@@ -78,18 +78,18 @@ const AuthPage = () => {
     <div className="min-h-screen flex items-center justify-center p-4 game-grid">
       <div className="w-full max-w-md space-y-6 bounce-in">
         <Card className="border-0 bg-card/50 backdrop-blur relative overflow-hidden">
-          {/* Animated Letters Background */}
-          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {/* Animated Letters Background - Full viewport */}
+          <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
             {animatedLetters.map((letter) => (
               <div
                 key={letter.id}
-                className={`absolute text-3xl font-bold ${letter.color} ${letter.font} transition-all duration-1000 transform hover:scale-110`}
+                className={`absolute text-2xl md:text-4xl font-bold ${letter.color} ${letter.font} transition-all duration-1000 transform hover:scale-110`}
                 style={{
                   left: `${letter.x}%`,
                   top: `${letter.y}%`,
                   textShadow: '0 0 10px currentColor',
                   animation: 'bounce 2s infinite',
-                  opacity: letter.x > 80 ? Math.max(0, 1 - (letter.x - 80) / 20) : 0.6
+                  opacity: letter.x > 80 ? Math.max(0, 1 - (letter.x - 80) / 20) : 0.4
                 }}
               >
                 {letter.letter}
