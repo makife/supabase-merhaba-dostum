@@ -295,9 +295,28 @@ const GamePage = ({ gameMode }: GamePageProps) => {
             Çıkış
           </Button>
           {gameType === 'timed' ? (
-            <div className="flex items-center space-x-2">
-              <Clock className="w-4 h-4" />
-              <span className="font-mono text-lg">{formatTime(timeLeft)}</span>
+            <div className="flex flex-col items-center space-y-2">
+              <div className={`flex items-center space-x-2 transition-all duration-300 ${
+                timeLeft <= 15 ? 'animate-pulse text-red-500' : 'text-foreground'
+              }`}>
+                <Clock className={`w-4 h-4 transition-all duration-300 ${
+                  timeLeft <= 15 ? 'animate-pulse text-red-500' : ''
+                }`} />
+                <span className={`font-mono text-lg font-bold transition-all duration-300 ${
+                  timeLeft <= 15 ? 'text-red-500 scale-110' : ''
+                }`}>
+                  {formatTime(timeLeft)}
+                </span>
+              </div>
+              <div className="w-32 h-1 bg-muted rounded-full overflow-hidden">
+                <div 
+                  className={`h-full transition-all duration-1000 ease-out ${
+                    timeLeft <= 15 ? 'bg-red-500 animate-pulse' : 
+                    timeLeft <= 30 ? 'bg-orange-500' : 'bg-green-500'
+                  }`}
+                  style={{ width: `${(timeLeft / 120) * 100}%` }}
+                />
+              </div>
             </div>
           ) : (
             <div className="flex items-center space-x-2">
