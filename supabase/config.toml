@@ -1,1 +1,10 @@
 project_id = "nnlvtqmuwmrqfinsgvwc"
+
+[functions.import-dictionary]
+verify_jwt = false
+
+[functions.validate-word]
+verify_jwt = false
+
+[functions.process-dictionary]
+verify_jwt = true
