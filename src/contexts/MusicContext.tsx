@@ -14,6 +14,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isPlaying, setIsPlaying] = useState(false);
   const [musicEnabled, setMusicEnabledState] = useState(true);
   const backgroundMusicRef = useRef<HTMLAudioElement | null>(null);
+  const isStartingRef = useRef(false);
 
   // Load settings on mount
   useEffect(() => {
@@ -67,18 +68,29 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   const startBackgroundMusic = () => {
-    if (musicEnabled && backgroundMusicRef.current && backgroundMusicRef.current.paused) {
-      // Reset to beginning and start fresh
-      backgroundMusicRef.current.currentTime = 0;
-      
-      // Try to play with better error handling
-      const playPromise = backgroundMusicRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
+    if (!musicEnabled || !backgroundMusicRef.current || isStartingRef.current) return;
+    
+    // Müzik zaten çalıyorsa tekrar başlatma
+    if (!backgroundMusicRef.current.paused) return;
+    
+    isStartingRef.current = true;
+    
+    // Reset to beginning and start fresh
+    backgroundMusicRef.current.currentTime = 0;
+    
+    // Try to play with better error handling
+    const playPromise = backgroundMusicRef.current.play();
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          isStartingRef.current = false;
+        })
+        .catch(error => {
+          isStartingRef.current = false;
           console.warn('Could not play background music:', error);
-          // Autoplay is blocked, music will start when user interacts
         });
-      }
+    } else {
+      isStartingRef.current = false;
     }
   };
 
@@ -86,6 +98,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
       backgroundMusicRef.current.pause();
     }
+    isStartingRef.current = false;
   };
 
   const setMusicEnabled = (enabled: boolean) => {
@@ -98,15 +111,25 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     window.dispatchEvent(new Event('settingsChanged'));
     
     // Control music based on setting
-    if (enabled && backgroundMusicRef.current && backgroundMusicRef.current.paused) {
+    if (enabled && backgroundMusicRef.current && backgroundMusicRef.current.paused && !isStartingRef.current) {
       backgroundMusicRef.current.currentTime = 0;
+      isStartingRef.current = true;
       const playPromise = backgroundMusicRef.current.play();
       if (playPromise !== undefined) {
-        playPromise.catch(console.warn);
+        playPromise
+          .then(() => {
+            isStartingRef.current = false;
+          })
+          .catch(() => {
+            isStartingRef.current = false;
+          });
+      } else {
+        isStartingRef.current = false;
       }
     } else if (!enabled && backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
       backgroundMusicRef.current.pause();
       backgroundMusicRef.current.currentTime = 0;
+      isStartingRef.current = false;
     }
   };
 
