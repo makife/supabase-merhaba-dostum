@@ -7,7 +7,6 @@ import { useProfilePicture } from '@/hooks/useProfilePicture';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,17 +17,13 @@ import {
   Clock,
   Target,
   User,
-  Settings,
-  ShoppingCart,
-  LogOut,
-  Gamepad2,
   Crown,
   Zap,
   Camera
 } from 'lucide-react';
 
 const HomePage = () => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { playSound, startBackgroundMusic } = useSounds();
   const { uploadProfilePicture, uploading } = useProfilePicture();
@@ -155,33 +150,6 @@ const HomePage = () => {
     },
   ];
 
-  const menuItems = [
-    {
-      id: 'profile',
-      title: 'Profil',
-      description: 'Profilini düzenle ve istatistiklerini gör',
-      icon: User,
-      route: '/profile',
-    },
-    {
-      id: 'market',
-      title: 'Market',
-      description: 'Oyun içi satın alımlar',
-      icon: ShoppingCart,
-      route: '/market',
-    },
-    {
-      id: 'settings',
-      title: 'Ayarlar',
-      description: 'Oyun ayarlarını düzenle',
-      icon: Settings,
-      route: '/settings',
-    },
-  ];
-
-  const handleLogout = async () => {
-    await signOut();
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
@@ -261,12 +229,6 @@ const HomePage = () => {
                   </div>
                 </div>
               </div>
-              <Button variant="outline" size="sm" onClick={() => {
-                playSound('buttonClick');
-                handleLogout();
-              }}>
-                <LogOut className="w-4 h-4" />
-              </Button>
             </div>
             <div className="flex items-center justify-between">
               <div className="text-xs text-muted-foreground font-medium">
@@ -360,13 +322,6 @@ const HomePage = () => {
                 </div>
                 <span className="text-xs text-center block text-muted-foreground">{userCredits}/5</span>
               </div>
-              <Button variant="outline" size="sm" onClick={() => {
-                playSound('buttonClick');
-                handleLogout();
-              }}>
-                <LogOut className="w-4 h-4 mr-2" />
-                Çıkış
-              </Button>
             </div>
           </div>
         </div>
@@ -448,56 +403,6 @@ const HomePage = () => {
           </div>
         </div>
 
-        {/* Menu Items */}
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Menü</h2>
-          <div className="relative">
-            <Carousel
-              opts={{
-                align: "start",
-                loop: true,
-              }}
-              className="w-full"
-            >
-              <CarouselContent className="-ml-2 md:-ml-4">
-                {menuItems.map((item) => (
-                  <CarouselItem key={item.id} className="pl-2 md:pl-4 basis-full md:basis-1/3">
-                    <Card 
-                      className={`hover:shadow-lg transition-all duration-300 cursor-pointer ${
-                        (item.id === 'profile' || item.id === 'market' || item.id === 'settings') ? 'bg-cover bg-center bg-no-repeat relative overflow-hidden' : ''
-                      }`}
-                      style={item.id === 'profile' ? {
-                        backgroundImage: `url('/lovable-uploads/2bd0c793-de1e-4655-8d4b-a7de9eecad4b.png')`
-                      } : item.id === 'market' ? {
-                        backgroundImage: `url('/lovable-uploads/0f632cb3-519b-4db8-a928-2cb6d5dd8736.png')`
-                      } : item.id === 'settings' ? {
-                        backgroundImage: `url('/lovable-uploads/c6870c8f-7357-4ca9-86dd-e941742c0989.png')`
-                      } : {}}
-                      onClick={() => {
-                        playSound('buttonClick');
-                        navigate(item.route);
-                      }}
-                    >
-                      <CardHeader className={`text-center py-4 ${(item.id === 'profile' || item.id === 'market' || item.id === 'settings') ? 'relative z-10 bg-black/50 text-white' : ''}`}>
-                        {(item.id !== 'profile' && item.id !== 'market' && item.id !== 'settings') && (
-                          <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-2">
-                            <item.icon className="w-6 h-6" />
-                          </div>
-                        )}
-                        <CardTitle className={`text-lg ${(item.id === 'profile' || item.id === 'market' || item.id === 'settings') ? 'text-white font-bold' : ''}`}>{item.title}</CardTitle>
-                        <CardDescription className={`text-sm ${(item.id === 'profile' || item.id === 'market' || item.id === 'settings') ? 'text-white/80' : ''}`}>
-                          {item.description}
-                        </CardDescription>
-                      </CardHeader>
-                    </Card>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <CarouselPrevious className="left-0" />
-              <CarouselNext className="right-0" />
-            </Carousel>
-          </div>
-        </div>
 
         {/* Game Mode Selector Modal */}
         {selectedMode && (
