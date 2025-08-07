@@ -1,4 +1,5 @@
 import { SoundPackSelector } from '@/components/SoundPackSelector';
+import { DictionaryImportButton } from '@/components/DictionaryImportButton';
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -22,7 +23,8 @@ import {
   Mail,
   Smartphone,
   Save,
-  PlayCircle
+  PlayCircle,
+  Database
 } from 'lucide-react';
 
 const SettingsPage = () => {
@@ -348,7 +350,16 @@ const SettingsPage = () => {
             {/* Sound Pack Selector */}
             {soundsEnabled && (
               <>
-                <SoundPackSelector />
+          <SoundPackSelector />
+          
+          {/* Dictionary Import */}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Database className="w-5 h-5 text-primary" />
+              <h3 className="text-lg font-semibold">Sözlük Yönetimi</h3>
+            </div>
+            <DictionaryImportButton />
+          </div>
                 <Separator />
               </>
             )}
