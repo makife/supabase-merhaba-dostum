@@ -8,6 +8,8 @@ import { useNavigate } from 'react-router-dom';
 import { useProfilePicture } from '@/hooks/useProfilePicture';
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { Input } from '@/components/ui/input';
 import {
   ArrowLeft,
   Trophy,
@@ -24,6 +26,8 @@ const ProfilePage = () => {
   const navigate = useNavigate();
   const { uploadProfilePicture, uploading } = useProfilePicture();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedUsername, setEditedUsername] = useState('');
   const [profileData, setProfileData] = useState({
     username: user?.email?.split('@')[0] || 'Oyuncu',
     avatar_url: '',
@@ -51,11 +55,13 @@ const ProfilePage = () => {
         .maybeSingle();
       
       if (data) {
+        const username = data.username || (user?.email?.split('@')[0] || 'Oyuncu');
         setProfileData(prev => ({
           ...prev,
-          username: data.username || prev.username,
+          username: username,
           avatar_url: data.avatar_url || '',
         }));
+        setEditedUsername(username);
       }
     };
 
@@ -81,6 +87,33 @@ const ProfilePage = () => {
     }
   };
 
+  const handleEditToggle = () => {
+    if (isEditing) {
+      setEditedUsername(profileData.username);
+    }
+    setIsEditing(!isEditing);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ username: editedUsername })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      setProfileData(prev => ({ ...prev, username: editedUsername }));
+      setIsEditing(false);
+      toast.success('Profil başarıyla güncellendi');
+    } catch (error: any) {
+      console.error('Profile update error:', error);
+      toast.error('Profil güncellenirken hata oluştu');
+    }
+  };
+
   const badges = [
     { name: 'İlk Adım', description: 'İlk oyununuzu tamamladınız', icon: '🎯', earned: true },
     { name: 'Hızlı Parmaklar', description: '10 saniyede kelime yazdınız', icon: '⚡', earned: true },
@@ -99,10 +132,16 @@ const ProfilePage = () => {
             Geri
           </Button>
           <h1 className="text-2xl font-bold">Profil</h1>
-          <Button variant="outline" size="sm">
-            <Edit className="w-4 h-4 mr-2" />
-            Düzenle
-          </Button>
+          {isEditing ? (
+            <Button variant="outline" size="sm" onClick={handleSaveProfile}>
+              Kaydet
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" onClick={handleEditToggle}>
+              <Edit className="w-4 h-4 mr-2" />
+              Düzenle
+            </Button>
+          )}
         </div>
 
         {/* Profile Header */}
@@ -133,7 +172,16 @@ const ProfilePage = () => {
                 />
               </div>
               <div className="flex-1">
-                <h2 className="text-2xl font-bold">{profileData.username}</h2>
+                {isEditing ? (
+                  <Input
+                    value={editedUsername}
+                    onChange={(e) => setEditedUsername(e.target.value)}
+                    className="text-2xl font-bold mb-2"
+                    placeholder="Kullanıcı adınız"
+                  />
+                ) : (
+                  <h2 className="text-2xl font-bold">{profileData.username}</h2>
+                )}
                 <p className="text-muted-foreground">{user?.email}</p>
                 <div className="flex items-center space-x-2 mt-2">
                   <Badge variant="secondary">Seviye {profileData.level}</Badge>
