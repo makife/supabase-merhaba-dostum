@@ -59,7 +59,7 @@ const HomePage = () => {
         prev.map(letter => ({
           ...letter,
           x: letter.x + letter.dx
-        })).filter(letter => letter.x < 120)
+        })).filter(letter => letter.x < 110) // Sağ tarafa kadar git
       );
     }, 50);
 
@@ -149,7 +149,7 @@ const HomePage = () => {
                   top: `${letter.y}%`,
                   textShadow: '0 0 10px currentColor',
                   animation: 'bounce 3s infinite',
-                  opacity: 0.6,
+                  opacity: letter.x > 95 ? Math.max(0, 1 - (letter.x - 95) / 15) : 0.6, // Çok sağda fade başlasın
                   zIndex: 1
                 }}
               >
