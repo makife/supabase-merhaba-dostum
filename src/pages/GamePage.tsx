@@ -391,9 +391,9 @@ const GamePage = ({ gameMode }: GamePageProps) => {
 
         {/* Scores */}
         <div className="grid grid-cols-2 gap-4">
-          <Card className="bg-gradient-to-br from-emerald-500/20 to-emerald-600/30 border-emerald-400/50 backdrop-blur-sm">
+          <Card className="bg-gradient-to-br from-yellow-300/20 to-yellow-400/30 border-yellow-400/50 backdrop-blur-sm">
             <CardContent className="p-4 text-center relative overflow-hidden">
-              <div className="w-16 h-16 bg-emerald-500/40 rounded-full mx-auto mb-2 flex items-center justify-center border-2 border-emerald-300/50 overflow-hidden">
+              <div className="w-16 h-16 bg-yellow-400/40 rounded-full mx-auto mb-2 flex items-center justify-center border-2 border-yellow-300/50 overflow-hidden">
                 {playerAvatar ? (
                   <img 
                     src={playerAvatar} 
@@ -401,17 +401,17 @@ const GamePage = ({ gameMode }: GamePageProps) => {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <User className="w-8 h-8 text-emerald-100" />
+                  <User className="w-8 h-8 text-yellow-100" />
                 )}
               </div>
-              <p className="text-sm text-emerald-100 font-bold font-bungee">
+              <p className="text-sm text-yellow-100 font-bold font-bungee">
                 Siz
               </p>
               <p className="text-2xl font-bold text-white">{playerScore}</p>
               {gameType === 'score' && (
                 <Progress 
                   value={(playerScore / 100) * 100} 
-                  className="mt-2 bg-emerald-900/50" 
+                  className="mt-2 bg-yellow-900/50" 
                 />
               )}
             </CardContent>
