@@ -26,6 +26,7 @@ export default {
 				bungee: ["Bungee", "cursive"],
 				orbitron: ["Orbitron", "monospace"],
 				"press-start": ["Press Start 2P", "cursive"],
+				painter: ["Permanent Marker", "cursive"],
 			},
 			colors: {
 				border: 'hsl(var(--border))',

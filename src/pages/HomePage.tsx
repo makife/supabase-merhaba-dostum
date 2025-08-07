@@ -331,7 +331,7 @@ const HomePage = () => {
         <div>
           <div className="bg-gradient-to-r from-yellow-400 to-white rounded-lg px-4 py-2 mb-4 inline-flex items-center shadow-md">
             <Target className="w-5 h-5 mr-2 text-gray-700" />
-            <h2 className="text-xl font-semibold text-gray-700">Oyun Modları</h2>
+            <h2 className="text-xl font-semibold text-gray-700 font-painter">Oyun Modları</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {gameModesConfig.map((mode) => (
