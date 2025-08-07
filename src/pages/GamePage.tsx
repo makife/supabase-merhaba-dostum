@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useGame } from '@/contexts/GameContext';
 import { useWordValidation } from '@/hooks/useWordValidation';
@@ -28,6 +28,8 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const { toast } = useToast();
   const { currentRoom, updateScore } = useGame();
   const { validateWord, isValidating } = useWordValidation();
+  const [searchParams] = useSearchParams();
+  const gameType = (searchParams.get('type') as 'timed' | 'score') || 'timed';
 
   // Game state
   const [gameGrid] = useState<string[][]>([
@@ -41,14 +43,14 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const [currentWord, setCurrentWord] = useState('');
   const [playerScore, setPlayerScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(120); // 2 minutes
+  const [timeLeft, setTimeLeft] = useState(gameType === 'timed' ? 120 : 0); // Only use timer for timed mode
   const [gameStarted, setGameStarted] = useState(true);
   const [gameEnded, setGameEnded] = useState(false);
   const [winner, setWinner] = useState<'player' | 'opponent' | 'tie' | null>(null);
 
-  // Timer effect
+  // Timer effect - only for timed mode
   useEffect(() => {
-    if (!gameStarted || gameEnded) return;
+    if (!gameStarted || gameEnded || gameType !== 'timed') return;
 
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
@@ -62,7 +64,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [gameStarted, gameEnded]);
+  }, [gameStarted, gameEnded, gameType]);
 
   // Check for winner
   const checkWinner = useCallback(() => {
@@ -75,13 +77,13 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     }
   }, [playerScore, opponentScore]);
 
-  // Check if score reaches 100
+  // Check if score reaches 100 - only for score mode
   useEffect(() => {
-    if (playerScore >= 100 || opponentScore >= 100) {
+    if (gameType === 'score' && (playerScore >= 100 || opponentScore >= 100)) {
       setGameEnded(true);
       checkWinner();
     }
-  }, [playerScore, opponentScore, checkWinner]);
+  }, [playerScore, opponentScore, checkWinner, gameType]);
 
   // Handle letter click
   const handleLetterClick = (letter: string, row: number, col: number) => {
@@ -226,10 +228,17 @@ const GamePage = ({ gameMode }: GamePageProps) => {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Çıkış
           </Button>
-          <div className="flex items-center space-x-2">
-            <Clock className="w-4 h-4" />
-            <span className="font-mono text-lg">{formatTime(timeLeft)}</span>
-          </div>
+          {gameType === 'timed' ? (
+            <div className="flex items-center space-x-2">
+              <Clock className="w-4 h-4" />
+              <span className="font-mono text-lg">{formatTime(timeLeft)}</span>
+            </div>
+          ) : (
+            <div className="flex items-center space-x-2">
+              <Target className="w-4 h-4" />
+              <span className="text-sm font-medium">100 Puana Kadar</span>
+            </div>
+          )}
         </div>
 
         {/* Scores */}
@@ -239,7 +248,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
               <User className="w-6 h-6 mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">Siz</p>
               <p className="text-2xl font-bold">{playerScore}</p>
-              <Progress value={(playerScore / 100) * 100} className="mt-2" />
+              <Progress value={gameType === 'score' ? (playerScore / 100) * 100 : Math.min((playerScore / 200) * 100, 100)} className="mt-2" />
             </CardContent>
           </Card>
           <Card>
@@ -247,7 +256,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
               <opponent.icon className="w-6 h-6 mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">{opponent.name}</p>
               <p className="text-2xl font-bold">{opponentScore}</p>
-              <Progress value={(opponentScore / 100) * 100} className="mt-2" />
+              <Progress value={gameType === 'score' ? (opponentScore / 100) * 100 : Math.min((opponentScore / 200) * 100, 100)} className="mt-2" />
             </CardContent>
           </Card>
         </div>
