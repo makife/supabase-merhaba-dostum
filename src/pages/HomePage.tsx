@@ -1,13 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 import GameModeSelector from '@/components/GameModeSelector';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSounds } from '@/hooks/useSounds';
+import { useProfilePicture } from '@/hooks/useProfilePicture';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Bot,
   Users,
@@ -20,16 +23,20 @@ import {
   LogOut,
   Gamepad2,
   Crown,
-  Zap
+  Zap,
+  Camera
 } from 'lucide-react';
 
 const HomePage = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { playSound, startBackgroundMusic } = useSounds();
+  const { uploadProfilePicture, uploading } = useProfilePicture();
   const [userCredits] = useState(5);
   const [selectedMode, setSelectedMode] = useState<string | null>(null);
   const [animatedLetters, setAnimatedLetters] = useState<Array<{id: number, letter: string, x: number, y: number, color: string, font: string, dx: number}>>([]);
+  const [userAvatar, setUserAvatar] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const letters = 'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ';
   const colors = ['text-red-400', 'text-blue-400', 'text-green-400', 'text-yellow-400', 'text-purple-400', 'text-pink-400', 'text-indigo-400', 'text-orange-400'];
@@ -70,6 +77,44 @@ const HomePage = () => {
   useEffect(() => {
     startBackgroundMusic();
   }, [startBackgroundMusic]);
+
+  // Fetch user profile data including avatar
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user) return;
+      
+      const { data } = await supabase
+        .from('profiles')
+        .select('avatar_url')
+        .eq('id', user.id)
+        .maybeSingle();
+      
+      if (data?.avatar_url) {
+        setUserAvatar(data.avatar_url);
+      }
+    };
+
+    fetchUserProfile();
+  }, [user]);
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const avatarUrl = await uploadProfilePicture(file);
+    if (avatarUrl) {
+      setUserAvatar(avatarUrl);
+    }
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const gameModesConfig = [
     {
@@ -165,19 +210,39 @@ const HomePage = () => {
           
           {/* Mobile Layout */}
           <div className="block md:hidden relative z-10">
+            {/* Hidden file input */}
+            <Input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+            
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-full p-0.5">
-                  <div className="w-full h-full bg-card rounded-full overflow-hidden flex items-center justify-center">
-                    {user?.user_metadata?.avatar_url ? (
+                <div 
+                  className="relative w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-full p-0.5 cursor-pointer group"
+                  onClick={handleAvatarClick}
+                >
+                  <div className="w-full h-full bg-card rounded-full overflow-hidden flex items-center justify-center relative">
+                    {userAvatar || user?.user_metadata?.avatar_url ? (
                       <img 
-                        src={user.user_metadata.avatar_url} 
+                        src={userAvatar || user.user_metadata.avatar_url} 
                         alt="Profile" 
                         className="w-full h-full object-cover"
                       />
                     ) : (
                       <User className="w-6 h-6 text-muted-foreground" />
                     )}
+                    {uploading && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 rounded-full flex items-center justify-center transition-all duration-200 opacity-0 group-hover:opacity-100">
+                      <Camera className="w-3 h-3 text-white" />
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-1 relative z-10">
@@ -225,20 +290,39 @@ const HomePage = () => {
             </div>
           </div>
 
-          {/* Desktop Layout */}
+          {/* Desktop Layout - Hidden file input */}
+          <Input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+          
           <div className="hidden md:flex items-center justify-between relative z-10">
             <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-full p-0.5">
-                <div className="w-full h-full bg-card rounded-full overflow-hidden flex items-center justify-center">
-                  {user?.user_metadata?.avatar_url ? (
+              <div 
+                className="relative w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-full p-0.5 cursor-pointer group"
+                onClick={handleAvatarClick}
+              >
+                <div className="w-full h-full bg-card rounded-full overflow-hidden flex items-center justify-center relative">
+                  {userAvatar || user?.user_metadata?.avatar_url ? (
                     <img 
-                      src={user.user_metadata.avatar_url} 
+                      src={userAvatar || user.user_metadata.avatar_url} 
                       alt="Profile" 
                       className="w-full h-full object-cover"
                     />
                   ) : (
                     <User className="w-8 h-8 text-muted-foreground" />
                   )}
+                  {uploading && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
+                      <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 rounded-full flex items-center justify-center transition-all duration-200 opacity-0 group-hover:opacity-100">
+                    <Camera className="w-5 h-5 text-white" />
+                  </div>
                 </div>
               </div>
               <div className="space-y-1 relative z-10">
