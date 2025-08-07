@@ -37,8 +37,15 @@ serve(async (req) => {
       .from('dictionaries')
       .download(fileName);
 
-    if (downloadError || !fileData) {
-      throw new Error('Failed to download file');
+    console.log('Download result:', { hasData: !!fileData, error: downloadError });
+
+    if (downloadError) {
+      console.error('Download error:', downloadError);
+      throw new Error(`Failed to download file: ${downloadError.message}`);
+    }
+    
+    if (!fileData) {
+      throw new Error('No file data received');
     }
 
     // Read file content
