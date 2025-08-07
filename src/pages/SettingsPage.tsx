@@ -18,7 +18,8 @@ import {
   Shield,
   HelpCircle,
   Mail,
-  Smartphone
+  Smartphone,
+  Save
 } from 'lucide-react';
 
 const SettingsPage = () => {
@@ -55,17 +56,12 @@ const SettingsPage = () => {
     // Dispatch custom event to notify other components
     window.dispatchEvent(new Event('settingsChanged'));
     
+    playSound('buttonClick');
     toast({
       title: 'Ayarlar Kaydedildi',
       description: 'Değişiklikleriniz başarıyla kaydedildi.',
     });
   };
-
-  // Auto-save when settings change
-  useEffect(() => {
-    const timeoutId = setTimeout(saveSettings, 500);
-    return () => clearTimeout(timeoutId);
-  }, [notifications, soundsEnabled, theme, language]);
 
   const handleNotificationChange = (checked: boolean) => {
     setNotifications(checked);
@@ -270,6 +266,20 @@ const SettingsPage = () => {
               <p>Kelimeci v1.0.0</p>
               <p>© 2024 Kelimeci Ekibi</p>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Save Button */}
+        <Card>
+          <CardContent className="pt-6">
+            <Button 
+              onClick={saveSettings}
+              className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-semibold"
+              size="lg"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Ayarları Kaydet
+            </Button>
           </CardContent>
         </Card>
       </div>
