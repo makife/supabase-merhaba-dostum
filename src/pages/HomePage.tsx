@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import GameModeSelector from '@/components/GameModeSelector';
+import { DictionaryImportButton } from '@/components/DictionaryImportButton';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSounds } from '@/hooks/useSounds';
 import { Button } from '@/components/ui/button';
@@ -297,6 +298,14 @@ const HomePage = () => {
                 </CardHeader>
               </Card>
             ))}
+          </div>
+        </div>
+
+        {/* Dictionary Import Section */}
+        <div>
+          <h2 className="text-xl font-semibold mb-4">Veritabanı Yönetimi</h2>
+          <div className="flex justify-center">
+            <DictionaryImportButton />
           </div>
         </div>
 
