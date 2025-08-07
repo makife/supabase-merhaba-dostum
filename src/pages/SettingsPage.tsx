@@ -1,0 +1,274 @@
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  ArrowLeft,
+  Bell,
+  Palette,
+  Volume2,
+  Info,
+  Shield,
+  HelpCircle,
+  Mail,
+  Smartphone
+} from 'lucide-react';
+
+const SettingsPage = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { user } = useAuth();
+
+  // Settings state
+  const [notifications, setNotifications] = useState(true);
+  const [sounds, setSounds] = useState(true);
+  const [theme, setTheme] = useState('system');
+  const [language, setLanguage] = useState('tr');
+
+  // Load settings from localStorage
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('kelimeci-settings');
+    if (savedSettings) {
+      const settings = JSON.parse(savedSettings);
+      setNotifications(settings.notifications ?? true);
+      setSounds(settings.sounds ?? true);
+      setTheme(settings.theme ?? 'system');
+      setLanguage(settings.language ?? 'tr');
+    }
+  }, []);
+
+  // Save settings to localStorage
+  const saveSettings = () => {
+    const settings = {
+      notifications,
+      sounds,
+      theme,
+      language
+    };
+    localStorage.setItem('kelimeci-settings', JSON.stringify(settings));
+    
+    toast({
+      title: 'Ayarlar Kaydedildi',
+      description: 'Değişiklikleriniz başarıyla kaydedildi.',
+    });
+  };
+
+  // Auto-save when settings change
+  useEffect(() => {
+    const timeoutId = setTimeout(saveSettings, 500);
+    return () => clearTimeout(timeoutId);
+  }, [notifications, sounds, theme, language]);
+
+  const handleNotificationChange = (checked: boolean) => {
+    setNotifications(checked);
+    if (checked && 'Notification' in window) {
+      Notification.requestPermission();
+    }
+  };
+
+  const openAbout = () => {
+    toast({
+      title: 'Kelimeci v1.0.0',
+      description: 'Türkçe kelime oyunu. Geliştirici: Kelimeci Ekibi',
+    });
+  };
+
+  const openPrivacyPolicy = () => {
+    toast({
+      title: 'Gizlilik Politikası',
+      description: 'Gizlilik politikamız yakında hazır olacak.',
+    });
+  };
+
+  const openSupport = () => {
+    toast({
+      title: 'Destek',
+      description: 'Destek ekibimizle iletişime geçmek için support@kelimeci.com adresine mail atabilirsiniz.',
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
+      <div className="max-w-2xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <Button variant="outline" size="sm" onClick={() => navigate('/')}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Geri
+          </Button>
+          <h1 className="text-2xl font-bold">Ayarlar</h1>
+          <div className="w-16" /> {/* Spacer */}
+        </div>
+
+        {/* Game Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Smartphone className="w-5 h-5 mr-2" />
+              Oyun Ayarları
+            </CardTitle>
+            <CardDescription>
+              Oyun deneyiminizi kişiselleştirin
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Notifications */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Bell className="w-5 h-5" />
+                <div>
+                  <p className="font-medium">Bildirimler</p>
+                  <p className="text-sm text-muted-foreground">Oyun bildirimlerini alın</p>
+                </div>
+              </div>
+              <Switch
+                checked={notifications}
+                onCheckedChange={handleNotificationChange}
+              />
+            </div>
+
+            <Separator />
+
+            {/* Sounds */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Volume2 className="w-5 h-5" />
+                <div>
+                  <p className="font-medium">Ses Efektleri</p>
+                  <p className="text-sm text-muted-foreground">Oyun seslerini açın/kapatın</p>
+                </div>
+              </div>
+              <Switch
+                checked={sounds}
+                onCheckedChange={setSounds}
+              />
+            </div>
+
+            <Separator />
+
+            {/* Theme */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Palette className="w-5 h-5" />
+                <div>
+                  <p className="font-medium">Tema</p>
+                  <p className="text-sm text-muted-foreground">Görünümü seçin</p>
+                </div>
+              </div>
+              <Select value={theme} onValueChange={setTheme}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="light">Açık</SelectItem>
+                  <SelectItem value="dark">Koyu</SelectItem>
+                  <SelectItem value="system">Sistem</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Account Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Shield className="w-5 h-5 mr-2" />
+              Hesap
+            </CardTitle>
+            <CardDescription>
+              Hesap bilgilerinizi yönetin
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">E-posta</p>
+                <p className="text-sm text-muted-foreground">{user?.email}</p>
+              </div>
+              <Button variant="outline" size="sm">
+                Değiştir
+              </Button>
+            </div>
+
+            <Separator />
+
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Şifre</p>
+                <p className="text-sm text-muted-foreground">Son değişiklik: 1 hafta önce</p>
+              </div>
+              <Button variant="outline" size="sm">
+                Değiştir
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Support & Info */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Info className="w-5 h-5 mr-2" />
+              Destek & Bilgi
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button
+              variant="ghost"
+              className="w-full justify-start"
+              onClick={openSupport}
+            >
+              <HelpCircle className="w-4 h-4 mr-2" />
+              Yardım & Destek
+            </Button>
+
+            <Button
+              variant="ghost"
+              className="w-full justify-start"
+              onClick={openPrivacyPolicy}
+            >
+              <Shield className="w-4 h-4 mr-2" />
+              Gizlilik Politikası
+            </Button>
+
+            <Button
+              variant="ghost"
+              className="w-full justify-start"
+              onClick={openAbout}
+            >
+              <Info className="w-4 h-4 mr-2" />
+              Hakkımızda
+            </Button>
+
+            <Button
+              variant="ghost"
+              className="w-full justify-start"
+              onClick={() => window.open('mailto:support@kelimeci.com')}
+            >
+              <Mail className="w-4 h-4 mr-2" />
+              İletişim
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* App Version */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center text-sm text-muted-foreground">
+              <p>Kelimeci v1.0.0</p>
+              <p>© 2024 Kelimeci Ekibi</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default SettingsPage;

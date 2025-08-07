@@ -4,11 +4,15 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { GameProvider } from "@/contexts/GameContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AuthPage from "@/pages/AuthPage";
 import HomePage from "@/pages/HomePage";
 import GamePage from "@/pages/GamePage";
 import ProfilePage from "@/pages/ProfilePage";
+import SettingsPage from "@/pages/SettingsPage";
+import MarketPage from "@/pages/MarketPage";
+import TournamentPage from "@/pages/TournamentPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -57,32 +61,22 @@ const AppRoutes = () => {
       } />
       <Route path="/tournament" element={
         <ProtectedRoute>
-          <div className="min-h-screen flex items-center justify-center">
-            <div className="text-center">
-              <h1 className="text-2xl font-bold mb-4">Turnuva Modu</h1>
-              <p className="text-muted-foreground">Yakında gelecek...</p>
-            </div>
-          </div>
+          <TournamentPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/tournament/:id/match" element={
+        <ProtectedRoute>
+          <GamePage gameMode="tournament" />
         </ProtectedRoute>
       } />
       <Route path="/market" element={
         <ProtectedRoute>
-          <div className="min-h-screen flex items-center justify-center">
-            <div className="text-center">
-              <h1 className="text-2xl font-bold mb-4">Market</h1>
-              <p className="text-muted-foreground">Yakında gelecek...</p>
-            </div>
-          </div>
+          <MarketPage />
         </ProtectedRoute>
       } />
       <Route path="/settings" element={
         <ProtectedRoute>
-          <div className="min-h-screen flex items-center justify-center">
-            <div className="text-center">
-              <h1 className="text-2xl font-bold mb-4">Ayarlar</h1>
-              <p className="text-muted-foreground">Yakında gelecek...</p>
-            </div>
-          </div>
+          <SettingsPage />
         </ProtectedRoute>
       } />
       <Route path="*" element={<NotFound />} />
@@ -97,7 +91,9 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <AppRoutes />
+          <GameProvider>
+            <AppRoutes />
+          </GameProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

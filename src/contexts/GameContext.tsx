@@ -1,0 +1,321 @@
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from './AuthContext';
+import { useToast } from '@/hooks/use-toast';
+
+interface GameRoom {
+  id: string;
+  room_code: string | null;
+  game_mode: string;
+  status: string;
+  host_id: string;
+  max_score: number;
+  time_limit: number;
+  current_grid: any;
+  created_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+}
+
+interface GameParticipant {
+  id: string;
+  room_id: string;
+  user_id: string;
+  score: number;
+  is_bot: boolean;
+  joined_at: string;
+}
+
+interface GameContextType {
+  currentRoom: GameRoom | null;
+  participants: GameParticipant[];
+  createRoom: (gameMode: string, roomCode?: string) => Promise<GameRoom | null>;
+  joinRoom: (roomCode: string) => Promise<boolean>;
+  leaveRoom: () => Promise<void>;
+  updateScore: (score: number) => Promise<void>;
+  startGame: () => Promise<void>;
+  endGame: () => Promise<void>;
+  isConnected: boolean;
+}
+
+const GameContext = createContext<GameContextType | undefined>(undefined);
+
+export const useGame = () => {
+  const context = useContext(GameContext);
+  if (!context) {
+    throw new Error('useGame must be used within a GameProvider');
+  }
+  return context;
+};
+
+interface GameProviderProps {
+  children: ReactNode;
+}
+
+export const GameProvider = ({ children }: GameProviderProps) => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [currentRoom, setCurrentRoom] = useState<GameRoom | null>(null);
+  const [participants, setParticipants] = useState<GameParticipant[]>([]);
+  const [isConnected, setIsConnected] = useState(false);
+
+  // Generate random grid
+  const generateRandomGrid = (): string[][] => {
+    const letters = 'ABCÇDEFGĞHIİJKLMNOÖPQRSŞTUÜVWXYZ';
+    const grid: string[][] = [];
+    for (let i = 0; i < 4; i++) {
+      const row: string[] = [];
+      for (let j = 0; j < 4; j++) {
+        row.push(letters[Math.floor(Math.random() * letters.length)]);
+      }
+      grid.push(row);
+    }
+    return grid;
+  };
+
+  // Create room
+  const createRoom = async (gameMode: string, roomCode?: string): Promise<GameRoom | null> => {
+    if (!user) return null;
+
+    try {
+      const grid = generateRandomGrid();
+      const { data: room, error } = await supabase
+        .from('game_rooms')
+        .insert({
+          game_mode: gameMode,
+          host_id: user.id,
+          room_code: roomCode,
+          current_grid: grid.flat(),
+          status: 'waiting'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Join the room as a participant
+      await supabase
+        .from('game_participants')
+        .insert({
+          room_id: room.id,
+          user_id: user.id,
+          score: 0
+        });
+
+      setCurrentRoom(room);
+      
+      toast({
+        title: 'Oda Oluşturuldu',
+        description: roomCode ? `Oda kodu: ${roomCode}` : 'Oyuna başlamaya hazırsınız',
+      });
+
+      return room;
+    } catch (error) {
+      console.error('Error creating room:', error);
+      toast({
+        title: 'Hata',
+        description: 'Oda oluşturulamadı',
+        variant: 'destructive',
+      });
+      return null;
+    }
+  };
+
+  // Join room
+  const joinRoom = async (roomCode: string): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      const { data: room, error: roomError } = await supabase
+        .from('game_rooms')
+        .select('*')
+        .eq('room_code', roomCode)
+        .eq('status', 'waiting')
+        .single();
+
+      if (roomError || !room) {
+        toast({
+          title: 'Hata',
+          description: 'Oda bulunamadı veya oyun başlamış',
+          variant: 'destructive',
+        });
+        return false;
+      }
+
+      // Check if already in room
+      const { data: existingParticipant } = await supabase
+        .from('game_participants')
+        .select('*')
+        .eq('room_id', room.id)
+        .eq('user_id', user.id)
+        .single();
+
+      if (!existingParticipant) {
+        await supabase
+          .from('game_participants')
+          .insert({
+            room_id: room.id,
+            user_id: user.id,
+            score: 0
+          });
+      }
+
+      setCurrentRoom(room);
+      
+      toast({
+        title: 'Odaya Katıldınız',
+        description: 'Oyun başlamayı bekliyor',
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error joining room:', error);
+      toast({
+        title: 'Hata',
+        description: 'Odaya katılamadı',
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
+  // Leave room
+  const leaveRoom = async (): Promise<void> => {
+    if (!user || !currentRoom) return;
+
+    try {
+      await supabase
+        .from('game_participants')
+        .delete()
+        .eq('room_id', currentRoom.id)
+        .eq('user_id', user.id);
+
+      setCurrentRoom(null);
+      setParticipants([]);
+    } catch (error) {
+      console.error('Error leaving room:', error);
+    }
+  };
+
+  // Update score
+  const updateScore = async (score: number): Promise<void> => {
+    if (!user || !currentRoom) return;
+
+    try {
+      await supabase
+        .from('game_participants')
+        .update({ score })
+        .eq('room_id', currentRoom.id)
+        .eq('user_id', user.id);
+    } catch (error) {
+      console.error('Error updating score:', error);
+    }
+  };
+
+  // Start game
+  const startGame = async (): Promise<void> => {
+    if (!currentRoom) return;
+
+    try {
+      await supabase
+        .from('game_rooms')
+        .update({ 
+          status: 'active', 
+          started_at: new Date().toISOString() 
+        })
+        .eq('id', currentRoom.id);
+    } catch (error) {
+      console.error('Error starting game:', error);
+    }
+  };
+
+  // End game
+  const endGame = async (): Promise<void> => {
+    if (!currentRoom) return;
+
+    try {
+      await supabase
+        .from('game_rooms')
+        .update({ 
+          status: 'finished', 
+          finished_at: new Date().toISOString() 
+        })
+        .eq('id', currentRoom.id);
+    } catch (error) {
+      console.error('Error ending game:', error);
+    }
+  };
+
+  // Real-time subscriptions
+  useEffect(() => {
+    if (!currentRoom) return;
+
+    const channel = supabase
+      .channel(`room-${currentRoom.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'game_participants',
+        filter: `room_id=eq.${currentRoom.id}`
+      }, (payload) => {
+        console.log('Participant change:', payload);
+        // Refresh participants
+        fetchParticipants();
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'game_rooms',
+        filter: `id=eq.${currentRoom.id}`
+      }, (payload) => {
+        console.log('Room change:', payload);
+        setCurrentRoom(payload.new as GameRoom);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentRoom]);
+
+  // Fetch participants
+  const fetchParticipants = async () => {
+    if (!currentRoom) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('game_participants')
+        .select('*')
+        .eq('room_id', currentRoom.id);
+
+      if (!error && data) {
+        setParticipants(data);
+      }
+    } catch (error) {
+      console.error('Error fetching participants:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (currentRoom) {
+      fetchParticipants();
+      setIsConnected(true);
+    } else {
+      setIsConnected(false);
+    }
+  }, [currentRoom]);
+
+  const value = {
+    currentRoom,
+    participants,
+    createRoom,
+    joinRoom,
+    leaveRoom,
+    updateScore,
+    startGame,
+    endGame,
+    isConnected,
+  };
+
+  return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
+};

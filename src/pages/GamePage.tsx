@@ -6,6 +6,8 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { useGame } from '@/contexts/GameContext';
+import { useWordValidation } from '@/hooks/useWordValidation';
 import { 
   ArrowLeft, 
   Clock, 
@@ -18,12 +20,14 @@ import {
 } from 'lucide-react';
 
 interface GamePageProps {
-  gameMode: 'vs-computer' | 'private-room' | 'random-match';
+  gameMode: 'vs-computer' | 'private-room' | 'random-match' | 'tournament';
 }
 
 const GamePage = ({ gameMode }: GamePageProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { currentRoom, updateScore } = useGame();
+  const { validateWord, isValidating } = useWordValidation();
 
   // Game state
   const [gameGrid] = useState<string[][]>([
@@ -116,21 +120,25 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       return;
     }
 
-    // Check if word is valid (simplified for demo)
-    const validWords = ['KEL', 'KALE', 'MASA', 'TOP', 'TOR', 'MAT', 'AS', 'SA'];
-    const isValid = validWords.includes(currentWord);
+    const result = await validateWord(currentWord);
 
-    if (isValid) {
-      const points = currentWord.length * 10;
-      setPlayerScore(prev => prev + points);
+    if (result.isValid) {
+      const newScore = playerScore + result.points;
+      setPlayerScore(newScore);
+      
+      // Update score in multiplayer context
+      if (currentRoom) {
+        await updateScore(newScore);
+      }
+      
       toast({
         title: 'Doğru Kelime!',
-        description: `+${points} puan kazandınız!`,
+        description: result.message,
       });
     } else {
       toast({
         title: 'Geçersiz Kelime',
-        description: 'Bu kelime sözlükte bulunmuyor.',
+        description: result.message,
         variant: 'destructive',
       });
     }
@@ -162,6 +170,8 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         return { name: 'Arkadaş', icon: User };
       case 'random-match':
         return { name: 'Rakip', icon: User };
+      case 'tournament':
+        return { name: 'Turnuva Rakibi', icon: Trophy };
       default:
         return { name: 'Rakip', icon: User };
     }
@@ -295,10 +305,10 @@ const GamePage = ({ gameMode }: GamePageProps) => {
           <Button 
             onClick={submitWord}
             className="h-12"
-            disabled={currentWord.length < 3}
+            disabled={currentWord.length < 3 || isValidating}
           >
             <Send className="w-4 h-4 mr-2" />
-            Gönder
+            {isValidating ? 'Kontrol Ediliyor...' : 'Gönder'}
           </Button>
         </div>
       </div>
