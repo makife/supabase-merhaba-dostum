@@ -34,13 +34,55 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const gameType = (searchParams.get('type') as 'timed' | 'score') || 'timed';
   const [timeWarningPlayed, setTimeWarningPlayed] = useState(false);
 
-  // Game state
-  const [gameGrid] = useState<string[][]>([
-    ['K', 'E', 'L', 'İ'],
-    ['M', 'A', 'S', 'A'],
-    ['T', 'O', 'P', 'U'],
-    ['R', 'N', 'D', 'Y']
-  ]);
+  // Game state - Generate random letters each time
+  const generateRandomGrid = (): string[][] => {
+    // Turkish letters with their frequency weights
+    const letterPool = [
+      'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A', // A - very common
+      'E', 'E', 'E', 'E', 'E', 'E', 'E',       // E - very common
+      'İ', 'İ', 'İ', 'İ', 'İ', 'İ',           // İ - common
+      'I', 'I', 'I', 'I', 'I',                 // I - common
+      'O', 'O', 'O', 'O', 'O',                 // O - common
+      'U', 'U', 'U', 'U',                      // U - common
+      'Ü', 'Ü', 'Ü',                           // Ü - common
+      'Ö', 'Ö', 'Ö',                           // Ö - common
+      'L', 'L', 'L', 'L', 'L',                 // L - common
+      'N', 'N', 'N', 'N', 'N',                 // N - common
+      'R', 'R', 'R', 'R', 'R',                 // R - common
+      'K', 'K', 'K', 'K',                      // K - common
+      'M', 'M', 'M', 'M',                      // M - common
+      'T', 'T', 'T', 'T',                      // T - common
+      'S', 'S', 'S', 'S',                      // S - common
+      'D', 'D', 'D',                           // D - common
+      'Y', 'Y', 'Y',                           // Y - common
+      'B', 'B', 'B',                           // B - medium
+      'C', 'C',                                // C - medium
+      'Ç', 'Ç',                                // Ç - medium
+      'F', 'F',                                // F - medium
+      'G', 'G',                                // G - medium
+      'Ğ', 'Ğ',                                // Ğ - medium
+      'H', 'H',                                // H - medium
+      'J',                                     // J - rare
+      'P', 'P',                                // P - medium
+      'Ş', 'Ş',                                // Ş - medium
+      'V', 'V',                                // V - medium
+      'Z',                                     // Z - rare
+      'Q', 'W', 'X'                            // Foreign letters - rare
+    ];
+    
+    const grid: string[][] = [];
+    for (let i = 0; i < 4; i++) {
+      const row: string[] = [];
+      for (let j = 0; j < 4; j++) {
+        const randomIndex = Math.floor(Math.random() * letterPool.length);
+        row.push(letterPool[randomIndex]);
+      }
+      grid.push(row);
+    }
+    return grid;
+  };
+
+  const [gameGrid] = useState<string[][]>(() => generateRandomGrid());
   
   const [selectedLetters, setSelectedLetters] = useState<{letter: string, row: number, col: number}[]>([]);
   const [currentWord, setCurrentWord] = useState('');
