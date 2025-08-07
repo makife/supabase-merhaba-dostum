@@ -404,7 +404,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
                   <User className="w-8 h-8 text-emerald-100" />
                 )}
               </div>
-              <p className="text-sm text-emerald-100 font-bold font-fredoka">
+              <p className="text-xs text-emerald-100 font-bold font-press-start">
                 Siz
               </p>
               <p className="text-2xl font-bold text-white">{playerScore}</p>
@@ -421,7 +421,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
               <div className="w-16 h-16 bg-purple-500/40 rounded-full mx-auto mb-2 flex items-center justify-center border-2 border-purple-300/50 overflow-hidden">
                 <opponent.icon className="w-8 h-8 text-purple-100" />
               </div>
-              <p className="text-sm text-purple-100 font-bold font-fredoka">
+              <p className="text-xs text-purple-100 font-bold font-press-start">
                 {opponent.name}
               </p>
               <p className="text-2xl font-bold text-white">{opponentScore}</p>

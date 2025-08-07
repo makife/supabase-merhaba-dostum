@@ -25,6 +25,7 @@ export default {
 				righteous: ["Righteous", "cursive"],
 				bungee: ["Bungee", "cursive"],
 				orbitron: ["Orbitron", "monospace"],
+				"press-start": ["Press Start 2P", "cursive"],
 			},
 			colors: {
 				border: 'hsl(var(--border))',
