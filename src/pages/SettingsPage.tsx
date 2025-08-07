@@ -52,6 +52,9 @@ const SettingsPage = () => {
     };
     localStorage.setItem('kelimeci-settings', JSON.stringify(settings));
     
+    // Dispatch custom event to notify other components
+    window.dispatchEvent(new Event('settingsChanged'));
+    
     toast({
       title: 'Ayarlar Kaydedildi',
       description: 'Değişiklikleriniz başarıyla kaydedildi.',

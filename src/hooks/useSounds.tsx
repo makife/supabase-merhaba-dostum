@@ -14,13 +14,29 @@ export const useSounds = () => {
   const [soundsEnabled, setSoundsEnabled] = useState(true);
   const audioCache = useRef<Map<string, HTMLAudioElement>>(new Map());
 
-  // Load settings from localStorage
+  // Load settings from localStorage and listen for changes
   useEffect(() => {
-    const savedSettings = localStorage.getItem('kelimeci-settings');
-    if (savedSettings) {
-      const settings = JSON.parse(savedSettings);
-      setSoundsEnabled(settings.sounds ?? true);
-    }
+    const loadSettings = () => {
+      const savedSettings = localStorage.getItem('kelimeci-settings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        setSoundsEnabled(settings.sounds ?? true);
+      }
+    };
+
+    loadSettings();
+    
+    // Listen for storage changes from other components
+    const handleStorageChange = () => loadSettings();
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Listen for custom event when settings change
+    window.addEventListener('settingsChanged', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('settingsChanged', handleStorageChange);
+    };
   }, []);
 
   // Create audio elements with Web Audio API fallback
