@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import GameModeSelector from '@/components/GameModeSelector';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,7 +23,8 @@ import {
 const HomePage = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [userCredits] = useState(5); // Bu gerçek API'den gelecek
+  const [userCredits] = useState(5);
+  const [selectedMode, setSelectedMode] = useState<string | null>(null);
 
   const gameModesConfig = [
     {
@@ -146,7 +148,7 @@ const HomePage = () => {
                   </div>
                   <Button 
                     className="w-full" 
-                    onClick={() => navigate(mode.route)}
+                    onClick={() => setSelectedMode(mode.id)}
                   >
                     Oyuna Başla
                   </Button>
@@ -177,6 +179,21 @@ const HomePage = () => {
             ))}
           </div>
         </div>
+
+        {/* Game Mode Selector Modal */}
+        {selectedMode && (
+          <GameModeSelector
+            mode={selectedMode}
+            onStart={(gameType) => {
+              const mode = gameModesConfig.find(m => m.id === selectedMode);
+              if (mode) {
+                navigate(`${mode.route}?type=${gameType}`);
+              }
+              setSelectedMode(null);
+            }}
+            onClose={() => setSelectedMode(null)}
+          />
+        )}
       </div>
     </div>
   );
