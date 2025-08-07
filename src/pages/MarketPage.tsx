@@ -23,7 +23,19 @@ import {
   Clock,
   Gift,
   Star,
-  Infinity
+  Infinity,
+  Palette,
+  Frame,
+  Volume2,
+  Sparkles,
+  Trophy,
+  Music,
+  Image,
+  Lightbulb,
+  Heart,
+  Moon,
+  Sun,
+  Gamepad2
 } from 'lucide-react';
 
 interface MarketItem {
@@ -33,7 +45,7 @@ interface MarketItem {
   price: number;
   currency: 'credits' | 'premium';
   icon: any;
-  type: 'credits' | 'unlimited_time' | 'premium' | 'theme';
+  type: 'credits' | 'unlimited_time' | 'premium' | 'theme' | 'avatar' | 'sound' | 'effect' | 'badge' | 'hint';
   value: number;
   duration?: string;
 }
@@ -47,6 +59,7 @@ const MarketPage = () => {
   const [isPremium, setIsPremium] = useState(false);
 
   const marketItems: MarketItem[] = [
+    // Oyun Hakları
     {
       id: 'credits_10',
       title: '10 Oyun Hakkı',
@@ -67,6 +80,18 @@ const MarketPage = () => {
       type: 'credits',
       value: 25
     },
+    {
+      id: 'credits_50',
+      title: '50 Oyun Hakkı',
+      description: 'Büyük oyun hakkı paketi',
+      price: 3.49,
+      currency: 'premium',
+      icon: Zap,
+      type: 'credits',
+      value: 50
+    },
+
+    // Sınırsız Zaman
     {
       id: 'unlimited_1h',
       title: '1 Saat Sınırsız',
@@ -89,6 +114,8 @@ const MarketPage = () => {
       value: 24,
       duration: '24 saat'
     },
+
+    // Premium & Reklamlar
     {
       id: 'premium_month',
       title: 'Premium Üyelik',
@@ -109,6 +136,160 @@ const MarketPage = () => {
       icon: Star,
       type: 'premium',
       value: 0
+    },
+
+    // Temalar
+    {
+      id: 'theme_dark_ocean',
+      title: 'Koyu Okyanus Teması',
+      description: 'Sakin mavi tonlarında koyu tema',
+      price: 1.99,
+      currency: 'premium',
+      icon: Moon,
+      type: 'theme',
+      value: 1
+    },
+    {
+      id: 'theme_sunset',
+      title: 'Gün Batımı Teması',
+      description: 'Sıcak turuncu ve pembe tonları',
+      price: 1.99,
+      currency: 'premium',
+      icon: Sun,
+      type: 'theme',
+      value: 1
+    },
+    {
+      id: 'theme_forest',
+      title: 'Orman Teması',
+      description: 'Doğal yeşil tonları',
+      price: 1.99,
+      currency: 'premium',
+      icon: Palette,
+      type: 'theme',
+      value: 1
+    },
+
+    // Avatar Çerçeveleri
+    {
+      id: 'avatar_gold_frame',
+      title: 'Altın Çerçeve',
+      description: 'Profilinize özel altın çerçeve',
+      price: 1.49,
+      currency: 'premium',
+      icon: Frame,
+      type: 'avatar',
+      value: 1
+    },
+    {
+      id: 'avatar_rainbow_frame',
+      title: 'Gökkuşağı Çerçeve',
+      description: 'Renkli gökkuşağı efekti',
+      price: 1.99,
+      currency: 'premium',
+      icon: Heart,
+      type: 'avatar',
+      value: 1
+    },
+
+    // Ses Efektleri
+    {
+      id: 'sound_pack_space',
+      title: 'Uzay Ses Paketi',
+      description: 'Bilim kurgu ses efektleri',
+      price: 1.29,
+      currency: 'premium',
+      icon: Volume2,
+      type: 'sound',
+      value: 1
+    },
+    {
+      id: 'sound_pack_nature',
+      title: 'Doğa Ses Paketi',
+      description: 'Rahatlatıcı doğa sesleri',
+      price: 1.29,
+      currency: 'premium',
+      icon: Music,
+      type: 'sound',
+      value: 1
+    },
+
+    // Özel Efektler
+    {
+      id: 'effect_fireworks',
+      title: 'Havai Fişek Efekti',
+      description: 'Kelime bulduğunuzda havai fişek gösterisi',
+      price: 0.99,
+      currency: 'premium',
+      icon: Sparkles,
+      type: 'effect',
+      value: 1
+    },
+    {
+      id: 'effect_confetti',
+      title: 'Konfeti Efekti',
+      description: 'Başarılı hamlelerinizde konfeti yağmuru',
+      price: 0.99,
+      currency: 'premium',
+      icon: Gift,
+      type: 'effect',
+      value: 1
+    },
+
+    // Özel Rozetler
+    {
+      id: 'badge_wordmaster',
+      title: 'Kelime Ustası Rozeti',
+      description: 'Özel kelime ustası rozeti',
+      price: 2.49,
+      currency: 'premium',
+      icon: Trophy,
+      type: 'badge',
+      value: 1
+    },
+
+    // İpucu Paketleri
+    {
+      id: 'hint_pack_basic',
+      title: 'Temel İpucu Paketi',
+      description: '10 kelime ipucu hakkı',
+      price: 0.99,
+      currency: 'premium',
+      icon: Lightbulb,
+      type: 'hint',
+      value: 10
+    },
+    {
+      id: 'hint_pack_premium',
+      title: 'Premium İpucu Paketi',
+      description: '25 kelime ipucu hakkı',
+      price: 1.99,
+      currency: 'premium',
+      icon: Lightbulb,
+      type: 'hint',
+      value: 25
+    },
+
+    // Kredi ile Alınabilenler
+    {
+      id: 'credits_theme_basic',
+      title: 'Klasik Tema',
+      description: 'Nostaljik retro tema',
+      price: 50,
+      currency: 'credits',
+      icon: Gamepad2,
+      type: 'theme',
+      value: 1
+    },
+    {
+      id: 'credits_hint_5',
+      title: '5 İpucu Hakkı',
+      description: 'Kredi ile ipucu satın alın',
+      price: 20,
+      currency: 'credits',
+      icon: Lightbulb,
+      type: 'hint',
+      value: 5
     }
   ];
 
@@ -311,14 +492,24 @@ const MarketPage = () => {
                   </div>
                   <div className="text-right">
                     <div className="text-lg font-bold">
-                      ${item.price}
+                      {item.currency === 'credits' ? (
+                        <span className="flex items-center justify-end">
+                          <Zap className="w-4 h-4 mr-1" />
+                          {item.price}
+                        </span>
+                      ) : (
+                        `$${item.price}`
+                      )}
                     </div>
                     <Button 
                       onClick={() => handlePurchase(item)}
                       size="sm"
                       className="mt-2"
+                      disabled={item.currency === 'credits' && userCredits < item.price}
                     >
-                      Satın Al
+                      {item.currency === 'credits' && userCredits < item.price ? 
+                        'Yetersiz Kredi' : 'Satın Al'
+                      }
                     </Button>
                   </div>
                 </div>
