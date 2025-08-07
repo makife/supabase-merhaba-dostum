@@ -6,7 +6,7 @@ import { useSounds } from '@/hooks/useSounds';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { useNavigate } from 'react-router-dom';
 import {
   Bot,
@@ -253,22 +253,22 @@ const HomePage = () => {
             <Target className="w-5 h-5 mr-2" />
             Oyun Modları
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {gameModesConfig.map((mode) => (
               <Card key={mode.id} className={`hover:shadow-xl transition-all duration-300 cursor-pointer border-0 overflow-hidden ${mode.gradient} hover:scale-105`}>
-                <CardHeader className="pb-3 relative">
+                <CardHeader className="pb-2 pt-3 relative">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center border border-white/30">
-                      <mode.icon className="w-5 h-5 text-white" />
+                    <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center border border-white/30">
+                      <mode.icon className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                      <CardTitle className="text-lg text-white drop-shadow-lg">{mode.title}</CardTitle>
-                      <CardDescription className="text-white/80 font-medium">{mode.description}</CardDescription>
+                      <CardTitle className="text-base text-white drop-shadow-lg">{mode.title}</CardTitle>
+                      <CardDescription className="text-white/80 font-medium text-sm">{mode.description}</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="flex items-center space-x-2 mb-3">
+                <CardContent className="pt-0 pb-3">
+                  <div className="flex items-center space-x-2 mb-2">
                     <Badge variant="secondary" className="text-xs bg-white/20 text-white border-white/30 hover:bg-white/30">
                       <Clock className="w-3 h-3 mr-1" />
                       2 Dakika
@@ -297,26 +297,45 @@ const HomePage = () => {
         {/* Menu Items */}
         <div>
           <h2 className="text-xl font-semibold mb-4">Menü</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {menuItems.map((item) => (
-              <Card 
-                key={item.id} 
-                className="hover:shadow-lg transition-all duration-200 cursor-pointer"
-                onClick={() => {
-                  playSound('buttonClick');
-                  navigate(item.route);
-                }}
-              >
-                <CardHeader className="text-center">
-                  <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-2">
-                    <item.icon className="w-6 h-6" />
-                  </div>
-                  <CardTitle className="text-lg">{item.title}</CardTitle>
-                  <CardDescription className="text-sm">{item.description}</CardDescription>
-                </CardHeader>
-              </Card>
-            ))}
-      </div>
+          <div className="relative">
+            <Carousel
+              opts={{
+                align: "center",
+                loop: true,
+              }}
+              className="w-full max-w-md mx-auto"
+            >
+              <CarouselContent className="-ml-2 md:-ml-4">
+                {menuItems.map((item, index) => (
+                  <CarouselItem key={item.id} className="pl-2 md:pl-4 basis-4/5">
+                    <Card 
+                      className={`hover:shadow-lg transition-all duration-300 cursor-pointer ${
+                        index === 1 ? 'scale-110 shadow-xl' : 'scale-90 opacity-75'
+                      }`}
+                      onClick={() => {
+                        playSound('buttonClick');
+                        navigate(item.route);
+                      }}
+                    >
+                      <CardHeader className="text-center py-4">
+                        <div className={`mx-auto rounded-full flex items-center justify-center mb-2 ${
+                          index === 1 ? 'w-14 h-14 bg-primary/20' : 'w-10 h-10 bg-muted'
+                        }`}>
+                          <item.icon className={index === 1 ? 'w-7 h-7' : 'w-5 h-5'} />
+                        </div>
+                        <CardTitle className={index === 1 ? 'text-lg' : 'text-base'}>{item.title}</CardTitle>
+                        <CardDescription className={`${index === 1 ? 'text-sm' : 'text-xs'}`}>
+                          {item.description}
+                        </CardDescription>
+                      </CardHeader>
+                    </Card>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="left-0" />
+              <CarouselNext className="right-0" />
+            </Carousel>
+          </div>
         </div>
 
 
