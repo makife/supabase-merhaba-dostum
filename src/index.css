@@ -49,6 +49,7 @@ All colors MUST be HSL.
     /* Gradyanlar */
     --gradient-primary: linear-gradient(135deg, hsl(260 84% 57%), hsl(280 65% 60%));
     --gradient-game: linear-gradient(45deg, hsl(260 84% 57%), hsl(280 65% 60%), hsl(300 50% 65%));
+    --gradient-light: linear-gradient(135deg, hsl(140 50% 85%), hsl(200 50% 85%));
     
     /* Gölgeler */
     --shadow-game: 0 10px 30px -10px hsl(260 84% 57% / 0.3);
@@ -220,6 +221,7 @@ All colors MUST be HSL.
     /* Dark gradyanlar */
     --gradient-primary: linear-gradient(135deg, hsl(260 84% 57%), hsl(280 65% 60%));
     --gradient-game: linear-gradient(45deg, hsl(260 84% 57%), hsl(280 65% 60%), hsl(300 50% 65%));
+    --gradient-light: linear-gradient(135deg, hsl(140 50% 75%), hsl(200 50% 75%));
     
     /* Dark gölgeler */
     --shadow-game: 0 10px 30px -10px hsl(260 84% 57% / 0.5);
@@ -303,6 +305,13 @@ All colors MUST be HSL.
   border-color: hsl(var(--game-primary));
   color: hsl(var(--primary-foreground));
   transform: scale(0.95);
+}
+
+/* Açık gradyanlar */
+.light-gradient {
+  background: var(--gradient-light);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 /* Konfeti animasyonu */
