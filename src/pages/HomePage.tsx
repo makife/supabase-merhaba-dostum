@@ -149,7 +149,7 @@ const HomePage = () => {
                   top: `${letter.y}%`,
                   textShadow: '0 0 10px currentColor',
                   animation: 'bounce 3s infinite',
-                  opacity: letter.x > 90 ? Math.max(0, 1 - (letter.x - 90) / 10) : 0.4,
+                  opacity: 0.6,
                   zIndex: 1
                 }}
               >
