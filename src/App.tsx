@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import { GameProvider } from "@/contexts/GameContext";
 import { useTheme } from "@/hooks/useTheme";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -96,9 +97,11 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-            <GameProvider>
-              <AppRoutes />
-            </GameProvider>
+            <ThemeProvider>
+              <GameProvider>
+                <AppRoutes />
+              </GameProvider>
+            </ThemeProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
