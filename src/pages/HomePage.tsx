@@ -340,26 +340,28 @@ const HomePage = () => {
                   <CarouselItem key={item.id} className="pl-2 md:pl-4 basis-full md:basis-1/3">
                     <Card 
                       className={`hover:shadow-lg transition-all duration-300 cursor-pointer ${
-                        (item.id === 'profile' || item.id === 'market') ? 'bg-cover bg-center bg-no-repeat relative overflow-hidden' : ''
+                        (item.id === 'profile' || item.id === 'market' || item.id === 'settings') ? 'bg-cover bg-center bg-no-repeat relative overflow-hidden' : ''
                       }`}
                       style={item.id === 'profile' ? {
                         backgroundImage: `url('/lovable-uploads/2bd0c793-de1e-4655-8d4b-a7de9eecad4b.png')`
                       } : item.id === 'market' ? {
                         backgroundImage: `url('/lovable-uploads/0f632cb3-519b-4db8-a928-2cb6d5dd8736.png')`
+                      } : item.id === 'settings' ? {
+                        backgroundImage: `url('/lovable-uploads/c6870c8f-7357-4ca9-86dd-e941742c0989.png')`
                       } : {}}
                       onClick={() => {
                         playSound('buttonClick');
                         navigate(item.route);
                       }}
                     >
-                      <CardHeader className={`text-center py-4 ${(item.id === 'profile' || item.id === 'market') ? 'relative z-10 bg-black/50 text-white' : ''}`}>
-                        {(item.id !== 'profile' && item.id !== 'market') && (
+                      <CardHeader className={`text-center py-4 ${(item.id === 'profile' || item.id === 'market' || item.id === 'settings') ? 'relative z-10 bg-black/50 text-white' : ''}`}>
+                        {(item.id !== 'profile' && item.id !== 'market' && item.id !== 'settings') && (
                           <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-2">
                             <item.icon className="w-6 h-6" />
                           </div>
                         )}
-                        <CardTitle className={`text-lg ${(item.id === 'profile' || item.id === 'market') ? 'text-white font-bold' : ''}`}>{item.title}</CardTitle>
-                        <CardDescription className={`text-sm ${(item.id === 'profile' || item.id === 'market') ? 'text-white/80' : ''}`}>
+                        <CardTitle className={`text-lg ${(item.id === 'profile' || item.id === 'market' || item.id === 'settings') ? 'text-white font-bold' : ''}`}>{item.title}</CardTitle>
+                        <CardDescription className={`text-sm ${(item.id === 'profile' || item.id === 'market' || item.id === 'settings') ? 'text-white/80' : ''}`}>
                           {item.description}
                         </CardDescription>
                       </CardHeader>
