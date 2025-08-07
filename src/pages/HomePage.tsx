@@ -41,7 +41,7 @@ const HomePage = () => {
         id: Date.now(),
         letter: letters[Math.floor(Math.random() * letters.length)],
         x: -10,
-        y: Math.random() * 60,
+        y: Math.random() * 80,
         color: colors[Math.floor(Math.random() * colors.length)],
         font: fonts[Math.floor(Math.random() * fonts.length)],
         dx: 0.5 + Math.random() * 1
@@ -59,7 +59,7 @@ const HomePage = () => {
         prev.map(letter => ({
           ...letter,
           x: letter.x + letter.dx
-        })).filter(letter => letter.x < 110)
+        })).filter(letter => letter.x < 120)
       );
     }, 50);
 
@@ -143,12 +143,13 @@ const HomePage = () => {
             {animatedLetters.map((letter) => (
               <div
                 key={letter.id}
-                className={`absolute text-4xl font-bold ${letter.color} ${letter.font} opacity-60 transition-all duration-1000 transform hover:scale-110`}
+                className={`absolute text-4xl font-bold ${letter.color} ${letter.font} transition-all duration-1000 transform hover:scale-110`}
                 style={{
                   left: `${letter.x}%`,
                   top: `${letter.y}%`,
                   textShadow: '0 0 10px currentColor',
-                  animation: 'bounce 2s infinite'
+                  animation: 'bounce 2s infinite',
+                  opacity: letter.x > 80 ? Math.max(0, 1 - (letter.x - 80) / 20) : 0.6
                 }}
               >
                 {letter.letter}
