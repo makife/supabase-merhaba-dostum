@@ -330,10 +330,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         <div className="grid grid-cols-2 gap-4">
           <Card className="bg-gradient-to-br from-blue-500/20 to-blue-600/30 border-blue-400/50 backdrop-blur-sm">
             <CardContent className="p-4 text-center relative overflow-hidden">
-              <div className="absolute top-2 right-2 w-8 h-8 bg-blue-500/30 rounded-full flex items-center justify-center">
-                <User className="w-4 h-4 text-blue-100" />
-              </div>
-              <div className="w-12 h-12 bg-blue-500/40 rounded-full mx-auto mb-2 flex items-center justify-center border-2 border-blue-300/50 overflow-hidden">
+              <div className="w-16 h-16 bg-blue-500/40 rounded-full mx-auto mb-2 flex items-center justify-center border-2 border-blue-300/50 overflow-hidden">
                 {user?.user_metadata?.avatar_url ? (
                   <img 
                     src={user.user_metadata.avatar_url} 
@@ -341,7 +338,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <User className="w-6 h-6 text-blue-100" />
+                  <User className="w-8 h-8 text-blue-100" />
                 )}
               </div>
               <p className="text-sm text-blue-100 font-medium">Siz</p>
@@ -356,11 +353,8 @@ const GamePage = ({ gameMode }: GamePageProps) => {
           </Card>
           <Card className="bg-gradient-to-br from-red-500/20 to-red-600/30 border-red-400/50 backdrop-blur-sm">
             <CardContent className="p-4 text-center relative overflow-hidden">
-              <div className="absolute top-2 right-2 w-8 h-8 bg-red-500/30 rounded-full flex items-center justify-center">
-                <opponent.icon className="w-4 h-4 text-red-100" />
-              </div>
-              <div className="w-12 h-12 bg-red-500/40 rounded-full mx-auto mb-2 flex items-center justify-center border-2 border-red-300/50">
-                <opponent.icon className="w-6 h-6 text-red-100" />
+              <div className="w-16 h-16 bg-red-500/40 rounded-full mx-auto mb-2 flex items-center justify-center border-2 border-red-300/50 overflow-hidden">
+                <opponent.icon className="w-8 h-8 text-red-100" />
               </div>
               <p className="text-sm text-red-100 font-medium">{opponent.name}</p>
               <p className="text-2xl font-bold text-white">{opponentScore}</p>
