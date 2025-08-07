@@ -95,35 +95,81 @@ serve(async (req) => {
     console.log(`Processing ${processedWords.length} valid words`);
 
     // Mevcut kelimeleri kontrol et
-    const { data: existingWords } = await supabaseClient
+    const { data: existingWords, error: selectError } = await supabaseClient
       .from('words')
       .select('word');
 
-    const existingWordSet = new Set(existingWords?.map(w => w.word) || []);
+    if (selectError) {
+      console.error('Error fetching existing words:', selectError);
+      throw selectError;
+    }
+
+    const existingWordSet = new Set(existingWords?.map(w => w.word.toUpperCase()) || []);
+    console.log(`Found ${existingWordSet.size} existing words in database`);
     
     // Sadece yeni kelimeleri filtrele
-    const newWords = processedWords.filter(word => !existingWordSet.has(word.word));
+    const newWords = processedWords.filter(word => !existingWordSet.has(word.word.toUpperCase()));
     
     console.log(`${newWords.length} new words to insert`);
 
-    // Batch olarak ekle (1000'er kelime)
-    const batchSize = 1000;
+    if (newWords.length === 0) {
+      const { count } = await supabaseClient
+        .from('words')
+        .select('*', { count: 'exact', head: true });
+
+      return new Response(JSON.stringify({
+        success: true,
+        message: 'Tüm kelimeler zaten veritabanında mevcut',
+        statistics: {
+          totalWordsInDatabase: count,
+          newWordsAdded: 0,
+          wordsProcessed: processedWords.length,
+          wordsFromSource: comprehensiveTurkishWords.length
+        }
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Batch olarak ekle (500'er kelime - daha küçük batch)
+    const batchSize = 500;
     let totalInserted = 0;
 
     for (let i = 0; i < newWords.length; i += batchSize) {
       const batch = newWords.slice(i, i + batchSize);
       
-      const { error } = await supabaseClient
-        .from('words')
-        .insert(batch);
+      try {
+        const { error } = await supabaseClient
+          .from('words')
+          .insert(batch);
 
-      if (error) {
-        console.error(`Error inserting batch ${i / batchSize + 1}:`, error);
-        throw error;
+        if (error) {
+          console.error(`Error inserting batch ${i / batchSize + 1}:`, error);
+          // Duplicate hatası varsa tek tek dene
+          if (error.code === '23505') {
+            console.log('Duplicate error detected, inserting words individually...');
+            for (const word of batch) {
+              const { error: singleError } = await supabaseClient
+                .from('words')
+                .insert([word]);
+              
+              if (!singleError) {
+                totalInserted++;
+              } else if (singleError.code !== '23505') {
+                console.error('Unexpected error inserting word:', word.word, singleError);
+              }
+            }
+          } else {
+            throw error;
+          }
+        } else {
+          totalInserted += batch.length;
+          console.log(`Inserted batch ${i / batchSize + 1}: ${totalInserted} total words`);
+        }
+      } catch (batchError) {
+        console.error(`Fatal error in batch ${i / batchSize + 1}:`, batchError);
+        throw batchError;
       }
-
-      totalInserted += batch.length;
-      console.log(`Inserted batch ${i / batchSize + 1}: ${totalInserted} total words`);
     }
 
     // İstatistikleri al
