@@ -14,7 +14,434 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      badges: {
+        Row: {
+          condition_type: string
+          condition_value: number
+          created_at: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          condition_type: string
+          condition_value: number
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          condition_type?: string
+          condition_value?: number
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      game_history: {
+        Row: {
+          id: string
+          player_id: string | null
+          room_id: string | null
+          score: number
+          submitted_at: string | null
+          word: string
+        }
+        Insert: {
+          id?: string
+          player_id?: string | null
+          room_id?: string | null
+          score: number
+          submitted_at?: string | null
+          word: string
+        }
+        Update: {
+          id?: string
+          player_id?: string | null
+          room_id?: string | null
+          score?: number
+          submitted_at?: string | null
+          word?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_history_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_history_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "game_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_participants: {
+        Row: {
+          id: string
+          is_bot: boolean | null
+          joined_at: string | null
+          room_id: string | null
+          score: number | null
+          user_id: string | null
+        }
+        Insert: {
+          id?: string
+          is_bot?: boolean | null
+          joined_at?: string | null
+          room_id?: string | null
+          score?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          id?: string
+          is_bot?: boolean | null
+          joined_at?: string | null
+          room_id?: string | null
+          score?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_participants_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "game_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_rooms: {
+        Row: {
+          created_at: string | null
+          current_grid: string[] | null
+          finished_at: string | null
+          game_mode: string
+          host_id: string | null
+          id: string
+          max_score: number | null
+          room_code: string | null
+          started_at: string | null
+          status: string | null
+          time_limit: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_grid?: string[] | null
+          finished_at?: string | null
+          game_mode: string
+          host_id?: string | null
+          id?: string
+          max_score?: number | null
+          room_code?: string | null
+          started_at?: string | null
+          status?: string | null
+          time_limit?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          current_grid?: string[] | null
+          finished_at?: string | null
+          game_mode?: string
+          host_id?: string | null
+          id?: string
+          max_score?: number | null
+          room_code?: string | null
+          started_at?: string | null
+          status?: string | null
+          time_limit?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_rooms_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          email: string
+          game_credits: number | null
+          id: string
+          last_credit_refresh: string | null
+          losses: number | null
+          premium_until: string | null
+          total_games: number | null
+          total_score: number | null
+          updated_at: string | null
+          username: string | null
+          wins: number | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email: string
+          game_credits?: number | null
+          id: string
+          last_credit_refresh?: string | null
+          losses?: number | null
+          premium_until?: string | null
+          total_games?: number | null
+          total_score?: number | null
+          updated_at?: string | null
+          username?: string | null
+          wins?: number | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string
+          game_credits?: number | null
+          id?: string
+          last_credit_refresh?: string | null
+          losses?: number | null
+          premium_until?: string | null
+          total_games?: number | null
+          total_score?: number | null
+          updated_at?: string | null
+          username?: string | null
+          wins?: number | null
+        }
+        Relationships: []
+      }
+      tournament_matches: {
+        Row: {
+          created_at: string | null
+          id: string
+          match_number: number
+          player1_id: string | null
+          player2_id: string | null
+          room_id: string | null
+          round: number
+          status: string | null
+          tournament_id: string | null
+          winner_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          match_number: number
+          player1_id?: string | null
+          player2_id?: string | null
+          room_id?: string | null
+          round: number
+          status?: string | null
+          tournament_id?: string | null
+          winner_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          match_number?: number
+          player1_id?: string | null
+          player2_id?: string | null
+          room_id?: string | null
+          round?: number
+          status?: string | null
+          tournament_id?: string | null
+          winner_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_matches_player1_id_fkey"
+            columns: ["player1_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_matches_player2_id_fkey"
+            columns: ["player2_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_matches_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "game_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_matches_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_matches_winner_id_fkey"
+            columns: ["winner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tournament_participants: {
+        Row: {
+          eliminated_at: string | null
+          id: string
+          is_bot: boolean | null
+          joined_at: string | null
+          seed: number | null
+          tournament_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          eliminated_at?: string | null
+          id?: string
+          is_bot?: boolean | null
+          joined_at?: string | null
+          seed?: number | null
+          tournament_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          eliminated_at?: string | null
+          id?: string
+          is_bot?: boolean | null
+          joined_at?: string | null
+          seed?: number | null
+          tournament_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_participants_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tournaments: {
+        Row: {
+          created_at: string | null
+          current_round: number | null
+          finished_at: string | null
+          id: string
+          max_participants: number | null
+          name: string
+          started_at: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_round?: number | null
+          finished_at?: string | null
+          id?: string
+          max_participants?: number | null
+          name: string
+          started_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          current_round?: number | null
+          finished_at?: string | null
+          id?: string
+          max_participants?: number | null
+          name?: string
+          started_at?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      user_badges: {
+        Row: {
+          badge_id: string | null
+          earned_at: string | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          badge_id?: string | null
+          earned_at?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          badge_id?: string | null
+          earned_at?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_badges_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      words: {
+        Row: {
+          created_at: string | null
+          difficulty: number | null
+          id: string
+          is_approved: boolean | null
+          length: number
+          word: string
+        }
+        Insert: {
+          created_at?: string | null
+          difficulty?: number | null
+          id?: string
+          is_approved?: boolean | null
+          length: number
+          word: string
+        }
+        Update: {
+          created_at?: string | null
+          difficulty?: number | null
+          id?: string
+          is_approved?: boolean | null
+          length?: number
+          word?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
