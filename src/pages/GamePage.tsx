@@ -34,7 +34,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const { currentRoom, updateScore } = useGame();
   const { validateWord, isValidating } = useWordValidation();
   const { playSound, playTimeWarningSequence, playCelebrationSound, playGameLoseSound } = useSounds();
-  const { stopBackgroundMusic, startBackgroundMusic } = useMusic();
+  const { fadeOutBackgroundMusic, fadeInBackgroundMusic } = useMusic();
   const [searchParams] = useSearchParams();
   const gameType = (searchParams.get('type') as 'timed' | 'score') || 'timed';
   const [timeWarningPlayed, setTimeWarningPlayed] = useState(false);
@@ -120,12 +120,12 @@ const GamePage = ({ gameMode }: GamePageProps) => {
 
   // Music control effect - separate from avatar fetching to prevent re-runs
   useEffect(() => {
-    // Stop background music when entering game
-    stopBackgroundMusic();
+    // Fade out background music when entering game
+    fadeOutBackgroundMusic(1500); // 1.5 saniyede yavaşça kapan
     
-    // Start background music again when leaving game (cleanup)
+    // Fade in background music again when leaving game (cleanup)
     return () => {
-      startBackgroundMusic();
+      fadeInBackgroundMusic(1000); // 1 saniyede yavaşça açıl
     };
   }, []); // Empty dependency array to run only once
 

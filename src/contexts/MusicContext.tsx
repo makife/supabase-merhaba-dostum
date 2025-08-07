@@ -6,6 +6,8 @@ interface MusicContextType {
   setMusicEnabled: (enabled: boolean) => void;
   startBackgroundMusic: () => void;
   stopBackgroundMusic: () => void;
+  fadeOutBackgroundMusic: (duration?: number) => void;
+  fadeInBackgroundMusic: (duration?: number) => void;
 }
 
 const MusicContext = createContext<MusicContextType | undefined>(undefined);
@@ -15,6 +17,8 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [musicEnabled, setMusicEnabledState] = useState(true);
   const backgroundMusicRef = useRef<HTMLAudioElement | null>(null);
   const isStartingRef = useRef(false);
+  const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const originalVolumeRef = useRef(0.3);
 
   // Load settings on mount
   useEffect(() => {
@@ -95,10 +99,88 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const stopBackgroundMusic = () => {
+    // Clear any ongoing fade
+    if (fadeIntervalRef.current) {
+      clearInterval(fadeIntervalRef.current);
+      fadeIntervalRef.current = null;
+    }
+    
     if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
       backgroundMusicRef.current.pause();
+      backgroundMusicRef.current.volume = originalVolumeRef.current;
     }
     isStartingRef.current = false;
+  };
+
+  const fadeOutBackgroundMusic = (duration: number = 2000) => {
+    if (!backgroundMusicRef.current || backgroundMusicRef.current.paused) return;
+    
+    // Clear any existing fade
+    if (fadeIntervalRef.current) {
+      clearInterval(fadeIntervalRef.current);
+    }
+    
+    const audio = backgroundMusicRef.current;
+    const startVolume = audio.volume;
+    const fadeStep = startVolume / (duration / 50); // 50ms intervals
+    
+    fadeIntervalRef.current = setInterval(() => {
+      if (audio.volume > fadeStep) {
+        audio.volume = Math.max(0, audio.volume - fadeStep);
+      } else {
+        audio.volume = 0;
+        audio.pause();
+        audio.volume = originalVolumeRef.current; // Reset for next time
+        if (fadeIntervalRef.current) {
+          clearInterval(fadeIntervalRef.current);
+          fadeIntervalRef.current = null;
+        }
+      }
+    }, 50);
+  };
+
+  const fadeInBackgroundMusic = (duration: number = 2000) => {
+    if (!musicEnabled || !backgroundMusicRef.current || isStartingRef.current) return;
+    
+    // Clear any existing fade
+    if (fadeIntervalRef.current) {
+      clearInterval(fadeIntervalRef.current);
+    }
+    
+    const audio = backgroundMusicRef.current;
+    const targetVolume = originalVolumeRef.current;
+    audio.volume = 0;
+    audio.currentTime = 0;
+    
+    isStartingRef.current = true;
+    
+    const playPromise = audio.play();
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          const fadeStep = targetVolume / (duration / 50); // 50ms intervals
+          
+          fadeIntervalRef.current = setInterval(() => {
+            if (audio.volume < targetVolume - fadeStep) {
+              audio.volume = Math.min(targetVolume, audio.volume + fadeStep);
+            } else {
+              audio.volume = targetVolume;
+              if (fadeIntervalRef.current) {
+                clearInterval(fadeIntervalRef.current);
+                fadeIntervalRef.current = null;
+              }
+            }
+          }, 50);
+          
+          isStartingRef.current = false;
+        })
+        .catch(error => {
+          isStartingRef.current = false;
+          console.warn('Could not play background music:', error);
+        });
+    } else {
+      isStartingRef.current = false;
+    }
   };
 
   const setMusicEnabled = (enabled: boolean) => {
@@ -140,6 +222,8 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setMusicEnabled,
       startBackgroundMusic,
       stopBackgroundMusic,
+      fadeOutBackgroundMusic,
+      fadeInBackgroundMusic,
     }}>
       {children}
     </MusicContext.Provider>
