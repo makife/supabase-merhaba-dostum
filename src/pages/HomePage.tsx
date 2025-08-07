@@ -281,6 +281,13 @@ const HomePage = () => {
                         className="absolute right-2 top-1/2 transform -translate-y-1/2 w-48 h-36 object-contain opacity-60"
                       />
                     )}
+                    {mode.id === 'random-match' && (
+                      <img 
+                        src="/lovable-uploads/a91ec87e-aaac-47fa-93fa-22e1f0270999.png" 
+                        alt="Random match"
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 w-48 h-36 object-contain opacity-60"
+                      />
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0 pb-3">
