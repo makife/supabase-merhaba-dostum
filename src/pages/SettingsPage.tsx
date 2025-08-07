@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -19,7 +20,8 @@ import {
   HelpCircle,
   Mail,
   Smartphone,
-  Save
+  Save,
+  PlayCircle
 } from 'lucide-react';
 
 const SettingsPage = () => {
@@ -32,6 +34,10 @@ const SettingsPage = () => {
   // Settings state
   const [notifications, setNotifications] = useState(true);
   const [language, setLanguage] = useState('tr');
+  
+  // Modal states
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalContent, setModalContent] = useState({ title: '', content: '' });
 
   // Load settings from localStorage
   useEffect(() => {
@@ -70,25 +76,210 @@ const SettingsPage = () => {
     }
   };
 
-  const openAbout = () => {
-    toast({
-      title: 'Kelimeci v1.0.0',
-      description: 'Türkçe kelime oyunu. Geliştirici: Kelimeci Ekibi',
-    });
+  const openModal = (title: string, content: string) => {
+    setModalContent({ title, content });
+    setModalOpen(true);
   };
 
-  const openPrivacyPolicy = () => {
-    toast({
-      title: 'Gizlilik Politikası',
-      description: 'Gizlilik politikamız yakında hazır olacak.',
-    });
+  const openHowToPlay = () => {
+    const content = `
+      <div class="space-y-4">
+        <h3 class="font-semibold text-lg">Oyunun Amacı</h3>
+        <p>Ekrandaki harf karelerinden kelimeler oluşturarak puan toplamak ve rakibinizi geçmek.</p>
+        
+        <h3 class="font-semibold text-lg">Nasıl Oynanır</h3>
+        <ol class="list-decimal list-inside space-y-2">
+          <li>Harf karelerine tıklayarak harfleri seçin</li>
+          <li>Seçtiğiniz harflerden anlamlı kelimeler oluşturun</li>
+          <li>Kelime en az 3 harf olmalıdır</li>
+          <li>Doğru kelimeler için puan kazanın</li>
+          <li>Yanlış kelimeler puan vermez</li>
+          <li>Süre bitiminde en yüksek puanı alan kazanır</li>
+        </ol>
+        
+        <h3 class="font-semibold text-lg">Oyun Modları</h3>
+        <ul class="list-disc list-inside space-y-2">
+          <li><strong>Bilgisayara Karşı:</strong> AI rakibe karşı oynayın</li>
+          <li><strong>Özel Oda:</strong> Arkadaşlarınızla özel oyun oluşturun</li>
+          <li><strong>Rastgele Rakip:</strong> Online oyuncularla eşleşin</li>
+          <li><strong>Turnuva:</strong> 8 kişilik turnuvalara katılın</li>
+        </ul>
+        
+        <h3 class="font-semibold text-lg">Puanlama</h3>
+        <ul class="list-disc list-inside space-y-1">
+          <li>3 harfli kelime: 10 puan</li>
+          <li>4 harfli kelime: 20 puan</li>
+          <li>5+ harfli kelime: 30 puan</li>
+          <li>Nadir harflerle bonus puan!</li>
+        </ul>
+      </div>
+    `;
+    openModal("Nasıl Oynanır", content);
   };
 
   const openSupport = () => {
-    toast({
-      title: 'Destek',
-      description: 'Destek ekibimizle iletişime geçmek için support@kelimeci.com adresine mail atabilirsiniz.',
-    });
+    const content = `
+      <div class="space-y-4">
+        <h3 class="font-semibold text-lg">Yardım & Destek</h3>
+        <p>Kelimeci oyunu hakkında sorularınız için aşağıdaki kanalları kullanabilirsiniz:</p>
+        
+        <div class="space-y-3">
+          <div class="p-3 bg-muted rounded-lg">
+            <h4 class="font-medium">E-posta Desteği</h4>
+            <p class="text-sm text-muted-foreground">support@kelimeci.com</p>
+            <p class="text-sm">24 saat içinde yanıtlanır</p>
+          </div>
+          
+          <div class="p-3 bg-muted rounded-lg">
+            <h4 class="font-medium">Sıkça Sorulan Sorular</h4>
+            <p class="text-sm">• Kelime bulunamadı hatası alıyorum</p>
+            <p class="text-sm">• Oyun donuyor</p>
+            <p class="text-sm">• Puan güncellenmiyor</p>
+            <p class="text-sm">• Ses açılmıyor</p>
+          </div>
+          
+          <div class="p-3 bg-muted rounded-lg">
+            <h4 class="font-medium">Teknik Sorunlar</h4>
+            <p class="text-sm">Uygulama ile ilgili teknik sorunları bildirin. Cihaz modelinizi ve hatanın ne zaman oluştuğunu belirtmeyi unutmayın.</p>
+          </div>
+        </div>
+      </div>
+    `;
+    openModal("Yardım & Destek", content);
+  };
+
+  const openPrivacyPolicy = () => {
+    const content = `
+      <div class="space-y-4">
+        <h3 class="font-semibold text-lg">Gizlilik Politikası</h3>
+        
+        <div class="space-y-3">
+          <section>
+            <h4 class="font-medium">Toplanan Bilgiler</h4>
+            <p class="text-sm text-muted-foreground">• E-posta adresi (hesap oluşturma için)</p>
+            <p class="text-sm text-muted-foreground">• Oyun istatistikleri</p>
+            <p class="text-sm text-muted-foreground">• Uygulama kullanım verileri</p>
+          </section>
+          
+          <section>
+            <h4 class="font-medium">Verilerin Kullanımı</h4>
+            <p class="text-sm text-muted-foreground">• Oyun deneyimini geliştirmek</p>
+            <p class="text-sm text-muted-foreground">• Hesap güvenliğini sağlamak</p>
+            <p class="text-sm text-muted-foreground">• İstatistik ve liderlik tabloları</p>
+          </section>
+          
+          <section>
+            <h4 class="font-medium">Veri Güvenliği</h4>
+            <p class="text-sm text-muted-foreground">Tüm veriler şifrelenerek güvenli sunucularda saklanır. Kişisel bilgileriniz üçüncü taraflarla paylaşılmaz.</p>
+          </section>
+          
+          <section>
+            <h4 class="font-medium">Çerezler</h4>
+            <p class="text-sm text-muted-foreground">Oyun ayarlarınızı hatırlamak için yerel depolama kullanılır.</p>
+          </section>
+          
+          <section>
+            <h4 class="font-medium">İletişim</h4>
+            <p class="text-sm text-muted-foreground">Gizlilik konularında: privacy@kelimeci.com</p>
+          </section>
+        </div>
+      </div>
+    `;
+    openModal("Gizlilik Politikası", content);
+  };
+
+  const openAbout = () => {
+    const content = `
+      <div class="space-y-4">
+        <h3 class="font-semibold text-lg">Kelimeci Hakkında</h3>
+        
+        <div class="text-center space-y-2">
+          <h4 class="text-2xl font-bold text-primary">KELİMECİ</h4>
+          <p class="text-lg font-medium">Versiyon 1.0.0</p>
+        </div>
+        
+        <div class="space-y-3">
+          <section>
+            <h4 class="font-medium">Geliştirici Ekibi</h4>
+            <p class="text-sm text-muted-foreground">Kelimeci Ekibi tarafından sevgiyle geliştirilmiştir.</p>
+          </section>
+          
+          <section>
+            <h4 class="font-medium">Misyonumuz</h4>
+            <p class="text-sm text-muted-foreground">Türkçe kelime dağarcığını geliştirmeyi amaçlayan, eğlenceli ve rekabetçi bir oyun deneyimi sunmak.</p>
+          </section>
+          
+          <section>
+            <h4 class="font-medium">Özellikler</h4>
+            <p class="text-sm text-muted-foreground">• Çoklu oyun modları</p>
+            <p class="text-sm text-muted-foreground">• Gerçek zamanlı çok oyunculu</p>
+            <p class="text-sm text-muted-foreground">• Kapsamlı Türkçe kelime sözlüğü</p>
+            <p class="text-sm text-muted-foreground">• Liderlik tabloları</p>
+            <p class="text-sm text-muted-foreground">• Sosyal özellikler</p>
+          </section>
+          
+          <section>
+            <h4 class="font-medium">Teşekkürler</h4>
+            <p class="text-sm text-muted-foreground">Kelimeci'yi tercih ettiğiniz için teşekkür ederiz!</p>
+          </section>
+        </div>
+        
+        <div class="text-center text-xs text-muted-foreground border-t pt-3">
+          <p>© 2024 Kelimeci Ekibi</p>
+          <p>Tüm hakları saklıdır</p>
+        </div>
+      </div>
+    `;
+    openModal("Hakkımızda", content);
+  };
+
+  const openContact = () => {
+    const content = `
+      <div class="space-y-4">
+        <h3 class="font-semibold text-lg">İletişim</h3>
+        
+        <div class="space-y-4">
+          <div class="p-4 bg-muted rounded-lg">
+            <h4 class="font-medium flex items-center mb-2">
+              <Mail class="w-4 h-4 mr-2" />
+              E-posta
+            </h4>
+            <p class="text-sm font-mono">support@kelimeci.com</p>
+            <p class="text-xs text-muted-foreground mt-1">Genel sorular ve destek</p>
+          </div>
+          
+          <div class="p-4 bg-muted rounded-lg">
+            <h4 class="font-medium flex items-center mb-2">
+              <Shield class="w-4 h-4 mr-2" />
+              Gizlilik
+            </h4>
+            <p class="text-sm font-mono">privacy@kelimeci.com</p>
+            <p class="text-xs text-muted-foreground mt-1">Gizlilik ve veri koruma</p>
+          </div>
+          
+          <div class="p-4 bg-muted rounded-lg">
+            <h4 class="font-medium flex items-center mb-2">
+              <HelpCircle class="w-4 h-4 mr-2" />
+              Teknik Destek
+            </h4>
+            <p class="text-sm font-mono">tech@kelimeci.com</p>
+            <p class="text-xs text-muted-foreground mt-1">Hata bildirimleri ve teknik sorunlar</p>
+          </div>
+          
+          <div class="space-y-2 pt-3 border-t">
+            <h4 class="font-medium">Yanıt Süreleri</h4>
+            <p class="text-sm text-muted-foreground">• Genel sorular: 24 saat</p>
+            <p class="text-sm text-muted-foreground">• Teknik sorunlar: 48 saat</p>
+            <p class="text-sm text-muted-foreground">• Acil durumlar: 6 saat</p>
+          </div>
+          
+          <div class="text-center pt-3 border-t">
+            <p class="text-sm text-muted-foreground">Size en iyi hizmeti verebilmek için buradayız!</p>
+          </div>
+        </div>
+      </div>
+    `;
+    openModal("İletişim", content);
   };
 
   return (
@@ -224,6 +415,15 @@ const SettingsPage = () => {
             <Button
               variant="ghost"
               className="w-full justify-start"
+              onClick={openHowToPlay}
+            >
+              <PlayCircle className="w-4 h-4 mr-2" />
+              Nasıl Oynanır
+            </Button>
+
+            <Button
+              variant="ghost"
+              className="w-full justify-start"
               onClick={openSupport}
             >
               <HelpCircle className="w-4 h-4 mr-2" />
@@ -251,7 +451,7 @@ const SettingsPage = () => {
             <Button
               variant="ghost"
               className="w-full justify-start"
-              onClick={() => window.open('mailto:support@kelimeci.com')}
+              onClick={openContact}
             >
               <Mail className="w-4 h-4 mr-2" />
               İletişim
@@ -283,6 +483,19 @@ const SettingsPage = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Modal Dialog */}
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">{modalContent.title}</DialogTitle>
+          </DialogHeader>
+          <div 
+            className="prose prose-sm max-w-none"
+            dangerouslySetInnerHTML={{ __html: modalContent.content }}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
