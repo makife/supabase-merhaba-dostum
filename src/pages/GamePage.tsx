@@ -307,35 +307,53 @@ const GamePage = ({ gameMode }: GamePageProps) => {
 
         {/* Scores */}
         <div className="grid grid-cols-2 gap-4">
-          <Card>
-            <CardContent className="p-4 text-center">
-              <User className="w-6 h-6 mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">Siz</p>
-              <p className="text-2xl font-bold">{playerScore}</p>
-              <Progress value={gameType === 'score' ? (playerScore / 100) * 100 : Math.min((playerScore / 200) * 100, 100)} className="mt-2" />
+          <Card className="bg-gradient-to-br from-blue-500/20 to-blue-600/30 border-blue-400/50 backdrop-blur-sm">
+            <CardContent className="p-4 text-center relative overflow-hidden">
+              <div className="absolute top-2 right-2 w-8 h-8 bg-blue-500/30 rounded-full flex items-center justify-center">
+                <User className="w-4 h-4 text-blue-100" />
+              </div>
+              <div className="w-12 h-12 bg-blue-500/40 rounded-full mx-auto mb-2 flex items-center justify-center border-2 border-blue-300/50">
+                <User className="w-6 h-6 text-blue-100" />
+              </div>
+              <p className="text-sm text-blue-100 font-medium">Siz</p>
+              <p className="text-2xl font-bold text-white">{playerScore}</p>
+              <Progress 
+                value={gameType === 'score' ? (playerScore / 100) * 100 : Math.min((playerScore / 200) * 100, 100)} 
+                className="mt-2 bg-blue-900/50" 
+              />
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <opponent.icon className="w-6 h-6 mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">{opponent.name}</p>
-              <p className="text-2xl font-bold">{opponentScore}</p>
-              <Progress value={gameType === 'score' ? (opponentScore / 100) * 100 : Math.min((opponentScore / 200) * 100, 100)} className="mt-2" />
+          <Card className="bg-gradient-to-br from-red-500/20 to-red-600/30 border-red-400/50 backdrop-blur-sm">
+            <CardContent className="p-4 text-center relative overflow-hidden">
+              <div className="absolute top-2 right-2 w-8 h-8 bg-red-500/30 rounded-full flex items-center justify-center">
+                <opponent.icon className="w-4 h-4 text-red-100" />
+              </div>
+              <div className="w-12 h-12 bg-red-500/40 rounded-full mx-auto mb-2 flex items-center justify-center border-2 border-red-300/50">
+                <opponent.icon className="w-6 h-6 text-red-100" />
+              </div>
+              <p className="text-sm text-red-100 font-medium">{opponent.name}</p>
+              <p className="text-2xl font-bold text-white">{opponentScore}</p>
+              <Progress 
+                value={gameType === 'score' ? (opponentScore / 100) * 100 : Math.min((opponentScore / 200) * 100, 100)} 
+                className="mt-2 bg-red-900/50" 
+              />
             </CardContent>
           </Card>
         </div>
 
         {/* Current Word Input */}
-        <Card>
+        <Card className="game-grid border-0">
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <Input 
                 value={currentWord} 
                 readOnly 
                 placeholder="Harflere tıklayarak kelime oluşturun"
-                className="text-lg font-mono text-center"
+                className="text-lg font-mono text-center bg-white/20 backdrop-blur-sm border-white/30 text-white placeholder:text-white/70 font-bold"
               />
-              <Badge variant="secondary">{currentWord.length}</Badge>
+              <Badge variant="secondary" className="bg-white/20 text-white border-white/30 font-bold">
+                {currentWord.length}
+              </Badge>
             </div>
           </CardContent>
         </Card>
