@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useMusic } from '@/contexts/MusicContext';
 
 import GameModeSelector from '@/components/GameModeSelector';
 import { FloatingMenu } from '@/components/FloatingMenu';
@@ -26,7 +27,8 @@ import {
 const HomePage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { playSound, startBackgroundMusic } = useSounds();
+  const { playSound } = useSounds();
+  const { startBackgroundMusic } = useMusic();
   const { uploadProfilePicture, uploading } = useProfilePicture();
   const [userCredits] = useState(5);
   const [selectedMode, setSelectedMode] = useState<string | null>(null);

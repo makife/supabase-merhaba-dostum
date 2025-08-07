@@ -21,10 +21,8 @@ interface SoundPack {
 
 export const useSounds = () => {
   const [soundsEnabled, setSoundsEnabled] = useState(true);
-  const [musicEnabled, setMusicEnabled] = useState(true);
   const { soundPack } = useThemeContext();
   const audioCache = useRef<Map<string, HTMLAudioElement[]>>(new Map());
-  const backgroundMusicRef = useRef<HTMLAudioElement | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
 
   // Generate simple beep sounds using Web Audio API
@@ -84,11 +82,11 @@ export const useSounds = () => {
   // Load settings from localStorage and listen for changes
   useEffect(() => {
     const loadSettings = () => {
-      const savedSettings = localStorage.getItem('kelimeci-settings');
-      if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
+      try {
+        const settings = JSON.parse(localStorage.getItem('kelimeci-settings') || '{}');
         setSoundsEnabled(settings.sounds ?? true);
-        setMusicEnabled(settings.music ?? true);
+      } catch (error) {
+        console.warn('Failed to load sound settings:', error);
       }
     };
 
@@ -106,35 +104,6 @@ export const useSounds = () => {
       window.removeEventListener('settingsChanged', handleStorageChange);
     };
   }, []);
-
-  // Background music management
-  useEffect(() => {
-    const loadBackgroundMusic = () => {
-      if (!backgroundMusicRef.current) {
-        backgroundMusicRef.current = new Audio('/sounds/default/backround-music.mp3');
-        backgroundMusicRef.current.loop = true;
-        backgroundMusicRef.current.volume = 0.3;
-        backgroundMusicRef.current.preload = 'auto';
-      }
-    };
-
-    loadBackgroundMusic();
-
-    // Sadece müzik açıksa ve şu an çalmıyorsa çal
-    if (musicEnabled && backgroundMusicRef.current && backgroundMusicRef.current.paused) {
-      backgroundMusicRef.current.play().catch(error => {
-        console.warn('Could not play background music:', error);
-      });
-    } else if (!musicEnabled && backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
-      backgroundMusicRef.current.pause();
-    }
-
-    return () => {
-      if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
-        backgroundMusicRef.current.pause();
-      }
-    };
-  }, [musicEnabled]);
 
   // Create audio pool for better performance
   const createAudioPool = (soundPath: string, poolSize: number = 3): HTMLAudioElement[] => {
@@ -349,21 +318,6 @@ export const useSounds = () => {
     setTimeout(() => playGeneratedSound(1000, 0.15), 400);
   };
 
-  const startBackgroundMusic = () => {
-    if (musicEnabled && backgroundMusicRef.current && backgroundMusicRef.current.paused) {
-      backgroundMusicRef.current.currentTime = 0; // Baştan başlat
-      backgroundMusicRef.current.play().catch(error => {
-        console.warn('Could not play background music:', error);
-      });
-    }
-  };
-
-  const stopBackgroundMusic = () => {
-    if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
-      backgroundMusicRef.current.pause();
-      backgroundMusicRef.current.currentTime = 0; // Pozisyonu sıfırla
-    }
-  };
 
   const playCelebrationSound = () => {
     if (!soundsEnabled) return;
@@ -404,21 +358,11 @@ export const useSounds = () => {
     playTimeWarningSequence,
     playCelebrationSound,
     playGameLoseSound,
-    startBackgroundMusic,
-    stopBackgroundMusic,
     soundsEnabled,
-    musicEnabled,
     setSoundsEnabled: (enabled: boolean) => {
       setSoundsEnabled(enabled);
       const settings = JSON.parse(localStorage.getItem('kelimeci-settings') || '{}');
       settings.sounds = enabled;
-      localStorage.setItem('kelimeci-settings', JSON.stringify(settings));
-      window.dispatchEvent(new Event('settingsChanged'));
-    },
-    setMusicEnabled: (enabled: boolean) => {
-      setMusicEnabled(enabled);
-      const settings = JSON.parse(localStorage.getItem('kelimeci-settings') || '{}');
-      settings.music = enabled;
       localStorage.setItem('kelimeci-settings', JSON.stringify(settings));
       window.dispatchEvent(new Event('settingsChanged'));
     }

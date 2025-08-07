@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { GameProvider } from "@/contexts/GameContext";
+import { MusicProvider } from "@/contexts/MusicContext";
 import { useTheme } from "@/hooks/useTheme";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AuthPage from "@/pages/AuthPage";
@@ -98,9 +99,11 @@ const App = () => {
         <BrowserRouter>
           <AuthProvider>
             <ThemeProvider>
-              <GameProvider>
-                <AppRoutes />
-              </GameProvider>
+              <MusicProvider>
+                <GameProvider>
+                  <AppRoutes />
+                </GameProvider>
+              </MusicProvider>
             </ThemeProvider>
           </AuthProvider>
         </BrowserRouter>

@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/hooks/useTheme';
 import { useSounds } from '@/hooks/useSounds';
+import { useMusic } from '@/contexts/MusicContext';
 import {
   ArrowLeft,
   Bell,
@@ -30,7 +31,8 @@ const SettingsPage = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
-  const { soundsEnabled, setSoundsEnabled, musicEnabled, setMusicEnabled, playSound } = useSounds();
+  const { soundsEnabled, setSoundsEnabled, playSound } = useSounds();
+  const { musicEnabled, setMusicEnabled } = useMusic();
 
   // Settings state
   const [notifications, setNotifications] = useState(true);

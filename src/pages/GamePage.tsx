@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useGame } from '@/contexts/GameContext';
+import { useMusic } from '@/contexts/MusicContext';
 import { useWordValidation } from '@/hooks/useWordValidation';
 import { useSounds } from '@/hooks/useSounds';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,7 +33,8 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const { toast } = useToast();
   const { currentRoom, updateScore } = useGame();
   const { validateWord, isValidating } = useWordValidation();
-  const { playSound, playTimeWarningSequence, playCelebrationSound, playGameLoseSound, stopBackgroundMusic, startBackgroundMusic } = useSounds();
+  const { playSound, playTimeWarningSequence, playCelebrationSound, playGameLoseSound } = useSounds();
+  const { stopBackgroundMusic, startBackgroundMusic } = useMusic();
   const [searchParams] = useSearchParams();
   const gameType = (searchParams.get('type') as 'timed' | 'score') || 'timed';
   const [timeWarningPlayed, setTimeWarningPlayed] = useState(false);
