@@ -288,6 +288,13 @@ const HomePage = () => {
                         className="absolute right-2 top-1/2 transform -translate-y-1/2 w-48 h-36 object-contain opacity-60"
                       />
                     )}
+                    {mode.id === 'tournament' && (
+                      <img 
+                        src="/lovable-uploads/70bff2fc-4ab0-4705-b1f1-d3cf41bbc7b5.png" 
+                        alt="Tournament"
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 w-48 h-36 object-contain opacity-60"
+                      />
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0 pb-3">
