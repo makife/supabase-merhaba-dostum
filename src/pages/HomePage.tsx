@@ -41,14 +41,14 @@ const HomePage = () => {
         id: Date.now(),
         letter: letters[Math.floor(Math.random() * letters.length)],
         x: -10,
-        y: Math.random() * 80,
+        y: Math.random() * 100, // Tüm yüksekliği kullan
         color: colors[Math.floor(Math.random() * colors.length)],
         font: fonts[Math.floor(Math.random() * fonts.length)],
-        dx: 0.5 + Math.random() * 1
+        dx: 0.3 + Math.random() * 0.8 // Daha yavaş hareket
       };
       
-      setAnimatedLetters(prev => [...prev.slice(-12), newLetter]);
-    }, 400);
+      setAnimatedLetters(prev => [...prev.slice(-15), newLetter]); // Daha fazla harf
+    }, 300); // Daha sık harf üret
 
     return () => clearInterval(interval);
   }, []);
@@ -143,13 +143,14 @@ const HomePage = () => {
             {animatedLetters.map((letter) => (
               <div
                 key={letter.id}
-                className={`absolute text-4xl font-bold ${letter.color} ${letter.font} transition-all duration-1000 transform hover:scale-110`}
+                className={`absolute text-3xl md:text-4xl font-bold ${letter.color} ${letter.font} transition-all duration-1000 transform hover:scale-110`}
                 style={{
                   left: `${letter.x}%`,
                   top: `${letter.y}%`,
                   textShadow: '0 0 10px currentColor',
-                  animation: 'bounce 2s infinite',
-                  opacity: letter.x > 80 ? Math.max(0, 1 - (letter.x - 80) / 20) : 0.6
+                  animation: 'bounce 3s infinite',
+                  opacity: letter.x > 90 ? Math.max(0, 1 - (letter.x - 90) / 10) : 0.4,
+                  zIndex: 1
                 }}
               >
                 {letter.letter}
@@ -174,7 +175,7 @@ const HomePage = () => {
                     )}
                   </div>
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1 relative z-10">
                   <h1 className="text-2xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent drop-shadow-2xl"
                       style={{
                         textShadow: '1px 1px 0px hsl(var(--primary)), 2px 2px 0px rgba(0,0,0,0.3), 0 0 15px hsl(var(--primary) / 0.5)',
@@ -235,7 +236,7 @@ const HomePage = () => {
                   )}
                 </div>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1 relative z-10">
                 <h1 className="text-4xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent drop-shadow-2xl"
                     style={{
                       textShadow: '2px 2px 0px hsl(var(--primary)), 4px 4px 0px rgba(0,0,0,0.3), 0 0 20px hsl(var(--primary) / 0.5)',
