@@ -327,10 +327,12 @@ const GamePage = ({ gameMode }: GamePageProps) => {
               </div>
               <p className="text-sm text-blue-100 font-medium">Siz</p>
               <p className="text-2xl font-bold text-white">{playerScore}</p>
-              <Progress 
-                value={gameType === 'score' ? (playerScore / 100) * 100 : Math.min((playerScore / 200) * 100, 100)} 
-                className="mt-2 bg-blue-900/50" 
-              />
+              {gameType === 'score' && (
+                <Progress 
+                  value={(playerScore / 100) * 100} 
+                  className="mt-2 bg-blue-900/50" 
+                />
+              )}
             </CardContent>
           </Card>
           <Card className="bg-gradient-to-br from-red-500/20 to-red-600/30 border-red-400/50 backdrop-blur-sm">
@@ -343,10 +345,12 @@ const GamePage = ({ gameMode }: GamePageProps) => {
               </div>
               <p className="text-sm text-red-100 font-medium">{opponent.name}</p>
               <p className="text-2xl font-bold text-white">{opponentScore}</p>
-              <Progress 
-                value={gameType === 'score' ? (opponentScore / 100) * 100 : Math.min((opponentScore / 200) * 100, 100)} 
-                className="mt-2 bg-red-900/50" 
-              />
+              {gameType === 'score' && (
+                <Progress 
+                  value={(opponentScore / 100) * 100} 
+                  className="mt-2 bg-red-900/50" 
+                />
+              )}
             </CardContent>
           </Card>
         </div>
