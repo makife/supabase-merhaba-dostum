@@ -268,13 +268,11 @@ const HomePage = () => {
                       </div>
                     </div>
                     {mode.id === 'vs-computer' && (
-                      <div className="w-20 h-16 flex items-center justify-center overflow-hidden">
-                        <img 
-                          src="/lovable-uploads/8008dff7-7ead-48e2-b47e-fde31770af08.png" 
-                          alt="Computer player"
-                          className="w-40 h-32 object-cover opacity-80"
-                        />
-                      </div>
+                      <img 
+                        src="/lovable-uploads/8008dff7-7ead-48e2-b47e-fde31770af08.png" 
+                        alt="Computer player"
+                        className="absolute inset-0 w-full h-full object-cover opacity-30"
+                      />
                     )}
                   </div>
                 </CardHeader>
