@@ -116,7 +116,10 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     };
 
     fetchPlayerAvatar();
-    
+  }, [user]);
+
+  // Music control effect - separate from avatar fetching to prevent re-runs
+  useEffect(() => {
     // Stop background music when entering game
     stopBackgroundMusic();
     
@@ -124,7 +127,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     return () => {
       startBackgroundMusic();
     };
-  }, [user, stopBackgroundMusic, startBackgroundMusic]);
+  }, []); // Empty dependency array to run only once
 
   // Timer effect - only for timed mode
   useEffect(() => {
