@@ -20,7 +20,8 @@ interface SoundPack {
 export const useSounds = () => {
   const [soundsEnabled, setSoundsEnabled] = useState(true);
   const { soundPack } = useThemeContext();
-  const audioCache = useRef<Map<string, HTMLAudioElement>>(new Map());
+  const audioCache = useRef<Map<string, HTMLAudioElement[]>>(new Map());
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   // Generate simple beep sounds using Web Audio API
   const generateBeep = (frequency: number, duration: number, type: OscillatorType = 'sine'): string => {
@@ -95,16 +96,45 @@ export const useSounds = () => {
     };
   }, []);
 
-  // Create audio elements with Web Audio API fallback
-  const createAudioElement = (soundPath: string): HTMLAudioElement => {
-    const audio = new Audio();
-    audio.src = soundPath;
-    audio.preload = 'auto';
-    audio.volume = 0.7;
-    audio.onerror = () => {
-      console.warn(`Could not load sound: ${soundPath}`);
-    };
-    return audio;
+  // Create audio pool for better performance
+  const createAudioPool = (soundPath: string, poolSize: number = 3): HTMLAudioElement[] => {
+    const pool: HTMLAudioElement[] = [];
+    for (let i = 0; i < poolSize; i++) {
+      const audio = new Audio();
+      audio.src = soundPath;
+      audio.preload = 'auto';
+      audio.volume = 0.7;
+      audio.onerror = () => {
+        console.warn(`Could not load sound: ${soundPath}`);
+      };
+      pool.push(audio);
+    }
+    return pool;
+  };
+
+  // Get available audio from pool
+  const getAvailableAudio = (audioPool: HTMLAudioElement[]): HTMLAudioElement | null => {
+    // En eski çalan ses dosyasını bul
+    for (const audio of audioPool) {
+      if (audio.paused || audio.ended || audio.currentTime === 0) {
+        return audio;
+      }
+    }
+    // Hepsi çalıyorsa ilkini kullan (kesip yeniden başlat)
+    return audioPool[0] || null;
+  };
+
+  // Initialize audio context
+  const getAudioContext = (): AudioContext | null => {
+    if (!audioContextRef.current) {
+      try {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      } catch (error) {
+        console.warn('Could not create audio context:', error);
+        return null;
+      }
+    }
+    return audioContextRef.current;
   };
 
   // Aktif ses paketini al
@@ -119,11 +149,11 @@ export const useSounds = () => {
     // Cache'i temizle
     audioCache.current.clear();
     
-    // Yeni sesleri yükle
+    // Yeni sesleri yükle (audio pool ile)
     Object.entries(activePack.sounds).forEach(([key, soundPath]) => {
       if (typeof soundPath === 'string' && !soundPath.startsWith('generated')) {
         try {
-          audioCache.current.set(key, createAudioElement(soundPath));
+          audioCache.current.set(key, createAudioPool(soundPath, 3));
         } catch (error) {
           console.warn(`Failed to load sound ${key}:`, error);
         }
@@ -135,7 +165,14 @@ export const useSounds = () => {
     if (!soundsEnabled) return;
     
     try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const audioContext = getAudioContext();
+      if (!audioContext) return;
+      
+      // Resume context if suspended (mobile requirement)
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+      
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
       
@@ -146,11 +183,17 @@ export const useSounds = () => {
       oscillator.type = type;
       
       gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-      gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 0.01);
+      gainNode.gain.linearRampToValueAtTime(0.05, audioContext.currentTime + 0.01);
       gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
       
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + duration);
+      
+      // Cleanup
+      oscillator.onended = () => {
+        oscillator.disconnect();
+        gainNode.disconnect();
+      };
     } catch (error) {
       console.warn('Could not play generated sound:', error);
     }
@@ -163,12 +206,15 @@ export const useSounds = () => {
     const soundPath = activePack.sounds[soundKey];
 
     try {
-      // MP3 dosyası varsa onu çal
-      const audio = audioCache.current.get(soundKey);
-      if (audio && typeof soundPath === 'string' && !soundPath.startsWith('generated')) {
-        audio.currentTime = 0;
-        await audio.play();
-        return;
+      // MP3 dosyası varsa audio pool'dan uygun olanı çal
+      const audioPool = audioCache.current.get(soundKey);
+      if (audioPool && typeof soundPath === 'string' && !soundPath.startsWith('generated')) {
+        const availableAudio = getAvailableAudio(audioPool);
+        if (availableAudio) {
+          availableAudio.currentTime = 0;
+          await availableAudio.play();
+          return;
+        }
       }
 
       // Generated ses için ilgili pakete göre fallback
