@@ -102,16 +102,67 @@ export const useSounds = () => {
   // Background music management
   useEffect(() => {
     if (musicEnabled) {
-      if (!backgroundMusicRef.current) {
-        backgroundMusicRef.current = new Audio('/sounds/default/background-music.mp3');
-        backgroundMusicRef.current.loop = true;
-        backgroundMusicRef.current.volume = 0.1;
-        backgroundMusicRef.current.preload = 'auto';
-      }
+      // Check if MP3 file exists, fallback to generated tones
+      const testAudio = new Audio();
+      testAudio.src = '/sounds/default/background-music.mp3';
       
-      backgroundMusicRef.current.play().catch(error => {
-        console.warn('Could not play background music:', error);
+      testAudio.addEventListener('error', () => {
+        // Fallback to generated background music
+        const playAmbientTone = () => {
+          if (!musicEnabled) return;
+          
+          try {
+            const audioContext = getAudioContext();
+            if (!audioContext) return;
+            
+            const oscillator1 = audioContext.createOscillator();
+            const oscillator2 = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator1.connect(gainNode);
+            oscillator2.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Neşeli C major chord
+            oscillator1.frequency.setValueAtTime(523, audioContext.currentTime); // C5
+            oscillator2.frequency.setValueAtTime(659, audioContext.currentTime); // E5
+            oscillator1.type = 'sine';
+            oscillator2.type = 'triangle';
+            
+            gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.02, audioContext.currentTime + 1);
+            gainNode.gain.linearRampToValueAtTime(0.01, audioContext.currentTime + 4);
+            gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 6);
+            
+            oscillator1.start(audioContext.currentTime);
+            oscillator2.start(audioContext.currentTime);
+            oscillator1.stop(audioContext.currentTime + 6);
+            
+            // Repeat every 15 seconds
+            setTimeout(playAmbientTone, 15000);
+          } catch (error) {
+            console.warn('Could not play background music:', error);
+          }
+        };
+        
+        setTimeout(playAmbientTone, 1000);
       });
+      
+      testAudio.addEventListener('canplaythrough', () => {
+        // MP3 file exists, use it
+        if (!backgroundMusicRef.current) {
+          backgroundMusicRef.current = new Audio('/sounds/default/background-music.mp3');
+          backgroundMusicRef.current.loop = true;
+          backgroundMusicRef.current.volume = 0.1;
+          backgroundMusicRef.current.preload = 'auto';
+        }
+        
+        backgroundMusicRef.current.play().catch(error => {
+          console.warn('Could not play background music:', error);
+        });
+      });
+      
+      testAudio.load();
     } else {
       if (backgroundMusicRef.current) {
         backgroundMusicRef.current.pause();
