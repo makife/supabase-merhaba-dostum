@@ -132,7 +132,7 @@ const HomePage = () => {
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between bg-card rounded-xl p-6 shadow-lg border relative overflow-hidden">
+        <div className="bg-card rounded-xl p-4 md:p-6 shadow-lg border relative overflow-hidden">
           {/* Animated Letters Background */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
             {animatedLetters.map((letter) => (
@@ -151,37 +151,76 @@ const HomePage = () => {
             ))}
           </div>
           
-          <div className="flex items-center space-x-4 relative z-10">
-            <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
-              <Gamepad2 className="w-6 h-6 text-primary-foreground" />
+          {/* Mobile Layout */}
+          <div className="block md:hidden relative z-10">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                  <Gamepad2 className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent drop-shadow-2xl"
+                      style={{
+                        textShadow: '1px 1px 0px hsl(var(--primary)), 2px 2px 0px rgba(0,0,0,0.3), 0 0 15px hsl(var(--primary) / 0.5)',
+                        WebkitTextStroke: '0.5px hsl(var(--border))'
+                      }}>
+                    KELİMECİ
+                  </h1>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => {
+                playSound('buttonClick');
+                handleLogout();
+              }}>
+                <LogOut className="w-4 h-4" />
+              </Button>
             </div>
-            <div>
-              <h1 className="text-4xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent drop-shadow-2xl"
-                  style={{
-                    textShadow: '2px 2px 0px hsl(var(--primary)), 4px 4px 0px rgba(0,0,0,0.3), 0 0 20px hsl(var(--primary) / 0.5)',
-                    WebkitTextStroke: '1px hsl(var(--border))'
-                  }}>
-                KELİMECİ
-              </h1>
-              <p className="text-muted-foreground font-medium">Hoş geldin, {user?.email?.split('@')[0]}!</p>
+            <div className="flex items-center justify-between">
+              <p className="text-muted-foreground font-medium text-sm">Hoş geldin, {user?.email?.split('@')[0]}!</p>
+              <div className="flex items-center space-x-3">
+                <Crown className="w-4 h-4 text-yellow-500" />
+                <div className="flex flex-col items-end">
+                  <Progress value={(userCredits / 5) * 100} className="w-16 h-2" />
+                  <span className="text-xs text-muted-foreground mt-1">{userCredits}/5</span>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="flex items-center space-x-4 relative z-10">
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <Crown className="w-4 h-4 text-yellow-500" />
-                <span className="text-xs font-medium text-muted-foreground">Hak</span>
+
+          {/* Desktop Layout */}
+          <div className="hidden md:flex items-center justify-between relative z-10">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
+                <Gamepad2 className="w-6 h-6 text-primary-foreground" />
               </div>
-              <Progress value={(userCredits / 5) * 100} className="w-20 h-2" />
-              <span className="text-xs text-center block w-20">{userCredits}/5</span>
+              <div>
+                <h1 className="text-4xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent drop-shadow-2xl"
+                    style={{
+                      textShadow: '2px 2px 0px hsl(var(--primary)), 4px 4px 0px rgba(0,0,0,0.3), 0 0 20px hsl(var(--primary) / 0.5)',
+                      WebkitTextStroke: '1px hsl(var(--border))'
+                    }}>
+                  KELİMECİ
+                </h1>
+                <p className="text-muted-foreground font-medium">Hoş geldin, {user?.email?.split('@')[0]}!</p>
+              </div>
             </div>
-            <Button variant="outline" size="sm" onClick={() => {
-              playSound('buttonClick');
-              handleLogout();
-            }}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Çıkış
-            </Button>
+            <div className="flex items-center space-x-4">
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Crown className="w-4 h-4 text-yellow-500" />
+                  <span className="text-xs font-medium text-muted-foreground">Hak</span>
+                </div>
+                <Progress value={(userCredits / 5) * 100} className="w-20 h-2" />
+                <span className="text-xs text-center block w-20">{userCredits}/5</span>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => {
+                playSound('buttonClick');
+                handleLogout();
+              }}>
+                <LogOut className="w-4 h-4 mr-2" />
+                Çıkış
+              </Button>
+            </div>
           </div>
         </div>
 
