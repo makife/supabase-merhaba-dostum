@@ -100,54 +100,62 @@ export const useSounds = () => {
   }, []);
 
   // Background music management
+  const backgroundIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
   useEffect(() => {
-    const initBackgroundMusic = () => {
-      if (musicEnabled) {
-        // Generate a simple ambient background tone
-        setTimeout(() => {
-          const playAmbientTone = () => {
-            if (!musicEnabled) return;
-            
-            try {
-              const audioContext = getAudioContext();
-              if (!audioContext) return;
-              
-              const oscillator1 = audioContext.createOscillator();
-              const oscillator2 = audioContext.createOscillator();
-              const gainNode = audioContext.createGain();
-              
-              oscillator1.connect(gainNode);
-              oscillator2.connect(gainNode);
-              gainNode.connect(audioContext.destination);
-              
-              oscillator1.frequency.setValueAtTime(220, audioContext.currentTime); // A3
-              oscillator2.frequency.setValueAtTime(330, audioContext.currentTime); // E4
-              oscillator1.type = 'sine';
-              oscillator2.type = 'triangle';
-              
-              gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-              gainNode.gain.linearRampToValueAtTime(0.02, audioContext.currentTime + 2);
-              gainNode.gain.linearRampToValueAtTime(0.01, audioContext.currentTime + 8);
-              gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 10);
-              
-              oscillator1.start(audioContext.currentTime);
-              oscillator2.start(audioContext.currentTime);
-              oscillator1.stop(audioContext.currentTime + 10);
-              oscillator2.stop(audioContext.currentTime + 10);
-              
-              // Repeat every 15 seconds
-              setTimeout(playAmbientTone, 15000);
-            } catch (error) {
-              console.warn('Could not play background music:', error);
-            }
-          };
-          
-          playAmbientTone();
-        }, 2000); // Start after 2 seconds
+    const playAmbientTone = () => {
+      if (!musicEnabled) return;
+      
+      try {
+        const audioContext = getAudioContext();
+        if (!audioContext) return;
+        
+        const oscillator1 = audioContext.createOscillator();
+        const oscillator2 = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator1.connect(gainNode);
+        oscillator2.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // Daha neşeli tonlar - C major chord (C4, E4, G4)
+        oscillator1.frequency.setValueAtTime(523, audioContext.currentTime); // C5
+        oscillator2.frequency.setValueAtTime(659, audioContext.currentTime); // E5
+        oscillator1.type = 'sine';
+        oscillator2.type = 'triangle';
+        
+        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.015, audioContext.currentTime + 1);
+        gainNode.gain.linearRampToValueAtTime(0.008, audioContext.currentTime + 4);
+        gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 6);
+        
+        oscillator1.start(audioContext.currentTime);
+        oscillator2.start(audioContext.currentTime);
+        oscillator1.stop(audioContext.currentTime + 6);
+        oscillator2.stop(audioContext.currentTime + 6);
+      } catch (error) {
+        console.warn('Could not play background music:', error);
       }
     };
 
-    initBackgroundMusic();
+    if (musicEnabled) {
+      // Start playing immediately, then repeat every 20 seconds
+      setTimeout(playAmbientTone, 1000);
+      backgroundIntervalRef.current = setInterval(playAmbientTone, 20000);
+    } else {
+      // Clear interval when music is disabled
+      if (backgroundIntervalRef.current) {
+        clearInterval(backgroundIntervalRef.current);
+        backgroundIntervalRef.current = null;
+      }
+    }
+
+    return () => {
+      if (backgroundIntervalRef.current) {
+        clearInterval(backgroundIntervalRef.current);
+        backgroundIntervalRef.current = null;
+      }
+    };
   }, [musicEnabled]);
 
   // Create audio pool for better performance
