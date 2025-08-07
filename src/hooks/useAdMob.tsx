@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { AdMob, RewardAdPluginEvents, AdLoadInfo, AdMobRewardItem } from '@capacitor-community/admob';
+import { Capacitor } from '@capacitor/core';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,8 +31,14 @@ export const useAdMob = () => {
     setIsAdLoading(true);
     
     try {
+      // Platform specific ad IDs
+      const isIOS = Capacitor.getPlatform() === 'ios';
+      const adId = isIOS 
+        ? 'ca-app-pub-4768026665961339/6383991586' // iOS Rewarded Ad ID
+        : 'ca-app-pub-4768026665961339/3449888248'; // Android Rewarded Ad ID
+      
       await AdMob.prepareRewardVideoAd({
-        adId: 'ca-app-pub-4768026665961339/3449888248', // Your real Rewarded Ad ID
+        adId: adId,
         isTesting: false, // Production mode
       });
       
