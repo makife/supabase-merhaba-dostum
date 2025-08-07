@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useGame } from '@/contexts/GameContext';
 import { useWordValidation } from '@/hooks/useWordValidation';
 import { useSounds } from '@/hooks/useSounds';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   ArrowLeft, 
   Clock, 
@@ -94,6 +95,26 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const [gameStarted, setGameStarted] = useState(true);
   const [gameEnded, setGameEnded] = useState(false);
   const [winner, setWinner] = useState<'player' | 'opponent' | 'tie' | null>(null);
+  const [playerAvatar, setPlayerAvatar] = useState<string>('');
+
+  // Fetch player avatar from profiles table
+  useEffect(() => {
+    const fetchPlayerAvatar = async () => {
+      if (!user) return;
+      
+      const { data } = await supabase
+        .from('profiles')
+        .select('avatar_url')
+        .eq('id', user.id)
+        .maybeSingle();
+      
+      if (data?.avatar_url) {
+        setPlayerAvatar(data.avatar_url);
+      }
+    };
+
+    fetchPlayerAvatar();
+  }, [user]);
 
   // Timer effect - only for timed mode
   useEffect(() => {
@@ -331,9 +352,9 @@ const GamePage = ({ gameMode }: GamePageProps) => {
           <Card className="bg-gradient-to-br from-blue-500/20 to-blue-600/30 border-blue-400/50 backdrop-blur-sm">
             <CardContent className="p-4 text-center relative overflow-hidden">
               <div className="w-16 h-16 bg-blue-500/40 rounded-full mx-auto mb-2 flex items-center justify-center border-2 border-blue-300/50 overflow-hidden">
-                {user?.user_metadata?.avatar_url ? (
+                {playerAvatar ? (
                   <img 
-                    src={user.user_metadata.avatar_url} 
+                    src={playerAvatar} 
                     alt="Profile" 
                     className="w-full h-full object-cover"
                   />
