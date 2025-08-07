@@ -1,3 +1,4 @@
+import { SoundPackSelector } from '@/components/SoundPackSelector';
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -343,6 +344,14 @@ const SettingsPage = () => {
             </div>
 
             <Separator />
+
+            {/* Sound Pack Selector */}
+            {soundsEnabled && (
+              <>
+                <SoundPackSelector />
+                <Separator />
+              </>
+            )}
 
             {/* Theme */}
             <div className="flex items-center justify-between">
