@@ -14,36 +14,27 @@ async function loadWordlist(): Promise<Set<string>> {
   }
 
   try {
-    // GitHub raw URL'ını buraya yazacaksın
-    const response = await fetch('https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/YOUR_REPO_NAME/main/src/assets/wordlist.txt');
-    
-    if (!response.ok) {
-      console.warn('Could not fetch wordlist from GitHub, using fallback');
-      // Fallback - temel Türkçe kelimeler
-      wordlistCache = new Set([
-        'KELIME', 'OYUN', 'TÜRKÇE', 'DİL', 'SES', 'HARF', 'SKOR', 'PUAN',
-        'EV', 'OKUL', 'ANNE', 'BABA', 'SU', 'EKMEK', 'MASA', 'SANDALYE',
-        'KITAP', 'KALEM', 'DEFTER', 'ÇANTA', 'AYAKKABI', 'GÖMLEK', 'PANTOLON',
-        'ARABA', 'OTOBÜS', 'TREN', 'UÇAK', 'GEMİ', 'BİSİKLET', 'MOTOR',
-        'TELEFON', 'BİLGİSAYAR', 'TELEVİZYON', 'RADYO', 'MÜZİK', 'ŞARKI',
-        'DANS', 'RESİM', 'SANAT', 'SPOR', 'FUTBOL', 'BASKETBOL', 'TENİS',
-        'YÜZME', 'KOŞU', 'YÜRÜYÜŞ', 'DAĞCILIK', 'KAMP', 'TATİL', 'SEYAHAT'
-      ]);
-      return wordlistCache;
-    }
-
-    const text = await response.text();
+    // Load from local wordlist.txt file
+    const text = await Deno.readTextFile('./wordlist.txt');
     const words = text.split('\n')
       .map(word => word.trim().toUpperCase())
       .filter(word => word.length >= 3); // En az 3 harfli kelimeler
 
     wordlistCache = new Set(words);
-    console.log(`Loaded ${wordlistCache.size} words from wordlist`);
+    console.log(`Loaded ${wordlistCache.size} words from local wordlist`);
     return wordlistCache;
   } catch (error) {
-    console.error('Error loading wordlist:', error);
-    // Emergency fallback
-    wordlistCache = new Set(['KELIME', 'OYUN', 'SKOR']);
+    console.error('Error loading local wordlist:', error);
+    // Fallback - temel Türkçe kelimeler
+    wordlistCache = new Set([
+      'KELIME', 'OYUN', 'TÜRKÇE', 'DİL', 'SES', 'HARF', 'SKOR', 'PUAN',
+      'EV', 'OKUL', 'ANNE', 'BABA', 'SU', 'EKMEK', 'MASA', 'SANDALYE',
+      'KITAP', 'KALEM', 'DEFTER', 'ÇANTA', 'AYAKKABI', 'GÖMLEK', 'PANTOLON',
+      'ARABA', 'OTOBÜS', 'TREN', 'UÇAK', 'GEMİ', 'BİSİKLET', 'MOTOR',
+      'TELEFON', 'BİLGİSAYAR', 'TELEVİZYON', 'RADYO', 'MÜZİK', 'ŞARKI',
+      'DANS', 'RESİM', 'SANAT', 'SPOR', 'FUTBOL', 'BASKETBOL', 'TENİS',
+      'YÜZME', 'KOŞU', 'YÜRÜYÜŞ', 'DAĞCILIK', 'KAMP', 'TATİL', 'SEYAHAT'
+    ]);
     return wordlistCache;
   }
 }
