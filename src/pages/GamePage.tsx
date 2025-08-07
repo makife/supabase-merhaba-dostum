@@ -8,6 +8,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useGame } from '@/contexts/GameContext';
 import { useWordValidation } from '@/hooks/useWordValidation';
+import { useSounds } from '@/hooks/useSounds';
 import { 
   ArrowLeft, 
   Clock, 
@@ -28,8 +29,10 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const { toast } = useToast();
   const { currentRoom, updateScore } = useGame();
   const { validateWord, isValidating } = useWordValidation();
+  const { playSound, playTimeWarningSequence } = useSounds();
   const [searchParams] = useSearchParams();
   const gameType = (searchParams.get('type') as 'timed' | 'score') || 'timed';
+  const [timeWarningPlayed, setTimeWarningPlayed] = useState(false);
 
   // Game state
   const [gameGrid] = useState<string[][]>([
@@ -54,6 +57,12 @@ const GamePage = ({ gameMode }: GamePageProps) => {
 
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
+        // Play time warning at 15 seconds
+        if (prev === 15 && !timeWarningPlayed) {
+          playTimeWarningSequence();
+          setTimeWarningPlayed(true);
+        }
+        
         if (prev <= 1) {
           setGameEnded(true);
           checkWinner();
@@ -70,12 +79,14 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const checkWinner = useCallback(() => {
     if (playerScore > opponentScore) {
       setWinner('player');
+      playSound('gameWin');
     } else if (opponentScore > playerScore) {
       setWinner('opponent');
+      playSound('gameLose');
     } else {
       setWinner('tie');
     }
-  }, [playerScore, opponentScore]);
+  }, [playerScore, opponentScore, playSound]);
 
   // Check if score reaches 100 - only for score mode
   useEffect(() => {
@@ -89,6 +100,8 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const handleLetterClick = (letter: string, row: number, col: number) => {
     if (gameEnded) return;
 
+    playSound('letterSelect');
+    
     const isSelected = selectedLetters.some(s => s.row === row && s.col === col);
     
     if (isSelected) {
@@ -107,6 +120,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
 
   // Clear current word
   const clearWord = () => {
+    playSound('buttonClick');
     setSelectedLetters([]);
     setCurrentWord('');
   };
@@ -125,6 +139,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     const result = await validateWord(currentWord);
 
     if (result.isValid) {
+      playSound('correctWord');
       const newScore = playerScore + result.points;
       setPlayerScore(newScore);
       
@@ -138,6 +153,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         description: result.message,
       });
     } else {
+      playSound('wrongWord');
       toast({
         title: 'Geçersiz Kelime',
         description: result.message,
@@ -202,12 +218,18 @@ const GamePage = ({ gameMode }: GamePageProps) => {
               </div>
             </div>
             <div className="space-y-2">
-              <Button onClick={() => navigate('/')} className="w-full">
+              <Button onClick={() => {
+                playSound('buttonClick');
+                navigate('/');
+              }} className="w-full">
                 Ana Menüye Dön
               </Button>
               <Button 
                 variant="outline" 
-                onClick={() => window.location.reload()} 
+                onClick={() => {
+                  playSound('buttonClick');
+                  window.location.reload();
+                }} 
                 className="w-full"
               >
                 Tekrar Oyna
@@ -224,7 +246,10 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       <div className="max-w-md mx-auto space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <Button variant="outline" size="sm" onClick={() => navigate('/')}>
+          <Button variant="outline" size="sm" onClick={() => {
+            playSound('buttonClick');
+            navigate('/');
+          }}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Çıkış
           </Button>
@@ -312,7 +337,10 @@ const GamePage = ({ gameMode }: GamePageProps) => {
             Sil
           </Button>
           <Button 
-            onClick={submitWord}
+            onClick={() => {
+              playSound('buttonClick');
+              submitWord();
+            }}
             className="h-12"
             disabled={currentWord.length < 3 || isValidating}
           >

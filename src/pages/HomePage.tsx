@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import GameModeSelector from '@/components/GameModeSelector';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSounds } from '@/hooks/useSounds';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +24,7 @@ import {
 const HomePage = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { playSound } = useSounds();
   const [userCredits] = useState(5);
   const [selectedMode, setSelectedMode] = useState<string | null>(null);
 
@@ -108,7 +110,10 @@ const HomePage = () => {
               <Crown className="w-5 h-5 text-yellow-500" />
               <span className="text-sm font-medium">{userCredits} Hak</span>
             </div>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
+            <Button variant="outline" size="sm" onClick={() => {
+              playSound('buttonClick');
+              handleLogout();
+            }}>
               <LogOut className="w-4 h-4 mr-2" />
               Çıkış
             </Button>
@@ -148,7 +153,10 @@ const HomePage = () => {
                   </div>
                   <Button 
                     className="w-full" 
-                    onClick={() => setSelectedMode(mode.id)}
+                    onClick={() => {
+                      playSound('buttonClick');
+                      setSelectedMode(mode.id);
+                    }}
                   >
                     Oyuna Başla
                   </Button>
@@ -166,7 +174,10 @@ const HomePage = () => {
               <Card 
                 key={item.id} 
                 className="hover:shadow-lg transition-all duration-200 cursor-pointer"
-                onClick={() => navigate(item.route)}
+                onClick={() => {
+                  playSound('buttonClick');
+                  navigate(item.route);
+                }}
               >
                 <CardHeader className="text-center">
                   <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-2">
@@ -185,13 +196,17 @@ const HomePage = () => {
           <GameModeSelector
             mode={selectedMode}
             onStart={(gameType) => {
+              playSound('buttonClick');
               const mode = gameModesConfig.find(m => m.id === selectedMode);
               if (mode) {
                 navigate(`${mode.route}?type=${gameType}`);
               }
               setSelectedMode(null);
             }}
-            onClose={() => setSelectedMode(null)}
+            onClose={() => {
+              playSound('buttonClick');
+              setSelectedMode(null);
+            }}
           />
         )}
       </div>

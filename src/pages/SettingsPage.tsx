@@ -7,6 +7,8 @@ import { Separator } from '@/components/ui/separator';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/hooks/useTheme';
+import { useSounds } from '@/hooks/useSounds';
 import {
   ArrowLeft,
   Bell,
@@ -23,11 +25,11 @@ const SettingsPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { theme, setTheme } = useTheme();
+  const { soundsEnabled, setSoundsEnabled, playSound } = useSounds();
 
   // Settings state
   const [notifications, setNotifications] = useState(true);
-  const [sounds, setSounds] = useState(true);
-  const [theme, setTheme] = useState('system');
   const [language, setLanguage] = useState('tr');
 
   // Load settings from localStorage
@@ -36,8 +38,6 @@ const SettingsPage = () => {
     if (savedSettings) {
       const settings = JSON.parse(savedSettings);
       setNotifications(settings.notifications ?? true);
-      setSounds(settings.sounds ?? true);
-      setTheme(settings.theme ?? 'system');
       setLanguage(settings.language ?? 'tr');
     }
   }, []);
@@ -46,7 +46,7 @@ const SettingsPage = () => {
   const saveSettings = () => {
     const settings = {
       notifications,
-      sounds,
+      sounds: soundsEnabled,
       theme,
       language
     };
@@ -62,7 +62,7 @@ const SettingsPage = () => {
   useEffect(() => {
     const timeoutId = setTimeout(saveSettings, 500);
     return () => clearTimeout(timeoutId);
-  }, [notifications, sounds, theme, language]);
+  }, [notifications, soundsEnabled, theme, language]);
 
   const handleNotificationChange = (checked: boolean) => {
     setNotifications(checked);
@@ -144,8 +144,11 @@ const SettingsPage = () => {
                 </div>
               </div>
               <Switch
-                checked={sounds}
-                onCheckedChange={setSounds}
+                checked={soundsEnabled}
+                onCheckedChange={(checked) => {
+                  setSoundsEnabled(checked);
+                  if (checked) playSound('buttonClick');
+                }}
               />
             </div>
 
@@ -160,7 +163,7 @@ const SettingsPage = () => {
                   <p className="text-sm text-muted-foreground">Görünümü seçin</p>
                 </div>
               </div>
-              <Select value={theme} onValueChange={setTheme}>
+              <Select value={theme} onValueChange={(value) => setTheme(value as 'light' | 'dark' | 'system')}>
                 <SelectTrigger className="w-32">
                   <SelectValue />
                 </SelectTrigger>

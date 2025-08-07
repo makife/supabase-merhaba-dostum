@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Clock, Target, Trophy, Bot, Users, Zap } from 'lucide-react';
+import { useSounds } from '@/hooks/useSounds';
 
 interface GameModeSelectorProps {
   mode: string;
@@ -14,6 +15,7 @@ interface GameModeSelectorProps {
 
 const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => {
   const [selectedType, setSelectedType] = useState<'timed' | 'score'>('timed');
+  const { playSound } = useSounds();
 
   const getModeInfo = () => {
     switch (mode) {
@@ -67,7 +69,10 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
         <CardContent className="space-y-6">
           <div>
             <h3 className="font-semibold mb-3">Oyun Türü Seçin</h3>
-            <RadioGroup value={selectedType} onValueChange={(value) => setSelectedType(value as 'timed' | 'score')}>
+            <RadioGroup value={selectedType} onValueChange={(value) => {
+              playSound('buttonClick');
+              setSelectedType(value as 'timed' | 'score');
+            }}>
               <div className="space-y-3">
                 <Label className="flex items-center space-x-3 p-3 rounded-lg border cursor-pointer hover:bg-muted">
                   <RadioGroupItem value="timed" />
@@ -115,10 +120,16 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
           </div>
 
           <div className="flex space-x-3">
-            <Button variant="outline" onClick={onClose} className="flex-1">
+            <Button variant="outline" onClick={() => {
+              playSound('buttonClick');
+              onClose();
+            }} className="flex-1">
               İptal
             </Button>
-            <Button onClick={() => onStart(selectedType)} className="flex-1">
+            <Button onClick={() => {
+              playSound('buttonClick');
+              onStart(selectedType);
+            }} className="flex-1">
               Oyunu Başlat
             </Button>
           </div>
