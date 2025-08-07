@@ -189,9 +189,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
 
   // Clear current word
   const clearWord = () => {
-    playSound('buttonClick');
     setSelectedLetters([]);
-    playSound('buttonClick');
     setCurrentWord('');
   };
 

@@ -181,18 +181,20 @@ export const useSounds = () => {
     return soundPacks[soundPack] || soundPacks.default;
   };
 
-  // Ses cache'ini güncelle
+  // Ses cache'ini güncelle - sadece kutlama ve kaybetme sesleri için
   useEffect(() => {
     const activePack = getActiveSoundPack();
     
     // Cache'i temizle
     audioCache.current.clear();
     
-    // Yeni sesleri yükle (audio pool ile)
-    Object.entries(activePack.sounds).forEach(([key, soundPath]) => {
+    // Sadece özel ses dosyalarını yükle (kutlama, kaybetme, arka plan müziği)
+    const specialSounds = ['celebration', 'gameLoseSound'];
+    specialSounds.forEach((key) => {
+      const soundPath = activePack.sounds[key as keyof SoundConfig];
       if (typeof soundPath === 'string' && !soundPath.startsWith('generated')) {
         try {
-          audioCache.current.set(key, createAudioPool(soundPath, 3));
+          audioCache.current.set(key, createAudioPool(soundPath, 2));
         } catch (error) {
           console.warn(`Failed to load sound ${key}:`, error);
         }
@@ -242,21 +244,20 @@ export const useSounds = () => {
     if (!soundsEnabled) return;
 
     const activePack = getActiveSoundPack();
-    const soundPath = activePack.sounds[soundKey];
 
     try {
-      // MP3 dosyası varsa audio pool'dan uygun olanı çal
+      // Önce MP3 dosyası var mı kontrol et
       const audioPool = audioCache.current.get(soundKey);
-      if (audioPool && typeof soundPath === 'string' && !soundPath.startsWith('generated')) {
+      if (audioPool && audioPool.length > 0) {
         const availableAudio = getAvailableAudio(audioPool);
-        if (availableAudio) {
+        if (availableAudio && availableAudio.src && !availableAudio.src.includes('undefined')) {
           availableAudio.currentTime = 0;
           await availableAudio.play();
           return;
         }
       }
 
-      // Generated ses için ilgili pakete göre fallback
+      // MP3 bulunamazsa generated sound kullan
       switch (activePack.id) {
         case 'space':
           switch (soundKey) {
