@@ -478,7 +478,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
                     >
                       {letter}
                       {isSelected && selectionOrder >= 0 && (
-                        <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold border-2 border-white">
+                        <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold border-2 border-white">
                           {selectionOrder + 1}
                         </span>
                       )}
