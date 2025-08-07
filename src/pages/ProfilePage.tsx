@@ -5,6 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { useNavigate } from 'react-router-dom';
+import { useProfilePicture } from '@/hooks/useProfilePicture';
+import { useEffect, useState, useRef } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import {
   ArrowLeft,
   Trophy,
@@ -19,10 +22,11 @@ import {
 const ProfilePage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-
-  // Mock data - gerçek uygulamada API'den gelecek
-  const profileData = {
+  const { uploadProfilePicture, uploading } = useProfilePicture();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [profileData, setProfileData] = useState({
     username: user?.email?.split('@')[0] || 'Oyuncu',
+    avatar_url: '',
     totalGames: 45,
     wins: 28,
     losses: 17,
@@ -34,6 +38,47 @@ const ProfilePage = () => {
     level: 12,
     experience: 2450,
     nextLevelExp: 3000,
+  });
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user) return;
+      
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
+      
+      if (data) {
+        setProfileData(prev => ({
+          ...prev,
+          username: data.username || prev.username,
+          avatar_url: data.avatar_url || '',
+        }));
+      }
+    };
+
+    fetchProfile();
+  }, [user]);
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const avatarUrl = await uploadProfilePicture(file);
+    if (avatarUrl) {
+      setProfileData(prev => ({ ...prev, avatar_url: avatarUrl }));
+    }
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const badges = [
@@ -66,17 +111,26 @@ const ProfilePage = () => {
             <div className="flex items-center space-x-4">
               <div className="relative">
                 <Avatar className="w-20 h-20">
-                  <AvatarImage src="" alt={profileData.username} />
+                  <AvatarImage src={profileData.avatar_url} alt={profileData.username} />
                   <AvatarFallback className="text-2xl">
                     {profileData.username.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <Button 
                   size="sm" 
+                  onClick={handleAvatarClick}
+                  disabled={uploading}
                   className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full p-0"
                 >
                   <Camera className="w-4 h-4" />
                 </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
               </div>
               <div className="flex-1">
                 <h2 className="text-2xl font-bold">{profileData.username}</h2>
