@@ -274,6 +274,13 @@ const HomePage = () => {
                         className="absolute right-2 top-1/2 transform -translate-y-1/2 w-48 h-36 object-contain opacity-60"
                       />
                     )}
+                    {mode.id === 'private-room' && (
+                      <img 
+                        src="/lovable-uploads/e5d22948-34db-460d-adff-dc6284efcf50.png" 
+                        alt="Private room"
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 w-48 h-36 object-contain opacity-60"
+                      />
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0 pb-3">
