@@ -61,6 +61,14 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				game: {
+					primary: 'hsl(var(--game-primary))',
+					secondary: 'hsl(var(--game-secondary))',
+					success: 'hsl(var(--game-success))',
+					warning: 'hsl(var(--game-warning))',
+					grid: 'hsl(var(--game-grid))',
+					letter: 'hsl(var(--game-letter))'
 				}
 			},
 			borderRadius: {
