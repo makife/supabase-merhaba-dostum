@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,31 +12,10 @@ interface WordValidationRequest {
 
 interface WordValidationResponse {
   isValid: boolean;
+  word: string;
+  length?: number;
   difficulty?: number;
-  definition?: string;
 }
-
-// Turkish word validation using a simple dictionary approach
-const turkishWords = new Set([
-  'kelime', 'masa', 'kale', 'top', 'tor', 'mat', 'as', 'sa', 'el', 'al', 'ol', 'ev', 'av', 'ok', 'at', 'et', 'it', 'ut', 'ot',
-  'kedi', 'köpek', 'kuş', 'balık', 'ağaç', 'çiçek', 'güneş', 'ay', 'yıldız', 'su', 'ateş', 'toprak', 'hava',
-  'kitap', 'kalem', 'defter', 'okul', 'öğretmen', 'öğrenci', 'sınıf', 'masa', 'sandalye',
-  'anne', 'baba', 'kardeş', 'aile', 'ev', 'oda', 'mutfak', 'banyo', 'salon',
-  'araba', 'otobüs', 'tren', 'uçak', 'gemi', 'bisiklet', 'yol', 'sokak', 'cadde',
-  'meyve', 'sebze', 'ekmek', 'süt', 'peynir', 'yumurta', 'et', 'tavuk', 'balık',
-  'kırmızı', 'mavi', 'yeşil', 'sarı', 'beyaz', 'siyah', 'pembe', 'mor', 'turuncu',
-  'büyük', 'küçük', 'uzun', 'kısa', 'kalın', 'ince', 'geniş', 'dar', 'yüksek', 'alçak',
-  'koş', 'yürü', 'otur', 'kalk', 'uyu', 'uyan', 'ye', 'iç', 'oku', 'yaz', 'çiz', 'say',
-  'bir', 'iki', 'üç', 'dört', 'beş', 'altı', 'yedi', 'sekiz', 'dokuz', 'on'
-]);
-
-const calculateDifficulty = (word: string): number => {
-  const length = word.length;
-  if (length <= 3) return 1;
-  if (length <= 5) return 2;
-  if (length <= 7) return 3;
-  return 4;
-};
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -45,46 +24,72 @@ serve(async (req) => {
   }
 
   try {
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
     const { word }: WordValidationRequest = await req.json();
     
     if (!word || typeof word !== 'string') {
-      return new Response(
-        JSON.stringify({ error: 'Word is required and must be a string' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+      return new Response(JSON.stringify({ 
+        error: 'Valid word is required',
+        isValid: false 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    const normalizedWord = word.toLowerCase().trim();
+    // Normalize the word (uppercase, trim)
+    const normalizedWord = word.trim().toUpperCase();
     
-    // Check if word exists in our simple dictionary
-    const isValid = turkishWords.has(normalizedWord);
+    console.log(`Validating word: ${normalizedWord}`);
+    
+    // Check if word exists in database
+    const { data, error } = await supabaseClient
+      .from('words')
+      .select('id, word, length, difficulty')
+      .eq('word', normalizedWord)
+      .eq('is_approved', true)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Database error:', error);
+      return new Response(JSON.stringify({ 
+        error: 'Database error',
+        isValid: false 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const isValid = data !== null;
+    
+    console.log(`Word validation result: ${normalizedWord} -> ${isValid ? 'valid' : 'invalid'}`);
     
     const response: WordValidationResponse = {
       isValid,
-      difficulty: isValid ? calculateDifficulty(normalizedWord) : undefined
+      word: normalizedWord,
+      ...(isValid && {
+        length: data.length,
+        difficulty: data.difficulty
+      })
     };
 
-    console.log(`Word validation: ${normalizedWord} -> ${isValid ? 'valid' : 'invalid'}`);
-
-    return new Response(
-      JSON.stringify(response),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
+    return new Response(JSON.stringify(response), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
 
   } catch (error) {
     console.error('Error validating word:', error);
-    
-    return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      isValid: false 
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });
