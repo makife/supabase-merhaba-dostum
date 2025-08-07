@@ -7,7 +7,6 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { GameProvider } from "@/contexts/GameContext";
 import { useTheme } from "@/hooks/useTheme";
-import { Layout } from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AuthPage from "@/pages/AuthPage";
 import HomePage from "@/pages/HomePage";
@@ -37,26 +36,52 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/auth" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
-      <Route path="/*" element={
-        user ? (
-          <Layout>
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/game/vs-computer" element={<GamePage gameMode="vs-computer" />} />
-              <Route path="/game/private-room" element={<GamePage gameMode="private-room" />} />
-              <Route path="/game/random-match" element={<GamePage gameMode="random-match" />} />
-              <Route path="/tournament" element={<TournamentPage />} />
-              <Route path="/tournament/:id/match" element={<GamePage gameMode="tournament" />} />
-              <Route path="/market" element={<MarketPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Layout>
-        ) : (
-          <Navigate to="/auth" replace />
-        )
+      <Route path="/" element={
+        <ProtectedRoute>
+          <HomePage />
+        </ProtectedRoute>
       } />
+      <Route path="/profile" element={
+        <ProtectedRoute>
+          <ProfilePage />
+        </ProtectedRoute>
+      } />
+      <Route path="/game/vs-computer" element={
+        <ProtectedRoute>
+          <GamePage gameMode="vs-computer" />
+        </ProtectedRoute>
+      } />
+      <Route path="/game/private-room" element={
+        <ProtectedRoute>
+          <GamePage gameMode="private-room" />
+        </ProtectedRoute>
+      } />
+      <Route path="/game/random-match" element={
+        <ProtectedRoute>
+          <GamePage gameMode="random-match" />
+        </ProtectedRoute>
+      } />
+      <Route path="/tournament" element={
+        <ProtectedRoute>
+          <TournamentPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/tournament/:id/match" element={
+        <ProtectedRoute>
+          <GamePage gameMode="tournament" />
+        </ProtectedRoute>
+      } />
+      <Route path="/market" element={
+        <ProtectedRoute>
+          <MarketPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/settings" element={
+        <ProtectedRoute>
+          <SettingsPage />
+        </ProtectedRoute>
+      } />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 
 import GameModeSelector from '@/components/GameModeSelector';
+import { FloatingMenu } from '@/components/FloatingMenu';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSounds } from '@/hooks/useSounds';
 import { useProfilePicture } from '@/hooks/useProfilePicture';
@@ -422,6 +423,9 @@ const HomePage = () => {
             }}
           />
         )}
+
+        {/* Floating Menu */}
+        <FloatingMenu />
       </div>
     </div>
   );
