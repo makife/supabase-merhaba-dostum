@@ -20,6 +20,11 @@ const config: CapacitorConfig = {
       spinnerColor: '#999999',
       splashFullScreen: true,
       splashImmersive: true
+    },
+    AdMob: {
+      appId: 'ca-app-pub-3940256099942544~3347511713', // Test App ID
+      androidAppId: 'ca-app-pub-3940256099942544~3347511713',
+      iosAppId: 'ca-app-pub-3940256099942544~1458002511'
     }
   }
 };

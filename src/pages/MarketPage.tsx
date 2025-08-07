@@ -6,6 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAdMob } from '@/hooks/useAdMob';
 import { supabase } from '@/integrations/supabase/client';
 import {
   ArrowLeft,
@@ -34,6 +35,7 @@ const MarketPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { isAdLoading, isAdReady, initializeAdMob, loadRewardedAd, showRewardedAd } = useAdMob();
   const [userCredits, setUserCredits] = useState(5);
   const [isPremium, setIsPremium] = useState(false);
 
@@ -103,10 +105,12 @@ const MarketPage = () => {
     }
   ];
 
-  // Load user profile
+  // Load user profile and initialize AdMob
   useEffect(() => {
     loadUserProfile();
-  }, [user]);
+    initializeAdMob();
+    loadRewardedAd();
+  }, [user, initializeAdMob, loadRewardedAd]);
 
   const loadUserProfile = async () => {
     if (!user) return;
@@ -186,37 +190,18 @@ const MarketPage = () => {
     }, 2000);
   };
 
-  const watchAdForCredits = () => {
-    toast({
-      title: 'Reklam İzleniyor',
-      description: 'Reklam tamamlandıktan sonra 1 hak kazanacaksınız.',
-    });
+  const watchAdForCredits = async () => {
+    if (!user) {
+      toast({
+        title: 'Hata',
+        description: 'Reklam izlemek için giriş yapmalısınız.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
-    // Simulate ad watching
-    setTimeout(async () => {
-      try {
-        const { error } = await supabase
-          .from('profiles')
-          .update({ game_credits: userCredits + 1 })
-          .eq('id', user.id);
-
-        if (error) throw error;
-
-        setUserCredits(prev => prev + 1);
-        
-        toast({
-          title: 'Tebrikler!',
-          description: '+1 oyun hakkı kazandınız!',
-        });
-      } catch (error) {
-        console.error('Ad reward error:', error);
-        toast({
-          title: 'Hata',
-          description: 'Ödül verilemedi, tekrar deneyin.',
-          variant: 'destructive',
-        });
-      }
-    }, 3000);
+    // Show rewarded ad
+    await showRewardedAd();
   };
 
   return (
@@ -272,13 +257,19 @@ const MarketPage = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button 
-              onClick={watchAdForCredits}
-              className="w-full bg-green-500 hover:bg-green-600"
-            >
-              <Gift className="w-4 h-4 mr-2" />
-              Reklam İzle (+1 Hak)
-            </Button>
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                {isAdReady ? "Reklam hazır! İzlemek için tıklayın." : "Reklam yükleniyor..."}
+              </p>
+              <Button 
+                onClick={watchAdForCredits}
+                disabled={!isAdReady || isAdLoading}
+                className="w-full bg-green-500 hover:bg-green-600 disabled:opacity-50"
+              >
+                <Gift className="w-4 h-4 mr-2" />
+                {isAdLoading ? 'Yükleniyor...' : isAdReady ? 'Ödüllü Reklam İzle (+50 Kredi)' : 'Reklam Hazırlanıyor...'}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
