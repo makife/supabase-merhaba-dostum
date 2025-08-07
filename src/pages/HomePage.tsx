@@ -160,17 +160,34 @@ const HomePage = () => {
           {/* Mobile Layout */}
           <div className="block md:hidden relative z-10">
             <div className="flex items-center justify-between mb-4">
-              <div className="space-y-1">
-                <h1 className="text-2xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent drop-shadow-2xl"
-                    style={{
-                      textShadow: '1px 1px 0px hsl(var(--primary)), 2px 2px 0px rgba(0,0,0,0.3), 0 0 15px hsl(var(--primary) / 0.5)',
-                      WebkitTextStroke: '0.5px hsl(var(--border))'
-                    }}>
-                  KELİMECİ
-                </h1>
-                <div className="space-y-0.5">
-                  <p className="text-sm font-semibold text-foreground">Merhaba, {user?.email?.split('@')[0]}! 👋</p>
-                  <p className="text-xs text-muted-foreground">Oyuna hazır mısın?</p>
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-full p-0.5">
+                  <div className="w-full h-full bg-card rounded-full overflow-hidden flex items-center justify-center">
+                    {user?.user_metadata?.avatar_url ? (
+                      <img 
+                        src={user.user_metadata.avatar_url} 
+                        alt="Profile" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User className="w-6 h-6 text-muted-foreground" />
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <h1 className="text-2xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent drop-shadow-2xl"
+                      style={{
+                        textShadow: '1px 1px 0px hsl(var(--primary)), 2px 2px 0px rgba(0,0,0,0.3), 0 0 15px hsl(var(--primary) / 0.5)',
+                        WebkitTextStroke: '0.5px hsl(var(--border))'
+                      }}>
+                    KELİMECİ
+                  </h1>
+                  <div className="space-y-0.5">
+                    <p className="text-sm font-semibold text-foreground">
+                      Merhaba, {user?.user_metadata?.username || user?.email?.split('@')[0]}! 👋
+                    </p>
+                    <p className="text-xs text-muted-foreground">Oyuna hazır mısın?</p>
+                  </div>
                 </div>
               </div>
               <Button variant="outline" size="sm" onClick={() => {
@@ -204,17 +221,34 @@ const HomePage = () => {
 
           {/* Desktop Layout */}
           <div className="hidden md:flex items-center justify-between relative z-10">
-            <div className="space-y-1">
-              <h1 className="text-4xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent drop-shadow-2xl"
-                  style={{
-                    textShadow: '2px 2px 0px hsl(var(--primary)), 4px 4px 0px rgba(0,0,0,0.3), 0 0 20px hsl(var(--primary) / 0.5)',
-                    WebkitTextStroke: '1px hsl(var(--border))'
-                  }}>
-                KELİMECİ
-              </h1>
-              <div className="space-y-0.5">
-                <p className="text-lg font-semibold text-foreground">Merhaba, {user?.email?.split('@')[0]}! 👋</p>
-                <p className="text-sm text-muted-foreground">Bugün hangi moda başlamak istersin?</p>
+            <div className="flex items-center space-x-4">
+              <div className="w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-full p-0.5">
+                <div className="w-full h-full bg-card rounded-full overflow-hidden flex items-center justify-center">
+                  {user?.user_metadata?.avatar_url ? (
+                    <img 
+                      src={user.user_metadata.avatar_url} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User className="w-8 h-8 text-muted-foreground" />
+                  )}
+                </div>
+              </div>
+              <div className="space-y-1">
+                <h1 className="text-4xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent drop-shadow-2xl"
+                    style={{
+                      textShadow: '2px 2px 0px hsl(var(--primary)), 4px 4px 0px rgba(0,0,0,0.3), 0 0 20px hsl(var(--primary) / 0.5)',
+                      WebkitTextStroke: '1px hsl(var(--border))'
+                    }}>
+                  KELİMECİ
+                </h1>
+                <div className="space-y-0.5">
+                  <p className="text-lg font-semibold text-foreground">
+                    Merhaba, {user?.user_metadata?.username || user?.email?.split('@')[0]}! 👋
+                  </p>
+                  <p className="text-sm text-muted-foreground">Bugün hangi moda başlamak istersin?</p>
+                </div>
               </div>
             </div>
             <div className="flex items-center space-x-4">
