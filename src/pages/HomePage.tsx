@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { DictionaryUpload } from '@/components/DictionaryUpload';
+
 import GameModeSelector from '@/components/GameModeSelector';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSounds } from '@/hooks/useSounds';
@@ -298,13 +298,6 @@ const HomePage = () => {
                 </CardHeader>
               </Card>
             ))}
-        {/* Dictionary Upload Section */}
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Sözlük Yönetimi</h2>
-          <div className="flex justify-center">
-            <DictionaryUpload />
-          </div>
-        </div>
       </div>
         </div>
 
