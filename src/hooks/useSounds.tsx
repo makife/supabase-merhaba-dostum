@@ -120,16 +120,17 @@ export const useSounds = () => {
 
     loadBackgroundMusic();
 
-    if (musicEnabled && backgroundMusicRef.current) {
+    // Sadece müzik açıksa ve şu an çalmıyorsa çal
+    if (musicEnabled && backgroundMusicRef.current && backgroundMusicRef.current.paused) {
       backgroundMusicRef.current.play().catch(error => {
         console.warn('Could not play background music:', error);
       });
-    } else if (backgroundMusicRef.current) {
+    } else if (!musicEnabled && backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
       backgroundMusicRef.current.pause();
     }
 
     return () => {
-      if (backgroundMusicRef.current) {
+      if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
         backgroundMusicRef.current.pause();
       }
     };
@@ -349,14 +350,18 @@ export const useSounds = () => {
   };
 
   const startBackgroundMusic = () => {
-    if (musicEnabled && backgroundMusicRef.current) {
-      backgroundMusicRef.current.play().catch(console.warn);
+    if (musicEnabled && backgroundMusicRef.current && backgroundMusicRef.current.paused) {
+      backgroundMusicRef.current.currentTime = 0; // Baştan başlat
+      backgroundMusicRef.current.play().catch(error => {
+        console.warn('Could not play background music:', error);
+      });
     }
   };
 
   const stopBackgroundMusic = () => {
-    if (backgroundMusicRef.current) {
+    if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
       backgroundMusicRef.current.pause();
+      backgroundMusicRef.current.currentTime = 0; // Pozisyonu sıfırla
     }
   };
 
