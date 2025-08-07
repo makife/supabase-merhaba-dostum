@@ -68,9 +68,17 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const startBackgroundMusic = () => {
     if (musicEnabled && backgroundMusicRef.current && backgroundMusicRef.current.paused) {
-      backgroundMusicRef.current.play().catch(error => {
-        console.warn('Could not play background music:', error);
-      });
+      // Reset to beginning and start fresh
+      backgroundMusicRef.current.currentTime = 0;
+      
+      // Try to play with better error handling
+      const playPromise = backgroundMusicRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.warn('Could not play background music:', error);
+          // Autoplay is blocked, music will start when user interacts
+        });
+      }
     }
   };
 
@@ -91,9 +99,14 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     // Control music based on setting
     if (enabled && backgroundMusicRef.current && backgroundMusicRef.current.paused) {
-      backgroundMusicRef.current.play().catch(console.warn);
+      backgroundMusicRef.current.currentTime = 0;
+      const playPromise = backgroundMusicRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(console.warn);
+      }
     } else if (!enabled && backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
       backgroundMusicRef.current.pause();
+      backgroundMusicRef.current.currentTime = 0;
     }
   };
 
