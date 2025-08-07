@@ -246,10 +246,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       <div className="max-w-md mx-auto space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <Button variant="outline" size="sm" onClick={() => {
-            playSound('buttonClick');
-            navigate('/');
-          }}>
+          <Button variant="outline" size="sm" onClick={() => navigate('/')}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Çıkış
           </Button>
