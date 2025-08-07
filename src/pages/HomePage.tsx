@@ -156,10 +156,14 @@ const HomePage = () => {
               <Gamepad2 className="w-6 h-6 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                Kelimeci
+              <h1 className="text-4xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent drop-shadow-2xl"
+                  style={{
+                    textShadow: '2px 2px 0px hsl(var(--primary)), 4px 4px 0px rgba(0,0,0,0.3), 0 0 20px hsl(var(--primary) / 0.5)',
+                    WebkitTextStroke: '1px hsl(var(--border))'
+                  }}>
+                KELİMECİ
               </h1>
-              <p className="text-muted-foreground">Hoş geldin, {user?.email?.split('@')[0]}!</p>
+              <p className="text-muted-foreground font-medium">Hoş geldin, {user?.email?.split('@')[0]}!</p>
             </div>
           </div>
           <div className="flex items-center space-x-4 relative z-10">
