@@ -49,7 +49,7 @@ const AuthPage = () => {
         id: Date.now(),
         letter: letters[Math.floor(Math.random() * letters.length)],
         x: -10,
-        y: Math.random() * 60,
+        y: Math.random() * 80,
         color: colors[Math.floor(Math.random() * colors.length)],
         font: fonts[Math.floor(Math.random() * fonts.length)],
         dx: 0.5 + Math.random() * 1
