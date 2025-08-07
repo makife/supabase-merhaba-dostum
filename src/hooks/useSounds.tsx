@@ -407,7 +407,19 @@ export const useSounds = () => {
     stopBackgroundMusic,
     soundsEnabled,
     musicEnabled,
-    setSoundsEnabled,
-    setMusicEnabled
+    setSoundsEnabled: (enabled: boolean) => {
+      setSoundsEnabled(enabled);
+      const settings = JSON.parse(localStorage.getItem('kelimeci-settings') || '{}');
+      settings.sounds = enabled;
+      localStorage.setItem('kelimeci-settings', JSON.stringify(settings));
+      window.dispatchEvent(new Event('settingsChanged'));
+    },
+    setMusicEnabled: (enabled: boolean) => {
+      setMusicEnabled(enabled);
+      const settings = JSON.parse(localStorage.getItem('kelimeci-settings') || '{}');
+      settings.music = enabled;
+      localStorage.setItem('kelimeci-settings', JSON.stringify(settings));
+      window.dispatchEvent(new Event('settingsChanged'));
+    }
   };
 };
