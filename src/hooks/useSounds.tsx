@@ -10,6 +10,7 @@ interface SoundConfig {
   timeWarning: string;
   letterSelect: string;
   celebration: string;
+  gameLoseSound: string;
 }
 
 interface SoundPack {
@@ -44,7 +45,8 @@ export const useSounds = () => {
         gameLose: generateBeep(200, 1.0),
         timeWarning: generateBeep(1000, 0.2),
         letterSelect: generateBeep(600, 0.1),
-        celebration: '/sounds/default/kutlama.mp3'
+        celebration: '/sounds/default/kutlama.mp3',
+        gameLoseSound: '/sounds/default/kaybetme.mp3'
       }
     },
     space: {
@@ -58,7 +60,8 @@ export const useSounds = () => {
         gameLose: generateBeep(80, 1.5), // Çok düşük frekans kayıp sesi
         timeWarning: generateBeep(1500, 0.15), // Keskin uyarı
         letterSelect: generateBeep(900, 0.05), // Kısa hızlı ses
-        celebration: '/sounds/default/kutlama.mp3'
+        celebration: '/sounds/default/kutlama.mp3',
+        gameLoseSound: '/sounds/default/kaybetme.mp3'
       }
     },
     nature: {
@@ -72,7 +75,8 @@ export const useSounds = () => {
         gameLose: generateBeep(180, 1.2), // Doğal kayıp sesi
         timeWarning: generateBeep(1200, 0.25), // Yumuşak uyarı
         letterSelect: generateBeep(700, 0.08), // Nazik seçim sesi
-        celebration: '/sounds/default/kutlama.mp3'
+        celebration: '/sounds/default/kutlama.mp3',
+        gameLoseSound: '/sounds/default/kaybetme.mp3'
       }
     }
   };
@@ -372,10 +376,28 @@ export const useSounds = () => {
     }
   };
 
+  const playGameLoseSound = () => {
+    if (!soundsEnabled) return;
+    
+    const activePack = getActiveSoundPack();
+    const soundPath = activePack.sounds.gameLoseSound;
+    
+    try {
+      const audio = new Audio(soundPath);
+      audio.volume = 0.6;
+      audio.play().catch(error => {
+        console.warn('Could not play game lose sound:', error);
+      });
+    } catch (error) {
+      console.warn('Could not load game lose sound:', error);
+    }
+  };
+
   return {
     playSound,
     playTimeWarningSequence,
     playCelebrationSound,
+    playGameLoseSound,
     startBackgroundMusic,
     stopBackgroundMusic,
     soundsEnabled,

@@ -32,7 +32,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const { toast } = useToast();
   const { currentRoom, updateScore } = useGame();
   const { validateWord, isValidating } = useWordValidation();
-  const { playSound, playTimeWarningSequence, playCelebrationSound } = useSounds();
+  const { playSound, playTimeWarningSequence, playCelebrationSound, playGameLoseSound } = useSounds();
   const [searchParams] = useSearchParams();
   const gameType = (searchParams.get('type') as 'timed' | 'score') || 'timed';
   const [timeWarningPlayed, setTimeWarningPlayed] = useState(false);
@@ -150,6 +150,8 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     } else if (opponentScore > playerScore) {
       setWinner('opponent');
       playSound('gameLose');
+      // Kaybetme müziği ve üzgün animasyon
+      setTimeout(() => playGameLoseSound(), 500);
     } else {
       setWinner('tie');
     }
@@ -288,6 +290,16 @@ const GamePage = ({ gameMode }: GamePageProps) => {
             ))}
           </div>
         )}
+
+        {/* Üzgün Animasyon - sadece kaybedildiğinde */}
+        {winner === 'opponent' && (
+          <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+            <div className="animate-[sadFace_2s_ease-in-out_infinite] text-9xl opacity-20">
+              😢
+            </div>
+          </div>
+        )}
+
         <Card className="w-full max-w-md text-center relative z-10">
           <CardContent className="p-6">
             <Trophy className={`w-16 h-16 mx-auto mb-4 ${
