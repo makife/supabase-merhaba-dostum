@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,6 +26,7 @@ interface GamePageProps {
 }
 
 const GamePage = ({ gameMode }: GamePageProps) => {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { currentRoom, updateScore } = useGame();
@@ -312,8 +314,16 @@ const GamePage = ({ gameMode }: GamePageProps) => {
               <div className="absolute top-2 right-2 w-8 h-8 bg-blue-500/30 rounded-full flex items-center justify-center">
                 <User className="w-4 h-4 text-blue-100" />
               </div>
-              <div className="w-12 h-12 bg-blue-500/40 rounded-full mx-auto mb-2 flex items-center justify-center border-2 border-blue-300/50">
-                <User className="w-6 h-6 text-blue-100" />
+              <div className="w-12 h-12 bg-blue-500/40 rounded-full mx-auto mb-2 flex items-center justify-center border-2 border-blue-300/50 overflow-hidden">
+                {user?.user_metadata?.avatar_url ? (
+                  <img 
+                    src={user.user_metadata.avatar_url} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <User className="w-6 h-6 text-blue-100" />
+                )}
               </div>
               <p className="text-sm text-blue-100 font-medium">Siz</p>
               <p className="text-2xl font-bold text-white">{playerScore}</p>
@@ -349,9 +359,9 @@ const GamePage = ({ gameMode }: GamePageProps) => {
                 value={currentWord} 
                 readOnly 
                 placeholder="Harflere tıklayarak kelime oluşturun"
-                className="text-lg font-mono text-center bg-white/20 backdrop-blur-sm border-white/30 text-white placeholder:text-white/70 font-bold"
+                className="text-2xl font-mono text-center bg-white/20 backdrop-blur-sm border-white/30 text-white placeholder:text-white/70 font-bold"
               />
-              <Badge variant="secondary" className="bg-white/20 text-white border-white/30 font-bold">
+              <Badge variant="secondary" className="bg-white/20 text-white border-white/30 font-bold text-lg px-3 py-1">
                 {currentWord.length}
               </Badge>
             </div>
