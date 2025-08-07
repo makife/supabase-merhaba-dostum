@@ -26,7 +26,7 @@ import {
 const HomePage = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const { playSound } = useSounds();
+  const { playSound, startBackgroundMusic } = useSounds();
   const [userCredits] = useState(5);
   const [selectedMode, setSelectedMode] = useState<string | null>(null);
   const [animatedLetters, setAnimatedLetters] = useState<Array<{id: number, letter: string, x: number, y: number, color: string, font: string, dx: number}>>([]);
@@ -65,6 +65,11 @@ const HomePage = () => {
 
     return () => clearInterval(moveInterval);
   }, []);
+
+  // Start background music when component mounts
+  useEffect(() => {
+    startBackgroundMusic();
+  }, [startBackgroundMusic]);
 
   const gameModesConfig = [
     {

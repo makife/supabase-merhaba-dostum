@@ -33,7 +33,7 @@ const SettingsPage = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
-  const { soundsEnabled, setSoundsEnabled, playSound } = useSounds();
+  const { soundsEnabled, setSoundsEnabled, musicEnabled, setMusicEnabled, playSound } = useSounds();
 
   // Settings state
   const [notifications, setNotifications] = useState(true);
@@ -58,6 +58,7 @@ const SettingsPage = () => {
     const settings = {
       notifications,
       sounds: soundsEnabled,
+      music: musicEnabled,
       theme,
       language
     };
@@ -341,6 +342,26 @@ const SettingsPage = () => {
                 checked={soundsEnabled}
                 onCheckedChange={(checked) => {
                   setSoundsEnabled(checked);
+                  if (checked) playSound('buttonClick');
+                }}
+              />
+            </div>
+
+            <Separator />
+
+            {/* Music */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Volume2 className="w-5 h-5" />
+                <div>
+                  <p className="font-medium">Arka Plan Müziği</p>
+                  <p className="text-sm text-muted-foreground">Oyun müziğini açın/kapatın</p>
+                </div>
+              </div>
+              <Switch
+                checked={musicEnabled}
+                onCheckedChange={(checked) => {
+                  setMusicEnabled(checked);
                   if (checked) playSound('buttonClick');
                 }}
               />

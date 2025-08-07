@@ -19,8 +19,10 @@ interface SoundPack {
 
 export const useSounds = () => {
   const [soundsEnabled, setSoundsEnabled] = useState(true);
+  const [musicEnabled, setMusicEnabled] = useState(true);
   const { soundPack } = useThemeContext();
   const audioCache = useRef<Map<string, HTMLAudioElement[]>>(new Map());
+  const backgroundMusicRef = useRef<HTMLAudioElement | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
 
   // Generate simple beep sounds using Web Audio API
@@ -78,6 +80,7 @@ export const useSounds = () => {
       if (savedSettings) {
         const settings = JSON.parse(savedSettings);
         setSoundsEnabled(settings.sounds ?? true);
+        setMusicEnabled(settings.music ?? true);
       }
     };
 
@@ -95,6 +98,57 @@ export const useSounds = () => {
       window.removeEventListener('settingsChanged', handleStorageChange);
     };
   }, []);
+
+  // Background music management
+  useEffect(() => {
+    const initBackgroundMusic = () => {
+      if (musicEnabled) {
+        // Generate a simple ambient background tone
+        setTimeout(() => {
+          const playAmbientTone = () => {
+            if (!musicEnabled) return;
+            
+            try {
+              const audioContext = getAudioContext();
+              if (!audioContext) return;
+              
+              const oscillator1 = audioContext.createOscillator();
+              const oscillator2 = audioContext.createOscillator();
+              const gainNode = audioContext.createGain();
+              
+              oscillator1.connect(gainNode);
+              oscillator2.connect(gainNode);
+              gainNode.connect(audioContext.destination);
+              
+              oscillator1.frequency.setValueAtTime(220, audioContext.currentTime); // A3
+              oscillator2.frequency.setValueAtTime(330, audioContext.currentTime); // E4
+              oscillator1.type = 'sine';
+              oscillator2.type = 'triangle';
+              
+              gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+              gainNode.gain.linearRampToValueAtTime(0.02, audioContext.currentTime + 2);
+              gainNode.gain.linearRampToValueAtTime(0.01, audioContext.currentTime + 8);
+              gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 10);
+              
+              oscillator1.start(audioContext.currentTime);
+              oscillator2.start(audioContext.currentTime);
+              oscillator1.stop(audioContext.currentTime + 10);
+              oscillator2.stop(audioContext.currentTime + 10);
+              
+              // Repeat every 15 seconds
+              setTimeout(playAmbientTone, 15000);
+            } catch (error) {
+              console.warn('Could not play background music:', error);
+            }
+          };
+          
+          playAmbientTone();
+        }, 2000); // Start after 2 seconds
+      }
+    };
+
+    initBackgroundMusic();
+  }, [musicEnabled]);
 
   // Create audio pool for better performance
   const createAudioPool = (soundPath: string, poolSize: number = 3): HTMLAudioElement[] => {
@@ -308,10 +362,26 @@ export const useSounds = () => {
     setTimeout(() => playGeneratedSound(1000, 0.15), 400);
   };
 
+  const startBackgroundMusic = () => {
+    if (musicEnabled && backgroundMusicRef.current) {
+      backgroundMusicRef.current.play().catch(console.warn);
+    }
+  };
+
+  const stopBackgroundMusic = () => {
+    if (backgroundMusicRef.current) {
+      backgroundMusicRef.current.pause();
+    }
+  };
+
   return {
     playSound,
     playTimeWarningSequence,
+    startBackgroundMusic,
+    stopBackgroundMusic,
     soundsEnabled,
-    setSoundsEnabled
+    musicEnabled,
+    setSoundsEnabled,
+    setMusicEnabled
   };
 };

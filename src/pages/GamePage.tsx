@@ -187,6 +187,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const clearWord = () => {
     playSound('buttonClick');
     setSelectedLetters([]);
+    playSound('buttonClick');
     setCurrentWord('');
   };
 
@@ -257,7 +258,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         return { name: 'Turnuva Rakibi', icon: Trophy };
       default:
         return { name: 'Rakip', icon: User };
-    }
+        }
   };
 
   const opponent = getOpponentInfo();
