@@ -72,6 +72,7 @@ const HomePage = () => {
       description: 'AI rakibine karşı oyna',
       icon: Bot,
       color: 'bg-blue-500',
+      gradient: 'bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700',
       route: '/game/vs-computer',
     },
     {
@@ -80,6 +81,7 @@ const HomePage = () => {
       description: 'Arkadaşınla özel oda oluştur',
       icon: Users,
       color: 'bg-green-500',
+      gradient: 'bg-gradient-to-br from-green-500 via-emerald-600 to-green-700',
       route: '/game/private-room',
     },
     {
@@ -88,6 +90,7 @@ const HomePage = () => {
       description: 'Rastgele oyuncu ile eşleş',
       icon: Zap,
       color: 'bg-purple-500',
+      gradient: 'bg-gradient-to-br from-purple-500 via-violet-600 to-purple-700',
       route: '/game/random-match',
     },
     {
@@ -96,6 +99,7 @@ const HomePage = () => {
       description: '8 kişilik turnuvaya katıl',
       icon: Trophy,
       color: 'bg-yellow-500',
+      gradient: 'bg-gradient-to-br from-yellow-500 via-orange-500 to-yellow-600',
       route: '/tournament',
     },
   ];
@@ -232,31 +236,32 @@ const HomePage = () => {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {gameModesConfig.map((mode) => (
-              <Card key={mode.id} className="hover:shadow-lg transition-all duration-200 cursor-pointer border-2 hover:border-primary/50">
-                <CardHeader className="pb-3">
+              <Card key={mode.id} className={`hover:shadow-xl transition-all duration-300 cursor-pointer border-0 overflow-hidden ${mode.gradient} hover:scale-105`}>
+                <CardHeader className="pb-3 relative">
                   <div className="flex items-center space-x-3">
-                    <div className={`w-10 h-10 ${mode.color} rounded-lg flex items-center justify-center`}>
+                    <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center border border-white/30">
                       <mode.icon className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <CardTitle className="text-lg">{mode.title}</CardTitle>
-                      <CardDescription>{mode.description}</CardDescription>
+                      <CardTitle className="text-lg text-white drop-shadow-lg">{mode.title}</CardTitle>
+                      <CardDescription className="text-white/80 font-medium">{mode.description}</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="flex items-center space-x-2 mb-3">
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge variant="secondary" className="text-xs bg-white/20 text-white border-white/30 hover:bg-white/30">
                       <Clock className="w-3 h-3 mr-1" />
                       2 Dakika
                     </Badge>
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge variant="secondary" className="text-xs bg-white/20 text-white border-white/30 hover:bg-white/30">
                       <Target className="w-3 h-3 mr-1" />
                       100 Puan
                     </Badge>
                   </div>
                   <Button 
-                    className="w-full" 
+                    className="w-full bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50 backdrop-blur-sm font-semibold" 
+                    variant="outline"
                     onClick={() => {
                       playSound('buttonClick');
                       setSelectedMode(mode.id);
