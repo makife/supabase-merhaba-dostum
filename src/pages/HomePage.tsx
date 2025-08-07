@@ -271,28 +271,28 @@ const HomePage = () => {
                       <img 
                         src="/lovable-uploads/8008dff7-7ead-48e2-b47e-fde31770af08.png" 
                         alt="Computer player"
-                        className="absolute right-2 bottom-6 w-48 h-36 object-contain opacity-60"
+                        className="absolute right-2 bottom-2 w-48 h-36 object-contain opacity-60"
                       />
                     )}
                     {mode.id === 'private-room' && (
                       <img 
                         src="/lovable-uploads/e5d22948-34db-460d-adff-dc6284efcf50.png" 
                         alt="Private room"
-                        className="absolute right-2 bottom-6 w-48 h-36 object-contain opacity-60"
+                        className="absolute right-2 bottom-2 w-48 h-36 object-contain opacity-60"
                       />
                     )}
                     {mode.id === 'random-match' && (
                       <img 
                         src="/lovable-uploads/a91ec87e-aaac-47fa-93fa-22e1f0270999.png" 
                         alt="Random match"
-                        className="absolute right-2 bottom-6 w-48 h-36 object-contain opacity-60"
+                        className="absolute right-2 bottom-2 w-48 h-36 object-contain opacity-60"
                       />
                     )}
                     {mode.id === 'tournament' && (
                       <img 
                         src="/lovable-uploads/70bff2fc-4ab0-4705-b1f1-d3cf41bbc7b5.png" 
                         alt="Tournament"
-                        className="absolute right-2 bottom-6 w-48 h-36 object-contain opacity-60"
+                        className="absolute right-2 bottom-2 w-48 h-36 object-contain opacity-60"
                       />
                     )}
                   </div>
@@ -363,7 +363,6 @@ const HomePage = () => {
             </Carousel>
           </div>
         </div>
-
 
         {/* Game Mode Selector Modal */}
         {selectedMode && (
