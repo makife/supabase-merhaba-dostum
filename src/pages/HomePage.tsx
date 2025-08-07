@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import GameModeSelector from '@/components/GameModeSelector';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSounds } from '@/hooks/useSounds';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { useNavigate } from 'react-router-dom';
 import {
   Bot,
@@ -27,6 +28,28 @@ const HomePage = () => {
   const { playSound } = useSounds();
   const [userCredits] = useState(5);
   const [selectedMode, setSelectedMode] = useState<string | null>(null);
+  const [animatedLetters, setAnimatedLetters] = useState<Array<{id: number, letter: string, x: number, y: number}>>([]);
+
+  const letters = 'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ';
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const newLetter = {
+        id: Date.now(),
+        letter: letters[Math.floor(Math.random() * letters.length)],
+        x: Math.random() * 100,
+        y: Math.random() * 50
+      };
+      
+      setAnimatedLetters(prev => [...prev.slice(-8), newLetter]);
+      
+      setTimeout(() => {
+        setAnimatedLetters(prev => prev.filter(l => l.id !== newLetter.id));
+      }, 2000);
+    }, 300);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const gameModesConfig = [
     {
@@ -95,20 +118,43 @@ const HomePage = () => {
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between bg-card rounded-xl p-6 shadow-lg border">
-          <div className="flex items-center space-x-4">
+        <div className="flex items-center justify-between bg-card rounded-xl p-6 shadow-lg border relative overflow-hidden">
+          {/* Animated Letters Background */}
+          <div className="absolute inset-0 pointer-events-none">
+            {animatedLetters.map((letter) => (
+              <div
+                key={letter.id}
+                className="absolute text-primary/20 text-xl font-bold animate-fade-in"
+                style={{
+                  left: `${letter.x}%`,
+                  top: `${letter.y}%`,
+                  animation: 'fade-in 0.5s ease-out, fade-out 1.5s ease-out 0.5s forwards'
+                }}
+              >
+                {letter.letter}
+              </div>
+            ))}
+          </div>
+          
+          <div className="flex items-center space-x-4 relative z-10">
             <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
               <Gamepad2 className="w-6 h-6 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">Kelimeci</h1>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                Kelimeci
+              </h1>
               <p className="text-muted-foreground">Hoş geldin, {user?.email?.split('@')[0]}!</p>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <Crown className="w-5 h-5 text-yellow-500" />
-              <span className="text-sm font-medium">{userCredits} Hak</span>
+          <div className="flex items-center space-x-4 relative z-10">
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Crown className="w-4 h-4 text-yellow-500" />
+                <span className="text-xs font-medium text-muted-foreground">Hak</span>
+              </div>
+              <Progress value={(userCredits / 5) * 100} className="w-20 h-2" />
+              <span className="text-xs text-center block w-20">{userCredits}/5</span>
             </div>
             <Button variant="outline" size="sm" onClick={() => {
               playSound('buttonClick');
