@@ -271,7 +271,7 @@ const HomePage = () => {
                       <img 
                         src="/lovable-uploads/8008dff7-7ead-48e2-b47e-fde31770af08.png" 
                         alt="Computer player"
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 w-16 h-12 object-contain opacity-60"
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 w-48 h-36 object-contain opacity-60"
                       />
                     )}
                   </div>
