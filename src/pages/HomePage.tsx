@@ -138,18 +138,18 @@ const HomePage = () => {
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="bg-card rounded-xl p-4 md:p-6 shadow-lg border relative overflow-hidden">
-          {/* Animated Letters Background - Full viewport */}
-          <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+          {/* Animated Letters Background */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
             {animatedLetters.map((letter) => (
               <div
                 key={letter.id}
-                className={`absolute text-2xl md:text-5xl font-bold ${letter.color} ${letter.font} transition-all duration-1000 transform hover:scale-110`}
+                className={`absolute text-3xl md:text-4xl font-bold ${letter.color} ${letter.font} transition-all duration-1000 transform hover:scale-110`}
                 style={{
                   left: `${letter.x}%`,
                   top: `${letter.y}%`,
-                  textShadow: '0 0 15px currentColor',
+                  textShadow: '0 0 10px currentColor',
                   animation: 'bounce 3s infinite',
-                  opacity: 0.4,
+                  opacity: 0.6,
                   zIndex: 1
                 }}
               >
