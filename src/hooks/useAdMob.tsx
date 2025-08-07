@@ -87,7 +87,7 @@ export const useAdMob = () => {
         
         toast({
           title: 'Ödül Kazandınız! 🎉',
-          description: '+50 kredi hesabınıza eklendi.',
+          description: '+1 kredi hesabınıza eklendi.',
         });
       });
 
@@ -124,7 +124,7 @@ export const useAdMob = () => {
         .eq('id', user.id)
         .single();
 
-      const newCredits = (profile?.game_credits || 0) + 50;
+      const newCredits = (profile?.game_credits || 0) + 1; // 1 kredi ekle
 
       // Update user credits in database
       const { error } = await supabase

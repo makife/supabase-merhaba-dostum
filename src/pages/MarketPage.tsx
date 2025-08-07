@@ -1,4 +1,11 @@
 import { useState, useEffect } from 'react';
+
+// Capacitor type check
+declare global {
+  interface Window {
+    Capacitor?: any;
+  }
+}
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -259,15 +266,22 @@ const MarketPage = () => {
           <CardContent>
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                {isAdReady ? "Reklam hazır! İzlemek için tıklayın." : "Reklam yükleniyor..."}
+                {/* Web'de AdMob çalışmaz - sadece mobil */}
+                {typeof window !== 'undefined' && !window.Capacitor ? 
+                  "⚠️ Reklamlar sadece mobil uygulamada çalışır. Web'de test edilemez." :
+                  (isAdReady ? "Reklam hazır! İzlemek için tıklayın." : "Reklam yükleniyor...")
+                }
               </p>
               <Button 
                 onClick={watchAdForCredits}
-                disabled={!isAdReady || isAdLoading}
+                disabled={!isAdReady || isAdLoading || (typeof window !== 'undefined' && !window.Capacitor)}
                 className="w-full bg-green-500 hover:bg-green-600 disabled:opacity-50"
               >
                 <Gift className="w-4 h-4 mr-2" />
-                {isAdLoading ? 'Yükleniyor...' : isAdReady ? 'Ödüllü Reklam İzle (+50 Kredi)' : 'Reklam Hazırlanıyor...'}
+                {typeof window !== 'undefined' && !window.Capacitor ? 
+                  'Sadece Mobil Uygulamada Çalışır' :
+                  (isAdLoading ? 'Yükleniyor...' : isAdReady ? 'Ödüllü Reklam İzle (+1 Kredi)' : 'Reklam Hazırlanıyor...')
+                }
               </Button>
             </div>
           </CardContent>
