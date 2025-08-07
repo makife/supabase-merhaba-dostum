@@ -342,6 +342,7 @@ const SettingsPage = () => {
                 checked={soundsEnabled}
                 onCheckedChange={(checked) => {
                   setSoundsEnabled(checked);
+                  saveSettings();
                   if (checked) playSound('buttonClick');
                 }}
               />
@@ -362,6 +363,7 @@ const SettingsPage = () => {
                 checked={musicEnabled}
                 onCheckedChange={(checked) => {
                   setMusicEnabled(checked);
+                  saveSettings();
                   if (checked) playSound('buttonClick');
                 }}
               />
