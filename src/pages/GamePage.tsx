@@ -32,7 +32,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const { toast } = useToast();
   const { currentRoom, updateScore } = useGame();
   const { validateWord, isValidating } = useWordValidation();
-  const { playSound, playTimeWarningSequence } = useSounds();
+  const { playSound, playTimeWarningSequence, playCelebrationSound } = useSounds();
   const [searchParams] = useSearchParams();
   const gameType = (searchParams.get('type') as 'timed' | 'score') || 'timed';
   const [timeWarningPlayed, setTimeWarningPlayed] = useState(false);
@@ -145,13 +145,15 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     if (playerScore > opponentScore) {
       setWinner('player');
       playSound('gameWin');
+      // Kutlama müziği ve konfeti efekti
+      setTimeout(() => playCelebrationSound(), 500);
     } else if (opponentScore > playerScore) {
       setWinner('opponent');
       playSound('gameLose');
     } else {
       setWinner('tie');
     }
-  }, [playerScore, opponentScore, playSound]);
+  }, [playerScore, opponentScore, playSound, playCelebrationSound]);
 
   // Check if score reaches 100 - only for score mode
   useEffect(() => {
@@ -265,12 +267,36 @@ const GamePage = ({ gameMode }: GamePageProps) => {
 
   if (gameEnded) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 game-grid">
-        <Card className="w-full max-w-md text-center">
+      <div className="min-h-screen flex items-center justify-center p-4 game-grid relative overflow-hidden">
+        {/* Konfeti Efekti - sadece kazanıldığında */}
+        {winner === 'player' && (
+          <div className="absolute inset-0 pointer-events-none">
+            {[...Array(50)].map((_, i) => (
+              <div
+                key={i}
+                className={`absolute w-3 h-3 rounded-full animate-[confetti_3s_ease-out_infinite] ${
+                  i % 4 === 0 ? 'bg-yellow-400' :
+                  i % 4 === 1 ? 'bg-red-400' :
+                  i % 4 === 2 ? 'bg-blue-400' : 'bg-green-400'
+                }`}
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 3}s`,
+                  transform: `rotate(${Math.random() * 360}deg)`
+                }}
+              />
+            ))}
+          </div>
+        )}
+        <Card className="w-full max-w-md text-center relative z-10">
           <CardContent className="p-6">
-            <Trophy className="w-16 h-16 mx-auto mb-4 text-yellow-500" />
-            <h2 className="text-2xl font-bold mb-2">
-              {winner === 'player' ? 'Kazandınız!' :
+            <Trophy className={`w-16 h-16 mx-auto mb-4 ${
+              winner === 'player' ? 'text-yellow-500 animate-bounce' : 'text-gray-400'
+            }`} />
+            <h2 className={`text-2xl font-bold mb-2 ${
+              winner === 'player' ? 'text-yellow-600 animate-pulse' : ''
+            }`}>
+              {winner === 'player' ? 'Kazandınız! 🎉' :
                winner === 'opponent' ? 'Kaybettiniz!' : 'Beraberlik!'}
             </h2>
             <div className="space-y-2 mb-6">

@@ -304,3 +304,15 @@ All colors MUST be HSL.
   color: hsl(var(--primary-foreground));
   transform: scale(0.95);
 }
+
+/* Konfeti animasyonu */
+@keyframes confetti {
+  0% {
+    transform: translateY(-100vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
