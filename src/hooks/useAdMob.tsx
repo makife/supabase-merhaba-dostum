@@ -14,8 +14,8 @@ export const useAdMob = () => {
   const initializeAdMob = useCallback(async () => {
     try {
       await AdMob.initialize({
-        testingDevices: ['YOUR_TESTING_DEVICE_ID'], // Replace with actual device ID for testing
-        initializeForTesting: true, // Set to false for production
+        testingDevices: [], // Production - no test devices
+        initializeForTesting: false, // Production mode
       });
       console.log('AdMob initialized successfully');
     } catch (error) {
@@ -31,8 +31,8 @@ export const useAdMob = () => {
     
     try {
       await AdMob.prepareRewardVideoAd({
-        adId: 'ca-app-pub-3940256099942544/5224354917', // Test Rewarded Ad ID
-        isTesting: true, // Set to false for production
+        adId: 'ca-app-pub-4768026665961339/3449888248', // Your real Rewarded Ad ID
+        isTesting: false, // Production mode
       });
       
       setIsAdReady(true);

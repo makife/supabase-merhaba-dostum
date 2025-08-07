@@ -22,9 +22,9 @@ const config: CapacitorConfig = {
       splashImmersive: true
     },
     AdMob: {
-      appId: 'ca-app-pub-3940256099942544~3347511713', // Test App ID
-      androidAppId: 'ca-app-pub-3940256099942544~3347511713',
-      iosAppId: 'ca-app-pub-3940256099942544~1458002511'
+      appId: 'ca-app-pub-4768026665961339~9319477813', // Your real App ID
+      androidAppId: 'ca-app-pub-4768026665961339~9319477813',
+      iosAppId: 'ca-app-pub-4768026665961339~9319477813' // Use same for both platforms
     }
   }
 };
