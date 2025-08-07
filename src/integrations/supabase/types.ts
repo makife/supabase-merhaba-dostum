@@ -184,6 +184,7 @@ export type Database = {
           created_at: string | null
           email: string
           game_credits: number | null
+          hint_credits: number | null
           id: string
           last_credit_refresh: string | null
           losses: number | null
@@ -199,6 +200,7 @@ export type Database = {
           created_at?: string | null
           email: string
           game_credits?: number | null
+          hint_credits?: number | null
           id: string
           last_credit_refresh?: string | null
           losses?: number | null
@@ -214,6 +216,7 @@ export type Database = {
           created_at?: string | null
           email?: string
           game_credits?: number | null
+          hint_credits?: number | null
           id?: string
           last_credit_refresh?: string | null
           losses?: number | null
@@ -414,6 +417,90 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_inventory: {
+        Row: {
+          id: string
+          item_type: string
+          quantity: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          item_type: string
+          quantity?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          item_type?: string
+          quantity?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_purchases: {
+        Row: {
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          item_id: string
+          item_type: string
+          purchased_at: string
+          user_id: string
+        }
+        Insert: {
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          item_id: string
+          item_type: string
+          purchased_at?: string
+          user_id: string
+        }
+        Update: {
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          item_id?: string
+          item_type?: string
+          purchased_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          active_avatar_frame: string | null
+          active_sound_pack: string | null
+          active_theme: string | null
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active_avatar_frame?: string | null
+          active_sound_pack?: string | null
+          active_theme?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active_avatar_frame?: string | null
+          active_sound_pack?: string | null
+          active_theme?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       words: {
         Row: {

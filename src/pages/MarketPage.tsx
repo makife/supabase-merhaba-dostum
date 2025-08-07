@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserPurchases } from '@/hooks/useUserPurchases';
 import { useAdMob } from '@/hooks/useAdMob';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -55,6 +56,7 @@ const MarketPage = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const { isAdLoading, isAdReady, initializeAdMob, loadRewardedAd, showRewardedAd } = useAdMob();
+  const { processPurchase, hasPurchased, loading: purchaseLoading } = useUserPurchases();
   const [userCredits, setUserCredits] = useState(5);
   const [isPremium, setIsPremium] = useState(false);
 
@@ -329,53 +331,11 @@ const MarketPage = () => {
       return;
     }
 
-    // Simulate purchase process
-    toast({
-      title: 'Satın Alma İşlemi',
-      description: 'Ödeme işlemi başlatılıyor...',
-    });
-
-    // Simulate payment delay
-    setTimeout(async () => {
-      try {
-        // Update user profile based on purchase
-        const updates: any = {};
-
-        if (item.type === 'credits') {
-          updates.game_credits = userCredits + item.value;
-        } else if (item.type === 'unlimited_time') {
-          // For demo, just add credits
-          updates.game_credits = userCredits + 50;
-        } else if (item.type === 'premium') {
-          const premiumUntil = new Date();
-          premiumUntil.setDate(premiumUntil.getDate() + item.value);
-          updates.premium_until = premiumUntil.toISOString();
-        }
-
-        if (Object.keys(updates).length > 0) {
-          const { error } = await supabase
-            .from('profiles')
-            .update(updates)
-            .eq('id', user.id);
-
-          if (error) throw error;
-
-          await loadUserProfile();
-
-          toast({
-            title: 'Satın Alma Başarılı!',
-            description: `${item.title} başarıyla satın alındı.`,
-          });
-        }
-      } catch (error) {
-        console.error('Purchase error:', error);
-        toast({
-          title: 'Satın Alma Hatası',
-          description: 'Bir hata oluştu, lütfen tekrar deneyin.',
-          variant: 'destructive',
-        });
-      }
-    }, 2000);
+    // Yeni satın alma sistemi kullan
+    const success = await processPurchase(item);
+    if (success) {
+      await loadUserProfile(); // Profili yenile
+    }
   };
 
   const watchAdForCredits = async () => {
@@ -450,10 +410,11 @@ const MarketPage = () => {
                   onClick={() => handlePurchase(item)}
                   size="sm"
                   className="mt-1 text-xs px-2 py-1 h-7"
-                  disabled={item.currency === 'credits' && userCredits < item.price}
+                  disabled={(item.currency === 'credits' && userCredits < item.price) || purchaseLoading || hasPurchased(item.id)}
                 >
-                  {item.currency === 'credits' && userCredits < item.price ? 
-                    'Yetersiz' : 'Satın Al'
+                  {hasPurchased(item.id) ? 'Satın Alındı' :
+                   (item.currency === 'credits' && userCredits < item.price) ? 'Yetersiz' : 
+                   purchaseLoading ? 'İşleniyor...' : 'Satın Al'
                   }
                 </Button>
               </div>

@@ -1,0 +1,326 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+
+interface UserPurchase {
+  id: string;
+  item_id: string;
+  item_type: string;
+  purchased_at: string;
+  is_active: boolean;
+  expires_at?: string;
+}
+
+interface UserSettings {
+  active_theme: string;
+  active_avatar_frame: string;
+  active_sound_pack: string;
+}
+
+interface UserInventory {
+  item_type: string;
+  quantity: number;
+}
+
+export const useUserPurchases = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [purchases, setPurchases] = useState<UserPurchase[]>([]);
+  const [settings, setSettings] = useState<UserSettings>({
+    active_theme: 'default',
+    active_avatar_frame: 'none',
+    active_sound_pack: 'default'
+  });
+  const [inventory, setInventory] = useState<UserInventory[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Kullanıcı satın alımlarını yükle
+  const loadPurchases = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('user_purchases')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true);
+
+      if (error) throw error;
+      setPurchases(data || []);
+    } catch (error) {
+      console.error('Error loading purchases:', error);
+    }
+  };
+
+  // Kullanıcı ayarlarını yükle
+  const loadSettings = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('user_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      
+      if (data) {
+        setSettings({
+          active_theme: data.active_theme || 'default',
+          active_avatar_frame: data.active_avatar_frame || 'none',
+          active_sound_pack: data.active_sound_pack || 'default'
+        });
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
+    }
+  };
+
+  // Kullanıcı envanterini yükle
+  const loadInventory = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('user_inventory')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      setInventory(data || []);
+    } catch (error) {
+      console.error('Error loading inventory:', error);
+    }
+  };
+
+  // Satın alma işlemi gerçekleştir
+  const processPurchase = async (item: any) => {
+    if (!user) return false;
+
+    setLoading(true);
+    try {
+      // Öğe tipine göre işlem yap
+      if (item.type === 'credits') {
+        // Kredi ekle
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('game_credits')
+          .eq('id', user.id)
+          .single();
+
+        const newCredits = (profile?.game_credits || 0) + item.value;
+
+        await supabase
+          .from('profiles')
+          .update({ game_credits: newCredits })
+          .eq('id', user.id);
+
+      } else if (item.type === 'unlimited_time') {
+        // Sınırsız zaman için özel kredi ekle
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('game_credits')
+          .eq('id', user.id)
+          .single();
+
+        const bonusCredits = item.value === 1 ? 10 : 50; // 1 saat = 10, 24 saat = 50
+        const newCredits = (profile?.game_credits || 0) + bonusCredits;
+
+        await supabase
+          .from('profiles')
+          .update({ game_credits: newCredits })
+          .eq('id', user.id);
+
+      } else if (item.type === 'premium') {
+        // Premium üyelik
+        if (item.value > 0) {
+          const premiumUntil = new Date();
+          premiumUntil.setDate(premiumUntil.getDate() + item.value);
+          
+          await supabase
+            .from('profiles')
+            .update({ premium_until: premiumUntil.toISOString() })
+            .eq('id', user.id);
+        }
+
+      } else if (item.type === 'hint') {
+        // İpucu paketi
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('hint_credits')
+          .eq('id', user.id)
+          .single();
+
+        const newHints = (profile?.hint_credits || 0) + item.value;
+
+        await supabase
+          .from('profiles')
+          .update({ hint_credits: newHints })
+          .eq('id', user.id);
+
+        // Envantere de ekle
+        await updateInventory('hint', item.value);
+
+      } else {
+        // Diğer öğeler için envantere ekle
+        await updateInventory(item.type, 1);
+      }
+
+      // Kredi ile satın alma
+      if (item.currency === 'credits') {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('game_credits')
+          .eq('id', user.id)
+          .single();
+
+        const newCredits = (profile?.game_credits || 0) - item.price;
+
+        await supabase
+          .from('profiles')
+          .update({ game_credits: newCredits })
+          .eq('id', user.id);
+      }
+
+      // Satın alma kaydı oluştur
+      await supabase
+        .from('user_purchases')
+        .insert({
+          user_id: user.id,
+          item_id: item.id,
+          item_type: item.type,
+          is_active: true
+        });
+
+      // Verileri yenile
+      await Promise.all([loadPurchases(), loadInventory()]);
+
+      toast({
+        title: 'Satın Alma Başarılı! 🎉',
+        description: `${item.title} başarıyla satın alındı.`,
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Purchase error:', error);
+      toast({
+        title: 'Satın Alma Hatası',
+        description: 'Bir hata oluştu, lütfen tekrar deneyin.',
+        variant: 'destructive',
+      });
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Envanter güncelle
+  const updateInventory = async (itemType: string, quantity: number) => {
+    if (!user) return;
+
+    try {
+      const { data: existing } = await supabase
+        .from('user_inventory')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('item_type', itemType)
+        .single();
+
+      if (existing) {
+        await supabase
+          .from('user_inventory')
+          .update({ quantity: existing.quantity + quantity })
+          .eq('id', existing.id);
+      } else {
+        await supabase
+          .from('user_inventory')
+          .insert({
+            user_id: user.id,
+            item_type: itemType,
+            quantity: quantity
+          });
+      }
+    } catch (error) {
+      console.error('Error updating inventory:', error);
+    }
+  };
+
+  // Ayarları güncelle
+  const updateSettings = async (newSettings: Partial<UserSettings>) => {
+    if (!user) return;
+
+    try {
+      const { data: existing } = await supabase
+        .from('user_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      const updatedSettings = { ...settings, ...newSettings };
+
+      if (existing) {
+        await supabase
+          .from('user_settings')
+          .update(updatedSettings)
+          .eq('id', existing.id);
+      } else {
+        await supabase
+          .from('user_settings')
+          .insert({
+            user_id: user.id,
+            ...updatedSettings
+          });
+      }
+
+      setSettings(updatedSettings);
+      await loadSettings();
+
+      toast({
+        title: 'Ayarlar Güncellendi',
+        description: 'Tercihleriniz başarıyla kaydedildi.',
+      });
+    } catch (error) {
+      console.error('Error updating settings:', error);
+      toast({
+        title: 'Güncelleme Hatası',
+        description: 'Ayarlar güncellenirken bir hata oluştu.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Satın alınmış öğe kontrolü
+  const hasPurchased = (itemId: string) => {
+    return purchases.some(p => p.item_id === itemId && p.is_active);
+  };
+
+  // Envanterde öğe kontrolü
+  const getInventoryQuantity = (itemType: string) => {
+    const item = inventory.find(i => i.item_type === itemType);
+    return item?.quantity || 0;
+  };
+
+  useEffect(() => {
+    if (user) {
+      loadPurchases();
+      loadSettings();
+      loadInventory();
+    }
+  }, [user]);
+
+  return {
+    purchases,
+    settings,
+    inventory,
+    loading,
+    processPurchase,
+    updateSettings,
+    hasPurchased,
+    getInventoryQuantity,
+    loadPurchases,
+    loadSettings,
+    loadInventory
+  };
+};

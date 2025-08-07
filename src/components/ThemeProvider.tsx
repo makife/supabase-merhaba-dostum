@@ -1,0 +1,159 @@
+import { createContext, useContext, useEffect, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+
+interface ThemeContextType {
+  theme: string;
+  avatarFrame: string;
+  soundPack: string;
+  applyTheme: (theme: string) => void;
+  applyAvatarFrame: (frame: string) => void;
+  applySoundPack: (pack: string) => void;
+}
+
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+
+export const useThemeContext = () => {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error('useThemeContext must be used within a ThemeProvider');
+  }
+  return context;
+};
+
+export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
+  const { user } = useAuth();
+  const [theme, setTheme] = useState('default');
+  const [avatarFrame, setAvatarFrame] = useState('none');
+  const [soundPack, setSoundPack] = useState('default');
+
+  // Kullanıcı ayarlarını yükle
+  const loadUserSettings = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('user_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      
+      if (data) {
+        setTheme(data.active_theme || 'default');
+        setAvatarFrame(data.active_avatar_frame || 'none');
+        setSoundPack(data.active_sound_pack || 'default');
+        
+        // Temayı DOM'a uygula
+        applyThemeToDOM(data.active_theme || 'default');
+      }
+    } catch (error) {
+      console.error('Error loading user settings:', error);
+    }
+  };
+
+  // Temayı DOM'a uygula
+  const applyThemeToDOM = (themeName: string) => {
+    const root = document.documentElement;
+    
+    // Mevcut tema sınıflarını temizle
+    root.classList.remove('theme-dark-ocean', 'theme-sunset', 'theme-forest', 'theme-classic');
+    
+    // Yeni temayı uygula
+    if (themeName !== 'default') {
+      root.classList.add(`theme-${themeName.replace('theme_', '').replace('_', '-')}`);
+    }
+  };
+
+  // Tema değiştir
+  const applyTheme = async (newTheme: string) => {
+    if (!user) return;
+
+    try {
+      await updateUserSetting('active_theme', newTheme);
+      setTheme(newTheme);
+      applyThemeToDOM(newTheme);
+    } catch (error) {
+      console.error('Error applying theme:', error);
+    }
+  };
+
+  // Avatar çerçevesi değiştir
+  const applyAvatarFrame = async (newFrame: string) => {
+    if (!user) return;
+
+    try {
+      await updateUserSetting('active_avatar_frame', newFrame);
+      setAvatarFrame(newFrame);
+    } catch (error) {
+      console.error('Error applying avatar frame:', error);
+    }
+  };
+
+  // Ses paketi değiştir
+  const applySoundPack = async (newPack: string) => {
+    if (!user) return;
+
+    try {
+      await updateUserSetting('active_sound_pack', newPack);
+      setSoundPack(newPack);
+    } catch (error) {
+      console.error('Error applying sound pack:', error);
+    }
+  };
+
+  // Kullanıcı ayarını güncelle
+  const updateUserSetting = async (field: string, value: string) => {
+    if (!user) return;
+
+    try {
+      const { data: existing } = await supabase
+        .from('user_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (existing) {
+        await supabase
+          .from('user_settings')
+          .update({ [field]: value })
+          .eq('id', existing.id);
+      } else {
+        await supabase
+          .from('user_settings')
+          .insert({
+            user_id: user.id,
+            [field]: value
+          });
+      }
+    } catch (error) {
+      console.error('Error updating user setting:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      loadUserSettings();
+    } else {
+      // Kullanıcı çıkış yaptığında varsayılan temaya dön
+      setTheme('default');
+      setAvatarFrame('none');
+      setSoundPack('default');
+      applyThemeToDOM('default');
+    }
+  }, [user]);
+
+  return (
+    <ThemeContext.Provider value={{
+      theme,
+      avatarFrame,
+      soundPack,
+      applyTheme,
+      applyAvatarFrame,
+      applySoundPack
+    }}>
+      {children}
+    </ThemeContext.Provider>
+  );
+};

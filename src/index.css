@@ -62,7 +62,123 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 270 15% 15%;
     --sidebar-border: 270 20% 90%;
     --sidebar-ring: 260 84% 57%;
-  }
+}
+
+/* Tema stilleri */
+.theme-dark-ocean {
+  --background: 220 28% 5%;
+  --foreground: 208 100% 85%;
+  --card: 217 33% 8%;
+  --card-foreground: 208 100% 85%;
+  --popover: 217 33% 8%;
+  --popover-foreground: 208 100% 85%;
+  --primary: 208 100% 47%;
+  --primary-foreground: 220 28% 5%;
+  --secondary: 217 33% 12%;
+  --secondary-foreground: 208 100% 85%;
+  --muted: 217 33% 12%;
+  --muted-foreground: 208 30% 60%;
+  --accent: 208 100% 20%;
+  --accent-foreground: 208 100% 85%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217 33% 15%;
+  --input: 217 33% 15%;
+  --ring: 208 100% 47%;
+  --radius: 0.5rem;
+}
+
+.theme-sunset {
+  --background: 25 28% 5%;
+  --foreground: 33 100% 85%;
+  --card: 25 33% 8%;
+  --card-foreground: 33 100% 85%;
+  --popover: 25 33% 8%;
+  --popover-foreground: 33 100% 85%;
+  --primary: 27 100% 60%;
+  --primary-foreground: 25 28% 5%;
+  --secondary: 25 33% 12%;
+  --secondary-foreground: 33 100% 85%;
+  --muted: 25 33% 12%;
+  --muted-foreground: 33 30% 60%;
+  --accent: 320 70% 60%;
+  --accent-foreground: 25 28% 5%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 25 33% 15%;
+  --input: 25 33% 15%;
+  --ring: 27 100% 60%;
+  --radius: 0.5rem;
+}
+
+.theme-forest {
+  --background: 120 28% 5%;
+  --foreground: 140 100% 85%;
+  --card: 120 33% 8%;
+  --card-foreground: 140 100% 85%;
+  --popover: 120 33% 8%;
+  --popover-foreground: 140 100% 85%;
+  --primary: 142 76% 36%;
+  --primary-foreground: 120 28% 5%;
+  --secondary: 120 33% 12%;
+  --secondary-foreground: 140 100% 85%;
+  --muted: 120 33% 12%;
+  --muted-foreground: 140 30% 60%;
+  --accent: 100 60% 50%;
+  --accent-foreground: 120 28% 5%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 120 33% 15%;
+  --input: 120 33% 15%;
+  --ring: 142 76% 36%;
+  --radius: 0.5rem;
+}
+
+.theme-classic {
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --card: 240 10% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 45 100% 51%;
+  --primary-foreground: 240 5.9% 10%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --accent: 240 3.7% 15.9%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --ring: 45 100% 51%;
+}
+
+/* Avatar çerçeve stilleri */
+.avatar-frame-gold {
+  border: 3px solid #ffd700;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.avatar-frame-rainbow {
+  border: 3px solid transparent;
+  background: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
+  background-clip: padding-box;
+}
+
+.avatar-frame-rainbow::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  background: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
+  border-radius: inherit;
+  z-index: -1;
+}
 
   .dark {
     --background: 270 15% 9%;
