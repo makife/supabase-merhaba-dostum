@@ -32,7 +32,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const { toast } = useToast();
   const { currentRoom, updateScore } = useGame();
   const { validateWord, isValidating } = useWordValidation();
-  const { playSound, playTimeWarningSequence, playCelebrationSound, playGameLoseSound } = useSounds();
+  const { playSound, playTimeWarningSequence, playCelebrationSound, playGameLoseSound, stopBackgroundMusic, startBackgroundMusic } = useSounds();
   const [searchParams] = useSearchParams();
   const gameType = (searchParams.get('type') as 'timed' | 'score') || 'timed';
   const [timeWarningPlayed, setTimeWarningPlayed] = useState(false);
@@ -97,7 +97,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const [winner, setWinner] = useState<'player' | 'opponent' | 'tie' | null>(null);
   const [playerAvatar, setPlayerAvatar] = useState<string>('');
 
-  // Fetch player avatar from profiles table
+  // Fetch player avatar from profiles table and stop background music
   useEffect(() => {
     const fetchPlayerAvatar = async () => {
       if (!user) return;
@@ -114,7 +114,15 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     };
 
     fetchPlayerAvatar();
-  }, [user]);
+    
+    // Stop background music when entering game
+    stopBackgroundMusic();
+    
+    // Start background music again when leaving game (cleanup)
+    return () => {
+      startBackgroundMusic();
+    };
+  }, [user, stopBackgroundMusic, startBackgroundMusic]);
 
   // Timer effect - only for timed mode
   useEffect(() => {
