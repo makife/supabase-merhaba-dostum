@@ -257,14 +257,25 @@ const HomePage = () => {
             {gameModesConfig.map((mode) => (
               <Card key={mode.id} className={`hover:shadow-xl transition-all duration-300 cursor-pointer border-0 overflow-hidden ${mode.gradient} hover:scale-105`}>
                 <CardHeader className="pb-2 pt-3 relative">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center border border-white/30">
-                      <mode.icon className="w-4 h-4 text-white" />
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center border border-white/30">
+                        <mode.icon className="w-4 h-4 text-white" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-base text-white drop-shadow-lg">{mode.title}</CardTitle>
+                        <CardDescription className="text-white/80 font-medium text-sm">{mode.description}</CardDescription>
+                      </div>
                     </div>
-                    <div>
-                      <CardTitle className="text-base text-white drop-shadow-lg">{mode.title}</CardTitle>
-                      <CardDescription className="text-white/80 font-medium text-sm">{mode.description}</CardDescription>
-                    </div>
+                    {mode.id === 'vs-computer' && (
+                      <div className="w-16 h-12 flex items-center justify-center">
+                        <img 
+                          src="/lovable-uploads/8008dff7-7ead-48e2-b47e-fde31770af08.png" 
+                          alt="Computer player"
+                          className="w-full h-full object-contain opacity-80"
+                        />
+                      </div>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0 pb-3">
