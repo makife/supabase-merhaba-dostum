@@ -18,6 +18,14 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				sans: ["Inter", "sans-serif"],
+				fredoka: ["Fredoka", "cursive"],
+				comfortaa: ["Comfortaa", "cursive"],
+				righteous: ["Righteous", "cursive"],
+				bungee: ["Bungee", "cursive"],
+				orbitron: ["Orbitron", "monospace"],
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',

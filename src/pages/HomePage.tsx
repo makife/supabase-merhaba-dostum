@@ -28,27 +28,41 @@ const HomePage = () => {
   const { playSound } = useSounds();
   const [userCredits] = useState(5);
   const [selectedMode, setSelectedMode] = useState<string | null>(null);
-  const [animatedLetters, setAnimatedLetters] = useState<Array<{id: number, letter: string, x: number, y: number}>>([]);
+  const [animatedLetters, setAnimatedLetters] = useState<Array<{id: number, letter: string, x: number, y: number, color: string, font: string, dx: number}>>([]);
 
   const letters = 'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ';
+  const colors = ['text-red-400', 'text-blue-400', 'text-green-400', 'text-yellow-400', 'text-purple-400', 'text-pink-400', 'text-indigo-400', 'text-orange-400'];
+  const fonts = ['font-fredoka', 'font-comfortaa', 'font-righteous', 'font-bungee', 'font-orbitron'];
 
   useEffect(() => {
     const interval = setInterval(() => {
       const newLetter = {
         id: Date.now(),
         letter: letters[Math.floor(Math.random() * letters.length)],
-        x: Math.random() * 100,
-        y: Math.random() * 50
+        x: -10,
+        y: Math.random() * 60,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        font: fonts[Math.floor(Math.random() * fonts.length)],
+        dx: 0.5 + Math.random() * 1
       };
       
-      setAnimatedLetters(prev => [...prev.slice(-8), newLetter]);
-      
-      setTimeout(() => {
-        setAnimatedLetters(prev => prev.filter(l => l.id !== newLetter.id));
-      }, 2000);
-    }, 300);
+      setAnimatedLetters(prev => [...prev.slice(-12), newLetter]);
+    }, 400);
 
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const moveInterval = setInterval(() => {
+      setAnimatedLetters(prev => 
+        prev.map(letter => ({
+          ...letter,
+          x: letter.x + letter.dx
+        })).filter(letter => letter.x < 110)
+      );
+    }, 50);
+
+    return () => clearInterval(moveInterval);
   }, []);
 
   const gameModesConfig = [
@@ -120,15 +134,16 @@ const HomePage = () => {
         {/* Header */}
         <div className="flex items-center justify-between bg-card rounded-xl p-6 shadow-lg border relative overflow-hidden">
           {/* Animated Letters Background */}
-          <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
             {animatedLetters.map((letter) => (
               <div
                 key={letter.id}
-                className="absolute text-primary/20 text-xl font-bold animate-fade-in"
+                className={`absolute text-4xl font-bold ${letter.color} ${letter.font} opacity-60 transition-all duration-1000 transform hover:scale-110`}
                 style={{
                   left: `${letter.x}%`,
                   top: `${letter.y}%`,
-                  animation: 'fade-in 0.5s ease-out, fade-out 1.5s ease-out 0.5s forwards'
+                  textShadow: '0 0 10px currentColor',
+                  animation: 'bounce 2s infinite'
                 }}
               >
                 {letter.letter}
