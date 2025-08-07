@@ -186,7 +186,18 @@ const HomePage = () => {
               <div className="flex items-center space-x-3">
                 <Crown className="w-4 h-4 text-yellow-500" />
                 <div className="flex flex-col items-end">
-                  <Progress value={(userCredits / 5) * 100} className="w-16 h-2" />
+                  <div className="flex space-x-1">
+                    {[...Array(5)].map((_, index) => (
+                      <div
+                        key={index}
+                        className={`w-3 h-2 rounded-sm border ${
+                          index < userCredits 
+                            ? 'bg-yellow-500 border-yellow-600 shadow-sm' 
+                            : 'bg-muted border-border'
+                        }`}
+                      />
+                    ))}
+                  </div>
                   <span className="text-xs text-muted-foreground mt-1">{userCredits}/5</span>
                 </div>
               </div>
@@ -216,7 +227,18 @@ const HomePage = () => {
                   <Crown className="w-4 h-4 text-yellow-500" />
                   <span className="text-xs font-medium text-muted-foreground">Hak</span>
                 </div>
-                <Progress value={(userCredits / 5) * 100} className="w-20 h-2" />
+                <div className="flex space-x-1">
+                  {[...Array(5)].map((_, index) => (
+                    <div
+                      key={index}
+                      className={`w-4 h-3 rounded-sm border ${
+                        index < userCredits 
+                          ? 'bg-yellow-500 border-yellow-600 shadow-sm' 
+                          : 'bg-muted border-border'
+                      }`}
+                    />
+                  ))}
+                </div>
                 <span className="text-xs text-center block w-20">{userCredits}/5</span>
               </div>
               <Button variant="outline" size="sm" onClick={() => {
