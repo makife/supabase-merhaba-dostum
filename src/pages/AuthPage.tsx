@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,18 +37,76 @@ const AuthPage = () => {
     setLoading(false);
   };
 
+  const [animatedLetters, setAnimatedLetters] = useState<Array<{id: number, letter: string, x: number, y: number, color: string, font: string, dx: number}>>([]);
+
+  const letters = 'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ';
+  const colors = ['text-red-400', 'text-blue-400', 'text-green-400', 'text-yellow-400', 'text-purple-400', 'text-pink-400', 'text-indigo-400', 'text-orange-400'];
+  const fonts = ['font-fredoka', 'font-comfortaa', 'font-righteous', 'font-bungee', 'font-orbitron'];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const newLetter = {
+        id: Date.now(),
+        letter: letters[Math.floor(Math.random() * letters.length)],
+        x: -10,
+        y: Math.random() * 60,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        font: fonts[Math.floor(Math.random() * fonts.length)],
+        dx: 0.5 + Math.random() * 1
+      };
+      
+      setAnimatedLetters(prev => [...prev.slice(-12), newLetter]);
+    }, 400);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const moveInterval = setInterval(() => {
+      setAnimatedLetters(prev => 
+        prev.map(letter => ({
+          ...letter,
+          x: letter.x + letter.dx
+        })).filter(letter => letter.x < 110)
+      );
+    }, 50);
+
+    return () => clearInterval(moveInterval);
+  }, []);
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 game-grid">
       <div className="w-full max-w-md space-y-6 bounce-in">
-        <div className="text-center space-y-2">
-          <div className="mx-auto w-16 h-16 bg-primary rounded-full flex items-center justify-center mb-4">
-            <Gamepad2 className="w-8 h-8 text-primary-foreground" />
+        <Card className="border-0 bg-card/50 backdrop-blur relative overflow-hidden">
+          {/* Animated Letters Background */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            {animatedLetters.map((letter) => (
+              <div
+                key={letter.id}
+                className={`absolute text-3xl font-bold ${letter.color} ${letter.font} opacity-60 transition-all duration-1000 transform hover:scale-110`}
+                style={{
+                  left: `${letter.x}%`,
+                  top: `${letter.y}%`,
+                  textShadow: '0 0 10px currentColor',
+                  animation: 'bounce 2s infinite'
+                }}
+              >
+                {letter.letter}
+              </div>
+            ))}
           </div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Kelimeci
-          </h1>
-          <p className="text-muted-foreground">Kelime oyununun en eğlenceli hali</p>
-        </div>
+          
+          <div className="text-center space-y-2 p-6 relative z-10">
+            <h1 className="text-3xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent drop-shadow-2xl"
+                style={{
+                  textShadow: '1px 1px 0px hsl(var(--primary)), 2px 2px 0px rgba(0,0,0,0.3), 0 0 15px hsl(var(--primary) / 0.5)',
+                  WebkitTextStroke: '0.5px hsl(var(--border))'
+                }}>
+              KELİMECİ
+            </h1>
+            <p className="text-muted-foreground font-medium">Kelime oyununun en eğlenceli hali</p>
+          </div>
+        </Card>
 
         <Card className="border-0 bg-card/50 backdrop-blur">
           <Tabs defaultValue="signin" className="w-full">
