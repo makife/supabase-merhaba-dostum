@@ -300,31 +300,27 @@ const HomePage = () => {
           <div className="relative">
             <Carousel
               opts={{
-                align: "center",
+                align: "start",
                 loop: true,
               }}
-              className="w-full max-w-md mx-auto"
+              className="w-full"
             >
               <CarouselContent className="-ml-2 md:-ml-4">
-                {menuItems.map((item, index) => (
-                  <CarouselItem key={item.id} className="pl-2 md:pl-4 basis-4/5">
+                {menuItems.map((item) => (
+                  <CarouselItem key={item.id} className="pl-2 md:pl-4 basis-full md:basis-1/3">
                     <Card 
-                      className={`hover:shadow-lg transition-all duration-300 cursor-pointer ${
-                        index === 1 ? 'scale-110 shadow-xl' : 'scale-90 opacity-75'
-                      }`}
+                      className="hover:shadow-lg transition-all duration-300 cursor-pointer"
                       onClick={() => {
                         playSound('buttonClick');
                         navigate(item.route);
                       }}
                     >
                       <CardHeader className="text-center py-4">
-                        <div className={`mx-auto rounded-full flex items-center justify-center mb-2 ${
-                          index === 1 ? 'w-14 h-14 bg-primary/20' : 'w-10 h-10 bg-muted'
-                        }`}>
-                          <item.icon className={index === 1 ? 'w-7 h-7' : 'w-5 h-5'} />
+                        <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-2">
+                          <item.icon className="w-6 h-6" />
                         </div>
-                        <CardTitle className={index === 1 ? 'text-lg' : 'text-base'}>{item.title}</CardTitle>
-                        <CardDescription className={`${index === 1 ? 'text-sm' : 'text-xs'}`}>
+                        <CardTitle className="text-lg">{item.title}</CardTitle>
+                        <CardDescription className="text-sm">
                           {item.description}
                         </CardDescription>
                       </CardHeader>
