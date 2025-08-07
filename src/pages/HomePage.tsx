@@ -339,18 +339,25 @@ const HomePage = () => {
                 {menuItems.map((item) => (
                   <CarouselItem key={item.id} className="pl-2 md:pl-4 basis-full md:basis-1/3">
                     <Card 
-                      className="hover:shadow-lg transition-all duration-300 cursor-pointer"
+                      className={`hover:shadow-lg transition-all duration-300 cursor-pointer ${
+                        item.id === 'profile' ? 'bg-cover bg-center bg-no-repeat relative overflow-hidden' : ''
+                      }`}
+                      style={item.id === 'profile' ? {
+                        backgroundImage: `url('/lovable-uploads/2bd0c793-de1e-4655-8d4b-a7de9eecad4b.png')`
+                      } : {}}
                       onClick={() => {
                         playSound('buttonClick');
                         navigate(item.route);
                       }}
                     >
-                      <CardHeader className="text-center py-4">
-                        <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-2">
-                          <item.icon className="w-6 h-6" />
-                        </div>
-                        <CardTitle className="text-lg">{item.title}</CardTitle>
-                        <CardDescription className="text-sm">
+                      <CardHeader className={`text-center py-4 ${item.id === 'profile' ? 'relative z-10 bg-black/50 text-white' : ''}`}>
+                        {item.id !== 'profile' && (
+                          <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-2">
+                            <item.icon className="w-6 h-6" />
+                          </div>
+                        )}
+                        <CardTitle className={`text-lg ${item.id === 'profile' ? 'text-white font-bold' : ''}`}>{item.title}</CardTitle>
+                        <CardDescription className={`text-sm ${item.id === 'profile' ? 'text-white/80' : ''}`}>
                           {item.description}
                         </CardDescription>
                       </CardHeader>
