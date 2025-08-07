@@ -142,6 +142,8 @@ const GamePage = ({ gameMode }: GamePageProps) => {
 
   // Check for winner
   const checkWinner = useCallback(() => {
+    if (gameEnded || winner !== null) return; // Oyun zaten bitmişse veya kazanan belliyse tekrar kontrol etme
+    
     if (playerScore > opponentScore) {
       setWinner('player');
       playSound('gameWin');
@@ -155,7 +157,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     } else {
       setWinner('tie');
     }
-  }, [playerScore, opponentScore, playSound, playCelebrationSound]);
+  }, [playerScore, opponentScore, playSound, playCelebrationSound, gameEnded, winner]);
 
   // Check if score reaches 100 - only for score mode
   useEffect(() => {
