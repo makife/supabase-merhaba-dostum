@@ -1,5 +1,6 @@
 import { SoundPackSelector } from '@/components/SoundPackSelector';
 import { DictionaryImportButton } from '@/components/DictionaryImportButton';
+import { AIWordGenerator } from '@/components/AIWordGenerator';
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -352,13 +353,16 @@ const SettingsPage = () => {
               <>
           <SoundPackSelector />
           
-          {/* Dictionary Import */}
+          {/* Dictionary Management */}
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
               <Database className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-semibold">Sözlük Yönetimi</h3>
             </div>
-            <DictionaryImportButton />
+            <div className="grid gap-4">
+              <DictionaryImportButton />
+              <AIWordGenerator />
+            </div>
           </div>
                 <Separator />
               </>
