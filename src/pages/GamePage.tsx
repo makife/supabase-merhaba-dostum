@@ -202,6 +202,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         title: 'Geçersiz Kelime',
         description: 'Kelime en az 3 harf olmalıdır.',
         variant: 'destructive',
+        duration: 1000,
       });
       return;
     }
@@ -221,6 +222,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       toast({
         title: 'Doğru Kelime!',
         description: result.message,
+        duration: 1000,
       });
     } else {
       playSound('wrongWord');
@@ -228,6 +230,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         title: 'Geçersiz Kelime',
         description: result.message,
         variant: 'destructive',
+        duration: 1000,
       });
     }
 
