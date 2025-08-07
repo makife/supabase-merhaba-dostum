@@ -467,15 +467,21 @@ const GamePage = ({ gameMode }: GamePageProps) => {
               {gameGrid.map((row, rowIndex) =>
                 row.map((letter, colIndex) => {
                   const isSelected = selectedLetters.some(s => s.row === rowIndex && s.col === colIndex);
+                  const selectionOrder = selectedLetters.findIndex(s => s.row === rowIndex && s.col === colIndex);
                   return (
                     <Button
                       key={`${rowIndex}-${colIndex}`}
-                      className={`letter-button h-16 text-xl font-bold ${
+                      className={`letter-button h-16 text-xl font-bold relative ${
                         isSelected ? 'selected' : ''
                       }`}
                       onClick={() => handleLetterClick(letter, rowIndex, colIndex)}
                     >
                       {letter}
+                      {isSelected && selectionOrder >= 0 && (
+                        <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold border-2 border-white">
+                          {selectionOrder + 1}
+                        </span>
+                      )}
                     </Button>
                   );
                 })
