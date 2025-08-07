@@ -9,7 +9,7 @@ declare global {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -392,6 +392,78 @@ const MarketPage = () => {
     await showRewardedAd();
   };
 
+  // Kategori öğelerini filtreleme fonksiyonu
+  const getItemsByCategory = (category: string) => {
+    switch (category) {
+      case 'credits':
+        return marketItems.filter(item => item.type === 'credits' || item.type === 'unlimited_time');
+      case 'premium':
+        return marketItems.filter(item => item.type === 'premium');
+      case 'themes':
+        return marketItems.filter(item => item.type === 'theme');
+      case 'avatar':
+        return marketItems.filter(item => item.type === 'avatar');
+      case 'effects':
+        return marketItems.filter(item => item.type === 'sound' || item.type === 'effect');
+      case 'extras':
+        return marketItems.filter(item => item.type === 'badge' || item.type === 'hint');
+      case 'credits-store':
+        return marketItems.filter(item => item.currency === 'credits');
+      default:
+        return [];
+    }
+  };
+
+  // Market kartları render fonksiyonu
+  const renderMarketItems = (items: MarketItem[]) => (
+    <div className="space-y-3">
+      {items.map((item) => (
+        <Card key={item.id} className="hover:shadow-lg transition-shadow">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-secondary rounded-lg flex items-center justify-center">
+                  <item.icon className="w-5 h-5" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-sm">{item.title}</h3>
+                  <p className="text-xs text-muted-foreground">{item.description}</p>
+                  {item.duration && (
+                    <Badge variant="outline" className="mt-1 text-xs">
+                      {item.duration}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-sm font-bold">
+                  {item.currency === 'credits' ? (
+                    <span className="flex items-center justify-end text-orange-500">
+                      <Zap className="w-3 h-3 mr-1" />
+                      {item.price}
+                    </span>
+                  ) : (
+                    `$${item.price}`
+                  )}
+                </div>
+                <Button 
+                  onClick={() => handlePurchase(item)}
+                  size="sm"
+                  className="mt-1 text-xs px-2 py-1 h-7"
+                  disabled={item.currency === 'credits' && userCredits < item.price}
+                >
+                  {item.currency === 'credits' && userCredits < item.price ? 
+                    'Yetersiz' : 'Satın Al'
+                  }
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
       <div className="max-w-2xl mx-auto space-y-6">
@@ -468,55 +540,99 @@ const MarketPage = () => {
           </CardContent>
         </Card>
 
-        {/* Market Items */}
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Satın Alınabilir Öğeler</h2>
+        {/* Market Kategorileri */}
+        <Tabs defaultValue="credits" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 mb-6">
+            <TabsTrigger value="credits" className="text-xs">Oyun</TabsTrigger>
+            <TabsTrigger value="premium" className="text-xs">Premium</TabsTrigger>
+            <TabsTrigger value="themes" className="text-xs">Temalar</TabsTrigger>
+            <TabsTrigger value="extras" className="text-xs">Diğer</TabsTrigger>
+          </TabsList>
           
-          {marketItems.map((item) => (
-            <Card key={item.id} className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-secondary rounded-lg flex items-center justify-center">
-                      <item.icon className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold">{item.title}</h3>
-                      <p className="text-sm text-muted-foreground">{item.description}</p>
-                      {item.duration && (
-                        <Badge variant="outline" className="mt-1">
-                          {item.duration}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-lg font-bold">
-                      {item.currency === 'credits' ? (
-                        <span className="flex items-center justify-end">
-                          <Zap className="w-4 h-4 mr-1" />
-                          {item.price}
-                        </span>
-                      ) : (
-                        `$${item.price}`
-                      )}
-                    </div>
-                    <Button 
-                      onClick={() => handlePurchase(item)}
-                      size="sm"
-                      className="mt-2"
-                      disabled={item.currency === 'credits' && userCredits < item.price}
-                    >
-                      {item.currency === 'credits' && userCredits < item.price ? 
-                        'Yetersiz Kredi' : 'Satın Al'
-                      }
-                    </Button>
-                  </div>
+          {/* Oyun Hakları & Sınırsız */}
+          <TabsContent value="credits" className="space-y-4">
+            <div className="flex items-center space-x-2 mb-4">
+              <Zap className="w-5 h-5 text-primary" />
+              <h3 className="text-lg font-semibold">Oyun Hakları & Sınırsız Zaman</h3>
+            </div>
+            {renderMarketItems(getItemsByCategory('credits'))}
+          </TabsContent>
+          
+          {/* Premium & Reklamlar */}
+          <TabsContent value="premium" className="space-y-4">
+            <div className="flex items-center space-x-2 mb-4">
+              <Crown className="w-5 h-5 text-yellow-500" />
+              <h3 className="text-lg font-semibold">Premium & Reklamlar</h3>
+            </div>
+            {renderMarketItems(getItemsByCategory('premium'))}
+          </TabsContent>
+          
+          {/* Temalar */}
+          <TabsContent value="themes" className="space-y-4">
+            <div className="flex items-center space-x-2 mb-4">
+              <Palette className="w-5 h-5 text-purple-500" />
+              <h3 className="text-lg font-semibold">Temalar & Görünüm</h3>
+            </div>
+            <Tabs defaultValue="theme-premium" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="theme-premium">Premium Temalar</TabsTrigger>
+                <TabsTrigger value="theme-credits">Kredi Temalar</TabsTrigger>
+              </TabsList>
+              <TabsContent value="theme-premium">
+                {renderMarketItems(getItemsByCategory('themes').filter(item => item.currency === 'premium'))}
+              </TabsContent>
+              <TabsContent value="theme-credits">
+                {renderMarketItems(getItemsByCategory('themes').filter(item => item.currency === 'credits'))}
+              </TabsContent>
+            </Tabs>
+          </TabsContent>
+          
+          {/* Diğer Öğeler */}
+          <TabsContent value="extras" className="space-y-4">
+            <Tabs defaultValue="avatar" className="w-full">
+              <TabsList className="grid w-full grid-cols-3 mb-4">
+                <TabsTrigger value="avatar" className="text-xs">Avatar</TabsTrigger>
+                <TabsTrigger value="effects" className="text-xs">Efektler</TabsTrigger>
+                <TabsTrigger value="extras-items" className="text-xs">Rozetler</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="avatar">
+                <div className="flex items-center space-x-2 mb-4">
+                  <Frame className="w-5 h-5 text-pink-500" />
+                  <h3 className="text-lg font-semibold">Avatar Çerçeveleri</h3>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                {renderMarketItems(getItemsByCategory('avatar'))}
+              </TabsContent>
+              
+              <TabsContent value="effects">
+                <div className="flex items-center space-x-2 mb-4">
+                  <Sparkles className="w-5 h-5 text-blue-500" />
+                  <h3 className="text-lg font-semibold">Ses & Efektler</h3>
+                </div>
+                {renderMarketItems(getItemsByCategory('effects'))}
+              </TabsContent>
+              
+              <TabsContent value="extras-items">
+                <div className="flex items-center space-x-2 mb-4">
+                  <Trophy className="w-5 h-5 text-orange-500" />
+                  <h3 className="text-lg font-semibold">Rozetler & İpuçları</h3>
+                </div>
+                <Tabs defaultValue="extras-premium" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 mb-4">
+                    <TabsTrigger value="extras-premium">Premium</TabsTrigger>
+                    <TabsTrigger value="extras-credits">Kredi</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="extras-premium">
+                    {renderMarketItems(getItemsByCategory('extras').filter(item => item.currency === 'premium'))}
+                  </TabsContent>
+                  <TabsContent value="extras-credits">
+                    {renderMarketItems(getItemsByCategory('extras').filter(item => item.currency === 'credits'))}
+                  </TabsContent>
+                </Tabs>
+              </TabsContent>
+            </Tabs>
+          </TabsContent>
+        </Tabs>
 
         {/* Premium Benefits */}
         <Card className="border-yellow-500">
