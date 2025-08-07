@@ -268,11 +268,11 @@ const HomePage = () => {
                       </div>
                     </div>
                     {mode.id === 'vs-computer' && (
-                      <div className="w-16 h-12 flex items-center justify-center">
+                      <div className="w-20 h-16 flex items-center justify-center overflow-hidden">
                         <img 
                           src="/lovable-uploads/8008dff7-7ead-48e2-b47e-fde31770af08.png" 
                           alt="Computer player"
-                          className="w-full h-full object-contain opacity-80"
+                          className="w-24 h-20 object-cover opacity-80"
                         />
                       </div>
                     )}
