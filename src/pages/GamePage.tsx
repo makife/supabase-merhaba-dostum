@@ -391,7 +391,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
 
         {/* Scores */}
         <div className="grid grid-cols-2 gap-4">
-          <Card className="bg-white/20 backdrop-blur-sm border-white/30">
+          <Card className="game-grid border-0">
             <CardContent className="p-4 text-center relative overflow-hidden">
               <div className="w-16 h-16 bg-white/30 rounded-full mx-auto mb-2 flex items-center justify-center border-2 border-white/40 overflow-hidden">
                 {playerAvatar ? (
@@ -416,7 +416,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
               )}
             </CardContent>
           </Card>
-          <Card className="bg-white/20 backdrop-blur-sm border-white/30">
+          <Card className="game-grid border-0">
             <CardContent className="p-4 text-center relative overflow-hidden">
               <div className="w-16 h-16 bg-white/30 rounded-full mx-auto mb-2 flex items-center justify-center border-2 border-white/40 overflow-hidden">
                 <opponent.icon className="w-8 h-8 text-white" />
