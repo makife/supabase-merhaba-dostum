@@ -258,7 +258,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         await updateScore(newScore);
       }
 
-      // Update total score in database for level progression
+      // Update total score in database for level progression with level multiplier
       if (user) {
         const { data: currentProfile } = await supabase
           .from('profiles')
@@ -266,19 +266,54 @@ const GamePage = ({ gameMode }: GamePageProps) => {
           .eq('id', user.id)
           .single();
 
-        const newTotalScore = (currentProfile?.total_score || 0) + result.points;
+        // Calculate current level to determine multiplier
+        const calculateLevel = (totalScore: number) => {
+          const baseExp = 1000;
+          let level = 1;
+          let expForCurrentLevel = 0;
+          let expForNextLevel = baseExp;
+
+          while (totalScore >= expForNextLevel) {
+            expForCurrentLevel = expForNextLevel;
+            level++;
+            expForNextLevel = baseExp * Math.pow(1.5, level - 1);
+          }
+
+          return level;
+        };
+
+        const currentLevel = calculateLevel(currentProfile?.total_score || 0);
+        const levelMultiplier = 1 + (currentLevel - 1) * 0.1; // Same formula as LevelProgress
+        const bonusPoints = Math.floor(result.points * levelMultiplier);
+        
+        const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
         
         await supabase
           .from('profiles')
           .update({ total_score: newTotalScore })
           .eq('id', user.id);
+
+        // Show bonus if multiplier > 1
+        if (levelMultiplier > 1) {
+          toast({
+            title: 'Seviye Bonusu!',
+            description: `${result.points} + ${bonusPoints - result.points} bonus = ${bonusPoints} EXP (${levelMultiplier.toFixed(1)}x)`,
+            duration: 2000,
+          });
+        } else {
+          toast({
+            title: 'Doğru Kelime!',
+            description: result.message,
+            duration: 1000,
+          });
+        }
+      } else {
+        toast({
+          title: 'Doğru Kelime!',
+          description: result.message,
+          duration: 1000,
+        });
       }
-      
-      toast({
-        title: 'Doğru Kelime!',
-        description: result.message,
-        duration: 1000,
-      });
     } else {
       playSound('wrongWord');
       toast({
