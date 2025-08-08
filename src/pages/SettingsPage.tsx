@@ -1,4 +1,5 @@
 import { SoundPackSelector } from '@/components/SoundPackSelector';
+import { ThemeSelector } from '@/components/ThemeSelector';
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -376,13 +377,18 @@ const SettingsPage = () => {
               </>
             )}
 
-            {/* Theme */}
+            {/* Theme Selector */}
+            <ThemeSelector />
+            
+            <Separator />
+            
+            {/* Legacy Theme for backward compatibility */}
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <Palette className="w-5 h-5" />
                 <div>
-                  <p className="font-medium">Tema</p>
-                  <p className="text-sm text-muted-foreground">Görünümü seçin</p>
+                  <p className="font-medium">Sistem Teması</p>
+                  <p className="text-sm text-muted-foreground">Açık/Koyu sistem ayarı</p>
                 </div>
               </div>
               <Select value={theme} onValueChange={(value) => setTheme(value as 'light' | 'dark' | 'system')}>

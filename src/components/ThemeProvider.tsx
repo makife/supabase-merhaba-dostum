@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserPurchases } from '@/hooks/useUserPurchases';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ThemeContextType {
@@ -23,6 +24,7 @@ export const useThemeContext = () => {
 
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
+  const { hasPurchased } = useUserPurchases();
   const [theme, setTheme] = useState('default');
   const [avatarFrame, setAvatarFrame] = useState('none');
   const [soundPack, setSoundPack] = useState('default');
@@ -68,14 +70,34 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Tema değiştir
   const applyTheme = async (newTheme: string) => {
-    if (!user) return;
+    if (!user) return false;
+
+    // Premium temaların satın alma kontrolü
+    const premiumThemes = ['dark_ocean', 'sunset', 'forest'];
+    const creditsThemes = ['classic'];
+    
+    if (premiumThemes.includes(newTheme)) {
+      const requiredPurchase = `theme_${newTheme}`;
+      if (!hasPurchased(requiredPurchase)) {
+        return false;
+      }
+    }
+    
+    if (creditsThemes.includes(newTheme)) {
+      const requiredPurchase = 'credits_theme_basic';
+      if (!hasPurchased(requiredPurchase)) {
+        return false;
+      }
+    }
 
     try {
       await updateUserSetting('active_theme', newTheme);
       setTheme(newTheme);
       applyThemeToDOM(newTheme);
+      return true;
     } catch (error) {
       console.error('Error applying theme:', error);
+      return false;
     }
   };
 
@@ -93,13 +115,25 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Ses paketi değiştir
   const applySoundPack = async (newPack: string) => {
-    if (!user) return;
+    if (!user) return false;
+
+    // Premium ses paketlerinin satın alma kontrolü
+    const premiumSoundPacks = ['space', 'nature'];
+    
+    if (premiumSoundPacks.includes(newPack)) {
+      const requiredPurchase = `sound_pack_${newPack}`;
+      if (!hasPurchased(requiredPurchase)) {
+        return false;
+      }
+    }
 
     try {
       await updateUserSetting('active_sound_pack', newPack);
       setSoundPack(newPack);
+      return true;
     } catch (error) {
       console.error('Error applying sound pack:', error);
+      return false;
     }
   };
 
