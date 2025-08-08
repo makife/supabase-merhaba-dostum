@@ -56,7 +56,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
 
   // Game state - Generate random letters each time
   const generateRandomGrid = (): string[][] => {
-    // Turkish letters with their frequency weights
+    // Turkish letters with their frequency weights - NO W, Q, X EVER
     const letterPool = [
       'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A', // A - very common
       'E', 'E', 'E', 'E', 'E', 'E', 'E',       // E - very common
@@ -87,7 +87,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       'Ş', 'Ş',                                // Ş - medium
       'V', 'V',                                // V - medium
       'Z',                                     // Z - rare
-      // Removed foreign letters Q, W, X - using only Turkish alphabet
+      // STRICTLY Turkish alphabet only - W, Q, X forbidden
     ];
     
     const grid: string[][] = [];

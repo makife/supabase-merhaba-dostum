@@ -60,9 +60,9 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   const [participants, setParticipants] = useState<GameParticipant[]>([]);
   const [isConnected, setIsConnected] = useState(false);
 
-  // Generate random grid
+  // Generate random grid - NO W, Q, X
   const generateRandomGrid = (): string[][] => {
-    const letters = 'ABCÇDEFGĞHIİJKLMNOÖPQRSŞTUÜVWXYZ';
+    const letters = 'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ'; // Removed W, Q, X
     const grid: string[][] = [];
     for (let i = 0; i < 4; i++) {
       const row: string[] = [];
