@@ -193,6 +193,96 @@ const MarketPage = () => {
       type: 'avatar',
       value: 1
     },
+    {
+      id: 'avatar_floral_roses',
+      title: 'Gül Çerçevesi',
+      description: 'Romantik gül desenli çerçeve',
+      price: 2.49,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1
+    },
+    {
+      id: 'avatar_blue_berries',
+      title: 'Mavi Çilek Çerçevesi',
+      description: 'Sevimli mavi çilek desenli çerçeve',
+      price: 1.99,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1
+    },
+    {
+      id: 'avatar_gold_simple',
+      title: 'Sade Altın Çerçeve',
+      description: 'Minimalist altın çerçeve',
+      price: 1.49,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1
+    },
+    {
+      id: 'avatar_floral_wreath',
+      title: 'Çiçek Çelengi',
+      description: 'Renkli çiçek çelengi çerçevesi',
+      price: 2.99,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1
+    },
+    {
+      id: 'avatar_purple_flowers',
+      title: 'Mor Çiçek Çerçevesi',
+      description: 'Zarif mor çiçek desenli çerçeve',
+      price: 2.49,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1
+    },
+    {
+      id: 'avatar_pink_flowers',
+      title: 'Pembe Çiçek Çerçevesi',
+      description: 'Tatlı pembe çiçek desenli çerçeve',
+      price: 2.49,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1
+    },
+    {
+      id: 'avatar_antique_bronze',
+      title: 'Antik Bronz Çerçeve',
+      description: 'Klasik antik bronz çerçeve',
+      price: 3.49,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1
+    },
+    {
+      id: 'avatar_green_patrick',
+      title: 'Yeşil Şans Çerçevesi',
+      description: 'Şanslı yeşil temmalı çerçeve',
+      price: 2.99,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1
+    },
+    {
+      id: 'avatar_heart_roses',
+      title: 'Kalp Gül Çerçevesi',
+      description: 'Sevgi dolu kalp ve gül çerçevesi',
+      price: 3.49,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1
+    },
 
     // Ses Efektleri
     {
