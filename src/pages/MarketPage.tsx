@@ -175,28 +175,6 @@ const MarketPage = () => {
 
     // Avatar Çerçeveleri
     {
-      id: 'avatar_gold_frame',
-      title: 'Altın Çerçeve',
-      description: 'Profilinize özel altın çerçeve',
-      price: 1.49,
-      currency: 'premium',
-      icon: Frame,
-      type: 'avatar',
-      value: 1,
-      image: '/lovable-uploads/aa2df12c-9aa3-49c0-a78e-4a946ad9c396.png'
-    },
-    {
-      id: 'avatar_rainbow_frame',
-      title: 'Gökkuşağı Çerçeve',
-      description: 'Renkli gökkuşağı efekti',
-      price: 1.99,
-      currency: 'premium',
-      icon: Heart,
-      type: 'avatar',
-      value: 1,
-      image: '/lovable-uploads/ff7b6503-a976-4eb1-87d0-2373423fc6e5.png'
-    },
-    {
       id: 'avatar_floral_roses',
       title: 'Gül Çerçevesi',
       description: 'Romantik gül desenli çerçeve',
