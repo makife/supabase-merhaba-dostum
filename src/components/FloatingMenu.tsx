@@ -54,7 +54,7 @@ export function FloatingMenu() {
               className="flex items-center space-x-3 animate-in slide-in-from-right-5"
               style={{ animationDelay: `${index * 50}ms` }}
             >
-              <span className="text-sm font-semibold text-white font-painter">
+              <span className="text-base font-semibold text-white font-painter flex items-center h-12">
                 {item.title}
               </span>
               <Button
@@ -72,7 +72,7 @@ export function FloatingMenu() {
             className="flex items-center space-x-3 animate-in slide-in-from-right-5"
             style={{ animationDelay: `${menuItems.length * 50}ms` }}
           >
-            <span className="text-sm font-semibold text-white font-painter">
+            <span className="text-base font-semibold text-white font-painter flex items-center h-12">
               Çıkış
             </span>
             <Button
