@@ -94,44 +94,61 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
           // No immediate match, but room created - wait for others via realtime
           console.log('🏗️ Room created, setting up realtime listener for new participants...');
           
-          // Set up realtime subscription to detect when someone joins our room
-          if (currentRoom) {
-            realtimeChannel = supabase
-              .channel(`matchmaking-${currentRoom.id}`)
-              .on('postgres_changes', {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'game_participants',
-                filter: `room_id=eq.${currentRoom.id}`
-              }, (payload) => {
-                console.log('🎉 New participant joined during matchmaking:', payload);
-                
-                // Check if it's not our own join (we already joined)
-                if (payload.new?.user_id !== user?.id) {
-                  console.log('✅ Real player found via realtime!');
+          // Wait a bit for currentRoom to be updated, then set up realtime
+          setTimeout(() => {
+            console.log('🏗️ Current room ID after timeout:', currentRoom?.id);
+            
+            // Set up realtime subscription to detect when someone joins our room
+            if (currentRoom) {
+              const channelName = `matchmaking-${currentRoom.id}`;
+              console.log('🔔 Setting up realtime channel:', channelName);
+              
+              realtimeChannel = supabase
+                .channel(channelName)
+                .on('postgres_changes', {
+                  event: 'INSERT',
+                  schema: 'public',
+                  table: 'game_participants',
+                  filter: `room_id=eq.${currentRoom.id}`
+                }, (payload) => {
+                  console.log('🎉 Realtime event received:', payload);
+                  console.log('🎉 New participant user_id:', payload.new?.user_id);
+                  console.log('🎉 Current user_id:', user?.id);
                   
-                  // Cleanup first to prevent multiple triggers
-                  if (realtimeChannel) {
-                    supabase.removeChannel(realtimeChannel);
-                    realtimeChannel = null;
+                  // Check if it's not our own join (we already joined)
+                  if (payload.new?.user_id !== user?.id) {
+                    console.log('✅ Real player found via realtime!');
+                    
+                    // Cleanup first to prevent multiple triggers
+                    if (realtimeChannel) {
+                      console.log('🧹 Cleaning up realtime channel');
+                      supabase.removeChannel(realtimeChannel);
+                      realtimeChannel = null;
+                    }
+                    clearTimeout(searchTimeout);
+                    clearInterval(progressInterval);
+                    clearInterval(countdownInterval);
+                    
+                    setSearchStatus('found');
+                    playSound('correctWord');
+                    toast({
+                      title: 'Oyuncu Bulundu!',
+                      description: 'Rakip oyuncu katıldı!',
+                    });
+                    setTimeout(() => {
+                      onMatchFound(false);
+                    }, 1500);
+                  } else {
+                    console.log('👤 Ignoring our own join event');
                   }
-                  clearTimeout(searchTimeout);
-                  clearInterval(progressInterval);
-                  clearInterval(countdownInterval);
-                  
-                  setSearchStatus('found');
-                  playSound('correctWord');
-                  toast({
-                    title: 'Oyuncu Bulundu!',
-                    description: 'Rakip oyuncu katıldı!',
-                  });
-                  setTimeout(() => {
-                    onMatchFound(false);
-                  }, 1500);
-                }
-              })
-              .subscribe();
-          }
+                })
+                .subscribe((status) => {
+                  console.log('📡 Realtime subscription status:', status);
+                });
+            } else {
+              console.log('❌ No current room available for realtime setup after timeout');
+            }
+          }, 500); // 500ms delay to allow currentRoom to be updated
         }
       } catch (error) {
         console.error('🚨 Matchmaking error:', error);
