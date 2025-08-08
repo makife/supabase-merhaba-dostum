@@ -42,10 +42,13 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   // Get game type from room or URL params
   const getGameType = (): 'timed' | 'score' => {
     if (currentRoom?.game_mode) {
-      if (currentRoom.game_mode.includes('timed')) return 'timed';
+      console.log('🎮 Game mode from room:', currentRoom.game_mode);
       if (currentRoom.game_mode.includes('score')) return 'score';
+      if (currentRoom.game_mode.includes('timed')) return 'timed';
     }
-    return (searchParams.get('type') as 'timed' | 'score') || 'timed';
+    const urlType = (searchParams.get('type') as 'timed' | 'score') || 'timed';
+    console.log('🎮 Game type from URL:', urlType);
+    return urlType;
   };
   
   const gameType = getGameType();
@@ -111,25 +114,44 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const [gameEnded, setGameEnded] = useState(false);
   const [winner, setWinner] = useState<'player' | 'opponent' | 'tie' | null>(null);
   const [playerAvatar, setPlayerAvatar] = useState<string>('');
+  const [opponentAvatar, setOpponentAvatar] = useState<string>('');
+  const [hasShownStartMessage, setHasShownStartMessage] = useState(false);
 
-  // Fetch player avatar from profiles table and stop background music
+  // Fetch player and opponent avatars
   useEffect(() => {
-    const fetchPlayerAvatar = async () => {
+    const fetchAvatars = async () => {
       if (!user) return;
       
-      const { data } = await supabase
+      // Fetch current user avatar
+      const { data: playerData } = await supabase
         .from('profiles')
         .select('avatar_url')
         .eq('id', user.id)
         .maybeSingle();
       
-      if (data?.avatar_url) {
-        setPlayerAvatar(data.avatar_url);
+      if (playerData?.avatar_url) {
+        setPlayerAvatar(playerData.avatar_url);
+      }
+
+      // Fetch opponent avatar for private room
+      if (gameMode === 'private-room' && participants.length >= 2) {
+        const opponent = participants.find(p => p.user_id !== user.id);
+        if (opponent) {
+          const { data: opponentData } = await supabase
+            .from('profiles')
+            .select('avatar_url')
+            .eq('id', opponent.user_id)
+            .maybeSingle();
+          
+          if (opponentData?.avatar_url) {
+            setOpponentAvatar(opponentData.avatar_url);
+          }
+        }
       }
     };
 
-    fetchPlayerAvatar();
-  }, [user]);
+    fetchAvatars();
+  }, [user, participants, gameMode]);
 
   // Music control effect and credit consumption
   useEffect(() => {
@@ -166,13 +188,12 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     };
   }, []); // Empty dependency array to run only once
 
-  // Private room logic with notification
+  // Private room logic with controlled notifications
   useEffect(() => {
     console.log('=== PRIVATE ROOM CHECK ===');
     console.log('Game mode:', gameMode);
     console.log('Participants count:', participants.length);
-    console.log('Current user ID:', user?.id);
-    console.log('Room host ID:', currentRoom?.host_id);
+    console.log('Has shown start message:', hasShownStartMessage);
     
     if (gameMode === 'private-room') {
       if (participants.length >= 2) {
@@ -180,24 +201,28 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         setWaitingForPlayer(false);
         setGameStarted(true);
         
-        // Show success toast when game starts
-        toast({
-          title: '🎮 Oyun Başladı!',
-          description: 'İki oyuncu da hazır, oyuna başlayın!',
-          duration: 2000,
-        });
+        // Show success toast only once
+        if (!hasShownStartMessage) {
+          setHasShownStartMessage(true);
+          toast({
+            title: '🎮 Oyun Başladı!',
+            description: `${gameType === 'score' ? 'Puanlı' : 'Süreli'} oyun başladı!`,
+            duration: 2000,
+          });
+        }
       } else {
         console.log('⏳ Waiting for second player...');
         setWaitingForPlayer(true);
         setGameStarted(false);
+        setHasShownStartMessage(false); // Reset for next time
       }
     } else {
       setGameStarted(true);
       setWaitingForPlayer(false);
     }
-    console.log('Game started:', participants.length >= 2);
+    console.log('Game type:', gameType, 'Game started:', participants.length >= 2);
     console.log('=== END CHECK ===');
-  }, [participants, gameMode, currentRoom, user]);
+  }, [participants, gameMode, hasShownStartMessage, gameType]);
 
   // Timer effect - only for timed mode
   useEffect(() => {
@@ -420,20 +445,20 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Get opponent info based on game mode
+  // Get opponent info based on game mode with avatar
   const getOpponentInfo = () => {
     switch (gameMode) {
       case 'vs-computer':
-        return { name: 'Bilgisayar', icon: Bot };
+        return { name: 'Bilgisayar', icon: Bot, avatar: null };
       case 'private-room':
-        return { name: 'Arkadaş', icon: User };
+        return { name: 'Arkadaş', icon: User, avatar: opponentAvatar };
       case 'random-match':
-        return { name: 'Rakip', icon: User };
+        return { name: 'Rakip', icon: User, avatar: null };
       case 'tournament':
-        return { name: 'Turnuva Rakibi', icon: Trophy };
+        return { name: 'Turnuva Rakibi', icon: Trophy, avatar: null };
       default:
-        return { name: 'Rakip', icon: User };
-        }
+        return { name: 'Rakip', icon: User, avatar: null };
+    }
   };
 
   const opponent = getOpponentInfo();
@@ -586,7 +611,15 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       <div className="max-w-md mx-auto space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <Button variant="outline" size="sm" onClick={() => navigate('/')}>
+          <Button variant="outline" size="sm" onClick={() => {
+            if (gameMode === 'private-room' && !gameEnded) {
+              if (confirm('Oyundan çıkmak istediğinizde arkadaşınız tek kalacak. Emin misiniz?')) {
+                navigate('/');
+              }
+            } else {
+              navigate('/');
+            }
+          }}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Çıkış
           </Button>
@@ -652,7 +685,15 @@ const GamePage = ({ gameMode }: GamePageProps) => {
           <Card className="light-gradient border-0">
             <CardContent className="p-4 text-center relative overflow-hidden">
               <div className="w-16 h-16 bg-white/60 rounded-full mx-auto mb-2 flex items-center justify-center border-2 border-white/80 overflow-hidden">
-                <opponent.icon className="w-8 h-8 text-gray-600" />
+                {opponent.avatar ? (
+                  <img 
+                    src={opponent.avatar} 
+                    alt="Opponent" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <opponent.icon className="w-8 h-8 text-gray-600" />
+                )}
               </div>
               <p className="text-sm text-gray-700 font-bold font-bungee">
                 {opponent.name}

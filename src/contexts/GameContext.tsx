@@ -87,7 +87,10 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           host_id: user.id,
           room_code: roomCode,
           current_grid: grid.flat(),
-          status: 'waiting'
+          status: 'waiting',
+          // Set correct limits based on game type
+          max_score: gameMode.includes('score') ? 500 : 100,
+          time_limit: gameMode.includes('timed') ? 120 : 0
         })
         .select()
         .single();
