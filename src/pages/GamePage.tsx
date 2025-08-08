@@ -454,6 +454,8 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const checkWinner = useCallback(async () => {
     if (gameEnded || winner !== null) return; // Oyun zaten bitmişse veya kazanan belliyse tekrar kontrol etme
     
+    console.log('🏆 Checking winner - Player:', playerScore, 'Opponent:', opponentScore);
+    
     let gameResult: 'player' | 'opponent' | 'tie';
     let bonusPoints = 0;
     
@@ -463,15 +465,18 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       setWinner('player');
       playSound('gameWin');
       setTimeout(() => playCelebrationSound(), 500);
+      console.log('🏆 Player wins!');
     } else if (opponentScore > playerScore) {
       gameResult = 'opponent';
       setWinner('opponent');
       playSound('gameLose');
       setTimeout(() => playGameLoseSound(), 500);
+      console.log('🏆 Opponent wins!');
     } else {
       gameResult = 'tie';
       bonusPoints = 25; // Beraberlik bonusu
       setWinner('tie');
+      console.log('🏆 It\'s a tie!');
     }
 
     // Apply end game bonus for player
