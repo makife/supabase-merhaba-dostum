@@ -379,11 +379,11 @@ const HomePage = () => {
         {selectedMode && selectedMode === 'private-room' ? (
           <PrivateRoomModal
             onClose={() => setSelectedMode(null)}
-            onRoomCreated={(roomCode) => {
+            onRoomCreated={(roomCode, gameType) => {
               setSelectedMode(null);
               navigate('/game/private-room', { 
                 state: { 
-                  gameType: 'timed',
+                  gameType: gameType,
                   roomCode: roomCode
                 } 
               });

@@ -4,20 +4,22 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, Plus, LogIn, Copy, Check } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Users, Plus, LogIn, Copy, Check, Clock, Trophy, Target } from 'lucide-react';
 import { useGame } from '@/contexts/GameContext';
 import { useSounds } from '@/hooks/useSounds';
 import { useToast } from '@/hooks/use-toast';
 
 interface PrivateRoomModalProps {
   onClose: () => void;
-  onRoomCreated: (roomCode: string) => void;
+  onRoomCreated: (roomCode: string, gameType: 'timed' | 'score') => void;
   onRoomJoined: () => void;
 }
 
 const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomModalProps) => {
   const [roomCode, setRoomCode] = useState('');
   const [joinCode, setJoinCode] = useState('');
+  const [gameType, setGameType] = useState<'timed' | 'score'>('timed');
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const { createRoom, joinRoom } = useGame();
@@ -43,10 +45,10 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
       
       if (room && room.room_code) {
         setRoomCode(room.room_code);
-        onRoomCreated(room.room_code);
+        onRoomCreated(room.room_code, gameType);
         toast({
           title: 'Oda Oluşturuldu!',
-          description: `Oda kodu: ${room.room_code}`,
+          description: `Oda kodu: ${room.room_code} (${gameType === 'timed' ? 'Zamana Karşı' : 'Puana Karşı'})`,
         });
       }
     } catch (error) {
@@ -131,6 +133,74 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
             </TabsList>
             
             <TabsContent value="create" className="space-y-4 mt-4">
+              {!roomCode && (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold mb-3 text-center">Oyun Türü Seçin</h3>
+                    <RadioGroup value={gameType} onValueChange={(value) => {
+                      playSound('buttonClick');
+                      setGameType(value as 'timed' | 'score');
+                    }}>
+                      <div className="space-y-3">
+                        {/* Zamana Karşı */}
+                        <Label className={`relative flex items-center space-x-3 p-3 rounded-lg border-2 cursor-pointer transition-all duration-300 ${
+                          gameType === 'timed' 
+                            ? 'border-blue-500 bg-blue-50' 
+                            : 'border-gray-200 hover:border-blue-300'
+                        }`}>
+                          <RadioGroupItem value="timed" className="sr-only" />
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                            gameType === 'timed' 
+                              ? 'bg-blue-500 text-white' 
+                              : 'bg-gray-100 text-gray-600'
+                          }`}>
+                            <Clock className="w-5 h-5" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold">Zamana Karşı</span>
+                              {gameType === 'timed' && (
+                                <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                                  <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                                </div>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">2 dakika içinde en yüksek puanı hedefle</p>
+                          </div>
+                        </Label>
+
+                        {/* Puana Karşı */}
+                        <Label className={`relative flex items-center space-x-3 p-3 rounded-lg border-2 cursor-pointer transition-all duration-300 ${
+                          gameType === 'score' 
+                            ? 'border-amber-500 bg-amber-50' 
+                            : 'border-gray-200 hover:border-amber-300'
+                        }`}>
+                          <RadioGroupItem value="score" className="sr-only" />
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                            gameType === 'score' 
+                              ? 'bg-amber-500 text-white' 
+                              : 'bg-gray-100 text-gray-600'
+                          }`}>
+                            <Trophy className="w-5 h-5" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold">Puana Karşı</span>
+                              {gameType === 'score' && (
+                                <div className="w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center">
+                                  <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                                </div>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">500 puana ilk ulaşan kazanır</p>
+                          </div>
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+                </div>
+              )}
+              
               <div className="text-center space-y-4">
                 <p className="text-sm text-muted-foreground">
                   Yeni bir özel oda oluşturun ve arkadaşınızla paylaşın
