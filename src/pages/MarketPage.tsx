@@ -718,7 +718,18 @@ const MarketPage = () => {
                 <TabsTrigger value="theme-credits">Kredi Temalar</TabsTrigger>
               </TabsList>
               <TabsContent value="theme-premium">
-                {renderMarketItems(getItemsByCategory('themes').filter(item => item.currency === 'premium'))}
+                {!isPremium && renderMarketItems(getItemsByCategory('themes').filter(item => item.currency === 'premium'))}
+                {isPremium && (
+                  <Card className="border-green-500">
+                    <CardContent className="p-6 text-center">
+                      <Crown className="w-12 h-12 text-yellow-500 mx-auto mb-3" />
+                      <h3 className="text-lg font-semibold mb-2">Premium Üyesiniz!</h3>
+                      <p className="text-muted-foreground">
+                        Tüm premium temalar size açık. Ayarlar sayfasından temalarınızı değiştirebilirsiniz.
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
               <TabsContent value="theme-credits">
                 {renderMarketItems(getItemsByCategory('themes').filter(item => item.currency === 'credits'))}
@@ -740,7 +751,18 @@ const MarketPage = () => {
                   <Frame className="w-5 h-5 text-pink-500" />
                   <h3 className="text-lg font-semibold">Avatar Çerçeveleri</h3>
                 </div>
-                {renderMarketItems(getItemsByCategory('avatar'))}
+                {!isPremium && renderMarketItems(getItemsByCategory('avatar'))}
+                {isPremium && (
+                  <Card className="border-green-500">
+                    <CardContent className="p-6 text-center">
+                      <Crown className="w-12 h-12 text-yellow-500 mx-auto mb-3" />
+                      <h3 className="text-lg font-semibold mb-2">Premium Üyesiniz!</h3>
+                      <p className="text-muted-foreground">
+                        Tüm avatar çerçeveleri size açık. Ayarlar sayfasından çerçevenizi değiştirebilirsiniz.
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
               
               <TabsContent value="effects">
@@ -748,7 +770,18 @@ const MarketPage = () => {
                   <Sparkles className="w-5 h-5 text-blue-500" />
                   <h3 className="text-lg font-semibold">Ses & Efektler</h3>
                 </div>
-                {renderMarketItems(getItemsByCategory('effects'))}
+                {!isPremium && renderMarketItems(getItemsByCategory('effects'))}
+                {isPremium && (
+                  <Card className="border-green-500">
+                    <CardContent className="p-6 text-center">
+                      <Crown className="w-12 h-12 text-yellow-500 mx-auto mb-3" />
+                      <h3 className="text-lg font-semibold mb-2">Premium Üyesiniz!</h3>
+                      <p className="text-muted-foreground">
+                        Tüm ses paketleri ve efektler size açık. Ayarlar sayfasından ses paketinizi değiştirebilirsiniz.
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
               
               <TabsContent value="extras-items">
@@ -762,7 +795,18 @@ const MarketPage = () => {
                     <TabsTrigger value="extras-credits">Kredi</TabsTrigger>
                   </TabsList>
                   <TabsContent value="extras-premium">
-                    {renderMarketItems(getItemsByCategory('extras').filter(item => item.currency === 'premium'))}
+                    {!isPremium && renderMarketItems(getItemsByCategory('extras').filter(item => item.currency === 'premium'))}
+                    {isPremium && (
+                      <Card className="border-green-500">
+                        <CardContent className="p-6 text-center">
+                          <Crown className="w-12 h-12 text-yellow-500 mx-auto mb-3" />
+                          <h3 className="text-lg font-semibold mb-2">Premium Üyesiniz!</h3>
+                          <p className="text-muted-foreground">
+                            Tüm premium rozetler ve özellikler size açık.
+                          </p>
+                        </CardContent>
+                      </Card>
+                    )}
                   </TabsContent>
                   <TabsContent value="extras-credits">
                     {renderMarketItems(getItemsByCategory('extras').filter(item => item.currency === 'credits'))}
