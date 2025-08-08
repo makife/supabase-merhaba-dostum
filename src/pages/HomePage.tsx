@@ -4,6 +4,7 @@ import { useMusic } from '@/contexts/MusicContext';
 import GameModeSelector from '@/components/GameModeSelector';
 import { LevelProgress } from '@/components/LevelProgress';
 import { FloatingMenu } from '@/components/FloatingMenu';
+import { HeaderAnimation } from '@/components/HeaderAnimation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/contexts/UserContext';
 import { useSounds } from '@/hooks/useSounds';
@@ -35,44 +36,8 @@ const HomePage = () => {
   const { startBackgroundMusic } = useMusic();
   const { uploadProfilePicture, uploading } = useProfilePicture();
   const [selectedMode, setSelectedMode] = useState<string | null>(null);
-  const [animatedLetters, setAnimatedLetters] = useState<Array<{id: number, letter: string, x: number, y: number, color: string, font: string, dx: number}>>([]);
   const [userAvatar, setUserAvatar] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const letters = 'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ';
-  const colors = ['text-red-400', 'text-blue-400', 'text-green-400', 'text-yellow-400', 'text-purple-400', 'text-pink-400', 'text-indigo-400', 'text-orange-400'];
-  const fonts = ['font-fredoka', 'font-comfortaa', 'font-righteous', 'font-bungee', 'font-orbitron'];
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const newLetter = {
-        id: Date.now(),
-        letter: letters[Math.floor(Math.random() * letters.length)],
-        x: -10,
-        y: Math.random() * 100, // Tüm yüksekliği kullan
-        color: colors[Math.floor(Math.random() * colors.length)],
-        font: fonts[Math.floor(Math.random() * fonts.length)],
-        dx: 0.3 + Math.random() * 0.8 // Daha yavaş hareket
-      };
-      
-      setAnimatedLetters(prev => [...prev.slice(-15), newLetter]); // Daha fazla harf
-    }, 300); // Daha sık harf üret
-
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    const moveInterval = setInterval(() => {
-      setAnimatedLetters(prev => 
-        prev.map(letter => ({
-          ...letter,
-          x: letter.x + letter.dx
-        })).filter(letter => letter.x < 110) // Sağ tarafa kadar git
-      );
-    }, 50);
-
-    return () => clearInterval(moveInterval);
-  }, []);
 
   // Start background music when component mounts
   useEffect(() => {
@@ -162,25 +127,7 @@ const HomePage = () => {
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="bg-card rounded-xl p-4 md:p-6 shadow-lg border relative overflow-hidden">
-          {/* Animated Letters Background */}
-          <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            {animatedLetters.map((letter) => (
-              <div
-                key={letter.id}
-                className={`absolute text-3xl md:text-4xl font-bold ${letter.color} ${letter.font} transition-all duration-1000 transform hover:scale-110`}
-                style={{
-                  left: `${letter.x}%`,
-                  top: `${letter.y}%`,
-                  textShadow: '0 0 10px currentColor',
-                  animation: 'bounce 3s infinite',
-                  opacity: letter.x > 95 ? Math.max(0, 1 - (letter.x - 95) / 15) : 0.6, // Çok sağda fade başlasın
-                  zIndex: 1
-                }}
-              >
-                {letter.letter}
-              </div>
-            ))}
-          </div>
+          <HeaderAnimation />
           
           {/* Mobile Layout */}
           <div className="block md:hidden relative z-10">

@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Eye, EyeOff, Gamepad2 } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
+import { HeaderAnimation } from '@/components/HeaderAnimation';
 
 const AuthPage = () => {
   const { signIn, signUp } = useAuth();
@@ -37,65 +38,12 @@ const AuthPage = () => {
     setLoading(false);
   };
 
-  const [animatedLetters, setAnimatedLetters] = useState<Array<{id: number, letter: string, x: number, y: number, color: string, font: string, dx: number}>>([]);
-
-  const letters = 'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ';
-  const colors = ['text-red-400', 'text-blue-400', 'text-green-400', 'text-yellow-400', 'text-purple-400', 'text-pink-400', 'text-indigo-400', 'text-orange-400'];
-  const fonts = ['font-fredoka', 'font-comfortaa', 'font-righteous', 'font-bungee', 'font-orbitron'];
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const newLetter = {
-        id: Date.now(),
-        letter: letters[Math.floor(Math.random() * letters.length)],
-        x: -10,
-        y: Math.random() * 80,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        font: fonts[Math.floor(Math.random() * fonts.length)],
-        dx: 0.5 + Math.random() * 1
-      };
-      
-      setAnimatedLetters(prev => [...prev.slice(-12), newLetter]);
-    }, 400);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    const moveInterval = setInterval(() => {
-      setAnimatedLetters(prev => 
-        prev.map(letter => ({
-          ...letter,
-          x: letter.x + letter.dx
-        })).filter(letter => letter.x < 110) // Sağ tarafa kadar git
-      );
-    }, 50);
-
-    return () => clearInterval(moveInterval);
-  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 game-grid">
       <div className="w-full max-w-md space-y-6 bounce-in">
         <Card className="border-0 bg-card/50 backdrop-blur relative overflow-hidden">
-          {/* Animated Letters Background */}
-          <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            {animatedLetters.map((letter) => (
-              <div
-                key={letter.id}
-                className={`absolute text-3xl font-bold ${letter.color} ${letter.font} transition-all duration-1000 transform hover:scale-110`}
-                style={{
-                  left: `${letter.x}%`,
-                  top: `${letter.y}%`,
-                  textShadow: '0 0 10px currentColor',
-                  animation: 'bounce 2s infinite',
-                  opacity: letter.x > 95 ? Math.max(0, 1 - (letter.x - 95) / 15) : 0.6 // Çok sağda fade başlasın
-                }}
-              >
-                {letter.letter}
-              </div>
-            ))}
-          </div>
+          <HeaderAnimation />
           
           <div className="text-center space-y-2 p-6 relative z-10">
             <h1 className="text-3xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent drop-shadow-2xl"
