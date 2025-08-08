@@ -106,8 +106,8 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const [playerScore, setPlayerScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(gameType === 'timed' ? 120 : 0); // Only use timer for timed mode
-  const [gameStarted, setGameStarted] = useState(gameMode !== 'private-room');
-  const [waitingForPlayer, setWaitingForPlayer] = useState(gameMode === 'private-room');
+  const [gameStarted, setGameStarted] = useState(false); // Always start as false for private rooms
+  const [waitingForPlayer, setWaitingForPlayer] = useState(false); // Will be set based on participants
   const [gameEnded, setGameEnded] = useState(false);
   const [winner, setWinner] = useState<'player' | 'opponent' | 'tie' | null>(null);
   const [playerAvatar, setPlayerAvatar] = useState<string>('');
@@ -169,31 +169,30 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   // Monitor participants for private room
   useEffect(() => {
     if (gameMode === 'private-room') {
-      console.log('Private room participants:', participants.length, participants);
-      // Check if we're the room host and alone (waiting for another player)
-      if (currentRoom && user && currentRoom.host_id === user.id) {
-        // Host is waiting for another player
-        if (participants.length < 2) {
-          setWaitingForPlayer(true);
-          setGameStarted(false);
-        } else {
-          // Second player joined
-          setWaitingForPlayer(false);
-          setGameStarted(true);
-          toast({
-            title: 'Oyun Başlıyor!',
-            description: 'İkinci oyuncu katıldı, oyuna başlayabilirsiniz!',
-          });
-        }
+      console.log('Private room check - participants:', participants.length);
+      
+      if (participants.length >= 2) {
+        // İki kişi de odada - oyuna başla
+        console.log('İki oyuncu hazır, oyun başlıyor!');
+        setWaitingForPlayer(false);
+        setGameStarted(true);
+        
+        toast({
+          title: 'Oyun Başlıyor!',
+          description: 'İki oyuncu da hazır - oyuna başlayabilirsiniz!',
+        });
       } else {
-        // Non-host player joining
-        if (participants.length >= 2) {
-          setWaitingForPlayer(false);
-          setGameStarted(true);
-        }
+        // Tek kişi - ikinci oyuncuyu bekle
+        console.log('İkinci oyuncu bekleniyor...');
+        setWaitingForPlayer(true);
+        setGameStarted(false);
       }
+    } else {
+      // Diğer oyun modları için direkt başla
+      setGameStarted(true);
+      setWaitingForPlayer(false);
     }
-  }, [participants, gameMode, currentRoom, user]);
+  }, [participants, gameMode]);
 
   // Timer effect - only for timed mode
   useEffect(() => {
