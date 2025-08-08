@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useThemeContext } from '@/components/ThemeProvider';
 import { useUserPurchases } from '@/hooks/useUserPurchases';
+import { useUser } from '@/contexts/UserContext';
 import { Crown, Star, Sparkles, Diamond, Rainbow, Heart, X } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -22,7 +23,7 @@ export const AvatarFrameSelector = () => {
   const { user } = useAuth();
   const { avatarFrame, applyAvatarFrame } = useThemeContext();
   const { hasPurchased } = useUserPurchases();
-  const { isPremium } = require('@/contexts/UserContext').useUser();
+  const { isPremium } = useUser();
 
   const frames: FrameOption[] = [
     {
