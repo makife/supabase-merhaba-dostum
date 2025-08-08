@@ -240,8 +240,8 @@ const SettingsPage = () => {
         <div class="space-y-4">
           <div class="p-4 bg-muted rounded-lg">
             <h4 class="font-medium flex items-center mb-3">
-              <Mail class="w-4 h-4 mr-2" />
-              E-posta
+              <Mail class="w-4 h-4 mr-2 flex-shrink-0" />
+              <span class="whitespace-nowrap">E-posta</span>
             </h4>
             <div class="space-y-2">
               <p class="text-sm font-mono break-all">makifergan@gmail.com</p>
