@@ -375,9 +375,10 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     }
 
     // Check if word already used
-    console.log('Current word:', currentWord);
-    console.log('Used words:', Array.from(usedWords));
-    console.log('Is word used?', usedWords.has(currentWord.toLowerCase()));
+    console.log('🔍 Current word:', currentWord);
+    console.log('🔍 Used words:', Array.from(usedWords));
+    console.log('🔍 Game mode:', gameMode);
+    console.log('🔍 Is word used?', usedWords.has(currentWord.toLowerCase()));
     
     if (usedWords.has(currentWord.toLowerCase())) {
       toast({
