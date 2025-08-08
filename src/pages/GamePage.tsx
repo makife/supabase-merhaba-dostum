@@ -132,14 +132,20 @@ const GamePage = ({ gameMode }: GamePageProps) => {
 
   // Sync grid with room data and fetch avatars
   useEffect(() => {
-    // Update grid from room if available
+    // Update grid from room if available (only when room grid is different)
     if (currentRoom?.current_grid) {
       const flatGrid = currentRoom.current_grid;
-      const grid: string[][] = [];
+      const roomGrid: string[][] = [];
       for (let i = 0; i < 4; i++) {
-        grid.push(flatGrid.slice(i * 4, (i + 1) * 4));
+        roomGrid.push(flatGrid.slice(i * 4, (i + 1) * 4));
       }
-      setGameGrid(grid);
+      
+      // Only update if grid is actually different to prevent unnecessary re-renders
+      const isGridDifferent = JSON.stringify(gameGrid) !== JSON.stringify(roomGrid);
+      if (isGridDifferent) {
+        console.log('📐 Updating grid from room data');
+        setGameGrid(roomGrid);
+      }
     }
 
     const fetchAvatars = async () => {
@@ -643,21 +649,23 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         // Get opponent from participants (similar to private-room logic)
         if (participants.length >= 2) {
           const opponent = participants.find(p => p.user_id !== user?.id);
-          if (opponent && (opponent as any).profiles?.avatar_url) {
+          if (opponent && (opponent as any).profiles?.username) {
+            console.log('🎮 Random match opponent found:', (opponent as any).profiles.username);
             return { 
-              name: (opponent as any).profiles.username || 'Oyuncu', 
+              name: (opponent as any).profiles.username, 
               icon: User, 
-              avatar: (opponent as any).profiles.avatar_url 
+              avatar: (opponent as any).profiles?.avatar_url || opponentAvatar 
             };
           }
           if (opponent) {
             return { 
-              name: (opponent as any).profiles?.username || 'Oyuncu', 
+              name: 'Oyuncu', 
               icon: User, 
               avatar: opponentAvatar 
             };
           }
         }
+        console.log('🔍 Random match: waiting for opponent, participants:', participants.length);
         return { name: 'Rakip Aranıyor...', icon: User, avatar: null };
       case 'tournament':
         return { name: 'Turnuva Rakibi', icon: Trophy, avatar: null };

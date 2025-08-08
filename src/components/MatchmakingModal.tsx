@@ -109,9 +109,16 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
                 // Check if it's not our own join (we already joined)
                 if (payload.new?.user_id !== user?.id) {
                   console.log('✅ Real player found via realtime!');
+                  
+                  // Cleanup first to prevent multiple triggers
+                  if (realtimeChannel) {
+                    supabase.removeChannel(realtimeChannel);
+                    realtimeChannel = null;
+                  }
                   clearTimeout(searchTimeout);
                   clearInterval(progressInterval);
                   clearInterval(countdownInterval);
+                  
                   setSearchStatus('found');
                   playSound('correctWord');
                   toast({
