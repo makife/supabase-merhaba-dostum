@@ -22,18 +22,20 @@ export const LevelProgress = ({ className = "" }: LevelProgressProps) => {
   // Calculate level from total score
   const calculateLevel = (totalScore: number) => {
     const baseExp = 1000;
+    const expIncreasePerLevel = 100; // Her seviyede +100 EXP daha fazla gerekecek
+    
     let level = 1;
-    let expForCurrentLevel = 0;
-    let expForNextLevel = baseExp;
+    let totalExpNeeded = 0;
+    let currentLevelExp = baseExp;
 
-    while (totalScore >= expForNextLevel) {
-      expForCurrentLevel = expForNextLevel;
+    while (totalScore >= totalExpNeeded + currentLevelExp) {
+      totalExpNeeded += currentLevelExp;
       level++;
-      expForNextLevel = baseExp * Math.pow(1.5, level - 1); // Exponential scaling
+      currentLevelExp = baseExp + (level - 1) * expIncreasePerLevel;
     }
 
-    const experience = totalScore - expForCurrentLevel;
-    const nextLevelExp = expForNextLevel - expForCurrentLevel;
+    const experience = totalScore - totalExpNeeded;
+    const nextLevelExp = currentLevelExp;
 
     return { level, experience, nextLevelExp, totalScore };
   };
