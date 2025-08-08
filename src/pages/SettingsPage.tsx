@@ -1,7 +1,7 @@
 import { SoundPackSelector } from '@/components/SoundPackSelector';
 import { ThemeSelector } from '@/components/ThemeSelector';
 import { AvatarFrameSelector } from '@/components/AvatarFrameSelector';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,7 +24,6 @@ import {
   HelpCircle,
   Mail,
   Smartphone,
-  Save,
   PlayCircle
 } from 'lucide-react';
 
@@ -40,40 +39,75 @@ const SettingsPage = () => {
   const [notifications, setNotifications] = useState(true);
   const [language, setLanguage] = useState('tr');
   
+  // Auto-save tracking
+  const initialSettingsRef = useRef<any>(null);
+  const hasChangedRef = useRef(false);
+  
   // Modal states
   const [modalOpen, setModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState({ title: '', content: '' });
 
-  // Load settings from localStorage
+  // Load settings from localStorage and set initial values
   useEffect(() => {
     const savedSettings = localStorage.getItem('kelimeci-settings');
     if (savedSettings) {
       const settings = JSON.parse(savedSettings);
       setNotifications(settings.notifications ?? true);
       setLanguage(settings.language ?? 'tr');
+      
+      // Store initial settings for comparison
+      initialSettingsRef.current = {
+        notifications: settings.notifications ?? true,
+        sounds: soundsEnabled,
+        music: musicEnabled,
+        theme,
+        language: settings.language ?? 'tr'
+      };
+    } else {
+      // Store initial settings even if no saved settings exist
+      initialSettingsRef.current = {
+        notifications: true,
+        sounds: soundsEnabled,
+        music: musicEnabled,
+        theme,
+        language: 'tr'
+      };
     }
-  }, []);
+  }, [soundsEnabled, musicEnabled, theme]);
 
-  // Save settings to localStorage
-  const saveSettings = () => {
-    const settings = {
+  // Auto-save when settings change
+  useEffect(() => {
+    if (!initialSettingsRef.current) return;
+
+    const currentSettings = {
       notifications,
       sounds: soundsEnabled,
       music: musicEnabled,
       theme,
       language
     };
-    localStorage.setItem('kelimeci-settings', JSON.stringify(settings));
+
+    // Check if any setting has actually changed
+    const hasRealChange = JSON.stringify(currentSettings) !== JSON.stringify(initialSettingsRef.current);
     
-    // Dispatch custom event to notify other components
-    window.dispatchEvent(new Event('settingsChanged'));
-    
-    playSound('buttonClick');
-    toast({
-      title: 'Ayarlar Kaydedildi',
-      description: 'Değişiklikleriniz başarıyla kaydedildi.',
-    });
-  };
+    if (hasRealChange) {
+      hasChangedRef.current = true;
+      localStorage.setItem('kelimeci-settings', JSON.stringify(currentSettings));
+      
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(new Event('settingsChanged'));
+      
+      // Only show toast if there was a real change
+      if (hasChangedRef.current) {
+        playSound('buttonClick');
+        toast({
+          title: 'Ayarlar Otomatik Kaydedildi',
+          description: 'Değişiklikleriniz otomatik olarak kaydedildi.',
+        });
+      }
+    }
+  }, [notifications, soundsEnabled, musicEnabled, theme, language, playSound, toast]);
+
 
   const handleNotificationChange = (checked: boolean) => {
     setNotifications(checked);
@@ -490,19 +524,6 @@ const SettingsPage = () => {
           </CardContent>
         </Card>
 
-        {/* Save Button */}
-        <Card>
-          <CardContent className="pt-6">
-            <Button 
-              onClick={saveSettings}
-              className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-semibold"
-              size="lg"
-            >
-              <Save className="w-4 h-4 mr-2" />
-              Ayarları Kaydet
-            </Button>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Modal Dialog */}
