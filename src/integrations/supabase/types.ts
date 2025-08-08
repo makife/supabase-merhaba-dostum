@@ -356,32 +356,38 @@ export type Database = {
         Row: {
           created_at: string | null
           current_round: number | null
+          expires_at: string | null
           finished_at: string | null
           id: string
           max_participants: number | null
           name: string
           started_at: string | null
           status: string | null
+          timeout_duration: number | null
         }
         Insert: {
           created_at?: string | null
           current_round?: number | null
+          expires_at?: string | null
           finished_at?: string | null
           id?: string
           max_participants?: number | null
           name: string
           started_at?: string | null
           status?: string | null
+          timeout_duration?: number | null
         }
         Update: {
           created_at?: string | null
           current_round?: number | null
+          expires_at?: string | null
           finished_at?: string | null
           id?: string
           max_participants?: number | null
           name?: string
           started_at?: string | null
           status?: string | null
+          timeout_duration?: number | null
         }
         Relationships: []
       }
@@ -539,6 +545,10 @@ export type Database = {
     Functions: {
       check_and_refresh_credits: {
         Args: { user_id: string }
+        Returns: undefined
+      }
+      cleanup_expired_tournaments: {
+        Args: Record<PropertyKey, never>
         Returns: undefined
       }
     }
