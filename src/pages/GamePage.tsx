@@ -261,12 +261,14 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const generateAIWordFromGrid = useCallback(() => {
     const possibleWords = [
       'KEDİ', 'MASA', 'ARABA', 'OKUL', 'KİTAP', 'DENİZ', 'AĞAÇ', 'ÇİÇEK', 
-      'DOSTLUK', 'GÜNEŞ', 'YILDIZ', 'BULUT', 'RÜZGAR', 'SU', 'ATEŞ', 'TOPRAK',
+      'DOSTLUK', 'GÜNEŞ', 'YILDIZ', 'BULUT', 'RÜZGAR', 'ATEŞ', 'TOPRAK',
       'SEVGİ', 'MUTLULUK', 'UMUT', 'HAYAL', 'RENKLER', 'MÜZİK', 'DANS', 'ŞARKI',
       'OYUN', 'SPOR', 'FUTBOL', 'BASKETBOL', 'TENİS', 'YÜZME', 'KOŞU', 'BISIKLET',
-      'YEMEK', 'SU', 'EKMEK', 'PEYNIR', 'DOMATES', 'SALATA', 'ÇORBA', 'ET',
-      'MEYVE', 'ELMA', 'ARMUT', 'ÇİLEK', 'KIRAZ', 'ÜZÜM', 'PORTAKAL', 'MANGO',
-      'SEBZE', 'HAVUÇ', 'PATLICAN', 'BIBER', 'SOĞAN', 'SARMIMSAK', 'PATATES'
+      'YEMEK', 'EKMEK', 'PEYNIR', 'DOMATES', 'SALATA', 'ÇORBA', 'MEYVE',
+      'ELMA', 'ARMUT', 'ÇİLEK', 'KIRAZ', 'ÜZÜM', 'PORTAKAL', 'MANGO',
+      'SEBZE', 'HAVUÇ', 'PATLICAN', 'BIBER', 'SOĞAN', 'SARMIMSAK', 'PATATES',
+      'KALE', 'KEDI', 'KÖPEK', 'KUŞU', 'BALINA', 'ASLAN', 'KAPLAN', 'FİL',
+      'SÜT', 'KOLA', 'ÇAY', 'KAHVE', 'ŞEKER', 'TUZ', 'YAĞLI', 'EKŞI'
     ];
     
     // Flatten grid to get available letters
@@ -278,8 +280,14 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       letterCount[letter] = (letterCount[letter] || 0) + 1;
     });
     
-    // Find words that can be made from available letters
+    // Find words that can be made from available letters and are not used yet
     const validWords = possibleWords.filter(word => {
+      // Check minimum length (3 characters)
+      if (word.length < 3) return false;
+      
+      // Check if word is already used
+      if (usedWords.has(word.toUpperCase())) return false;
+      
       const wordLetterCount: { [key: string]: number } = {};
       
       // Count letters needed for this word
@@ -301,9 +309,11 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       return validWords[Math.floor(Math.random() * validWords.length)];
     }
     
-    // Fallback: try to make simple 3-letter words
-    const simpleWords = ['SU', 'ET', 'AL', 'VER', 'GEL', 'GIT', 'YAZ', 'OKU'];
+    // Fallback: try to make simple 3-letter words that aren't used
+    const simpleWords = ['SUT', 'ETİ', 'ALI', 'VER', 'GEL', 'GİT', 'YAZ', 'OKU', 'BAK', 'KOŞ', 'YAP', 'İÇ'];
     for (const word of simpleWords) {
+      if (word.length < 3 || usedWords.has(word.toUpperCase())) continue;
+      
       const wordLetterCount: { [key: string]: number } = {};
       for (const letter of word) {
         wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
@@ -323,7 +333,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     }
     
     return null;
-  }, [gameGrid]);
+  }, [gameGrid, usedWords]);
 
   // AI continuous play effect - only for vs-computer mode
   useEffect(() => {
@@ -333,6 +343,9 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       const aiWord = generateAIWordFromGrid();
       
       if (aiWord) {
+        // Add AI word to used words
+        setUsedWords(prev => new Set([...prev, aiWord.toLowerCase()]));
+        
         const opponentPoints = Math.floor(Math.random() * 25) + 10;
         setOpponentScore(prev => prev + opponentPoints);
         
