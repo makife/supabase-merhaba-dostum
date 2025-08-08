@@ -45,7 +45,7 @@ const TournamentPage = () => {
   const [activeTournaments, setActiveTournaments] = useState<Tournament[]>([]);
   const [currentTournament, setCurrentTournament] = useState<Tournament | null>(null);
   const [participants, setParticipants] = useState<TournamentParticipant[]>([]);
-  const [waitingTime, setWaitingTime] = useState(30);
+  const [waitingTime, setWaitingTime] = useState(60);
   const [isJoining, setIsJoining] = useState(false);
 
   useEffect(() => {
@@ -177,7 +177,7 @@ const TournamentPage = () => {
       if (tournament) {
         setCurrentTournament(tournament);
         loadTournamentParticipants(tournamentId);
-        setWaitingTime(30);
+        setWaitingTime(60);
       }
 
       toast({
@@ -360,7 +360,7 @@ const TournamentPage = () => {
                 <div className="space-y-4">
                   <div className="text-center">
                     <div className="text-3xl font-bold">{waitingTime}s</div>
-                    <Progress value={((30 - waitingTime) / 30) * 100} className="mt-2" />
+                    <Progress value={((60 - waitingTime) / 60) * 100} className="mt-2" />
                   </div>
                   <div className="text-sm text-muted-foreground text-center">
                     {participants.length}/8 oyuncu katıldı
@@ -477,34 +477,6 @@ const TournamentPage = () => {
           </div>
         )}
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Crown className="w-5 h-5 mr-2" />
-              Turnuva Kuralları
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2 text-sm">
-              <li className="flex items-center">
-                <Zap className="w-4 h-4 mr-2 text-primary" />
-                8 kişilik eleme usulü turnuva
-              </li>
-              <li className="flex items-center">
-                <Clock className="w-4 h-4 mr-2 text-primary" />
-                Her maç 2 dakika sürer
-              </li>
-              <li className="flex items-center">
-                <Trophy className="w-4 h-4 mr-2 text-primary" />
-                En yüksek puan alan ilerler
-              </li>
-              <li className="flex items-center">
-                <Bot className="w-4 h-4 mr-2 text-primary" />
-                30 saniye sonra botlarla başlar
-              </li>
-            </ul>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
