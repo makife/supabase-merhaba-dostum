@@ -205,7 +205,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     };
   }, []); // Empty dependency array to run only once
 
-  // Private room logic with controlled notifications
+  // Private room logic with controlled notifications + reset used words
   useEffect(() => {
     console.log('=== PRIVATE ROOM CHECK ===');
     console.log('Game mode:', gameMode);
@@ -217,6 +217,10 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         console.log('✅ 2 players ready - START GAME FOR BOTH');
         setWaitingForPlayer(false);
         setGameStarted(true);
+        
+        // Reset used words when game starts
+        setUsedWords(new Set());
+        console.log('Reset used words for new game');
         
         // Show success toast only once
         if (!hasShownStartMessage) {
@@ -232,10 +236,16 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         setWaitingForPlayer(true);
         setGameStarted(false);
         setHasShownStartMessage(false); // Reset for next time
+        
+        // Reset used words when waiting
+        setUsedWords(new Set());
       }
     } else {
       setGameStarted(true);
       setWaitingForPlayer(false);
+      
+      // Reset used words for other game modes
+      setUsedWords(new Set());
     }
     console.log('Game type:', gameType, 'Game started:', participants.length >= 2);
     console.log('=== END CHECK ===');
@@ -365,6 +375,10 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     }
 
     // Check if word already used
+    console.log('Current word:', currentWord);
+    console.log('Used words:', Array.from(usedWords));
+    console.log('Is word used?', usedWords.has(currentWord.toLowerCase()));
+    
     if (usedWords.has(currentWord.toLowerCase())) {
       toast({
         title: 'Kelime Zaten Kullanıldı',
@@ -372,6 +386,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         variant: 'destructive',
         duration: 1000,
       });
+      playSound('wrongWord');
       clearWord();
       return;
     }
@@ -380,7 +395,10 @@ const GamePage = ({ gameMode }: GamePageProps) => {
 
     if (result.isValid) {
       // Add word to used words
-      setUsedWords(prev => new Set([...prev, currentWord.toLowerCase()]));
+      const newUsedWords = new Set([...usedWords, currentWord.toLowerCase()]);
+      setUsedWords(newUsedWords);
+      console.log('Added word to used:', currentWord.toLowerCase());
+      console.log('New used words:', Array.from(newUsedWords));
       playSound('correctWord');
       const newScore = playerScore + result.points;
       setPlayerScore(newScore);
