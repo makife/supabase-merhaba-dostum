@@ -172,15 +172,15 @@ const GamePage = ({ gameMode }: GamePageProps) => {
           }
         }
         
-        // Update opponent score from participants in private room
-        if (opponent && opponent.score !== undefined) {
+        // Update opponent score from participants in private room (only if game not ended)
+        if (opponent && opponent.score !== undefined && !gameEnded) {
           console.log('🔄 Updating opponent score from participants:', opponent.score);
           setOpponentScore(opponent.score);
         }
       }
       
-      // For random-match mode, also sync opponent score
-      if (gameMode === 'random-match' && participants.length >= 2) {
+      // For random-match mode, also sync opponent score (only if game not ended)
+      if (gameMode === 'random-match' && participants.length >= 2 && !gameEnded) {
         const opponent = participants.find(p => p.user_id !== user.id && !p.is_bot);
         if (opponent && opponent.score !== undefined) {
           console.log('🔄 Updating opponent score in random match:', opponent.score);
