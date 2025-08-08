@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import turnuvaGif from '@/assets/turnuvagif.gif';
 import {
   ArrowLeft,
   Trophy,
@@ -471,15 +472,24 @@ const TournamentPage = () => {
               8 kişilik turnuva oluştur veya mevcut turnuvaya katıl
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button 
-              onClick={createTournament} 
-              className="w-full"
-              disabled={isJoining}
-            >
-              <Trophy className="w-4 h-4 mr-2" />
-              Yeni Turnuva Oluştur
-            </Button>
+          <CardContent className="flex items-center space-x-4">
+            <div className="flex-1">
+              <Button 
+                onClick={createTournament} 
+                className="w-full"
+                disabled={isJoining}
+              >
+                <Trophy className="w-4 h-4 mr-2" />
+                Yeni Turnuva Oluştur
+              </Button>
+            </div>
+            <div className="w-20 h-20 rounded-lg overflow-hidden">
+              <img 
+                src={turnuvaGif} 
+                alt="Turnuva" 
+                className="w-full h-full object-cover"
+              />
+            </div>
           </CardContent>
         </Card>
 
