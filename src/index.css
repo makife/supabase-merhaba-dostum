@@ -322,13 +322,17 @@ All colors MUST be HSL.
 }
 
 /* Yeni satın alınabilir çerçeveler */
+.avatar-frame-avatar_floral_roses {
+  padding: 12px;
+}
+
 .avatar-frame-avatar_floral_roses::before {
   content: '';
   position: absolute;
-  top: -24px;
-  left: -24px;
-  right: -24px;
-  bottom: -24px;
+  top: -12px;
+  left: -12px;
+  right: -12px;
+  bottom: -12px;
   background-image: url('/lovable-uploads/a717e6dc-c468-4e17-9e40-e2a47817aed6.png');
   background-size: contain;
   background-repeat: no-repeat;
@@ -337,13 +341,17 @@ All colors MUST be HSL.
   pointer-events: none;
 }
 
+.avatar-frame-avatar_blue_berries {
+  padding: 12px;
+}
+
 .avatar-frame-avatar_blue_berries::before {
   content: '';
   position: absolute;
-  top: -24px;
-  left: -24px;
-  right: -24px;
-  bottom: -24px;
+  top: -12px;
+  left: -12px;
+  right: -12px;
+  bottom: -12px;
   background-image: url('/lovable-uploads/9224e301-b3e4-47ba-9be4-b9a4fd4694a5.png');
   background-size: contain;
   background-repeat: no-repeat;
@@ -352,13 +360,17 @@ All colors MUST be HSL.
   pointer-events: none;
 }
 
+.avatar-frame-avatar_gold_simple {
+  padding: 12px;
+}
+
 .avatar-frame-avatar_gold_simple::before {
   content: '';
   position: absolute;
-  top: -24px;
-  left: -24px;
-  right: -24px;
-  bottom: -24px;
+  top: -12px;
+  left: -12px;
+  right: -12px;
+  bottom: -12px;
   background-image: url('/lovable-uploads/aa2df12c-9aa3-49c0-a78e-4a946ad9c396.png');
   background-size: contain;
   background-repeat: no-repeat;
@@ -367,13 +379,17 @@ All colors MUST be HSL.
   pointer-events: none;
 }
 
+.avatar-frame-avatar_floral_wreath {
+  padding: 12px;
+}
+
 .avatar-frame-avatar_floral_wreath::before {
   content: '';
   position: absolute;
-  top: -24px;
-  left: -24px;
-  right: -24px;
-  bottom: -24px;
+  top: -12px;
+  left: -12px;
+  right: -12px;
+  bottom: -12px;
   background-image: url('/lovable-uploads/eea94c24-3141-4496-ab48-9911ecfd1400.png');
   background-size: contain;
   background-repeat: no-repeat;
@@ -382,13 +398,17 @@ All colors MUST be HSL.
   pointer-events: none;
 }
 
+.avatar-frame-avatar_purple_flowers {
+  padding: 12px;
+}
+
 .avatar-frame-avatar_purple_flowers::before {
   content: '';
   position: absolute;
-  top: -24px;
-  left: -24px;
-  right: -24px;
-  bottom: -24px;
+  top: -12px;
+  left: -12px;
+  right: -12px;
+  bottom: -12px;
   background-image: url('/lovable-uploads/1b6aaacc-0774-46f0-9aed-58be7383877a.png');
   background-size: contain;
   background-repeat: no-repeat;
@@ -397,13 +417,17 @@ All colors MUST be HSL.
   pointer-events: none;
 }
 
+.avatar-frame-avatar_pink_flowers {
+  padding: 12px;
+}
+
 .avatar-frame-avatar_pink_flowers::before {
   content: '';
   position: absolute;
-  top: -24px;
-  left: -24px;
-  right: -24px;
-  bottom: -24px;
+  top: -12px;
+  left: -12px;
+  right: -12px;
+  bottom: -12px;
   background-image: url('/lovable-uploads/4a19df44-882d-4bf3-b557-2986fd9ea69e.png');
   background-size: contain;
   background-repeat: no-repeat;
@@ -412,13 +436,17 @@ All colors MUST be HSL.
   pointer-events: none;
 }
 
+.avatar-frame-avatar_antique_bronze {
+  padding: 12px;
+}
+
 .avatar-frame-avatar_antique_bronze::before {
   content: '';
   position: absolute;
-  top: -24px;
-  left: -24px;
-  right: -24px;
-  bottom: -24px;
+  top: -12px;
+  left: -12px;
+  right: -12px;
+  bottom: -12px;
   background-image: url('/lovable-uploads/227894f5-629e-46a5-88d7-2d8df2460fa2.png');
   background-size: contain;
   background-repeat: no-repeat;
@@ -427,13 +455,17 @@ All colors MUST be HSL.
   pointer-events: none;
 }
 
+.avatar-frame-avatar_green_patrick {
+  padding: 12px;
+}
+
 .avatar-frame-avatar_green_patrick::before {
   content: '';
   position: absolute;
-  top: -24px;
-  left: -24px;
-  right: -24px;
-  bottom: -24px;
+  top: -12px;
+  left: -12px;
+  right: -12px;
+  bottom: -12px;
   background-image: url('/lovable-uploads/d9551411-6a1a-4199-b99e-a0ff5defbf4e.png');
   background-size: contain;
   background-repeat: no-repeat;
@@ -442,13 +474,17 @@ All colors MUST be HSL.
   pointer-events: none;
 }
 
+.avatar-frame-avatar_heart_roses {
+  padding: 12px;
+}
+
 .avatar-frame-avatar_heart_roses::before {
   content: '';
   position: absolute;
-  top: -24px;
-  left: -24px;
-  right: -24px;
-  bottom: -24px;
+  top: -12px;
+  left: -12px;
+  right: -12px;
+  bottom: -12px;
   background-image: url('/lovable-uploads/ff7b6503-a976-4eb1-87d0-2373423fc6e5.png');
   background-size: contain;
   background-repeat: no-repeat;
@@ -457,13 +493,17 @@ All colors MUST be HSL.
   pointer-events: none;
 }
 
+.avatar-frame-avatar_christmas_lights {
+  padding: 12px;
+}
+
 .avatar-frame-avatar_christmas_lights::before {
   content: '';
   position: absolute;
-  top: -24px;
-  left: -24px;
-  right: -24px;
-  bottom: -24px;
+  top: -12px;
+  left: -12px;
+  right: -12px;
+  bottom: -12px;
   background-image: url('/lovable-uploads/2e9f15c2-49f4-461f-997e-84c4682368c6.png');
   background-size: contain;
   background-repeat: no-repeat;
@@ -472,13 +512,17 @@ All colors MUST be HSL.
   pointer-events: none;
 }
 
+.avatar-frame-avatar_ornate_gold {
+  padding: 12px;
+}
+
 .avatar-frame-avatar_ornate_gold::before {
   content: '';
   position: absolute;
-  top: -24px;
-  left: -24px;
-  right: -24px;
-  bottom: -24px;
+  top: -12px;
+  left: -12px;
+  right: -12px;
+  bottom: -12px;
   background-image: url('/lovable-uploads/9ed9fbb7-3aa3-4185-96c5-d118e2067712.png');
   background-size: contain;
   background-repeat: no-repeat;
@@ -487,13 +531,17 @@ All colors MUST be HSL.
   pointer-events: none;
 }
 
+.avatar-frame-avatar_party_balloons {
+  padding: 12px;
+}
+
 .avatar-frame-avatar_party_balloons::before {
   content: '';
   position: absolute;
-  top: -24px;
-  left: -24px;
-  right: -24px;
-  bottom: -24px;
+  top: -12px;
+  left: -12px;
+  right: -12px;
+  bottom: -12px;
   background-image: url('/lovable-uploads/afa305fa-30a5-496f-8af0-029aa71047a3.png');
   background-size: contain;
   background-repeat: no-repeat;
@@ -502,13 +550,17 @@ All colors MUST be HSL.
   pointer-events: none;
 }
 
+.avatar-frame-avatar_christmas_tree {
+  padding: 12px;
+}
+
 .avatar-frame-avatar_christmas_tree::before {
   content: '';
   position: absolute;
-  top: -24px;
-  left: -24px;
-  right: -24px;
-  bottom: -24px;
+  top: -12px;
+  left: -12px;
+  right: -12px;
+  bottom: -12px;
   background-image: url('/lovable-uploads/b2d1b581-c29f-43e4-b354-2889ce0621b1.png');
   background-size: contain;
   background-repeat: no-repeat;
@@ -517,13 +569,17 @@ All colors MUST be HSL.
   pointer-events: none;
 }
 
+.avatar-frame-avatar_ornate_black {
+  padding: 12px;
+}
+
 .avatar-frame-avatar_ornate_black::before {
   content: '';
   position: absolute;
-  top: -24px;
-  left: -24px;
-  right: -24px;
-  bottom: -24px;
+  top: -12px;
+  left: -12px;
+  right: -12px;
+  bottom: -12px;
   background-image: url('/lovable-uploads/5b932686-4cbb-44bb-8aa0-d9172ae54764.png');
   background-size: contain;
   background-repeat: no-repeat;
@@ -532,13 +588,17 @@ All colors MUST be HSL.
   pointer-events: none;
 }
 
+.avatar-frame-avatar_black_floral {
+  padding: 12px;
+}
+
 .avatar-frame-avatar_black_floral::before {
   content: '';
   position: absolute;
-  top: -24px;
-  left: -24px;
-  right: -24px;
-  bottom: -24px;
+  top: -12px;
+  left: -12px;
+  right: -12px;
+  bottom: -12px;
   background-image: url('/lovable-uploads/53623185-5b73-4dd2-bc2b-1af5b94f321a.png');
   background-size: contain;
   background-repeat: no-repeat;
@@ -547,13 +607,17 @@ All colors MUST be HSL.
   pointer-events: none;
 }
 
+.avatar-frame-avatar_golden_stars {
+  padding: 12px;
+}
+
 .avatar-frame-avatar_golden_stars::before {
   content: '';
   position: absolute;
-  top: -24px;
-  left: -24px;
-  right: -24px;
-  bottom: -24px;
+  top: -12px;
+  left: -12px;
+  right: -12px;
+  bottom: -12px;
   background-image: url('/lovable-uploads/ff8a7b50-41b9-461a-bd0b-0e166b281ef3.png');
   background-size: contain;
   background-repeat: no-repeat;
@@ -562,13 +626,17 @@ All colors MUST be HSL.
   pointer-events: none;
 }
 
+.avatar-frame-avatar_wavy_black {
+  padding: 12px;
+}
+
 .avatar-frame-avatar_wavy_black::before {
   content: '';
   position: absolute;
-  top: -24px;
-  left: -24px;
-  right: -24px;
-  bottom: -24px;
+  top: -12px;
+  left: -12px;
+  right: -12px;
+  bottom: -12px;
   background-image: url('/lovable-uploads/309c658e-e0d1-423a-80d6-9b012943f30d.png');
   background-size: contain;
   background-repeat: no-repeat;
