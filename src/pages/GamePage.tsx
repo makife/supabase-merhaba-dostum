@@ -339,9 +339,26 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     return null;
   }, [gameGrid, usedWords]);
 
-  // AI continuous play effect - only for vs-computer mode
+  // Check if playing with AI (unified logic for all modes)
+  const isPlayingWithAI = useCallback(() => {
+    switch (gameMode) {
+      case 'vs-computer':
+        return true; // Always AI
+      case 'private-room':
+      case 'random-match':
+        return participants.length < 2; // AI if no second player
+      case 'tournament':
+        return true; // Tournament is always vs AI for now
+      default:
+        return false;
+    }
+  }, [gameMode, participants.length]);
+
+  // AI continuous play effect - unified for all modes when playing with AI
   useEffect(() => {
-    if (gameMode !== 'vs-computer' || !gameStarted || gameEnded) return;
+    if (!isPlayingWithAI() || !gameStarted || gameEnded) return;
+
+    console.log('🤖 Starting AI play interval for game mode:', gameMode);
 
     const aiPlayInterval = setInterval(() => {
       // Check if player recently took action, if so wait longer
@@ -357,7 +374,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       if (aiWord) {
         // Add AI word to used words (normalize to uppercase for consistency)
         setUsedWords(prev => new Set([...prev, aiWord.toUpperCase()]));
-        console.log(`AI used word: ${aiWord} (added as: ${aiWord.toUpperCase()})`);
+        console.log(`🤖 AI used word: ${aiWord} (added as: ${aiWord.toUpperCase()}) in ${gameMode} mode`);
         
         const opponentPoints = Math.floor(Math.random() * 25) + 10;
         setOpponentScore(prev => prev + opponentPoints);
@@ -367,11 +384,15 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         // If no word can be formed, AI gets fewer points
         const opponentPoints = Math.floor(Math.random() * 10) + 5;
         setOpponentScore(prev => prev + opponentPoints);
+        console.log(`🤖 AI couldn't find word, got ${opponentPoints} points in ${gameMode} mode`);
       }
     }, 4000 + Math.random() * 3000); // 4-7 saniye arasında
 
-    return () => clearInterval(aiPlayInterval);
-  }, [gameMode, gameStarted, gameEnded, generateAIWordFromGrid, playSound, lastPlayerAction]);
+    return () => {
+      console.log('🤖 Stopping AI play interval for game mode:', gameMode);
+      clearInterval(aiPlayInterval);
+    };
+  }, [isPlayingWithAI, gameStarted, gameEnded, generateAIWordFromGrid, playSound, lastPlayerAction, gameMode]);
 
   // Timer effect - only for timed mode
   useEffect(() => {
