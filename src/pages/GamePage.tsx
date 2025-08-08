@@ -179,24 +179,55 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     return () => clearInterval(timer);
   }, [gameStarted, gameEnded, gameType]);
 
-  // Check for winner
-  const checkWinner = useCallback(() => {
+  // Check for winner and apply end game bonuses
+  const checkWinner = useCallback(async () => {
     if (gameEnded || winner !== null) return; // Oyun zaten bitmişse veya kazanan belliyse tekrar kontrol etme
     
+    let gameResult: 'player' | 'opponent' | 'tie';
+    let bonusPoints = 0;
+    
     if (playerScore > opponentScore) {
+      gameResult = 'player';
+      bonusPoints = 50; // Kazanma bonusu
       setWinner('player');
       playSound('gameWin');
-      // Kutlama müziği ve konfeti efekti
       setTimeout(() => playCelebrationSound(), 500);
     } else if (opponentScore > playerScore) {
+      gameResult = 'opponent';
       setWinner('opponent');
       playSound('gameLose');
-      // Kaybetme müziği ve üzgün animasyon
       setTimeout(() => playGameLoseSound(), 500);
     } else {
+      gameResult = 'tie';
+      bonusPoints = 25; // Beraberlik bonusu
       setWinner('tie');
     }
-  }, [playerScore, opponentScore, playSound, playCelebrationSound, gameEnded, winner]);
+
+    // Apply end game bonus for player
+    if (user && bonusPoints > 0) {
+      const { data: currentProfile } = await supabase
+        .from('profiles')
+        .select('total_score')
+        .eq('id', user.id)
+        .single();
+
+      const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
+      
+      await supabase
+        .from('profiles')
+        .update({ total_score: newTotalScore })
+        .eq('id', user.id);
+
+      // Show bonus toast
+      setTimeout(() => {
+        toast({
+          title: gameResult === 'player' ? 'Kazanma Bonusu!' : 'Beraberlik Bonusu!',
+          description: `+${bonusPoints} bonus EXP kazandınız!`,
+          duration: 2000,
+        });
+      }, 1000);
+    }
+  }, [playerScore, opponentScore, playSound, playCelebrationSound, gameEnded, winner, user]);
 
   // Check if score reaches 500 - only for score mode
   useEffect(() => {
