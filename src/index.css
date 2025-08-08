@@ -277,13 +277,35 @@ All colors MUST be HSL.
 /* Avatar çerçeve stilleri */
 .avatar-frame-gold {
   border: 3px solid #ffd700;
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+  animation: gold-glow 2s ease-in-out infinite alternate;
+}
+
+.avatar-frame-silver {
+  border: 3px solid #c0c0c0;
+  box-shadow: 0 0 15px rgba(192, 192, 192, 0.5);
+  animation: silver-glow 2s ease-in-out infinite alternate;
+}
+
+.avatar-frame-diamond {
+  border: 3px solid #b9f2ff;
+  box-shadow: 0 0 20px rgba(185, 242, 255, 0.7);
+  animation: diamond-glow 2s ease-in-out infinite alternate;
+}
+
+.avatar-frame-premium {
+  border: 3px solid hsl(var(--primary));
+  box-shadow: 0 0 20px hsl(var(--primary) / 0.6);
+  background: linear-gradient(45deg, transparent, hsl(var(--primary) / 0.1));
+  animation: premium-glow 3s ease-in-out infinite alternate;
 }
 
 .avatar-frame-rainbow {
   border: 3px solid transparent;
   background: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
   background-clip: padding-box;
+  animation: rainbow-rotate 3s linear infinite;
+  position: relative;
 }
 
 .avatar-frame-rainbow::before {
@@ -296,6 +318,32 @@ All colors MUST be HSL.
   background: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
   border-radius: inherit;
   z-index: -1;
+  animation: rainbow-rotate 3s linear infinite;
+}
+
+@keyframes gold-glow {
+  from { box-shadow: 0 0 15px rgba(255, 215, 0, 0.5); }
+  to { box-shadow: 0 0 25px rgba(255, 215, 0, 0.8); }
+}
+
+@keyframes silver-glow {
+  from { box-shadow: 0 0 15px rgba(192, 192, 192, 0.5); }
+  to { box-shadow: 0 0 25px rgba(192, 192, 192, 0.8); }
+}
+
+@keyframes diamond-glow {
+  from { box-shadow: 0 0 20px rgba(185, 242, 255, 0.7); }
+  to { box-shadow: 0 0 30px rgba(185, 242, 255, 1); }
+}
+
+@keyframes premium-glow {
+  from { box-shadow: 0 0 20px hsl(var(--primary) / 0.6); }
+  to { box-shadow: 0 0 30px hsl(var(--primary) / 0.9); }
+}
+
+@keyframes rainbow-rotate {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
 }
 
 @keyframes bounceIn {
