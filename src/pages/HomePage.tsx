@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useMusic } from '@/contexts/MusicContext';
 
 import GameModeSelector from '@/components/GameModeSelector';
+import { LevelProgress } from '@/components/LevelProgress';
 import { FloatingMenu } from '@/components/FloatingMenu';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/contexts/UserContext';
@@ -344,6 +345,9 @@ const HomePage = () => {
             </div>
           </div>
         </div>
+
+        {/* Level Progress */}
+        <LevelProgress />
 
         {/* Game Modes */}
         <div>

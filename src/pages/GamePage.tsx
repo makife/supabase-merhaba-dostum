@@ -257,6 +257,22 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       if (currentRoom) {
         await updateScore(newScore);
       }
+
+      // Update total score in database for level progression
+      if (user) {
+        const { data: currentProfile } = await supabase
+          .from('profiles')
+          .select('total_score')
+          .eq('id', user.id)
+          .single();
+
+        const newTotalScore = (currentProfile?.total_score || 0) + result.points;
+        
+        await supabase
+          .from('profiles')
+          .update({ total_score: newTotalScore })
+          .eq('id', user.id);
+      }
       
       toast({
         title: 'Doğru Kelime!',
