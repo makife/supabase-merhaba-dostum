@@ -195,7 +195,7 @@ const TournamentPage = () => {
         return;
       }
 
-      // Join tournament
+      // Join tournament directly - no game type selection needed since tournament already has a type
       await supabase
         .from('tournament_participants')
         .insert({
