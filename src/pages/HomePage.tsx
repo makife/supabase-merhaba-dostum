@@ -152,7 +152,11 @@ const HomePage = () => {
           <Button
             variant="outline"
             size="lg"
-            className="absolute top-4 right-4 z-20 w-14 h-14 rounded-full bg-gradient-to-r from-primary/10 to-accent/10 hover:from-primary/20 hover:to-accent/20 backdrop-blur-md border-2 border-primary/30 hover:border-primary/50 transition-all duration-300 hover:scale-105 shadow-lg"
+            className={`absolute top-4 right-4 z-20 w-14 h-14 rounded-full backdrop-blur-md border-2 transition-all duration-300 hover:scale-105 shadow-lg ${
+              musicEnabled 
+                ? 'bg-gradient-to-r from-primary/10 to-accent/10 hover:from-primary/20 hover:to-accent/20 border-primary/30 hover:border-primary/50' 
+                : 'bg-gradient-to-r from-muted/20 to-muted/30 hover:from-muted/30 hover:to-muted/40 border-muted-foreground/20 hover:border-muted-foreground/30'
+            }`}
             onClick={() => {
               setMusicEnabled(!musicEnabled);
               playSound('buttonClick');
