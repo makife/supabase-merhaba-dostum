@@ -34,7 +34,7 @@ export const AvatarFrameSelector = () => {
       name: 'Altın Çerçeve',
       description: 'Altın parıltısıyla özel bir görünüm',
       icon: Crown,
-      requiredPurchase: 'avatar_frame_gold',
+      requiredPurchase: 'avatar_gold_frame',
       isPremium: true,
     },
     {
@@ -42,7 +42,7 @@ export const AvatarFrameSelector = () => {
       name: 'Gümüş Çerçeve', 
       description: 'Gümüş parlaklığında zarif çerçeve',
       icon: Star,
-      requiredPurchase: 'avatar_frame_silver',
+      requiredPurchase: 'avatar_silver_frame',
       isPremium: true,
     },
     {
@@ -50,7 +50,7 @@ export const AvatarFrameSelector = () => {
       name: 'Elmas Çerçeve',
       description: 'Kristal berraklığında lüks çerçeve',
       icon: Diamond,
-      requiredPurchase: 'avatar_frame_diamond',
+      requiredPurchase: 'avatar_diamond_frame',
       isPremium: true,
     },
     {
@@ -58,7 +58,7 @@ export const AvatarFrameSelector = () => {
       name: 'Premium Çerçeve',
       description: 'Tema renginde özel premium çerçeve',
       icon: Sparkles,
-      requiredPurchase: 'avatar_frame_premium',
+      requiredPurchase: 'avatar_premium_frame',
       isPremium: true,
     },
     {
@@ -66,7 +66,7 @@ export const AvatarFrameSelector = () => {
       name: 'Gökkuşağı Çerçeve',
       description: 'Renkli animasyonlu özel çerçeve',
       icon: Rainbow,
-      requiredPurchase: 'avatar_frame_rainbow',
+      requiredPurchase: 'avatar_rainbow_frame',
       isPremium: true,
     },
   ];
