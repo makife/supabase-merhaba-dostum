@@ -353,23 +353,11 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         const opponentPoints = Math.floor(Math.random() * 25) + 10;
         setOpponentScore(prev => prev + opponentPoints);
         
-        toast({
-          title: `🤖 AI: "${aiWord}"`,
-          description: `AI ızgaradan kelime buldu! +${opponentPoints} puan`,
-          duration: 2000,
-        });
-        
         playSound('correctWord');
       } else {
         // If no word can be formed, AI gets fewer points
         const opponentPoints = Math.floor(Math.random() * 10) + 5;
         setOpponentScore(prev => prev + opponentPoints);
-        
-        toast({
-          title: '🤖 AI düşünüyor...',
-          description: `+${opponentPoints} puan`,
-          duration: 1500,
-        });
       }
     }, 4000 + Math.random() * 3000); // 4-7 saniye arasında
 
