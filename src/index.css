@@ -168,6 +168,14 @@ All colors MUST be HSL.
   --input: 220 20% 18%;
   --ring: 200 90% 60%;
   --radius: 0.5rem;
+  
+  /* Dark Ocean oyun renkleri */
+  --game-primary: 200 90% 60%;
+  --game-secondary: 190 85% 55%;
+  --game-success: 120 60% 50%;
+  --game-warning: 45 100% 60%;
+  --game-grid: 220 25% 12%;
+  --game-letter: 220 25% 20%;
 }
 
 /* Sunset Theme */
@@ -192,6 +200,14 @@ All colors MUST be HSL.
   --input: 25 30% 22%;
   --ring: 20 95% 65%;
   --radius: 0.5rem;
+  
+  /* Sunset oyun renkleri */
+  --game-primary: 20 95% 65%;
+  --game-secondary: 340 85% 70%;
+  --game-success: 120 60% 50%;
+  --game-warning: 45 100% 60%;
+  --game-grid: 25 40% 16%;
+  --game-letter: 25 40% 22%;
 }
 
 /* Forest Theme */
@@ -216,6 +232,14 @@ All colors MUST be HSL.
   --input: 140 20% 20%;
   --ring: 120 70% 55%;
   --radius: 0.5rem;
+  
+  /* Forest oyun renkleri */
+  --game-primary: 120 70% 55%;
+  --game-secondary: 80 60% 60%;
+  --game-success: 120 60% 50%;
+  --game-warning: 45 100% 60%;
+  --game-grid: 140 25% 14%;
+  --game-letter: 140 25% 20%;
 }
 
 /* Classic Retro Theme */
@@ -240,6 +264,14 @@ All colors MUST be HSL.
   --input: 60 20% 80%;
   --ring: 270 80% 50%;
   --radius: 0.75rem;
+  
+  /* Classic oyun renkleri */
+  --game-primary: 270 80% 50%;
+  --game-secondary: 300 70% 60%;
+  --game-success: 120 60% 50%;
+  --game-warning: 45 100% 60%;
+  --game-grid: 60 30% 90%;
+  --game-letter: 0 0% 100%;
 }
 
 /* Avatar çerçeve stilleri */
