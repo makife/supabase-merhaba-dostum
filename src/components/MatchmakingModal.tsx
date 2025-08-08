@@ -70,7 +70,7 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
         }, 3000);
       }, 15000);
 
-      // Try to find real player
+      // Try to find real player and set up polling for new participants
       try {
         console.log('🔍 Attempting to find random match...');
         const match = await findRandomMatch(gameType);
@@ -91,64 +91,42 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
             onMatchFound(false);
           }, 1500);
         } else {
-          // No immediate match, but room created - wait for others via realtime
-          console.log('🏗️ Room created, setting up realtime listener for new participants...');
+          // No immediate match, start polling for new participants
+          console.log('🏗️ Starting polling for new participants...');
           
-          // Wait a bit for currentRoom to be updated, then set up realtime
-          setTimeout(() => {
-            console.log('🏗️ Current room ID after timeout:', currentRoom?.id);
-            
-            // Set up realtime subscription to detect when someone joins our room
+          const pollForParticipants = setInterval(async () => {
             if (currentRoom) {
-              const channelName = `matchmaking-${currentRoom.id}`;
-              console.log('🔔 Setting up realtime channel:', channelName);
-              
-              realtimeChannel = supabase
-                .channel(channelName)
-                .on('postgres_changes', {
-                  event: 'INSERT',
-                  schema: 'public',
-                  table: 'game_participants',
-                  filter: `room_id=eq.${currentRoom.id}`
-                }, (payload) => {
-                  console.log('🎉 Realtime event received:', payload);
-                  console.log('🎉 New participant user_id:', payload.new?.user_id);
-                  console.log('🎉 Current user_id:', user?.id);
+              try {
+                const { data: participants } = await supabase
+                  .from('game_participants')
+                  .select('user_id')
+                  .eq('room_id', currentRoom.id);
+                
+                if (participants && participants.length >= 2) {
+                  // Found second participant!
+                  clearInterval(pollForParticipants);
+                  clearTimeout(searchTimeout);
+                  clearInterval(progressInterval);
+                  clearInterval(countdownInterval);
                   
-                  // Check if it's not our own join (we already joined)
-                  if (payload.new?.user_id !== user?.id) {
-                    console.log('✅ Real player found via realtime!');
-                    
-                    // Cleanup first to prevent multiple triggers
-                    if (realtimeChannel) {
-                      console.log('🧹 Cleaning up realtime channel');
-                      supabase.removeChannel(realtimeChannel);
-                      realtimeChannel = null;
-                    }
-                    clearTimeout(searchTimeout);
-                    clearInterval(progressInterval);
-                    clearInterval(countdownInterval);
-                    
-                    setSearchStatus('found');
-                    playSound('correctWord');
-                    toast({
-                      title: 'Oyuncu Bulundu!',
-                      description: 'Rakip oyuncu katıldı!',
-                    });
-                    setTimeout(() => {
-                      onMatchFound(false);
-                    }, 1500);
-                  } else {
-                    console.log('👤 Ignoring our own join event');
-                  }
-                })
-                .subscribe((status) => {
-                  console.log('📡 Realtime subscription status:', status);
-                });
-            } else {
-              console.log('❌ No current room available for realtime setup after timeout');
+                  setSearchStatus('found');
+                  playSound('correctWord');
+                  toast({
+                    title: 'Oyuncu Bulundu!',
+                    description: 'Rakip oyuncu katıldı!',
+                  });
+                  setTimeout(() => {
+                    onMatchFound(false);
+                  }, 1500);
+                }
+              } catch (error) {
+                console.error('Polling error:', error);
+              }
             }
-          }, 500); // 500ms delay to allow currentRoom to be updated
+          }, 1000); // Check every second
+          
+          // Store the polling interval to clean it up later
+          realtimeChannel = { pollInterval: pollForParticipants };
         }
       } catch (error) {
         console.error('🚨 Matchmaking error:', error);
@@ -161,9 +139,8 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
       clearInterval(progressInterval);
       clearInterval(countdownInterval);
       clearTimeout(searchTimeout);
-      if (realtimeChannel) {
-        console.log('🧹 Cleaning up realtime channel');
-        supabase.removeChannel(realtimeChannel);
+      if (realtimeChannel?.pollInterval) {
+        clearInterval(realtimeChannel.pollInterval);
       }
     };
   }, [findRandomMatch, gameType, playSound, toast, onMatchFound]);
