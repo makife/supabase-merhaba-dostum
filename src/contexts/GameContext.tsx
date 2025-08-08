@@ -31,6 +31,7 @@ interface GameContextType {
   participants: GameParticipant[];
   createRoom: (gameMode: string, roomCode?: string) => Promise<GameRoom | null>;
   joinRoom: (roomCode: string) => Promise<boolean>;
+  findRandomMatch: (gameType: 'timed' | 'score') => Promise<boolean>;
   leaveRoom: () => Promise<void>;
   updateScore: (score: number) => Promise<void>;
   startGame: () => Promise<void>;
@@ -179,6 +180,94 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     }
   };
 
+  // Find random match
+  const findRandomMatch = async (gameType: 'timed' | 'score'): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      // Look for existing waiting rooms with random-match mode
+      const { data: waitingRooms, error: searchError } = await supabase
+        .from('game_rooms')
+        .select('*')
+        .eq('game_mode', 'random-match')
+        .eq('status', 'waiting')
+        .limit(1);
+
+      if (searchError) throw searchError;
+
+      // If found a waiting room, join it
+      if (waitingRooms && waitingRooms.length > 0) {
+        const room = waitingRooms[0];
+        
+        // Check if already in room
+        const { data: existingParticipant } = await supabase
+          .from('game_participants')
+          .select('*')
+          .eq('room_id', room.id)
+          .eq('user_id', user.id)
+          .single();
+
+        if (!existingParticipant) {
+          await supabase
+            .from('game_participants')
+            .insert({
+              room_id: room.id,
+              user_id: user.id,
+              score: 0
+            });
+        }
+
+        setCurrentRoom(room);
+        
+        toast({
+          title: 'Oyuncu Bulundu!',
+          description: 'Rakip oyuncu ile eşleştiniz',
+        });
+
+        return true;
+      }
+
+      // If no waiting room found, create one
+      const grid = generateRandomGrid();
+      const { data: room, error } = await supabase
+        .from('game_rooms')
+        .insert({
+          game_mode: 'random-match',
+          host_id: user.id,
+          current_grid: grid.flat(),
+          status: 'waiting',
+          max_score: gameType === 'score' ? 500 : 0,
+          time_limit: gameType === 'timed' ? 120 : 0
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Join the room as a participant
+      await supabase
+        .from('game_participants')
+        .insert({
+          room_id: room.id,
+          user_id: user.id,
+          score: 0
+        });
+
+      setCurrentRoom(room);
+      
+      // Return false to indicate we're waiting for another player
+      return false;
+    } catch (error) {
+      console.error('Error finding random match:', error);
+      toast({
+        title: 'Hata',
+        description: 'Eşleşme sırasında hata oluştu',
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
   // Leave room
   const leaveRoom = async (): Promise<void> => {
     if (!user || !currentRoom) return;
@@ -310,6 +399,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     participants,
     createRoom,
     joinRoom,
+    findRandomMatch,
     leaveRoom,
     updateScore,
     startGame,

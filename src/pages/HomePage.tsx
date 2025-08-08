@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import PrivateRoomModal from '@/components/PrivateRoomModal';
+import MatchmakingModal from '@/components/MatchmakingModal';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import {
   Bot,
@@ -37,6 +38,8 @@ const HomePage = () => {
   const { startBackgroundMusic } = useMusic();
   const { uploadProfilePicture, uploading } = useProfilePicture();
   const [selectedMode, setSelectedMode] = useState<string | null>(null);
+  const [showMatchmaking, setShowMatchmaking] = useState(false);
+  const [matchmakingGameType, setMatchmakingGameType] = useState<'timed' | 'score'>('timed');
   const [userAvatar, setUserAvatar] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -397,6 +400,20 @@ const HomePage = () => {
               });
             }}
           />
+        ) : selectedMode === 'random-match' ? (
+          <GameModeSelector
+            mode={selectedMode}
+            onStart={(gameType) => {
+              playSound('buttonClick');
+              setSelectedMode(null);
+              setMatchmakingGameType(gameType);
+              setShowMatchmaking(true);
+            }}
+            onClose={() => {
+              playSound('buttonClick');
+              setSelectedMode(null);
+            }}
+          />
         ) : selectedMode ? (
           <GameModeSelector
             mode={selectedMode}
@@ -412,6 +429,22 @@ const HomePage = () => {
               playSound('buttonClick');
               setSelectedMode(null);
             }}
+          />
+        ) : null}
+
+        {/* Matchmaking Modal for Random Match */}
+        {showMatchmaking && (
+          <MatchmakingModal
+            onClose={() => setShowMatchmaking(false)}
+            onMatchFound={(isAI) => {
+              setShowMatchmaking(false);
+              if (isAI) {
+                navigate(`/game/vs-computer?type=${matchmakingGameType}`);
+              } else {
+                navigate(`/game/random-match?type=${matchmakingGameType}`);
+              }
+            }}
+            gameType={matchmakingGameType}
           />
         ) : null}
 
