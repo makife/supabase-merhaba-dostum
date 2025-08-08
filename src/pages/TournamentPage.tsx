@@ -16,7 +16,8 @@ import {
   Crown,
   Zap,
   Bot,
-  User
+  User,
+  Target
 } from 'lucide-react';
 
 interface Tournament {
@@ -30,6 +31,7 @@ interface Tournament {
   finished_at: string | null;
   expires_at: string | null;
   timeout_duration: number;
+  game_type: 'timed' | 'score';
 }
 
 interface TournamentParticipant {
@@ -50,6 +52,7 @@ const TournamentPage = () => {
   const [participants, setParticipants] = useState<TournamentParticipant[]>([]);
   const [waitingTime, setWaitingTime] = useState(60);
   const [isJoining, setIsJoining] = useState(false);
+  const [gameType, setGameType] = useState<'timed' | 'score'>('timed');
 
   useEffect(() => {
     loadActiveTournaments();
@@ -100,7 +103,7 @@ const TournamentPage = () => {
         .order('created_at', { ascending: false });
 
       if (!error && data) {
-        setActiveTournaments(data);
+        setActiveTournaments(data as Tournament[]);
       }
     } catch (error) {
       console.error('Error loading tournaments:', error);
@@ -128,7 +131,8 @@ const TournamentPage = () => {
           name: `Turnuva ${new Date().toLocaleTimeString('tr-TR')}`,
           status: 'waiting',
           current_round: 1,
-          max_participants: 8
+          max_participants: 8,
+          game_type: gameType
         })
         .select()
         .single();
@@ -209,7 +213,7 @@ const TournamentPage = () => {
         .single();
 
       if (tournament) {
-        setCurrentTournament(tournament);
+        setCurrentTournament(tournament as Tournament);
         loadTournamentParticipants(tournamentId);
         // Calculate initial waiting time from expires_at
         if (tournament.expires_at) {
@@ -472,23 +476,46 @@ const TournamentPage = () => {
               8 kişilik turnuva oluştur veya mevcut turnuvaya katıl
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex items-center space-x-4">
-            <div className="flex-1">
-              <Button 
-                onClick={createTournament} 
-                className="w-full"
-                disabled={isJoining}
-              >
-                <Trophy className="w-4 h-4 mr-2" />
-                Yeni Turnuva Oluştur
-              </Button>
+          <CardContent className="space-y-4">
+            <div className="space-y-3">
+              <label className="text-sm font-medium">Oyun Türü</label>
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  variant={gameType === 'timed' ? 'default' : 'outline'}
+                  onClick={() => setGameType('timed')}
+                  className="flex items-center space-x-2"
+                >
+                  <Clock className="w-4 h-4" />
+                  <span>Süreli (30s)</span>
+                </Button>
+                <Button
+                  variant={gameType === 'score' ? 'default' : 'outline'}
+                  onClick={() => setGameType('score')}
+                  className="flex items-center space-x-2"
+                >
+                  <Target className="w-4 h-4" />
+                  <span>Puanlı (500)</span>
+                </Button>
+              </div>
             </div>
-            <div className="w-20 h-20 rounded-lg overflow-hidden">
-              <img 
-                src={turnuvaGif} 
-                alt="Turnuva" 
-                className="w-full h-full object-cover"
-              />
+            <div className="flex items-center space-x-4">
+              <div className="flex-1">
+                <Button 
+                  onClick={createTournament} 
+                  className="w-full"
+                  disabled={isJoining}
+                >
+                  <Trophy className="w-4 h-4 mr-2" />
+                  Yeni Turnuva Oluştur
+                </Button>
+              </div>
+              <div className="w-20 h-20 rounded-lg overflow-hidden">
+                <img 
+                  src={turnuvaGif} 
+                  alt="Turnuva" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -512,6 +539,9 @@ const TournamentPage = () => {
                       <div className="flex items-center space-x-2 mt-2">
                         <Badge variant={tournament.status === 'waiting' ? 'secondary' : 'default'}>
                           {tournament.status === 'waiting' ? 'Bekliyor' : 'Aktif'}
+                        </Badge>
+                        <Badge variant="outline">
+                          {tournament.game_type === 'timed' ? 'Süreli (30s)' : 'Puanlı (500)'}
                         </Badge>
                         <span className="text-xs text-muted-foreground flex items-center">
                           <Users className="w-3 h-3 mr-1" />

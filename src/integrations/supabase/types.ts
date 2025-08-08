@@ -358,6 +358,7 @@ export type Database = {
           current_round: number | null
           expires_at: string | null
           finished_at: string | null
+          game_type: string
           id: string
           max_participants: number | null
           name: string
@@ -370,6 +371,7 @@ export type Database = {
           current_round?: number | null
           expires_at?: string | null
           finished_at?: string | null
+          game_type?: string
           id?: string
           max_participants?: number | null
           name: string
@@ -382,6 +384,7 @@ export type Database = {
           current_round?: number | null
           expires_at?: string | null
           finished_at?: string | null
+          game_type?: string
           id?: string
           max_participants?: number | null
           name?: string
