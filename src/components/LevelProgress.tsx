@@ -123,9 +123,6 @@ export const LevelProgress = ({ className = "" }: LevelProgressProps) => {
           <Badge variant="outline" className="text-xs bg-white/40 text-gray-700 border-white/60">
             Toplam: {levelData.totalScore} puan
           </Badge>
-          <Badge variant="outline" className="text-xs bg-yellow-100/80 text-yellow-800 border-yellow-300">
-            {getLevelMultiplier(levelData.level).toFixed(1)}x EXP
-          </Badge>
           <span className="text-xs text-gray-600">
             %{Math.round(progressPercentage)} tamamlandı
           </span>
