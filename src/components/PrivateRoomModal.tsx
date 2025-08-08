@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Users, Plus, LogIn, Copy, Check, Clock, Trophy, Target } from 'lucide-react';
+import { Users, Plus, LogIn, Copy, Check, Clock, Trophy, Target, AlertTriangle } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useGame } from '@/contexts/GameContext';
 import { useSounds } from '@/hooks/useSounds';
 import { useToast } from '@/hooks/use-toast';
@@ -22,7 +23,8 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
   const [gameType, setGameType] = useState<'timed' | 'score'>('timed');
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
-  const { createRoom, joinRoom } = useGame();
+  const [showExitDialog, setShowExitDialog] = useState(false);
+  const { createRoom, joinRoom, leaveRoom, currentRoom, participants } = useGame();
   const { playSound } = useSounds();
   const { toast } = useToast();
 
@@ -279,13 +281,55 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
               variant="outline"
               onClick={() => {
                 playSound('buttonClick');
-                onClose();
+                // If in a room with other players, show warning
+                if (currentRoom && participants.length > 1) {
+                  setShowExitDialog(true);
+                } else {
+                  onClose();
+                }
               }}
               className="w-full"
             >
-              İptal
+              {currentRoom && participants.length > 1 ? 'Çıkış' : 'İptal'}
             </Button>
           </div>
+          
+          {/* Exit Warning Dialog */}
+          <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-amber-500" />
+                  <AlertDialogTitle>Odadan Çıkmak İstiyorsun?</AlertDialogTitle>
+                </div>
+                <AlertDialogDescription>
+                  Odadan çıkarsan puan kaybedeceksin ve arkadaşın tek başına kalacak. Emin misin?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setShowExitDialog(false)}>
+                  Vazgeç
+                </AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={async () => {
+                    playSound('buttonClick');
+                    await leaveRoom();
+                    setShowExitDialog(false);
+                    onClose();
+                    toast({
+                      title: '😞 Puan Kaybettin!',
+                      description: 'Odadan çıktığın için puan kaybettin.',
+                      variant: 'destructive',
+                      duration: 3000,
+                    });
+                  }}
+                  className="bg-red-500 hover:bg-red-600"
+                >
+                  Evet, Çık
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </CardContent>
       </Card>
     </div>

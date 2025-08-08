@@ -283,11 +283,29 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     }
   };
 
-  // Leave room
+  // Leave room with penalty logic
   const leaveRoom = async (): Promise<void> => {
     if (!user || !currentRoom) return;
 
     try {
+      // If game is active and there are multiple players, apply penalty
+      if (currentRoom.status === 'active' && participants.length > 1) {
+        // Deduct points from user's total score as penalty
+        const { data: currentProfile } = await supabase
+          .from('profiles')
+          .select('total_score')
+          .eq('id', user.id)
+          .single();
+
+        const penalty = 50; // Penalty points
+        const newTotalScore = Math.max(0, (currentProfile?.total_score || 0) - penalty);
+        
+        await supabase
+          .from('profiles')
+          .update({ total_score: newTotalScore })
+          .eq('id', user.id);
+      }
+
       await supabase
         .from('game_participants')
         .delete()
@@ -412,7 +430,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     }
   }, [currentRoom]);
 
-  // Fetch participants function with better logging
+  // Fetch participants function with better logging + profile data
   const fetchParticipants = async () => {
     if (!currentRoom) {
       console.log('❌ No current room for fetchParticipants');
@@ -423,7 +441,13 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       console.log('🔍 Fetching participants for room:', currentRoom.id);
       const { data, error } = await supabase
         .from('game_participants')
-        .select('*')
+        .select(`
+          *,
+          profiles!game_participants_user_id_fkey (
+            username,
+            avatar_url
+          )
+        `)
         .eq('room_id', currentRoom.id);
 
       if (error) {
