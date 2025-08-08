@@ -198,9 +198,9 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     }
   }, [playerScore, opponentScore, playSound, playCelebrationSound, gameEnded, winner]);
 
-  // Check if score reaches 100 - only for score mode
+  // Check if score reaches 500 - only for score mode
   useEffect(() => {
-    if (gameType === 'score' && (playerScore >= 100 || opponentScore >= 100)) {
+    if (gameType === 'score' && (playerScore >= 500 || opponentScore >= 500)) {
       setGameEnded(true);
       checkWinner();
     }
@@ -433,7 +433,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
           ) : (
             <div className="flex items-center space-x-2">
               <Target className="w-4 h-4" />
-              <span className="text-sm font-medium">100 Puana Kadar</span>
+              <span className="text-sm font-medium">500 Puana Kadar</span>
             </div>
           )}
         </div>
@@ -459,7 +459,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
               <p className="text-2xl font-bold text-gray-700">{playerScore}</p>
               {gameType === 'score' && (
                 <Progress 
-                  value={(playerScore / 100) * 100} 
+                  value={(playerScore / 500) * 100} 
                   className="mt-2 bg-white/60" 
                 />
               )}
@@ -476,7 +476,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
               <p className="text-2xl font-bold text-gray-700">{opponentScore}</p>
               {gameType === 'score' && (
                 <Progress 
-                  value={(opponentScore / 100) * 100} 
+                  value={(opponentScore / 500) * 100} 
                   className="mt-2 bg-white/60" 
                 />
               )}
