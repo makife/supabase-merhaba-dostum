@@ -68,26 +68,42 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
         </CardHeader>
         <CardContent className="space-y-6">
           <div>
-            <h3 className="font-semibold mb-3">Oyun Türü Seçin</h3>
+            <h3 className="font-semibold mb-3 text-center">Oyun Türü Seçin</h3>
             <RadioGroup value={selectedType} onValueChange={(value) => {
               playSound('buttonClick');
               setSelectedType(value as 'timed' | 'score');
             }}>
-              <div className="space-y-3">
-                <Label className="flex items-center space-x-3 p-3 rounded-lg border cursor-pointer hover:bg-muted">
-                  <RadioGroupItem value="timed" />
+              <div className="space-y-4">
+                {/* Zamana Karşı */}
+                <Label className={`relative flex items-center space-x-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 hover:scale-[1.02] ${
+                  selectedType === 'timed' 
+                    ? 'border-blue-500 bg-gradient-to-r from-blue-50 to-cyan-50 shadow-lg shadow-blue-200/50' 
+                    : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/30'
+                }`}>
+                  <RadioGroupItem value="timed" className="sr-only" />
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                    selectedType === 'timed' 
+                      ? 'bg-gradient-to-br from-blue-500 to-cyan-500 shadow-lg' 
+                      : 'bg-gray-100'
+                  }`}>
+                    <Clock className={`w-6 h-6 ${selectedType === 'timed' ? 'text-white' : 'text-gray-600'}`} />
+                  </div>
                   <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <Clock className="w-4 h-4" />
-                      <span className="font-medium">Zamana Karşı</span>
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-lg">Zamana Karşı</span>
+                      {selectedType === 'timed' && (
+                        <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center animate-scale-in">
+                          <div className="w-2 h-2 bg-white rounded-full"></div>
+                        </div>
+                      )}
                     </div>
-                    <p className="text-sm text-muted-foreground">2 dakika içinde en yüksek puan</p>
-                    <div className="flex space-x-2 mt-1">
-                      <Badge variant="outline" className="text-xs">
+                    <p className="text-sm text-muted-foreground mt-1">2 dakika içinde en yüksek puanı hedefle</p>
+                    <div className="flex space-x-2 mt-3">
+                      <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800 border-blue-200">
                         <Clock className="w-3 h-3 mr-1" />
                         2 Dakika
                       </Badge>
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="secondary" className="text-xs bg-cyan-100 text-cyan-800 border-cyan-200">
                         <Target className="w-3 h-3 mr-1" />
                         Sınırsız Puan
                       </Badge>
@@ -95,20 +111,36 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
                   </div>
                 </Label>
 
-                <Label className="flex items-center space-x-3 p-3 rounded-lg border cursor-pointer hover:bg-muted">
-                  <RadioGroupItem value="score" />
+                {/* Puana Karşı */}
+                <Label className={`relative flex items-center space-x-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 hover:scale-[1.02] ${
+                  selectedType === 'score' 
+                    ? 'border-amber-500 bg-gradient-to-r from-amber-50 to-orange-50 shadow-lg shadow-amber-200/50' 
+                    : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/30'
+                }`}>
+                  <RadioGroupItem value="score" className="sr-only" />
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                    selectedType === 'score' 
+                      ? 'bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg' 
+                      : 'bg-gray-100'
+                  }`}>
+                    <Trophy className={`w-6 h-6 ${selectedType === 'score' ? 'text-white' : 'text-gray-600'}`} />
+                  </div>
                   <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <Trophy className="w-4 h-4" />
-                      <span className="font-medium">Puana Karşı</span>
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-lg">Puana Karşı</span>
+                      {selectedType === 'score' && (
+                        <div className="w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center animate-scale-in">
+                          <div className="w-2 h-2 bg-white rounded-full"></div>
+                        </div>
+                      )}
                     </div>
-                    <p className="text-sm text-muted-foreground">500 puana ilk ulaşan kazanır</p>
-                    <div className="flex space-x-2 mt-1">
-                      <Badge variant="outline" className="text-xs">
+                    <p className="text-sm text-muted-foreground mt-1">500 puana ilk ulaşan kazanır</p>
+                    <div className="flex space-x-2 mt-3">
+                      <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 border-amber-200">
                         <Trophy className="w-3 h-3 mr-1" />
                         500 Puan
                       </Badge>
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-800 border-orange-200">
                         <Clock className="w-3 h-3 mr-1" />
                         Sınırsız Süre
                       </Badge>
