@@ -190,6 +190,8 @@ export const AvatarFrameSelector = () => {
 
   const isFrameAvailable = (frameOption: FrameOption) => {
     if (!frameOption.requiredPurchase) return true;
+    // Premium üyeler tüm çerçevelere erişebilir
+    if (isPremium) return true;
     return hasPurchased(frameOption.requiredPurchase);
   };
 

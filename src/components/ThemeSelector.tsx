@@ -79,6 +79,8 @@ export const ThemeSelector = () => {
   // Kullanılabilir temaları kontrol et
   const isThemeAvailable = (themeOption: ThemeOption) => {
     if (!themeOption.requiredPurchase) return true; // Varsayılan temalar her zaman mevcut
+    // Premium üyeler tüm temalara erişebilir
+    if (isPremium) return true;
     return user && hasPurchased(themeOption.requiredPurchase);
   };
 
