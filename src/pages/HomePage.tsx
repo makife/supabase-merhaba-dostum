@@ -27,7 +27,9 @@ import {
   User,
   Crown,
   Zap,
-  Camera
+  Camera,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 
 const HomePage = () => {
@@ -35,7 +37,7 @@ const HomePage = () => {
   const { profile, isPremium } = useUser();
   const navigate = useNavigate();
   const { playSound } = useSounds();
-  const { startBackgroundMusic } = useMusic();
+  const { startBackgroundMusic, musicEnabled, setMusicEnabled } = useMusic();
   const { uploadProfilePicture, uploading } = useProfilePicture();
   const [selectedMode, setSelectedMode] = useState<string | null>(null);
   const [showMatchmaking, setShowMatchmaking] = useState(false);
@@ -132,6 +134,23 @@ const HomePage = () => {
         {/* Header */}
         <div className="bg-card rounded-xl p-4 md:p-6 shadow-lg border relative overflow-hidden">
           <HeaderAnimation />
+          
+          {/* Music Toggle Button - Top Right */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="absolute top-3 right-3 z-20 w-10 h-10 rounded-full hover:bg-white/10 backdrop-blur-sm border border-white/20"
+            onClick={() => {
+              setMusicEnabled(!musicEnabled);
+              playSound('buttonClick');
+            }}
+          >
+            {musicEnabled ? (
+              <Volume2 className="w-5 h-5 text-muted-foreground" />
+            ) : (
+              <VolumeX className="w-5 h-5 text-muted-foreground" />
+            )}
+          </Button>
           
           {/* Mobile Layout */}
           <div className="block md:hidden relative z-10">
