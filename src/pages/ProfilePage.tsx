@@ -31,18 +31,37 @@ const ProfilePage = () => {
   const [profileData, setProfileData] = useState({
     username: user?.email?.split('@')[0] || 'Oyuncu',
     avatar_url: '',
-    totalGames: 45,
-    wins: 28,
-    losses: 17,
-    totalScore: 12450,
-    winRate: 62,
-    fastestWord: '2.3s',
-    longestWord: 'BİLGİSAYAR',
-    currentStreak: 5,
-    level: 12,
-    experience: 2450,
-    nextLevelExp: 3000,
+    totalGames: 0,
+    wins: 0,
+    losses: 0,
+    totalScore: 0,
+    winRate: 0,
+    fastestWord: '0s',
+    longestWord: '',
+    currentStreak: 0,
+    level: 1,
+    experience: 0,
+    nextLevelExp: 1000,
   });
+
+  // Calculate level from total score (same as LevelProgress component)
+  const calculateLevel = (totalScore: number) => {
+    const baseExp = 1000;
+    let level = 1;
+    let expForCurrentLevel = 0;
+    let expForNextLevel = baseExp;
+
+    while (totalScore >= expForNextLevel) {
+      expForCurrentLevel = expForNextLevel;
+      level++;
+      expForNextLevel = baseExp * Math.pow(1.5, level - 1); // Exponential scaling
+    }
+
+    const experience = totalScore - expForCurrentLevel;
+    const nextLevelExp = expForNextLevel - expForCurrentLevel;
+
+    return { level, experience, nextLevelExp };
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -55,17 +74,62 @@ const ProfilePage = () => {
         .maybeSingle();
       
       if (data) {
+        // Calculate level data from total_score
+        const levelData = calculateLevel(data.total_score || 0);
         const username = data.username || (user?.email?.split('@')[0] || 'Oyuncu');
+        
         setProfileData(prev => ({
           ...prev,
           username: username,
           avatar_url: data.avatar_url || '',
+          totalGames: data.total_games || 0,
+          wins: data.wins || 0,
+          losses: data.losses || 0,
+          totalScore: data.total_score || 0,
+          winRate: data.total_games > 0 ? Math.round(((data.wins || 0) / data.total_games) * 100) : 0,
+          level: levelData.level,
+          experience: levelData.experience,
+          nextLevelExp: levelData.nextLevelExp,
         }));
         setEditedUsername(username);
       }
     };
 
     fetchProfile();
+  }, [user]);
+
+  // Listen for real-time updates to total_score
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('profile-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${user.id}`
+        },
+        (payload) => {
+          if (payload.new.total_score !== undefined) {
+            const levelData = calculateLevel(payload.new.total_score);
+            setProfileData(prev => ({
+              ...prev,
+              totalScore: payload.new.total_score,
+              level: levelData.level,
+              experience: levelData.experience,
+              nextLevelExp: levelData.nextLevelExp,
+            }));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   const handleAvatarClick = () => {
