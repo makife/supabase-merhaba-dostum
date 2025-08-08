@@ -414,28 +414,31 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     };
   }, [isPlayingWithAI, gameStarted, gameEnded, generateAIWordFromGrid, playSound, lastPlayerAction, gameMode]);
 
-  // Timer effect - only for timed mode
+  // Timer effect - for both timed and score modes
   useEffect(() => {
-    if (!gameStarted || gameEnded || gameType !== 'timed') return;
+    if (!gameStarted || gameEnded) return;
 
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        // Play time warning at 15 seconds
-        if (prev === 15 && !timeWarningPlayed) {
-          playTimeWarningSequence();
-          setTimeWarningPlayed(true);
-        }
-        
-        if (prev <= 1) {
-          setGameEnded(true);
-          checkWinner();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    // For timed mode, use countdown timer
+    if (gameType === 'timed') {
+      const timer = setInterval(() => {
+        setTimeLeft((prev) => {
+          // Play time warning at 15 seconds
+          if (prev === 15 && !timeWarningPlayed) {
+            playTimeWarningSequence();
+            setTimeWarningPlayed(true);
+          }
+          
+          if (prev <= 1) {
+            setGameEnded(true);
+            checkWinner();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
 
-    return () => clearInterval(timer);
+      return () => clearInterval(timer);
+    }
   }, [gameStarted, gameEnded, gameType]);
 
   // Check for winner and apply end game bonuses
@@ -488,13 +491,20 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     }
   }, [playerScore, opponentScore, playSound, playCelebrationSound, gameEnded, winner, user]);
 
-  // Check if score reaches 500 - only for score mode
+  // Check win conditions based on game type
   useEffect(() => {
-    if (gameType === 'score' && (playerScore >= 500 || opponentScore >= 500)) {
-      setGameEnded(true);
-      checkWinner();
+    if (gameType === 'score') {
+      // Score mode: first to reach max_score wins
+      const maxScore = currentRoom?.max_score || 500;
+      if (playerScore >= maxScore || opponentScore >= maxScore) {
+        setGameEnded(true);
+        checkWinner();
+      }
+    } else if (gameType === 'timed') {
+      // Timed mode: game ends when timer reaches 0 (handled in timer effect)
+      // No additional check needed here
     }
-  }, [playerScore, opponentScore, checkWinner, gameType]);
+  }, [playerScore, opponentScore, checkWinner, gameType, currentRoom?.max_score]);
 
   // Handle letter click
   const handleLetterClick = (letter: string, row: number, col: number) => {
