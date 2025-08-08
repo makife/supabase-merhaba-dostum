@@ -50,6 +50,7 @@ interface MarketItem {
   type: 'credits' | 'unlimited_time' | 'premium' | 'theme' | 'avatar' | 'sound' | 'effect' | 'badge' | 'hint';
   value: number;
   duration?: string;
+  image?: string;
 }
 
 const MarketPage = () => {
@@ -181,7 +182,8 @@ const MarketPage = () => {
       currency: 'premium',
       icon: Frame,
       type: 'avatar',
-      value: 1
+      value: 1,
+      image: '/lovable-uploads/aa2df12c-9aa3-49c0-a78e-4a946ad9c396.png'
     },
     {
       id: 'avatar_rainbow_frame',
@@ -191,7 +193,8 @@ const MarketPage = () => {
       currency: 'premium',
       icon: Heart,
       type: 'avatar',
-      value: 1
+      value: 1,
+      image: '/lovable-uploads/ff7b6503-a976-4eb1-87d0-2373423fc6e5.png'
     },
     {
       id: 'avatar_floral_roses',
@@ -201,7 +204,8 @@ const MarketPage = () => {
       currency: 'premium',
       icon: Image,
       type: 'avatar',
-      value: 1
+      value: 1,
+      image: '/lovable-uploads/a717e6dc-c468-4e17-9e40-e2a47817aed6.png'
     },
     {
       id: 'avatar_blue_berries',
@@ -211,7 +215,8 @@ const MarketPage = () => {
       currency: 'premium',
       icon: Image,
       type: 'avatar',
-      value: 1
+      value: 1,
+      image: '/lovable-uploads/9224e301-b3e4-47ba-9be4-b9a4fd4694a5.png'
     },
     {
       id: 'avatar_gold_simple',
@@ -221,7 +226,8 @@ const MarketPage = () => {
       currency: 'premium',
       icon: Image,
       type: 'avatar',
-      value: 1
+      value: 1,
+      image: '/lovable-uploads/aa2df12c-9aa3-49c0-a78e-4a946ad9c396.png'
     },
     {
       id: 'avatar_floral_wreath',
@@ -231,87 +237,8 @@ const MarketPage = () => {
       currency: 'premium',
       icon: Image,
       type: 'avatar',
-      value: 1
-    },
-    {
-      id: 'avatar_christmas_lights',
-      title: 'Noel Işıkları Çerçevesi',
-      description: 'Renkli noel ışıkları ile çerçeve',
-      price: 2.99,
-      currency: 'premium',
-      icon: Image,
-      type: 'avatar',
-      value: 1
-    },
-    {
-      id: 'avatar_ornate_gold',
-      title: 'Süslü Altın Çerçeve',
-      description: 'Detaylı süslemeli lüks altın çerçeve',
-      price: 4.99,
-      currency: 'premium',
-      icon: Image,
-      type: 'avatar',
-      value: 1
-    },
-    {
-      id: 'avatar_party_balloons',
-      title: 'Parti Balonları Çerçevesi',
-      description: 'Renkli parti balonları ile çerçeve',
-      price: 2.49,
-      currency: 'premium',
-      icon: Image,
-      type: 'avatar',
-      value: 1
-    },
-    {
-      id: 'avatar_christmas_tree',
-      title: 'Noel Ağacı Çerçevesi',
-      description: 'Noel ağacı ve hediyeli özel çerçeve',
-      price: 3.99,
-      currency: 'premium',
-      icon: Image,
-      type: 'avatar',
-      value: 1
-    },
-    {
-      id: 'avatar_ornate_black',
-      title: 'Siyah Süslü Çerçeve',
-      description: 'Klasik siyah süslemeli çerçeve',
-      price: 3.49,
-      currency: 'premium',
-      icon: Image,
-      type: 'avatar',
-      value: 1
-    },
-    {
-      id: 'avatar_black_floral',
-      title: 'Siyah Çiçek Çerçevesi',
-      description: 'Zarif siyah çiçek motifli çerçeve',
-      price: 3.49,
-      currency: 'premium',
-      icon: Image,
-      type: 'avatar',
-      value: 1
-    },
-    {
-      id: 'avatar_golden_stars',
-      title: 'Altın Yıldızlar Çerçevesi',
-      description: 'Yeni yıl temalı altın yıldız çerçevesi',
-      price: 4.49,
-      currency: 'premium',
-      icon: Image,
-      type: 'avatar',
-      value: 1
-    },
-    {
-      id: 'avatar_wavy_black',
-      title: 'Dalgalı Siyah Çerçeve',
-      description: 'Modern dalgalı siyah çerçeve',
-      price: 2.99,
-      currency: 'premium',
-      icon: Image,
-      type: 'avatar',
-      value: 1
+      value: 1,
+      image: '/lovable-uploads/eea94c24-3141-4496-ab48-9911ecfd1400.png'
     },
     {
       id: 'avatar_purple_flowers',
@@ -321,7 +248,8 @@ const MarketPage = () => {
       currency: 'premium',
       icon: Image,
       type: 'avatar',
-      value: 1
+      value: 1,
+      image: '/lovable-uploads/1b6aaacc-0774-46f0-9aed-58be7383877a.png'
     },
     {
       id: 'avatar_pink_flowers',
@@ -331,7 +259,8 @@ const MarketPage = () => {
       currency: 'premium',
       icon: Image,
       type: 'avatar',
-      value: 1
+      value: 1,
+      image: '/lovable-uploads/4a19df44-882d-4bf3-b557-2986fd9ea69e.png'
     },
     {
       id: 'avatar_antique_bronze',
@@ -341,7 +270,8 @@ const MarketPage = () => {
       currency: 'premium',
       icon: Image,
       type: 'avatar',
-      value: 1
+      value: 1,
+      image: '/lovable-uploads/227894f5-629e-46a5-88d7-2d8df2460fa2.png'
     },
     {
       id: 'avatar_green_patrick',
@@ -351,7 +281,8 @@ const MarketPage = () => {
       currency: 'premium',
       icon: Image,
       type: 'avatar',
-      value: 1
+      value: 1,
+      image: '/lovable-uploads/d9551411-6a1a-4199-b99e-a0ff5defbf4e.png'
     },
     {
       id: 'avatar_heart_roses',
@@ -361,7 +292,96 @@ const MarketPage = () => {
       currency: 'premium',
       icon: Image,
       type: 'avatar',
-      value: 1
+      value: 1,
+      image: '/lovable-uploads/ff7b6503-a976-4eb1-87d0-2373423fc6e5.png'
+    },
+    {
+      id: 'avatar_christmas_lights',
+      title: 'Noel Işıkları Çerçevesi',
+      description: 'Renkli noel ışıkları ile çerçeve',
+      price: 2.99,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1,
+      image: '/lovable-uploads/2e9f15c2-49f4-461f-997e-84c4682368c6.png'
+    },
+    {
+      id: 'avatar_ornate_gold',
+      title: 'Süslü Altın Çerçeve',
+      description: 'Detaylı süslemeli lüks altın çerçeve',
+      price: 4.99,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1,
+      image: '/lovable-uploads/9ed9fbb7-3aa3-4185-96c5-d118e2067712.png'
+    },
+    {
+      id: 'avatar_party_balloons',
+      title: 'Parti Balonları Çerçevesi',
+      description: 'Renkli parti balonları ile çerçeve',
+      price: 2.49,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1,
+      image: '/lovable-uploads/afa305fa-30a5-496f-8af0-029aa71047a3.png'
+    },
+    {
+      id: 'avatar_christmas_tree',
+      title: 'Noel Ağacı Çerçevesi',
+      description: 'Noel ağacı ve hediyeli özel çerçeve',
+      price: 3.99,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1,
+      image: '/lovable-uploads/b2d1b581-c29f-43e4-b354-2889ce0621b1.png'
+    },
+    {
+      id: 'avatar_ornate_black',
+      title: 'Siyah Süslü Çerçeve',
+      description: 'Klasik siyah süslemeli çerçeve',
+      price: 3.49,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1,
+      image: '/lovable-uploads/5b932686-4cbb-44bb-8aa0-d9172ae54764.png'
+    },
+    {
+      id: 'avatar_black_floral',
+      title: 'Siyah Çiçek Çerçevesi',
+      description: 'Zarif siyah çiçek motifli çerçeve',
+      price: 3.49,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1,
+      image: '/lovable-uploads/53623185-5b73-4dd2-bc2b-1af5b94f321a.png'
+    },
+    {
+      id: 'avatar_golden_stars',
+      title: 'Altın Yıldızlar Çerçevesi',
+      description: 'Yeni yıl temalı altın yıldız çerçevesi',
+      price: 4.49,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1,
+      image: '/lovable-uploads/ff8a7b50-41b9-461a-bd0b-0e166b281ef3.png'
+    },
+    {
+      id: 'avatar_wavy_black',
+      title: 'Dalgalı Siyah Çerçeve',
+      description: 'Modern dalgalı siyah çerçeve',
+      price: 2.99,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1,
+      image: '/lovable-uploads/309c658e-e0d1-423a-80d6-9b012943f30d.png'
     },
 
     // Ses Efektleri
@@ -532,9 +552,19 @@ const MarketPage = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-secondary rounded-lg flex items-center justify-center">
-                  <item.icon className="w-5 h-5" />
-                </div>
+                {item.type === 'avatar' && item.image ? (
+                  <div className="w-12 h-12 relative">
+                    <img 
+                      src={item.image} 
+                      alt={item.title}
+                      className="w-12 h-12 object-contain rounded-lg border border-border"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-10 h-10 bg-secondary rounded-lg flex items-center justify-center">
+                    <item.icon className="w-5 h-5" />
+                  </div>
+                )}
                 <div className="flex-1">
                   <h3 className="font-semibold text-sm">{item.title}</h3>
                   <p className="text-xs text-muted-foreground">{item.description}</p>
