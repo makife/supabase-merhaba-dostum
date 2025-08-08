@@ -218,13 +218,15 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
       console.log('🔍 Found waiting rooms:', waitingRooms?.length || 0, waitingRooms);
 
-      // Filter rooms that have space (less than 2 participants) and match game type
+      // Filter rooms that have space (less than 2 participants) and match game type  
+      // Also exclude rooms where we're already a participant
       const availableRooms = waitingRooms?.filter(room => {
         const participantCount = room.game_participants?.length || 0;
         const gameTypeMatch = (gameType === 'timed' && room.time_limit > 0) || 
                              (gameType === 'score' && room.max_score > 0);
-        console.log(`Room ${room.id}: participants=${participantCount}, gameTypeMatch=${gameTypeMatch}`);
-        return participantCount < 2 && gameTypeMatch;
+        const isUserInRoom = room.game_participants?.some(p => p.user_id === user.id);
+        console.log(`Room ${room.id}: participants=${participantCount}, gameTypeMatch=${gameTypeMatch}, userInRoom=${isUserInRoom}`);
+        return participantCount < 2 && gameTypeMatch && !isUserInRoom;
       }) || [];
 
       console.log('✅ Available rooms after filtering:', availableRooms.length);
