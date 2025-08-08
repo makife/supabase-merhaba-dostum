@@ -102,11 +102,11 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
                       <Trophy className="w-4 h-4" />
                       <span className="font-medium">Puana Karşı</span>
                     </div>
-                    <p className="text-sm text-muted-foreground">100 puana ilk ulaşan kazanır</p>
+                    <p className="text-sm text-muted-foreground">500 puana ilk ulaşan kazanır</p>
                     <div className="flex space-x-2 mt-1">
                       <Badge variant="outline" className="text-xs">
                         <Trophy className="w-3 h-3 mr-1" />
-                        100 Puan
+                        500 Puan
                       </Badge>
                       <Badge variant="outline" className="text-xs">
                         <Clock className="w-3 h-3 mr-1" />

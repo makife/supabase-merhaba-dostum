@@ -403,7 +403,7 @@ const HomePage = () => {
                     </Badge>
                     <Badge variant="secondary" className="text-xs bg-white/20 text-white border-white/30 hover:bg-white/30">
                       <Target className="w-3 h-3 mr-1" />
-                      100 Puan
+                      500 Puan
                     </Badge>
                   </div>
                   <Button 
