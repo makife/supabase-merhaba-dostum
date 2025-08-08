@@ -285,8 +285,11 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       // Check minimum length (3 characters)
       if (word.length < 3) return false;
       
-      // Check if word is already used
-      if (usedWords.has(word.toUpperCase())) return false;
+      // Check if word is already used (normalize to uppercase for comparison)
+      if (usedWords.has(word.toUpperCase())) {
+        console.log(`AI skipping already used word: ${word}`);
+        return false;
+      }
       
       const wordLetterCount: { [key: string]: number } = {};
       
@@ -343,8 +346,9 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       const aiWord = generateAIWordFromGrid();
       
       if (aiWord) {
-        // Add AI word to used words
-        setUsedWords(prev => new Set([...prev, aiWord.toLowerCase()]));
+        // Add AI word to used words (normalize to uppercase for consistency)
+        setUsedWords(prev => new Set([...prev, aiWord.toUpperCase()]));
+        console.log(`AI used word: ${aiWord} (added as: ${aiWord.toUpperCase()})`);
         
         const opponentPoints = Math.floor(Math.random() * 25) + 10;
         setOpponentScore(prev => prev + opponentPoints);
