@@ -200,21 +200,41 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     if (!user) return false;
 
     try {
-      // Look for existing waiting rooms with random-match mode
+      console.log('🔍 Starting random match search for gameType:', gameType);
+      
+      // Look for existing waiting rooms with random-match mode  
       const { data: waitingRooms, error: searchError } = await supabase
         .from('game_rooms')
-        .select('*')
+        .select('*, game_participants!inner(*)')
         .eq('game_mode', 'random-match')
         .eq('status', 'waiting')
-        .limit(1);
+        .not('host_id', 'eq', user.id) // Don't join our own room
+        .limit(5);
 
-      if (searchError) throw searchError;
+      if (searchError) {
+        console.error('❌ Search error:', searchError);
+        throw searchError;
+      }
 
-      // If found a waiting room, join it
-      if (waitingRooms && waitingRooms.length > 0) {
-        const room = waitingRooms[0];
+      console.log('🔍 Found waiting rooms:', waitingRooms?.length || 0, waitingRooms);
+
+      // Filter rooms that have space (less than 2 participants) and match game type
+      const availableRooms = waitingRooms?.filter(room => {
+        const participantCount = room.game_participants?.length || 0;
+        const gameTypeMatch = (gameType === 'timed' && room.time_limit > 0) || 
+                             (gameType === 'score' && room.max_score > 0);
+        console.log(`Room ${room.id}: participants=${participantCount}, gameTypeMatch=${gameTypeMatch}`);
+        return participantCount < 2 && gameTypeMatch;
+      }) || [];
+
+      console.log('✅ Available rooms after filtering:', availableRooms.length);
+
+      // If found a suitable waiting room, join it
+      if (availableRooms.length > 0) {
+        const room = availableRooms[0];
+        console.log('🎯 Joining existing room:', room.id);
         
-        // Check if already in room
+        // Check if already in room (safety check)
         const { data: existingParticipant } = await supabase
           .from('game_participants')
           .select('*')
@@ -223,26 +243,28 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           .single();
 
         if (!existingParticipant) {
-          await supabase
+          const { error: joinError } = await supabase
             .from('game_participants')
             .insert({
               room_id: room.id,
               user_id: user.id,
               score: 0
             });
+          
+          if (joinError) {
+            console.error('❌ Join error:', joinError);
+            throw joinError;
+          }
         }
 
         setCurrentRoom(room);
-        
-        toast({
-          title: 'Oyuncu Bulundu!',
-          description: 'Rakip oyuncu ile eşleştiniz',
-        });
-
-        return true;
+        console.log('✅ Successfully joined room with real player');
+        return true; // Found real player!
       }
 
-      // If no waiting room found, create one
+      console.log('🏗️ No available rooms found, creating new room and waiting...');
+      
+      // If no waiting room found, create one and wait for others
       const grid = generateRandomGrid();
       const { data: room, error } = await supabase
         .from('game_rooms')
@@ -257,9 +279,12 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Room creation error:', error);
+        throw error;
+      }
 
-      // Join the room as a participant
+      // Join our own room as participant
       await supabase
         .from('game_participants')
         .insert({
@@ -269,11 +294,12 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         });
 
       setCurrentRoom(room);
+      console.log('✅ Created room and waiting for other players');
       
       // Return false to indicate we're waiting for another player
       return false;
     } catch (error) {
-      console.error('Error finding random match:', error);
+      console.error('💥 Error finding random match:', error);
       toast({
         title: 'Hata',
         description: 'Eşleşme sırasında hata oluştu',
