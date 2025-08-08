@@ -48,8 +48,8 @@ export const HeaderAnimation = () => {
         maxAge: 120 + Math.random() * 60
       };
       
-      setAnimatedLetters(prev => [...prev.slice(-40), newLetter]);
-    }, 250);
+      setAnimatedLetters(prev => [...prev.slice(-60), newLetter]);
+    }, 150);
 
     return () => clearInterval(interval);
   }, []);
