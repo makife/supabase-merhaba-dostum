@@ -128,6 +128,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const [playerAvatar, setPlayerAvatar] = useState<string>('');
   const [opponentAvatar, setOpponentAvatar] = useState<string>('');
   const [hasShownStartMessage, setHasShownStartMessage] = useState(false);
+  const [lastPlayerAction, setLastPlayerAction] = useState<number>(0);
 
   // Sync grid with room data and fetch avatars
   useEffect(() => {
@@ -343,6 +344,14 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     if (gameMode !== 'vs-computer' || !gameStarted || gameEnded) return;
 
     const aiPlayInterval = setInterval(() => {
+      // Check if player recently took action, if so wait longer
+      const timeSincePlayerAction = Date.now() - lastPlayerAction;
+      const minDelayAfterPlayerAction = 3000; // 3 saniye minimum bekleme
+      
+      if (timeSincePlayerAction < minDelayAfterPlayerAction) {
+        return; // Bu round'u atla
+      }
+      
       const aiWord = generateAIWordFromGrid();
       
       if (aiWord) {
@@ -362,7 +371,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     }, 4000 + Math.random() * 3000); // 4-7 saniye arasında
 
     return () => clearInterval(aiPlayInterval);
-  }, [gameMode, gameStarted, gameEnded, generateAIWordFromGrid, playSound, toast]);
+  }, [gameMode, gameStarted, gameEnded, generateAIWordFromGrid, playSound, lastPlayerAction]);
 
   // Timer effect - only for timed mode
   useEffect(() => {
@@ -476,6 +485,9 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   // Submit word
   const submitWord = async () => {
     if (waitingForPlayer) return;
+    
+    // Set player action timestamp to delay AI
+    setLastPlayerAction(Date.now());
     
     if (currentWord.length < 3) {
       toast({
