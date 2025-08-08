@@ -18,7 +18,8 @@ import {
   Zap,
   Crown,
   Camera,
-  Edit
+  Edit,
+  Calendar
 } from 'lucide-react';
 
 const ProfilePage = () => {
@@ -42,6 +43,7 @@ const ProfilePage = () => {
     level: 1,
     experience: 0,
     nextLevelExp: 1000,
+    premiumUntil: null as string | null,
   });
 
   // Calculate level from total score (same as LevelProgress component)
@@ -92,6 +94,7 @@ const ProfilePage = () => {
           level: levelData.level,
           experience: levelData.experience,
           nextLevelExp: levelData.nextLevelExp,
+          premiumUntil: data.premium_until,
         }));
         setEditedUsername(username);
       }
@@ -180,6 +183,40 @@ const ProfilePage = () => {
     }
   };
 
+  // Helper function to get subscription info
+  const getSubscriptionInfo = () => {
+    if (!profileData.premiumUntil) return null;
+    
+    const premiumDate = new Date(profileData.premiumUntil);
+    const now = new Date();
+    
+    if (premiumDate <= now) return null;
+    
+    const diffTime = premiumDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    // Determine subscription type based on remaining days
+    const isYearly = diffDays > 40; // If more than 40 days, likely yearly
+    const subscriptionType = isYearly ? 'Yıllık' : 'Aylık';
+    
+    let timeLeft = '';
+    if (diffDays > 365) {
+      const years = Math.floor(diffDays / 365);
+      const remainingDays = diffDays % 365;
+      timeLeft = `${years} yıl ${remainingDays} gün`;
+    } else if (diffDays > 30) {
+      const months = Math.floor(diffDays / 30);
+      const remainingDays = diffDays % 30;
+      timeLeft = `${months} ay ${remainingDays} gün`;
+    } else {
+      timeLeft = `${diffDays} gün`;
+    }
+    
+    return { subscriptionType, timeLeft, diffDays };
+  };
+
+  const subscriptionInfo = getSubscriptionInfo();
+
   const badges = [
     { name: 'İlk Adım', description: 'İlk oyununuzu tamamladınız', icon: '🎯', earned: true },
     { name: 'Hızlı Parmaklar', description: '10 saniyede kelime yazdınız', icon: '⚡', earned: true },
@@ -249,10 +286,16 @@ const ProfilePage = () => {
                   <h2 className="text-2xl font-bold">{profileData.username}</h2>
                 )}
                 <p className="text-muted-foreground">{user?.email}</p>
-                <div className="flex items-center space-x-2 mt-2">
-                  <Badge variant="secondary">Seviye {profileData.level}</Badge>
-                  <Badge variant="outline">{profileData.winRate}% Kazanma</Badge>
-                </div>
+                 <div className="flex items-center space-x-2 mt-2">
+                   <Badge variant="secondary">Seviye {profileData.level}</Badge>
+                   <Badge variant="outline">{profileData.winRate}% Kazanma</Badge>
+                   {subscriptionInfo && (
+                     <Badge variant="default" className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
+                       <Crown className="w-3 h-3 mr-1" />
+                       Premium
+                     </Badge>
+                   )}
+                 </div>
               </div>
             </div>
             
@@ -265,9 +308,56 @@ const ProfilePage = () => {
               <Progress value={(profileData.experience / profileData.nextLevelExp) * 100} />
             </div>
           </CardContent>
-        </Card>
+         </Card>
 
-        {/* Statistics */}
+         {/* Premium Subscription Info */}
+         {subscriptionInfo && (
+           <Card className="border-yellow-200 bg-gradient-to-r from-yellow-50 to-orange-50">
+             <CardHeader>
+               <CardTitle className="flex items-center text-yellow-700">
+                 <Crown className="w-5 h-5 mr-2" />
+                 Premium Abonelik
+               </CardTitle>
+               <CardDescription>
+                 Aktif premium üyeliğinizin detayları
+               </CardDescription>
+             </CardHeader>
+             <CardContent>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div className="flex items-center space-x-3">
+                   <div className="bg-yellow-100 p-2 rounded-lg">
+                     <Calendar className="w-5 h-5 text-yellow-600" />
+                   </div>
+                   <div>
+                     <p className="font-medium text-yellow-800">Abonelik Türü</p>
+                     <p className="text-sm text-yellow-600">{subscriptionInfo.subscriptionType} Premium</p>
+                   </div>
+                 </div>
+                 <div className="flex items-center space-x-3">
+                   <div className="bg-orange-100 p-2 rounded-lg">
+                     <Clock className="w-5 h-5 text-orange-600" />
+                   </div>
+                   <div>
+                     <p className="font-medium text-orange-800">Kalan Süre</p>
+                     <p className="text-sm text-orange-600">{subscriptionInfo.timeLeft}</p>
+                   </div>
+                 </div>
+               </div>
+               <div className="mt-4">
+                 <div className="flex justify-between text-sm mb-2">
+                   <span className="text-yellow-700">Yenilenme süresine kalan gün</span>
+                   <span className="font-medium text-yellow-800">{subscriptionInfo.diffDays} gün</span>
+                 </div>
+                 <Progress 
+                   value={Math.max(0, Math.min(100, (30 - subscriptionInfo.diffDays) / 30 * 100))} 
+                   className="bg-yellow-100"
+                 />
+               </div>
+             </CardContent>
+           </Card>
+         )}
+
+         {/* Statistics */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="p-4 text-center">
