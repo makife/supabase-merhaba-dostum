@@ -29,8 +29,21 @@ import {
   Zap,
   Camera,
   Volume2,
-  VolumeX
+  VolumeX,
+  Gift
 } from 'lucide-react';
+
+// Check if user is in their first week (gift premium period)
+const isGiftPremium = (profile: any) => {
+  if (!profile?.premium_until) return false;
+  
+  const premiumUntil = new Date(profile.premium_until);
+  const createdAt = new Date(profile.created_at);
+  const daysDiff = Math.ceil((premiumUntil.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+  
+  // If premium duration is around 7 days from creation, it's likely gift premium
+  return daysDiff >= 6 && daysDiff <= 8 && premiumUntil > new Date();
+};
 
 const HomePage = () => {
   const { user } = useAuth();
@@ -315,6 +328,29 @@ const HomePage = () => {
             </div>
           </div>
         </div>
+
+        {/* Gift Premium Banner */}
+        {isPremium && isGiftPremium(profile) && (
+          <Card className="border-2 border-gradient-to-r from-yellow-400 to-orange-500 bg-gradient-to-r from-yellow-50 to-orange-50 shadow-lg">
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
+                  <Gift className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-gray-800">🎉 Hoş Geldin Hediyesi!</h3>
+                  <p className="text-sm text-gray-600">
+                    1 haftalık ücretsiz premium paketini kullanıyorsun! Tüm özelliklerden faydalanabilirsin.
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Son tarih: {profile?.premium_until ? new Date(profile.premium_until).toLocaleDateString('tr-TR') : ''}
+                  </p>
+                </div>
+                <Crown className="w-6 h-6 text-yellow-500" />
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Level Progress */}
         <LevelProgress />
