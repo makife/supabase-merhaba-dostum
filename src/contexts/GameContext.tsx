@@ -389,36 +389,49 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     };
   }, [currentRoom, user]);
 
-  // Fetch participants when room changes
+  // Fetch participants when room changes + manual refresh
   useEffect(() => {
     if (currentRoom) {
-      console.log('Current room changed, fetching participants:', currentRoom.id);
+      console.log('🏠 Current room changed, fetching participants:', currentRoom.id);
       fetchParticipants();
       setIsConnected(true);
+      
+      // Manual refresh every 2 seconds for debugging
+      const interval = setInterval(() => {
+        console.log('🔄 Manual refresh participants...');
+        fetchParticipants();
+      }, 2000);
+      
+      return () => clearInterval(interval);
     } else {
       setParticipants([]);
       setIsConnected(false);
     }
   }, [currentRoom]);
 
-  // Fetch participants function
+  // Fetch participants function with better logging
   const fetchParticipants = async () => {
-    if (!currentRoom) return;
+    if (!currentRoom) {
+      console.log('❌ No current room for fetchParticipants');
+      return;
+    }
 
     try {
+      console.log('🔍 Fetching participants for room:', currentRoom.id);
       const { data, error } = await supabase
         .from('game_participants')
         .select('*')
         .eq('room_id', currentRoom.id);
 
-      if (!error && data) {
-        console.log('Participants fetched:', data.length, data);
-        setParticipants(data);
-      } else {
-        console.error('Error fetching participants:', error);
+      if (error) {
+        console.error('❌ Error fetching participants:', error);
+        return;
       }
+
+      console.log('✅ Participants fetched:', data?.length || 0, data);
+      setParticipants(data || []);
     } catch (error) {
-      console.error('Error fetching participants:', error);
+      console.error('💥 Exception fetching participants:', error);
     }
   };
 
