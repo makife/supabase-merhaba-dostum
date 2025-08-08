@@ -367,7 +367,16 @@ const GamePage = ({ gameMode }: GamePageProps) => {
 
   // AI continuous play effect - unified for all modes when playing with AI
   useEffect(() => {
-    if (!isPlayingWithAI() || !gameStarted || gameEnded) return;
+    const aiPlaying = isPlayingWithAI();
+    console.log('🤖 AI Effect Check:', { 
+      aiPlaying, 
+      gameStarted, 
+      gameEnded, 
+      gameMode, 
+      participantsLength: participants.length 
+    });
+    
+    if (!aiPlaying || !gameStarted || gameEnded) return;
 
     console.log('🤖 Starting AI play interval for game mode:', gameMode);
 
