@@ -257,28 +257,107 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     console.log('=== END CHECK ===');
   }, [participants, gameMode, hasShownStartMessage, gameType]);
 
+  // Generate AI word from current grid
+  const generateAIWordFromGrid = useCallback(() => {
+    const possibleWords = [
+      'KEDİ', 'MASA', 'ARABA', 'OKUL', 'KİTAP', 'DENİZ', 'AĞAÇ', 'ÇİÇEK', 
+      'DOSTLUK', 'GÜNEŞ', 'YILDIZ', 'BULUT', 'RÜZGAR', 'SU', 'ATEŞ', 'TOPRAK',
+      'SEVGİ', 'MUTLULUK', 'UMUT', 'HAYAL', 'RENKLER', 'MÜZİK', 'DANS', 'ŞARKI',
+      'OYUN', 'SPOR', 'FUTBOL', 'BASKETBOL', 'TENİS', 'YÜZME', 'KOŞU', 'BISIKLET',
+      'YEMEK', 'SU', 'EKMEK', 'PEYNIR', 'DOMATES', 'SALATA', 'ÇORBA', 'ET',
+      'MEYVE', 'ELMA', 'ARMUT', 'ÇİLEK', 'KIRAZ', 'ÜZÜM', 'PORTAKAL', 'MANGO',
+      'SEBZE', 'HAVUÇ', 'PATLICAN', 'BIBER', 'SOĞAN', 'SARMIMSAK', 'PATATES'
+    ];
+    
+    // Flatten grid to get available letters
+    const availableLetters = gameGrid.flat();
+    const letterCount: { [key: string]: number } = {};
+    
+    // Count available letters
+    availableLetters.forEach(letter => {
+      letterCount[letter] = (letterCount[letter] || 0) + 1;
+    });
+    
+    // Find words that can be made from available letters
+    const validWords = possibleWords.filter(word => {
+      const wordLetterCount: { [key: string]: number } = {};
+      
+      // Count letters needed for this word
+      for (const letter of word) {
+        wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
+      }
+      
+      // Check if we have enough letters
+      for (const [letter, needed] of Object.entries(wordLetterCount)) {
+        if ((letterCount[letter] || 0) < needed) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
+    
+    if (validWords.length > 0) {
+      return validWords[Math.floor(Math.random() * validWords.length)];
+    }
+    
+    // Fallback: try to make simple 3-letter words
+    const simpleWords = ['SU', 'ET', 'AL', 'VER', 'GEL', 'GIT', 'YAZ', 'OKU'];
+    for (const word of simpleWords) {
+      const wordLetterCount: { [key: string]: number } = {};
+      for (const letter of word) {
+        wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
+      }
+      
+      let canMake = true;
+      for (const [letter, needed] of Object.entries(wordLetterCount)) {
+        if ((letterCount[letter] || 0) < needed) {
+          canMake = false;
+          break;
+        }
+      }
+      
+      if (canMake) {
+        return word;
+      }
+    }
+    
+    return null;
+  }, [gameGrid]);
+
   // AI continuous play effect - only for vs-computer mode
   useEffect(() => {
     if (gameMode !== 'vs-computer' || !gameStarted || gameEnded) return;
 
     const aiPlayInterval = setInterval(() => {
-      const aiWords = ['KEDI', 'MASA', 'ARABA', 'OKUL', 'KITAP', 'DENIZ', 'GÖKYÜZÜ', 'ÇİÇEK', 'AĞAÇ', 'DOSTLUK'];
-      const randomWord = aiWords[Math.floor(Math.random() * aiWords.length)];
-      const opponentPoints = Math.floor(Math.random() * 25) + 5;
+      const aiWord = generateAIWordFromGrid();
       
-      setOpponentScore(prev => prev + opponentPoints);
-      
-      toast({
-        title: `🤖 AI: "${randomWord}"`,
-        description: `+${opponentPoints} puan kazandı`,
-        duration: 1500,
-      });
-      
-      playSound('correctWord');
-    }, 3000 + Math.random() * 2000); // 3-5 saniye arasında
+      if (aiWord) {
+        const opponentPoints = Math.floor(Math.random() * 25) + 10;
+        setOpponentScore(prev => prev + opponentPoints);
+        
+        toast({
+          title: `🤖 AI: "${aiWord}"`,
+          description: `AI ızgaradan kelime buldu! +${opponentPoints} puan`,
+          duration: 2000,
+        });
+        
+        playSound('correctWord');
+      } else {
+        // If no word can be formed, AI gets fewer points
+        const opponentPoints = Math.floor(Math.random() * 10) + 5;
+        setOpponentScore(prev => prev + opponentPoints);
+        
+        toast({
+          title: '🤖 AI düşünüyor...',
+          description: `+${opponentPoints} puan`,
+          duration: 1500,
+        });
+      }
+    }, 4000 + Math.random() * 3000); // 4-7 saniye arasında
 
     return () => clearInterval(aiPlayInterval);
-  }, [gameMode, gameStarted, gameEnded, playSound, toast]);
+  }, [gameMode, gameStarted, gameEnded, generateAIWordFromGrid, playSound, toast]);
 
   // Timer effect - only for timed mode
   useEffect(() => {
