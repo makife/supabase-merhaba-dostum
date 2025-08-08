@@ -303,7 +303,7 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
                   <AlertDialogTitle>Odadan Çıkmak İstiyorsun?</AlertDialogTitle>
                 </div>
                 <AlertDialogDescription>
-                  Odadan çıkarsan puan kaybedeceksin ve arkadaşın tek başına kalacak. Emin misin?
+                  Odadan çıkarsan arkadaşın tek başına kalacak. Emin misin?
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -317,10 +317,9 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
                     setShowExitDialog(false);
                     onClose();
                     toast({
-                      title: '😞 Puan Kaybettin!',
-                      description: 'Odadan çıktığın için puan kaybettin.',
-                      variant: 'destructive',
-                      duration: 3000,
+                      title: 'Odadan Çıktın',
+                      description: 'Arkadaşın devam edebilir.',
+                      duration: 2000,
                     });
                   }}
                   className="bg-red-500 hover:bg-red-600"

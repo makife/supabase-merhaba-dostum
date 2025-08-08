@@ -283,29 +283,11 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     }
   };
 
-  // Leave room with penalty logic
+  // Leave room - no penalty anymore
   const leaveRoom = async (): Promise<void> => {
     if (!user || !currentRoom) return;
 
     try {
-      // If game is active and there are multiple players, apply penalty
-      if (currentRoom.status === 'active' && participants.length > 1) {
-        // Deduct points from user's total score as penalty
-        const { data: currentProfile } = await supabase
-          .from('profiles')
-          .select('total_score')
-          .eq('id', user.id)
-          .single();
-
-        const penalty = 50; // Penalty points
-        const newTotalScore = Math.max(0, (currentProfile?.total_score || 0) - penalty);
-        
-        await supabase
-          .from('profiles')
-          .update({ total_score: newTotalScore })
-          .eq('id', user.id);
-      }
-
       await supabase
         .from('game_participants')
         .delete()
@@ -388,6 +370,15 @@ export const GameProvider = ({ children }: GameProviderProps) => {
             title: '🎉 Oyuncu Katıldı!',
             description: 'Arkadaşınız odaya katıldı, oyun başlayabilir!',
             duration: 3000,
+          });
+        }
+        
+        // If someone left and it's not the current user
+        if (payload.eventType === 'DELETE' && payload.old?.user_id !== user?.id) {
+          toast({
+            title: '😔 Rakip Ayrıldı',
+            description: 'Rakibiniz oyunu terk etti. Devam ederseniz puan alabilirsiniz!',
+            duration: 4000,
           });
         }
         

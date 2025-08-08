@@ -102,10 +102,22 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     return grid;
   };
 
-  const [gameGrid, setGameGrid] = useState<string[][]>(() => generateRandomGrid());
+  const [gameGrid, setGameGrid] = useState<string[][]>(() => {
+    // For private rooms, use grid from room if available
+    if (currentRoom?.current_grid) {
+      const flatGrid = currentRoom.current_grid;
+      const grid: string[][] = [];
+      for (let i = 0; i < 4; i++) {
+        grid.push(flatGrid.slice(i * 4, (i + 1) * 4));
+      }
+      return grid;
+    }
+    return generateRandomGrid();
+  });
   
   const [selectedLetters, setSelectedLetters] = useState<{letter: string, row: number, col: number}[]>([]);
   const [currentWord, setCurrentWord] = useState('');
+  const [usedWords, setUsedWords] = useState<Set<string>>(new Set());
   const [playerScore, setPlayerScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(gameType === 'timed' ? 120 : 0);
@@ -117,8 +129,18 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const [opponentAvatar, setOpponentAvatar] = useState<string>('');
   const [hasShownStartMessage, setHasShownStartMessage] = useState(false);
 
-  // Fetch player and opponent avatars
+  // Sync grid with room data and fetch avatars
   useEffect(() => {
+    // Update grid from room if available
+    if (currentRoom?.current_grid) {
+      const flatGrid = currentRoom.current_grid;
+      const grid: string[][] = [];
+      for (let i = 0; i < 4; i++) {
+        grid.push(flatGrid.slice(i * 4, (i + 1) * 4));
+      }
+      setGameGrid(grid);
+    }
+
     const fetchAvatars = async () => {
       if (!user) return;
       
@@ -136,22 +158,17 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       // Fetch opponent avatar for private room
       if (gameMode === 'private-room' && participants.length >= 2) {
         const opponent = participants.find(p => p.user_id !== user.id);
-        if (opponent) {
-          const { data: opponentData } = await supabase
-            .from('profiles')
-            .select('avatar_url')
-            .eq('id', opponent.user_id)
-            .maybeSingle();
-          
-          if (opponentData?.avatar_url) {
-            setOpponentAvatar(opponentData.avatar_url);
+        if (opponent && (opponent as any).profiles) {
+          const opponentProfile = (opponent as any).profiles;
+          if (opponentProfile.avatar_url) {
+            setOpponentAvatar(opponentProfile.avatar_url);
           }
         }
       }
     };
 
     fetchAvatars();
-  }, [user, participants, gameMode]);
+  }, [user, participants, gameMode, currentRoom]);
 
   // Music control effect and credit consumption
   useEffect(() => {
@@ -347,9 +364,23 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       return;
     }
 
+    // Check if word already used
+    if (usedWords.has(currentWord.toLowerCase())) {
+      toast({
+        title: 'Kelime Zaten Kullanıldı',
+        description: 'Bu kelimeyi daha önce kullandınız.',
+        variant: 'destructive',
+        duration: 1000,
+      });
+      clearWord();
+      return;
+    }
+
     const result = await validateWord(currentWord);
 
     if (result.isValid) {
+      // Add word to used words
+      setUsedWords(prev => new Set([...prev, currentWord.toLowerCase()]));
       playSound('correctWord');
       const newScore = playerScore + result.points;
       setPlayerScore(newScore);
