@@ -68,7 +68,9 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
 
       // Try to find real player (simulate search)
       try {
+        console.log('🔍 Attempting to find random match...');
         const match = await findRandomMatch(gameType);
+        console.log('🎮 Match result:', match);
         if (match) {
           clearTimeout(searchTimeout);
           clearInterval(progressInterval);

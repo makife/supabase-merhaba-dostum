@@ -614,7 +614,25 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         }
         return { name: 'Arkadaş', icon: User, avatar: opponentAvatar };
       case 'random-match':
-        return { name: 'Rakip', icon: User, avatar: null };
+        // Get opponent from participants (similar to private-room logic)
+        if (participants.length >= 2) {
+          const opponent = participants.find(p => p.user_id !== user?.id);
+          if (opponent && (opponent as any).profiles?.avatar_url) {
+            return { 
+              name: (opponent as any).profiles.username || 'Oyuncu', 
+              icon: User, 
+              avatar: (opponent as any).profiles.avatar_url 
+            };
+          }
+          if (opponent) {
+            return { 
+              name: (opponent as any).profiles?.username || 'Oyuncu', 
+              icon: User, 
+              avatar: opponentAvatar 
+            };
+          }
+        }
+        return { name: 'Rakip Aranıyor...', icon: User, avatar: null };
       case 'tournament':
         return { name: 'Turnuva Rakibi', icon: Trophy, avatar: null };
       default:
