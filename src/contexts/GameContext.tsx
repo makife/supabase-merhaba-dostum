@@ -348,8 +348,8 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         filter: `room_id=eq.${currentRoom.id}`
       }, (payload) => {
         console.log('Participant change:', payload);
-        // Refresh participants
-        fetchParticipants();
+        // Immediately refresh participants when someone joins/leaves
+        setTimeout(() => fetchParticipants(), 100);
       })
       .on('postgres_changes', {
         event: 'UPDATE',
