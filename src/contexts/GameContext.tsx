@@ -87,7 +87,10 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           host_id: user.id,
           room_code: roomCode,
           current_grid: grid.flat(),
-          status: 'waiting'
+          status: 'waiting',
+          // Set max_score and time_limit based on game type for private rooms
+          max_score: gameMode.includes('private-room-score') ? 500 : 100,
+          time_limit: gameMode.includes('private-room-timed') ? 120 : (gameMode.includes('private-room-score') ? 0 : 120)
         })
         .select()
         .single();

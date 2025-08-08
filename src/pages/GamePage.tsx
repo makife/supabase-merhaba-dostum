@@ -38,7 +38,17 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const { playSound, playTimeWarningSequence, playCelebrationSound, playGameLoseSound } = useSounds();
   const { fadeOutBackgroundMusic, fadeInBackgroundMusic } = useMusic();
   const [searchParams] = useSearchParams();
-  const gameType = (searchParams.get('type') as 'timed' | 'score') || 'timed';
+  
+  // Get game type from room or URL params
+  const getGameType = (): 'timed' | 'score' => {
+    if (currentRoom?.game_mode) {
+      if (currentRoom.game_mode.includes('timed')) return 'timed';
+      if (currentRoom.game_mode.includes('score')) return 'score';
+    }
+    return (searchParams.get('type') as 'timed' | 'score') || 'timed';
+  };
+  
+  const gameType = getGameType();
   const [timeWarningPlayed, setTimeWarningPlayed] = useState(false);
 
   // Game state - Generate random letters each time
