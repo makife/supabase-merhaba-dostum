@@ -571,26 +571,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
           .update({ total_score: newTotalScore })
           .eq('id', user.id);
 
-        // Show bonus if multiplier > 1
-        if (levelMultiplier > 1) {
-          toast({
-            title: 'Seviye Bonusu!',
-            description: `${result.points} + ${bonusPoints - result.points} bonus = ${bonusPoints} EXP (${levelMultiplier.toFixed(1)}x)`,
-            duration: 2000,
-          });
-        } else {
-          toast({
-            title: 'Doğru Kelime!',
-            description: result.message,
-            duration: 1000,
-          });
-        }
-      } else {
-        toast({
-          title: 'Doğru Kelime!',
-          description: result.message,
-          duration: 1000,
-        });
+        // Silent success - no toast notifications for correct words during gameplay
       }
     } else {
       playSound('wrongWord');
@@ -604,20 +585,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
 
     clearWord();
 
-    // Simulate opponent move (for demo)
-    if (gameMode === 'vs-computer' && !gameEnded) {
-      setTimeout(() => {
-        const opponentPoints = Math.floor(Math.random() * 30) + 10;
-        setOpponentScore(prev => prev + opponentPoints);
-        
-        // Show AI is playing message
-        toast({
-          title: '🤖 AI Oynuyor...',
-          description: `AI ${opponentPoints} puan kazandı!`,
-          duration: 800,
-        });
-      }, 1000);
-    }
+    // AI opponent plays automatically via interval, no manual trigger needed
   };
 
   // Format time
