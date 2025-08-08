@@ -16,7 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/contexts/UserContext';
 import { useUserPurchases } from '@/hooks/useUserPurchases';
 import { useAdMob } from '@/hooks/useAdMob';
-import { useNativePurchases } from '@/hooks/useNativePurchases';
+import { useNativeSubscriptions } from '@/hooks/useNativeSubscriptions';
 import { supabase } from '@/integrations/supabase/client';
 import {
   ArrowLeft,
@@ -62,10 +62,14 @@ const MarketPage = () => {
   const { isAdLoading, isAdReady, initializeAdMob, loadRewardedAd, showRewardedAd } = useAdMob();
   const { processPurchase, hasPurchased, loading: purchaseLoading } = useUserPurchases();
   const { 
-    isLoading: isPurchaseLoading, 
-    purchaseProduct,
-    restorePurchases 
-  } = useNativePurchases();
+    isLoading: isSubscriptionLoading, 
+    subscriptionProducts,
+    isSubscribed,
+    subscriptionInfo,
+    purchaseSubscription,
+    restoreSubscriptions,
+    openSubscriptionManagement
+  } = useNativeSubscriptions();
 
   const marketItems: MarketItem[] = [
     // Oyun Hakları
@@ -474,11 +478,10 @@ const MarketPage = () => {
       return;
     }
 
-    // Check if running on mobile (Capacitor) platform
-    if (typeof window !== 'undefined' && window.Capacitor && item.currency === 'premium') {
-      // Use native in-app purchase system for mobile
-      const success = await purchaseProduct(item.id, item);
-      // The native purchase system will handle the rest via callbacks
+    // Check if this is a premium subscription purchase on mobile
+    if (typeof window !== 'undefined' && window.Capacitor && item.type === 'premium') {
+      // Use native subscription system for premium purchases on mobile
+      const success = await purchaseSubscription('premium_monthly');
       return;
     }
 
@@ -574,13 +577,13 @@ const MarketPage = () => {
                    disabled={
                      (item.currency === 'credits' && (profile?.game_credits || 0) < item.price) || 
                      purchaseLoading || 
-                     isPurchaseLoading || 
+                     isSubscriptionLoading || 
                      hasPurchased(item.id)
                    }
                  >
                    {hasPurchased(item.id) ? 'Satın Alındı' :
                     (item.currency === 'credits' && (profile?.game_credits || 0) < item.price) ? 'Yetersiz' : 
-                    (purchaseLoading || isPurchaseLoading) ? 'İşleniyor...' : 'Satın Al'
+                    (purchaseLoading || isSubscriptionLoading) ? 'İşleniyor...' : 'Satın Al'
                    }
                  </Button>
               </div>
@@ -686,13 +689,13 @@ const MarketPage = () => {
                   <p className="text-xs text-muted-foreground">Önceki satın alımlarınızı geri yükleyin</p>
                 </div>
                 <Button 
-                  onClick={restorePurchases}
+                  onClick={restoreSubscriptions}
                   size="sm"
                   variant="outline"
-                  disabled={isPurchaseLoading}
+                  disabled={isSubscriptionLoading}
                   className="text-xs"
                 >
-                  {isPurchaseLoading ? 'Yükleniyor...' : 'Geri Yükle'}
+                  {isSubscriptionLoading ? 'Yükleniyor...' : 'Geri Yükle'}
                 </Button>
               </div>
             </CardContent>
@@ -728,21 +731,88 @@ const MarketPage = () => {
             )}
           </TabsContent>
           
-          {/* Premium & Reklamlar */}
+          {/* Premium & Abonelik */}
           <TabsContent value="premium" className="space-y-4">
             <div className="flex items-center space-x-2 mb-4">
               <Crown className="w-5 h-5 text-yellow-500" />
-              <h3 className="text-lg font-semibold">Premium & Reklamlar</h3>
+              <h3 className="text-lg font-semibold">Premium Abonelik</h3>
             </div>
-            {!isPremium && renderMarketItems(getItemsByCategory('premium'))}
+            
+            {/* Native Mobile Subscription Cards */}
+            {typeof window !== 'undefined' && window.Capacitor && !isPremium && (
+              <div className="space-y-4 mb-6">
+                <h4 className="text-md font-semibold text-yellow-600">🎯 Mobil Abonelik Planları</h4>
+                {subscriptionProducts.map((product) => (
+                  <Card key={product.id} className="border-yellow-500 hover:shadow-lg transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center">
+                            <Crown className="w-8 h-8 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-lg font-bold">{product.title}</h3>
+                            <p className="text-sm text-muted-foreground mb-2">{product.description}</p>
+                            <div className="flex items-center space-x-2">
+                              <Badge variant="default" className="bg-yellow-500">
+                                {product.period === 'monthly' ? 'Aylık' : 'Yıllık'}
+                              </Badge>
+                              {product.period === 'yearly' && (
+                                <Badge variant="outline" className="text-green-600 border-green-600">
+                                  %40 İndirim
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-yellow-600 mb-2">
+                            {product.price}
+                          </div>
+                          <Button 
+                            onClick={() => purchaseSubscription(product.id)}
+                            className="bg-yellow-500 hover:bg-yellow-600 text-white"
+                            disabled={isSubscriptionLoading}
+                          >
+                            {isSubscriptionLoading ? 'İşleniyor...' : 'Abone Ol'}
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {/* Web Premium or Already Premium */}
+            {(typeof window !== 'undefined' && !window.Capacitor && !isPremium) && 
+              renderMarketItems(getItemsByCategory('premium'))
+            }
+            
             {isPremium && (
               <Card className="border-green-500">
                 <CardContent className="p-6 text-center">
                   <Crown className="w-12 h-12 text-yellow-500 mx-auto mb-3" />
                   <h3 className="text-lg font-semibold mb-2">Premium Üyesiniz!</h3>
-                  <p className="text-muted-foreground">
-                    Zaten premium üyeliğiniz aktif. Tüm premium özellikler size açık.
+                  <p className="text-muted-foreground mb-4">
+                    Tüm premium özellikler aktif. Harika seçim!
                   </p>
+                  {subscriptionInfo && (
+                    <div className="text-sm text-muted-foreground">
+                      {subscriptionInfo.expiryDate && (
+                        <p>Abonelik: {new Date(subscriptionInfo.expiryDate).toLocaleDateString('tr-TR')}'e kadar</p>
+                      )}
+                    </div>
+                  )}
+                  {typeof window !== 'undefined' && window.Capacitor && (
+                    <Button 
+                      onClick={openSubscriptionManagement}
+                      variant="outline"
+                      className="mt-4"
+                    >
+                      Aboneliği Yönet
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             )}
