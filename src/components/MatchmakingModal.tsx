@@ -94,16 +94,21 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
           // No immediate match, start polling for new participants
           console.log('🏗️ Starting polling for new participants...');
           
+          // Start polling every second to check for new participants
           const pollForParticipants = setInterval(async () => {
-            if (currentRoom) {
-              try {
+            try {
+              if (currentRoom) {
+                console.log('📊 Checking participants for room:', currentRoom.id);
                 const { data: participants } = await supabase
                   .from('game_participants')
                   .select('user_id')
                   .eq('room_id', currentRoom.id);
                 
+                console.log('📊 Current participants:', participants?.length || 0);
+                
                 if (participants && participants.length >= 2) {
                   // Found second participant!
+                  console.log('🎉 Second participant found!');
                   clearInterval(pollForParticipants);
                   clearTimeout(searchTimeout);
                   clearInterval(progressInterval);
@@ -119,13 +124,13 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
                     onMatchFound(false);
                   }, 1500);
                 }
-              } catch (error) {
-                console.error('Polling error:', error);
               }
+            } catch (error) {
+              console.error('❌ Polling error:', error);
             }
           }, 1000); // Check every second
           
-          // Store the polling interval to clean it up later
+          // Store the polling interval to clean it up later  
           realtimeChannel = { pollInterval: pollForParticipants };
         }
       } catch (error) {
