@@ -166,30 +166,38 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     };
   }, []); // Empty dependency array to run only once
 
-  // Private room logic - SIMPLE AND CLEAR
+  // Private room logic with notification
   useEffect(() => {
     console.log('=== PRIVATE ROOM CHECK ===');
     console.log('Game mode:', gameMode);
     console.log('Participants count:', participants.length);
-    console.log('Participants:', participants);
+    console.log('Current user ID:', user?.id);
+    console.log('Room host ID:', currentRoom?.host_id);
     
     if (gameMode === 'private-room') {
       if (participants.length >= 2) {
-        console.log('✅ 2 players ready - START GAME');
+        console.log('✅ 2 players ready - START GAME FOR BOTH');
         setWaitingForPlayer(false);
         setGameStarted(true);
+        
+        // Show success toast when game starts
+        toast({
+          title: '🎮 Oyun Başladı!',
+          description: 'İki oyuncu da hazır, oyuna başlayın!',
+          duration: 2000,
+        });
       } else {
-        console.log('⏳ Waiting for second player');
+        console.log('⏳ Waiting for second player...');
         setWaitingForPlayer(true);
         setGameStarted(false);
       }
     } else {
-      // Other game modes start immediately
       setGameStarted(true);
       setWaitingForPlayer(false);
     }
+    console.log('Game started:', participants.length >= 2);
     console.log('=== END CHECK ===');
-  }, [participants, gameMode]);
+  }, [participants, gameMode, currentRoom, user]);
 
   // Timer effect - only for timed mode
   useEffect(() => {

@@ -347,7 +347,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     }
   };
 
-  // Real-time subscriptions
+  // Real-time subscriptions with notifications
   useEffect(() => {
     if (!currentRoom) return;
 
@@ -359,9 +359,19 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         table: 'game_participants',
         filter: `room_id=eq.${currentRoom.id}`
       }, (payload) => {
-        console.log('Participant change:', payload);
-        // Immediately refresh participants when someone joins/leaves
-        setTimeout(() => fetchParticipants(), 100);
+        console.log('🔔 Participant change detected:', payload);
+        
+        // If someone joined and it's not the current user
+        if (payload.eventType === 'INSERT' && payload.new?.user_id !== user?.id) {
+          toast({
+            title: '🎉 Oyuncu Katıldı!',
+            description: 'Arkadaşınız odaya katıldı, oyun başlayabilir!',
+            duration: 3000,
+          });
+        }
+        
+        // Immediately refresh participants
+        setTimeout(() => fetchParticipants(), 200);
       })
       .on('postgres_changes', {
         event: 'UPDATE',
@@ -369,7 +379,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         table: 'game_rooms',
         filter: `id=eq.${currentRoom.id}`
       }, (payload) => {
-        console.log('Room change:', payload);
+        console.log('🏠 Room change:', payload);
         setCurrentRoom(payload.new as GameRoom);
       })
       .subscribe();
@@ -377,7 +387,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentRoom]);
+  }, [currentRoom, user]);
 
   // Fetch participants when room changes
   useEffect(() => {
