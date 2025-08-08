@@ -6,6 +6,8 @@ import { Users, Bot, Loader2, Zap, User } from 'lucide-react';
 import { useGame } from '@/contexts/GameContext';
 import { useSounds } from '@/hooks/useSounds';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface MatchmakingModalProps {
   onClose: () => void;
@@ -17,14 +19,16 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
   const [searchProgress, setSearchProgress] = useState(0);
   const [searchStatus, setSearchStatus] = useState<'searching' | 'ai-fallback' | 'found'>('searching');
   const [countdown, setCountdown] = useState(15);
-  const { findRandomMatch } = useGame();
+  const { findRandomMatch, currentRoom } = useGame();
   const { playSound } = useSounds();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     let progressInterval: NodeJS.Timeout;
     let countdownInterval: NodeJS.Timeout;
     let searchTimeout: NodeJS.Timeout;
+    let realtimeChannel: any;
 
     const startSearch = async () => {
       setSearchStatus('searching');
@@ -66,12 +70,14 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
         }, 3000);
       }, 15000);
 
-      // Try to find real player (simulate search)
+      // Try to find real player
       try {
         console.log('🔍 Attempting to find random match...');
         const match = await findRandomMatch(gameType);
         console.log('🎮 Match result:', match);
+        
         if (match) {
+          // Immediate match found
           clearTimeout(searchTimeout);
           clearInterval(progressInterval);
           clearInterval(countdownInterval);
@@ -84,9 +90,44 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
           setTimeout(() => {
             onMatchFound(false);
           }, 1500);
+        } else {
+          // No immediate match, but room created - wait for others via realtime
+          console.log('🏗️ Room created, setting up realtime listener for new participants...');
+          
+          // Set up realtime subscription to detect when someone joins our room
+          if (currentRoom) {
+            realtimeChannel = supabase
+              .channel(`matchmaking-${currentRoom.id}`)
+              .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'game_participants',
+                filter: `room_id=eq.${currentRoom.id}`
+              }, (payload) => {
+                console.log('🎉 New participant joined during matchmaking:', payload);
+                
+                // Check if it's not our own join (we already joined)
+                if (payload.new?.user_id !== user?.id) {
+                  console.log('✅ Real player found via realtime!');
+                  clearTimeout(searchTimeout);
+                  clearInterval(progressInterval);
+                  clearInterval(countdownInterval);
+                  setSearchStatus('found');
+                  playSound('correctWord');
+                  toast({
+                    title: 'Oyuncu Bulundu!',
+                    description: 'Rakip oyuncu katıldı!',
+                  });
+                  setTimeout(() => {
+                    onMatchFound(false);
+                  }, 1500);
+                }
+              })
+              .subscribe();
+          }
         }
       } catch (error) {
-        console.error('Matchmaking error:', error);
+        console.error('🚨 Matchmaking error:', error);
       }
     };
 
@@ -96,8 +137,12 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
       clearInterval(progressInterval);
       clearInterval(countdownInterval);
       clearTimeout(searchTimeout);
+      if (realtimeChannel) {
+        console.log('🧹 Cleaning up realtime channel');
+        supabase.removeChannel(realtimeChannel);
+      }
     };
-  }, []);
+  }, [findRandomMatch, gameType, playSound, toast, onMatchFound]);
 
   const handlePlayWithAI = () => {
     playSound('buttonClick');
