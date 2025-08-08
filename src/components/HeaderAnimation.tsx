@@ -11,6 +11,8 @@ interface AnimatedLetter {
   dy: number;
   rotation: number;
   rotationSpeed: number;
+  age: number;
+  maxAge: number;
 }
 
 export const HeaderAnimation = () => {
@@ -38,14 +40,16 @@ export const HeaderAnimation = () => {
         y: Math.random() * 100,
         color: colors[Math.floor(Math.random() * colors.length)],
         font: fonts[Math.floor(Math.random() * fonts.length)],
-        dx: (Math.random() - 0.5) * 0.3,
-        dy: (Math.random() - 0.5) * 0.3,
+        dx: (Math.random() - 0.5) * 1.2,
+        dy: (Math.random() - 0.5) * 1.2,
         rotation: Math.random() * 360,
-        rotationSpeed: (Math.random() - 0.5) * 2
+        rotationSpeed: (Math.random() - 0.5) * 6,
+        age: 0,
+        maxAge: 120 + Math.random() * 60
       };
       
-      setAnimatedLetters(prev => [...prev.slice(-20), newLetter]);
-    }, 800);
+      setAnimatedLetters(prev => [...prev.slice(-25), newLetter]);
+    }, 400);
 
     return () => clearInterval(interval);
   }, []);
@@ -57,29 +61,43 @@ export const HeaderAnimation = () => {
           ...letter,
           x: letter.x + letter.dx,
           y: letter.y + letter.dy,
-          rotation: letter.rotation + letter.rotationSpeed
+          rotation: letter.rotation + letter.rotationSpeed,
+          age: letter.age + 1
         })).filter(letter => 
-          letter.x >= -5 && letter.x <= 105 && 
-          letter.y >= -5 && letter.y <= 105
+          letter.x >= -10 && letter.x <= 110 && 
+          letter.y >= -10 && letter.y <= 110 && 
+          letter.age < letter.maxAge
         )
       );
-    }, 50);
+    }, 30);
 
     return () => clearInterval(moveInterval);
   }, []);
+
+  const getOpacity = (age: number, maxAge: number) => {
+    const fadeInDuration = maxAge * 0.2;
+    const fadeOutStart = maxAge * 0.7;
+    
+    if (age < fadeInDuration) {
+      return (age / fadeInDuration) * 0.8;
+    } else if (age > fadeOutStart) {
+      return ((maxAge - age) / (maxAge - fadeOutStart)) * 0.8;
+    }
+    return 0.8;
+  };
 
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden">
       {animatedLetters.map((letter) => (
         <div
           key={letter.id}
-          className={`absolute text-2xl md:text-3xl font-bold ${letter.color} ${letter.font} transition-all duration-500`}
+          className={`absolute text-2xl md:text-3xl font-bold ${letter.color} ${letter.font} transition-opacity duration-300`}
           style={{
             left: `${letter.x}%`,
             top: `${letter.y}%`,
             transform: `rotate(${letter.rotation}deg)`,
             textShadow: '0 0 8px currentColor',
-            opacity: 0.7,
+            opacity: getOpacity(letter.age, letter.maxAge),
             zIndex: 1
           }}
         >
