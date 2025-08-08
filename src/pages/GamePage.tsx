@@ -440,7 +440,8 @@ const GamePage = ({ gameMode }: GamePageProps) => {
           
           if (prev <= 1) {
             setGameEnded(true);
-            checkWinner();
+            // Süreli oyun bitişinde mevcut skorları direkt geç
+            checkWinnerWithScores(playerScore, opponentScore);
             return 0;
           }
           return prev - 1;
@@ -451,35 +452,35 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     }
   }, [gameStarted, gameEnded, gameType]);
 
-  // Check for winner and apply end game bonuses
-  const checkWinner = useCallback(async () => {
+  // Check for winner and apply end game bonuses - parametre ile skorları al
+  const checkWinnerWithScores = useCallback(async (currentPlayerScore: number, currentOpponentScore: number) => {
     if (gameEnded || winner !== null) return; // Oyun zaten bitmişse veya kazanan belliyse tekrar kontrol etme
     
-    console.log('🏆 Checking winner - Player:', playerScore, 'Opponent:', opponentScore);
+    console.log('🏆 Checking winner with scores - Player:', currentPlayerScore, 'Opponent:', currentOpponentScore);
     
     let gameResult: 'player' | 'opponent' | 'tie';
     let bonusPoints = 0;
     
     // Kesin kazanan belirleme mantığı
-    if (playerScore > opponentScore) {
+    if (currentPlayerScore > currentOpponentScore) {
       gameResult = 'player';
       bonusPoints = 50; // Kazanma bonusu
       setWinner('player');
       playSound('gameWin');
       setTimeout(() => playCelebrationSound(), 500);
-      console.log('🏆 Player wins! Score:', playerScore, 'vs', opponentScore);
-    } else if (playerScore < opponentScore) {
+      console.log('🏆 Player wins! Score:', currentPlayerScore, 'vs', currentOpponentScore);
+    } else if (currentPlayerScore < currentOpponentScore) {
       gameResult = 'opponent';
       setWinner('opponent');
       playSound('gameLose');
       setTimeout(() => playGameLoseSound(), 500);
-      console.log('🏆 Opponent wins! Score:', opponentScore, 'vs', playerScore);
+      console.log('🏆 Opponent wins! Score:', currentOpponentScore, 'vs', currentPlayerScore);
     } else {
       // Skorlar eşit ise beraberlik
       gameResult = 'tie';
       bonusPoints = 25; // Beraberlik bonusu
       setWinner('tie');
-      console.log('🏆 It\'s a tie! Both scores:', playerScore);
+      console.log('🏆 It\'s a tie! Both scores:', currentPlayerScore);
     }
 
     // Apply end game bonus for player
@@ -515,7 +516,12 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         await endGame();
       }, 3000); // 3 second delay to see results
     }
-  }, [playerScore, opponentScore, playSound, playCelebrationSound, gameEnded, winner, user, currentRoom, gameMode]);
+  }, [gameEnded, winner, user, currentRoom, gameMode, endGame, playSound, playCelebrationSound, playGameLoseSound, toast]);
+
+  // Check for winner - eski fonksiyon da kalsın puanlı oyunlar için
+  const checkWinner = useCallback(async () => {
+    checkWinnerWithScores(playerScore, opponentScore);
+  }, [playerScore, opponentScore, checkWinnerWithScores]);
 
   // Check win conditions based on game type
   useEffect(() => {
