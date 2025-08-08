@@ -341,17 +341,22 @@ const GamePage = ({ gameMode }: GamePageProps) => {
 
   // Check if playing with AI (unified logic for all modes)
   const isPlayingWithAI = useCallback(() => {
-    switch (gameMode) {
-      case 'vs-computer':
-        return true; // Always AI
-      case 'private-room':
-      case 'random-match':
-        return participants.length < 2; // AI if no second player
-      case 'tournament':
-        return true; // Tournament is always vs AI for now
-      default:
-        return false;
-    }
+    const aiStatus = (() => {
+      switch (gameMode) {
+        case 'vs-computer':
+          return true; // Always AI
+        case 'private-room':
+        case 'random-match':
+          return participants.length < 2; // AI if no second player
+        case 'tournament':
+          return true; // Tournament is always vs AI for now
+        default:
+          return false;
+      }
+    })();
+    
+    console.log(`🤖 AI Status Check - Mode: ${gameMode}, Participants: ${participants.length}, PlayingWithAI: ${aiStatus}`);
+    return aiStatus;
   }, [gameMode, participants.length]);
 
   // AI continuous play effect - unified for all modes when playing with AI
