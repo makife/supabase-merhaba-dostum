@@ -378,7 +378,8 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           toast({
             title: '😔 Rakip Ayrıldı',
             description: 'Rakibiniz oyunu terk etti. Devam ederseniz puan alabilirsiniz!',
-            duration: 4000,
+            duration: 5000,
+            className: 'border-amber-200 bg-amber-50',
           });
         }
         

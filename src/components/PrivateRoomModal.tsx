@@ -294,20 +294,27 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
             </Button>
           </div>
           
-          {/* Exit Warning Dialog */}
+          {/* Modern Exit Dialog */}
           <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5 text-amber-500" />
-                  <AlertDialogTitle>Odadan Çıkmak İstiyorsun?</AlertDialogTitle>
+            <AlertDialogContent className="max-w-sm">
+              <AlertDialogHeader className="text-center">
+                <div className="mx-auto w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mb-4">
+                  <AlertTriangle className="w-6 h-6 text-amber-600" />
                 </div>
-                <AlertDialogDescription>
-                  Odadan çıkarsan arkadaşın tek başına kalacak. Emin misin?
+                <AlertDialogTitle className="text-lg font-semibold text-center">
+                  Odadan Çıkmak İstiyorsun?
+                </AlertDialogTitle>
+                <AlertDialogDescription className="text-center text-muted-foreground">
+                  Odadan çıkarsan arkadaşın tek başına kalacak.
+                  <br />
+                  Emin misin?
                 </AlertDialogDescription>
               </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setShowExitDialog(false)}>
+              <AlertDialogFooter className="flex-col space-y-2 sm:space-y-0 sm:flex-row sm:space-x-2">
+                <AlertDialogCancel 
+                  onClick={() => setShowExitDialog(false)}
+                  className="w-full sm:w-auto order-2 sm:order-1"
+                >
                   Vazgeç
                 </AlertDialogCancel>
                 <AlertDialogAction 
@@ -317,12 +324,12 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
                     setShowExitDialog(false);
                     onClose();
                     toast({
-                      title: 'Odadan Çıktın',
+                      title: '✋ Odadan Çıktın',
                       description: 'Arkadaşın devam edebilir.',
                       duration: 2000,
                     });
                   }}
-                  className="bg-red-500 hover:bg-red-600"
+                  className="w-full sm:w-auto bg-red-500 hover:bg-red-600 order-1 sm:order-2"
                 >
                   Evet, Çık
                 </AlertDialogAction>
