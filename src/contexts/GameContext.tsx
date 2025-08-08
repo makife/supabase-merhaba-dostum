@@ -103,12 +103,32 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         .insert({
           room_id: room.id,
           user_id: user.id,
-          score: 0
+          score: 0,
+          is_bot: false
         });
 
       if (participantError) {
         console.error('Error joining room as participant:', participantError);
         throw participantError;
+      }
+
+      // Add AI bot for vs-computer mode
+      if (gameMode === 'vs-computer') {
+        const { error: botError } = await supabase
+          .from('game_participants')
+          .insert({
+            room_id: room.id,
+            user_id: null, // AI bot has no user_id
+            score: 0,
+            is_bot: true
+          });
+
+        if (botError) {
+          console.error('Error adding AI bot:', botError);
+          throw botError;
+        }
+        
+        console.log('✅ AI bot added to vs-computer room');
       }
 
       console.log('Room created and joined:', room.id, room.room_code);
