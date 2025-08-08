@@ -239,12 +239,14 @@ const SettingsPage = () => {
         
         <div class="space-y-4">
           <div class="p-4 bg-muted rounded-lg">
-            <h4 class="font-medium flex items-center mb-2">
+            <h4 class="font-medium flex items-center mb-3">
               <Mail class="w-4 h-4 mr-2" />
               E-posta
             </h4>
-            <p class="text-sm font-mono">makifergan@gmail.com</p>
-            <p class="text-xs text-muted-foreground mt-1">Genel sorular, destek ve tüm konular</p>
+            <div class="space-y-2">
+              <p class="text-sm font-mono break-all">makifergan@gmail.com</p>
+              <p class="text-xs text-muted-foreground">Genel sorular, destek ve tüm konular</p>
+            </div>
           </div>
           
           <div class="space-y-2 pt-3 border-t">
