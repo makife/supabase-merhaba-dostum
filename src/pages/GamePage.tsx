@@ -500,6 +500,17 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       case 'vs-computer':
         return { name: 'Bilgisayar', icon: Bot, avatar: null };
       case 'private-room':
+        // Get opponent from participants
+        if (participants.length >= 2) {
+          const opponent = participants.find(p => p.user_id !== user?.id);
+          if (opponent && (opponent as any).profiles?.avatar_url) {
+            return { 
+              name: (opponent as any).profiles.username || 'Arkadaş', 
+              icon: User, 
+              avatar: (opponent as any).profiles.avatar_url 
+            };
+          }
+        }
         return { name: 'Arkadaş', icon: User, avatar: opponentAvatar };
       case 'random-match':
         return { name: 'Rakip', icon: User, avatar: null };
