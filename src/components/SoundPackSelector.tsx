@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useThemeContext } from '@/components/ThemeProvider';
 import { useUserPurchases } from '@/hooks/useUserPurchases';
+import { useUser } from '@/contexts/UserContext';
 import { Volume2, Music, Zap, Lock } from 'lucide-react';
 
 interface SoundPackOption {
@@ -20,7 +21,7 @@ export const SoundPackSelector = () => {
   const { user } = useAuth();
   const { soundPack, applySoundPack } = useThemeContext();
   const { hasPurchased } = useUserPurchases();
-  const { isPremium } = require('@/contexts/UserContext').useUser();
+  const { isPremium } = useUser();
   
   const soundPacks: SoundPackOption[] = [
     {

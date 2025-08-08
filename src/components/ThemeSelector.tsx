@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useThemeContext } from '@/components/ThemeProvider';
 import { useUserPurchases } from '@/hooks/useUserPurchases';
+import { useUser } from '@/contexts/UserContext';
 import { Palette, Moon, Sun, Waves, Sunset, TreePine, Gamepad2, Lock } from 'lucide-react';
 
 interface ThemeOption {
@@ -21,7 +22,7 @@ export const ThemeSelector = () => {
   const { user } = useAuth();
   const { theme, applyTheme } = useThemeContext();
   const { hasPurchased } = useUserPurchases();
-  const { isPremium } = require('@/contexts/UserContext').useUser();
+  const { isPremium } = useUser();
   
   const themes: ThemeOption[] = [
     {
