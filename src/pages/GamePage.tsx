@@ -89,7 +89,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     return grid;
   };
 
-  const [gameGrid] = useState<string[][]>(() => generateRandomGrid());
+  const [gameGrid, setGameGrid] = useState<string[][]>(() => generateRandomGrid());
   
   const [selectedLetters, setSelectedLetters] = useState<{letter: string, row: number, col: number}[]>([]);
   const [currentWord, setCurrentWord] = useState('');
@@ -374,7 +374,17 @@ const GamePage = ({ gameMode }: GamePageProps) => {
                 variant="outline" 
                 onClick={() => {
                   playSound('buttonClick');
-                  window.location.reload();
+                  // Reset game state instead of reloading page
+                  setGameGrid(generateRandomGrid());
+                  setSelectedLetters([]);
+                  setCurrentWord('');
+                  setPlayerScore(0);
+                  setOpponentScore(0);
+                  setTimeLeft(gameType === 'timed' ? 120 : Infinity);
+                  setGameStarted(true);
+                  setGameEnded(false);
+                  setWinner(null);
+                  setTimeWarningPlayed(false);
                 }} 
                 className="w-full"
               >
