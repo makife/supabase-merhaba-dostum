@@ -127,21 +127,13 @@ const SettingsPage = () => {
     const content = `
       <div class="space-y-4">
         <h3 class="font-semibold text-lg">Yardım & Destek</h3>
-        <p>Kelimeci oyunu hakkında sorularınız için aşağıdaki kanalları kullanabilirsiniz:</p>
+        <p>Kelimeci oyunu hakkında sorularınız için aşağıdaki kanalı kullanabilirsiniz:</p>
         
         <div class="space-y-3">
           <div class="p-3 bg-muted rounded-lg">
             <h4 class="font-medium">E-posta Desteği</h4>
-            <p class="text-sm text-muted-foreground">support@kelimeci.com</p>
+            <p class="text-sm text-muted-foreground">makifergan@gmail.com</p>
             <p class="text-sm">24 saat içinde yanıtlanır</p>
-          </div>
-          
-          <div class="p-3 bg-muted rounded-lg">
-            <h4 class="font-medium">Sıkça Sorulan Sorular</h4>
-            <p class="text-sm">• Kelime bulunamadı hatası alıyorum</p>
-            <p class="text-sm">• Oyun donuyor</p>
-            <p class="text-sm">• Puan güncellenmiyor</p>
-            <p class="text-sm">• Ses açılmıyor</p>
           </div>
           
           <div class="p-3 bg-muted rounded-lg">
@@ -206,8 +198,9 @@ const SettingsPage = () => {
         
         <div class="space-y-3">
           <section>
-            <h4 class="font-medium">Geliştirici Ekibi</h4>
-            <p class="text-sm text-muted-foreground">Kelimeci Ekibi tarafından sevgiyle geliştirilmiştir.</p>
+            <h4 class="font-medium">Geliştirici</h4>
+            <p class="text-sm text-muted-foreground">Ergan Mühendislik tarafından geliştirilmiştir.</p>
+            <p class="text-sm text-muted-foreground">Web: <a href="https://erganmuhendislik.com" class="text-primary underline">erganmuhendislik.com</a></p>
           </section>
           
           <section>
@@ -231,7 +224,7 @@ const SettingsPage = () => {
         </div>
         
         <div class="text-center text-xs text-muted-foreground border-t pt-3">
-          <p>© 2024 Kelimeci Ekibi</p>
+          <p>© 2025 Ergan Mühendislik</p>
           <p>Tüm hakları saklıdır</p>
         </div>
       </div>
@@ -250,26 +243,8 @@ const SettingsPage = () => {
               <Mail class="w-4 h-4 mr-2" />
               E-posta
             </h4>
-            <p class="text-sm font-mono">support@kelimeci.com</p>
-            <p class="text-xs text-muted-foreground mt-1">Genel sorular ve destek</p>
-          </div>
-          
-          <div class="p-4 bg-muted rounded-lg">
-            <h4 class="font-medium flex items-center mb-2">
-              <Shield class="w-4 h-4 mr-2" />
-              Gizlilik
-            </h4>
-            <p class="text-sm font-mono">privacy@kelimeci.com</p>
-            <p class="text-xs text-muted-foreground mt-1">Gizlilik ve veri koruma</p>
-          </div>
-          
-          <div class="p-4 bg-muted rounded-lg">
-            <h4 class="font-medium flex items-center mb-2">
-              <HelpCircle class="w-4 h-4 mr-2" />
-              Teknik Destek
-            </h4>
-            <p class="text-sm font-mono">tech@kelimeci.com</p>
-            <p class="text-xs text-muted-foreground mt-1">Hata bildirimleri ve teknik sorunlar</p>
+            <p class="text-sm font-mono">makifergan@gmail.com</p>
+            <p class="text-xs text-muted-foreground mt-1">Genel sorular, destek ve tüm konular</p>
           </div>
           
           <div class="space-y-2 pt-3 border-t">
@@ -508,7 +483,7 @@ const SettingsPage = () => {
           <CardContent className="pt-6">
             <div className="text-center text-sm text-muted-foreground">
               <p>Kelimeci v1.0.0</p>
-              <p>© 2024 Kelimeci Ekibi</p>
+              <p>© 2025 Ergan Mühendislik</p>
             </div>
           </CardContent>
         </Card>
