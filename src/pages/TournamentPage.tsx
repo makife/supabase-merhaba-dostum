@@ -27,6 +27,8 @@ interface Tournament {
   created_at: string;
   started_at: string | null;
   finished_at: string | null;
+  expires_at: string | null;
+  timeout_duration: number;
 }
 
 interface TournamentParticipant {
@@ -50,19 +52,35 @@ const TournamentPage = () => {
 
   useEffect(() => {
     loadActiveTournaments();
+    // Set up interval to periodically clean up expired tournaments and reload list
+    const interval = setInterval(() => {
+      cleanupExpiredTournaments();
+      loadActiveTournaments();
+    }, 30000); // Check every 30 seconds
+
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
     if (currentTournament && currentTournament.status === 'waiting') {
-      const timer = setInterval(() => {
-        setWaitingTime(prev => {
-          if (prev <= 1) {
+      // Calculate remaining time based on expires_at
+      const updateTimer = () => {
+        if (currentTournament.expires_at) {
+          const expiresAt = new Date(currentTournament.expires_at).getTime();
+          const now = new Date().getTime();
+          const remaining = Math.max(0, Math.ceil((expiresAt - now) / 1000));
+          
+          if (remaining <= 0) {
             startTournamentWithBots();
-            return 0;
+            return;
           }
-          return prev - 1;
-        });
-      }, 1000);
+          
+          setWaitingTime(remaining);
+        }
+      };
+
+      updateTimer(); // Initial call
+      const timer = setInterval(updateTimer, 1000);
 
       return () => clearInterval(timer);
     }
@@ -70,10 +88,14 @@ const TournamentPage = () => {
 
   const loadActiveTournaments = async () => {
     try {
+      // First cleanup expired tournaments
+      await cleanupExpiredTournaments();
+      
       const { data, error } = await supabase
         .from('tournaments')
         .select('*')
         .in('status', ['waiting', 'active'])
+        .gt('expires_at', new Date().toISOString()) // Only show non-expired tournaments
         .order('created_at', { ascending: false });
 
       if (!error && data) {
@@ -81,6 +103,17 @@ const TournamentPage = () => {
       }
     } catch (error) {
       console.error('Error loading tournaments:', error);
+    }
+  };
+
+  const cleanupExpiredTournaments = async () => {
+    try {
+      const { error } = await supabase.rpc('cleanup_expired_tournaments');
+      if (error) {
+        console.error('Error cleaning up tournaments:', error);
+      }
+    } catch (error) {
+      console.error('Error in cleanup function:', error);
     }
   };
 
@@ -177,7 +210,13 @@ const TournamentPage = () => {
       if (tournament) {
         setCurrentTournament(tournament);
         loadTournamentParticipants(tournamentId);
-        setWaitingTime(60);
+        // Calculate initial waiting time from expires_at
+        if (tournament.expires_at) {
+          const expiresAt = new Date(tournament.expires_at).getTime();
+          const now = new Date().getTime();
+          const remaining = Math.max(0, Math.ceil((expiresAt - now) / 1000));
+          setWaitingTime(remaining);
+        }
       }
 
       toast({
@@ -360,7 +399,9 @@ const TournamentPage = () => {
                 <div className="space-y-4">
                   <div className="text-center">
                     <div className="text-3xl font-bold">{waitingTime}s</div>
-                    <Progress value={((60 - waitingTime) / 60) * 100} className="mt-2" />
+                    <Progress value={currentTournament.expires_at ? 
+                      Math.max(0, 100 - ((waitingTime / (currentTournament.timeout_duration || 300)) * 100)) : 0} 
+                      className="mt-2" />
                   </div>
                   <div className="text-sm text-muted-foreground text-center">
                     {participants.length}/8 oyuncu katıldı
@@ -452,7 +493,11 @@ const TournamentPage = () => {
                     <div>
                       <h3 className="font-semibold">{tournament.name}</h3>
                       <p className="text-sm text-muted-foreground">
-                        {tournament.status === 'waiting' ? 'Oyuncular bekleniyor' : `${tournament.current_round}. tur`}
+                        {tournament.status === 'waiting' ? 
+                          `Kalan süre: ${tournament.expires_at ? 
+                            Math.max(0, Math.ceil((new Date(tournament.expires_at).getTime() - new Date().getTime()) / 1000 / 60)) 
+                            : 0} dk` : 
+                          `${tournament.current_round}. tur`}
                       </p>
                       <div className="flex items-center space-x-2 mt-2">
                         <Badge variant={tournament.status === 'waiting' ? 'secondary' : 'default'}>
