@@ -60,6 +60,65 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   const [participants, setParticipants] = useState<GameParticipant[]>([]);
   const [isConnected, setIsConnected] = useState(false);
 
+  // Cleanup old finished rooms and their participants
+  const cleanupOldRooms = async () => {
+    try {
+      // Remove participants from finished rooms first
+      const { data: finishedRooms } = await supabase
+        .from('game_rooms')
+        .select('id')
+        .eq('status', 'finished');
+      
+      if (finishedRooms && finishedRooms.length > 0) {
+        const roomIds = finishedRooms.map(room => room.id);
+        
+        // Delete participants from finished rooms
+        await supabase
+          .from('game_participants')
+          .delete()
+          .in('room_id', roomIds);
+        
+        // Delete finished rooms
+        await supabase
+          .from('game_rooms')
+          .delete()
+          .eq('status', 'finished');
+        
+        console.log('🧹 Cleaned up', finishedRooms.length, 'finished rooms');
+      }
+      
+      // Also cleanup very old waiting rooms (older than 10 minutes) as they're likely abandoned
+      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      
+      const { data: oldRooms } = await supabase
+        .from('game_rooms')
+        .select('id')
+        .eq('status', 'waiting')
+        .lt('created_at', tenMinutesAgo);
+      
+      if (oldRooms && oldRooms.length > 0) {
+        const oldRoomIds = oldRooms.map(room => room.id);
+        
+        // Delete participants from old rooms
+        await supabase
+          .from('game_participants')
+          .delete()
+          .in('room_id', oldRoomIds);
+        
+        // Delete old rooms
+        await supabase
+          .from('game_rooms')
+          .delete()
+          .eq('status', 'waiting')
+          .lt('created_at', tenMinutesAgo);
+        
+        console.log('🧹 Cleaned up', oldRooms.length, 'old waiting rooms');
+      }
+    } catch (error) {
+      console.error('Error cleaning up old rooms:', error);
+    }
+  };
+
   // Generate random grid - NO W, Q, X
   const generateRandomGrid = (): string[][] => {
     const letters = 'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ'; // Removed W, Q, X
@@ -222,6 +281,9 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     try {
       console.log('🔍 Starting random match search for gameType:', gameType);
       
+      // First cleanup old finished rooms to prevent confusion
+      await cleanupOldRooms();
+      
       // Look for existing waiting rooms with random-match mode
       const { data: waitingRooms, error: searchError } = await supabase
         .from('game_rooms')
@@ -329,16 +391,33 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     }
   };
 
-  // Leave room - no penalty anymore
+  // Leave room and cleanup
   const leaveRoom = async (): Promise<void> => {
     if (!user || !currentRoom) return;
 
     try {
+      // Remove user from participants
       await supabase
         .from('game_participants')
         .delete()
         .eq('room_id', currentRoom.id)
         .eq('user_id', user.id);
+
+      // Check if room is now empty, if so delete the room entirely
+      const { data: remainingParticipants } = await supabase
+        .from('game_participants')
+        .select('id')
+        .eq('room_id', currentRoom.id);
+
+      if (!remainingParticipants || remainingParticipants.length === 0) {
+        // No participants left, delete the room
+        await supabase
+          .from('game_rooms')
+          .delete()
+          .eq('id', currentRoom.id);
+        
+        console.log('🧹 Empty room deleted:', currentRoom.id);
+      }
 
       setCurrentRoom(null);
       setParticipants([]);
@@ -379,11 +458,12 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     }
   };
 
-  // End game
+  // End game and cleanup
   const endGame = async (): Promise<void> => {
     if (!currentRoom) return;
 
     try {
+      // Update room status to finished
       await supabase
         .from('game_rooms')
         .update({ 
@@ -391,6 +471,18 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           finished_at: new Date().toISOString() 
         })
         .eq('id', currentRoom.id);
+      
+      // Clean up: Remove all participants from this room
+      await supabase
+        .from('game_participants')
+        .delete()
+        .eq('room_id', currentRoom.id);
+      
+      // Clear local state
+      setCurrentRoom(null);
+      setParticipants([]);
+      
+      console.log('🧹 Game ended and room cleaned up:', currentRoom.id);
     } catch (error) {
       console.error('Error ending game:', error);
     }

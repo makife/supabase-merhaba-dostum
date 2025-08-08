@@ -34,7 +34,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const { consumeCredit, isPremium } = useUser();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { currentRoom, updateScore, participants } = useGame();
+  const { currentRoom, updateScore, participants, endGame } = useGame();
   const { validateWord, isValidating } = useWordValidation();
   const { playSound, playTimeWarningSequence, playCelebrationSound, playGameLoseSound } = useSounds();
   const { fadeOutBackgroundMusic, fadeInBackgroundMusic } = useMusic();
@@ -504,7 +504,16 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         });
       }, 1000);
     }
-  }, [playerScore, opponentScore, playSound, playCelebrationSound, gameEnded, winner, user]);
+    
+    // End the game and cleanup room (for multiplayer modes)
+    if (currentRoom && (gameMode === 'random-match' || gameMode === 'private-room')) {
+      // Delay cleanup to allow players to see results
+      setTimeout(async () => {
+        // Call endGame from context to cleanup room and participants
+        await endGame();
+      }, 3000); // 3 second delay to see results
+    }
+  }, [playerScore, opponentScore, playSound, playCelebrationSound, gameEnded, winner, user, currentRoom, gameMode]);
 
   // Check win conditions based on game type
   useEffect(() => {
