@@ -234,6 +234,86 @@ const MarketPage = () => {
       value: 1
     },
     {
+      id: 'avatar_christmas_lights',
+      title: 'Noel Işıkları Çerçevesi',
+      description: 'Renkli noel ışıkları ile çerçeve',
+      price: 2.99,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1
+    },
+    {
+      id: 'avatar_ornate_gold',
+      title: 'Süslü Altın Çerçeve',
+      description: 'Detaylı süslemeli lüks altın çerçeve',
+      price: 4.99,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1
+    },
+    {
+      id: 'avatar_party_balloons',
+      title: 'Parti Balonları Çerçevesi',
+      description: 'Renkli parti balonları ile çerçeve',
+      price: 2.49,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1
+    },
+    {
+      id: 'avatar_christmas_tree',
+      title: 'Noel Ağacı Çerçevesi',
+      description: 'Noel ağacı ve hediyeli özel çerçeve',
+      price: 3.99,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1
+    },
+    {
+      id: 'avatar_ornate_black',
+      title: 'Siyah Süslü Çerçeve',
+      description: 'Klasik siyah süslemeli çerçeve',
+      price: 3.49,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1
+    },
+    {
+      id: 'avatar_black_floral',
+      title: 'Siyah Çiçek Çerçevesi',
+      description: 'Zarif siyah çiçek motifli çerçeve',
+      price: 3.49,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1
+    },
+    {
+      id: 'avatar_golden_stars',
+      title: 'Altın Yıldızlar Çerçevesi',
+      description: 'Yeni yıl temalı altın yıldız çerçevesi',
+      price: 4.49,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1
+    },
+    {
+      id: 'avatar_wavy_black',
+      title: 'Dalgalı Siyah Çerçeve',
+      description: 'Modern dalgalı siyah çerçeve',
+      price: 2.99,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1
+    },
+    {
       id: 'avatar_purple_flowers',
       title: 'Mor Çiçek Çerçevesi',
       description: 'Zarif mor çiçek desenli çerçeve',
