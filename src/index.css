@@ -322,10 +322,6 @@ All colors MUST be HSL.
 }
 
 /* Yeni satın alınabilir çerçeveler */
-.avatar-frame-avatar_floral_roses {
-  padding: 12px;
-}
-
 .avatar-frame-avatar_floral_roses::before {
   content: '';
   position: absolute;
@@ -339,10 +335,6 @@ All colors MUST be HSL.
   background-position: center;
   z-index: 10;
   pointer-events: none;
-}
-
-.avatar-frame-avatar_blue_berries {
-  padding: 12px;
 }
 
 .avatar-frame-avatar_blue_berries::before {
@@ -360,10 +352,6 @@ All colors MUST be HSL.
   pointer-events: none;
 }
 
-.avatar-frame-avatar_gold_simple {
-  padding: 12px;
-}
-
 .avatar-frame-avatar_gold_simple::before {
   content: '';
   position: absolute;
@@ -377,10 +365,6 @@ All colors MUST be HSL.
   background-position: center;
   z-index: 10;
   pointer-events: none;
-}
-
-.avatar-frame-avatar_floral_wreath {
-  padding: 12px;
 }
 
 .avatar-frame-avatar_floral_wreath::before {
@@ -398,10 +382,6 @@ All colors MUST be HSL.
   pointer-events: none;
 }
 
-.avatar-frame-avatar_purple_flowers {
-  padding: 12px;
-}
-
 .avatar-frame-avatar_purple_flowers::before {
   content: '';
   position: absolute;
@@ -415,10 +395,6 @@ All colors MUST be HSL.
   background-position: center;
   z-index: 10;
   pointer-events: none;
-}
-
-.avatar-frame-avatar_pink_flowers {
-  padding: 12px;
 }
 
 .avatar-frame-avatar_pink_flowers::before {
@@ -436,10 +412,6 @@ All colors MUST be HSL.
   pointer-events: none;
 }
 
-.avatar-frame-avatar_antique_bronze {
-  padding: 12px;
-}
-
 .avatar-frame-avatar_antique_bronze::before {
   content: '';
   position: absolute;
@@ -453,10 +425,6 @@ All colors MUST be HSL.
   background-position: center;
   z-index: 10;
   pointer-events: none;
-}
-
-.avatar-frame-avatar_green_patrick {
-  padding: 12px;
 }
 
 .avatar-frame-avatar_green_patrick::before {
@@ -474,10 +442,6 @@ All colors MUST be HSL.
   pointer-events: none;
 }
 
-.avatar-frame-avatar_heart_roses {
-  padding: 12px;
-}
-
 .avatar-frame-avatar_heart_roses::before {
   content: '';
   position: absolute;
@@ -491,10 +455,6 @@ All colors MUST be HSL.
   background-position: center;
   z-index: 10;
   pointer-events: none;
-}
-
-.avatar-frame-avatar_christmas_lights {
-  padding: 12px;
 }
 
 .avatar-frame-avatar_christmas_lights::before {
@@ -512,10 +472,6 @@ All colors MUST be HSL.
   pointer-events: none;
 }
 
-.avatar-frame-avatar_ornate_gold {
-  padding: 12px;
-}
-
 .avatar-frame-avatar_ornate_gold::before {
   content: '';
   position: absolute;
@@ -529,10 +485,6 @@ All colors MUST be HSL.
   background-position: center;
   z-index: 10;
   pointer-events: none;
-}
-
-.avatar-frame-avatar_party_balloons {
-  padding: 12px;
 }
 
 .avatar-frame-avatar_party_balloons::before {
@@ -550,10 +502,6 @@ All colors MUST be HSL.
   pointer-events: none;
 }
 
-.avatar-frame-avatar_christmas_tree {
-  padding: 12px;
-}
-
 .avatar-frame-avatar_christmas_tree::before {
   content: '';
   position: absolute;
@@ -567,10 +515,6 @@ All colors MUST be HSL.
   background-position: center;
   z-index: 10;
   pointer-events: none;
-}
-
-.avatar-frame-avatar_ornate_black {
-  padding: 12px;
 }
 
 .avatar-frame-avatar_ornate_black::before {
@@ -588,10 +532,6 @@ All colors MUST be HSL.
   pointer-events: none;
 }
 
-.avatar-frame-avatar_black_floral {
-  padding: 12px;
-}
-
 .avatar-frame-avatar_black_floral::before {
   content: '';
   position: absolute;
@@ -607,10 +547,6 @@ All colors MUST be HSL.
   pointer-events: none;
 }
 
-.avatar-frame-avatar_golden_stars {
-  padding: 12px;
-}
-
 .avatar-frame-avatar_golden_stars::before {
   content: '';
   position: absolute;
@@ -624,10 +560,6 @@ All colors MUST be HSL.
   background-position: center;
   z-index: 10;
   pointer-events: none;
-}
-
-.avatar-frame-avatar_wavy_black {
-  padding: 12px;
 }
 
 .avatar-frame-avatar_wavy_black::before {
