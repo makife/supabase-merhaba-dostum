@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import PrivateRoomModal from '@/components/PrivateRoomModal';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import {
   Bot,
@@ -375,7 +376,28 @@ const HomePage = () => {
 
 
         {/* Game Mode Selector Modal */}
-        {selectedMode && (
+        {selectedMode && selectedMode === 'private-room' ? (
+          <PrivateRoomModal
+            onClose={() => setSelectedMode(null)}
+            onRoomCreated={(roomCode) => {
+              setSelectedMode(null);
+              navigate('/game/private-room', { 
+                state: { 
+                  gameType: 'timed',
+                  roomCode: roomCode
+                } 
+              });
+            }}
+            onRoomJoined={() => {
+              setSelectedMode(null);
+              navigate('/game/private-room', { 
+                state: { 
+                  gameType: 'timed'
+                } 
+              });
+            }}
+          />
+        ) : selectedMode ? (
           <GameModeSelector
             mode={selectedMode}
             onStart={(gameType) => {
@@ -391,7 +413,7 @@ const HomePage = () => {
               setSelectedMode(null);
             }}
           />
-        )}
+        ) : null}
 
         {/* Floating Menu */}
         <FloatingMenu />
