@@ -159,9 +159,9 @@ const HomePage = () => {
             }}
           >
             {musicEnabled ? (
-              <Volume2 className="w-6 h-6 text-primary drop-shadow-md" />
+              <Volume2 className="w-8 h-8 text-primary font-bold" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }} />
             ) : (
-              <VolumeX className="w-6 h-6 text-muted-foreground drop-shadow-md" />
+              <VolumeX className="w-8 h-8 text-destructive font-bold" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }} />
             )}
           </Button>
           
