@@ -549,9 +549,9 @@ const MarketPage = () => {
                       <Zap className="w-3 h-3 mr-1" />
                       {item.price}
                     </span>
-                  ) : (
-                    `$${item.price}`
-                  )}
+                   ) : (
+                     `₺${item.price}`
+                   )}
                 </div>
                 <Button 
                   onClick={() => handlePurchase(item)}
@@ -672,7 +672,18 @@ const MarketPage = () => {
               <Zap className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-semibold">Oyun Hakları & Sınırsız Zaman</h3>
             </div>
-            {renderMarketItems(getItemsByCategory('credits'))}
+            {!isPremium && renderMarketItems(getItemsByCategory('credits'))}
+            {isPremium && (
+              <Card className="border-green-500">
+                <CardContent className="p-6 text-center">
+                  <Crown className="w-12 h-12 text-yellow-500 mx-auto mb-3" />
+                  <h3 className="text-lg font-semibold mb-2">Premium Üyesiniz!</h3>
+                  <p className="text-muted-foreground">
+                    Zaten sınırsız oyun hakkınız bulunuyor. Ek satın alma yapmanıza gerek yok.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
           
           {/* Premium & Reklamlar */}
@@ -681,7 +692,18 @@ const MarketPage = () => {
               <Crown className="w-5 h-5 text-yellow-500" />
               <h3 className="text-lg font-semibold">Premium & Reklamlar</h3>
             </div>
-            {renderMarketItems(getItemsByCategory('premium'))}
+            {!isPremium && renderMarketItems(getItemsByCategory('premium'))}
+            {isPremium && (
+              <Card className="border-green-500">
+                <CardContent className="p-6 text-center">
+                  <Crown className="w-12 h-12 text-yellow-500 mx-auto mb-3" />
+                  <h3 className="text-lg font-semibold mb-2">Premium Üyesiniz!</h3>
+                  <p className="text-muted-foreground">
+                    Zaten premium üyeliğiniz aktif. Tüm premium özellikler size açık.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
           
           {/* Temalar */}
