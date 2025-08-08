@@ -246,9 +246,8 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     const isSelected = selectedLetters.some(s => s.row === row && s.col === col);
     
     if (isSelected) {
-      // Remove letter and all letters after it
-      const index = selectedLetters.findIndex(s => s.row === row && s.col === col);
-      const newSelected = selectedLetters.slice(0, index);
+      // Remove only the clicked letter
+      const newSelected = selectedLetters.filter(s => !(s.row === row && s.col === col));
       setSelectedLetters(newSelected);
       setCurrentWord(newSelected.map(s => s.letter).join(''));
     } else {
