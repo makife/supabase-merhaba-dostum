@@ -16,6 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/contexts/UserContext';
 import { useUserPurchases } from '@/hooks/useUserPurchases';
 import { useAdMob } from '@/hooks/useAdMob';
+import { useNativePurchases } from '@/hooks/useNativePurchases';
 import { supabase } from '@/integrations/supabase/client';
 import {
   ArrowLeft,
@@ -60,6 +61,11 @@ const MarketPage = () => {
   const { profile, isPremium, refreshProfile } = useUser();
   const { isAdLoading, isAdReady, initializeAdMob, loadRewardedAd, showRewardedAd } = useAdMob();
   const { processPurchase, hasPurchased, loading: purchaseLoading } = useUserPurchases();
+  const { 
+    isLoading: isPurchaseLoading, 
+    purchaseProduct,
+    restorePurchases 
+  } = useNativePurchases();
 
   const marketItems: MarketItem[] = [
     // Oyun Hakları
@@ -468,7 +474,15 @@ const MarketPage = () => {
       return;
     }
 
-    // Yeni satın alma sistemi kullan
+    // Check if running on mobile (Capacitor) platform
+    if (typeof window !== 'undefined' && window.Capacitor && item.currency === 'premium') {
+      // Use native in-app purchase system for mobile
+      const success = await purchaseProduct(item.id, item);
+      // The native purchase system will handle the rest via callbacks
+      return;
+    }
+
+    // Use web-based purchase system for web/browser
     const success = await processPurchase(item);
     if (success) {
       await refreshProfile(); // Profili yenile
@@ -553,17 +567,22 @@ const MarketPage = () => {
                      `₺${item.price}`
                    )}
                 </div>
-                <Button 
-                  onClick={() => handlePurchase(item)}
-                  size="sm"
-                  className="mt-1 text-xs px-2 py-1 h-7"
-                  disabled={(item.currency === 'credits' && (profile?.game_credits || 0) < item.price) || purchaseLoading || hasPurchased(item.id)}
-                >
-                  {hasPurchased(item.id) ? 'Satın Alındı' :
-                   (item.currency === 'credits' && (profile?.game_credits || 0) < item.price) ? 'Yetersiz' : 
-                   purchaseLoading ? 'İşleniyor...' : 'Satın Al'
-                  }
-                </Button>
+                 <Button 
+                   onClick={() => handlePurchase(item)}
+                   size="sm"
+                   className="mt-1 text-xs px-2 py-1 h-7"
+                   disabled={
+                     (item.currency === 'credits' && (profile?.game_credits || 0) < item.price) || 
+                     purchaseLoading || 
+                     isPurchaseLoading || 
+                     hasPurchased(item.id)
+                   }
+                 >
+                   {hasPurchased(item.id) ? 'Satın Alındı' :
+                    (item.currency === 'credits' && (profile?.game_credits || 0) < item.price) ? 'Yetersiz' : 
+                    (purchaseLoading || isPurchaseLoading) ? 'İşleniyor...' : 'Satın Al'
+                   }
+                 </Button>
               </div>
             </div>
           </CardContent>
@@ -656,6 +675,29 @@ const MarketPage = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Mobile Purchase Restore */}
+        {typeof window !== 'undefined' && window.Capacitor && (
+          <Card className="border-blue-500">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-sm">Satın Alımları Geri Yükle</h3>
+                  <p className="text-xs text-muted-foreground">Önceki satın alımlarınızı geri yükleyin</p>
+                </div>
+                <Button 
+                  onClick={restorePurchases}
+                  size="sm"
+                  variant="outline"
+                  disabled={isPurchaseLoading}
+                  className="text-xs"
+                >
+                  {isPurchaseLoading ? 'Yükleniyor...' : 'Geri Yükle'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Market Kategorileri */}
         <Tabs defaultValue="credits" className="w-full">
