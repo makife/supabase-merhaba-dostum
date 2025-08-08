@@ -150,18 +150,18 @@ const HomePage = () => {
           
           {/* Music Toggle Button - Top Right */}
           <Button
-            variant="ghost"
-            size="sm"
-            className="absolute top-3 right-3 z-20 w-10 h-10 rounded-full hover:bg-white/10 backdrop-blur-sm border border-white/20"
+            variant="outline"
+            size="lg"
+            className="absolute top-4 right-4 z-20 w-14 h-14 rounded-full bg-gradient-to-r from-primary/10 to-accent/10 hover:from-primary/20 hover:to-accent/20 backdrop-blur-md border-2 border-primary/30 hover:border-primary/50 transition-all duration-300 hover:scale-105 shadow-lg"
             onClick={() => {
               setMusicEnabled(!musicEnabled);
               playSound('buttonClick');
             }}
           >
             {musicEnabled ? (
-              <Volume2 className="w-5 h-5 text-muted-foreground" />
+              <Volume2 className="w-6 h-6 text-primary drop-shadow-md" />
             ) : (
-              <VolumeX className="w-5 h-5 text-muted-foreground" />
+              <VolumeX className="w-6 h-6 text-muted-foreground drop-shadow-md" />
             )}
           </Button>
           
