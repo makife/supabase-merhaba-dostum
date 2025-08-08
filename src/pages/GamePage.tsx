@@ -74,7 +74,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       'Ş', 'Ş',                                // Ş - medium
       'V', 'V',                                // V - medium
       'Z',                                     // Z - rare
-      'Q', 'W', 'X'                            // Foreign letters - rare
+      // Removed foreign letters Q, W, X - using only Turkish alphabet
     ];
     
     const grid: string[][] = [];
