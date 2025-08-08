@@ -33,7 +33,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const { consumeCredit, isPremium } = useUser();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { currentRoom, updateScore } = useGame();
+  const { currentRoom, updateScore, participants } = useGame();
   const { validateWord, isValidating } = useWordValidation();
   const { playSound, playTimeWarningSequence, playCelebrationSound, playGameLoseSound } = useSounds();
   const { fadeOutBackgroundMusic, fadeInBackgroundMusic } = useMusic();
@@ -96,7 +96,8 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const [playerScore, setPlayerScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(gameType === 'timed' ? 120 : 0); // Only use timer for timed mode
-  const [gameStarted, setGameStarted] = useState(true);
+  const [gameStarted, setGameStarted] = useState(gameMode !== 'private-room');
+  const [waitingForPlayer, setWaitingForPlayer] = useState(gameMode === 'private-room');
   const [gameEnded, setGameEnded] = useState(false);
   const [winner, setWinner] = useState<'player' | 'opponent' | 'tie' | null>(null);
   const [playerAvatar, setPlayerAvatar] = useState<string>('');
@@ -154,6 +155,18 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       fadeInBackgroundMusic(1000); // 1 saniyede yavaşça açıl
     };
   }, []); // Empty dependency array to run only once
+
+  // Monitor participants for private room
+  useEffect(() => {
+    if (gameMode === 'private-room' && participants.length >= 2 && waitingForPlayer) {
+      setWaitingForPlayer(false);
+      setGameStarted(true);
+      toast({
+        title: 'Oyun Başlıyor!',
+        description: 'İkinci oyuncu katıldı, oyuna başlayabilirsiniz!',
+      });
+    }
+  }, [participants, gameMode, waitingForPlayer]);
 
   // Timer effect - only for timed mode
   useEffect(() => {
@@ -239,7 +252,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
 
   // Handle letter click
   const handleLetterClick = (letter: string, row: number, col: number) => {
-    if (gameEnded) return;
+    if (gameEnded || waitingForPlayer) return;
 
     playSound('letterSelect');
     
@@ -266,6 +279,8 @@ const GamePage = ({ gameMode }: GamePageProps) => {
 
   // Submit word
   const submitWord = async () => {
+    if (waitingForPlayer) return;
+    
     if (currentWord.length < 3) {
       toast({
         title: 'Geçersiz Kelime',
@@ -474,6 +489,61 @@ const GamePage = ({ gameMode }: GamePageProps) => {
                 Tekrar Oyna
               </Button>
             </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Waiting screen for private room
+  if (waitingForPlayer) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background to-muted">
+        <Card className="w-full max-w-md text-center">
+          <CardContent className="p-8">
+            <div className="animate-pulse space-y-4">
+              <div className="w-16 h-16 bg-green-500 rounded-full mx-auto flex items-center justify-center">
+                <User className="w-8 h-8 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold">Özel Oda</h2>
+              <p className="text-muted-foreground">
+                İkinci oyuncuyu bekliyoruz...
+              </p>
+              <div className="bg-muted rounded-lg p-4">
+                <p className="text-sm font-medium">Oda Kodu</p>
+                <div className="flex items-center justify-center space-x-2 mt-2">
+                  <span className="text-2xl font-mono font-bold">{currentRoom?.room_code}</span>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={async () => {
+                      if (currentRoom?.room_code) {
+                        await navigator.clipboard.writeText(currentRoom.room_code);
+                        toast({
+                          title: 'Kopyalandı!',
+                          description: 'Oda kodu panoya kopyalandı',
+                        });
+                      }
+                    }}
+                  >
+                    Kopyala
+                  </Button>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Bu kodu arkadaşınızla paylaşın
+              </p>
+              <div className="text-xs text-muted-foreground">
+                Katılımcılar: {participants.length}/2
+              </div>
+            </div>
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/')}
+              className="mt-6 w-full"
+            >
+              Ana Menüye Dön
+            </Button>
           </CardContent>
         </Card>
       </div>
