@@ -422,7 +422,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       console.log('🤖 Stopping AI play interval for game mode:', gameMode);
       clearInterval(aiPlayInterval);
     };
-  }, [isPlayingWithAI, gameStarted, gameEnded, generateAIWordFromGrid, playSound, lastPlayerAction, gameMode]);
+  }, [isPlayingWithAI, gameStarted, gameEnded, generateAIWordFromGrid, playSound, lastPlayerAction, gameMode, gameType]);
 
   // Timer effect - for both timed and score modes
   useEffect(() => {
