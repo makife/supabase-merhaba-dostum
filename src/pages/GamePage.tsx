@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useGame } from '@/contexts/GameContext';
@@ -905,17 +906,15 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         <div className="grid grid-cols-2 gap-4">
           <Card className="light-gradient border-0">
             <CardContent className="p-4 text-center relative overflow-hidden">
-              <div className="w-16 h-16 bg-white/60 rounded-full mx-auto mb-2 flex items-center justify-center border-2 border-white/80 overflow-hidden">
-                {playerAvatar ? (
-                  <img 
-                    src={playerAvatar} 
-                    alt="Profile" 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
+              <Avatar className="w-16 h-16 mx-auto mb-2">
+                <AvatarImage 
+                  src={playerAvatar || user?.user_metadata?.avatar_url} 
+                  alt="Profile"
+                />
+                <AvatarFallback>
                   <User className="w-8 h-8 text-gray-600" />
-                )}
-              </div>
+                </AvatarFallback>
+              </Avatar>
               <p className="text-sm text-gray-700 font-bold font-bungee">
                 Siz
               </p>
@@ -930,17 +929,15 @@ const GamePage = ({ gameMode }: GamePageProps) => {
           </Card>
           <Card className="light-gradient border-0">
             <CardContent className="p-4 text-center relative overflow-hidden">
-              <div className="w-16 h-16 bg-white/60 rounded-full mx-auto mb-2 flex items-center justify-center border-2 border-white/80 overflow-hidden">
-                {opponent.avatar ? (
-                  <img 
-                    src={opponent.avatar} 
-                    alt="Opponent" 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
+              <Avatar className="w-16 h-16 mx-auto mb-2">
+                <AvatarImage 
+                  src={opponent.avatar} 
+                  alt="Opponent"
+                />
+                <AvatarFallback>
                   <opponent.icon className="w-8 h-8 text-gray-600" />
-                )}
-              </div>
+                </AvatarFallback>
+              </Avatar>
               <p className="text-sm text-gray-700 font-bold font-bungee">
                 {opponent.name}
               </p>
