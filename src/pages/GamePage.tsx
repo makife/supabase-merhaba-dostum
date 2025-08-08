@@ -257,6 +257,29 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     console.log('=== END CHECK ===');
   }, [participants, gameMode, hasShownStartMessage, gameType]);
 
+  // AI continuous play effect - only for vs-computer mode
+  useEffect(() => {
+    if (gameMode !== 'vs-computer' || !gameStarted || gameEnded) return;
+
+    const aiPlayInterval = setInterval(() => {
+      const aiWords = ['KEDI', 'MASA', 'ARABA', 'OKUL', 'KITAP', 'DENIZ', 'GÖKYÜZÜ', 'ÇİÇEK', 'AĞAÇ', 'DOSTLUK'];
+      const randomWord = aiWords[Math.floor(Math.random() * aiWords.length)];
+      const opponentPoints = Math.floor(Math.random() * 25) + 5;
+      
+      setOpponentScore(prev => prev + opponentPoints);
+      
+      toast({
+        title: `🤖 AI: "${randomWord}"`,
+        description: `+${opponentPoints} puan kazandı`,
+        duration: 1500,
+      });
+      
+      playSound('correctWord');
+    }, 3000 + Math.random() * 2000); // 3-5 saniye arasında
+
+    return () => clearInterval(aiPlayInterval);
+  }, [gameMode, gameStarted, gameEnded, playSound, toast]);
+
   // Timer effect - only for timed mode
   useEffect(() => {
     if (!gameStarted || gameEnded || gameType !== 'timed') return;
@@ -490,6 +513,13 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       setTimeout(() => {
         const opponentPoints = Math.floor(Math.random() * 30) + 10;
         setOpponentScore(prev => prev + opponentPoints);
+        
+        // Show AI is playing message
+        toast({
+          title: '🤖 AI Oynuyor...',
+          description: `AI ${opponentPoints} puan kazandı!`,
+          duration: 800,
+        });
       }, 1000);
     }
   };
