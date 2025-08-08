@@ -54,12 +54,12 @@ export function FloatingMenu() {
               className="flex items-center space-x-3 animate-in slide-in-from-right-5"
               style={{ animationDelay: `${index * 50}ms` }}
             >
-              <span className="text-base font-semibold text-white font-painter flex items-center h-12">
+              <span className="text-lg font-semibold text-white font-painter">
                 {item.title}
               </span>
               <Button
                 size="sm"
-                className={`w-12 h-12 rounded-full shadow-lg ${item.color} text-white border-2 border-white`}
+                className={`w-12 h-12 rounded-full shadow-lg ${item.color} text-white border-2 border-white flex items-center justify-center`}
                 onClick={() => handleMenuClick(item.route)}
               >
                 <item.icon className="w-5 h-5" />
@@ -72,12 +72,12 @@ export function FloatingMenu() {
             className="flex items-center space-x-3 animate-in slide-in-from-right-5"
             style={{ animationDelay: `${menuItems.length * 50}ms` }}
           >
-            <span className="text-base font-semibold text-white font-painter flex items-center h-12">
-              Çıkış
+            <span className="text-lg font-semibold text-white font-painter">
+              Çıkıs
             </span>
             <Button
               size="sm"
-              className="w-12 h-12 rounded-full shadow-lg bg-red-500 hover:bg-red-600 text-white border-2 border-white"
+              className="w-12 h-12 rounded-full shadow-lg bg-red-500 hover:bg-red-600 text-white border-2 border-white flex items-center justify-center"
               onClick={handleLogout}
             >
               <LogOut className="w-5 h-5" />
