@@ -21,6 +21,7 @@ export const ThemeSelector = () => {
   const { user } = useAuth();
   const { theme, applyTheme } = useThemeContext();
   const { hasPurchased } = useUserPurchases();
+  const { isPremium } = require('@/contexts/UserContext').useUser();
   
   const themes: ThemeOption[] = [
     {

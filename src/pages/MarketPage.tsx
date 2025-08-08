@@ -67,7 +67,7 @@ const MarketPage = () => {
       id: 'credits_10',
       title: '10 Oyun Hakkı',
       description: 'Ekstra 10 oyun hakkı kazanın',
-      price: 0.99,
+      price: 4.99,
       currency: 'premium',
       icon: Zap,
       type: 'credits',
@@ -77,7 +77,7 @@ const MarketPage = () => {
       id: 'credits_25',
       title: '25 Oyun Hakkı',
       description: 'Ekstra 25 oyun hakkı kazanın',
-      price: 1.99,
+      price: 9.99,
       currency: 'premium',
       icon: Zap,
       type: 'credits',
@@ -87,7 +87,7 @@ const MarketPage = () => {
       id: 'credits_50',
       title: '50 Oyun Hakkı',
       description: 'Büyük oyun hakkı paketi',
-      price: 3.49,
+      price: 17.99,
       currency: 'premium',
       icon: Zap,
       type: 'credits',
@@ -99,7 +99,7 @@ const MarketPage = () => {
       id: 'unlimited_1h',
       title: '1 Saat Sınırsız',
       description: '1 saat boyunca sınırsız oyun oynayın',
-      price: 1.49,
+      price: 7.99,
       currency: 'premium',
       icon: Clock,
       type: 'unlimited_time',
@@ -110,7 +110,7 @@ const MarketPage = () => {
       id: 'unlimited_24h',
       title: '24 Saat Sınırsız',
       description: '24 saat boyunca sınırsız oyun oynayın',
-      price: 4.99,
+      price: 24.99,
       currency: 'premium',
       icon: Infinity,
       type: 'unlimited_time',
@@ -118,27 +118,16 @@ const MarketPage = () => {
       duration: '24 saat'
     },
 
-    // Premium & Reklamlar
+    // Premium
     {
       id: 'premium_month',
       title: 'Premium Üyelik',
-      description: 'Sınırsız oyun, özel temalar ve daha fazlası',
-      price: 9.99,
+      description: 'Sınırsız oyun, tüm temalar, sesler, çerçeveler ve özel özellikler',
+      price: 29.99,
       currency: 'premium',
       icon: Crown,
       type: 'premium',
-      value: 30,
-      duration: '1 ay'
-    },
-    {
-      id: 'remove_ads',
-      title: 'Reklamları Kaldır',
-      description: 'Tüm reklamları kalıcı olarak kaldırın',
-      price: 2.99,
-      currency: 'premium',
-      icon: Star,
-      type: 'premium',
-      value: 0
+      value: 30
     },
 
     // Temalar
@@ -777,16 +766,24 @@ const MarketPage = () => {
                 Sınırsız oyun hakkı
               </li>
               <li className="flex items-center">
+                <Palette className="w-4 h-4 mr-2 text-yellow-500" />
+                Tüm temalara erişim
+              </li>
+              <li className="flex items-center">
+                <Volume2 className="w-4 h-4 mr-2 text-yellow-500" />
+                Tüm ses paketlerine erişim
+              </li>
+              <li className="flex items-center">
+                <Frame className="w-4 h-4 mr-2 text-yellow-500" />
+                Tüm avatar çerçevelerine erişim
+              </li>
+              <li className="flex items-center">
                 <Star className="w-4 h-4 mr-2 text-yellow-500" />
                 Reklamız deneyim
               </li>
               <li className="flex items-center">
                 <Gift className="w-4 h-4 mr-2 text-yellow-500" />
                 Özel rozetler ve ödüller
-              </li>
-              <li className="flex items-center">
-                <Zap className="w-4 h-4 mr-2 text-yellow-500" />
-                Öncelikli maç eşleşmesi
               </li>
             </ul>
           </CardContent>

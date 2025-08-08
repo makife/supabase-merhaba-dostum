@@ -25,6 +25,7 @@ export const useThemeContext = () => {
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
   const { hasPurchased } = useUserPurchases();
+  const { isPremium } = require('@/contexts/UserContext').useUser();
   const [theme, setTheme] = useState('default');
   const [avatarFrame, setAvatarFrame] = useState('none');
   const [soundPack, setSoundPack] = useState('default');
@@ -72,20 +73,20 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const applyTheme = async (newTheme: string) => {
     if (!user) return false;
 
-    // Premium temaların satın alma kontrolü
+    // Premium üyeler tüm temalara erişebilir
     const premiumThemes = ['dark_ocean', 'sunset', 'forest'];
     const creditsThemes = ['classic'];
     
     if (premiumThemes.includes(newTheme)) {
       const requiredPurchase = `theme_${newTheme}`;
-      if (!hasPurchased(requiredPurchase)) {
+      if (!isPremium && !hasPurchased(requiredPurchase)) {
         return false;
       }
     }
     
     if (creditsThemes.includes(newTheme)) {
       const requiredPurchase = 'credits_theme_basic';
-      if (!hasPurchased(requiredPurchase)) {
+      if (!isPremium && !hasPurchased(requiredPurchase)) {
         return false;
       }
     }
@@ -103,13 +104,22 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Avatar çerçevesi değiştir
   const applyAvatarFrame = async (newFrame: string) => {
-    if (!user) return;
+    if (!user) return true;
+
+    // Premium üyeler tüm çerçevelere erişebilir (none hariç)
+    const frameRequiresPurchase = newFrame !== 'none';
+    
+    if (frameRequiresPurchase && !isPremium && !hasPurchased(newFrame)) {
+      return false;
+    }
 
     try {
       await updateUserSetting('active_avatar_frame', newFrame);
       setAvatarFrame(newFrame);
+      return true;
     } catch (error) {
       console.error('Error applying avatar frame:', error);
+      return false;
     }
   };
 
@@ -117,12 +127,12 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const applySoundPack = async (newPack: string) => {
     if (!user) return false;
 
-    // Premium ses paketlerinin satın alma kontrolü
+    // Premium üyeler tüm ses paketlerine erişebilir
     const premiumSoundPacks = ['space', 'nature'];
     
     if (premiumSoundPacks.includes(newPack)) {
       const requiredPurchase = `sound_pack_${newPack}`;
-      if (!hasPurchased(requiredPurchase)) {
+      if (!isPremium && !hasPurchased(requiredPurchase)) {
         return false;
       }
     }

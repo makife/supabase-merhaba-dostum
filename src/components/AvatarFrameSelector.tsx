@@ -22,6 +22,7 @@ export const AvatarFrameSelector = () => {
   const { user } = useAuth();
   const { avatarFrame, applyAvatarFrame } = useThemeContext();
   const { hasPurchased } = useUserPurchases();
+  const { isPremium } = require('@/contexts/UserContext').useUser();
 
   const frames: FrameOption[] = [
     {

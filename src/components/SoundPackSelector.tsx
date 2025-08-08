@@ -20,6 +20,7 @@ export const SoundPackSelector = () => {
   const { user } = useAuth();
   const { soundPack, applySoundPack } = useThemeContext();
   const { hasPurchased } = useUserPurchases();
+  const { isPremium } = require('@/contexts/UserContext').useUser();
   
   const soundPacks: SoundPackOption[] = [
     {
@@ -50,6 +51,8 @@ export const SoundPackSelector = () => {
   // Kullanılabilir ses paketlerini kontrol et
   const isPackAvailable = (pack: SoundPackOption) => {
     if (!pack.requiredPurchase) return true; // Varsayılan paket her zaman mevcut
+    // Premium üyeler tüm ses paketlerine erişebilir
+    if (isPremium) return true;
     return user && hasPurchased(pack.requiredPurchase);
   };
 
