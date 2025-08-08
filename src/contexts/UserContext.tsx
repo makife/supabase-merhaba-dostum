@@ -69,10 +69,20 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   const isPremium = profile?.premium_until ? new Date(profile.premium_until) > new Date() : false;
 
   const consumeCredit = async (): Promise<boolean> => {
-    if (!user || !profile) return false;
+    if (!user || !profile) {
+      console.log('consumeCredit: No user or profile');
+      return false;
+    }
+    
+    console.log('consumeCredit: profile?.premium_until:', profile?.premium_until);
+    console.log('consumeCredit: isPremium:', isPremium);
+    console.log('consumeCredit: current date:', new Date());
     
     // Premium kullanıcılar için kredi tüketimi yok
-    if (isPremium) return true;
+    if (isPremium) {
+      console.log('consumeCredit: User is premium, returning true');
+      return true;
+    }
     
     // Kredi kontrolü
     if (profile.game_credits <= 0) return false;

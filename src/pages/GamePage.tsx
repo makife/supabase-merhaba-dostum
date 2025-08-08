@@ -126,9 +126,13 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       // Fade out background music when entering game
       fadeOutBackgroundMusic(1500); // 1.5 saniyede yavaşça kapan
       
+      console.log('GamePage isPremium:', isPremium);
+      
       // Consume credit if not premium
       if (!isPremium) {
+        console.log('User is not premium, consuming credit...');
         const creditConsumed = await consumeCredit();
+        console.log('Credit consumed result:', creditConsumed);
         if (!creditConsumed) {
           toast({
             title: 'Yetersiz Hak',
@@ -138,6 +142,8 @@ const GamePage = ({ gameMode }: GamePageProps) => {
           navigate('/market');
           return;
         }
+      } else {
+        console.log('User is premium, skipping credit consumption');
       }
     };
     
