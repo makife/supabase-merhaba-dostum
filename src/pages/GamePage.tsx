@@ -460,24 +460,26 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     let gameResult: 'player' | 'opponent' | 'tie';
     let bonusPoints = 0;
     
+    // Kesin kazanan belirleme mantığı
     if (playerScore > opponentScore) {
       gameResult = 'player';
       bonusPoints = 50; // Kazanma bonusu
       setWinner('player');
       playSound('gameWin');
       setTimeout(() => playCelebrationSound(), 500);
-      console.log('🏆 Player wins!');
-    } else if (opponentScore > playerScore) {
+      console.log('🏆 Player wins! Score:', playerScore, 'vs', opponentScore);
+    } else if (playerScore < opponentScore) {
       gameResult = 'opponent';
       setWinner('opponent');
       playSound('gameLose');
       setTimeout(() => playGameLoseSound(), 500);
-      console.log('🏆 Opponent wins!');
+      console.log('🏆 Opponent wins! Score:', opponentScore, 'vs', playerScore);
     } else {
+      // Skorlar eşit ise beraberlik
       gameResult = 'tie';
       bonusPoints = 25; // Beraberlik bonusu
       setWinner('tie');
-      console.log('🏆 It\'s a tie!');
+      console.log('🏆 It\'s a tie! Both scores:', playerScore);
     }
 
     // Apply end game bonus for player
