@@ -222,65 +222,58 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     try {
       console.log('🔍 Starting random match search for gameType:', gameType);
       
-      // Look for existing waiting rooms with random-match mode  
+      // Look for existing waiting rooms with random-match mode
       const { data: waitingRooms, error: searchError } = await supabase
         .from('game_rooms')
-        .select('*, game_participants!inner(*)')
+        .select(`
+          *,
+          game_participants (*)
+        `)
         .eq('game_mode', 'random-match')
         .eq('status', 'waiting')
-        .not('host_id', 'eq', user.id) // Don't join our own room
-        .limit(5);
+        .not('host_id', 'eq', user.id); // Don't join our own room
 
       if (searchError) {
         console.error('❌ Search error:', searchError);
         throw searchError;
       }
 
-      console.log('🔍 Found waiting rooms:', waitingRooms?.length || 0, waitingRooms);
+      console.log('🔍 Found waiting rooms:', waitingRooms?.length || 0);
 
-      // Filter rooms that have space (less than 2 participants) and match game type  
-      // Also exclude rooms where we're already a participant
+      // Filter rooms that have exactly 1 participant and match game type
       const availableRooms = waitingRooms?.filter(room => {
         const participantCount = room.game_participants?.length || 0;
         const gameTypeMatch = (gameType === 'timed' && room.time_limit > 0) || 
                              (gameType === 'score' && room.max_score > 0);
         const isUserInRoom = room.game_participants?.some(p => p.user_id === user.id);
-        console.log(`Room ${room.id}: participants=${participantCount}, gameTypeMatch=${gameTypeMatch}, userInRoom=${isUserInRoom}`);
-        return participantCount < 2 && gameTypeMatch && !isUserInRoom;
+        
+        console.log(`🔍 Room ${room.id}: participants=${participantCount}, gameTypeMatch=${gameTypeMatch}, userInRoom=${isUserInRoom}`);
+        
+        return participantCount === 1 && gameTypeMatch && !isUserInRoom;
       }) || [];
 
-      console.log('✅ Available rooms after filtering:', availableRooms.length);
+      console.log('✅ Available rooms for joining:', availableRooms.length);
 
       // If found a suitable waiting room, join it
       if (availableRooms.length > 0) {
         const room = availableRooms[0];
         console.log('🎯 Joining existing room:', room.id);
         
-        // Check if already in room (safety check)
-        const { data: existingParticipant } = await supabase
+        const { error: joinError } = await supabase
           .from('game_participants')
-          .select('*')
-          .eq('room_id', room.id)
-          .eq('user_id', user.id)
-          .single();
-
-        if (!existingParticipant) {
-          const { error: joinError } = await supabase
-            .from('game_participants')
-            .insert({
-              room_id: room.id,
-              user_id: user.id,
-              score: 0
-            });
-          
-          if (joinError) {
-            console.error('❌ Join error:', joinError);
-            throw joinError;
-          }
+          .insert({
+            room_id: room.id,
+            user_id: user.id,
+            score: 0
+          });
+        
+        if (joinError) {
+          console.error('❌ Join error:', joinError);
+          throw joinError;
         }
 
         setCurrentRoom(room);
-        console.log('✅ Successfully joined room with real player');
+        console.log('✅ Successfully joined room with real player!');
         return true; // Found real player!
       }
 
