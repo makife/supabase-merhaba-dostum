@@ -243,11 +243,15 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       // Filter rooms that have exactly 1 participant and match game type
       const availableRooms = waitingRooms?.filter(room => {
         const participantCount = room.game_participants?.length || 0;
-        const gameTypeMatch = (gameType === 'timed' && room.time_limit > 0) || 
-                             (gameType === 'score' && room.max_score > 0);
+        
+        // More precise game type matching
+        const gameTypeMatch = gameType === 'timed' 
+          ? (room.time_limit > 0 && room.max_score === 0)  // Timed: has time_limit but no max_score
+          : (room.max_score > 0 && room.time_limit === 0); // Score: has max_score but no time_limit
+          
         const isUserInRoom = room.game_participants?.some(p => p.user_id === user.id);
         
-        console.log(`🔍 Room ${room.id}: participants=${participantCount}, gameTypeMatch=${gameTypeMatch}, userInRoom=${isUserInRoom}`);
+        console.log(`🔍 Room ${room.id}: participants=${participantCount}, gameType=${gameType}, time_limit=${room.time_limit}, max_score=${room.max_score}, match=${gameTypeMatch}, userInRoom=${isUserInRoom}`);
         
         return participantCount === 1 && gameTypeMatch && !isUserInRoom;
       }) || [];
@@ -288,6 +292,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           host_id: user.id,
           current_grid: grid.flat(),
           status: 'waiting',
+          // Set only the relevant field based on game type to avoid confusion
           max_score: gameType === 'score' ? 500 : 0,
           time_limit: gameType === 'timed' ? 120 : 0
         })

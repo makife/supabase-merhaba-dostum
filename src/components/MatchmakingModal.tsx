@@ -98,13 +98,10 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
           const pollForParticipants = setInterval(async () => {
             try {
               if (currentRoom) {
-                console.log('📊 Checking participants for room:', currentRoom.id);
                 const { data: participants } = await supabase
                   .from('game_participants')
                   .select('user_id')
                   .eq('room_id', currentRoom.id);
-                
-                console.log('📊 Current participants:', participants?.length || 0);
                 
                 if (participants && participants.length >= 2) {
                   // Found second participant!
