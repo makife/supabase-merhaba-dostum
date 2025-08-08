@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserPurchases } from '@/hooks/useUserPurchases';
 import { supabase } from '@/integrations/supabase/client';
+import { useUser } from '@/contexts/UserContext';
 
 interface ThemeContextType {
   theme: string;
@@ -25,7 +26,7 @@ export const useThemeContext = () => {
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
   const { hasPurchased } = useUserPurchases();
-  const { isPremium } = require('@/contexts/UserContext').useUser();
+  const { isPremium } = useUser();
   const [theme, setTheme] = useState('default');
   const [avatarFrame, setAvatarFrame] = useState('none');
   const [soundPack, setSoundPack] = useState('default');
