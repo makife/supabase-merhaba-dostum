@@ -164,6 +164,12 @@ const GamePage = ({ gameMode }: GamePageProps) => {
             setOpponentAvatar(opponentProfile.avatar_url);
           }
         }
+        
+        // Update opponent score from participants in private room
+        if (opponent && opponent.score !== undefined && gameMode === 'private-room') {
+          console.log('🔄 Updating opponent score from participants:', opponent.score);
+          setOpponentScore(opponent.score);
+        }
       }
     };
 
