@@ -4,8 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface UserProfile {
   game_credits: number;
+  bonus_credits: number;
   premium_until: string | null;
   hint_credits: number;
+  last_credit_refresh: string | null;
 }
 
 interface UserContextType {
@@ -13,7 +15,11 @@ interface UserContextType {
   loading: boolean;
   refreshProfile: () => Promise<void>;
   updateCredits: (newCredits: number) => void;
+  addBonusCredits: (bonusCredits: number) => Promise<void>;
   consumeCredit: () => Promise<boolean>;
+  checkAndRefreshCredits: () => Promise<void>;
+  getTotalCredits: () => number;
+  getDisplayCredits: () => { base: number; bonus: number };
   isPremium: boolean;
 }
 
@@ -46,7 +52,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('game_credits, premium_until, hint_credits')
+        .select('game_credits, bonus_credits, premium_until, hint_credits, last_credit_refresh')
         .eq('id', user.id)
         .single();
 
@@ -64,6 +70,61 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     if (profile) {
       setProfile({ ...profile, game_credits: newCredits });
     }
+  };
+
+  const addBonusCredits = async (bonusCredits: number) => {
+    if (!user || !profile) return;
+    
+    try {
+      // Önce ana hakları 5'e tamamla
+      const currentBase = profile.game_credits;
+      const neededForFull = Math.max(0, 5 - currentBase);
+      const newBase = Math.min(5, currentBase + bonusCredits);
+      const remainingBonus = Math.max(0, bonusCredits - neededForFull);
+      const newTotalBonus = profile.bonus_credits + remainingBonus;
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          game_credits: newBase,
+          bonus_credits: newTotalBonus
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      setProfile({ 
+        ...profile, 
+        game_credits: newBase,
+        bonus_credits: newTotalBonus
+      });
+    } catch (error) {
+      console.error('Error adding bonus credits:', error);
+    }
+  };
+
+  const checkAndRefreshCredits = async () => {
+    if (!user) return;
+    
+    try {
+      await supabase.rpc('check_and_refresh_credits', { user_id: user.id });
+      await refreshProfile();
+    } catch (error) {
+      console.error('Error checking credits:', error);
+    }
+  };
+
+  const getTotalCredits = () => {
+    if (!profile) return 0;
+    return profile.game_credits + profile.bonus_credits;
+  };
+
+  const getDisplayCredits = () => {
+    if (!profile) return { base: 0, bonus: 0 };
+    return { 
+      base: profile.game_credits, 
+      bonus: profile.bonus_credits 
+    };
   };
 
   const isPremium = profile?.premium_until ? new Date(profile.premium_until) > new Date() : false;
@@ -84,22 +145,39 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       return true;
     }
     
-    // Kredi kontrolü
-    if (profile.game_credits <= 0) return false;
+    // Toplam kredi kontrolü
+    const totalCredits = getTotalCredits();
+    if (totalCredits <= 0) return false;
     
     try {
-      const newCredits = profile.game_credits - 1;
+      let newGameCredits = profile.game_credits;
+      let newBonusCredits = profile.bonus_credits;
+      
+      // Önce ana hakları kullan
+      if (profile.game_credits > 0) {
+        newGameCredits = profile.game_credits - 1;
+      } else if (profile.bonus_credits > 0) {
+        // Ana haklar bitmiş, bonus hakları kullan
+        newBonusCredits = profile.bonus_credits - 1;
+      }
       
       // Veritabanını güncelle
       const { error } = await supabase
         .from('profiles')
-        .update({ game_credits: newCredits })
+        .update({ 
+          game_credits: newGameCredits,
+          bonus_credits: newBonusCredits
+        })
         .eq('id', user.id);
       
       if (error) throw error;
       
       // Local state'i güncelle
-      setProfile({ ...profile, game_credits: newCredits });
+      setProfile({ 
+        ...profile, 
+        game_credits: newGameCredits,
+        bonus_credits: newBonusCredits
+      });
       return true;
     } catch (error) {
       console.error('Error consuming credit:', error);
@@ -109,7 +187,22 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
   useEffect(() => {
     refreshProfile();
+    // İlk yüklemede kredi kontrolü yap
+    if (user) {
+      checkAndRefreshCredits();
+    }
   }, [user]);
+
+  // Her 15 dakikada bir kredi kontrolü yap
+  useEffect(() => {
+    if (!user || isPremium) return;
+    
+    const interval = setInterval(() => {
+      checkAndRefreshCredits();
+    }, 15 * 60 * 1000); // 15 dakika
+
+    return () => clearInterval(interval);
+  }, [user, isPremium]);
 
   // Real-time subscription for profile changes
   useEffect(() => {
@@ -139,7 +232,18 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   }, [user]);
 
   return (
-    <UserContext.Provider value={{ profile, loading, refreshProfile, updateCredits, consumeCredit, isPremium }}>
+    <UserContext.Provider value={{ 
+      profile, 
+      loading, 
+      refreshProfile, 
+      updateCredits, 
+      addBonusCredits,
+      consumeCredit, 
+      checkAndRefreshCredits,
+      getTotalCredits,
+      getDisplayCredits,
+      isPremium 
+    }}>
       {children}
     </UserContext.Provider>
   );

@@ -181,6 +181,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bonus_credits: number | null
           created_at: string | null
           email: string
           game_credits: number | null
@@ -197,6 +198,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          bonus_credits?: number | null
           created_at?: string | null
           email: string
           game_credits?: number | null
@@ -213,6 +215,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          bonus_credits?: number | null
           created_at?: string | null
           email?: string
           game_credits?: number | null
@@ -534,7 +537,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_and_refresh_credits: {
+        Args: { user_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

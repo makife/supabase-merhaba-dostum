@@ -103,18 +103,28 @@ export const useUserPurchases = () => {
     try {
       // Öğe tipine göre işlem yap
       if (item.type === 'credits') {
-        // Kredi ekle
+        // Yeni hak sistemi: bonus krediler olarak ekle
         const { data: profile } = await supabase
           .from('profiles')
-          .select('game_credits')
+          .select('game_credits, bonus_credits')
           .eq('id', user.id)
           .single();
 
-        const newCredits = (profile?.game_credits || 0) + item.value;
+        const currentBase = profile?.game_credits || 0;
+        const currentBonus = profile?.bonus_credits || 0;
+        
+        // Ana hakları 5'e tamamla, kalanı bonus'a ekle
+        const neededForFull = Math.max(0, 5 - currentBase);
+        const newBase = Math.min(5, currentBase + item.value);
+        const remainingBonus = Math.max(0, item.value - neededForFull);
+        const newTotalBonus = currentBonus + remainingBonus;
 
         await supabase
           .from('profiles')
-          .update({ game_credits: newCredits })
+          .update({ 
+            game_credits: newBase,
+            bonus_credits: newTotalBonus
+          })
           .eq('id', user.id);
 
       } else if (item.type === 'unlimited_time') {
