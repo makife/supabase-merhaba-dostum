@@ -446,7 +446,7 @@ const HomePage = () => {
             }}
             gameType={matchmakingGameType}
           />
-        ) : null}
+        )}
 
         {/* Floating Menu */}
         <FloatingMenu />
