@@ -41,8 +41,7 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
     
     try {
       const newRoomCode = generateRoomCode();
-      // Pass the game type as part of the room mode
-      const room = await createRoom(`private-room-${gameType}`, newRoomCode);
+      const room = await createRoom('private-room', newRoomCode);
       
       if (room && room.room_code) {
         setRoomCode(room.room_code);

@@ -87,10 +87,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           host_id: user.id,
           room_code: roomCode,
           current_grid: grid.flat(),
-          status: 'waiting',
-          // Set max_score and time_limit based on game type for private rooms
-          max_score: gameMode.includes('private-room-score') ? 500 : 100,
-          time_limit: gameMode.includes('private-room-timed') ? 120 : (gameMode.includes('private-room-score') ? 0 : 120)
+          status: 'waiting'
         })
         .select()
         .single();
@@ -98,7 +95,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       if (error) throw error;
 
       // Join the room as a participant
-      await supabase
+      const { error: participantError } = await supabase
         .from('game_participants')
         .insert({
           room_id: room.id,
@@ -106,6 +103,12 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           score: 0
         });
 
+      if (participantError) {
+        console.error('Error joining room as participant:', participantError);
+        throw participantError;
+      }
+
+      console.log('Room created and joined:', room.id, room.room_code);
       setCurrentRoom(room);
       
       toast({
@@ -155,15 +158,21 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         .single();
 
       if (!existingParticipant) {
-        await supabase
+        const { error: joinError } = await supabase
           .from('game_participants')
           .insert({
             room_id: room.id,
             user_id: user.id,
             score: 0
           });
+
+        if (joinError) {
+          console.error('Error joining room:', joinError);
+          throw joinError;
+        }
       }
 
+      console.log('Joined room:', room.id, room.room_code);
       setCurrentRoom(room);
       
       toast({
@@ -370,7 +379,19 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     };
   }, [currentRoom]);
 
-  // Fetch participants
+  // Fetch participants when room changes
+  useEffect(() => {
+    if (currentRoom) {
+      console.log('Current room changed, fetching participants:', currentRoom.id);
+      fetchParticipants();
+      setIsConnected(true);
+    } else {
+      setParticipants([]);
+      setIsConnected(false);
+    }
+  }, [currentRoom]);
+
+  // Fetch participants function
   const fetchParticipants = async () => {
     if (!currentRoom) return;
 
@@ -381,21 +402,15 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         .eq('room_id', currentRoom.id);
 
       if (!error && data) {
+        console.log('Participants fetched:', data.length, data);
         setParticipants(data);
+      } else {
+        console.error('Error fetching participants:', error);
       }
     } catch (error) {
       console.error('Error fetching participants:', error);
     }
   };
-
-  useEffect(() => {
-    if (currentRoom) {
-      fetchParticipants();
-      setIsConnected(true);
-    } else {
-      setIsConnected(false);
-    }
-  }, [currentRoom]);
 
   const value = {
     currentRoom,

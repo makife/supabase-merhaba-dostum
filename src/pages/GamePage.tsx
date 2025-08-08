@@ -105,9 +105,9 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const [currentWord, setCurrentWord] = useState('');
   const [playerScore, setPlayerScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(gameType === 'timed' ? 120 : 0); // Only use timer for timed mode
-  const [gameStarted, setGameStarted] = useState(false); // Always start as false for private rooms
-  const [waitingForPlayer, setWaitingForPlayer] = useState(false); // Will be set based on participants
+  const [timeLeft, setTimeLeft] = useState(gameType === 'timed' ? 120 : 0);
+  const [gameStarted, setGameStarted] = useState(false);
+  const [waitingForPlayer, setWaitingForPlayer] = useState(false);
   const [gameEnded, setGameEnded] = useState(false);
   const [winner, setWinner] = useState<'player' | 'opponent' | 'tie' | null>(null);
   const [playerAvatar, setPlayerAvatar] = useState<string>('');
@@ -166,32 +166,29 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     };
   }, []); // Empty dependency array to run only once
 
-  // Monitor participants for private room
+  // Private room logic - SIMPLE AND CLEAR
   useEffect(() => {
+    console.log('=== PRIVATE ROOM CHECK ===');
+    console.log('Game mode:', gameMode);
+    console.log('Participants count:', participants.length);
+    console.log('Participants:', participants);
+    
     if (gameMode === 'private-room') {
-      console.log('Private room check - participants:', participants.length);
-      
       if (participants.length >= 2) {
-        // İki kişi de odada - oyuna başla
-        console.log('İki oyuncu hazır, oyun başlıyor!');
+        console.log('✅ 2 players ready - START GAME');
         setWaitingForPlayer(false);
         setGameStarted(true);
-        
-        toast({
-          title: 'Oyun Başlıyor!',
-          description: 'İki oyuncu da hazır - oyuna başlayabilirsiniz!',
-        });
       } else {
-        // Tek kişi - ikinci oyuncuyu bekle
-        console.log('İkinci oyuncu bekleniyor...');
+        console.log('⏳ Waiting for second player');
         setWaitingForPlayer(true);
         setGameStarted(false);
       }
     } else {
-      // Diğer oyun modları için direkt başla
+      // Other game modes start immediately
       setGameStarted(true);
       setWaitingForPlayer(false);
     }
+    console.log('=== END CHECK ===');
   }, [participants, gameMode]);
 
   // Timer effect - only for timed mode
