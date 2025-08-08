@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { GameProvider } from "@/contexts/GameContext";
 import { MusicProvider } from "@/contexts/MusicContext";
+import { UserProvider } from "@/contexts/UserContext";
 import { useTheme } from "@/hooks/useTheme";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AuthPage from "@/pages/AuthPage";
@@ -98,13 +99,15 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-            <ThemeProvider>
-              <MusicProvider>
-                <GameProvider>
-                  <AppRoutes />
-                </GameProvider>
-              </MusicProvider>
-            </ThemeProvider>
+            <UserProvider>
+              <ThemeProvider>
+                <MusicProvider>
+                  <GameProvider>
+                    <AppRoutes />
+                  </GameProvider>
+                </MusicProvider>
+              </ThemeProvider>
+            </UserProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

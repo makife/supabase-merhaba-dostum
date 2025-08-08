@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUser } from '@/contexts/UserContext';
 import { useUserPurchases } from '@/hooks/useUserPurchases';
 import { useAdMob } from '@/hooks/useAdMob';
 import { supabase } from '@/integrations/supabase/client';
@@ -55,10 +56,9 @@ const MarketPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { profile, isPremium, refreshProfile } = useUser();
   const { isAdLoading, isAdReady, initializeAdMob, loadRewardedAd, showRewardedAd } = useAdMob();
   const { processPurchase, hasPurchased, loading: purchaseLoading } = useUserPurchases();
-  const [userCredits, setUserCredits] = useState(5);
-  const [isPremium, setIsPremium] = useState(false);
 
   const marketItems: MarketItem[] = [
     // Oyun Hakları
@@ -295,31 +295,11 @@ const MarketPage = () => {
     }
   ];
 
-  // Load user profile and initialize AdMob
+  // Initialize AdMob
   useEffect(() => {
-    loadUserProfile();
     initializeAdMob();
     loadRewardedAd();
-  }, [user, initializeAdMob, loadRewardedAd]);
-
-  const loadUserProfile = async () => {
-    if (!user) return;
-
-    try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('game_credits, premium_until')
-        .eq('id', user.id)
-        .single();
-
-      if (!error && profile) {
-        setUserCredits(profile.game_credits || 0);
-        setIsPremium(profile.premium_until ? new Date(profile.premium_until) > new Date() : false);
-      }
-    } catch (error) {
-      console.error('Error loading profile:', error);
-    }
-  };
+  }, [initializeAdMob, loadRewardedAd]);
 
   const handlePurchase = async (item: MarketItem) => {
     if (!user) {
@@ -334,7 +314,7 @@ const MarketPage = () => {
     // Yeni satın alma sistemi kullan
     const success = await processPurchase(item);
     if (success) {
-      await loadUserProfile(); // Profili yenile
+      await refreshProfile(); // Profili yenile
     }
   };
 
@@ -410,10 +390,10 @@ const MarketPage = () => {
                   onClick={() => handlePurchase(item)}
                   size="sm"
                   className="mt-1 text-xs px-2 py-1 h-7"
-                  disabled={(item.currency === 'credits' && userCredits < item.price) || purchaseLoading || hasPurchased(item.id)}
+                  disabled={(item.currency === 'credits' && (profile?.game_credits || 0) < item.price) || purchaseLoading || hasPurchased(item.id)}
                 >
                   {hasPurchased(item.id) ? 'Satın Alındı' :
-                   (item.currency === 'credits' && userCredits < item.price) ? 'Yetersiz' : 
+                   (item.currency === 'credits' && (profile?.game_credits || 0) < item.price) ? 'Yetersiz' : 
                    purchaseLoading ? 'İşleniyor...' : 'Satın Al'
                   }
                 </Button>
@@ -456,8 +436,17 @@ const MarketPage = () => {
                       {isPremium ? "Premium Üye" : "Ücretsiz Üye"}
                     </Badge>
                     <span className="text-sm">
-                      <Zap className="w-4 h-4 inline mr-1" />
-                      {userCredits} Hak
+                      {isPremium ? (
+                        <>
+                          <Crown className="w-4 h-4 inline mr-1" />
+                          Sınırsız Hak
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="w-4 h-4 inline mr-1" />
+                          {profile?.game_credits || 0} Hak
+                        </>
+                      )}
                     </span>
                   </div>
                 </div>

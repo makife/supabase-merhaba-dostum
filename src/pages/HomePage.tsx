@@ -4,6 +4,7 @@ import { useMusic } from '@/contexts/MusicContext';
 import GameModeSelector from '@/components/GameModeSelector';
 import { FloatingMenu } from '@/components/FloatingMenu';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUser } from '@/contexts/UserContext';
 import { useSounds } from '@/hooks/useSounds';
 import { useProfilePicture } from '@/hooks/useProfilePicture';
 import { Button } from '@/components/ui/button';
@@ -26,11 +27,11 @@ import {
 
 const HomePage = () => {
   const { user } = useAuth();
+  const { profile, isPremium } = useUser();
   const navigate = useNavigate();
   const { playSound } = useSounds();
   const { startBackgroundMusic } = useMusic();
   const { uploadProfilePicture, uploading } = useProfilePicture();
-  const [userCredits] = useState(5);
   const [selectedMode, setSelectedMode] = useState<string | null>(null);
   const [animatedLetters, setAnimatedLetters] = useState<Array<{id: number, letter: string, x: number, y: number, color: string, font: string, dx: number}>>([]);
   const [userAvatar, setUserAvatar] = useState<string>('');
@@ -238,19 +239,28 @@ const HomePage = () => {
                 Kalan hakların
               </div>
               <div className="flex items-center space-x-2">
-                <div className="flex space-x-1">
-                  {[...Array(5)].map((_, index) => (
-                    <div
-                      key={index}
-                      className={`w-3 h-2 rounded-sm border ${
-                        index < userCredits 
-                          ? 'bg-yellow-500 border-yellow-600 shadow-sm' 
-                          : 'bg-muted border-border'
-                      }`}
-                    />
-                  ))}
-                </div>
-                <span className="text-xs text-muted-foreground">{userCredits}/5</span>
+                {isPremium ? (
+                  <div className="flex items-center space-x-2">
+                    <Crown className="w-4 h-4 text-yellow-500" />
+                    <span className="text-xs text-yellow-500 font-semibold">Sınırsız</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex space-x-1">
+                      {[...Array(5)].map((_, index) => (
+                        <div
+                          key={index}
+                          className={`w-3 h-2 rounded-sm border ${
+                            index < (profile?.game_credits || 0) 
+                              ? 'bg-yellow-500 border-yellow-600 shadow-sm' 
+                              : 'bg-muted border-border'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-xs text-muted-foreground">{profile?.game_credits || 0}/5</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -311,19 +321,28 @@ const HomePage = () => {
                 <div className="text-xs font-medium text-muted-foreground text-center">
                   Kalan hakların
                 </div>
-                <div className="flex space-x-1 justify-center">
-                  {[...Array(5)].map((_, index) => (
-                    <div
-                      key={index}
-                      className={`w-4 h-3 rounded-sm border ${
-                        index < userCredits 
-                          ? 'bg-yellow-500 border-yellow-600 shadow-sm' 
-                          : 'bg-muted border-border'
-                      }`}
-                    />
-                  ))}
-                </div>
-                <span className="text-xs text-center block text-muted-foreground">{userCredits}/5</span>
+                {isPremium ? (
+                  <div className="flex items-center justify-center space-x-2">
+                    <Crown className="w-5 h-5 text-yellow-500" />
+                    <span className="text-sm text-yellow-500 font-semibold">Sınırsız</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex space-x-1 justify-center">
+                      {[...Array(5)].map((_, index) => (
+                        <div
+                          key={index}
+                          className={`w-4 h-3 rounded-sm border ${
+                            index < (profile?.game_credits || 0) 
+                              ? 'bg-yellow-500 border-yellow-600 shadow-sm' 
+                              : 'bg-muted border-border'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-xs text-center block text-muted-foreground">{profile?.game_credits || 0}/5</span>
+                  </>
+                )}
               </div>
             </div>
           </div>

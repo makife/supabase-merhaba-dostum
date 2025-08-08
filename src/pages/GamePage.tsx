@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUser } from '@/contexts/UserContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -29,6 +30,7 @@ interface GamePageProps {
 
 const GamePage = ({ gameMode }: GamePageProps) => {
   const { user } = useAuth();
+  const { consumeCredit, isPremium } = useUser();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { currentRoom, updateScore } = useGame();
@@ -118,10 +120,28 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     fetchPlayerAvatar();
   }, [user]);
 
-  // Music control effect - separate from avatar fetching to prevent re-runs
+  // Music control effect and credit consumption
   useEffect(() => {
-    // Fade out background music when entering game
-    fadeOutBackgroundMusic(1500); // 1.5 saniyede yavaşça kapan
+    const initializeGame = async () => {
+      // Fade out background music when entering game
+      fadeOutBackgroundMusic(1500); // 1.5 saniyede yavaşça kapan
+      
+      // Consume credit if not premium
+      if (!isPremium) {
+        const creditConsumed = await consumeCredit();
+        if (!creditConsumed) {
+          toast({
+            title: 'Yetersiz Hak',
+            description: 'Oyun oynamak için yeterli hakkınız yok. Market\'ten hak satın alabilirsiniz.',
+            variant: 'destructive',
+          });
+          navigate('/market');
+          return;
+        }
+      }
+    };
+    
+    initializeGame();
     
     // Fade in background music again when leaving game (cleanup)
     return () => {
