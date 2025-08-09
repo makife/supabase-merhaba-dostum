@@ -236,6 +236,7 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
             },
             (payload) => {
               const newReaction = payload.new as MessageReaction;
+              console.log('New reaction received:', newReaction);
               setMessageReactions(prev => ({
                 ...prev,
                 [newReaction.message_id]: [
@@ -254,6 +255,7 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
             },
             (payload) => {
               const deletedReaction = payload.old as MessageReaction;
+              console.log('Reaction deleted:', deletedReaction);
               setMessageReactions(prev => ({
                 ...prev,
                 [deletedReaction.message_id]: (prev[deletedReaction.message_id] || [])
