@@ -129,7 +129,7 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
         return {
           icon: Zap,
           title: 'Oyuncu Aranıyor...',
-          description: 'Online oyuncular arasında rakip arıyoruz',
+          description: 'Lütfen bekleyin...',
           color: 'text-primary',
           bgColor: 'bg-primary'
         };
@@ -137,7 +137,7 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
         return {
           icon: Bot,
           title: 'AI ile Oyun Başlıyor',
-          description: 'Bilgisayar rakibiniz hazırlanıyor...',
+          description: 'Yapay zekaya karşı oynayın...',
           color: 'text-secondary',
           bgColor: 'bg-secondary'
         };
