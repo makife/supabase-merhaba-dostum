@@ -231,10 +231,14 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
   // Simple random match finder - returns true if immediate match found
   const findRandomMatch = async (gameType: 'timed' | 'score'): Promise<boolean> => {
-    if (!user) return false;
+    if (!user) {
+      console.log('❌ No user found in findRandomMatch');
+      return false;
+    }
 
     try {
       console.log('🔍 Starting random match search for:', gameType);
+      console.log('🔍 User ID:', user.id);
       
       // Aggressive cleanup first
       await cleanupOldRooms();
@@ -272,7 +276,8 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
       if (suitableRoom) {
         // Join existing room
-        await supabase
+        console.log('🎯 Joining existing room:', suitableRoom.id);
+        const { error: joinError } = await supabase
           .from('game_participants')
           .insert({
             room_id: suitableRoom.id,
@@ -281,14 +286,20 @@ export const GameProvider = ({ children }: GameProviderProps) => {
             is_bot: false
           });
 
+        if (joinError) {
+          console.error('❌ Error joining room:', joinError);
+          throw joinError;
+        }
+
         setCurrentRoom(suitableRoom);
         console.log('✅ Found and joined existing fresh room');
         return true; // Immediate match found
       }
 
       // No suitable room found - create brand new room
+      console.log('🆕 No suitable room found, creating new room...');
       const grid = generateRandomGrid();
-      const { data: newRoom } = await supabase
+      const { data: newRoom, error: roomError } = await supabase
         .from('game_rooms')
         .insert({
           game_mode: 'random-match',
@@ -301,8 +312,14 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         .select()
         .single();
 
+      if (roomError) {
+        console.error('❌ Error creating room:', roomError);
+        throw roomError;
+      }
+
       if (newRoom) {
-        await supabase
+        console.log('🆕 Room created successfully:', newRoom.id);
+        const { error: participantError } = await supabase
           .from('game_participants')
           .insert({
             room_id: newRoom.id,
@@ -310,6 +327,11 @@ export const GameProvider = ({ children }: GameProviderProps) => {
             score: 0,
             is_bot: false
           });
+
+        if (participantError) {
+          console.error('❌ Error adding participant:', participantError);
+          throw participantError;
+        }
 
         setCurrentRoom(newRoom);
         console.log('🆕 Created brand new room for matchmaking');

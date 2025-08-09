@@ -28,6 +28,7 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
 
     const startSearch = async () => {
       console.log('🔍 Starting matchmaking for:', gameType);
+      console.log('🔍 Setting up timers and intervals...');
       setSearchStatus('searching');
       
       // Progress animation
@@ -51,10 +52,12 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
 
       // Auto fallback to AI after 10 seconds
       searchTimeout = setTimeout(async () => {
+        console.log('⏰ 10 second timeout reached - switching to AI');
         setSearchStatus('ai-fallback');
         clearInterval(progressInterval);
         clearInterval(countdownInterval);
         
+        console.log('🤖 Adding AI opponent...');
         // Add AI opponent to current room
         await addAIOpponent();
         
@@ -64,17 +67,22 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
           duration: 2000,
         });
 
+        console.log('🎮 Starting game with AI in 2 seconds...');
         setTimeout(() => {
+          console.log('🎮 Calling onMatchFound(true)...');
           onMatchFound(true);
         }, 2000);
       }, 10000);
 
       // Try to find a match
       try {
+        console.log('🔍 Calling findRandomMatch...');
         const matchFound = await findRandomMatch(gameType);
+        console.log('🔍 findRandomMatch result:', matchFound);
         
         if (matchFound) {
           // Immediate match found
+          console.log('✅ Immediate match found! Clearing timers...');
           clearTimeout(searchTimeout);
           clearInterval(progressInterval);
           clearInterval(countdownInterval);
@@ -87,12 +95,16 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
           });
           
           setTimeout(() => {
+            console.log('🎮 Starting game with real player...');
             onMatchFound(false);
           }, 1500);
+        } else {
+          console.log('❌ No immediate match found, waiting for timeout...');
         }
         // If no immediate match found, continue waiting and let timeout handle AI fallback
       } catch (error) {
         console.error('🚨 Matchmaking error:', error);
+        console.log('🔄 Continuing with normal timeout flow after error');
         // Continue with normal timeout flow on error
       }
     };
