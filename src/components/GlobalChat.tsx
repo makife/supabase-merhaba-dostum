@@ -203,8 +203,12 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
           
           setMessages(prev => [...prev, newMessage]);
           
-          // Play sound for new messages from other users
-          playSound('correctWord');
+          // Play sound for new messages from other users - use fixed callback to avoid dependency
+          try {
+            playSound('correctWord');
+          } catch (e) {
+            console.log('Sound play failed:', e);
+          }
         }
       )
       .on(
@@ -346,7 +350,7 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
       setOnlineUsers(new Set());
       setTypingUsers(new Set());
     };
-  }, [isOpen, user?.id, playSound]);
+  }, [isOpen, user?.id]); // playSound'u dependency'den çıkardım
 
   const fetchMessages = async () => {
     try {
