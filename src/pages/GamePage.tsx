@@ -13,6 +13,7 @@ import { useGame } from '@/contexts/GameContext';
 import { useMusic } from '@/contexts/MusicContext';
 import { useWordValidation } from '@/hooks/useWordValidation';
 import { useSounds } from '@/hooks/useSounds';
+import { useUserPurchases } from '@/hooks/useUserPurchases';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   ArrowLeft, 
@@ -32,6 +33,7 @@ interface GamePageProps {
 const GamePage = ({ gameMode }: GamePageProps) => {
   const { user } = useAuth();
   const { consumeCredit, isPremium } = useUser();
+  const { hasPurchased } = useUserPurchases();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { currentRoom, updateScore, participants, endGame } = useGame();
@@ -648,6 +650,9 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       const newScore = playerScore + result.points;
       setPlayerScore(newScore);
       
+      // Trigger effects if purchased
+      triggerWordEffects();
+      
       // Update score in multiplayer context
       if (currentRoom) {
         await updateScore(newScore);
@@ -705,6 +710,81 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     clearWord();
 
     // AI opponent plays automatically via interval, no manual trigger needed
+  };
+
+  // Trigger word effects (confetti/fireworks) if purchased
+  const triggerWordEffects = () => {
+    // Check if user has purchased confetti effect
+    if (hasPurchased('effect_confetti')) {
+      createConfettiEffect();
+    }
+    
+    // Check if user has purchased fireworks effect
+    if (hasPurchased('effect_fireworks')) {
+      createFireworksEffect();
+    }
+  };
+
+  // Create confetti effect
+  const createConfettiEffect = () => {
+    const confettiContainer = document.createElement('div');
+    confettiContainer.className = 'fixed inset-0 pointer-events-none z-50';
+    document.body.appendChild(confettiContainer);
+
+    // Create 25 confetti pieces
+    for (let i = 0; i < 25; i++) {
+      const confetti = document.createElement('div');
+      confetti.className = `absolute w-2 h-2 rounded-full animate-[confetti_2s_ease-out_forwards] ${
+        i % 4 === 0 ? 'bg-yellow-400' :
+        i % 4 === 1 ? 'bg-red-400' :
+        i % 4 === 2 ? 'bg-blue-400' : 'bg-green-400'
+      }`;
+      confetti.style.left = `${Math.random() * 100}%`;
+      confetti.style.animationDelay = `${Math.random() * 1}s`;
+      confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+      confettiContainer.appendChild(confetti);
+    }
+
+    // Remove effect after animation
+    setTimeout(() => {
+      document.body.removeChild(confettiContainer);
+    }, 3000);
+  };
+
+  // Create fireworks effect
+  const createFireworksEffect = () => {
+    const fireworksContainer = document.createElement('div');
+    fireworksContainer.className = 'fixed inset-0 pointer-events-none z-50';
+    document.body.appendChild(fireworksContainer);
+
+    // Create 3 firework bursts at random positions
+    for (let burst = 0; burst < 3; burst++) {
+      setTimeout(() => {
+        const centerX = Math.random() * window.innerWidth;
+        const centerY = Math.random() * window.innerHeight;
+
+        // Create 12 firework particles per burst
+        for (let i = 0; i < 12; i++) {
+          const firework = document.createElement('div');
+          const colors = ['bg-yellow-400', 'bg-red-400', 'bg-blue-400', 'bg-green-400', 'bg-purple-400', 'bg-pink-400'];
+          firework.className = `firework ${colors[Math.floor(Math.random() * colors.length)]}`;
+          firework.style.left = `${centerX}px`;
+          firework.style.top = `${centerY}px`;
+          
+          // Random direction for particle spread
+          const angle = (i / 12) * 2 * Math.PI;
+          const distance = 50 + Math.random() * 50;
+          firework.style.transform = `translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px)`;
+          
+          fireworksContainer.appendChild(firework);
+        }
+      }, burst * 300); // Stagger the bursts
+    }
+
+    // Remove effect after animation
+    setTimeout(() => {
+      document.body.removeChild(fireworksContainer);
+    }, 2000);
   };
 
   // Format time
