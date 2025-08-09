@@ -468,8 +468,16 @@ const GamePage = ({ gameMode }: GamePageProps) => {
           
           if (prev <= 1) {
             setGameEnded(true);
-            // Süreli oyun bitişinde mevcut skorları direkt geç
-            checkWinnerWithScores(playerScore, opponentScore);
+            // Use setTimeout to ensure we get the latest scores
+            setTimeout(() => {
+              setPlayerScore(currentPlayerScore => {
+                setOpponentScore(currentOpponentScore => {
+                  checkWinnerWithScores(currentPlayerScore, currentOpponentScore);
+                  return currentOpponentScore;
+                });
+                return currentPlayerScore;
+              });
+            }, 100);
             return 0;
           }
           return prev - 1;
