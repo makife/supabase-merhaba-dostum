@@ -179,14 +179,8 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
 
     const setupPresence = async () => {
       try {
-        // Get username for presence
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('username, email')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        const displayName = profileData?.username || profileData?.email?.split('@')[0] || 'Anonim';
+        // Cache username to avoid repeated API calls
+        const cachedUsername = user.user_metadata?.username || user.email?.split('@')[0] || 'Anonim';
 
         channel = supabase
           .channel('global-chat', {
@@ -312,7 +306,7 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
                 try {
                   await channel.track({
                     user_id: user.id,
-                    username: displayName,
+                    username: cachedUsername,
                     typing: false,
                     online_at: new Date().toISOString(),
                   });
@@ -364,14 +358,8 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
 
     setIsLoading(true);
     try {
-      // Get username from profiles table
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('username, email')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      const displayName = profileData?.username || profileData?.email?.split('@')[0] || 'Anonim';
+      // Use cached username to avoid API call
+      const displayName = user.user_metadata?.username || user.email?.split('@')[0] || 'Anonim';
 
       const { data, error } = await supabase
         .from('global_chat')
@@ -404,16 +392,10 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
     setNewMessage(e.target.value);
     
     // Typing indicator
-    if (user) {
+    if (user && currentChannel && currentChannel.state === 'joined') {
       try {
-        // Get username from profiles table  
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('username, email')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        const displayName = profileData?.username || profileData?.email?.split('@')[0] || 'Anonim';
+        // Use cached username to avoid API call
+        const displayName = user.user_metadata?.username || user.email?.split('@')[0] || 'Anonim';
         
         if (currentChannel && currentChannel.state === 'joined') {
           // Send typing status
@@ -465,6 +447,17 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
   const addReaction = async (messageId: string, emoji: string) => {
     if (!user) return;
 
+    // Check if user already has this reaction
+    const existingReaction = messageReactions[messageId]?.find(
+      r => r.user_id === user.id && r.emoji === emoji
+    );
+
+    if (existingReaction) {
+      toast.info('Bu emoji reaksiyonunu zaten vermişsiniz');
+      setShowEmojiPicker(null);
+      return;
+    }
+
     try {
       // Optimistic update - add reaction immediately
       const tempReaction: MessageReaction = {
@@ -497,7 +490,14 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
           ...prev,
           [messageId]: (prev[messageId] || []).filter(r => r.id !== tempReaction.id)
         }));
-        throw error;
+        
+        // Handle duplicate key error
+        if (error.code === '23505') {
+          toast.info('Bu emoji reaksiyonunu zaten vermişsiniz');
+        } else {
+          throw error;
+        }
+        return;
       }
 
       playSound('buttonClick');
