@@ -407,7 +407,7 @@ const TournamentPage = () => {
                 </CardTitle>
                 <CardDescription>
                   {currentTournament.status === 'waiting' ? 
-                    'Diğer oyuncular bekleniyor veya botlarla başlatılacak' : 
+                    'Diğer oyuncular bekleniyor' : 
                     'Turnuva başladı!'
                   }
                 </CardDescription>
