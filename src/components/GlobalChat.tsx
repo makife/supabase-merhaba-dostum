@@ -283,20 +283,35 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
           )
           .on('presence', { event: 'sync' }, () => {
             const newState = channel.presenceState();
+            console.log('Presence sync - raw state:', newState);
+            
             const typing = new Set<string>();
             const online = new Set<string>();
             
             Object.values(newState).forEach((presences: any) => {
+              console.log('Processing presences array:', presences);
               presences.forEach((presence: any) => {
-                online.add(presence.username);
-                if (presence.typing) {
-                  typing.add(presence.username);
+                console.log('Processing presence:', presence);
+                if (presence.username) {
+                  online.add(presence.username);
+                  console.log('Added to online:', presence.username);
+                  if (presence.typing) {
+                    typing.add(presence.username);
+                  }
                 }
               });
             });
             
+            console.log('Final online users:', Array.from(online));
+            console.log('Final typing users:', Array.from(typing));
             setTypingUsers(typing);
             setOnlineUsers(online);
+          })
+          .on('presence', { event: 'join' }, ({ newPresences }) => {
+            console.log('User joined presence:', newPresences);
+          })
+          .on('presence', { event: 'leave' }, ({ leftPresences }) => {
+            console.log('User left presence:', leftPresences);
           })
           .subscribe(async (status) => {
             if (status === 'SUBSCRIBED') {
@@ -304,12 +319,21 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
               // Add a small delay to ensure channel is fully ready
               setTimeout(async () => {
                 try {
-                  await channel.track({
+                  console.log('Attempting to track presence:', {
                     user_id: user.id,
                     username: cachedUsername,
                     typing: false,
                     online_at: new Date().toISOString(),
                   });
+                  
+                  const result = await channel.track({
+                    user_id: user.id,
+                    username: cachedUsername,
+                    typing: false,
+                    online_at: new Date().toISOString(),
+                  });
+                  
+                  console.log('Track result:', result);
                 } catch (error) {
                   console.error('Error tracking presence:', error);
                 }
