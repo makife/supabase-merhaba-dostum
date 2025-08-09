@@ -243,28 +243,12 @@ const HomePage = () => {
                   </div>
                 </div>
 
-                {/* Sağ taraf - Oyun hakları */}
-                <div className="flex items-center space-x-2 flex-shrink-0">
-                  {isPremium ? (
+                {/* Sağ taraf - Hak durumu (sadece premium badge) */}
+                <div className="flex-shrink-0">
+                  {isPremium && (
                     <div className="flex items-center space-x-1">
                       <Crown className="w-4 h-4 text-yellow-500" />
-                      <span className="text-xs text-yellow-500 font-semibold">Sınırsız</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2">
-                      <div className="flex space-x-1">
-                        {[...Array(5)].map((_, index) => (
-                          <div
-                            key={index}
-                            className={`w-3 h-2 rounded-sm border transition-all duration-300 ${
-                              index < (profile?.game_credits || 0) 
-                                ? 'bg-yellow-500 border-yellow-600 shadow-sm' 
-                                : 'bg-muted border-border'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <span className="text-xs text-muted-foreground">{profile?.game_credits || 0}/5</span>
+                      <span className="text-xs text-yellow-500 font-semibold">Premium</span>
                     </div>
                   )}
                 </div>
