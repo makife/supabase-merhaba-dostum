@@ -1,4 +1,5 @@
 import { SoundPackSelector } from '@/components/SoundPackSelector';
+import { MusicPackSelector } from '@/components/MusicPackSelector';
 import { ThemeSelector } from '@/components/ThemeSelector';
 import { AvatarFrameSelector } from '@/components/AvatarFrameSelector';
 import { useState, useEffect, useRef } from 'react';
@@ -384,7 +385,15 @@ const SettingsPage = () => {
             {/* Sound Pack Selector */}
             {soundsEnabled && (
               <>
-          <SoundPackSelector />
+                <SoundPackSelector />
+                <Separator />
+              </>
+            )}
+
+            {/* Music Pack Selector */}
+            {musicEnabled && (
+              <>
+                <MusicPackSelector />
                 <Separator />
               </>
             )}

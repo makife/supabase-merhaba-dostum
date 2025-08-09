@@ -73,7 +73,7 @@ export const useUserPurchases = () => {
           active_theme: data.active_theme || 'default',
           active_avatar_frame: data.active_avatar_frame || 'none',
           active_sound_pack: data.active_sound_pack || 'default',
-          active_music_pack: data.active_music_pack || 'default'
+          active_music_pack: (data as any).active_music_pack || 'default'
         });
       }
     } catch (error) {

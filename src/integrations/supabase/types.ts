@@ -602,6 +602,7 @@ export type Database = {
       user_settings: {
         Row: {
           active_avatar_frame: string | null
+          active_music_pack: string | null
           active_sound_pack: string | null
           active_theme: string | null
           created_at: string
@@ -611,6 +612,7 @@ export type Database = {
         }
         Insert: {
           active_avatar_frame?: string | null
+          active_music_pack?: string | null
           active_sound_pack?: string | null
           active_theme?: string | null
           created_at?: string
@@ -620,6 +622,7 @@ export type Database = {
         }
         Update: {
           active_avatar_frame?: string | null
+          active_music_pack?: string | null
           active_sound_pack?: string | null
           active_theme?: string | null
           created_at?: string
