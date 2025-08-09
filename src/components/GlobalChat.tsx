@@ -31,6 +31,9 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
+  const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Scroll to bottom when new messages arrive
@@ -49,37 +52,86 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
     }
   }, [isOpen]);
 
-  // Set up realtime subscription
+  // Set up realtime subscription and presence
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !user?.id) return;
 
-    const channel = supabase
-      .channel('global-chat')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'global_chat'
-        },
-        (payload) => {
-          const newMessage = payload.new as ChatMessage;
-          
-          // Kendi mesajımızı tekrar ekleme, zaten manuel olarak eklendi
-          if (newMessage.user_id === user?.id) {
-            return;
-          }
-          
-          setMessages(prev => [...prev, newMessage]);
-          
-          // Play sound for new messages from other users
-          playSound('correctWord');
-        }
-      )
-      .subscribe();
+    const setupPresence = async () => {
+      try {
+        // Get username for presence
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('username, email')
+          .eq('id', user.id)
+          .single();
 
+        const displayName = profileData?.username || profileData?.email?.split('@')[0] || 'Anonim';
+
+        const channel = supabase
+          .channel('global-chat')
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'global_chat'
+            },
+            (payload) => {
+              const newMessage = payload.new as ChatMessage;
+              
+              // Kendi mesajımızı tekrar ekleme, zaten manuel olarak eklendi
+              if (newMessage.user_id === user?.id) {
+                return;
+              }
+              
+              setMessages(prev => [...prev, newMessage]);
+              
+              // Play sound for new messages from other users
+              playSound('correctWord');
+            }
+          )
+          .on('presence', { event: 'sync' }, () => {
+            const newState = channel.presenceState();
+            const typing = new Set<string>();
+            const online = new Set<string>();
+            
+            Object.values(newState).forEach((presences: any) => {
+              presences.forEach((presence: any) => {
+                if (presence.user_id !== user.id) {
+                  online.add(presence.username);
+                  if (presence.typing) {
+                    typing.add(presence.username);
+                  }
+                }
+              });
+            });
+            
+            setTypingUsers(typing);
+            setOnlineUsers(online);
+          })
+          .subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+              // Track user presence when subscribed
+              await channel.track({
+                user_id: user.id,
+                username: displayName,
+                typing: false,
+                online_at: new Date().toISOString(),
+              });
+            }
+          });
+
+        return () => {
+          supabase.removeChannel(channel);
+        };
+      } catch (error) {
+        console.error('Error setting up presence:', error);
+      }
+    };
+
+    const cleanup = setupPresence();
     return () => {
-      supabase.removeChannel(channel);
+      cleanup.then(cleanupFn => cleanupFn && cleanupFn());
     };
   }, [isOpen, user?.id, playSound]);
 
@@ -146,6 +198,53 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
     }
   };
 
+  const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewMessage(e.target.value);
+    
+    // Typing indicator
+    if (user) {
+      try {
+        // Get username from profiles table  
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('username, email')
+          .eq('id', user.id)
+          .single();
+
+        const displayName = profileData?.username || profileData?.email?.split('@')[0] || 'Anonim';
+        
+        const channel = supabase.channel('global-chat');
+        
+        // Send typing status
+        channel.track({
+          user_id: user.id,
+          username: displayName,
+          typing: true,
+          online_at: new Date().toISOString(),
+        });
+        
+        // Clear previous timeout
+        if (typingTimeout) {
+          clearTimeout(typingTimeout);
+        }
+        
+        // Set new timeout to stop typing
+        const timeout = setTimeout(() => {
+          channel.track({
+            user_id: user.id,
+            username: displayName,
+            typing: false,
+            online_at: new Date().toISOString(),
+          });
+        }, 2000);
+        
+        setTypingTimeout(timeout);
+      } catch (error) {
+        console.error('Error handling typing indicator:', error);
+      }
+    }
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -169,7 +268,12 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
         <div className="flex items-center justify-between p-4 border-b border-border">
           <div className="flex items-center space-x-2">
             <MessageCircle className="w-5 h-5 text-primary" />
-            <h3 className="font-semibold text-lg">Global Sohbet</h3>
+            <div>
+              <h3 className="font-semibold text-lg">Global Sohbet</h3>
+              <p className="text-xs text-muted-foreground">
+                {onlineUsers.size > 0 ? `${onlineUsers.size} kişi çevrimiçi` : 'Kimse çevrimiçi değil'}
+              </p>
+            </div>
           </div>
           <Button
             variant="ghost"
@@ -194,6 +298,9 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
                   >
                     {message.username}
                   </span>
+                  {onlineUsers.has(message.username) && message.user_id !== user?.id && (
+                    <div className="w-2 h-2 bg-green-500 rounded-full" title="Çevrimiçi"></div>
+                  )}
                   <span className="text-xs text-muted-foreground">
                     {formatTime(message.created_at)}
                   </span>
@@ -203,6 +310,22 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
                 </div>
               </div>
             ))}
+            
+            {/* Typing indicator */}
+            {typingUsers.size > 0 && (
+              <div className="flex items-center space-x-2 text-muted-foreground text-sm italic">
+                <div className="flex space-x-1">
+                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                </div>
+                <span>
+                  {Array.from(typingUsers).slice(0, 2).join(', ')} yazıyor...
+                  {typingUsers.size > 2 && ` ve ${typingUsers.size - 2} kişi daha`}
+                </span>
+              </div>
+            )}
+            
             <div ref={messagesEndRef} />
           </div>
         </ScrollArea>
@@ -214,7 +337,7 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
           <div className="flex space-x-2">
             <Input
               value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
+              onChange={handleInputChange}
               onKeyPress={handleKeyPress}
               placeholder="Mesajınızı yazın..."
               maxLength={200}
