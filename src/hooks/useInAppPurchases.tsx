@@ -1,29 +1,9 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
+import { Purchases, CustomerInfo, PurchasesOffering } from '@revenuecat/purchases-capacitor';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
 import { useUserPurchases } from '@/hooks/useUserPurchases';
-
-// Capacitor In-App Purchase types
-declare global {
-  interface Window {
-    Capacitor?: any;
-    InAppPurchase?: {
-      init: () => Promise<any>;
-      ready: () => Promise<any>;
-      getProducts: (productIds: string[]) => Promise<any>;
-      buy: (productId: string) => Promise<any>;
-      subscribe: (productId: string) => Promise<any>;
-      restorePurchases: () => Promise<any>;
-      finishTransaction: (transactionId: string) => Promise<any>;
-      when: (productId: string) => {
-        approved: (callback: (purchase: any) => void) => void;
-        verified: (callback: (purchase: any) => void) => void;
-        updated: (callback: (purchase: any) => void) => void;
-      };
-    };
-  }
-}
 
 interface Product {
   id: string;
@@ -31,48 +11,18 @@ interface Product {
   description: string;
   price: string;
   currency: string;
-  type: 'CONSUMABLE' | 'NON_CONSUMABLE' | 'SUBSCRIPTION';
-}
-
-interface Purchase {
-  transactionId: string;
-  productId: string;
-  quantity: number;
-  state: 'PURCHASED' | 'PENDING' | 'CANCELLED';
 }
 
 export const useInAppPurchases = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
+  const [offerings, setOfferings] = useState<PurchasesOffering | null>(null);
   const { toast } = useToast();
   const { refreshProfile } = useUser();
   const { processPurchase } = useUserPurchases();
 
-  // Define product IDs for your app
-  const PRODUCT_IDS = [
-    'credits_10',
-    'credits_25', 
-    'credits_50',
-    'unlimited_1h',
-    'unlimited_24h',
-    'premium_month',
-    'theme_dark_ocean',
-    'theme_sunset',
-    'theme_forest',
-    'avatar_floral_roses',
-    'avatar_blue_berries',
-    'avatar_gold_simple',
-    'sound_pack_space',
-    'sound_pack_nature',
-    'effect_fireworks',
-    'effect_confetti',
-    'badge_wordmaster',
-    'hint_pack_basic',
-    'hint_pack_premium'
-  ];
-
-  // Initialize in-app purchases
+  // Initialize RevenueCat
   const initializePurchases = useCallback(async () => {
     if (!Capacitor.isNativePlatform() || isInitialized) {
       return;
@@ -81,116 +31,64 @@ export const useInAppPurchases = () => {
     try {
       setIsLoading(true);
       
-      // Check if cordova-plugin-purchase is available
-      if (!window.InAppPurchase) {
-        console.log('In-app purchase plugin not available');
-        return;
-      }
+      // RevenueCat API keys - Bu gerçek projede environment variables olmalı
+      const REVENUECAT_API_KEY = Capacitor.getPlatform() === 'ios' 
+        ? 'appl_your_ios_api_key_here'  // iOS için
+        : 'goog_your_android_api_key_here';  // Android için
 
-      // Initialize the plugin
-      await window.InAppPurchase.init();
-      
-      // Set up event listeners for purchase events
-      PRODUCT_IDS.forEach(productId => {
-        if (window.InAppPurchase) {
-          window.InAppPurchase.when(productId).approved(async (purchase: Purchase) => {
-            // Handle approved purchase
-            console.log('Purchase approved:', purchase);
-            await handlePurchaseApproved(purchase);
-          });
-
-          window.InAppPurchase.when(productId).verified(async (purchase: Purchase) => {
-            // Handle verified purchase
-            console.log('Purchase verified:', purchase);
-            await handlePurchaseVerified(purchase);
-          });
-        }
+      await Purchases.configure({
+        apiKey: REVENUECAT_API_KEY,
       });
 
-      // Load products
-      await loadProducts();
+      // Set user ID if available
+      const userInfo = await Purchases.getCustomerInfo();
+      console.log('Customer info:', userInfo);
+
+      // Load offerings
+      await loadOfferings();
       
-      // Mark as ready
-      await window.InAppPurchase.ready();
       setIsInitialized(true);
+      console.log('RevenueCat initialized successfully');
       
-      console.log('In-app purchases initialized successfully');
     } catch (error) {
-      console.error('Failed to initialize in-app purchases:', error);
+      console.error('Failed to initialize RevenueCat:', error);
       toast({
-        title: 'Hata',
-        description: 'Satın alma sistemi başlatılamadı',
-        variant: 'destructive',
+        title: 'Bilgi',
+        description: 'Mobil satın alma sistemi web\'de çalışmaz',
+        variant: 'default',
       });
     } finally {
       setIsLoading(false);
     }
   }, [isInitialized, toast]);
 
-  // Load available products
-  const loadProducts = useCallback(async () => {
-    if (!window.InAppPurchase) return;
-
+  // Load offerings (products)
+  const loadOfferings = useCallback(async () => {
     try {
-      const productList = await window.InAppPurchase.getProducts(PRODUCT_IDS);
-      setProducts(productList || []);
-      console.log('Products loaded:', productList);
-    } catch (error) {
-      console.error('Failed to load products:', error);
-    }
-  }, []);
-
-  // Handle purchase approval
-  const handlePurchaseApproved = useCallback(async (purchase: Purchase) => {
-    try {
-      // Map the purchase to our internal item format
-      const item = {
-        id: purchase.productId,
-        title: `Product ${purchase.productId}`,
-        description: 'Mobile purchase',
-        price: 0, // Will be handled by app store
-        currency: 'premium' as const,
-        type: getItemType(purchase.productId),
-        value: getItemValue(purchase.productId)
-      };
-
-      // Process the purchase in our system
-      await processPurchase(item);
-      
-      toast({
-        title: 'Satın Alma Başarılı',
-        description: 'Ürününüz hesabınıza eklendi',
-      });
-
-      // Refresh user profile
-      await refreshProfile();
-      
-    } catch (error) {
-      console.error('Failed to process purchase:', error);
-      toast({
-        title: 'Hata',
-        description: 'Satın alma işlenirken hata oluştu',
-        variant: 'destructive',
-      });
-    }
-  }, [processPurchase, refreshProfile, toast]);
-
-  // Handle purchase verification
-  const handlePurchaseVerified = useCallback(async (purchase: Purchase) => {
-    try {
-      // Finish the transaction
-      if (window.InAppPurchase) {
-        await window.InAppPurchase.finishTransaction(purchase.transactionId);
+      const offerings = await Purchases.getOfferings();
+      if (offerings.current) {
+        setOfferings(offerings.current);
+        
+        // Convert to our Product format
+        const productList = offerings.current.availablePackages.map(pkg => ({
+          id: pkg.product.identifier,
+          title: pkg.product.title,
+          description: pkg.product.description,
+          price: pkg.product.priceString,
+          currency: pkg.product.currencyCode
+        }));
+        
+        setProducts(productList);
+        console.log('Offerings loaded:', productList);
       }
-      console.log('Transaction finished:', purchase.transactionId);
     } catch (error) {
-      console.error('Failed to finish transaction:', error);
+      console.error('Failed to load offerings:', error);
     }
   }, []);
 
   // Purchase a product
   const purchaseProduct = useCallback(async (productId: string) => {
-    if (!window.InAppPurchase || !isInitialized) {
+    if (!isInitialized) {
       toast({
         title: 'Hata',
         description: 'Satın alma sistemi hazır değil',
@@ -199,29 +97,78 @@ export const useInAppPurchases = () => {
       return false;
     }
 
+    if (!offerings) {
+      toast({
+        title: 'Hata', 
+        description: 'Ürünler yüklenemedi',
+        variant: 'destructive',
+      });
+      return false;
+    }
+
     try {
       setIsLoading(true);
       
+      // Find the package
+      const packageToPurchase = offerings.availablePackages.find(
+        pkg => pkg.product.identifier === productId
+      );
+
+      if (!packageToPurchase) {
+        throw new Error('Product not found');
+      }
+
       console.log('Attempting to purchase:', productId);
-      await window.InAppPurchase.buy(productId);
+      const purchaserInfo = await Purchases.purchasePackage({
+        aPackage: packageToPurchase
+      });
+
+      // Purchase completed - process it
+      const item = {
+        id: productId,
+        title: packageToPurchase.product.title,
+        description: packageToPurchase.product.description,
+        price: 0, // Handled by app store
+        currency: 'premium' as const,
+        type: getItemType(productId),
+        value: getItemValue(productId)
+      };
+
+      await processPurchase(item);
+      
+      toast({
+        title: 'Satın Alma Başarılı',
+        description: 'Ürününüz hesabınıza eklendi',
+      });
+
+      await refreshProfile();
       
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Purchase failed:', error);
-      toast({
-        title: 'Satın Alma Hatası',
-        description: 'Satın alma işlemi iptal edildi veya başarısız oldu',
-        variant: 'destructive',
-      });
+      
+      // Handle user cancellation
+      if (error.code === 'PURCHASE_CANCELLED_ERROR') {
+        toast({
+          title: 'İptal Edildi',
+          description: 'Satın alma işlemi iptal edildi',
+        });
+      } else {
+        toast({
+          title: 'Satın Alma Hatası',
+          description: 'Satın alma işlemi başarısız oldu',
+          variant: 'destructive',
+        });
+      }
       return false;
     } finally {
       setIsLoading(false);
     }
-  }, [isInitialized, toast]);
+  }, [isInitialized, offerings, processPurchase, refreshProfile, toast]);
 
   // Restore purchases
   const restorePurchases = useCallback(async () => {
-    if (!window.InAppPurchase || !isInitialized) {
+    if (!isInitialized) {
       toast({
         title: 'Hata',
         description: 'Satın alma sistemi hazır değil',
@@ -232,11 +179,11 @@ export const useInAppPurchases = () => {
 
     try {
       setIsLoading(true);
-      await window.InAppPurchase.restorePurchases();
+      await Purchases.restorePurchases();
       
       toast({
         title: 'Başarılı',
-        description: 'Önceki satın alımlarınız geri yüklendi',
+        description: 'Önceki satın alımlarınız kontrol edildi',
       });
       
       await refreshProfile();
@@ -250,7 +197,7 @@ export const useInAppPurchases = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [isInitialized, refreshProfile, toast]);
+  }, [isInitialized, processPurchase, refreshProfile, toast]);
 
   // Helper function to get item type from product ID
   const getItemType = (productId: string) => {
@@ -277,13 +224,19 @@ export const useInAppPurchases = () => {
     return 1;
   };
 
+  // Initialize on mount
+  useEffect(() => {
+    initializePurchases();
+  }, [initializePurchases]);
+
   return {
     isInitialized,
     isLoading,
     products,
+    offerings,
     initializePurchases,
     purchaseProduct,
     restorePurchases,
-    loadProducts,
+    loadOfferings,
   };
 };
