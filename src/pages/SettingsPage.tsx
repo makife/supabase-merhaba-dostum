@@ -387,12 +387,6 @@ const SettingsPage = () => {
               <>
                 <SoundPackSelector />
                 <Separator />
-              </>
-            )}
-
-            {/* Music Pack Selector */}
-            {musicEnabled && (
-              <>
                 <MusicPackSelector />
                 <Separator />
               </>
