@@ -105,13 +105,26 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
   };
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !user || !chatId) return;
+    if (!newMessage.trim() || !user || !chatId) {
+      console.log('Private message send blocked:', { 
+        messageEmpty: !newMessage.trim(), 
+        noUser: !user, 
+        noChatId: !chatId 
+      });
+      return;
+    }
 
     const trimmedMessage = newMessage.trim();
     if (trimmedMessage.length > 500) {
       toast.error('Mesaj 500 karakterden uzun olamaz');
       return;
     }
+
+    console.log('Sending private message:', {
+      chatId,
+      senderId: user.id,
+      message: trimmedMessage
+    });
 
     setIsLoading(true);
     try {
@@ -125,17 +138,21 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
         .select()
         .single();
 
+      console.log('Private message insert result:', { data, error });
+
       if (error) throw error;
 
       // Add message immediately to UI
       if (data) {
+        console.log('Adding private message to UI:', data);
         setMessages(prev => [...prev, data]);
       }
 
       setNewMessage('');
       playSound('buttonClick');
+      console.log('Private message sent successfully');
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('Error sending private message:', error);
       toast.error('Mesaj gönderilirken hata oluştu');
     } finally {
       setIsLoading(false);
