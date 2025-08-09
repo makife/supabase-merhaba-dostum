@@ -210,6 +210,43 @@ export const useSounds = () => {
     }
   };
 
+  // Uzay teması için özel sesler
+  const playSpaceCorrectSound = () => {
+    if (!soundsEnabled) return;
+    // Yükselen frekanslı uzay zafer sesi
+    setTimeout(() => playGeneratedSound(800, 0.1, 'square'), 0);
+    setTimeout(() => playGeneratedSound(1200, 0.1, 'square'), 100);
+    setTimeout(() => playGeneratedSound(1600, 0.2, 'square'), 200);
+  };
+
+  const playSpaceWinSound = () => {
+    if (!soundsEnabled) return;
+    // Uzay zafer fanfarı - elektronik melodi
+    setTimeout(() => playGeneratedSound(1000, 0.2, 'square'), 0);
+    setTimeout(() => playGeneratedSound(1500, 0.2, 'square'), 200);
+    setTimeout(() => playGeneratedSound(2000, 0.3, 'square'), 400);
+    setTimeout(() => playGeneratedSound(2500, 0.4, 'square'), 600);
+  };
+
+  // Doğa teması için özel sesler
+  const playNatureCorrectSound = () => {
+    if (!soundsEnabled) return;
+    // Kuş şakıması benzeri doğal ses
+    setTimeout(() => playGeneratedSound(600, 0.08, 'triangle'), 0);
+    setTimeout(() => playGeneratedSound(800, 0.08, 'triangle'), 80);
+    setTimeout(() => playGeneratedSound(1000, 0.12, 'triangle'), 160);
+  };
+
+  const playNatureWinSound = () => {
+    if (!soundsEnabled) return;
+    // Doğal melodi - kuş cıvıltısı benzeri
+    setTimeout(() => playGeneratedSound(800, 0.15, 'triangle'), 0);
+    setTimeout(() => playGeneratedSound(1200, 0.15, 'triangle'), 150);
+    setTimeout(() => playGeneratedSound(900, 0.15, 'triangle'), 300);
+    setTimeout(() => playGeneratedSound(1400, 0.2, 'triangle'), 450);
+    setTimeout(() => playGeneratedSound(1100, 0.25, 'triangle'), 650);
+  };
+
   const playSound = async (soundKey: keyof SoundConfig) => {
     if (!soundsEnabled) return;
 
@@ -227,55 +264,69 @@ export const useSounds = () => {
         }
       }
 
-      // MP3 bulunamazsa generated sound kullan
+      // MP3 bulunamazsa tema-specific generated sound kullan
       switch (activePack.id) {
         case 'space':
           switch (soundKey) {
             case 'buttonClick':
-              playGeneratedSound(900, 0.08, 'square');
+              // Futuristik elektronik beep - yüksek frekanslı keskin ses
+              playGeneratedSound(1200, 0.06, 'square');
               break;
             case 'correctWord':
-              playGeneratedSound(1800, 0.4, 'sawtooth');
+              // Uzay zafer sesi - yükselen frekanslı synthesizer
+              playSpaceCorrectSound();
               break;
             case 'wrongWord':
-              playGeneratedSound(150, 0.8);
+              // Düşük frekanslı robotik hata sesi
+              playGeneratedSound(120, 0.8, 'square');
               break;
             case 'gameWin':
-              playGeneratedSound(2000, 1.0);
+              // Uzay zafer fanfarı - çoklu frekanslı
+              playSpaceWinSound();
               break;
             case 'gameLose':
-              playGeneratedSound(80, 1.5);
+              // Dramatik düşük frekanslı kayıp sesi
+              playGeneratedSound(60, 2.0, 'sawtooth');
               break;
             case 'timeWarning':
-              playGeneratedSound(1500, 0.15);
+              // Keskin alarm sesi
+              playGeneratedSound(1800, 0.12, 'square');
               break;
             case 'letterSelect':
-              playGeneratedSound(900, 0.05);
+              // Hızlı elektronik tick
+              playGeneratedSound(1500, 0.03, 'square');
               break;
           }
           break;
         case 'nature':
           switch (soundKey) {
             case 'buttonClick':
-              playGeneratedSound(500, 0.12, 'triangle');
+              // Yumuşak ahşap tık sesi
+              playGeneratedSound(400, 0.15, 'triangle');
               break;
             case 'correctWord':
-              playGeneratedSound(1000, 0.5, 'triangle');
+              // Kuş şakıması benzeri doğal ses
+              playNatureCorrectSound();
               break;
             case 'wrongWord':
-              playGeneratedSound(250, 0.6);
+              // Yumuşak rüzgar sesi
+              playGeneratedSound(200, 0.7, 'triangle');
               break;
             case 'gameWin':
-              playGeneratedSound(1400, 1.2);
+              // Doğal melodi - kuş cıvıltısı benzeri
+              playNatureWinSound();
               break;
             case 'gameLose':
-              playGeneratedSound(180, 1.2);
+              // Yumuşak dalga sesi
+              playGeneratedSound(150, 1.5, 'sine');
               break;
             case 'timeWarning':
-              playGeneratedSound(1200, 0.25);
+              // Nazik çan sesi
+              playGeneratedSound(1000, 0.3, 'triangle');
               break;
             case 'letterSelect':
-              playGeneratedSound(700, 0.08);
+              // Yaprak hışırtısı benzeri
+              playGeneratedSound(600, 0.1, 'triangle');
               break;
           }
           break;
