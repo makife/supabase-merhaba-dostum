@@ -174,6 +174,8 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
   useEffect(() => {
     if (!isOpen || !user?.id) return;
 
+    let channel: any = null;
+
     const setupPresence = async () => {
       try {
         // Get username for presence
@@ -185,8 +187,12 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
 
         const displayName = profileData?.username || profileData?.email?.split('@')[0] || 'Anonim';
 
-        const channel = supabase
-          .channel('global-chat')
+        channel = supabase
+          .channel('global-chat', {
+            config: {
+              presence: { key: user.id }
+            }
+          })
           .on(
             'postgres_changes',
             {
@@ -265,13 +271,11 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
           )
           .on('presence', { event: 'sync' }, () => {
             const newState = channel.presenceState();
-            console.log('Presence state:', newState);
             const typing = new Set<string>();
             const online = new Set<string>();
             
             Object.values(newState).forEach((presences: any) => {
               presences.forEach((presence: any) => {
-                console.log('Presence user:', presence);
                 online.add(presence.username);
                 if (presence.typing) {
                   typing.add(presence.username);
@@ -279,36 +283,32 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
               });
             });
             
-            console.log('Online users:', Array.from(online));
             setTypingUsers(typing);
             setOnlineUsers(online);
           })
           .subscribe(async (status) => {
-            console.log('Channel status:', status);
             if (status === 'SUBSCRIBED') {
               // Track user presence when subscribed
-              const presenceData = {
+              await channel.track({
                 user_id: user.id,
                 username: displayName,
                 typing: false,
                 online_at: new Date().toISOString(),
-              };
-              console.log('Tracking presence:', presenceData);
-              await channel.track(presenceData);
+              });
             }
           });
 
-        return () => {
-          supabase.removeChannel(channel);
-        };
       } catch (error) {
         console.error('Error setting up presence:', error);
       }
     };
 
-    const cleanup = setupPresence();
+    setupPresence();
+
     return () => {
-      cleanup.then(cleanupFn => cleanupFn && cleanupFn());
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
     };
   }, [isOpen, user?.id, playSound]);
 
