@@ -66,14 +66,6 @@ export const ThemeSelector = () => {
       preview: 'Doğanın huzur verici yeşillikleri',
       isPremium: true
     },
-    {
-      id: 'classic',
-      name: 'Klasik',
-      description: 'Nostaljik retro tema',
-      requiredPurchase: 'credits_theme_basic',
-      icon: Gamepad2,
-      preview: 'Eski okul oyun hissi'
-    }
   ];
 
   // Kullanılabilir temaları kontrol et

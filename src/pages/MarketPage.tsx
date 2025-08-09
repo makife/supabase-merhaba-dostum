@@ -481,17 +481,7 @@ const MarketPage = () => {
       value: 25
     },
 
-    // Kredi ile Alınabilenler
-    {
-      id: 'credits_theme_basic',
-      title: 'Klasik Tema',
-      description: 'Nostaljik retro tema',
-      price: 50,
-      currency: 'credits',
-      icon: Gamepad2,
-      type: 'theme',
-      value: 1
-    },
+    // İpucu Paketleri - Kredi ile
     {
       id: 'credits_hint_5',
       title: '5 İpucu Hakkı',
