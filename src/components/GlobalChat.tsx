@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Send, MessageCircle, X } from 'lucide-react';
+import { Send, MessageCircle, X, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ChatMessage {
@@ -107,7 +107,7 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
           .from('profiles')
           .select('username, email')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
 
         const displayName = profileData?.username || profileData?.email?.split('@')[0] || 'Anonim';
 
@@ -132,6 +132,25 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
               
               // Play sound for new messages from other users
               playSound('correctWord');
+            }
+          )
+          .on(
+            'postgres_changes',
+            {
+              event: 'DELETE',
+              schema: 'public',
+              table: 'global_chat'
+            },
+            (payload) => {
+              const deletedMessage = payload.old as ChatMessage;
+              setMessages(prev => prev.filter(m => m.id !== deletedMessage.id));
+              
+              // Also remove reactions for this message
+              setMessageReactions(prev => {
+                const newReactions = { ...prev };
+                delete newReactions[deletedMessage.id];
+                return newReactions;
+              });
             }
           )
           .on(
@@ -245,7 +264,7 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
         .from('profiles')
         .select('username, email')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       const displayName = profileData?.username || profileData?.email?.split('@')[0] || 'Anonim';
 
@@ -287,7 +306,7 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
           .from('profiles')
           .select('username, email')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
 
         const displayName = profileData?.username || profileData?.email?.split('@')[0] || 'Anonim';
         
@@ -387,6 +406,30 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
     }
   };
 
+  // Delete message
+  const deleteMessage = async (messageId: string) => {
+    if (!user) return;
+
+    const confirmed = window.confirm('Bu mesajı silmek istediğinizden emin misiniz?');
+    if (!confirmed) return;
+
+    try {
+      const { error } = await supabase
+        .from('global_chat')
+        .delete()
+        .eq('id', messageId)
+        .eq('user_id', user.id); // Sadece kendi mesajlarını silebilir
+
+      if (error) throw error;
+      
+      playSound('buttonClick');
+      toast.success('Mesaj silindi');
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      toast.error('Mesaj silinirken hata oluştu');
+    }
+  };
+
   const formatTime = (timestamp: string) => {
     return new Date(timestamp).toLocaleTimeString('tr-TR', {
       hour: '2-digit',
@@ -436,21 +479,34 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
         <ScrollArea className="flex-1 p-4">
           <div className="space-y-4">
             {messages.map((message) => (
-              <div key={message.id} className="flex flex-col space-y-1">
-                <div className="flex items-center space-x-2">
-                  <span 
-                    className={`text-sm font-medium ${
-                      message.user_id === user?.id ? 'text-primary' : 'text-muted-foreground'
-                    }`}
-                  >
-                    {message.username}
-                  </span>
-                  {onlineUsers.has(message.username) && message.user_id !== user?.id && (
-                    <div className="w-2 h-2 bg-green-500 rounded-full" title="Çevrimiçi"></div>
+              <div key={message.id} className="group flex flex-col space-y-1 hover:bg-muted/30 rounded-lg p-2 -m-2 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span 
+                      className={`text-sm font-medium ${
+                        message.user_id === user?.id ? 'text-primary' : 'text-muted-foreground'
+                      }`}
+                    >
+                      {message.username}
+                    </span>
+                    {onlineUsers.has(message.username) && message.user_id !== user?.id && (
+                      <div className="w-2 h-2 bg-green-500 rounded-full" title="Çevrimiçi"></div>
+                    )}
+                    <span className="text-xs text-muted-foreground">
+                      {formatTime(message.created_at)}
+                    </span>
+                  </div>
+                  
+                  {/* Delete button for own messages */}
+                  {message.user_id === user?.id && (
+                    <button
+                      onClick={() => deleteMessage(message.id)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-destructive/20 rounded"
+                      title="Mesajı sil"
+                    >
+                      <Trash2 className="w-3 h-3 text-destructive" />
+                    </button>
                   )}
-                  <span className="text-xs text-muted-foreground">
-                    {formatTime(message.created_at)}
-                  </span>
                 </div>
                 <div className="break-words text-foreground">
                   {message.message}
