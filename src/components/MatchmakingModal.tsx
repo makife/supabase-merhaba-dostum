@@ -17,7 +17,7 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
   const [searchProgress, setSearchProgress] = useState(0);
   const [searchStatus, setSearchStatus] = useState<'searching' | 'ai-fallback' | 'found'>('searching');
   const [countdown, setCountdown] = useState(10);
-  const { findRandomMatch } = useGame();
+  const { findRandomMatch, addAIOpponent } = useGame();
   const { playSound } = useSounds();
   const { toast } = useToast();
 
@@ -50,14 +50,17 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
       }, 1000);
 
       // Auto fallback to AI after 10 seconds
-      searchTimeout = setTimeout(() => {
+      searchTimeout = setTimeout(async () => {
         setSearchStatus('ai-fallback');
         clearInterval(progressInterval);
         clearInterval(countdownInterval);
         
+        // Add AI opponent to current room
+        await addAIOpponent();
+        
         toast({
           title: 'Oyuncu Bulunamadı',
-          description: 'AI ile oynama başlatılıyor...',
+          description: 'AI rakip eklendi, oyun başlıyor...',
           duration: 2000,
         });
 
@@ -80,20 +83,17 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
           
           toast({
             title: 'Oyuncu Bulundu!',
-            description: 'Rakip oyuncu ile eşleştiniz',
+            description: 'Gerçek oyuncu ile eşleştiniz',
           });
           
           setTimeout(() => {
             onMatchFound(false);
           }, 1500);
         }
-        // If no immediate match, waiting logic is handled in GameContext
+        // If no immediate match found, continue waiting and let timeout handle AI fallback
       } catch (error) {
         console.error('🚨 Matchmaking error:', error);
-        // Fallback to AI on error
-        setTimeout(() => {
-          onMatchFound(true);
-        }, 1000);
+        // Continue with normal timeout flow on error
       }
     };
 

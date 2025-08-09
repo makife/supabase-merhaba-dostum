@@ -32,6 +32,7 @@ interface GameContextType {
   createRoom: (gameMode: string, roomCode?: string) => Promise<GameRoom | null>;
   joinRoom: (roomCode: string) => Promise<boolean>;
   findRandomMatch: (gameType: 'timed' | 'score') => Promise<boolean>;
+  addAIOpponent: () => Promise<void>;
   leaveRoom: () => Promise<void>;
   updateScore: (score: number) => Promise<void>;
   startGame: () => Promise<void>;
@@ -212,34 +213,40 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     }
   };
 
-  // Simple random match finder
+  // Simple random match finder - returns true if immediate match found
   const findRandomMatch = async (gameType: 'timed' | 'score'): Promise<boolean> => {
     if (!user) return false;
 
     try {
-      console.log('🔍 Finding random match for:', gameType);
+      console.log('🔍 Starting random match search for:', gameType);
       
       // Cleanup first
       await cleanupOldRooms();
       
-      // Look for waiting rooms
+      // Look for waiting rooms (only real users, not AI)
       const { data: waitingRooms } = await supabase
         .from('game_rooms')
         .select(`
           *,
-          game_participants (count)
+          game_participants!inner (
+            id,
+            user_id,
+            is_bot
+          )
         `)
         .eq('game_mode', 'random-match')
         .eq('status', 'waiting')
-        .neq('host_id', user.id);
+        .neq('host_id', user.id)
+        .eq('game_participants.is_bot', false);
 
-      // Find suitable room
+      // Find suitable room with exactly 1 real player
       const suitableRoom = waitingRooms?.find(room => {
-        const participantCount = room.game_participants?.[0]?.count || 0;
+        const participants = room.game_participants || [];
+        const realPlayers = participants.filter((p: any) => !p.is_bot);
         const isCorrectType = gameType === 'timed' 
           ? room.time_limit > 0 
           : room.max_score > 0;
-        return participantCount === 1 && isCorrectType;
+        return realPlayers.length === 1 && isCorrectType;
       });
 
       if (suitableRoom) {
@@ -249,15 +256,16 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           .insert({
             room_id: suitableRoom.id,
             user_id: user.id,
-            score: 0
+            score: 0,
+            is_bot: false
           });
 
         setCurrentRoom(suitableRoom);
-        console.log('✅ Joined existing room');
-        return true;
+        console.log('✅ Found and joined existing room');
+        return true; // Immediate match found
       }
 
-      // Create new room if none found
+      // No suitable room found - create new room and wait
       const grid = generateRandomGrid();
       const { data: newRoom } = await supabase
         .from('game_rooms')
@@ -278,17 +286,38 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           .insert({
             room_id: newRoom.id,
             user_id: user.id,
-            score: 0
+            score: 0,
+            is_bot: false
           });
 
         setCurrentRoom(newRoom);
-        console.log('✅ Created new room, waiting...');
+        console.log('🔄 Created new room, waiting for opponent...');
       }
       
-      return false; // Waiting for another player
+      return false; // No immediate match, waiting for players
     } catch (error) {
-      console.error('Error in random match:', error);
+      console.error('🚨 Random match error:', error);
       return false;
+    }
+  };
+
+  // Add AI opponent to current room
+  const addAIOpponent = async (): Promise<void> => {
+    if (!currentRoom) return;
+
+    try {
+      await supabase
+        .from('game_participants')
+        .insert({
+          room_id: currentRoom.id,
+          user_id: null,
+          score: 0,
+          is_bot: true
+        });
+      
+      console.log('🤖 Added AI opponent to room');
+    } catch (error) {
+      console.error('Error adding AI opponent:', error);
     }
   };
 
@@ -428,6 +457,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       createRoom,
       joinRoom,
       findRandomMatch,
+      addAIOpponent,
       leaveRoom,
       updateScore,
       startGame,
