@@ -190,61 +190,61 @@ const HomePage = () => {
 
           <CardContent className="p-4 relative z-10">
             {/* Mobil optimized layout */}
-            <div className="space-y-4">
+            <div className="space-y-3">
               {/* Üst satır - Avatar ve Kelimeci başlığı */}
-              <div className="flex items-center space-x-3">
-                {/* Hidden file input */}
-                <Input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-                
-                <div 
-                  className="relative cursor-pointer group flex-shrink-0"
-                  onClick={handleAvatarClick}
-                >
-                  <Avatar className="w-16 h-16 ring-3 ring-white/50 shadow-lg">
-                    <AvatarImage 
-                      src={userAvatar || user?.user_metadata?.avatar_url} 
-                      alt="Profile"
-                    />
-                    <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-lg font-bold">
-                      <User className="w-8 h-8" />
-                    </AvatarFallback>
-                  </Avatar>
-                  {uploading && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  {/* Hidden file input */}
+                  <Input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                  
+                  <div 
+                    className="relative cursor-pointer group flex-shrink-0"
+                    onClick={handleAvatarClick}
+                  >
+                    <Avatar className="w-14 h-14 ring-2 ring-white/50 shadow-lg">
+                      <AvatarImage 
+                        src={userAvatar || user?.user_metadata?.avatar_url} 
+                        alt="Profile"
+                      />
+                      <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-sm font-bold">
+                        <User className="w-6 h-6" />
+                      </AvatarFallback>
+                    </Avatar>
+                    {uploading && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
+                        <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 rounded-full flex items-center justify-center transition-all duration-200 opacity-0 group-hover:opacity-100">
+                      <Camera className="w-3 h-3 text-white" />
                     </div>
-                  )}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 rounded-full flex items-center justify-center transition-all duration-200 opacity-0 group-hover:opacity-100">
-                    <Camera className="w-4 h-4 text-white" />
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <h1 className="text-xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent drop-shadow-lg"
+                        style={{
+                          textShadow: '1px 1px 0px hsl(var(--primary)), 2px 2px 0px rgba(0,0,0,0.3), 0 0 15px hsl(var(--primary) / 0.5)',
+                          WebkitTextStroke: '0.5px hsl(var(--border))'
+                        }}>
+                      KELİMECİ
+                    </h1>
+                    <p className="text-xs text-muted-foreground">
+                      Merhaba 👋
+                    </p>
+                    <p className="text-sm font-semibold text-foreground truncate">
+                      {user?.user_metadata?.username || user?.email?.split('@')[0]}
+                    </p>
                   </div>
                 </div>
-                
-                <div className="flex-1 min-w-0">
-                  <h1 className="text-2xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent drop-shadow-lg"
-                      style={{
-                        textShadow: '1px 1px 0px hsl(var(--primary)), 2px 2px 0px rgba(0,0,0,0.3), 0 0 15px hsl(var(--primary) / 0.5)',
-                        WebkitTextStroke: '0.5px hsl(var(--border))'
-                      }}>
-                    KELİMECİ
-                  </h1>
-                  <p className="text-sm font-semibold text-foreground truncate">
-                    Merhaba, {user?.user_metadata?.username || user?.email?.split('@')[0]}! 👋
-                  </p>
-                </div>
-              </div>
 
-              {/* Alt satır - Oyun hakları */}
-              <div className="flex items-center justify-between">
-                <div className="text-xs text-muted-foreground font-medium">
-                  Bugün hangi moda başlamak istersin?
-                </div>
-                <div className="flex items-center space-x-2">
+                {/* Sağ taraf - Oyun hakları */}
+                <div className="flex items-center space-x-2 flex-shrink-0">
                   {isPremium ? (
                     <div className="flex items-center space-x-1">
                       <Crown className="w-4 h-4 text-yellow-500" />
@@ -273,13 +273,13 @@ const HomePage = () => {
 
             {/* Mobil optimized seviye progress */}
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 shadow-inner">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg flex-shrink-0">
-                    <Trophy className="w-5 h-5 text-white" />
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg flex-shrink-0">
+                    <Trophy className="w-4 h-4 text-white" />
                   </div>
                   <div className="min-w-0">
-                    <h3 className="text-base font-bold text-foreground">Seviye {calculateLevel(profile?.total_score || 0).level}</h3>
+                    <h3 className="text-sm font-bold text-foreground">Seviye {calculateLevel(profile?.total_score || 0).level}</h3>
                     <p className="text-xs text-muted-foreground truncate">
                       {calculateLevel(profile?.total_score || 0).experience} / {calculateLevel(profile?.total_score || 0).nextLevelExp} EXP
                     </p>
@@ -287,7 +287,7 @@ const HomePage = () => {
                 </div>
                 
                 <div className="text-right flex-shrink-0">
-                  <div className="text-lg font-bold text-primary">
+                  <div className="text-base font-bold text-primary">
                     {(profile?.total_score || 0) > 9999 
                       ? `${Math.floor((profile?.total_score || 0) / 1000)}k` 
                       : (profile?.total_score || 0).toLocaleString()
@@ -298,7 +298,7 @@ const HomePage = () => {
               </div>
               
               {/* Progress bar */}
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>İlerleme</span>
                   <span>%{Math.round((calculateLevel(profile?.total_score || 0).experience / calculateLevel(profile?.total_score || 0).nextLevelExp) * 100)}</span>
@@ -315,7 +315,7 @@ const HomePage = () => {
             </div>
 
             {/* Mobil optimized alt kısım */}
-            <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-white/20 justify-center">
+            <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-white/20 justify-center">
               <Badge variant="secondary" className="bg-white/20 text-foreground border-white/30 text-xs">
                 <Target className="w-3 h-3 mr-1" />
                 Günlük: {Math.min(5, profile?.daily_games || 0)}/5
