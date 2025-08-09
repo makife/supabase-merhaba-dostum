@@ -81,29 +81,32 @@ export function FloatingMenu() {
               transitionDelay: isOpen ? `${index * 50}ms` : `${(menuItems.length + 2 - index) * 30}ms` 
             }}
           >
-            {/* Label with stroke effect */}
-            <span 
-              className="text-lg font-semibold text-white font-fredoka whitespace-nowrap pointer-events-none select-none"
-              style={{ 
-                textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 2px 0 #000, 0 -2px 0 #000, 2px 0 0 #000, -2px 0 0 #000' 
-              }}
-            >
-              {item.title}
-            </span>
-            
-            {/* Button */}
-            <Button
-              onClick={() => handleMenuClick(item.route, item.title)}
-              className={`group relative overflow-hidden bg-gradient-to-r ${item.color} ${item.hoverColor} 
-                         text-white border-2 border-white shadow-lg hover:shadow-xl transform hover:scale-105 
-                         transition-all duration-200 w-12 h-12 rounded-full flex items-center justify-center`}
-            >
-              {/* Ripple effect background */}
-              <div className="absolute inset-0 bg-white/20 scale-0 group-hover:scale-100 transition-transform duration-300 rounded-full" />
+            {/* Label with beautiful styling */}
+            <div className="flex items-center space-x-3 bg-black/80 backdrop-blur-md rounded-full px-4 py-2 border border-white/20 shadow-2xl">
+              <span 
+                className="text-base font-bold text-white whitespace-nowrap pointer-events-none select-none tracking-wide"
+                style={{ 
+                  fontFamily: '"Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif',
+                  textShadow: '0 2px 4px rgba(0,0,0,0.8), 0 0 8px rgba(255,255,255,0.1)' 
+                }}
+              >
+                {item.title}
+              </span>
               
-              {/* Icon */}
-              <item.icon className="w-5 h-5 relative z-10" />
-            </Button>
+              {/* Button */}
+              <Button
+                onClick={() => handleMenuClick(item.route, item.title)}
+                className={`group relative overflow-hidden bg-gradient-to-r ${item.color} ${item.hoverColor} 
+                           text-white border-2 border-white shadow-lg hover:shadow-xl transform hover:scale-105 
+                           transition-all duration-200 w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0`}
+              >
+                {/* Ripple effect background */}
+                <div className="absolute inset-0 bg-white/20 scale-0 group-hover:scale-100 transition-transform duration-300 rounded-full" />
+                
+                {/* Icon */}
+                <item.icon className="w-5 h-5 relative z-10" />
+              </Button>
+            </div>
           </div>
         ))}
 
@@ -118,24 +121,27 @@ export function FloatingMenu() {
             transitionDelay: isOpen ? `${menuItems.length * 50}ms` : `${(2 - menuItems.length) * 30}ms` 
           }}
         >
-          <span 
-            className="text-lg font-semibold text-white font-fredoka whitespace-nowrap pointer-events-none select-none"
-            style={{ 
-              textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 2px 0 #000, 0 -2px 0 #000, 2px 0 0 #000, -2px 0 0 #000' 
-            }}
-          >
-            Sohbet
-          </span>
-          
-          <Button
-            onClick={handleChatOpen}
-            className="group relative overflow-hidden bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700
-                       text-white border-2 border-white shadow-lg hover:shadow-xl transform hover:scale-105 
-                       transition-all duration-200 w-12 h-12 rounded-full flex items-center justify-center"
-          >
-            <div className="absolute inset-0 bg-white/20 scale-0 group-hover:scale-100 transition-transform duration-300 rounded-full" />
-            <MessageCircle className="w-5 h-5 relative z-10" />
-          </Button>
+          <div className="flex items-center space-x-3 bg-black/80 backdrop-blur-md rounded-full px-4 py-2 border border-white/20 shadow-2xl">
+            <span 
+              className="text-base font-bold text-white whitespace-nowrap pointer-events-none select-none tracking-wide"
+              style={{ 
+                fontFamily: '"Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif',
+                textShadow: '0 2px 4px rgba(0,0,0,0.8), 0 0 8px rgba(255,255,255,0.1)' 
+              }}
+            >
+              Sohbet
+            </span>
+            
+            <Button
+              onClick={handleChatOpen}
+              className="group relative overflow-hidden bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700
+                         text-white border-2 border-white shadow-lg hover:shadow-xl transform hover:scale-105 
+                         transition-all duration-200 w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
+            >
+              <div className="absolute inset-0 bg-white/20 scale-0 group-hover:scale-100 transition-transform duration-300 rounded-full" />
+              <MessageCircle className="w-5 h-5 relative z-10" />
+            </Button>
+          </div>
         </div>
 
         {/* Logout Button */}
@@ -149,24 +155,27 @@ export function FloatingMenu() {
             transitionDelay: isOpen ? `${(menuItems.length + 1) * 50}ms` : `${(1 - menuItems.length) * 30}ms` 
           }}
         >
-          <span 
-            className="text-lg font-semibold text-white font-fredoka whitespace-nowrap pointer-events-none select-none"
-            style={{ 
-              textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 2px 0 #000, 0 -2px 0 #000, 2px 0 0 #000, -2px 0 0 #000' 
-            }}
-          >
-            Çıkış
-          </span>
-          
-          <Button
-            onClick={handleLogout}
-            className="group relative overflow-hidden bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700
-                       text-white border-2 border-white shadow-lg hover:shadow-xl transform hover:scale-105 
-                       transition-all duration-200 w-12 h-12 rounded-full flex items-center justify-center"
-          >
-            <div className="absolute inset-0 bg-white/20 scale-0 group-hover:scale-100 transition-transform duration-300 rounded-full" />
-            <LogOut className="w-5 h-5 relative z-10" />
-          </Button>
+          <div className="flex items-center space-x-3 bg-black/80 backdrop-blur-md rounded-full px-4 py-2 border border-white/20 shadow-2xl">
+            <span 
+              className="text-base font-bold text-white whitespace-nowrap pointer-events-none select-none tracking-wide"
+              style={{ 
+                fontFamily: '"Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif',
+                textShadow: '0 2px 4px rgba(0,0,0,0.8), 0 0 8px rgba(255,255,255,0.1)' 
+              }}
+            >
+              Çıkış
+            </span>
+            
+            <Button
+              onClick={handleLogout}
+              className="group relative overflow-hidden bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700
+                         text-white border-2 border-white shadow-lg hover:shadow-xl transform hover:scale-105 
+                         transition-all duration-200 w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
+            >
+              <div className="absolute inset-0 bg-white/20 scale-0 group-hover:scale-100 transition-transform duration-300 rounded-full" />
+              <LogOut className="w-5 h-5 relative z-10" />
+            </Button>
+          </div>
         </div>
       </div>
 
