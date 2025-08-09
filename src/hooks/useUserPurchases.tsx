@@ -17,6 +17,9 @@ interface UserSettings {
   active_avatar_frame: string;
   active_sound_pack: string;
   active_music_pack: string;
+  effects_enabled?: boolean;
+  confetti_effect_enabled?: boolean;
+  fireworks_effect_enabled?: boolean;
 }
 
 interface UserInventory {
@@ -32,7 +35,10 @@ export const useUserPurchases = () => {
     active_theme: 'default',
     active_avatar_frame: 'none',
     active_sound_pack: 'default',
-    active_music_pack: 'default'
+    active_music_pack: 'default',
+    effects_enabled: true,
+    confetti_effect_enabled: true,
+    fireworks_effect_enabled: true
   });
   const [inventory, setInventory] = useState<UserInventory[]>([]);
   const [loading, setLoading] = useState(false);
@@ -73,7 +79,10 @@ export const useUserPurchases = () => {
           active_theme: data.active_theme || 'default',
           active_avatar_frame: data.active_avatar_frame || 'none',
           active_sound_pack: data.active_sound_pack || 'default',
-          active_music_pack: (data as any).active_music_pack || 'default'
+          active_music_pack: (data as any).active_music_pack || 'default',
+          effects_enabled: data.effects_enabled ?? true,
+          confetti_effect_enabled: data.confetti_effect_enabled ?? true,
+          fireworks_effect_enabled: data.fireworks_effect_enabled ?? true
         });
       }
     } catch (error) {

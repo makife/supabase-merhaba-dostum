@@ -33,7 +33,7 @@ interface GamePageProps {
 const GamePage = ({ gameMode }: GamePageProps) => {
   const { user } = useAuth();
   const { consumeCredit, isPremium } = useUser();
-  const { hasPurchased } = useUserPurchases();
+  const { hasPurchased, settings } = useUserPurchases();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { currentRoom, updateScore, participants, endGame } = useGame();
@@ -714,10 +714,13 @@ const GamePage = ({ gameMode }: GamePageProps) => {
 
   // Trigger word effects (confetti/fireworks) if purchased
   const triggerWordEffects = () => {
-    const hasConfetti = hasPurchased('effect_confetti');
-    const hasFireworks = hasPurchased('effect_fireworks');
+    // Check if effects are globally enabled
+    if (!(settings?.effects_enabled ?? true)) return;
     
-    // If both purchased, randomly choose one
+    const hasConfetti = hasPurchased('effect_confetti') && (settings?.confetti_effect_enabled ?? true);
+    const hasFireworks = hasPurchased('effect_fireworks') && (settings?.fireworks_effect_enabled ?? true);
+    
+    // If both purchased and enabled, randomly choose one
     if (hasConfetti && hasFireworks) {
       if (Math.random() > 0.5) {
         createConfettiEffect();

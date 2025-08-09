@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/hooks/useTheme';
 import { useSounds } from '@/hooks/useSounds';
 import { useMusic } from '@/contexts/MusicContext';
+import { useUserPurchases } from '@/hooks/useUserPurchases';
 import {
   ArrowLeft,
   Bell,
@@ -25,7 +26,9 @@ import {
   HelpCircle,
   Mail,
   Smartphone,
-  PlayCircle
+  PlayCircle,
+  Sparkles,
+  Gift
 } from 'lucide-react';
 
 const SettingsPage = () => {
@@ -35,6 +38,7 @@ const SettingsPage = () => {
   const { theme, setTheme } = useTheme();
   const { soundsEnabled, setSoundsEnabled, playSound } = useSounds();
   const { musicEnabled, setMusicEnabled } = useMusic();
+  const { hasPurchased, settings, updateSettings } = useUserPurchases();
 
   // Settings state
   const [notifications, setNotifications] = useState(true);
@@ -399,6 +403,67 @@ const SettingsPage = () => {
 
             {/* Avatar Frame Selector */}
             <AvatarFrameSelector />
+            
+            <Separator />
+            
+            {/* Effect Settings */}
+            {(hasPurchased('effect_confetti') || hasPurchased('effect_fireworks')) && (
+              <>
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-3">
+                    <Sparkles className="w-5 h-5 text-purple-500" />
+                    <div>
+                      <p className="font-medium">Oyun Efektleri</p>
+                      <p className="text-sm text-muted-foreground">Kelime bulma efektlerini yönet</p>
+                    </div>
+                  </div>
+                  
+                  {/* Overall Effects Toggle */}
+                  <div className="flex items-center justify-between pl-8">
+                    <div>
+                      <p className="font-medium">Tüm Efektler</p>
+                      <p className="text-sm text-muted-foreground">Tüm efektleri açın/kapatın</p>
+                    </div>
+                    <Switch
+                      checked={settings?.effects_enabled ?? true}
+                      onCheckedChange={(checked) => updateSettings({ effects_enabled: checked })}
+                    />
+                  </div>
+                  
+                  {/* Individual Effect Controls */}
+                  {(settings?.effects_enabled ?? true) && (
+                    <div className="space-y-3 pl-8">
+                      {hasPurchased('effect_confetti') && (
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <Gift className="w-4 h-4 text-green-500" />
+                            <p className="text-sm font-medium">Konfeti Efekti</p>
+                          </div>
+                          <Switch
+                            checked={settings?.confetti_effect_enabled ?? true}
+                            onCheckedChange={(checked) => updateSettings({ confetti_effect_enabled: checked })}
+                          />
+                        </div>
+                      )}
+                      
+                      {hasPurchased('effect_fireworks') && (
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <Sparkles className="w-4 h-4 text-yellow-500" />
+                            <p className="text-sm font-medium">Havai Fişek Efekti</p>
+                          </div>
+                          <Switch
+                            checked={settings?.fireworks_effect_enabled ?? true}
+                            onCheckedChange={(checked) => updateSettings({ fireworks_effect_enabled: checked })}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <Separator />
+              </>
+            )}
             
             <Separator />
             

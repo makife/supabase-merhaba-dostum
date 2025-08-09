@@ -605,7 +605,10 @@ export type Database = {
           active_music_pack: string | null
           active_sound_pack: string | null
           active_theme: string | null
+          confetti_effect_enabled: boolean | null
           created_at: string
+          effects_enabled: boolean | null
+          fireworks_effect_enabled: boolean | null
           id: string
           updated_at: string
           user_id: string
@@ -615,7 +618,10 @@ export type Database = {
           active_music_pack?: string | null
           active_sound_pack?: string | null
           active_theme?: string | null
+          confetti_effect_enabled?: boolean | null
           created_at?: string
+          effects_enabled?: boolean | null
+          fireworks_effect_enabled?: boolean | null
           id?: string
           updated_at?: string
           user_id: string
@@ -625,7 +631,10 @@ export type Database = {
           active_music_pack?: string | null
           active_sound_pack?: string | null
           active_theme?: string | null
+          confetti_effect_enabled?: boolean | null
           created_at?: string
+          effects_enabled?: boolean | null
+          fireworks_effect_enabled?: boolean | null
           id?: string
           updated_at?: string
           user_id?: string
