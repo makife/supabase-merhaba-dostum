@@ -54,6 +54,7 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
+  const [currentChannel, setCurrentChannel] = useState<any>(null);
   const [messageReactions, setMessageReactions] = useState<{[messageId: string]: MessageReaction[]}>({});
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
   const [userAvatars, setUserAvatars] = useState<{[userId: string]: string}>({});
@@ -288,6 +289,7 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
           })
           .subscribe(async (status) => {
             if (status === 'SUBSCRIBED') {
+              setCurrentChannel(channel);
               // Add a small delay to ensure channel is fully ready
               setTimeout(async () => {
                 try {
@@ -396,33 +398,39 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
 
         const displayName = profileData?.username || profileData?.email?.split('@')[0] || 'Anonim';
         
-        const existingChannel = supabase.getChannels().find(ch => ch.topic === 'realtime:global-chat');
-        
-        if (existingChannel && existingChannel.state === 'joined') {
+        if (currentChannel && currentChannel.state === 'joined') {
           // Send typing status
-          existingChannel.track({
-            user_id: user.id,
-            username: displayName,
-            typing: true,
-            online_at: new Date().toISOString(),
-          });
-          
-          // Clear previous timeout
-          if (typingTimeout) {
-            clearTimeout(typingTimeout);
-          }
-          
-          // Set new timeout to stop typing
-          const timeout = setTimeout(() => {
-            existingChannel.track({
+          try {
+            await currentChannel.track({
               user_id: user.id,
               username: displayName,
-              typing: false,
+              typing: true,
               online_at: new Date().toISOString(),
             });
-          }, 2000);
-          
-          setTypingTimeout(timeout);
+            
+            // Clear previous timeout
+            if (typingTimeout) {
+              clearTimeout(typingTimeout);
+            }
+            
+            // Set new timeout to stop typing
+            const timeout = setTimeout(async () => {
+              try {
+                await currentChannel.track({
+                  user_id: user.id,
+                  username: displayName,
+                  typing: false,
+                  online_at: new Date().toISOString(),
+                });
+              } catch (error) {
+                console.error('Error stopping typing indicator:', error);
+              }
+            }, 2000);
+            
+            setTypingTimeout(timeout);
+          } catch (error) {
+            console.error('Error sending typing indicator:', error);
+          }
         }
       } catch (error) {
         console.error('Error handling typing indicator:', error);
