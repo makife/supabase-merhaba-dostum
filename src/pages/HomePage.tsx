@@ -167,11 +167,11 @@ const HomePage = () => {
         <Card className="border-0 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/10 shadow-2xl relative overflow-hidden">
           <HeaderAnimation />
           
-          {/* Müzik Toggle - Sağ üst köşe */}
+          {/* Müzik Toggle - Mobil optimized */}
           <Button
             variant="outline"
-            size="lg"
-            className={`absolute top-4 right-4 z-20 w-14 h-14 rounded-full backdrop-blur-md border-2 transition-all duration-300 hover:scale-105 shadow-lg ${
+            size="sm"
+            className={`absolute top-3 right-3 z-20 w-10 h-10 rounded-full backdrop-blur-md border-2 transition-all duration-300 hover:scale-105 shadow-lg ${
               musicEnabled 
                 ? 'bg-gradient-to-r from-primary/10 to-accent/10 hover:from-primary/20 hover:to-accent/20 border-primary/30 hover:border-primary/50' 
                 : 'bg-gradient-to-r from-muted/20 to-muted/30 hover:from-muted/30 hover:to-muted/40 border-muted-foreground/20 hover:border-muted-foreground/30'
@@ -182,17 +182,17 @@ const HomePage = () => {
             }}
           >
             {musicEnabled ? (
-              <Volume2 className="w-8 h-8 text-primary font-bold" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }} />
+              <Volume2 className="w-5 h-5 text-primary font-bold" />
             ) : (
-              <VolumeX className="w-8 h-8 text-destructive font-bold" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }} />
+              <VolumeX className="w-5 h-5 text-destructive font-bold" />
             )}
           </Button>
 
-          <CardContent className="p-6 relative z-10">
-            {/* Üst kısım - Avatar, İsim, Kelimeci */}
-            <div className="flex items-start justify-between mb-6">
-              {/* Sol taraf - Avatar ve kullanıcı bilgileri */}
-              <div className="flex items-center space-x-4">
+          <CardContent className="p-4 relative z-10">
+            {/* Mobil optimized layout */}
+            <div className="space-y-4">
+              {/* Üst satır - Avatar ve Kelimeci başlığı */}
+              <div className="flex items-center space-x-3">
                 {/* Hidden file input */}
                 <Input
                   ref={fileInputRef}
@@ -203,98 +203,97 @@ const HomePage = () => {
                 />
                 
                 <div 
-                  className="relative cursor-pointer group"
+                  className="relative cursor-pointer group flex-shrink-0"
                   onClick={handleAvatarClick}
                 >
-                  <Avatar className="w-20 h-20 ring-4 ring-white/50 shadow-xl">
+                  <Avatar className="w-16 h-16 ring-3 ring-white/50 shadow-lg">
                     <AvatarImage 
                       src={userAvatar || user?.user_metadata?.avatar_url} 
                       alt="Profile"
                     />
-                    <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-2xl font-bold">
-                      <User className="w-10 h-10" />
+                    <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-lg font-bold">
+                      <User className="w-8 h-8" />
                     </AvatarFallback>
                   </Avatar>
                   {uploading && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
-                      <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     </div>
                   )}
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 rounded-full flex items-center justify-center transition-all duration-200 opacity-0 group-hover:opacity-100">
-                    <Camera className="w-6 h-6 text-white" />
+                    <Camera className="w-4 h-4 text-white" />
                   </div>
                 </div>
                 
-                <div className="space-y-1">
-                  <h1 className="text-4xl md:text-5xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent drop-shadow-2xl"
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-2xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent drop-shadow-lg"
                       style={{
-                        textShadow: '2px 2px 0px hsl(var(--primary)), 4px 4px 0px rgba(0,0,0,0.3), 0 0 20px hsl(var(--primary) / 0.5)',
-                        WebkitTextStroke: '1px hsl(var(--border))'
+                        textShadow: '1px 1px 0px hsl(var(--primary)), 2px 2px 0px rgba(0,0,0,0.3), 0 0 15px hsl(var(--primary) / 0.5)',
+                        WebkitTextStroke: '0.5px hsl(var(--border))'
                       }}>
                     KELİMECİ
                   </h1>
-                  <div className="space-y-1">
-                    <p className="text-lg font-semibold text-foreground flex items-center">
-                      Merhaba, {user?.user_metadata?.username || user?.email?.split('@')[0]}! 
-                      <span className="ml-2 animate-bounce">👋</span>
-                    </p>
-                    <p className="text-sm text-muted-foreground">Bugün hangi moda başlamak istersin?</p>
-                  </div>
+                  <p className="text-sm font-semibold text-foreground truncate">
+                    Merhaba, {user?.user_metadata?.username || user?.email?.split('@')[0]}! 👋
+                  </p>
                 </div>
               </div>
 
-              {/* Sağ taraf - Oyun hakları */}
-              <div className="text-right">
-                <div className="space-y-2">
-                  <div className="text-xs font-medium text-muted-foreground">
-                    Kalan hakların
-                  </div>
+              {/* Alt satır - Oyun hakları */}
+              <div className="flex items-center justify-between">
+                <div className="text-xs text-muted-foreground font-medium">
+                  Bugün hangi moda başlamak istersin?
+                </div>
+                <div className="flex items-center space-x-2">
                   {isPremium ? (
-                    <div className="flex items-center space-x-2">
-                      <Crown className="w-5 h-5 text-yellow-500" />
-                      <span className="text-sm text-yellow-500 font-semibold">Sınırsız</span>
+                    <div className="flex items-center space-x-1">
+                      <Crown className="w-4 h-4 text-yellow-500" />
+                      <span className="text-xs text-yellow-500 font-semibold">Sınırsız</span>
                     </div>
                   ) : (
-                    <div className="space-y-2">
-                      <div className="flex space-x-1 justify-end">
+                    <div className="flex items-center space-x-2">
+                      <div className="flex space-x-1">
                         {[...Array(5)].map((_, index) => (
                           <div
                             key={index}
-                            className={`w-4 h-3 rounded-sm border transition-all duration-300 ${
+                            className={`w-3 h-2 rounded-sm border transition-all duration-300 ${
                               index < (profile?.game_credits || 0) 
-                                ? 'bg-yellow-500 border-yellow-600 shadow-sm animate-pulse' 
+                                ? 'bg-yellow-500 border-yellow-600 shadow-sm' 
                                 : 'bg-muted border-border'
                             }`}
                           />
                         ))}
                       </div>
-                      <span className="text-xs block text-muted-foreground">{profile?.game_credits || 0}/5</span>
+                      <span className="text-xs text-muted-foreground">{profile?.game_credits || 0}/5</span>
                     </div>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Orta kısım - Seviye progress birleştirilmiş */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20 shadow-inner">
+            {/* Mobil optimized seviye progress */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 shadow-inner">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
-                    <Trophy className="w-6 h-6 text-white" />
+                  <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg flex-shrink-0">
+                    <Trophy className="w-5 h-5 text-white" />
                   </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-foreground">Seviye {calculateLevel(profile?.total_score || 0).level}</h3>
-                    <p className="text-sm text-muted-foreground">
+                  <div className="min-w-0">
+                    <h3 className="text-base font-bold text-foreground">Seviye {calculateLevel(profile?.total_score || 0).level}</h3>
+                    <p className="text-xs text-muted-foreground truncate">
                       {calculateLevel(profile?.total_score || 0).experience} / {calculateLevel(profile?.total_score || 0).nextLevelExp} EXP
                     </p>
                   </div>
                 </div>
                 
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-primary">
-                    {(profile?.total_score || 0).toLocaleString()}
+                <div className="text-right flex-shrink-0">
+                  <div className="text-lg font-bold text-primary">
+                    {(profile?.total_score || 0) > 9999 
+                      ? `${Math.floor((profile?.total_score || 0) / 1000)}k` 
+                      : (profile?.total_score || 0).toLocaleString()
+                    }
                   </div>
-                  <div className="text-xs text-muted-foreground">Toplam Puan</div>
+                  <div className="text-xs text-muted-foreground">Puan</div>
                 </div>
               </div>
               
@@ -304,7 +303,7 @@ const HomePage = () => {
                   <span>İlerleme</span>
                   <span>%{Math.round((calculateLevel(profile?.total_score || 0).experience / calculateLevel(profile?.total_score || 0).nextLevelExp) * 100)}</span>
                 </div>
-                <div className="w-full bg-black/20 rounded-full h-3 overflow-hidden">
+                <div className="w-full bg-black/20 rounded-full h-2 overflow-hidden">
                   <div 
                     className="h-full bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 rounded-full transition-all duration-1000 ease-out shadow-lg"
                     style={{ 
@@ -315,20 +314,20 @@ const HomePage = () => {
               </div>
             </div>
 
-            {/* Alt kısım - Hızlı aksiyonlar */}
-            <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/20">
-              <div className="flex items-center space-x-4">
-                <Badge variant="secondary" className="bg-white/20 text-foreground border-white/30">
+            {/* Mobil optimized alt kısım */}
+            <div className="flex flex-col space-y-2 mt-3 pt-3 border-t border-white/20">
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="secondary" className="bg-white/20 text-foreground border-white/30 text-xs">
                   <Target className="w-3 h-3 mr-1" />
-                  Günlük Hedef: {Math.min(5, profile?.daily_games || 0)}/5
+                  Günlük: {Math.min(5, profile?.daily_games || 0)}/5
                 </Badge>
-                <Badge variant="secondary" className="bg-white/20 text-foreground border-white/30">
+                <Badge variant="secondary" className="bg-white/20 text-foreground border-white/30 text-xs">
                   <Zap className="w-3 h-3 mr-1" />
                   Seri: {profile?.win_streak || 0}
                 </Badge>
               </div>
               
-              <div className="text-xs text-muted-foreground">
+              <div className="text-xs text-muted-foreground text-center">
                 {profile?.last_game_at ? `Son oyun: ${new Date(profile.last_game_at).toLocaleDateString('tr-TR')}` : 'İlk oyununuzu oynayın!'}
               </div>
             </div>
