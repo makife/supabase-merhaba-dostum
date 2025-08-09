@@ -179,37 +179,39 @@ export function FloatingMenu() {
         </div>
       </div>
 
-      {/* Main toggle button */}
-      <Button
-        onClick={handleToggle}
-        className={`group relative overflow-hidden w-14 h-14 rounded-full border-2 border-white shadow-2xl 
-                   transform transition-all duration-300 hover:scale-110 active:scale-95
-                   ${isOpen 
-                     ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rotate-45' 
-                     : 'bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90'
-                   }`}
-      >
-        {/* Pulse animation ring */}
-        <div className={`absolute inset-0 rounded-full bg-gradient-to-r from-primary to-accent 
-                        animate-ping opacity-20 ${isOpen ? 'hidden' : ''}`} />
-        
-        {/* Glow effect */}
-        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-primary/50 to-accent/50 
-                       blur-lg scale-150 opacity-30" />
-        
-        {/* Button content */}
-        <div className="relative z-10 flex items-center justify-center">
-          {isOpen ? (
-            <X className="w-6 h-6 text-white transition-transform duration-300" />
-          ) : (
-            <MenuIcon className="w-6 h-6 text-white transition-transform duration-300" />
-          )}
-        </div>
+      {/* Main toggle button - Fixed position */}
+      <div className="fixed bottom-6 right-6">
+        <Button
+          onClick={handleToggle}
+          className={`group relative overflow-hidden w-14 h-14 rounded-full border-2 border-white shadow-2xl 
+                     transform transition-all duration-300 hover:scale-110 active:scale-95
+                     ${isOpen 
+                       ? 'bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 rotate-45' 
+                       : 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700'
+                     }`}
+        >
+          {/* Pulse animation ring */}
+          <div className={`absolute inset-0 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 
+                          animate-ping opacity-20 ${isOpen ? 'hidden' : ''}`} />
+          
+          {/* Glow effect */}
+          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-600/50 to-blue-600/50 
+                         blur-lg scale-150 opacity-30" />
+          
+          {/* Button content */}
+          <div className="relative z-10 flex items-center justify-center">
+            {isOpen ? (
+              <X className="w-6 h-6 text-white transition-transform duration-300" />
+            ) : (
+              <MenuIcon className="w-6 h-6 text-white transition-transform duration-300" />
+            )}
+          </div>
 
-        {/* Ripple effect on click */}
-        <div className="absolute inset-0 bg-white/30 scale-0 group-active:scale-100 
-                       transition-transform duration-150 rounded-full" />
-      </Button>
+          {/* Ripple effect on click */}
+          <div className="absolute inset-0 bg-white/30 scale-0 group-active:scale-100 
+                         transition-transform duration-150 rounded-full" />
+        </Button>
+      </div>
 
       {/* Global Chat */}
       <GlobalChat 
