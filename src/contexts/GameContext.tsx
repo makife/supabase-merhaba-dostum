@@ -75,20 +75,36 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     return grid;
   };
 
-  // Clean up old rooms
+  // Clean up old rooms - more aggressive cleanup
   const cleanupOldRooms = async () => {
     try {
-      const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      const oneMinuteAgo = new Date(Date.now() - 1 * 60 * 1000).toISOString();
       
-      // Delete old waiting and finished rooms
+      // Delete old waiting rooms older than 5 minutes
       await supabase
         .from('game_rooms')
         .delete()
-        .or(`status.eq.finished,and(status.eq.waiting,created_at.lt.${fifteenMinutesAgo})`);
+        .eq('status', 'waiting')
+        .lt('created_at', fiveMinutesAgo);
         
-      console.log('🧹 Cleaned up old rooms');
+      // Delete finished rooms older than 1 minute
+      await supabase
+        .from('game_rooms')
+        .delete()
+        .eq('status', 'finished')
+        .lt('finished_at', oneMinuteAgo);
+        
+      // Delete active rooms that started more than 10 minutes ago (stale games)
+      await supabase
+        .from('game_rooms')
+        .delete()
+        .eq('status', 'active')
+        .lt('started_at', new Date(Date.now() - 10 * 60 * 1000).toISOString());
+        
+      console.log('🧹 Aggressive cleanup completed');
     } catch (error) {
-      console.error('Error cleaning up:', error);
+      console.error('Error in cleanup:', error);
     }
   };
 
@@ -220,10 +236,12 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     try {
       console.log('🔍 Starting random match search for:', gameType);
       
-      // Cleanup first
+      // Aggressive cleanup first
       await cleanupOldRooms();
       
-      // Look for waiting rooms (only real users, not AI)
+      // Look for ONLY fresh waiting rooms from the last minute
+      const oneMinuteAgo = new Date(Date.now() - 1 * 60 * 1000).toISOString();
+      
       const { data: waitingRooms } = await supabase
         .from('game_rooms')
         .select(`
@@ -237,7 +255,10 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         .eq('game_mode', 'random-match')
         .eq('status', 'waiting')
         .neq('host_id', user.id)
+        .gt('created_at', oneMinuteAgo)  // Only rooms created in last minute
         .eq('game_participants.is_bot', false);
+
+      console.log('🔍 Found waiting rooms:', waitingRooms?.length || 0);
 
       // Find suitable room with exactly 1 real player
       const suitableRoom = waitingRooms?.find(room => {
@@ -261,11 +282,11 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           });
 
         setCurrentRoom(suitableRoom);
-        console.log('✅ Found and joined existing room');
+        console.log('✅ Found and joined existing fresh room');
         return true; // Immediate match found
       }
 
-      // No suitable room found - create new room and wait
+      // No suitable room found - create brand new room
       const grid = generateRandomGrid();
       const { data: newRoom } = await supabase
         .from('game_rooms')
@@ -291,7 +312,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           });
 
         setCurrentRoom(newRoom);
-        console.log('🔄 Created new room, waiting for opponent...');
+        console.log('🆕 Created brand new room for matchmaking');
       }
       
       return false; // No immediate match, waiting for players
