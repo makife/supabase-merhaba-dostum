@@ -8,7 +8,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { GameProvider } from "@/contexts/GameContext";
 import { MusicProvider } from "@/contexts/MusicContext";
 import { UserProvider } from "@/contexts/UserContext";
-import { useTheme } from "@/hooks/useTheme";
+// removed useTheme import as it conflicts with ThemeProvider
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AuthPage from "@/pages/AuthPage";
 import HomePage from "@/pages/HomePage";
@@ -89,9 +89,6 @@ const AppRoutes = () => {
 };
 
 const App = () => {
-  // Initialize theme on app startup
-  useTheme();
-  
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
