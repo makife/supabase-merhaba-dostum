@@ -288,13 +288,19 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
           })
           .subscribe(async (status) => {
             if (status === 'SUBSCRIBED') {
-              // Track user presence when subscribed
-              await channel.track({
-                user_id: user.id,
-                username: displayName,
-                typing: false,
-                online_at: new Date().toISOString(),
-              });
+              // Add a small delay to ensure channel is fully ready
+              setTimeout(async () => {
+                try {
+                  await channel.track({
+                    user_id: user.id,
+                    username: displayName,
+                    typing: false,
+                    online_at: new Date().toISOString(),
+                  });
+                } catch (error) {
+                  console.error('Error tracking presence:', error);
+                }
+              }, 100);
             }
           });
 
