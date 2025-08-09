@@ -116,7 +116,7 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
       clearInterval(countdownInterval);
       clearTimeout(searchTimeout);
     };
-  }, [findRandomMatch, gameType, playSound, toast, onMatchFound]);
+  }, [findRandomMatch, gameType]); // onMatchFound, playSound, toast'u çıkardım
 
   const handlePlayWithAI = () => {
     playSound('buttonClick');
