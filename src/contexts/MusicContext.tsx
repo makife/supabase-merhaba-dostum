@@ -239,6 +239,13 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const setMusicPack = (pack: string) => {
+    const wasPlaying = backgroundMusicRef.current && !backgroundMusicRef.current.paused;
+    
+    // Stop current music if playing
+    if (wasPlaying) {
+      stopBackgroundMusic();
+    }
+    
     setMusicPackState(pack);
     
     // Save to localStorage
@@ -246,6 +253,14 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     settings.musicPack = pack;
     localStorage.setItem('kelimeci-settings', JSON.stringify(settings));
     window.dispatchEvent(new Event('settingsChanged'));
+    
+    // Restart music with new pack if it was playing and music is enabled
+    if (wasPlaying && musicEnabled) {
+      // Small delay to allow audio element to update
+      setTimeout(() => {
+        startBackgroundMusic();
+      }, 100);
+    }
   };
 
   return (
