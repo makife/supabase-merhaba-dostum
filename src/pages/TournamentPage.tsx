@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -45,6 +45,7 @@ interface TournamentParticipant {
 
 const TournamentPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { user } = useAuth();
   const [activeTournaments, setActiveTournaments] = useState<Tournament[]>([]);
@@ -53,6 +54,14 @@ const TournamentPage = () => {
   const [waitingTime, setWaitingTime] = useState(60);
   const [isJoining, setIsJoining] = useState(false);
   const [gameType, setGameType] = useState<'timed' | 'score'>('timed');
+  
+  // Get game type from navigation state if available
+  useEffect(() => {
+    const state = location.state as { gameType?: 'timed' | 'score' } | null;
+    if (state?.gameType) {
+      setGameType(state.gameType);
+    }
+  }, []);
 
   useEffect(() => {
     loadActiveTournaments();
@@ -478,24 +487,20 @@ const TournamentPage = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3">
-              <label className="text-sm font-medium">Oyun Türü</label>
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  variant={gameType === 'timed' ? 'default' : 'outline'}
-                  onClick={() => setGameType('timed')}
-                  className="flex items-center space-x-2"
-                >
-                  <Clock className="w-4 h-4" />
-                  <span>Süreli (30s)</span>
-                </Button>
-                <Button
-                  variant={gameType === 'score' ? 'default' : 'outline'}
-                  onClick={() => setGameType('score')}
-                  className="flex items-center space-x-2"
-                >
-                  <Target className="w-4 h-4" />
-                  <span>Puanlı (500)</span>
-                </Button>
+              <div className="text-center p-4 bg-muted rounded-lg">
+                <div className="flex items-center justify-center space-x-2 mb-2">
+                  {gameType === 'timed' ? (
+                    <Clock className="w-5 h-5 text-primary" />
+                  ) : (
+                    <Target className="w-5 h-5 text-primary" />
+                  )}
+                  <span className="font-semibold">
+                    {gameType === 'timed' ? 'Süreli Oyun (2 dakika)' : 'Puanlı Oyun (500 puan)'}
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Oyun türü seçildi
+                </p>
               </div>
             </div>
             <div className="flex items-center space-x-4">

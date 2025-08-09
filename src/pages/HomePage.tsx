@@ -473,6 +473,19 @@ const HomePage = () => {
               setSelectedMode(null);
             }}
           />
+        ) : selectedMode === 'tournament' ? (
+          <GameModeSelector
+            mode={selectedMode}
+            onStart={(gameType) => {
+              playSound('buttonClick');
+              navigate('/tournament', { state: { gameType } });
+              setSelectedMode(null);
+            }}
+            onClose={() => {
+              playSound('buttonClick');
+              setSelectedMode(null);
+            }}
+          />
         ) : selectedMode ? (
           <GameModeSelector
             mode={selectedMode}
