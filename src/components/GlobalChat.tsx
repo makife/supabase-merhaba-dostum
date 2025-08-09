@@ -244,13 +244,30 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
             (payload) => {
               const newReaction = payload.new as MessageReaction;
               console.log('New reaction received:', newReaction);
-              setMessageReactions(prev => ({
-                ...prev,
-                [newReaction.message_id]: [
-                  ...(prev[newReaction.message_id] || []),
-                  newReaction
-                ]
-              }));
+              
+              // Don't add if it's already in state (optimistic update)
+              setMessageReactions(prev => {
+                const existing = prev[newReaction.message_id] || [];
+                const hasTemp = existing.some(r => r.id.startsWith('temp-') && r.user_id === newReaction.user_id && r.emoji === newReaction.emoji);
+                
+                if (hasTemp) {
+                  // Replace temp reaction with real one
+                  return {
+                    ...prev,
+                    [newReaction.message_id]: existing.map(r => 
+                      r.id.startsWith('temp-') && r.user_id === newReaction.user_id && r.emoji === newReaction.emoji 
+                        ? newReaction 
+                        : r
+                    )
+                  };
+                } else {
+                  // Add new reaction
+                  return {
+                    ...prev,
+                    [newReaction.message_id]: [...existing, newReaction]
+                  };
+                }
+              });
             }
           )
           .on(
@@ -445,11 +462,27 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
     }
   };
 
-  // Add emoji reaction
   const addReaction = async (messageId: string, emoji: string) => {
     if (!user) return;
 
     try {
+      // Optimistic update - add reaction immediately
+      const tempReaction: MessageReaction = {
+        id: `temp-${Date.now()}`,
+        message_id: messageId,
+        user_id: user.id,
+        emoji: emoji,
+        created_at: new Date().toISOString()
+      };
+
+      setMessageReactions(prev => ({
+        ...prev,
+        [messageId]: [
+          ...(prev[messageId] || []),
+          tempReaction
+        ]
+      }));
+
       const { error } = await supabase
         .from('message_reactions')
         .insert({
@@ -458,7 +491,15 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
           emoji: emoji
         });
 
-      if (error) throw error;
+      if (error) {
+        // Remove optimistic update on error
+        setMessageReactions(prev => ({
+          ...prev,
+          [messageId]: (prev[messageId] || []).filter(r => r.id !== tempReaction.id)
+        }));
+        throw error;
+      }
+
       playSound('buttonClick');
       setShowEmojiPicker(null);
     } catch (error) {
