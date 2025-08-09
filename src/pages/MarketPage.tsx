@@ -361,6 +361,28 @@ const MarketPage = () => {
       image: '/lovable-uploads/309c658e-e0d1-423a-80d6-9b012943f30d.png'
     },
 
+    // Ses Efekti Paketleri
+    {
+      id: 'sound_pack_space',
+      title: 'Uzay Ses Paketi',
+      description: 'Futuristik elektronik ses efektleri',
+      price: 1.99,
+      currency: 'premium',
+      icon: Zap,
+      type: 'sound',
+      value: 1
+    },
+    {
+      id: 'sound_pack_nature',
+      title: 'Doğa Ses Paketi',
+      description: 'Rahatlatıcı doğa ses efektleri',
+      price: 1.99,
+      currency: 'premium',
+      icon: Music,
+      type: 'sound',
+      value: 1
+    },
+
     // Müzik Paketleri
     {
       id: 'music_pack_nature1',
