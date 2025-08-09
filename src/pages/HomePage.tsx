@@ -298,16 +298,37 @@ const HomePage = () => {
               </div>
             </div>
 
-            {/* Mobil optimized alt kısım */}
-            <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-white/20 justify-center">
-              <Badge variant="secondary" className="bg-white/20 text-foreground border-white/30 text-xs">
-                <Target className="w-3 h-3 mr-1" />
-                Günlük: {Math.min(5, profile?.daily_games || 0)}/5
-              </Badge>
-              <Badge variant="secondary" className="bg-white/20 text-foreground border-white/30 text-xs">
-                <Zap className="w-3 h-3 mr-1" />
-                Seri: {profile?.win_streak || 0}
-              </Badge>
+            {/* Alt kısım - Hak barı ve istatistikler */}
+            <div className="space-y-2 mt-2 pt-2 border-t border-white/20">
+              {/* Hak barı - sadece premium değilse göster */}
+              {!isPremium && (
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-muted-foreground">Oyun Hakları</span>
+                    <span className="text-xs font-medium text-foreground">{profile?.game_credits || 0}/5</span>
+                  </div>
+                  <div className="w-full bg-black/20 rounded-full h-2 overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-orange-400 to-yellow-500 rounded-full transition-all duration-500 ease-out shadow-sm"
+                      style={{ 
+                        width: `${Math.max(10, ((profile?.game_credits || 0) / 5) * 100)}%` 
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {/* İstatistik badge'leri */}
+              <div className="flex flex-wrap gap-2 justify-center">
+                <Badge variant="secondary" className="bg-white/20 text-foreground border-white/30 text-xs">
+                  <Target className="w-3 h-3 mr-1" />
+                  Günlük: {Math.min(5, profile?.daily_games || 0)}/5
+                </Badge>
+                <Badge variant="secondary" className="bg-white/20 text-foreground border-white/30 text-xs">
+                  <Zap className="w-3 h-3 mr-1" />
+                  Seri: {profile?.win_streak || 0}
+                </Badge>
+              </div>
             </div>
           </CardContent>
         </Card>
