@@ -19,6 +19,14 @@ interface ChatMessage {
   created_at: string;
 }
 
+interface MessageReaction {
+  id: string;
+  message_id: string;
+  user_id: string;
+  emoji: string;
+  created_at: string;
+}
+
 interface GlobalChatProps {
   isOpen: boolean;
   onClose: () => void;
@@ -34,6 +42,8 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
+  const [messageReactions, setMessageReactions] = useState<{[messageId: string]: MessageReaction[]}>({});
+  const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Scroll to bottom when new messages arrive
@@ -51,6 +61,40 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
       fetchMessages();
     }
   }, [isOpen]);
+
+  // Fetch reactions for messages
+  const fetchReactions = async () => {
+    try {
+      const messageIds = messages.map(m => m.id);
+      if (messageIds.length === 0) return;
+
+      const { data, error } = await supabase
+        .from('message_reactions')
+        .select('*')
+        .in('message_id', messageIds);
+
+      if (error) throw error;
+
+      const reactionsByMessage: {[messageId: string]: MessageReaction[]} = {};
+      data?.forEach(reaction => {
+        if (!reactionsByMessage[reaction.message_id]) {
+          reactionsByMessage[reaction.message_id] = [];
+        }
+        reactionsByMessage[reaction.message_id].push(reaction);
+      });
+
+      setMessageReactions(reactionsByMessage);
+    } catch (error) {
+      console.error('Error fetching reactions:', error);
+    }
+  };
+
+  // Fetch reactions when messages change
+  useEffect(() => {
+    if (messages.length > 0) {
+      fetchReactions();
+    }
+  }, [messages]);
 
   // Set up realtime subscription and presence
   useEffect(() => {
@@ -88,6 +132,40 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
               
               // Play sound for new messages from other users
               playSound('correctWord');
+            }
+          )
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'message_reactions'
+            },
+            (payload) => {
+              const newReaction = payload.new as MessageReaction;
+              setMessageReactions(prev => ({
+                ...prev,
+                [newReaction.message_id]: [
+                  ...(prev[newReaction.message_id] || []),
+                  newReaction
+                ]
+              }));
+            }
+          )
+          .on(
+            'postgres_changes',
+            {
+              event: 'DELETE',
+              schema: 'public',
+              table: 'message_reactions'
+            },
+            (payload) => {
+              const deletedReaction = payload.old as MessageReaction;
+              setMessageReactions(prev => ({
+                ...prev,
+                [deletedReaction.message_id]: (prev[deletedReaction.message_id] || [])
+                  .filter(r => r.id !== deletedReaction.id)
+              }));
             }
           )
           .on('presence', { event: 'sync' }, () => {
@@ -252,11 +330,80 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
     }
   };
 
+  // Add emoji reaction
+  const addReaction = async (messageId: string, emoji: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('message_reactions')
+        .insert({
+          message_id: messageId,
+          user_id: user.id,
+          emoji: emoji
+        });
+
+      if (error) throw error;
+      playSound('buttonClick');
+      setShowEmojiPicker(null);
+    } catch (error) {
+      console.error('Error adding reaction:', error);
+      toast.error('Reaksiyon eklenirken hata oluştu');
+    }
+  };
+
+  // Remove emoji reaction
+  const removeReaction = async (messageId: string, emoji: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('message_reactions')
+        .delete()
+        .eq('message_id', messageId)
+        .eq('user_id', user.id)
+        .eq('emoji', emoji);
+
+      if (error) throw error;
+      playSound('buttonClick');
+    } catch (error) {
+      console.error('Error removing reaction:', error);
+      toast.error('Reaksiyon kaldırılırken hata oluştu');
+    }
+  };
+
+  // Toggle emoji reaction
+  const toggleReaction = async (messageId: string, emoji: string) => {
+    if (!user) return;
+
+    const userReaction = messageReactions[messageId]?.find(
+      r => r.user_id === user.id && r.emoji === emoji
+    );
+
+    if (userReaction) {
+      await removeReaction(messageId, emoji);
+    } else {
+      await addReaction(messageId, emoji);
+    }
+  };
+
   const formatTime = (timestamp: string) => {
     return new Date(timestamp).toLocaleTimeString('tr-TR', {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  // Group reactions by emoji
+  const groupReactions = (reactions: MessageReaction[]) => {
+    const grouped: {[emoji: string]: MessageReaction[]} = {};
+    reactions.forEach(reaction => {
+      if (!grouped[reaction.emoji]) {
+        grouped[reaction.emoji] = [];
+      }
+      grouped[reaction.emoji].push(reaction);
+    });
+    return grouped;
   };
 
   if (!isOpen) return null;
@@ -307,6 +454,53 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
                 </div>
                 <div className="break-words text-foreground">
                   {message.message}
+                </div>
+                
+                {/* Reactions */}
+                <div className="flex items-center space-x-2 mt-1">
+                  {/* Show existing reactions */}
+                  {messageReactions[message.id] && Object.entries(groupReactions(messageReactions[message.id])).map(([emoji, reactions]) => (
+                    <button
+                      key={emoji}
+                      onClick={() => toggleReaction(message.id, emoji)}
+                      className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs transition-colors ${
+                        reactions.some(r => r.user_id === user?.id)
+                          ? 'bg-primary/20 text-primary border border-primary/30'
+                          : 'bg-muted hover:bg-muted/80'
+                      }`}
+                    >
+                      <span>{emoji}</span>
+                      <span>{reactions.length}</span>
+                    </button>
+                  ))}
+                  
+                  {/* Add reaction button */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowEmojiPicker(showEmojiPicker === message.id ? null : message.id)}
+                      className="w-6 h-6 rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center text-xs"
+                      title="Reaksiyon ekle"
+                    >
+                      +
+                    </button>
+                    
+                    {/* Quick emoji picker */}
+                    {showEmojiPicker === message.id && (
+                      <div className="absolute bottom-full left-0 mb-1 bg-popover border rounded-lg p-2 shadow-md z-10">
+                        <div className="flex space-x-1">
+                          {['👍', '❤️', '😂', '😮', '😢', '😡'].map(emoji => (
+                            <button
+                              key={emoji}
+                              onClick={() => addReaction(message.id, emoji)}
+                              className="w-8 h-8 rounded hover:bg-muted/50 flex items-center justify-center"
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
