@@ -714,13 +714,19 @@ const GamePage = ({ gameMode }: GamePageProps) => {
 
   // Trigger word effects (confetti/fireworks) if purchased
   const triggerWordEffects = () => {
-    // Check if user has purchased confetti effect
-    if (hasPurchased('effect_confetti')) {
-      createConfettiEffect();
-    }
+    const hasConfetti = hasPurchased('effect_confetti');
+    const hasFireworks = hasPurchased('effect_fireworks');
     
-    // Check if user has purchased fireworks effect
-    if (hasPurchased('effect_fireworks')) {
+    // If both purchased, randomly choose one
+    if (hasConfetti && hasFireworks) {
+      if (Math.random() > 0.5) {
+        createConfettiEffect();
+      } else {
+        createFireworksEffect();
+      }
+    } else if (hasConfetti) {
+      createConfettiEffect();
+    } else if (hasFireworks) {
       createFireworksEffect();
     }
   };
