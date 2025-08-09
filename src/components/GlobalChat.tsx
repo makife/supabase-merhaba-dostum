@@ -265,20 +265,21 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
           )
           .on('presence', { event: 'sync' }, () => {
             const newState = channel.presenceState();
+            console.log('Presence state:', newState);
             const typing = new Set<string>();
             const online = new Set<string>();
             
             Object.values(newState).forEach((presences: any) => {
               presences.forEach((presence: any) => {
-                if (presence.user_id !== user.id) {
-                  online.add(presence.username);
-                  if (presence.typing) {
-                    typing.add(presence.username);
-                  }
+                console.log('Presence user:', presence);
+                online.add(presence.username);
+                if (presence.typing) {
+                  typing.add(presence.username);
                 }
               });
             });
             
+            console.log('Online users:', Array.from(online));
             setTypingUsers(typing);
             setOnlineUsers(online);
           })
