@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Send, MessageCircle, X, Trash2 } from 'lucide-react';
+import { UserAvatar } from '@/components/UserAvatar';
 import { toast } from 'sonner';
 
 interface ChatMessage {
@@ -17,6 +18,7 @@ interface ChatMessage {
   username: string;
   message: string;
   created_at: string;
+  avatar_url?: string;
 }
 
 interface MessageReaction {
@@ -44,6 +46,7 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
   const [messageReactions, setMessageReactions] = useState<{[messageId: string]: MessageReaction[]}>({});
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
+  const [userAvatars, setUserAvatars] = useState<{[userId: string]: string}>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Scroll to bottom when new messages arrive
@@ -89,7 +92,38 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
     }
   };
 
-  // Fetch reactions when messages change
+  // Fetch user avatars
+  const fetchUserAvatars = async (userIds: string[]) => {
+    if (userIds.length === 0) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, avatar_url')
+        .in('id', userIds);
+
+      if (error) throw error;
+
+      const avatarMap: {[userId: string]: string} = {};
+      data?.forEach(profile => {
+        if (profile.avatar_url) {
+          avatarMap[profile.id] = profile.avatar_url;
+        }
+      });
+
+      setUserAvatars(prev => ({ ...prev, ...avatarMap }));
+    } catch (error) {
+      console.error('Error fetching user avatars:', error);
+    }
+  };
+
+  // Fetch avatars when messages change
+  useEffect(() => {
+    if (messages.length > 0) {
+      const userIds = [...new Set(messages.map(m => m.user_id))];
+      fetchUserAvatars(userIds);
+    }
+  }, [messages]);
   useEffect(() => {
     if (messages.length > 0) {
       fetchReactions();
@@ -482,6 +516,12 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
               <div key={message.id} className="group flex flex-col space-y-1 hover:bg-muted/30 rounded-lg p-2 -m-2 transition-colors">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
+                    <UserAvatar
+                      src={userAvatars[message.user_id]}
+                      alt={message.username}
+                      fallback={message.username.charAt(0).toUpperCase()}
+                      size="sm"
+                    />
                     <span 
                       className={`text-sm font-medium ${
                         message.user_id === user?.id ? 'text-primary' : 'text-muted-foreground'

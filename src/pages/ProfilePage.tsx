@@ -2,11 +2,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
+import { UserAvatar } from '@/components/UserAvatar';
 import { useNavigate } from 'react-router-dom';
-import { useProfilePicture } from '@/hooks/useProfilePicture';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
@@ -17,7 +16,6 @@ import {
   Clock,
   Zap,
   Crown,
-  Camera,
   Edit,
   Calendar
 } from 'lucide-react';
@@ -25,8 +23,6 @@ import {
 const ProfilePage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { uploadProfilePicture, uploading } = useProfilePicture();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedUsername, setEditedUsername] = useState('');
   const [profileData, setProfileData] = useState({
@@ -137,25 +133,6 @@ const ProfilePage = () => {
     };
   }, [user]);
 
-  const handleAvatarClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const avatarUrl = await uploadProfilePicture(file);
-    if (avatarUrl) {
-      setProfileData(prev => ({ ...prev, avatar_url: avatarUrl }));
-    }
-    
-    // Reset file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
   const handleEditToggle = () => {
     if (isEditing) {
       setEditedUsername(profileData.username);
@@ -251,29 +228,14 @@ const ProfilePage = () => {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center space-x-4">
-              <div className="relative">
-                <Avatar className="w-20 h-20">
-                  <AvatarImage src={profileData.avatar_url} alt={profileData.username} />
-                  <AvatarFallback className="text-2xl">
-                    {profileData.username.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <Button 
-                  size="sm" 
-                  onClick={handleAvatarClick}
-                  disabled={uploading}
-                  className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full p-0"
-                >
-                  <Camera className="w-4 h-4" />
-                </Button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-              </div>
+              <UserAvatar
+                src={profileData.avatar_url}
+                alt={profileData.username}
+                fallback={profileData.username.charAt(0).toUpperCase()}
+                size="xl"
+                editable={true}
+                onAvatarChange={(newUrl) => setProfileData(prev => ({ ...prev, avatar_url: newUrl || '' }))}
+              />
               <div className="flex-1">
                 {isEditing ? (
                   <Input
