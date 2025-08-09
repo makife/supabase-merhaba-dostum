@@ -6,8 +6,6 @@ import { Users, Bot, Loader2, Zap, User } from 'lucide-react';
 import { useGame } from '@/contexts/GameContext';
 import { useSounds } from '@/hooks/useSounds';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 
 interface MatchmakingModalProps {
   onClose: () => void;
@@ -18,26 +16,25 @@ interface MatchmakingModalProps {
 const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalProps) => {
   const [searchProgress, setSearchProgress] = useState(0);
   const [searchStatus, setSearchStatus] = useState<'searching' | 'ai-fallback' | 'found'>('searching');
-  const [countdown, setCountdown] = useState(15);
-  const { findRandomMatch, currentRoom } = useGame();
+  const [countdown, setCountdown] = useState(10);
+  const { findRandomMatch } = useGame();
   const { playSound } = useSounds();
   const { toast } = useToast();
-  const { user } = useAuth();
 
   useEffect(() => {
     let progressInterval: NodeJS.Timeout;
     let countdownInterval: NodeJS.Timeout;
     let searchTimeout: NodeJS.Timeout;
-    let realtimeChannel: any;
 
     const startSearch = async () => {
+      console.log('🔍 Starting matchmaking for:', gameType);
       setSearchStatus('searching');
       
       // Progress animation
       progressInterval = setInterval(() => {
         setSearchProgress(prev => {
-          if (prev >= 100) return 0; // Reset when full
-          return prev + 2;
+          if (prev >= 100) return 0;
+          return prev + 5;
         });
       }, 100);
 
@@ -52,7 +49,7 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
         });
       }, 1000);
 
-      // Search timeout - switch to AI after 15 seconds
+      // Auto fallback to AI after 10 seconds
       searchTimeout = setTimeout(() => {
         setSearchStatus('ai-fallback');
         clearInterval(progressInterval);
@@ -60,78 +57,43 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
         
         toast({
           title: 'Oyuncu Bulunamadı',
-          description: 'Şu an online oyuncu yok, AI ile oynayacaksın',
-          duration: 3000,
+          description: 'AI ile oynama başlatılıyor...',
+          duration: 2000,
         });
 
-        // Auto proceed with AI after 3 seconds
         setTimeout(() => {
           onMatchFound(true);
-        }, 3000);
-      }, 15000);
+        }, 2000);
+      }, 10000);
 
-      // Try to find real player and set up polling for new participants
+      // Try to find a match
       try {
-        console.log('🔍 Attempting to find random match...');
-        const match = await findRandomMatch(gameType);
-        console.log('🎮 Match result:', match);
+        const matchFound = await findRandomMatch(gameType);
         
-        if (match) {
+        if (matchFound) {
           // Immediate match found
           clearTimeout(searchTimeout);
           clearInterval(progressInterval);
           clearInterval(countdownInterval);
           setSearchStatus('found');
           playSound('correctWord');
+          
           toast({
             title: 'Oyuncu Bulundu!',
             description: 'Rakip oyuncu ile eşleştiniz',
           });
+          
           setTimeout(() => {
             onMatchFound(false);
           }, 1500);
-        } else {
-          // No immediate match, start polling for new participants
-          console.log('🏗️ Starting polling for new participants...');
-          
-          // Start polling every second to check for new participants
-          const pollForParticipants = setInterval(async () => {
-            try {
-              if (currentRoom) {
-                const { data: participants } = await supabase
-                  .from('game_participants')
-                  .select('user_id')
-                  .eq('room_id', currentRoom.id);
-                
-                if (participants && participants.length >= 2) {
-                  // Found second participant!
-                  console.log('🎉 Second participant found!');
-                  clearInterval(pollForParticipants);
-                  clearTimeout(searchTimeout);
-                  clearInterval(progressInterval);
-                  clearInterval(countdownInterval);
-                  
-                  setSearchStatus('found');
-                  playSound('correctWord');
-                  toast({
-                    title: 'Oyuncu Bulundu!',
-                    description: 'Rakip oyuncu katıldı!',
-                  });
-                  setTimeout(() => {
-                    onMatchFound(false);
-                  }, 1500);
-                }
-              }
-            } catch (error) {
-              console.error('❌ Polling error:', error);
-            }
-          }, 1000); // Check every second
-          
-          // Store the polling interval to clean it up later  
-          realtimeChannel = { pollInterval: pollForParticipants };
         }
+        // If no immediate match, waiting logic is handled in GameContext
       } catch (error) {
         console.error('🚨 Matchmaking error:', error);
+        // Fallback to AI on error
+        setTimeout(() => {
+          onMatchFound(true);
+        }, 1000);
       }
     };
 
@@ -141,9 +103,6 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
       clearInterval(progressInterval);
       clearInterval(countdownInterval);
       clearTimeout(searchTimeout);
-      if (realtimeChannel?.pollInterval) {
-        clearInterval(realtimeChannel.pollInterval);
-      }
     };
   }, [findRandomMatch, gameType, playSound, toast, onMatchFound]);
 
@@ -159,24 +118,24 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
           icon: Zap,
           title: 'Oyuncu Aranıyor...',
           description: 'Online oyuncular arasında rakip arıyoruz',
-          color: 'text-purple-500',
-          bgColor: 'bg-purple-500'
+          color: 'text-primary',
+          bgColor: 'bg-primary'
         };
       case 'ai-fallback':
         return {
           icon: Bot,
-          title: 'Oyuncu Bulunamadı',
-          description: 'AI ile oynama hazırlanıyor...',
-          color: 'text-blue-500',
-          bgColor: 'bg-blue-500'
+          title: 'AI ile Oyun Başlıyor',
+          description: 'Bilgisayar rakibiniz hazırlanıyor...',
+          color: 'text-secondary',
+          bgColor: 'bg-secondary'
         };
       case 'found':
         return {
           icon: User,
           title: 'Oyuncu Bulundu!',
           description: 'Rakip ile eşleştiniz',
-          color: 'text-green-500',
-          bgColor: 'bg-green-500'
+          color: 'text-accent',
+          bgColor: 'bg-accent'
         };
     }
   };
@@ -202,8 +161,8 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
             {/* Ripple effect for searching */}
             {searchStatus === 'searching' && (
               <>
-                <div className="absolute inset-0 rounded-full border-4 border-purple-500/30 animate-ping"></div>
-                <div className="absolute inset-2 rounded-full border-4 border-purple-500/20 animate-ping animation-delay-300"></div>
+                <div className="absolute inset-0 rounded-full border-4 border-primary/30 animate-ping"></div>
+                <div className="absolute inset-2 rounded-full border-4 border-primary/20 animate-ping animation-delay-300"></div>
               </>
             )}
           </div>
@@ -230,7 +189,7 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
             <div className="space-y-2">
               <Progress value={searchProgress} className="h-2" />
               <p className="text-sm text-muted-foreground">
-                Arama sürecek: {countdown} saniye
+                {countdown} saniye sonra AI ile oyun
               </p>
             </div>
           )}
@@ -240,14 +199,14 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
             <div className="space-y-3">
               <div className="flex items-center justify-center space-x-2 text-sm text-muted-foreground">
                 <Bot className="w-4 h-4" />
-                <span>AI ile oynama otomatik başlayacak</span>
+                <span>AI rakip hazırlanıyor...</span>
               </div>
               <Button
                 onClick={handlePlayWithAI}
                 className="w-full"
                 size="lg"
               >
-                Hemen AI ile Oyna
+                Hemen Başla
               </Button>
             </div>
           )}
@@ -255,7 +214,7 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
           {/* Found Match */}
           {searchStatus === 'found' && (
             <div className="space-y-3">
-              <div className="flex items-center justify-center space-x-2 text-sm text-green-600">
+              <div className="flex items-center justify-center space-x-2 text-sm text-accent">
                 <Users className="w-4 h-4" />
                 <span>Rakip oyuncu bulundu!</span>
               </div>
