@@ -396,32 +396,34 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
 
         const displayName = profileData?.username || profileData?.email?.split('@')[0] || 'Anonim';
         
-        const channel = supabase.channel('global-chat');
+        const existingChannel = supabase.getChannels().find(ch => ch.topic === 'realtime:global-chat');
         
-        // Send typing status
-        channel.track({
-          user_id: user.id,
-          username: displayName,
-          typing: true,
-          online_at: new Date().toISOString(),
-        });
-        
-        // Clear previous timeout
-        if (typingTimeout) {
-          clearTimeout(typingTimeout);
-        }
-        
-        // Set new timeout to stop typing
-        const timeout = setTimeout(() => {
-          channel.track({
+        if (existingChannel && existingChannel.state === 'joined') {
+          // Send typing status
+          existingChannel.track({
             user_id: user.id,
             username: displayName,
-            typing: false,
+            typing: true,
             online_at: new Date().toISOString(),
           });
-        }, 2000);
-        
-        setTypingTimeout(timeout);
+          
+          // Clear previous timeout
+          if (typingTimeout) {
+            clearTimeout(typingTimeout);
+          }
+          
+          // Set new timeout to stop typing
+          const timeout = setTimeout(() => {
+            existingChannel.track({
+              user_id: user.id,
+              username: displayName,
+              typing: false,
+              online_at: new Date().toISOString(),
+            });
+          }, 2000);
+          
+          setTypingTimeout(timeout);
+        }
       } catch (error) {
         console.error('Error handling typing indicator:', error);
       }
