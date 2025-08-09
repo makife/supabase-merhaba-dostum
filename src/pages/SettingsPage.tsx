@@ -144,7 +144,7 @@ const SettingsPage = () => {
         
         <h3 class="font-semibold text-lg">Oyun Modları</h3>
         <ul class="list-disc list-inside space-y-2">
-          <li><strong>Bilgisayara Karşı:</strong> AI rakibe karşı oynayın</li>
+          <li><strong>Yapay Zekaya Karşı:</strong> AI rakibe karşı oynayın</li>
           <li><strong>Özel Oda:</strong> Arkadaşlarınızla özel oyun oluşturun</li>
           <li><strong>Rastgele Rakip:</strong> Online oyuncularla eşleşin</li>
           <li><strong>Turnuva:</strong> 8 kişilik turnuvalara katılın</li>

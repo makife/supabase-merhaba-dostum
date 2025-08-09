@@ -104,8 +104,8 @@ const HomePage = () => {
   const gameModesConfig = [
     {
       id: 'vs-computer',
-      title: 'Bilgisayara Karşı',
-      description: 'AI rakibine karşı oyna',
+      title: 'Yapay Zekaya Karşı',
+      description: 'AI rakibine karşı pratik yap',
       icon: Bot,
       color: 'bg-blue-500',
       gradient: 'bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700',

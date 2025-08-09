@@ -21,8 +21,8 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
     switch (mode) {
       case 'vs-computer':
         return {
-          title: 'Bilgisayara Karşı',
-          description: 'AI rakibine karşı oyna',
+          title: 'Yapay Zekaya Karşı',
+          description: 'AI rakibine karşı pratik yap',
           icon: Bot,
           color: 'bg-blue-500'
         };
