@@ -386,6 +386,14 @@ const SettingsPage = () => {
 
             <Separator />
 
+            {/* Music Pack Selector - appears when music is enabled */}
+            {musicEnabled && (
+              <>
+                <MusicPackSelector />
+                <Separator />
+              </>
+            )}
+
             {/* Effect Settings */}
             {(hasPurchased('effect_confetti') || hasPurchased('effect_fireworks')) && (
               <>
@@ -449,8 +457,6 @@ const SettingsPage = () => {
             {soundsEnabled && (
               <>
                 <SoundPackSelector />
-                <Separator />
-                <MusicPackSelector />
                 <Separator />
               </>
             )}
