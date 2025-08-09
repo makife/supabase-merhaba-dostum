@@ -41,16 +41,20 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const [searchParams] = useSearchParams();
   
   // Get game type from room or URL params
-  const getGameType = (): 'timed' | 'score' => {
+  const getGameType = useCallback((): 'timed' | 'score' => {
+    // For vs-computer mode, always use URL params
+    if (gameMode === 'vs-computer') {
+      const urlType = (searchParams.get('type') as 'timed' | 'score') || 'timed';
+      return urlType;
+    }
+    
     if (currentRoom?.game_mode) {
-      console.log('🎮 Game mode from room:', currentRoom.game_mode);
       if (currentRoom.game_mode.includes('score')) return 'score';
       if (currentRoom.game_mode.includes('timed')) return 'timed';
     }
     const urlType = (searchParams.get('type') as 'timed' | 'score') || 'timed';
-    console.log('🎮 Game type from URL:', urlType);
     return urlType;
-  };
+  }, [gameMode, currentRoom?.game_mode, searchParams]);
   
   const gameType = getGameType();
   const [timeWarningPlayed, setTimeWarningPlayed] = useState(false);
@@ -399,23 +403,47 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         return; // Bu round'u atla
       }
       
-      const aiWord = generateAIWordFromGrid();
-      
-      if (aiWord) {
-        // Add AI word to used words (normalize to uppercase for consistency)
-        setUsedWords(prev => new Set([...prev, aiWord.toUpperCase()]));
-        console.log(`🤖 AI used word: ${aiWord} (added as: ${aiWord.toUpperCase()}) in ${gameMode} mode`);
+      // Get current used words from state
+      setUsedWords(currentUsedWords => {
+        const aiWord = (() => {
+          const possibleWords = [
+            'KEDİ', 'MASA', 'ARABA', 'OKUL', 'KİTAP', 'DENİZ', 'AĞAÇ', 'ÇİÇEK', 
+            'DOSTLUK', 'GÜNEŞ', 'YILDIZ', 'BULUT', 'RÜZGAR', 'ATEŞ', 'TOPRAK',
+            'SEVGİ', 'MUTLULUK', 'UMUT', 'HAYAL', 'RENKLER', 'MÜZİK', 'DANS', 'ŞARKI',
+            'SPOR', 'FUTBOL', 'BASKETBOL', 'TENİS', 'YÜZME', 'KOŞU', 'BISIKLET',
+            'YEMEK', 'EKMEK', 'PEYNIR', 'DOMATES', 'SALATA', 'ÇORBA', 'MEYVE',
+            'ELMA', 'ARMUT', 'ÇİLEK', 'KIRAZ', 'ÜZÜM', 'PORTAKAL', 'MANGO',
+            'SEBZE', 'HAVUÇ', 'PATLICAN', 'BIBER', 'SOĞAN', 'SARMIMSAK', 'PATATES',
+            'KALE', 'KEDİK', 'KÖPEK', 'KUŞU', 'BALINA', 'ASLAN', 'KAPLAN', 'FİL',
+            'SÜT', 'KOLA', 'ÇAY', 'KAHVE', 'ŞEKER', 'TUZ', 'YAĞLI', 'EKŞI', 'BAL', 'YAG'
+          ];
+          
+          // Find unused words
+          const unusedWords = possibleWords.filter(word => 
+            !currentUsedWords.has(word.toUpperCase()) && word.length >= 3
+          );
+          
+          return unusedWords.length > 0 ? unusedWords[Math.floor(Math.random() * unusedWords.length)] : null;
+        })();
         
-        const opponentPoints = Math.floor(Math.random() * 25) + 10;
-        setOpponentScore(prev => prev + opponentPoints);
-        
-        playSound('correctWord');
-      } else {
-        // If no word can be formed, AI gets fewer points
-        const opponentPoints = Math.floor(Math.random() * 10) + 5;
-        setOpponentScore(prev => prev + opponentPoints);
-        console.log(`🤖 AI couldn't find word, got ${opponentPoints} points in ${gameMode} mode`);
-      }
+        if (aiWord) {
+          console.log(`🤖 AI used word: ${aiWord} (added as: ${aiWord.toUpperCase()}) in ${gameMode} mode`);
+          
+          const opponentPoints = Math.floor(Math.random() * 25) + 10;
+          setOpponentScore(prev => prev + opponentPoints);
+          
+          playSound('correctWord');
+          
+          // Return new used words set
+          return new Set([...currentUsedWords, aiWord.toUpperCase()]);
+        } else {
+          // If no word can be formed, AI gets fewer points
+          const opponentPoints = Math.floor(Math.random() * 10) + 5;
+          setOpponentScore(prev => prev + opponentPoints);
+          console.log(`🤖 AI couldn't find unused word, got ${opponentPoints} points in ${gameMode} mode`);
+          return currentUsedWords;
+        }
+      });
     }, 4000 + Math.random() * 3000); // 4-7 saniye arasında
 
     return () => {
