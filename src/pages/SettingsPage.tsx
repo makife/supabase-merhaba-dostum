@@ -386,26 +386,6 @@ const SettingsPage = () => {
 
             <Separator />
 
-            {/* Sound Pack Selector */}
-            {soundsEnabled && (
-              <>
-                <SoundPackSelector />
-                <Separator />
-                <MusicPackSelector />
-                <Separator />
-              </>
-            )}
-
-            {/* Theme Selector */}
-            <ThemeSelector />
-            
-            <Separator />
-
-            {/* Avatar Frame Selector */}
-            <AvatarFrameSelector />
-            
-            <Separator />
-            
             {/* Effect Settings */}
             {(hasPurchased('effect_confetti') || hasPurchased('effect_fireworks')) && (
               <>
@@ -464,6 +444,25 @@ const SettingsPage = () => {
                 <Separator />
               </>
             )}
+
+            {/* Sound Pack Selector */}
+            {soundsEnabled && (
+              <>
+                <SoundPackSelector />
+                <Separator />
+                <MusicPackSelector />
+                <Separator />
+              </>
+            )}
+
+            {/* Theme Selector */}
+            <ThemeSelector />
+            
+            <Separator />
+
+            {/* Avatar Frame Selector */}
+            <AvatarFrameSelector />
+            
             
             <Separator />
             
