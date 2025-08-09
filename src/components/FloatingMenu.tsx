@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSounds } from '@/hooks/useSounds';
 import { Button } from '@/components/ui/button';
+import { GlobalChat } from '@/components/GlobalChat';
 import {
   User,
   Settings,
@@ -10,7 +11,8 @@ import {
   LogOut,
   Menu,
   X,
-  Home
+  Home,
+  MessageCircle
 } from 'lucide-react';
 
 const menuItems = [
@@ -22,6 +24,7 @@ const menuItems = [
 
 export function FloatingMenu() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const { playSound } = useSounds();
@@ -34,6 +37,12 @@ export function FloatingMenu() {
   const handleMenuClick = (route: string) => {
     playSound('buttonClick');
     navigate(route);
+    setIsOpen(false);
+  };
+
+  const handleChatOpen = () => {
+    playSound('buttonClick');
+    setIsChatOpen(true);
     setIsOpen(false);
   };
 
@@ -67,10 +76,27 @@ export function FloatingMenu() {
             </div>
           ))}
           
-          {/* Logout Button */}
+          {/* Chat Button */}
           <div
             className="flex items-center space-x-3 animate-in slide-in-from-right-5"
             style={{ animationDelay: `${menuItems.length * 50}ms` }}
+          >
+            <span className="text-lg font-semibold text-white font-painter" style={{ textShadow: '3px 3px 0 #000, -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000, 0 3px 0 #000, 0 -3px 0 #000, 3px 0 0 #000, -3px 0 0 #000' }}>
+              Sohbet
+            </span>
+            <Button
+              size="sm"
+              className="w-12 h-12 rounded-full shadow-lg bg-teal-500 hover:bg-teal-600 text-white border-2 border-white flex items-center justify-center"
+              onClick={handleChatOpen}
+            >
+              <MessageCircle className="w-5 h-5" />
+            </Button>
+          </div>
+
+          {/* Logout Button */}
+          <div
+            className="flex items-center space-x-3 animate-in slide-in-from-right-5"
+            style={{ animationDelay: `${(menuItems.length + 1) * 50}ms` }}
           >
             <span className="text-lg font-semibold text-white font-painter" style={{ textShadow: '3px 3px 0 #000, -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000, 0 3px 0 #000, 0 -3px 0 #000, 3px 0 0 #000, -3px 0 0 #000' }}>
               Çıkıs
@@ -104,6 +130,12 @@ export function FloatingMenu() {
           onClick={() => setIsOpen(false)}
         />
       )}
+
+      {/* Global Chat */}
+      <GlobalChat 
+        isOpen={isChatOpen} 
+        onClose={() => setIsChatOpen(false)} 
+      />
     </div>
   );
 }
