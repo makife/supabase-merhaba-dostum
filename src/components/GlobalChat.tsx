@@ -510,8 +510,8 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
         </div>
 
         {/* Messages */}
-        <ScrollArea className="flex-1 p-4">
-          <div className="space-y-4">
+        <ScrollArea className="flex-1 p-4 overflow-hidden">
+          <div className="space-y-4 overflow-hidden">
             {messages.map((message) => (
               <div key={message.id} className="group flex flex-col space-y-1 hover:bg-muted/30 rounded-lg p-2 -m-2 transition-colors">
                 <div className="flex items-center justify-between">
