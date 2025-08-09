@@ -64,12 +64,16 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
         },
         (payload) => {
           const newMessage = payload.new as ChatMessage;
+          
+          // Kendi mesajımızı tekrar ekleme, zaten manuel olarak eklendi
+          if (newMessage.user_id === user?.id) {
+            return;
+          }
+          
           setMessages(prev => [...prev, newMessage]);
           
           // Play sound for new messages from other users
-          if (newMessage.user_id !== user?.id) {
-            playSound('correctWord');
-          }
+          playSound('correctWord');
         }
       )
       .subscribe();
@@ -115,15 +119,22 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
 
       const displayName = profileData?.username || profileData?.email?.split('@')[0] || 'Anonim';
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('global_chat')
         .insert({
           user_id: user.id,
           username: displayName,
           message: trimmedMessage
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Anında kendi mesajımızı listeye ekle
+      if (data) {
+        setMessages(prev => [...prev, data]);
+      }
 
       setNewMessage('');
       playSound('buttonClick');
