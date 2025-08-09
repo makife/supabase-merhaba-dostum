@@ -64,8 +64,8 @@ export function FloatingMenu() {
         />
       )}
 
-      {/* Menu items */}
-      <div className={`flex flex-col items-end space-y-3 mb-4 transition-all duration-300 ${
+      {/* Menu items - Positioned higher */}
+      <div className={`absolute bottom-20 right-0 flex flex-col items-end space-y-4 transition-all duration-300 ${
         isOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
       }`}>
         {/* Regular menu items */}
@@ -78,7 +78,7 @@ export function FloatingMenu() {
                 : 'translate-x-8 scale-75'
             }`}
             style={{ 
-              transitionDelay: isOpen ? `${index * 50}ms` : `${(menuItems.length + 2 - index) * 30}ms` 
+              transitionDelay: isOpen ? `${index * 60}ms` : `${(menuItems.length + 2 - index) * 40}ms` 
             }}
           >
             {/* Label with beautiful styling */}
@@ -118,7 +118,7 @@ export function FloatingMenu() {
               : 'translate-x-8 scale-75'
           }`}
           style={{ 
-            transitionDelay: isOpen ? `${menuItems.length * 50}ms` : `${(2 - menuItems.length) * 30}ms` 
+            transitionDelay: isOpen ? `${menuItems.length * 60}ms` : `${(2 - menuItems.length) * 40}ms` 
           }}
         >
           <div className="flex items-center space-x-3 bg-black/80 backdrop-blur-md rounded-full px-4 py-2 border border-white/20 shadow-2xl">
@@ -152,7 +152,7 @@ export function FloatingMenu() {
               : 'translate-x-8 scale-75'
           }`}
           style={{ 
-            transitionDelay: isOpen ? `${(menuItems.length + 1) * 50}ms` : `${(1 - menuItems.length) * 30}ms` 
+            transitionDelay: isOpen ? `${(menuItems.length + 1) * 60}ms` : `${(1 - menuItems.length) * 40}ms` 
           }}
         >
           <div className="flex items-center space-x-3 bg-black/80 backdrop-blur-md rounded-full px-4 py-2 border border-white/20 shadow-2xl">
