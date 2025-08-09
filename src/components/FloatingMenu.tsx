@@ -65,7 +65,7 @@ export function FloatingMenu() {
       )}
 
       {/* Menu items - Positioned higher */}
-      <div className={`absolute bottom-20 right-0 flex flex-col items-end space-y-4 transition-all duration-300 ${
+      <div className={`absolute bottom-20 right-0 flex flex-col items-end space-y-3 transition-all duration-300 ${
         isOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
       }`}>
         {/* Regular menu items */}
@@ -82,12 +82,12 @@ export function FloatingMenu() {
             }}
           >
             {/* Label with beautiful styling */}
-            <div className="flex items-center space-x-3 bg-black/80 backdrop-blur-md rounded-full px-4 py-2 border border-white/20 shadow-2xl">
+            <div className="flex items-center space-x-2 bg-black/80 backdrop-blur-md rounded-full px-3 py-1.5 border border-white/20 shadow-xl">
               <span 
-                className="text-base font-bold text-white whitespace-nowrap pointer-events-none select-none tracking-wide"
+                className="text-sm font-semibold text-white whitespace-nowrap pointer-events-none select-none tracking-wide"
                 style={{ 
                   fontFamily: '"Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif',
-                  textShadow: '0 2px 4px rgba(0,0,0,0.8), 0 0 8px rgba(255,255,255,0.1)' 
+                  textShadow: '0 1px 3px rgba(0,0,0,0.8), 0 0 6px rgba(255,255,255,0.1)' 
                 }}
               >
                 {item.title}
@@ -98,13 +98,13 @@ export function FloatingMenu() {
                 onClick={() => handleMenuClick(item.route, item.title)}
                 className={`group relative overflow-hidden bg-gradient-to-r ${item.color} ${item.hoverColor} 
                            text-white border-2 border-white shadow-lg hover:shadow-xl transform hover:scale-105 
-                           transition-all duration-200 w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0`}
+                           transition-all duration-200 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0`}
               >
                 {/* Ripple effect background */}
                 <div className="absolute inset-0 bg-white/20 scale-0 group-hover:scale-100 transition-transform duration-300 rounded-full" />
                 
                 {/* Icon */}
-                <item.icon className="w-5 h-5 relative z-10" />
+                <item.icon className="w-4 h-4 relative z-10" />
               </Button>
             </div>
           </div>
@@ -121,12 +121,12 @@ export function FloatingMenu() {
             transitionDelay: isOpen ? `${menuItems.length * 60}ms` : `${(2 - menuItems.length) * 40}ms` 
           }}
         >
-          <div className="flex items-center space-x-3 bg-black/80 backdrop-blur-md rounded-full px-4 py-2 border border-white/20 shadow-2xl">
+          <div className="flex items-center space-x-2 bg-black/80 backdrop-blur-md rounded-full px-3 py-1.5 border border-white/20 shadow-xl">
             <span 
-              className="text-base font-bold text-white whitespace-nowrap pointer-events-none select-none tracking-wide"
+              className="text-sm font-semibold text-white whitespace-nowrap pointer-events-none select-none tracking-wide"
               style={{ 
                 fontFamily: '"Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif',
-                textShadow: '0 2px 4px rgba(0,0,0,0.8), 0 0 8px rgba(255,255,255,0.1)' 
+                textShadow: '0 1px 3px rgba(0,0,0,0.8), 0 0 6px rgba(255,255,255,0.1)' 
               }}
             >
               Sohbet
@@ -136,10 +136,10 @@ export function FloatingMenu() {
               onClick={handleChatOpen}
               className="group relative overflow-hidden bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700
                          text-white border-2 border-white shadow-lg hover:shadow-xl transform hover:scale-105 
-                         transition-all duration-200 w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
+                         transition-all duration-200 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
             >
               <div className="absolute inset-0 bg-white/20 scale-0 group-hover:scale-100 transition-transform duration-300 rounded-full" />
-              <MessageCircle className="w-5 h-5 relative z-10" />
+              <MessageCircle className="w-4 h-4 relative z-10" />
             </Button>
           </div>
         </div>
@@ -155,12 +155,12 @@ export function FloatingMenu() {
             transitionDelay: isOpen ? `${(menuItems.length + 1) * 60}ms` : `${(1 - menuItems.length) * 40}ms` 
           }}
         >
-          <div className="flex items-center space-x-3 bg-black/80 backdrop-blur-md rounded-full px-4 py-2 border border-white/20 shadow-2xl">
+          <div className="flex items-center space-x-2 bg-black/80 backdrop-blur-md rounded-full px-3 py-1.5 border border-white/20 shadow-xl">
             <span 
-              className="text-base font-bold text-white whitespace-nowrap pointer-events-none select-none tracking-wide"
+              className="text-sm font-semibold text-white whitespace-nowrap pointer-events-none select-none tracking-wide"
               style={{ 
                 fontFamily: '"Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif',
-                textShadow: '0 2px 4px rgba(0,0,0,0.8), 0 0 8px rgba(255,255,255,0.1)' 
+                textShadow: '0 1px 3px rgba(0,0,0,0.8), 0 0 6px rgba(255,255,255,0.1)' 
               }}
             >
               Çıkış
@@ -170,10 +170,10 @@ export function FloatingMenu() {
               onClick={handleLogout}
               className="group relative overflow-hidden bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700
                          text-white border-2 border-white shadow-lg hover:shadow-xl transform hover:scale-105 
-                         transition-all duration-200 w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
+                         transition-all duration-200 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
             >
               <div className="absolute inset-0 bg-white/20 scale-0 group-hover:scale-100 transition-transform duration-300 rounded-full" />
-              <LogOut className="w-5 h-5 relative z-10" />
+              <LogOut className="w-4 h-4 relative z-10" />
             </Button>
           </div>
         </div>
