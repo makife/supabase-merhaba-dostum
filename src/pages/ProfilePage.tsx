@@ -247,7 +247,7 @@ const ProfilePage = () => {
                 ) : (
                   <h2 className="text-2xl font-bold">{profileData.username}</h2>
                 )}
-                <p className="text-muted-foreground">{user?.email}</p>
+                <p className="text-xs text-muted-foreground truncate max-w-xs">{user?.email}</p>
                  <div className="flex items-center space-x-2 mt-2">
                    <Badge variant="secondary">Seviye {profileData.level}</Badge>
                    <Badge variant="outline">{profileData.winRate}% Kazanma</Badge>
