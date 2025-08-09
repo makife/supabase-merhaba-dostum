@@ -695,7 +695,7 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
                   >
                     {message.username}
                   </span>
-                  {onlineUsers.has(message.username) && message.user_id !== user?.id && (
+                  {onlineUsers.has(message.username) && (
                     <div className="w-2 h-2 bg-green-500 rounded-full" title="Çevrimiçi"></div>
                   )}
                   <span className="text-xs text-muted-foreground">
