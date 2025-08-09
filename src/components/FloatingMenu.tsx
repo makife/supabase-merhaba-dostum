@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSounds } from '@/hooks/useSounds';
 import { Button } from '@/components/ui/button';
 import { GlobalChat } from '@/components/GlobalChat';
-import { PrivateChatContainer } from '@/components/PrivateChatContainer';
 import {
   User,
   Settings,
@@ -13,8 +12,7 @@ import {
   Menu,
   X,
   Home,
-  MessageCircle,
-  Mail
+  MessageCircle
 } from 'lucide-react';
 
 const menuItems = [
@@ -27,7 +25,6 @@ const menuItems = [
 export function FloatingMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [isPrivateChatOpen, setIsPrivateChatOpen] = useState(false);
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const { playSound } = useSounds();
@@ -49,10 +46,6 @@ export function FloatingMenu() {
     setIsOpen(false);
   };
 
-  const handlePrivateChatOpen = () => {
-    playSound('buttonClick');
-    setIsPrivateChatOpen(true);
-  };
 
   const handleLogout = async () => {
     playSound('buttonClick');
@@ -84,13 +77,13 @@ export function FloatingMenu() {
             </div>
           ))}
           
-          {/* Chat Buttons */}
+          {/* Chat Button */}
           <div
             className="flex items-center space-x-3 animate-in slide-in-from-right-5"
             style={{ animationDelay: `${menuItems.length * 50}ms` }}
           >
             <span className="text-lg font-semibold text-white font-fredoka" style={{ textShadow: '3px 3px 0 #000, -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000, 0 3px 0 #000, 0 -3px 0 #000, 3px 0 0 #000, -3px 0 0 #000' }}>
-              Global Sohbet
+              Sohbet
             </span>
             <Button
               size="sm"
@@ -101,26 +94,10 @@ export function FloatingMenu() {
             </Button>
           </div>
 
-          <div
-            className="flex items-center space-x-3 animate-in slide-in-from-right-5"
-            style={{ animationDelay: `${(menuItems.length + 1) * 50}ms` }}
-          >
-            <span className="text-lg font-semibold text-white font-fredoka" style={{ textShadow: '3px 3px 0 #000, -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000, 0 3px 0 #000, 0 -3px 0 #000, 3px 0 0 #000, -3px 0 0 #000' }}>
-              Özel Mesaj
-            </span>
-            <Button
-              size="sm"
-              className="w-12 h-12 rounded-full shadow-lg bg-pink-500 hover:bg-pink-600 text-white border-2 border-white flex items-center justify-center"
-              onClick={handlePrivateChatOpen}
-            >
-              <Mail className="w-5 h-5" />
-            </Button>
-          </div>
-
           {/* Logout Button */}
           <div
             className="flex items-center space-x-3 animate-in slide-in-from-right-5"
-            style={{ animationDelay: `${(menuItems.length + 2) * 50}ms` }}
+            style={{ animationDelay: `${(menuItems.length + 1) * 50}ms` }}
           >
             <span className="text-lg font-semibold text-white font-fredoka" style={{ textShadow: '3px 3px 0 #000, -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000, 0 3px 0 #000, 0 -3px 0 #000, 3px 0 0 #000, -3px 0 0 #000' }}>
               Çıkış
@@ -155,15 +132,10 @@ export function FloatingMenu() {
         />
       )}
 
-      {/* Chat Modals */}
+      {/* Global Chat */}
       <GlobalChat 
         isOpen={isChatOpen} 
         onClose={() => setIsChatOpen(false)} 
-      />
-      
-      <PrivateChatContainer 
-        isOpen={isPrivateChatOpen} 
-        onClose={() => setIsPrivateChatOpen(false)} 
       />
     </div>
   );

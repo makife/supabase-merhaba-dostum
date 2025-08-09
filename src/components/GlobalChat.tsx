@@ -8,8 +8,10 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Send, MessageCircle, X, Trash2 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Send, MessageCircle, X, Trash2, Mail } from 'lucide-react';
 import { UserAvatar } from '@/components/UserAvatar';
+import { PrivateChat } from '@/components/PrivateChat';
 import { toast } from 'sonner';
 
 interface ChatMessage {
@@ -34,6 +36,14 @@ interface GlobalChatProps {
   onClose: () => void;
 }
 
+type ViewMode = 'global' | 'users' | 'private-chat';
+
+interface SelectedUser {
+  id: string;
+  username: string;
+  avatar_url?: string;
+}
+
 export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
   const { user } = useAuth();
   const { profile } = useUser();
@@ -47,6 +57,11 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
   const [messageReactions, setMessageReactions] = useState<{[messageId: string]: MessageReaction[]}>({});
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
   const [userAvatars, setUserAvatars] = useState<{[userId: string]: string}>({});
+  const [viewMode, setViewMode] = useState<ViewMode>('global');
+  const [privateChatEnabled, setPrivateChatEnabled] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<SelectedUser | null>(null);
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const [allUsers, setAllUsers] = useState<SelectedUser[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Scroll to bottom when new messages arrive
@@ -124,6 +139,31 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
       fetchUserAvatars(userIds);
     }
   }, [messages]);
+
+  // Fetch all users for private chat
+  const fetchAllUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, email, avatar_url')
+        .neq('id', user?.id)
+        .order('username', { ascending: true })
+        .limit(50);
+
+      if (error) throw error;
+      setAllUsers(data || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
+
+  // Fetch users when private chat is enabled
+  useEffect(() => {
+    if (privateChatEnabled && isOpen) {
+      fetchAllUsers();
+    }
+  }, [privateChatEnabled, isOpen]);
+
   useEffect(() => {
     if (messages.length > 0) {
       fetchReactions();
@@ -483,22 +523,141 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
     return grouped;
   };
 
-  if (!isOpen) return null;
+  // Start private chat
+  const startPrivateChat = async (targetUser: SelectedUser) => {
+    if (!user) return;
+    
+    try {
+      const { data: chatId, error } = await supabase
+        .rpc('get_or_create_private_chat', {
+          other_user_id: targetUser.id
+        });
 
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md h-[600px] flex flex-col bg-background border-2 border-primary/20">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <div className="flex items-center space-x-2">
-            <MessageCircle className="w-5 h-5 text-primary" />
-            <div>
-              <h3 className="font-semibold text-lg">Global Sohbet</h3>
-              <p className="text-xs text-muted-foreground">
-                {onlineUsers.size > 0 ? `${onlineUsers.size} kişi çevrimiçi` : 'Kimse çevrimiçi değil'}
-              </p>
+      if (error) throw error;
+      
+      setActiveChatId(chatId);
+      setSelectedUser(targetUser);
+      setViewMode('private-chat');
+      toast.success(`${targetUser.username} ile özel sohbet başlatıldı`);
+    } catch (error) {
+      console.error('Error starting private chat:', error);
+      toast.error('Özel sohbet başlatılırken hata oluştu');
+    }
+  };
+
+  // Render different views
+  const renderContent = () => {
+    if (viewMode === 'private-chat' && selectedUser && activeChatId) {
+      return (
+        <PrivateChat
+          chatId={activeChatId}
+          otherUser={selectedUser}
+          onBack={() => {
+            setViewMode('global');
+            setSelectedUser(null);
+            setActiveChatId(null);
+          }}
+        />
+      );
+    }
+
+    if (viewMode === 'users') {
+      return renderUsersList();
+    }
+
+    return renderGlobalChat();
+  };
+
+  const renderUsersList = () => (
+    <>
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-border">
+        <div className="flex items-center space-x-2">
+          <MessageCircle className="w-5 h-5 text-primary" />
+          <h3 className="font-semibold text-lg">Kullanıcılar</h3>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setViewMode('global')}
+          className="text-muted-foreground hover:text-foreground"
+        >
+          <X className="w-4 h-4" />
+        </Button>
+      </div>
+
+      {/* Users List */}
+      <ScrollArea className="flex-1 p-4">
+        <div className="space-y-2">
+          {allUsers.length === 0 ? (
+            <div className="text-center text-muted-foreground py-8">
+              Henüz kullanıcı yok
             </div>
+          ) : (
+            allUsers.map((targetUser) => (
+              <div
+                key={targetUser.id}
+                className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors"
+              >
+                <div className="flex items-center space-x-3">
+                  <UserAvatar
+                    src={targetUser.avatar_url}
+                    alt={targetUser.username}
+                    fallback={targetUser.username.charAt(0).toUpperCase()}
+                    size="md"
+                  />
+                  <div>
+                    <div className="font-medium">{targetUser.username}</div>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => startPrivateChat(targetUser)}
+                  className="flex items-center space-x-2"
+                >
+                  <Mail className="w-4 h-4" />
+                  <span>Sohbet</span>
+                </Button>
+              </div>
+            ))
+          )}
+        </div>
+      </ScrollArea>
+    </>
+  );
+
+  const renderGlobalChat = () => (
+    <>
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-border">
+        <div className="flex items-center space-x-2">
+          <MessageCircle className="w-5 h-5 text-primary" />
+          <div>
+            <h3 className="font-semibold text-lg">Global Sohbet</h3>
+            <p className="text-xs text-muted-foreground">
+              {onlineUsers.size > 0 ? `${onlineUsers.size} kişi çevrimiçi` : 'Kimse çevrimiçi değil'}
+            </p>
           </div>
+        </div>
+        <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-muted-foreground">Özel Mesaj</span>
+            <Switch
+              checked={privateChatEnabled}
+              onCheckedChange={setPrivateChatEnabled}
+            />
+          </div>
+          {privateChatEnabled && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setViewMode('users')}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Mail className="w-4 h-4" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -508,145 +667,172 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
             <X className="w-4 h-4" />
           </Button>
         </div>
+      </div>
 
-        {/* Messages */}
-        <ScrollArea className="flex-1 p-4 overflow-hidden">
-          <div className="space-y-4 overflow-hidden">
-            {messages.map((message) => (
-              <div key={message.id} className="group flex flex-col space-y-1 hover:bg-muted/30 rounded-lg p-2 -m-2 transition-colors">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <UserAvatar
-                      src={userAvatars[message.user_id]}
-                      alt={message.username}
-                      fallback={message.username.charAt(0).toUpperCase()}
-                      size="sm"
-                    />
-                    <span 
-                      className={`text-sm font-medium ${
-                        message.user_id === user?.id ? 'text-primary' : 'text-muted-foreground'
-                      }`}
-                    >
-                      {message.username}
-                    </span>
-                    {onlineUsers.has(message.username) && message.user_id !== user?.id && (
-                      <div className="w-2 h-2 bg-green-500 rounded-full" title="Çevrimiçi"></div>
-                    )}
-                    <span className="text-xs text-muted-foreground">
-                      {formatTime(message.created_at)}
-                    </span>
-                  </div>
+      {/* Messages */}
+      <ScrollArea className="flex-1 p-4 overflow-hidden">
+        <div className="space-y-4 overflow-hidden">
+          {messages.map((message) => (
+            <div key={message.id} className="group flex flex-col space-y-1 hover:bg-muted/30 rounded-lg p-2 -m-2 transition-colors">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <UserAvatar
+                    src={userAvatars[message.user_id]}
+                    alt={message.username}
+                    fallback={message.username.charAt(0).toUpperCase()}
+                    size="sm"
+                  />
+                  <span 
+                    className={`text-sm font-medium ${
+                      message.user_id === user?.id ? 'text-primary' : 'text-muted-foreground'
+                    }`}
+                  >
+                    {message.username}
+                  </span>
+                  {onlineUsers.has(message.username) && message.user_id !== user?.id && (
+                    <div className="w-2 h-2 bg-green-500 rounded-full" title="Çevrimiçi"></div>
+                  )}
+                  <span className="text-xs text-muted-foreground">
+                    {formatTime(message.created_at)}
+                  </span>
                   
-                  {/* Delete button for own messages */}
-                  {message.user_id === user?.id && (
-                    <button
-                      onClick={() => deleteMessage(message.id)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-destructive/20 rounded"
-                      title="Mesajı sil"
+                  {/* Private Message Button */}
+                  {privateChatEnabled && message.user_id !== user?.id && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => startPrivateChat({
+                        id: message.user_id,
+                        username: message.username,
+                        avatar_url: userAvatars[message.user_id]
+                      })}
+                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/20"
+                      title="Özel mesaj gönder"
                     >
-                      <Trash2 className="w-3 h-3 text-destructive" />
-                    </button>
+                      <Mail className="w-3 h-3 text-primary" />
+                    </Button>
                   )}
                 </div>
-                <div className="break-words text-foreground">
-                  {message.message}
-                </div>
                 
-                {/* Reactions */}
-                <div className="flex items-center space-x-2 mt-1">
-                  {/* Show existing reactions */}
-                  {messageReactions[message.id] && Object.entries(groupReactions(messageReactions[message.id])).map(([emoji, reactions]) => (
-                    <button
-                      key={emoji}
-                      onClick={() => toggleReaction(message.id, emoji)}
-                      className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs transition-colors ${
-                        reactions.some(r => r.user_id === user?.id)
-                          ? 'bg-primary/20 text-primary border border-primary/30'
-                          : 'bg-muted hover:bg-muted/80'
-                      }`}
-                    >
-                      <span>{emoji}</span>
-                      <span>{reactions.length}</span>
-                    </button>
-                  ))}
+                {/* Delete button for own messages */}
+                {message.user_id === user?.id && (
+                  <button
+                    onClick={() => deleteMessage(message.id)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-destructive/20 rounded"
+                    title="Mesajı sil"
+                  >
+                    <Trash2 className="w-3 h-3 text-destructive" />
+                  </button>
+                )}
+              </div>
+              <div className="break-words text-foreground">
+                {message.message}
+              </div>
+              
+              {/* Reactions */}
+              <div className="flex items-center space-x-2 mt-1">
+                {/* Show existing reactions */}
+                {messageReactions[message.id] && Object.entries(groupReactions(messageReactions[message.id])).map(([emoji, reactions]) => (
+                  <button
+                    key={emoji}
+                    onClick={() => toggleReaction(message.id, emoji)}
+                    className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs transition-colors ${
+                      reactions.some(r => r.user_id === user?.id)
+                        ? 'bg-primary/20 text-primary border border-primary/30'
+                        : 'bg-muted hover:bg-muted/80'
+                    }`}
+                  >
+                    <span>{emoji}</span>
+                    <span>{reactions.length}</span>
+                  </button>
+                ))}
+                
+                {/* Add reaction button */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowEmojiPicker(showEmojiPicker === message.id ? null : message.id)}
+                    className="w-6 h-6 rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center text-xs"
+                    title="Reaksiyon ekle"
+                  >
+                    +
+                  </button>
                   
-                  {/* Add reaction button */}
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowEmojiPicker(showEmojiPicker === message.id ? null : message.id)}
-                      className="w-6 h-6 rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center text-xs"
-                      title="Reaksiyon ekle"
-                    >
-                      +
-                    </button>
-                    
-                    {/* Quick emoji picker */}
-                    {showEmojiPicker === message.id && (
-                      <div className="absolute bottom-full left-0 mb-1 bg-popover border rounded-lg p-2 shadow-md z-10">
-                        <div className="flex space-x-1">
-                          {['👍', '❤️', '😂', '😮', '😢', '😡'].map(emoji => (
-                            <button
-                              key={emoji}
-                              onClick={() => addReaction(message.id, emoji)}
-                              className="w-8 h-8 rounded hover:bg-muted/50 flex items-center justify-center"
-                            >
-                              {emoji}
-                            </button>
-                          ))}
-                        </div>
+                  {/* Quick emoji picker */}
+                  {showEmojiPicker === message.id && (
+                    <div className="absolute bottom-full left-0 mb-1 bg-popover border rounded-lg p-2 shadow-md z-10">
+                      <div className="flex space-x-1">
+                        {['👍', '❤️', '😂', '😮', '😢', '😡'].map(emoji => (
+                          <button
+                            key={emoji}
+                            onClick={() => addReaction(message.id, emoji)}
+                            className="w-8 h-8 rounded hover:bg-muted/50 flex items-center justify-center"
+                          >
+                            {emoji}
+                          </button>
+                        ))}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
-            ))}
-            
-            {/* Typing indicator */}
-            {typingUsers.size > 0 && (
-              <div className="flex items-center space-x-2 text-muted-foreground text-sm italic">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                </div>
-                <span>
-                  {Array.from(typingUsers).slice(0, 2).join(', ')} yazıyor...
-                  {typingUsers.size > 2 && ` ve ${typingUsers.size - 2} kişi daha`}
-                </span>
+            </div>
+          ))}
+          
+          {/* Typing indicator */}
+          {typingUsers.size > 0 && (
+            <div className="flex items-center space-x-2 text-muted-foreground text-sm italic">
+              <div className="flex space-x-1">
+                <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
               </div>
-            )}
-            
-            <div ref={messagesEndRef} />
-          </div>
-        </ScrollArea>
-
-        <Separator />
-
-        {/* Message Input */}
-        <div className="p-4">
-          <div className="flex space-x-2">
-            <Input
-              value={newMessage}
-              onChange={handleInputChange}
-              onKeyPress={handleKeyPress}
-              placeholder="Mesajınızı yazın..."
-              maxLength={200}
-              disabled={isLoading}
-              className="flex-1"
-            />
-            <Button
-              onClick={sendMessage}
-              disabled={!newMessage.trim() || isLoading}
-              size="sm"
-              className="px-3"
-            >
-              <Send className="w-4 h-4" />
-            </Button>
-          </div>
-          <div className="text-xs text-muted-foreground mt-1 text-right">
-            {newMessage.length}/200
-          </div>
+              <span>
+                {Array.from(typingUsers).slice(0, 2).join(', ')} yazıyor...
+                {typingUsers.size > 2 && ` ve ${typingUsers.size - 2} kişi daha`}
+              </span>
+            </div>
+          )}
+          
+          <div ref={messagesEndRef} />
         </div>
+      </ScrollArea>
+
+      <Separator />
+
+      {/* Message Input */}
+      <div className="p-4">
+        <div className="flex space-x-2">
+          <Input
+            value={newMessage}
+            onChange={handleInputChange}
+            onKeyPress={handleKeyPress}
+            placeholder="Mesajınızı yazın..."
+            maxLength={200}
+            disabled={isLoading}
+            className="flex-1"
+          />
+          <Button
+            onClick={sendMessage}
+            disabled={!newMessage.trim() || isLoading}
+            size="sm"
+            className="px-3"
+          >
+            <Send className="w-4 h-4" />
+          </Button>
+        </div>
+        <div className="text-xs text-muted-foreground mt-1 text-right">
+          {newMessage.length}/200
+        </div>
+      </div>
+    </>
+  );
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md h-[600px] flex flex-col bg-background border-2 border-primary/20">
+        {renderContent()}
       </Card>
     </div>
   );
