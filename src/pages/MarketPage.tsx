@@ -361,28 +361,6 @@ const MarketPage = () => {
       image: '/lovable-uploads/309c658e-e0d1-423a-80d6-9b012943f30d.png'
     },
 
-    // Ses Efektleri
-    {
-      id: 'sound_pack_space',
-      title: 'Uzay Ses Paketi',
-      description: 'Bilim kurgu ses efektleri',
-      price: 1.29,
-      currency: 'premium',
-      icon: Volume2,
-      type: 'sound',
-      value: 1
-    },
-    {
-      id: 'sound_pack_nature',
-      title: 'Doğa Ses Paketi',
-      description: 'Rahatlatıcı doğa sesleri',
-      price: 1.29,
-      currency: 'premium',
-      icon: Music,
-      type: 'sound',
-      value: 1
-    },
-
     // Müzik Paketleri
     {
       id: 'music_pack_nature1',
