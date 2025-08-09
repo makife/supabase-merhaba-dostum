@@ -62,7 +62,7 @@ export function UserAvatar({
 
   return (
     <div className="relative group">
-      <Avatar className={cn(sizeClasses[size], className)}>
+      <Avatar className={cn(sizeClasses[size], className)} showFrame={true}>
         <AvatarImage src={src || undefined} alt={alt} />
         <AvatarFallback className="bg-primary text-primary-foreground">
           {fallback}
