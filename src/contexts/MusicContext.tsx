@@ -3,7 +3,9 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 interface MusicContextType {
   isPlaying: boolean;
   musicEnabled: boolean;
+  musicPack: string;
   setMusicEnabled: (enabled: boolean) => void;
+  setMusicPack: (pack: string) => void;
   startBackgroundMusic: () => void;
   stopBackgroundMusic: () => void;
   fadeOutBackgroundMusic: (duration?: number) => void;
@@ -15,6 +17,7 @@ const MusicContext = createContext<MusicContextType | undefined>(undefined);
 export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [musicEnabled, setMusicEnabledState] = useState(true);
+  const [musicPack, setMusicPackState] = useState('default');
   const backgroundMusicRef = useRef<HTMLAudioElement | null>(null);
   const isStartingRef = useRef(false);
   const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -26,6 +29,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       try {
         const settings = JSON.parse(localStorage.getItem('kelimeci-settings') || '{}');
         setMusicEnabledState(settings.music ?? true);
+        setMusicPackState(settings.musicPack ?? 'default');
       } catch (error) {
         console.warn('Failed to load music settings:', error);
       }
@@ -47,17 +51,36 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Initialize and manage background music
   useEffect(() => {
     const initMusic = () => {
-      if (!backgroundMusicRef.current) {
-        backgroundMusicRef.current = new Audio('/sounds/default/backround-music.mp3');
-        backgroundMusicRef.current.loop = true;
-        backgroundMusicRef.current.volume = 0.3;
-        backgroundMusicRef.current.preload = 'auto';
-        
-        // Event listeners for state tracking
-        backgroundMusicRef.current.onplay = () => setIsPlaying(true);
-        backgroundMusicRef.current.onpause = () => setIsPlaying(false);
-        backgroundMusicRef.current.onended = () => setIsPlaying(false);
+      // Stop current music if playing
+      if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
+        backgroundMusicRef.current.pause();
       }
+      
+      // Get music file based on selected pack
+      const getMusicFile = () => {
+        switch (musicPack) {
+          case 'nature1':
+            return '/sounds/default/doga1.mp3';
+          case 'nature2':
+            return '/sounds/default/doga2.mp3';
+          case 'space1':
+            return '/sounds/default/uzay1.mp3';
+          case 'space2':
+            return '/sounds/default/uzay2.mp3';
+          default:
+            return '/sounds/default/backround-music.mp3';
+        }
+      };
+      
+      backgroundMusicRef.current = new Audio(getMusicFile());
+      backgroundMusicRef.current.loop = true;
+      backgroundMusicRef.current.volume = 0.3;
+      backgroundMusicRef.current.preload = 'auto';
+      
+      // Event listeners for state tracking
+      backgroundMusicRef.current.onplay = () => setIsPlaying(true);
+      backgroundMusicRef.current.onpause = () => setIsPlaying(false);
+      backgroundMusicRef.current.onended = () => setIsPlaying(false);
     };
 
     initMusic();
@@ -69,7 +92,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         backgroundMusicRef.current.currentTime = 0;
       }
     };
-  }, []);
+  }, [musicPack]);
 
   const startBackgroundMusic = () => {
     if (!musicEnabled || !backgroundMusicRef.current || isStartingRef.current) return;
@@ -215,11 +238,23 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  const setMusicPack = (pack: string) => {
+    setMusicPackState(pack);
+    
+    // Save to localStorage
+    const settings = JSON.parse(localStorage.getItem('kelimeci-settings') || '{}');
+    settings.musicPack = pack;
+    localStorage.setItem('kelimeci-settings', JSON.stringify(settings));
+    window.dispatchEvent(new Event('settingsChanged'));
+  };
+
   return (
     <MusicContext.Provider value={{
       isPlaying,
       musicEnabled,
+      musicPack,
       setMusicEnabled,
+      setMusicPack,
       startBackgroundMusic,
       stopBackgroundMusic,
       fadeOutBackgroundMusic,

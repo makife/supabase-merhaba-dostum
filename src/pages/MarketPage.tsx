@@ -383,6 +383,48 @@ const MarketPage = () => {
       value: 1
     },
 
+    // Müzik Paketleri
+    {
+      id: 'music_pack_nature1',
+      title: 'Doğa Müziği 1',
+      description: 'Sakin doğa müziği - Orman sesleri',
+      price: 1.99,
+      currency: 'premium',
+      icon: Music,
+      type: 'sound',
+      value: 1
+    },
+    {
+      id: 'music_pack_nature2',
+      title: 'Doğa Müziği 2',
+      description: 'Huzurlu doğa müziği - Su sesleri',
+      price: 1.99,
+      currency: 'premium',
+      icon: Music,
+      type: 'sound',
+      value: 1
+    },
+    {
+      id: 'music_pack_space1',
+      title: 'Uzay Müziği 1',
+      description: 'Elektronik uzay müziği - Ambient',
+      price: 1.99,
+      currency: 'premium',
+      icon: Music,
+      type: 'sound',
+      value: 1
+    },
+    {
+      id: 'music_pack_space2',
+      title: 'Uzay Müziği 2',
+      description: 'Sintetik uzay müziği - Cosmic',
+      price: 1.99,
+      currency: 'premium',
+      icon: Music,
+      type: 'sound',
+      value: 1
+    },
+
     // Özel Efektler
     {
       id: 'effect_fireworks',

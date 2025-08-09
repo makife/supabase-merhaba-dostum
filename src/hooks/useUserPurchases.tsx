@@ -16,6 +16,7 @@ interface UserSettings {
   active_theme: string;
   active_avatar_frame: string;
   active_sound_pack: string;
+  active_music_pack: string;
 }
 
 interface UserInventory {
@@ -30,7 +31,8 @@ export const useUserPurchases = () => {
   const [settings, setSettings] = useState<UserSettings>({
     active_theme: 'default',
     active_avatar_frame: 'none',
-    active_sound_pack: 'default'
+    active_sound_pack: 'default',
+    active_music_pack: 'default'
   });
   const [inventory, setInventory] = useState<UserInventory[]>([]);
   const [loading, setLoading] = useState(false);
@@ -70,7 +72,8 @@ export const useUserPurchases = () => {
         setSettings({
           active_theme: data.active_theme || 'default',
           active_avatar_frame: data.active_avatar_frame || 'none',
-          active_sound_pack: data.active_sound_pack || 'default'
+          active_sound_pack: data.active_sound_pack || 'default',
+          active_music_pack: data.active_music_pack || 'default'
         });
       }
     } catch (error) {
@@ -176,6 +179,12 @@ export const useUserPurchases = () => {
       } else {
         // Diğer öğeler için envantere ekle
         await updateInventory(item.type, 1);
+        
+        // Müzik paketi satın alımı için özel işlem
+        if (item.id.startsWith('music_pack_')) {
+          const musicPackId = item.id.replace('music_pack_', '');
+          await updateSettings({ active_music_pack: musicPackId });
+        }
       }
 
       // Kredi ile satın alma
