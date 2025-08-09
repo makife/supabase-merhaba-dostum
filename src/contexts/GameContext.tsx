@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -230,7 +230,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   };
 
   // Simple random match finder - returns true if immediate match found
-  const findRandomMatch = async (gameType: 'timed' | 'score'): Promise<boolean> => {
+  const findRandomMatch = useCallback(async (gameType: 'timed' | 'score'): Promise<boolean> => {
     if (!user) {
       console.log('❌ No user found in findRandomMatch');
       return false;
@@ -342,7 +342,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       console.error('🚨 Random match error:', error);
       return false;
     }
-  };
+  }, [user]);
 
   // Add AI opponent to current room
   const addAIOpponent = async (): Promise<void> => {
