@@ -315,21 +315,15 @@ const HomePage = () => {
             </div>
 
             {/* Mobil optimized alt kısım */}
-            <div className="flex flex-col space-y-2 mt-3 pt-3 border-t border-white/20">
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="secondary" className="bg-white/20 text-foreground border-white/30 text-xs">
-                  <Target className="w-3 h-3 mr-1" />
-                  Günlük: {Math.min(5, profile?.daily_games || 0)}/5
-                </Badge>
-                <Badge variant="secondary" className="bg-white/20 text-foreground border-white/30 text-xs">
-                  <Zap className="w-3 h-3 mr-1" />
-                  Seri: {profile?.win_streak || 0}
-                </Badge>
-              </div>
-              
-              <div className="text-xs text-muted-foreground text-center">
-                {profile?.last_game_at ? `Son oyun: ${new Date(profile.last_game_at).toLocaleDateString('tr-TR')}` : 'İlk oyununuzu oynayın!'}
-              </div>
+            <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-white/20 justify-center">
+              <Badge variant="secondary" className="bg-white/20 text-foreground border-white/30 text-xs">
+                <Target className="w-3 h-3 mr-1" />
+                Günlük: {Math.min(5, profile?.daily_games || 0)}/5
+              </Badge>
+              <Badge variant="secondary" className="bg-white/20 text-foreground border-white/30 text-xs">
+                <Zap className="w-3 h-3 mr-1" />
+                Seri: {profile?.win_streak || 0}
+              </Badge>
             </div>
           </CardContent>
         </Card>
