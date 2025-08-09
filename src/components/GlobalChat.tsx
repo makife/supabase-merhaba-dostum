@@ -284,14 +284,17 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
             setOnlineUsers(online);
           })
           .subscribe(async (status) => {
+            console.log('Channel status:', status);
             if (status === 'SUBSCRIBED') {
               // Track user presence when subscribed
-              await channel.track({
+              const presenceData = {
                 user_id: user.id,
                 username: displayName,
                 typing: false,
                 online_at: new Date().toISOString(),
-              });
+              };
+              console.log('Tracking presence:', presenceData);
+              await channel.track(presenceData);
             }
           });
 
