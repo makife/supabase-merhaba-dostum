@@ -199,9 +199,9 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
                   </span>
                 </div>
                 <div 
-                  className={`rounded-lg px-3 py-2 max-w-[80%] break-words ${
+                  className={`rounded-lg px-3 py-2 break-words ${
                     message.user_id === user?.id 
-                      ? 'bg-primary text-primary-foreground ml-auto' 
+                      ? 'bg-primary text-primary-foreground' 
                       : 'bg-muted text-foreground'
                   }`}
                 >
