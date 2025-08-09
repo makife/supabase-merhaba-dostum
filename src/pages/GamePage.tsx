@@ -1101,7 +1101,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
               <Input 
                 value={currentWord} 
                 readOnly 
-                placeholder="Harflere tıkla"
+                placeholder="~Kelime Üret~"
                 className="text-2xl font-mono text-center bg-white/20 backdrop-blur-sm border-white/30 text-white placeholder:text-white/70 font-bold"
               />
               <Badge variant="secondary" className="bg-white/20 text-white border-white/30 font-bold text-lg px-3 py-1">
