@@ -198,13 +198,7 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
                     {formatTime(message.created_at)}
                   </span>
                 </div>
-                <div 
-                  className={`rounded-lg px-3 py-2 break-words ${
-                    message.user_id === user?.id 
-                      ? 'bg-primary text-primary-foreground' 
-                      : 'bg-muted text-foreground'
-                  }`}
-                >
+                <div className="break-words text-foreground">
                   {message.message}
                 </div>
               </div>
