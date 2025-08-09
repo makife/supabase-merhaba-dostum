@@ -314,30 +314,32 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
             console.log('User left presence:', leftPresences);
           })
           .subscribe(async (status) => {
+            console.log('Channel status:', status);
             if (status === 'SUBSCRIBED') {
               setCurrentChannel(channel);
-              // Add a small delay to ensure channel is fully ready
-              setTimeout(async () => {
-                try {
-                  console.log('Attempting to track presence:', {
-                    user_id: user.id,
-                    username: cachedUsername,
-                    typing: false,
-                    online_at: new Date().toISOString(),
-                  });
-                  
-                  const result = await channel.track({
-                    user_id: user.id,
-                    username: cachedUsername,
-                    typing: false,
-                    online_at: new Date().toISOString(),
-                  });
-                  
-                  console.log('Track result:', result);
-                } catch (error) {
-                  console.error('Error tracking presence:', error);
+              
+              const presenceData = {
+                user_id: user.id,
+                username: cachedUsername,
+                typing: false,
+                online_at: new Date().toISOString(),
+              };
+              
+              console.log('Tracking presence:', presenceData);
+              
+              // Try tracking without timeout sensitivity and add fallback
+              try {
+                const result = await channel.track(presenceData);
+                console.log('Track result:', result);
+                if (result === 'timed out') {
+                  // Manual fallback for timeout
+                  setOnlineUsers(prev => new Set([...prev, cachedUsername]));
                 }
-              }, 100);
+              } catch (error) {
+                console.log('Track error, using fallback:', error);
+                // Fallback: manually add user to online list
+                setOnlineUsers(prev => new Set([...prev, cachedUsername]));
+              }
             }
           });
 
