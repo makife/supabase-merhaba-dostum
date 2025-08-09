@@ -63,7 +63,7 @@ export function FloatingMenu() {
               className="flex items-center space-x-3 animate-in slide-in-from-right-5"
               style={{ animationDelay: `${index * 50}ms` }}
             >
-              <span className="text-lg font-semibold text-white font-painter" style={{ textShadow: '3px 3px 0 #000, -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000, 0 3px 0 #000, 0 -3px 0 #000, 3px 0 0 #000, -3px 0 0 #000' }}>
+              <span className="text-lg font-semibold text-white font-fredoka" style={{ textShadow: '3px 3px 0 #000, -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000, 0 3px 0 #000, 0 -3px 0 #000, 3px 0 0 #000, -3px 0 0 #000' }}>
                 {item.title}
               </span>
               <Button
@@ -81,7 +81,7 @@ export function FloatingMenu() {
             className="flex items-center space-x-3 animate-in slide-in-from-right-5"
             style={{ animationDelay: `${menuItems.length * 50}ms` }}
           >
-            <span className="text-lg font-semibold text-white font-painter" style={{ textShadow: '3px 3px 0 #000, -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000, 0 3px 0 #000, 0 -3px 0 #000, 3px 0 0 #000, -3px 0 0 #000' }}>
+            <span className="text-lg font-semibold text-white font-fredoka" style={{ textShadow: '3px 3px 0 #000, -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000, 0 3px 0 #000, 0 -3px 0 #000, 3px 0 0 #000, -3px 0 0 #000' }}>
               Sohbet
             </span>
             <Button
@@ -98,8 +98,8 @@ export function FloatingMenu() {
             className="flex items-center space-x-3 animate-in slide-in-from-right-5"
             style={{ animationDelay: `${(menuItems.length + 1) * 50}ms` }}
           >
-            <span className="text-lg font-semibold text-white font-painter" style={{ textShadow: '3px 3px 0 #000, -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000, 0 3px 0 #000, 0 -3px 0 #000, 3px 0 0 #000, -3px 0 0 #000' }}>
-              Çıkıs
+            <span className="text-lg font-semibold text-white font-fredoka" style={{ textShadow: '3px 3px 0 #000, -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000, 0 3px 0 #000, 0 -3px 0 #000, 3px 0 0 #000, -3px 0 0 #000' }}>
+              Çıkış
             </span>
             <Button
               size="sm"
