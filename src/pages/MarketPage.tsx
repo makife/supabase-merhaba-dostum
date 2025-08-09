@@ -856,29 +856,18 @@ const MarketPage = () => {
               <Palette className="w-5 h-5 text-purple-500" />
               <h3 className="text-lg font-semibold">Temalar & Görünüm</h3>
             </div>
-            <Tabs defaultValue="theme-premium" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-4">
-                <TabsTrigger value="theme-premium">Premium Temalar</TabsTrigger>
-                <TabsTrigger value="theme-credits">Kredi Temalar</TabsTrigger>
-              </TabsList>
-              <TabsContent value="theme-premium">
-                {!isPremium && renderMarketItems(getItemsByCategory('themes').filter(item => item.currency === 'premium'))}
-                {isPremium && (
-                  <Card className="border-green-500">
-                    <CardContent className="p-6 text-center">
-                      <Crown className="w-12 h-12 text-yellow-500 mx-auto mb-3" />
-                      <h3 className="text-lg font-semibold mb-2">Premium Üyesiniz!</h3>
-                      <p className="text-muted-foreground">
-                        Tüm premium temalar size açık. Ayarlar sayfasından temalarınızı değiştirebilirsiniz.
-                      </p>
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
-              <TabsContent value="theme-credits">
-                {renderMarketItems(getItemsByCategory('themes').filter(item => item.currency === 'credits'))}
-              </TabsContent>
-            </Tabs>
+            {!isPremium && renderMarketItems(getItemsByCategory('themes'))}
+            {isPremium && (
+              <Card className="border-green-500">
+                <CardContent className="p-6 text-center">
+                  <Crown className="w-12 h-12 text-yellow-500 mx-auto mb-3" />
+                  <h3 className="text-lg font-semibold mb-2">Premium Üyesiniz!</h3>
+                  <p className="text-muted-foreground">
+                    Tüm premium temalar size açık. Ayarlar sayfasından temalarınızı değiştirebilirsiniz.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
           
           {/* Diğer Öğeler */}
