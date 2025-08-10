@@ -220,7 +220,7 @@ const LeaderboardPage = () => {
       case 2:
         return 'bg-gradient-to-r from-gray-300 to-gray-500 text-white';
       case 3:
-        return 'bg-gradient-to-r from-amber-400 to-amber-600 text-white';
+        return 'bg-gradient-to-r from-amber-700 to-amber-900 text-white';
       default:
         return 'bg-muted';
     }
