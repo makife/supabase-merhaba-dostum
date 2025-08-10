@@ -987,7 +987,7 @@ if (gameEnded) {
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
-
+  const opponent = getOpponentInfo();
   // Get opponent info based on game mode with avatar
   const getOpponentInfo = () => {
     switch (gameMode) {
@@ -1035,7 +1035,7 @@ if (gameEnded) {
     }
   };
 
-  const opponent = getOpponentInfo();
+  
 
   if (gameEnded) {
     return (
