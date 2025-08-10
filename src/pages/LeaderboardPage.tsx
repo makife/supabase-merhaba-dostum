@@ -249,7 +249,6 @@ const LeaderboardPage = () => {
                       {leader.username.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-2">
   <h3 className={`font-semibold truncate flex-1 ${leader.rank <= 3 ? 'text-white' : 'text-foreground'}`}>
     {leader.username}
