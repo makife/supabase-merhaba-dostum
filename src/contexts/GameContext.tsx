@@ -63,48 +63,94 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
   // Generate random grid
   const generateRandomGrid = (): string[][] => {
-    const letters = 'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ';
+    // Turkish letters with their frequency weights - NO W, Q, X EVER
+    const letterPool = [
+      'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A', // A - very common
+      'E', 'E', 'E', 'E', 'E', 'E', 'E',       // E - very common
+      'İ', 'İ', 'İ', 'İ', 'İ', 'İ',           // İ - common
+      'I', 'I', 'I', 'I', 'I',                 // I - common
+      'O', 'O', 'O', 'O', 'O',                 // O - common
+      'U', 'U', 'U', 'U',                      // U - common
+      'Ü', 'Ü', 'Ü',                           // Ü - common
+      'Ö', 'Ö', 'Ö',                           // Ö - common
+      'L', 'L', 'L', 'L', 'L',                 // L - common
+      'N', 'N', 'N', 'N', 'N',                 // N - common
+      'R', 'R', 'R', 'R', 'R',                 // R - common
+      'K', 'K', 'K', 'K',                      // K - common
+      'M', 'M', 'M', 'M',                      // M - common
+      'T', 'T', 'T', 'T',                      // T - common
+      'S', 'S', 'S', 'S',                      // S - common
+      'D', 'D', 'D',                           // D - common
+      'Y', 'Y', 'Y',                           // Y - common
+      'B', 'B', 'B',                           // B - medium
+      'C', 'C',                                // C - medium
+      'Ç', 'Ç',                                // Ç - medium
+      'F', 'F',                                // F - medium
+      'G', 'G',                                // G - medium
+      'Ğ', 'Ğ',                                // Ğ - medium
+      'H', 'H',                                // H - medium
+      'J',                                     // J - rare
+      'P', 'P',                                // P - medium
+      'Ş', 'Ş',                                // Ş - medium
+      'V', 'V',                                // V - medium
+      'Z',                                     // Z - rare
+    ];
+    
     const grid: string[][] = [];
     for (let i = 0; i < 4; i++) {
       const row: string[] = [];
       for (let j = 0; j < 4; j++) {
-        row.push(letters[Math.floor(Math.random() * letters.length)]);
+        const randomIndex = Math.floor(Math.random() * letterPool.length);
+        row.push(letterPool[randomIndex]);
       }
       grid.push(row);
     }
     return grid;
   };
 
-  // Clean up old rooms - more aggressive cleanup
+  // 🔧 DÜZELT: Cleanup sürelerini genişlet
   const cleanupOldRooms = async () => {
     try {
-      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-      const oneMinuteAgo = new Date(Date.now() - 1 * 60 * 1000).toISOString();
+      // DEĞIŞIKLIK: 5 dakika → 2 saat (bekleyen odalar)
+      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+      // DEĞIŞIKLIK: 1 dakika → 30 dakika (bitmiş oyunlar)
+      const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
       
-      // Delete old waiting rooms older than 5 minutes
-      await supabase
+      console.log('🧹 Cleanup başlıyor - 2 saat öncesi bekleyen odalar silinecek');
+      
+      // Bekleyen odalar için 2 saat bekle
+      const { data: deletedWaiting } = await supabase
         .from('game_rooms')
         .delete()
         .eq('status', 'waiting')
-        .lt('created_at', fiveMinutesAgo);
+        .lt('created_at', twoHoursAgo)
+        .select();
+      
+      console.log('🧹 Silinen bekleyen oda sayısı:', deletedWaiting?.length || 0);
         
-      // Delete finished rooms older than 1 minute
-      await supabase
+      // Bitmiş oyunlar 30 dakika sonra silinsin
+      const { data: deletedFinished } = await supabase
         .from('game_rooms')
         .delete()
         .eq('status', 'finished')
-        .lt('finished_at', oneMinuteAgo);
+        .lt('finished_at', thirtyMinutesAgo)
+        .select();
         
-      // Delete active rooms that started more than 10 minutes ago (stale games)
-      await supabase
+      console.log('🧹 Silinen bitmiş oyun sayısı:', deletedFinished?.length || 0);
+        
+      // Başlamış ama takılmış oyunlar (1 saat sonra)
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      const { data: deletedStale } = await supabase
         .from('game_rooms')
         .delete()
         .eq('status', 'active')
-        .lt('started_at', new Date(Date.now() - 10 * 60 * 1000).toISOString());
+        .lt('started_at', oneHourAgo)
+        .select();
         
-      console.log('🧹 Aggressive cleanup completed');
+      console.log('🧹 Silinen takılmış oyun sayısı:', deletedStale?.length || 0);
+      console.log('🧹 Cleanup tamamlandı');
     } catch (error) {
-      console.error('Error in cleanup:', error);
+      console.error('❌ Cleanup hatası:', error);
     }
   };
 
@@ -229,7 +275,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     }
   };
 
-  // Simple random match finder - returns true if immediate match found
+  // 🔧 DÜZELT: Geliştirilmiş random match finder
   const findRandomMatch = useCallback(async (gameType: 'timed' | 'score'): Promise<boolean> => {
     if (!user) {
       console.log('❌ No user found in findRandomMatch');
@@ -237,14 +283,30 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     }
 
     try {
-      console.log('🔍 Starting random match search for:', gameType);
-      console.log('🔍 User ID:', user.id);
+      console.log('🔍 ===== MATCHMAKING DEBUG START =====');
+      console.log('👤 User ID:', user.id);
+      console.log('🎮 Game Type:', gameType);
+      console.log('⏰ Timestamp:', new Date().toISOString());
       
-      // Aggressive cleanup first
+      // Cleanup öncesi durum
+      const { data: beforeCleanup } = await supabase
+        .from('game_rooms')
+        .select('*')
+        .eq('game_mode', 'random-match');
+      console.log('📊 Cleanup öncesi toplam oda:', beforeCleanup?.length);
+      
+      // Agresif cleanup
       await cleanupOldRooms();
       
-      // Look for ONLY fresh waiting rooms from the last minute
-      const oneMinuteAgo = new Date(Date.now() - 1 * 60 * 1000).toISOString();
+      // Cleanup sonrası durum
+      const { data: afterCleanup } = await supabase
+        .from('game_rooms')
+        .select('*')
+        .eq('game_mode', 'random-match');
+      console.log('📊 Cleanup sonrası toplam oda:', afterCleanup?.length);
+      
+      // DEĞIŞIKLIK: 1 dakika → 30 dakika geri bak
+      const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
       
       const { data: waitingRooms } = await supabase
         .from('game_rooms')
@@ -253,30 +315,41 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           game_participants!inner (
             id,
             user_id,
-            is_bot
+            is_bot,
+            profiles:user_id (username, avatar_url)
           )
         `)
         .eq('game_mode', 'random-match')
         .eq('status', 'waiting')
         .neq('host_id', user.id)
-        .gt('created_at', oneMinuteAgo)  // Only rooms created in last minute
+        .gt('created_at', thirtyMinutesAgo)  // 30 dakika geriye bak
         .eq('game_participants.is_bot', false);
 
-      console.log('🔍 Found waiting rooms:', waitingRooms?.length || 0);
+      console.log('🔍 Bulunan bekleyen oda sayısı:', waitingRooms?.length || 0);
+      console.log('🔍 Bekleyen odalar:', waitingRooms);
 
-      // Find suitable room with exactly 1 real player
+      // Uygun oda bul - tam olarak 1 gerçek oyuncusu olan
       const suitableRoom = waitingRooms?.find(room => {
         const participants = room.game_participants || [];
-        const realPlayers = participants.filter((p: any) => !p.is_bot);
+        const realPlayers = participants.filter((p: any) => !p.is_bot && p.user_id !== user.id);
         const isCorrectType = gameType === 'timed' 
           ? room.time_limit > 0 
           : room.max_score > 0;
+        
+        console.log('🔍 Oda analizi:', {
+          roomId: room.id,
+          realPlayerCount: realPlayers.length,
+          isCorrectType,
+          timeLimit: room.time_limit,
+          maxScore: room.max_score
+        });
+        
         return realPlayers.length === 1 && isCorrectType;
       });
 
       if (suitableRoom) {
-        // Join existing room
-        console.log('🎯 Joining existing room:', suitableRoom.id);
+        // Mevcut odaya katıl
+        console.log('🎯 Uygun oda bulundu, katılıyor:', suitableRoom.id);
         const { error: joinError } = await supabase
           .from('game_participants')
           .insert({
@@ -287,17 +360,18 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           });
 
         if (joinError) {
-          console.error('❌ Error joining room:', joinError);
+          console.error('❌ Odaya katılma hatası:', joinError);
           throw joinError;
         }
 
         setCurrentRoom(suitableRoom);
-        console.log('✅ Found and joined existing fresh room');
-        return true; // Immediate match found
+        console.log('✅ Mevcut odaya başarıyla katıldı');
+        console.log('🔍 ===== MATCHMAKING DEBUG END (SUCCESS) =====');
+        return true; // Anında eşleşme bulundu
       }
 
-      // No suitable room found - create brand new room
-      console.log('🆕 No suitable room found, creating new room...');
+      // Uygun oda yok - yeni oda aç
+      console.log('🆕 Uygun oda bulunamadı, yeni oda açılıyor...');
       const grid = generateRandomGrid();
       const { data: newRoom, error: roomError } = await supabase
         .from('game_rooms')
@@ -313,12 +387,12 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         .single();
 
       if (roomError) {
-        console.error('❌ Error creating room:', roomError);
+        console.error('❌ Oda oluşturma hatası:', roomError);
         throw roomError;
       }
 
       if (newRoom) {
-        console.log('🆕 Room created successfully:', newRoom.id);
+        console.log('🆕 Yeni oda oluşturuldu:', newRoom.id);
         const { error: participantError } = await supabase
           .from('game_participants')
           .insert({
@@ -329,17 +403,19 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           });
 
         if (participantError) {
-          console.error('❌ Error adding participant:', participantError);
+          console.error('❌ Katılımcı ekleme hatası:', participantError);
           throw participantError;
         }
 
         setCurrentRoom(newRoom);
-        console.log('🆕 Created brand new room for matchmaking');
+        console.log('🆕 Yeni oda için bekliyor...');
       }
       
-      return false; // No immediate match, waiting for players
+      console.log('🔍 ===== MATCHMAKING DEBUG END (WAITING) =====');
+      return false; // Anında eşleşme yok, bekleniyor
     } catch (error) {
-      console.error('🚨 Random match error:', error);
+      console.error('🚨 Random match hatası:', error);
+      console.log('🔍 ===== MATCHMAKING DEBUG END (ERROR) =====');
       return false;
     }
   }, [user]);
@@ -349,6 +425,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     if (!currentRoom) return;
 
     try {
+      console.log('🤖 AI rakip ekleniyor...');
       await supabase
         .from('game_participants')
         .insert({
@@ -358,9 +435,9 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           is_bot: true
         });
       
-      console.log('🤖 Added AI opponent to room');
+      console.log('🤖 AI rakip başarıyla eklendi');
     } catch (error) {
-      console.error('Error adding AI opponent:', error);
+      console.error('❌ AI rakip ekleme hatası:', error);
     }
   };
 
@@ -459,6 +536,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         .eq('room_id', roomId);
       
       if (data) {
+        console.log('👥 Katılımcılar güncellendi:', data.length);
         setParticipants(data);
       }
     } catch (error) {
@@ -473,6 +551,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       return;
     }
 
+    console.log('🔗 Real-time bağlantı kuruluyor:', currentRoom.id);
     setIsConnected(true);
     fetchParticipants(currentRoom.id);
 
@@ -483,12 +562,14 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         schema: 'public',
         table: 'game_participants',
         filter: `room_id=eq.${currentRoom.id}`
-      }, () => {
+      }, (payload) => {
+        console.log('📡 Real-time katılımcı değişikliği:', payload);
         fetchParticipants(currentRoom.id);
       })
       .subscribe();
 
     return () => {
+      console.log('🔌 Real-time bağlantı kesiliyor');
       supabase.removeChannel(channel);
     };
   }, [currentRoom]);
