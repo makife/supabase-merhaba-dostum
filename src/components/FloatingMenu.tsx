@@ -6,16 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSounds } from '@/hooks/useSounds';
 import { Button } from '@/components/ui/button';
 import { GlobalChat } from '@/components/GlobalChat';
-import {
-  User,
-  Settings,
-  ShoppingCart,
-  LogOut,
-  Menu as MenuIcon,
-  X,
-  Home,
-  MessageCircle
-} from 'lucide-react';
+
 
 import {
   User,
