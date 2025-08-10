@@ -17,8 +17,21 @@ import {
   MessageCircle
 } from 'lucide-react';
 
+import {
+  User,
+  Settings,
+  ShoppingCart,
+  LogOut,
+  Menu as MenuIcon,
+  X,
+  Home,
+  MessageCircle,
+  Trophy  // <- Bu satırı ekle
+} from 'lucide-react';
+
 const menuItems = [
   { title: 'Ana Sayfa', route: '/', icon: Home, color: 'from-blue-500 to-blue-600', hoverColor: 'hover:from-blue-600 hover:to-blue-700' },
+  { title: 'Liderlik', route: '/leaderboard', icon: Trophy, color: 'from-yellow-500 to-amber-600', hoverColor: 'hover:from-yellow-600 hover:to-amber-700' },
   { title: 'Profil', route: '/profile', icon: User, color: 'from-green-500 to-green-600', hoverColor: 'hover:from-green-600 hover:to-green-700' },
   { title: 'Market', route: '/market', icon: ShoppingCart, color: 'from-purple-500 to-purple-600', hoverColor: 'hover:from-purple-600 hover:to-purple-700' },
   { title: 'Ayarlar', route: '/settings', icon: Settings, color: 'from-orange-500 to-orange-600', hoverColor: 'hover:from-orange-600 hover:to-orange-700' },
