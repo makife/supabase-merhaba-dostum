@@ -125,6 +125,8 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const [selectedLetters, setSelectedLetters] = useState<{letter: string, row: number, col: number}[]>([]);
   const [currentWord, setCurrentWord] = useState('');
   const [usedWords, setUsedWords] = useState<Set<string>>(new Set());
+  const [playerWords, setPlayerWords] = useState<string[]>([]);
+  const [opponentWords, setOpponentWords] = useState<string[]>([]);
   const [playerScore, setPlayerScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(gameType === 'timed' ? 120 : 0);
@@ -662,14 +664,14 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     
     if (usedWords.has(currentWord.toLowerCase())) {
       toast({
-        title: 'Kelime Zaten Kullanıldı',
-        description: 'Bu kelimeyi daha önce kullandınız.',
-        variant: 'destructive',
-        duration: 1000,
+       title: 'Kelimeyi Zaten Kullandınız',
+       description: 'Bu kelimeyi daha önce SİZ kullandınız.',
+       variant: 'destructive',
+       duration: 1500,
       });
-      playSound('wrongWord');
-      clearWord();
-      return;
+     playSound('wrongWord');
+     clearWord();
+     return;
     }
 
     const result = await validateWord(currentWord);
