@@ -20,10 +20,14 @@ interface GameRoom {
 interface GameParticipant {
   id: string;
   room_id: string;
-  user_id: string;
+  user_id: string | null;
   score: number;
   is_bot: boolean;
   joined_at: string;
+  profiles?: {
+    username: string;
+    avatar_url: string | null;
+  };
 }
 
 interface GameContextType {
@@ -38,6 +42,12 @@ interface GameContextType {
   startGame: () => Promise<void>;
   endGame: () => Promise<void>;
   isConnected: boolean;
+}
+
+interface RealtimePayload {
+  eventType: 'INSERT' | 'UPDATE' | 'DELETE';
+  new: Record<string, any> | null;
+  old: Record<string, any> | null;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -108,17 +118,17 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     return grid;
   };
 
-  // 🔧 DÜZELT: Cleanup sürelerini genişlet
-  const cleanupOldRooms = async () => {
+  // Cleanup old rooms
+  const cleanupOldRooms = useCallback(async () => {
     try {
-      // DEĞIŞIKLIK: 5 dakika → 2 saat (bekleyen odalar)
+      // 2 hours ago for waiting rooms
       const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
-      // DEĞIŞIKLIK: 1 dakika → 30 dakika (bitmiş oyunlar)
+      // 30 minutes ago for finished games
       const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
       
       console.log('🧹 Cleanup başlıyor - 2 saat öncesi bekleyen odalar silinecek');
       
-      // Bekleyen odalar için 2 saat bekle
+      // Delete waiting rooms after 2 hours
       const { data: deletedWaiting } = await supabase
         .from('game_rooms')
         .delete()
@@ -128,7 +138,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       
       console.log('🧹 Silinen bekleyen oda sayısı:', deletedWaiting?.length || 0);
         
-      // Bitmiş oyunlar 30 dakika sonra silinsin
+      // Delete finished games after 30 minutes
       const { data: deletedFinished } = await supabase
         .from('game_rooms')
         .delete()
@@ -138,7 +148,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         
       console.log('🧹 Silinen bitmiş oyun sayısı:', deletedFinished?.length || 0);
         
-      // Başlamış ama takılmış oyunlar (1 saat sonra)
+      // Delete stale active games after 1 hour
       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
       const { data: deletedStale } = await supabase
         .from('game_rooms')
@@ -152,10 +162,138 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     } catch (error) {
       console.error('❌ Cleanup hatası:', error);
     }
-  };
+  }, []);
+
+  // Apply disconnect penalty
+  const applyDisconnectPenalty = useCallback(async (userId: string) => {
+    if (!userId) return;
+    
+    try {
+      console.log('⚖️ Ayrılma cezası uygulanıyor:', userId.slice(-8));
+      
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('total_score, disconnect_count')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        console.error('❌ Profile fetch error:', error);
+        return;
+      }
+      
+      if (profile) {
+        const currentScore = profile.total_score || 0;
+        const disconnectCount = (profile.disconnect_count || 0) + 1;
+        const penaltyAmount = Math.min(50 + (disconnectCount * 10), 200);
+        const newScore = Math.max(0, currentScore - penaltyAmount);
+        
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ 
+            total_score: newScore,
+            disconnect_count: disconnectCount,
+            last_disconnect: new Date().toISOString()
+          })
+          .eq('id', userId);
+        
+        if (updateError) {
+          console.error('❌ Profile update error:', updateError);
+          return;
+        }
+        
+        console.log('⚖️ Ceza uygulandı:', penaltyAmount, 'puan');
+      }
+    } catch (error) {
+      console.error('❌ Ceza uygulama hatası:', error);
+    }
+  }, []);
+
+  // Apply win bonus
+  const applyWinBonus = useCallback(async (userId: string | undefined, bonusAmount: number = 100) => {
+    if (!userId) return;
+    
+    try {
+      console.log('🏆 Kazanma bonusu veriliyor:', bonusAmount);
+      
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('total_score, win_count')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        console.error('❌ Profile fetch error:', error);
+        return;
+      }
+      
+      if (profile) {
+        const currentScore = profile.total_score || 0;
+        const winCount = (profile.win_count || 0) + 1;
+        const newScore = currentScore + bonusAmount;
+        
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ 
+            total_score: newScore,
+            win_count: winCount,
+            last_win: new Date().toISOString()
+          })
+          .eq('id', userId);
+        
+        if (updateError) {
+          console.error('❌ Profile update error:', updateError);
+          return;
+        }
+        
+        console.log('🏆 Bonus verildi:', bonusAmount, 'puan');
+      }
+    } catch (error) {
+      console.error('❌ Bonus verme hatası:', error);
+    }
+  }, []);
+
+  // Close full room
+  const closeFullRoom = useCallback(async (roomId: string) => {
+    try {
+      console.log('🔒 Oda kapatılıyor (dolu):', roomId.slice(-8));
+      
+      await supabase
+        .from('game_rooms')
+        .update({ 
+          status: 'active',
+          started_at: new Date().toISOString()
+        })
+        .eq('id', roomId);
+        
+      console.log('✅ Oda kapatıldı');
+    } catch (error) {
+      console.error('❌ Oda kapatma hatası:', error);
+    }
+  }, []);
+
+  // Fetch participants
+  const fetchParticipants = useCallback(async (roomId: string) => {
+    try {
+      const { data } = await supabase
+        .from('game_participants')
+        .select(`
+          *,
+          profiles:user_id (username, avatar_url)
+        `)
+        .eq('room_id', roomId);
+      
+      if (data) {
+        console.log('👥 Katılımcılar güncellendi:', data.length);
+        setParticipants(data as GameParticipant[]);
+      }
+    } catch (error) {
+      console.error('Error fetching participants:', error);
+    }
+  }, []);
 
   // Create room
-  const createRoom = async (gameMode: string, roomCode?: string): Promise<GameRoom | null> => {
+  const createRoom = useCallback(async (gameMode: string, roomCode?: string): Promise<GameRoom | null> => {
     if (!user) return null;
 
     try {
@@ -215,10 +353,10 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       });
       return null;
     }
-  };
+  }, [user, toast]);
 
   // Join room
-  const joinRoom = async (roomCode: string): Promise<boolean> => {
+  const joinRoom = useCallback(async (roomCode: string): Promise<boolean> => {
     if (!user) return false;
 
     try {
@@ -252,7 +390,8 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           .insert({
             room_id: room.id,
             user_id: user.id,
-            score: 0
+            score: 0,
+            is_bot: false
           });
       }
 
@@ -273,161 +412,125 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       });
       return false;
     }
-  };
+  }, [user, toast]);
 
-  // 🔧 DÜZELT: Race condition önleyici matchmaking
-  // GameContext.tsx - BASIT VE NET Matchmaking
+  // Find random match - race condition prevention
+  const findRandomMatch = useCallback(async (gameType: 'timed' | 'score'): Promise<boolean> => {
+    if (!user) return false;
 
-const findRandomMatch = useCallback(async (gameType: 'timed' | 'score'): Promise<boolean> => {
-  if (!user) return false;
-
-  try {
-    console.log('🔍 ===== BASİT MATCHMAKING BAŞLADI =====');
-    console.log('👤 User:', user.id.slice(-8));
-    console.log('🎮 Type:', gameType);
-    
-    // 1. ARAMA: Tam olarak 1 kişisi olan bekleyen odalar
-    const { data: waitingRooms } = await supabase
-      .from('game_rooms')
-      .select(`
-        *,
-        game_participants!inner(user_id, is_bot)
-      `)
-      .eq('game_mode', 'random-match')
-      .eq('status', 'waiting')
-      .neq('host_id', user.id) // Kendi odası değil
-      .gte('created_at', new Date(Date.now() - 5 * 60 * 1000).toISOString()); // Son 5 dakika
-
-    console.log('🔍 Bulunan bekleyen odalar:', waitingRooms?.length || 0);
-
-    // 2. FILTRELEME: Sadece 1 gerçek oyuncusu olan odalar
-    const availableRooms = waitingRooms?.filter(room => {
-      const realPlayers = room.game_participants?.filter(p => !p.is_bot) || [];
-      const gameTypeMatch = gameType === 'timed' ? room.time_limit > 0 : room.max_score > 0;
+    try {
+      console.log('🔍 ===== BASİT MATCHMAKING BAŞLADI =====');
+      console.log('👤 User:', user.id.slice(-8));
+      console.log('🎮 Type:', gameType);
       
-      console.log(`🏠 Oda ${room.id.slice(-8)}: ${realPlayers.length} oyuncu, type: ${gameTypeMatch ? 'uygun' : 'uyumsuz'}`);
-      
-      return realPlayers.length === 1 && gameTypeMatch;
-    }) || [];
+      // Search for waiting rooms with exactly 1 player
+      const { data: waitingRooms } = await supabase
+        .from('game_rooms')
+        .select(`
+          *,
+          game_participants!inner(user_id, is_bot)
+        `)
+        .eq('game_mode', 'random-match')
+        .eq('status', 'waiting')
+        .neq('host_id', user.id) // Not own room
+        .gte('created_at', new Date(Date.now() - 5 * 60 * 1000).toISOString()); // Last 5 minutes
 
-    console.log('✅ Uygun oda sayısı:', availableRooms.length);
+      console.log('🔍 Bulunan bekleyen odalar:', waitingRooms?.length || 0);
 
-    // 3. EŞLEŞME: İlk uygun odaya katıl
-    if (availableRooms.length > 0) {
-      const targetRoom = availableRooms[0];
-      console.log('🎯 Hedef oda:', targetRoom.id.slice(-8));
-      
-      try {
-        // Atomic insert - sadece bir kişi başarır
-        const { error: joinError } = await supabase
-          .from('game_participants')
-          .insert({
-            room_id: targetRoom.id,
-            user_id: user.id,
-            score: 0,
-            is_bot: false
-          });
+      // Filter rooms with exactly 1 real player
+      const availableRooms = waitingRooms?.filter(room => {
+        const realPlayers = room.game_participants?.filter(p => !p.is_bot) || [];
+        const gameTypeMatch = gameType === 'timed' ? room.time_limit > 0 : room.max_score > 0;
+        
+        console.log(`🏠 Oda ${room.id.slice(-8)}: ${realPlayers.length} oyuncu, type: ${gameTypeMatch ? 'uygun' : 'uyumsuz'}`);
+        
+        return realPlayers.length === 1 && gameTypeMatch;
+      }) || [];
 
-        if (joinError) {
-          // Muhtemelen başka biri daha hızlı katıldı
-          console.log('⚠️ Katılma başarısız (başkası önce katıldı):', joinError.message);
-          
-          // Eğer duplicate key hatası ise, başka oda aramaya devam et
-          if (joinError.code === '23505') {
-            console.log('🔄 Duplicate - başka oda deneniyor...');
-            // Yeni oda açmaya geç
+      console.log('✅ Uygun oda sayısı:', availableRooms.length);
+
+      // Try to join first available room
+      if (availableRooms.length > 0) {
+        const targetRoom = availableRooms[0];
+        console.log('🎯 Hedef oda:', targetRoom.id.slice(-8));
+        
+        try {
+          // Atomic insert - only one person succeeds
+          const { error: joinError } = await supabase
+            .from('game_participants')
+            .insert({
+              room_id: targetRoom.id,
+              user_id: user.id,
+              score: 0,
+              is_bot: false
+            });
+
+          if (joinError) {
+            // Probably someone else joined first
+            console.log('⚠️ Katılma başarısız (başkası önce katıldı):', joinError.message);
+            
+            if (joinError.code === '23505') {
+              console.log('🔄 Duplicate - başka oda deneniyor...');
+              // Continue to create new room
+            } else {
+              throw joinError;
+            }
           } else {
-            throw joinError;
+            // Successful join!
+            setCurrentRoom(targetRoom);
+            console.log('✅ BAŞARILI EŞLEŞME!');
+            return true;
           }
-        } else {
-          // Başarılı katılım!
-          setCurrentRoom(targetRoom);
-          console.log('✅ BAŞARILI EŞLEŞME!');
-          return true;
+        } catch (error) {
+          console.error('❌ Katılma hatası:', error);
         }
-      } catch (error) {
-        console.error('❌ Katılma hatası:', error);
       }
-    }
 
-    // 4. YENİ ODA AÇ: Uygun oda yok veya katılma başarısız
-    console.log('🆕 Yeni oda açılıyor...');
-    
-    const grid = generateRandomGrid();
-    const { data: newRoom, error: roomError } = await supabase
-      .from('game_rooms')
-      .insert({
-        game_mode: 'random-match',
-        host_id: user.id,
-        current_grid: grid.flat(),
-        status: 'waiting',
-        max_score: gameType === 'score' ? 500 : 0,
-        time_limit: gameType === 'timed' ? 120 : 0
-      })
-      .select()
-      .single();
-
-    if (roomError) throw roomError;
-
-    // Kendini odaya ekle
-    const { error: participantError } = await supabase
-      .from('game_participants')
-      .insert({
-        room_id: newRoom.id,
-        user_id: user.id,
-        score: 0,
-        is_bot: false
-      });
-
-    if (participantError) throw participantError;
-
-    setCurrentRoom(newRoom);
-    console.log('🆕 Yeni oda oluşturuldu:', newRoom.id.slice(-8));
-    console.log('🔍 ===== MATCHMAKING BİTTİ (BEKLEMEDE) =====');
-    
-    return false; // Beklemede
-    
-  } catch (error) {
-    console.error('🚨 Matchmaking hatası:', error);
-    return false;
-  }
-}, [user]);
-
-// YENİ: Oda dolduğunda otomatik kapatma
-const closeFullRoom = async (roomId: string) => {
-  try {
-    console.log('🔒 Oda kapatılıyor (dolu):', roomId.slice(-8));
-    
-    // Oda durumunu 'active' yap (artık kimse katılamaz)
-    await supabase
-      .from('game_rooms')
-      .update({ 
-        status: 'active',
-        started_at: new Date().toISOString()
-      })
-      .eq('id', roomId);
+      // Create new room if no available room or join failed
+      console.log('🆕 Yeni oda açılıyor...');
       
-    console.log('✅ Oda kapatıldı');
-  } catch (error) {
-    console.error('❌ Oda kapatma hatası:', error);
-  }
-};
+      const grid = generateRandomGrid();
+      const { data: newRoom, error: roomError } = await supabase
+        .from('game_rooms')
+        .insert({
+          game_mode: 'random-match',
+          host_id: user.id,
+          current_grid: grid.flat(),
+          status: 'waiting',
+          max_score: gameType === 'score' ? 500 : 0,
+          time_limit: gameType === 'timed' ? 120 : 0
+        })
+        .select()
+        .single();
 
-// YENİ: Participants değiştiğinde oda durumunu kontrol et
-useEffect(() => {
-  if (!currentRoom || currentRoom.status !== 'waiting') return;
-  
-  // Eğer 2 gerçek oyuncu varsa odayı kapat
-  const realPlayers = participants.filter(p => !p.is_bot);
-  
-  if (realPlayers.length >= 2) {
-    console.log('🔒 Oda dolu, kapatılıyor...');
-    closeFullRoom(currentRoom.id);
-  }
-}, [participants, currentRoom]);
+      if (roomError) throw roomError;
+
+      // Add self to room
+      const { error: participantError } = await supabase
+        .from('game_participants')
+        .insert({
+          room_id: newRoom.id,
+          user_id: user.id,
+          score: 0,
+          is_bot: false
+        });
+
+      if (participantError) throw participantError;
+
+      setCurrentRoom(newRoom);
+      console.log('🆕 Yeni oda oluşturuldu:', newRoom.id.slice(-8));
+      console.log('🔍 ===== MATCHMAKING BİTTİ (BEKLEMEDE) =====');
+      
+      return false; // Waiting
+      
+    } catch (error) {
+      console.error('🚨 Matchmaking hatası:', error);
+      return false;
+    }
+  }, [user]);
 
   // Add AI opponent to current room
-  const addAIOpponent = async (): Promise<void> => {
+  const addAIOpponent = useCallback(async (): Promise<void> => {
     if (!currentRoom) return;
 
     try {
@@ -445,10 +548,10 @@ useEffect(() => {
     } catch (error) {
       console.error('❌ AI rakip ekleme hatası:', error);
     }
-  };
+  }, [currentRoom]);
 
   // Leave room
-  const leaveRoom = async (): Promise<void> => {
+  const leaveRoom = useCallback(async (): Promise<void> => {
     if (!user || !currentRoom) return;
 
     try {
@@ -476,10 +579,10 @@ useEffect(() => {
     } catch (error) {
       console.error('Error leaving room:', error);
     }
-  };
+  }, [user, currentRoom]);
 
   // Update score
-  const updateScore = async (score: number): Promise<void> => {
+  const updateScore = useCallback(async (score: number): Promise<void> => {
     if (!user || !currentRoom) return;
 
     try {
@@ -491,10 +594,10 @@ useEffect(() => {
     } catch (error) {
       console.error('Error updating score:', error);
     }
-  };
+  }, [user, currentRoom]);
 
   // Start game
-  const startGame = async (): Promise<void> => {
+  const startGame = useCallback(async (): Promise<void> => {
     if (!currentRoom) return;
 
     try {
@@ -508,10 +611,10 @@ useEffect(() => {
     } catch (error) {
       console.error('Error starting game:', error);
     }
-  };
+  }, [currentRoom]);
 
   // End game
-  const endGame = async (): Promise<void> => {
+  const endGame = useCallback(async (): Promise<void> => {
     if (!currentRoom) return;
 
     try {
@@ -528,265 +631,167 @@ useEffect(() => {
     } catch (error) {
       console.error('Error ending game:', error);
     }
-  };
+  }, [currentRoom]);
 
-  // Fetch participants
-  const fetchParticipants = async (roomId: string) => {
-    try {
-      const { data } = await supabase
-        .from('game_participants')
-        .select(`
-          *,
-          profiles:user_id (username, avatar_url)
-        `)
-        .eq('room_id', roomId);
-      
-      if (data) {
-        console.log('👥 Katılımcılar güncellendi:', data.length);
-        setParticipants(data);
-      }
-    } catch (error) {
-      console.error('Error fetching participants:', error);
-    }
-  };
-
-  // GameContext.tsx'e EKLE - Oyuncu ayrılma sistemi
-
-// Real-time subscriptions bölümüne EKLENECEKLer:
-useEffect(() => {
-  if (!currentRoom) {
-    setIsConnected(false);
-    return;
-  }
-
-  console.log('🔗 Real-time bağlantı kuruluyor:', currentRoom.id.slice(-8));
-  setIsConnected(true);
-  fetchParticipants(currentRoom.id);
-
-  const channel = supabase
-    .channel(`room-${currentRoom.id}`)
-    .on('postgres_changes', {
-       event: '*',
-       schema: 'public',
-       table: 'game_participants',
-       filter: `room_id=eq.${currentRoom.id}`
-    }, async (payload: any) => { // ← any type ekle
-  console.log('📡 ===== REAL-TIME EVENT =====');
-  console.log('📡 Event Type:', payload.eventType);
-  console.log('📡 New:', payload.new);
-  console.log('📡 Old:', payload.old);
-  console.log('📡 =============================');
-  
-  // SADECE DELETE kontrol et
-  if (payload.eventType === 'DELETE') {
-    console.log('🚪 DELETE event tespit edildi!');
-    console.log('🚪 Ayrılan oyuncu:', payload.old);
+  // Check if room is full and close it
+  useEffect(() => {
+    if (!currentRoom || currentRoom.status !== 'waiting') return;
     
-    // Type checking ekle
-    if (payload.old && 
-        !payload.old.is_bot && 
-        payload.old.user_id && 
-        payload.old.user_id !== user?.id) {
-      
-      console.log('🏆 GERÇEK OYUNCU AYRILDI - KAZANMA BAŞLADI!');
-      
-      // Ayrılan oyuncuya ceza puanı uygula
-      await applyDisconnectPenalty(payload.old.user_id);
-      
-      // Kalan oyuncuya kazanma bonusu ver
-      await applyWinBonus(user?.id);
-      
-      toast({
-        title: '🏆 Kazandınız!',
-        description: 'Rakip oyuncu oyundan ayrıldı. +100 bonus puan!',
-        duration: 4000,
-      });
-      
-      // Oyunu sonlandır
-      setTimeout(() => {
-        console.log('🎮 Disconnect event dispatch ediliyor...');
-        window.dispatchEvent(new CustomEvent('playerDisconnected', {
-          detail: { winner: 'player', reason: 'opponent_left' }
-        }));
-      }, 1000);
+    const realPlayers = participants.filter(p => !p.is_bot);
+    
+    if (realPlayers.length >= 2) {
+      console.log('🔒 Oda dolu, kapatılıyor...');
+      closeFullRoom(currentRoom.id);
     }
-  }
-  
-  fetchParticipants(currentRoom.id);
-})
-    })
-    // YENI: Presence tracking ekle (bağlantı kopması)
-    .on('presence', { event: 'sync' }, () => {
-      console.log('👥 Presence sync');
-    })
-    .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-      console.log('👋 Kullanıcı katıldı:', key);
-    })
-    .on('presence', { event: 'leave' }, async ({ key, leftPresences }) => {
-      console.log('🚪 Kullanıcı bağlantısı koptu:', key);
-      
-      // Eğer oyun aktif ve başka oyuncu ayrıldıysa
-      if (currentRoom.status === 'active' && key !== `user-${user?.id}`) {
-        console.log('📡 Bağlantı kopması tespit edildi');
+  }, [participants, currentRoom, closeFullRoom]);
+
+  // Real-time subscriptions
+  useEffect(() => {
+    if (!currentRoom) {
+      setIsConnected(false);
+      return;
+    }
+
+    console.log('🔗 Real-time bağlantı kuruluyor:', currentRoom.id.slice(-8));
+    setIsConnected(true);
+    fetchParticipants(currentRoom.id);
+
+    const channel = supabase
+      .channel(`room-${currentRoom.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'game_participants',
+        filter: `room_id=eq.${currentRoom.id}`
+      }, async (payload: RealtimePayload) => {
+        console.log('📡 ===== REAL-TIME EVENT =====');
+        console.log('📡 Event Type:', payload.eventType);
+        console.log('📡 New:', payload.new);
+        console.log('📡 Old:', payload.old);
+        console.log('📡 =============================');
         
-        // Kısa bir süre bekle (geçici bağlantı sorunu olabilir)
-        setTimeout(async () => {
-          // Hala yoksa ceza uygula
-          const { data: participants } = await supabase
-            .from('game_participants')
-            .select('user_id')
-            .eq('room_id', currentRoom.id)
-            .neq('user_id', user?.id);
+        // Handle DELETE events
+        if (payload.eventType === 'DELETE' && payload.old) {
+          console.log('🚪 DELETE event tespit edildi!');
+          console.log('🚪 Ayrılan oyuncu:', payload.old);
           
-          if (!participants || participants.length === 0) {
-            console.log('🏆 Rakip bağlantısı koptu - oyuncu kazandı!');
+          if (!payload.old.is_bot && 
+              payload.old.user_id && 
+              payload.old.user_id !== user?.id) {
+            
+            console.log('🏆 GERÇEK OYUNCU AYRILDI - KAZANMA BAŞLADI!');
+            
+            // Apply penalty to leaving player
+            await applyDisconnectPenalty(payload.old.user_id);
+            
+            // Give win bonus to remaining player
+            await applyWinBonus(user?.id);
             
             toast({
               title: '🏆 Kazandınız!',
-              description: 'Rakip oyuncunun bağlantısı koptu. +50 puan!',
+              description: 'Rakip oyuncu oyundan ayrıldı. +100 bonus puan!',
               duration: 4000,
             });
             
-            // Kazanma bonusu ver
-            await applyWinBonus(user?.id, 50);
-            
-            // Oyunu sonlandır
-            window.dispatchEvent(new CustomEvent('playerDisconnected', {
-              detail: { winner: 'player', reason: 'connection_lost' }
-            }));
+            // End game
+            setTimeout(() => {
+              console.log('🎮 Disconnect event dispatch ediliyor...');
+              window.dispatchEvent(new CustomEvent('playerDisconnected', {
+                detail: { winner: 'player', reason: 'opponent_left' }
+              }));
+            }, 1000);
           }
-        }, 10000); // 10 saniye bekle
+        }
+        
+        fetchParticipants(currentRoom.id);
+      })
+      .on('presence', { event: 'sync' }, () => {
+        console.log('👥 Presence sync');
+      })
+      .on('presence', { event: 'join' }, ({ key }) => {
+        console.log('👋 Kullanıcı katıldı:', key);
+      })
+      .on('presence', { event: 'leave' }, async ({ key }) => {
+        console.log('🚪 Kullanıcı bağlantısı koptu:', key);
+        
+        // If game is active and another player left
+        if (currentRoom.status === 'active' && key !== `user-${user?.id}`) {
+          console.log('📡 Bağlantı kopması tespit edildi');
+          
+          // Wait briefly (might be temporary connection issue)
+          setTimeout(async () => {
+            // Check if still missing
+            const { data: participants } = await supabase
+              .from('game_participants')
+              .select('user_id')
+              .eq('room_id', currentRoom.id)
+              .neq('user_id', user?.id);
+            
+            if (!participants || participants.length === 0) {
+              console.log('🏆 Rakip bağlantısı koptu - oyuncu kazandı!');
+              
+              toast({
+                title: '🏆 Kazandınız!',
+                description: 'Rakip oyuncunun bağlantısı koptu. +50 puan!',
+                duration: 4000,
+              });
+              
+              // Give win bonus
+              await applyWinBonus(user?.id, 50);
+              
+              // End game
+              window.dispatchEvent(new CustomEvent('playerDisconnected', {
+                detail: { winner: 'player', reason: 'connection_lost' }
+              }));
+            }
+          }, 10000); // Wait 10 seconds
+        }
+      })
+      .subscribe();
+
+    return () => {
+      console.log('🔌 Real-time bağlantı kesiliyor');
+      supabase.removeChannel(channel);
+    };
+  }, [currentRoom, user, fetchParticipants, applyDisconnectPenalty, applyWinBonus, toast]);
+
+  // Handle page close/refresh cleanup
+  useEffect(() => {
+    const handleBeforeUnload = async () => {
+      if (currentRoom && user && currentRoom.status === 'active') {
+        console.log('🚪 Oyuncu oyunu kapatıyor - ceza uygulanacak');
+        
+        // Apply penalty to self
+        await applyDisconnectPenalty(user.id);
+        
+        // Leave room
+        await supabase
+          .from('game_participants')
+          .delete()
+          .eq('room_id', currentRoom.id)
+          .eq('user_id', user.id);
       }
-    })
-    .subscribe();
+    };
 
-  return () => {
-    console.log('🔌 Real-time bağlantı kesiliyor');
-    supabase.removeChannel(channel);
-  };
-}, [currentRoom, user]);
-
-// YENI: Ayrılma cezası uygulama fonksiyonu
-const applyDisconnectPenalty = async (userId: string) => {
-  if (!userId) return;
-  
-  try {
-    console.log('⚖️ Ayrılma cezası uygulanıyor:', userId.slice(-8));
+    // Handle page close
+    window.addEventListener('beforeunload', handleBeforeUnload);
     
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('total_score, disconnect_count')
-      .eq('id', userId)
-      .single();
-    
-    if (error) {
-      console.error('❌ Profile fetch error:', error);
-      return;
-    }
-    
-    if (profile) {
-      const currentScore = profile.total_score || 0;
-      const disconnectCount = (profile.disconnect_count || 0) + 1;
-      const penaltyAmount = Math.min(50 + (disconnectCount * 10), 200);
-      const newScore = Math.max(0, currentScore - penaltyAmount);
+    // Cleanup on component unmount
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
       
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ 
-          total_score: newScore,
-          disconnect_count: disconnectCount,
-          last_disconnect: new Date().toISOString()
-        })
-        .eq('id', userId);
-      
-      if (updateError) {
-        console.error('❌ Profile update error:', updateError);
-        return;
+      // Check on component unmount as well
+      if (currentRoom && user && currentRoom.status === 'active') {
+        // Run in background (non-blocking)
+        handleBeforeUnload();
       }
-      
-      console.log('⚖️ Ceza uygulandı:', penaltyAmount, 'puan');
-    }
-  } catch (error) {
-    console.error('❌ Ceza uygulama hatası:', error);
-  }
-};
+    };
+  }, [currentRoom, user, applyDisconnectPenalty]);
 
-// YENI: Kazanma bonusu verme fonksiyonu
-const applyWinBonus = async (userId: string | undefined, bonusAmount: number = 100) => {
-  if (!userId) return;
-  
-  try {
-    console.log('🏆 Kazanma bonusu veriliyor:', bonusAmount);
-    
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('total_score, win_count')
-      .eq('id', userId)
-      .single();
-    
-    if (error) {
-      console.error('❌ Profile fetch error:', error);
-      return;
-    }
-    
-    if (profile) {
-      const currentScore = profile.total_score || 0;
-      const winCount = (profile.win_count || 0) + 1;
-      const newScore = currentScore + bonusAmount;
-      
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ 
-          total_score: newScore,
-          win_count: winCount,
-          last_win: new Date().toISOString()
-        })
-        .eq('id', userId);
-      
-      if (updateError) {
-        console.error('❌ Profile update error:', updateError);
-        return;
-      }
-      
-      console.log('🏆 Bonus verildi:', bonusAmount, 'puan');
-    }
-  } catch (error) {
-    console.error('❌ Bonus verme hatası:', error);
-  }
-};
-
-// YENI: Sayfa kapatılırken temizlik ve ceza
-useEffect(() => {
-  const handleBeforeUnload = async () => {
-    if (currentRoom && user && currentRoom.status === 'active') {
-      console.log('🚪 Oyuncu oyunu kapatıyor - ceza uygulanacak');
-      
-      // Kendine ceza uygula
-      await applyDisconnectPenalty(user.id);
-      
-      // Odadan çıkar
-      await supabase
-        .from('game_participants')
-        .delete()
-        .eq('room_id', currentRoom.id)
-        .eq('user_id', user.id);
-    }
-  };
-
-  // Sayfa kapatılırken
-  window.addEventListener('beforeunload', handleBeforeUnload);
-  
-  // Uygulama kapanırken (React cleanup)
-  return () => {
-    window.removeEventListener('beforeunload', handleBeforeUnload);
-    
-    // Component unmount olurken de kontrol et
-    if (currentRoom && user && currentRoom.status === 'active') {
-      // Background'da çalıştır (blocking olmayacak şekilde)
-      handleBeforeUnload();
-    }
-  };
-}, [currentRoom, user]);
+  // Initialize cleanup on mount
+  useEffect(() => {
+    cleanupOldRooms();
+  }, [cleanupOldRooms]);
 
   return (
     <GameContext.Provider value={{
