@@ -550,35 +550,232 @@ useEffect(() => {
     }
   };
 
-  // Real-time subscriptions
-  useEffect(() => {
-    if (!currentRoom) {
-      setIsConnected(false);
-      return;
+  // GameContext.tsx'e EKLE - Oyuncu ayrılma sistemi
+
+// Real-time subscriptions bölümüne EKLENECEKLer:
+useEffect(() => {
+  if (!currentRoom) {
+    setIsConnected(false);
+    return;
+  }
+
+  console.log('🔗 Real-time bağlantı kuruluyor:', currentRoom.id.slice(-8));
+  setIsConnected(true);
+  fetchParticipants(currentRoom.id);
+
+  const channel = supabase
+    .channel(`room-${currentRoom.id}`)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'game_participants',
+      filter: `room_id=eq.${currentRoom.id}`
+    }, async (payload) => {
+      console.log('📡 Real-time katılımcı değişikliği:', payload);
+      
+      // YENI: Oyuncu ayrılma kontrolü
+      if (payload.eventType === 'DELETE') {
+        console.log('🚪 Oyuncu oyundan ayrıldı:', payload.old);
+        
+        // Eğer bot değilse ve kendisi değilse ve oyun başlamışsa
+        if (!payload.old.is_bot && 
+            payload.old.user_id !== user?.id && 
+            currentRoom.status === 'active') {
+          
+          console.log('🏆 Rakip ayrıldı - oyuncu kazandı!');
+          
+          // Ayrılan oyuncuya ceza puanı uygula
+          await applyDisconnectPenalty(payload.old.user_id);
+          
+          // Kalan oyuncuya kazanma bonusu ver
+          await applyWinBonus(user?.id);
+          
+          toast({
+            title: '🏆 Kazandınız!',
+            description: 'Rakip oyuncu oyundan ayrıldı. +100 bonus puan!',
+            duration: 4000,
+          });
+          
+          // Oyunu sonlandır
+          setTimeout(() => {
+            // GamePage'de winner state'ini set et
+            window.dispatchEvent(new CustomEvent('playerDisconnected', {
+              detail: { winner: 'player', reason: 'opponent_left' }
+            }));
+          }, 1000);
+        }
+      }
+      
+      fetchParticipants(currentRoom.id);
+    })
+    // YENI: Presence tracking ekle (bağlantı kopması)
+    .on('presence', { event: 'sync' }, () => {
+      console.log('👥 Presence sync');
+    })
+    .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+      console.log('👋 Kullanıcı katıldı:', key);
+    })
+    .on('presence', { event: 'leave' }, async ({ key, leftPresences }) => {
+      console.log('🚪 Kullanıcı bağlantısı koptu:', key);
+      
+      // Eğer oyun aktif ve başka oyuncu ayrıldıysa
+      if (currentRoom.status === 'active' && key !== `user-${user?.id}`) {
+        console.log('📡 Bağlantı kopması tespit edildi');
+        
+        // Kısa bir süre bekle (geçici bağlantı sorunu olabilir)
+        setTimeout(async () => {
+          // Hala yoksa ceza uygula
+          const { data: participants } = await supabase
+            .from('game_participants')
+            .select('user_id')
+            .eq('room_id', currentRoom.id)
+            .neq('user_id', user?.id);
+          
+          if (!participants || participants.length === 0) {
+            console.log('🏆 Rakip bağlantısı koptu - oyuncu kazandı!');
+            
+            toast({
+              title: '🏆 Kazandınız!',
+              description: 'Rakip oyuncunun bağlantısı koptu. +50 puan!',
+              duration: 4000,
+            });
+            
+            // Kazanma bonusu ver
+            await applyWinBonus(user?.id, 50);
+            
+            // Oyunu sonlandır
+            window.dispatchEvent(new CustomEvent('playerDisconnected', {
+              detail: { winner: 'player', reason: 'connection_lost' }
+            }));
+          }
+        }, 10000); // 10 saniye bekle
+      }
+    })
+    .subscribe();
+
+  return () => {
+    console.log('🔌 Real-time bağlantı kesiliyor');
+    supabase.removeChannel(channel);
+  };
+}, [currentRoom, user]);
+
+// YENI: Ayrılma cezası uygulama fonksiyonu
+const applyDisconnectPenalty = async (userId: string) => {
+  if (!userId) return;
+  
+  try {
+    console.log('⚖️ Ayrılma cezası uygulanıyor:', userId.slice(-8));
+    
+    // Kullanıcının mevcut puanını al
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('total_score, disconnect_count')
+      .eq('id', userId)
+      .single();
+    
+    if (profile) {
+      const currentScore = profile.total_score || 0;
+      const disconnectCount = (profile.disconnect_count || 0) + 1;
+      
+      // Ceza miktarı: Ayrılma sayısına göre artar
+      const penaltyAmount = Math.min(50 + (disconnectCount * 10), 200); // Max 200 puan
+      const newScore = Math.max(0, currentScore - penaltyAmount); // Minimum 0
+      
+      // Profili güncelle
+      await supabase
+        .from('profiles')
+        .update({ 
+          total_score: newScore,
+          disconnect_count: disconnectCount,
+          last_disconnect: new Date().toISOString()
+        })
+        .eq('id', userId);
+      
+      console.log('⚖️ Ceza uygulandı:', {
+        userId: userId.slice(-8),
+        penalty: penaltyAmount,
+        newScore,
+        disconnectCount
+      });
     }
+  } catch (error) {
+    console.error('❌ Ceza uygulama hatası:', error);
+  }
+};
 
-    console.log('🔗 Real-time bağlantı kuruluyor:', currentRoom.id);
-    setIsConnected(true);
-    fetchParticipants(currentRoom.id);
+// YENI: Kazanma bonusu verme fonksiyonu
+const applyWinBonus = async (userId: string | undefined, bonusAmount: number = 100) => {
+  if (!userId) return;
+  
+  try {
+    console.log('🏆 Kazanma bonusu veriliyor:', userId.slice(-8), bonusAmount);
+    
+    // Kullanıcının mevcut puanını al
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('total_score, win_count')
+      .eq('id', userId)
+      .single();
+    
+    if (profile) {
+      const currentScore = profile.total_score || 0;
+      const winCount = (profile.win_count || 0) + 1;
+      const newScore = currentScore + bonusAmount;
+      
+      // Profili güncelle
+      await supabase
+        .from('profiles')
+        .update({ 
+          total_score: newScore,
+          win_count: winCount,
+          last_win: new Date().toISOString()
+        })
+        .eq('id', userId);
+      
+      console.log('🏆 Bonus verildi:', {
+        userId: userId.slice(-8),
+        bonus: bonusAmount,
+        newScore,
+        winCount
+      });
+    }
+  } catch (error) {
+    console.error('❌ Bonus verme hatası:', error);
+  }
+};
 
-    const channel = supabase
-      .channel(`room-${currentRoom.id}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'game_participants',
-        filter: `room_id=eq.${currentRoom.id}`
-      }, (payload) => {
-        console.log('📡 Real-time katılımcı değişikliği:', payload);
-        fetchParticipants(currentRoom.id);
-      })
-      .subscribe();
+// YENI: Sayfa kapatılırken temizlik ve ceza
+useEffect(() => {
+  const handleBeforeUnload = async () => {
+    if (currentRoom && user && currentRoom.status === 'active') {
+      console.log('🚪 Oyuncu oyunu kapatıyor - ceza uygulanacak');
+      
+      // Kendine ceza uygula
+      await applyDisconnectPenalty(user.id);
+      
+      // Odadan çıkar
+      await supabase
+        .from('game_participants')
+        .delete()
+        .eq('room_id', currentRoom.id)
+        .eq('user_id', user.id);
+    }
+  };
 
-    return () => {
-      console.log('🔌 Real-time bağlantı kesiliyor');
-      supabase.removeChannel(channel);
-    };
-  }, [currentRoom]);
+  // Sayfa kapatılırken
+  window.addEventListener('beforeunload', handleBeforeUnload);
+  
+  // Uygulama kapanırken (React cleanup)
+  return () => {
+    window.removeEventListener('beforeunload', handleBeforeUnload);
+    
+    // Component unmount olurken de kontrol et
+    if (currentRoom && user && currentRoom.status === 'active') {
+      // Background'da çalıştır (blocking olmayacak şekilde)
+      handleBeforeUnload();
+    }
+  };
+}, [currentRoom, user]);
 
   return (
     <GameContext.Provider value={{
