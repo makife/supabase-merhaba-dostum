@@ -688,7 +688,7 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
                     src={targetUser.avatar_url}
                     alt={targetUser.username}
                     fallback={targetUser.username.charAt(0).toUpperCase()}
-                    size="md"
+                    size="xs"
                   />
                   <div>
                     <div className="font-medium">{targetUser.username}</div>
