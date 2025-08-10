@@ -9,13 +9,14 @@ interface UserAvatarProps {
   src?: string | null;
   alt?: string;
   fallback?: string;
-  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'xxs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   editable?: boolean;
   onAvatarChange?: (newUrl: string | null) => void;
   className?: string;
 }
 
 const sizeClasses = {
+  xxs: 'w-4 h-4',   // 16px - çok çok küçük
   xs: 'w-6 h-6',    // 24px - çok küçük
   sm: 'w-8 h-8',    // 32px - küçük
   md: 'w-12 h-12',  // 48px - orta
