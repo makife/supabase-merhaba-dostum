@@ -9,17 +9,18 @@ interface UserAvatarProps {
   src?: string | null;
   alt?: string;
   fallback?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   editable?: boolean;
   onAvatarChange?: (newUrl: string | null) => void;
   className?: string;
 }
 
 const sizeClasses = {
-  sm: 'w-8 h-8',
-  md: 'w-12 h-12',
-  lg: 'w-16 h-16',
-  xl: 'w-24 h-24'
+  xs: 'w-6 h-6',    // 24px - çok küçük
+  sm: 'w-8 h-8',    // 32px - küçük
+  md: 'w-12 h-12',  // 48px - orta
+  lg: 'w-16 h-16',  // 64px - büyük
+  xl: 'w-24 h-24'   // 96px - çok büyük
 };
 
 export function UserAvatar({ 
