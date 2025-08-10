@@ -149,16 +149,7 @@ const HomePage = () => {
     gradient: 'bg-gradient-to-br from-purple-500 via-violet-600 to-purple-700',
     route: '/game/random-match',
   },
-  {
-    id: 'leaderboard',
-    title: 'Liderlik',
-    description: 'Günlük ve haftalık liderler',
-    icon: Trophy,
-    color: 'bg-amber-500',
-    gradient: 'bg-gradient-to-br from-amber-500 via-yellow-500 to-orange-500',
-    route: '/leaderboard',
-    isNavigation: true, // Bu flag ekle
-  },
+  
   {
     id: 'tournament',
     title: 'Turnuva',
