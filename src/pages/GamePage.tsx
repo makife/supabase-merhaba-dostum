@@ -361,6 +361,27 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     return null;
   }, [gameGrid, usedWords]);
 
+  const updateLeaderboard = async (score: number, bestWord?: string, bestWordScore?: number) => {
+  if (!user) return;
+  
+  try {
+    const username = user.user_metadata?.username || user.email?.split('@')[0] || 'Anonim';
+    
+    await supabase.rpc('update_daily_leaderboard', {
+      p_user_id: user.id,
+      p_username: username,
+      p_avatar_url: userAvatar || null,
+      p_game_score: score,
+      p_best_word: bestWord || null,
+      p_best_word_score: bestWordScore || 0
+    });
+    
+    console.log('✅ Liderlik tablosu güncellendi:', { score, bestWord, bestWordScore });
+  } catch (error) {
+    console.error('❌ Liderlik tablosu güncellenemedi:', error);
+  }
+};
+
   // Check if playing with AI (unified logic for all modes)
   const isPlayingWithAI = useCallback(() => {
     const aiStatus = (() => {
@@ -554,6 +575,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         await endGame();
       }, 3000); // 3 second delay to see results
     }
+    await updateLeaderboard(currentPlayerScore);
   }, [gameEnded, winner, user, currentRoom, gameMode, endGame, playSound, playCelebrationSound, playGameLoseSound, toast]);
 
   // Check for winner - eski fonksiyon da kalsın puanlı oyunlar için
