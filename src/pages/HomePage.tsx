@@ -122,43 +122,53 @@ const HomePage = () => {
   };
 
   const gameModesConfig = [
-    {
-      id: 'vs-computer',
-      title: 'Yapay Zekaya Karşı',
-      description: 'AI rakibine karşı pratik yap',
-      icon: Bot,
-      color: 'bg-blue-500',
-      gradient: 'bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700',
-      route: '/game/vs-computer',
-    },
-    {
-      id: 'private-room',
-      title: 'Özel Oda',
-      description: 'Arkadaşınla özel oda oluştur',
-      icon: Users,
-      color: 'bg-green-500',
-      gradient: 'bg-gradient-to-br from-green-500 via-emerald-600 to-green-700',
-      route: '/game/private-room',
-    },
-    {
-      id: 'random-match',
-      title: 'Rastgele Rakip',
-      description: 'Rastgele oyuncu ile eşleş',
-      icon: Zap,
-      color: 'bg-purple-500',
-      gradient: 'bg-gradient-to-br from-purple-500 via-violet-600 to-purple-700',
-      route: '/game/random-match',
-    },
-    {
-      id: 'tournament',
-      title: 'Turnuva',
-      description: '8 kişilik turnuvaya katıl',
-      icon: Trophy,
-      color: 'bg-yellow-500',
-      gradient: 'bg-gradient-to-br from-yellow-500 via-orange-500 to-yellow-600',
-      route: '/tournament',
-    },
-  ];
+  {
+    id: 'vs-computer',
+    title: 'Yapay Zekaya Karşı',
+    description: 'AI rakibine karşı pratik yap',
+    icon: Bot,
+    color: 'bg-blue-500',
+    gradient: 'bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700',
+    route: '/game/vs-computer',
+  },
+  {
+    id: 'private-room',
+    title: 'Özel Oda',
+    description: 'Arkadaşınla özel oda oluştur',
+    icon: Users,
+    color: 'bg-green-500',
+    gradient: 'bg-gradient-to-br from-green-500 via-emerald-600 to-green-700',
+    route: '/game/private-room',
+  },
+  {
+    id: 'random-match',
+    title: 'Rastgele Rakip',
+    description: 'Rastgele oyuncu ile eşleş',
+    icon: Zap,
+    color: 'bg-purple-500',
+    gradient: 'bg-gradient-to-br from-purple-500 via-violet-600 to-purple-700',
+    route: '/game/random-match',
+  },
+  {
+    id: 'leaderboard',
+    title: 'Liderlik',
+    description: 'Günlük ve haftalık liderler',
+    icon: Trophy,
+    color: 'bg-amber-500',
+    gradient: 'bg-gradient-to-br from-amber-500 via-yellow-500 to-orange-500',
+    route: '/leaderboard',
+    isNavigation: true, // Bu flag ekle
+  },
+  {
+    id: 'tournament',
+    title: 'Turnuva',
+    description: '8 kişilik turnuvaya katıl',
+    icon: Trophy,
+    color: 'bg-yellow-500',
+    gradient: 'bg-gradient-to-br from-yellow-500 via-orange-500 to-yellow-600',
+    route: '/tournament',
+  },
+];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
@@ -418,15 +428,21 @@ const HomePage = () => {
                     </Badge>
                   </div>
                   <Button 
-                    className="w-full bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50 backdrop-blur-sm font-semibold" 
-                    variant="outline"
-                    onClick={() => {
-                      playSound('buttonClick');
-                      setSelectedMode(mode.id);
-                    }}
-                  >
-                    Oyuna Başla
-                  </Button>
+  className="w-full bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50 backdrop-blur-sm font-semibold" 
+  variant="outline"
+  onClick={() => {
+    playSound('buttonClick');
+    // Eğer liderlik butonu ise direkt yönlendir
+    if (mode.isNavigation) {
+      navigate(mode.route);
+    } else {
+      // Diğer oyun modları için modal aç
+      setSelectedMode(mode.id);
+    }
+  }}
+>
+  {mode.isNavigation ? 'Görüntüle' : 'Oyuna Başla'}
+</Button>
                 </CardContent>
               </Card>
             ))}
