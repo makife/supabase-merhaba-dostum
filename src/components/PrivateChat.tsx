@@ -190,7 +190,7 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
             src={otherUser.avatar_url}
             alt={otherUser.username}
             fallback={otherUser.username.charAt(0).toUpperCase()}
-            size="sm"
+            size="xxs"
           />
           <div>
             <h3 className="font-semibold">{otherUser.username}</h3>
