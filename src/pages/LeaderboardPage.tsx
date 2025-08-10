@@ -220,7 +220,7 @@ const LeaderboardPage = () => {
       case 2:
         return 'bg-gradient-to-r from-gray-300 to-gray-500 text-white';
       case 3:
-        return 'bg-gradient-to-r from-amber-700 to-amber-900 text-white';
+        return 'bg-gradient-to-r from-amber-900 to-amber-1000 text-white';
       default:
         return 'bg-muted';
     }
@@ -250,14 +250,16 @@ const LeaderboardPage = () => {
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <h3 className={`font-semibold truncate ${leader.rank <= 3 ? 'text-white' : 'text-foreground'}`}>
-                      {leader.username}
-                      {leader.user_id === user?.id && (
-                        <Badge variant="outline" className="ml-2 text-xs">
-                          Sen
-                        </Badge>
-                      )}
-                    </h3>
+                    <div className="flex items-center space-x-2">
+  <h3 className={`font-semibold truncate flex-1 ${leader.rank <= 3 ? 'text-white' : 'text-foreground'}`}>
+    {leader.username}
+  </h3>
+  {leader.user_id === user?.id && (
+    <Badge className="text-xs px-2 py-0 h-5 bg-white/20 text-white border-white/50 flex-shrink-0">
+      Sen
+    </Badge>
+  )}
+</div>
                     <div className="flex items-center space-x-3 text-sm">
                       <span className={`flex items-center ${leader.rank <= 3 ? 'text-white/80' : 'text-muted-foreground'}`}>
                         <Target className="w-3 h-3 mr-1" />
