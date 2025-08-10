@@ -6,6 +6,8 @@ import { Users, Bot, Loader2, Zap, User } from 'lucide-react';
 import { useGame } from '@/contexts/GameContext';
 import { useSounds } from '@/hooks/useSounds';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface MatchmakingModalProps {
   onClose: () => void;
@@ -16,10 +18,100 @@ interface MatchmakingModalProps {
 const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalProps) => {
   const [searchProgress, setSearchProgress] = useState(0);
   const [searchStatus, setSearchStatus] = useState<'searching' | 'ai-fallback' | 'found'>('searching');
-  const [countdown, setCountdown] = useState(10);
-  const { findRandomMatch, addAIOpponent } = useGame();
+  const [countdown, setCountdown] = useState(15); // 10 → 15 saniye
+  const { findRandomMatch, addAIOpponent, currentRoom, participants } = useGame();
   const { playSound } = useSounds();
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  // 🔧 YENİ: Real-time matchmaking listener
+  useEffect(() => {
+    if (!currentRoom || searchStatus !== 'searching' || !user) return;
+    
+    console.log('🎯 Real-time matchmaking dinleyicisi başlatılıyor...');
+    console.log('🎯 Dinlenecek oda:', currentRoom.id);
+    
+    const channel = supabase
+      .channel(`matchmaking-${currentRoom.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public', 
+        table: 'game_participants',
+        filter: `room_id=eq.${currentRoom.id}`
+      }, (payload) => {
+        console.log('🎉 YENİ KATILIMCI TESPİT EDİLDİ!', payload);
+        console.log('🔍 Payload detayı:', {
+          newUserId: payload.new.user_id,
+          currentUserId: user.id,
+          isBot: payload.new.is_bot,
+          roomId: payload.new.room_id
+        });
+        
+        // Eğer bot değilse ve farklı oyuncuysa
+        if (!payload.new.is_bot && payload.new.user_id !== user.id && payload.new.user_id !== null) {
+          console.log('✅ GERÇEK OYUNCU EŞLEŞMESI BULUNDU!');
+          setSearchStatus('found');
+          
+          playSound('correctWord');
+          toast({
+            title: '🎉 Oyuncu Bulundu!',
+            description: 'Gerçek oyuncu ile eşleştiniz!',
+            duration: 2000,
+          });
+          
+          // 1.5 saniye sonra oyunu başlat
+          setTimeout(() => {
+            console.log('🎮 Gerçek oyuncu ile oyun başlatılıyor...');
+            onMatchFound(false); // false = gerçek oyuncu
+          }, 1500);
+        } else {
+          console.log('🤖 Bot katıldı veya aynı oyuncu, eşleşme sayılmaz');
+        }
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'game_participants', 
+        filter: `room_id=eq.${currentRoom.id}`
+      }, (payload) => {
+        console.log('📊 Katılımcı güncellendi:', payload);
+      })
+      .subscribe();
+
+    return () => {
+      console.log('🧹 Real-time matchmaking dinleyicisi temizleniyor...');
+      supabase.removeChannel(channel);
+    };
+  }, [currentRoom, searchStatus, user, playSound, toast, onMatchFound]);
+
+  // 🔧 YENİ: Participants değişikliklerini izle
+  useEffect(() => {
+    if (!currentRoom || searchStatus !== 'searching' || !user) return;
+    
+    console.log('👥 Katılımcı listesi değişti:', participants.length);
+    console.log('👥 Katılımcılar:', participants);
+    
+    // Gerçek oyuncu sayısını kontrol et (bot olmayanlar ve kendisi hariç)
+    const realPlayers = participants.filter(p => !p.is_bot && p.user_id !== user.id);
+    console.log('👤 Gerçek oyuncu sayısı (kendisi hariç):', realPlayers.length);
+    
+    if (realPlayers.length > 0 && searchStatus === 'searching') {
+      console.log('✅ PARTICIPANTS ÜZERİNDEN EŞLEŞME TESPİT EDİLDİ!');
+      setSearchStatus('found');
+      
+      playSound('correctWord');
+      toast({
+        title: '🎉 Oyuncu Bulundu!',
+        description: 'Gerçek oyuncu ile eşleştiniz!',
+        duration: 2000,
+      });
+      
+      setTimeout(() => {
+        console.log('🎮 Participants üzerinden oyun başlatılıyor...');
+        onMatchFound(false);
+      }, 1500);
+    }
+  }, [participants, currentRoom, searchStatus, user, playSound, toast, onMatchFound]);
 
   useEffect(() => {
     let progressInterval: NodeJS.Timeout;
@@ -27,17 +119,16 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
     let searchTimeout: NodeJS.Timeout;
 
     const startSearch = async () => {
-      console.log('🔍 Starting matchmaking for:', gameType);
-      console.log('🔍 Setting up timers and intervals...');
+      console.log('🔍 Matchmaking başlatılıyor:', gameType);
       setSearchStatus('searching');
       
-      // Progress animation
+      // Progress animasyonu
       progressInterval = setInterval(() => {
         setSearchProgress(prev => {
           if (prev >= 100) return 0;
-          return prev + 5;
+          return prev + 3; // 5 → 3 (daha yavaş)
         });
-      }, 100);
+      }, 150); // 100 → 150ms (daha yavaş)
 
       // Countdown
       countdownInterval = setInterval(() => {
@@ -50,39 +141,41 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
         });
       }, 1000);
 
-      // Auto fallback to AI after 10 seconds
+      // 🔧 DEĞIŞIKLIK: 10 → 15 saniye timeout
       searchTimeout = setTimeout(async () => {
-        console.log('⏰ 10 second timeout reached - switching to AI');
-        setSearchStatus('ai-fallback');
-        clearInterval(progressInterval);
-        clearInterval(countdownInterval);
+        console.log('⏰ 15 saniye timeout - AI ile devam ediliyor');
         
-        console.log('🤖 Adding AI opponent...');
-        // Add AI opponent to current room
-        await addAIOpponent();
-        
-        toast({
-          title: 'Oyuncu Bulunamadı',
-          description: 'AI rakip eklendi, oyun başlıyor...',
-          duration: 2000,
-        });
+        // Eğer hala searching durumundaysa AI'ya geç
+        if (searchStatus === 'searching') {
+          setSearchStatus('ai-fallback');
+          clearInterval(progressInterval);
+          clearInterval(countdownInterval);
+          
+          console.log('🤖 AI rakip ekleniyor...');
+          await addAIOpponent();
+          
+          toast({
+            title: 'Oyuncu Bulunamadı',
+            description: 'AI rakip eklendi, oyun başlıyor...',
+            duration: 2000,
+          });
 
-        console.log('🎮 Starting game with AI in 2 seconds...');
-        setTimeout(() => {
-          console.log('🎮 Calling onMatchFound(true)...');
-          onMatchFound(true);
-        }, 2000);
-      }, 10000);
+          setTimeout(() => {
+            console.log('🎮 AI ile oyun başlatılıyor...');
+            onMatchFound(true); // true = AI
+          }, 2000);
+        }
+      }, 15000); // 10000 → 15000ms
 
-      // Try to find a match
+      // Match arama
       try {
-        console.log('🔍 Calling findRandomMatch...');
+        console.log('🔍 findRandomMatch çağrılıyor...');
         const matchFound = await findRandomMatch(gameType);
-        console.log('🔍 findRandomMatch result:', matchFound);
+        console.log('🔍 findRandomMatch sonucu:', matchFound);
         
         if (matchFound) {
-          // Immediate match found
-          console.log('✅ Immediate match found! Clearing timers...');
+          // Anında eşleşme bulundu
+          console.log('✅ Anında eşleşme bulundu! Timer temizleniyor...');
           clearTimeout(searchTimeout);
           clearInterval(progressInterval);
           clearInterval(countdownInterval);
@@ -90,37 +183,46 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
           playSound('correctWord');
           
           toast({
-            title: 'Oyuncu Bulundu!',
-            description: 'Gerçek oyuncu ile eşleştiniz',
+            title: '🎉 Oyuncu Bulundu!',
+            description: 'Gerçek oyuncu ile anında eşleştiniz',
+            duration: 2000,
           });
           
           setTimeout(() => {
-            console.log('🎮 Starting game with real player...');
-            onMatchFound(false);
+            console.log('🎮 Anında eşleşme ile oyun başlatılıyor...');
+            onMatchFound(false); // false = gerçek oyuncu
           }, 1500);
         } else {
-          console.log('❌ No immediate match found, waiting for timeout...');
+          console.log('❌ Anında eşleşme yok, real-time bekleniyor...');
+          console.log('🎯 Current room after search:', currentRoom?.id);
         }
-        // If no immediate match found, continue waiting and let timeout handle AI fallback
       } catch (error) {
-        console.error('🚨 Matchmaking error:', error);
-        console.log('🔄 Continuing with normal timeout flow after error');
-        // Continue with normal timeout flow on error
+        console.error('🚨 Matchmaking hatası:', error);
+        console.log('🔄 Hata sonrası normal akış devam ediyor...');
       }
     };
 
     startSearch();
 
+    // Cleanup function
     return () => {
+      console.log('🧹 Matchmaking effect temizleniyor...');
       clearInterval(progressInterval);
       clearInterval(countdownInterval);
       clearTimeout(searchTimeout);
     };
-  }, [findRandomMatch, gameType]); // onMatchFound, playSound, toast'u çıkardım
+  }, [findRandomMatch, gameType, addAIOpponent, playSound, toast, onMatchFound, currentRoom, searchStatus]);
 
   const handlePlayWithAI = () => {
+    console.log('🎮 Manuel AI oyunu başlatılıyor...');
     playSound('buttonClick');
     onMatchFound(true);
+  };
+
+  const handleCancel = () => {
+    console.log('❌ Matchmaking iptal ediliyor...');
+    playSound('buttonClick');
+    onClose();
   };
 
   const getStatusInfo = () => {
@@ -129,7 +231,7 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
         return {
           icon: Zap,
           title: 'Oyuncu Aranıyor...',
-          description: 'Lütfen bekleyin...',
+          description: `${gameType === 'timed' ? 'Zamana karşı' : 'Puana karşı'} oyun için eşleşme bekleniyor`,
           color: 'text-primary',
           bgColor: 'bg-primary'
         };
@@ -137,7 +239,7 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
         return {
           icon: Bot,
           title: 'AI ile Oyun Başlıyor',
-          description: 'Yapay zekaya karşı oynayın...',
+          description: 'Yapay zekaya karşı mücadele edeceksiniz',
           color: 'text-secondary',
           bgColor: 'bg-secondary'
         };
@@ -145,9 +247,9 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
         return {
           icon: User,
           title: 'Oyuncu Bulundu!',
-          description: 'Rakip ile eşleştiniz',
-          color: 'text-accent',
-          bgColor: 'bg-accent'
+          description: 'Gerçek rakip ile eşleştiniz, oyun başlıyor...',
+          color: 'text-green-500',
+          bgColor: 'bg-green-500'
         };
     }
   };
@@ -161,7 +263,8 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
           {/* Animated Icon */}
           <div className="relative">
             <div className={`w-20 h-20 ${statusInfo.bgColor} rounded-full mx-auto flex items-center justify-center ${
-              searchStatus === 'searching' ? 'animate-pulse' : ''
+              searchStatus === 'searching' ? 'animate-pulse' : 
+              searchStatus === 'found' ? 'animate-bounce' : ''
             }`}>
               {searchStatus === 'searching' ? (
                 <Loader2 className="w-10 h-10 text-white animate-spin" />
@@ -177,6 +280,11 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
                 <div className="absolute inset-2 rounded-full border-4 border-primary/20 animate-ping animation-delay-300"></div>
               </>
             )}
+
+            {/* Success ring for found */}
+            {searchStatus === 'found' && (
+              <div className="absolute inset-0 rounded-full border-4 border-green-400/50 animate-pulse"></div>
+            )}
           </div>
 
           {/* Status Text */}
@@ -184,24 +292,42 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
             <h2 className={`text-2xl font-bold ${statusInfo.color}`}>
               {statusInfo.title}
             </h2>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               {statusInfo.description}
             </p>
           </div>
 
           {/* Game Type Badge */}
-          <div className="inline-flex items-center px-3 py-1 bg-muted rounded-full">
+          <div className="inline-flex items-center px-4 py-2 bg-muted rounded-full">
             <span className="text-sm font-medium">
-              {gameType === 'timed' ? 'Zamana Karşı' : 'Puana Karşı'}
+              {gameType === 'timed' ? '⏱️ Zamana Karşı (2 dk)' : '🎯 500 Puana Kadar'}
             </span>
           </div>
 
+          {/* Room ID Debug (Development only) */}
+          {process.env.NODE_ENV === 'development' && currentRoom && (
+            <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+              <p>🏠 Oda ID: {currentRoom.id.slice(-8)}</p>
+              <p>👥 Katılımcı: {participants.length}</p>
+            </div>
+          )}
+
           {/* Progress Bar (only during search) */}
           {searchStatus === 'searching' && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Progress value={searchProgress} className="h-2" />
-              <p className="text-sm text-muted-foreground">
-                {countdown} saniye sonra AI ile oyun
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">
+                  Aranıyor...
+                </span>
+                <span className={`font-medium ${
+                  countdown <= 5 ? 'text-orange-500 animate-pulse' : 'text-muted-foreground'
+                }`}>
+                  {countdown}s kaldı
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {countdown} saniye sonra AI rakip ile oyun başlayacak
               </p>
             </div>
           )}
@@ -218,6 +344,7 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
                 className="w-full"
                 size="lg"
               >
+                <Bot className="w-4 h-4 mr-2" />
                 Hemen Başla
               </Button>
             </div>
@@ -226,28 +353,32 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
           {/* Found Match */}
           {searchStatus === 'found' && (
             <div className="space-y-3">
-              <div className="flex items-center justify-center space-x-2 text-sm text-accent">
+              <div className="flex items-center justify-center space-x-2 text-sm text-green-600">
                 <Users className="w-4 h-4" />
-                <span>Rakip oyuncu bulundu!</span>
+                <span className="font-medium">Gerçek oyuncu bulundu!</span>
               </div>
-              <div className="text-sm text-muted-foreground">
-                Oyuna yönlendiriliyorsunuz...
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                <p className="text-sm text-green-700">
+                  🎉 Eşleşme başarılı! Oyuna yönlendiriliyorsunuz...
+                </p>
               </div>
             </div>
           )}
 
           {/* Cancel Button (only during search) */}
           {searchStatus === 'searching' && (
-            <Button
-              variant="outline"
-              onClick={() => {
-                playSound('buttonClick');
-                onClose();
-              }}
-              className="w-full"
-            >
-              İptal
-            </Button>
+            <div className="space-y-2">
+              <Button
+                variant="outline"
+                onClick={handleCancel}
+                className="w-full"
+              >
+                ❌ İptal Et
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                İptal ederseniz ana menüye döneceksiniz
+              </p>
+            </div>
           )}
         </CardContent>
       </Card>
