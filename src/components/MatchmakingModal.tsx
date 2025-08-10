@@ -18,7 +18,7 @@ interface MatchmakingModalProps {
 const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalProps) => {
   const [searchProgress, setSearchProgress] = useState(0);
   const [searchStatus, setSearchStatus] = useState<'searching' | 'ai-fallback' | 'found'>('searching');
-  const [countdown, setCountdown] = useState(15); // 10 → 15 saniye
+  const [countdown, setCountdown] = useState(20); // 15 → 20 saniye
   const { findRandomMatch, addAIOpponent, currentRoom, participants } = useGame();
   const { playSound } = useSounds();
   const { toast } = useToast();
@@ -149,29 +149,6 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
         console.log('🎮 Bot ile oyun başlatılıyor...');
         onMatchFound(true); // true = bot
       }, 1000);
-    }
-  }, [participants, currentRoom, searchStatus, user, playSound, toast, onMatchFound]);('👥 Katılımcı listesi değişti:', participants.length);
-    console.log('👥 Katılımcılar:', participants);
-    
-    // Gerçek oyuncu sayısını kontrol et (bot olmayanlar ve kendisi hariç)
-    const realPlayers = participants.filter(p => !p.is_bot && p.user_id !== user.id);
-    console.log('👤 Gerçek oyuncu sayısı (kendisi hariç):', realPlayers.length);
-    
-    if (realPlayers.length > 0 && searchStatus === 'searching') {
-      console.log('✅ PARTICIPANTS ÜZERİNDEN EŞLEŞME TESPİT EDİLDİ!');
-      setSearchStatus('found');
-      
-      playSound('correctWord');
-      toast({
-        title: '🎉 Oyuncu Bulundu!',
-        description: 'Gerçek oyuncu ile eşleştiniz!',
-        duration: 2000,
-      });
-      
-      setTimeout(() => {
-        console.log('🎮 Participants üzerinden oyun başlatılıyor...');
-        onMatchFound(false);
-      }, 1500);
     }
   }, [participants, currentRoom, searchStatus, user, playSound, toast, onMatchFound]);
 
