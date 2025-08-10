@@ -566,47 +566,54 @@ useEffect(() => {
   const channel = supabase
     .channel(`room-${currentRoom.id}`)
     .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'game_participants',
-      filter: `room_id=eq.${currentRoom.id}`
-    }, async (payload) => {
-      console.log('📡 Real-time katılımcı değişikliği:', payload);
+  event: '*',
+  schema: 'public',
+  table: 'game_participants',
+  filter: `room_id=eq.${currentRoom.id}`
+}, async (payload: any) => { // ← any type ekle
+  console.log('📡 ===== REAL-TIME EVENT =====');
+  console.log('📡 Event Type:', payload.eventType);
+  console.log('📡 New:', payload.new);
+  console.log('📡 Old:', payload.old);
+  console.log('📡 =============================');
+  
+  // SADECE DELETE kontrol et
+  if (payload.eventType === 'DELETE') {
+    console.log('🚪 DELETE event tespit edildi!');
+    console.log('🚪 Ayrılan oyuncu:', payload.old);
+    
+    // Type checking ekle
+    if (payload.old && 
+        !payload.old.is_bot && 
+        payload.old.user_id && 
+        payload.old.user_id !== user?.id) {
       
-      // YENI: Oyuncu ayrılma kontrolü
-      if (payload.eventType === 'DELETE' || payload.event === 'DELETE') {
-        console.log('🚪 Oyuncu oyundan ayrıldı:', payload.old);
-        
-        // Eğer bot değilse ve kendisi değilse ve oyun başlamışsa
-        if (!payload.old.is_bot && 
-            payload.old.user_id !== user?.id && 
-            currentRoom.status === 'active') {
-          
-          console.log('🏆 Rakip ayrıldı - oyuncu kazandı!');
-          
-          // Ayrılan oyuncuya ceza puanı uygula
-          await applyDisconnectPenalty(payload.old.user_id);
-          
-          // Kalan oyuncuya kazanma bonusu ver
-          await applyWinBonus(user?.id);
-          
-          toast({
-            title: '🏆 Kazandınız!',
-            description: 'Rakip oyuncu oyundan ayrıldı. +100 bonus puan!',
-            duration: 4000,
-          });
-          
-          // Oyunu sonlandır
-          setTimeout(() => {
-            // GamePage'de winner state'ini set et
-            window.dispatchEvent(new CustomEvent('playerDisconnected', {
-              detail: { winner: 'player', reason: 'opponent_left' }
-            }));
-          }, 1000);
-        }
-      }
+      console.log('🏆 GERÇEK OYUNCU AYRILDI - KAZANMA BAŞLADI!');
       
-      fetchParticipants(currentRoom.id);
+      // Ayrılan oyuncuya ceza puanı uygula
+      await applyDisconnectPenalty(payload.old.user_id);
+      
+      // Kalan oyuncuya kazanma bonusu ver
+      await applyWinBonus(user?.id);
+      
+      toast({
+        title: '🏆 Kazandınız!',
+        description: 'Rakip oyuncu oyundan ayrıldı. +100 bonus puan!',
+        duration: 4000,
+      });
+      
+      // Oyunu sonlandır
+      setTimeout(() => {
+        console.log('🎮 Disconnect event dispatch ediliyor...');
+        window.dispatchEvent(new CustomEvent('playerDisconnected', {
+          detail: { winner: 'player', reason: 'opponent_left' }
+        }));
+      }, 1000);
+    }
+  }
+  
+  fetchParticipants(currentRoom.id);
+})
     })
     // YENI: Presence tracking ekle (bağlantı kopması)
     .on('presence', { event: 'sync' }, () => {
