@@ -574,7 +574,7 @@ useEffect(() => {
       console.log('📡 Real-time katılımcı değişikliği:', payload);
       
       // YENI: Oyuncu ayrılma kontrolü
-      if (payload.eventType === 'DELETE') {
+      if (payload.eventType === 'DELETE' || payload.event === 'DELETE') {
         console.log('🚪 Oyuncu oyundan ayrıldı:', payload.old);
         
         // Eğer bot değilse ve kendisi değilse ve oyun başlamışsa
