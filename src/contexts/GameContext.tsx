@@ -166,92 +166,92 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
   // Apply disconnect penalty
   const applyDisconnectPenalty = useCallback(async (userId: string) => {
-    if (!userId) return;
+  if (!userId) return;
+  
+  try {
+    console.log('⚖️ Ayrılma cezası uygulanıyor:', userId.slice(-8));
     
-    try {
-      console.log('⚖️ Ayrılma cezası uygulanıyor:', userId.slice(-8));
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('total_score, disconnect_count')
+      .eq('id', userId)
+      .single();
+    
+    if (error) {
+      console.error('❌ Profile fetch error:', error);
+      return;
+    }
+    
+    if (profile) {
+      const currentScore = profile.total_score || 0;
+      const disconnectCount = (profile.disconnect_count || 0) + 1;
+      const penaltyAmount = Math.min(50 + (disconnectCount * 10), 200);
+      const newScore = Math.max(0, currentScore - penaltyAmount);
       
-      const { data: profile, error } = await supabase
+      const { error: updateError } = await supabase
         .from('profiles')
-        .select('total_score, disconnect_count')
-        .eq('id', userId)
-        .single();
+        .update({ 
+          total_score: newScore,
+          disconnect_count: disconnectCount,
+          last_disconnect: new Date().toISOString()
+        })
+        .eq('id', userId);
       
-      if (error) {
-        console.error('❌ Profile fetch error:', error);
+      if (updateError) {
+        console.error('❌ Profile update error:', updateError);
         return;
       }
       
-      if (profile) {
-        const currentScore = profile.total_score || 0;
-        const disconnectCount = (profile.disconnect_count || 0) + 1;
-        const penaltyAmount = Math.min(50 + (disconnectCount * 10), 200);
-        const newScore = Math.max(0, currentScore - penaltyAmount);
-        
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ 
-            total_score: newScore,
-            disconnect_count: disconnectCount,
-            last_disconnect: new Date().toISOString()
-          })
-          .eq('id', userId);
-        
-        if (updateError) {
-          console.error('❌ Profile update error:', updateError);
-          return;
-        }
-        
-        console.log('⚖️ Ceza uygulandı:', penaltyAmount, 'puan');
-      }
-    } catch (error) {
-      console.error('❌ Ceza uygulama hatası:', error);
+      console.log('⚖️ Ceza uygulandı:', penaltyAmount, 'puan');
     }
-  }, []);
+  } catch (error) {
+    console.error('❌ Ceza uygulama hatası:', error);
+  }
+}, []);
 
-  // Apply win bonus
-  const applyWinBonus = useCallback(async (userId: string | undefined, bonusAmount: number = 100) => {
-    if (!userId) return;
+// Apply win bonus - güncelleme gerekli
+const applyWinBonus = useCallback(async (userId: string | undefined, bonusAmount: number = 100) => {
+  if (!userId) return;
+  
+  try {
+    console.log('🏆 Kazanma bonusu veriliyor:', bonusAmount);
     
-    try {
-      console.log('🏆 Kazanma bonusu veriliyor:', bonusAmount);
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('total_score, win_count')
+      .eq('id', userId)
+      .single();
+    
+    if (error) {
+      console.error('❌ Profile fetch error:', error);
+      return;
+    }
+    
+    if (profile) {
+      const currentScore = profile.total_score || 0;
+      const winCount = (profile.win_count || 0) + 1;
+      const newScore = currentScore + bonusAmount;
       
-      const { data: profile, error } = await supabase
+      const { error: updateError } = await supabase
         .from('profiles')
-        .select('total_score, win_count')
-        .eq('id', userId)
-        .single();
+        .update({ 
+          total_score: newScore,
+          win_count: winCount,
+          last_win: new Date().toISOString()
+        })
+        .eq('id', userId);
       
-      if (error) {
-        console.error('❌ Profile fetch error:', error);
+      if (updateError) {
+        console.error('❌ Profile update error:', updateError);
         return;
       }
       
-      if (profile) {
-        const currentScore = profile.total_score || 0;
-        const winCount = (profile.win_count || 0) + 1;
-        const newScore = currentScore + bonusAmount;
-        
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ 
-            total_score: newScore,
-            win_count: winCount,
-            last_win: new Date().toISOString()
-          })
-          .eq('id', userId);
-        
-        if (updateError) {
-          console.error('❌ Profile update error:', updateError);
-          return;
-        }
-        
-        console.log('🏆 Bonus verildi:', bonusAmount, 'puan');
-      }
-    } catch (error) {
-      console.error('❌ Bonus verme hatası:', error);
+      console.log('🏆 Bonus verildi:', bonusAmount, 'puan');
     }
-  }, []);
+  } catch (error) {
+    console.error('❌ Bonus verme hatası:', error);
+  }
+}, []);
 
   // Close full room
   const closeFullRoom = useCallback(async (roomId: string) => {
@@ -647,113 +647,130 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
   // Real-time subscriptions
   useEffect(() => {
-    if (!currentRoom) {
-      setIsConnected(false);
-      return;
-    }
+  if (!currentRoom) {
+    setIsConnected(false);
+    return;
+  }
 
-    console.log('🔗 Real-time bağlantı kuruluyor:', currentRoom.id.slice(-8));
-    setIsConnected(true);
-    fetchParticipants(currentRoom.id);
+  console.log('🔗 Real-time bağlantı kuruluyor:', currentRoom.id.slice(-8));
+  setIsConnected(true);
+  fetchParticipants(currentRoom.id);
 
-    const channel = supabase
-      .channel(`room-${currentRoom.id}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'game_participants',
-        filter: `room_id=eq.${currentRoom.id}`
-      }, async (payload: RealtimePayload) => {
-        console.log('📡 ===== REAL-TIME EVENT =====');
-        console.log('📡 Event Type:', payload.eventType);
-        console.log('📡 New:', payload.new);
-        console.log('📡 Old:', payload.old);
-        console.log('📡 =============================');
+  const channel = supabase
+    .channel(`room-${currentRoom.id}`)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'game_participants',
+      filter: `room_id=eq.${currentRoom.id}`
+    }, async (payload: RealtimePayload) => {
+      console.log('📡 ===== REAL-TIME EVENT =====');
+      console.log('📡 Event Type:', payload.eventType);
+      console.log('📡 New:', payload.new);
+      console.log('📡 Old:', payload.old);
+      console.log('📡 Game Mode:', gameMode);
+      console.log('📡 Room Status:', currentRoom.status);
+      console.log('📡 =============================');
+      
+      // Handle DELETE events (player left)
+      if (payload.eventType === 'DELETE' && payload.old) {
+        console.log('🚪 DELETE event tespit edildi!');
+        console.log('🚪 Ayrılan oyuncu:', payload.old);
         
-        // Handle DELETE events
-        if (payload.eventType === 'DELETE' && payload.old) {
-          console.log('🚪 DELETE event tespit edildi!');
-          console.log('🚪 Ayrılan oyuncu:', payload.old);
+        // Check if this is a real player (not bot) leaving an active game
+        if (!payload.old.is_bot && 
+            payload.old.user_id && 
+            payload.old.user_id !== user?.id &&
+            currentRoom.status === 'active') {
           
-          if (!payload.old.is_bot && 
-              payload.old.user_id && 
-              payload.old.user_id !== user?.id) {
-            
-            console.log('🏆 GERÇEK OYUNCU AYRILDI - KAZANMA BAŞLADI!');
-            
-            // Apply penalty to leaving player
-            await applyDisconnectPenalty(payload.old.user_id);
-            
-            // Give win bonus to remaining player
-            await applyWinBonus(user?.id);
+          console.log('🏆 GERÇEK OYUNCU AYRILDI - KAZANMA BAŞLADI!');
+          console.log('🎮 Game Mode:', gameMode);
+          
+          // Apply penalty to leaving player
+          await applyDisconnectPenalty(payload.old.user_id);
+          
+          // Give win bonus to remaining player
+          await applyWinBonus(user?.id);
+          
+          toast({
+            title: '🏆 Kazandınız!',
+            description: 'Rakip oyuncu oyundan ayrıldı. +100 bonus puan!',
+            duration: 4000,
+          });
+          
+          // End game for both modes
+          setTimeout(() => {
+            console.log('🎮 Disconnect event dispatch ediliyor...');
+            window.dispatchEvent(new CustomEvent('playerDisconnected', {
+              detail: { winner: 'player', reason: 'opponent_left' }
+            }));
+          }, 1000);
+        }
+      }
+      
+      // Handle UPDATE events (score changes)
+      if (payload.eventType === 'UPDATE' && payload.new && payload.old) {
+        console.log('📊 Score update detected');
+        // Refresh participants to get latest scores
+        await fetchParticipants(currentRoom.id);
+      }
+      
+      // Always refresh participants for any change
+      fetchParticipants(currentRoom.id);
+    })
+    .on('presence', { event: 'sync' }, () => {
+      console.log('👥 Presence sync');
+    })
+    .on('presence', { event: 'join' }, ({ key }) => {
+      console.log('👋 Kullanıcı katıldı:', key);
+    })
+    .on('presence', { event: 'leave' }, async ({ key }) => {
+      console.log('🚪 Kullanıcı bağlantısı koptu:', key);
+      
+      // Handle presence leave for active games
+      if (currentRoom.status === 'active' && key !== `user-${user?.id}`) {
+        console.log('📡 Bağlantı kopması tespit edildi - Game Mode:', gameMode);
+        
+        // Wait briefly for temporary connection issues
+        setTimeout(async () => {
+          // Check if participant still exists in database
+          const { data: participants } = await supabase
+            .from('game_participants')
+            .select('user_id, is_bot')
+            .eq('room_id', currentRoom.id)
+            .neq('user_id', user?.id);
+          
+          const realPlayers = participants?.filter(p => !p.is_bot) || [];
+          
+          if (realPlayers.length === 0) {
+            console.log('🏆 Rakip bağlantısı koptu - oyuncu kazandı!');
             
             toast({
               title: '🏆 Kazandınız!',
-              description: 'Rakip oyuncu oyundan ayrıldı. +100 bonus puan!',
+              description: 'Rakip oyuncunun bağlantısı koptu. +50 puan!',
               duration: 4000,
             });
             
+            // Give win bonus
+            await applyWinBonus(user?.id, 50);
+            
             // End game
             setTimeout(() => {
-              console.log('🎮 Disconnect event dispatch ediliyor...');
-              window.dispatchEvent(new CustomEvent('playerDisconnected', {
-                detail: { winner: 'player', reason: 'opponent_left' }
-              }));
-            }, 1000);
-          }
-        }
-        
-        fetchParticipants(currentRoom.id);
-      })
-      .on('presence', { event: 'sync' }, () => {
-        console.log('👥 Presence sync');
-      })
-      .on('presence', { event: 'join' }, ({ key }) => {
-        console.log('👋 Kullanıcı katıldı:', key);
-      })
-      .on('presence', { event: 'leave' }, async ({ key }) => {
-        console.log('🚪 Kullanıcı bağlantısı koptu:', key);
-        
-        // If game is active and another player left
-        if (currentRoom.status === 'active' && key !== `user-${user?.id}`) {
-          console.log('📡 Bağlantı kopması tespit edildi');
-          
-          // Wait briefly (might be temporary connection issue)
-          setTimeout(async () => {
-            // Check if still missing
-            const { data: participants } = await supabase
-              .from('game_participants')
-              .select('user_id')
-              .eq('room_id', currentRoom.id)
-              .neq('user_id', user?.id);
-            
-            if (!participants || participants.length === 0) {
-              console.log('🏆 Rakip bağlantısı koptu - oyuncu kazandı!');
-              
-              toast({
-                title: '🏆 Kazandınız!',
-                description: 'Rakip oyuncunun bağlantısı koptu. +50 puan!',
-                duration: 4000,
-              });
-              
-              // Give win bonus
-              await applyWinBonus(user?.id, 50);
-              
-              // End game
               window.dispatchEvent(new CustomEvent('playerDisconnected', {
                 detail: { winner: 'player', reason: 'connection_lost' }
               }));
-            }
-          }, 10000); // Wait 10 seconds
-        }
-      })
-      .subscribe();
+            }, 1000);
+          }
+        }, 10000); // Wait 10 seconds for reconnection
+      }
+    })
+    .subscribe();
 
-    return () => {
-      console.log('🔌 Real-time bağlantı kesiliyor');
-      supabase.removeChannel(channel);
-    };
-  }, [currentRoom, user, fetchParticipants, applyDisconnectPenalty, applyWinBonus, toast]);
+  return () => {
+    console.log('🔌 Real-time bağlantı kesiliyor');
+    supabase.removeChannel(channel);
+  };
+}, [currentRoom, user, fetchParticipants, applyDisconnectPenalty, applyWinBonus, toast, gameMode]);
 
   // Handle page close/refresh cleanup
   useEffect(() => {
