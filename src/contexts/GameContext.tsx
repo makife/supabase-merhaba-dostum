@@ -566,11 +566,11 @@ useEffect(() => {
   const channel = supabase
     .channel(`room-${currentRoom.id}`)
     .on('postgres_changes', {
-  event: '*',
-  schema: 'public',
-  table: 'game_participants',
-  filter: `room_id=eq.${currentRoom.id}`
-}, async (payload: any) => { // ← any type ekle
+       event: '*',
+       schema: 'public',
+       table: 'game_participants',
+       filter: `room_id=eq.${currentRoom.id}`
+    }, async (payload: any) => { // ← any type ekle
   console.log('📡 ===== REAL-TIME EVENT =====');
   console.log('📡 Event Type:', payload.eventType);
   console.log('📡 New:', payload.new);
