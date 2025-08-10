@@ -36,102 +36,10 @@ const LeaderboardPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  const [dailyLeaders, setDailyLeaders] = useState<LeaderboardEntry[]>([]);
-  const [weeklyLeaders, setWeeklyLeaders] = useState<LeaderboardEntry[]>([]);
   const [allTimeLeaders, setAllTimeLeaders] = useState<LeaderboardEntry[]>([]);
   const [userRank, setUserRank] = useState<number | null>(null);
   const [userStats, setUserStats] = useState<LeaderboardEntry | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-
-  // Günlük liderleri getir
-  const fetchDailyLeaders = async (date = selectedDate) => {
-    try {
-      const { data, error } = await supabase
-        .rpc('get_daily_top_leaders', {
-          target_date: date,
-          limit_count: 50
-        });
-
-      if (error) throw error;
-      setDailyLeaders(data || []);
-
-      // Kullanıcının kendi durumunu bul
-      if (user && data) {
-        const userEntry = data.find((entry: LeaderboardEntry) => entry.user_id === user.id);
-        if (userEntry) {
-          setUserRank(userEntry.rank);
-          setUserStats(userEntry);
-        } else {
-          setUserRank(null);
-          setUserStats(null);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching daily leaders:', error);
-      toast({
-        title: 'Hata',
-        description: 'Liderlik tablosu yüklenirken hata oluştu',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  // Haftalık liderleri getir (basit implementasyon)
-  const fetchWeeklyLeaders = async () => {
-    try {
-      // Son 7 günün toplamını al
-      const { data, error } = await supabase
-        .from('daily_leaderboard')
-        .select(`
-          user_id,
-          username,
-          avatar_url,
-          daily_score,
-          games_played,
-          best_word,
-          best_word_score
-        `)
-        .gte('date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
-        .order('daily_score', { ascending: false });
-
-      if (error) throw error;
-
-      // Kullanıcı bazında grupla ve topla
-      const weeklyData: { [key: string]: LeaderboardEntry } = {};
-      data?.forEach((entry: any) => {
-        if (!weeklyData[entry.user_id]) {
-          weeklyData[entry.user_id] = {
-            user_id: entry.user_id,
-            username: entry.username,
-            avatar_url: entry.avatar_url,
-            daily_score: 0,
-            games_played: 0,
-            best_word: entry.best_word,
-            best_word_score: entry.best_word_score,
-            rank: 0
-          };
-        }
-        weeklyData[entry.user_id].daily_score += entry.daily_score;
-        weeklyData[entry.user_id].games_played += entry.games_played;
-        
-        if (entry.best_word_score > weeklyData[entry.user_id].best_word_score) {
-          weeklyData[entry.user_id].best_word = entry.best_word;
-          weeklyData[entry.user_id].best_word_score = entry.best_word_score;
-        }
-      });
-
-      // Array'e çevir ve sırala
-      const weeklyArray = Object.values(weeklyData)
-        .sort((a, b) => b.daily_score - a.daily_score)
-        .slice(0, 50)
-        .map((entry, index) => ({ ...entry, rank: index + 1 }));
-
-      setWeeklyLeaders(weeklyArray);
-    } catch (error) {
-      console.error('Error fetching weekly leaders:', error);
-    }
-  };
 
   // Tüm zamanların liderlerini getir
   const fetchAllTimeLeaders = async () => {
@@ -156,49 +64,37 @@ const LeaderboardPage = () => {
       })) || [];
 
       setAllTimeLeaders(allTimeData);
+
+      // Kullanıcının kendi durumunu bul
+      if (user && allTimeData) {
+        const userEntry = allTimeData.find((entry: LeaderboardEntry) => entry.user_id === user.id);
+        if (userEntry) {
+          setUserRank(userEntry.rank);
+          setUserStats(userEntry);
+        } else {
+          setUserRank(null);
+          setUserStats(null);
+        }
+      }
     } catch (error) {
       console.error('Error fetching all-time leaders:', error);
+      toast({
+        title: 'Hata',
+        description: 'Liderlik tablosu yüklenirken hata oluştu',
+        variant: 'destructive',
+      });
     }
   };
 
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      await Promise.all([
-        fetchDailyLeaders(),
-        fetchWeeklyLeaders(),
-        fetchAllTimeLeaders()
-      ]);
+      await fetchAllTimeLeaders();
       setLoading(false);
     };
 
     loadData();
-  }, [user, selectedDate]);
-
-  // Real-time güncellemeler
-  useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel('leaderboard-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'daily_leaderboard'
-        },
-        () => {
-          fetchDailyLeaders();
-          fetchWeeklyLeaders();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, selectedDate]);
+  }, [user]);
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
@@ -226,7 +122,7 @@ const LeaderboardPage = () => {
     }
   };
 
-  const renderLeaderboard = (leaders: LeaderboardEntry[], showGames = true) => (
+  const renderLeaderboard = (leaders: LeaderboardEntry[]) => (
     <div className="space-y-2">
       {leaders.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
@@ -265,18 +161,6 @@ const LeaderboardPage = () => {
                         <Target className="w-3 h-3 mr-1" />
                         {leader.daily_score} puan
                       </span>
-                      {showGames && (
-                        <span className={`flex items-center ${leader.rank <= 3 ? 'text-white/80' : 'text-muted-foreground'}`}>
-                          <Zap className="w-3 h-3 mr-1" />
-                          {leader.games_played} oyun
-                        </span>
-                      )}
-                      {leader.best_word && (
-                        <span className={`flex items-center ${leader.rank <= 3 ? 'text-white/80' : 'text-muted-foreground'}`}>
-                          <Star className="w-3 h-3 mr-1" />
-                          {leader.best_word} ({leader.best_word_score}p)
-                        </span>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -322,7 +206,7 @@ const LeaderboardPage = () => {
             <CardHeader>
               <CardTitle className="flex items-center">
                 <TrendingUp className="w-5 h-5 mr-2" />
-                Bugünkü Performansın
+                Senin Performansın
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -333,14 +217,14 @@ const LeaderboardPage = () => {
                 </div>
                 <div>
                   <div className="text-2xl font-bold text-primary">{userStats.daily_score}</div>
-                  <div className="text-sm text-muted-foreground">Günlük Puan</div>
+                  <div className="text-sm text-muted-foreground">Toplam Puan</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-primary">{userStats.games_played}</div>
+                  <div className="text-2xl font-bold text-primary">0</div>
                   <div className="text-sm text-muted-foreground">Oyun Sayısı</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-primary">{userStats.best_word || '—'}</div>
+                  <div className="text-2xl font-bold text-primary">—</div>
                   <div className="text-sm text-muted-foreground">En İyi Kelime</div>
                 </div>
               </div>
@@ -349,64 +233,17 @@ const LeaderboardPage = () => {
         )}
 
         {/* Liderlik Tabloları */}
-        <Tabs defaultValue="daily" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="daily" className="flex items-center">
-              <Calendar className="w-4 h-4 mr-2" />
-              Günlük
-            </TabsTrigger>
-            <TabsTrigger value="weekly" className="flex items-center">
-              <TrendingUp className="w-4 h-4 mr-2" />
-              Haftalık
-            </TabsTrigger>
-            <TabsTrigger value="alltime" className="flex items-center">
-              <Crown className="w-4 h-4 mr-2" />
-              Tüm Zamanlar
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="daily" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Günün Liderleri</CardTitle>
-                <CardDescription>
-                  Bugün en çok puan toplayan oyuncular
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {renderLeaderboard(dailyLeaders)}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="weekly" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Haftalık Liderler</CardTitle>
-                <CardDescription>
-                  Son 7 günün en başarılı oyuncuları
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {renderLeaderboard(weeklyLeaders)}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="alltime" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Tüm Zamanların En İyileri</CardTitle>
-                <CardDescription>
-                  Toplam puan sıralaması
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {renderLeaderboard(allTimeLeaders, false)}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+        <Card>
+          <CardHeader>
+            <CardTitle>Tüm Zamanların En İyileri</CardTitle>
+            <CardDescription>
+              Toplam puan sıralaması
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {renderLeaderboard(allTimeLeaders)}
+          </CardContent>
+        </Card>
 
         {/* Bilgi Kutusu */}
         <Card className="border-blue-200 bg-blue-50">
@@ -416,10 +253,10 @@ const LeaderboardPage = () => {
               <div className="text-sm text-blue-800">
                 <p className="font-medium mb-1">Nasıl Çalışır?</p>
                 <ul className="list-disc list-inside space-y-1 text-blue-700">
-                  <li>Her oyun sonunda puanın günlük sıralamaya eklenir</li>
-                  <li>Gece 00:00'da günlük sıralama sıfırlanır</li>
-                  <li>Haftalık sıralama son 7 günün toplamıdır</li>
-                  <li>Tüm zamanlar sıralaması toplam EXP puanınadır</li>
+                  <li>Her oyun sonunda puanın toplam puanına eklenir</li>
+                  <li>Liderlik tablosu toplam puanlara göre sıralanır</li>
+                  <li>Seviye sistemi toplam puanınıza bağlıdır</li>
+                  <li>Daha yüksek seviyelerde daha fazla puan kazanırsınız</li>
                 </ul>
               </div>
             </div>

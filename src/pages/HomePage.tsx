@@ -323,11 +323,11 @@ const HomePage = () => {
               <div className="flex flex-wrap gap-2 justify-center">
                 <Badge variant="secondary" className="bg-white/20 text-foreground border-white/30 text-xs">
                   <Target className="w-3 h-3 mr-1" />
-                  Günlük: {Math.min(5, profile?.daily_games || 0)}/5
+                  Günlük: 0/∞
                 </Badge>
                 <Badge variant="secondary" className="bg-white/20 text-foreground border-white/30 text-xs">
                   <Zap className="w-3 h-3 mr-1" />
-                  Seri: {profile?.win_streak || 0}
+                  Seri: 0
                 </Badge>
               </div>
             </div>
@@ -423,16 +423,11 @@ const HomePage = () => {
   variant="outline"
   onClick={() => {
     playSound('buttonClick');
-    // Eğer liderlik butonu ise direkt yönlendir
-    if (mode.isNavigation) {
-      navigate(mode.route);
-    } else {
-      // Diğer oyun modları için modal aç
-      setSelectedMode(mode.id);
-    }
+                    // Diğer oyun modları için modal aç
+                    setSelectedMode(mode.id);
   }}
 >
-  {mode.isNavigation ? 'Görüntüle' : 'Oyuna Başla'}
+  Oyuna Başla
 </Button>
                 </CardContent>
               </Card>

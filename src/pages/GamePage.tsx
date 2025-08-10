@@ -367,14 +367,26 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   try {
     const username = user.user_metadata?.username || user.email?.split('@')[0] || 'Anonim';
     
-    await supabase.rpc('update_daily_leaderboard', {
+    const userProfile = await supabase
+      .from('profiles')
+      .select('avatar_url')
+      .eq('id', user.id)
+      .single();
+
+    // Simplified leaderboard update - just increment total score
+    await supabase
+      .from('profiles')
+      .update({ total_score: score })
+      .eq('id', user.id);
+    
+    /* await supabase.rpc('update_daily_leaderboard', {
       p_user_id: user.id,
       p_username: username,
-      p_avatar_url: userAvatar || null,
+      p_avatar_url: userProfile.data?.avatar_url || null,
       p_game_score: score,
       p_best_word: bestWord || null,
       p_best_word_score: bestWordScore || 0
-    });
+    }); */
     
     console.log('✅ Liderlik tablosu güncellendi:', { score, bestWord, bestWordScore });
   } catch (error) {

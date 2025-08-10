@@ -8,8 +8,6 @@ interface UserProfile {
   premium_until: string | null;
   hint_credits: number;
   last_credit_refresh: string | null;
-  daily_games: number;
-  win_streak: number;
   total_score: number;
   created_at: string;
 }
@@ -56,7 +54,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('game_credits, bonus_credits, premium_until, hint_credits, last_credit_refresh, daily_games, win_streak, total_score, created_at')
+        .select('game_credits, bonus_credits, premium_until, hint_credits, last_credit_refresh, total_score, created_at')
         .eq('id', user.id)
         .single();
 
