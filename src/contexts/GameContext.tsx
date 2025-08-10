@@ -666,23 +666,24 @@ const applyDisconnectPenalty = async (userId: string) => {
   try {
     console.log('⚖️ Ayrılma cezası uygulanıyor:', userId.slice(-8));
     
-    // Kullanıcının mevcut puanını al
-    const { data: profile } = await supabase
+    const { data: profile, error } = await supabase
       .from('profiles')
       .select('total_score, disconnect_count')
       .eq('id', userId)
       .single();
     
+    if (error) {
+      console.error('❌ Profile fetch error:', error);
+      return;
+    }
+    
     if (profile) {
       const currentScore = profile.total_score || 0;
       const disconnectCount = (profile.disconnect_count || 0) + 1;
+      const penaltyAmount = Math.min(50 + (disconnectCount * 10), 200);
+      const newScore = Math.max(0, currentScore - penaltyAmount);
       
-      // Ceza miktarı: Ayrılma sayısına göre artar
-      const penaltyAmount = Math.min(50 + (disconnectCount * 10), 200); // Max 200 puan
-      const newScore = Math.max(0, currentScore - penaltyAmount); // Minimum 0
-      
-      // Profili güncelle
-      await supabase
+      const { error: updateError } = await supabase
         .from('profiles')
         .update({ 
           total_score: newScore,
@@ -691,12 +692,12 @@ const applyDisconnectPenalty = async (userId: string) => {
         })
         .eq('id', userId);
       
-      console.log('⚖️ Ceza uygulandı:', {
-        userId: userId.slice(-8),
-        penalty: penaltyAmount,
-        newScore,
-        disconnectCount
-      });
+      if (updateError) {
+        console.error('❌ Profile update error:', updateError);
+        return;
+      }
+      
+      console.log('⚖️ Ceza uygulandı:', penaltyAmount, 'puan');
     }
   } catch (error) {
     console.error('❌ Ceza uygulama hatası:', error);
@@ -708,22 +709,25 @@ const applyWinBonus = async (userId: string | undefined, bonusAmount: number = 1
   if (!userId) return;
   
   try {
-    console.log('🏆 Kazanma bonusu veriliyor:', userId.slice(-8), bonusAmount);
+    console.log('🏆 Kazanma bonusu veriliyor:', bonusAmount);
     
-    // Kullanıcının mevcut puanını al
-    const { data: profile } = await supabase
+    const { data: profile, error } = await supabase
       .from('profiles')
       .select('total_score, win_count')
       .eq('id', userId)
       .single();
+    
+    if (error) {
+      console.error('❌ Profile fetch error:', error);
+      return;
+    }
     
     if (profile) {
       const currentScore = profile.total_score || 0;
       const winCount = (profile.win_count || 0) + 1;
       const newScore = currentScore + bonusAmount;
       
-      // Profili güncelle
-      await supabase
+      const { error: updateError } = await supabase
         .from('profiles')
         .update({ 
           total_score: newScore,
@@ -732,12 +736,12 @@ const applyWinBonus = async (userId: string | undefined, bonusAmount: number = 1
         })
         .eq('id', userId);
       
-      console.log('🏆 Bonus verildi:', {
-        userId: userId.slice(-8),
-        bonus: bonusAmount,
-        newScore,
-        winCount
-      });
+      if (updateError) {
+        console.error('❌ Profile update error:', updateError);
+        return;
+      }
+      
+      console.log('🏆 Bonus verildi:', bonusAmount, 'puan');
     }
   } catch (error) {
     console.error('❌ Bonus verme hatası:', error);
