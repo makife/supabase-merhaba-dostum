@@ -764,7 +764,7 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
                     src={userAvatars[message.user_id]}
                     alt={message.username}
                     fallback={message.username.charAt(0).toUpperCase()}
-                    size="sm"
+                    size="xs"
                   />
                   <span 
                     className={`text-sm font-medium ${
