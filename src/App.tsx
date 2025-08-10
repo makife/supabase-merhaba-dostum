@@ -19,6 +19,7 @@ import SettingsPage from "@/pages/SettingsPage";
 import MarketPage from "@/pages/MarketPage";
 import TournamentPage from "@/pages/TournamentPage";
 import NotFound from "./pages/NotFound";
+import LeaderboardPage from "@/pages/LeaderboardPage";
 
 const queryClient = new QueryClient();
 
@@ -84,6 +85,11 @@ const AppRoutes = () => {
           <SettingsPage />
         </ProtectedRoute>
       } />
+      <Route path="/leaderboard" element={
+  <ProtectedRoute>
+    <LeaderboardPage />
+  </ProtectedRoute>
+} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
