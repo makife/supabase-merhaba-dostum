@@ -302,7 +302,7 @@ if (gameEnded) {
               <span className="font-bold">{playerScore}</span>
             </div>
             <div className="flex justify-between">
-              <span>{opponent.name}:</span>
+              <span>Rakip:</span>
               <span className="font-bold">{opponentScore}</span>
             </div>
             
@@ -1087,7 +1087,7 @@ if (gameEnded) {
                 <span className="font-bold">{playerScore}</span>
               </div>
               <div className="flex justify-between">
-                <span>{opponent.name}:</span>
+                <span>Rakip:</span>
                 <span className="font-bold">{opponentScore}</span>
               </div>
             </div>
