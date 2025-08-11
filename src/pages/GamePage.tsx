@@ -141,6 +141,8 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const [opponentAvatar, setOpponentAvatar] = useState<string>('');
   const [hasShownStartMessage, setHasShownStartMessage] = useState(false);
   const [lastPlayerAction, setLastPlayerAction] = useState<number>(0);
+  const [matchmakingTimeout, setMatchmakingTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [timeoutCountdown, setTimeoutCountdown] = useState(30); // 30 saniye
 
   // Sync grid with room data and fetch avatars
   useEffect(() => {
@@ -549,23 +551,27 @@ if (gameEnded) {
 
   // Check if playing with AI (unified logic for all modes)
   const isPlayingWithAI = useCallback(() => {
-    const aiStatus = (() => {
-      switch (gameMode) {
-        case 'vs-computer':
-          return true; // Always AI
-        case 'private-room':
-        case 'random-match':
-          return participants.length < 2; // AI if no second player
-        case 'tournament':
-          return true; // Tournament is always vs AI for now
-        default:
-          return false;
-      }
-    })();
-    
-    console.log(`🤖 AI Status Check - Mode: ${gameMode}, Participants: ${participants.length}, PlayingWithAI: ${aiStatus}`);
-    return aiStatus;
-  }, [gameMode, participants.length]);
+  const aiStatus = (() => {
+    switch (gameMode) {
+      case 'vs-computer':
+        return true; // Always AI
+      case 'private-room':
+        return participants.length < 2; // AI if no second player
+      case 'random-match':
+        // ★★★ RANDOM MATCH: AI varsa AI ile oyna ★★★
+        const hasAI = participants.some(p => p.is_bot);
+        const hasRealOpponent = participants.filter(p => !p.is_bot).length >= 2;
+        return hasAI && !hasRealOpponent;
+      case 'tournament':
+        return true; // Tournament is always vs AI for now
+      default:
+        return false;
+    }
+  })();
+  
+  console.log(`🤖 AI Status Check - Mode: ${gameMode}, Participants: ${participants.length}, PlayingWithAI: ${aiStatus}`);
+  return aiStatus;
+}, [gameMode, participants]);
 
   // AI continuous play effect - unified for all modes when playing with AI
   useEffect(() => {
@@ -639,6 +645,72 @@ if (gameEnded) {
       clearInterval(aiPlayInterval);
     };
   }, [gameStarted, gameEnded, gameMode, participants.length]); // Removed unstable dependencies
+
+
+  useEffect(() => {
+  // Sadece random match + waiting durumunda timeout başlat
+  if (gameMode === 'random-match' && waitingForPlayer && participants.length === 1) {
+    console.log('⏰ Random match timeout başlatılıyor (30 saniye)');
+    
+    setTimeoutCountdown(30);
+    
+    // Countdown timer
+    const countdownInterval = setInterval(() => {
+      setTimeoutCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(countdownInterval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    
+    // Main timeout
+    const timeout = setTimeout(async () => {
+      console.log('⏰ Random match timeout! AI ekleniyor...');
+      
+      if (currentRoom && participants.length === 1) {
+        try {
+          // AI rakip ekle
+          await supabase
+            .from('game_participants')
+            .insert({
+              room_id: currentRoom.id,
+              user_id: null, // AI için null
+              score: 0,
+              is_bot: true
+            });
+          
+          toast({
+            title: '🤖 AI Rakip Eklendi',
+            description: 'Gerçek oyuncu bulunamadı, AI ile oynanacak',
+            duration: 3000,
+          });
+          
+          console.log('🤖 AI başarıyla eklendi');
+        } catch (error) {
+          console.error('❌ AI ekleme hatası:', error);
+        }
+      }
+      
+      clearInterval(countdownInterval);
+    }, 30000); // 30 saniye
+    
+    setMatchmakingTimeout(timeout);
+    
+    // Cleanup
+    return () => {
+      if (timeout) clearTimeout(timeout);
+      clearInterval(countdownInterval);
+    };
+  } else {
+    // Timeout'u temizle
+    if (matchmakingTimeout) {
+      clearTimeout(matchmakingTimeout);
+      setMatchmakingTimeout(null);
+    }
+  }
+}, [gameMode, waitingForPlayer, participants.length, currentRoom]);
 
   // Timer effect - for both timed and score modes
   useEffect(() => {
@@ -1126,6 +1198,108 @@ if (gameEnded) {
       </div>
     );
   }
+
+  if (gameMode === 'random-match' && waitingForPlayer) {
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background to-muted">
+      <Card className="w-full max-w-md text-center">
+        <CardContent className="p-8">
+          <div className="animate-pulse space-y-4">
+            <div className="w-16 h-16 bg-blue-500 rounded-full mx-auto flex items-center justify-center">
+              <User className="w-8 h-8 text-white animate-bounce" />
+            </div>
+            <h2 className="text-2xl font-bold">Rastgele Eşleşme</h2>
+            <p className="text-muted-foreground">
+              Rastgele rakip aranıyor...
+            </p>
+            
+            {/* Timeout countdown */}
+            <div className="bg-muted rounded-lg p-4">
+              <p className="text-sm font-medium mb-2">
+                {timeoutCountdown > 0 ? (
+                  <>AI rakip ekleme: {timeoutCountdown}s</>
+                ) : (
+                  'AI rakip ekleniyor...'
+                )}
+              </p>
+              <div className="w-full bg-background rounded-full h-2 mt-2">
+                <div 
+                  className="bg-primary h-2 rounded-full transition-all duration-1000"
+                  style={{ width: `${((30 - timeoutCountdown) / 30) * 100}%` }}
+                />
+              </div>
+            </div>
+            
+            <div className="bg-muted rounded-lg p-4">
+              <p className="text-sm font-medium mb-2">Oyun Tipi</p>
+              <Badge variant="outline" className="text-lg px-4 py-2">
+                {gameType === 'timed' ? '⏱️ Süreli (2 dakika)' : '🎯 Puanlı (500 puana kadar)'}
+              </Badge>
+            </div>
+            
+            <p className="text-sm text-muted-foreground">
+              Katılımcılar: {participants.length}/2
+            </p>
+            
+            <p className="text-xs text-muted-foreground">
+              30 saniye içinde gerçek oyuncu bulunamazsa AI rakip eklenecek
+            </p>
+            
+            <div className="flex space-x-2 justify-center">
+              {[...Array(3)].map((_, i) => (
+                <div
+                  key={i}
+                  className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                  style={{ animationDelay: `${i * 0.2}s` }}
+                />
+              ))}
+            </div>
+          </div>
+          
+          <div className="space-y-2 mt-6">
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/')}
+              className="w-full"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Ana Menüye Dön
+            </Button>
+            
+            <Button 
+              variant="secondary" 
+              onClick={async () => {
+                console.log('👤 Manuel AI ekleme');
+                if (currentRoom && participants.length === 1) {
+                  try {
+                    await supabase
+                      .from('game_participants')
+                      .insert({
+                        room_id: currentRoom.id,
+                        user_id: null,
+                        score: 0,
+                        is_bot: true
+                      });
+                    
+                    toast({
+                      title: '🤖 AI Rakip Eklendi',
+                      description: 'Manuel olarak AI rakip eklendi',
+                    });
+                  } catch (error) {
+                    console.error('❌ Manuel AI ekleme hatası:', error);
+                  }
+                }
+              }}
+              className="w-full text-sm"
+            >
+              🤖 Hemen AI ile Oyna
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
   // Waiting screen for private room
   if (waitingForPlayer) {

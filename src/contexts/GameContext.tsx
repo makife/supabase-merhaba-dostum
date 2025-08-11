@@ -416,24 +416,11 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   if (!user) return false;
 
   try {
-    console.log('🔍 ===== MATCHMAKING BAŞLADI =====');
+    console.log('🔍 ===== BASİT MATCHMAKING BAŞLADI =====');
     console.log('👤 User:', user.id.slice(-8));
     console.log('🎮 Type:', gameType);
     
-    // ★★★ ÖNCE ESKİ ODALARI TEMİZLE ★★★
-    console.log('🧹 Matchmaking öncesi cleanup...');
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-    
-    await supabase
-      .from('game_rooms')
-      .delete()
-      .or(`status.eq.finished,created_at.lt.${fiveMinutesAgo}`);
-    
-    console.log('✅ Eski odalar temizlendi');
-    
-    // ★★★ SADECE ÇOK YENİ ODALARI ARA ★★★
-    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
-    
+    // DÜZELTME: Supabase query'sini düzelt - created_at kontrolünü kaldır
     const { data: waitingRooms, error } = await supabase
       .from('game_rooms')
       .select(`
@@ -442,17 +429,17 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       `)
       .eq('game_mode', 'random-match')
       .eq('status', 'waiting')
-      .neq('host_id', user.id)
-      .gte('created_at', twoMinutesAgo); // SADECE SON 2 DAKİKA
+      .neq('host_id', user.id) // DÜZELTME: UUID format doğru
+      .gte('created_at', new Date(Date.now() - 10 * 60 * 1000).toISOString()); // Son 10 dakika
 
     if (error) {
-      console.error('❌ Query hatası:', error);
+      console.error('❌ Waiting rooms query hatası:', error);
       throw error;
     }
 
     console.log('🔍 Bulunan bekleyen odalar:', waitingRooms?.length || 0);
 
-    // Filter rooms with exactly 1 real player
+    // Filter rooms with exactly 1 real player and matching game type
     const availableRooms = waitingRooms?.filter(room => {
       const realPlayers = room.game_participants?.filter(p => !p.is_bot) || [];
       const gameTypeMatch = gameType === 'timed' ? room.time_limit > 0 : room.max_score > 0;
@@ -470,7 +457,21 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       console.log('🎯 Hedef oda:', targetRoom.id.slice(-8));
       
       try {
-        // Atomic insert
+        // DÜZELTME: Önce mevcut katılımları kontrol et
+        const { data: existingParticipant } = await supabase
+          .from('game_participants')
+          .select('id')
+          .eq('room_id', targetRoom.id)
+          .eq('user_id', user.id)
+          .single();
+
+        if (existingParticipant) {
+          console.log('⚠️ Zaten bu odada katılımcısınız');
+          setCurrentRoom(targetRoom);
+          return true;
+        }
+
+        // Atomic insert - only one person succeeds
         const { error: joinError } = await supabase
           .from('game_participants')
           .insert({
@@ -480,11 +481,22 @@ export const GameProvider = ({ children }: GameProviderProps) => {
             is_bot: false
           });
 
-        if (!joinError) {
-          // Success!
+        if (joinError) {
+          // Probably someone else joined first
+          console.log('⚠️ Katılma başarısız (başkası önce katıldı):', joinError.message);
+          
+          if (joinError.code === '23505') {
+            console.log('🔄 Duplicate - başka oda deneniyor...');
+            // Continue to create new room
+          } else {
+            throw joinError;
+          }
+        } else {
+          // Successful join!
           setCurrentRoom(targetRoom);
           console.log('✅ BAŞARILI EŞLEŞME!');
           
+          // DÜZELTME: Oyunu hemen başlat
           toast({
             title: '🎯 Eşleşme Bulundu!',
             description: 'Rakip bulundu, oyun başlıyor...',
@@ -492,15 +504,13 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           });
           
           return true;
-        } else {
-          console.log('⚠️ Katılma başarısız:', joinError.message);
         }
       } catch (error) {
         console.error('❌ Katılma hatası:', error);
       }
     }
 
-    // Create new room
+    // Create new room if no available room or join failed
     console.log('🆕 Yeni oda açılıyor...');
     
     const grid = generateRandomGrid();
@@ -535,34 +545,59 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     console.log('🆕 Yeni oda oluşturuldu:', newRoom.id.slice(-8));
     console.log('🔍 ===== MATCHMAKING BİTTİ (BEKLEMEDE) =====');
     
+    toast({
+      title: '🔍 Rakip Aranıyor...',
+      description: 'Oyuncular aranıyor, bekleyiniz...',
+      duration: 3000,
+    });
+    
     return false; // Waiting
     
   } catch (error) {
     console.error('🚨 Matchmaking hatası:', error);
+    toast({
+      title: 'Eşleşme Hatası',
+      description: 'Rakip bulunurken hata oluştu. Tekrar deneyin.',
+      variant: 'destructive',
+    });
     return false;
   }
-}, [user]);
+}, [user, toast]);
 
   // Add AI opponent to current room
   const addAIOpponent = useCallback(async (): Promise<void> => {
-    if (!currentRoom) return;
+  if (!currentRoom) return;
 
-    try {
-      console.log('🤖 AI rakip ekleniyor...');
-      await supabase
-        .from('game_participants')
-        .insert({
-          room_id: currentRoom.id,
-          user_id: null,
-          score: 0,
-          is_bot: true
-        });
-      
-      console.log('🤖 AI rakip başarıyla eklendi');
-    } catch (error) {
-      console.error('❌ AI rakip ekleme hatası:', error);
+  try {
+    console.log('🤖 AI rakip ekleniyor...');
+    
+    // Önce mevcut AI kontrolü
+    const { data: existingAI } = await supabase
+      .from('game_participants')
+      .select('id')
+      .eq('room_id', currentRoom.id)
+      .eq('is_bot', true)
+      .single();
+    
+    if (existingAI) {
+      console.log('⚠️ AI zaten mevcut');
+      return;
     }
-  }, [currentRoom]);
+    
+    await supabase
+      .from('game_participants')
+      .insert({
+        room_id: currentRoom.id,
+        user_id: null,
+        score: 0,
+        is_bot: true
+      });
+    
+    console.log('🤖 AI rakip başarıyla eklendi');
+  } catch (error) {
+    console.error('❌ AI rakip ekleme hatası:', error);
+  }
+}, [currentRoom]);
 
   // Leave room
   const leaveRoom = useCallback(async (): Promise<void> => {
@@ -668,64 +703,107 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   setIsConnected(true);
   fetchParticipants(currentRoom.id);
 
+  const currentGameMode = getGameModeFromRoom(currentRoom);
+
   const channel = supabase
     .channel(`room-${currentRoom.id}`)
     .on('postgres_changes', {
-      event: 'DELETE', // ★★★ SADECE DELETE DİNLE ★★★
+      event: '*',
       schema: 'public',
       table: 'game_participants',
       filter: `room_id=eq.${currentRoom.id}`
     }, async (payload: RealtimePayload) => {
-      console.log('📡 ===== PLAYER LEFT EVENT =====');
-      console.log('📡 Ayrılan oyuncu:', payload.old);
+      console.log('📡 ===== REAL-TIME EVENT =====');
+      console.log('📡 Event Type:', payload.eventType);
+      console.log('📡 Game Mode:', currentGameMode);
       
-      if (payload.old && 
-          !payload.old.is_bot && 
-          payload.old.user_id && 
-          payload.old.user_id !== user?.id &&
-          currentRoom.status === 'active') {
+      // Handle DELETE events - OYUNCU AYRILDI
+      if (payload.eventType === 'DELETE' && payload.old) {
+        console.log('🚪 OYUNCU AYRILDI!');
         
-        console.log('🏆 RAKIP AYRILDI - KAZANDIN!');
-        
-        // Ceza + Bonus
-        await applyDisconnectPenalty(payload.old.user_id, false);
-        await applyWinBonus(user?.id);
-        
-        toast({
-          title: '🏆 Kazandınız!',
-          description: 'Rakip oyundan ayrıldı. +100 bonus puan!',
-          duration: 4000,
-        });
-        
-        // ★★★ ODAYI SİL ★★★
-        console.log('🗑️ ODA SİLİNİYOR');
-        await supabase
-          .from('game_rooms')
-          .delete()
-          .eq('id', currentRoom.id);
-        
-        // Event + cleanup
-        window.dispatchEvent(new CustomEvent('playerDisconnected', {
-          detail: { winner: 'player', reason: 'opponent_left' }
-        }));
-        
-        setTimeout(() => {
-          setCurrentRoom(null);
-          setParticipants([]);
-        }, 2000);
+        if (!payload.old.is_bot && 
+            payload.old.user_id && 
+            payload.old.user_id !== user?.id &&
+            currentRoom.status === 'active') {
+          
+          console.log('🏆 RAKIP AYRILDI - KAZANDIN!');
+          
+          // Ceza ver
+          await applyDisconnectPenalty(payload.old.user_id, false);
+          
+          // Bonus ver
+          await applyWinBonus(user?.id);
+          
+          toast({
+            title: '🏆 Kazandınız!',
+            description: 'Rakip oyundan ayrıldı. +100 bonus puan!',
+            duration: 4000,
+          });
+          
+          // ★★★ KILIT NOKTA: ODAYI SİL! ★★★
+          console.log('🗑️ ODA SİLİNİYOR - TEKRAR EŞLEŞME ÖNLEME');
+          await supabase
+            .from('game_rooms')
+            .delete()
+            .eq('id', currentRoom.id);
+          
+          // Disconnect event gönder
+          window.dispatchEvent(new CustomEvent('playerDisconnected', {
+            detail: { winner: 'player', reason: 'opponent_left' }
+          }));
+          
+          // State temizle
+          setTimeout(() => {
+            setCurrentRoom(null);
+            setParticipants([]);
+          }, 2000);
+        }
       }
       
-      // Katılımcıları güncelle (sadece DELETE için)
       fetchParticipants(currentRoom.id);
     })
-    .on('postgres_changes', {
-      event: 'INSERT', // ★★★ INSERT İÇİN AYRI DİNLEYİCİ ★★★
-      schema: 'public',
-      table: 'game_participants',
-      filter: `room_id=eq.${currentRoom.id}`
-    }, () => {
-      console.log('📡 Yeni katılımcı eklendi');
-      fetchParticipants(currentRoom.id);
+    .on('presence', { event: 'leave' }, async ({ key }) => {
+      console.log('🚪 Bağlantı koptu:', key);
+      
+      if (currentRoom.status === 'active' && key !== `user-${user?.id}`) {
+        setTimeout(async () => {
+          const { data: participants } = await supabase
+            .from('game_participants')
+            .select('user_id, is_bot')
+            .eq('room_id', currentRoom.id)
+            .neq('user_id', user?.id);
+          
+          const realPlayers = participants?.filter(p => !p.is_bot) || [];
+          
+          if (realPlayers.length === 0) {
+            console.log('🏆 Bağlantı kopması - kazandın!');
+            
+            await applyWinBonus(user?.id, 50);
+            
+            toast({
+              title: '🏆 Kazandınız!',
+              description: 'Rakip bağlantısı koptu. +50 puan!',
+              duration: 4000,
+            });
+            
+            // ★★★ KILIT NOKTA: ODAYI SİL! ★★★
+            console.log('🗑️ ODA SİLİNİYOR - BAĞLANTI KOPMASI');
+            await supabase
+              .from('game_rooms')
+              .delete()
+              .eq('id', currentRoom.id);
+            
+            window.dispatchEvent(new CustomEvent('playerDisconnected', {
+              detail: { winner: 'player', reason: 'connection_lost' }
+            }));
+            
+            setTimeout(() => {
+              setCurrentRoom(null);
+              setParticipants([]);
+            }, 2000);
+          }
+        }, 5000); // 5 saniye bekle
+      }
     })
     .subscribe();
 
