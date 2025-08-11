@@ -319,17 +319,6 @@ export const NewMatchmakingProvider = ({ children }: NewMatchmakingProviderProps
   console.log('✅ Queue listener aktif');
 }, [user]);
 
-  // Set AI timeout
-  aiTimeoutRef.current = setTimeout(async () => {
-    console.log('⏰ Queue timeout - AI oyunu başlatılıyor');
-    clearInterval(pollingInterval);
-    await createAIGame(gameType);
-  }, 30000);
-
-  // Store polling interval for cleanup
-  queueChannelRef.current = { unsubscribe: () => clearInterval(pollingInterval) };
-}, [user]);
-
   const createAIGame = useCallback(async (gameType: 'timed' | 'score') => {
     if (!user) return;
 
