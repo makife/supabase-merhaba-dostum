@@ -272,45 +272,41 @@ export const NewMatchmakingProvider = ({ children }: NewMatchmakingProviderProps
   const startQueueListener = useCallback((gameType: 'timed' | 'score') => {
   if (!user) return;
 
-  console.log('👂 Polling başlatılıyor (her 2 saniye kontrol)...');
+  console.log('👂 Queue listener başlatılıyor...');
 
-  // Start queue timer
-  queueTimerRef.current = setInterval(() => {
-    setState(prev => ({ 
-      ...prev, 
-      queueTime: prev.queueTime + 1,
-      estimatedWait: Math.max(0, 30 - prev.queueTime)
-    }));
-  }, 1000);
-
-  // Polling - her 2 saniyede queue durumunu kontrol et
-  const pollingInterval = setInterval(async () => {
-    try {
-      const { data: queueStatus } = await supabase
-        .from('matchmaking_queue')
-        .select('status, room_id')
-        .eq('user_id', user.id)
-        .single();
-
-      console.log('🔄 Polling check:', queueStatus);
-
-      if (queueStatus?.status === 'matched' && queueStatus?.room_id) {
-        console.log('🎉 Polling ile eşleşme bulundu!', queueStatus.room_id);
+  // *** DEBUG CHANNEL'I KALDIR, SADECE ANA LISTENER ***
+  queueChannelRef.current = supabase
+    .channel(`queue-${user.id}`)
+    .on('postgres_changes', {
+      event: '*',  // ← UPDATE yerine * kullan (tüm eventler)
+      schema: 'public',
+      table: 'matchmaking_queue',
+      // ← Filter'ı kaldır, tüm değişiklikleri dinle
+    }, async (payload) => {
+      console.log('📡 REALTIME EVENT:', payload);
+      
+      // Sadece kendi user'ımızla ilgili değişiklikler
+      if (payload.new && payload.new.user_id === user.id) {
+        console.log('📡 Queue update for me:', payload.new);
         
-        clearInterval(pollingInterval);
-        clearInterval(queueTimerRef.current!);
-        
-        setState(prev => ({ 
-          ...prev, 
-          status: 'matched' 
-        }));
+        if (payload.new.status === 'matched' && payload.new.room_id) {
+          console.log('🎉 Eşleşme bulundu!', payload.new.room_id);
+          
+          clearInterval(queueTimerRef.current!);
+          clearTimeout(aiTimeoutRef.current!);
+          
+          setState(prev => ({ 
+            ...prev, 
+            status: 'matched' 
+          }));
 
-        await loadRoom(queueStatus.room_id);
+          await loadRoom(payload.new.room_id);
+        }
       }
-    } catch (error) {
-      console.log('Polling error:', error);
-    }
-  }, 2000); // Her 2 saniye
+    })
+    .subscribe();
+
+  console.log('✅ Queue listener aktif');
 
   // Set AI timeout
   aiTimeoutRef.current = setTimeout(async () => {
