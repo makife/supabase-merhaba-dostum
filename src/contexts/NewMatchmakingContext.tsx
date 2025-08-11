@@ -259,33 +259,39 @@ export const NewMatchmakingProvider = ({ children }: NewMatchmakingProviderProps
   }, 1000);
 
   // MANUAL POLLING - Her 3 saniyede function çağır
-  const pollingInterval = setInterval(async () => {
-    try {
-      console.log('🔄 Manual polling - function çağrılıyor...');
+  // MANUAL POLLING - Her 3 saniyede function çağır
+const pollingInterval = setInterval(async () => {
+  try {
+    console.log('🔄 Manual polling - function çağrılıyor...');
+    
+    const { data: matchResult, error } = await supabase
+      .rpc('find_match', { 
+        p_user_id: user.id, 
+        p_game_type: gameType 
+      });
+    
+    console.log('🔄 Polling sonucu:', { matchResult, error });
+    console.log('🔄 Found?', matchResult?.found);
+    console.log('🔄 Room ID?', matchResult?.room_id);
+    console.log('🔄 Condition check:', matchResult?.found && matchResult?.room_id);
+    
+    if (matchResult?.found && matchResult?.room_id) {
+      console.log('🎉 CONDITION PASSED - Polling ile eşleşme bulundu!', matchResult.room_id);
       
-      const { data: matchResult, error } = await supabase
-        .rpc('find_match', { 
-          p_user_id: user.id, 
-          p_game_type: gameType 
-        });
+      // Timer'ları temizle
+      clearInterval(pollingInterval);
+      if (queueTimerRef.current) clearInterval(queueTimerRef.current);
+      if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
       
-      console.log('🔄 Polling sonucu:', { matchResult, error });
-      
-      if (matchResult?.found && matchResult?.room_id) {
-        console.log('🎉 Polling ile eşleşme bulundu!', matchResult.room_id);
-        
-        // Timer'ları temizle
-        clearInterval(pollingInterval);
-        if (queueTimerRef.current) clearInterval(queueTimerRef.current);
-        if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
-        
-        setState(prev => ({ ...prev, status: 'matched' }));
-        await loadRoom(matchResult.room_id);
-      }
-    } catch (error) {
-      console.log('❌ Polling error:', error);
+      setState(prev => ({ ...prev, status: 'matched' }));
+      await loadRoom(matchResult.room_id);
+    } else {
+      console.log('❌ CONDITION FAILED - No match yet');
     }
-  }, 3000); // Her 3 saniye
+  } catch (error) {
+    console.log('❌ Polling error:', error);
+  }
+}, 3000);
 
   // Set AI timeout
   aiTimeoutRef.current = setTimeout(async () => {
