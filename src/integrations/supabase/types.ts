@@ -44,6 +44,56 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_leaderboard: {
+        Row: {
+          avatar_url: string | null
+          best_word: string | null
+          best_word_score: number | null
+          created_at: string | null
+          daily_score: number | null
+          date: string
+          games_played: number | null
+          id: string
+          updated_at: string | null
+          user_id: string
+          username: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          best_word?: string | null
+          best_word_score?: number | null
+          created_at?: string | null
+          daily_score?: number | null
+          date?: string
+          games_played?: number | null
+          id?: string
+          updated_at?: string | null
+          user_id: string
+          username: string
+        }
+        Update: {
+          avatar_url?: string | null
+          best_word?: string | null
+          best_word_score?: number | null
+          created_at?: string | null
+          daily_score?: number | null
+          date?: string
+          games_played?: number | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_leaderboard_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       game_history: {
         Row: {
           id: string
@@ -178,6 +228,48 @@ export type Database = {
           },
         ]
       }
+      game_words: {
+        Row: {
+          created_at: string | null
+          id: string
+          player_id: string
+          points: number | null
+          room_id: string
+          word: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          player_id: string
+          points?: number | null
+          room_id: string
+          word: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          player_id?: string
+          points?: number | null
+          room_id?: string
+          word?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_game_words_player"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_game_words_room"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "game_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       global_chat: {
         Row: {
           created_at: string
@@ -296,53 +388,92 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          average_word_length: number | null
           bonus_credits: number | null
           created_at: string | null
+          daily_games: number | null
+          disconnect_count: number | null
           email: string
+          fastest_word_time: number | null
           game_credits: number | null
+          highest_word: string | null
+          highest_word_score: number | null
           hint_credits: number | null
           id: string
           last_credit_refresh: string | null
+          last_disconnect: string | null
+          last_win: string | null
+          longest_word: string | null
+          longest_word_length: number | null
           losses: number | null
           premium_until: string | null
           total_games: number | null
           total_score: number | null
+          total_words_created: number | null
           updated_at: string | null
           username: string | null
+          win_count: number | null
+          win_streak: number | null
           wins: number | null
         }
         Insert: {
           avatar_url?: string | null
+          average_word_length?: number | null
           bonus_credits?: number | null
           created_at?: string | null
+          daily_games?: number | null
+          disconnect_count?: number | null
           email: string
+          fastest_word_time?: number | null
           game_credits?: number | null
+          highest_word?: string | null
+          highest_word_score?: number | null
           hint_credits?: number | null
           id: string
           last_credit_refresh?: string | null
+          last_disconnect?: string | null
+          last_win?: string | null
+          longest_word?: string | null
+          longest_word_length?: number | null
           losses?: number | null
           premium_until?: string | null
           total_games?: number | null
           total_score?: number | null
+          total_words_created?: number | null
           updated_at?: string | null
           username?: string | null
+          win_count?: number | null
+          win_streak?: number | null
           wins?: number | null
         }
         Update: {
           avatar_url?: string | null
+          average_word_length?: number | null
           bonus_credits?: number | null
           created_at?: string | null
+          daily_games?: number | null
+          disconnect_count?: number | null
           email?: string
+          fastest_word_time?: number | null
           game_credits?: number | null
+          highest_word?: string | null
+          highest_word_score?: number | null
           hint_credits?: number | null
           id?: string
           last_credit_refresh?: string | null
+          last_disconnect?: string | null
+          last_win?: string | null
+          longest_word?: string | null
+          longest_word_length?: number | null
           losses?: number | null
           premium_until?: string | null
           total_games?: number | null
           total_score?: number | null
+          total_words_created?: number | null
           updated_at?: string | null
           username?: string | null
+          win_count?: number | null
+          win_streak?: number | null
           wins?: number | null
         }
         Relationships: []
@@ -685,9 +816,56 @@ export type Database = {
         Args: { user_id: string }
         Returns: string
       }
+      get_daily_top_leaders: {
+        Args: { target_date?: string; limit_count?: number }
+        Returns: {
+          user_id: string
+          username: string
+          avatar_url: string
+          daily_score: number
+          games_played: number
+          best_word: string
+          best_word_score: number
+          rank: number
+        }[]
+      }
+      get_frequent_disconnectors: {
+        Args: { limit_count?: number }
+        Returns: {
+          user_id: string
+          username: string
+          disconnect_count: number
+          win_count: number
+          disconnect_ratio: number
+        }[]
+      }
       get_or_create_private_chat: {
         Args: { other_user_id: string }
         Returns: string
+      }
+      reset_daily_games: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      update_daily_leaderboard: {
+        Args: {
+          p_user_id: string
+          p_username: string
+          p_avatar_url: string
+          p_game_score: number
+          p_best_word?: string
+          p_best_word_score?: number
+        }
+        Returns: undefined
+      }
+      update_game_statistics: {
+        Args: {
+          p_user_id: string
+          p_game_score: number
+          p_words: Json
+          p_is_winner?: boolean
+        }
+        Returns: undefined
       }
     }
     Enums: {
