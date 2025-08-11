@@ -126,49 +126,24 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
   // Cleanup old rooms
   const cleanupOldRooms = useCallback(async () => {
-    try {
-      // 2 hours ago for waiting rooms
-      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
-      // 30 minutes ago for finished games
-      const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
-      
-      console.log('🧹 Cleanup başlıyor - 2 saat öncesi bekleyen odalar silinecek');
-      
-      // Delete waiting rooms after 2 hours
-      const { data: deletedWaiting } = await supabase
-        .from('game_rooms')
-        .delete()
-        .eq('status', 'waiting')
-        .lt('created_at', twoHoursAgo)
-        .select();
-      
-      console.log('🧹 Silinen bekleyen oda sayısı:', deletedWaiting?.length || 0);
-        
-      // Delete finished games after 30 minutes
-      const { data: deletedFinished } = await supabase
-        .from('game_rooms')
-        .delete()
-        .eq('status', 'finished')
-        .lt('finished_at', thirtyMinutesAgo)
-        .select();
-        
-      console.log('🧹 Silinen bitmiş oyun sayısı:', deletedFinished?.length || 0);
-        
-      // Delete stale active games after 1 hour
-      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-      const { data: deletedStale } = await supabase
-        .from('game_rooms')
-        .delete()
-        .eq('status', 'active')
-        .lt('started_at', oneHourAgo)
-        .select();
-        
-      console.log('🧹 Silinen takılmış oyun sayısı:', deletedStale?.length || 0);
-      console.log('🧹 Cleanup tamamlandı');
-    } catch (error) {
-      console.error('❌ Cleanup hatası:', error);
-    }
-  }, []);
+  try {
+    console.log('🧹 Cleanup başlıyor - BÜTÜN ESKİ ODALAR SİLİNECEK');
+    
+    // 10 dakika öncesi tüm odaları sil
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    
+    const { data: deleted } = await supabase
+      .from('game_rooms')
+      .delete()
+      .lt('created_at', tenMinutesAgo)
+      .select();
+    
+    console.log('🧹 Silinen oda sayısı:', deleted?.length || 0);
+    console.log('🧹 Cleanup tamamlandı');
+  } catch (error) {
+    console.error('❌ Cleanup hatası:', error);
+  }
+}, []);
 
   // Apply disconnect penalty with notifications
   const applyDisconnectPenalty = useCallback(async (userId: string, isCurrentUser: boolean = false) => {
@@ -615,105 +590,27 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   if (!user || !currentRoom) return;
 
   try {
-    console.log('🚪 Oyuncu odadan ayrılıyor:', user.id.slice(-8));
-    console.log('🎮 Oda modu:', currentRoom.game_mode);
-    console.log('📊 Oda durumu:', currentRoom.status);
+    console.log('🚪 Manual leave - oda siliniyor:', currentRoom.id.slice(-8));
     
-    // DÜZELTME: Aktif oyunsa ceza uygula
+    // Aktif oyunsa ceza uygula
     if (currentRoom.status === 'active') {
-      console.log('⚖️ Aktif oyundan ayrılma - ceza uygulanacak');
       await applyDisconnectPenalty(user.id, true);
     }
 
-    // Remove from participants
+    // ★★★ SIMPLE: ODAYI HEMEN SİL ★★★
     await supabase
-      .from('game_participants')
+      .from('game_rooms')
       .delete()
-      .eq('room_id', currentRoom.id)
-      .eq('user_id', user.id);
+      .eq('id', currentRoom.id);
 
-    // Check remaining participants
-    const { data: remaining } = await supabase
-      .from('game_participants')
-      .select('id, is_bot, user_id')
-      .eq('room_id', currentRoom.id);
-
-    const realPlayers = remaining?.filter(p => !p.is_bot) || [];
-    console.log('👥 Kalan gerçek oyuncu sayısı:', realPlayers.length);
-
-    // DÜZELTME: Oyun moduna göre farklı davranış
-    if (currentRoom.game_mode === 'random-match' || currentRoom.game_mode === 'private-room') {
-      
-      if (realPlayers.length === 0) {
-        // Hiç gerçek oyuncu kalmadıysa odayı sil
-        console.log('🗑️ Oda tamamen boş kaldı, siliniyor');
-        await supabase
-          .from('game_rooms')
-          .delete()
-          .eq('id', currentRoom.id);
-          
-      } else if (realPlayers.length === 1 && currentRoom.status === 'active') {
-        // Tek oyuncu kaldı ve oyun aktifse - kalan oyuncu kazandı
-        console.log('🏆 Tek oyuncu kaldı - otomatik kazanma!');
-        
-        const remainingPlayer = realPlayers[0];
-        
-        // Kalan oyuncuya kazanma bonusu ver
-        if (remainingPlayer.user_id) {
-          await applyWinBonus(remainingPlayer.user_id, 100);
-          console.log('🎁 Kazanma bonusu verildi:', remainingPlayer.user_id.slice(-8));
-        }
-        
-        // Oyunu bitir
-        await supabase
-          .from('game_rooms')
-          .update({ 
-            status: 'finished', 
-            finished_at: new Date().toISOString() 
-          })
-          .eq('id', currentRoom.id);
-          
-        console.log('🏁 Oyun finished durumuna getirildi');
-        
-        // Kalan oyuncuya bildirim gönder (real-time ile otomatik olacak)
-        
-      } else if (realPlayers.length === 1 && currentRoom.status === 'waiting') {
-        // Waiting durumunda tek oyuncu kaldıysa normal beklesin
-        console.log('⏳ Waiting durumunda tek oyuncu kaldı - oda aktif kalıyor');
-        
-      } else {
-        // 2+ oyuncu varsa oda devam etsin
-        console.log('✅ Oda devam ediyor, yeterli oyuncu var');
-      }
-      
-    } else if (currentRoom.game_mode === 'vs-computer') {
-      // VS Computer modunda her zaman odayı sil
-      console.log('🤖 VS Computer oda siliniyor');
-      await supabase
-        .from('game_rooms')
-        .delete()
-        .eq('id', currentRoom.id);
-        
-    } else {
-      // Diğer modlar için varsayılan davranış
-      if (realPlayers.length === 0) {
-        console.log('🗑️ Oda boş kaldı, siliniyor');
-        await supabase
-          .from('game_rooms')
-          .delete()
-          .eq('id', currentRoom.id);
-      }
-    }
-
-    // Local state'i temizle
     setCurrentRoom(null);
     setParticipants([]);
-    console.log('✅ Oyuncu başarıyla odadan ayrıldı');
+    console.log('✅ Oda silindi, state temizlendi');
     
   } catch (error) {
-    console.error('❌ Odadan ayrılma hatası:', error);
+    console.error('❌ Leave room hatası:', error);
   }
-}, [user, currentRoom, applyDisconnectPenalty, applyWinBonus]);
+}, [user, currentRoom, applyDisconnectPenalty]);
 
   // Update score
   const updateScore = useCallback(async (score: number): Promise<void> => {
@@ -749,23 +646,25 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
   // End game
   const endGame = useCallback(async (): Promise<void> => {
-    if (!currentRoom) return;
+  if (!currentRoom) return;
 
-    try {
-      await supabase
-        .from('game_rooms')
-        .update({ 
-          status: 'finished', 
-          finished_at: new Date().toISOString() 
-        })
-        .eq('id', currentRoom.id);
-      
-      setCurrentRoom(null);
-      setParticipants([]);
-    } catch (error) {
-      console.error('Error ending game:', error);
-    }
-  }, [currentRoom]);
+  try {
+    console.log('🏁 Oyun bitiyor - oda siliniyor:', currentRoom.id.slice(-8));
+    
+    // ★★★ SIMPLE: ODAYI SİL ★★★
+    await supabase
+      .from('game_rooms')
+      .delete()
+      .eq('id', currentRoom.id);
+    
+    setCurrentRoom(null);
+    setParticipants([]);
+    console.log('✅ Oyun bitti, oda silindi');
+    
+  } catch (error) {
+    console.error('❌ End game hatası:', error);
+  }
+}, [currentRoom]);
 
   // Check if room is full and close it
   useEffect(() => {
@@ -781,151 +680,124 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
   // Real-time subscriptions
   useEffect(() => {
-    if (!currentRoom) {
-      setIsConnected(false);
-      return;
-    }
+  if (!currentRoom) {
+    setIsConnected(false);
+    return;
+  }
 
-    console.log('🔗 Real-time bağlantı kuruluyor:', currentRoom.id.slice(-8));
-    setIsConnected(true);
-    fetchParticipants(currentRoom.id);
+  console.log('🔗 Real-time bağlantı kuruluyor:', currentRoom.id.slice(-8));
+  setIsConnected(true);
+  fetchParticipants(currentRoom.id);
 
-    const currentGameMode = getGameModeFromRoom(currentRoom);
+  const currentGameMode = getGameModeFromRoom(currentRoom);
 
-    const channel = supabase
-      .channel(`room-${currentRoom.id}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'game_participants',
-        filter: `room_id=eq.${currentRoom.id}`
-      }, async (payload: RealtimePayload) => {
-        console.log('📡 ===== REAL-TIME EVENT =====');
-        console.log('📡 Event Type:', payload.eventType);
-        console.log('📡 New:', payload.new);
-        console.log('📡 Old:', payload.old);
-        console.log('📡 Game Mode:', currentGameMode);
-        console.log('📡 =============================');
+  const channel = supabase
+    .channel(`room-${currentRoom.id}`)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'game_participants',
+      filter: `room_id=eq.${currentRoom.id}`
+    }, async (payload: RealtimePayload) => {
+      console.log('📡 ===== REAL-TIME EVENT =====');
+      console.log('📡 Event Type:', payload.eventType);
+      console.log('📡 Game Mode:', currentGameMode);
+      
+      // Handle DELETE events - OYUNCU AYRILDI
+      if (payload.eventType === 'DELETE' && payload.old) {
+        console.log('🚪 OYUNCU AYRILDI!');
         
-        // Handle DELETE events
-        if (payload.eventType === 'DELETE' && payload.old) {
-          console.log('🚪 DELETE event tespit edildi!');
-          console.log('🚪 Ayrılan oyuncu:', payload.old);
+        if (!payload.old.is_bot && 
+            payload.old.user_id && 
+            payload.old.user_id !== user?.id &&
+            currentRoom.status === 'active') {
           
-          if (!payload.old.is_bot && 
-              payload.old.user_id && 
-              payload.old.user_id !== user?.id &&
-              currentRoom.status === 'active') {
+          console.log('🏆 RAKIP AYRILDI - KAZANDIN!');
+          
+          // Ceza ver
+          await applyDisconnectPenalty(payload.old.user_id, false);
+          
+          // Bonus ver
+          await applyWinBonus(user?.id);
+          
+          toast({
+            title: '🏆 Kazandınız!',
+            description: 'Rakip oyundan ayrıldı. +100 bonus puan!',
+            duration: 4000,
+          });
+          
+          // ★★★ KILIT NOKTA: ODAYI SİL! ★★★
+          console.log('🗑️ ODA SİLİNİYOR - TEKRAR EŞLEŞME ÖNLEME');
+          await supabase
+            .from('game_rooms')
+            .delete()
+            .eq('id', currentRoom.id);
+          
+          // Disconnect event gönder
+          window.dispatchEvent(new CustomEvent('playerDisconnected', {
+            detail: { winner: 'player', reason: 'opponent_left' }
+          }));
+          
+          // State temizle
+          setTimeout(() => {
+            setCurrentRoom(null);
+            setParticipants([]);
+          }, 2000);
+        }
+      }
+      
+      fetchParticipants(currentRoom.id);
+    })
+    .on('presence', { event: 'leave' }, async ({ key }) => {
+      console.log('🚪 Bağlantı koptu:', key);
+      
+      if (currentRoom.status === 'active' && key !== `user-${user?.id}`) {
+        setTimeout(async () => {
+          const { data: participants } = await supabase
+            .from('game_participants')
+            .select('user_id, is_bot')
+            .eq('room_id', currentRoom.id)
+            .neq('user_id', user?.id);
+          
+          const realPlayers = participants?.filter(p => !p.is_bot) || [];
+          
+          if (realPlayers.length === 0) {
+            console.log('🏆 Bağlantı kopması - kazandın!');
             
-            console.log('🏆 GERÇEK OYUNCU AYRILDI - KAZANMA BAŞLADI!');
-            console.log('🎮 Game Mode:', currentGameMode);
-            
-            // Apply penalty to leaving player and show notification to opponent
-            await applyDisconnectPenalty(payload.old.user_id, false);
-            
-            // Give win bonus to remaining player
-            await applyWinBonus(user?.id);
+            await applyWinBonus(user?.id, 50);
             
             toast({
               title: '🏆 Kazandınız!',
-              description: 'Rakip oyuncu oyundan ayrıldı. +100 bonus puan!',
+              description: 'Rakip bağlantısı koptu. +50 puan!',
               duration: 4000,
             });
             
-            // End game and close room properly
+            // ★★★ KILIT NOKTA: ODAYI SİL! ★★★
+            console.log('🗑️ ODA SİLİNİYOR - BAĞLANTI KOPMASI');
             await supabase
               .from('game_rooms')
-              .update({ 
-                status: 'finished', 
-                finished_at: new Date().toISOString() 
-              })
+              .delete()
               .eq('id', currentRoom.id);
             
-            // Dispatch event after ending the game
+            window.dispatchEvent(new CustomEvent('playerDisconnected', {
+              detail: { winner: 'player', reason: 'connection_lost' }
+            }));
+            
             setTimeout(() => {
-              console.log('🎮 Disconnect event dispatch ediliyor...');
-              window.dispatchEvent(new CustomEvent('playerDisconnected', {
-                detail: { winner: 'player', reason: 'opponent_left' }
-              }));
-              
-              // Clear room state after notification
-              setTimeout(() => {
-                setCurrentRoom(null);
-                setParticipants([]);
-              }, 2000);
-            }, 1000);
+              setCurrentRoom(null);
+              setParticipants([]);
+            }, 2000);
           }
-        }
-        
-        fetchParticipants(currentRoom.id);
-      })
-      .on('presence', { event: 'sync' }, () => {
-        console.log('👥 Presence sync');
-      })
-      .on('presence', { event: 'join' }, ({ key }) => {
-        console.log('👋 Kullanıcı katıldı:', key);
-      })
-      .on('presence', { event: 'leave' }, async ({ key }) => {
-        console.log('🚪 Kullanıcı bağlantısı koptu:', key);
-        console.log('📡 Game Mode during presence leave:', currentGameMode);
-        
-        // If game is active and another player left
-        if (currentRoom.status === 'active' && key !== `user-${user?.id}`) {
-          console.log('📡 Bağlantı kopması tespit edildi');
-          
-          // Wait briefly (might be temporary connection issue)
-          setTimeout(async () => {
-            // Check if still missing
-            const { data: participants } = await supabase
-              .from('game_participants')
-              .select('user_id, is_bot')
-              .eq('room_id', currentRoom.id)
-              .neq('user_id', user?.id);
-            
-            const realPlayers = participants?.filter(p => !p.is_bot) || [];
-            
-            if (realPlayers.length === 0) {
-              console.log('🏆 Rakip bağlantısı koptu - oyuncu kazandı!');
-              
-              // Give win bonus
-              await applyWinBonus(user?.id, 50);
-              
-              toast({
-                title: '🏆 Kazandınız!',
-                description: 'Rakip oyuncunun bağlantısı koptu. +50 puan!',
-                duration: 4000,
-              });
-              
-              // End game and close room properly
-              await supabase
-                .from('game_rooms')
-                .update({ 
-                  status: 'finished', 
-                  finished_at: new Date().toISOString() 
-                })
-                .eq('id', currentRoom.id);
-              
-              // End game
-              window.dispatchEvent(new CustomEvent('playerDisconnected', {
-                detail: { winner: 'player', reason: 'connection_lost' }
-              }));
-              
-              // Clear room state after notification
-              setTimeout(() => {
-                setCurrentRoom(null);
-                setParticipants([]);
-              }, 2000);
-            }
-          }, 10000); // Wait 10 seconds
-        }
-      })
-      .subscribe();
+        }, 5000); // 5 saniye bekle
+      }
+    })
+    .subscribe();
 
-    return () => {
-      console.log('🔌 Real-time bağlantı kesiliyor');
-      supabase.removeChannel(channel);
-    };
-  }, [currentRoom, user, fetchParticipants, applyDisconnectPenalty, applyWinBonus, toast, getGameModeFromRoom]);
+  return () => {
+    console.log('🔌 Real-time bağlantı kesiliyor');
+    supabase.removeChannel(channel);
+  };
+}, [currentRoom?.id, currentRoom?.status, user?.id]);
 
   // Handle page close/refresh cleanup
   useEffect(() => {
