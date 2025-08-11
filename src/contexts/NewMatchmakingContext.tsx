@@ -391,9 +391,6 @@ export const NewMatchmakingProvider = ({ children }: NewMatchmakingProviderProps
       throw error;
     }
 
-    console.log('✅ Room yüklendi:', room);
-    console.log('🔍 room.current_grid:', room.current_grid, 'Type:', typeof room.current_grid, 'Is Array:', Array.isArray(room.current_grid));
-
     let gameGrid: string[][];
     try {
       if (room.current_grid && Array.isArray(room.current_grid) && room.current_grid.length === 16) {
