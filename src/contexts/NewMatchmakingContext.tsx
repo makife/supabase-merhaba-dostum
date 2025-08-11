@@ -180,97 +180,69 @@ export const NewMatchmakingProvider = ({ children }: NewMatchmakingProviderProps
   // ========================
 
   const startSearching = useCallback(async (gameType: 'timed' | 'score') => {
-    if (!user) {
-      console.error('❌ User not found');
-      return;
-    }
+  if (!user) {
+    console.error('❌ User not found');
+    return;
+  }
 
-    try {
-      console.log('🔍 Matchmaking başlatılıyor:', { 
-        userId: user.id.slice(-8), 
-        gameType 
+  try {
+    console.log('🔍 Matchmaking başlatılıyor:', { 
+      userId: user.id.slice(-8), 
+      gameType 
+    });
+    
+    // Cleanup previous state
+    cleanupListeners();
+    
+    setState(prev => ({ 
+      ...prev, 
+      status: 'searching', 
+      queueTime: 0, 
+      estimatedWait: 30,
+      error: null,
+      gameGrid: [],
+      playerScore: 0,
+      opponentScore: 0,
+      usedWords: []
+    }));
+
+    // 1. Clear existing queue records
+    await supabase
+      .from('matchmaking_queue')
+      .delete()
+      .eq('user_id', user.id);
+
+    console.log('🧹 Eski queue kayıtları temizlendi');
+
+    // 2. Enter queue
+    const { error: queueError } = await supabase
+      .from('matchmaking_queue')
+      .insert({
+        user_id: user.id,
+        game_type: gameType,
+        status: 'searching'
       });
-      
-      // Cleanup previous state
-      cleanupListeners();
-      
-      setState(prev => ({ 
-        ...prev, 
-        status: 'searching', 
-        queueTime: 0, 
-        estimatedWait: 30,
-        error: null,
-        gameGrid: [],
-        playerScore: 0,
-        opponentScore: 0,
-        usedWords: []
-      }));
 
-      // 1. Clear existing queue records
-      await supabase
-        .from('matchmaking_queue')
-        .delete()
-        .eq('user_id', user.id);
-
-      console.log('🧹 Eski queue kayıtları temizlendi');
-
-      // 2. Enter queue
-      const { error: queueError } = await supabase
-        .from('matchmaking_queue')
-        .insert({
-          user_id: user.id,
-          game_type: gameType,
-          status: 'searching'
-        });
-
-      if (queueError) {
-        console.error('❌ Queue insert error:', queueError);
-        throw queueError;
-      }
-
-      console.log('🔍 Function çağrılıyor:', { userId: user.id, gameType });
-
-      // 3. Try to find immediate match
-      const { data: matchResult, error: matchError } = await supabase
-        .rpc('find_match', { 
-          p_user_id: user.id, 
-          p_game_type: gameType 
-        });
-
-      console.log('🔍 Function sonucu:', { matchResult, matchError });
-
-      if (matchError) {
-        console.error('❌ Match finding error:', matchError);
-        // Continue to queue anyway
-      }
-
-      if (matchResult?.found && matchResult?.room_id) {
-        // Immediate match found
-        console.log('🎉 Anında eşleşme bulundu:', matchResult.room_id.slice(-8));
-        
-        setState(prev => ({ 
-          ...prev, 
-          status: 'matched' 
-        }));
-
-        // Load room
-        await loadRoom(matchResult.room_id);
-      } else {
-        console.log('❌ Anında eşleşme yok, polling başlatılıyor...');
-        // Start queue listening
-        console.log('⏳ Queue\'da bekleniyor...');
-        startQueueListener(gameType);
-      }
-
-    } catch (error: any) {
-      console.error('❌ Matchmaking error:', error);
-      setState(prev => ({ 
-        ...prev, 
-        status: 'error', 
-        error: error.message || 'Eşleşme sırasında hata oluştu'
-      }));
+    if (queueError) {
+      console.error('❌ Queue insert error:', queueError);
+      throw queueError;
     }
-  }, [user, cleanupListeners]);
+
+    console.log('✅ Queue\'ya girildi');
+
+    // 3. Sadece bekle, function çağırma!
+    console.log('⏳ Queue\'da bekleniyor...');
+    startQueueListener(gameType);
+
+  } catch (error: any) {
+    console.error('❌ Matchmaking error:', error);
+    setState(prev => ({ 
+      ...prev, 
+      status: 'error', 
+      error: error.message || 'Eşleşme sırasında hata oluştu'
+    }));
+  }
+}, [user, cleanupListeners]);
 
   const startQueueListener = useCallback((gameType: 'timed' | 'score') => {
   if (!user) return;
