@@ -206,41 +206,25 @@ export const NewMatchmakingProvider = ({ children }: NewMatchmakingProviderProps
       usedWords: []
     }));
 
-    // 1. Clear existing queue records
-    await supabase
-      .from('matchmaking_queue')
-      .delete()
-      .eq('user_id', user.id);
-
-    console.log('🧹 Eski queue kayıtları temizlendi');
-
-    // 2. Enter queue
+    // 1. Clear existing queue records and insert new one in a transaction
     const { error: queueError } = await supabase
-      .from('matchmaking_queue')
-      .insert({
-        user_id: user.id,
-        game_type: gameType,
-        status: 'searching'
+      .rpc('clear_and_insert_queue', {
+        p_user_id: user.id,
+        p_game_type: gameType
       });
 
     if (queueError) {
-      console.error('❌ Queue insert error:', queueError);
+      console.error('❌ Queue operation error:', queueError);
       throw queueError;
     }
 
     console.log('✅ Queue\'ya girildi');
 
-    // *** YENİ: 2 saniye bekle, sonra listener başlat ***
-    console.log('⏳ 2 saniye bekleniyor (race condition önlemek için)...');
-
+    // 2. Start queue listener after a short delay to avoid race conditions
     setTimeout(() => {
-      console.log('⏳ Queue\'da bekleniyor...');
+      console.log('⏳ Queue listener başlatılıyor...');
       startQueueListener(gameType);
-    }, 2000); // 2 saniye delay
-
-    // 3. Sadece bekle, function çağırma!
-    console.log('⏳ Queue\'da bekleniyor...');
-    startQueueListener(gameType);
+    }, 1000); // 1 saniye gecikme yeterlidir
 
   } catch (error: any) {
     console.error('❌ Matchmaking error:', error);
