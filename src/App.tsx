@@ -90,6 +90,11 @@ const AppRoutes = () => {
     <LeaderboardPage />
   </ProtectedRoute>
 } />
+      <Route path="/test-matchmaking" element={
+  <ProtectedRoute>
+    <TestMatchmakingPage />
+  </ProtectedRoute>
+} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
