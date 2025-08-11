@@ -392,8 +392,23 @@ export const NewMatchmakingProvider = ({ children }: NewMatchmakingProviderProps
     }
 
     console.log('✅ Room yüklendi:', room);
+    console.log('🔍 room.current_grid:', room.current_grid, 'Type:', typeof room.current_grid, 'Is Array:', Array.isArray(room.current_grid));
 
-    const gameGrid = room.current_grid ? flatGridToMatrix(room.current_grid) : generateRandomGrid();
+    let gameGrid: string[][];
+    try {
+      if (room.current_grid && Array.isArray(room.current_grid) && room.current_grid.length === 16) {
+        console.log('🔍 Processing flatGridToMatrix with:', room.current_grid);
+        gameGrid = flatGridToMatrix(room.current_grid);
+      } else {
+        console.warn('⚠️ Invalid or missing current_grid, generating random grid');
+        gameGrid = generateRandomGrid();
+      }
+      console.log('🔍 Generated gameGrid:', gameGrid);
+    } catch (gridError) {
+      console.error('❌ Grid processing error:', gridError);
+      gameGrid = generateRandomGrid(); // Fallback
+    }
+
     const isPlayer1 = room.player1_id === user.id;
     const playerScore = isPlayer1 ? room.player1_score : room.player2_score;
     const opponentScore = isPlayer1 ? room.player2_score : room.player1_score;
