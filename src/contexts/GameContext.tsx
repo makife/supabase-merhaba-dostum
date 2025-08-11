@@ -170,8 +170,8 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     }
   }, []);
 
-  // Apply disconnect penalty
-  const applyDisconnectPenalty = useCallback(async (userId: string) => {
+  // Apply disconnect penalty with notifications
+  const applyDisconnectPenalty = useCallback(async (userId: string, isCurrentUser: boolean = false) => {
     if (!userId) return;
     
     try {
@@ -179,7 +179,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('total_score, disconnect_count')
+        .select('total_score, disconnect_count, username')
         .eq('id', userId)
         .single();
       
@@ -209,11 +209,27 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         }
         
         console.log('⚖️ Ceza uygulandı:', penaltyAmount, 'puan');
+        
+        // Show notifications
+        if (isCurrentUser) {
+          // Show penalty notification to the user who disconnected
+          toast({
+            title: '⚖️ Ayrılma Cezası',
+            description: `Oyundan ayrıldığınız için ${penaltyAmount} puan kaybettiniz`,
+            variant: 'destructive',
+          });
+        } else {
+          // Show notification about opponent leaving
+          toast({
+            title: '🚪 Rakip Ayrıldı',
+            description: `${profile.username} oyundan ayrıldı ve ceza aldı. Siz kazandınız!`,
+          });
+        }
       }
     } catch (error) {
       console.error('❌ Ceza uygulama hatası:', error);
     }
-  }, []);
+  }, [toast]);
 
   // Apply win bonus
   const applyWinBonus = useCallback(async (userId: string | undefined, bonusAmount: number = 100) => {
@@ -692,8 +708,8 @@ export const GameProvider = ({ children }: GameProviderProps) => {
             console.log('🏆 GERÇEK OYUNCU AYRILDI - KAZANMA BAŞLADI!');
             console.log('🎮 Game Mode:', currentGameMode);
             
-            // Apply penalty to leaving player
-            await applyDisconnectPenalty(payload.old.user_id);
+            // Apply penalty to leaving player and show notification to opponent
+            await applyDisconnectPenalty(payload.old.user_id, false);
             
             // Give win bonus to remaining player
             await applyWinBonus(user?.id);
@@ -775,8 +791,8 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       if (currentRoom && user && currentRoom.status === 'active') {
         console.log('🚪 Oyuncu oyunu kapatıyor - ceza uygulanacak');
         
-        // Apply penalty to self
-        await applyDisconnectPenalty(user.id);
+        // Apply penalty to self and show notification
+        await applyDisconnectPenalty(user.id, true);
         
         // Leave room
         await supabase
