@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -44,8 +44,8 @@ export const useUserPurchases = () => {
   const [loading, setLoading] = useState(false);
 
   // Kullanıcı satın alımlarını yükle
-  const loadPurchases = async () => {
-    if (!user) return;
+  const loadPurchases = useCallback(async () => {
+    if (!user?.id) return;
 
     try {
       const { data, error } = await supabase
@@ -59,11 +59,11 @@ export const useUserPurchases = () => {
     } catch (error) {
       console.error('Error loading purchases:', error);
     }
-  };
+  }, [user?.id]);
 
   // Kullanıcı ayarlarını yükle
-  const loadSettings = async () => {
-    if (!user) return;
+  const loadSettings = useCallback(async () => {
+    if (!user?.id) return;
 
     try {
       const { data, error } = await supabase
@@ -88,11 +88,11 @@ export const useUserPurchases = () => {
     } catch (error) {
       console.error('Error loading settings:', error);
     }
-  };
+  }, [user?.id]);
 
   // Kullanıcı envanterini yükle
-  const loadInventory = async () => {
-    if (!user) return;
+  const loadInventory = useCallback(async () => {
+    if (!user?.id) return;
 
     try {
       const { data, error } = await supabase
@@ -105,11 +105,86 @@ export const useUserPurchases = () => {
     } catch (error) {
       console.error('Error loading inventory:', error);
     }
-  };
+  }, [user?.id]);
+
+  // Envanter güncelle
+  const updateInventory = useCallback(async (itemType: string, quantity: number) => {
+    if (!user?.id) return;
+
+    try {
+      const { data: existing } = await supabase
+        .from('user_inventory')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('item_type', itemType)
+        .single();
+
+      if (existing) {
+        await supabase
+          .from('user_inventory')
+          .update({ quantity: existing.quantity + quantity })
+          .eq('id', existing.id);
+      } else {
+        await supabase
+          .from('user_inventory')
+          .insert({
+            user_id: user.id,
+            item_type: itemType,
+            quantity: quantity
+          });
+      }
+    } catch (error) {
+      console.error('Error updating inventory:', error);
+    }
+  }, [user?.id]);
+
+  // Ayarları güncelle
+  const updateSettings = useCallback(async (newSettings: Partial<UserSettings>) => {
+    if (!user?.id) return;
+
+    try {
+      const { data: existing } = await supabase
+        .from('user_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      const updatedSettings = { ...settings, ...newSettings };
+
+      if (existing) {
+        await supabase
+          .from('user_settings')
+          .update(updatedSettings)
+          .eq('id', existing.id);
+      } else {
+        await supabase
+          .from('user_settings')
+          .insert({
+            user_id: user.id,
+            ...updatedSettings
+          });
+      }
+
+      setSettings(updatedSettings);
+      await loadSettings();
+
+      toast({
+        title: 'Ayarlar Güncellendi',
+        description: 'Tercihleriniz başarıyla kaydedildi.',
+      });
+    } catch (error) {
+      console.error('Error updating settings:', error);
+      toast({
+        title: 'Güncelleme Hatası',
+        description: 'Ayarlar güncellenirken bir hata oluştu.',
+        variant: 'destructive',
+      });
+    }
+  }, [user?.id, settings, loadSettings, toast]);
 
   // Satın alma işlemi gerçekleştir
-  const processPurchase = async (item: any) => {
-    if (!user) return false;
+  const processPurchase = useCallback(async (item: any) => {
+    if (!user?.id) return false;
 
     setLoading(true);
     try {
@@ -242,101 +317,44 @@ export const useUserPurchases = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Envanter güncelle
-  const updateInventory = async (itemType: string, quantity: number) => {
-    if (!user) return;
-
-    try {
-      const { data: existing } = await supabase
-        .from('user_inventory')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('item_type', itemType)
-        .single();
-
-      if (existing) {
-        await supabase
-          .from('user_inventory')
-          .update({ quantity: existing.quantity + quantity })
-          .eq('id', existing.id);
-      } else {
-        await supabase
-          .from('user_inventory')
-          .insert({
-            user_id: user.id,
-            item_type: itemType,
-            quantity: quantity
-          });
-      }
-    } catch (error) {
-      console.error('Error updating inventory:', error);
-    }
-  };
-
-  // Ayarları güncelle
-  const updateSettings = async (newSettings: Partial<UserSettings>) => {
-    if (!user) return;
-
-    try {
-      const { data: existing } = await supabase
-        .from('user_settings')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      const updatedSettings = { ...settings, ...newSettings };
-
-      if (existing) {
-        await supabase
-          .from('user_settings')
-          .update(updatedSettings)
-          .eq('id', existing.id);
-      } else {
-        await supabase
-          .from('user_settings')
-          .insert({
-            user_id: user.id,
-            ...updatedSettings
-          });
-      }
-
-      setSettings(updatedSettings);
-      await loadSettings();
-
-      toast({
-        title: 'Ayarlar Güncellendi',
-        description: 'Tercihleriniz başarıyla kaydedildi.',
-      });
-    } catch (error) {
-      console.error('Error updating settings:', error);
-      toast({
-        title: 'Güncelleme Hatası',
-        description: 'Ayarlar güncellenirken bir hata oluştu.',
-        variant: 'destructive',
-      });
-    }
-  };
+  }, [user?.id, updateInventory, updateSettings, loadPurchases, loadInventory, toast]);
 
   // Satın alınmış öğe kontrolü
-  const hasPurchased = (itemId: string) => {
+  const hasPurchased = useCallback((itemId: string) => {
     return purchases.some(p => p.item_id === itemId && p.is_active);
-  };
+  }, [purchases]);
 
   // Envanterde öğe kontrolü
-  const getInventoryQuantity = (itemType: string) => {
+  const getInventoryQuantity = useCallback((itemType: string) => {
     const item = inventory.find(i => i.item_type === itemType);
     return item?.quantity || 0;
-  };
+  }, [inventory]);
 
+  // Kullanıcı değiştiğinde verileri yükle
   useEffect(() => {
-    if (user) {
-      loadPurchases();
-      loadSettings();
-      loadInventory();
+    if (user?.id) {
+      Promise.all([
+        loadPurchases(),
+        loadSettings(),
+        loadInventory()
+      ]).catch(error => {
+        console.error('Error loading user data:', error);
+      });
+    } else {
+      // Kullanıcı çıkış yaptığında state'leri temizle
+      setPurchases([]);
+      setSettings({
+        active_theme: 'default',
+        active_avatar_frame: 'none',
+        active_sound_pack: 'default',
+        active_music_pack: 'default',
+        effects_enabled: true,
+        confetti_effect_enabled: true,
+        fireworks_effect_enabled: true
+      });
+      setInventory([]);
     }
-  }, [user]);
+  }, [user?.id, loadPurchases, loadSettings, loadInventory]);
 
   return {
     purchases,
