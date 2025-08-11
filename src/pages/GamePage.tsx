@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useGame } from '@/contexts/GameContext';
@@ -60,6 +61,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   
   const gameType = getGameType();
   const [timeWarningPlayed, setTimeWarningPlayed] = useState(false);
+  const [showExitDialog, setShowExitDialog] = useState(false);
 
   // Game state - Generate random letters each time
   const generateRandomGrid = (): string[][] => {
@@ -1181,12 +1183,15 @@ if (gameEnded) {
   }
   const opponent = getOpponentInfo();
   return (
+    <>
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
       <div className="max-w-md mx-auto space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
           <Button variant="outline" size="sm" onClick={() => {
-            if (gameMode === 'private-room' && !gameEnded) {
+            if (gameMode === 'random-match' && !gameEnded) {
+              setShowExitDialog(true);
+            } else if (gameMode === 'private-room' && !gameEnded) {
               if (confirm('Oyundan çıkmak istediğinizde arkadaşınız tek kalacak. Emin misiniz?')) {
                 navigate('/');
               }
@@ -1351,6 +1356,33 @@ if (gameEnded) {
         </div>
       </div>
     </div>
+
+    {/* Exit Confirmation Dialog */}
+    <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
+      <AlertDialogContent className="max-w-sm mx-auto">
+        <AlertDialogHeader>
+          <AlertDialogTitle className="text-center">⚠️ Oyundan Çıkış</AlertDialogTitle>
+          <AlertDialogDescription className="text-center">
+            Oyundan şimdi çıkarsanız <span className="font-bold text-destructive">50-200 puan</span> kaybedeceksiniz! 
+            Ayrıca ayrılma sayacınız artacak.
+            <br /><br />
+            Yine de çıkmak istiyor musunuz?
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="flex-col space-y-2 sm:flex-col sm:space-y-2 sm:space-x-0">
+          <AlertDialogAction 
+            onClick={() => navigate('/')}
+            className="w-full bg-destructive hover:bg-destructive/90"
+          >
+            Evet, Çıkış Yap
+          </AlertDialogAction>
+          <AlertDialogCancel className="w-full">
+            Hayır, Oyuna Devam Et
+          </AlertDialogCancel>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 };
 
