@@ -259,10 +259,11 @@ export const NewMatchmakingProvider = ({ children }: NewMatchmakingProviderProps
   }, 1000);
 
   // MANUAL POLLING - Her 3 saniyede function çağır
-  // MANUAL POLLING - Her 3 saniyede function çağır
 const pollingInterval = setInterval(async () => {
   try {
     console.log('🔄 Manual polling - function çağrılıyor...');
+    console.log('🔄 User ID:', user.id);
+    console.log('🔄 Game Type:', gameType);
     
     const { data: matchResult, error } = await supabase
       .rpc('find_match', { 
@@ -271,23 +272,7 @@ const pollingInterval = setInterval(async () => {
       });
     
     console.log('🔄 Polling sonucu:', { matchResult, error });
-    console.log('🔄 Found?', matchResult?.found);
-    console.log('🔄 Room ID?', matchResult?.room_id);
-    console.log('🔄 Condition check:', matchResult?.found && matchResult?.room_id);
-    
-    if (matchResult?.found && matchResult?.room_id) {
-      console.log('🎉 CONDITION PASSED - Polling ile eşleşme bulundu!', matchResult.room_id);
-      
-      // Timer'ları temizle
-      clearInterval(pollingInterval);
-      if (queueTimerRef.current) clearInterval(queueTimerRef.current);
-      if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
-      
-      setState(prev => ({ ...prev, status: 'matched' }));
-      await loadRoom(matchResult.room_id);
-    } else {
-      console.log('❌ CONDITION FAILED - No match yet');
-    }
+    // ... rest of code
   } catch (error) {
     console.log('❌ Polling error:', error);
   }
