@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useThemeContext } from '@/components/ThemeProvider';
 
 interface SoundConfig {
@@ -24,14 +24,9 @@ export const useSounds = () => {
   const { soundPack } = useThemeContext();
   const audioCache = useRef<Map<string, HTMLAudioElement[]>>(new Map());
   const audioContextRef = useRef<AudioContext | null>(null);
-
-  // Generate simple beep sounds using Web Audio API
-  const generateBeep = (frequency: number, duration: number, type: OscillatorType = 'sine'): string => {
-    return 'generated'; // Generated ses olarak işaretle
-  };
-
-  // Ses paketleri tanımları
-  const soundPacks: Record<string, SoundPack> = {
+  
+  // DÜZELTME: Sound packs'i ref ile sabitle
+  const soundPacksRef = useRef<Record<string, SoundPack>>({
     default: {
       id: 'default',
       name: 'Varsayılan',
@@ -39,10 +34,10 @@ export const useSounds = () => {
         buttonClick: '/sounds/default/button-click.mp3',
         correctWord: '/sounds/default/correct-word.mp3',
         wrongWord: '/sounds/default/wrong-word.mp3',
-        gameWin: generateBeep(1600, 0.8),
-        gameLose: generateBeep(200, 1.0),
-        timeWarning: generateBeep(1000, 0.2),
-        letterSelect: generateBeep(600, 0.1),
+        gameWin: 'generated', // Generated ses olarak işaretle
+        gameLose: 'generated',
+        timeWarning: 'generated',
+        letterSelect: 'generated',
         celebration: '/sounds/default/kutlama.mp3',
         gameLoseSound: '/sounds/default/kaybetme.mp3'
       }
@@ -53,11 +48,11 @@ export const useSounds = () => {
       sounds: {
         buttonClick: '/sounds/space/button-click.mp3',
         correctWord: '/sounds/space/correct-word.mp3',
-        wrongWord: generateBeep(150, 0.8), // Daha düşük frekans uzay sesi
-        gameWin: generateBeep(2000, 1.0), // Yüksek frekans zafer sesi
-        gameLose: generateBeep(80, 1.5), // Çok düşük frekans kayıp sesi
-        timeWarning: generateBeep(1500, 0.15), // Keskin uyarı
-        letterSelect: generateBeep(900, 0.05), // Kısa hızlı ses
+        wrongWord: 'generated',
+        gameWin: 'generated',
+        gameLose: 'generated',
+        timeWarning: 'generated',
+        letterSelect: 'generated',
         celebration: '/sounds/default/kutlama.mp3',
         gameLoseSound: '/sounds/default/kaybetme.mp3'
       }
@@ -68,28 +63,29 @@ export const useSounds = () => {
       sounds: {
         buttonClick: '/sounds/nature/button-click.mp3',
         correctWord: '/sounds/nature/correct-word.mp3',
-        wrongWord: generateBeep(250, 0.6), // Yumuşak yanlış sesi
-        gameWin: generateBeep(1400, 1.2), // Melodik zafer
-        gameLose: generateBeep(180, 1.2), // Doğal kayıp sesi
-        timeWarning: generateBeep(1200, 0.25), // Yumuşak uyarı
-        letterSelect: generateBeep(700, 0.08), // Nazik seçim sesi
+        wrongWord: 'generated',
+        gameWin: 'generated',
+        gameLose: 'generated',
+        timeWarning: 'generated',
+        letterSelect: 'generated',
         celebration: '/sounds/default/kutlama.mp3',
         gameLoseSound: '/sounds/default/kaybetme.mp3'
       }
     }
-  };
+  });
+
+  // DÜZELTME: Settings yükleme fonksiyonunu stabilize et
+  const loadSettings = useCallback(() => {
+    try {
+      const settings = JSON.parse(localStorage.getItem('kelimeci-settings') || '{}');
+      setSoundsEnabled(settings.sounds ?? true);
+    } catch (error) {
+      console.warn('Failed to load sound settings:', error);
+    }
+  }, []);
 
   // Load settings from localStorage and listen for changes
   useEffect(() => {
-    const loadSettings = () => {
-      try {
-        const settings = JSON.parse(localStorage.getItem('kelimeci-settings') || '{}');
-        setSoundsEnabled(settings.sounds ?? true);
-      } catch (error) {
-        console.warn('Failed to load sound settings:', error);
-      }
-    };
-
     loadSettings();
     
     // Listen for storage changes from other components
@@ -103,10 +99,10 @@ export const useSounds = () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('settingsChanged', handleStorageChange);
     };
-  }, []);
+  }, [loadSettings]);
 
-  // Create audio pool for better performance
-  const createAudioPool = (soundPath: string, poolSize: number = 3): HTMLAudioElement[] => {
+  // DÜZELTME: Audio utility fonksiyonlarını useCallback ile stabilize et
+  const createAudioPool = useCallback((soundPath: string, poolSize: number = 3): HTMLAudioElement[] => {
     const pool: HTMLAudioElement[] = [];
     for (let i = 0; i < poolSize; i++) {
       const audio = new Audio();
@@ -119,10 +115,10 @@ export const useSounds = () => {
       pool.push(audio);
     }
     return pool;
-  };
+  }, []);
 
   // Get available audio from pool
-  const getAvailableAudio = (audioPool: HTMLAudioElement[]): HTMLAudioElement | null => {
+  const getAvailableAudio = useCallback((audioPool: HTMLAudioElement[]): HTMLAudioElement | null => {
     // En eski çalan ses dosyasını bul
     for (const audio of audioPool) {
       if (audio.paused || audio.ended || audio.currentTime === 0) {
@@ -131,10 +127,10 @@ export const useSounds = () => {
     }
     // Hepsi çalıyorsa ilkini kullan (kesip yeniden başlat)
     return audioPool[0] || null;
-  };
+  }, []);
 
   // Initialize audio context
-  const getAudioContext = (): AudioContext | null => {
+  const getAudioContext = useCallback((): AudioContext | null => {
     if (!audioContextRef.current) {
       try {
         audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -144,14 +140,14 @@ export const useSounds = () => {
       }
     }
     return audioContextRef.current;
-  };
+  }, []);
 
   // Aktif ses paketini al
-  const getActiveSoundPack = (): SoundPack => {
-    return soundPacks[soundPack] || soundPacks.default;
-  };
+  const getActiveSoundPack = useCallback((): SoundPack => {
+    return soundPacksRef.current[soundPack] || soundPacksRef.current.default;
+  }, [soundPack]);
 
-  // Ses cache'ini güncelle - sadece kutlama ve kaybetme sesleri için
+  // DÜZELTME: Audio cache update'i stabilize et
   useEffect(() => {
     const activePack = getActiveSoundPack();
     
@@ -170,9 +166,10 @@ export const useSounds = () => {
         }
       }
     });
-  }, [soundPack]);
+  }, [soundPack, getActiveSoundPack, createAudioPool]);
 
-  const playGeneratedSound = (frequency: number, duration: number, type: OscillatorType = 'sine') => {
+  // DÜZELTME: Generated sound fonksiyonlarını useCallback ile stabilize et
+  const playGeneratedSound = useCallback((frequency: number, duration: number, type: OscillatorType = 'sine') => {
     if (!soundsEnabled) return;
     
     try {
@@ -208,46 +205,10 @@ export const useSounds = () => {
     } catch (error) {
       console.warn('Could not play generated sound:', error);
     }
-  };
+  }, [soundsEnabled, getAudioContext]);
 
-  // Uzay teması için özel sesler
-  const playSpaceCorrectSound = () => {
-    if (!soundsEnabled) return;
-    // Yükselen frekanslı uzay zafer sesi
-    setTimeout(() => playGeneratedSound(800, 0.1, 'square'), 0);
-    setTimeout(() => playGeneratedSound(1200, 0.1, 'square'), 100);
-    setTimeout(() => playGeneratedSound(1600, 0.2, 'square'), 200);
-  };
-
-  const playSpaceWinSound = () => {
-    if (!soundsEnabled) return;
-    // Uzay zafer fanfarı - elektronik melodi
-    setTimeout(() => playGeneratedSound(1000, 0.2, 'square'), 0);
-    setTimeout(() => playGeneratedSound(1500, 0.2, 'square'), 200);
-    setTimeout(() => playGeneratedSound(2000, 0.3, 'square'), 400);
-    setTimeout(() => playGeneratedSound(2500, 0.4, 'square'), 600);
-  };
-
-  // Doğa teması için özel sesler
-  const playNatureCorrectSound = () => {
-    if (!soundsEnabled) return;
-    // Kuş şakıması benzeri doğal ses
-    setTimeout(() => playGeneratedSound(600, 0.08, 'triangle'), 0);
-    setTimeout(() => playGeneratedSound(800, 0.08, 'triangle'), 80);
-    setTimeout(() => playGeneratedSound(1000, 0.12, 'triangle'), 160);
-  };
-
-  const playNatureWinSound = () => {
-    if (!soundsEnabled) return;
-    // Doğal melodi - kuş cıvıltısı benzeri
-    setTimeout(() => playGeneratedSound(800, 0.15, 'triangle'), 0);
-    setTimeout(() => playGeneratedSound(1200, 0.15, 'triangle'), 150);
-    setTimeout(() => playGeneratedSound(900, 0.15, 'triangle'), 300);
-    setTimeout(() => playGeneratedSound(1400, 0.2, 'triangle'), 450);
-    setTimeout(() => playGeneratedSound(1100, 0.25, 'triangle'), 650);
-  };
-
-  const playSound = async (soundKey: keyof SoundConfig) => {
+  // DÜZELTME: playSound fonksiyonunu stabilize et
+  const playSound = useCallback(async (soundKey: keyof SoundConfig) => {
     if (!soundsEnabled) return;
 
     const activePack = getActiveSoundPack();
@@ -269,31 +230,29 @@ export const useSounds = () => {
         case 'space':
           switch (soundKey) {
             case 'buttonClick':
-              // Futuristik elektronik beep - yüksek frekanslı keskin ses
               playGeneratedSound(1200, 0.06, 'square');
               break;
             case 'correctWord':
-              // Uzay zafer sesi - yükselen frekanslı synthesizer
-              playSpaceCorrectSound();
+              setTimeout(() => playGeneratedSound(800, 0.1, 'square'), 0);
+              setTimeout(() => playGeneratedSound(1200, 0.1, 'square'), 100);
+              setTimeout(() => playGeneratedSound(1600, 0.2, 'square'), 200);
               break;
             case 'wrongWord':
-              // Düşük frekanslı robotik hata sesi
               playGeneratedSound(120, 0.8, 'square');
               break;
             case 'gameWin':
-              // Uzay zafer fanfarı - çoklu frekanslı
-              playSpaceWinSound();
+              setTimeout(() => playGeneratedSound(1000, 0.2, 'square'), 0);
+              setTimeout(() => playGeneratedSound(1500, 0.2, 'square'), 200);
+              setTimeout(() => playGeneratedSound(2000, 0.3, 'square'), 400);
+              setTimeout(() => playGeneratedSound(2500, 0.4, 'square'), 600);
               break;
             case 'gameLose':
-              // Dramatik düşük frekanslı kayıp sesi
               playGeneratedSound(60, 2.0, 'sawtooth');
               break;
             case 'timeWarning':
-              // Keskin alarm sesi
               playGeneratedSound(1800, 0.12, 'square');
               break;
             case 'letterSelect':
-              // Hızlı elektronik tick
               playGeneratedSound(1500, 0.03, 'square');
               break;
           }
@@ -301,31 +260,30 @@ export const useSounds = () => {
         case 'nature':
           switch (soundKey) {
             case 'buttonClick':
-              // Yumuşak ahşap tık sesi
               playGeneratedSound(400, 0.15, 'triangle');
               break;
             case 'correctWord':
-              // Kuş şakıması benzeri doğal ses
-              playNatureCorrectSound();
+              setTimeout(() => playGeneratedSound(600, 0.08, 'triangle'), 0);
+              setTimeout(() => playGeneratedSound(800, 0.08, 'triangle'), 80);
+              setTimeout(() => playGeneratedSound(1000, 0.12, 'triangle'), 160);
               break;
             case 'wrongWord':
-              // Yumuşak rüzgar sesi
               playGeneratedSound(200, 0.7, 'triangle');
               break;
             case 'gameWin':
-              // Doğal melodi - kuş cıvıltısı benzeri
-              playNatureWinSound();
+              setTimeout(() => playGeneratedSound(800, 0.15, 'triangle'), 0);
+              setTimeout(() => playGeneratedSound(1200, 0.15, 'triangle'), 150);
+              setTimeout(() => playGeneratedSound(900, 0.15, 'triangle'), 300);
+              setTimeout(() => playGeneratedSound(1400, 0.2, 'triangle'), 450);
+              setTimeout(() => playGeneratedSound(1100, 0.25, 'triangle'), 650);
               break;
             case 'gameLose':
-              // Yumuşak dalga sesi
               playGeneratedSound(150, 1.5, 'sine');
               break;
             case 'timeWarning':
-              // Nazik çan sesi
               playGeneratedSound(1000, 0.3, 'triangle');
               break;
             case 'letterSelect':
-              // Yaprak hışırtısı benzeri
               playGeneratedSound(600, 0.1, 'triangle');
               break;
           }
@@ -358,19 +316,19 @@ export const useSounds = () => {
     } catch (error) {
       console.warn('Could not play sound:', error);
     }
-  };
+  }, [soundsEnabled, getActiveSoundPack, getAvailableAudio, playGeneratedSound]);
 
-  const playTimeWarningSequence = () => {
+  // Diğer fonksiyonları da stabilize et
+  const playTimeWarningSequence = useCallback(() => {
     if (!soundsEnabled) return;
     
     // Play 3 quick beeps for time warning
     setTimeout(() => playGeneratedSound(1000, 0.15), 0);
     setTimeout(() => playGeneratedSound(1000, 0.15), 200);
     setTimeout(() => playGeneratedSound(1000, 0.15), 400);
-  };
+  }, [soundsEnabled, playGeneratedSound]);
 
-
-  const playCelebrationSound = () => {
+  const playCelebrationSound = useCallback(() => {
     if (!soundsEnabled) return;
     
     const activePack = getActiveSoundPack();
@@ -385,9 +343,9 @@ export const useSounds = () => {
     } catch (error) {
       console.warn('Could not load celebration sound:', error);
     }
-  };
+  }, [soundsEnabled, getActiveSoundPack]);
 
-  const playGameLoseSound = () => {
+  const playGameLoseSound = useCallback(() => {
     if (!soundsEnabled) return;
     
     const activePack = getActiveSoundPack();
@@ -402,7 +360,16 @@ export const useSounds = () => {
     } catch (error) {
       console.warn('Could not load game lose sound:', error);
     }
-  };
+  }, [soundsEnabled, getActiveSoundPack]);
+
+  // DÜZELTME: setSoundsEnabled fonksiyonunu stabilize et
+  const updateSoundsEnabled = useCallback((enabled: boolean) => {
+    setSoundsEnabled(enabled);
+    const settings = JSON.parse(localStorage.getItem('kelimeci-settings') || '{}');
+    settings.sounds = enabled;
+    localStorage.setItem('kelimeci-settings', JSON.stringify(settings));
+    window.dispatchEvent(new Event('settingsChanged'));
+  }, []);
 
   return {
     playSound,
@@ -410,12 +377,6 @@ export const useSounds = () => {
     playCelebrationSound,
     playGameLoseSound,
     soundsEnabled,
-    setSoundsEnabled: (enabled: boolean) => {
-      setSoundsEnabled(enabled);
-      const settings = JSON.parse(localStorage.getItem('kelimeci-settings') || '{}');
-      settings.sounds = enabled;
-      localStorage.setItem('kelimeci-settings', JSON.stringify(settings));
-      window.dispatchEvent(new Event('settingsChanged'));
-    }
+    setSoundsEnabled: updateSoundsEnabled
   };
 };
