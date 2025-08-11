@@ -283,11 +283,25 @@ export const NewMatchmakingProvider = ({ children }: NewMatchmakingProviderProps
       }));
     }, 1000);
 
+    console.log('👂 Queue listener başlatılıyor...');
+
     // Set AI timeout
     aiTimeoutRef.current = setTimeout(async () => {
       console.log('⏰ Queue timeout - AI oyunu başlatılıyor');
       await createAIGame(gameType);
     }, 30000); // 30 seconds
+
+    // *** DEBUG: TEST CHANNEL EKLE ***
+     const testChannel = supabase
+       .channel('test-debug-channel')
+       .on('postgres_changes', {
+         event: '*',
+         schema: 'public',
+        table: 'matchmaking_queue'
+       }, (payload) => {
+         console.log('🎉 REALTIME TEST WORKING:', payload);
+       })
+       .subscribe();
 
     // Start real-time listener
     queueChannelRef.current = supabase
