@@ -150,34 +150,39 @@ export const NewMatchmakingProvider = ({ children }: NewMatchmakingProviderProps
   };
 
   const cleanupListeners = useCallback(() => {
-    console.log('🧹 Cleanup listeners başlatılıyor...');
-    
-    if (queueTimerRef.current) {
-      clearInterval(queueTimerRef.current);
-      queueTimerRef.current = null;
-    }
-    
-    if (aiTimeoutRef.current) {
-      clearTimeout(aiTimeoutRef.current);
-      aiTimeoutRef.current = null;
-    }
-    
-    if (queueChannelRef.current) {
-      supabase.removeChannel(queueChannelRef.current);
-      queueChannelRef.current = null;
-    }
-    
-    if (gameChannelRef.current) {
-      supabase.removeChannel(gameChannelRef.current);
-      gameChannelRef.current = null;
-    }
-    
-    console.log('✅ Cleanup tamamlandı');
-  }, []);
-
-  // ========================
-  // MATCHMAKING FUNCTIONS
-  // ========================
+  console.log('🧹 Cleanup listeners başlatılıyor...');
+  
+  if (queueTimerRef.current) {
+    clearInterval(queueTimerRef.current);
+    queueTimerRef.current = null;
+  }
+  
+  if (aiTimeoutRef.current) {
+    clearTimeout(aiTimeoutRef.current);
+    aiTimeoutRef.current = null;
+  }
+  
+  if (queueChannelRef.current) {
+    supabase.removeChannel(queueChannelRef.current);
+    queueChannelRef.current = null;
+  }
+  
+  if (gameChannelRef.current) {
+    supabase.removeChannel(gameChannelRef.current);
+    gameChannelRef.current = null;
+  }
+  
+  // Additional cleanup: Remove user from queue
+  if (user) {
+    supabase
+      .from('matchmaking_queue')
+      .delete()
+      .eq('user_id', user.id)
+      .then(() => console.log('🧹 Queue cleaned for user'));
+  }
+  
+  console.log('✅ Cleanup tamamlandı');
+}, [user]);
 
   const startSearching = useCallback(async (gameType: 'timed' | 'score') => {
   if (!user) {
