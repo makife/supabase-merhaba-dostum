@@ -239,7 +239,7 @@ export const NewMatchmakingProvider = ({ children }: NewMatchmakingProviderProps
   const startQueueListener = useCallback((gameType: 'timed' | 'score') => {
   if (!user) return;
 
-  console.log('👂 Queue listener + Polling başlatılıyor...');
+  console.log('👂 Queue listener başlatılıyor...');
 
   // Start queue timer
   queueTimerRef.current = setInterval(() => {
@@ -250,69 +250,67 @@ export const NewMatchmakingProvider = ({ children }: NewMatchmakingProviderProps
     }));
   }, 1000);
 
-  // MANUAL POLLING - Her 3 saniyede function çağır
-const pollingInterval = setInterval(async () => {
-  try {
-    console.log('🔄 Manual polling - function çağrılıyor...');
-    console.log('🔄 User ID:', user.id);
-    console.log('🔄 Game Type:', gameType);
-    
-    // Function öncesi queue durumunu da kontrol et
-    const { data: queueCheck } = await supabase
-      .from('matchmaking_queue')
-      .select('user_id, game_type, status')
-      .eq('status', 'searching');
-    
-    console.log('🔄 Queue durumu:', queueCheck);
-    
-    const { data: matchResult, error } = await supabase
-      .rpc('find_match', { 
-        p_user_id: user.id, 
-        p_game_type: gameType 
-      });
-    
-    console.log('🔄 Function parametreleri:', {
-      p_user_id: user.id,
-      p_game_type: gameType
-    });
-    console.log('🔄 Polling sonucu:', { matchResult, error });
-    
-    // ... rest
-  } catch (error) {
-    console.log('❌ Polling error:', error);
-  }
-}, 2000);
-
-  // Set AI timeout
-  aiTimeoutRef.current = setTimeout(async () => {
-    console.log('⏰ Queue timeout - AI oyunu başlatılıyor');
-    clearInterval(pollingInterval);
-    await createAIGame(gameType);
-  }, 30000);
-
-  // Realtime listener (yedek olarak kalsın)
+  // Realtime listener
   queueChannelRef.current = supabase
     .channel(`queue-${user.id}`)
     .on('postgres_changes', {
-      event: '*',
+      event: 'UPDATE',
       schema: 'public',
-      table: 'matchmaking_queue'
+      table: 'matchmaking_queue',
+      filter: `user_id=eq.${user.id}`
     }, async (payload) => {
-      console.log('📡 REALTIME EVENT (yedek):', payload);
+      console.log('📡 Realtime event:', payload);
       
-      if (payload.new && payload.new.user_id === user.id && payload.new.status === 'matched') {
-        console.log('🎉 Realtime ile eşleşme bulundu!', payload.new.room_id);
-        clearInterval(pollingInterval);
+      if (payload.new && payload.new.status === 'matched') {
+        console.log('🎉 Eşleşme bulundu!', payload.new.room_id);
         if (queueTimerRef.current) clearInterval(queueTimerRef.current);
         if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
+        if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
         setState(prev => ({ ...prev, status: 'matched' }));
         await loadRoom(payload.new.room_id);
       }
     })
     .subscribe();
 
-  console.log('✅ Queue listener + Polling aktif');
-}, [user]);
+  // Fallback polling
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  pollingIntervalRef.current = setInterval(async () => {
+    try {
+      console.log('🔄 Polling for match...');
+      const { data: matchResult, error } = await supabase
+        .rpc('find_match', { 
+          p_user_id: user.id, 
+          p_game_type: gameType 
+        });
+
+      if (error) {
+        console.error('❌ Polling error:', error);
+        return;
+      }
+
+      if (matchResult && matchResult.room_id) {
+        console.log('🎉 Polling ile eşleşme bulundu:', matchResult.room_id);
+        if (queueTimerRef.current) clearInterval(queueTimerRef.current);
+        if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
+        clearInterval(pollingIntervalRef.current);
+        setState(prev => ({ ...prev, status: 'matched' }));
+        await loadRoom(matchResult.room_id);
+      }
+    } catch (error) {
+      console.error('❌ Polling error:', error);
+    }
+  }, 5000); // 5 saniyede bir polling
+
+  // AI timeout
+  aiTimeoutRef.current = setTimeout(async () => {
+    console.log('⏰ Queue timeout - AI oyunu başlatılıyor');
+    if (queueTimerRef.current) clearInterval(queueTimerRef.current);
+    if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
+    await createAIGame(gameType);
+  }, 30000);
+
+  console.log('✅ Queue listener aktif');
+}, [user, createAIGame, loadRoom]);
 
   const createAIGame = useCallback(async (gameType: 'timed' | 'score') => {
     if (!user) return;
