@@ -277,39 +277,47 @@ export const NewMatchmakingProvider = ({ children }: NewMatchmakingProviderProps
 
   console.log('👂 Queue listener başlatılıyor...');
 
-  // *** DEBUG CHANNEL'I KALDIR, SADECE ANA LISTENER ***
+  // Start queue timer
+  queueTimerRef.current = setInterval(() => {
+    setState(prev => ({ 
+      ...prev, 
+      queueTime: prev.queueTime + 1,
+      estimatedWait: Math.max(0, 30 - prev.queueTime)
+    }));
+  }, 1000);
+
+  // Set AI timeout
+  aiTimeoutRef.current = setTimeout(async () => {
+    console.log('⏰ Queue timeout - AI oyunu başlatılıyor');
+    await createAIGame(gameType);
+  }, 30000);
+
+  // Start real-time listener
   queueChannelRef.current = supabase
     .channel(`queue-${user.id}`)
     .on('postgres_changes', {
-      event: '*',  // ← UPDATE yerine * kullan (tüm eventler)
+      event: '*',
       schema: 'public',
-      table: 'matchmaking_queue',
-      // ← Filter'ı kaldır, tüm değişiklikleri dinle
+      table: 'matchmaking_queue'
     }, async (payload) => {
-      console.log('📡 REALTIME EVENT:', payload);
+      console.log('📡 REALTIME EVENT (tüm değişiklikler):', payload);
       
-      // Sadece kendi user'ımızla ilgili değişiklikler
-      if (payload.new && payload.new.user_id === user.id) {
-        console.log('📡 Queue update for me:', payload.new);
+      // Manuel filtre - sadece kendi user'ımızla ilgili
+      if (payload.new && payload.new.user_id === user.id && payload.new.status === 'matched') {
+        console.log('🎉 Eşleşme bulundu!', payload.new.room_id);
         
-        if (payload.new.status === 'matched' && payload.new.room_id) {
-          console.log('🎉 Eşleşme bulundu!', payload.new.room_id);
-          
-          clearInterval(queueTimerRef.current!);
-          clearTimeout(aiTimeoutRef.current!);
-          
-          setState(prev => ({ 
-            ...prev, 
-            status: 'matched' 
-          }));
-
-          await loadRoom(payload.new.room_id);
-        }
+        // Timer'ları temizle
+        if (queueTimerRef.current) clearInterval(queueTimerRef.current);
+        if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
+        
+        setState(prev => ({ ...prev, status: 'matched' }));
+        await loadRoom(payload.new.room_id);
       }
     })
     .subscribe();
 
   console.log('✅ Queue listener aktif');
+}, [user]);
 
   // Set AI timeout
   aiTimeoutRef.current = setTimeout(async () => {
