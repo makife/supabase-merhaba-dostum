@@ -228,7 +228,7 @@ export const NewMatchmakingProvider = ({ children }: NewMatchmakingProviderProps
         throw queueError;
       }
 
-      console.log('✅ Queue\'ya girildi');
+      console.log('🔍 Function çağrılıyor:', { userId: user.id, gameType });
 
       // 3. Try to find immediate match
       const { data: matchResult, error: matchError } = await supabase
@@ -236,6 +236,8 @@ export const NewMatchmakingProvider = ({ children }: NewMatchmakingProviderProps
           p_user_id: user.id, 
           p_game_type: gameType 
         });
+
+      console.log('🔍 Function sonucu:', { matchResult, matchError });
 
       if (matchError) {
         console.error('❌ Match finding error:', matchError);
@@ -254,6 +256,7 @@ export const NewMatchmakingProvider = ({ children }: NewMatchmakingProviderProps
         // Load room
         await loadRoom(matchResult.room_id);
       } else {
+        console.log('❌ Anında eşleşme yok, polling başlatılıyor...');
         // Start queue listening
         console.log('⏳ Queue\'da bekleniyor...');
         startQueueListener(gameType);
