@@ -445,7 +445,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       console.log('👤 User:', user.id.slice(-8));
       console.log('🎮 Type:', gameType);
       
-      // Search for waiting rooms with exactly 1 player
+      // Search for waiting rooms with exactly 1 player, excluding rooms user recently left
       const { data: waitingRooms } = await supabase
         .from('game_rooms')
         .select(`
@@ -455,7 +455,8 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         .eq('game_mode', 'random-match')
         .eq('status', 'waiting')
         .neq('host_id', user.id) // Not own room
-        .gte('created_at', new Date(Date.now() - 5 * 60 * 1000).toISOString()); // Last 5 minutes
+        .gte('created_at', new Date(Date.now() - 5 * 60 * 1000).toISOString()) // Last 5 minutes
+        .gte('updated_at', new Date(Date.now() - 30 * 1000).toISOString()); // Updated in last 30 seconds to avoid recently left rooms
 
       console.log('🔍 Bulunan bekleyen odalar:', waitingRooms?.length || 0);
 
@@ -720,12 +721,27 @@ export const GameProvider = ({ children }: GameProviderProps) => {
               duration: 4000,
             });
             
-            // End game
+            // End game and close room properly
+            await supabase
+              .from('game_rooms')
+              .update({ 
+                status: 'finished', 
+                finished_at: new Date().toISOString() 
+              })
+              .eq('id', currentRoom.id);
+            
+            // Dispatch event after ending the game
             setTimeout(() => {
               console.log('🎮 Disconnect event dispatch ediliyor...');
               window.dispatchEvent(new CustomEvent('playerDisconnected', {
                 detail: { winner: 'player', reason: 'opponent_left' }
               }));
+              
+              // Clear room state after notification
+              setTimeout(() => {
+                setCurrentRoom(null);
+                setParticipants([]);
+              }, 2000);
             }, 1000);
           }
         }
@@ -760,19 +776,34 @@ export const GameProvider = ({ children }: GameProviderProps) => {
             if (realPlayers.length === 0) {
               console.log('🏆 Rakip bağlantısı koptu - oyuncu kazandı!');
               
+              // Give win bonus
+              await applyWinBonus(user?.id, 50);
+              
               toast({
                 title: '🏆 Kazandınız!',
                 description: 'Rakip oyuncunun bağlantısı koptu. +50 puan!',
                 duration: 4000,
               });
               
-              // Give win bonus
-              await applyWinBonus(user?.id, 50);
+              // End game and close room properly
+              await supabase
+                .from('game_rooms')
+                .update({ 
+                  status: 'finished', 
+                  finished_at: new Date().toISOString() 
+                })
+                .eq('id', currentRoom.id);
               
               // End game
               window.dispatchEvent(new CustomEvent('playerDisconnected', {
                 detail: { winner: 'player', reason: 'connection_lost' }
               }));
+              
+              // Clear room state after notification
+              setTimeout(() => {
+                setCurrentRoom(null);
+                setParticipants([]);
+              }, 2000);
             }
           }, 10000); // Wait 10 seconds
         }
