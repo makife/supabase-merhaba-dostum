@@ -10,7 +10,6 @@ import { GameProvider } from "@/contexts/GameContext";
 import { MusicProvider } from "@/contexts/MusicContext";
 import { UserProvider } from "@/contexts/UserContext";
 import { NewMatchmakingProvider } from "@/contexts/NewMatchmakingContext";
-// removed useTheme import as it conflicts with ThemeProvider
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AuthPage from "@/pages/AuthPage";
 import HomePage from "@/pages/HomePage";
@@ -19,9 +18,9 @@ import ProfilePage from "@/pages/ProfilePage";
 import SettingsPage from "@/pages/SettingsPage";
 import MarketPage from "@/pages/MarketPage";
 import TournamentPage from "@/pages/TournamentPage";
+import TestMatchmakingPage from "@/pages/TestMatchmakingPage";
 import NotFound from "./pages/NotFound";
 import LeaderboardPage from "@/pages/LeaderboardPage";
-
 
 const queryClient = new QueryClient();
 
@@ -88,15 +87,15 @@ const AppRoutes = () => {
         </ProtectedRoute>
       } />
       <Route path="/leaderboard" element={
-  <ProtectedRoute>
-    <LeaderboardPage />
-  </ProtectedRoute>
-} />
+        <ProtectedRoute>
+          <LeaderboardPage />
+        </ProtectedRoute>
+      } />
       <Route path="/test-matchmaking" element={
-  <ProtectedRoute>
-    <TestMatchmakingPage />
-  </ProtectedRoute>
-} />
+        <ProtectedRoute>
+          <TestMatchmakingPage />
+        </ProtectedRoute>
+      } />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
@@ -118,8 +117,8 @@ const App = () => {
                 <MusicProvider>
                   <GameProvider>
                     <NewMatchmakingProvider>
-                    <AppRoutes />
-                    <NewMatchmakingProvider>
+                      <AppRoutes />
+                    </NewMatchmakingProvider>
                   </GameProvider>
                 </MusicProvider>
               </ThemeProvider>
