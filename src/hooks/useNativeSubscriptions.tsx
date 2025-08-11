@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
@@ -19,9 +19,9 @@ export const useNativeSubscriptions = () => {
   const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null);
   const { toast } = useToast();
   const { refreshProfile } = useUser();
-
-  // Subscription products available
-  const subscriptionProducts: SubscriptionProduct[] = [
+  
+  // DÜZELTME: subscriptionProducts'u ref ile sabitleyerek re-render'ları önle
+  const subscriptionProductsRef = useRef<SubscriptionProduct[]>([
     {
       id: 'premium_monthly',
       title: 'Aylık Premium',
@@ -38,9 +38,81 @@ export const useNativeSubscriptions = () => {
       currency: 'TRY',
       period: 'yearly'
     }
-  ];
+  ]);
 
-  // Simulated native subscription purchase
+  // DÜZELTME: updateSubscriptionInDatabase'i useCallback ile stabilize et
+  const updateSubscriptionInDatabase = useCallback(async (productId: string, isActive: boolean) => {
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) return;
+
+      // Calculate subscription end date
+      const subscriptionEnd = new Date();
+      if (productId === 'premium_monthly') {
+        subscriptionEnd.setMonth(subscriptionEnd.getMonth() + 1);
+      } else if (productId === 'premium_yearly') {
+        subscriptionEnd.setFullYear(subscriptionEnd.getFullYear() + 1);
+      }
+
+      // Update user profile with premium status
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          premium_until: isActive ? subscriptionEnd.toISOString() : null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.user.id);
+
+      if (error) {
+        console.error('Failed to update subscription in database:', error);
+        throw error;
+      }
+
+      console.log('Subscription updated in database:', { isActive, subscriptionEnd });
+    } catch (error) {
+      console.error('Database update failed:', error);
+      throw error;
+    }
+  }, []); // Boş dependency array
+
+  // DÜZELTME: checkSubscriptionStatus'u stabilize et
+  const checkSubscriptionStatus = useCallback(async () => {
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('premium_until')
+        .eq('id', user.user.id)
+        .single();
+
+      if (profile?.premium_until) {
+        const premiumUntil = new Date(profile.premium_until);
+        const now = new Date();
+        const isActive = premiumUntil > now;
+        
+        setIsSubscribed(isActive);
+        if (isActive) {
+          setSubscriptionInfo({
+            expiryDate: premiumUntil,
+            isActive: true
+          });
+        } else {
+          setSubscriptionInfo(null);
+          // If expired, clear the database
+          await updateSubscriptionInDatabase('', false);
+        }
+      } else {
+        setIsSubscribed(false);
+        setSubscriptionInfo(null);
+      }
+    } catch (error) {
+      console.error('Failed to check subscription status:', error);
+    }
+  }, [updateSubscriptionInDatabase]);
+
+  // DÜZELTME: purchaseSubscription'ı stabilize et
   const purchaseSubscription = useCallback(async (productId: string) => {
     if (!Capacitor.isNativePlatform()) {
       toast({
@@ -54,7 +126,7 @@ export const useNativeSubscriptions = () => {
     try {
       setIsLoading(true);
       
-      const product = subscriptionProducts.find(p => p.id === productId);
+      const product = subscriptionProductsRef.current.find(p => p.id === productId);
       if (!product) return false;
 
       // Show confirmation dialog
@@ -107,44 +179,9 @@ export const useNativeSubscriptions = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [refreshProfile, toast, subscriptionProducts]);
+  }, [refreshProfile, toast, updateSubscriptionInDatabase]);
 
-  // Update subscription in database
-  const updateSubscriptionInDatabase = useCallback(async (productId: string, isActive: boolean) => {
-    try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return;
-
-      // Calculate subscription end date
-      const subscriptionEnd = new Date();
-      if (productId === 'premium_monthly') {
-        subscriptionEnd.setMonth(subscriptionEnd.getMonth() + 1);
-      } else if (productId === 'premium_yearly') {
-        subscriptionEnd.setFullYear(subscriptionEnd.getFullYear() + 1);
-      }
-
-      // Update user profile with premium status
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          premium_until: isActive ? subscriptionEnd.toISOString() : null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.user.id);
-
-      if (error) {
-        console.error('Failed to update subscription in database:', error);
-        throw error;
-      }
-
-      console.log('Subscription updated in database:', { isActive, subscriptionEnd });
-    } catch (error) {
-      console.error('Database update failed:', error);
-      throw error;
-    }
-  }, []);
-
-  // Restore subscriptions (check current status)
+  // DÜZELTME: Diğer fonksiyonları da stabilize et
   const restoreSubscriptions = useCallback(async () => {
     if (!Capacitor.isNativePlatform()) {
       toast({
@@ -179,46 +216,8 @@ export const useNativeSubscriptions = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [refreshProfile, toast]);
+  }, [refreshProfile, toast, checkSubscriptionStatus]);
 
-  // Check current subscription status
-  const checkSubscriptionStatus = useCallback(async () => {
-    try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('premium_until')
-        .eq('id', user.user.id)
-        .single();
-
-      if (profile?.premium_until) {
-        const premiumUntil = new Date(profile.premium_until);
-        const now = new Date();
-        const isActive = premiumUntil > now;
-        
-        setIsSubscribed(isActive);
-        if (isActive) {
-          setSubscriptionInfo({
-            expiryDate: premiumUntil,
-            isActive: true
-          });
-        } else {
-          setSubscriptionInfo(null);
-          // If expired, clear the database
-          await updateSubscriptionInDatabase('', false);
-        }
-      } else {
-        setIsSubscribed(false);
-        setSubscriptionInfo(null);
-      }
-    } catch (error) {
-      console.error('Failed to check subscription status:', error);
-    }
-  }, []);
-
-  // Cancel subscription (for simulation)
   const cancelSubscription = useCallback(async () => {
     if (!Capacitor.isNativePlatform()) {
       toast({
@@ -257,7 +256,6 @@ export const useNativeSubscriptions = () => {
     }
   }, [toast]);
 
-  // Open subscription management (native store)
   const openSubscriptionManagement = useCallback(async () => {
     if (!Capacitor.isNativePlatform()) {
       toast({
@@ -275,14 +273,14 @@ export const useNativeSubscriptions = () => {
     });
   }, [toast]);
 
-  // Check subscription status on component mount
+  // DÜZELTME: useEffect dependency'sini checkSubscriptionStatus ile sınırla
   useEffect(() => {
     checkSubscriptionStatus();
   }, [checkSubscriptionStatus]);
 
   return {
     isLoading,
-    subscriptionProducts,
+    subscriptionProducts: subscriptionProductsRef.current, // Ref'ten döndür
     isSubscribed,
     subscriptionInfo,
     purchaseSubscription,
