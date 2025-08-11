@@ -265,14 +265,27 @@ const pollingInterval = setInterval(async () => {
     console.log('🔄 User ID:', user.id);
     console.log('🔄 Game Type:', gameType);
     
+    // Function öncesi queue durumunu da kontrol et
+    const { data: queueCheck } = await supabase
+      .from('matchmaking_queue')
+      .select('user_id, game_type, status')
+      .eq('status', 'searching');
+    
+    console.log('🔄 Queue durumu:', queueCheck);
+    
     const { data: matchResult, error } = await supabase
       .rpc('find_match', { 
         p_user_id: user.id, 
         p_game_type: gameType 
       });
     
+    console.log('🔄 Function parametreleri:', {
+      p_user_id: user.id,
+      p_game_type: gameType
+    });
     console.log('🔄 Polling sonucu:', { matchResult, error });
-    // ... rest of code
+    
+    // ... rest
   } catch (error) {
     console.log('❌ Polling error:', error);
   }
