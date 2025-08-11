@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface WordValidationResult {
   isValid: boolean;
@@ -11,12 +11,15 @@ export const useWordValidation = () => {
   const [isLoading, setIsLoading] = useState(true);
   const wordSetRef = useRef<Set<string> | null>(null);
   const loadPromiseRef = useRef<Promise<void> | null>(null);
+  const isInitializedRef = useRef(false);
 
-  // Kelime dosyasını yükle ve Set'e dönüştür (sadece bir kez)
-  const loadWordList = async (): Promise<void> => {
-    if (wordSetRef.current !== null) {
+  // DÜZELTME: loadWordList fonksiyonunu useCallback ile stabilize et
+  const loadWordList = useCallback(async (): Promise<void> => {
+    if (wordSetRef.current !== null || isInitializedRef.current) {
       return; // Zaten yüklenmiş
     }
+
+    isInitializedRef.current = true;
 
     try {
       console.log('📚 65K kelimeli wordlist yükleniyor...');
@@ -62,19 +65,32 @@ export const useWordValidation = () => {
       wordSetRef.current = new Set<string>();
       console.log('⚠️ Boş wordlist ile devam ediliyor - hiçbir kelime kabul edilmeyecek');
     }
-  };
-
-  // Component mount olduğunda wordlist'i yükle
-  useEffect(() => {
-    if (!loadPromiseRef.current) {
-      loadPromiseRef.current = loadWordList().finally(() => {
-        setIsLoading(false);
-      });
-    }
   }, []);
 
-  // Kelime doğrulama fonksiyonu - 65K kelime için optimize edilmiş
-  const validateWord = async (word: string): Promise<WordValidationResult> => {
+  // DÜZELTME: calculatePoints fonksiyonunu useCallback ile stabilize et
+  const calculatePoints = useCallback((word: string): number => {
+    const length = word.length;
+    
+    // Base points - her harf 5 puan
+    let points = length * 5;
+    
+    // Uzunluk bonusları
+    if (length >= 6) points += 10;  // 6+ harf bonus
+    if (length >= 8) points += 20;  // 8+ harf bonus
+    if (length >= 10) points += 30; // 10+ harf bonus
+    if (length >= 12) points += 50; // 12+ harf büyük bonus
+    
+    // Nadir harf bonusları (Türkçe'de daha az kullanılan)
+    const rareLetters = ['Ç', 'Ğ', 'Ş', 'J', 'X', 'Z'];
+    const rareBonus = word.toUpperCase().split('').reduce((bonus, letter) => {
+      return rareLetters.includes(letter) ? bonus + 5 : bonus;
+    }, 0);
+    
+    return points + rareBonus;
+  }, []);
+
+  // DÜZELTME: validateWord fonksiyonunu stabilize et
+  const validateWord = useCallback(async (word: string): Promise<WordValidationResult> => {
     // Hızlı pre-validations
     if (word.length < 3) {
       return {
@@ -138,32 +154,10 @@ export const useWordValidation = () => {
     } finally {
       setIsValidating(false);
     }
-  };
+  }, [calculatePoints]); // calculatePoints dependency'si eklendi
 
-  // Gelişmiş puan hesaplama - kelime uzunluğu ve nadir harflere göre
-  const calculatePoints = (word: string): number => {
-    const length = word.length;
-    
-    // Base points - her harf 5 puan
-    let points = length * 5;
-    
-    // Uzunluk bonusları
-    if (length >= 6) points += 10;  // 6+ harf bonus
-    if (length >= 8) points += 20;  // 8+ harf bonus
-    if (length >= 10) points += 30; // 10+ harf bonus
-    if (length >= 12) points += 50; // 12+ harf büyük bonus
-    
-    // Nadir harf bonusları (Türkçe'de daha az kullanılan)
-    const rareLetters = ['Ç', 'Ğ', 'Ş', 'J', 'X', 'Z'];
-    const rareBonus = word.toUpperCase().split('').reduce((bonus, letter) => {
-      return rareLetters.includes(letter) ? bonus + 5 : bonus;
-    }, 0);
-    
-    return points + rareBonus;
-  };
-
-  // Debug: wordlist istatistikleri (development için)
-  const getWordListStats = () => {
+  // DÜZELTME: getWordListStats fonksiyonunu stabilize et
+  const getWordListStats = useCallback(() => {
     if (!wordSetRef.current) return null;
     
     const allWords = Array.from(wordSetRef.current);
@@ -180,7 +174,16 @@ export const useWordValidation = () => {
       sampleWords: allWords.slice(0, 10),
       longestWords: allWords.filter(w => w.length >= 15).slice(0, 5)
     };
-  };
+  }, [isLoading]);
+
+  // DÜZELTME: Component mount olduğunda wordlist'i yükle - sadece bir kez
+  useEffect(() => {
+    if (!loadPromiseRef.current && !isInitializedRef.current) {
+      loadPromiseRef.current = loadWordList().finally(() => {
+        setIsLoading(false);
+      });
+    }
+  }, []); // Boş dependency array - sadece mount'ta çalışır
 
   return {
     validateWord,
