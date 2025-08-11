@@ -230,6 +230,14 @@ export const NewMatchmakingProvider = ({ children }: NewMatchmakingProviderProps
 
     console.log('✅ Queue\'ya girildi');
 
+    // *** YENİ: 2 saniye bekle, sonra listener başlat ***
+    console.log('⏳ 2 saniye bekleniyor (race condition önlemek için)...');
+
+    setTimeout(() => {
+      console.log('⏳ Queue\'da bekleniyor...');
+      startQueueListener(gameType);
+    }, 2000); // 2 saniye delay
+
     // 3. Sadece bekle, function çağırma!
     console.log('⏳ Queue\'da bekleniyor...');
     startQueueListener(gameType);
@@ -289,7 +297,7 @@ const pollingInterval = setInterval(async () => {
   } catch (error) {
     console.log('❌ Polling error:', error);
   }
-}, 3000);
+}, 2000);
 
   // Set AI timeout
   aiTimeoutRef.current = setTimeout(async () => {
