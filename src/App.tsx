@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { GameProvider } from "@/contexts/GameContext";
 import { MusicProvider } from "@/contexts/MusicContext";
 import { UserProvider } from "@/contexts/UserContext";
+import { NewMatchmakingProvider } from "@/contexts/NewMatchmakingContext";
 // removed useTheme import as it conflicts with ThemeProvider
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AuthPage from "@/pages/AuthPage";
@@ -20,6 +21,7 @@ import MarketPage from "@/pages/MarketPage";
 import TournamentPage from "@/pages/TournamentPage";
 import NotFound from "./pages/NotFound";
 import LeaderboardPage from "@/pages/LeaderboardPage";
+
 
 const queryClient = new QueryClient();
 
@@ -115,7 +117,9 @@ const App = () => {
               <ThemeProvider>
                 <MusicProvider>
                   <GameProvider>
+                    <NewMatchmakingProvider>
                     <AppRoutes />
+                    <NewMatchmakingProvider>
                   </GameProvider>
                 </MusicProvider>
               </ThemeProvider>
