@@ -247,7 +247,7 @@ export const NewMatchmakingProvider = ({ children }: NewMatchmakingProviderProps
   const startQueueListener = useCallback((gameType: 'timed' | 'score') => {
   if (!user) return;
 
-  console.log('👂 Queue listener başlatılıyor...');
+  console.log('👂 Queue listener + Polling başlatılıyor...');
 
   // Start queue timer
   queueTimerRef.current = setInterval(() => {
@@ -258,48 +258,64 @@ export const NewMatchmakingProvider = ({ children }: NewMatchmakingProviderProps
     }));
   }, 1000);
 
+  // MANUAL POLLING - Her 3 saniyede function çağır
+  const pollingInterval = setInterval(async () => {
+    try {
+      console.log('🔄 Manual polling - function çağrılıyor...');
+      
+      const { data: matchResult, error } = await supabase
+        .rpc('find_match', { 
+          p_user_id: user.id, 
+          p_game_type: gameType 
+        });
+      
+      console.log('🔄 Polling sonucu:', { matchResult, error });
+      
+      if (matchResult?.found && matchResult?.room_id) {
+        console.log('🎉 Polling ile eşleşme bulundu!', matchResult.room_id);
+        
+        // Timer'ları temizle
+        clearInterval(pollingInterval);
+        if (queueTimerRef.current) clearInterval(queueTimerRef.current);
+        if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
+        
+        setState(prev => ({ ...prev, status: 'matched' }));
+        await loadRoom(matchResult.room_id);
+      }
+    } catch (error) {
+      console.log('❌ Polling error:', error);
+    }
+  }, 3000); // Her 3 saniye
+
   // Set AI timeout
   aiTimeoutRef.current = setTimeout(async () => {
     console.log('⏰ Queue timeout - AI oyunu başlatılıyor');
+    clearInterval(pollingInterval);
     await createAIGame(gameType);
   }, 30000);
 
-  // Start real-time listener
+  // Realtime listener (yedek olarak kalsın)
   queueChannelRef.current = supabase
     .channel(`queue-${user.id}`)
     .on('postgres_changes', {
-  event: '*',
-  schema: 'public',
-  table: 'matchmaking_queue'
-}, async (payload) => {
-  console.log('📡 REALTIME EVENT (tüm değişiklikler):', payload);
-  console.log('📡 Event Type:', payload.eventType);
-  console.log('📡 New Data:', payload.new);
-  console.log('📡 Old Data:', payload.old);
-  
-  // Debug: User ID karşılaştırması
-  if (payload.new) {
-    console.log('📡 Payload User ID:', payload.new.user_id);
-    console.log('📡 Current User ID:', user.id);
-    console.log('📡 User ID Match:', payload.new.user_id === user.id);
-    console.log('📡 Status:', payload.new.status);
-  }
-  
-  // Manuel filtre - sadece kendi user'ımızla ilgili
-  if (payload.new && payload.new.user_id === user.id && payload.new.status === 'matched') {
-    console.log('🎉 Eşleşme bulundu!', payload.new.room_id);
-    
-    // Timer'ları temizle
-    if (queueTimerRef.current) clearInterval(queueTimerRef.current);
-    if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
-    
-    setState(prev => ({ ...prev, status: 'matched' }));
-    await loadRoom(payload.new.room_id);
-  }
-})
+      event: '*',
+      schema: 'public',
+      table: 'matchmaking_queue'
+    }, async (payload) => {
+      console.log('📡 REALTIME EVENT (yedek):', payload);
+      
+      if (payload.new && payload.new.user_id === user.id && payload.new.status === 'matched') {
+        console.log('🎉 Realtime ile eşleşme bulundu!', payload.new.room_id);
+        clearInterval(pollingInterval);
+        if (queueTimerRef.current) clearInterval(queueTimerRef.current);
+        if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
+        setState(prev => ({ ...prev, status: 'matched' }));
+        await loadRoom(payload.new.room_id);
+      }
+    })
     .subscribe();
 
-  console.log('✅ Queue listener aktif');
+  console.log('✅ Queue listener + Polling aktif');
 }, [user]);
 
   const createAIGame = useCallback(async (gameType: 'timed' | 'score') => {
