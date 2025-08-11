@@ -369,59 +369,61 @@ export const NewMatchmakingProvider = ({ children }: NewMatchmakingProviderProps
   }, [user, toast]);
 
   const loadRoom = useCallback(async (roomId: string) => {
-    if (!user) return;
+  if (!user) return;
 
-    try {
-      console.log('🏠 Room yükleniyor:', roomId.slice(-8));
+  try {
+    console.log('🏠 Room yükleniyor:', roomId.slice(-8));
 
-      const { data: room, error } = await supabase
-        .from('game_rooms')
-        .select('*')
-        .eq('id', roomId)
-        .single();
-
-      if (error) {
-        console.error('❌ Room loading error:', error);
-        throw error;
-      }
-
-      console.log('✅ Room yüklendi:', room);
-
-      // Convert grid
-      const gameGrid = room.current_grid ? flatGridToMatrix(room.current_grid) : generateRandomGrid();
-      
-      // Determine scores
-      const isPlayer1 = room.player1_id === user.id;
-      const playerScore = isPlayer1 ? room.player1_score : room.player2_score;
-      const opponentScore = isPlayer1 ? room.player2_score : room.player1_score;
-
-      setState(prev => ({ 
-        ...prev, 
-        status: 'in_game',
-        currentRoom: room,
-        gameGrid: gameGrid,
-        playerScore: playerScore,
-        opponentScore: opponentScore,
-        usedWords: room.used_words || []
-      }));
-
-      // Start game listener
-      startGameListener(roomId);
-
-      toast({
-        title: '🎮 Oyun Başladı!',
-        description: 'Rakibinizle eşleştiniz, iyi oyunlar!',
-      });
-
-    } catch (error: any) {
-      console.error('❌ Room loading error:', error);
-      setState(prev => ({ 
-        ...prev, 
-        status: 'error', 
-        error: error.message || 'Room yüklenemedi'
-      }));
+    // Clear AI timeout to prevent AI game from starting
+    if (aiTimeoutRef.current) {
+      clearTimeout(aiTimeoutRef.current);
+      aiTimeoutRef.current = null;
     }
-  }, [user, toast]);
+
+    const { data: room, error } = await supabase
+      .from('game_rooms')
+      .select('*')
+      .eq('id', roomId)
+      .single();
+
+    if (error) {
+      console.error('❌ Room loading error:', error);
+      throw error;
+    }
+
+    console.log('✅ Room yüklendi:', room);
+
+    const gameGrid = room.current_grid ? flatGridToMatrix(room.current_grid) : generateRandomGrid();
+    const isPlayer1 = room.player1_id === user.id;
+    const playerScore = isPlayer1 ? room.player1_score : room.player2_score;
+    const opponentScore = isPlayer1 ? room.player2_score : room.player1_score;
+
+    setState(prev => ({ 
+      ...prev, 
+      status: 'in_game',
+      currentRoom: room,
+      gameGrid: gameGrid,
+      playerScore: playerScore,
+      opponentScore: opponentScore,
+      usedWords: room.used_words || []
+    }));
+
+    startGameListener(roomId);
+
+    toast({
+      title: '🎮 Oyun Başladı!',
+      description: 'Rakibinizle eşleştiniz, iyi oyunlar!',
+    });
+
+  } catch (error: any) {
+    console.error('❌ Room loading error:', error);
+    setState(prev => ({ 
+      ...prev, 
+      status: 'error', 
+      error: error.message || 'Room yüklenemedi'
+    }));
+  }
+}, [user, toast, startGameListener]);
 
   const startGameListener = useCallback((roomId: string) => {
     if (!user) return;
