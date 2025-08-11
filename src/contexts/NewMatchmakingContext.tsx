@@ -296,24 +296,35 @@ export const NewMatchmakingProvider = ({ children }: NewMatchmakingProviderProps
   queueChannelRef.current = supabase
     .channel(`queue-${user.id}`)
     .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'matchmaking_queue'
-    }, async (payload) => {
-      console.log('📡 REALTIME EVENT (tüm değişiklikler):', payload);
-      
-      // Manuel filtre - sadece kendi user'ımızla ilgili
-      if (payload.new && payload.new.user_id === user.id && payload.new.status === 'matched') {
-        console.log('🎉 Eşleşme bulundu!', payload.new.room_id);
-        
-        // Timer'ları temizle
-        if (queueTimerRef.current) clearInterval(queueTimerRef.current);
-        if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
-        
-        setState(prev => ({ ...prev, status: 'matched' }));
-        await loadRoom(payload.new.room_id);
-      }
-    })
+  event: '*',
+  schema: 'public',
+  table: 'matchmaking_queue'
+}, async (payload) => {
+  console.log('📡 REALTIME EVENT (tüm değişiklikler):', payload);
+  console.log('📡 Event Type:', payload.eventType);
+  console.log('📡 New Data:', payload.new);
+  console.log('📡 Old Data:', payload.old);
+  
+  // Debug: User ID karşılaştırması
+  if (payload.new) {
+    console.log('📡 Payload User ID:', payload.new.user_id);
+    console.log('📡 Current User ID:', user.id);
+    console.log('📡 User ID Match:', payload.new.user_id === user.id);
+    console.log('📡 Status:', payload.new.status);
+  }
+  
+  // Manuel filtre - sadece kendi user'ımızla ilgili
+  if (payload.new && payload.new.user_id === user.id && payload.new.status === 'matched') {
+    console.log('🎉 Eşleşme bulundu!', payload.new.room_id);
+    
+    // Timer'ları temizle
+    if (queueTimerRef.current) clearInterval(queueTimerRef.current);
+    if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
+    
+    setState(prev => ({ ...prev, status: 'matched' }));
+    await loadRoom(payload.new.room_id);
+  }
+})
     .subscribe();
 
   console.log('✅ Queue listener aktif');
