@@ -612,34 +612,108 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
   // Leave room
   const leaveRoom = useCallback(async (): Promise<void> => {
-    if (!user || !currentRoom) return;
+  if (!user || !currentRoom) return;
 
-    try {
+  try {
+    console.log('🚪 Oyuncu odadan ayrılıyor:', user.id.slice(-8));
+    console.log('🎮 Oda modu:', currentRoom.game_mode);
+    console.log('📊 Oda durumu:', currentRoom.status);
+    
+    // DÜZELTME: Aktif oyunsa ceza uygula
+    if (currentRoom.status === 'active') {
+      console.log('⚖️ Aktif oyundan ayrılma - ceza uygulanacak');
+      await applyDisconnectPenalty(user.id, true);
+    }
+
+    // Remove from participants
+    await supabase
+      .from('game_participants')
+      .delete()
+      .eq('room_id', currentRoom.id)
+      .eq('user_id', user.id);
+
+    // Check remaining participants
+    const { data: remaining } = await supabase
+      .from('game_participants')
+      .select('id, is_bot, user_id')
+      .eq('room_id', currentRoom.id);
+
+    const realPlayers = remaining?.filter(p => !p.is_bot) || [];
+    console.log('👥 Kalan gerçek oyuncu sayısı:', realPlayers.length);
+
+    // DÜZELTME: Oyun moduna göre farklı davranış
+    if (currentRoom.game_mode === 'random-match' || currentRoom.game_mode === 'private-room') {
+      
+      if (realPlayers.length === 0) {
+        // Hiç gerçek oyuncu kalmadıysa odayı sil
+        console.log('🗑️ Oda tamamen boş kaldı, siliniyor');
+        await supabase
+          .from('game_rooms')
+          .delete()
+          .eq('id', currentRoom.id);
+          
+      } else if (realPlayers.length === 1 && currentRoom.status === 'active') {
+        // Tek oyuncu kaldı ve oyun aktifse - kalan oyuncu kazandı
+        console.log('🏆 Tek oyuncu kaldı - otomatik kazanma!');
+        
+        const remainingPlayer = realPlayers[0];
+        
+        // Kalan oyuncuya kazanma bonusu ver
+        if (remainingPlayer.user_id) {
+          await applyWinBonus(remainingPlayer.user_id, 100);
+          console.log('🎁 Kazanma bonusu verildi:', remainingPlayer.user_id.slice(-8));
+        }
+        
+        // Oyunu bitir
+        await supabase
+          .from('game_rooms')
+          .update({ 
+            status: 'finished', 
+            finished_at: new Date().toISOString() 
+          })
+          .eq('id', currentRoom.id);
+          
+        console.log('🏁 Oyun finished durumuna getirildi');
+        
+        // Kalan oyuncuya bildirim gönder (real-time ile otomatik olacak)
+        
+      } else if (realPlayers.length === 1 && currentRoom.status === 'waiting') {
+        // Waiting durumunda tek oyuncu kaldıysa normal beklesin
+        console.log('⏳ Waiting durumunda tek oyuncu kaldı - oda aktif kalıyor');
+        
+      } else {
+        // 2+ oyuncu varsa oda devam etsin
+        console.log('✅ Oda devam ediyor, yeterli oyuncu var');
+      }
+      
+    } else if (currentRoom.game_mode === 'vs-computer') {
+      // VS Computer modunda her zaman odayı sil
+      console.log('🤖 VS Computer oda siliniyor');
       await supabase
-        .from('game_participants')
+        .from('game_rooms')
         .delete()
-        .eq('room_id', currentRoom.id)
-        .eq('user_id', user.id);
-
-      // Delete room if empty
-      const { data: remaining } = await supabase
-        .from('game_participants')
-        .select('id')
-        .eq('room_id', currentRoom.id);
-
-      if (!remaining || remaining.length === 0) {
+        .eq('id', currentRoom.id);
+        
+    } else {
+      // Diğer modlar için varsayılan davranış
+      if (realPlayers.length === 0) {
+        console.log('🗑️ Oda boş kaldı, siliniyor');
         await supabase
           .from('game_rooms')
           .delete()
           .eq('id', currentRoom.id);
       }
-
-      setCurrentRoom(null);
-      setParticipants([]);
-    } catch (error) {
-      console.error('Error leaving room:', error);
     }
-  }, [user, currentRoom]);
+
+    // Local state'i temizle
+    setCurrentRoom(null);
+    setParticipants([]);
+    console.log('✅ Oyuncu başarıyla odadan ayrıldı');
+    
+  } catch (error) {
+    console.error('❌ Odadan ayrılma hatası:', error);
+  }
+}, [user, currentRoom, applyDisconnectPenalty, applyWinBonus]);
 
   // Update score
   const updateScore = useCallback(async (score: number): Promise<void> => {
