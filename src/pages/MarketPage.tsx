@@ -324,7 +324,7 @@ const MarketPage = () => {
           await purchaseSubscription(subscriptionProducts[0].id);
         }
       } else {
-        await processPurchase(item.id, item.price, item.currency);
+        await processPurchase(item);
       }
 
       toast({
