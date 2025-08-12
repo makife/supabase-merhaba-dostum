@@ -948,7 +948,8 @@ const MarketPage = () => {
                 </Tabs>
               </TabsContent>
             </Tabs>
-          </TabsContent>[state=active]:bg-white/20">Premium</TabsTrigger>
+          </TabsContent>
+        </Tabs>[state=active]:bg-white/20">Premium</TabsTrigger>
                     <TabsTrigger value="extras-credits" className="text-white data-[state=active]:bg-white/20">Kredi</TabsTrigger>
                   </TabsList>
                   <TabsContent value="extras-premium">
