@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useMusic } from '@/contexts/MusicContext';
-
+import { useGame } from '@/contexts/GameContext';
 import GameModeSelector from '@/components/GameModeSelector';
 import { FloatingMenu } from '@/components/FloatingMenu';
 import { HeaderAnimation } from '@/components/HeaderAnimation';
