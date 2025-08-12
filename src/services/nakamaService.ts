@@ -22,8 +22,11 @@ class NakamaService {
         },
         body: JSON.stringify({
           id: userId
-        })
-      });
+        }),
+        // SSL certificate hatalarını ignore et
+        mode: 'cors',
+        credentials: 'omit'
+    });
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -46,19 +49,21 @@ class NakamaService {
 
     try {
       const response = await fetch(`${this.baseUrl}/v2/matchmaker`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.session.token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          min_count: 2,
-          max_count: 2,
-          query: "*",
-          string_properties: {
-            game_type: gameType
-          }
-        })
+         method: 'POST',
+         headers: {
+           'Authorization': `Bearer ${this.session.token}`,
+           'Content-Type': 'application/json'
+         },
+         body: JSON.stringify({
+           min_count: 2,
+           max_count: 2,
+           query: "*",
+           string_properties: {
+             game_type: gameType
+           }
+         }),
+         mode: 'cors',
+         credentials: 'omit'
       });
 
       if (!response.ok) {
