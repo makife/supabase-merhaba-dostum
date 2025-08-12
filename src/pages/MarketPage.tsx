@@ -687,7 +687,7 @@ const MarketPage = () => {
         <div className="text-center mb-8">
           <div className="relative mx-auto w-48 h-32 mb-6">
             <img 
-              src="/assets/marketimaj.png" 
+              src="/src/assets/marketimaj.png" 
               alt="Market" 
               className="w-full h-full object-contain drop-shadow-2xl"
             />
