@@ -780,31 +780,31 @@ const MarketPage = () => {
 
         {/* Market Kategorileri */}
         <Tabs defaultValue="credits" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-8 bg-white/10 backdrop-blur-md rounded-2xl p-2">
+          <TabsList className="grid w-full grid-cols-4 mb-6 bg-white/80 backdrop-blur-md rounded-2xl p-2">
             <TabsTrigger 
               value="credits" 
-              className="flex items-center space-x-2 text-white data-[state=active]:bg-white/20 data-[state=active]:text-white rounded-xl transition-all duration-300"
+              className="flex items-center space-x-2 text-gray-700 data-[state=active]:bg-primary/20 data-[state=active]:text-gray-800 rounded-xl transition-all duration-300"
             >
               <Gamepad2 className="w-4 h-4" />
               <span className="font-medium">Oyun</span>
             </TabsTrigger>
             <TabsTrigger 
               value="premium" 
-              className="flex items-center space-x-2 text-white data-[state=active]:bg-white/20 data-[state=active]:text-white rounded-xl transition-all duration-300"
+              className="flex items-center space-x-2 text-gray-700 data-[state=active]:bg-primary/20 data-[state=active]:text-gray-800 rounded-xl transition-all duration-300"
             >
               <Crown className="w-4 h-4" />
               <span className="font-medium">Premium</span>
             </TabsTrigger>
             <TabsTrigger 
               value="themes" 
-              className="flex items-center space-x-2 text-white data-[state=active]:bg-white/20 data-[state=active]:text-white rounded-xl transition-all duration-300"
+              className="flex items-center space-x-2 text-gray-700 data-[state=active]:bg-primary/20 data-[state=active]:text-gray-800 rounded-xl transition-all duration-300"
             >
               <Palette className="w-4 h-4" />
               <span className="font-medium">Temalar</span>
             </TabsTrigger>
             <TabsTrigger 
               value="extras" 
-              className="flex items-center space-x-2 text-white data-[state=active]:bg-white/20 data-[state=active]:text-white rounded-xl transition-all duration-300"
+              className="flex items-center space-x-2 text-gray-700 data-[state=active]:bg-primary/20 data-[state=active]:text-gray-800 rounded-xl transition-all duration-300"
             >
               <Gift className="w-4 h-4" />
               <span className="font-medium">Diğer</span>
@@ -812,18 +812,18 @@ const MarketPage = () => {
           </TabsList>
           
           {/* Oyun Hakları & Sınırsız */}
-          <TabsContent value="credits" className="space-y-6">
-            <div className="flex items-center space-x-3 mb-6">
-              <Zap className="w-8 h-8 text-yellow-400" />
-              <h3 className="text-3xl font-bold text-white">Oyun Hakları & Sınırsız Zaman</h3>
+          <TabsContent value="credits" className="space-y-4">
+            <div className="flex items-center space-x-3 mb-4">
+              <Zap className="w-6 h-6 text-yellow-500" />
+              <h3 className="text-2xl font-bold text-gray-800">Oyun Hakları & Sınırsız Zaman</h3>
             </div>
             {!isPremium && renderMarketItems(getItemsByCategory('credits'))}
             {isPremium && (
               <Card className="border-0 bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-md">
-                <CardContent className="p-8 text-center">
-                  <Crown className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
-                  <h3 className="text-2xl font-bold mb-3 text-white">Premium Üyesiniz!</h3>
-                  <p className="text-white/80 text-lg">
+                <CardContent className="p-4 text-center">
+                  <Crown className="w-12 h-12 text-yellow-500 mx-auto mb-3" />
+                  <h3 className="text-xl font-bold mb-2 text-gray-800">Premium Üyesiniz!</h3>
+                  <p className="text-gray-700">
                     Zaten sınırsız oyun hakkınız bulunuyor.
                   </p>
                 </CardContent>
@@ -832,18 +832,18 @@ const MarketPage = () => {
           </TabsContent>
           
           {/* Premium Üyelik */}
-          <TabsContent value="premium" className="space-y-6">
-            <div className="flex items-center space-x-3 mb-6">
-              <Crown className="w-8 h-8 text-yellow-400" />
-              <h3 className="text-3xl font-bold text-white">Premium Üyelik</h3>
+          <TabsContent value="premium" className="space-y-4">
+            <div className="flex items-center space-x-3 mb-4">
+              <Crown className="w-6 h-6 text-yellow-500" />
+              <h3 className="text-2xl font-bold text-gray-800">Premium Üyelik</h3>
             </div>
             {!isPremium && renderMarketItems(getItemsByCategory('premium'))}
             {isPremium && (
               <Card className="border-0 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 backdrop-blur-md">
-                <CardContent className="p-8 text-center">
-                  <Crown className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
-                  <h3 className="text-2xl font-bold mb-3 text-white">Zaten Premium Üyesiniz!</h3>
-                  <p className="text-white/80 text-lg">
+                <CardContent className="p-4 text-center">
+                  <Crown className="w-12 h-12 text-yellow-500 mx-auto mb-3" />
+                  <h3 className="text-xl font-bold mb-2 text-gray-800">Zaten Premium Üyesiniz!</h3>
+                  <p className="text-gray-700">
                     Tüm premium özelliklere erişiminiz bulunuyor.
                   </p>
                 </CardContent>
@@ -852,18 +852,18 @@ const MarketPage = () => {
           </TabsContent>
           
           {/* Temalar */}
-          <TabsContent value="themes" className="space-y-6">
-            <div className="flex items-center space-x-3 mb-6">
-              <Palette className="w-8 h-8 text-purple-400" />
-              <h3 className="text-3xl font-bold text-white">Temalar</h3>
+          <TabsContent value="themes" className="space-y-4">
+            <div className="flex items-center space-x-3 mb-4">
+              <Palette className="w-6 h-6 text-purple-500" />
+              <h3 className="text-2xl font-bold text-gray-800">Temalar</h3>
             </div>
             {!isPremium && renderMarketItems(getItemsByCategory('themes'))}
             {isPremium && (
               <Card className="border-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-md">
-                <CardContent className="p-8 text-center">
-                  <Crown className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
-                  <h3 className="text-2xl font-bold mb-3 text-white">Premium Üyesiniz!</h3>
-                  <p className="text-white/80 text-lg">
+                <CardContent className="p-4 text-center">
+                  <Crown className="w-12 h-12 text-yellow-500 mx-auto mb-3" />
+                  <h3 className="text-xl font-bold mb-2 text-gray-800">Premium Üyesiniz!</h3>
+                  <p className="text-gray-700">
                     Tüm temalar size açık. Ayarlar sayfasından temalarınızı değiştirebilirsiniz.
                   </p>
                 </CardContent>
@@ -872,26 +872,26 @@ const MarketPage = () => {
           </TabsContent>
           
           {/* Diğer Öğeler */}
-          <TabsContent value="extras" className="space-y-6">
+          <TabsContent value="extras" className="space-y-4">
             <Tabs defaultValue="avatar" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-6 bg-white/10 backdrop-blur-md rounded-xl">
-                <TabsTrigger value="avatar" className="text-white data-[state=active]:bg-white/20">Avatar</TabsTrigger>
-                <TabsTrigger value="effects" className="text-white data-[state=active]:bg-white/20">Efektler</TabsTrigger>
-                <TabsTrigger value="extras-items" className="text-white data-[state=active]:bg-white/20">Rozetler</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-3 mb-4 bg-white/80 backdrop-blur-md rounded-xl">
+                <TabsTrigger value="avatar" className="text-gray-700 data-[state=active]:bg-white/80 data-[state=active]:text-gray-800">Avatar</TabsTrigger>
+                <TabsTrigger value="effects" className="text-gray-700 data-[state=active]:bg-white/80 data-[state=active]:text-gray-800">Efektler</TabsTrigger>
+                <TabsTrigger value="extras-items" className="text-gray-700 data-[state=active]:bg-white/80 data-[state=active]:text-gray-800">Rozetler</TabsTrigger>
               </TabsList>
               
               <TabsContent value="avatar">
-                <div className="flex items-center space-x-3 mb-6">
-                  <Frame className="w-8 h-8 text-pink-400" />
-                  <h3 className="text-2xl font-bold text-white">Avatar Çerçeveleri</h3>
+                <div className="flex items-center space-x-3 mb-4">
+                  <Frame className="w-6 h-6 text-pink-500" />
+                  <h3 className="text-xl font-bold text-gray-800">Avatar Çerçeveleri</h3>
                 </div>
                 {!isPremium && renderMarketItems(getItemsByCategory('avatar'))}
                 {isPremium && (
                   <Card className="border-0 bg-gradient-to-r from-pink-500/20 to-rose-500/20 backdrop-blur-md">
-                    <CardContent className="p-8 text-center">
-                      <Crown className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
-                      <h3 className="text-2xl font-bold mb-3 text-white">Premium Üyesiniz!</h3>
-                      <p className="text-white/80 text-lg">
+                    <CardContent className="p-4 text-center">
+                      <Crown className="w-12 h-12 text-yellow-500 mx-auto mb-3" />
+                      <h3 className="text-xl font-bold mb-2 text-gray-800">Premium Üyesiniz!</h3>
+                      <p className="text-gray-700">
                         Tüm avatar çerçeveleri size açık. Ayarlar sayfasından çerçevenizi değiştirebilirsiniz.
                       </p>
                     </CardContent>
@@ -900,17 +900,17 @@ const MarketPage = () => {
               </TabsContent>
               
               <TabsContent value="effects">
-                <div className="flex items-center space-x-3 mb-6">
-                  <Sparkles className="w-8 h-8 text-blue-400" />
-                  <h3 className="text-2xl font-bold text-white">Ses & Efektler</h3>
+                <div className="flex items-center space-x-3 mb-4">
+                  <Sparkles className="w-6 h-6 text-blue-500" />
+                  <h3 className="text-xl font-bold text-gray-800">Ses & Efektler</h3>
                 </div>
                 {!isPremium && renderMarketItems([...getItemsByCategory('sounds'), ...getItemsByCategory('effects')])}
                 {isPremium && (
                   <Card className="border-0 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 backdrop-blur-md">
-                    <CardContent className="p-8 text-center">
-                      <Crown className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
-                      <h3 className="text-2xl font-bold mb-3 text-white">Premium Üyesiniz!</h3>
-                      <p className="text-white/80 text-lg">
+                    <CardContent className="p-4 text-center">
+                      <Crown className="w-12 h-12 text-yellow-500 mx-auto mb-3" />
+                      <h3 className="text-xl font-bold mb-2 text-gray-800">Premium Üyesiniz!</h3>
+                      <p className="text-gray-700">
                         Tüm ses paketleri ve efektler size açık. Ayarlar sayfasından ses paketinizi değiştirebilirsiniz.
                       </p>
                     </CardContent>
@@ -919,13 +919,36 @@ const MarketPage = () => {
               </TabsContent>
               
               <TabsContent value="extras-items">
-                <div className="flex items-center space-x-3 mb-6">
-                  <Trophy className="w-8 h-8 text-orange-400" />
-                  <h3 className="text-2xl font-bold text-white">Rozetler & İpuçları</h3>
+                <div className="flex items-center space-x-3 mb-4">
+                  <Trophy className="w-6 h-6 text-orange-500" />
+                  <h3 className="text-xl font-bold text-gray-800">Rozetler & İpuçları</h3>
                 </div>
                 <Tabs defaultValue="extras-premium" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 mb-6 bg-white/10 backdrop-blur-md rounded-xl">
-                    <TabsTrigger value="extras-premium" className="text-white data-[state=active]:bg-white/20">Premium</TabsTrigger>
+                  <TabsList className="grid w-full grid-cols-2 mb-4 bg-white/80 backdrop-blur-md rounded-xl">
+                    <TabsTrigger value="extras-premium" className="text-gray-700 data-[state=active]:bg-white/80 data-[state=active]:text-gray-800">Premium</TabsTrigger>
+                    <TabsTrigger value="extras-credits" className="text-gray-700 data-[state=active]:bg-white/80 data-[state=active]:text-gray-800">Kredi</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="extras-premium">
+                    {!isPremium && renderMarketItems(getItemsByCategory('extras').filter(item => item.currency === 'premium'))}
+                    {isPremium && (
+                      <Card className="border-0 bg-gradient-to-r from-orange-500/20 to-yellow-500/20 backdrop-blur-md">
+                        <CardContent className="p-4 text-center">
+                          <Crown className="w-12 h-12 text-yellow-500 mx-auto mb-3" />
+                          <h3 className="text-xl font-bold mb-2 text-gray-800">Premium Üyesiniz!</h3>
+                          <p className="text-gray-700">
+                            Tüm premium rozetler ve özellikler size açık.
+                          </p>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </TabsContent>
+                  <TabsContent value="extras-credits">
+                    {renderMarketItems(getItemsByCategory('extras').filter(item => item.currency === 'credits'))}
+                  </TabsContent>
+                </Tabs>
+              </TabsContent>
+            </Tabs>
+          </TabsContent>[state=active]:bg-white/20">Premium</TabsTrigger>
                     <TabsTrigger value="extras-credits" className="text-white data-[state=active]:bg-white/20">Kredi</TabsTrigger>
                   </TabsList>
                   <TabsContent value="extras-premium">
@@ -954,36 +977,36 @@ const MarketPage = () => {
         {/* Premium Benefits */}
         <Card className="border-0 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 backdrop-blur-md">
           <CardHeader>
-            <CardTitle className="flex items-center text-yellow-300 text-2xl">
-              <Crown className="w-6 h-6 mr-3" />
+            <CardTitle className="flex items-center text-gray-800 text-xl">
+              <Crown className="w-5 h-5 mr-3" />
               Premium Avantajları
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <div className="flex items-center text-white p-3 bg-white/10 rounded-lg backdrop-blur-sm">
-                <Infinity className="w-5 h-5 mr-3 text-yellow-400" />
-                <span className="text-sm font-medium">Sınırsız oyun hakkı</span>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="flex items-center text-gray-800 p-2 bg-white/60 rounded-lg backdrop-blur-sm">
+                <Infinity className="w-4 h-4 mr-2 text-yellow-600" />
+                <span className="text-xs font-medium">Sınırsız oyun hakkı</span>
               </div>
-              <div className="flex items-center text-white p-3 bg-white/10 rounded-lg backdrop-blur-sm">
-                <Palette className="w-5 h-5 mr-3 text-yellow-400" />
-                <span className="text-sm font-medium">Tüm temalara erişim</span>
+              <div className="flex items-center text-gray-800 p-2 bg-white/60 rounded-lg backdrop-blur-sm">
+                <Palette className="w-4 h-4 mr-2 text-yellow-600" />
+                <span className="text-xs font-medium">Tüm temalara erişim</span>
               </div>
-              <div className="flex items-center text-white p-3 bg-white/10 rounded-lg backdrop-blur-sm">
-                <Volume2 className="w-5 h-5 mr-3 text-yellow-400" />
-                <span className="text-sm font-medium">Tüm ses paketleri</span>
+              <div className="flex items-center text-gray-800 p-2 bg-white/60 rounded-lg backdrop-blur-sm">
+                <Volume2 className="w-4 h-4 mr-2 text-yellow-600" />
+                <span className="text-xs font-medium">Tüm ses paketleri</span>
               </div>
-              <div className="flex items-center text-white p-3 bg-white/10 rounded-lg backdrop-blur-sm">
-                <Frame className="w-5 h-5 mr-3 text-yellow-400" />
-                <span className="text-sm font-medium">Tüm çerçeveler</span>
+              <div className="flex items-center text-gray-800 p-2 bg-white/60 rounded-lg backdrop-blur-sm">
+                <Frame className="w-4 h-4 mr-2 text-yellow-600" />
+                <span className="text-xs font-medium">Tüm çerçeveler</span>
               </div>
-              <div className="flex items-center text-white p-3 bg-white/10 rounded-lg backdrop-blur-sm">
-                <Star className="w-5 h-5 mr-3 text-yellow-400" />
-                <span className="text-sm font-medium">Reklamsız deneyim</span>
+              <div className="flex items-center text-gray-800 p-2 bg-white/60 rounded-lg backdrop-blur-sm">
+                <Star className="w-4 h-4 mr-2 text-yellow-600" />
+                <span className="text-xs font-medium">Reklamsız deneyim</span>
               </div>
-              <div className="flex items-center text-white p-3 bg-white/10 rounded-lg backdrop-blur-sm">
-                <Gift className="w-5 h-5 mr-3 text-yellow-400" />
-                <span className="text-sm font-medium">Özel rozetler</span>
+              <div className="flex items-center text-gray-800 p-2 bg-white/60 rounded-lg backdrop-blur-sm">
+                <Gift className="w-4 h-4 mr-2 text-yellow-600" />
+                <span className="text-xs font-medium">Özel rozetler</span>
               </div>
             </div>
           </CardContent>
