@@ -43,6 +43,8 @@ interface GameContextType {
   startGame: () => Promise<void>;
   endGame: () => Promise<void>;
   isConnected: boolean;
+  useNakama: boolean;
+  toggleNakama: () => void;
 }
 
 interface RealtimePayload {
@@ -65,11 +67,6 @@ interface GameProviderProps {
   children: ReactNode;
 }
 
-interface GameContextType {
-  // Mevcut props'lar...
-  useNakama: boolean;
-  toggleNakama: () => void;
-}
 
 export const GameProvider = ({ children }: GameProviderProps) => {
   const { user } = useAuth();
@@ -77,6 +74,11 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   const [currentRoom, setCurrentRoom] = useState<GameRoom | null>(null);
   const [participants, setParticipants] = useState<GameParticipant[]>([]);
   const [isConnected, setIsConnected] = useState(false);
+  const [useNakama, setUseNakama] = useState(false);
+
+  const toggleNakama = () => {
+  setUseNakama(!useNakama);
+};
 
   // Generate random grid
   const generateRandomGrid = (): string[][] => {
@@ -870,7 +872,9 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       updateScore,
       startGame,
       endGame,
-      isConnected
+      isConnected,
+      useNakama,
+      toggleNakama
     }}>
       {children}
     </GameContext.Provider>
