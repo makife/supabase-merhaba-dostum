@@ -34,7 +34,7 @@ class NakamaService {
       }
 
       const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/@heroiclabs/nakama-js@3.8.0/dist/nakama-js.umd.js';
+      script.src = 'https://unpkg.com/@heroiclabs/nakama-js@3.8.0/dist/nakama-js.umd.js';
       script.onload = () => {
         // Global Nakama object'ini window'a ata
         window.NakamaJs = (window as any).nakamajs;
