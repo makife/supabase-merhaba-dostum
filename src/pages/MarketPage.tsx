@@ -128,16 +128,26 @@ const MarketPage = () => {
       duration: '24 saat'
     },
 
-    // Premium
+    // Premium - Aylık ve Yıllık
     {
       id: 'premium_month',
-      title: 'Premium Üyelik',
+      title: 'Premium Aylık',
       description: 'Sınırsız oyun, tüm temalar, sesler, çerçeveler ve özel özellikler',
       price: 29.99,
       currency: 'premium',
       icon: Crown,
       type: 'premium',
       value: 30
+    },
+    {
+      id: 'premium_year',
+      title: 'Premium Yıllık',
+      description: '12 aylık premium üyelik - %40 tasarruf! Tüm özellikler dahil',
+      price: 199.99,
+      currency: 'premium',
+      icon: Crown,
+      type: 'premium',
+      value: 365
     },
 
     // Temalar
