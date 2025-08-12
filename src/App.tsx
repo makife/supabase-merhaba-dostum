@@ -17,6 +17,7 @@ import ProfilePage from "@/pages/ProfilePage";
 import SettingsPage from "@/pages/SettingsPage";
 import MarketPage from "@/pages/MarketPage";
 import TournamentPage from "@/pages/TournamentPage";
+import TestMatchmakingPage from "@/pages/TestMatchmakingPage";
 import NotFound from "./pages/NotFound";
 import LeaderboardPage from "@/pages/LeaderboardPage";
 
@@ -87,6 +88,11 @@ const AppRoutes = () => {
       <Route path="/leaderboard" element={
         <ProtectedRoute>
           <LeaderboardPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/test-matchmaking" element={
+        <ProtectedRoute>
+          <TestMatchmakingPage />
         </ProtectedRoute>
       } />
       <Route path="*" element={<NotFound />} />
