@@ -4,7 +4,7 @@ interface MatchTicket {
 
 class NakamaService {
   private session: any = null;
-  private baseUrl: string = 'https://88.99.121.2';
+  private baseUrl: string = 'http://88.99.121.2:7350';
   private serverKey: string = 'kelimeci_default_key';
 
   constructor() {
