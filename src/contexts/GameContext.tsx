@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode, useCallback 
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useNakamaMatchmaking } from '@/hooks/useNakamaMatchmaking';
 
 interface GameRoom {
   id: string;
