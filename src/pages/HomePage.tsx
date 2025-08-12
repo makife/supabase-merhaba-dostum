@@ -56,6 +56,7 @@ const HomePage = () => {
   const [matchmakingGameType, setMatchmakingGameType] = useState<'timed' | 'score'>('timed');
   const [userAvatar, setUserAvatar] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { useNakama, toggleNakama } = useGame();
 
   // Level hesaplama fonksiyonu
   const calculateLevel = (totalScore: number) => {
