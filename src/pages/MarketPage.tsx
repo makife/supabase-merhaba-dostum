@@ -685,17 +685,17 @@ const MarketPage = () => {
 
         {/* Market Hero Section with Image */}
         <div className="text-center mb-8">
-          <div className="relative mx-auto w-48 h-32 mb-6">
+          <div className="relative mx-auto w-64 h-40 mb-4">
             <img 
               src="/src/assets/marketimaj.png" 
               alt="Market" 
               className="w-full h-full object-contain drop-shadow-2xl"
             />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2 bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-600 bg-clip-text text-transparent">
-            ✨ Market'e Hoşgeldiniz ✨
+          <h1 className="text-2xl font-bold text-white mb-2 bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-600 bg-clip-text text-transparent">
+            ✨ Premium Market ✨
           </h1>
-          <p className="text-white/70 text-lg">Oyun deneyiminizi bir üst seviyeye taşıyın</p>
+          <p className="text-white/70">Oyun deneyiminizi bir üst seviyeye taşıyın</p>
         </div>
 
         {/* User Status */}
