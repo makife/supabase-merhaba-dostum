@@ -172,7 +172,7 @@ const MarketPage = () => {
       value: 1
     },
 
-    // Avatar Çerçeveleri
+    // Avatar Çerçeveleri - TÜM ORİJİNAL ÇERÇEVELER
     {
       id: 'avatar_floral_roses',
       title: 'Gül Çerçevesi',
@@ -206,73 +206,291 @@ const MarketPage = () => {
       value: 1,
       image: '/lovable-uploads/aa2df12c-9aa3-49c0-a78e-4a946ad9c396.png'
     },
-
-    // Ses Paketleri
     {
-      id: 'sound_retro',
-      title: 'Retro Ses Paketi',
-      description: 'Nostaljik 8-bit sesler',
-      price: 2.49,
+      id: 'avatar_floral_wreath',
+      title: 'Çiçek Çelengi',
+      description: 'Renkli çiçek çelengi çerçevesi',
+      price: 1.49,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1,
+      image: '/lovable-uploads/eea94c24-3141-4496-ab48-9911ecfd1400.png'
+    },
+    {
+      id: 'avatar_purple_flowers',
+      title: 'Mor Çiçek Çerçevesi',
+      description: 'Zarif mor çiçek desenli çerçeve',
+      price: 1.49,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1,
+      image: '/lovable-uploads/1b6aaacc-0774-46f0-9aed-58be7383877a.png'
+    },
+    {
+      id: 'avatar_pink_flowers',
+      title: 'Pembe Çiçek Çerçevesi',
+      description: 'Tatlı pembe çiçek desenli çerçeve',
+      price: 1.49,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1,
+      image: '/lovable-uploads/b2d1b581-c29f-43e4-b354-2889ce0621b1.png'
+    },
+    {
+      id: 'avatar_antique_bronze',
+      title: 'Antik Bronz Çerçeve',
+      description: 'Nostaljik antik bronz çerçeve',
+      price: 1.49,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1,
+      image: '/lovable-uploads/da0c0d9e-ba9a-49b1-aec9-b5b5d8e0e7f2.png'
+    },
+    {
+      id: 'avatar_green_patrick',
+      title: 'Yeşil Patrick Çerçevesi',
+      description: 'Şanslı yonca desenli çerçeve',
+      price: 1.49,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1,
+      image: '/lovable-uploads/832fc6fe-e9b4-451a-bc8c-3a1ae8c2bfaa.png'
+    },
+    {
+      id: 'avatar_heart_roses',
+      title: 'Kalp Güller Çerçevesi',
+      description: 'Romantik kalp ve gül motifli çerçeve',
+      price: 1.49,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1,
+      image: '/lovable-uploads/dc6bd5c7-38e1-4ce8-ae6b-8b2b0d7d7c5e.png'
+    },
+    {
+      id: 'avatar_christmas_lights',
+      title: 'Noel Işıkları Çerçevesi',
+      description: 'Renkli noel ışıkları çerçevesi',
+      price: 1.49,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1,
+      image: '/lovable-uploads/f8f8f8f8-f8f8-f8f8-f8f8-f8f8f8f8f8f8.png'
+    },
+    {
+      id: 'avatar_ornate_gold',
+      title: 'Süslü Altın Çerçeve',
+      description: 'Lüks süslemeli altın çerçeve',
+      price: 1.49,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1,
+      image: '/lovable-uploads/b2d1b581-c29f-43e4-b354-2889ce0621b1.png'
+    },
+    {
+      id: 'avatar_party_balloons',
+      title: 'Parti Balonları Çerçevesi',
+      description: 'Renkli parti balonları çerçevesi',
+      price: 1.49,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1,
+      image: '/lovable-uploads/da0c0d9e-ba9a-49b1-aec9-b5b5d8e0e7f2.png'
+    },
+    {
+      id: 'avatar_christmas_tree',
+      title: 'Noel Ağacı Çerçevesi',
+      description: 'Noel ağacı temalı çerçeve',
+      price: 1.49,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1,
+      image: '/lovable-uploads/832fc6fe-e9b4-451a-bc8c-3a1ae8c2bfaa.png'
+    },
+    {
+      id: 'avatar_ornate_black',
+      title: 'Siyah Süslü Çerçeve',
+      description: 'Klasik siyah süslemeli çerçeve',
+      price: 1.49,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1,
+      image: '/lovable-uploads/5b932686-4cbb-44bb-8aa0-d9172ae54764.png'
+    },
+    {
+      id: 'avatar_black_floral',
+      title: 'Siyah Çiçek Çerçevesi',
+      description: 'Zarif siyah çiçek motifli çerçeve',
+      price: 1.49,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1,
+      image: '/lovable-uploads/53623185-5b73-4dd2-bc2b-1af5b94f321a.png'
+    },
+    {
+      id: 'avatar_golden_stars',
+      title: 'Altın Yıldızlar Çerçevesi',
+      description: 'Yeni yıl temalı altın yıldız çerçevesi',
+      price: 1.49,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1,
+      image: '/lovable-uploads/ff8a7b50-41b9-461a-bd0b-0e166b281ef3.png'
+    },
+    {
+      id: 'avatar_wavy_black',
+      title: 'Dalgalı Siyah Çerçeve',
+      description: 'Modern dalgalı siyah çerçeve',
+      price: 1.49,
+      currency: 'premium',
+      icon: Image,
+      type: 'avatar',
+      value: 1,
+      image: '/lovable-uploads/309c658e-e0d1-423a-80d6-9b012943f30d.png'
+    },
+
+    // Ses Efekti Paketleri
+    {
+      id: 'sound_pack_space',
+      title: 'Uzay Ses Paketi',
+      description: 'Futuristik elektronik ses efektleri',
+      price: 1.99,
+      currency: 'premium',
+      icon: Zap,
+      type: 'sound',
+      value: 1
+    },
+    {
+      id: 'sound_pack_nature',
+      title: 'Doğa Ses Paketi',
+      description: 'Rahatlatıcı doğa ses efektleri',
+      price: 1.99,
+      currency: 'premium',
+      icon: Music,
+      type: 'sound',
+      value: 1
+    },
+
+    // Müzik Paketleri
+    {
+      id: 'music_pack_nature1',
+      title: 'Doğa Müziği 1',
+      description: 'Sakin doğa müziği - Orman sesleri',
+      price: 1.99,
       currency: 'premium',
       icon: Music,
       type: 'sound',
       value: 1
     },
     {
-      id: 'sound_nature',
-      title: 'Doğa Ses Paketi',
-      description: 'Rahatlatıcı doğa sesleri',
-      price: 2.49,
+      id: 'music_pack_nature2',
+      title: 'Doğa Müziği 2',
+      description: 'Huzurlu doğa müziği - Su sesleri',
+      price: 1.99,
       currency: 'premium',
-      icon: Volume2,
+      icon: Music,
+      type: 'sound',
+      value: 1
+    },
+    {
+      id: 'music_pack_space1',
+      title: 'Uzay Müziği 1',
+      description: 'Elektronik uzay müziği - Ambient',
+      price: 1.99,
+      currency: 'premium',
+      icon: Music,
+      type: 'sound',
+      value: 1
+    },
+    {
+      id: 'music_pack_space2',
+      title: 'Uzay Müziği 2',
+      description: 'Sintetik uzay müziği - Cosmic',
+      price: 1.99,
+      currency: 'premium',
+      icon: Music,
       type: 'sound',
       value: 1
     },
 
-    // Efektler
+    // Özel Efektler
     {
-      id: 'effect_particles',
-      title: 'Partikül Efektleri',
-      description: 'Göz alıcı partikül animasyonları',
-      price: 3.49,
+      id: 'effect_fireworks',
+      title: 'Havai Fişek Efekti',
+      description: 'Kelime bulduğunuzda havai fişek gösterisi',
+      price: 0.99,
       currency: 'premium',
       icon: Sparkles,
       type: 'effect',
       value: 1
     },
-
-    // Rozetler
     {
-      id: 'badge_master',
-      title: 'Usta Rozeti',
-      description: 'Deneyimli oyuncu rozeti',
-      price: 2.99,
+      id: 'effect_confetti',
+      title: 'Konfeti Efekti',
+      description: 'Başarılı hamlelerinizde konfeti yağmuru',
+      price: 0.99,
+      currency: 'premium',
+      icon: Gift,
+      type: 'effect',
+      value: 1
+    },
+
+    // Özel Rozetler
+    {
+      id: 'badge_wordmaster',
+      title: 'Kelime Ustası Rozeti',
+      description: 'Özel kelime ustası rozeti',
+      price: 2.49,
       currency: 'premium',
       icon: Trophy,
       type: 'badge',
       value: 1
     },
 
-    // İpuçları
+    // İpucu Paketleri
     {
-      id: 'hint_pack_5',
-      title: '5 İpucu Paketi',
-      description: 'Zor durumlarda yardımcı ipuçları',
-      price: 5,
+      id: 'hint_pack_basic',
+      title: 'Temel İpucu Paketi',
+      description: '10 kelime ipucu hakkı',
+      price: 0.99,
+      currency: 'premium',
+      icon: Lightbulb,
+      type: 'hint',
+      value: 10
+    },
+    {
+      id: 'hint_pack_premium',
+      title: 'Premium İpucu Paketi',
+      description: '25 kelime ipucu hakkı',
+      price: 1.99,
+      currency: 'premium',
+      icon: Lightbulb,
+      type: 'hint',
+      value: 25
+    },
+
+    // İpucu Paketleri - Kredi ile
+    {
+      id: 'credits_hint_5',
+      title: '5 İpucu Hakkı',
+      description: 'Kredi ile ipucu satın alın',
+      price: 20,
       currency: 'credits',
       icon: Lightbulb,
       type: 'hint',
       value: 5
-    },
-    {
-      id: 'hint_pack_10',
-      title: '10 İpucu Paketi',
-      description: 'Büyük ipucu paketi',
-      price: 8,
-      currency: 'credits',
-      icon: Lightbulb,
-      type: 'hint',
-      value: 10
     }
   ];
 
