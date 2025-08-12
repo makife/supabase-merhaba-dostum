@@ -7,16 +7,18 @@ interface WordValidationResult {
 }
 
 export const useWordValidation = () => {
+  // TÜM STATE'LER VE REF'LER EN ÜSTTE - HİÇBİR KOŞULLU RETURN YOK
   const [isValidating, setIsValidating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const wordSetRef = useRef<Set<string> | null>(null);
   const loadPromiseRef = useRef<Promise<void> | null>(null);
   const isInitializedRef = useRef(false);
 
-  // DÜZELTME: loadWordList fonksiyonunu useCallback ile stabilize et
+  // TÜM CALLBACK'LER STABLE - DEPENDENCİ ARRAY'LER DOĞRU
   const loadWordList = useCallback(async (): Promise<void> => {
+    // Eğer zaten yüklenmiş ise çık
     if (wordSetRef.current !== null || isInitializedRef.current) {
-      return; // Zaten yüklenmiş
+      return;
     }
 
     isInitializedRef.current = true;
@@ -24,7 +26,6 @@ export const useWordValidation = () => {
     try {
       console.log('📚 65K kelimeli wordlist yükleniyor...');
       
-      // Public klasöründen yükle
       const response = await fetch('/wordlist.txt');
       
       if (!response.ok) {
@@ -36,18 +37,15 @@ export const useWordValidation = () => {
       console.log('🔄 65K kelime işleniyor...');
       const startTime = performance.now();
       
-      // Büyük dosya için optimize edilmiş processing
       const words = text
         .split('\n')
-        .map(word => word.trim().toUpperCase()) // Türkçe karakterler için
+        .map(word => word.trim().toUpperCase())
         .filter(word => {
-          // Hızlı filtreleme: sadece geçerli Türkçe kelimeleri al
           return word.length >= 3 && 
                  word.length <= 25 && 
                  /^[A-ZÇĞIİÖŞÜ]+$/.test(word);
         });
       
-      // Set'e dönüştür (65K kelime için optimize edilmiş)
       wordSetRef.current = new Set(words);
       
       const endTime = performance.now();
@@ -55,42 +53,37 @@ export const useWordValidation = () => {
       
       console.log(`🎉 ${words.length.toLocaleString()} kelime başarıyla yüklendi!`);
       console.log(`⚡ İşlem süresi: ${processingTime}ms`);
-      console.log(`📊 Memory kullanımı: ~${Math.round(words.length * 10 / 1024)} KB`);
       
     } catch (error) {
       console.error('❌ Wordlist yüklenirken hata:', error);
       console.log('💡 Çözüm: wordlist.txt dosyasını public/ klasörüne koyduğunuzdan emin olun');
       
-      // Son çare: boş set oluştur (oyun çalışır ama kelime kabul etmez)
+      // Boş set oluştur - oyun çalışır ama kelime kabul etmez
       wordSetRef.current = new Set<string>();
-      console.log('⚠️ Boş wordlist ile devam ediliyor - hiçbir kelime kabul edilmeyecek');
+      console.log('⚠️ Boş wordlist ile devam ediliyor');
     }
-  }, []);
+  }, []); // Boş dependency array
 
-  // DÜZELTME: calculatePoints fonksiyonunu useCallback ile stabilize et
   const calculatePoints = useCallback((word: string): number => {
     const length = word.length;
-    
-    // Base points - her harf 5 puan
     let points = length * 5;
     
-    // Uzunluk bonusları
-    if (length >= 6) points += 10;  // 6+ harf bonus
-    if (length >= 8) points += 20;  // 8+ harf bonus
-    if (length >= 10) points += 30; // 10+ harf bonus
-    if (length >= 12) points += 50; // 12+ harf büyük bonus
+    if (length >= 6) points += 10;
+    if (length >= 8) points += 20;
+    if (length >= 10) points += 30;
+    if (length >= 12) points += 50;
     
-    // Nadir harf bonusları (Türkçe'de daha az kullanılan)
     const rareLetters = ['Ç', 'Ğ', 'Ş', 'J', 'X', 'Z'];
     const rareBonus = word.toUpperCase().split('').reduce((bonus, letter) => {
       return rareLetters.includes(letter) ? bonus + 5 : bonus;
     }, 0);
     
     return points + rareBonus;
-  }, []);
+  }, []); // Boş dependency array
 
-  // DÜZELTME: validateWord fonksiyonunu stabilize et
   const validateWord = useCallback(async (word: string): Promise<WordValidationResult> => {
+    // HİÇBİR KOŞULLU RETURN YOK - SADECE DATA KONTROLÜ
+    
     // Hızlı pre-validations
     if (word.length < 3) {
       return {
@@ -108,7 +101,6 @@ export const useWordValidation = () => {
       };
     }
 
-    // Türkçe karakter kontrolü
     if (!/^[A-ZÇĞIİÖŞÜa-zçğıiöşü]+$/.test(word)) {
       return {
         isValid: false,
@@ -125,10 +117,9 @@ export const useWordValidation = () => {
         await loadPromiseRef.current;
       }
 
-      // Super fast O(1) lookup - Set'den kontrol et
+      // O(1) lookup
       const normalizedWord = word.toUpperCase();
       const isValid = wordSetRef.current?.has(normalizedWord) || false;
-
       const points = isValid ? calculatePoints(word) : 0;
 
       const result: WordValidationResult = {
@@ -139,9 +130,7 @@ export const useWordValidation = () => {
           : 'Bu kelime sözlükte bulunmuyor.'
       };
 
-      // Debug log
       console.log(`🔍 "${word}" -> ${isValid ? '✅' : '❌'} (${points} puan)`);
-
       return result;
 
     } catch (error) {
@@ -154,9 +143,8 @@ export const useWordValidation = () => {
     } finally {
       setIsValidating(false);
     }
-  }, [calculatePoints]); // calculatePoints dependency'si eklendi
+  }, [calculatePoints]); // Stable dependency
 
-  // DÜZELTME: getWordListStats fonksiyonunu stabilize et
   const getWordListStats = useCallback(() => {
     if (!wordSetRef.current) return null;
     
@@ -174,21 +162,22 @@ export const useWordValidation = () => {
       sampleWords: allWords.slice(0, 10),
       longestWords: allWords.filter(w => w.length >= 15).slice(0, 5)
     };
-  }, [isLoading]);
+  }, [isLoading]); // Stable dependency
 
-  // DÜZELTME: Component mount olduğunda wordlist'i yükle - sadece bir kez
+  // SADECE BİR useEffect - MOUNT'TA ÇALIŞIR
   useEffect(() => {
     if (!loadPromiseRef.current && !isInitializedRef.current) {
       loadPromiseRef.current = loadWordList().finally(() => {
         setIsLoading(false);
       });
     }
-  }, []); // Boş dependency array - sadece mount'ta çalışır
+  }, []); // Boş dependency array - sadece mount'ta
 
+  // RETURN HER ZAMAN AYNI SAYIDA HOOK İLE BİTER
   return {
     validateWord,
     isValidating,
     isLoading,
-    getWordListStats // Debug için - production'da silinebilir
+    getWordListStats
   };
 };
