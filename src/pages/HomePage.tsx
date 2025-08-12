@@ -357,6 +357,28 @@ const HomePage = () => {
           </Card>
         )}
 
+        {/* Nakama Toggle Button */}
+<div className="mb-4 p-4 bg-muted rounded-lg">
+  <div className="flex items-center justify-between">
+    <div>
+      <h3 className="font-semibold">Matchmaking Engine</h3>
+      <p className="text-sm text-muted-foreground">
+        {useNakama ? '🚀 Nakama (Hızlı)' : '📊 Supabase (Mevcut)'}
+      </p>
+    </div>
+    <button
+      onClick={toggleNakama}
+      className={`px-4 py-2 rounded-lg font-medium transition-all ${
+        useNakama 
+          ? 'bg-green-500 text-white hover:bg-green-600' 
+          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+      }`}
+    >
+      {useNakama ? 'Nakama Aktif' : 'Supabase Aktif'}
+    </button>
+  </div>
+</div>
+
         {/* Game Modes */}
         <div>
           <div className="bg-gradient-to-r from-yellow-400 to-white rounded-lg px-4 py-2 mb-4 inline-flex items-center shadow-md">
