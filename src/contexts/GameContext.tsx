@@ -65,6 +65,12 @@ interface GameProviderProps {
   children: ReactNode;
 }
 
+interface GameContextType {
+  // Mevcut props'lar...
+  useNakama: boolean;
+  toggleNakama: () => void;
+}
+
 export const GameProvider = ({ children }: GameProviderProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
