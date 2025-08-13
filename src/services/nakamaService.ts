@@ -11,7 +11,8 @@ class NakamaService {
   
   constructor() {
     // Mevcut ayarlarınızı kullanıyorum
-    this.client = new Client("kelimeci_default_key", "kelimeci.com.tr", 7350, true); // SSL için true
+    // 7350 = WebSocket port, 7351 = HTTP REST port
+    this.client = new Client("kelimeci_default_key", "kelimeci.com.tr", 7350, true);
     console.log("🚀 Nakama WebSocket Service initialized");
   }
 
