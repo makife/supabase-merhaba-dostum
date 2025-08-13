@@ -1,128 +1,123 @@
+import { Client, Session, Socket } from '@heroiclabs/nakama-js';
+
 interface MatchTicket {
   ticket: string;
 }
 
 class NakamaService {
-  private session: any = null;
-  private baseUrl: string = 'https://kelimeci.com.tr';
-  private serverKey: string = 'kelimeci_default_key';
-
+  private client: Client;
+  private session: Session | null = null;
+  private socket: Socket | null = null;
+  
   constructor() {
-    console.log("🚀 Direct HTTP Nakama Service initialized");
+    // Mevcut ayarlarınızı kullanıyorum
+    this.client = new Client("kelimeci_default_key", "kelimeci.com.tr", 7350, true); // SSL için true
+    console.log("🚀 Nakama WebSocket Service initialized");
   }
 
-  // HTTP-only Authentication
-  async authenticate(userId: string) {
+  async authenticate(userId: string): Promise<Session> {
     try {
-      const response = await fetch(`${this.baseUrl}/v2/account/authenticate/device?create=true`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${btoa(this.serverKey + ':')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          id: userId
-        }),
-        // SSL certificate hatalarını ignore et
-        mode: 'cors',
-        credentials: 'omit'
-    });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      this.session = await response.json();
-      console.log("✅ HTTP Nakama authenticated:", this.session.user?.id);
+      console.log("🔐 Authenticating with Nakama WebSocket...");
+      
+      // Device authentication - REST API'yi de kullanabilir
+      this.session = await this.client.authenticateDevice(userId, true);
+      
+      console.log("✅ Nakama authentication successful:", this.session.user_id);
       return this.session;
     } catch (error) {
-      console.error("❌ HTTP Nakama auth error:", error);
-      throw error;
+      console.error("❌ Nakama authentication failed:", error);
+      throw new Error(`Authentication failed: ${error}`);
     }
   }
 
-  // HTTP-only Matchmaking
-  async findMatch(gameType: 'timed' | 'score' = 'timed'): Promise<MatchTicket> {
+  async createSocket(): Promise<Socket> {
     if (!this.session) {
-      await this.authenticate(`user_${Date.now()}`);
+      throw new Error("Must authenticate before creating socket");
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/v2/matchmaker`, {
-         method: 'POST',
-         headers: {
-           'Authorization': `Bearer ${this.session.token}`,
-           'Content-Type': 'application/json'
-         },
-         body: JSON.stringify({
-           min_count: 2,
-           max_count: 2,
-           query: "*",
-           string_properties: {
-             game_type: gameType
-           }
-         }),
-         mode: 'cors',
-         credentials: 'omit'
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      console.log("🎯 HTTP Nakama matchmaking ticket:", result.ticket);
+      console.log("🔌 Creating WebSocket connection...");
       
-      // Simulate match found after 8 seconds (since we can't use WebSocket)
-      setTimeout(() => {
-        console.log("🎉 HTTP Nakama - Simulated match found!");
-        // Trigger success callback here if needed
-      }, 8000);
-
-      return { ticket: result.ticket };
+      // WebSocket bağlantısı oluştur
+      this.socket = this.client.createSocket(true, false); // useSSL: true, verbose: false
+      
+      // Bağlantıyı aç
+      await this.socket.connect(this.session);
+      
+      console.log("✅ WebSocket connected successfully");
+      return this.socket;
     } catch (error) {
-      console.error("❌ HTTP Nakama matchmaking error:", error);
-      throw error;
+      console.error("❌ WebSocket connection failed:", error);
+      throw new Error(`Socket connection failed: ${error}`);
     }
   }
 
-  // HTTP-only Cancel
-  async cancelMatchmaking(ticket: string) {
+  async findMatch(gameType: 'timed' | 'score'): Promise<{ ticket: string }> {
+    if (!this.socket) {
+      throw new Error("Socket connection required for matchmaking");
+    }
+
     try {
-      const response = await fetch(`${this.baseUrl}/v2/matchmaker/${ticket}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${this.session.token}`
-        }
-      });
-
-      if (!response.ok) {
-        console.warn("Cancel matchmaking failed, but continuing...");
-      }
+      console.log("🎯 Starting matchmaking for:", gameType);
       
-      console.log("❌ HTTP Nakama matchmaking cancelled");
+      // Matchmaking parametreleri
+      const query = `+properties.game_type:${gameType}`;
+      const minCount = 2; // Minimum 2 oyuncu
+      const maxCount = 2; // Maximum 2 oyuncu
+      const stringProperties = { game_type: gameType };
+      const numericProperties = {};
+
+      // Matchmaking ticket oluştur
+      const matchmakerTicket = await this.socket.addMatchmaker(
+        query,
+        minCount,
+        maxCount,
+        stringProperties,
+        numericProperties
+      );
+
+      console.log("🎫 Matchmaking ticket created:", matchmakerTicket.ticket);
+      
+      return { ticket: matchmakerTicket.ticket };
     } catch (error) {
-      console.error("❌ Cancel matchmaking error:", error);
+      console.error("❌ Matchmaking failed:", error);
+      throw new Error(`Matchmaking failed: ${error}`);
     }
   }
 
-  // Mock WebSocket (since we can't load the script)
-  async createSocket() {
-    console.log("🔌 Mock WebSocket connection (HTTP-only mode)");
-    return {
-      onmatchmakermatched: null,
-      connect: () => Promise.resolve(),
-      close: () => {}
-    };
+  async cancelMatchmaking(ticket: string): Promise<void> {
+    if (!this.socket) {
+      throw new Error("Socket connection required");
+    }
+
+    try {
+      console.log("❌ Cancelling matchmaking ticket:", ticket);
+      await this.socket.removeMatchmaker(ticket);
+      console.log("✅ Matchmaking cancelled successfully");
+    } catch (error) {
+      console.error("❌ Cancel matchmaking failed:", error);
+      throw new Error(`Cancel failed: ${error}`);
+    }
   }
 
-  getSession() {
+  // Socket bağlantısını temizle
+  disconnect(): void {
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
+      console.log("🔌 Socket disconnected");
+    }
+  }
+
+  // Getter'lar
+  getSocket(): Socket | null {
+    return this.socket;
+  }
+
+  getSession(): Session | null {
     return this.session;
-  }
-
-  getSocket() {
-    return null; // HTTP-only mode
   }
 }
 
+// Singleton instance
 export const nakamaService = new NakamaService();
