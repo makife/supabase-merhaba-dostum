@@ -184,39 +184,60 @@ export type Database = {
           current_grid: string[] | null
           finished_at: string | null
           game_mode: string
+          game_type_new: string | null
           host_id: string | null
           id: string
           max_score: number | null
+          player1_id: string | null
+          player1_score: number | null
+          player2_id: string | null
+          player2_score: number | null
           room_code: string | null
           started_at: string | null
           status: string | null
           time_limit: number | null
+          used_words: Json | null
+          winner_id: string | null
         }
         Insert: {
           created_at?: string | null
           current_grid?: string[] | null
           finished_at?: string | null
           game_mode: string
+          game_type_new?: string | null
           host_id?: string | null
           id?: string
           max_score?: number | null
+          player1_id?: string | null
+          player1_score?: number | null
+          player2_id?: string | null
+          player2_score?: number | null
           room_code?: string | null
           started_at?: string | null
           status?: string | null
           time_limit?: number | null
+          used_words?: Json | null
+          winner_id?: string | null
         }
         Update: {
           created_at?: string | null
           current_grid?: string[] | null
           finished_at?: string | null
           game_mode?: string
+          game_type_new?: string | null
           host_id?: string | null
           id?: string
           max_score?: number | null
+          player1_id?: string | null
+          player1_score?: number | null
+          player2_id?: string | null
+          player2_score?: number | null
           room_code?: string | null
           started_at?: string | null
           status?: string | null
           time_limit?: number | null
+          used_words?: Json | null
+          winner_id?: string | null
         }
         Relationships: [
           {
@@ -291,6 +312,39 @@ export type Database = {
           message?: string
           user_id?: string
           username?: string
+        }
+        Relationships: []
+      }
+      matchmaking_rooms: {
+        Row: {
+          created_at: string
+          current_players: number
+          expires_at: string
+          game_type: string
+          id: string
+          max_players: number
+          room_data: Json | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          current_players?: number
+          expires_at?: string
+          game_type: string
+          id?: string
+          max_players?: number
+          room_data?: Json | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          current_players?: number
+          expires_at?: string
+          game_type?: string
+          id?: string
+          max_players?: number
+          room_data?: Json | null
+          status?: string
         }
         Relationships: []
       }
@@ -804,13 +858,37 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_and_award_badges: {
+        Args: { p_user_id: string }
+        Returns: {
+          new_badge_id: string
+          new_badge_name: string
+          new_badge_icon: string
+        }[]
+      }
       check_and_refresh_credits: {
         Args: { user_id: string }
+        Returns: undefined
+      }
+      check_words_per_game_badge: {
+        Args: { p_user_id: string; p_words_count: number }
+        Returns: {
+          new_badge_id: string
+          new_badge_name: string
+          new_badge_icon: string
+        }[]
+      }
+      cleanup_expired_matchmaking_rooms: {
+        Args: Record<PropertyKey, never>
         Returns: undefined
       }
       cleanup_expired_tournaments: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      generate_random_grid: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       get_avatar_url: {
         Args: { user_id: string }
