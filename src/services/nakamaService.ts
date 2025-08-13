@@ -19,6 +19,9 @@ class NakamaService {
   async authenticate(userId: string): Promise<Session> {
     try {
       console.log("🔐 Authenticating with Nakama WebSocket...");
+      console.log("🌐 Client host:", this.client.host);
+      console.log("🔌 Client port:", this.client.port);  
+      console.log("🔒 Client SSL:", this.client.useSSL);
       
       // Device authentication - REST API'yi de kullanabilir
       this.session = await this.client.authenticateDevice(userId, true);
