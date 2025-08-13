@@ -104,7 +104,7 @@ class NakamaService {
   // Socket bağlantısını temizle
   disconnect(): void {
     if (this.socket) {
-      this.socket.disconnect();
+      this.socket.disconnect(true); // forceClose parameter
       this.socket = null;
       console.log("🔌 Socket disconnected");
     }
