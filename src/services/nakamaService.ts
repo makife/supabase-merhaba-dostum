@@ -46,7 +46,7 @@ class NakamaService {
       this.socket = this.client.createSocket();
       
       // Bağlantıyı aç
-      await this.socket.connect(this.session, true); // SSL = true (Nginx proxy)
+      await this.socket.connect(this.session, false); // SSL = false
       
       console.log("✅ WebSocket connected successfully");
       return this.socket;
