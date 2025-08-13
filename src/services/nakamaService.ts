@@ -12,7 +12,7 @@ class NakamaService {
   constructor() {
     // Mevcut ayarlarınızı kullanıyorum
     // 7350 = WebSocket port, 7351 = HTTP REST port
-    this.client = new Client("kelimeci_default_key", "kelimeci.com.tr", 7350, true);
+    this.client = new Client("kelimeci_default_key", "kelimeci.com.tr", "7350", true);
     console.log("🚀 Nakama WebSocket Service initialized");
   }
 
@@ -40,7 +40,7 @@ class NakamaService {
       console.log("🔌 Creating WebSocket connection...");
       
       // WebSocket bağlantısı oluştur
-      this.socket = this.client.createSocket(true, false); // useSSL: true, verbose: false
+      this.socket = this.client.createSocket();
       
       // Bağlantıyı aç
       await this.socket.connect(this.session);
@@ -74,7 +74,8 @@ class NakamaService {
         minCount,
         maxCount,
         stringProperties,
-        numericProperties
+        numericProperties,
+        "*" // countMultiple parameter
       );
 
       console.log("🎫 Matchmaking ticket created:", matchmakerTicket.ticket);
