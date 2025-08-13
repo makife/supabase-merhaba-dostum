@@ -43,7 +43,7 @@ class NakamaService {
       this.socket = this.client.createSocket();
       
       // Bağlantıyı aç
-      await this.socket.connect(this.session);
+      await this.socket.connect(this.session, true); // session ve useSSL
       
       console.log("✅ WebSocket connected successfully");
       return this.socket;
@@ -74,8 +74,7 @@ class NakamaService {
         minCount,
         maxCount,
         stringProperties,
-        numericProperties,
-        "*" // countMultiple parameter
+        numericProperties
       );
 
       console.log("🎫 Matchmaking ticket created:", matchmakerTicket.ticket);
