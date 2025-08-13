@@ -87,6 +87,9 @@ const ProfilePage = () => {
           losses: data.losses || 0,
           totalScore: data.total_score || 0,
           winRate: data.total_games > 0 ? Math.round(((data.wins || 0) / data.total_games) * 100) : 0,
+          longestWord: data.longest_word || '',
+          currentStreak: data.win_streak || 0,
+          fastestWord: data.fastest_word_time ? `${data.fastest_word_time}s` : '0s',
           level: levelData.level,
           experience: levelData.experience,
           nextLevelExp: levelData.nextLevelExp,
@@ -114,11 +117,20 @@ const ProfilePage = () => {
           filter: `id=eq.${user.id}`
         },
         (payload) => {
-          if (payload.new.total_score !== undefined) {
-            const levelData = calculateLevel(payload.new.total_score);
+          console.log('📊 Profile updated:', payload.new);
+          const newData = payload.new;
+          
+          if (newData.total_score !== undefined) {
+            const levelData = calculateLevel(newData.total_score);
             setProfileData(prev => ({
               ...prev,
-              totalScore: payload.new.total_score,
+              totalScore: newData.total_score,
+              totalGames: newData.total_games || prev.totalGames,
+              wins: newData.wins || prev.wins,
+              losses: newData.losses || prev.losses,
+              longestWord: newData.longest_word || prev.longestWord,
+              currentStreak: newData.win_streak || prev.currentStreak,
+              winRate: newData.total_games > 0 ? Math.round(((newData.wins || 0) / newData.total_games) * 100) : 0,
               level: levelData.level,
               experience: levelData.experience,
               nextLevelExp: levelData.nextLevelExp,

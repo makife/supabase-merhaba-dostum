@@ -129,6 +129,8 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const [usedWords, setUsedWords] = useState<Set<string>>(new Set());
   const [playerWords, setPlayerWords] = useState<string[]>([]);
   const [opponentWords, setOpponentWords] = useState<string[]>([]);
+  const [playerWordsWithScores, setPlayerWordsWithScores] = useState<Array<{word: string, score: number}>>([]);
+  const [opponentWordsWithScores, setOpponentWordsWithScores] = useState<Array<{word: string, score: number}>>([]);
   const [playerScore, setPlayerScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(gameType === 'timed' ? 120 : 0);
@@ -334,6 +336,11 @@ if (gameEnded) {
                 setGameGrid(generateRandomGrid());
                 setSelectedLetters([]);
                 setCurrentWord('');
+                setUsedWords(new Set());
+                setPlayerWords([]);
+                setOpponentWords([]);
+                setPlayerWordsWithScores([]);
+                setOpponentWordsWithScores([]);
                 setPlayerScore(0);
                 setOpponentScore(0);
                 setTimeLeft(gameType === 'timed' ? 120 : Infinity);
@@ -626,6 +633,10 @@ if (gameEnded) {
           const opponentPoints = Math.floor(Math.random() * 25) + 10;
           setOpponentScore(prev => prev + opponentPoints);
           
+          // Store AI word with score for statistics
+          setOpponentWords(prev => [...prev, aiWord]);
+          setOpponentWordsWithScores(prev => [...prev, { word: aiWord, score: opponentPoints }]);
+          
           playSound('correctWord');
           
           // Return new used words set
@@ -808,8 +819,25 @@ if (gameEnded) {
     if (currentRoom && (gameMode === 'random-match' || gameMode === 'private-room')) {
       // Delay cleanup to allow players to see results
       setTimeout(async () => {
-        // Call endGame from context to cleanup room and participants
-        await endGame();
+        // Gather statistics for both players
+        const playerStats = user ? {
+          userId: user.id,
+          score: currentPlayerScore,
+          words: playerWordsWithScores,
+          isWinner: gameResult === 'player'
+        } : undefined;
+        
+        // For opponent stats, we need to check if it's a real player or AI
+        const opponentParticipant = participants.find(p => p.user_id !== user?.id && !p.is_bot);
+        const opponentStats = opponentParticipant?.user_id ? {
+          userId: opponentParticipant.user_id,
+          score: currentOpponentScore,
+          words: opponentWordsWithScores,
+          isWinner: gameResult === 'opponent'
+        } : undefined;
+        
+        // Call endGame from context to cleanup room and participants with statistics
+        await endGame(playerStats, opponentStats);
       }, 3000); // 3 second delay to see results
     }
     await updateLeaderboard(currentPlayerScore);
@@ -908,6 +936,10 @@ if (gameEnded) {
       playSound('correctWord');
       const newScore = playerScore + result.points;
       setPlayerScore(newScore);
+      
+      // Store word with score for statistics
+      setPlayerWords(prev => [...prev, currentWord]);
+      setPlayerWordsWithScores(prev => [...prev, { word: currentWord, score: result.points }]);
       
       // Trigger effects if purchased
       triggerWordEffects();
@@ -1180,6 +1212,11 @@ if (gameEnded) {
                   setGameGrid(generateRandomGrid());
                   setSelectedLetters([]);
                   setCurrentWord('');
+                  setUsedWords(new Set());
+                  setPlayerWords([]);
+                  setOpponentWords([]);
+                  setPlayerWordsWithScores([]);
+                  setOpponentWordsWithScores([]);
                   setPlayerScore(0);
                   setOpponentScore(0);
                   setTimeLeft(gameType === 'timed' ? 120 : Infinity);

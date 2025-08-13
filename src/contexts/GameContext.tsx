@@ -41,7 +41,26 @@ interface GameContextType {
   leaveRoom: () => Promise<void>;
   updateScore: (score: number) => Promise<void>;
   startGame: () => Promise<void>;
-  endGame: () => Promise<void>;
+  endGame: (
+    playerStats?: {
+      userId: string;
+      score: number;
+      words: Array<{word: string, score: number}>;
+      isWinner: boolean;
+    },
+    opponentStats?: {
+      userId: string;
+      score: number;
+      words: Array<{word: string, score: number}>;
+      isWinner: boolean;
+    }
+  ) => Promise<void>;
+  updatePlayerStatistics: (
+    userId: string, 
+    gameScore: number, 
+    words: Array<{word: string, score: number}>, 
+    isWinner?: boolean
+  ) => Promise<void>;
   isConnected: boolean;
   useNakama: boolean;
   toggleNakama: () => void;
@@ -667,14 +686,70 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     }
   }, [currentRoom]);
 
+  // Update game statistics for a player
+  const updatePlayerStatistics = useCallback(async (
+    userId: string, 
+    gameScore: number, 
+    words: Array<{word: string, score: number}>, 
+    isWinner: boolean = false
+  ) => {
+    try {
+      console.log('📊 İstatistikler güncelleniyor:', { userId, gameScore, words: words.length, isWinner });
+      
+      await supabase.rpc('update_game_statistics', {
+        p_user_id: userId,
+        p_game_score: gameScore,
+        p_words: words,
+        p_is_winner: isWinner
+      });
+      
+      console.log('✅ İstatistikler güncellendi');
+    } catch (error) {
+      console.error('❌ İstatistik güncelleme hatası:', error);
+    }
+  }, []);
+
   // End game
-  const endGame = useCallback(async (): Promise<void> => {
+  const endGame = useCallback(async (
+    playerStats?: {
+      userId: string;
+      score: number;
+      words: Array<{word: string, score: number}>;
+      isWinner: boolean;
+    },
+    opponentStats?: {
+      userId: string;
+      score: number;
+      words: Array<{word: string, score: number}>;
+      isWinner: boolean;
+    }
+  ): Promise<void> => {
   if (!currentRoom) return;
 
   try {
-    console.log('🏁 Oyun bitiyor - oda siliniyor:', currentRoom.id.slice(-8));
+    console.log('🏁 Oyun bitiyor - istatistikler güncelleniyor:', currentRoom.id.slice(-8));
     
-    // ★★★ SIMPLE: ODAYI SİL ★★★
+    // Update player statistics if provided
+    if (playerStats) {
+      await updatePlayerStatistics(
+        playerStats.userId,
+        playerStats.score,
+        playerStats.words,
+        playerStats.isWinner
+      );
+    }
+    
+    // Update opponent statistics if provided
+    if (opponentStats && !participants.find(p => p.user_id === opponentStats.userId && p.is_bot)) {
+      await updatePlayerStatistics(
+        opponentStats.userId,
+        opponentStats.score,
+        opponentStats.words,
+        opponentStats.isWinner
+      );
+    }
+    
+    // Delete the room
     await supabase
       .from('game_rooms')
       .delete()
@@ -682,12 +757,12 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     
     setCurrentRoom(null);
     setParticipants([]);
-    console.log('✅ Oyun bitti, oda silindi');
+    console.log('✅ Oyun bitti, oda silindi, istatistikler güncellendi');
     
   } catch (error) {
     console.error('❌ End game hatası:', error);
   }
-}, [currentRoom]);
+}, [currentRoom, participants, updatePlayerStatistics]);
 
   // Check if room is full and close it
   useEffect(() => {
@@ -872,6 +947,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       updateScore,
       startGame,
       endGame,
+      updatePlayerStatistics,
       isConnected,
       useNakama,
       toggleNakama
