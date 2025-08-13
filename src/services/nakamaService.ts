@@ -10,11 +10,10 @@ class NakamaService {
   private socket: Socket | null = null;
   
   constructor() {
-    // Mevcut ayarlarınızı kullanıyorum
-    // HTTP zorla (Mixed Content bypass için)
-    this.client = new Client("kelimeci_default_key", "kelimeci.com.tr", "7351", false);
-    console.log("🚀 Nakama WebSocket Service initialized");
-  }
+  // HTTPS port 443 - Nginx proxy üzerinden (7350'ye proxy yapıyor)
+  this.client = new Client("kelimeci_default_key", "kelimeci.com.tr", "443", true);
+  console.log("🚀 Nakama Client initialized with HTTPS via Nginx proxy");
+}
 
   async authenticate(userId: string): Promise<Session> {
     try {
