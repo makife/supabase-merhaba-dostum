@@ -556,7 +556,6 @@ const TournamentPage = () => {
                         </span>
                       </div>
                     </div>
-                    // Bu şekilde değiştir:
 <Button 
   onClick={() => {
     if (tournament.status === 'waiting') {
