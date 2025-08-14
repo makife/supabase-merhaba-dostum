@@ -473,6 +473,130 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     };
   }, []);
 
+  // Timer effect - for both timed and score modes
+  useEffect(() => {
+    if (!gameStarted || gameEnded) return;
+
+    // For timed mode, use countdown timer
+    if (gameType === 'timed') {
+      const timer = setInterval(() => {
+        setTimeLeft((prev) => {
+          // Play time warning at 15 seconds
+          if (prev === 15 && !timeWarningPlayed) {
+            playTimeWarningSequence();
+            setTimeWarningPlayed(true);
+          }
+          
+          if (prev <= 1) {
+            setGameEnded(true);
+            // Use setTimeout to ensure we get the latest scores
+            setTimeout(() => {
+              setPlayerScore(currentPlayerScore => {
+                setOpponentScore(currentOpponentScore => {
+                  checkWinnerWithScores(currentPlayerScore, currentOpponentScore);
+                  return currentOpponentScore;
+                });
+                return currentPlayerScore;
+              });
+            }, 100);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [gameStarted, gameEnded, gameType, timeWarningPlayed, playTimeWarningSequence]);
+
+  // Check for winner and apply end game bonuses
+  const checkWinnerWithScores = useCallback(async (currentPlayerScore: number, currentOpponentScore: number) => {
+    if (gameEnded || winner !== null) return;
+    
+    console.log('🏆 Checking winner with scores - Player:', currentPlayerScore, 'Opponent:', currentOpponentScore);
+    
+    let gameResult: 'player' | 'opponent' | 'tie';
+    let bonusPoints = 0;
+    
+    if (currentPlayerScore > currentOpponentScore) {
+      gameResult = 'player';
+      bonusPoints = 50;
+      setWinner('player');
+      playSound('gameWin');
+      setTimeout(() => playCelebrationSound(), 500);
+      console.log('🏆 Player wins! Score:', currentPlayerScore, 'vs', currentOpponentScore);
+    } else if (currentPlayerScore < currentOpponentScore) {
+      gameResult = 'opponent';
+      setWinner('opponent');
+      playSound('gameLose');
+      setTimeout(() => playGameLoseSound(), 500);
+      console.log('🏆 Opponent wins! Score:', currentOpponentScore, 'vs', currentPlayerScore);
+    } else {
+      gameResult = 'tie';
+      bonusPoints = 25;
+      setWinner('tie');
+      console.log('🏆 It\'s a tie! Both scores:', currentPlayerScore);
+    }
+
+    // Apply end game bonus for player
+    if (user && bonusPoints > 0) {
+      const { data: currentProfile } = await supabase
+        .from('profiles')
+        .select('total_score')
+        .eq('id', user.id)
+        .single();
+
+      const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
+      
+      await supabase
+        .from('profiles')
+        .update({ total_score: newTotalScore })
+        .eq('id', user.id);
+
+      setTimeout(() => {
+        toast({
+          title: gameResult === 'player' ? 'Kazanma Bonusu!' : 'Beraberlik Bonusu!',
+          description: `+${bonusPoints} bonus EXP kazandınız!`,
+          duration: 2000,
+        });
+      }, 1000);
+    }
+    
+    // End the game and cleanup room (for multiplayer modes)
+    if (currentRoom && (gameMode === 'random-match' || gameMode === 'private-room')) {
+      setTimeout(async () => {
+        const playerStats = user ? {
+          userId: user.id,
+          score: currentPlayerScore,
+          words: playerWordsWithScores,
+          isWinner: gameResult === 'player'
+        } : undefined;
+        
+        const opponentParticipant = participants.find(p => p.user_id !== user?.id && !p.is_bot);
+        const opponentStats = opponentParticipant?.user_id ? {
+          userId: opponentParticipant.user_id,
+          score: currentOpponentScore,
+          words: opponentWordsWithScores,
+          isWinner: gameResult === 'opponent'
+        } : undefined;
+        
+        await endGame(playerStats, opponentStats);
+      }, 3000);
+    }
+  }, [gameEnded, winner, user, currentRoom, gameMode, endGame, playSound, playCelebrationSound, playGameLoseSound, toast, participants, playerWordsWithScores, opponentWordsWithScores]);
+
+  // Check win conditions based on game type
+  useEffect(() => {
+    if (gameType === 'score') {
+      // Score mode: first to reach max_score wins
+      const maxScore = currentRoom?.max_score || 500;
+      if (playerScore >= maxScore || opponentScore >= maxScore) {
+        setGameEnded(true);
+        checkWinnerWithScores(playerScore, opponentScore);
+      }
+    }
+  }, [playerScore, opponentScore, checkWinnerWithScores, gameType, currentRoom?.max_score]);
+
   // Private room logic
   useEffect(() => {
     if (gameMode === 'private-room') {
