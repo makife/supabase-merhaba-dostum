@@ -11,12 +11,13 @@ interface TournamentMatch {
   match_number: number;
   player1_id: string | null;
   player2_id: string | null;
-  player1_score: number;
-  player2_score: number;
+  player1_score?: number; // Optional çünkü database'de olmayabilir
+  player2_score?: number; // Optional çünkü database'de olmayabilir
   winner_id: string | null;
-  status: 'pending' | 'active' | 'completed';
+  status: string; // Database'den string gelir
   created_at: string;
-  updated_at: string;
+  updated_at?: string; // Optional çünkü database'de olmayabilir
+  room_id?: string; // Database'de varsa
 }
 
 interface TournamentParticipant {
@@ -97,6 +98,7 @@ const TournamentBracket: React.FC<TournamentBracketProps> = ({
     const player2 = getParticipantInfo(match.player2_id);
     const isCompleted = match.status === 'completed';
     const isActive = match.status === 'active';
+    const isPending = match.status === 'pending';
 
     return (
       <Card className={`w-full transition-all duration-300 ${
@@ -131,7 +133,7 @@ const TournamentBracket: React.FC<TournamentBracketProps> = ({
               </div>
               <div className="flex items-center space-x-1">
                 {isCompleted && (
-                  <span className="text-sm font-bold">{match.player1_score}</span>
+                  <span className="text-sm font-bold">{match.player1_score || 0}</span>
                 )}
                 {match.winner_id === match.player1_id && (
                   <CheckCircle className="w-4 h-4 text-green-600" />
@@ -164,7 +166,7 @@ const TournamentBracket: React.FC<TournamentBracketProps> = ({
               </div>
               <div className="flex items-center space-x-1">
                 {isCompleted && (
-                  <span className="text-sm font-bold">{match.player2_score}</span>
+                  <span className="text-sm font-bold">{match.player2_score || 0}</span>
                 )}
                 {match.winner_id === match.player2_id && (
                   <CheckCircle className="w-4 h-4 text-green-600" />
@@ -184,7 +186,7 @@ const TournamentBracket: React.FC<TournamentBracketProps> = ({
                   ✅ Tamamlandı
                 </Badge>
               )}
-              {match.status === 'pending' && (
+              {isPending && (
                 <Badge variant="outline" className="text-xs">
                   ⏳ Bekliyor
                 </Badge>
