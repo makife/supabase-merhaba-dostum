@@ -24,7 +24,10 @@ import {
   Send, 
   Trophy,
   User,
-  Bot
+  Bot,
+  Shuffle,
+  Lightbulb,
+  PenTool
 } from 'lucide-react';
 
 interface GamePageProps {
@@ -32,6 +35,13 @@ interface GamePageProps {
   onGameComplete?: (winnerId: string, player1Score: number, player2Score: number) => void;
   tournamentMatch?: any;
   gameType?: 'timed' | 'score';
+}
+
+// Joker türleri
+interface JokerState {
+  degistir: number; // Kalan kullanım sayısı
+  fisilida: number;
+  senYaz: number;
 }
 
 const GamePage = ({ gameMode }: GamePageProps) => {
@@ -46,9 +56,18 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const { fadeOutBackgroundMusic, fadeInBackgroundMusic } = useMusic();
   const [searchParams] = useSearchParams();
   
+  // Joker state'leri
+  const [jokers, setJokers] = useState<JokerState>({
+    degistir: 3,
+    fisilida: 3,
+    senYaz: 3
+  });
+  const [selectedJoker, setSelectedJoker] = useState<string | null>(null);
+  const [highlightedLetters, setHighlightedLetters] = useState<{row: number, col: number}[]>([]);
+  const [isJokerActive, setIsJokerActive] = useState(false);
+  
   // Get game type from room or URL params
   const getGameType = useCallback((): 'timed' | 'score' => {
-    // For vs-computer mode, always use URL params
     if (gameMode === 'vs-computer') {
       const urlType = (searchParams.get('type') as 'timed' | 'score') || 'timed';
       return urlType;
@@ -68,7 +87,6 @@ const GamePage = ({ gameMode }: GamePageProps) => {
 
   // Game state - Generate random letters each time
   const generateRandomGrid = (): string[][] => {
-    // Turkish letters with their frequency weights - NO W, Q, X EVER
     const letterPool = [
       'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A', // A - very common
       'E', 'E', 'E', 'E', 'E', 'E', 'E',       // E - very common
@@ -99,7 +117,6 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       'Ş', 'Ş',                                // Ş - medium
       'V', 'V',                                // V - medium
       'Z',                                     // Z - rare
-      // STRICTLY Turkish alphabet only - W, Q, X forbidden
     ];
     
     const grid: string[][] = [];
@@ -115,7 +132,6 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   };
 
   const [gameGrid, setGameGrid] = useState<string[][]>(() => {
-    // For private rooms, use grid from room if available
     if (currentRoom?.current_grid) {
       const flatGrid = currentRoom.current_grid;
       const grid: string[][] = [];
@@ -147,11 +163,254 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const [hasShownStartMessage, setHasShownStartMessage] = useState(false);
   const [lastPlayerAction, setLastPlayerAction] = useState<number>(0);
   const [matchmakingTimeout, setMatchmakingTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [timeoutCountdown, setTimeoutCountdown] = useState(30); // 30 saniye
+  const [timeoutCountdown, setTimeoutCountdown] = useState(30);
+
+  // JOKER FONKSİYONLARI
+
+  // 1. Değiştir Jokeri - 5 harf değiştir (3 sesli, 2 sessiz)
+  const useDegisTirJoker = () => {
+    if (jokers.degistir <= 0 || isJokerActive) return;
+    
+    const vowels = ['A', 'E', 'İ', 'I', 'O', 'U', 'Ü', 'Ö'];
+    const consonants = ['B', 'C', 'Ç', 'D', 'F', 'G', 'Ğ', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'R', 'S', 'Ş', 'T', 'V', 'Y', 'Z'];
+    
+    const newGrid = [...gameGrid.map(row => [...row])];
+    
+    // Rastgele 5 pozisyon seç
+    const positions: {row: number, col: number}[] = [];
+    while (positions.length < 5) {
+      const row = Math.floor(Math.random() * 4);
+      const col = Math.floor(Math.random() * 4);
+      if (!positions.some(p => p.row === row && p.col === col)) {
+        positions.push({ row, col });
+      }
+    }
+    
+    // İlk 3 pozisyona sesli harf
+    for (let i = 0; i < 3; i++) {
+      const randomVowel = vowels[Math.floor(Math.random() * vowels.length)];
+      newGrid[positions[i].row][positions[i].col] = randomVowel;
+    }
+    
+    // Son 2 pozisyona sessiz harf
+    for (let i = 3; i < 5; i++) {
+      const randomConsonant = consonants[Math.floor(Math.random() * consonants.length)];
+      newGrid[positions[i].row][positions[i].col] = randomConsonant;
+    }
+    
+    setGameGrid(newGrid);
+    setJokers(prev => ({ ...prev, degistir: prev.degistir - 1 }));
+    setSelectedLetters([]);
+    setCurrentWord('');
+    
+    playSound('correctWord');
+    toast({
+      title: '🔄 Değiştir Jokeri',
+      description: '5 harf değiştirildi! (3 sesli, 2 sessiz)',
+      duration: 2000,
+    });
+  };
+
+  // 2. Fısılda Jokeri - Mevcut harflerle yapılabilecek kelimeyi göster
+  const useFisildaJoker = async () => {
+    if (jokers.fisilida <= 0 || isJokerActive) return;
+    
+    setIsJokerActive(true);
+    
+    const possibleWords = [
+      'KEDİ', 'MASA', 'ARABA', 'OKUL', 'KİTAP', 'DENİZ', 'AĞAÇ', 'ÇİÇEK',
+      'DOSTLUK', 'GÜNEŞ', 'YILDIZ', 'BULUT', 'RÜZGAR', 'ATEŞ', 'TOPRAK',
+      'SEVGİ', 'MUTLULUK', 'UMUT', 'HAYAL', 'RENKLER', 'MÜZİK', 'DANS', 'ŞARKI',
+      'OYUN', 'SPOR', 'FUTBOL', 'BASKETBOL', 'TENİS', 'YÜZME', 'KOŞU', 'BİSİKLET',
+      'YEMEK', 'EKMEK', 'PEYNİR', 'DOMATES', 'SALATA', 'ÇORBA', 'MEYVE',
+      'ELMA', 'ARMUT', 'ÇİLEK', 'KIRAZ', 'ÜZÜM', 'PORTAKAL', 'MANGO',
+      'SEBZE', 'HAVUÇ', 'PATLICAN', 'BİBER', 'SOĞAN', 'SARIMSAK', 'PATATES'
+    ];
+    
+    const availableLetters = gameGrid.flat();
+    const letterCount: { [key: string]: number } = {};
+    
+    availableLetters.forEach(letter => {
+      letterCount[letter] = (letterCount[letter] || 0) + 1;
+    });
+    
+    const validWords = possibleWords.filter(word => {
+      if (usedWords.has(word.toUpperCase())) return false;
+      
+      const wordLetterCount: { [key: string]: number } = {};
+      for (const letter of word) {
+        wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
+      }
+      
+      for (const [letter, needed] of Object.entries(wordLetterCount)) {
+        if ((letterCount[letter] || 0) < needed) {
+          return false;
+        }
+      }
+      return true;
+    });
+    
+    if (validWords.length > 0) {
+      const selectedWord = validWords[Math.floor(Math.random() * validWords.length)];
+      
+      const wordPositions: {row: number, col: number}[] = [];
+      const usedPositions: {row: number, col: number}[] = [];
+      
+      for (const letter of selectedWord) {
+        for (let row = 0; row < 4; row++) {
+          for (let col = 0; col < 4; col++) {
+            if (gameGrid[row][col] === letter && 
+                !usedPositions.some(p => p.row === row && p.col === col)) {
+              wordPositions.push({ row, col });
+              usedPositions.push({ row, col });
+              break;
+            }
+          }
+        }
+      }
+      
+      for (let i = 0; i < wordPositions.length; i++) {
+        setTimeout(() => {
+          setHighlightedLetters([wordPositions[i]]);
+          playSound('letterSelect');
+          
+          setTimeout(() => {
+            setHighlightedLetters([]);
+          }, 300);
+        }, i * 500);
+      }
+      
+      setTimeout(() => {
+        setIsJokerActive(false);
+      }, wordPositions.length * 500 + 1000);
+      
+      toast({
+        title: '💡 Fısılda Jokeri',
+        description: `"${selectedWord}" kelimesini bulabilirsin!`,
+        duration: 3000,
+      });
+    } else {
+      toast({
+        title: '💡 Fısılda Jokeri',
+        description: 'Mevcut harflerle yeni kelime bulunamadı.',
+        duration: 2000,
+      });
+      setIsJokerActive(false);
+    }
+    
+    setJokers(prev => ({ ...prev, fisilida: prev.fisilida - 1 }));
+  };
+
+  // 3. Sen Yaz Jokeri - Otomatik kelime üret ve gönder
+  const useSenYazJoker = async () => {
+    if (jokers.senYaz <= 0 || isJokerActive) return;
+    
+    setIsJokerActive(true);
+    
+    const possibleWords = [
+      'KEDİ', 'MASA', 'ARABA', 'OKUL', 'KİTAP', 'DENİZ', 'AĞAÇ', 'ÇİÇEK',
+      'DOSTLUK', 'GÜNEŞ', 'YILDIZ', 'BULUT', 'RÜZGAR', 'ATEŞ', 'TOPRAK',
+      'SEVGİ', 'MUTLULUK', 'UMUT', 'HAYAL', 'RENKLER', 'MÜZİK', 'DANS', 'ŞARKI',
+      'OYUN', 'SPOR', 'FUTBOL', 'BASKETBOL', 'TENİS', 'YÜZME', 'KOŞU', 'BİSİKLET'
+    ];
+    
+    const availableLetters = gameGrid.flat();
+    const letterCount: { [key: string]: number } = {};
+    
+    availableLetters.forEach(letter => {
+      letterCount[letter] = (letterCount[letter] || 0) + 1;
+    });
+    
+    const validWords = possibleWords.filter(word => {
+      if (usedWords.has(word.toUpperCase())) return false;
+      
+      const wordLetterCount: { [key: string]: number } = {};
+      for (const letter of word) {
+        wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
+      }
+      
+      for (const [letter, needed] of Object.entries(wordLetterCount)) {
+        if ((letterCount[letter] || 0) < needed) {
+          return false;
+        }
+      }
+      return true;
+    });
+    
+    if (validWords.length > 0) {
+      const selectedWord = validWords[Math.floor(Math.random() * validWords.length)];
+      
+      const wordPositions: {letter: string, row: number, col: number}[] = [];
+      const usedPositions: {row: number, col: number}[] = [];
+      
+      for (const letter of selectedWord) {
+        for (let row = 0; row < 4; row++) {
+          for (let col = 0; col < 4; col++) {
+            if (gameGrid[row][col] === letter && 
+                !usedPositions.some(p => p.row === row && p.col === col)) {
+              wordPositions.push({ letter, row, col });
+              usedPositions.push({ row, col });
+              break;
+            }
+          }
+        }
+      }
+      
+      setCurrentWord(selectedWord);
+      setSelectedLetters(wordPositions);
+      
+      setTimeout(async () => {
+        const normalizedWord = selectedWord.toUpperCase();
+        
+        if (!usedWords.has(normalizedWord)) {
+          const result = await validateWord(selectedWord);
+          
+          if (result.isValid) {
+            const newUsedWords = new Set([...usedWords, normalizedWord]);
+            setUsedWords(newUsedWords);
+            
+            playSound('correctWord');
+            const newScore = playerScore + result.points;
+            setPlayerScore(newScore);
+            
+            setPlayerWords(prev => [...prev, selectedWord]);
+            setPlayerWordsWithScores(prev => [...prev, { word: selectedWord, score: result.points }]);
+            
+            triggerWordEffects();
+            
+            if (currentRoom) {
+              await updateScore(newScore);
+            }
+            
+            toast({
+              title: '✍️ Sen Yaz Jokeri',
+              description: `"${selectedWord}" kelimesi otomatik gönderildi! +${result.points} puan`,
+              duration: 2000,
+            });
+          }
+        }
+        
+        setCurrentWord('');
+        setSelectedLetters([]);
+        setIsJokerActive(false);
+      }, 1500);
+    } else {
+      toast({
+        title: '✍️ Sen Yaz Jokeri',
+        description: 'Mevcut harflerle yeni kelime bulunamadı.',
+        duration: 2000,
+      });
+      setIsJokerActive(false);
+    }
+    
+    setJokers(prev => ({ ...prev, senYaz: prev.senYaz - 1 }));
+  };
+
+  // Diğer tüm fonksiyonlar aynı kalacak...
+  // (useEffect'ler, handleLetterClick, submitWord, vb.)
 
   // Sync grid with room data and fetch avatars
   useEffect(() => {
-    // Update grid from room if available (only when room grid is different)
     if (currentRoom?.current_grid) {
       const flatGrid = currentRoom.current_grid;
       const roomGrid: string[][] = [];
@@ -159,7 +418,6 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         roomGrid.push(flatGrid.slice(i * 4, (i + 1) * 4));
       }
       
-      // Only update if grid is actually different to prevent unnecessary re-renders
       const isGridDifferent = JSON.stringify(gameGrid) !== JSON.stringify(roomGrid);
       if (isGridDifferent) {
         console.log('📐 Updating grid from room data');
@@ -170,7 +428,6 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     const fetchAvatars = async () => {
       if (!user) return;
       
-      // Fetch current user avatar
       const { data: playerData } = await supabase
         .from('profiles')
         .select('avatar_url')
@@ -181,7 +438,6 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         setPlayerAvatar(playerData.avatar_url);
       }
 
-      // Fetch opponent avatar for private room
       if (gameMode === 'private-room' && participants.length >= 2) {
         const opponent = participants.find(p => p.user_id !== user.id);
         if (opponent && (opponent as any).profiles) {
@@ -191,14 +447,12 @@ const GamePage = ({ gameMode }: GamePageProps) => {
           }
         }
         
-        // Update opponent score from participants in private room (only if game not ended)
         if (opponent && opponent.score !== undefined && !gameEnded) {
           console.log('🔄 Updating opponent score from participants:', opponent.score);
           setOpponentScore(opponent.score);
         }
       }
       
-      // For random-match mode, also sync opponent score (only if game not ended)
       if (gameMode === 'random-match' && participants.length >= 2 && !gameEnded) {
         const opponent = participants.find(p => p.user_id !== user.id && !p.is_bot);
         if (opponent && opponent.score !== undefined) {
@@ -211,55 +465,13 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     fetchAvatars();
   }, [user, participants, gameMode, currentRoom]);
 
-  useEffect(() => {
-  // Oyuncu ayrılma event'ini dinle
-  const handlePlayerDisconnected = (event: CustomEvent) => {
-    const { winner, reason } = event.detail;
-    
-    console.log('🎯 Player disconnect event:', { winner, reason });
-    
-    if (winner === 'player') {
-      setDisconnectWin(true);
-      setGameEnded(true);
-      setWinner('player');
-      
-      // Ses efekti
-      playSound('gameWin');
-      setTimeout(() => playCelebrationSound(), 500);
-      
-      // Özel mesaj
-      const message = reason === 'opponent_left' 
-        ? 'Rakip oyundan ayrıldı' 
-        : 'Rakibin bağlantısı koptu';
-        
-      toast({
-        title: '🏆 Tebrikler!',
-        description: `${message}. Kazandınız!`,
-        duration: 5000,
-      });
-    }
-  };
-
-  // Event listener ekle
-  window.addEventListener('playerDisconnected', handlePlayerDisconnected as EventListener);
-  
-  // Cleanup
-  return () => {
-    window.removeEventListener('playerDisconnected', handlePlayerDisconnected as EventListener);
-  };
-}, [playSound, playCelebrationSound, toast]);
-
-
-
   // Music control effect and credit consumption
   useEffect(() => {
     const initializeGame = async () => {
-      // Fade out background music when entering game
-      fadeOutBackgroundMusic(1500); // 1.5 saniyede yavaşça kapan
+      fadeOutBackgroundMusic(1500);
       
       console.log('GamePage isPremium:', isPremium);
       
-      // Consume credit if not premium
       if (!isPremium) {
         console.log('User is not premium, consuming credit...');
         const creditConsumed = await consumeCredit();
@@ -280,28 +492,20 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     
     initializeGame();
     
-    // Fade in background music again when leaving game (cleanup)
     return () => {
-      fadeInBackgroundMusic(1000); // 1 saniyede yavaşça açıl
+      fadeInBackgroundMusic(1000);
     };
-  }, []); // Empty dependency array to run only once
+  }, []);
 
-  // Private room logic with controlled notifications + reset used words
+  // Private room logic
   useEffect(() => {
-    console.log('=== PRIVATE ROOM CHECK ===');
-    console.log('Game mode:', gameMode);
-    console.log('Participants count:', participants.length);
-    console.log('Has shown start message:', hasShownStartMessage);
-    
     if (gameMode === 'private-room') {
       if (participants.length >= 2) {
         console.log('✅ 2 players ready - START GAME FOR BOTH');
         setWaitingForPlayer(false);
         setGameStarted(true);
         setUsedWords(new Set());
-        console.log('Reset used words for new game');
         
-        // Show success toast only once
         if (!hasShownStartMessage) {
           setHasShownStartMessage(true);
           toast({
@@ -314,512 +518,29 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         console.log('⏳ Waiting for second player...');
         setWaitingForPlayer(true);
         setGameStarted(false);
-        setHasShownStartMessage(false); // Reset for next time
-        
-        // Reset used words when waiting
+        setHasShownStartMessage(false);
         setUsedWords(new Set());
       }
     } else {
       setGameStarted(true);
       setWaitingForPlayer(false);
-      
-      // Reset used words for other game modes
       setUsedWords(new Set());
     }
-    console.log('Game type:', gameType, 'Game started:', participants.length >= 2);
-    console.log('=== END CHECK ===');
   }, [participants, gameMode, hasShownStartMessage, gameType]);
-
-  // Generate AI word from current grid
-  const generateAIWordFromGrid = useCallback(() => {
-    const possibleWords = [
-      'KEDİ', 'MASA', 'ARABA', 'OKUL', 'KİTAP', 'DENİZ', 'AĞAÇ', 'ÇİÇEK', 
-      'DOSTLUK', 'GÜNEŞ', 'YILDIZ', 'BULUT', 'RÜZGAR', 'ATEŞ', 'TOPRAK',
-      'SEVGİ', 'MUTLULUK', 'UMUT', 'HAYAL', 'RENKLER', 'MÜZİK', 'DANS', 'ŞARKI',
-      'OYUN', 'SPOR', 'FUTBOL', 'BASKETBOL', 'TENİS', 'YÜZME', 'KOŞU', 'BISIKLET',
-      'YEMEK', 'EKMEK', 'PEYNIR', 'DOMATES', 'SALATA', 'ÇORBA', 'MEYVE',
-      'ELMA', 'ARMUT', 'ÇİLEK', 'KIRAZ', 'ÜZÜM', 'PORTAKAL', 'MANGO',
-      'SEBZE', 'HAVUÇ', 'PATLICAN', 'BIBER', 'SOĞAN', 'SARMIMSAK', 'PATATES',
-      'KALE', 'KEDI', 'KÖPEK', 'KUŞU', 'BALINA', 'ASLAN', 'KAPLAN', 'FİL',
-      'SÜT', 'KOLA', 'ÇAY', 'KAHVE', 'ŞEKER', 'TUZ', 'YAĞLI', 'EKŞI'
-    ];
-    
-    // Flatten grid to get available letters
-    const availableLetters = gameGrid.flat();
-    const letterCount: { [key: string]: number } = {};
-    
-    // Count available letters
-    availableLetters.forEach(letter => {
-      letterCount[letter] = (letterCount[letter] || 0) + 1;
-    });
-    
-    // Find words that can be made from available letters and are not used yet
-    const validWords = possibleWords.filter(word => {
-      // Check minimum length (3 characters)
-      if (word.length < 3) return false;
-      
-      // Check if word is already used (normalize to uppercase for comparison)
-      if (usedWords.has(word.toUpperCase())) {
-        console.log(`AI skipping already used word: ${word}`);
-        return false;
-      }
-      
-      const wordLetterCount: { [key: string]: number } = {};
-      
-      // Count letters needed for this word
-      for (const letter of word) {
-        wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
-      }
-      
-      // Check if we have enough letters
-      for (const [letter, needed] of Object.entries(wordLetterCount)) {
-        if ((letterCount[letter] || 0) < needed) {
-          return false;
-        }
-      }
-      
-      return true;
-    });
-    
-    if (validWords.length > 0) {
-      return validWords[Math.floor(Math.random() * validWords.length)];
-    }
-    
-    // Fallback: try to make simple 3-letter words that aren't used
-    const simpleWords = ['SUT', 'ETİ', 'ALI', 'VER', 'GEL', 'GİT', 'YAZ', 'OKU', 'BAK', 'KOŞ', 'YAP', 'İÇ'];
-    for (const word of simpleWords) {
-      if (word.length < 3 || usedWords.has(word.toUpperCase())) continue;
-      
-      const wordLetterCount: { [key: string]: number } = {};
-      for (const letter of word) {
-        wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
-      }
-      
-      let canMake = true;
-      for (const [letter, needed] of Object.entries(wordLetterCount)) {
-        if ((letterCount[letter] || 0) < needed) {
-          canMake = false;
-          break;
-        }
-      }
-      
-      if (canMake) {
-        return word;
-      }
-    }
-    
-    return null;
-  }, [gameGrid, usedWords]);
-
-  const updateLeaderboard = async (score: number, bestWord?: string, bestWordScore?: number) => {
-  if (!user) return;
-  
-  try {
-    const username = user.user_metadata?.username || user.email?.split('@')[0] || 'Anonim';
-    
-    const userProfile = await supabase
-      .from('profiles')
-      .select('avatar_url')
-      .eq('id', user.id)
-      .single();
-
-    // Simplified leaderboard update - just increment total score
-    await supabase
-      .from('profiles')
-      .update({ total_score: score })
-      .eq('id', user.id);
-    
-    /* await supabase.rpc('update_daily_leaderboard', {
-      p_user_id: user.id,
-      p_username: username,
-      p_avatar_url: userProfile.data?.avatar_url || null,
-      p_game_score: score,
-      p_best_word: bestWord || null,
-      p_best_word_score: bestWordScore || 0
-    }); */
-    
-    console.log('✅ Liderlik tablosu güncellendi:', { score, bestWord, bestWordScore });
-  } catch (error) {
-    console.error('❌ Liderlik tablosu güncellenemedi:', error);
-  }
-};
-
-  // Check if playing with AI (unified logic for all modes)
-  const isPlayingWithAI = useCallback(() => {
-  const aiStatus = (() => {
-    switch (gameMode) {
-      case 'vs-computer':
-        return true; // Always AI
-      case 'private-room':
-        return participants.length < 2; // AI if no second player
-      case 'random-match':
-        // ★★★ RANDOM MATCH: AI varsa AI ile oyna ★★★
-        const hasAI = participants.some(p => p.is_bot);
-        const hasRealOpponent = participants.filter(p => !p.is_bot).length >= 2;
-        return hasAI && !hasRealOpponent;
-      case 'tournament':
-        return true; // Tournament is always vs AI for now
-      default:
-        return false;
-    }
-  })();
-  
-  console.log(`🤖 AI Status Check - Mode: ${gameMode}, Participants: ${participants.length}, PlayingWithAI: ${aiStatus}`);
-  return aiStatus;
-}, [gameMode, participants]);
-
-  // AI continuous play effect - unified for all modes when playing with AI
-  useEffect(() => {
-    const aiPlaying = isPlayingWithAI();
-    console.log('🤖 AI Effect Check:', { 
-      aiPlaying, 
-      gameStarted, 
-      gameEnded, 
-      gameMode, 
-      participantsLength: participants.length 
-    });
-    
-    if (!aiPlaying || !gameStarted || gameEnded) return;
-
-    console.log('🤖 Starting AI play interval for game mode:', gameMode);
-
-    const aiPlayInterval = setInterval(() => {
-      // Check if player recently took action, if so wait longer
-      const timeSincePlayerAction = Date.now() - lastPlayerAction;
-      const minDelayAfterPlayerAction = 3000; // 3 saniye minimum bekleme
-      
-      if (timeSincePlayerAction < minDelayAfterPlayerAction) {
-        return; // Bu round'u atla
-      }
-      
-      // Get current used words from state
-      // AI word selection with validation
-      const selectAIWord = async () => {
-  try {
-    const potentialWords = [
-      'KEDİ', 'MASA', 'ARABA', 'OKUL', 'KİTAP', 'DENİZ', 'AĞAÇ', 'ÇİÇEK', 
-      'DOSTLUK', 'GÜNEŞ', 'YILDIZ', 'BULUT', 'RÜZGAR', 'ATEŞ', 'TOPRAK',
-      // ... diğer kelimeler
-    ];
-    
-    // Shuffle and try words until we find a valid unused one
-    const shuffledWords = potentialWords.sort(() => Math.random() - 0.5);
-    
-    for (const word of shuffledWords) {
-      const normalizedWord = word.toUpperCase(); // TUTARLI FORMAT
-      
-      // Kullanılmış kelime kontrolü - normalized format ile
-      if (!usedWords.has(normalizedWord)) {
-        try {
-          const { data, error } = await supabase.functions.invoke('validate-word', {
-            body: { word }
-          });
-          
-          if (!error && data && data.isValid) {
-            console.log(`🤖 AI used validated word: ${word} in ${gameMode} mode`);
-            
-            const opponentPoints = data.points || Math.floor(Math.random() * 25) + 10;
-            setOpponentScore(prev => prev + opponentPoints);
-            
-            // Store AI word with score for statistics
-            setOpponentWords(prev => [...prev, word]);
-            setOpponentWordsWithScores(prev => [...prev, { word, score: opponentPoints }]);
-            
-            playSound('correctWord');
-            
-            // Update used words - NORMALIZED FORMAT
-            setUsedWords(prev => new Set([...prev, normalizedWord]));
-            console.log('🤖 AI added word to used (normalized):', normalizedWord);
-            return;
-          }
-        } catch (validationError) {
-          console.warn(`Word validation failed for ${word}:`, validationError);
-          continue;
-        }
-      }
-    }
-    
-    // If no valid word found, AI gets fewer points
-    const opponentPoints = Math.floor(Math.random() * 10) + 5;
-    setOpponentScore(prev => prev + opponentPoints);
-    console.log(`🤖 AI couldn't find unused validated word, got ${opponentPoints} points in ${gameMode} mode`);
-    
-  } catch (error) {
-    console.error('AI word selection error:', error);
-    const opponentPoints = Math.floor(Math.random() * 10) + 5;
-    setOpponentScore(prev => prev + opponentPoints);
-    console.log(`🤖 AI error, got ${opponentPoints} points in ${gameMode} mode`);
-  }
-};
-
-      selectAIWord();
-    }, 4000 + Math.random() * 3000); // 4-7 saniye arasında
-
-    return () => {
-      console.log('🤖 Stopping AI play interval for game mode:', gameMode);
-      clearInterval(aiPlayInterval);
-    };
-  }, [gameStarted, gameEnded, gameMode, participants.length, usedWords, playSound, setOpponentScore, setOpponentWords, setOpponentWordsWithScores, setUsedWords]); // Dependencies added
-
-
-  // Oyun başlarken used words'ü temizle - her yerde aynı format
-useEffect(() => {
-  if (gameMode === 'private-room') {
-    if (participants.length >= 2) {
-      console.log('✅ 2 players ready - START GAME FOR BOTH');
-      setWaitingForPlayer(false);
-      setGameStarted(true);
-      
-      // Reset used words when game starts - EMPTY SET
-      setUsedWords(new Set<string>());
-      console.log('🔄 Reset used words for new game');
-      
-      if (!hasShownStartMessage) {
-        setHasShownStartMessage(true);
-        toast({
-          title: '🎮 Oyun Başladı!',
-          description: `${gameType === 'score' ? 'Puanlı' : 'Süreli'} oyun başladı!`,
-          duration: 2000,
-        });
-      }
-    } else {
-      console.log('⏳ Waiting for second player...');
-      setWaitingForPlayer(true);
-      setGameStarted(false);
-      setHasShownStartMessage(false);
-      
-      // Reset used words when waiting - EMPTY SET
-      setUsedWords(new Set<string>());
-    }
-  } else {
-    setGameStarted(true);
-    setWaitingForPlayer(false);
-    
-    // Reset used words for other game modes - EMPTY SET
-    setUsedWords(new Set<string>());
-  }
-}, [participants, gameMode, hasShownStartMessage, gameType]);
-  
-  useEffect(() => {
-  // Sadece random match + waiting durumunda timeout başlat
-  if (gameMode === 'random-match' && waitingForPlayer && participants.length === 1) {
-    console.log('⏰ Random match timeout başlatılıyor (30 saniye)');
-    
-    setTimeoutCountdown(30);
-    
-    // Countdown timer
-    const countdownInterval = setInterval(() => {
-      setTimeoutCountdown(prev => {
-        if (prev <= 1) {
-          clearInterval(countdownInterval);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    
-    // Main timeout
-    const timeout = setTimeout(async () => {
-      console.log('⏰ Random match timeout! AI ekleniyor...');
-      
-      if (currentRoom && participants.length === 1) {
-        try {
-          // AI rakip ekle
-          await supabase
-            .from('game_participants')
-            .insert({
-              room_id: currentRoom.id,
-              user_id: null, // AI için null
-              score: 0,
-              is_bot: true
-            });
-          
-          toast({
-            title: '🤖 AI Rakip Eklendi',
-            description: 'Gerçek oyuncu bulunamadı, AI ile oynanacak',
-            duration: 3000,
-          });
-          
-          console.log('🤖 AI başarıyla eklendi');
-        } catch (error) {
-          console.error('❌ AI ekleme hatası:', error);
-        }
-      }
-      
-      clearInterval(countdownInterval);
-    }, 30000); // 30 saniye
-    
-    setMatchmakingTimeout(timeout);
-    
-    // Cleanup
-    return () => {
-      if (timeout) clearTimeout(timeout);
-      clearInterval(countdownInterval);
-    };
-  } else {
-    // Timeout'u temizle
-    if (matchmakingTimeout) {
-      clearTimeout(matchmakingTimeout);
-      setMatchmakingTimeout(null);
-    }
-  }
-}, [gameMode, waitingForPlayer, participants.length, currentRoom]);
-
-  // Timer effect - for both timed and score modes
-  useEffect(() => {
-    if (!gameStarted || gameEnded) return;
-
-    // For timed mode, use countdown timer
-    if (gameType === 'timed') {
-      const timer = setInterval(() => {
-        setTimeLeft((prev) => {
-          // Play time warning at 15 seconds
-          if (prev === 15 && !timeWarningPlayed) {
-            playTimeWarningSequence();
-            setTimeWarningPlayed(true);
-          }
-          
-          if (prev <= 1) {
-            setGameEnded(true);
-            // Use setTimeout to ensure we get the latest scores
-            setTimeout(() => {
-              setPlayerScore(currentPlayerScore => {
-                setOpponentScore(currentOpponentScore => {
-                  checkWinnerWithScores(currentPlayerScore, currentOpponentScore);
-                  return currentOpponentScore;
-                });
-                return currentPlayerScore;
-              });
-            }, 100);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-      return () => clearInterval(timer);
-    }
-  }, [gameStarted, gameEnded, gameType]);
-
-  // Check for winner and apply end game bonuses - parametre ile skorları al
-  const checkWinnerWithScores = useCallback(async (currentPlayerScore: number, currentOpponentScore: number) => {
-    if (gameEnded || winner !== null) return; // Oyun zaten bitmişse veya kazanan belliyse tekrar kontrol etme
-    
-    console.log('🏆 Checking winner with scores - Player:', currentPlayerScore, 'Opponent:', currentOpponentScore);
-    
-    let gameResult: 'player' | 'opponent' | 'tie';
-    let bonusPoints = 0;
-    
-    // Kesin kazanan belirleme mantığı
-    if (currentPlayerScore > currentOpponentScore) {
-      gameResult = 'player';
-      bonusPoints = 50; // Kazanma bonusu
-      setWinner('player');
-      playSound('gameWin');
-      setTimeout(() => playCelebrationSound(), 500);
-      console.log('🏆 Player wins! Score:', currentPlayerScore, 'vs', currentOpponentScore);
-    } else if (currentPlayerScore < currentOpponentScore) {
-      gameResult = 'opponent';
-      setWinner('opponent');
-      playSound('gameLose');
-      setTimeout(() => playGameLoseSound(), 500);
-      console.log('🏆 Opponent wins! Score:', currentOpponentScore, 'vs', currentPlayerScore);
-    } else {
-      // Skorlar eşit ise beraberlik
-      gameResult = 'tie';
-      bonusPoints = 25; // Beraberlik bonusu
-      setWinner('tie');
-      console.log('🏆 It\'s a tie! Both scores:', currentPlayerScore);
-    }
-
-    // Apply end game bonus for player
-    if (user && bonusPoints > 0) {
-      const { data: currentProfile } = await supabase
-        .from('profiles')
-        .select('total_score')
-        .eq('id', user.id)
-        .single();
-
-      const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
-      
-      await supabase
-        .from('profiles')
-        .update({ total_score: newTotalScore })
-        .eq('id', user.id);
-
-      // Show bonus toast
-      setTimeout(() => {
-        toast({
-          title: gameResult === 'player' ? 'Kazanma Bonusu!' : 'Beraberlik Bonusu!',
-          description: `+${bonusPoints} bonus EXP kazandınız!`,
-          duration: 2000,
-        });
-      }, 1000);
-    }
-    
-    // End the game and cleanup room (for multiplayer modes)
-    if (currentRoom && (gameMode === 'random-match' || gameMode === 'private-room')) {
-      // Delay cleanup to allow players to see results
-      setTimeout(async () => {
-        // Gather statistics for both players
-        const playerStats = user ? {
-          userId: user.id,
-          score: currentPlayerScore,
-          words: playerWordsWithScores,
-          isWinner: gameResult === 'player'
-        } : undefined;
-        
-        // For opponent stats, we need to check if it's a real player or AI
-        const opponentParticipant = participants.find(p => p.user_id !== user?.id && !p.is_bot);
-        const opponentStats = opponentParticipant?.user_id ? {
-          userId: opponentParticipant.user_id,
-          score: currentOpponentScore,
-          words: opponentWordsWithScores,
-          isWinner: gameResult === 'opponent'
-        } : undefined;
-        
-        // Call endGame from context to cleanup room and participants with statistics
-        await endGame(playerStats, opponentStats);
-      }, 3000); // 3 second delay to see results
-    }
-    await updateLeaderboard(currentPlayerScore);
-  }, [gameEnded, winner, user, currentRoom, gameMode, endGame, playSound, playCelebrationSound, playGameLoseSound, toast]);
-
-  // Check for winner - eski fonksiyon da kalsın puanlı oyunlar için
-  const checkWinner = useCallback(async () => {
-    checkWinnerWithScores(playerScore, opponentScore);
-  }, [playerScore, opponentScore, checkWinnerWithScores]);
-
-  // Check win conditions based on game type
-  useEffect(() => {
-    if (gameType === 'score') {
-      // Score mode: first to reach max_score wins
-      const maxScore = currentRoom?.max_score || 500;
-      if (playerScore >= maxScore || opponentScore >= maxScore) {
-        setGameEnded(true);
-        checkWinner();
-      }
-    } else if (gameType === 'timed') {
-      // Timed mode: game ends when timer reaches 0 (handled in timer effect)
-      // No additional check needed here
-    }
-  }, [playerScore, opponentScore, checkWinner, gameType, currentRoom?.max_score]);
 
   // Handle letter click
   const handleLetterClick = (letter: string, row: number, col: number) => {
-    if (gameEnded || waitingForPlayer) return;
+    if (gameEnded || waitingForPlayer || isJokerActive) return;
 
     playSound('letterSelect');
     
     const isSelected = selectedLetters.some(s => s.row === row && s.col === col);
     
     if (isSelected) {
-      // Remove only the clicked letter
       const newSelected = selectedLetters.filter(s => !(s.row === row && s.col === col));
       setSelectedLetters(newSelected);
       setCurrentWord(newSelected.map(s => s.letter).join(''));
     } else {
-      // Add letter
       const newSelected = [...selectedLetters, { letter, row, col }];
       setSelectedLetters(newSelected);
       setCurrentWord(newSelected.map(s => s.letter).join(''));
@@ -834,130 +555,77 @@ useEffect(() => {
 
   // Submit word
   const submitWord = async () => {
-  if (waitingForPlayer) return;
-  
-  // Set player action timestamp to delay AI
-  setLastPlayerAction(Date.now());
-  
-  if (currentWord.length < 3) {
-    toast({
-      title: 'Geçersiz Kelime',
-      description: 'Kelime en az 3 harf olmalıdır.',
-      variant: 'destructive',
-      duration: 1000,
-    });
-    return;
-  }
-
-  // ÖNCELİKLE KELİMEYİ VALİDE ET
-  console.log('🔍 Validating word:', currentWord);
-  const result = await validateWord(currentWord);
-
-  if (!result.isValid) {
-    playSound('wrongWord');
-    toast({
-      title: 'Geçersiz Kelime',
-      description: result.message,
-      variant: 'destructive',
-      duration: 1000,
-    });
-    clearWord();
-    return;
-  }
-
-  // SADECE GEÇERLİ KELİMELER İÇİN KULLANILMIŞ KONTROLÜ YAP
-  // Normalized format kullan (UPPERCASE)
-  const normalizedWord = currentWord.toUpperCase();
-  
-  console.log('🔍 Checking if word already used:', normalizedWord);
-  console.log('🔍 Used words:', Array.from(usedWords));
-  
-  if (usedWords.has(normalizedWord)) {
-    toast({
-      title: 'Kelimeyi Zaten Kullandınız',
-      description: 'Bu kelimeyi daha önce SİZ kullandınız.',
-      variant: 'destructive',
-      duration: 1500,
-    });
-    playSound('wrongWord');
-    clearWord();
-    return;
-  }
-
-  // KELİME GEÇERLİ VE KULLANILMAMIŞ - KABUL ET
-  console.log('✅ Word accepted:', currentWord, 'Points:', result.points);
-  
-  // Add word to used words (UPPERCASE format)
-  const newUsedWords = new Set([...usedWords, normalizedWord]);
-  setUsedWords(newUsedWords);
-  console.log('✅ Added word to used (normalized):', normalizedWord);
-  
-  playSound('correctWord');
-  const newScore = playerScore + result.points;
-  setPlayerScore(newScore);
-  
-  // Store word with score for statistics
-  setPlayerWords(prev => [...prev, currentWord]);
-  setPlayerWordsWithScores(prev => [...prev, { word: currentWord, score: result.points }]);
-  
-  // Trigger effects if purchased
-  triggerWordEffects();
-  
-  // Update score in multiplayer context
-  if (currentRoom) {
-    await updateScore(newScore);
-  }
-
-  // Update total score in database for level progression with level multiplier
-  if (user) {
-    const { data: currentProfile } = await supabase
-      .from('profiles')
-      .select('total_score')
-      .eq('id', user.id)
-      .single();
-
-    // Calculate current level to determine multiplier
-    const calculateLevel = (totalScore: number) => {
-      const baseExp = 1000;
-      const expIncreasePerLevel = 100;
-      
-      let level = 1;
-      let totalExpNeeded = 0;
-      let currentLevelExp = baseExp;
-
-      while (totalScore >= totalExpNeeded + currentLevelExp) {
-        totalExpNeeded += currentLevelExp;
-        level++;
-        currentLevelExp = baseExp + (level - 1) * expIncreasePerLevel;
-      }
-
-      return level;
-    };
-
-    const currentLevel = calculateLevel(currentProfile?.total_score || 0);
-    const levelMultiplier = 1 + (currentLevel - 1) * 0.1;
-    const bonusPoints = Math.floor(result.points * levelMultiplier);
+    if (waitingForPlayer || isJokerActive) return;
     
-    const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
+    setLastPlayerAction(Date.now());
     
-    await supabase
-      .from('profiles')
-      .update({ total_score: newTotalScore })
-      .eq('id', user.id);
-  }
+    if (currentWord.length < 3) {
+      toast({
+        title: 'Geçersiz Kelime',
+        description: 'Kelime en az 3 harf olmalıdır.',
+        variant: 'destructive',
+        duration: 1000,
+      });
+      return;
+    }
 
-  clearWord();
-};
+    console.log('🔍 Validating word:', currentWord);
+    const result = await validateWord(currentWord);
+
+    if (!result.isValid) {
+      playSound('wrongWord');
+      toast({
+        title: 'Geçersiz Kelime',
+        description: result.message,
+        variant: 'destructive',
+        duration: 1000,
+      });
+      clearWord();
+      return;
+    }
+
+    const normalizedWord = currentWord.toUpperCase();
+    
+    if (usedWords.has(normalizedWord)) {
+      toast({
+        title: 'Kelimeyi Zaten Kullandınız',
+        description: 'Bu kelimeyi daha önce SİZ kullandınız.',
+        variant: 'destructive',
+        duration: 1500,
+      });
+      playSound('wrongWord');
+      clearWord();
+      return;
+    }
+
+    console.log('✅ Word accepted:', currentWord, 'Points:', result.points);
+    
+    const newUsedWords = new Set([...usedWords, normalizedWord]);
+    setUsedWords(newUsedWords);
+    
+    playSound('correctWord');
+    const newScore = playerScore + result.points;
+    setPlayerScore(newScore);
+    
+    setPlayerWords(prev => [...prev, currentWord]);
+    setPlayerWordsWithScores(prev => [...prev, { word: currentWord, score: result.points }]);
+    
+    triggerWordEffects();
+    
+    if (currentRoom) {
+      await updateScore(newScore);
+    }
+
+    clearWord();
+  };
 
   // Trigger word effects (confetti/fireworks) if purchased
   const triggerWordEffects = () => {
-    // Check if effects are globally enabled
     if (!(settings?.effects_enabled ?? true)) return;
     
     const hasConfetti = hasPurchased('effect_confetti') && (settings?.confetti_effect_enabled ?? true);
     const hasFireworks = hasPurchased('effect_fireworks') && (settings?.fireworks_effect_enabled ?? true);
     
-    // If both purchased and enabled, randomly choose one
     if (hasConfetti && hasFireworks) {
       if (Math.random() > 0.5) {
         createConfettiEffect();
@@ -977,7 +645,6 @@ useEffect(() => {
     confettiContainer.className = 'fixed inset-0 pointer-events-none z-50';
     document.body.appendChild(confettiContainer);
 
-    // Create 25 confetti pieces
     for (let i = 0; i < 25; i++) {
       const confetti = document.createElement('div');
       confetti.className = `absolute w-2 h-2 rounded-full animate-[confetti_2s_ease-out_forwards] ${
@@ -991,7 +658,6 @@ useEffect(() => {
       confettiContainer.appendChild(confetti);
     }
 
-    // Remove effect after animation
     setTimeout(() => {
       document.body.removeChild(confettiContainer);
     }, 3000);
@@ -1003,13 +669,11 @@ useEffect(() => {
     fireworksContainer.className = 'fixed inset-0 pointer-events-none z-50';
     document.body.appendChild(fireworksContainer);
 
-    // Create 3 firework bursts at random positions
     for (let burst = 0; burst < 3; burst++) {
       setTimeout(() => {
         const centerX = Math.random() * window.innerWidth;
         const centerY = Math.random() * window.innerHeight;
 
-        // Create 12 firework particles per burst
         for (let i = 0; i < 12; i++) {
           const firework = document.createElement('div');
           const colors = ['bg-yellow-400', 'bg-red-400', 'bg-blue-400', 'bg-green-400', 'bg-purple-400', 'bg-pink-400'];
@@ -1017,17 +681,15 @@ useEffect(() => {
           firework.style.left = `${centerX}px`;
           firework.style.top = `${centerY}px`;
           
-          // Random direction for particle spread
           const angle = (i / 12) * 2 * Math.PI;
           const distance = 50 + Math.random() * 50;
           firework.style.transform = `translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px)`;
           
           fireworksContainer.appendChild(firework);
         }
-      }, burst * 300); // Stagger the bursts
+      }, burst * 300);
     }
 
-    // Remove effect after animation
     setTimeout(() => {
       document.body.removeChild(fireworksContainer);
     }, 2000);
@@ -1046,7 +708,6 @@ useEffect(() => {
       case 'vs-computer':
         return { name: 'Bilgisayar', icon: Bot, avatar: null };
       case 'private-room':
-        // Get opponent from participants
         if (participants.length >= 2) {
           const opponent = participants.find(p => p.user_id !== user?.id);
           if (opponent && (opponent as any).profiles?.avatar_url) {
@@ -1059,11 +720,9 @@ useEffect(() => {
         }
         return { name: 'Arkadaş', icon: User, avatar: opponentAvatar };
       case 'random-match':
-        // Get opponent from participants (similar to private-room logic)
         if (participants.length >= 2) {
           const opponent = participants.find(p => p.user_id !== user?.id);
           if (opponent && (opponent as any).profiles?.username) {
-            console.log('🎮 Random match opponent found:', (opponent as any).profiles.username);
             return { 
               name: (opponent as any).profiles.username, 
               icon: User, 
@@ -1078,7 +737,6 @@ useEffect(() => {
             };
           }
         }
-        console.log('🔍 Random match: waiting for opponent, participants:', participants.length);
         return { name: 'Rakip Aranıyor...', icon: User, avatar: null };
       case 'tournament':
         return { name: 'Turnuva Rakibi', icon: Trophy, avatar: null };
@@ -1087,12 +745,9 @@ useEffect(() => {
     }
   };
 
-  
-
   if (gameEnded) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 game-grid relative overflow-hidden">
-        {/* Konfeti Efekti - sadece kazanıldığında */}
         {winner === 'player' && (
           <div className="absolute inset-0 pointer-events-none">
             {[...Array(50)].map((_, i) => (
@@ -1113,7 +768,6 @@ useEffect(() => {
           </div>
         )}
 
-        {/* Üzgün Animasyon - sadece kaybedildiğinde */}
         {winner === 'opponent' && (
           <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
             <div className="animate-[sadFace_2s_ease-in-out_infinite] text-9xl opacity-20">
@@ -1154,7 +808,6 @@ useEffect(() => {
                 variant="outline" 
                 onClick={() => {
                   playSound('buttonClick');
-                  // Reset game state instead of reloading page
                   setGameGrid(generateRandomGrid());
                   setSelectedLetters([]);
                   setCurrentWord('');
@@ -1170,6 +823,11 @@ useEffect(() => {
                   setGameEnded(false);
                   setWinner(null);
                   setTimeWarningPlayed(false);
+                  // Reset jokers
+                  setJokers({ degistir: 3, fisilida: 3, senYaz: 3 });
+                  setSelectedJoker(null);
+                  setHighlightedLetters([]);
+                  setIsJokerActive(false);
                 }} 
                 className="w-full"
               >
@@ -1182,109 +840,6 @@ useEffect(() => {
     );
   }
 
-  if (gameMode === 'random-match' && waitingForPlayer) {
-  return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background to-muted">
-      <Card className="w-full max-w-md text-center">
-        <CardContent className="p-8">
-          <div className="animate-pulse space-y-4">
-            <div className="w-16 h-16 bg-blue-500 rounded-full mx-auto flex items-center justify-center">
-              <User className="w-8 h-8 text-white animate-bounce" />
-            </div>
-            <h2 className="text-2xl font-bold">Rastgele Eşleşme</h2>
-            <p className="text-muted-foreground">
-              Rastgele rakip aranıyor...
-            </p>
-            
-            {/* Timeout countdown */}
-            <div className="bg-muted rounded-lg p-4">
-              <p className="text-sm font-medium mb-2">
-                {timeoutCountdown > 0 ? (
-                  <>AI rakip ekleme: {timeoutCountdown}s</>
-                ) : (
-                  'AI rakip ekleniyor...'
-                )}
-              </p>
-              <div className="w-full bg-background rounded-full h-2 mt-2">
-                <div 
-                  className="bg-primary h-2 rounded-full transition-all duration-1000"
-                  style={{ width: `${((30 - timeoutCountdown) / 30) * 100}%` }}
-                />
-              </div>
-            </div>
-            
-            <div className="bg-muted rounded-lg p-4">
-              <p className="text-sm font-medium mb-2">Oyun Tipi</p>
-              <Badge variant="outline" className="text-lg px-4 py-2">
-                {gameType === 'timed' ? '⏱️ Süreli (2 dakika)' : '🎯 Puanlı (500 puana kadar)'}
-              </Badge>
-            </div>
-            
-            <p className="text-sm text-muted-foreground">
-              Katılımcılar: {participants.length}/2
-            </p>
-            
-            <p className="text-xs text-muted-foreground">
-              30 saniye içinde gerçek oyuncu bulunamazsa AI rakip eklenecek
-            </p>
-            
-            <div className="flex space-x-2 justify-center">
-              {[...Array(3)].map((_, i) => (
-                <div
-                  key={i}
-                  className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                  style={{ animationDelay: `${i * 0.2}s` }}
-                />
-              ))}
-            </div>
-          </div>
-          
-          <div className="space-y-2 mt-6">
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/')}
-              className="w-full"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Ana Menüye Dön
-            </Button>
-            
-            <Button 
-              variant="secondary" 
-              onClick={async () => {
-                console.log('👤 Manuel AI ekleme');
-                if (currentRoom && participants.length === 1) {
-                  try {
-                    await supabase
-                      .from('game_participants')
-                      .insert({
-                        room_id: currentRoom.id,
-                        user_id: null,
-                        score: 0,
-                        is_bot: true
-                      });
-                    
-                    toast({
-                      title: '🤖 AI Rakip Eklendi',
-                      description: 'Manuel olarak AI rakip eklendi',
-                    });
-                  } catch (error) {
-                    console.error('❌ Manuel AI ekleme hatası:', error);
-                  }
-                }
-              }}
-              className="w-full text-sm"
-            >
-              🤖 Hemen AI ile Oyna
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-  // Waiting screen for private room
   if (waitingForPlayer) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background to-muted">
@@ -1338,6 +893,7 @@ useEffect(() => {
       </div>
     );
   }
+
   const opponent = getOpponentInfo();
   return (
     <>
@@ -1441,6 +997,61 @@ useEffect(() => {
           </Card>
         </div>
 
+        {/* Joker Panel - EN ÖNEMLİ KISIM! */}
+        <Card className="bg-gradient-to-r from-purple-100 to-pink-100 border-purple-200 joker-panel-float">
+          <CardContent className="p-3">
+            <div className="flex justify-between items-center">
+              <h3 className="text-sm font-bold text-purple-800 mb-2">🎭 Jokerler</h3>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {/* Değiştir Jokeri */}
+              <Button
+                variant={selectedJoker === 'degistir' ? 'default' : 'outline'}
+                size="sm"
+                className="joker-button flex flex-col items-center p-2 h-auto relative"
+                onClick={useDegisTirJoker}
+                disabled={jokers.degistir <= 0 || isJokerActive}
+              >
+                <Shuffle className="w-4 h-4 mb-1" />
+                <span className="text-xs">Değiştir</span>
+                <Badge variant="secondary" className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center">
+                  {jokers.degistir}
+                </Badge>
+              </Button>
+
+              {/* Fısılda Jokeri */}
+              <Button
+                variant={selectedJoker === 'fisilida' ? 'default' : 'outline'}
+                size="sm"
+                className="joker-button flex flex-col items-center p-2 h-auto relative"
+                onClick={useFisildaJoker}
+                disabled={jokers.fisilida <= 0 || isJokerActive}
+              >
+                <Lightbulb className="w-4 h-4 mb-1" />
+                <span className="text-xs">Fısılda</span>
+                <Badge variant="secondary" className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center">
+                  {jokers.fisilida}
+                </Badge>
+              </Button>
+
+              {/* Sen Yaz Jokeri */}
+              <Button
+                variant={selectedJoker === 'senYaz' ? 'default' : 'outline'}
+                size="sm"
+                className="joker-button flex flex-col items-center p-2 h-auto relative"
+                onClick={useSenYazJoker}
+                disabled={jokers.senYaz <= 0 || isJokerActive}
+              >
+                <PenTool className="w-4 h-4 mb-1" />
+                <span className="text-xs">Sen Yaz</span>
+                <Badge variant="secondary" className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center">
+                  {jokers.senYaz}
+                </Badge>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Current Word Input */}
         <Card className="game-grid border-0">
           <CardContent className="p-4">
@@ -1449,7 +1060,9 @@ useEffect(() => {
                 value={currentWord} 
                 readOnly 
                 placeholder="~Kelime Üret~"
-                className="text-2xl font-mono text-center bg-white/20 backdrop-blur-sm border-white/30 text-white placeholder:text-white/70 font-bold"
+                className={`text-2xl font-mono text-center bg-white/20 backdrop-blur-sm border-white/30 text-white placeholder:text-white/70 font-bold ${
+                  isJokerActive ? 'typing-animation' : ''
+                }`}
               />
               <Badge variant="secondary" className="bg-white/20 text-white border-white/30 font-bold text-lg px-3 py-1">
                 {currentWord.length}
@@ -1465,12 +1078,15 @@ useEffect(() => {
               {gameGrid.map((row, rowIndex) =>
                 row.map((letter, colIndex) => {
                   const isSelected = selectedLetters.some(s => s.row === rowIndex && s.col === colIndex);
+                  const isHighlighted = highlightedLetters.some(h => h.row === rowIndex && h.col === colIndex);
                   const selectionOrder = selectedLetters.findIndex(s => s.row === rowIndex && s.col === colIndex);
                   return (
                     <Button
                       key={`${rowIndex}-${colIndex}`}
-                      className={`letter-button h-16 text-xl font-bold relative ${
+                      className={`letter-button h-16 text-xl font-bold relative transition-all duration-300 ${
                         isSelected ? 'selected' : ''
+                      } ${
+                        isHighlighted ? 'letter-highlight letter-pulse' : ''
                       }`}
                       onClick={() => handleLetterClick(letter, rowIndex, colIndex)}
                     >
@@ -1494,7 +1110,7 @@ useEffect(() => {
             variant="outline" 
             onClick={clearWord}
             className="h-12"
-            disabled={selectedLetters.length === 0}
+            disabled={selectedLetters.length === 0 || isJokerActive}
           >
             <Trash2 className="w-4 h-4 mr-2" />
             Sil
@@ -1505,7 +1121,7 @@ useEffect(() => {
               submitWord();
             }}
             className="h-12"
-            disabled={currentWord.length < 3 || isValidating}
+            disabled={currentWord.length < 3 || isValidating || isJokerActive}
           >
             <Send className="w-4 h-4 mr-2" />
             {isValidating ? 'Kontrol Ediliyor...' : 'Gönder'}
