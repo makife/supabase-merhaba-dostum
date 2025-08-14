@@ -104,13 +104,13 @@ const TournamentMatchPage = () => {
       if (matchesError) throw matchesError;
       
       // Matches için default değerler ekle
-      const processedMatches = (matchesData || []).map(match => ({
+      const processedMatches = (matchesData || []).map((match: any) => ({
         ...match,
-        player1_score: match.player1_score || 0,
-        player2_score: match.player2_score || 0,
+        player1_score: match.player1_score ?? 0,
+        player2_score: match.player2_score ?? 0,
         updated_at: match.updated_at || match.created_at,
         status: match.status as 'pending' | 'active' | 'completed'
-      }));
+      })) as TournamentMatch[];
       setMatches(processedMatches);
 
       // Katılımcıları getir
