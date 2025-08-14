@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import TournamentBracket from '../components/TournamentBracket';
+import TournamentBracket from './TournamentBracket';
 import GamePage from './GamePage';
 import { 
   ArrowLeft, 
