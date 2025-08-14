@@ -146,6 +146,45 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const [matchmakingTimeout, setMatchmakingTimeout] = useState<NodeJS.Timeout | null>(null);
   const [timeoutCountdown, setTimeoutCountdown] = useState(30); // 30 saniye
 
+    // Clear current word
+  const clearWord = () => {
+    setSelectedLetters([]);
+    setCurrentWord('');
+  };
+
+  // Submit word
+  const submitWord = async () => {
+    if (waitingForPlayer) return;
+    
+    // Set player action timestamp to delay AI
+    setLastPlayerAction(Date.now());
+    
+    if (currentWord.length < 3) {
+      toast({
+        title: 'Geçersiz Kelime',
+        description: 'Kelime en az 3 harf olmalıdır.',
+        variant: 'destructive',
+        duration: 1000,
+      });
+      return;
+    }
+
+      // 🎯 ÖNCELİKLE KELİMEYİ VALİDE ET
+    console.log('🔍 Validating word:', currentWord);
+    const result = await validateWord(currentWord);
+
+    if (!result.isValid) {
+      playSound('wrongWord');
+      toast({
+        title: 'Geçersiz Kelime',
+        description: result.message,
+        variant: 'destructive',
+        duration: 1000,
+      });
+      clearWord();
+      return;
+    }
+
   // Sync grid with room data and fetch avatars
   useEffect(() => {
     // Update grid from room if available (only when room grid is different)
@@ -909,29 +948,6 @@ if (gameEnded) {
     }
   };
 
-  // Clear current word
-  const clearWord = () => {
-    setSelectedLetters([]);
-    setCurrentWord('');
-  };
-
-  // Submit word
-  const submitWord = async () => {
-    if (waitingForPlayer) return;
-    
-    // Set player action timestamp to delay AI
-    setLastPlayerAction(Date.now());
-    
-    if (currentWord.length < 3) {
-      toast({
-        title: 'Geçersiz Kelime',
-        description: 'Kelime en az 3 harf olmalıdır.',
-        variant: 'destructive',
-        duration: 1000,
-      });
-      return;
-    }
-
     // Check if word already used
     console.log('🔍 Current word:', currentWord);
     console.log('🔍 Used words:', Array.from(usedWords));
@@ -941,7 +957,7 @@ if (gameEnded) {
     if (usedWords.has(currentWord.toLowerCase())) {
       toast({
        title: 'Kelimeyi Zaten Kullandınız',
-       description: 'Bu kelimeyi daha önce SİZ kullandınız.',
+       description: 'Bu kelimeyi daha önce kullandınız.',
        variant: 'destructive',
        duration: 1500,
       });
