@@ -605,73 +605,72 @@ if (gameEnded) {
       }
       
       // Get current used words from state
-      // AI word selection with validation
       const selectAIWord = async () => {
+  try {
+    const potentialWords = [
+      'KEDİ', 'MASA', 'ARABA', 'OKUL', 'KİTAP', 'DENİZ', 'AĞAÇ', 'ÇİÇEK', 
+      'DOSTLUK', 'GÜNEŞ', 'YILDIZ', 'BULUT', 'RÜZGAR', 'ATEŞ', 'TOPRAK',
+      'SEVGİ', 'MUTLULUK', 'UMUT', 'HAYAL', 'RENKLER', 'MÜZİK', 'DANS', 'ŞARKI',
+      'SPOR', 'FUTBOL', 'BASKETBOL', 'TENİS', 'YÜZME', 'KOŞU', 'BİSİKLET',
+      'YEMEK', 'EKMEK', 'PEYNİR', 'DOMATES', 'SALATA', 'ÇORBA', 'MEYVE',
+      'ELMA', 'ARMUT', 'ÇİLEK', 'KIRAZ', 'ÜZÜM', 'PORTAKAL', 'MANGO'
+    ];
+    
+    // Shuffle and try words until we find a valid unused one
+    const shuffledWords = potentialWords.sort(() => Math.random() - 0.5);
+    
+    for (const word of shuffledWords) {
+      const wordToCheck = word.toLowerCase(); // AI için de lowercase kontrol
+      
+      // Case-insensitive used word check for AI
+      const isAlreadyUsed = Array.from(usedWords).some(usedWord => 
+        usedWord.toLowerCase() === wordToCheck
+      );
+      
+      if (!isAlreadyUsed) {
         try {
-          // Get a random selection of Turkish words to try
-          const potentialWords = [
-            'KEDİ', 'MASA', 'ARABA', 'OKUL', 'KİTAP', 'DENİZ', 'AĞAÇ', 'ÇİÇEK', 
-            'DOSTLUK', 'GÜNEŞ', 'YILDIZ', 'BULUT', 'RÜZGAR', 'ATEŞ', 'TOPRAK',
-            'SEVGİ', 'MUTLULUK', 'UMUT', 'HAYAL', 'RENKLER', 'MÜZİK', 'DANS', 'ŞARKI',
-            'SPOR', 'FUTBOL', 'BASKETBOL', 'TENİS', 'YÜZME', 'KOŞU', 'BISIKLET',
-            'YEMEK', 'EKMEK', 'PEYNIR', 'DOMATES', 'SALATA', 'ÇORBA', 'MEYVE',
-            'ELMA', 'ARMUT', 'ÇİLEK', 'KIRAZ', 'ÜZÜM', 'PORTAKAL', 'MANGO',
-            'SEBZE', 'HAVUÇ', 'PATLICAN', 'BIBER', 'SOĞAN', 'SARMIMSAK', 'PATATES',
-            'KALE', 'KÖPEK', 'KUŞU', 'BALINA', 'ASLAN', 'KAPLAN', 'FİL',
-            'SÜT', 'KOLA', 'ÇAY', 'KAHVE', 'ŞEKER', 'TUZ', 'YAĞLI', 'EKŞI', 'BAL', 'YAG',
-            'ARABA', 'MOTOR', 'BISIKLET', 'OTOBÜS', 'TREN', 'UÇAK', 'GEMİ',
-            'EV', 'APARTMAN', 'OKUL', 'HASTANE', 'MAĞAZA', 'PARK', 'BAHÇE',
-            'ANNE', 'BABA', 'KARDEŞ', 'ARKADAŞ', 'ÖĞRETMEN', 'DOKTOR', 'ÇOBAN',
-            'KIRMIZI', 'MAVİ', 'YEŞİL', 'SARI', 'BEYAZ', 'SİYAH', 'PEMBE',
-            'YAZ', 'KIŞ', 'İLKBAHAR', 'SONBAHAR', 'HAFTA', 'AY', 'YIL'
-          ];
+          const { data, error } = await supabase.functions.invoke('validate-word', {
+            body: { word }
+          });
           
-          // Shuffle and try words until we find a valid unused one
-          const shuffledWords = potentialWords.sort(() => Math.random() - 0.5);
-          
-          for (const word of shuffledWords) {
-            if (!usedWords.has(word.toUpperCase())) {
-              // Validate the word using the edge function
-              try {
-                const { data, error } = await supabase.functions.invoke('validate-word', {
-                  body: { word }
-                });
-                
-                if (!error && data && data.isValid) {
-                  console.log(`🤖 AI used validated word: ${word} in ${gameMode} mode`);
-                  
-                  const opponentPoints = data.points || Math.floor(Math.random() * 25) + 10;
-                  setOpponentScore(prev => prev + opponentPoints);
-                  
-                  // Store AI word with score for statistics
-                  setOpponentWords(prev => [...prev, word]);
-                  setOpponentWordsWithScores(prev => [...prev, { word, score: opponentPoints }]);
-                  
-                  playSound('correctWord');
-                  
-                  // Update used words
-                  setUsedWords(prev => new Set([...prev, word.toUpperCase()]));
-                  return;
-                }
-              } catch (validationError) {
-                console.warn(`Word validation failed for ${word}:`, validationError);
-                // Continue to next word
-              }
-            }
+          if (!error && data && data.isValid) {
+            console.log(`🤖 AI used validated word: ${word} in ${gameMode} mode`);
+            
+            const opponentPoints = data.points || Math.floor(Math.random() * 25) + 10;
+            setOpponentScore(prev => prev + opponentPoints);
+            
+            // Store AI word with score for statistics
+            setOpponentWords(prev => [...prev, word]);
+            setOpponentWordsWithScores(prev => [...prev, { word, score: opponentPoints }]);
+            
+            playSound('correctWord');
+            
+            // Update used words - normalized to lowercase
+            setUsedWords(prev => new Set([...prev, wordToCheck]));
+            console.log('🤖 AI added word to used (normalized to lowercase):', wordToCheck);
+            return;
           }
-          
-          // If no valid word found, AI gets fewer points
-          const opponentPoints = Math.floor(Math.random() * 10) + 5;
-          setOpponentScore(prev => prev + opponentPoints);
-          console.log(`🤖 AI couldn't find unused validated word, got ${opponentPoints} points in ${gameMode} mode`);
-          
-        } catch (error) {
-          console.error('AI word selection error:', error);
-          const opponentPoints = Math.floor(Math.random() * 10) + 5;
-          setOpponentScore(prev => prev + opponentPoints);
-          console.log(`🤖 AI error, got ${opponentPoints} points in ${gameMode} mode`);
+        } catch (validationError) {
+          console.warn(`Word validation failed for ${word}:`, validationError);
+          continue;
         }
-      };
+      } else {
+        console.log(`🤖 AI skipping already used word: ${word} (${wordToCheck})`);
+      }
+    }
+    
+    // If no valid word found, AI gets fewer points
+    const opponentPoints = Math.floor(Math.random() * 10) + 5;
+    setOpponentScore(prev => prev + opponentPoints);
+    console.log(`🤖 AI couldn't find unused validated word, got ${opponentPoints} points in ${gameMode} mode`);
+    
+  } catch (error) {
+    console.error('AI word selection error:', error);
+    const opponentPoints = Math.floor(Math.random() * 10) + 5;
+    setOpponentScore(prev => prev + opponentPoints);
+    console.log(`🤖 AI error, got ${opponentPoints} points in ${gameMode} mode`);
+  }
+};
 
       selectAIWord();
     }, 4000 + Math.random() * 3000); // 4-7 saniye arasında
@@ -910,123 +909,125 @@ if (gameEnded) {
   };
 
   // Clear current word
-  const clearWord = () => {
-    setSelectedLetters([]);
-    setCurrentWord('');
-  };
-
-  // Submit word
   const submitWord = async () => {
-    if (waitingForPlayer) return;
-    
-    // Set player action timestamp to delay AI
-    setLastPlayerAction(Date.now());
-    
-    if (currentWord.length < 3) {
-      toast({
-        title: 'Geçersiz Kelime',
-        description: 'Kelime en az 3 harf olmalıdır.',
-        variant: 'destructive',
-        duration: 1000,
-      });
-      return;
-    }
+  if (waitingForPlayer) return;
+  
+  // Set player action timestamp to delay AI
+  setLastPlayerAction(Date.now());
+  
+  if (currentWord.length < 3) {
+    toast({
+      title: 'Geçersiz Kelime',
+      description: 'Kelime en az 3 harf olmalıdır.',
+      variant: 'destructive',
+      duration: 1000,
+    });
+    return;
+  }
 
-    // Check if word already used
-    console.log('🔍 Current word:', currentWord);
-    console.log('🔍 Used words:', Array.from(usedWords));
-    console.log('🔍 Game mode:', gameMode);
-    console.log('🔍 Is word used?', usedWords.has(currentWord.toLowerCase()));
-    
-    if (usedWords.has(currentWord.toLowerCase())) {
-      toast({
-       title: 'Kelimeyi Zaten Kullandınız',
-       description: 'Bu kelimeyi daha önce SİZ kullandınız.',
-       variant: 'destructive',
-       duration: 1500,
-      });
-     playSound('wrongWord');
-     clearWord();
-     return;
-    }
+  // 🎯 ÖNCELİKLE KELİMEYİ VALİDE ET
+  console.log('🔍 Validating word:', currentWord);
+  const result = await validateWord(currentWord);
 
-    const result = await validateWord(currentWord);
-
-    if (result.isValid) {
-      // Add word to used words
-      const newUsedWords = new Set([...usedWords, currentWord.toLowerCase()]);
-      setUsedWords(newUsedWords);
-      console.log('Added word to used:', currentWord.toLowerCase());
-      console.log('New used words:', Array.from(newUsedWords));
-      playSound('correctWord');
-      const newScore = playerScore + result.points;
-      setPlayerScore(newScore);
-      
-      // Store word with score for statistics
-      setPlayerWords(prev => [...prev, currentWord]);
-      setPlayerWordsWithScores(prev => [...prev, { word: currentWord, score: result.points }]);
-      
-      // Trigger effects if purchased
-      triggerWordEffects();
-      
-      // Update score in multiplayer context
-      if (currentRoom) {
-        await updateScore(newScore);
-      }
-
-      // Update total score in database for level progression with level multiplier
-      if (user) {
-        const { data: currentProfile } = await supabase
-          .from('profiles')
-          .select('total_score')
-          .eq('id', user.id)
-          .single();
-
-        // Calculate current level to determine multiplier
-        const calculateLevel = (totalScore: number) => {
-          const baseExp = 1000;
-          const expIncreasePerLevel = 100; // Her seviyede +100 EXP daha fazla gerekecek
-          
-          let level = 1;
-          let totalExpNeeded = 0;
-          let currentLevelExp = baseExp;
-
-          while (totalScore >= totalExpNeeded + currentLevelExp) {
-            totalExpNeeded += currentLevelExp;
-            level++;
-            currentLevelExp = baseExp + (level - 1) * expIncreasePerLevel;
-          }
-
-          return level;
-        };
-
-        const currentLevel = calculateLevel(currentProfile?.total_score || 0);
-        const levelMultiplier = 1 + (currentLevel - 1) * 0.1; // Same formula as LevelProgress
-        const bonusPoints = Math.floor(result.points * levelMultiplier);
-        
-        const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
-        
-        await supabase
-          .from('profiles')
-          .update({ total_score: newTotalScore })
-          .eq('id', user.id);
-
-        // Silent success - no toast notifications for correct words during gameplay
-      }
-    } else {
-      playSound('wrongWord');
-      toast({
-        title: 'Geçersiz Kelime',
-        description: result.message,
-        variant: 'destructive',
-        duration: 1000,
-      });
-    }
-
+  if (!result.isValid) {
+    playSound('wrongWord');
+    toast({
+      title: 'Geçersiz Kelime',
+      description: result.message,
+      variant: 'destructive',
+      duration: 1000,
+    });
     clearWord();
+    return;
+  }
 
-    // AI opponent plays automatically via interval, no manual trigger needed
-  };
+  // 🎯 ESNEKLİK: Case-insensitive used words kontrolü
+  const wordToCheck = currentWord.toLowerCase(); // Kontrol için hep lowercase kullan
+  
+  console.log('🔍 Checking if word already used:', wordToCheck);
+  console.log('🔍 Used words:', Array.from(usedWords));
+  
+  // Used words set'inde bu kelimenin herhangi bir varyantı var mı?
+  const isAlreadyUsed = Array.from(usedWords).some(usedWord => 
+    usedWord.toLowerCase() === wordToCheck
+  );
+  
+  if (isAlreadyUsed) {
+    toast({
+      title: 'Kelimeyi Zaten Kullandınız',
+      description: 'Bu kelimeyi daha önce SİZ kullandınız.',
+      variant: 'destructive',
+      duration: 1500,
+    });
+    playSound('wrongWord');
+    clearWord();
+    return;
+  }
+
+  // 🎯 KELİME GEÇERLİ VE KULLANILMAMIŞ - KABUL ET
+  console.log('✅ Word accepted:', currentWord, 'Points:', result.points);
+  
+  // Add word to used words (normalize to lowercase for consistency)
+  const newUsedWords = new Set([...usedWords, wordToCheck]);
+  setUsedWords(newUsedWords);
+  console.log('✅ Added word to used (normalized to lowercase):', wordToCheck);
+  
+  playSound('correctWord');
+  const newScore = playerScore + result.points;
+  setPlayerScore(newScore);
+  
+  // Store word with score for statistics (original case için)
+  setPlayerWords(prev => [...prev, currentWord]);
+  setPlayerWordsWithScores(prev => [...prev, { word: currentWord, score: result.points }]);
+  
+  // Trigger effects if purchased
+  triggerWordEffects();
+  
+  // Update score in multiplayer context
+  if (currentRoom) {
+    await updateScore(newScore);
+  }
+
+  // Update total score in database for level progression with level multiplier
+  if (user) {
+    const { data: currentProfile } = await supabase
+      .from('profiles')
+      .select('total_score')
+      .eq('id', user.id)
+      .single();
+
+    // Calculate current level to determine multiplier
+    const calculateLevel = (totalScore: number) => {
+      const baseExp = 1000;
+      const expIncreasePerLevel = 100;
+      
+      let level = 1;
+      let totalExpNeeded = 0;
+      let currentLevelExp = baseExp;
+
+      while (totalScore >= totalExpNeeded + currentLevelExp) {
+        totalExpNeeded += currentLevelExp;
+        level++;
+        currentLevelExp = baseExp + (level - 1) * expIncreasePerLevel;
+      }
+
+      return level;
+    };
+
+    const currentLevel = calculateLevel(currentProfile?.total_score || 0);
+    const levelMultiplier = 1 + (currentLevel - 1) * 0.1;
+    const bonusPoints = Math.floor(result.points * levelMultiplier);
+    
+    const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
+    
+    await supabase
+      .from('profiles')
+      .update({ total_score: newTotalScore })
+      .eq('id', user.id);
+  }
+
+  clearWord();
+};
 
   // Trigger word effects (confetti/fireworks) if purchased
   const triggerWordEffects = () => {
