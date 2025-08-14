@@ -66,8 +66,7 @@ const AppRoutes = () => {
         <GamePage gameMode="random-match" />
       </ProtectedRoute>
     } />
-    
-    {/* Turnuva route'ları - sıralama önemli! */}
+
     <Route path="/tournament/:tournamentId" element={
       <ProtectedRoute>
         <TournamentMatchPage />
