@@ -908,6 +908,11 @@ if (gameEnded) {
     }
   };
 
+  const clearWord = () => {
+  setSelectedLetters([]);
+  setCurrentWord('');
+};
+
   // Clear current word
   const submitWord = async () => {
   if (waitingForPlayer) return;
