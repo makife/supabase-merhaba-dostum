@@ -29,6 +29,13 @@ import {
 
 interface GamePageProps {
   gameMode: 'vs-computer' | 'private-room' | 'random-match' | 'tournament';
+  onGameComplete?: (winnerId: string, player1Score: number, player2Score: number) => void;
+  tournamentMatch?: any;
+  gameType?: 'timed' | 'score';
+}
+
+interface GamePageProps {
+  gameMode: 'vs-computer' | 'private-room' | 'random-match' | 'tournament';
 }
 
 const GamePage = ({ gameMode }: GamePageProps) => {
