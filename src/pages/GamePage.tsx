@@ -264,7 +264,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         }
       }
       
-      // Her harfi sırayla yakıp söndür - kutu rengi değişecek (Hızlı versiyon)
+      // Her harfi sırayla renkli yap - kutu rengi değişecek (Hızlı versiyon)
       for (let i = 0; i < wordPositions.length; i++) {
         setTimeout(() => {
           setHighlightedLetters([wordPositions[i]]);
@@ -274,7 +274,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
           setTimeout(() => {
             setHighlightedLetters([]);
           }, 400);
-        }, i * 300); // Daha hızlı geçiş (500ms)
+        }, i * 500); // 500ms arayla sırayla
       }
       
       setTimeout(() => {
