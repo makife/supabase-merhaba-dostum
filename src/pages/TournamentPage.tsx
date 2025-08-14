@@ -556,12 +556,19 @@ const TournamentPage = () => {
                         </span>
                       </div>
                     </div>
-                    <Button 
-                      onClick={() => joinTournament(tournament.id)}
-                      disabled={isJoining || tournament.status !== 'waiting'}
-                    >
-                      {tournament.status === 'waiting' ? 'Katıl' : 'Görüntüle'}
-                    </Button>
+                    // Bu şekilde değiştir:
+<Button 
+  onClick={() => {
+    if (tournament.status === 'waiting') {
+      joinTournament(tournament.id);
+    } else {
+      navigate(`/tournament/${tournament.id}`);  // Turnuva detayına git
+    }
+  }}
+  disabled={isJoining}
+>
+  {tournament.status === 'waiting' ? 'Katıl' : 'Görüntüle'}
+</Button>
                   </div>
                 </CardContent>
               </Card>
