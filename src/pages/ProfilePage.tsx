@@ -204,15 +204,64 @@ const ProfilePage = () => {
     return { subscriptionType, timeLeft, diffDays };
   };
 
-  const subscriptionInfo = getSubscriptionInfo();
+  const [badges, setBadges] = useState<Array<{
+    id: string;
+    name: string;
+    description: string;
+    icon: string;
+    earned: boolean;
+    earned_at?: string;
+  }>>([]);
 
-  const badges = [
-    { name: 'İlk Adım', description: 'İlk oyununuzu tamamladınız', icon: '🎯', earned: true },
-    { name: 'Hızlı Parmaklar', description: '10 saniyede kelime yazdınız', icon: '⚡', earned: true },
-    { name: 'Kelime Ustası', description: '100 oyun tamamladınız', icon: '🏆', earned: false },
-    { name: 'Turnuva Şampiyonu', description: 'İlk turnuvanızı kazandınız', icon: '👑', earned: false },
-    { name: 'Kelime Avcısı', description: '1000 puan topladınız', icon: '🎪', earned: true },
-  ];
+  // Fetch badges from database
+  useEffect(() => {
+    const fetchBadges = async () => {
+      if (!user) return;
+      
+      try {
+        // Get all badges with user's earned status
+        const { data: allBadges, error: badgesError } = await supabase
+          .from('badges')
+          .select('*')
+          .order('name');
+          
+        if (badgesError) {
+          console.error('Rozet fetch hatası:', badgesError);
+          return;
+        }
+        
+        // Get user's earned badges
+        const { data: userBadges, error: userBadgesError } = await supabase
+          .from('user_badges')
+          .select('badge_id, earned_at')
+          .eq('user_id', user.id);
+          
+        if (userBadgesError) {
+          console.error('Kullanıcı rozet fetch hatası:', userBadgesError);
+          return;
+        }
+        
+        // Combine badges with earned status
+        const earnedBadgeIds = new Set(userBadges?.map(ub => ub.badge_id) || []);
+        const badgesWithStatus = allBadges?.map(badge => ({
+          id: badge.id,
+          name: badge.name,
+          description: badge.description,
+          icon: badge.icon,
+          earned: earnedBadgeIds.has(badge.id),
+          earned_at: userBadges?.find(ub => ub.badge_id === badge.id)?.earned_at
+        })) || [];
+        
+        setBadges(badgesWithStatus);
+      } catch (error) {
+        console.error('Rozet yükleme hatası:', error);
+      }
+    };
+
+    fetchBadges();
+  }, [user]);
+
+  const subscriptionInfo = getSubscriptionInfo();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
@@ -376,9 +425,9 @@ const ProfilePage = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {badges.map((badge, index) => (
+              {badges.map((badge) => (
                 <div 
-                  key={index}
+                  key={badge.id}
                   className={`flex items-center space-x-3 p-3 rounded-lg border ${
                     badge.earned 
                       ? 'bg-accent/50 border-accent' 
@@ -389,6 +438,11 @@ const ProfilePage = () => {
                   <div className="flex-1">
                     <p className="font-medium">{badge.name}</p>
                     <p className="text-sm text-muted-foreground">{badge.description}</p>
+                    {badge.earned && badge.earned_at && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {new Date(badge.earned_at).toLocaleDateString('tr-TR')} tarihinde kazanıldı
+                      </p>
+                    )}
                   </div>
                   {badge.earned && (
                     <Badge variant="secondary" className="text-xs">

@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "13.0.4"
@@ -861,9 +861,9 @@ export type Database = {
       check_and_award_badges: {
         Args: { p_user_id: string }
         Returns: {
+          new_badge_icon: string
           new_badge_id: string
           new_badge_name: string
-          new_badge_icon: string
         }[]
       }
       check_and_refresh_credits: {
@@ -873,9 +873,9 @@ export type Database = {
       check_words_per_game_badge: {
         Args: { p_user_id: string; p_words_count: number }
         Returns: {
+          new_badge_icon: string
           new_badge_id: string
           new_badge_name: string
-          new_badge_icon: string
         }[]
       }
       cleanup_expired_matchmaking_rooms: {
@@ -895,26 +895,26 @@ export type Database = {
         Returns: string
       }
       get_daily_top_leaders: {
-        Args: { target_date?: string; limit_count?: number }
+        Args: { limit_count?: number; target_date?: string }
         Returns: {
-          user_id: string
-          username: string
           avatar_url: string
-          daily_score: number
-          games_played: number
           best_word: string
           best_word_score: number
+          daily_score: number
+          games_played: number
           rank: number
+          user_id: string
+          username: string
         }[]
       }
       get_frequent_disconnectors: {
         Args: { limit_count?: number }
         Returns: {
+          disconnect_count: number
+          disconnect_ratio: number
           user_id: string
           username: string
-          disconnect_count: number
           win_count: number
-          disconnect_ratio: number
         }[]
       }
       get_or_create_private_chat: {
@@ -927,21 +927,21 @@ export type Database = {
       }
       update_daily_leaderboard: {
         Args: {
-          p_user_id: string
-          p_username: string
           p_avatar_url: string
-          p_game_score: number
           p_best_word?: string
           p_best_word_score?: number
+          p_game_score: number
+          p_user_id: string
+          p_username: string
         }
         Returns: undefined
       }
       update_game_statistics: {
         Args: {
-          p_user_id: string
           p_game_score: number
-          p_words: Json
           p_is_winner?: boolean
+          p_user_id: string
+          p_words: Json
         }
         Returns: undefined
       }

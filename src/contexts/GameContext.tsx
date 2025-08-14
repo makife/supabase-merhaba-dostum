@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { useAuth } from './AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useNakamaMatchmaking } from '@/hooks/useNakamaMatchmaking';
@@ -61,6 +62,7 @@ interface GameContextType {
     words: Array<{word: string, score: number}>, 
     isWinner?: boolean
   ) => Promise<void>;
+  checkBadges: (userId: string, wordsCount?: number) => Promise<void>;
   isConnected: boolean;
   useNakama: boolean;
   toggleNakama: () => void;
@@ -686,6 +688,54 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     }
   }, [currentRoom]);
 
+  // Check and award badges for a user
+  const checkBadges = useCallback(async (userId: string, wordsCount?: number) => {
+    try {
+      console.log('🏆 Rozet kontrolü yapılıyor:', userId);
+      
+      // General badge check
+      const { data: generalBadges, error: generalError } = await supabase.rpc('check_and_award_badges', {
+        p_user_id: userId
+      });
+      
+      if (generalError) {
+        console.error('❌ Genel rozet kontrolü hatası:', generalError);
+      } else if (generalBadges && generalBadges.length > 0) {
+        generalBadges.forEach((badge: any) => {
+          toast({
+            title: '🏆 Yeni Rozet!',
+            description: `"${badge.new_badge_name}" rozetini kazandınız! ${badge.new_badge_icon}`,
+            duration: 4000,
+          });
+        });
+      }
+      
+      // Words per game badge check
+      if (wordsCount && wordsCount > 0) {
+        const { data: wordsBadges, error: wordsError } = await supabase.rpc('check_words_per_game_badge', {
+          p_user_id: userId,
+          p_words_count: wordsCount
+        });
+        
+        if (wordsError) {
+          console.error('❌ Kelime rozeti kontrolü hatası:', wordsError);
+        } else if (wordsBadges && wordsBadges.length > 0) {
+          wordsBadges.forEach((badge: any) => {
+            toast({
+              title: '🏆 Yeni Rozet!',
+              description: `"${badge.new_badge_name}" rozetini kazandınız! ${badge.new_badge_icon}`,
+              duration: 4000,
+            });
+          });
+        }
+      }
+      
+      console.log('✅ Rozet kontrolü tamamlandı');
+    } catch (error) {
+      console.error('❌ Rozet kontrolü hatası:', error);
+    }
+  }, [toast]);
+
   // Update game statistics for a player
   const updatePlayerStatistics = useCallback(async (
     userId: string, 
@@ -737,6 +787,9 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         playerStats.words,
         playerStats.isWinner
       );
+      
+      // Check for new badges after updating statistics
+      await checkBadges(playerStats.userId, playerStats.words.length);
     }
     
     // Update opponent statistics if provided
@@ -747,6 +800,9 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         opponentStats.words,
         opponentStats.isWinner
       );
+      
+      // Check for new badges for opponent too
+      await checkBadges(opponentStats.userId, opponentStats.words.length);
     }
     
     // Delete the room
@@ -762,7 +818,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   } catch (error) {
     console.error('❌ End game hatası:', error);
   }
-}, [currentRoom, participants, updatePlayerStatistics]);
+}, [currentRoom, participants, updatePlayerStatistics, checkBadges]);
 
   // Check if room is full and close it
   useEffect(() => {
@@ -948,6 +1004,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       startGame,
       endGame,
       updatePlayerStatistics,
+      checkBadges,
       isConnected,
       useNakama,
       toggleNakama
