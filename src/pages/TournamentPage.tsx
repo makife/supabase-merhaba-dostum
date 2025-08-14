@@ -307,8 +307,7 @@ const TournamentPage = () => {
         description: 'İlk tur maçları oluşturuldu.',
       });
 
-      // Navigate to first match
-      navigate(`/tournament/${currentTournament.id}/match`);
+      navigate(`/tournament/${currentTournament.id}`);
 
     } catch (error) {
       console.error('Error starting tournament:', error);
