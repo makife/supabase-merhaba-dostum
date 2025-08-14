@@ -25,7 +25,9 @@ interface Tournament {
   created_at: string;
   started_at: string | null;
   finished_at: string | null;
-  game_type: 'timed' | 'score';
+  expires_at: string | null;
+  timeout_duration: number;
+  game_type: string; // Database'den string gelir, cast edilecek
 }
 
 interface TournamentMatch {
@@ -35,12 +37,13 @@ interface TournamentMatch {
   match_number: number;
   player1_id: string | null;
   player2_id: string | null;
-  player1_score: number;
-  player2_score: number;
+  player1_score?: number; // Optional çünkü database'de olmayabilir
+  player2_score?: number; // Optional çünkü database'de olmayabilir
   winner_id: string | null;
-  status: 'pending' | 'active' | 'completed';
+  status: string; // Database'den string gelir
   created_at: string;
-  updated_at: string;
+  updated_at?: string; // Optional çünkü database'de olmayabilir
+  room_id?: string; // Database'de varsa
 }
 
 interface TournamentParticipant {
@@ -82,7 +85,13 @@ const TournamentMatchPage = () => {
         .single();
 
       if (tournamentError) throw tournamentError;
-      setTournament(tournamentData);
+      
+      // Type casting ile game_type'ı düzelt
+      const processedTournament = {
+        ...tournamentData,
+        game_type: (tournamentData.game_type === 'score' ? 'score' : 'timed') as 'timed' | 'score'
+      };
+      setTournament(processedTournament);
 
       // Maçları getir
       const { data: matchesData, error: matchesError } = await supabase
@@ -93,7 +102,16 @@ const TournamentMatchPage = () => {
         .order('match_number');
 
       if (matchesError) throw matchesError;
-      setMatches(matchesData || []);
+      
+      // Matches için default değerler ekle
+      const processedMatches = (matchesData || []).map(match => ({
+        ...match,
+        player1_score: match.player1_score || 0,
+        player2_score: match.player2_score || 0,
+        updated_at: match.updated_at || match.created_at,
+        status: match.status as 'pending' | 'active' | 'completed'
+      }));
+      setMatches(processedMatches);
 
       // Katılımcıları getir
       const { data: participantsData, error: participantsError } = await supabase
@@ -109,8 +127,8 @@ const TournamentMatchPage = () => {
       setParticipants(participantsData || []);
 
       // Kullanıcının aktif maçını bul
-      if (user && matchesData) {
-        const userActiveMatch = matchesData.find(match => 
+      if (user && processedMatches) {
+        const userActiveMatch = processedMatches.find(match => 
           (match.player1_id === user.id || match.player2_id === user.id) && 
           match.status === 'active'
         );
@@ -198,15 +216,29 @@ const TournamentMatchPage = () => {
     if (!currentMatch) return;
 
     try {
-      // Maçı tamamla
-      const { error } = await supabase.rpc('complete_tournament_match', {
-        p_match_id: currentMatch.id,
-        p_winner_id: winnerId,
-        p_player1_score: player1Score,
-        p_player2_score: player2Score
-      });
+      // Önce maçı tamamla
+      const { error: updateError } = await supabase
+        .from('tournament_matches')
+        .update({
+          status: 'completed',
+          winner_id: winnerId,
+          player1_score: player1Score,
+          player2_score: player2Score,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', currentMatch.id);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
+
+      // Kaybedeni eleme
+      const loserId = winnerId === currentMatch.player1_id ? currentMatch.player2_id : currentMatch.player1_id;
+      if (loserId) {
+        await supabase
+          .from('tournament_participants')
+          .update({ eliminated_at: new Date().toISOString() })
+          .eq('user_id', loserId)
+          .eq('tournament_id', tournamentId);
+      }
 
       setIsPlaying(false);
       setCurrentMatch(null);
@@ -269,7 +301,7 @@ const TournamentMatchPage = () => {
         gameMode="tournament"
         onGameComplete={completeMatch}
         tournamentMatch={currentMatch}
-        gameType={tournament.game_type}
+        gameType={(tournament.game_type as string) === 'score' ? 'score' : 'timed'}
       />
     );
   }
@@ -293,7 +325,7 @@ const TournamentMatchPage = () => {
                  tournament.status === 'finished' ? '🏆 Bitti' : '⏳ Bekliyor'}
               </Badge>
               <Badge variant="outline">
-                {tournament.game_type === 'timed' ? '⏱️ Süreli' : '🎯 Puanlı'}
+                {(tournament.game_type as string) === 'timed' ? '⏱️ Süreli' : '🎯 Puanlı'}
               </Badge>
               <Badge variant="outline">
                 🏆 {tournament.current_round === 1 ? 'Çeyrek Final' : 
@@ -438,7 +470,7 @@ const TournamentMatchPage = () => {
                         </div>
                         <div className="flex items-center space-x-2">
                           <span className="text-sm font-mono">
-                            {match.player1_score}-{match.player2_score}
+                            {match.player1_score || 0}-{match.player2_score || 0}
                           </span>
                           <Badge variant="outline" className="text-xs">
                             🏆 {winner?.profiles?.username || `Oyuncu ${winner?.seed}`}
