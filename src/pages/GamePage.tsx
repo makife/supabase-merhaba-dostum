@@ -34,10 +34,6 @@ interface GamePageProps {
   gameType?: 'timed' | 'score';
 }
 
-interface GamePageProps {
-  gameMode: 'vs-computer' | 'private-room' | 'random-match' | 'tournament';
-}
-
 const GamePage = ({ gameMode }: GamePageProps) => {
   const { user } = useAuth();
   const { consumeCredit, isPremium } = useUser();
