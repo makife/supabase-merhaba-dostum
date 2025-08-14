@@ -299,7 +299,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     }
     
     return null;
-  }, [gameGrid, usedWords]);
+  }[gameGrid, usedWords]);
 
   const updateLeaderboard = async (score: number, bestWord?: string, bestWordScore?: number) => {
   if (!user) return;
