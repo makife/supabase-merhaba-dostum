@@ -688,6 +688,30 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     }
   }, [currentRoom]);
 
+
+  // Update game statistics for a player
+  const updatePlayerStatistics = useCallback(async (
+    userId: string, 
+    gameScore: number, 
+    words: Array<{word: string, score: number}>, 
+    isWinner: boolean = false
+  ) => {
+    try {
+      console.log('📊 İstatistikler güncelleniyor:', { userId, gameScore, words: words.length, isWinner });
+      
+      await supabase.rpc('update_game_statistics', {
+        p_user_id: userId,
+        p_game_score: gameScore,
+        p_words: words,
+        p_is_winner: isWinner
+      });
+      
+      console.log('✅ İstatistikler güncellendi');
+    } catch (error) {
+      console.error('❌ İstatistik güncelleme hatası:', error);
+    }
+   }, []);
+
   // Check and award badges for a user
   const checkBadges = useCallback(async (userId: string, wordsCount?: number) => {
     try {
@@ -735,29 +759,6 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       console.error('❌ Rozet kontrolü hatası:', error);
     }
   }, [toast]);
-
-  // Update game statistics for a player
-  const updatePlayerStatistics = useCallback(async (
-    userId: string, 
-    gameScore: number, 
-    words: Array<{word: string, score: number}>, 
-    isWinner: boolean = false
-  ) => {
-    try {
-      console.log('📊 İstatistikler güncelleniyor:', { userId, gameScore, words: words.length, isWinner });
-      
-      await supabase.rpc('update_game_statistics', {
-        p_user_id: userId,
-        p_game_score: gameScore,
-        p_words: words,
-        p_is_winner: isWinner
-      });
-      
-      console.log('✅ İstatistikler güncellendi');
-    } catch (error) {
-      console.error('❌ İstatistik güncelleme hatası:', error);
-    }
-  }, []);
 
   // End game
   const endGame = useCallback(async (
@@ -818,7 +819,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   } catch (error) {
     console.error('❌ End game hatası:', error);
   }
-}, [currentRoom, participants, updatePlayerStatistics, checkBadges]);
+}, [currentRoom, participants, updatePlayerStatistics]);
 
   // Check if room is full and close it
   useEffect(() => {
