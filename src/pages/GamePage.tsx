@@ -146,7 +146,29 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const [matchmakingTimeout, setMatchmakingTimeout] = useState<NodeJS.Timeout | null>(null);
   const [timeoutCountdown, setTimeoutCountdown] = useState(30); // 30 saniye
 
-    // Clear current word
+
+    // Handle letter click
+  const handleLetterClick = (letter: string, row: number, col: number) => {
+    if (gameEnded || waitingForPlayer) return;
+
+    playSound('letterSelect');
+    
+    const isSelected = selectedLetters.some(s => s.row === row && s.col === col);
+    
+    if (isSelected) {
+      // Remove only the clicked letter
+      const newSelected = selectedLetters.filter(s => !(s.row === row && s.col === col));
+      setSelectedLetters(newSelected);
+      setCurrentWord(newSelected.map(s => s.letter).join(''));
+    } else {
+      // Add letter
+      const newSelected = [...selectedLetters, { letter, row, col }];
+      setSelectedLetters(newSelected);
+      setCurrentWord(newSelected.map(s => s.letter).join(''));
+    }
+  };
+
+  // Clear current word
   const clearWord = () => {
     setSelectedLetters([]);
     setCurrentWord('');
@@ -169,11 +191,88 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       return;
     }
 
-      // 🎯 ÖNCELİKLE KELİMEYİ VALİDE ET
-    console.log('🔍 Validating word:', currentWord);
+    // Check if word already used
+    console.log('🔍 Current word:', currentWord);
+    console.log('🔍 Used words:', Array.from(usedWords));
+    console.log('🔍 Game mode:', gameMode);
+    console.log('🔍 Is word used?', usedWords.has(currentWord.toLowerCase()));
+    
+    if (usedWords.has(currentWord.toLowerCase())) {
+      toast({
+       title: 'Kelimeyi Zaten Kullandınız',
+       description: 'Bu kelimeyi daha önce SİZ kullandınız.',
+       variant: 'destructive',
+       duration: 1500,
+      });
+     playSound('wrongWord');
+     clearWord();
+     return;
+    }
+
     const result = await validateWord(currentWord);
 
-    if (!result.isValid) {
+    if (result.isValid) {
+      // Add word to used words
+      const newUsedWords = new Set([...usedWords, currentWord.toLowerCase()]);
+      setUsedWords(newUsedWords);
+      console.log('Added word to used:', currentWord.toLowerCase());
+      console.log('New used words:', Array.from(newUsedWords));
+      playSound('correctWord');
+      const newScore = playerScore + result.points;
+      setPlayerScore(newScore);
+      
+      // Store word with score for statistics
+      setPlayerWords(prev => [...prev, currentWord]);
+      setPlayerWordsWithScores(prev => [...prev, { word: currentWord, score: result.points }]);
+      
+      // Trigger effects if purchased
+      triggerWordEffects();
+      
+      // Update score in multiplayer context
+      if (currentRoom) {
+        await updateScore(newScore);
+      }
+
+      // Update total score in database for level progression with level multiplier
+      if (user) {
+        const { data: currentProfile } = await supabase
+          .from('profiles')
+          .select('total_score')
+          .eq('id', user.id)
+          .single();
+
+        // Calculate current level to determine multiplier
+        const calculateLevel = (totalScore: number) => {
+          const baseExp = 1000;
+          const expIncreasePerLevel = 100; // Her seviyede +100 EXP daha fazla gerekecek
+          
+          let level = 1;
+          let totalExpNeeded = 0;
+          let currentLevelExp = baseExp;
+
+          while (totalScore >= totalExpNeeded + currentLevelExp) {
+            totalExpNeeded += currentLevelExp;
+            level++;
+            currentLevelExp = baseExp + (level - 1) * expIncreasePerLevel;
+          }
+
+          return level;
+        };
+
+        const currentLevel = calculateLevel(currentProfile?.total_score || 0);
+        const levelMultiplier = 1 + (currentLevel - 1) * 0.1; // Same formula as LevelProgress
+        const bonusPoints = Math.floor(result.points * levelMultiplier);
+        
+        const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
+        
+        await supabase
+          .from('profiles')
+          .update({ total_score: newTotalScore })
+          .eq('id', user.id);
+
+        // Silent success - no toast notifications for correct words during gameplay
+      }
+    } else {
       playSound('wrongWord');
       toast({
         title: 'Geçersiz Kelime',
@@ -181,9 +280,12 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         variant: 'destructive',
         duration: 1000,
       });
-      clearWord();
-      return;
     }
+
+    clearWord();
+
+    // AI opponent plays automatically via interval, no manual trigger needed
+  };
 
   // Sync grid with room data and fetch avatars
   useEffect(() => {
@@ -927,122 +1029,7 @@ if (gameEnded) {
     }
   }, [playerScore, opponentScore, checkWinner, gameType, currentRoom?.max_score]);
 
-  // Handle letter click
-  const handleLetterClick = (letter: string, row: number, col: number) => {
-    if (gameEnded || waitingForPlayer) return;
 
-    playSound('letterSelect');
-    
-    const isSelected = selectedLetters.some(s => s.row === row && s.col === col);
-    
-    if (isSelected) {
-      // Remove only the clicked letter
-      const newSelected = selectedLetters.filter(s => !(s.row === row && s.col === col));
-      setSelectedLetters(newSelected);
-      setCurrentWord(newSelected.map(s => s.letter).join(''));
-    } else {
-      // Add letter
-      const newSelected = [...selectedLetters, { letter, row, col }];
-      setSelectedLetters(newSelected);
-      setCurrentWord(newSelected.map(s => s.letter).join(''));
-    }
-  };
-
-    // Check if word already used
-    console.log('🔍 Current word:', currentWord);
-    console.log('🔍 Used words:', Array.from(usedWords));
-    console.log('🔍 Game mode:', gameMode);
-    console.log('🔍 Is word used?', usedWords.has(currentWord.toLowerCase()));
-    
-    if (usedWords.has(currentWord.toLowerCase())) {
-      toast({
-       title: 'Kelimeyi Zaten Kullandınız',
-       description: 'Bu kelimeyi daha önce kullandınız.',
-       variant: 'destructive',
-       duration: 1500,
-      });
-     playSound('wrongWord');
-     clearWord();
-     return;
-    }
-
-    const result = await validateWord(currentWord);
-
-    if (result.isValid) {
-      // Add word to used words
-      const newUsedWords = new Set([...usedWords, currentWord.toLowerCase()]);
-      setUsedWords(newUsedWords);
-      console.log('Added word to used:', currentWord.toLowerCase());
-      console.log('New used words:', Array.from(newUsedWords));
-      playSound('correctWord');
-      const newScore = playerScore + result.points;
-      setPlayerScore(newScore);
-      
-      // Store word with score for statistics
-      setPlayerWords(prev => [...prev, currentWord]);
-      setPlayerWordsWithScores(prev => [...prev, { word: currentWord, score: result.points }]);
-      
-      // Trigger effects if purchased
-      triggerWordEffects();
-      
-      // Update score in multiplayer context
-      if (currentRoom) {
-        await updateScore(newScore);
-      }
-
-      // Update total score in database for level progression with level multiplier
-      if (user) {
-        const { data: currentProfile } = await supabase
-          .from('profiles')
-          .select('total_score')
-          .eq('id', user.id)
-          .single();
-
-        // Calculate current level to determine multiplier
-        const calculateLevel = (totalScore: number) => {
-          const baseExp = 1000;
-          const expIncreasePerLevel = 100; // Her seviyede +100 EXP daha fazla gerekecek
-          
-          let level = 1;
-          let totalExpNeeded = 0;
-          let currentLevelExp = baseExp;
-
-          while (totalScore >= totalExpNeeded + currentLevelExp) {
-            totalExpNeeded += currentLevelExp;
-            level++;
-            currentLevelExp = baseExp + (level - 1) * expIncreasePerLevel;
-          }
-
-          return level;
-        };
-
-        const currentLevel = calculateLevel(currentProfile?.total_score || 0);
-        const levelMultiplier = 1 + (currentLevel - 1) * 0.1; // Same formula as LevelProgress
-        const bonusPoints = Math.floor(result.points * levelMultiplier);
-        
-        const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
-        
-        await supabase
-          .from('profiles')
-          .update({ total_score: newTotalScore })
-          .eq('id', user.id);
-
-        // Silent success - no toast notifications for correct words during gameplay
-      }
-    } else {
-      playSound('wrongWord');
-      toast({
-        title: 'Geçersiz Kelime',
-        description: result.message,
-        variant: 'destructive',
-        duration: 1000,
-      });
-    }
-
-    clearWord();
-
-    // AI opponent plays automatically via interval, no manual trigger needed
-  };
 
   // Trigger word effects (confetti/fireworks) if purchased
   const triggerWordEffects = () => {
