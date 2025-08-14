@@ -16,53 +16,73 @@ export const useWordValidation = () => {
 
   // TÜM CALLBACK'LER STABLE - DEPENDENCİ ARRAY'LER DOĞRU
   const loadWordList = useCallback(async (): Promise<void> => {
-    // Eğer zaten yüklenmiş ise çık
-    if (wordSetRef.current !== null || isInitializedRef.current) {
-      return;
-    }
+  if (wordSetRef.current !== null || isInitializedRef.current) {
+    console.log('📚 Wordlist already loaded, skipping...');
+    return;
+  }
 
-    isInitializedRef.current = true;
+  isInitializedRef.current = true;
 
-    try {
-      console.log('📚 65K kelimeli wordlist yükleniyor...');
-      
-      const response = await fetch('/wordlist.txt');
-      
-      if (!response.ok) {
-        throw new Error(`Wordlist dosyası bulunamadı! Status: ${response.status}`);
-      }
-      
-      const text = await response.text();
-      
-      console.log('🔄 65K kelime işleniyor...');
-      const startTime = performance.now();
-      
-      const words = text
-        .split('\n')
-        .map(word => word.trim().toUpperCase())
-        .filter(word => {
-          return word.length >= 3 && 
-                 word.length <= 25 && 
-                 /^[A-ZÇĞIİÖŞÜ]+$/.test(word);
-        });
-      
-      wordSetRef.current = new Set(words);
-      
-      const endTime = performance.now();
-      const processingTime = Math.round(endTime - startTime);
-      
-      console.log(`🎉 ${words.length.toLocaleString()} kelime başarıyla yüklendi!`);
-      console.log(`⚡ İşlem süresi: ${processingTime}ms`);
-      
-    } catch (error) {
-      console.error('❌ Wordlist yüklenirken hata:', error);
-      console.log('💡 Çözüm: wordlist.txt dosyasını public/ klasörüne koyduğunuzdan emin olun');
-      
-      // Boş set oluştur - oyun çalışır ama kelime kabul etmez
-      wordSetRef.current = new Set<string>();
-      console.log('⚠️ Boş wordlist ile devam ediliyor');
+  try {
+    console.log('📚 Starting wordlist load...');
+    console.log('📚 Fetching from: /wordlist.txt');
+    
+    const response = await fetch('/wordlist.txt');
+    
+    if (!response.ok) {
+      throw new Error(`Wordlist dosyası bulunamadı! Status: ${response.status}`);
     }
-  }, []); // Boş dependency array
+    
+    const text = await response.text();
+    console.log('📚 Raw text length:', text.length);
+    console.log('📚 First 200 chars:', text.slice(0, 200));
+    
+    console.log('📄 Processing words...');
+    const startTime = performance.now();
+    
+    const rawWords = text
+      .split('\n')
+      .map(word => word.trim())
+      .filter(word => {
+        const isValid = word.length >= 3 && 
+               word.length <= 25 && 
+               /^[A-ZÇĞIİÖŞÜa-zçğıiöşü]+$/.test(word);
+        return isValid;
+      });
+    
+    // 🎯 WORDLIST'E HEM ORIJINAL HEM NORMALIZE EDILMIŞ VERSIYONLARI EKLE
+    const allWords = new Set<string>();
+    
+    rawWords.forEach(word => {
+      // Orijinal halini ekle
+      allWords.add(word);
+      
+      // Farklı case varyantlarını da ekle (tutarlılık için)
+      allWords.add(word.toUpperCase());
+      allWords.add(word.toLowerCase());
+      allWords.add(word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
+    });
+    
+    wordSetRef.current = allWords;
+    
+    const endTime = performance.now();
+    const processingTime = Math.round(endTime - startTime);
+    
+    console.log(`🎉 ${rawWords.length.toLocaleString()} kelime yüklendi!`);
+    console.log(`🎉 ${allWords.size.toLocaleString()} toplam varyant (case variants dahil)!`);
+    console.log(`⚡ İşlem süresi: ${processingTime}ms`);
+    console.log('📚 Sample original words:', rawWords.slice(0, 5));
+    console.log('📚 Sample variants:', Array.from(allWords).slice(0, 10));
+    
+  } catch (error) {
+    console.error('❌ Wordlist yüklenirken hata:', error);
+    console.log('💡 Çözüm: wordlist.txt dosyasını public/ klasörüne koyduğunuzdan emin olun');
+    
+    // Boş set oluştur
+    wordSetRef.current = new Set<string>();
+    console.log('⚠️ Boş wordlist ile devam ediliyor');
+  }
+}, []);
 
   const calculatePoints = useCallback((word: string): number => {
     const length = word.length;
@@ -82,68 +102,125 @@ export const useWordValidation = () => {
   }, []); // Boş dependency array
 
   const validateWord = useCallback(async (word: string): Promise<WordValidationResult> => {
-    // HİÇBİR KOŞULLU RETURN YOK - SADECE DATA KONTROLÜ
+  console.log('🔍 === WORD VALIDATION START ===');
+  console.log('🔍 Input word:', word);
+  console.log('🔍 Word length:', word.length);
+  console.log('🔍 Wordlist loaded:', wordSetRef.current !== null);
+  console.log('🔍 Wordlist size:', wordSetRef.current?.size || 0);
+  
+  // Hızlı pre-validations
+  if (word.length < 3) {
+    console.log('❌ Word too short');
+    return {
+      isValid: false,
+      points: 0,
+      message: 'Kelime en az 3 harf olmalıdır.'
+    };
+  }
+
+  if (word.length > 25) {
+    console.log('❌ Word too long');
+    return {
+      isValid: false,
+      points: 0,
+      message: 'Kelime çok uzun.'
+    };
+  }
+
+  if (!/^[A-ZÇĞIİÖŞÜa-zçğıiöşü]+$/.test(word)) {
+    console.log('❌ Invalid characters');
+    return {
+      isValid: false,
+      points: 0,
+      message: 'Sadece Türkçe harfler kullanabilirsiniz.'
+    };
+  }
+
+  setIsValidating(true);
+
+  try {
+    // Wordlist henüz yüklenmediyse bekle
+    if (loadPromiseRef.current) {
+      console.log('⏳ Waiting for wordlist to load...');
+      await loadPromiseRef.current;
+    }
+
+    // Wordlist kontrolü
+    if (!wordSetRef.current) {
+      console.log('❌ Wordlist not available');
+      return {
+        isValid: false,
+        points: 0,
+        message: 'Sözlük yüklenemedi.'
+      };
+    }
+
+    // 🎯 ESNEKLİK: Hem UPPERCASE hem lowercase hem de ilk harfi büyük kontrol et
+    const wordVariants = [
+      word.toUpperCase(),           // "MASA"
+      word.toLowerCase(),           // "masa" 
+      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(), // "Masa"
+      word // Orijinal hali
+    ];
     
-    // Hızlı pre-validations
-    if (word.length < 3) {
-      return {
-        isValid: false,
-        points: 0,
-        message: 'Kelime en az 3 harf olmalıdır.'
-      };
-    }
-
-    if (word.length > 25) {
-      return {
-        isValid: false,
-        points: 0,
-        message: 'Kelime çok uzun.'
-      };
-    }
-
-    if (!/^[A-ZÇĞIİÖŞÜa-zçğıiöşü]+$/.test(word)) {
-      return {
-        isValid: false,
-        points: 0,
-        message: 'Sadece Türkçe harfler kullanabilirsiniz.'
-      };
-    }
-
-    setIsValidating(true);
-
-    try {
-      // Wordlist henüz yüklenmediyse bekle
-      if (loadPromiseRef.current) {
-        await loadPromiseRef.current;
+    console.log('🔍 Checking word variants:', wordVariants);
+    
+    let isValid = false;
+    let foundVariant = '';
+    
+    // Tüm varyantları dene
+    for (const variant of wordVariants) {
+      if (wordSetRef.current.has(variant)) {
+        isValid = true;
+        foundVariant = variant;
+        console.log('✅ Found word variant:', variant);
+        break;
       }
-
-      // O(1) lookup
-      const normalizedWord = word.toUpperCase();
-      const isValid = wordSetRef.current?.has(normalizedWord) || false;
-      const points = isValid ? calculatePoints(word) : 0;
-
-      const result: WordValidationResult = {
-        isValid,
-        points,
-        message: isValid 
-          ? `Doğru! +${points} puan` 
-          : 'Bu kelime sözlükte bulunmuyor.'
-      };
-
-      console.log(`🔍 "${word}" -> ${isValid ? '✅' : '❌'} (${points} puan)`);
-      return result;
-
-    } catch (error) {
-      console.error('Kelime doğrulama hatası:', error);
-      return {
-        isValid: false,
-        points: 0,
-        message: 'Kelime doğrulanamadı.'
-      };
-    } finally {
-      setIsValidating(false);
     }
-  }, [calculatePoints]); // Stable dependency
+    
+    const points = isValid ? calculatePoints(word) : 0;
+
+    console.log('🔍 Word found in wordlist:', isValid);
+    console.log('🔍 Found as variant:', foundVariant);
+    console.log('🔍 Points calculated:', points);
+    
+    // Debug: Sample wordlist check
+    if (!isValid) {
+      console.log('🔍 Sample words from wordlist:', 
+        Array.from(wordSetRef.current).slice(0, 10)
+      );
+      
+      // Check if similar words exist
+      const similarWords = Array.from(wordSetRef.current).filter(w => 
+        w.toLowerCase().includes(word.toLowerCase().slice(0, 3)) || 
+        word.toLowerCase().includes(w.toLowerCase().slice(0, 3))
+      ).slice(0, 5);
+      console.log('🔍 Similar words found:', similarWords);
+    }
+
+    const result: WordValidationResult = {
+      isValid,
+      points,
+      message: isValid 
+        ? `Doğru! +${points} puan` 
+        : 'Bu kelime sözlükte bulunmuyor.'
+    };
+
+    console.log('🔍 Final result:', result);
+    console.log('🔍 === WORD VALIDATION END ===');
+    return result;
+
+  } catch (error) {
+    console.error('❌ Kelime doğrulama hatası:', error);
+    return {
+      isValid: false,
+      points: 0,
+      message: 'Kelime doğrulanamadı.'
+    };
+  } finally {
+    setIsValidating(false);
+  }
+}, [calculatePoints]);
 
   const getWordListStats = useCallback(() => {
     if (!wordSetRef.current) return null;
