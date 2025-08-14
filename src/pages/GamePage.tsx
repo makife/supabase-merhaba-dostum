@@ -32,6 +32,7 @@ interface GamePageProps {
 }
 
 const GamePage = ({ gameMode }: GamePageProps) => {
+  // ⭐ TÜM HOOKS EN ÜSTTE - HİÇBİR KOŞULLU RETURN'DEN ÖNCE
   const { user } = useAuth();
   const { consumeCredit, isPremium } = useUser();
   const { hasPurchased, settings } = useUserPurchases();
@@ -60,9 +61,11 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   }, [gameMode, currentRoom?.game_mode, searchParams]);
   
   const gameType = getGameType();
+  
+  // ⭐ TÜM STATE'LER
   const [timeWarningPlayed, setTimeWarningPlayed] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
-
+  
   // Game state - Generate random letters each time
   const generateRandomGrid = (): string[][] => {
     // Turkish letters with their frequency weights - NO W, Q, X EVER
@@ -96,7 +99,6 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       'Ş', 'Ş',                                // Ş - medium
       'V', 'V',                                // V - medium
       'Z',                                     // Z - rare
-      // STRICTLY Turkish alphabet only - W, Q, X forbidden
     ];
     
     const grid: string[][] = [];
@@ -146,161 +148,161 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const [matchmakingTimeout, setMatchmakingTimeout] = useState<NodeJS.Timeout | null>(null);
   const [timeoutCountdown, setTimeoutCountdown] = useState(30); // 30 saniye
 
-  // Sync grid with room data and fetch avatars
-  useEffect(() => {
-    // Update grid from room if available (only when room grid is different)
-    if (currentRoom?.current_grid) {
-      const flatGrid = currentRoom.current_grid;
-      const roomGrid: string[][] = [];
-      for (let i = 0; i < 4; i++) {
-        roomGrid.push(flatGrid.slice(i * 4, (i + 1) * 4));
-      }
-      
-      // Only update if grid is actually different to prevent unnecessary re-renders
-      const isGridDifferent = JSON.stringify(gameGrid) !== JSON.stringify(roomGrid);
-      if (isGridDifferent) {
-        console.log('📐 Updating grid from room data');
-        setGameGrid(roomGrid);
-      }
+  // ⭐ TÜM CALLBACK'LER
+  const clearWord = useCallback(() => {
+    setSelectedLetters([]);
+    setCurrentWord('');
+  }, []);
+
+  const submitWord = useCallback(async () => {
+    if (waitingForPlayer) return;
+    
+    // Set player action timestamp to delay AI
+    setLastPlayerAction(Date.now());
+    
+    if (currentWord.length < 3) {
+      toast({
+        title: 'Geçersiz Kelime',
+        description: 'Kelime en az 3 harf olmalıdır.',
+        variant: 'destructive',
+        duration: 1000,
+      });
+      return;
     }
 
-    const fetchAvatars = async () => {
-      if (!user) return;
-      
-      // Fetch current user avatar
-      const { data: playerData } = await supabase
-        .from('profiles')
-        .select('avatar_url')
-        .eq('id', user.id)
-        .maybeSingle();
-      
-      if (playerData?.avatar_url) {
-        setPlayerAvatar(playerData.avatar_url);
-      }
+    // 🎯 ÖNCELİKLE KELİMEYİ VALİDE ET
+    console.log('🔍 Validating word:', currentWord);
+    const result = await validateWord(currentWord);
 
-      // Fetch opponent avatar for private room
-      if (gameMode === 'private-room' && participants.length >= 2) {
-        const opponent = participants.find(p => p.user_id !== user.id);
-        if (opponent && (opponent as any).profiles) {
-          const opponentProfile = (opponent as any).profiles;
-          if (opponentProfile.avatar_url) {
-            setOpponentAvatar(opponentProfile.avatar_url);
-          }
-        }
-        
-        // Update opponent score from participants in private room (only if game not ended)
-        if (opponent && opponent.score !== undefined && !gameEnded) {
-          console.log('🔄 Updating opponent score from participants:', opponent.score);
-          setOpponentScore(opponent.score);
-        }
-      }
+    if (!result.isValid) {
+      playSound('wrongWord');
+      toast({
+        title: 'Geçersiz Kelime',
+        description: result.message,
+        variant: 'destructive',
+        duration: 1000,
+      });
+      clearWord();
+      return;
+    }
+
+    // 🎯 ESNEKLİK: Case-insensitive used words kontrolü
+    const wordToCheck = currentWord.toLowerCase(); // Kontrol için hep lowercase kullan
+    
+    console.log('🔍 Checking if word already used:', wordToCheck);
+    console.log('🔍 Used words:', Array.from(usedWords));
+    
+    // Used words set'inde bu kelimenin herhangi bir varyantı var mı?
+    const isAlreadyUsed = Array.from(usedWords).some(usedWord => 
+      usedWord.toLowerCase() === wordToCheck
+    );
+    
+    if (isAlreadyUsed) {
+      toast({
+        title: 'Kelimeyi Zaten Kullandınız',
+        description: 'Bu kelimeyi daha önce SİZ kullandınız.',
+        variant: 'destructive',
+        duration: 1500,
+      });
+      playSound('wrongWord');
+      clearWord();
+      return;
+    }
+
+    // 🎯 KELİME GEÇERLİ VE KULLANILMAMIŞ - KABUL ET
+    console.log('✅ Word accepted:', currentWord, 'Points:', result.points);
+    
+    // Add word to used words (normalize to lowercase for consistency)
+    const newUsedWords = new Set([...usedWords, wordToCheck]);
+    setUsedWords(newUsedWords);
+    console.log('✅ Added word to used (normalized to lowercase):', wordToCheck);
+    
+    playSound('correctWord');
+    const newScore = playerScore + result.points;
+    setPlayerScore(newScore);
+    
+    // Store word with score for statistics (original case için)
+    setPlayerWords(prev => [...prev, currentWord]);
+    setPlayerWordsWithScores(prev => [...prev, { word: currentWord, score: result.points }]);
+    
+    // Update score in multiplayer context
+    if (currentRoom) {
+      await updateScore(newScore);
+    }
+
+    clearWord();
+  }, [waitingForPlayer, currentWord, validateWord, usedWords, playerScore, currentRoom, updateScore, clearWord, toast, playSound]);
+
+  // ⭐ TÜM useEffect'LER
+  
+  // Music control effect and credit consumption
+  useEffect(() => {
+    const initializeGame = async () => {
+      // Fade out background music when entering game
+      fadeOutBackgroundMusic(1500); // 1.5 saniyede yavaşça kapan
       
-      // For random-match mode, also sync opponent score (only if game not ended)
-      if (gameMode === 'random-match' && participants.length >= 2 && !gameEnded) {
-        const opponent = participants.find(p => p.user_id !== user.id && !p.is_bot);
-        if (opponent && opponent.score !== undefined) {
-          console.log('🔄 Updating opponent score in random match:', opponent.score);
-          setOpponentScore(opponent.score);
+      console.log('GamePage isPremium:', isPremium);
+      
+      // Consume credit if not premium
+      if (!isPremium) {
+        console.log('User is not premium, consuming credit...');
+        const creditConsumed = await consumeCredit();
+        console.log('Credit consumed result:', creditConsumed);
+        if (!creditConsumed) {
+          toast({
+            title: 'Yetersiz Hak',
+            description: 'Oyun oynamak için yeterli hakkınız yok. Market\'ten hak satın alabilirsiniz.',
+            variant: 'destructive',
+          });
+          navigate('/market');
+          return;
         }
+      } else {
+        console.log('User is premium, skipping credit consumption');
       }
     };
-
-    fetchAvatars();
-  }, [user, participants, gameMode, currentRoom]);
-
-  useEffect(() => {
-  // Oyuncu ayrılma event'ini dinle
-  const handlePlayerDisconnected = (event: CustomEvent) => {
-    const { winner, reason } = event.detail;
     
-    console.log('🎯 Player disconnect event:', { winner, reason });
+    initializeGame();
     
-    if (winner === 'player') {
-      setDisconnectWin(true);
-      setGameEnded(true);
-      setWinner('player');
-      
-      // Ses efekti
-      playSound('gameWin');
-      setTimeout(() => playCelebrationSound(), 500);
-      
-      // Özel mesaj
-      const message = reason === 'opponent_left' 
-        ? 'Rakip oyundan ayrıldı' 
-        : 'Rakibin bağlantısı koptu';
-        
-      toast({
-        title: '🏆 Tebrikler!',
-        description: `${message}. Kazandınız!`,
-        duration: 5000,
-      });
-    }
-  };
+    // Fade in background music again when leaving game (cleanup)
+    return () => {
+      fadeInBackgroundMusic(1000); // 1 saniyede yavaşça açıl
+    };
+  }, []); // Empty dependency array to run only once
 
-  // Event listener ekle
-  window.addEventListener('playerDisconnected', handlePlayerDisconnected as EventListener);
-  
-  // Cleanup
-  return () => {
-    window.removeEventListener('playerDisconnected', handlePlayerDisconnected as EventListener);
-  };
-}, [playSound, playCelebrationSound, toast]);
+  // ⭐ RENDER LOGİĞİ - HOOKS'LARDAN SONRA
 
-// Oyun bittiğinde gösterilecek ekranı güncelle (mevcut gameEnded ekranında):
-if (gameEnded) {
-  return (
-    <div className="min-h-screen flex items-center justify-center p-4 game-grid relative overflow-hidden">
-      {/* Konfeti Efekti - kazanıldığında */}
-      {winner === 'player' && (
-        <div className="absolute inset-0 pointer-events-none">
-          {[...Array(disconnectWin ? 75 : 50)].map((_, i) => (
-            <div
-              key={i}
-              className={`absolute w-3 h-3 rounded-full animate-[confetti_3s_ease-out_infinite] ${
-                i % 4 === 0 ? 'bg-yellow-400' :
-                i % 4 === 1 ? 'bg-red-400' :
-                i % 4 === 2 ? 'bg-blue-400' : 'bg-green-400'
-              }`}
-              style={{
-                left: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 3}s`,
-                transform: `rotate(${Math.random() * 360}deg)`
-              }}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Üzgün Animasyon - kaybedildiğinde */}
-      {winner === 'opponent' && !disconnectWin && (
-        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-          <div className="animate-[sadFace_2s_ease-in-out_infinite] text-9xl opacity-20">
-            😢
+  // Game ended screen
+  if (gameEnded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 game-grid relative overflow-hidden">
+        {/* Konfeti Efekti - kazanıldığında */}
+        {winner === 'player' && (
+          <div className="absolute inset-0 pointer-events-none">
+            {[...Array(disconnectWin ? 75 : 50)].map((_, i) => (
+              <div
+                key={i}
+                className={`absolute w-3 h-3 rounded-full animate-[confetti_3s_ease-out_infinite] ${
+                  i % 4 === 0 ? 'bg-yellow-400' :
+                  i % 4 === 1 ? 'bg-red-400' :
+                  i % 4 === 2 ? 'bg-blue-400' : 'bg-green-400'
+                }`}
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 3}s`,
+                  transform: `rotate(${Math.random() * 360}deg)`
+                }}
+              />
+            ))}
           </div>
-        </div>
-      )}
+        )}
 
-      <Card className="w-full max-w-md text-center relative z-10">
-        <CardContent className="p-6">
-          <Trophy className={`w-16 h-16 mx-auto mb-4 ${
-            winner === 'player' ? 'text-yellow-500 animate-bounce' : 'text-gray-400'
-          }`} />
-          
-          {/* Kazanma mesajları */}
-          <h2 className={`text-2xl font-bold mb-2 ${
-            winner === 'player' ? 'text-yellow-600 animate-pulse' : ''
-          }`}>
+        <div className="w-full max-w-md text-center relative z-10 bg-white/90 rounded-lg p-6">
+          <h2 className="text-2xl font-bold mb-4">
             {winner === 'player' && disconnectWin ? '🏆 Varsayılan Kazanma!' :
              winner === 'player' ? '🎉 Kazandınız!' :
              winner === 'opponent' ? 'Kaybettiniz!' : 'Beraberlik!'}
           </h2>
-          
-          {/* Açıklama mesajı */}
-          {disconnectWin && (
-            <p className="text-sm text-muted-foreground mb-3">
-              Rakip oyuncu oyundan ayrıldı. Bonus puan kazandınız! 🎁
-            </p>
-          )}
           
           <div className="space-y-2 mb-6">
             <div className="flex justify-between">
@@ -311,27 +313,17 @@ if (gameEnded) {
               <span>Rakip:</span>
               <span className="font-bold">{opponentScore}</span>
             </div>
-            
-            {/* Bonus puan gösterimi */}
-            {disconnectWin && (
-              <div className="flex justify-between text-green-600">
-                <span>Kazanma Bonusu:</span>
-                <span className="font-bold">+100 EXP</span>
-              </div>
-            )}
           </div>
           
           <div className="space-y-2">
-            <Button onClick={() => {
-              playSound('buttonClick');
-              navigate('/');
-            }} className="w-full">
+            <button 
+              onClick={() => navigate('/')}
+              className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
+            >
               Ana Menüye Dön
-            </Button>
-            <Button 
-              variant="outline" 
+            </button>
+            <button 
               onClick={() => {
-                playSound('buttonClick');
                 // Reset game state
                 setGameGrid(generateRandomGrid());
                 setSelectedLetters([]);
@@ -343,23 +335,232 @@ if (gameEnded) {
                 setOpponentWordsWithScores([]);
                 setPlayerScore(0);
                 setOpponentScore(0);
-                setTimeLeft(gameType === 'timed' ? 120 : Infinity);
+                setTimeLeft(gameType === 'timed' ? 120 : 0);
                 setGameStarted(true);
                 setGameEnded(false);
                 setWinner(null);
                 setTimeWarningPlayed(false);
-                setDisconnectWin(false); // YENI: Reset disconnect win
-              }} 
-              className="w-full"
+                setDisconnectWin(false);
+              }}
+              className="w-full bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600"
             >
               Tekrar Oyna
-            </Button>
+            </button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Waiting screens
+  if (gameMode === 'random-match' && waitingForPlayer) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background to-muted">
+        <div className="w-full max-w-md text-center bg-white/90 rounded-lg p-8">
+          <h2 className="text-2xl font-bold mb-4">Rastgele Eşleşme</h2>
+          <p className="text-gray-600 mb-4">Rastgele rakip aranıyor...</p>
+          
+          <div className="bg-gray-100 rounded-lg p-4 mb-4">
+            <p className="text-sm font-medium mb-2">
+              {timeoutCountdown > 0 ? (
+                <>AI rakip ekleme: {timeoutCountdown}s</>
+              ) : (
+                'AI rakip ekleniyor...'
+              )}
+            </p>
+            <div className="w-full bg-white rounded-full h-2 mt-2">
+              <div 
+                className="bg-blue-500 h-2 rounded-full transition-all duration-1000"
+                style={{ width: `${((30 - timeoutCountdown) / 30) * 100}%` }}
+              />
+            </div>
+          </div>
+          
+          <p className="text-sm text-gray-500 mb-4">
+            Katılımcılar: {participants.length}/2
+          </p>
+          
+          <button 
+            onClick={() => navigate('/')}
+            className="w-full bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600"
+          >
+            Ana Menüye Dön
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (waitingForPlayer) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background to-muted">
+        <div className="w-full max-w-md text-center bg-white/90 rounded-lg p-8">
+          <h2 className="text-2xl font-bold mb-4">Özel Oda</h2>
+          <p className="text-gray-600 mb-4">İkinci oyuncuyu bekliyoruz...</p>
+          
+          <div className="bg-gray-100 rounded-lg p-4 mb-4">
+            <p className="text-sm font-medium">Oda Kodu</p>
+            <div className="flex items-center justify-center space-x-2 mt-2">
+              <span className="text-2xl font-mono font-bold">{currentRoom?.room_code}</span>
+              <button 
+                onClick={async () => {
+                  if (currentRoom?.room_code) {
+                    await navigator.clipboard.writeText(currentRoom.room_code);
+                    toast({
+                      title: 'Kopyalandı!',
+                      description: 'Oda kodu panoya kopyalandı',
+                    });
+                  }
+                }}
+                className="bg-blue-500 text-white px-2 py-1 rounded text-sm hover:bg-blue-600"
+              >
+                Kopyala
+              </button>
+            </div>
+          </div>
+          
+          <p className="text-sm text-gray-500 mb-4">
+            Bu kodu arkadaşınızla paylaşın
+          </p>
+          <div className="text-xs text-gray-400 mb-4">
+            Katılımcılar: {participants.length}/2
+          </div>
+          
+          <button 
+            onClick={() => navigate('/')}
+            className="w-full bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600"
+          >
+            Ana Menüye Dön
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Main game interface
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
+      <div className="max-w-md mx-auto space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <button 
+            onClick={() => {
+              if (gameMode === 'random-match' && !gameEnded) {
+                setShowExitDialog(true);
+              } else {
+                navigate('/');
+              }
+            }}
+            className="bg-gray-500 text-white px-3 py-2 rounded hover:bg-gray-600"
+          >
+            ← Çıkış
+          </button>
+          
+          {gameType === 'timed' ? (
+            <div className="text-center">
+              <div className={`text-lg font-bold ${timeLeft <= 15 ? 'text-red-500 animate-pulse' : ''}`}>
+                ⏰ {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center">
+              <span className="text-sm font-medium">🎯 500 Puana Kadar</span>
+            </div>
+          )}
+        </div>
+
+        {/* Scores */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-white/80 rounded-lg p-4 text-center">
+            <p className="text-sm font-bold mb-2">Siz</p>
+            <p className="text-2xl font-bold">{playerScore}</p>
+          </div>
+          <div className="bg-white/80 rounded-lg p-4 text-center">
+            <p className="text-sm font-bold mb-2">Rakip</p>
+            <p className="text-2xl font-bold">{opponentScore}</p>
+          </div>
+        </div>
+
+        {/* Current Word Input */}
+        <div className="bg-white/80 rounded-lg p-4">
+          <div className="flex items-center space-x-2">
+            <input 
+              value={currentWord} 
+              readOnly 
+              placeholder="~Kelime Üret~"
+              className="flex-1 text-2xl font-mono text-center bg-transparent border border-gray-300 rounded px-3 py-2"
+            />
+            <span className="bg-gray-200 px-3 py-2 rounded font-bold">
+              {currentWord.length}
+            </span>
+          </div>
+        </div>
+
+        {/* Game Grid */}
+        <div className="bg-white/80 rounded-lg p-6">
+          <div className="grid grid-cols-4 gap-3">
+            {gameGrid.map((row, rowIndex) =>
+              row.map((letter, colIndex) => {
+                const isSelected = selectedLetters.some(s => s.row === rowIndex && s.col === colIndex);
+                const selectionOrder = selectedLetters.findIndex(s => s.row === rowIndex && s.col === colIndex);
+                return (
+                  <button
+                    key={`${rowIndex}-${colIndex}`}
+                    className={`h-16 text-xl font-bold rounded-lg border-2 relative transition-all ${
+                      isSelected 
+                        ? 'bg-blue-500 text-white border-blue-600 transform scale-105' 
+                        : 'bg-gray-100 text-gray-800 border-gray-300 hover:bg-gray-200'
+                    }`}
+                    onClick={() => {
+                      const isAlreadySelected = selectedLetters.some(s => s.row === rowIndex && s.col === colIndex);
+                      
+                      if (isAlreadySelected) {
+                        // Remove only the clicked letter
+                        const newSelected = selectedLetters.filter(s => !(s.row === rowIndex && s.col === colIndex));
+                        setSelectedLetters(newSelected);
+                        setCurrentWord(newSelected.map(s => s.letter).join(''));
+                      } else {
+                        // Add letter
+                        const newSelected = [...selectedLetters, { letter, row: rowIndex, col: colIndex }];
+                        setSelectedLetters(newSelected);
+                        setCurrentWord(newSelected.map(s => s.letter).join(''));
+                      }
+                    }}
+                  >
+                    {letter}
+                    {isSelected && selectionOrder >= 0 && (
+                      <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold border-2 border-white">
+                        {selectionOrder + 1}
+                      </span>
+                    )}
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="grid grid-cols-2 gap-4">
+          <button 
+            onClick={clearWord}
+            disabled={selectedLetters.length === 0}
+            className="h-12 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            🗑️ Sil
+          </button>
+          <button 
+            onClick={submitWord}
+            disabled={currentWord.length < 3 || isValidating}
+            className="h-12 bg-green-500 text-white rounded-lg font-bold hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            📤 {isValidating ? 'Kontrol Ediliyor...' : 'Gönder'}
+          </button>
+        </div>
+      </div>
     </div>
   );
-}
+};
 
   // Music control effect and credit consumption
   useEffect(() => {
