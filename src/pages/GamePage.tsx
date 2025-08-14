@@ -269,20 +269,22 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         }
       }
       
+      // Her harfi sırayla yakıp söndür - kutu rengi değişecek
       for (let i = 0; i < wordPositions.length; i++) {
         setTimeout(() => {
           setHighlightedLetters([wordPositions[i]]);
           playSound('letterSelect');
           
+          // Daha uzun süre göster (600ms)
           setTimeout(() => {
             setHighlightedLetters([]);
-          }, 300);
-        }, i * 500);
+          }, 600);
+        }, i * 800); // Daha yavaş geçiş (800ms)
       }
       
       setTimeout(() => {
         setIsJokerActive(false);
-      }, wordPositions.length * 500 + 1000);
+      }, wordPositions.length * 800 + 1000);
       
       toast({
         title: '💡 Fısılda Jokeri',
@@ -1086,7 +1088,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
                       className={`letter-button h-16 text-xl font-bold relative transition-all duration-300 ${
                         isSelected ? 'selected' : ''
                       } ${
-                        isHighlighted ? 'letter-highlight letter-pulse' : ''
+                        isHighlighted ? 'letter-glow-highlight' : ''
                       }`}
                       onClick={() => handleLetterClick(letter, rowIndex, colIndex)}
                     >
