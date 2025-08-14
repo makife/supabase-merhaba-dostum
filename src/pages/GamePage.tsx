@@ -204,11 +204,6 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     setCurrentWord('');
     
     playSound('correctWord');
-    toast({
-      title: '🔄 Değiştir Jokeri',
-      description: '5 harf değiştirildi! (3 sesli, 2 sessiz)',
-      duration: 2000,
-    });
   };
 
   // 2. Fısılda Jokeri - Mevcut harflerle yapılabilecek kelimeyi göster
@@ -269,22 +264,22 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         }
       }
       
-      // Her harfi sırayla yakıp söndür - kutu rengi değişecek
+      // Her harfi sırayla yakıp söndür - kutu rengi değişecek (Hızlı versiyon)
       for (let i = 0; i < wordPositions.length; i++) {
         setTimeout(() => {
           setHighlightedLetters([wordPositions[i]]);
           playSound('letterSelect');
           
-          // Daha uzun süre göster (600ms)
+          // Daha kısa süre göster (400ms)
           setTimeout(() => {
             setHighlightedLetters([]);
-          }, 600);
-        }, i * 800); // Daha yavaş geçiş (800ms)
+          }, 400);
+        }, i * 500); // Daha hızlı geçiş (500ms)
       }
       
       setTimeout(() => {
         setIsJokerActive(false);
-      }, wordPositions.length * 800 + 1000);
+      }, wordPositions.length * 500 + 800);
       
       toast({
         title: '💡 Fısılda Jokeri',
@@ -292,11 +287,6 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         duration: 3000,
       });
     } else {
-      toast({
-        title: '💡 Fısılda Jokeri',
-        description: 'Mevcut harflerle yeni kelime bulunamadı.',
-        duration: 2000,
-      });
       setIsJokerActive(false);
     }
     
@@ -383,12 +373,6 @@ const GamePage = ({ gameMode }: GamePageProps) => {
             if (currentRoom) {
               await updateScore(newScore);
             }
-            
-            toast({
-              title: '✍️ Sen Yaz Jokeri',
-              description: `"${selectedWord}" kelimesi otomatik gönderildi! +${result.points} puan`,
-              duration: 2000,
-            });
           }
         }
         
@@ -397,11 +381,6 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         setIsJokerActive(false);
       }, 1500);
     } else {
-      toast({
-        title: '✍️ Sen Yaz Jokeri',
-        description: 'Mevcut harflerle yeni kelime bulunamadı.',
-        duration: 2000,
-      });
       setIsJokerActive(false);
     }
     
