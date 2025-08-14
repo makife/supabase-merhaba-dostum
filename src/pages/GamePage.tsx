@@ -274,18 +274,13 @@ const GamePage = ({ gameMode }: GamePageProps) => {
           setTimeout(() => {
             setHighlightedLetters([]);
           }, 400);
-        }, i * 500); // Daha hızlı geçiş (500ms)
+        }, i * 300); // Daha hızlı geçiş (500ms)
       }
       
       setTimeout(() => {
         setIsJokerActive(false);
       }, wordPositions.length * 500 + 800);
       
-      toast({
-        title: '💡 Fısılda Jokeri',
-        description: `"${selectedWord}" kelimesini bulabilirsin!`,
-        duration: 3000,
-      });
     } else {
       setIsJokerActive(false);
     }
