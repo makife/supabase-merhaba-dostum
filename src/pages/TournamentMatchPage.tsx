@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,8 +13,7 @@ import {
   Trophy, 
   Users, 
   Clock, 
-  Play,
-  Eye
+  Play
 } from 'lucide-react';
 
 interface Tournament {
@@ -196,35 +194,19 @@ const TournamentMatchPage = () => {
   };
 
   // Maçı bitirme ve sonraki tura geçme fonksiyonu
-  const completeMatch = async (matchId: string, winnerId: string, player1Score: number, player2Score: number) => {
+  const completeMatch = async (winnerId: string, player1Score: number, player2Score: number) => {
+    if (!currentMatch) return;
+
     try {
       // Maçı tamamla
-      await supabase
-        .from('tournament_matches')
-        .update({
-          status: 'completed',
-          winner_id: winnerId,
-          player1_score: player1Score,
-          player2_score: player2Score,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', matchId);
+      const { error } = await supabase.rpc('complete_tournament_match', {
+        p_match_id: currentMatch.id,
+        p_winner_id: winnerId,
+        p_player1_score: player1Score,
+        p_player2_score: player2Score
+      });
 
-      // Kaybedeni eleme tablosuna ekle
-      const match = matches.find(m => m.id === matchId);
-      if (match) {
-        const loserId = winnerId === match.player1_id ? match.player2_id : match.player1_id;
-        if (loserId) {
-          await supabase
-            .from('tournament_participants')
-            .update({ eliminated_at: new Date().toISOString() })
-            .eq('user_id', loserId)
-            .eq('tournament_id', tournamentId);
-        }
-      }
-
-      // Sonraki turu kontrol et ve oluştur
-      await checkAndCreateNextRound();
+      if (error) throw error;
 
       setIsPlaying(false);
       setCurrentMatch(null);
@@ -234,6 +216,9 @@ const TournamentMatchPage = () => {
         description: 'Sonraki tur kontrol ediliyor...',
       });
 
+      // Verileri yeniden yükle
+      loadTournamentData();
+
     } catch (error) {
       console.error('Error completing match:', error);
       toast({
@@ -241,82 +226,6 @@ const TournamentMatchPage = () => {
         description: 'Maç tamamlanamadı',
         variant: 'destructive',
       });
-    }
-  };
-
-  // Sonraki turu kontrol et ve oluştur
-  const checkAndCreateNextRound = async () => {
-    if (!tournament) return;
-
-    try {
-      // Mevcut turdaki tüm maçların tamamlanıp tamamlanmadığını kontrol et
-      const currentRoundMatches = matches.filter(m => m.round === tournament.current_round);
-      const completedMatches = currentRoundMatches.filter(m => m.status === 'completed');
-
-      if (completedMatches.length === currentRoundMatches.length) {
-        // Tüm maçlar tamamlandı, sonraki turu oluştur
-        const nextRound = tournament.current_round + 1;
-        
-        // Final turu mu kontrol et
-        if (nextRound > 3) {
-          // Turnuva bitti
-          await supabase
-            .from('tournaments')
-            .update({
-              status: 'finished',
-              finished_at: new Date().toISOString()
-            })
-            .eq('id', tournamentId);
-
-          toast({
-            title: '🎉 Turnuva Sona Erdi!',
-            description: 'Tebrikler! Turnuva tamamlandı.',
-          });
-          return;
-        }
-
-        // Sonraki tur maçlarını oluştur
-        const winners = completedMatches.map(match => match.winner_id).filter(Boolean);
-        
-        if (winners.length >= 2) {
-          const nextRoundMatches = [];
-          
-          // İkili eşleştirmeler oluştur
-          for (let i = 0; i < winners.length; i += 2) {
-            if (winners[i + 1]) {
-              nextRoundMatches.push({
-                tournament_id: tournamentId,
-                round: nextRound,
-                match_number: Math.floor(i / 2) + 1,
-                player1_id: winners[i],
-                player2_id: winners[i + 1],
-                player1_score: 0,
-                player2_score: 0,
-                status: 'pending'
-              });
-            }
-          }
-
-          if (nextRoundMatches.length > 0) {
-            await supabase
-              .from('tournament_matches')
-              .insert(nextRoundMatches);
-
-            // Turnuva round'unu güncelle
-            await supabase
-              .from('tournaments')
-              .update({ current_round: nextRound })
-              .eq('id', tournamentId);
-
-            toast({
-              title: `🎯 ${nextRound === 2 ? 'Yarı Final' : nextRound === 3 ? 'Final' : `${nextRound}. Tur`} Hazır!`,
-              description: 'Yeni maçlar oluşturuldu',
-            });
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error creating next round:', error);
     }
   };
 
@@ -358,9 +267,7 @@ const TournamentMatchPage = () => {
     return (
       <GamePage 
         gameMode="tournament"
-        onGameComplete={(winnerId, player1Score, player2Score) => {
-          completeMatch(currentMatch.id, winnerId, player1Score, player2Score);
-        }}
+        onGameComplete={completeMatch}
         tournamentMatch={currentMatch}
         gameType={tournament.game_type}
       />
@@ -432,6 +339,27 @@ const TournamentMatchPage = () => {
                       ⏳ Sıradaki Maçınız Hazır
                     </Badge>
                     <p className="text-sm text-muted-foreground mt-2">
+                      {userNextMatch.round === 2 ? 'Yarı Final' : 
+                       userNextMatch.round === 3 ? 'Final' : 'Çeyrek Final'} - 
+                      Maç {userNextMatch.match_number}
+                    </p>
+                  </div>
+                  <div className="flex justify-center">
+                    <Button 
+                      onClick={() => startMatch(userNextMatch.id)}
+                      className="px-8 py-3"
+                    >
+                      <Play className="w-4 h-4 mr-2" />
+                      Maçı Başlat
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center">
+                  <Badge variant="outline" className="text-lg px-4 py-2">
+                    👀 Turnuvayı İzliyorsunuz
+                  </Badge>
+                  <p className="text-sm text-muted-foreground mt-2">
                     Elendikten sonra turnuvayı takip edebilirsiniz
                   </p>
                 </div>
