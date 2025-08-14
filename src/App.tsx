@@ -20,6 +20,7 @@ import TournamentPage from "@/pages/TournamentPage";
 import TestMatchmakingPage from "@/pages/TestMatchmakingPage";
 import NotFound from "./pages/NotFound";
 import LeaderboardPage from "@/pages/LeaderboardPage";
+import TournamentMatchPage from './pages/TournamentMatchPage';
 
 const queryClient = new QueryClient();
 
