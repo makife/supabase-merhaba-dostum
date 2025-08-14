@@ -66,6 +66,10 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const [highlightedLetters, setHighlightedLetters] = useState<{row: number, col: number}[]>([]);
   const [isJokerActive, setIsJokerActive] = useState(false);
   
+  // Wordlist for local validation
+  const [wordlist, setWordlist] = useState<Set<string>>(new Set());
+  const [wordlistLoaded, setWordlistLoaded] = useState(false);
+  
   // Get game type from room or URL params
   const getGameType = useCallback((): 'timed' | 'score' => {
     if (gameMode === 'vs-computer') {
@@ -441,7 +445,93 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     fetchAvatars();
   }, [user, participants, gameMode, currentRoom]);
 
-  // Music control effect and credit consumption
+  // Load wordlist from public/wordlist.txt
+  useEffect(() => {
+    const loadWordlist = async () => {
+      try {
+        console.log('📖 Loading wordlist from public/wordlist.txt...');
+        const response = await fetch('/wordlist.txt');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const text = await response.text();
+        const words = text.split('\n')
+          .map(word => word.trim().toUpperCase())
+          .filter(word => word.length >= 3); // Minimum 3 harf
+        
+        const wordSet = new Set(words);
+        setWordlist(wordSet);
+        setWordlistLoaded(true);
+        console.log(`✅ Wordlist loaded: ${wordSet.size} words`);
+      } catch (error) {
+        console.error('❌ Failed to load wordlist:', error);
+        setWordlistLoaded(false);
+      }
+    };
+
+    loadWordlist();
+  }, []);
+
+  // Local word validation using wordlist.txt
+  const validateWordLocal = useCallback((word: string): { isValid: boolean; points: number; message: string } => {
+    const normalizedWord = word.toUpperCase().trim();
+    
+    // Basic checks
+    if (normalizedWord.length < 3) {
+      return {
+        isValid: false,
+        points: 0,
+        message: 'Kelime en az 3 harf olmalıdır'
+      };
+    }
+
+    // Turkish letter pattern check
+    const turkishPattern = /^[A-ZÇĞIİÖŞÜ]+$/;
+    if (!turkishPattern.test(normalizedWord)) {
+      return {
+        isValid: false,
+        points: 0,
+        message: 'Sadece Türkçe harfler kullanabilirsiniz'
+      };
+    }
+
+    // Check against wordlist
+    if (wordlistLoaded) {
+      if (!wordlist.has(normalizedWord)) {
+        return {
+          isValid: false,
+          points: 0,
+          message: 'Bu kelime sözlükte bulunamadı'
+        };
+      }
+    } else {
+      console.warn('⚠️ Wordlist not loaded, using fallback validation');
+    }
+
+    // Calculate points based on word length and letter rarity
+    const calculatePoints = (word: string): number => {
+      const basePoints = word.length * 2;
+      let rareLetterBonus = 0;
+      
+      // Rare letters give bonus points
+      const rareLetters = ['J', 'Z', 'Ğ', 'Ü', 'Ö', 'Ç', 'Ş'];
+      for (const letter of word) {
+        if (rareLetters.includes(letter)) {
+          rareLetterBonus += 3;
+        }
+      }
+      
+      return Math.max(basePoints + rareLetterBonus, 5);
+    };
+
+    const points = calculatePoints(normalizedWord);
+    
+    return {
+      isValid: true,
+      points,
+      message: 'Geçerli kelime'
+    };
+  }, [wordlist, wordlistLoaded]);
   useEffect(() => {
     const initializeGame = async () => {
       fadeOutBackgroundMusic(1500);
