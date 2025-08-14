@@ -499,7 +499,7 @@ const HomePage = () => {
             mode={selectedMode}
             onStart={(gameType) => {
               playSound('buttonClick');
-              navigate('/tournament', { state: { gameType } });
+              navigate('/tournaments', { state: { gameType } });
               setSelectedMode(null);
             }}
             onClose={() => {
