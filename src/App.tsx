@@ -39,68 +39,70 @@ const AppRoutes = () => {
   }
 
   return (
-  <Routes>
-    <Route path="/auth" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
-    <Route path="/" element={
-      <ProtectedRoute>
-        <HomePage />
-      </ProtectedRoute>
-    } />
-    <Route path="/profile" element={
-      <ProtectedRoute>
-        <ProfilePage />
-      </ProtectedRoute>
-    } />
-    <Route path="/game/vs-computer" element={
-      <ProtectedRoute>
-        <GamePage gameMode="vs-computer" />
-      </ProtectedRoute>
-    } />
-    <Route path="/game/private-room" element={
-      <ProtectedRoute>
-        <GamePage gameMode="private-room" />
-      </ProtectedRoute>
-    } />
-    <Route path="/game/random-match" element={
-      <ProtectedRoute>
-        <GamePage gameMode="random-match" />
-      </ProtectedRoute>
-    } />
-
-    <Route path="/tournament/:tournamentId" element={
-      <ProtectedRoute>
-        <TournamentMatchPage />
-      </ProtectedRoute>
-    } />
-    <Route path="/tournaments" element={
-      <ProtectedRoute>
-        <TournamentPage />
-      </ProtectedRoute>
-    } />
-    
-    <Route path="/market" element={
-      <ProtectedRoute>
-        <MarketPage />
-      </ProtectedRoute>
-    } />
-    <Route path="/settings" element={
-      <ProtectedRoute>
-        <SettingsPage />
-      </ProtectedRoute>
-    } />
-    <Route path="/leaderboard" element={
-      <ProtectedRoute>
-        <LeaderboardPage />
-      </ProtectedRoute>
-    } />
-    <Route path="/test-matchmaking" element={
-      <ProtectedRoute>
-        <TestMatchmakingPage />
-      </ProtectedRoute>
-    } />
-    <Route path="*" element={<NotFound />} />
-  </Routes>
-);
+    <Routes>
+      <Route path="/auth" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
+      <Route path="/" element={
+        <ProtectedRoute>
+          <HomePage />
+        </ProtectedRoute>
+      } />
+      <Route path="/profile" element={
+        <ProtectedRoute>
+          <ProfilePage />
+        </ProtectedRoute>
+      } />
+      <Route path="/game/vs-computer" element={
+        <ProtectedRoute>
+          <GamePage gameMode="vs-computer" />
+        </ProtectedRoute>
+      } />
+      <Route path="/game/private-room" element={
+        <ProtectedRoute>
+          <GamePage gameMode="private-room" />
+        </ProtectedRoute>
+      } />
+      <Route path="/game/random-match" element={
+        <ProtectedRoute>
+          <GamePage gameMode="random-match" />
+        </ProtectedRoute>
+      } />
+      
+      {/* Turnuva route'ları - sıralama önemli! */}
+      <Route path="/tournament/:tournamentId" element={
+        <ProtectedRoute>
+          <TournamentMatchPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/tournaments" element={
+        <ProtectedRoute>
+          <TournamentPage />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/market" element={
+        <ProtectedRoute>
+          <MarketPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/settings" element={
+        <ProtectedRoute>
+          <SettingsPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/leaderboard" element={
+        <ProtectedRoute>
+          <LeaderboardPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/test-matchmaking" element={
+        <ProtectedRoute>
+          <TestMatchmakingPage />
+        </ProtectedRoute>
+      } />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+};
 
 const App = () => {
   return (
