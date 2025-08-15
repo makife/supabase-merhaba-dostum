@@ -514,7 +514,7 @@ const useSenYazJoker = async () => {
     // SADECE GERÇEKTEN BAŞARILI OLDUĞUNDA JOKER SAYISINI AZALT
     if (jokerSuccess) {
       setJokers(prev => ({ ...prev, senYaz: prev.senYaz - 1 }));
-      console.log('🎯 Sen Yaz Jokeri harcandı!');
+      console.log('🎯 Sen Yaz Jokeri harcanı!');
     } else {
       console.log('💾 Sen Yaz Jokeri korundu (işlem başarısız)!');
     }
@@ -1635,7 +1635,7 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
             className="h-12"
             disabled={selectedLetters.length === 0 || isJokerActive}
           >
-            <Trash2 className="w-4 h-4 mr-2" />
+            <Trash2 className="w-3 h-3 mr-2" />
             Sil
           </Button>
           <Button 
@@ -1646,7 +1646,7 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
             className="h-12"
             disabled={currentWord.length < 3 || isValidating || isJokerActive}
           >
-            <Send className="w-4 h-4 mr-2" />
+            <Send className="w-3 h-3 mr-2" />
             {isValidating ? 'Kontrol Ediliyor...' : 'Gönder'}
           </Button>
         </div>
