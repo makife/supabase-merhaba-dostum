@@ -1486,13 +1486,13 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
         <div className="grid grid-cols-2 gap-2 mb-2 shrink-0">
           <Card className="light-gradient border-0">
             <CardContent className="p-2 text-center relative overflow-hidden">
-              <Avatar className="w-12 h-12 mx-auto mb-1">
+              <Avatar className="w-16 h-16 mx-auto mb-2">
                 <AvatarImage 
                   src={playerAvatar || user?.user_metadata?.avatar_url} 
                   alt="Profile"
                 />
                 <AvatarFallback>
-                  <User className="w-12 h-12 text-gray-600" />
+                  <User className="w-8 h-8 text-gray-600" />
                 </AvatarFallback>
               </Avatar>
               <p className="text-sm text-gray-700 font-bold font-bungee">
@@ -1508,8 +1508,8 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
             </CardContent>
           </Card>
           <Card className="light-gradient border-0">
-            <CardContent className="p-2 text-center relative overflow-hidden">
-              <Avatar className="w-12 h-12 mx-auto mb-2">
+            <CardContent className="p-4 text-center relative overflow-hidden">
+              <Avatar className="w-16 h-16 mx-auto mb-2">
                 <AvatarImage 
                   src={opponent.avatar} 
                   alt="Opponent"
@@ -1559,10 +1559,7 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
         variant={selectedJoker === 'fisilida' ? 'default' : 'outline'}
         size="sm"
         className="joker-button flex flex-col items-center p-1 h-auto relative text-xs"
-        onClick={() => {
-          setSelectedJoker('fisilda');
-          useFisildaJoker();
-       }}
+        onClick={useFisildaJoker}
         disabled={jokers.fisilida <= 0 || isJokerActive}
       >
         <Lightbulb className="w-4 h-4 mb-1" />
@@ -1577,10 +1574,7 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
         variant={selectedJoker === 'senYaz' ? 'default' : 'outline'}
         size="sm"
         className="joker-button flex flex-col items-center p-1 h-auto relative text-xs"
-        onClick={() => {
-          setSelectedJoker('senYaz');
-          useSenYazJoker();
-       }}
+        onClick={useSenYazJoker}
         disabled={jokers.senYaz <= 0 || isJokerActive}
       >
         <PenTool className="w-4 h-4 mb-1" />
