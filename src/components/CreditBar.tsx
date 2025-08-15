@@ -1,5 +1,4 @@
 import React from 'react';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { useUser } from '@/contexts/UserContext';
 import { Heart } from 'lucide-react';
@@ -14,7 +13,6 @@ export const CreditBar = ({ showRefresh = false }: CreditBarProps) => {
   if (!profile) return null;
 
   const { base, bonus } = getDisplayCredits();
-  const progressValue = (base / 5) * 100;
 
   if (isPremium) {
     return (
@@ -24,6 +22,36 @@ export const CreditBar = ({ showRefresh = false }: CreditBarProps) => {
       </div>
     );
   }
+
+  // 5 eşit parçalı progress bar segmentleri
+  const segments = Array.from({ length: 5 }, (_, i) => {
+    const isActive = i < base;
+    let segmentColor = 'bg-muted'; // Varsayılan renk (boş)
+    
+    if (isActive) {
+      switch (i + 1) {
+        case 1:
+          segmentColor = 'bg-red-500'; // 1 hak - kırmızı
+          break;
+        case 2:
+          segmentColor = 'bg-red-400'; // 2 hak - açık kırmızı
+          break;
+        case 3:
+          segmentColor = 'bg-orange-500'; // 3 hak - turuncu
+          break;
+        case 4:
+          segmentColor = 'bg-green-400'; // 4 hak - açık yeşil
+          break;
+        case 5:
+          segmentColor = 'bg-green-500'; // 5 hak - yeşil
+          break;
+        default:
+          segmentColor = 'bg-muted';
+      }
+    }
+    
+    return segmentColor;
+  });
 
   return (
     <div className="space-y-2">
@@ -48,10 +76,15 @@ export const CreditBar = ({ showRefresh = false }: CreditBarProps) => {
       </div>
       
       <div className="space-y-1">
-        <Progress 
-          value={progressValue} 
-          className="h-2 bg-muted" 
-        />
+        {/* 5 Parçalı Progress Bar */}
+        <div className="flex gap-1 h-2 w-full">
+          {segments.map((color, index) => (
+            <div
+              key={index}
+              className={`flex-1 rounded-full transition-colors duration-300 ${color}`}
+            />
+          ))}
+        </div>
         <div className="flex justify-between text-xs text-muted-foreground">
           <span>{base}/5 hak</span>
           <span>15dk'da 1 hak yenilenir</span>
