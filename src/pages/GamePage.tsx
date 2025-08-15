@@ -211,11 +211,19 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   };
 
 
-// 2. Fısılda Jokeri - Sözlükteki orijinal haliyle göster (çevirme yapma!)
+// 2. Fısılda Jokeri - Mevcut harflerle yapılabilecek kelimeyi göster (Latin->Türkçe çeviri ile)
 const useFisildaJoker = async () => {
   if (jokers.fisilida <= 0 || isJokerActive) return;
   
   setIsJokerActive(true);
+  
+  // Latin karakterleri Türkçe'ye çevir
+  const latinToTurkish = (text: string): string => {
+    return text
+      .toUpperCase()
+      .replace(/I/g, 'İ')  // Latin I -> Turkish İ
+      .trim();
+  };
   
   const possibleWords = [
     'KEDİ', 'MASA', 'ARABA', 'OKUL', 'KİTAP', 'DENİZ', 'AĞAÇ', 'ÇİÇEK',
@@ -238,8 +246,8 @@ const useFisildaJoker = async () => {
   let validWords = [];
   
   if (wordlistLoaded) {
-    // Wordlist'ten kelimeleri ORİJİNAL HALİYLE al (çevirme yapma!)
-    const wordArray = Array.from(wordlist).map(word => word.toUpperCase().trim());
+    // Wordlist'ten mevcut harflerle yapılabilecek kelimeleri bul
+    const wordArray = Array.from(wordlist).map(word => latinToTurkish(word)); // LATIN->TÜRKÇE ÇEVİR
     validWords = wordArray.filter(word => {
       if (usedWords.has(word)) return false;
       
@@ -256,7 +264,7 @@ const useFisildaJoker = async () => {
       return true;
     });
   } else {
-    // Fallback: önceden tanımlı kelimeler
+    // Fallback: önceden tanımlı kelimeler (zaten Türkçe)
     validWords = possibleWords.filter(word => {
       if (usedWords.has(word.toUpperCase())) return false;
       
@@ -275,22 +283,23 @@ const useFisildaJoker = async () => {
   }
   
   if (validWords.length > 0) {
-    // Kelime bulundu
+    // Kelime bulundu - joker sayısını azalt ve animasyonu başlat
     const selectedWord = validWords[Math.floor(Math.random() * validWords.length)];
     
     // Kelime sırasına göre harfleri bul - HER HARF İÇİN FARKLI POZİSYON
     const wordPositions: {row: number, col: number}[] = [];
     const usedPositions: {row: number, col: number}[] = [];
     
-    // ONDALIK için: O-N-D-A-L-I-K sırasıyla (sözlükteki haliyle)
+    // Kelime sırasına göre: A-L-İ-N-A gibi
     for (const letter of selectedWord) {
       let letterFound = false;
       for (let row = 0; row < 4; row++) {
         for (let col = 0; col < 4; col++) {
+          // Bu pozisyon daha önce kullanılmamış ve doğru harf mi?
           if (gameGrid[row][col] === letter && 
               !usedPositions.some(p => p.row === row && p.col === col)) {
             wordPositions.push({ row, col });
-            usedPositions.push({ row, col });
+            usedPositions.push({ row, col }); // Bu pozisyonu işaretle
             letterFound = true;
             break;
           }
@@ -299,7 +308,7 @@ const useFisildaJoker = async () => {
       }
     }
     
-    console.log(`💡 Fısılda: "${selectedWord}" kelimesi (sözlük hali) için ${wordPositions.length} pozisyon bulundu`);
+    console.log(`💡 Fısılda: "${selectedWord}" kelimesi için ${wordPositions.length} pozisyon bulundu`);
     
     // Kelime sırasına göre harfleri sırayla yak
     for (let i = 0; i < wordPositions.length; i++) {
@@ -307,10 +316,11 @@ const useFisildaJoker = async () => {
         setHighlightedLetters([wordPositions[i]]);
         playSound('letterSelect');
         
+        // 400ms boyunca göster
         setTimeout(() => {
           setHighlightedLetters([]);
         }, 400);
-      }, i * 500);
+      }, i * 500); // 500ms arayla sırayla
     }
     
     setTimeout(() => {
@@ -321,7 +331,7 @@ const useFisildaJoker = async () => {
     setJokers(prev => ({ ...prev, fisilida: prev.fisilida - 1 }));
     
   } else {
-    // Kelime bulunamadı
+    // Kelime bulunamadı - joker sayısını azaltma, özel mesaj göster
     setIsJokerActive(false);
     
     toast({
@@ -1253,27 +1263,14 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
 
   if (gameEnded) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 game-grid relative overflow-hidden">
+      <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
         {winner === 'player' && (
-          <div className="absolute inset-0 pointer-events-none">
-            {[...Array(50)].map((_, i) => (
-              <div
-                key={i}
-                className={`absolute w-3 h-3 rounded-full animate-[confetti_3s_ease-out_infinite] ${
-                  i % 4 === 0 ? 'bg-yellow-400' :
-                  i % 4 === 1 ? 'bg-red-400' :
-                  i % 4 === 2 ? 'bg-blue-400' : 'bg-green-400'
-                }`}
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  animationDelay: `${Math.random() * 3}s`,
-                  transform: `rotate(${Math.random() * 360}deg)`
-                }}
-              />
-            ))}
-          </div>
-        )}
-
+              <img 
+                  src="/assets/sevinc.gif" 
+                  alt="Sevinç" 
+                  className="w-16 h-16 object-contain animate-bounce"
+                  />
+              )}
         {winner === 'opponent' && (
           <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
             <div className="animate-[sadFace_2s_ease-in-out_infinite] text-9xl opacity-20">
