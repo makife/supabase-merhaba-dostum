@@ -303,7 +303,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
           setTimeout(() => {
             setHighlightedLetters([]);
           }, 400);
-        }, i * 500); // 500ms arayla sırayla
+        }, i * 600); // 500ms arayla sırayla
       }
       
       setTimeout(() => {
@@ -917,7 +917,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         title: 'Geçersiz Kelime',
         description: 'Kelime en az 3 harf olmalıdır.',
         variant: 'destructive',
-        duration: 300, // 0.5 saniye
+        duration: 400, // 0.5 saniye
       });
       return;
     }
@@ -930,7 +930,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         title: 'Kelimeyi Zaten Kullandınız',
         description: 'Bu kelimeyi daha önce kullandınız.',
         variant: 'destructive',
-        duration: 300, // 0.5 saniye
+        duration: 400, // 0.5 saniye
       });
       playSound('wrongWord');
       clearWord();
@@ -948,7 +948,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         title: 'Geçersiz Kelime',
         description: result.message,
         variant: 'destructive',
-        duration: 300, // 0.5 saniye
+        duration: 400, // 0.5 saniye
       });
       clearWord();
       return;
