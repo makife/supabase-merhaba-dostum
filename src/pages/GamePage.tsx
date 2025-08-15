@@ -1420,11 +1420,17 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
   const opponent = getOpponentInfo();
   return (
     <>
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
-      <div className="max-w-md mx-auto space-y-4">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted relative overflow-hidden" 
+     style={{ 
+       paddingTop: 'env(safe-area-inset-top, 8px)', 
+       paddingBottom: 'env(safe-area-inset-bottom, 8px)',
+       paddingLeft: 'env(safe-area-inset-left, 4px)',
+       paddingRight: 'env(safe-area-inset-right, 4px)'
+     }}>
+  <div className="h-full flex flex-col px-2">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <Button variant="outline" size="sm" onClick={() => {
+        <div className="flex items-center justify-between py-2 shrink-0">
+          <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-8" onClick={() => {
             if (gameMode === 'random-match' && !gameEnded) {
               setShowExitDialog(true);
             } else if (gameMode === 'private-room' && !gameEnded) {
@@ -1443,16 +1449,16 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
               <div className={`flex items-center space-x-2 transition-all duration-300 ${
                 timeLeft <= 15 ? 'animate-pulse text-red-500' : 'text-foreground'
               }`}>
-                <Clock className={`w-4 h-4 transition-all duration-300 ${
+                <Clock className={`w-3 h-3 transition-all duration-300 ${
                   timeLeft <= 15 ? 'animate-pulse text-red-500' : ''
                 }`} />
-                <span className={`font-mono text-lg font-bold transition-all duration-300 ${
+                <span className={`font-mono text-sm font-bold transition-all duration-300 ${
                   timeLeft <= 15 ? 'text-red-500 scale-110' : ''
                 }`}>
                   {formatTime(timeLeft)}
                 </span>
               </div>
-              <div className="w-32 h-1 bg-muted rounded-full overflow-hidden">
+              <div className="w-24 h-0.5 bg-muted rounded-full overflow-hidden">
                 <div 
                   className={`h-full transition-all duration-1000 ease-out ${
                     timeLeft <= 15 ? 'bg-red-500 animate-pulse' : 
@@ -1471,10 +1477,10 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
         </div>
 
         {/* Scores */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-2 mb-2 shrink-0">
           <Card className="light-gradient border-0">
-            <CardContent className="p-4 text-center relative overflow-hidden">
-              <Avatar className="w-16 h-16 mx-auto mb-2">
+            <CardContent className="p-2 text-center relative overflow-hidden">
+              <Avatar className="w-10 h-10 mx-auto mb-1">
                 <AvatarImage 
                   src={playerAvatar || user?.user_metadata?.avatar_url} 
                   alt="Profile"
@@ -1522,20 +1528,20 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
 
         {/* Joker Panel - EN ÖNEMLİ KISIM! */}
         <Card className="bg-gradient-to-r from-purple-100 to-pink-100 border-purple-200 joker-panel-float">
-          <CardContent className="p-3">
+          <CardContent className="p-2">
             <div className="flex justify-between items-center">
               <h3 className="text-sm font-bold text-purple-800 mb-2">🎭 Jokerler</h3>
             </div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-1">
               {/* Değiştir Jokeri */}
               <Button
                 variant={selectedJoker === 'degistir' ? 'default' : 'outline'}
                 size="sm"
-                className="joker-button flex flex-col items-center p-2 h-auto relative"
+                className="joker-button flex flex-col items-center p-1 h-auto relative text-xs">
                 onClick={useDegisTirJoker}
                 disabled={jokers.degistir <= 0 || isJokerActive}
               >
-                <Shuffle className="w-4 h-4 mb-1" />
+                <Shuffle className="w-3 h-3 mb-0.5" />
                 <span className="text-xs">Değiştir</span>
                 <Badge variant="secondary" className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center">
                   {jokers.degistir}
@@ -1577,17 +1583,17 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
 
         {/* Current Word Input */}
         <Card className="game-grid border-0">
-          <CardContent className="p-4">
+          <CardContent className="p-2">
             <div className="flex items-center space-x-2">
               <Input 
                 value={currentWord} 
                 readOnly 
                 placeholder="~Kelime Üret~"
-                className={`text-2xl font-mono text-center bg-white/20 backdrop-blur-sm border-white/30 text-white placeholder:text-white/70 font-bold ${
+                className={`text-lg font-mono text-center bg-white/20 backdrop-blur-sm border-white/30 text-white placeholder:text-white/70 font-bold h-8 ${
                   isJokerActive ? 'typing-animation' : ''
                 }`}
               />
-              <Badge variant="secondary" className="bg-white/20 text-white border-white/30 font-bold text-lg px-3 py-1">
+              <Badge variant="secondary" className="bg-white/20 text-white... text-sm px-2 py-0.5 min-w-8 h-8 flex items-center justify-center">
                 {currentWord.length}
               </Badge>
             </div>
@@ -1595,9 +1601,9 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
         </Card>
 
         {/* Game Grid */}
-        <Card className="game-grid border-0">
-          <CardContent className="p-6">
-            <div className="grid grid-cols-4 gap-3">
+        <Card className="game-grid border-0 mb-2 flex-1">
+          <CardContent className="p-3 h-full flex items-center justify-center">
+            <div className="grid grid-cols-4 gap-2 w-full max-w-xs">
               {gameGrid.map((row, rowIndex) =>
                 row.map((letter, colIndex) => {
                   const isSelected = selectedLetters.some(s => s.row === rowIndex && s.col === colIndex);
@@ -1606,7 +1612,7 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
                   return (
                     <Button
                       key={`${rowIndex}-${colIndex}`}
-                      className={`letter-button h-16 text-xl font-bold relative transition-all duration-300 ${
+                      className={`letter-button h-12 text-lg font-bold relative transition-all duration-300 ${
                         isSelected ? 'selected' : ''
                       } ${
                         isHighlighted ? 'letter-glow-highlight' : ''
@@ -1628,14 +1634,14 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
         </Card>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-2 shrink-0">
           <Button 
             variant="outline" 
             onClick={clearWord}
-            className="h-12"
+            className="h-9 text-sm"
             disabled={selectedLetters.length === 0 || isJokerActive}
           >
-            <Trash2 className="w-4 h-4 mr-2" />
+            <Trash2 className="w-3 h-3 mr-2" />
             Sil
           </Button>
           <Button 
@@ -1646,7 +1652,7 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
             className="h-12"
             disabled={currentWord.length < 3 || isValidating || isJokerActive}
           >
-            <Send className="w-4 h-4 mr-2" />
+            <Send className="w-3 h-3 mr-2" />
             {isValidating ? 'Kontrol Ediliyor...' : 'Gönder'}
           </Button>
         </div>
