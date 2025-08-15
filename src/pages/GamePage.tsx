@@ -212,6 +212,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
 
   // 2. Fısılda Jokeri - Mevcut harflerle yapılabilecek kelimeyi göster
   // 2. Fısılda Jokeri - Mevcut harflerle yapılabilecek kelimeyi göster
+// 2. Fısılda Jokeri - Kelime sırasına göre harfleri yak (farklı pozisyonlar)
 const useFisildaJoker = async () => {
   if (jokers.fisilida <= 0 || isJokerActive) return;
   
@@ -227,80 +228,42 @@ const useFisildaJoker = async () => {
     'SEBZE', 'HAVUÇ', 'PATLICAN', 'BİBER', 'SOĞAN', 'SARIMSAK', 'PATATES'
   ];
   
-  const availableLetters = gameGrid.flat();
-  const letterCount: { [key: string]: number } = {};
-  
-  availableLetters.forEach(letter => {
-    letterCount[letter] = (letterCount[letter] || 0) + 1;
-  });
-  
-  // Önce wordlist'ten kontrol et (eğer yüklenmişse)
-  let validWords = [];
-  
-  if (wordlistLoaded) {
-    // Wordlist'ten mevcut harflerle yapılabilecek kelimeleri bul
-    const wordArray = Array.from(wordlist);
-    validWords = wordArray.filter(word => {
-      if (usedWords.has(word)) return false;
-      
-      const wordLetterCount: { [key: string]: number } = {};
-      for (const letter of word) {
-        wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
-      }
-      
-      for (const [letter, needed] of Object.entries(wordLetterCount)) {
-        if ((letterCount[letter] || 0) < needed) {
-          return false;
-        }
-      }
-      return true;
-    });
-  } else {
-    // Fallback: önceden tanımlı kelimeler
-    validWords = possibleWords.filter(word => {
-      if (usedWords.has(word.toUpperCase())) return false;
-      
-      const wordLetterCount: { [key: string]: number } = {};
-      for (const letter of word) {
-        wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
-      }
-      
-      for (const [letter, needed] of Object.entries(wordLetterCount)) {
-        if ((letterCount[letter] || 0) < needed) {
-          return false;
-        }
-      }
-      return true;
-    });
-  }
+  // ... önceki kodlar aynı (validWords bulma kısmı) ...
   
   if (validWords.length > 0) {
-    // Kelime bulundu - joker sayısını azalt ve animasyonu başlat
+    // Kelime bulundu
     const selectedWord = validWords[Math.floor(Math.random() * validWords.length)];
     
+    // Kelime sırasına göre harfleri bul - HER HARF İÇİN FARKLI POZİSYON
     const wordPositions: {row: number, col: number}[] = [];
     const usedPositions: {row: number, col: number}[] = [];
     
+    // ANANA için: A-N-A-N-A sırasıyla (5 farklı pozisyon)
     for (const letter of selectedWord) {
+      let letterFound = false;
       for (let row = 0; row < 4; row++) {
         for (let col = 0; col < 4; col++) {
+          // Bu pozisyon daha önce kullanılmamış ve doğru harf mi?
           if (gameGrid[row][col] === letter && 
               !usedPositions.some(p => p.row === row && p.col === col)) {
             wordPositions.push({ row, col });
-            usedPositions.push({ row, col });
+            usedPositions.push({ row, col }); // Bu pozisyonu işaretle
+            letterFound = true;
             break;
           }
         }
+        if (letterFound) break;
       }
     }
     
-    // Her harfi sırayla renkli yap - kutu rengi değişecek (Hızlı versiyon)
+    console.log(`💡 Fısılda: "${selectedWord}" kelimesi için ${wordPositions.length} pozisyon bulundu`);
+    
+    // Kelime sırasına göre harfleri sırayla yak
     for (let i = 0; i < wordPositions.length; i++) {
       setTimeout(() => {
         setHighlightedLetters([wordPositions[i]]);
         playSound('letterSelect');
         
-        // Daha kısa süre göster (400ms)
         setTimeout(() => {
           setHighlightedLetters([]);
         }, 400);
@@ -315,7 +278,7 @@ const useFisildaJoker = async () => {
     setJokers(prev => ({ ...prev, fisilida: prev.fisilida - 1 }));
     
   } else {
-    // Kelime bulunamadı - joker sayısını azaltma, özel mesaj göster
+    // Kelime bulunamadı
     setIsJokerActive(false);
     
     toast({
@@ -323,12 +286,9 @@ const useFisildaJoker = async () => {
       description: 'Şu an kulağına fısıldayacağım bir kelime aklıma gelmedi. Eğer değiştir jokeri ile yeni harfler alırsan belki bir şeyler bulabilirim! 🤔',
       duration: 4000,
     });
-    
-    // JOKER SAYISINI AZALTMA!
   }
 };
 
-  // 3. Sen Yaz Jokeri - Otomatik kelime üret ve gönder
   // 3. Sen Yaz Jokeri - Otomatik kelime üret ve gönder
 const useSenYazJoker = async () => {
   if (jokers.senYaz <= 0 || isJokerActive) return;
