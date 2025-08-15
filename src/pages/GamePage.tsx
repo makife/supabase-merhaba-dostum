@@ -1606,7 +1606,7 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
                   return (
                     <Button
                       key={`${rowIndex}-${colIndex}`}
-                      className={`letter-button h-16 text-xl font-bold relative transition-all duration-300 ${
+                      className={`letter-button h-12 text-lg font-bold relative transition-all duration-300 ${
                         isSelected ? 'selected' : ''
                       } ${
                         isHighlighted ? 'letter-glow-highlight' : ''
