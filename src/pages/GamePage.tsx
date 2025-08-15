@@ -1420,11 +1420,17 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
   const opponent = getOpponentInfo();
   return (
     <>
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
-      <div className="max-w-md mx-auto space-y-4">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted relative overflow-hidden"
+       style={{ 
+         paddingTop: 'env(safe-area-inset-top, 8px)', 
+         paddingBottom: 'env(safe-area-inset-bottom, 8px)',
+         paddingLeft: 'env(safe-area-inset-left, 4px)',
+         paddingRight: 'env(safe-area-inset-right, 4px)'
+       }}>
+      <div className="h-full flex flex-col px-2">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <Button variant="outline" size="sm" onClick={() => {
+        <div className="flex items-center justify-between py-2 shrink-0">
+          <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-8" onClick={
             if (gameMode === 'random-match' && !gameEnded) {
               setShowExitDialog(true);
             } else if (gameMode === 'private-room' && !gameEnded) {
@@ -1471,10 +1477,10 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
         </div>
 
         {/* Scores */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-2 mb-2 shrink-0">
           <Card className="light-gradient border-0">
-            <CardContent className="p-4 text-center relative overflow-hidden">
-              <Avatar className="w-16 h-16 mx-auto mb-2">
+            <CardContent className="p-2 text-center relative overflow-hidden">
+              <Avatar className="w-10 h-10 mx-auto mb-1">
                 <AvatarImage 
                   src={playerAvatar || user?.user_metadata?.avatar_url} 
                   alt="Profile"
@@ -1521,7 +1527,6 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
         </div>
 
         {/* Joker Panel - EN ÖNEMLİ KISIM! */}
-        // Joker Panel - Düzeltilmiş versiyon
 <Card className="bg-gradient-to-r from-purple-100 to-pink-100 border-purple-200 joker-panel-float">
   <CardContent className="p-2">
     <div className="flex justify-between items-center">
