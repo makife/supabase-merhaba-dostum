@@ -1632,10 +1632,10 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
           <Button 
             variant="outline" 
             onClick={clearWord}
-            className="h-9"
+            className="h-12"
             disabled={selectedLetters.length === 0 || isJokerActive}
           >
-            <Trash2 className="w-3 h-3 mr-2" />
+            <Trash2 className="w-4 h-4 mr-2" />
             Sil
           </Button>
           <Button 
@@ -1646,7 +1646,7 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
             className="h-12"
             disabled={currentWord.length < 3 || isValidating || isJokerActive}
           >
-            <Send className="w-3 h-3 mr-2" />
+            <Send className="w-4 h-4 mr-2" />
             {isValidating ? 'Kontrol Ediliyor...' : 'Gönder'}
           </Button>
         </div>
