@@ -1264,20 +1264,28 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
   if (gameEnded) {
     return (
       <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-        {winner === 'player' && (
-              <img 
-                  src="/assets/sevinc.gif" 
-                  alt="Sevinç" 
-                  className="w-16 h-16 object-contain animate-bounce"
-                  />
-              )}
-        {winner === 'opponent' && (
-          <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-            <div className="animate-[sadFace_2s_ease-in-out_infinite] text-9xl opacity-20">
-              😢
-            </div>
-          </div>
-        )}
+  {winner === 'player' && (
+    <img 
+      src="/assets/sevinc.gif" 
+      alt="Sevinç" 
+      className="w-16 h-16 object-contain animate-bounce"
+    />
+  )}
+  {winner === 'opponent' && (
+    <img 
+      src="/assets/uzgun.gif" 
+      alt="Üzgün" 
+      className="w-16 h-16 object-contain"
+    />
+  )}
+  {winner === 'tie' && (
+    <img 
+      src="/assets/sabit.gif" 
+      alt="Beraberlik" 
+      className="w-16 h-16 object-contain"
+    />
+  )}
+</div>
 
         <Card className="w-full max-w-md text-center relative z-10">
           <CardContent className="p-6">
