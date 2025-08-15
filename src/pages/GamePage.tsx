@@ -1557,7 +1557,7 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
         size="sm"
         className="joker-button flex flex-col items-center p-1 h-auto relative text-xs"
         onClick={() => {
-          setSelectedJoker('degistir');
+          setSelectedJoker('fisilda');
           useDegisTirJoker();
        }}
         disabled={jokers.fisilida <= 0 || isJokerActive}
@@ -1575,7 +1575,7 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
         size="sm"
         className="joker-button flex flex-col items-center p-1 h-auto relative text-xs"
         onClick={() => {
-          setSelectedJoker('degistir');
+          setSelectedJoker('senYaz');
           useDegisTirJoker();
        }}
         disabled={jokers.senYaz <= 0 || isJokerActive}
