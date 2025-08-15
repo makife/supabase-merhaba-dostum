@@ -1430,7 +1430,7 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
       <div className="h-full flex flex-col px-2">
         {/* Header */}
         <div className="flex items-center justify-between py-2 shrink-0">
-          <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-8" onClick={
+          <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-8" onClick={() => {
             if (gameMode === 'random-match' && !gameEnded) {
               setShowExitDialog(true);
             } else if (gameMode === 'private-room' && !gameEnded) {
