@@ -211,19 +211,11 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   };
 
 
-// 2. Fısılda Jokeri - Mevcut harflerle yapılabilecek kelimeyi göster (Latin->Türkçe çeviri ile)
+// 2. Fısılda Jokeri - Sözlükteki orijinal haliyle göster (çevirme yapma!)
 const useFisildaJoker = async () => {
   if (jokers.fisilida <= 0 || isJokerActive) return;
   
   setIsJokerActive(true);
-  
-  // Latin karakterleri Türkçe'ye çevir
-  const latinToTurkish = (text: string): string => {
-    return text
-      .toUpperCase()
-      .replace(/I/g, 'İ')  // Latin I -> Turkish İ
-      .trim();
-  };
   
   const possibleWords = [
     'KEDİ', 'MASA', 'ARABA', 'OKUL', 'KİTAP', 'DENİZ', 'AĞAÇ', 'ÇİÇEK',
@@ -246,8 +238,8 @@ const useFisildaJoker = async () => {
   let validWords = [];
   
   if (wordlistLoaded) {
-    // Wordlist'ten mevcut harflerle yapılabilecek kelimeleri bul
-    const wordArray = Array.from(wordlist).map(word => latinToTurkish(word)); // LATIN->TÜRKÇE ÇEVİR
+    // Wordlist'ten kelimeleri ORİJİNAL HALİYLE al (çevirme yapma!)
+    const wordArray = Array.from(wordlist).map(word => word.toUpperCase().trim());
     validWords = wordArray.filter(word => {
       if (usedWords.has(word)) return false;
       
@@ -264,7 +256,7 @@ const useFisildaJoker = async () => {
       return true;
     });
   } else {
-    // Fallback: önceden tanımlı kelimeler (zaten Türkçe)
+    // Fallback: önceden tanımlı kelimeler
     validWords = possibleWords.filter(word => {
       if (usedWords.has(word.toUpperCase())) return false;
       
@@ -283,23 +275,22 @@ const useFisildaJoker = async () => {
   }
   
   if (validWords.length > 0) {
-    // Kelime bulundu - joker sayısını azalt ve animasyonu başlat
+    // Kelime bulundu
     const selectedWord = validWords[Math.floor(Math.random() * validWords.length)];
     
     // Kelime sırasına göre harfleri bul - HER HARF İÇİN FARKLI POZİSYON
     const wordPositions: {row: number, col: number}[] = [];
     const usedPositions: {row: number, col: number}[] = [];
     
-    // Kelime sırasına göre: A-L-İ-N-A gibi
+    // ONDALIK için: O-N-D-A-L-I-K sırasıyla (sözlükteki haliyle)
     for (const letter of selectedWord) {
       let letterFound = false;
       for (let row = 0; row < 4; row++) {
         for (let col = 0; col < 4; col++) {
-          // Bu pozisyon daha önce kullanılmamış ve doğru harf mi?
           if (gameGrid[row][col] === letter && 
               !usedPositions.some(p => p.row === row && p.col === col)) {
             wordPositions.push({ row, col });
-            usedPositions.push({ row, col }); // Bu pozisyonu işaretle
+            usedPositions.push({ row, col });
             letterFound = true;
             break;
           }
@@ -308,7 +299,7 @@ const useFisildaJoker = async () => {
       }
     }
     
-    console.log(`💡 Fısılda: "${selectedWord}" kelimesi için ${wordPositions.length} pozisyon bulundu`);
+    console.log(`💡 Fısılda: "${selectedWord}" kelimesi (sözlük hali) için ${wordPositions.length} pozisyon bulundu`);
     
     // Kelime sırasına göre harfleri sırayla yak
     for (let i = 0; i < wordPositions.length; i++) {
@@ -316,11 +307,10 @@ const useFisildaJoker = async () => {
         setHighlightedLetters([wordPositions[i]]);
         playSound('letterSelect');
         
-        // 400ms boyunca göster
         setTimeout(() => {
           setHighlightedLetters([]);
         }, 400);
-      }, i * 500); // 500ms arayla sırayla
+      }, i * 500);
     }
     
     setTimeout(() => {
@@ -331,7 +321,7 @@ const useFisildaJoker = async () => {
     setJokers(prev => ({ ...prev, fisilida: prev.fisilida - 1 }));
     
   } else {
-    // Kelime bulunamadı - joker sayısını azaltma, özel mesaj göster
+    // Kelime bulunamadı
     setIsJokerActive(false);
     
     toast({
