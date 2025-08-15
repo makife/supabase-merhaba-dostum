@@ -886,6 +886,15 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      complete_tournament_match: {
+        Args: {
+          p_match_id: string
+          p_player1_score: number
+          p_player2_score: number
+          p_winner_id: string
+        }
+        Returns: Json
+      }
       generate_random_grid: {
         Args: Record<PropertyKey, never>
         Returns: Json
@@ -921,9 +930,25 @@ export type Database = {
         Args: { other_user_id: string }
         Returns: string
       }
+      get_tournament_status: {
+        Args: { p_tournament_id: string }
+        Returns: Json
+      }
+      get_user_tournament_status: {
+        Args: { p_tournament_id: string; p_user_id: string }
+        Returns: Json
+      }
       reset_daily_games: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      start_tournament_automatically: {
+        Args: { p_tournament_id: string }
+        Returns: Json
+      }
+      start_tournament_with_bracket: {
+        Args: { p_tournament_id: string }
+        Returns: Json
       }
       update_daily_leaderboard: {
         Args: {

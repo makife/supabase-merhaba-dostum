@@ -270,90 +270,41 @@ const TournamentPage = () => {
     if (!currentTournament) return;
 
     try {
-      const participantCount = participants.length;
-      const botsNeeded = 8 - participantCount;
-
-      // Add bots if needed
-      if (botsNeeded > 0) {
-        const botInserts = [];
-        for (let i = 0; i < botsNeeded; i++) {
-          botInserts.push({
-            tournament_id: currentTournament.id,
-            user_id: null,
-            seed: participantCount + i + 1,
-            is_bot: true
-          });
-        }
-
-        await supabase
-          .from('tournament_participants')
-          .insert(botInserts);
-      }
-
-      // Start tournament
-      await supabase
-        .from('tournaments')
-        .update({
-          status: 'active',
-          started_at: new Date().toISOString()
-        })
-        .eq('id', currentTournament.id);
-
-      // Create first round matches
-      await createTournamentMatches(currentTournament.id);
-
-      toast({
-        title: 'Turnuva Başladı!',
-        description: 'İlk tur maçları oluşturuldu.',
+      // Yeni Supabase fonksiyonu ile turnuvayı başlat
+      const { data, error } = await supabase.rpc('start_tournament_automatically', {
+        p_tournament_id: currentTournament.id
       });
 
-      navigate(`/tournament/${currentTournament.id}`);
+      if (error) throw error;
+
+      const result = data as any;
+      if (result?.success) {
+        toast({
+          title: 'Turnuva Başladı!',
+          description: `İlk tur maçları oluşturuldu. ${result.matches_created || 4} maç, ${result.participants || 8} katılımcı.`,
+        });
+
+        navigate(`/tournament/${currentTournament.id}`);
+      } else {
+        throw new Error(result?.error || 'Turnuva başlatılamadı');
+      }
 
     } catch (error) {
       console.error('Error starting tournament:', error);
       toast({
         title: 'Hata',
-        description: 'Turnuva başlatılamadı',
+        description: typeof error === 'object' && error !== null && 'message' in error 
+          ? (error as Error).message 
+          : 'Turnuva başlatılamadı',
         variant: 'destructive',
       });
     }
   };
 
-  const createTournamentMatches = async (tournamentId: string) => {
-    try {
-      // Get all participants
-      const { data: allParticipants } = await supabase
-        .from('tournament_participants')
-        .select('*')
-        .eq('tournament_id', tournamentId)
-        .order('seed');
-
-      if (!allParticipants || allParticipants.length !== 8) return;
-
-      // Create 4 first round matches
-      const matches = [];
-      for (let i = 0; i < 4; i++) {
-        const player1 = allParticipants[i * 2];
-        const player2 = allParticipants[i * 2 + 1];
-
-        matches.push({
-          tournament_id: tournamentId,
-          round: 1,
-          match_number: i + 1,
-          player1_id: player1.user_id,
-          player2_id: player2.user_id,
-          status: 'pending'
-        });
-      }
-
-      await supabase
-        .from('tournament_matches')
-        .insert(matches);
-
-    } catch (error) {
-      console.error('Error creating matches:', error);
-    }
-  };
+  // Bu fonksiyon artık kullanılmıyor, Supabase fonksiyonu kullanıyoruz
+  // const createTournamentMatches = async (tournamentId: string) => {
+  //   // Artık start_tournament_automatically fonksiyonu içinde yapılıyor
+  // };
 
   const leaveTournament = async () => {
     if (!user || !currentTournament) return;
