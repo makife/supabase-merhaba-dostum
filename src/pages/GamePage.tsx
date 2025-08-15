@@ -1628,7 +1628,7 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
         </Card>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-2 shrink-0">
+        <div className="grid grid-cols-2 gap-2">
           <Button 
             variant="outline" 
             onClick={clearWord}
