@@ -211,19 +211,11 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   };
 
 
-// 2. Fısılda Jokeri - Mevcut harflerle yapılabilecek kelimeyi göster (Latin->Türkçe çeviri ile)
+// 2. Fısılda Jokeri - Sözlükteki orijinal haliyle göster (çevirme yapma!)
 const useFisildaJoker = async () => {
   if (jokers.fisilida <= 0 || isJokerActive) return;
   
   setIsJokerActive(true);
-  
-  // Latin karakterleri Türkçe'ye çevir
-  const latinToTurkish = (text: string): string => {
-    return text
-      .toUpperCase()
-      .replace(/I/g, 'İ')  // Latin I -> Turkish İ
-      .trim();
-  };
   
   const possibleWords = [
     'KEDİ', 'MASA', 'ARABA', 'OKUL', 'KİTAP', 'DENİZ', 'AĞAÇ', 'ÇİÇEK',
@@ -246,8 +238,8 @@ const useFisildaJoker = async () => {
   let validWords = [];
   
   if (wordlistLoaded) {
-    // Wordlist'ten mevcut harflerle yapılabilecek kelimeleri bul
-    const wordArray = Array.from(wordlist).map(word => latinToTurkish(word)); // LATIN->TÜRKÇE ÇEVİR
+    // Wordlist'ten kelimeleri ORİJİNAL HALİYLE al (çevirme yapma!)
+    const wordArray = Array.from(wordlist).map(word => word.toUpperCase().trim());
     validWords = wordArray.filter(word => {
       if (usedWords.has(word)) return false;
       
@@ -264,7 +256,7 @@ const useFisildaJoker = async () => {
       return true;
     });
   } else {
-    // Fallback: önceden tanımlı kelimeler (zaten Türkçe)
+    // Fallback: önceden tanımlı kelimeler
     validWords = possibleWords.filter(word => {
       if (usedWords.has(word.toUpperCase())) return false;
       
@@ -283,23 +275,22 @@ const useFisildaJoker = async () => {
   }
   
   if (validWords.length > 0) {
-    // Kelime bulundu - joker sayısını azalt ve animasyonu başlat
+    // Kelime bulundu
     const selectedWord = validWords[Math.floor(Math.random() * validWords.length)];
     
     // Kelime sırasına göre harfleri bul - HER HARF İÇİN FARKLI POZİSYON
     const wordPositions: {row: number, col: number}[] = [];
     const usedPositions: {row: number, col: number}[] = [];
     
-    // Kelime sırasına göre: A-L-İ-N-A gibi
+    // ONDALIK için: O-N-D-A-L-I-K sırasıyla (sözlükteki haliyle)
     for (const letter of selectedWord) {
       let letterFound = false;
       for (let row = 0; row < 4; row++) {
         for (let col = 0; col < 4; col++) {
-          // Bu pozisyon daha önce kullanılmamış ve doğru harf mi?
           if (gameGrid[row][col] === letter && 
               !usedPositions.some(p => p.row === row && p.col === col)) {
             wordPositions.push({ row, col });
-            usedPositions.push({ row, col }); // Bu pozisyonu işaretle
+            usedPositions.push({ row, col });
             letterFound = true;
             break;
           }
@@ -308,7 +299,7 @@ const useFisildaJoker = async () => {
       }
     }
     
-    console.log(`💡 Fısılda: "${selectedWord}" kelimesi için ${wordPositions.length} pozisyon bulundu`);
+    console.log(`💡 Fısılda: "${selectedWord}" kelimesi (sözlük hali) için ${wordPositions.length} pozisyon bulundu`);
     
     // Kelime sırasına göre harfleri sırayla yak
     for (let i = 0; i < wordPositions.length; i++) {
@@ -316,11 +307,10 @@ const useFisildaJoker = async () => {
         setHighlightedLetters([wordPositions[i]]);
         playSound('letterSelect');
         
-        // 400ms boyunca göster
         setTimeout(() => {
           setHighlightedLetters([]);
         }, 400);
-      }, i * 500); // 500ms arayla sırayla
+      }, i * 500);
     }
     
     setTimeout(() => {
@@ -331,7 +321,7 @@ const useFisildaJoker = async () => {
     setJokers(prev => ({ ...prev, fisilida: prev.fisilida - 1 }));
     
   } else {
-    // Kelime bulunamadı - joker sayısını azaltma, özel mesaj göster
+    // Kelime bulunamadı
     setIsJokerActive(false);
     
     toast({
@@ -1262,117 +1252,99 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
   };
 
   if (gameEnded) {
- return (
-   <div className="min-h-screen flex items-center justify-center p-4 game-grid relative overflow-hidden">
-     {winner === 'player' && (
-       <div className="absolute inset-0 pointer-events-none">
-         {[...Array(50)].map((_, i) => (
-           <div
-             key={i}
-             className={`absolute w-3 h-3 rounded-full animate-[confetti_3s_ease-out_infinite] ${
-               i % 4 === 0 ? 'bg-yellow-400' :
-               i % 4 === 1 ? 'bg-red-400' :
-               i % 4 === 2 ? 'bg-blue-400' : 'bg-green-400'
-             }`}
-             style={{
-               left: `${Math.random() * 100}%`,
-               animationDelay: `${Math.random() * 3}s`,
-               transform: `rotate(${Math.random() * 360}deg)`
-             }}
-           />
-         ))}
-       </div>
-     )}
-     {winner === 'opponent' && (
-       <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-         <div className="animate-[sadFace_2s_ease-in-out_infinite] text-9xl opacity-20">
-           😢
-         </div>
-       </div>
-     )}
-     <Card className="w-full max-w-md text-center relative z-10">
-       <CardContent className="p-6">
-         <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-           {winner === 'player' && (
-             <img 
-               src="/assets/sevinc.gif" 
-               alt="Sevinç" 
-               className="w-16 h-16 object-contain animate-bounce"
-             />
-           )}
-           {winner === 'opponent' && (
-             <img 
-               src="/assets/uzgun.gif" 
-               alt="Üzgün" 
-               className="w-16 h-16 object-contain"
-             />
-           )}
-           {winner === 'tie' && (
-             <img 
-               src="/assets/sabit.gif" 
-               alt="Beraberlik" 
-               className="w-16 h-16 object-contain"
-             />
-           )}
-         </div>
-         <h2 className={`text-2xl font-bold mb-2 ${
-           winner === 'player' ? 'text-yellow-600 animate-pulse' : ''
-         }`}>
-           {winner === 'player' ? 'Kazandınız! 🎉' :
-            winner === 'opponent' ? 'Kaybettiniz!' : 'Beraberlik!'}
-         </h2>
-         <div className="space-y-2 mb-6">
-           <div className="flex justify-between">
-             <span>Sizin Puanınız:</span>
-             <span className="font-bold">{playerScore}</span>
-           </div>
-           <div className="flex justify-between">
-             <span>Rakip:</span>
-             <span className="font-bold">{opponentScore}</span>
-           </div>
-         </div>
-         <div className="space-y-2">
-           <Button onClick={() => {
-             playSound('buttonClick');
-             navigate('/');
-           }} className="w-full">
-             Ana Menüye Dön
-           </Button>
-           <Button 
-             variant="outline" 
-             onClick={() => {
-               playSound('buttonClick');
-               setGameGrid(generateRandomGrid());
-               setSelectedLetters([]);
-               setCurrentWord('');
-               setUsedWords(new Set());
-               setPlayerWords([]);
-               setOpponentWords([]);
-               setPlayerWordsWithScores([]);
-               setOpponentWordsWithScores([]);
-               setPlayerScore(0);
-               setOpponentScore(0);
-               setTimeLeft(gameType === 'timed' ? 120 : Infinity);
-               setGameStarted(true);
-               setGameEnded(false);
-               setWinner(null);
-               setTimeWarningPlayed(false);
-               // Reset jokers
-               setJokers({ degistir: 3, fisilida: 3, senYaz: 3 });
-               setSelectedJoker(null);
-               setHighlightedLetters([]);
-               setIsJokerActive(false);
-             }} 
-             className="w-full"
-           >
-             Tekrar Oyna
-           </Button>
-         </div>
-       </CardContent>
-     </Card>
-   </div>
- );
-}
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 game-grid relative overflow-hidden">
+        {winner === 'player' && (
+          <div className="absolute inset-0 pointer-events-none">
+            {[...Array(50)].map((_, i) => (
+              <div
+                key={i}
+                className={`absolute w-3 h-3 rounded-full animate-[confetti_3s_ease-out_infinite] ${
+                  i % 4 === 0 ? 'bg-yellow-400' :
+                  i % 4 === 1 ? 'bg-red-400' :
+                  i % 4 === 2 ? 'bg-blue-400' : 'bg-green-400'
+                }`}
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 3}s`,
+                  transform: `rotate(${Math.random() * 360}deg)`
+                }}
+              />
+            ))}
+          </div>
+        )}
+
+        {winner === 'opponent' && (
+          <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+            <div className="animate-[sadFace_2s_ease-in-out_infinite] text-9xl opacity-20">
+              😢
+            </div>
+          </div>
+        )}
+
+        <Card className="w-full max-w-md text-center relative z-10">
+          <CardContent className="p-6">
+            <Trophy className={`w-16 h-16 mx-auto mb-4 ${
+              winner === 'player' ? 'text-yellow-500 animate-bounce' : 'text-gray-400'
+            }`} />
+            <h2 className={`text-2xl font-bold mb-2 ${
+              winner === 'player' ? 'text-yellow-600 animate-pulse' : ''
+            }`}>
+              {winner === 'player' ? 'Kazandınız! 🎉' :
+               winner === 'opponent' ? 'Kaybettiniz!' : 'Beraberlik!'}
+            </h2>
+            <div className="space-y-2 mb-6">
+              <div className="flex justify-between">
+                <span>Sizin Puanınız:</span>
+                <span className="font-bold">{playerScore}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Rakip:</span>
+                <span className="font-bold">{opponentScore}</span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Button onClick={() => {
+                playSound('buttonClick');
+                navigate('/');
+              }} className="w-full">
+                Ana Menüye Dön
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  playSound('buttonClick');
+                  setGameGrid(generateRandomGrid());
+                  setSelectedLetters([]);
+                  setCurrentWord('');
+                  setUsedWords(new Set());
+                  setPlayerWords([]);
+                  setOpponentWords([]);
+                  setPlayerWordsWithScores([]);
+                  setOpponentWordsWithScores([]);
+                  setPlayerScore(0);
+                  setOpponentScore(0);
+                  setTimeLeft(gameType === 'timed' ? 120 : Infinity);
+                  setGameStarted(true);
+                  setGameEnded(false);
+                  setWinner(null);
+                  setTimeWarningPlayed(false);
+                  // Reset jokers
+                  setJokers({ degistir: 3, fisilida: 3, senYaz: 3 });
+                  setSelectedJoker(null);
+                  setHighlightedLetters([]);
+                  setIsJokerActive(false);
+                }} 
+                className="w-full"
+              >
+                Tekrar Oyna
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (waitingForPlayer) {
     return (
