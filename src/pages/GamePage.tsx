@@ -210,12 +210,20 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     playSound('correctWord');
   };
 
-  // 2. Fısılda Jokeri - Mevcut harflerle yapılabilecek kelimeyi göster
-// 2. Fısılda Jokeri - Mevcut harflerle yapılabilecek kelimeyi göster (Unique harfler)
+
+// 2. Fısılda Jokeri - Mevcut harflerle yapılabilecek kelimeyi göster (Latin->Türkçe çeviri ile)
 const useFisildaJoker = async () => {
   if (jokers.fisilida <= 0 || isJokerActive) return;
   
   setIsJokerActive(true);
+  
+  // Latin karakterleri Türkçe'ye çevir
+  const latinToTurkish = (text: string): string => {
+    return text
+      .toUpperCase()
+      .replace(/I/g, 'İ')  // Latin I -> Turkish İ
+      .trim();
+  };
   
   const possibleWords = [
     'KEDİ', 'MASA', 'ARABA', 'OKUL', 'KİTAP', 'DENİZ', 'AĞAÇ', 'ÇİÇEK',
@@ -239,7 +247,7 @@ const useFisildaJoker = async () => {
   
   if (wordlistLoaded) {
     // Wordlist'ten mevcut harflerle yapılabilecek kelimeleri bul
-    const wordArray = Array.from(wordlist);
+    const wordArray = Array.from(wordlist).map(word => latinToTurkish(word)); // LATIN->TÜRKÇE ÇEVİR
     validWords = wordArray.filter(word => {
       if (usedWords.has(word)) return false;
       
@@ -256,7 +264,7 @@ const useFisildaJoker = async () => {
       return true;
     });
   } else {
-    // Fallback: önceden tanımlı kelimeler
+    // Fallback: önceden tanımlı kelimeler (zaten Türkçe)
     validWords = possibleWords.filter(word => {
       if (usedWords.has(word.toUpperCase())) return false;
       
@@ -275,14 +283,14 @@ const useFisildaJoker = async () => {
   }
   
   if (validWords.length > 0) {
-    // Kelime bulundu
+    // Kelime bulundu - joker sayısını azalt ve animasyonu başlat
     const selectedWord = validWords[Math.floor(Math.random() * validWords.length)];
     
     // Kelime sırasına göre harfleri bul - HER HARF İÇİN FARKLI POZİSYON
     const wordPositions: {row: number, col: number}[] = [];
     const usedPositions: {row: number, col: number}[] = [];
     
-    // ANANA için: A-N-A-N-A sırasıyla (5 farklı pozisyon)
+    // Kelime sırasına göre: A-L-İ-N-A gibi
     for (const letter of selectedWord) {
       let letterFound = false;
       for (let row = 0; row < 4; row++) {
@@ -308,6 +316,7 @@ const useFisildaJoker = async () => {
         setHighlightedLetters([wordPositions[i]]);
         playSound('letterSelect');
         
+        // 400ms boyunca göster
         setTimeout(() => {
           setHighlightedLetters([]);
         }, 400);
@@ -322,7 +331,7 @@ const useFisildaJoker = async () => {
     setJokers(prev => ({ ...prev, fisilida: prev.fisilida - 1 }));
     
   } else {
-    // Kelime bulunamadı
+    // Kelime bulunamadı - joker sayısını azaltma, özel mesaj göster
     setIsJokerActive(false);
     
     toast({
@@ -604,66 +613,83 @@ const useSenYazJoker = async () => {
     loadWordlist();
   }, []);
 
-  // Local word validation using wordlist.txt
-  const validateWordLocal = useCallback((word: string): { isValid: boolean; points: number; message: string } => {
-    const normalizedWord = word.toUpperCase().trim();
-    
-    // Basic checks
-    if (normalizedWord.length < 3) {
-      return {
-        isValid: false,
-        points: 0,
-        message: 'Kelime en az 3 harf olmalıdır'
-      };
-    }
+  // Local word validation - Sözlükteki kelimeleri Türkçe'ye çevir
+const validateWordLocal = useCallback((word: string): { isValid: boolean; points: number; message: string } => {
+  // Latin karakterleri Türkçe'ye çevir
+  const latinToTurkish = (text: string): string => {
+    return text
+      .toUpperCase()
+      .replace(/I/g, 'İ')  // Latin I -> Turkish İ
+      .replace(/S/g, 'Ş')  // Bazı S'ler Ş olabilir (opsiyonel)
+      .replace(/G/g, 'Ğ')  // Bazı G'ler Ğ olabilir (opsiyonel)  
+      .replace(/C/g, 'Ç')  // Bazı C'ler Ç olabilir (opsiyonel)
+      .replace(/U/g, 'Ü')  // Bazı U'lar Ü olabilir (opsiyonel)
+      .replace(/O/g, 'Ö')  // Bazı O'lar Ö olabilir (opsiyonel)
+      .trim();
+  };
 
-    // Turkish letter pattern check
-    const turkishPattern = /^[A-ZÇĞIİÖŞÜ]+$/;
-    if (!turkishPattern.test(normalizedWord)) {
-      return {
-        isValid: false,
-        points: 0,
-        message: 'Sadece Türkçe harfler kullanabilirsiniz'
-      };
-    }
-
-    // Check against wordlist
-    if (wordlistLoaded) {
-      if (!wordlist.has(normalizedWord)) {
-        return {
-          isValid: false,
-          points: 0,
-          message: 'Bu kelime sözlükte bulunamadı'
-        };
-      }
-    } else {
-      console.warn('⚠️ Wordlist not loaded, using fallback validation');
-    }
-
-    // Calculate points based on word length and letter rarity
-    const calculatePoints = (word: string): number => {
-      const basePoints = word.length * 2;
-      let rareLetterBonus = 0;
-      
-      // Rare letters give bonus points
-      const rareLetters = ['J', 'Z', 'Ğ', 'Ü', 'Ö', 'Ç', 'Ş'];
-      for (const letter of word) {
-        if (rareLetters.includes(letter)) {
-          rareLetterBonus += 3;
-        }
-      }
-      
-      return Math.max(basePoints + rareLetterBonus, 5);
-    };
-
-    const points = calculatePoints(normalizedWord);
-    
+  const normalizedWord = word.toUpperCase().trim();
+  
+  // Basic checks
+  if (normalizedWord.length < 3) {
     return {
-      isValid: true,
-      points,
-      message: 'Geçerli kelime'
+      isValid: false,
+      points: 0,
+      message: 'Kelime en az 3 harf olmalıdır'
     };
-  }, [wordlist, wordlistLoaded]);
+  }
+
+  // Turkish letter pattern check
+  const turkishPattern = /^[A-ZÇĞIİÖŞÜ]+$/;
+  if (!turkishPattern.test(normalizedWord)) {
+    return {
+      isValid: false,
+      points: 0,
+      message: 'Sadece Türkçe harfler kullanabilirsiniz'
+    };
+  }
+
+  // Check against wordlist - HEM ORİJİNAL HEM TÜRKÇELEŞTİRİLMİŞ HALİ
+  if (wordlistLoaded) {
+    const wordExists = Array.from(wordlist).some(dictWord => {
+      const originalMatch = dictWord.toUpperCase() === normalizedWord;
+      const turkishMatch = latinToTurkish(dictWord).toUpperCase() === normalizedWord;
+      return originalMatch || turkishMatch;
+    });
+    
+    if (!wordExists) {
+      return {
+        isValid: false,
+        points: 0,
+        message: 'Bu kelime sözlükte bulunamadı'
+      };
+    }
+  }
+
+  // Calculate points
+  const calculatePoints = (word: string): number => {
+    const basePoints = word.length * 2;
+    let rareLetterBonus = 0;
+    
+    const rareLetters = ['J', 'Z', 'Ğ', 'Ü', 'Ö', 'Ç', 'Ş'];
+    for (const letter of word) {
+      if (rareLetters.includes(letter)) {
+        rareLetterBonus += 3;
+      }
+    }
+    
+    return Math.max(basePoints + rareLetterBonus, 5);
+  };
+
+  const points = calculatePoints(normalizedWord);
+  
+  return {
+    isValid: true,
+    points,
+    message: 'Geçerli kelime'
+  };
+}, [wordlist, wordlistLoaded]);
+  
   useEffect(() => {
     const initializeGame = async () => {
       fadeOutBackgroundMusic(1500);
