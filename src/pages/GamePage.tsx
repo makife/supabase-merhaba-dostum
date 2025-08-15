@@ -1576,7 +1576,7 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
         className="joker-button flex flex-col items-center p-1 h-auto relative text-xs"
         onClick={() => {
           setSelectedJoker('senYaz');
-          usesenYazJoker();
+          useSenYazJoker();
        }}
         disabled={jokers.senYaz <= 0 || isJokerActive}
       >
