@@ -1595,9 +1595,9 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
         </Card>
 
         {/* Game Grid */}
-        <Card className="game-grid border-0">
-          <CardContent className="p-6">
-            <div className="grid grid-cols-4 gap-3">
+        <Card className="game-grid border-0 mb-2 flex-1">
+          <CardContent className="p-3 h-full flex items-center justify-center">
+            <div className="grid grid-cols-4 gap-2 w-full max-w-xs">
               {gameGrid.map((row, rowIndex) =>
                 row.map((letter, colIndex) => {
                   const isSelected = selectedLetters.some(s => s.row === rowIndex && s.col === colIndex);
@@ -1606,7 +1606,7 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
                   return (
                     <Button
                       key={`${rowIndex}-${colIndex}`}
-                      className={`letter-button h-16 text-xl font-bold relative transition-all duration-300 ${
+                      className={`letter-button h-12 text-lg font-bold relative transition-all duration-300 ${
                         isSelected ? 'selected' : ''
                       } ${
                         isHighlighted ? 'letter-glow-highlight' : ''
@@ -1628,14 +1628,14 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
         </Card>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-2 shrink-0">
           <Button 
             variant="outline" 
             onClick={clearWord}
             className="h-12"
             disabled={selectedLetters.length === 0 || isJokerActive}
           >
-            <Trash2 className="w-3 h-3 mr-2" />
+            <Trash2 className="w-4 h-4 mr-2" />
             Sil
           </Button>
           <Button 
@@ -1646,7 +1646,7 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
             className="h-12"
             disabled={currentWord.length < 3 || isValidating || isJokerActive}
           >
-            <Send className="w-3 h-3 mr-2" />
+            <Send className="w-4 h-4 mr-2" />
             {isValidating ? 'Kontrol Ediliyor...' : 'Gönder'}
           </Button>
         </div>
