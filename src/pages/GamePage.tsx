@@ -1486,23 +1486,23 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
         <div className="grid grid-cols-2 gap-2 mb-2 shrink-0">
           <Card className="light-gradient border-0">
             <CardContent className="p-2 text-center relative overflow-hidden">
-              <Avatar className="w-8 h-8 mx-auto mb-1">
+              <Avatar className="w-12 h-12 mx-auto mb-1">
                 <AvatarImage 
                   src={playerAvatar || user?.user_metadata?.avatar_url} 
                   alt="Profile"
                 />
                 <AvatarFallback>
-                  <User className="w-8 h-8 text-gray-600" />
+                  <User className="w-12 h-12 text-gray-600" />
                 </AvatarFallback>
               </Avatar>
               <p className="text-sm text-gray-700 font-bold font-bungee">
                 Siz
               </p>
-              <p className="text-2xl font-bold text-gray-700">{playerScore}</p>
+              <p className="text-sm font-bold text-gray-700">{playerScore}</p>
               {gameType === 'score' && (
                 <Progress 
                   value={(playerScore / 500) * 100} 
-                  className="mt-2 bg-white/60" 
+                  className="mt-1 bg-white/60" 
                 />
               )}
             </CardContent>
