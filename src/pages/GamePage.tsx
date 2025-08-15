@@ -1584,7 +1584,7 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
                 value={currentWord} 
                 readOnly 
                 placeholder="~Kelime Üret~"
-                className={`text-lg font-mono text-center bg-white/20 backdrop-blur-sm border-white/30 text-white placeholder:text-white/70 font-bold ${
+                className={`text-lg font-mono text-center bg-white/20 backdrop-blur-sm border-white/30 text-white placeholder:text-white/70 font-bold h-8 ${
                   isJokerActive ? 'typing-animation' : ''
                 }`}
               />
@@ -1629,11 +1629,11 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
         </Card>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-2 shrink-0">
           <Button 
             variant="outline" 
             onClick={clearWord}
-            className="h-12"
+            className="h-9"
             disabled={selectedLetters.length === 0 || isJokerActive}
           >
             <Trash2 className="w-4 h-4 mr-2" />
