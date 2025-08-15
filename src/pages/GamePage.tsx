@@ -201,6 +201,12 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       const randomConsonant = consonants[Math.floor(Math.random() * consonants.length)];
       newGrid[positions[i].row][positions[i].col] = randomConsonant;
     }
+
+    setHighlightedLetters(positions); // Tüm değişen pozisyonları highlight et
+  
+    setTimeout(() => {
+    setHighlightedLetters([]); // 1 saniye sonra highlight'ı kaldır
+  }, 1000);
     
     setGameGrid(newGrid);
     setJokers(prev => ({ ...prev, degistir: prev.degistir - 1 }));
