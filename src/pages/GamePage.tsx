@@ -1577,17 +1577,17 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
 
         {/* Current Word Input */}
         <Card className="game-grid border-0">
-          <CardContent className="p-4">
+          <CardContent className="p-2">
             <div className="flex items-center space-x-2">
               <Input 
                 value={currentWord} 
                 readOnly 
                 placeholder="~Kelime Üret~"
-                className={`text-2xl font-mono text-center bg-white/20 backdrop-blur-sm border-white/30 text-white placeholder:text-white/70 font-bold ${
+                className={`text-lg font-mono text-center bg-white/20 backdrop-blur-sm border-white/30 text-white placeholder:text-white/70 font-bold ${
                   isJokerActive ? 'typing-animation' : ''
                 }`}
               />
-              <Badge variant="secondary" className="bg-white/20 text-white border-white/30 font-bold text-lg px-3 py-1">
+              <Badge variant="secondary" className="bg-white/20 text-white... text-sm px-2 py-0.5 min-w-8 h-8 flex items-center justify-center">
                 {currentWord.length}
               </Badge>
             </div>
