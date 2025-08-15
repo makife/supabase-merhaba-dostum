@@ -80,9 +80,10 @@ const HomePage = () => {
     return { level, experience, nextLevelExp };
   };
 
-  // Kalan süreyi hesaplama fonksiyonu
+// Kalan süreyi hesaplama fonksiyonu
 const calculateTimeUntilNextCredit = () => {
-  if (!profile?.last_credit_refresh || isPremium) {
+  // Premium ise veya haklar zaten full ise gösterme
+  if (!profile?.last_credit_refresh || isPremium || (profile?.game_credits >= 5)) {
     setTimeUntilNextCredit('');
     return;
   }
@@ -102,7 +103,7 @@ const calculateTimeUntilNextCredit = () => {
   
   setTimeUntilNextCredit(`${minutes}:${seconds.toString().padStart(2, '0')}`);
 };
-
+  
   // Timer effect for credit countdown
 useEffect(() => {
   if (!isPremium && profile) {
