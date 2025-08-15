@@ -211,8 +211,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   };
 
   // 2. Fısılda Jokeri - Mevcut harflerle yapılabilecek kelimeyi göster
-  // 2. Fısılda Jokeri - Mevcut harflerle yapılabilecek kelimeyi göster
-// 2. Fısılda Jokeri - Kelime sırasına göre harfleri yak (farklı pozisyonlar)
+// 2. Fısılda Jokeri - Mevcut harflerle yapılabilecek kelimeyi göster (Unique harfler)
 const useFisildaJoker = async () => {
   if (jokers.fisilida <= 0 || isJokerActive) return;
   
@@ -228,7 +227,52 @@ const useFisildaJoker = async () => {
     'SEBZE', 'HAVUÇ', 'PATLICAN', 'BİBER', 'SOĞAN', 'SARIMSAK', 'PATATES'
   ];
   
-  // ... önceki kodlar aynı (validWords bulma kısmı) ...
+  const availableLetters = gameGrid.flat();
+  const letterCount: { [key: string]: number } = {};
+  
+  availableLetters.forEach(letter => {
+    letterCount[letter] = (letterCount[letter] || 0) + 1;
+  });
+  
+  // Önce wordlist'ten kontrol et (eğer yüklenmişse)
+  let validWords = [];
+  
+  if (wordlistLoaded) {
+    // Wordlist'ten mevcut harflerle yapılabilecek kelimeleri bul
+    const wordArray = Array.from(wordlist);
+    validWords = wordArray.filter(word => {
+      if (usedWords.has(word)) return false;
+      
+      const wordLetterCount: { [key: string]: number } = {};
+      for (const letter of word) {
+        wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
+      }
+      
+      for (const [letter, needed] of Object.entries(wordLetterCount)) {
+        if ((letterCount[letter] || 0) < needed) {
+          return false;
+        }
+      }
+      return true;
+    });
+  } else {
+    // Fallback: önceden tanımlı kelimeler
+    validWords = possibleWords.filter(word => {
+      if (usedWords.has(word.toUpperCase())) return false;
+      
+      const wordLetterCount: { [key: string]: number } = {};
+      for (const letter of word) {
+        wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
+      }
+      
+      for (const [letter, needed] of Object.entries(wordLetterCount)) {
+        if ((letterCount[letter] || 0) < needed) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }
   
   if (validWords.length > 0) {
     // Kelime bulundu
