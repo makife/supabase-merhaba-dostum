@@ -211,121 +211,122 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   };
 
   // 2. Fısılda Jokeri - Mevcut harflerle yapılabilecek kelimeyi göster
-  const useFisildaJoker = async () => {
-    if (jokers.fisilida <= 0 || isJokerActive) return;
+  // 2. Fısılda Jokeri - Mevcut harflerle yapılabilecek kelimeyi göster
+const useFisildaJoker = async () => {
+  if (jokers.fisilida <= 0 || isJokerActive) return;
+  
+  setIsJokerActive(true);
+  
+  const possibleWords = [
+    'KEDİ', 'MASA', 'ARABA', 'OKUL', 'KİTAP', 'DENİZ', 'AĞAÇ', 'ÇİÇEK',
+    'DOSTLUK', 'GÜNEŞ', 'YILDIZ', 'BULUT', 'RÜZGAR', 'ATEŞ', 'TOPRAK',
+    'SEVGİ', 'MUTLULUK', 'UMUT', 'HAYAL', 'RENKLER', 'MÜZİK', 'DANS', 'ŞARKI',
+    'OYUN', 'SPOR', 'FUTBOL', 'BASKETBOL', 'TENİS', 'YÜZME', 'KOŞU', 'BİSİKLET',
+    'YEMEK', 'EKMEK', 'PEYNİR', 'DOMATES', 'SALATA', 'ÇORBA', 'MEYVE',
+    'ELMA', 'ARMUT', 'ÇİLEK', 'KIRAZ', 'ÜZÜM', 'PORTAKAL', 'MANGO',
+    'SEBZE', 'HAVUÇ', 'PATLICAN', 'BİBER', 'SOĞAN', 'SARIMSAK', 'PATATES'
+  ];
+  
+  const availableLetters = gameGrid.flat();
+  const letterCount: { [key: string]: number } = {};
+  
+  availableLetters.forEach(letter => {
+    letterCount[letter] = (letterCount[letter] || 0) + 1;
+  });
+  
+  // Önce wordlist'ten kontrol et (eğer yüklenmişse)
+  let validWords = [];
+  
+  if (wordlistLoaded) {
+    // Wordlist'ten mevcut harflerle yapılabilecek kelimeleri bul
+    const wordArray = Array.from(wordlist);
+    validWords = wordArray.filter(word => {
+      if (usedWords.has(word)) return false;
+      
+      const wordLetterCount: { [key: string]: number } = {};
+      for (const letter of word) {
+        wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
+      }
+      
+      for (const [letter, needed] of Object.entries(wordLetterCount)) {
+        if ((letterCount[letter] || 0) < needed) {
+          return false;
+        }
+      }
+      return true;
+    });
+  } else {
+    // Fallback: önceden tanımlı kelimeler
+    validWords = possibleWords.filter(word => {
+      if (usedWords.has(word.toUpperCase())) return false;
+      
+      const wordLetterCount: { [key: string]: number } = {};
+      for (const letter of word) {
+        wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
+      }
+      
+      for (const [letter, needed] of Object.entries(wordLetterCount)) {
+        if ((letterCount[letter] || 0) < needed) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }
+  
+  if (validWords.length > 0) {
+    // Kelime bulundu - joker sayısını azalt ve animasyonu başlat
+    const selectedWord = validWords[Math.floor(Math.random() * validWords.length)];
     
-    setIsJokerActive(true);
+    const wordPositions: {row: number, col: number}[] = [];
+    const usedPositions: {row: number, col: number}[] = [];
     
-    const possibleWords = [
-      'KEDİ', 'MASA', 'ARABA', 'OKUL', 'KİTAP', 'DENİZ', 'AĞAÇ', 'ÇİÇEK',
-      'DOSTLUK', 'GÜNEŞ', 'YILDIZ', 'BULUT', 'RÜZGAR', 'ATEŞ', 'TOPRAK',
-      'SEVGİ', 'MUTLULUK', 'UMUT', 'HAYAL', 'RENKLER', 'MÜZİK', 'DANS', 'ŞARKI',
-      'OYUN', 'SPOR', 'FUTBOL', 'BASKETBOL', 'TENİS', 'YÜZME', 'KOŞU', 'BİSİKLET',
-      'YEMEK', 'EKMEK', 'PEYNİR', 'DOMATES', 'SALATA', 'ÇORBA', 'MEYVE',
-      'ELMA', 'ARMUT', 'ÇİLEK', 'KIRAZ', 'ÜZÜM', 'PORTAKAL', 'MANGO',
-      'SEBZE', 'HAVUÇ', 'PATLICAN', 'BİBER', 'SOĞAN', 'SARIMSAK', 'PATATES'
-    ];
+    for (const letter of selectedWord) {
+      for (let row = 0; row < 4; row++) {
+        for (let col = 0; col < 4; col++) {
+          if (gameGrid[row][col] === letter && 
+              !usedPositions.some(p => p.row === row && p.col === col)) {
+            wordPositions.push({ row, col });
+            usedPositions.push({ row, col });
+            break;
+          }
+        }
+      }
+    }
     
-    const availableLetters = gameGrid.flat();
-    const letterCount: { [key: string]: number } = {};
+    // Her harfi sırayla renkli yap - kutu rengi değişecek (Hızlı versiyon)
+    for (let i = 0; i < wordPositions.length; i++) {
+      setTimeout(() => {
+        setHighlightedLetters([wordPositions[i]]);
+        playSound('letterSelect');
+        
+        // Daha kısa süre göster (400ms)
+        setTimeout(() => {
+          setHighlightedLetters([]);
+        }, 400);
+      }, i * 500); // 500ms arayla sırayla
+    }
     
-    availableLetters.forEach(letter => {
-      letterCount[letter] = (letterCount[letter] || 0) + 1;
+    setTimeout(() => {
+      setIsJokerActive(false);
+    }, wordPositions.length * 500 + 800);
+    
+    // SADECE BAŞARILI DURUMDA JOKER SAYISINI AZALT
+    setJokers(prev => ({ ...prev, fisilida: prev.fisilida - 1 }));
+    
+  } else {
+    // Kelime bulunamadı - joker sayısını azaltma, özel mesaj göster
+    setIsJokerActive(false);
+    
+    toast({
+      title: '💡 Fısılda Jokeri',
+      description: 'Şu an kulağına fısıldayacağım bir kelime aklıma gelmedi. Eğer değiştir jokeri ile yeni harfler alırsan belki bir şeyler bulabilirim! 🤔',
+      duration: 4000,
     });
     
-    // Önce wordlist'ten kontrol et (eğer yüklenmişse)
-    let validWords = [];
-    
-    if (wordlistLoaded) {
-      // Wordlist'ten mevcut harflerle yapılabilecek kelimeleri bul
-      const wordArray = Array.from(wordlist);
-      validWords = wordArray.filter(word => {
-        if (usedWords.has(word)) return false;
-        
-        const wordLetterCount: { [key: string]: number } = {};
-        for (const letter of word) {
-          wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
-        }
-        
-        for (const [letter, needed] of Object.entries(wordLetterCount)) {
-          if ((letterCount[letter] || 0) < needed) {
-            return false;
-          }
-        }
-        return true;
-      });
-    } else {
-      // Fallback: önceden tanımlı kelimeler
-      validWords = possibleWords.filter(word => {
-        if (usedWords.has(word.toUpperCase())) return false;
-        
-        const wordLetterCount: { [key: string]: number } = {};
-        for (const letter of word) {
-          wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
-        }
-        
-        for (const [letter, needed] of Object.entries(wordLetterCount)) {
-          if ((letterCount[letter] || 0) < needed) {
-            return false;
-          }
-        }
-        return true;
-      });
-    }
-    
-    if (validWords.length > 0) {
-      // Kelime bulundu - joker sayısını azalt ve animasyonu başlat
-      const selectedWord = validWords[Math.floor(Math.random() * validWords.length)];
-      
-      const wordPositions: {row: number, col: number}[] = [];
-      const usedPositions: {row: number, col: number}[] = [];
-      
-      for (const letter of selectedWord) {
-        for (let row = 0; row < 4; row++) {
-          for (let col = 0; col < 4; col++) {
-            if (gameGrid[row][col] === letter && 
-                !usedPositions.some(p => p.row === row && p.col === col)) {
-              wordPositions.push({ row, col });
-              usedPositions.push({ row, col });
-              break;
-            }
-          }
-        }
-      }
-      
-      // Her harfi sırayla renkli yap - kutu rengi değişecek (Hızlı versiyon)
-      for (let i = 0; i < wordPositions.length; i++) {
-        setTimeout(() => {
-          setHighlightedLetters([wordPositions[i]]);
-          playSound('letterSelect');
-          
-          // Daha kısa süre göster (400ms)
-          setTimeout(() => {
-            setHighlightedLetters([]);
-          }, 400);
-        }, i * 600); // 500ms arayla sırayla
-      }
-      
-      setTimeout(() => {
-        setIsJokerActive(false);
-      }, wordPositions.length * 500 + 800);
-      
-      // SADECE BAŞARILI DURUMDA JOKER SAYISINI AZALT
-      setJokers(prev => ({ ...prev, fisilida: prev.fisilida - 1 }));
-      
-    } else {
-      // Kelime bulunamadı - joker sayısını azaltma, özel mesaj göster
-      setIsJokerActive(false);
-      
-      toast({
-        title: '💡 Fısılda Jokeri',
-        description: 'Şu an kulağına fısıldayacağım bir kelime aklıma gelmedi. Eğer değiştir jokeri ile yeni harfler alırsan belki bir şeyler bulabilirim! 🤔',
-        duration: 4000,
-      });
-      
-      // JOKER SAYISINI AZALTMA!
-    }
-  };
+    // JOKER SAYISINI AZALTMA!
+  }
+};
 
   // 3. Sen Yaz Jokeri - Otomatik kelime üret ve gönder
   // 3. Sen Yaz Jokeri - Otomatik kelime üret ve gönder
