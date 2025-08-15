@@ -1285,21 +1285,21 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
          <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
            {winner === 'player' && (
              <img 
-               src="/assets/sevinc.gif" 
+               src="/public/sevinc.gif" 
                alt="Sevinç" 
                className="w-16 h-16 object-contain animate-bounce"
              />
            )}
            {winner === 'opponent' && (
              <img 
-               src="/assets/uzgun.gif" 
+               src="/public/uzgun.gif" 
                alt="Üzgün" 
                className="w-16 h-16 object-contain"
              />
            )}
            {winner === 'tie' && (
              <img 
-               src="/assets/sabit.gif" 
+               src="/public/sabit.gif" 
                alt="Beraberlik" 
                className="w-16 h-16 object-contain"
              />
