@@ -233,23 +233,48 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       letterCount[letter] = (letterCount[letter] || 0) + 1;
     });
     
-    const validWords = possibleWords.filter(word => {
-      if (usedWords.has(word.toUpperCase())) return false;
-      
-      const wordLetterCount: { [key: string]: number } = {};
-      for (const letter of word) {
-        wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
-      }
-      
-      for (const [letter, needed] of Object.entries(wordLetterCount)) {
-        if ((letterCount[letter] || 0) < needed) {
-          return false;
+    // Önce wordlist'ten kontrol et (eğer yüklenmişse)
+    let validWords = [];
+    
+    if (wordlistLoaded) {
+      // Wordlist'ten mevcut harflerle yapılabilecek kelimeleri bul
+      const wordArray = Array.from(wordlist);
+      validWords = wordArray.filter(word => {
+        if (usedWords.has(word)) return false;
+        
+        const wordLetterCount: { [key: string]: number } = {};
+        for (const letter of word) {
+          wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
         }
-      }
-      return true;
-    });
+        
+        for (const [letter, needed] of Object.entries(wordLetterCount)) {
+          if ((letterCount[letter] || 0) < needed) {
+            return false;
+          }
+        }
+        return true;
+      });
+    } else {
+      // Fallback: önceden tanımlı kelimeler
+      validWords = possibleWords.filter(word => {
+        if (usedWords.has(word.toUpperCase())) return false;
+        
+        const wordLetterCount: { [key: string]: number } = {};
+        for (const letter of word) {
+          wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
+        }
+        
+        for (const [letter, needed] of Object.entries(wordLetterCount)) {
+          if ((letterCount[letter] || 0) < needed) {
+            return false;
+          }
+        }
+        return true;
+      });
+    }
     
     if (validWords.length > 0) {
+      // Kelime bulundu - joker sayısını azalt ve animasyonu başlat
       const selectedWord = validWords[Math.floor(Math.random() * validWords.length)];
       
       const wordPositions: {row: number, col: number}[] = [];
@@ -285,11 +310,21 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         setIsJokerActive(false);
       }, wordPositions.length * 500 + 800);
       
+      // SADECE BAŞARILI DURUMDA JOKER SAYISINI AZALT
+      setJokers(prev => ({ ...prev, fisilida: prev.fisilida - 1 }));
+      
     } else {
+      // Kelime bulunamadı - joker sayısını azaltma, özel mesaj göster
       setIsJokerActive(false);
+      
+      toast({
+        title: '💡 Fısılda Jokeri',
+        description: 'Şu an kulağına fısıldayacağım bir kelime aklıma gelmedi. Eğer değiştir jokeri ile yeni harfler alırsan belki bir şeyler bulabilirim! 🤔',
+        duration: 4000,
+      });
+      
+      // JOKER SAYISINI AZALTMA!
     }
-    
-    setJokers(prev => ({ ...prev, fisilida: prev.fisilida - 1 }));
   };
 
   // 3. Sen Yaz Jokeri - Otomatik kelime üret ve gönder
@@ -761,46 +796,34 @@ const GamePage = ({ gameMode }: GamePageProps) => {
             
             // Kullanılmış kelime kontrolü
             if (!usedWords.has(normalizedWord)) {
-              try {
-                // Kelime validasyonu - hata durumunda devam et
-                let isValid = true;
-                let points = Math.floor(Math.random() * 25) + 10;
+              // LOCAL WORDLIST CHECK FOR AI
+              if (wordlistLoaded && wordlist.has(normalizedWord)) {
+                const points = Math.floor(Math.random() * 25) + 10;
+                console.log(`🤖 AI used validated word (local): ${word} in ${gameMode} mode with ${points} points`);
                 
-                try {
-                  const { data, error } = await supabase.functions.invoke('validate-word', {
-                    body: { word }
-                  });
-                  
-                  if (!error && data && data.isValid) {
-                    points = data.points || points;
-                  } else {
-                    // Validasyon başarısızsa basit puan ver ama kelimeyi kabul et
-                    console.log(`🤖 AI word validation failed for ${word}, using fallback points`);
-                  }
-                } catch (validationError) {
-                  console.warn(`🤖 AI validation error for ${word}:`, validationError);
-                  // Hata durumunda da kelimeyi kabul et
-                }
+                setOpponentScore(prev => prev + points);
                 
-                if (isValid) {
-                  console.log(`🤖 AI used word: ${word} in ${gameMode} mode with ${points} points`);
-                  
-                  setOpponentScore(prev => prev + points);
-                  
-                  // Store AI word with score for statistics
-                  setOpponentWords(prev => [...prev, word]);
-                  setOpponentWordsWithScores(prev => [...prev, { word, score: points }]);
-                  
-                  playSound('correctWord');
-                  
-                  // Update used words
-                  setUsedWords(prev => new Set([...prev, normalizedWord]));
-                  console.log('🤖 AI added word to used:', normalizedWord);
-                  return;
-                }
-              } catch (validationError) {
-                console.warn(`Word validation failed for ${word}:`, validationError);
-                continue;
+                // Store AI word with score for statistics
+                setOpponentWords(prev => [...prev, word]);
+                setOpponentWordsWithScores(prev => [...prev, { word, score: points }]);
+                
+                playSound('correctWord');
+                
+                // Update used words
+                setUsedWords(prev => new Set([...prev, normalizedWord]));
+                console.log('🤖 AI added word to used:', normalizedWord);
+                return;
+              } else if (!wordlistLoaded) {
+                // Fallback if wordlist not loaded
+                const points = Math.floor(Math.random() * 15) + 8;
+                console.log(`🤖 AI used word (no wordlist): ${word} with ${points} points`);
+                
+                setOpponentScore(prev => prev + points);
+                setOpponentWords(prev => [...prev, word]);
+                setOpponentWordsWithScores(prev => [...prev, { word, score: points }]);
+                playSound('correctWord');
+                setUsedWords(prev => new Set([...prev, normalizedWord]));
+                return;
               }
             }
           }
@@ -825,7 +848,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       console.log('🤖 Stopping AI play interval for game mode:', gameMode);
       clearInterval(aiPlayInterval);
     };
-  }, [gameStarted, gameEnded, gameMode, participants.length, usedWords, playSound, lastPlayerAction, isPlayingWithAI]);
+  }, [gameStarted, gameEnded, gameMode, participants.length, usedWords, playSound, lastPlayerAction, isPlayingWithAI, wordlist, wordlistLoaded]);
 
   // Private room logic
   useEffect(() => {
@@ -883,7 +906,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     setCurrentWord('');
   };
 
-  // Submit word - Improved validation with fallback
+  // Submit word - Using local wordlist validation
   const submitWord = async () => {
     if (waitingForPlayer || isJokerActive) return;
     
@@ -914,61 +937,24 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       return;
     }
 
-    console.log('🔍 Validating word:', currentWord);
+    console.log('🔍 Validating word locally:', currentWord);
     
-    // Kelime validasyonu - iyileştirilmiş hata yönetimi
-    let result;
-    try {
-      result = await validateWord(currentWord);
-      
-      // Eğer validasyon başarısız olursa fallback kullan
-      if (!result.isValid) {
-        // Basit Türkçe kelime kontrolü - en azından Türkçe harfler içeriyorsa kabul et
-        const turkishPattern = /^[A-ZÇĞIİÖŞÜ]+$/;
-        if (turkishPattern.test(normalizedWord) && currentWord.length >= 3) {
-          console.log('🔄 Using fallback validation for word:', currentWord);
-          result = {
-            isValid: true,
-            points: Math.max(currentWord.length * 2, 5), // Minimum 5, harf başına 2 puan
-            message: 'Kelime kabul edildi'
-          };
-        } else {
-          playSound('wrongWord');
-          toast({
-            title: 'Geçersiz Kelime',
-            description: result.message || 'Bu kelime geçerli değil.',
-            variant: 'destructive',
-            duration: 1000,
-          });
-          clearWord();
-          return;
-        }
-      }
-    } catch (error) {
-      console.error('Validation error:', error);
-      // Hata durumunda fallback kullan
-      const turkishPattern = /^[A-ZÇĞIİÖŞÜ]+$/;
-      if (turkishPattern.test(normalizedWord) && currentWord.length >= 3) {
-        console.log('🔄 Using emergency fallback for word:', currentWord);
-        result = {
-          isValid: true,
-          points: Math.max(currentWord.length * 2, 5),
-          message: 'Kelime kabul edildi'
-        };
-      } else {
-        playSound('wrongWord');
-        toast({
-          title: 'Kelime Kontrol Edilemedi',
-          description: 'Lütfen tekrar deneyin.',
-          variant: 'destructive',
-          duration: 1000,
-        });
-        clearWord();
-        return;
-      }
+    // LOCAL WORDLIST VALIDATION
+    const result = validateWordLocal(currentWord);
+    
+    if (!result.isValid) {
+      playSound('wrongWord');
+      toast({
+        title: 'Geçersiz Kelime',
+        description: result.message,
+        variant: 'destructive',
+        duration: 1000,
+      });
+      clearWord();
+      return;
     }
 
-    console.log('✅ Word accepted:', currentWord, 'Points:', result.points);
+    console.log('✅ Word accepted (local validation):', currentWord, 'Points:', result.points);
     
     const newUsedWords = new Set([...usedWords, normalizedWord]);
     setUsedWords(newUsedWords);
