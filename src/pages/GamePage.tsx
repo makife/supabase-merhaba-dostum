@@ -1539,7 +1539,6 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
       <h3 className="text-sm font-bold text-purple-800 mb-2">🎭 Jokerler</h3>
     </div>
     <div className="grid grid-cols-3 gap-1">
-      {/* Değiştir Jokeri - DÜZELTME: onClick doğru yerde */}
       <Button
         variant={selectedJoker === 'degistir' ? 'default' : 'outline'}
         size="sm"
