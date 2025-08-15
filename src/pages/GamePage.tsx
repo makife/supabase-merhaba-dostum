@@ -328,26 +328,50 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   };
 
   // 3. Sen Yaz Jokeri - Otomatik kelime üret ve gönder
-  const useSenYazJoker = async () => {
-    if (jokers.senYaz <= 0 || isJokerActive) return;
-    
-    setIsJokerActive(true);
-    
-    const possibleWords = [
-      'KEDİ', 'MASA', 'ARABA', 'OKUL', 'KİTAP', 'DENİZ', 'AĞAÇ', 'ÇİÇEK',
-      'DOSTLUK', 'GÜNEŞ', 'YILDIZ', 'BULUT', 'RÜZGAR', 'ATEŞ', 'TOPRAK',
-      'SEVGİ', 'MUTLULUK', 'UMUT', 'HAYAL', 'RENKLER', 'MÜZİK', 'DANS', 'ŞARKI',
-      'OYUN', 'SPOR', 'FUTBOL', 'BASKETBOL', 'TENİS', 'YÜZME', 'KOŞU', 'BİSİKLET'
-    ];
-    
-    const availableLetters = gameGrid.flat();
-    const letterCount: { [key: string]: number } = {};
-    
-    availableLetters.forEach(letter => {
-      letterCount[letter] = (letterCount[letter] || 0) + 1;
+  // 3. Sen Yaz Jokeri - Otomatik kelime üret ve gönder
+const useSenYazJoker = async () => {
+  if (jokers.senYaz <= 0 || isJokerActive) return;
+  
+  setIsJokerActive(true);
+  
+  const possibleWords = [
+    'KEDİ', 'MASA', 'ARABA', 'OKUL', 'KİTAP', 'DENİZ', 'AĞAÇ', 'ÇİÇEK',
+    'DOSTLUK', 'GÜNEŞ', 'YILDIZ', 'BULUT', 'RÜZGAR', 'ATEŞ', 'TOPRAK',
+    'SEVGİ', 'MUTLULUK', 'UMUT', 'HAYAL', 'RENKLER', 'MÜZİK', 'DANS', 'ŞARKI',
+    'OYUN', 'SPOR', 'FUTBOL', 'BASKETBOL', 'TENİS', 'YÜZME', 'KOŞU', 'BİSİKLET'
+  ];
+  
+  const availableLetters = gameGrid.flat();
+  const letterCount: { [key: string]: number } = {};
+  
+  availableLetters.forEach(letter => {
+    letterCount[letter] = (letterCount[letter] || 0) + 1;
+  });
+  
+  // Önce wordlist'ten kontrol et (eğer yüklenmişse)
+  let validWords = [];
+  
+  if (wordlistLoaded) {
+    // Wordlist'ten mevcut harflerle yapılabilecek kelimeleri bul
+    const wordArray = Array.from(wordlist);
+    validWords = wordArray.filter(word => {
+      if (usedWords.has(word)) return false;
+      
+      const wordLetterCount: { [key: string]: number } = {};
+      for (const letter of word) {
+        wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
+      }
+      
+      for (const [letter, needed] of Object.entries(wordLetterCount)) {
+        if ((letterCount[letter] || 0) < needed) {
+          return false;
+        }
+      }
+      return true;
     });
-    
-    const validWords = possibleWords.filter(word => {
+  } else {
+    // Fallback: önceden tanımlı kelimeler
+    validWords = possibleWords.filter(word => {
       if (usedWords.has(word.toUpperCase())) return false;
       
       const wordLetterCount: { [key: string]: number } = {};
@@ -362,68 +386,136 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       }
       return true;
     });
+  }
+  
+  // ÖNCE KELİME VAR MI DİYE KONTROL ET
+  if (validWords.length === 0) {
+    // Kelime bulunamadı - joker sayısını AZALTMA!
+    setIsJokerActive(false);
     
-    if (validWords.length > 0) {
-      const selectedWord = validWords[Math.floor(Math.random() * validWords.length)];
-      
-      const wordPositions: {letter: string, row: number, col: number}[] = [];
-      const usedPositions: {row: number, col: number}[] = [];
-      
-      for (const letter of selectedWord) {
-        for (let row = 0; row < 4; row++) {
-          for (let col = 0; col < 4; col++) {
-            if (gameGrid[row][col] === letter && 
-                !usedPositions.some(p => p.row === row && p.col === col)) {
-              wordPositions.push({ letter, row, col });
-              usedPositions.push({ row, col });
-              break;
-            }
-          }
+    toast({
+      title: '✍️ Sen Yaz Jokeri',
+      description: 'Düşünüyorum ama henüz bulamadım. İstersen harfleri değiştir öyle deneyelim! 🤯',
+      duration: 4000,
+    });
+    
+    return; // Fonksiyondan çık, joker azaltma
+  }
+  
+  // Kelime var, şimdi işlemi dene
+  const selectedWord = validWords[Math.floor(Math.random() * validWords.length)];
+  const normalizedSelectedWord = selectedWord.toUpperCase();
+  
+  // ÇİFTE KONTROL: Bu kelime gerçekten kullanılmamış mı?
+  if (usedWords.has(normalizedSelectedWord)) {
+    console.log('⚠️ Sen Yaz Jokeri: Seçilen kelime zaten kullanılmış:', selectedWord);
+    setIsJokerActive(false);
+    
+    toast({
+      title: '✍️ Sen Yaz Jokeri',
+      description: 'Düşünüyorum ama henüz bulamadım. İstersen harfleri değiştir öyle deneyelim! 🤯',
+      duration: 4000,
+    });
+    
+    return; // Fonksiyondan çık, joker azaltma
+  }
+  
+  // Harflerin pozisyonlarını bul
+  const wordPositions: {letter: string, row: number, col: number}[] = [];
+  const usedPositions: {row: number, col: number}[] = [];
+  let canFormWord = true;
+  
+  for (const letter of selectedWord) {
+    let letterFound = false;
+    for (let row = 0; row < 4; row++) {
+      for (let col = 0; col < 4; col++) {
+        if (gameGrid[row][col] === letter && 
+            !usedPositions.some(p => p.row === row && p.col === col)) {
+          wordPositions.push({ letter, row, col });
+          usedPositions.push({ row, col });
+          letterFound = true;
+          break;
         }
       }
-      
-      setCurrentWord(selectedWord);
-      setSelectedLetters(wordPositions);
-      
-      setTimeout(async () => {
-        const normalizedWord = selectedWord.toUpperCase();
-        
-        if (!usedWords.has(normalizedWord)) {
-          const result = await validateWord(selectedWord);
-          
-          if (result.isValid) {
-            const newUsedWords = new Set([...usedWords, normalizedWord]);
-            setUsedWords(newUsedWords);
-            
-            playSound('correctWord');
-            const newScore = playerScore + result.points;
-            setPlayerScore(newScore);
-            
-            setPlayerWords(prev => [...prev, selectedWord]);
-            setPlayerWordsWithScores(prev => [...prev, { word: selectedWord, score: result.points }]);
-            
-            triggerWordEffects();
-            
-            if (currentRoom) {
-              await updateScore(newScore);
-            }
-          }
-        }
-        
-        setCurrentWord('');
-        setSelectedLetters([]);
-        setIsJokerActive(false);
-      }, 1500);
-    } else {
-      setIsJokerActive(false);
+      if (letterFound) break;
     }
     
-    setJokers(prev => ({ ...prev, senYaz: prev.senYaz - 1 }));
-  };
-
-  // Diğer tüm fonksiyonlar aynı kalacak...
-  // (useEffect'ler, handleLetterClick, submitWord, vb.)
-
+    if (!letterFound) {
+      canFormWord = false;
+      break;
+    }
+  }
+  
+  // Eğer kelimeyi oluşturamıyorsak
+  if (!canFormWord || wordPositions.length !== selectedWord.length) {
+    console.log('⚠️ Sen Yaz Jokeri: Kelime ızgarada oluşturulamıyor:', selectedWord);
+    setIsJokerActive(false);
+    
+    toast({
+      title: '✍️ Sen Yaz Jokeri',
+      description: 'Düşünüyorum ama henüz bulamadım. İstersen harfleri değiştir öyle deneyelim! 🤯',
+      duration: 4000,
+    });
+    
+    return; // Fonksiyondan çık, joker azaltma
+  }
+  
+  // Her şey tamam, şimdi kelimeyi yaz
+  setCurrentWord(selectedWord);
+  setSelectedLetters(wordPositions);
+  
+  setTimeout(async () => {
+    let jokerSuccess = false;
+    
+    try {
+      const normalizedWord = selectedWord.toUpperCase();
+      
+      // Son kontrol: Kelime hala kullanılmamış mı?
+      if (!usedWords.has(normalizedWord)) {
+        const result = validateWordLocal(selectedWord);
+        
+        if (result.isValid) {
+          const newUsedWords = new Set([...usedWords, normalizedWord]);
+          setUsedWords(newUsedWords);
+          
+          playSound('correctWord');
+          const newScore = playerScore + result.points;
+          setPlayerScore(newScore);
+          
+          setPlayerWords(prev => [...prev, selectedWord]);
+          setPlayerWordsWithScores(prev => [...prev, { word: selectedWord, score: result.points }]);
+          
+          triggerWordEffects();
+          
+          if (currentRoom) {
+            await updateScore(newScore);
+          }
+          
+          jokerSuccess = true; // İşlem başarılı
+          console.log('✅ Sen Yaz Jokeri başarılı:', selectedWord, 'Puan:', result.points);
+        } else {
+          console.log('❌ Sen Yaz Jokeri: Kelime geçersiz:', selectedWord);
+        }
+      } else {
+        console.log('❌ Sen Yaz Jokeri: Kelime zaten kullanılmış:', selectedWord);
+      }
+    } catch (error) {
+      console.error('❌ Sen Yaz Jokeri hatası:', error);
+    }
+    
+    setCurrentWord('');
+    setSelectedLetters([]);
+    setIsJokerActive(false);
+    
+    // SADECE GERÇEKTEN BAŞARILI OLDUĞUNDA JOKER SAYISINI AZALT
+    if (jokerSuccess) {
+      setJokers(prev => ({ ...prev, senYaz: prev.senYaz - 1 }));
+      console.log('🎯 Sen Yaz Jokeri harcanı!');
+    } else {
+      console.log('💾 Sen Yaz Jokeri korundu (işlem başarısız)!');
+    }
+  }, 1500);
+};
   // Sync grid with room data and fetch avatars
   useEffect(() => {
     if (currentRoom?.current_grid) {
