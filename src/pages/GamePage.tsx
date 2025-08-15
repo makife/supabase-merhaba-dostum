@@ -1502,8 +1502,8 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
             </CardContent>
           </Card>
           <Card className="light-gradient border-0">
-            <CardContent className="p-4 text-center relative overflow-hidden">
-              <Avatar className="w-16 h-16 mx-auto mb-2">
+            <CardContent className="p-2 text-center relative overflow-hidden">
+              <Avatar className="w-10 h-10 mx-auto mb-1">
                 <AvatarImage 
                   src={opponent.avatar} 
                   alt="Opponent"
