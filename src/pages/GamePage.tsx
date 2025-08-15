@@ -1538,7 +1538,10 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
         variant={selectedJoker === 'degistir' ? 'default' : 'outline'}
         size="sm"
         className="joker-button flex flex-col items-center p-1 h-auto relative text-xs"
-        onClick={useDegisTirJoker}
+        onClick={() => {
+          setSelectedJoker('degistir');
+          useDegisTirJoker();
+       }}
         disabled={jokers.degistir <= 0 || isJokerActive}
       >
         <Shuffle className="w-3 h-3 mb-0.5" />
@@ -1553,7 +1556,10 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
         variant={selectedJoker === 'fisilida' ? 'default' : 'outline'}
         size="sm"
         className="joker-button flex flex-col items-center p-1 h-auto relative text-xs"
-        onClick={useFisildaJoker}
+        onClick={() => {
+          setSelectedJoker('degistir');
+          useDegisTirJoker();
+       }}
         disabled={jokers.fisilida <= 0 || isJokerActive}
       >
         <Lightbulb className="w-4 h-4 mb-1" />
@@ -1568,7 +1574,10 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
         variant={selectedJoker === 'senYaz' ? 'default' : 'outline'}
         size="sm"
         className="joker-button flex flex-col items-center p-1 h-auto relative text-xs"
-        onClick={useSenYazJoker}
+        onClick={() => {
+          setSelectedJoker('degistir');
+          useDegisTirJoker();
+       }}
         disabled={jokers.senYaz <= 0 || isJokerActive}
       >
         <PenTool className="w-4 h-4 mb-1" />
