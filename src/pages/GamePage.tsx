@@ -1485,7 +1485,7 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
         {/* Scores */}
         <div className="grid grid-cols-2 gap-2 mb-2 shrink-0">
           <Card className="light-gradient border-0">
-            <CardContent className="p-2 text-center relative overflow-hidden">
+            <CardContent className="p-4 text-center relative overflow-hidden">
               <Avatar className="w-16 h-16 mx-auto mb-2">
                 <AvatarImage 
                   src={playerAvatar || user?.user_metadata?.avatar_url} 
