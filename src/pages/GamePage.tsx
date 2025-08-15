@@ -1544,9 +1544,7 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
         variant={selectedJoker === 'degistir' ? 'default' : 'outline'}
         size="sm"
         className="joker-button flex flex-col items-center p-1 h-auto relative text-xs"
-        onClick={() => {
-          useDegisTirJoker();
-       }
+        onClick={useDegisTirJoker}
         disabled={jokers.degistir <= 0 || isJokerActive}
       >
         <Shuffle className="w-3 h-3 mb-0.5" />
