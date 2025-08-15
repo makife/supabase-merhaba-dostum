@@ -1522,20 +1522,20 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
 
         {/* Joker Panel - EN ÖNEMLİ KISIM! */}
         <Card className="bg-gradient-to-r from-purple-100 to-pink-100 border-purple-200 joker-panel-float">
-          <CardContent className="p-3">
+          <CardContent className="p-2">
             <div className="flex justify-between items-center">
               <h3 className="text-sm font-bold text-purple-800 mb-2">🎭 Jokerler</h3>
             </div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-1">
               {/* Değiştir Jokeri */}
               <Button
                 variant={selectedJoker === 'degistir' ? 'default' : 'outline'}
                 size="sm"
-                className="joker-button flex flex-col items-center p-2 h-auto relative"
+                className="joker-button flex flex-col items-center p-1 h-auto relative text-xs">
                 onClick={useDegisTirJoker}
                 disabled={jokers.degistir <= 0 || isJokerActive}
               >
-                <Shuffle className="w-4 h-4 mb-1" />
+                <Shuffle className="w-3 h-3 mb-0.5" />
                 <span className="text-xs">Değiştir</span>
                 <Badge variant="secondary" className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center">
                   {jokers.degistir}
@@ -1546,7 +1546,7 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
               <Button
                 variant={selectedJoker === 'fisilida' ? 'default' : 'outline'}
                 size="sm"
-                className="joker-button flex flex-col items-center p-2 h-auto relative"
+                className="joker-button flex flex-col items-center p-1 h-auto relative text-xs">
                 onClick={useFisildaJoker}
                 disabled={jokers.fisilida <= 0 || isJokerActive}
               >
@@ -1561,7 +1561,7 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
               <Button
                 variant={selectedJoker === 'senYaz' ? 'default' : 'outline'}
                 size="sm"
-                className="joker-button flex flex-col items-center p-2 h-auto relative"
+                className="joker-button flex flex-col items-center p-1 h-auto relative text-xs">
                 onClick={useSenYazJoker}
                 disabled={jokers.senYaz <= 0 || isJokerActive}
               >
