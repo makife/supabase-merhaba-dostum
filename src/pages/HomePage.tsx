@@ -57,6 +57,7 @@ const HomePage = () => {
   const [userAvatar, setUserAvatar] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { useNakama, toggleNakama } = useGame();
+  const [timeUntilNextCredit, setTimeUntilNextCredit] = useState<string>('');
 
   // Level hesaplama fonksiyonu
   const calculateLevel = (totalScore: number) => {
@@ -78,6 +79,38 @@ const HomePage = () => {
 
     return { level, experience, nextLevelExp };
   };
+
+  // Kalan süreyi hesaplama fonksiyonu
+const calculateTimeUntilNextCredit = () => {
+  if (!profile?.last_credit_refresh || isPremium) {
+    setTimeUntilNextCredit('');
+    return;
+  }
+
+  const now = new Date();
+  const lastRefresh = new Date(profile.last_credit_refresh);
+  const nextRefresh = new Date(lastRefresh.getTime() + (15 * 60 * 1000)); // 15 dakika ekle
+  
+  if (now >= nextRefresh) {
+    setTimeUntilNextCredit('Hemen!');
+    return;
+  }
+
+  const timeDiff = nextRefresh.getTime() - now.getTime();
+  const minutes = Math.floor(timeDiff / (1000 * 60));
+  const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+  
+  setTimeUntilNextCredit(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+};
+
+  // Timer effect for credit countdown
+useEffect(() => {
+  if (!isPremium && profile) {
+    calculateTimeUntilNextCredit();
+    const interval = setInterval(calculateTimeUntilNextCredit, 1000);
+    return () => clearInterval(interval);
+  }
+}, [profile, isPremium]);
 
   // Start background music when component mounts
   useEffect(() => {
@@ -303,22 +336,56 @@ const HomePage = () => {
             {/* Alt kısım - Hak barı ve istatistikler */}
             <div className="space-y-2 mt-2 pt-2 border-t border-white/20">
               {/* Hak barı - sadece premium değilse göster */}
-              {!isPremium && (
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-muted-foreground">Oyun Hakları</span>
-                    <span className="text-xs font-medium text-foreground">{profile?.game_credits || 0}/5</span>
-                  </div>
-                  <div className="w-full bg-black/20 rounded-full h-2 overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-orange-400 to-yellow-500 rounded-full transition-all duration-500 ease-out shadow-sm"
-                      style={{ 
-                        width: `${Math.max(10, ((profile?.game_credits || 0) / 5) * 100)}%` 
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
+{!isPremium && (
+  <div className="space-y-1">
+    <div className="flex justify-between items-center">
+      <span className="text-xs text-muted-foreground">Oyun Hakları</span>
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-medium text-foreground">{profile?.game_credits || 0}/5</span>
+        {timeUntilNextCredit && (
+          <span className="text-xs text-orange-500 bg-orange-100 px-2 py-1 rounded-full">
+            {timeUntilNextCredit}
+          </span>
+        )}
+      </div>
+    </div>
+    <div className="flex gap-1 h-2 w-full">
+      {Array.from({ length: 5 }, (_, i) => {
+        const isActive = i < (profile?.game_credits || 0);
+        let segmentColor = 'bg-black/20'; // Varsayılan renk (boş)
+        
+        if (isActive) {
+          switch (i + 1) {
+            case 1:
+              segmentColor = 'bg-red-500'; // 1 hak - kırmızı
+              break;
+            case 2:
+              segmentColor = 'bg-red-400'; // 2 hak - açık kırmızı
+              break;
+            case 3:
+              segmentColor = 'bg-orange-500'; // 3 hak - turuncu
+              break;
+            case 4:
+              segmentColor = 'bg-green-400'; // 4 hak - açık yeşil
+              break;
+            case 5:
+              segmentColor = 'bg-green-500'; // 5 hak - yeşil
+              break;
+            default:
+              segmentColor = 'bg-black/20';
+          }
+        }
+        
+        return (
+          <div
+            key={i}
+            className={`flex-1 rounded-full transition-all duration-500 ease-out shadow-sm ${segmentColor}`}
+          />
+        );
+      })}
+    </div>
+  </div>
+)}
               
               {/* İstatistik badge'leri */}
               <div className="flex flex-wrap gap-2 justify-center">
