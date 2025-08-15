@@ -66,6 +66,10 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const [highlightedLetters, setHighlightedLetters] = useState<{row: number, col: number}[]>([]);
   const [isJokerActive, setIsJokerActive] = useState(false);
   
+  // Wordlist for local validation
+  const [wordlist, setWordlist] = useState<Set<string>>(new Set());
+  const [wordlistLoaded, setWordlistLoaded] = useState(false);
+  
   // Get game type from room or URL params
   const getGameType = useCallback((): 'timed' | 'score' => {
     if (gameMode === 'vs-computer') {
@@ -204,11 +208,6 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     setCurrentWord('');
     
     playSound('correctWord');
-    toast({
-      title: '🔄 Değiştir Jokeri',
-      description: '5 harf değiştirildi! (3 sesli, 2 sessiz)',
-      duration: 2000,
-    });
   };
 
   // 2. Fısılda Jokeri - Mevcut harflerle yapılabilecek kelimeyi göster
@@ -234,23 +233,48 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       letterCount[letter] = (letterCount[letter] || 0) + 1;
     });
     
-    const validWords = possibleWords.filter(word => {
-      if (usedWords.has(word.toUpperCase())) return false;
-      
-      const wordLetterCount: { [key: string]: number } = {};
-      for (const letter of word) {
-        wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
-      }
-      
-      for (const [letter, needed] of Object.entries(wordLetterCount)) {
-        if ((letterCount[letter] || 0) < needed) {
-          return false;
+    // Önce wordlist'ten kontrol et (eğer yüklenmişse)
+    let validWords = [];
+    
+    if (wordlistLoaded) {
+      // Wordlist'ten mevcut harflerle yapılabilecek kelimeleri bul
+      const wordArray = Array.from(wordlist);
+      validWords = wordArray.filter(word => {
+        if (usedWords.has(word)) return false;
+        
+        const wordLetterCount: { [key: string]: number } = {};
+        for (const letter of word) {
+          wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
         }
-      }
-      return true;
-    });
+        
+        for (const [letter, needed] of Object.entries(wordLetterCount)) {
+          if ((letterCount[letter] || 0) < needed) {
+            return false;
+          }
+        }
+        return true;
+      });
+    } else {
+      // Fallback: önceden tanımlı kelimeler
+      validWords = possibleWords.filter(word => {
+        if (usedWords.has(word.toUpperCase())) return false;
+        
+        const wordLetterCount: { [key: string]: number } = {};
+        for (const letter of word) {
+          wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
+        }
+        
+        for (const [letter, needed] of Object.entries(wordLetterCount)) {
+          if ((letterCount[letter] || 0) < needed) {
+            return false;
+          }
+        }
+        return true;
+      });
+    }
     
     if (validWords.length > 0) {
+      // Kelime bulundu - joker sayısını azalt ve animasyonu başlat
       const selectedWord = validWords[Math.floor(Math.random() * validWords.length)];
       
       const wordPositions: {row: number, col: number}[] = [];
@@ -269,38 +293,38 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         }
       }
       
-      // Her harfi sırayla yakıp söndür - kutu rengi değişecek
+      // Her harfi sırayla renkli yap - kutu rengi değişecek (Hızlı versiyon)
       for (let i = 0; i < wordPositions.length; i++) {
         setTimeout(() => {
           setHighlightedLetters([wordPositions[i]]);
           playSound('letterSelect');
           
-          // Daha uzun süre göster (600ms)
+          // Daha kısa süre göster (400ms)
           setTimeout(() => {
             setHighlightedLetters([]);
-          }, 600);
-        }, i * 800); // Daha yavaş geçiş (800ms)
+          }, 400);
+        }, i * 500); // 500ms arayla sırayla
       }
       
       setTimeout(() => {
         setIsJokerActive(false);
-      }, wordPositions.length * 800 + 1000);
+      }, wordPositions.length * 500 + 800);
+      
+      // SADECE BAŞARILI DURUMDA JOKER SAYISINI AZALT
+      setJokers(prev => ({ ...prev, fisilida: prev.fisilida - 1 }));
+      
+    } else {
+      // Kelime bulunamadı - joker sayısını azaltma, özel mesaj göster
+      setIsJokerActive(false);
       
       toast({
         title: '💡 Fısılda Jokeri',
-        description: `"${selectedWord}" kelimesini bulabilirsin!`,
-        duration: 3000,
+        description: 'Şu an kulağına fısıldayacağım bir kelime aklıma gelmedi. Eğer değiştir jokeri ile yeni harfler alırsan belki bir şeyler bulabilirim! 🤔',
+        duration: 4000,
       });
-    } else {
-      toast({
-        title: '💡 Fısılda Jokeri',
-        description: 'Mevcut harflerle yeni kelime bulunamadı.',
-        duration: 2000,
-      });
-      setIsJokerActive(false);
+      
+      // JOKER SAYISINI AZALTMA!
     }
-    
-    setJokers(prev => ({ ...prev, fisilida: prev.fisilida - 1 }));
   };
 
   // 3. Sen Yaz Jokeri - Otomatik kelime üret ve gönder
@@ -383,12 +407,6 @@ const GamePage = ({ gameMode }: GamePageProps) => {
             if (currentRoom) {
               await updateScore(newScore);
             }
-            
-            toast({
-              title: '✍️ Sen Yaz Jokeri',
-              description: `"${selectedWord}" kelimesi otomatik gönderildi! +${result.points} puan`,
-              duration: 2000,
-            });
           }
         }
         
@@ -397,11 +415,6 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         setIsJokerActive(false);
       }, 1500);
     } else {
-      toast({
-        title: '✍️ Sen Yaz Jokeri',
-        description: 'Mevcut harflerle yeni kelime bulunamadı.',
-        duration: 2000,
-      });
       setIsJokerActive(false);
     }
     
@@ -467,7 +480,93 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     fetchAvatars();
   }, [user, participants, gameMode, currentRoom]);
 
-  // Music control effect and credit consumption
+  // Load wordlist from public/wordlist.txt
+  useEffect(() => {
+    const loadWordlist = async () => {
+      try {
+        console.log('📖 Loading wordlist from public/wordlist.txt...');
+        const response = await fetch('/wordlist.txt');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const text = await response.text();
+        const words = text.split('\n')
+          .map(word => word.trim().toUpperCase())
+          .filter(word => word.length >= 3); // Minimum 3 harf
+        
+        const wordSet = new Set(words);
+        setWordlist(wordSet);
+        setWordlistLoaded(true);
+        console.log(`✅ Wordlist loaded: ${wordSet.size} words`);
+      } catch (error) {
+        console.error('❌ Failed to load wordlist:', error);
+        setWordlistLoaded(false);
+      }
+    };
+
+    loadWordlist();
+  }, []);
+
+  // Local word validation using wordlist.txt
+  const validateWordLocal = useCallback((word: string): { isValid: boolean; points: number; message: string } => {
+    const normalizedWord = word.toUpperCase().trim();
+    
+    // Basic checks
+    if (normalizedWord.length < 3) {
+      return {
+        isValid: false,
+        points: 0,
+        message: 'Kelime en az 3 harf olmalıdır'
+      };
+    }
+
+    // Turkish letter pattern check
+    const turkishPattern = /^[A-ZÇĞIİÖŞÜ]+$/;
+    if (!turkishPattern.test(normalizedWord)) {
+      return {
+        isValid: false,
+        points: 0,
+        message: 'Sadece Türkçe harfler kullanabilirsiniz'
+      };
+    }
+
+    // Check against wordlist
+    if (wordlistLoaded) {
+      if (!wordlist.has(normalizedWord)) {
+        return {
+          isValid: false,
+          points: 0,
+          message: 'Bu kelime sözlükte bulunamadı'
+        };
+      }
+    } else {
+      console.warn('⚠️ Wordlist not loaded, using fallback validation');
+    }
+
+    // Calculate points based on word length and letter rarity
+    const calculatePoints = (word: string): number => {
+      const basePoints = word.length * 2;
+      let rareLetterBonus = 0;
+      
+      // Rare letters give bonus points
+      const rareLetters = ['J', 'Z', 'Ğ', 'Ü', 'Ö', 'Ç', 'Ş'];
+      for (const letter of word) {
+        if (rareLetters.includes(letter)) {
+          rareLetterBonus += 3;
+        }
+      }
+      
+      return Math.max(basePoints + rareLetterBonus, 5);
+    };
+
+    const points = calculatePoints(normalizedWord);
+    
+    return {
+      isValid: true,
+      points,
+      message: 'Geçerli kelime'
+    };
+  }, [wordlist, wordlistLoaded]);
   useEffect(() => {
     const initializeGame = async () => {
       fadeOutBackgroundMusic(1500);
@@ -498,6 +597,258 @@ const GamePage = ({ gameMode }: GamePageProps) => {
       fadeInBackgroundMusic(1000);
     };
   }, []);
+
+  // Timer effect - for both timed and score modes
+  useEffect(() => {
+    if (!gameStarted || gameEnded) return;
+
+    // For timed mode, use countdown timer
+    if (gameType === 'timed') {
+      const timer = setInterval(() => {
+        setTimeLeft((prev) => {
+          // Play time warning at 15 seconds
+          if (prev === 15 && !timeWarningPlayed) {
+            playTimeWarningSequence();
+            setTimeWarningPlayed(true);
+          }
+          
+          if (prev <= 1) {
+            setGameEnded(true);
+            // Use setTimeout to ensure we get the latest scores
+            setTimeout(() => {
+              setPlayerScore(currentPlayerScore => {
+                setOpponentScore(currentOpponentScore => {
+                  checkWinnerWithScores(currentPlayerScore, currentOpponentScore);
+                  return currentOpponentScore;
+                });
+                return currentPlayerScore;
+              });
+            }, 100);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [gameStarted, gameEnded, gameType, timeWarningPlayed, playTimeWarningSequence]);
+
+  // Check for winner and apply end game bonuses
+  const checkWinnerWithScores = useCallback(async (currentPlayerScore: number, currentOpponentScore: number) => {
+    if (gameEnded || winner !== null) return;
+    
+    console.log('🏆 Checking winner with scores - Player:', currentPlayerScore, 'Opponent:', currentOpponentScore);
+    
+    let gameResult: 'player' | 'opponent' | 'tie';
+    let bonusPoints = 0;
+    
+    if (currentPlayerScore > currentOpponentScore) {
+      gameResult = 'player';
+      bonusPoints = 50;
+      setWinner('player');
+      playSound('gameWin');
+      setTimeout(() => playCelebrationSound(), 500);
+      console.log('🏆 Player wins! Score:', currentPlayerScore, 'vs', currentOpponentScore);
+    } else if (currentPlayerScore < currentOpponentScore) {
+      gameResult = 'opponent';
+      setWinner('opponent');
+      playSound('gameLose');
+      setTimeout(() => playGameLoseSound(), 500);
+      console.log('🏆 Opponent wins! Score:', currentOpponentScore, 'vs', currentPlayerScore);
+    } else {
+      gameResult = 'tie';
+      bonusPoints = 25;
+      setWinner('tie');
+      console.log('🏆 It\'s a tie! Both scores:', currentPlayerScore);
+    }
+
+    // Apply end game bonus for player
+    if (user && bonusPoints > 0) {
+      const { data: currentProfile } = await supabase
+        .from('profiles')
+        .select('total_score')
+        .eq('id', user.id)
+        .single();
+
+      const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
+      
+      await supabase
+        .from('profiles')
+        .update({ total_score: newTotalScore })
+        .eq('id', user.id);
+
+      setTimeout(() => {
+        toast({
+          title: gameResult === 'player' ? 'Kazanma Bonusu!' : 'Beraberlik Bonusu!',
+          description: `+${bonusPoints} bonus EXP kazandınız!`,
+          duration: 2000,
+        });
+      }, 1000);
+    }
+    
+    // End the game and cleanup room (for multiplayer modes)
+    if (currentRoom && (gameMode === 'random-match' || gameMode === 'private-room')) {
+      setTimeout(async () => {
+        const playerStats = user ? {
+          userId: user.id,
+          score: currentPlayerScore,
+          words: playerWordsWithScores,
+          isWinner: gameResult === 'player'
+        } : undefined;
+        
+        const opponentParticipant = participants.find(p => p.user_id !== user?.id && !p.is_bot);
+        const opponentStats = opponentParticipant?.user_id ? {
+          userId: opponentParticipant.user_id,
+          score: currentOpponentScore,
+          words: opponentWordsWithScores,
+          isWinner: gameResult === 'opponent'
+        } : undefined;
+        
+        await endGame(playerStats, opponentStats);
+      }, 3000);
+    }
+  }, [gameEnded, winner, user, currentRoom, gameMode, endGame, playSound, playCelebrationSound, playGameLoseSound, toast, participants, playerWordsWithScores, opponentWordsWithScores]);
+
+  // Check win conditions based on game type
+  useEffect(() => {
+    if (gameType === 'score') {
+      // Score mode: first to reach max_score wins
+      const maxScore = currentRoom?.max_score || 500;
+      if (playerScore >= maxScore || opponentScore >= maxScore) {
+        setGameEnded(true);
+        checkWinnerWithScores(playerScore, opponentScore);
+      }
+    }
+  }, [playerScore, opponentScore, checkWinnerWithScores, gameType, currentRoom?.max_score]);
+
+  // Check if playing with AI (unified logic for all modes)
+  const isPlayingWithAI = useCallback(() => {
+    const aiStatus = (() => {
+      switch (gameMode) {
+        case 'vs-computer':
+          return true; // Always AI
+        case 'private-room':
+          return participants.length < 2; // AI if no second player
+        case 'random-match':
+          const hasAI = participants.some(p => p.is_bot);
+          const hasRealOpponent = participants.filter(p => !p.is_bot).length >= 2;
+          return hasAI && !hasRealOpponent;
+        case 'tournament':
+          return true; // Tournament is always vs AI for now
+        default:
+          return false;
+      }
+    })();
+    
+    console.log(`🤖 AI Status Check - Mode: ${gameMode}, Participants: ${participants.length}, PlayingWithAI: ${aiStatus}`);
+    return aiStatus;
+  }, [gameMode, participants]);
+
+  // AI continuous play effect - unified for all modes when playing with AI
+  useEffect(() => {
+    const aiPlaying = isPlayingWithAI();
+    console.log('🤖 AI Effect Check:', { 
+      aiPlaying, 
+      gameStarted, 
+      gameEnded, 
+      gameMode, 
+      participantsLength: participants.length 
+    });
+    
+    if (!aiPlaying || !gameStarted || gameEnded) return;
+
+    console.log('🤖 Starting AI play interval for game mode:', gameMode);
+
+    const aiPlayInterval = setInterval(() => {
+      // Check if player recently took action, if so wait longer
+      const timeSincePlayerAction = Date.now() - lastPlayerAction;
+      const minDelayAfterPlayerAction = 3000; // 3 saniye minimum bekleme
+      
+      if (timeSincePlayerAction < minDelayAfterPlayerAction) {
+        return; // Bu round'u atla
+      }
+      
+      // AI word selection with validation
+      const selectAIWord = async () => {
+        try {
+          const potentialWords = [
+            'KEDİ', 'MASA', 'ARABA', 'OKUL', 'KİTAP', 'DENİZ', 'AĞAÇ', 'ÇİÇEK', 
+            'DOSTLUK', 'GÜNEŞ', 'YILDIZ', 'BULUT', 'RÜZGAR', 'ATEŞ', 'TOPRAK',
+            'SEVGİ', 'MUTLULUK', 'UMUT', 'HAYAL', 'RENKLER', 'MÜZİK', 'DANS', 'ŞARKI',
+            'OYUN', 'SPOR', 'FUTBOL', 'BASKETBOL', 'TENİS', 'YÜZME', 'KOŞU', 'BİSİKLET',
+            'YEMEK', 'EKMEK', 'PEYNİR', 'DOMATES', 'SALATA', 'ÇORBA', 'MEYVE',
+            'ELMA', 'ARMUT', 'ÇİLEK', 'KIRAZ', 'ÜZÜM', 'PORTAKAL', 'MANGO',
+            'SEBZE', 'HAVUÇ', 'PATLICAN', 'BİBER', 'SOĞAN', 'SARIMSAK', 'PATATES',
+            'KALE', 'KEDİ', 'KÖPEK', 'KUŞU', 'BALINA', 'ASLAN', 'KAPLAN', 'FİL',
+            'SÜT', 'KOLA', 'ÇAY', 'KAHVE', 'ŞEKER', 'TUZ', 'YAĞLI', 'EKŞİ',
+            'EV', 'KAPI', 'PENCERE', 'ODA', 'SALON', 'MUTFAK', 'BANYO', 'YATAK',
+            'ANNE', 'BABA', 'KARDEŞ', 'DEDE', 'NINE', 'AMCA', 'TEYZE', 'HALA',
+            'ARKADAŞ', 'AILE', 'İNSAN', 'ÇOCUK', 'BEBEK', 'YAŞ', 'GÜN', 'GECE',
+            'SABAH', 'ÖĞLE', 'AKŞAM', 'HAFTA', 'AY', 'YIL', 'ZAMAN', 'SAAT'
+          ];
+          
+          // Shuffle and try words until we find a valid unused one
+          const shuffledWords = potentialWords.sort(() => Math.random() - 0.5);
+          
+          for (const word of shuffledWords) {
+            const normalizedWord = word.toUpperCase();
+            
+            // Kullanılmış kelime kontrolü
+            if (!usedWords.has(normalizedWord)) {
+              // LOCAL WORDLIST CHECK FOR AI
+              if (wordlistLoaded && wordlist.has(normalizedWord)) {
+                const points = Math.floor(Math.random() * 25) + 10;
+                console.log(`🤖 AI used validated word (local): ${word} in ${gameMode} mode with ${points} points`);
+                
+                setOpponentScore(prev => prev + points);
+                
+                // Store AI word with score for statistics
+                setOpponentWords(prev => [...prev, word]);
+                setOpponentWordsWithScores(prev => [...prev, { word, score: points }]);
+                
+                playSound('correctWord');
+                
+                // Update used words
+                setUsedWords(prev => new Set([...prev, normalizedWord]));
+                console.log('🤖 AI added word to used:', normalizedWord);
+                return;
+              } else if (!wordlistLoaded) {
+                // Fallback if wordlist not loaded
+                const points = Math.floor(Math.random() * 15) + 8;
+                console.log(`🤖 AI used word (no wordlist): ${word} with ${points} points`);
+                
+                setOpponentScore(prev => prev + points);
+                setOpponentWords(prev => [...prev, word]);
+                setOpponentWordsWithScores(prev => [...prev, { word, score: points }]);
+                playSound('correctWord');
+                setUsedWords(prev => new Set([...prev, normalizedWord]));
+                return;
+              }
+            }
+          }
+          
+          // If no valid word found, AI gets fewer points
+          const opponentPoints = Math.floor(Math.random() * 10) + 5;
+          setOpponentScore(prev => prev + opponentPoints);
+          console.log(`🤖 AI couldn't find unused word, got ${opponentPoints} points in ${gameMode} mode`);
+          
+        } catch (error) {
+          console.error('AI word selection error:', error);
+          const opponentPoints = Math.floor(Math.random() * 10) + 5;
+          setOpponentScore(prev => prev + opponentPoints);
+          console.log(`🤖 AI error, got ${opponentPoints} points in ${gameMode} mode`);
+        }
+      };
+
+      selectAIWord();
+    }, 4000 + Math.random() * 3000); // 4-7 saniye arasında
+
+    return () => {
+      console.log('🤖 Stopping AI play interval for game mode:', gameMode);
+      clearInterval(aiPlayInterval);
+    };
+  }, [gameStarted, gameEnded, gameMode, participants.length, usedWords, playSound, lastPlayerAction, isPlayingWithAI, wordlist, wordlistLoaded]);
 
   // Private room logic
   useEffect(() => {
@@ -555,7 +906,7 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     setCurrentWord('');
   };
 
-  // Submit word
+  // Submit word - Using local wordlist validation
   const submitWord = async () => {
     if (waitingForPlayer || isJokerActive) return;
     
@@ -566,41 +917,44 @@ const GamePage = ({ gameMode }: GamePageProps) => {
         title: 'Geçersiz Kelime',
         description: 'Kelime en az 3 harf olmalıdır.',
         variant: 'destructive',
-        duration: 300,
+        duration: 300, // 0.5 saniye
       });
       return;
     }
 
-    console.log('🔍 Validating word:', currentWord);
-    const result = await validateWord(currentWord);
+    const normalizedWord = currentWord.toUpperCase();
+    
+    // Önce kullanılmış kelime kontrolü yap
+    if (usedWords.has(normalizedWord)) {
+      toast({
+        title: 'Kelimeyi Zaten Kullandınız',
+        description: 'Bu kelimeyi daha önce kullandınız.',
+        variant: 'destructive',
+        duration: 300, // 0.5 saniye
+      });
+      playSound('wrongWord');
+      clearWord();
+      return;
+    }
 
+    console.log('🔍 Validating word locally:', currentWord);
+    
+    // LOCAL WORDLIST VALIDATION
+    const result = validateWordLocal(currentWord);
+    
     if (!result.isValid) {
       playSound('wrongWord');
       toast({
         title: 'Geçersiz Kelime',
         description: result.message,
         variant: 'destructive',
-        duration: 300,
+        duration: 300, // 0.5 saniye
       });
       clearWord();
       return;
     }
 
-    const normalizedWord = currentWord.toUpperCase();
-    
-    if (usedWords.has(normalizedWord)) {
-      toast({
-        title: 'Kelimeyi Zaten Kullandınız',
-        description: 'Bu kelimeyi daha önce kullandınız.',
-        variant: 'destructive',
-        duration: 300,
-      });
-      playSound('wrongWord');
-      clearWord();
-      return;
-    }
-
-    console.log('✅ Word accepted:', currentWord, 'Points:', result.points);
+    console.log('✅ Word accepted (local validation):', currentWord, 'Points:', result.points);
     
     const newUsedWords = new Set([...usedWords, normalizedWord]);
     setUsedWords(newUsedWords);
@@ -616,6 +970,43 @@ const GamePage = ({ gameMode }: GamePageProps) => {
     
     if (currentRoom) {
       await updateScore(newScore);
+    }
+
+    // Update total score in database for level progression
+    if (user) {
+      const { data: currentProfile } = await supabase
+        .from('profiles')
+        .select('total_score')
+        .eq('id', user.id)
+        .single();
+
+      const calculateLevel = (totalScore: number) => {
+        const baseExp = 1000;
+        const expIncreasePerLevel = 100;
+        
+        let level = 1;
+        let totalExpNeeded = 0;
+        let currentLevelExp = baseExp;
+
+        while (totalScore >= totalExpNeeded + currentLevelExp) {
+          totalExpNeeded += currentLevelExp;
+          level++;
+          currentLevelExp = baseExp + (level - 1) * expIncreasePerLevel;
+        }
+
+        return level;
+      };
+
+      const currentLevel = calculateLevel(currentProfile?.total_score || 0);
+      const levelMultiplier = 1 + (currentLevel - 1) * 0.1;
+      const bonusPoints = Math.floor(result.points * levelMultiplier);
+      
+      const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
+      
+      await supabase
+        .from('profiles')
+        .update({ total_score: newTotalScore })
+        .eq('id', user.id);
     }
 
     clearWord();
