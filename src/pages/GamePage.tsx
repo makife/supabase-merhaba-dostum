@@ -1595,9 +1595,9 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
         </Card>
 
         {/* Game Grid */}
-        <Card className="game-grid border-0">
-          <CardContent className="p-6">
-            <div className="grid grid-cols-4 gap-3">
+        <Card className="game-grid border-0 mb-2 flex-1">
+          <CardContent className="p-3 h-full flex items-center justify-center">
+            <div className="grid grid-cols-4 gap-2 w-full max-w-xs">
               {gameGrid.map((row, rowIndex) =>
                 row.map((letter, colIndex) => {
                   const isSelected = selectedLetters.some(s => s.row === rowIndex && s.col === colIndex);
