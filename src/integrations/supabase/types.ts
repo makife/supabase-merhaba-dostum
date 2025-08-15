@@ -895,6 +895,10 @@ export type Database = {
         }
         Returns: Json
       }
+      create_matches_for_active_tournament: {
+        Args: { p_tournament_id: string }
+        Returns: Json
+      }
       generate_random_grid: {
         Args: Record<PropertyKey, never>
         Returns: Json
