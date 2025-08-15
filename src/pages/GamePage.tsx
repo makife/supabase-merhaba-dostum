@@ -1483,7 +1483,7 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
         </div>
 
         {/* Scores */}
-        <div className="grid grid-cols-2 gap-2 mb-2 shrink-0">
+        <div className="grid grid-cols-2 gap-4">
           <Card className="light-gradient border-0">
             <CardContent className="p-4 text-center relative overflow-hidden">
               <Avatar className="w-16 h-16 mx-auto mb-2">
@@ -1643,7 +1643,7 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
           <Button 
             variant="outline" 
             onClick={clearWord}
-            className="h-9"
+            className="h-12"
             disabled={selectedLetters.length === 0 || isJokerActive}
           >
             <Trash2 className="w-4 h-4 mr-2" />
