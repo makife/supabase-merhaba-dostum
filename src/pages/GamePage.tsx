@@ -1240,21 +1240,21 @@ const createConfettiEffect = () => {
   }, 4000);
 };
 
-  // Create fireworks effect - Enhanced version  
+// Create fireworks effect - Enhanced version  
 const createFireworksEffect = () => {
   const fireworksContainer = document.createElement('div');
   fireworksContainer.className = 'fixed inset-0 pointer-events-none z-50';
   document.body.appendChild(fireworksContainer);
 
-  // Çoklu patlamalar
-  for (let burst = 0; burst < 5; burst++) {
+  // Çoklu patlamalar - DAHA FAZLA VE DAHA BÜYÜK
+  for (let burst = 0; burst < 8; burst++) { // 5 → 8
     setTimeout(() => {
-      // Rastgele pozisyon
-      const centerX = Math.random() * (window.innerWidth - 200) + 100;
-      const centerY = Math.random() * (window.innerHeight - 200) + 100;
+      // Rastgele pozisyon - DAHA MERKEZDE
+      const centerX = Math.random() * (window.innerWidth - 400) + 200; // Daha merkezi
+      const centerY = Math.random() * (window.innerHeight - 400) + 200; // Daha merkezi
 
-      // Ana patlama
-      for (let i = 0; i < 20; i++) {
+      // Ana patlama - DAHA ÇOK PARÇACIK
+      for (let i = 0; i < 30; i++) { // 20 → 30
         const firework = document.createElement('div');
         const colors = [
           '#FFD700', '#FF1493', '#00CED1', '#32CD32', 
@@ -1264,17 +1264,17 @@ const createFireworksEffect = () => {
         
         firework.className = 'firework-particle';
         firework.style.position = 'absolute';
-        firework.style.width = `${Math.random() * 6 + 3}px`;
-        firework.style.height = `${Math.random() * 6 + 3}px`;
+        firework.style.width = `${Math.random() * 10 + 6}px`; // 3-9px → 6-16px
+        firework.style.height = `${Math.random() * 10 + 6}px`; // DAHA BÜYÜK
         firework.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
         firework.style.borderRadius = '50%';
         firework.style.left = `${centerX}px`;
         firework.style.top = `${centerY}px`;
-        firework.style.boxShadow = `0 0 10px ${colors[Math.floor(Math.random() * colors.length)]}`;
+        firework.style.boxShadow = `0 0 20px ${colors[Math.floor(Math.random() * colors.length)]}`; // 10px → 20px DAHA PARLI
         
-        const angle = (i / 20) * 2 * Math.PI;
-        const distance = 80 + Math.random() * 120;
-        const duration = 1 + Math.random() * 0.5;
+        const angle = (i / 30) * 2 * Math.PI; // 20 → 30
+        const distance = 120 + Math.random() * 200; // 80-200 → 120-320 DAHA UZAK
+        const duration = 1.5 + Math.random() * 1; // 1-1.5s → 1.5-2.5s DAHA YAVAS
         
         firework.style.animation = `firework-burst ${duration}s ease-out forwards`;
         firework.style.setProperty('--end-x', `${Math.cos(angle) * distance}px`);
@@ -1283,30 +1283,31 @@ const createFireworksEffect = () => {
         fireworksContainer.appendChild(firework);
       }
 
-      // İkincil parçacıklar
-      for (let j = 0; j < 15; j++) {
+      // İkincil parçacıklar - DAHA ÇOK
+      for (let j = 0; j < 25; j++) { // 15 → 25
         setTimeout(() => {
           const secondaryParticle = document.createElement('div');
           secondaryParticle.className = 'firework-secondary';
           secondaryParticle.style.position = 'absolute';
-          secondaryParticle.style.width = '2px';
-          secondaryParticle.style.height = '2px';
+          secondaryParticle.style.width = '4px'; // 2px → 4px
+          secondaryParticle.style.height = '4px'; // 2px → 4px
           secondaryParticle.style.backgroundColor = '#FFF';
           secondaryParticle.style.borderRadius = '50%';
-          secondaryParticle.style.left = `${centerX + (Math.random() - 0.5) * 40}px`;
-          secondaryParticle.style.top = `${centerY + (Math.random() - 0.5) * 40}px`;
-          secondaryParticle.style.animation = 'secondary-sparkle 0.8s ease-out forwards';
+          secondaryParticle.style.boxShadow = '0 0 10px #FFF'; // PARLAMA EKLE
+          secondaryParticle.style.left = `${centerX + (Math.random() - 0.5) * 80}px`; // 40 → 80
+          secondaryParticle.style.top = `${centerY + (Math.random() - 0.5) * 80}px`; // 40 → 80
+          secondaryParticle.style.animation = 'secondary-sparkle 1.2s ease-out forwards'; // 0.8s → 1.2s
           
           fireworksContainer.appendChild(secondaryParticle);
-        }, j * 50);
+        }, j * 30); // 50ms → 30ms DAHA HIZLI
       }
       
-    }, burst * 400);
+    }, burst * 300); // 400ms → 300ms DAHA SIKIŞIK
   }
 
   setTimeout(() => {
     document.body.removeChild(fireworksContainer);
-  }, 3000);
+  }, 4000); // 3000ms → 4000ms DAHA UZUN
 };
 
   // Format time
