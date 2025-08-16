@@ -55,6 +55,9 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const { playSound, playTimeWarningSequence, playCelebrationSound, playGameLoseSound } = useSounds();
   const { fadeOutBackgroundMusic, fadeInBackgroundMusic } = useMusic();
   const [searchParams] = useSearchParams();
+  const [lastClickTime, setLastClickTime] = useState(0);
+  const [audioWow1] = useState(new Audio('/wow1.mp3'));
+  const [audioWow2] = useState(new Audio('/wow2.mp3'));
   
   // Joker state'leri
   const [jokers, setJokers] = useState<JokerState>({
