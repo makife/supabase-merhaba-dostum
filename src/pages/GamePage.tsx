@@ -1538,14 +1538,13 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
     <div className="flex justify-between items-center">
       <h3 className="text-sm font-bold text-purple-800 mb-2">🎭 Jokerler</h3>
     </div>
-    <div className="grid grid-cols-3 gap-1">
-      <Button
-        variant={selectedJoker === 'degistir' ? 'default' : 'outline'}
-        size="sm"
-        className="joker-button flex flex-col items-center p-1 h-auto relative text-xs"
-        onClick={useDegisTirJoker}
-        disabled={jokers.degistir <= 0 || isJokerActive}
-      >
+    <Button
+  variant={selectedJoker === 'degistir' ? 'default' : 'outline'}
+  size="sm"
+  className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-green-100 to-emerald-200 hover:from-green-200 hover:to-emerald-300 border-green-300"
+  onClick={useDegisTirJoker}
+  disabled={jokers.degistir <= 0 || isJokerActive}
+>
         <Shuffle className="w-3 h-3 mb-0.5" />
         <span className="text-xs">Değiştir</span>
         <Badge variant="secondary" className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center">
@@ -1555,12 +1554,12 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
 
       {/* Fısılda Jokeri - DÜZELTME: onClick doğru yerde */}
       <Button
-        variant={selectedJoker === 'fisilida' ? 'default' : 'outline'}
-        size="sm"
-        className="joker-button flex flex-col items-center p-1 h-auto relative text-xs"
-        onClick={useFisildaJoker}
-        disabled={jokers.fisilida <= 0 || isJokerActive}
-      >
+  variant={selectedJoker === 'fisilida' ? 'default' : 'outline'}
+  size="sm"
+  className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-blue-100 to-cyan-200 hover:from-blue-200 hover:to-cyan-300 border-blue-300"
+  onClick={useFisildaJoker}
+  disabled={jokers.fisilida <= 0 || isJokerActive}
+>
         <Lightbulb className="w-4 h-4 mb-1" />
         <span className="text-xs">Fısılda</span>
         <Badge variant="secondary" className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center">
@@ -1570,12 +1569,12 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
 
       {/* Sen Yaz Jokeri - DÜZELTME: onClick doğru yerde */}
       <Button
-        variant={selectedJoker === 'senYaz' ? 'default' : 'outline'}
-        size="sm"
-        className="joker-button flex flex-col items-center p-1 h-auto relative text-xs"
-        onClick={useSenYazJoker}
-        disabled={jokers.senYaz <= 0 || isJokerActive}
-      >
+  variant={selectedJoker === 'senYaz' ? 'default' : 'outline'}
+  size="sm"
+  className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-purple-100 to-violet-200 hover:from-purple-200 hover:to-violet-300 border-purple-300"
+  onClick={useSenYazJoker}
+  disabled={jokers.senYaz <= 0 || isJokerActive}
+>
         <PenTool className="w-4 h-4 mb-1" />
         <span className="text-xs">Sen Yaz</span>
         <Badge variant="secondary" className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center">
