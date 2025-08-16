@@ -567,6 +567,7 @@ const ProfilePage = () => {
           </CardContent>
         </Card>
       </div>
+    </div>
   );
 };
 
