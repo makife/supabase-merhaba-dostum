@@ -1140,6 +1140,45 @@ All colors MUST be HSL.
   }
 }
 
+/* Enhanced Fireworks */
+@keyframes firework-burst {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(calc(var(--end-x) * 0.8), calc(var(--end-y) * 0.8)) scale(1.2);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(var(--end-x), var(--end-y)) scale(0.3);
+    opacity: 0;
+  }
+}
+
+@keyframes secondary-sparkle {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+
+.firework-particle {
+  animation-fill-mode: forwards;
+}
+
+.firework-secondary {
+  animation-fill-mode: forwards;
+}
+
 /* Eğer daha dramatik efekt istersen, class name'i değiştir */
 .letter-fire-highlight {
   animation: letter-fire-highlight 1.2s ease-in-out;
