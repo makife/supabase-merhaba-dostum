@@ -1005,9 +1005,28 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
     }
   }, [participants, gameMode, hasShownStartMessage, gameType]);
 
+  // Touch olayları için optimize edilmiş handler
+  const handleLetterTouch = (letter: string, row: number, col: number, event: React.TouchEvent) => {
+    event.preventDefault(); // Default touch davranışını engelle
+    event.stopPropagation();
+    handleLetterClick(letter, row, col);
+  };
+
+  // Mouse olayları için optimize edilmiş handler  
+  const handleLetterMouse = (letter: string, row: number, col: number, event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    handleLetterClick(letter, row, col);
+  };
+
   // Handle letter click
   const handleLetterClick = (letter: string, row: number, col: number) => {
     if (gameEnded || waitingForPlayer || isJokerActive) return;
+
+    const now = Date.now();
+    // 50ms debounce (çok hızlı tıklamaları engelle)
+    if (now - lastClickTime < 50) return;
+    setLastClickTime(now);
 
     playSound('letterSelect');
     
@@ -1697,13 +1716,19 @@ const createFireworksEffect = () => {
                   return (
                     <Button
                       key={`${rowIndex}-${colIndex}`}
-                      className={`letter-button h-12 text-lg font-bold relative transition-all duration-300 ${
+                      className={`letter-button h-12 text-lg font-bold relative transition-all duration-150 ${
                         isSelected ? 'selected' : ''
                       } ${
                         isHighlighted ? 'letter-glow-highlight' : ''
                       }`}
-                      onClick={() => handleLetterClick(letter, rowIndex, colIndex)}
-                    >
+                      onMouseDown={(e) => handleLetterMouse(letter, rowIndex, colIndex, e)}
+                      onTouchStart={(e) => handleLetterTouch(letter, rowIndex, colIndex, e)}
+                      style={{ 
+                      touchAction: 'manipulation',
+                      userSelect: 'none',
+                      WebkitTapHighlightColor: 'transparent'
+                    }}
+>
                       {letter}
                       {isSelected && selectionOrder >= 0 && (
                         <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold border-2 border-white">
