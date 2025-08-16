@@ -1538,7 +1538,8 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
     <div className="flex justify-between items-center">
       <h3 className="text-sm font-bold text-purple-800 mb-2">🎭 Jokerler</h3>
     </div>
-    <Button
+    <div className="grid grid-cols-3 gap-1">
+      <Button
         variant={selectedJoker === 'degistir' ? 'default' : 'outline'}
         size="sm"
         className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-green-100 to-emerald-200 hover:from-green-200 hover:to-emerald-300 border-green-300"
@@ -1552,7 +1553,6 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
         </Badge>
       </Button>
 
-      {/* Fısılda Jokeri - DÜZELTME: onClick doğru yerde */}
       <Button
         variant={selectedJoker === 'fisilida' ? 'default' : 'outline'}
         size="sm"
@@ -1567,7 +1567,6 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
         </Badge>
       </Button>
 
-      {/* Sen Yaz Jokeri - DÜZELTME: onClick doğru yerde */}
       <Button
         variant={selectedJoker === 'senYaz' ? 'default' : 'outline'}
         size="sm"
@@ -1584,7 +1583,6 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
     </div>
   </CardContent>
 </Card>
-
         {/* Current Word Input */}
         <Card className="game-grid border-0">
           <CardContent className="p-2">
