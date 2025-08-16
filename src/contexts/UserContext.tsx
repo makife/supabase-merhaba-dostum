@@ -10,6 +10,28 @@ interface UserProfile {
   last_credit_refresh: string | null;
   total_score: number;
   created_at: string;
+  // Yeni eklenen alanlar:
+  daily_games?: number;
+  win_streak?: number;
+  daily_wins?: number;
+  best_streak?: number;
+  average_score?: number;
+  total_words?: number;
+  favorite_letter?: string;
+  total_play_time?: number;
+  last_daily_reset?: string;
+  // Diğer mevcut alanlar:
+  total_games?: number;
+  wins?: number;
+  losses?: number;
+  longest_word?: string;
+  fastest_word_time?: number;
+  username?: string;
+  avatar_url?: string;
+  disconnect_count?: number;
+  win_count?: number;
+  last_disconnect?: string;
+  last_win?: string;
 }
 
 interface UserContextType {
@@ -52,9 +74,10 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
     setLoading(true);
     try {
+      // Tüm alanları seç - sadece bazılarını değil
       const { data, error } = await supabase
         .from('profiles')
-        .select('game_credits, bonus_credits, premium_until, hint_credits, last_credit_refresh, total_score, created_at')
+        .select('*')  // Tüm alanları seç
         .eq('id', user.id)
         .single();
 
