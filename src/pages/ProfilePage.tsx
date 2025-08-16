@@ -17,7 +17,10 @@ import {
   Zap,
   Crown,
   Edit,
-  Calendar
+  Calendar,
+  Star,
+  TrendingUp,
+  FileText
 } from 'lucide-react';
 
 const ProfilePage = () => {
@@ -39,6 +42,13 @@ const ProfilePage = () => {
     level: 1,
     experience: 0,
     nextLevelExp: 1000,
+    dailyGames: 0,          // Günlük oyun sayısı
+    dailyWins: 0,           // Günlük kazanma
+    bestStreak: 0,          // En iyi seri
+    averageScore: 0,        // Ortalama puan
+    totalWords: 0,          // Toplam kelime
+    favoriteLetter: '',     // En çok kullandığı harf
+    playTime: 0,            // Toplam oyun süresi
     premiumUntil: null as string | null,
   });
 
@@ -65,18 +75,26 @@ const ProfilePage = () => {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      if (!user) return;
-      
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
-      
-      if (data) {
-        // Calculate level data from total_score
-        const levelData = calculateLevel(data.total_score || 0);
-        const username = data.username || (user?.email?.split('@')[0] || 'Oyuncu');
+  if (!user) return;
+  
+  const { data } = await supabase
+    .from('profiles')
+    .select(`
+      *,
+      daily_games,
+      daily_wins,
+      best_streak,
+      average_score,
+      total_words,
+      favorite_letter,
+      total_play_time
+    `)
+    .eq('id', user.id)
+    .maybeSingle();
+  
+  if (data) {
+    const levelData = calculateLevel(data.total_score || 0);
+    const username = data.username || (user?.email?.split('@')[0] || 'Oyuncu');
         
         setProfileData(prev => ({
           ...prev,
@@ -94,8 +112,14 @@ const ProfilePage = () => {
           experience: levelData.experience,
           nextLevelExp: levelData.nextLevelExp,
           premiumUntil: data.premium_until,
+          dailyGames: data.daily_games || 0,
+          dailyWins: data.daily_wins || 0,
+          bestStreak: data.best_streak || 0,
+          averageScore: data.average_score || 0,
+          totalWords: data.total_words || 0,
+          favoriteLetter: data.favorite_letter || '',
+          playTime: data.total_play_time || 0,
         }));
-        setEditedUsername(username);
       }
     };
 
@@ -134,6 +158,13 @@ const ProfilePage = () => {
               level: levelData.level,
               experience: levelData.experience,
               nextLevelExp: levelData.nextLevelExp,
+              dailyGames: newData.daily_games || prev.dailyGames,
+              dailyWins: newData.daily_wins || prev.dailyWins,
+              bestStreak: newData.best_streak || prev.bestStreak,
+              averageScore: newData.average_score || prev.averageScore,
+              totalWords: newData.total_words || prev.totalWords,
+              favoriteLetter: newData.favorite_letter || prev.favoriteLetter,
+              playTime: newData.total_play_time || prev.playTime,
             }));
           }
         }
@@ -410,6 +441,38 @@ const ProfilePage = () => {
               <p className="text-sm text-muted-foreground">Seri</p>
             </CardContent>
           </Card>
+          <Card>
+    <CardContent className="p-4 text-center">
+      <Calendar className="w-8 h-8 mx-auto mb-2 text-indigo-500" />
+      <p className="text-2xl font-bold">{profileData.dailyGames}</p>
+      <p className="text-sm text-muted-foreground">Günlük</p>
+    </CardContent>
+  </Card>
+  
+  <Card>
+    <CardContent className="p-4 text-center">
+      <Star className="w-8 h-8 mx-auto mb-2 text-pink-500" />
+      <p className="text-2xl font-bold">{profileData.bestStreak}</p>
+      <p className="text-sm text-muted-foreground">En İyi Seri</p>
+    </CardContent>
+  </Card>
+  
+  <Card>
+    <CardContent className="p-4 text-center">
+      <TrendingUp className="w-8 h-8 mx-auto mb-2 text-cyan-500" />
+      <p className="text-2xl font-bold">{Math.round(profileData.averageScore)}</p>
+      <p className="text-sm text-muted-foreground">Ort. Puan</p>
+    </CardContent>
+  </Card>
+  
+  <Card>
+    <CardContent className="p-4 text-center">
+      <FileText className="w-8 h-8 mx-auto mb-2 text-emerald-500" />
+      <p className="text-2xl font-bold">{profileData.totalWords}</p>
+      <p className="text-sm text-muted-foreground">Toplam Kelime</p>
+    </CardContent>
+  </Card>
+</div>
         </div>
 
         {/* Achievements / Badges */}
@@ -477,6 +540,30 @@ const ProfilePage = () => {
               <span>Kazanma Oranı:</span>
               <span className="font-bold">{profileData.winRate}%</span>
             </div>
+            <div className="flex justify-between">
+    <span>Günlük Kazanma:</span>
+    <span className="font-bold">{profileData.dailyWins}</span>
+  </div>
+  <div className="flex justify-between">
+    <span>En İyi Seri:</span>
+    <span className="font-bold">{profileData.bestStreak}</span>
+  </div>
+  <div className="flex justify-between">
+    <span>Ortalama Puan:</span>
+    <span className="font-bold">{Math.round(profileData.averageScore)}</span>
+  </div>
+  <div className="flex justify-between">
+    <span>Toplam Kelime:</span>
+    <span className="font-bold">{profileData.totalWords}</span>
+  </div>
+  <div className="flex justify-between">
+    <span>Favori Harf:</span>
+    <span className="font-bold">{profileData.favoriteLetter || 'Henüz yok'}</span>
+  </div>
+  <div className="flex justify-between">
+    <span>Oyun Süresi:</span>
+    <span className="font-bold">{Math.round(profileData.playTime / 60)} dakika</span>
+  </div>
           </CardContent>
         </Card>
       </div>

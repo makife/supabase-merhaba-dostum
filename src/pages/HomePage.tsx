@@ -392,11 +392,11 @@ useEffect(() => {
               <div className="flex flex-wrap gap-2 justify-center">
                 <Badge variant="secondary" className="bg-white/20 text-foreground border-white/30 text-xs">
                   <Target className="w-3 h-3 mr-1" />
-                  Günlük: 0/∞
+                  Günlük: {profile?.daily_games || 0}/∞
                 </Badge>
                 <Badge variant="secondary" className="bg-white/20 text-foreground border-white/30 text-xs">
                   <Zap className="w-3 h-3 mr-1" />
-                  Seri: 0
+                  Seri: {profile?.win_streak || 0}
                 </Badge>
               </div>
             </div>
