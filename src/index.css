@@ -1174,31 +1174,102 @@ All colors MUST be HSL.
   }
 }
 
-/* Tuş hassasiyet optimizasyonları */
-.letter-button {
-  touch-action: manipulation;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-  -webkit-touch-callout: none;
-  transition: all 0.1s ease-out;
-  cursor: pointer;
-}
-
-.letter-button:active {
-  transform: scale(0.95);
-  transition: transform 0.05s ease-out;
-}
-
-/* Mobile dokunma alanını genişlet */
-@media (max-width: 768px) {
-  .letter-button {
-    min-height: 48px;
-    min-width: 48px;
-    padding: 4px;
-  }
-}
-
 /* Eğer daha dramatik efekt istersen, class name'i değiştir */
 .letter-fire-highlight {
   animation: letter-fire-highlight 1.2s ease-in-out;
+}
+
+/* Enhanced Confetti Animations */
+.confetti-circle {
+  border-radius: 50%;
+}
+
+.confetti-square {
+  border-radius: 2px;
+}
+
+.confetti-triangle {
+  width: 0 !important;
+  height: 0 !important;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-bottom: 8px solid;
+  background: transparent !important;
+}
+
+@keyframes confetti {
+  0% {
+    transform: translateY(-100vh) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  25% {
+    opacity: 1;
+    transform: translateY(-50vh) rotate(180deg) scale(1.2);
+  }
+  50% {
+    opacity: 0.8;
+    transform: translateY(0vh) rotate(360deg) scale(0.8);
+  }
+  75% {
+    opacity: 0.6;
+    transform: translateY(50vh) rotate(540deg) scale(1.1);
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg) scale(0.5);
+    opacity: 0;
+  }
+}
+
+/* Enhanced Fireworks */
+@keyframes firework-burst {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(calc(var(--end-x) * 0.8), calc(var(--end-y) * 0.8)) scale(1.2);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(var(--end-x), var(--end-y)) scale(0.3);
+    opacity: 0;
+  }
+}
+
+@keyframes secondary-sparkle {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+
+@keyframes sparkle-burst {
+  0% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2);
+  }
+}
+
+.firework-particle {
+  animation-fill-mode: forwards;
+}
+
+.firework-secondary {
+  animation-fill-mode: forwards;
 }
