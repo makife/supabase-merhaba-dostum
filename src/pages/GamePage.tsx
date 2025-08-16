@@ -1134,25 +1134,35 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
     clearWord();
   };
 
+
   // Trigger word effects (confetti/fireworks) if purchased
-  const triggerWordEffects = () => {
-    if (!(settings?.effects_enabled ?? true)) return;
-    
-    const hasConfetti = hasPurchased('effect_confetti') && (settings?.confetti_effect_enabled ?? true);
-    const hasFireworks = hasPurchased('effect_fireworks') && (settings?.fireworks_effect_enabled ?? true);
-    
-    if (hasConfetti && hasFireworks) {
-      if (Math.random() > 0.5) {
-        createConfettiEffect();
-      } else {
-        createFireworksEffect();
-      }
-    } else if (hasConfetti) {
+const triggerWordEffects = () => {
+  if (!(settings?.effects_enabled ?? true)) return;
+  
+  const hasConfetti = hasPurchased('effect_confetti') && (settings?.confetti_effect_enabled ?? true);
+  const hasFireworks = hasPurchased('effect_fireworks') && (settings?.fireworks_effect_enabled ?? true);
+  
+  // Kelime uzunluğuna göre ses çal
+  if (currentWord.length === 4) {
+    audioWow1.currentTime = 0; // Baştan başlat
+    audioWow1.play().catch(e => console.log('Audio play failed:', e));
+  } else if (currentWord.length >= 5) {
+    audioWow2.currentTime = 0; // Baştan başlat
+    audioWow2.play().catch(e => console.log('Audio play failed:', e));
+  }
+  
+  if (hasConfetti && hasFireworks) {
+    if (Math.random() > 0.5) {
       createConfettiEffect();
-    } else if (hasFireworks) {
+    } else {
       createFireworksEffect();
     }
-  };
+  } else if (hasConfetti) {
+    createConfettiEffect();
+  } else if (hasFireworks) {
+    createFireworksEffect();
+  }
+};
 
   // Create confetti effect - Enhanced version
 const createConfettiEffect = () => {
