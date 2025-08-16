@@ -1495,7 +1495,7 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
                   <User className="w-8 h-8 text-gray-600" />
                 </AvatarFallback>
               </Avatar>
-              <p className="text-2x1 text-gray-700 font-bold font-bungee">
+              <p className="text-sm text-gray-700 font-bold font-bungee">
                 Siz
               </p>
               <p className="text-2x1 font-bold text-gray-700">{playerScore}</p>
