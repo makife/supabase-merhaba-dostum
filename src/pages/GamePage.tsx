@@ -1533,7 +1533,7 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
         </div>
 
         {/* Joker Panel - EN ÖNEMLİ KISIM! */}
-<Card className="bg-gradient-to-r from-purple-100 to-pink-100 border-purple-200 joker-panel-float">
+<Card className="bg-gradient-to-r from-amber-50 to-orange-100 border-amber-200 shadow-md">
   <CardContent className="p-2">
     <div className="flex justify-between items-center">
       <h3 className="text-sm font-bold text-purple-800 mb-2">🎭 Jokerler</h3>
