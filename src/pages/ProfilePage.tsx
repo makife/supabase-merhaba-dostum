@@ -79,16 +79,7 @@ const ProfilePage = () => {
   
   const { data } = await supabase
     .from('profiles')
-    .select(`
-      *,
-      daily_games,
-      daily_wins,
-      best_streak,
-      average_score,
-      total_words,
-      favorite_letter,
-      total_play_time
-    `)
+    .select('*')  // Sadece yıldız, başka bir şey belirtme
     .eq('id', user.id)
     .maybeSingle();
   
