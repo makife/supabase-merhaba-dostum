@@ -1174,6 +1174,30 @@ All colors MUST be HSL.
   }
 }
 
+/* Tuş hassasiyet optimizasyonları */
+.letter-button {
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  transition: all 0.1s ease-out;
+  cursor: pointer;
+}
+
+.letter-button:active {
+  transform: scale(0.95);
+  transition: transform 0.05s ease-out;
+}
+
+/* Mobile dokunma alanını genişlet */
+@media (max-width: 768px) {
+  .letter-button {
+    min-height: 48px;
+    min-width: 48px;
+    padding: 4px;
+  }
+}
+
 /* Eğer daha dramatik efekt istersen, class name'i değiştir */
 .letter-fire-highlight {
   animation: letter-fire-highlight 1.2s ease-in-out;
