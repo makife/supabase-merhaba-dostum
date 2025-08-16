@@ -690,6 +690,8 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
 }, [wordlist, wordlistLoaded]);
   
   useEffect(() => {
+    audioWow1.volume = 0.7; // %70 ses
+    audioWow2.volume = 0.7; // %70 ses
     const initializeGame = async () => {
       fadeOutBackgroundMusic(1500);
       
