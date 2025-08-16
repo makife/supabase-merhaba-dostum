@@ -1044,29 +1044,6 @@ All colors MUST be HSL.
   }
 }
 
-/* Letter Button Enhanced Styles */
-.letter-button {
-  position: relative;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  color: white;
-  font-weight: bold;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-}
-
-.letter-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-  border-color: rgba(255, 255, 255, 0.4);
-}
-
-.letter-button.selected {
-  background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
-  transform: translateY(-3px);
-  box-shadow: 0 10px 30px rgba(74, 222, 128, 0.5);
-  border-color: rgba(255, 255, 255, 0.6);
-}
 
 /* Responsive Design for Jokers */
 @media (max-width: 480px) {
