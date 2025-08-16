@@ -718,53 +718,6 @@ All colors MUST be HSL.
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
-/* Konfeti animasyonu */
-@keyframes confetti {
-  0% {
-    transform: translateY(-100vh) rotate(0deg);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(100vh) rotate(720deg);
-    opacity: 0;
-  }
-}
-
-/* Havai fişek animasyonu */
-@keyframes fireworks {
-  0% {
-    transform: scale(0.1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1);
-    opacity: 0.8;
-  }
-  100% {
-    transform: scale(1.5);
-    opacity: 0;
-  }
-}
-
-.firework {
-  position: absolute;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  animation: fireworks 1s ease-out forwards;
-}
-
-@keyframes sadFace {
-  0%, 100% {
-    transform: scale(1) rotate(-3deg);
-  }
-  50% {
-    transform: scale(1.1) rotate(3deg);
-  }
-}
-
-/* Joker System CSS Animations */
-
 /* Joker Panel Styling */
 .joker-panel {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -1078,29 +1031,6 @@ All colors MUST be HSL.
   }
 }
 
-/* Letter Button Enhanced Styles */
-.letter-button {
-  position: relative;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  color: white;
-  font-weight: bold;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-}
-
-.letter-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-  border-color: rgba(255, 255, 255, 0.4);
-}
-
-.letter-button.selected {
-  background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
-  transform: translateY(-3px);
-  box-shadow: 0 10px 30px rgba(74, 222, 128, 0.5);
-  border-color: rgba(255, 255, 255, 0.6);
-}
 
 /* Responsive Design for Jokers */
 @media (max-width: 480px) {
@@ -1177,99 +1107,4 @@ All colors MUST be HSL.
 /* Eğer daha dramatik efekt istersen, class name'i değiştir */
 .letter-fire-highlight {
   animation: letter-fire-highlight 1.2s ease-in-out;
-}
-
-/* Enhanced Confetti Animations */
-.confetti-circle {
-  border-radius: 50%;
-}
-
-.confetti-square {
-  border-radius: 2px;
-}
-
-.confetti-triangle {
-  width: 0 !important;
-  height: 0 !important;
-  border-left: 4px solid transparent;
-  border-right: 4px solid transparent;
-  border-bottom: 8px solid;
-  background: transparent !important;
-}
-
-@keyframes confetti {
-  0% {
-    transform: translateY(-100vh) rotate(0deg) scale(1);
-    opacity: 1;
-  }
-  25% {
-    opacity: 1;
-    transform: translateY(-50vh) rotate(180deg) scale(1.2);
-  }
-  50% {
-    opacity: 0.8;
-    transform: translateY(0vh) rotate(360deg) scale(0.8);
-  }
-  75% {
-    opacity: 0.6;
-    transform: translateY(50vh) rotate(540deg) scale(1.1);
-  }
-  100% {
-    transform: translateY(100vh) rotate(720deg) scale(0.5);
-    opacity: 0;
-  }
-}
-
-/* Enhanced Fireworks */
-@keyframes firework-burst {
-  0% {
-    transform: translate(0, 0) scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: translate(calc(var(--end-x) * 0.8), calc(var(--end-y) * 0.8)) scale(1.2);
-    opacity: 0.8;
-  }
-  100% {
-    transform: translate(var(--end-x), var(--end-y)) scale(0.3);
-    opacity: 0;
-  }
-}
-
-@keyframes secondary-sparkle {
-  0% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.5);
-    opacity: 0.7;
-  }
-  100% {
-    transform: scale(0);
-    opacity: 0;
-  }
-}
-
-@keyframes sparkle-burst {
-  0% {
-    opacity: 0;
-    transform: scale(0);
-  }
-  50% {
-    opacity: 0.6;
-    transform: scale(1.2);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(2);
-  }
-}
-
-.firework-particle {
-  animation-fill-mode: forwards;
-}
-
-.firework-secondary {
-  animation-fill-mode: forwards;
 }
