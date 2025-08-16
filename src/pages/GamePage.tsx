@@ -1498,11 +1498,11 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
               <p className="text-sm text-gray-700 font-bold font-bungee">
                 Siz
               </p>
-              <p className="text-2x1 font-bold text-gray-700">{playerScore}</p>
+              <p className="text-2xl font-bold text-gray-700">{playerScore}</p>
               {gameType === 'score' && (
                 <Progress 
                   value={(playerScore / 500) * 100} 
-                  className="mt-1 bg-white/60" 
+                  className="mt-2 bg-white/60" 
                 />
               )}
             </CardContent>
