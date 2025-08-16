@@ -473,7 +473,7 @@ const ProfilePage = () => {
     </CardContent>
   </Card>
 </div>
-        </div>
+
 
         {/* Achievements / Badges */}
         <Card>
