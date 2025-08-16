@@ -1556,7 +1556,7 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
       <Button
         variant={selectedJoker === 'fisilida' ? 'default' : 'outline'}
         size="sm"
-        className="joker-button flex flex-col items-center p-1 h-auto relative text-xs"
+        className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-blue-100 to-cyan-200 hover:from-blue-200 hover:to-cyan-300 border-blue-300"
         onClick={useFisildaJoker}
         disabled={jokers.fisilida <= 0 || isJokerActive}
       >
@@ -1571,7 +1571,7 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
       <Button
         variant={selectedJoker === 'senYaz' ? 'default' : 'outline'}
         size="sm"
-        className="joker-button flex flex-col items-center p-1 h-auto relative text-xs"
+        className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-purple-100 to-violet-200 hover:from-purple-200 hover:to-violet-300 border-purple-300"
         onClick={useSenYazJoker}
         disabled={jokers.senYaz <= 0 || isJokerActive}
       >
@@ -1597,7 +1597,7 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
                   isJokerActive ? 'typing-animation' : ''
                 }`}
               />
-              <Badge variant="secondary" className="bg-white/20 text-white... text-sm px-2 py-0.5 min-w-8 h-8 flex items-center justify-center">
+              <Badge variant="secondary" className="bg-white/20 text-white text-sm px-2 py-0.5 min-w-8 h-8 flex items-center justify-center">
                 {currentWord.length}
               </Badge>
             </div>
