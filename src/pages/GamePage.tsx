@@ -1502,7 +1502,7 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
               {gameType === 'score' && (
                 <Progress 
                   value={(playerScore / 500) * 100} 
-                  className="mt-2 bg-white/60" 
+                  className="mt-1 bg-white/60" 
                 />
               )}
             </CardContent>
