@@ -541,33 +541,32 @@ const ProfilePage = () => {
               <span className="font-bold">{profileData.winRate}%</span>
             </div>
             <div className="flex justify-between">
-    <span>Günlük Kazanma:</span>
-    <span className="font-bold">{profileData.dailyWins}</span>
-  </div>
-  <div className="flex justify-between">
-    <span>En İyi Seri:</span>
-    <span className="font-bold">{profileData.bestStreak}</span>
-  </div>
-  <div className="flex justify-between">
-    <span>Ortalama Puan:</span>
-    <span className="font-bold">{Math.round(profileData.averageScore)}</span>
-  </div>
-  <div className="flex justify-between">
-    <span>Toplam Kelime:</span>
-    <span className="font-bold">{profileData.totalWords}</span>
-  </div>
-  <div className="flex justify-between">
-    <span>Favori Harf:</span>
-    <span className="font-bold">{profileData.favoriteLetter || 'Henüz yok'}</span>
-  </div>
-  <div className="flex justify-between">
-    <span>Oyun Süresi:</span>
-    <span className="font-bold">{Math.round(profileData.playTime / 60)} dakika</span>
-  </div>
+              <span>Günlük Kazanma:</span>
+              <span className="font-bold">{profileData.dailyWins}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>En İyi Seri:</span>
+              <span className="font-bold">{profileData.bestStreak}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Ortalama Puan:</span>
+              <span className="font-bold">{Math.round(profileData.averageScore)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Toplam Kelime:</span>
+              <span className="font-bold">{profileData.totalWords}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Favori Harf:</span>
+              <span className="font-bold">{profileData.favoriteLetter || 'Henüz yok'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Oyun Süresi:</span>
+              <span className="font-bold">{Math.round(profileData.playTime / 60)} dakika</span>
+            </div>
           </CardContent>
         </Card>
       </div>
-    </div>
   );
 };
 
