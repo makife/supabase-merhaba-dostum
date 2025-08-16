@@ -168,7 +168,6 @@ const GamePage = ({ gameMode }: GamePageProps) => {
   const [lastPlayerAction, setLastPlayerAction] = useState<number>(0);
   const [matchmakingTimeout, setMatchmakingTimeout] = useState<NodeJS.Timeout | null>(null);
   const [timeoutCountdown, setTimeoutCountdown] = useState(30);
-  const [lastClickTime, setLastClickTime] = useState(0);
 
   // JOKER FONKSİYONLARI
 
@@ -1001,28 +1000,9 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
     }
   }, [participants, gameMode, hasShownStartMessage, gameType]);
 
-  // Touch olayları için optimize edilmiş handler
-  const handleLetterTouch = (letter: string, row: number, col: number, event: React.TouchEvent) => {
-    event.preventDefault(); // Default touch davranışını engelle
-    event.stopPropagation();
-    handleLetterClick(letter, row, col);
-  };
-
-  // Mouse olayları için optimize edilmiş handler  
-  const handleLetterMouse = (letter: string, row: number, col: number, event: React.MouseEvent) => {
-    event.preventDefault();
-    event.stopPropagation();
-    handleLetterClick(letter, row, col);
-  };
-
   // Handle letter click
   const handleLetterClick = (letter: string, row: number, col: number) => {
     if (gameEnded || waitingForPlayer || isJokerActive) return;
-
-    const now = Date.now();
-    // 50ms debounce (çok hızlı tıklamaları engelle)
-    if (now - lastClickTime < 50) return;
-    setLastClickTime(now);
 
     playSound('letterSelect');
     
@@ -1171,61 +1151,129 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
     }
   };
 
-  // Create confetti effect
-  const createConfettiEffect = () => {
-    const confettiContainer = document.createElement('div');
-    confettiContainer.className = 'fixed inset-0 pointer-events-none z-50';
-    document.body.appendChild(confettiContainer);
+  // Create confetti effect - Enhanced version
+const createConfettiEffect = () => {
+  const confettiContainer = document.createElement('div');
+  confettiContainer.className = 'fixed inset-0 pointer-events-none z-50';
+  document.body.appendChild(confettiContainer);
 
-    for (let i = 0; i < 25; i++) {
-      const confetti = document.createElement('div');
-      confetti.className = `absolute w-2 h-2 rounded-full animate-[confetti_2s_ease-out_forwards] ${
-        i % 4 === 0 ? 'bg-yellow-400' :
-        i % 4 === 1 ? 'bg-red-400' :
-        i % 4 === 2 ? 'bg-blue-400' : 'bg-green-400'
-      }`;
-      confetti.style.left = `${Math.random() * 100}%`;
-      confetti.style.animationDelay = `${Math.random() * 1}s`;
-      confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
-      confettiContainer.appendChild(confetti);
+  // Daha çok konfeti, farklı boyutlar ve şekiller
+  for (let i = 0; i < 50; i++) {
+    const confetti = document.createElement('div');
+    
+    // Rastgele şekil seç
+    const shapes = ['circle', 'square', 'triangle'];
+    const shape = shapes[Math.floor(Math.random() * shapes.length)];
+    
+    // Rastgele boyut
+    const size = Math.random() * 8 + 4; // 4-12px
+    
+    confetti.className = `absolute animate-[confetti_${2 + Math.random() * 2}s_ease-out_forwards] confetti-${shape}`;
+    confetti.style.width = `${size}px`;
+    confetti.style.height = `${size}px`;
+    confetti.style.left = `${Math.random() * 100}%`;
+    confetti.style.top = `-10px`;
+    
+    // Rastgele renk
+    const colors = [
+      '#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', 
+      '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8',
+      '#F7DC6F', '#BB8FCE', '#85C1E9', '#F8C471'
+    ];
+    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    
+    // Rastgele animasyon gecikmesi
+    confetti.style.animationDelay = `${Math.random() * 0.5}s`;
+    
+    // Rastgele rotasyon
+    confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+    
+    confettiContainer.appendChild(confetti);
+  }
+
+  // Parlama efekti ekle
+  const sparkle = document.createElement('div');
+  sparkle.className = 'fixed inset-0 pointer-events-none z-40';
+  sparkle.style.background = 'radial-gradient(circle, rgba(255,215,0,0.3) 0%, transparent 70%)';
+  sparkle.style.animation = 'sparkle-burst 1s ease-out forwards';
+  document.body.appendChild(sparkle);
+
+  setTimeout(() => {
+    document.body.removeChild(confettiContainer);
+    if (document.body.contains(sparkle)) {
+      document.body.removeChild(sparkle);
     }
+  }, 4000);
+};
 
+  // Create fireworks effect - Enhanced version  
+const createFireworksEffect = () => {
+  const fireworksContainer = document.createElement('div');
+  fireworksContainer.className = 'fixed inset-0 pointer-events-none z-50';
+  document.body.appendChild(fireworksContainer);
+
+  // Çoklu patlamalar
+  for (let burst = 0; burst < 5; burst++) {
     setTimeout(() => {
-      document.body.removeChild(confettiContainer);
-    }, 3000);
-  };
+      // Rastgele pozisyon
+      const centerX = Math.random() * (window.innerWidth - 200) + 100;
+      const centerY = Math.random() * (window.innerHeight - 200) + 100;
 
-  // Create fireworks effect
-  const createFireworksEffect = () => {
-    const fireworksContainer = document.createElement('div');
-    fireworksContainer.className = 'fixed inset-0 pointer-events-none z-50';
-    document.body.appendChild(fireworksContainer);
+      // Ana patlama
+      for (let i = 0; i < 20; i++) {
+        const firework = document.createElement('div');
+        const colors = [
+          '#FFD700', '#FF1493', '#00CED1', '#32CD32', 
+          '#FF69B4', '#1E90FF', '#FFA500', '#DA70D6',
+          '#FF6347', '#40E0D0', '#ADFF2F', '#FF4500'
+        ];
+        
+        firework.className = 'firework-particle';
+        firework.style.position = 'absolute';
+        firework.style.width = `${Math.random() * 6 + 3}px`;
+        firework.style.height = `${Math.random() * 6 + 3}px`;
+        firework.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        firework.style.borderRadius = '50%';
+        firework.style.left = `${centerX}px`;
+        firework.style.top = `${centerY}px`;
+        firework.style.boxShadow = `0 0 10px ${colors[Math.floor(Math.random() * colors.length)]}`;
+        
+        const angle = (i / 20) * 2 * Math.PI;
+        const distance = 80 + Math.random() * 120;
+        const duration = 1 + Math.random() * 0.5;
+        
+        firework.style.animation = `firework-burst ${duration}s ease-out forwards`;
+        firework.style.setProperty('--end-x', `${Math.cos(angle) * distance}px`);
+        firework.style.setProperty('--end-y', `${Math.sin(angle) * distance}px`);
+        
+        fireworksContainer.appendChild(firework);
+      }
 
-    for (let burst = 0; burst < 3; burst++) {
-      setTimeout(() => {
-        const centerX = Math.random() * window.innerWidth;
-        const centerY = Math.random() * window.innerHeight;
-
-        for (let i = 0; i < 12; i++) {
-          const firework = document.createElement('div');
-          const colors = ['bg-yellow-400', 'bg-red-400', 'bg-blue-400', 'bg-green-400', 'bg-purple-400', 'bg-pink-400'];
-          firework.className = `firework ${colors[Math.floor(Math.random() * colors.length)]}`;
-          firework.style.left = `${centerX}px`;
-          firework.style.top = `${centerY}px`;
+      // İkincil parçacıklar
+      for (let j = 0; j < 15; j++) {
+        setTimeout(() => {
+          const secondaryParticle = document.createElement('div');
+          secondaryParticle.className = 'firework-secondary';
+          secondaryParticle.style.position = 'absolute';
+          secondaryParticle.style.width = '2px';
+          secondaryParticle.style.height = '2px';
+          secondaryParticle.style.backgroundColor = '#FFF';
+          secondaryParticle.style.borderRadius = '50%';
+          secondaryParticle.style.left = `${centerX + (Math.random() - 0.5) * 40}px`;
+          secondaryParticle.style.top = `${centerY + (Math.random() - 0.5) * 40}px`;
+          secondaryParticle.style.animation = 'secondary-sparkle 0.8s ease-out forwards';
           
-          const angle = (i / 12) * 2 * Math.PI;
-          const distance = 50 + Math.random() * 50;
-          firework.style.transform = `translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px)`;
-          
-          fireworksContainer.appendChild(firework);
-        }
-      }, burst * 300);
-    }
+          fireworksContainer.appendChild(secondaryParticle);
+        }, j * 50);
+      }
+      
+    }, burst * 400);
+  }
 
-    setTimeout(() => {
-      document.body.removeChild(fireworksContainer);
-    }, 2000);
-  };
+  setTimeout(() => {
+    document.body.removeChild(fireworksContainer);
+  }, 3000);
+};
 
   // Format time
   const formatTime = (seconds: number) => {
@@ -1634,19 +1682,13 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
                   return (
                     <Button
                       key={`${rowIndex}-${colIndex}`}
-                      className={`letter-button h-12 text-lg font-bold relative transition-all duration-150 ${
+                      className={`letter-button h-12 text-lg font-bold relative transition-all duration-300 ${
                         isSelected ? 'selected' : ''
                       } ${
                         isHighlighted ? 'letter-glow-highlight' : ''
                       }`}
-                      onMouseDown={(e) => handleLetterMouse(letter, rowIndex, colIndex, e)}
-                      onTouchStart={(e) => handleLetterTouch(letter, rowIndex, colIndex, e)}
-                      style={{ 
-                        touchAction: 'manipulation',
-                        userSelect: 'none',
-                        WebkitTapHighlightColor: 'transparent'
-                      }}
-                     >
+                      onClick={() => handleLetterClick(letter, rowIndex, colIndex)}
+                    >
                       {letter}
                       {isSelected && selectionOrder >= 0 && (
                         <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold border-2 border-white">
