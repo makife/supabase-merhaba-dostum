@@ -1001,5 +1001,5 @@ const MarketPage = () => {
       </div>
     </div>
   );
-
+}
 export default MarketPage;
