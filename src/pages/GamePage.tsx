@@ -1716,14 +1716,17 @@ const createFireworksEffect = () => {
                   const selectionOrder = selectedLetters.findIndex(s => s.row === rowIndex && s.col === colIndex);
                   return (
                     <Button
-                      key={`${rowIndex}-${colIndex}`}
-                      className={`letter-button h-12 text-lg font-bold relative transition-all duration-300 ${
-                        isSelected ? 'selected' : ''
-                      } ${
-                        isHighlighted ? 'letter-glow-highlight' : ''
-                      }`}
-                      onClick={() => handleLetterClick(letter, rowIndex, colIndex)}
-                    >
+  key={`${rowIndex}-${colIndex}`}
+  className={`letter-button h-12 text-lg font-bold relative transition-all duration-300 ${
+    isSelected ? 'selected' : ''
+  } ${
+    isHighlighted ? 'letter-glow-highlight' : ''
+  }`}
+  onClick={() => handleLetterClick(letter, rowIndex, colIndex)}  // ← Sadece onClick
+  style={{ 
+    userSelect: 'none',
+    WebkitTapHighlightColor: 'transparent'
+  }}
 >
                       {letter}
                       {isSelected && selectionOrder >= 0 && (
