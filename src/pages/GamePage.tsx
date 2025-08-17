@@ -33,7 +33,7 @@ import {
 interface GamePageProps {
   gameMode: 'vs-computer' | 'private-room' | 'random-match' | 'tournament';
   onGameComplete?: (winnerId: string, player1Score: number, player2Score: number) => void;
-  tournamentMatch?: any;
+  tournamentMatch?: TournamentMatch;
   gameType?: 'timed' | 'score';
 }
 
@@ -44,7 +44,12 @@ interface JokerState {
   senYaz: number;
 }
 
-const GamePage = ({ gameMode }: GamePageProps) => {
+const GamePage = ({ 
+  gameMode = 'vs-computer', 
+  onGameComplete,
+  tournamentMatch,
+  gameType: propGameType 
+}: GamePageProps) => {
   const { user } = useAuth();
   const { consumeCredit, isPremium } = useUser();
   const { hasPurchased, settings } = useUserPurchases();
