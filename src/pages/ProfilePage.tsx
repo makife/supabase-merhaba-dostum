@@ -167,7 +167,7 @@ const ProfilePage = () => {
       favoriteLetter: prev.favoriteLetter,
       playTime: prev.playTime,
     });
-          }
+          };
         }
       )
       // 🏆 YENİ: Rozet güncellemeleri için listener ekle
