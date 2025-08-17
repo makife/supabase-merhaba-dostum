@@ -417,6 +417,7 @@ useEffect(() => {
         );
       })}
     </div>
+  </div>
 )}
               
               {/* İstatistik badge'leri */}
