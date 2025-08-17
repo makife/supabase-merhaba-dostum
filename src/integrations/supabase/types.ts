@@ -442,19 +442,24 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          average_score: number | null
           average_word_length: number | null
+          best_streak: number | null
           bonus_credits: number | null
           created_at: string | null
           daily_games: number | null
+          daily_wins: number | null
           disconnect_count: number | null
           email: string
           fastest_word_time: number | null
+          favorite_letter: string | null
           game_credits: number | null
           highest_word: string | null
           highest_word_score: number | null
           hint_credits: number | null
           id: string
           last_credit_refresh: string | null
+          last_daily_reset: string | null
           last_disconnect: string | null
           last_win: string | null
           longest_word: string | null
@@ -462,7 +467,9 @@ export type Database = {
           losses: number | null
           premium_until: string | null
           total_games: number | null
+          total_play_time: number | null
           total_score: number | null
+          total_words: number | null
           total_words_created: number | null
           updated_at: string | null
           username: string | null
@@ -472,19 +479,24 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          average_score?: number | null
           average_word_length?: number | null
+          best_streak?: number | null
           bonus_credits?: number | null
           created_at?: string | null
           daily_games?: number | null
+          daily_wins?: number | null
           disconnect_count?: number | null
           email: string
           fastest_word_time?: number | null
+          favorite_letter?: string | null
           game_credits?: number | null
           highest_word?: string | null
           highest_word_score?: number | null
           hint_credits?: number | null
           id: string
           last_credit_refresh?: string | null
+          last_daily_reset?: string | null
           last_disconnect?: string | null
           last_win?: string | null
           longest_word?: string | null
@@ -492,7 +504,9 @@ export type Database = {
           losses?: number | null
           premium_until?: string | null
           total_games?: number | null
+          total_play_time?: number | null
           total_score?: number | null
+          total_words?: number | null
           total_words_created?: number | null
           updated_at?: string | null
           username?: string | null
@@ -502,19 +516,24 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          average_score?: number | null
           average_word_length?: number | null
+          best_streak?: number | null
           bonus_credits?: number | null
           created_at?: string | null
           daily_games?: number | null
+          daily_wins?: number | null
           disconnect_count?: number | null
           email?: string
           fastest_word_time?: number | null
+          favorite_letter?: string | null
           game_credits?: number | null
           highest_word?: string | null
           highest_word_score?: number | null
           hint_credits?: number | null
           id?: string
           last_credit_refresh?: string | null
+          last_daily_reset?: string | null
           last_disconnect?: string | null
           last_win?: string | null
           longest_word?: string | null
@@ -522,7 +541,9 @@ export type Database = {
           losses?: number | null
           premium_until?: string | null
           total_games?: number | null
+          total_play_time?: number | null
           total_score?: number | null
+          total_words?: number | null
           total_words_created?: number | null
           updated_at?: string | null
           username?: string | null
