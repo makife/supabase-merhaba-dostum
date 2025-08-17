@@ -1021,27 +1021,27 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
 
   // Handle letter click
   const handleLetterClick = (letter: string, row: number, col: number) => {
-    if (gameEnded || waitingForPlayer || isJokerActive) return;
+  if (gameEnded || waitingForPlayer || isJokerActive) return;
 
-    const now = Date.now();
-    // 50ms debounce (çok hızlı tıklamaları engelle)
-    if (now - lastClickTime < 50) return;
-    setLastClickTime(now);
+  const now = Date.now();
+  // 100ms debounce (daha rahat tıklama)
+  if (now - lastClickTime < 100) return;  // ← 50ms → 100ms
+  setLastClickTime(now);
 
-    playSound('letterSelect');
-    
-    const isSelected = selectedLetters.some(s => s.row === row && s.col === col);
-    
-    if (isSelected) {
-      const newSelected = selectedLetters.filter(s => !(s.row === row && s.col === col));
-      setSelectedLetters(newSelected);
-      setCurrentWord(newSelected.map(s => s.letter).join(''));
-    } else {
-      const newSelected = [...selectedLetters, { letter, row, col }];
-      setSelectedLetters(newSelected);
-      setCurrentWord(newSelected.map(s => s.letter).join(''));
-    }
-  };
+  playSound('letterSelect');
+  
+  const isSelected = selectedLetters.some(s => s.row === row && s.col === col);
+  
+  if (isSelected) {
+    const newSelected = selectedLetters.filter(s => !(s.row === row && s.col === col));
+    setSelectedLetters(newSelected);
+    setCurrentWord(newSelected.map(s => s.letter).join(''));
+  } else {
+    const newSelected = [...selectedLetters, { letter, row, col }];
+    setSelectedLetters(newSelected);
+    setCurrentWord(newSelected.map(s => s.letter).join(''));
+  }
+};
 
   // Clear current word
   const clearWord = () => {
