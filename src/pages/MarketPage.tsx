@@ -598,56 +598,56 @@ const MarketPage = () => {
       {items.map(item => (
         <Card 
           key={item.id} 
-          className="group relative overflow-hidden border-2 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:border-primary/50 bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-sm"
+          className="group relative overflow-hidden border transition-all duration-300 hover:scale-105 hover:shadow-xl hover:border-primary/50 bg-gradient-to-br from-card to-muted/50 backdrop-blur-sm"
         >
-          {/* Dark background overlay for better text readability */}
-          <div className="absolute inset-0 bg-black/20" />
+          {/* Light background overlay for better text readability */}
+          <div className="absolute inset-0 bg-background/5" />
           
           {/* Animated sparkles */}
           <div className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-500">
-            <div className="absolute top-2 right-2 w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
-            <div className="absolute top-6 right-6 w-1 h-1 bg-blue-400 rounded-full animate-pulse delay-100" />
-            <div className="absolute bottom-4 left-4 w-1.5 h-1.5 bg-pink-400 rounded-full animate-pulse delay-200" />
+            <div className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full animate-pulse" />
+            <div className="absolute top-6 right-6 w-1 h-1 bg-accent rounded-full animate-pulse delay-100" />
+            <div className="absolute bottom-4 left-4 w-1.5 h-1.5 bg-primary/70 rounded-full animate-pulse delay-200" />
           </div>
 
           <CardContent className="relative z-10 p-4">
             <div className="flex items-start justify-between mb-3">
-              <div className="p-2 bg-gradient-to-br from-primary/30 to-accent/30 rounded-lg backdrop-blur-sm group-hover:scale-110 transition-transform duration-300">
-                <item.icon className="w-5 h-5 text-white" />
+              <div className="p-2 bg-gradient-to-br from-primary/20 to-accent/20 rounded-lg backdrop-blur-sm group-hover:scale-110 transition-transform duration-300">
+                <item.icon className="w-5 h-5 text-primary" />
               </div>
               <div className="text-right">
-                <p className="text-xl font-bold text-white drop-shadow-lg">
+                <p className="text-xl font-bold text-foreground">
                   {item.price}{item.currency === 'credits' ? ' kredi' : '₺'}
                 </p>
                 {item.duration && (
-                  <p className="text-xs text-white/90 drop-shadow-md">{item.duration}</p>
+                  <p className="text-xs text-muted-foreground">{item.duration}</p>
                 )}
               </div>
             </div>
 
             {item.image && (
-              <div className="w-12 h-12 mx-auto mb-3 rounded-full overflow-hidden border-2 border-white/50">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-full overflow-hidden border-2 border-border">
                 <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
               </div>
             )}
 
             <div className="space-y-2">
-              <h3 className="font-bold text-base text-white drop-shadow-lg group-hover:text-yellow-200 transition-colors duration-200">
+              <h3 className="font-bold text-base text-foreground group-hover:text-primary transition-colors duration-200">
                 {item.title}
               </h3>
-              <p className="text-xs text-white/90 leading-relaxed drop-shadow-md">
+              <p className="text-xs text-muted-foreground leading-relaxed">
                 {item.description}
               </p>
               
               <div className="flex items-center justify-between pt-2">
                 <div className="flex items-center space-x-1">
                   {hasPurchased(item.id) && (
-                    <Badge className="bg-green-500/80 text-white border-green-400/50 text-xs px-2 py-1">
+                    <Badge className="bg-primary text-primary-foreground border-primary/50 text-xs px-2 py-1">
                       ✓ Satın Alındı
                     </Badge>
                   )}
                   {isPremium && (item.type === 'credits' || item.type === 'unlimited_time') && (
-                    <Badge className="bg-yellow-500/80 text-black border-yellow-400/50 text-xs px-2 py-1">
+                    <Badge className="bg-accent text-accent-foreground border-accent/50 text-xs px-2 py-1">
                       Premium
                     </Badge>
                   )}
@@ -661,7 +661,7 @@ const MarketPage = () => {
                     purchaseLoading || 
                     isSubscriptionLoading
                   }
-                  className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white shadow-lg hover:shadow-xl transition-all duration-300 group-hover:scale-105 text-xs px-3 py-1"
+                  className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 group-hover:scale-105 text-xs px-3 py-1"
                   size="sm"
                 >
                   {hasPurchased(item.id) ? 'Alındı' :
@@ -677,7 +677,7 @@ const MarketPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/50 to-violet-900/30 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -685,7 +685,7 @@ const MarketPage = () => {
             variant="outline" 
             size="sm" 
             onClick={() => navigate('/')}
-            className="bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-sm"
+            className="bg-card/50 border-border text-foreground hover:bg-card/80 backdrop-blur-sm"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Geri
@@ -694,7 +694,7 @@ const MarketPage = () => {
         </div>
 
         {/* Market Hero Section with Image */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 p-6 bg-gradient-to-br from-card/50 to-muted/50 rounded-2xl backdrop-blur-sm border border-border/20">
           <div className="relative mx-auto w-64 h-40 mb-4">
             <img 
               src="/src/assets/marketimaj.png" 
@@ -702,30 +702,30 @@ const MarketPage = () => {
               className="w-full h-full object-contain drop-shadow-2xl"
             />
           </div>
-          <h1 className="text-2xl font-bold text-white mb-2 bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-600 bg-clip-text text-transparent">
+          <h1 className="text-2xl font-bold mb-2 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
             ✨ Premium Market ✨
           </h1>
-          <p className="text-white/70">Oyun deneyiminizi bir üst seviyeye taşıyın</p>
+          <p className="text-muted-foreground">Oyun deneyiminizi bir üst seviyeye taşıyın</p>
         </div>
 
         {/* User Status */}
-        <Card className="border-0 bg-gradient-to-r from-primary/20 to-accent/20 backdrop-blur-md border-primary/30">
+        <Card className="border-0 bg-gradient-to-r from-primary/10 to-accent/10 backdrop-blur-md border border-primary/20">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-xl">
-                  <Crown className="w-6 h-6 text-white" />
+                <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center shadow-xl">
+                  <Crown className="w-6 h-6 text-primary-foreground" />
                 </div>
                 <div>
-                  <p className="font-semibold text-lg text-gray-800">Mevcut Durumunuz</p>
+                  <p className="font-semibold text-lg text-foreground">Mevcut Durumunuz</p>
                   <div className="flex items-center space-x-3 mt-1">
                     <Badge 
                       variant={isPremium ? "default" : "secondary"}
-                      className={isPremium ? "bg-yellow-500 text-black border-yellow-500/50" : "bg-gray-600 text-white border-gray-500/50"}
+                      className={isPremium ? "bg-primary text-primary-foreground border-primary/50" : "bg-muted text-muted-foreground border-muted/50"}
                     >
                       {isPremium ? "Premium Üye" : "Ücretsiz Üye"}
                     </Badge>
-                    <span className="text-base font-medium text-gray-700">
+                    <span className="text-base font-medium text-foreground">
                       {isPremium ? "Sınırsız oyun hakkı" : `${profile?.game_credits || 0} oyun hakkı`}
                     </span>
                   </div>
@@ -736,14 +736,14 @@ const MarketPage = () => {
         </Card>
 
         {/* Reward Section */}
-        <Card className="border-0 bg-gradient-to-r from-green-500/20 to-blue-500/20 backdrop-blur-md">
+        <Card className="border-0 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/10 backdrop-blur-md">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <Gift className="w-10 h-10 text-green-600" />
+                <Gift className="w-10 h-10 text-primary" />
                 <div>
-                  <h3 className="font-semibold text-lg text-gray-800">Ücretsiz Kredi Kazan!</h3>
-                  <p className="text-gray-700">
+                  <h3 className="font-semibold text-lg text-foreground">Ücretsiz Kredi Kazan!</h3>
+                  <p className="text-muted-foreground">
                     {isAdReady ? "Reklam izleyerek +1 kredi kazanın" : 
                      isAdLoading ? "Reklam yükleniyor..." : 
                      "Reklam hazırlanıyor..."}
@@ -753,7 +753,7 @@ const MarketPage = () => {
               <Button 
                 onClick={watchAdForCredits}
                 disabled={!isAdReady || isAdLoading || (typeof window !== 'undefined' && !window.Capacitor)}
-                className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 <Gift className="w-4 h-4 mr-2" />
                 {typeof window !== 'undefined' && !window.Capacitor ? 
@@ -767,19 +767,19 @@ const MarketPage = () => {
 
         {/* Mobile Purchase Restore */}
         {typeof window !== 'undefined' && window.Capacitor && (
-          <Card className="border-0 bg-blue-500/20 backdrop-blur-md">
+          <Card className="border-0 bg-muted/40 backdrop-blur-md">
             <CardContent className="p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold text-gray-800">Satın Alımları Geri Yükle</h3>
-                  <p className="text-sm text-gray-700">Önceki satın alımlarınızı geri yükleyin</p>
+                  <h3 className="font-semibold text-foreground">Satın Alımları Geri Yükle</h3>
+                  <p className="text-sm text-muted-foreground">Önceki satın alımlarınızı geri yükleyin</p>
                 </div>
                 <Button 
                   onClick={restoreSubscriptions}
                   size="sm"
                   variant="outline"
                   disabled={isSubscriptionLoading}
-                  className="bg-white/10 border-gray-400 text-gray-700 hover:bg-white/20"
+                  className="bg-card/50 border-border text-foreground hover:bg-card/80"
                 >
                   {isSubscriptionLoading ? 'Yükleniyor...' : 'Geri Yükle'}
                 </Button>
@@ -790,31 +790,31 @@ const MarketPage = () => {
 
         {/* Market Kategorileri */}
         <Tabs defaultValue="credits" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6 bg-white/80 backdrop-blur-md rounded-2xl p-2">
+          <TabsList className="grid w-full grid-cols-4 mb-6 bg-card/80 backdrop-blur-md rounded-2xl p-2 border border-border/20">
             <TabsTrigger 
               value="credits" 
-              className="flex items-center space-x-2 text-gray-700 data-[state=active]:bg-primary/20 data-[state=active]:text-gray-800 rounded-xl transition-all duration-300"
+              className="flex items-center space-x-2 text-muted-foreground data-[state=active]:bg-primary/20 data-[state=active]:text-foreground rounded-xl transition-all duration-300"
             >
               <Gamepad2 className="w-4 h-4" />
               <span className="font-medium">Oyun</span>
             </TabsTrigger>
             <TabsTrigger 
               value="premium" 
-              className="flex items-center space-x-2 text-gray-700 data-[state=active]:bg-primary/20 data-[state=active]:text-gray-800 rounded-xl transition-all duration-300"
+              className="flex items-center space-x-2 text-muted-foreground data-[state=active]:bg-primary/20 data-[state=active]:text-foreground rounded-xl transition-all duration-300"
             >
               <Crown className="w-4 h-4" />
               <span className="font-medium">Premium</span>
             </TabsTrigger>
             <TabsTrigger 
               value="themes" 
-              className="flex items-center space-x-2 text-gray-700 data-[state=active]:bg-primary/20 data-[state=active]:text-gray-800 rounded-xl transition-all duration-300"
+              className="flex items-center space-x-2 text-muted-foreground data-[state=active]:bg-primary/20 data-[state=active]:text-foreground rounded-xl transition-all duration-300"
             >
               <Palette className="w-4 h-4" />
               <span className="font-medium">Temalar</span>
             </TabsTrigger>
             <TabsTrigger 
               value="extras" 
-              className="flex items-center space-x-2 text-gray-700 data-[state=active]:bg-primary/20 data-[state=active]:text-gray-800 rounded-xl transition-all duration-300"
+              className="flex items-center space-x-2 text-muted-foreground data-[state=active]:bg-primary/20 data-[state=active]:text-foreground rounded-xl transition-all duration-300"
             >
               <Gift className="w-4 h-4" />
               <span className="font-medium">Diğer</span>
@@ -824,16 +824,16 @@ const MarketPage = () => {
           {/* Oyun Hakları & Sınırsız */}
           <TabsContent value="credits" className="space-y-4">
             <div className="flex items-center space-x-3 mb-4">
-              <Zap className="w-6 h-6 text-yellow-500" />
-              <h3 className="text-2xl font-bold text-gray-800">Oyun Hakları & Sınırsız Zaman</h3>
+              <Zap className="w-6 h-6 text-primary" />
+              <h3 className="text-2xl font-bold text-foreground">Oyun Hakları & Sınırsız Zaman</h3>
             </div>
             {!isPremium && renderMarketItems(getItemsByCategory('credits'))}
             {isPremium && (
-              <Card className="border-0 bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-md">
+              <Card className="border-0 bg-gradient-to-r from-primary/15 to-accent/15 backdrop-blur-md">
                 <CardContent className="p-4 text-center">
-                  <Crown className="w-12 h-12 text-yellow-500 mx-auto mb-3" />
-                  <h3 className="text-xl font-bold mb-2 text-gray-800">Premium Üyesiniz!</h3>
-                  <p className="text-gray-700">
+                  <Crown className="w-12 h-12 text-primary mx-auto mb-3" />
+                  <h3 className="text-xl font-bold mb-2 text-foreground">Premium Üyesiniz!</h3>
+                  <p className="text-muted-foreground">
                     Zaten sınırsız oyun hakkınız bulunuyor.
                   </p>
                 </CardContent>
@@ -844,16 +844,16 @@ const MarketPage = () => {
           {/* Premium Üyelik */}
           <TabsContent value="premium" className="space-y-4">
             <div className="flex items-center space-x-3 mb-4">
-              <Crown className="w-6 h-6 text-yellow-500" />
-              <h3 className="text-2xl font-bold text-gray-800">Premium Üyelik</h3>
+              <Crown className="w-6 h-6 text-primary" />
+              <h3 className="text-2xl font-bold text-foreground">Premium Üyelik</h3>
             </div>
             {!isPremium && renderMarketItems(getItemsByCategory('premium'))}
             {isPremium && (
-              <Card className="border-0 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 backdrop-blur-md">
+              <Card className="border-0 bg-gradient-to-r from-primary/15 to-accent/15 backdrop-blur-md">
                 <CardContent className="p-4 text-center">
-                  <Crown className="w-12 h-12 text-yellow-500 mx-auto mb-3" />
-                  <h3 className="text-xl font-bold mb-2 text-gray-800">Zaten Premium Üyesiniz!</h3>
-                  <p className="text-gray-700">
+                  <Crown className="w-12 h-12 text-primary mx-auto mb-3" />
+                  <h3 className="text-xl font-bold mb-2 text-foreground">Zaten Premium Üyesiniz!</h3>
+                  <p className="text-muted-foreground">
                     Tüm premium özelliklere erişiminiz bulunuyor.
                   </p>
                 </CardContent>
@@ -864,16 +864,16 @@ const MarketPage = () => {
           {/* Temalar */}
           <TabsContent value="themes" className="space-y-4">
             <div className="flex items-center space-x-3 mb-4">
-              <Palette className="w-6 h-6 text-purple-500" />
-              <h3 className="text-2xl font-bold text-gray-800">Temalar</h3>
+              <Palette className="w-6 h-6 text-primary" />
+              <h3 className="text-2xl font-bold text-foreground">Temalar</h3>
             </div>
             {!isPremium && renderMarketItems(getItemsByCategory('themes'))}
             {isPremium && (
-              <Card className="border-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-md">
+              <Card className="border-0 bg-gradient-to-r from-primary/15 to-accent/15 backdrop-blur-md">
                 <CardContent className="p-4 text-center">
-                  <Crown className="w-12 h-12 text-yellow-500 mx-auto mb-3" />
-                  <h3 className="text-xl font-bold mb-2 text-gray-800">Premium Üyesiniz!</h3>
-                  <p className="text-gray-700">
+                  <Crown className="w-12 h-12 text-primary mx-auto mb-3" />
+                  <h3 className="text-xl font-bold mb-2 text-foreground">Premium Üyesiniz!</h3>
+                  <p className="text-muted-foreground">
                     Tüm temalar size açık. Ayarlar sayfasından temalarınızı değiştirebilirsiniz.
                   </p>
                 </CardContent>
@@ -884,24 +884,24 @@ const MarketPage = () => {
           {/* Diğer Öğeler */}
           <TabsContent value="extras" className="space-y-4">
             <Tabs defaultValue="avatar" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-4 bg-white/80 backdrop-blur-md rounded-xl">
-                <TabsTrigger value="avatar" className="text-gray-700 data-[state=active]:bg-white/80 data-[state=active]:text-gray-800">Avatar</TabsTrigger>
-                <TabsTrigger value="effects" className="text-gray-700 data-[state=active]:bg-white/80 data-[state=active]:text-gray-800">Efektler</TabsTrigger>
-                <TabsTrigger value="extras-items" className="text-gray-700 data-[state=active]:bg-white/80 data-[state=active]:text-gray-800">Rozetler</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-3 mb-4 bg-card/80 backdrop-blur-md rounded-xl border border-border/20">
+                <TabsTrigger value="avatar" className="text-muted-foreground data-[state=active]:bg-primary/20 data-[state=active]:text-foreground">Avatar</TabsTrigger>
+                <TabsTrigger value="effects" className="text-muted-foreground data-[state=active]:bg-primary/20 data-[state=active]:text-foreground">Efektler</TabsTrigger>
+                <TabsTrigger value="extras-items" className="text-muted-foreground data-[state=active]:bg-primary/20 data-[state=active]:text-foreground">Rozetler</TabsTrigger>
               </TabsList>
               
               <TabsContent value="avatar">
                 <div className="flex items-center space-x-3 mb-4">
-                  <Frame className="w-6 h-6 text-pink-500" />
-                  <h3 className="text-xl font-bold text-gray-800">Avatar Çerçeveleri</h3>
+                  <Frame className="w-6 h-6 text-primary" />
+                  <h3 className="text-xl font-bold text-foreground">Avatar Çerçeveleri</h3>
                 </div>
                 {!isPremium && renderMarketItems(getItemsByCategory('avatar'))}
                 {isPremium && (
-                  <Card className="border-0 bg-gradient-to-r from-pink-500/20 to-rose-500/20 backdrop-blur-md">
+                  <Card className="border-0 bg-gradient-to-r from-primary/15 to-accent/15 backdrop-blur-md">
                     <CardContent className="p-4 text-center">
-                      <Crown className="w-12 h-12 text-yellow-500 mx-auto mb-3" />
-                      <h3 className="text-xl font-bold mb-2 text-gray-800">Premium Üyesiniz!</h3>
-                      <p className="text-gray-700">
+                      <Crown className="w-12 h-12 text-primary mx-auto mb-3" />
+                      <h3 className="text-xl font-bold mb-2 text-foreground">Premium Üyesiniz!</h3>
+                      <p className="text-muted-foreground">
                         Tüm avatar çerçeveleri size açık. Ayarlar sayfasından çerçevenizi değiştirebilirsiniz.
                       </p>
                     </CardContent>
@@ -911,16 +911,16 @@ const MarketPage = () => {
               
               <TabsContent value="effects">
                 <div className="flex items-center space-x-3 mb-4">
-                  <Sparkles className="w-6 h-6 text-blue-500" />
-                  <h3 className="text-xl font-bold text-gray-800">Ses & Efektler</h3>
+                  <Sparkles className="w-6 h-6 text-primary" />
+                  <h3 className="text-xl font-bold text-foreground">Ses & Efektler</h3>
                 </div>
                 {!isPremium && renderMarketItems([...getItemsByCategory('sounds'), ...getItemsByCategory('effects')])}
                 {isPremium && (
-                  <Card className="border-0 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 backdrop-blur-md">
+                  <Card className="border-0 bg-gradient-to-r from-primary/15 to-accent/15 backdrop-blur-md">
                     <CardContent className="p-4 text-center">
-                      <Crown className="w-12 h-12 text-yellow-500 mx-auto mb-3" />
-                      <h3 className="text-xl font-bold mb-2 text-gray-800">Premium Üyesiniz!</h3>
-                      <p className="text-gray-700">
+                      <Crown className="w-12 h-12 text-primary mx-auto mb-3" />
+                      <h3 className="text-xl font-bold mb-2 text-foreground">Premium Üyesiniz!</h3>
+                      <p className="text-muted-foreground">
                         Tüm ses paketleri ve efektler size açık. Ayarlar sayfasından ses paketinizi değiştirebilirsiniz.
                       </p>
                     </CardContent>
@@ -930,22 +930,22 @@ const MarketPage = () => {
               
               <TabsContent value="extras-items">
                 <div className="flex items-center space-x-3 mb-4">
-                  <Trophy className="w-6 h-6 text-orange-500" />
-                  <h3 className="text-xl font-bold text-gray-800">Rozetler & İpuçları</h3>
+                  <Trophy className="w-6 h-6 text-primary" />
+                  <h3 className="text-xl font-bold text-foreground">Rozetler & İpuçları</h3>
                 </div>
                 <Tabs defaultValue="extras-premium" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 mb-4 bg-white/80 backdrop-blur-md rounded-xl">
-                    <TabsTrigger value="extras-premium" className="text-gray-700 data-[state=active]:bg-white/80 data-[state=active]:text-gray-800">Premium</TabsTrigger>
-                    <TabsTrigger value="extras-credits" className="text-gray-700 data-[state=active]:bg-white/80 data-[state=active]:text-gray-800">Kredi</TabsTrigger>
+                  <TabsList className="grid w-full grid-cols-2 mb-4 bg-card/80 backdrop-blur-md rounded-xl border border-border/20">
+                    <TabsTrigger value="extras-premium" className="text-muted-foreground data-[state=active]:bg-primary/20 data-[state=active]:text-foreground">Premium</TabsTrigger>
+                    <TabsTrigger value="extras-credits" className="text-muted-foreground data-[state=active]:bg-primary/20 data-[state=active]:text-foreground">Kredi</TabsTrigger>
                   </TabsList>
                   <TabsContent value="extras-premium">
                     {!isPremium && renderMarketItems(getItemsByCategory('extras').filter(item => item.currency === 'premium'))}
                     {isPremium && (
-                      <Card className="border-0 bg-gradient-to-r from-orange-500/20 to-yellow-500/20 backdrop-blur-md">
+                      <Card className="border-0 bg-gradient-to-r from-primary/15 to-accent/15 backdrop-blur-md">
                         <CardContent className="p-4 text-center">
-                          <Crown className="w-12 h-12 text-yellow-500 mx-auto mb-3" />
-                          <h3 className="text-xl font-bold mb-2 text-gray-800">Premium Üyesiniz!</h3>
-                          <p className="text-gray-700">
+                          <Crown className="w-12 h-12 text-primary mx-auto mb-3" />
+                          <h3 className="text-xl font-bold mb-2 text-foreground">Premium Üyesiniz!</h3>
+                          <p className="text-muted-foreground">
                             Tüm premium rozetler ve özellikler size açık.
                           </p>
                         </CardContent>
@@ -962,37 +962,37 @@ const MarketPage = () => {
         </Tabs>
 
         {/* Premium Benefits */}
-        <Card className="border-0 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 backdrop-blur-md">
+        <Card className="border-0 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/5 backdrop-blur-md">
           <CardHeader>
-            <CardTitle className="flex items-center text-gray-800 text-xl">
+            <CardTitle className="flex items-center text-foreground text-xl">
               <Crown className="w-5 h-5 mr-3" />
               Premium Avantajları
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              <div className="flex items-center text-gray-800 p-2 bg-white/60 rounded-lg backdrop-blur-sm">
-                <Infinity className="w-4 h-4 mr-2 text-yellow-600" />
+              <div className="flex items-center text-foreground p-2 bg-card/60 rounded-lg backdrop-blur-sm border border-border/20">
+                <Infinity className="w-4 h-4 mr-2 text-primary" />
                 <span className="text-xs font-medium">Sınırsız oyun hakkı</span>
               </div>
-              <div className="flex items-center text-gray-800 p-2 bg-white/60 rounded-lg backdrop-blur-sm">
-                <Palette className="w-4 h-4 mr-2 text-yellow-600" />
+              <div className="flex items-center text-foreground p-2 bg-card/60 rounded-lg backdrop-blur-sm border border-border/20">
+                <Palette className="w-4 h-4 mr-2 text-primary" />
                 <span className="text-xs font-medium">Tüm temalara erişim</span>
               </div>
-              <div className="flex items-center text-gray-800 p-2 bg-white/60 rounded-lg backdrop-blur-sm">
-                <Volume2 className="w-4 h-4 mr-2 text-yellow-600" />
+              <div className="flex items-center text-foreground p-2 bg-card/60 rounded-lg backdrop-blur-sm border border-border/20">
+                <Volume2 className="w-4 h-4 mr-2 text-primary" />
                 <span className="text-xs font-medium">Tüm ses paketleri</span>
               </div>
-              <div className="flex items-center text-gray-800 p-2 bg-white/60 rounded-lg backdrop-blur-sm">
-                <Frame className="w-4 h-4 mr-2 text-yellow-600" />
+              <div className="flex items-center text-foreground p-2 bg-card/60 rounded-lg backdrop-blur-sm border border-border/20">
+                <Frame className="w-4 h-4 mr-2 text-primary" />
                 <span className="text-xs font-medium">Tüm çerçeveler</span>
               </div>
-              <div className="flex items-center text-gray-800 p-2 bg-white/60 rounded-lg backdrop-blur-sm">
-                <Star className="w-4 h-4 mr-2 text-yellow-600" />
+              <div className="flex items-center text-foreground p-2 bg-card/60 rounded-lg backdrop-blur-sm border border-border/20">
+                <Star className="w-4 h-4 mr-2 text-primary" />
                 <span className="text-xs font-medium">Reklamsız deneyim</span>
               </div>
-              <div className="flex items-center text-gray-800 p-2 bg-white/60 rounded-lg backdrop-blur-sm">
-                <Gift className="w-4 h-4 mr-2 text-yellow-600" />
+              <div className="flex items-center text-foreground p-2 bg-card/60 rounded-lg backdrop-blur-sm border border-border/20">
+                <Gift className="w-4 h-4 mr-2 text-primary" />
                 <span className="text-xs font-medium">Özel rozetler</span>
               </div>
             </div>
@@ -1001,6 +1001,5 @@ const MarketPage = () => {
       </div>
     </div>
   );
-};
 
 export default MarketPage;
