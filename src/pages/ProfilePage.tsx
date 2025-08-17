@@ -104,12 +104,12 @@ const ProfilePage = () => {
           nextLevelExp: levelData.nextLevelExp,
           premiumUntil: data.premium_until,
           dailyGames: data.daily_games || 0,
-          dailyWins: data.daily_wins || 0,
-          bestStreak: data.best_streak || 0,
-          averageScore: data.average_score || 0,
-          totalWords: data.total_words || 0,
-          favoriteLetter: data.favorite_letter || '',
-          playTime: data.total_play_time || 0,
+          dailyWins: data.wins || 0,  // Use wins instead of daily_wins
+          bestStreak: data.win_streak || 0,  // Use win_streak instead of best_streak
+          averageScore: data.average_word_length || 0,  // Use average_word_length instead of average_score
+          totalWords: data.total_words_created || 0,  // Use total_words_created instead of total_words
+          favoriteLetter: '',  // This field doesn't exist in the database
+          playTime: 0,  // This field doesn't exist in the database
         }));
       }
     };
@@ -150,12 +150,12 @@ const ProfilePage = () => {
               experience: levelData.experience,
               nextLevelExp: levelData.nextLevelExp,
               dailyGames: newData.daily_games || prev.dailyGames,
-              dailyWins: newData.daily_wins || prev.dailyWins,
-              bestStreak: newData.best_streak || prev.bestStreak,
-              averageScore: newData.average_score || prev.averageScore,
-              totalWords: newData.total_words || prev.totalWords,
-              favoriteLetter: newData.favorite_letter || prev.favoriteLetter,
-              playTime: newData.total_play_time || prev.playTime,
+              dailyWins: newData.wins || prev.dailyWins,  // Use wins instead of daily_wins
+              bestStreak: newData.win_streak || prev.bestStreak,  // Use win_streak instead of best_streak
+              averageScore: newData.average_word_length || prev.averageScore,  // Use average_word_length instead of average_score
+              totalWords: newData.total_words_created || prev.totalWords,  // Use total_words_created instead of total_words
+              favoriteLetter: prev.favoriteLetter,  // Keep previous value since field doesn't exist
+              playTime: prev.playTime,  // Keep previous value since field doesn't exist
             }));
           }
         }
