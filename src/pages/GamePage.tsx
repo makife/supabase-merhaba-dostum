@@ -199,14 +199,33 @@ const GamePage = ({
 
 
 
-  const handleTournamentGameEnd = (userScore: number, opponentScore: number) => {
+  const handleTournamentGameEnd = async (userScore: number, opponentScore: number) => {
     if (!user || !tournamentMatch || !onGameComplete) return;
 
     console.log('🏁 Turnuva maçı bitiyor:', { userScore, opponentScore });
 
+    // 🎯 ÖNEMLİ: ÖNCE İSTATİSTİKLERİ GÜNCELLE
+    try {
+      // Kullanıcı istatistiklerini güncelle
+      const isUserWinner = userScore > opponentScore;
+    
+      await updatePlayerStatistics(
+        user.id,
+        userScore,
+        playerWordsWithScores, // Gerçek kelimeler
+        isUserWinner
+      );
+    
+      // Rozet kontrolü
+      await checkBadges(user.id, playerWordsWithScores.length);
+    
+      console.log('✅ Turnuva istatistikleri güncellendi');
+    } catch (error) {
+      console.error('❌ Turnuva istatistik güncelleme hatası:', error);
+    }
+
     // Kazananı belirle
-    const isUserWinner = userScore > opponentScore;
-    const winnerId = isUserWinner ? user.id : (
+    const winnerId = userScore > opponentScore ? user.id : (
       tournamentMatch.player1_id === user.id ? 
       tournamentMatch.player2_id : 
       tournamentMatch.player1_id
@@ -226,12 +245,11 @@ const GamePage = ({
       player1Score,
       player2Score,
       winnerId,
-      isUserWinner,
+      isUserWinner: userScore > opponentScore,
       isUserPlayer1
     });
 
-    // 🎯 ÖNEMLİ: Turnuva modunda normal game end ekranını gösterme!
-    // Direkt parent component'e bildir, UI'ı değiştirme
+    // Parent component'e bildir
     onGameComplete(winnerId, player1Score, player2Score);
   };
 
@@ -243,16 +261,8 @@ const GamePage = ({
     isWinner: boolean
   ) => {
     try {
-      console.log('📊 İstatistikler güncelleniyor:', { userId, gameScore, words: words.length, isWinner });
+      console.log('📊 Oyun istatistikleri güncelleniyor:', { userId, gameScore, words: words.length, isWinner });
     
-      // Eğer GameContext'ten geliyorsa kullan
-      if (currentRoom) {
-        // Multiplayer modunda GameContext fonksiyonunu kullan
-        // Bu zaten var, burada bir şey yapmaya gerek yok
-        return;
-      }
-    
-      // Single player (vs-computer) modu için basit güncelleme
       await supabase.rpc('update_game_statistics', {
         p_user_id: userId,
         p_game_score: gameScore,
@@ -260,9 +270,56 @@ const GamePage = ({
         p_is_winner: isWinner
       });
     
-      console.log('✅ İstatistikler güncellendi');
+      console.log('✅ Oyun istatistikleri güncellendi');
     } catch (error) {
       console.error('❌ İstatistik güncelleme hatası:', error);
+    }
+  };
+
+  const checkBadges = async (userId: string, wordsCount?: number) => {
+    try {
+      console.log('🏆 Rozet kontrolü yapılıyor:', userId);
+    
+      // General badge check
+      const { data: generalBadges, error: generalError } = await supabase.rpc('check_and_award_badges', {
+        p_user_id: userId
+      });
+    
+      if (generalError) {
+        console.error('❌ Genel rozet kontrolü hatası:', generalError);
+      } else if (generalBadges && generalBadges.length > 0) {
+        generalBadges.forEach((badge: any) => {
+          toast({
+            title: '🏆 Yeni Rozet!',
+            description: `"${badge.new_badge_name}" rozetini kazandınız! ${badge.new_badge_icon}`,
+            duration: 4000,
+          });
+        });
+      }
+    
+      // Words per game badge check
+      if (wordsCount && wordsCount > 0) {
+        const { data: wordsBadges, error: wordsError } = await supabase.rpc('check_words_per_game_badge', {
+          p_user_id: userId,
+          p_words_count: wordsCount
+        });
+      
+        if (wordsError) {
+          console.error('❌ Kelime rozeti kontrolü hatası:', wordsError);
+        } else if (wordsBadges && wordsBadges.length > 0) {
+          wordsBadges.forEach((badge: any) => {
+            toast({
+              title: '🏆 Yeni Rozet!',
+              description: `"${badge.new_badge_name}" rozetini kazandınız! ${badge.new_badge_icon}`,
+              duration: 4000,
+            });
+          });
+        }
+      }
+    
+      console.log('✅ Rozet kontrolü tamamlandı');
+    } catch (error) {
+      console.error('❌ Rozet kontrolü hatası:', error);
     }
   };
 
