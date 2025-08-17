@@ -52,6 +52,15 @@ const ProfilePage = () => {
     premiumUntil: null as string | null,
   });
 
+  const [badges, setBadges] = useState<Array<{
+    id: string;
+    name: string;
+    description: string;
+    icon: string;
+    earned: boolean;
+    earned_at?: string;
+  }>>([]);
+
   // Calculate level from total score (same as LevelProgress component)
   const calculateLevel = (totalScore: number) => {
     const baseExp = 1000;
@@ -73,20 +82,64 @@ const ProfilePage = () => {
     return { level, experience, nextLevelExp };
   };
 
+  // Fetch badges from database
+  const fetchBadges = async () => {
+    if (!user) return;
+  
+    try {
+      // Get all badges with user's earned status
+      const { data: allBadges, error: badgesError } = await supabase
+        .from('badges')
+        .select('*')
+        .order('name');
+        
+      if (badgesError) {
+        console.error('Rozet fetch hatası:', badgesError);
+        return;
+      }
+    
+      // Get user's earned badges
+      const { data: userBadges, error: userBadgesError } = await supabase
+        .from('user_badges')
+        .select('badge_id, earned_at')
+        .eq('user_id', user.id);
+        
+      if (userBadgesError) {
+        console.error('Kullanıcı rozet fetch hatası:', userBadgesError);
+        return;
+      }
+    
+      // Combine badges with earned status
+      const earnedBadgeIds = new Set(userBadges?.map(ub => ub.badge_id) || []);
+      const badgesWithStatus = allBadges?.map(badge => ({
+        id: badge.id,
+        name: badge.name,
+        description: badge.description,
+        icon: badge.icon,
+        earned: earnedBadgeIds.has(badge.id),
+        earned_at: userBadges?.find(ub => ub.badge_id === badge.id)?.earned_at
+      })) || [];
+    
+      setBadges(badgesWithStatus);
+    } catch (error) {
+      console.error('Rozet yükleme hatası:', error);
+    }
+  };
+
   useEffect(() => {
     const fetchProfile = async () => {
-  if (!user) return;
-  
-  const { data } = await supabase
-    .from('profiles')
-    .select('*')  // Sadece yıldız, başka bir şey belirtme
-    .eq('id', user.id)
-    .maybeSingle();
-  
-  if (data) {
-    const levelData = calculateLevel(data.total_score || 0);
-    const username = data.username || (user?.email?.split('@')[0] || 'Oyuncu');
-        
+      if (!user) return;
+      
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')  // Sadece yıldız, başka bir şey belirtme
+        .eq('id', user.id)
+        .maybeSingle();
+      
+      if (data) {
+        const levelData = calculateLevel(data.total_score || 0);
+        const username = data.username || (user?.email?.split('@')[0] || 'Oyuncu');
+            
         setProfileData(prev => ({
           ...prev,
           username: username,
@@ -138,36 +191,36 @@ const ProfilePage = () => {
           if (newData.total_score !== undefined) {
             const levelData = calculateLevel(newData.total_score);
             setProfileData(prev => {
-             // Level kontrolünü ekle
-             if (levelData.level > prev.level) {
-               toast.success(`🎉 Seviye ${levelData.level}'e ulaştınız!`, {
-                duration: 5000,
-             });
-          }
+              // Level kontrolünü ekle
+              if (levelData.level > prev.level) {
+                toast.success(`🎉 Seviye ${levelData.level}'e ulaştınız!`, {
+                  duration: 5000,
+                });
+              }
 
-    
-    // Return ekle
-    return {
-      ...prev,
-      totalScore: newData.total_score,
-      totalGames: newData.total_games || prev.totalGames,
-      wins: newData.wins || prev.wins,
-      losses: newData.losses || prev.losses,
-      longestWord: newData.longest_word || prev.longestWord,
-      currentStreak: newData.win_streak || prev.currentStreak,
-      winRate: newData.total_games > 0 ? Math.round(((newData.wins || 0) / newData.total_games) * 100) : 0,
-      level: levelData.level,
-      experience: levelData.experience,
-      nextLevelExp: levelData.nextLevelExp,
-      dailyGames: newData.daily_games || prev.dailyGames,
-      dailyWins: newData.wins || prev.dailyWins,
-      bestStreak: newData.win_streak || prev.bestStreak,
-      averageScore: newData.average_word_length || prev.averageScore,
-      totalWords: newData.total_words_created || prev.totalWords,
-      favoriteLetter: prev.favoriteLetter,
-      playTime: prev.playTime,
-    });
-          };
+              // Return ekle
+              return {
+                ...prev,
+                totalScore: newData.total_score,
+                totalGames: newData.total_games || prev.totalGames,
+                wins: newData.wins || prev.wins,
+                losses: newData.losses || prev.losses,
+                longestWord: newData.longest_word || prev.longestWord,
+                currentStreak: newData.win_streak || prev.currentStreak,
+                winRate: newData.total_games > 0 ? Math.round(((newData.wins || 0) / newData.total_games) * 100) : 0,
+                level: levelData.level,
+                experience: levelData.experience,
+                nextLevelExp: levelData.nextLevelExp,
+                dailyGames: newData.daily_games || prev.dailyGames,
+                dailyWins: newData.wins || prev.dailyWins,
+                bestStreak: newData.win_streak || prev.bestStreak,
+                averageScore: newData.average_word_length || prev.averageScore,
+                totalWords: newData.total_words_created || prev.totalWords,
+                favoriteLetter: prev.favoriteLetter,
+                playTime: prev.playTime,
+              };
+            });
+          }
         }
       )
       // 🏆 YENİ: Rozet güncellemeleri için listener ekle
@@ -204,6 +257,11 @@ const ProfilePage = () => {
     return () => {
       supabase.removeChannel(channel);
     };
+  }, [user]);
+
+  // Rozet useEffect'ini güncelle:
+  useEffect(() => {
+    fetchBadges();
   }, [user]);
 
   const handleEditToggle = () => {
@@ -265,65 +323,7 @@ const ProfilePage = () => {
     return { subscriptionType, timeLeft, diffDays };
   };
 
-  const [badges, setBadges] = useState<Array<{
-    id: string;
-    name: string;
-    description: string;
-    icon: string;
-    earned: boolean;
-    earned_at?: string;
-  }>>([]);
-
   const subscriptionInfo = getSubscriptionInfo();
-
-  // Fetch badges from database
-  const fetchBadges = async () => {
-    if (!user) return;
-  
-    try {
-      // Get all badges with user's earned status
-      const { data: allBadges, error: badgesError } = await supabase
-        .from('badges')
-        .select('*')
-        .order('name');
-        
-      if (badgesError) {
-        console.error('Rozet fetch hatası:', badgesError);
-        return;
-      }
-    
-      // Get user's earned badges
-      const { data: userBadges, error: userBadgesError } = await supabase
-        .from('user_badges')
-        .select('badge_id, earned_at')
-        .eq('user_id', user.id);
-        
-      if (userBadgesError) {
-        console.error('Kullanıcı rozet fetch hatası:', userBadgesError);
-        return;
-      }
-    
-      // Combine badges with earned status
-      const earnedBadgeIds = new Set(userBadges?.map(ub => ub.badge_id) || []);
-      const badgesWithStatus = allBadges?.map(badge => ({
-        id: badge.id,
-        name: badge.name,
-        description: badge.description,
-        icon: badge.icon,
-        earned: earnedBadgeIds.has(badge.id),
-        earned_at: userBadges?.find(ub => ub.badge_id === badge.id)?.earned_at
-      })) || [];
-    
-      setBadges(badgesWithStatus);
-    } catch (error) {
-      console.error('Rozet yükleme hatası:', error);
-    }
-  };
-
-  // Rozet useEffect'ini güncelle:
-  useEffect(() => {
-    fetchBadges();
-  }, [user]);
 
   // 🎯 Manuel refresh butonu ekle (test için):
   const refreshStats = async () => {
@@ -373,7 +373,6 @@ const ProfilePage = () => {
     }
   };
 
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
       <div className="max-w-2xl mx-auto space-y-6">
@@ -385,23 +384,23 @@ const ProfilePage = () => {
           </Button>
           <h1 className="text-2xl font-bold">Profil</h1>
           <div className="flex space-x-2">
-          {/* 🔄 YENİ: Refresh butonu */}
-           <Button variant="outline" size="sm" onClick={refreshStats}>
-            <TrendingUp className="w-4 h-4 mr-2" />
-           Yenile
-           </Button>
-          {isEditing ? (
-            <Button variant="outline" size="sm" onClick={handleSaveProfile}>
-              Kaydet
+            {/* 🔄 YENİ: Refresh butonu */}
+            <Button variant="outline" size="sm" onClick={refreshStats}>
+              <TrendingUp className="w-4 h-4 mr-2" />
+              Yenile
             </Button>
-          ) : (
-            <Button variant="outline" size="sm" onClick={handleEditToggle}>
-              <Edit className="w-4 h-4 mr-2" />
-              Düzenle
-            </Button>
-          )}
+            {isEditing ? (
+              <Button variant="outline" size="sm" onClick={handleSaveProfile}>
+                Kaydet
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" onClick={handleEditToggle}>
+                <Edit className="w-4 h-4 mr-2" />
+                Düzenle
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
 
         {/* Profile Header */}
         <Card>
@@ -427,16 +426,16 @@ const ProfilePage = () => {
                   <h2 className="text-2xl font-bold">{profileData.username}</h2>
                 )}
                 <p className="text-xs text-muted-foreground truncate max-w-xs">{user?.email}</p>
-                 <div className="flex items-center space-x-2 mt-2">
-                   <Badge variant="secondary">Seviye {profileData.level}</Badge>
-                   <Badge variant="outline">{profileData.winRate}% Kazanma</Badge>
-                   {subscriptionInfo && (
-                     <Badge variant="default" className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
-                       <Crown className="w-3 h-3 mr-1" />
-                       Premium
-                     </Badge>
-                   )}
-                 </div>
+                <div className="flex items-center space-x-2 mt-2">
+                  <Badge variant="secondary">Seviye {profileData.level}</Badge>
+                  <Badge variant="outline">{profileData.winRate}% Kazanma</Badge>
+                  {subscriptionInfo && (
+                    <Badge variant="default" className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
+                      <Crown className="w-3 h-3 mr-1" />
+                      Premium
+                    </Badge>
+                  )}
+                </div>
               </div>
             </div>
             
@@ -449,56 +448,56 @@ const ProfilePage = () => {
               <Progress value={(profileData.experience / profileData.nextLevelExp) * 100} />
             </div>
           </CardContent>
-         </Card>
+        </Card>
 
-         {/* Premium Subscription Info */}
-         {subscriptionInfo && (
-           <Card className="border-yellow-200 bg-gradient-to-r from-yellow-50 to-orange-50">
-             <CardHeader>
-               <CardTitle className="flex items-center text-yellow-700">
-                 <Crown className="w-5 h-5 mr-2" />
-                 Premium Abonelik
-               </CardTitle>
-               <CardDescription>
-                 Aktif premium üyeliğinizin detayları
-               </CardDescription>
-             </CardHeader>
-             <CardContent>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <div className="flex items-center space-x-3">
-                   <div className="bg-yellow-100 p-2 rounded-lg">
-                     <Calendar className="w-5 h-5 text-yellow-600" />
-                   </div>
-                   <div>
-                     <p className="font-medium text-yellow-800">Abonelik Türü</p>
-                     <p className="text-sm text-yellow-600">{subscriptionInfo.subscriptionType} Premium</p>
-                   </div>
-                 </div>
-                 <div className="flex items-center space-x-3">
-                   <div className="bg-orange-100 p-2 rounded-lg">
-                     <Clock className="w-5 h-5 text-orange-600" />
-                   </div>
-                   <div>
-                     <p className="font-medium text-orange-800">Kalan Süre</p>
-                     <p className="text-sm text-orange-600">{subscriptionInfo.timeLeft}</p>
-                   </div>
-                 </div>
-               </div>
-               <div className="mt-4">
-                 <div className="flex justify-between text-sm mb-2">
-                   <span className="text-yellow-700">Yenilenme süresine kalan gün</span>
-                   <span className="font-medium text-yellow-800">{subscriptionInfo.diffDays} gün</span>
-                 </div>
-                 <Progress 
-                   value={Math.max(0, Math.min(100, (30 - subscriptionInfo.diffDays) / 30 * 100))} 
-                   className="bg-yellow-100"
-                 />
-               </div>
-             </CardContent>
-           </Card>
-         )}
+        {/* Premium Subscription Info */}
+        {subscriptionInfo && (
+          <Card className="border-yellow-200 bg-gradient-to-r from-yellow-50 to-orange-50">
+            <CardHeader>
+              <CardTitle className="flex items-center text-yellow-700">
+                <Crown className="w-5 h-5 mr-2" />
+                Premium Abonelik
+              </CardTitle>
+              <CardDescription>
+                Aktif premium üyeliğinizin detayları
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center space-x-3">
+                  <div className="bg-yellow-100 p-2 rounded-lg">
+                    <Calendar className="w-5 h-5 text-yellow-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-yellow-800">Abonelik Türü</p>
+                    <p className="text-sm text-yellow-600">{subscriptionInfo.subscriptionType} Premium</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="bg-orange-100 p-2 rounded-lg">
+                    <Clock className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-orange-800">Kalan Süre</p>
+                    <p className="text-sm text-orange-600">{subscriptionInfo.timeLeft}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4">
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-yellow-700">Yenilenme süresine kalan gün</span>
+                  <span className="font-medium text-yellow-800">{subscriptionInfo.diffDays} gün</span>
+                </div>
+                <Progress 
+                  value={Math.max(0, Math.min(100, (30 - subscriptionInfo.diffDays) / 30 * 100))} 
+                  className="bg-yellow-100"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-         {/* Statistics */}
+        {/* Statistics */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="p-4 text-center">
@@ -529,38 +528,37 @@ const ProfilePage = () => {
             </CardContent>
           </Card>
           <Card>
-    <CardContent className="p-4 text-center">
-      <Calendar className="w-8 h-8 mx-auto mb-2 text-indigo-500" />
-      <p className="text-2xl font-bold">{profileData.dailyGames}</p>
-      <p className="text-sm text-muted-foreground">Günlük</p>
-    </CardContent>
-  </Card>
-  
-  <Card>
-    <CardContent className="p-4 text-center">
-      <Star className="w-8 h-8 mx-auto mb-2 text-pink-500" />
-      <p className="text-2xl font-bold">{profileData.bestStreak}</p>
-      <p className="text-sm text-muted-foreground">En İyi Seri</p>
-    </CardContent>
-  </Card>
-  
-  <Card>
-    <CardContent className="p-4 text-center">
-      <TrendingUp className="w-8 h-8 mx-auto mb-2 text-cyan-500" />
-      <p className="text-2xl font-bold">{Math.round(profileData.averageScore)}</p>
-      <p className="text-sm text-muted-foreground">Ort. Puan</p>
-    </CardContent>
-  </Card>
-  
-  <Card>
-    <CardContent className="p-4 text-center">
-      <FileText className="w-8 h-8 mx-auto mb-2 text-emerald-500" />
-      <p className="text-2xl font-bold">{profileData.totalWords}</p>
-      <p className="text-sm text-muted-foreground">Toplam Kelime</p>
-    </CardContent>
-  </Card>
-</div>
-
+            <CardContent className="p-4 text-center">
+              <Calendar className="w-8 h-8 mx-auto mb-2 text-indigo-500" />
+              <p className="text-2xl font-bold">{profileData.dailyGames}</p>
+              <p className="text-sm text-muted-foreground">Günlük</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4 text-center">
+              <Star className="w-8 h-8 mx-auto mb-2 text-pink-500" />
+              <p className="text-2xl font-bold">{profileData.bestStreak}</p>
+              <p className="text-sm text-muted-foreground">En İyi Seri</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4 text-center">
+              <TrendingUp className="w-8 h-8 mx-auto mb-2 text-cyan-500" />
+              <p className="text-2xl font-bold">{Math.round(profileData.averageScore)}</p>
+              <p className="text-sm text-muted-foreground">Ort. Puan</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4 text-center">
+              <FileText className="w-8 h-8 mx-auto mb-2 text-emerald-500" />
+              <p className="text-2xl font-bold">{profileData.totalWords}</p>
+              <p className="text-sm text-muted-foreground">Toplam Kelime</p>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Achievements / Badges */}
         <Card>
