@@ -417,16 +417,6 @@ useEffect(() => {
         );
       })}
     </div>
-    
-    {/* Ek bilgi - krediler 5'ten az ise */}
-    {(profile?.game_credits < 5) && timeUntilNextCredit && (
-      <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded-lg">
-        <p className="text-xs text-orange-700 text-center">
-          💡 Sonraki kredi {timeUntilNextCredit} sonra gelecek
-        </p>
-      </div>
-    )}
-  </div>
 )}
               
               {/* İstatistik badge'leri */}
