@@ -1977,7 +1977,7 @@ return (
         </div>
       </div>
     </div>
-  </div>
+  </>
     {/* Exit Confirmation Dialog */}
     <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
       <AlertDialogContent className="max-w-sm mx-auto">
