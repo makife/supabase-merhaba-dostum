@@ -317,7 +317,51 @@ const TournamentMatchPage = () => {
 
       if (updateError) throw updateError;
 
-      // Kaybedeni eleme
+      // 🎯 ÖNEMLİ: İSTATİSTİKLERİ GÜNCELLE!
+    
+      // Player 1 istatistikleri
+      if (currentMatch.player1_id && !currentMatch.player1_id.startsWith('bot_')) {
+        const isPlayer1Winner = winnerId === currentMatch.player1_id;
+      
+        // Player 1 kelimelerini oluştur (simüle et)
+        const player1Words = Array.from({length: Math.floor(player1Score / 8)}, (_, i) => ({
+          word: `KELIME${i + 1}`,
+          score: 8
+        }));
+      
+        await updatePlayerStatistics(
+          currentMatch.player1_id,
+          player1Score,
+          player1Words,
+          isPlayer1Winner
+        );
+      
+        // Rozet kontrolü
+        await checkBadges(currentMatch.player1_id, player1Words.length);
+      }
+    
+      // Player 2 istatistikleri
+      if (currentMatch.player2_id && !currentMatch.player2_id.startsWith('bot_')) {
+        const isPlayer2Winner = winnerId === currentMatch.player2_id;
+      
+        // Player 2 kelimelerini oluştur (simüle et)
+        const player2Words = Array.from({length: Math.floor(player2Score / 8)}, (_, i) => ({
+          word: `KELIME${i + 1}`,
+          score: 8
+        }));
+      
+        await updatePlayerStatistics(
+          currentMatch.player2_id,
+          player2Score,
+          player2Words,
+          isPlayer2Winner
+        );
+      
+        // Rozet kontrolü
+        await checkBadges(currentMatch.player2_id, player2Words.length);
+      }
+
+    // Kaybedeni eleme
       const loserId = winnerId === currentMatch.player1_id ? currentMatch.player2_id : currentMatch.player1_id;
       if (loserId) {
         await supabase
@@ -332,12 +376,12 @@ const TournamentMatchPage = () => {
 
       toast({
         title: '🏆 Maç Tamamlandı!',
-        description: 'Sonraki tur kontrol ediliyor...',
+        description: 'İstatistikler güncellendi, sonraki tur kontrol ediliyor...',
       });
 
       // Verileri yeniden yükle
       await loadTournamentData();
-      
+    
       // Sonraki tur kontrolü yap
       setTimeout(() => {
         checkNextRoundOrFinish();
@@ -352,6 +396,76 @@ const TournamentMatchPage = () => {
       });
     }
   };
+
+  const updatePlayerStatistics = async (
+    userId: string,
+    gameScore: number,
+    words: Array<{word: string, score: number}>,
+    isWinner: boolean
+  ) => {
+    try {
+      console.log('📊 Turnuva istatistikleri güncelleniyor:', { userId, gameScore, words: words.length, isWinner });
+    
+      await supabase.rpc('update_game_statistics', {
+        p_user_id: userId,
+        p_game_score: gameScore,
+        p_words: words,
+        p_is_winner: isWinner
+      });
+    
+      console.log('✅ Turnuva istatistikleri güncellendi');
+    } catch (error) {
+      console.error('❌ Turnuva istatistik güncelleme hatası:', error);
+    }
+  };
+
+  const checkBadges = async (userId: string, wordsCount?: number) => {
+    try {
+      console.log('🏆 Turnuva rozet kontrolü yapılıyor:', userId);
+    
+      // General badge check
+      const { data: generalBadges, error: generalError } = await supabase.rpc('check_and_award_badges', {
+        p_user_id: userId
+      });
+    
+      if (generalError) {
+        console.error('❌ Genel rozet kontrolü hatası:', generalError);
+      } else if (generalBadges && generalBadges.length > 0) {
+        generalBadges.forEach((badge: any) => {
+          toast({
+            title: '🏆 Yeni Rozet!',
+            description: `"${badge.new_badge_name}" rozetini kazandınız! ${badge.new_badge_icon}`,
+            duration: 4000,
+          });
+        });
+      }
+    
+      // Words per game badge check
+      if (wordsCount && wordsCount > 0) {
+        const { data: wordsBadges, error: wordsError } = await supabase.rpc('check_words_per_game_badge', {
+          p_user_id: userId,
+          p_words_count: wordsCount
+        });
+      
+        if (wordsError) {
+          console.error('❌ Kelime rozeti kontrolü hatası:', wordsError);
+        } else if (wordsBadges && wordsBadges.length > 0) {
+          wordsBadges.forEach((badge: any) => {
+            toast({
+              title: '🏆 Yeni Rozet!',
+              description: `"${badge.new_badge_name}" rozetini kazandınız! ${badge.new_badge_icon}`,
+              duration: 4000,
+            });
+          });
+        }
+      }
+    
+      console.log('✅ Turnuva rozet kontrolü tamamlandı');
+    } catch (error) {
+      console.error('❌ Turnuva rozet kontrolü hatası:', error);
+    }
+  };
+
 
   // Kullanıcının sıradaki maçını bul
   const getUserNextMatch = () => {
