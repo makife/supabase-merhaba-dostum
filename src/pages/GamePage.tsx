@@ -1977,6 +1977,7 @@ return (
         </div>
       </div>
     </div>
+  </div>
   </>
     {/* Exit Confirmation Dialog */}
     <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
