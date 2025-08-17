@@ -192,6 +192,11 @@ const GamePage = ({
   const [lastPlayerAction, setLastPlayerAction] = useState<number>(0);
   const [matchmakingTimeout, setMatchmakingTimeout] = useState<NodeJS.Timeout | null>(null);
   const [timeoutCountdown, setTimeoutCountdown] = useState(30);
+  const [showResults, setShowResults] = useState(false);
+  const [isAIOpponent, setIsAIOpponent] = useState(false);
+  const [opponentName, setOpponentName] = useState('');
+  const [targetScore, setTargetScore] = useState(gameType === 'score' ? 500 : 0);
+
 
 
   const handleTournamentGameEnd = (userScore: number, opponentScore: number) => {
@@ -229,18 +234,50 @@ const GamePage = ({
     onGameComplete(winnerId, player1Score, player2Score);
   };
 
+  const updatePlayerStatistics = async (
+    userId: string,
+    gameScore: number,
+    words: Array<{word: string, score: number}>,
+    isWinner: boolean
+  ) => {
+    try {
+      console.log('📊 İstatistikler güncelleniyor:', { userId, gameScore, words: words.length, isWinner });
+    
+      // Eğer GameContext'ten geliyorsa kullan
+      if (currentRoom) {
+        // Multiplayer modunda GameContext fonksiyonunu kullan
+        // Bu zaten var, burada bir şey yapmaya gerek yok
+        return;
+      }
+    
+      // Single player (vs-computer) modu için basit güncelleme
+      await supabase.rpc('update_game_statistics', {
+        p_user_id: userId,
+        p_game_score: gameScore,
+        p_words: words,
+        p_is_winner: isWinner
+      });
+    
+      console.log('✅ İstatistikler güncellendi');
+    } catch (error) {
+      console.error('❌ İstatistik güncelleme hatası:', error);
+    }
+  };
+
   // Oyun biti fonksiyonunu güncelle
   const handleGameEnd = () => {
     const finalUserScore = playerScore;
     const finalOpponentScore = opponentScore;
 
-    // İstatistikleri güncelle
-    updatePlayerStatistics(
-      user?.id || '',
-      finalUserScore,
-      words.map(w => ({ word: w.word, score: w.points })),
-      finalUserScore > finalOpponentScore
-    );
+    // İstatistikleri güncelle - sadece vs-computer modunda
+    if (gameMode === 'vs-computer' && user) {
+      updatePlayerStatistics(
+        user.id,
+        finalUserScore,
+        playerWordsWithScores, // words yerine playerWordsWithScores kullan
+        finalUserScore > finalOpponentScore
+      );
+    }
 
     // Turnuva modundaysa özel işlem
     if (gameMode === 'tournament' && tournamentMatch) {
@@ -250,7 +287,7 @@ const GamePage = ({
 
     // Normal mod için mevcut kod devam eder...
     setGameEnded(true);
-    setShowResults(true);
+    // setShowResults burada kullanılmıyor, sadece state tanımla
   };
 
   useEffect(() => {
@@ -259,12 +296,12 @@ const GamePage = ({
       return;
     }
 
-    // Turnuva modunda AI opponent ekle
+    // Turnuva modunda rakip ayarla
     if (gameMode === 'tournament' && tournamentMatch) {
       const opponentId = tournamentMatch.player1_id === user?.id ? 
         tournamentMatch.player2_id : 
         tournamentMatch.player1_id;
-      
+    
       // Eğer opponent bir bot ise veya null ise AI aktif et
       if (!opponentId || opponentId.startsWith('bot_')) {
         setIsAIOpponent(true);
@@ -276,7 +313,7 @@ const GamePage = ({
 
       // Game type'ı ayarla
       if (propGameType) {
-        setGameType(propGameType);
+        // gameType zaten const olarak tanımlı, setGameType'a gerek yok
         if (propGameType === 'timed') {
           setTimeLimit(120); // 2 dakika
           setTargetScore(0);
@@ -284,6 +321,22 @@ const GamePage = ({
           setTargetScore(500);
           setTimeLimit(0);
         }
+      }
+    } else {
+      // Diğer modlar için default ayarlar
+      switch (gameMode) {
+        case 'vs-computer':
+          setIsAIOpponent(true);
+          setOpponentName('Bilgisayar');
+          break;
+        case 'private-room':
+          setIsAIOpponent(false);
+          setOpponentName('Arkadaş');
+          break;
+        case 'random-match':
+          setIsAIOpponent(false);
+          setOpponentName('Rakip');
+          break;
       }
     }
   }, [gameMode, tournamentMatch, propGameType, user?.id]);
@@ -294,13 +347,23 @@ const GamePage = ({
       const opponentId = tournamentMatch.player1_id === user?.id ? 
         tournamentMatch.player2_id : 
         tournamentMatch.player1_id;
-      
+    
       if (!opponentId) return 'Turnuva Botu';
       if (opponentId.startsWith('bot_')) return 'Turnuva Botu';
       return opponentName || 'Turnuva Rakibi';
     }
-    
-    return opponentName || 'AI Rakip';
+  
+    // Diğer modlar için
+    switch (gameMode) {
+      case 'vs-computer':
+        return 'Bilgisayar';
+      case 'private-room':
+        return opponentName || 'Arkadaş';
+      case 'random-match':
+        return opponentName || 'Rakip';
+      default:
+        return 'AI Rakip';
+    }
   };
 
   // Turnuva modunda geri dönüş engelle
