@@ -398,6 +398,7 @@ const ProfilePage = () => {
             </Button>
           )}
         </div>
+      </div>
 
         {/* Profile Header */}
         <Card>
