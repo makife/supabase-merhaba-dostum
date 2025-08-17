@@ -677,7 +677,7 @@ const MarketPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/50 to-violet-900/30 p-4">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -685,7 +685,7 @@ const MarketPage = () => {
             variant="outline" 
             size="sm" 
             onClick={() => navigate('/')}
-            variant="outline" size="sm"
+            className="bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-sm"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Geri
@@ -702,7 +702,7 @@ const MarketPage = () => {
               className="w-full h-full object-contain drop-shadow-2xl"
             />
           </div>
-          <h1 className="text-2xl font-bold">Premium Market</h1>
+          <h1 className="text-2xl font-bold text-white mb-2 bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-600 bg-clip-text text-transparent">
             ✨ Premium Market ✨
           </h1>
           <p className="text-white/70">Oyun deneyiminizi bir üst seviyeye taşıyın</p>
