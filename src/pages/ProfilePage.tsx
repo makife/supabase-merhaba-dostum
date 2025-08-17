@@ -271,57 +271,105 @@ const ProfilePage = () => {
     earned_at?: string;
   }>>([]);
 
-  
+  const subscriptionInfo = getSubscriptionInfo();
 
   // Fetch badges from database
-  useEffect(() => {
-    const fetchBadges = async () => {
-      if (!user) return;
-      
-      try {
-        // Get all badges with user's earned status
-        const { data: allBadges, error: badgesError } = await supabase
-          .from('badges')
-          .select('*')
-          .order('name');
-          
-        if (badgesError) {
-          console.error('Rozet fetch hatası:', badgesError);
-          return;
-        }
+  const fetchBadges = async () => {
+    if (!user) return;
+  
+    try {
+      // Get all badges with user's earned status
+      const { data: allBadges, error: badgesError } = await supabase
+        .from('badges')
+        .select('*')
+        .order('name');
         
-        // Get user's earned badges
-        const { data: userBadges, error: userBadgesError } = await supabase
-          .from('user_badges')
-          .select('badge_id, earned_at')
-          .eq('user_id', user.id);
-          
-        if (userBadgesError) {
-          console.error('Kullanıcı rozet fetch hatası:', userBadgesError);
-          return;
-        }
-        
-        // Combine badges with earned status
-        const earnedBadgeIds = new Set(userBadges?.map(ub => ub.badge_id) || []);
-        const badgesWithStatus = allBadges?.map(badge => ({
-          id: badge.id,
-          name: badge.name,
-          description: badge.description,
-          icon: badge.icon,
-          earned: earnedBadgeIds.has(badge.id),
-          earned_at: userBadges?.find(ub => ub.badge_id === badge.id)?.earned_at
-        })) || [];
-        
-        setBadges(badgesWithStatus);
-      } catch (error) {
-        console.error('Rozet yükleme hatası:', error);
+      if (badgesError) {
+        console.error('Rozet fetch hatası:', badgesError);
+        return;
       }
-    };
+    
+      // Get user's earned badges
+      const { data: userBadges, error: userBadgesError } = await supabase
+        .from('user_badges')
+        .select('badge_id, earned_at')
+        .eq('user_id', user.id);
+        
+      if (userBadgesError) {
+        console.error('Kullanıcı rozet fetch hatası:', userBadgesError);
+        return;
+      }
+    
+      // Combine badges with earned status
+      const earnedBadgeIds = new Set(userBadges?.map(ub => ub.badge_id) || []);
+      const badgesWithStatus = allBadges?.map(badge => ({
+        id: badge.id,
+        name: badge.name,
+        description: badge.description,
+        icon: badge.icon,
+        earned: earnedBadgeIds.has(badge.id),
+        earned_at: userBadges?.find(ub => ub.badge_id === badge.id)?.earned_at
+      })) || [];
+    
+      setBadges(badgesWithStatus);
+    } catch (error) {
+      console.error('Rozet yükleme hatası:', error);
+    }
+  };
 
+  // Rozet useEffect'ini güncelle:
+  useEffect(() => {
     fetchBadges();
   }, [user]);
 
-  const subscriptionInfo = getSubscriptionInfo();
+  // 🎯 Manuel refresh butonu ekle (test için):
+  const refreshStats = async () => {
+    if (!user) return;
+  
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+    
+      if (data) {
+        const levelData = calculateLevel(data.total_score || 0);
+        const username = data.username || (user?.email?.split('@')[0] || 'Oyuncu');
+      
+        setProfileData(prev => ({
+          ...prev,
+          username: username,
+          avatar_url: data.avatar_url || '',
+          totalGames: data.total_games || 0,
+          wins: data.wins || 0,
+          losses: data.losses || 0,
+          totalScore: data.total_score || 0,
+          winRate: data.total_games > 0 ? Math.round(((data.wins || 0) / data.total_games) * 100) : 0,
+          longestWord: data.longest_word || '',
+          currentStreak: data.win_streak || 0,
+          fastestWord: data.fastest_word_time ? `${data.fastest_word_time}s` : '0s',
+          level: levelData.level,
+          experience: levelData.experience,
+          nextLevelExp: levelData.nextLevelExp,
+          premiumUntil: data.premium_until,
+          dailyGames: data.daily_games || 0,
+          dailyWins: data.wins || 0,
+          bestStreak: data.win_streak || 0,
+          averageScore: data.average_word_length || 0,
+          totalWords: data.total_words_created || 0,
+          favoriteLetter: '',
+          playTime: 0,
+        }));
+      }
+    
+      await fetchBadges();
+      toast.success('İstatistikler güncellendi!');
+    } catch (error) {
+      toast.error('Güncelleme hatası');
+    }
+  };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
@@ -333,6 +381,12 @@ const ProfilePage = () => {
             Geri
           </Button>
           <h1 className="text-2xl font-bold">Profil</h1>
+          <div className="flex space-x-2">
+          {/* 🔄 YENİ: Refresh butonu */}
+           <Button variant="outline" size="sm" onClick={refreshStats}>
+            <TrendingUp className="w-4 h-4 mr-2" />
+           Yenile
+           </Button>
           {isEditing ? (
             <Button variant="outline" size="sm" onClick={handleSaveProfile}>
               Kaydet
