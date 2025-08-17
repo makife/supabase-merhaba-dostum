@@ -30,6 +30,22 @@ import {
   PenTool
 } from 'lucide-react';
 
+interface TournamentMatch {
+  id: string;
+  tournament_id: string;
+  round: number;
+  match_number: number;
+  player1_id: string | null;
+  player2_id: string | null;
+  player1_score?: number;
+  player2_score?: number;
+  winner_id: string | null;
+  status: string;
+  created_at: string;
+  updated_at?: string;
+  room_id?: string;
+}
+
 interface GamePageProps {
   gameMode: 'vs-computer' | 'private-room' | 'random-match' | 'tournament';
   onGameComplete?: (winnerId: string, player1Score: number, player2Score: number) => void;
