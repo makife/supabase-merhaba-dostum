@@ -147,6 +147,7 @@ const TournamentPage = () => {
         })
         .select()
         .single();
+  };
 
       if (error) throw error;
 
