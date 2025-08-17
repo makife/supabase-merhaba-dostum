@@ -1685,7 +1685,7 @@ return (
          }}>
       <div className="h-full flex flex-col px-2">
         
-        {/* 🎯 BU HEADER KISMI DEĞİŞTİRİLECEK */}
+        {/* Header - GÜNCELLENMIŞ */}
         <div className="flex items-center justify-between py-2 shrink-0">
           {/* Sol taraf - Geri butonu */}
           <Button 
@@ -1693,7 +1693,7 @@ return (
             size="sm" 
             className="text-xs px-2 py-1 h-8" 
             onClick={() => {
-              // 🔥 BU KISMI DEĞİŞTİR
+              // 🔥 TURNUVA KONTROLÜ EKLENDİ
               if (gameMode === 'tournament') {
                 toast({
                   title: '⚠️ Uyarı',
@@ -1719,10 +1719,10 @@ return (
             {gameMode === 'tournament' ? 'Turnuva Maçı' : 'Çıkış'}
           </Button>
 
-          {/* Orta kısım - Timer veya hedef */}
+          {/* Orta kısım - Timer veya hedef + Turnuva bilgisi */}
           {gameType === 'timed' ? (
             <div className="flex flex-col items-center space-y-2">
-              {/* Turnuva bilgisi ekle */}
+              {/* 🏆 TURNUVA BİLGİSİ EKLENDİ */}
               {gameMode === 'tournament' && tournamentMatch && (
                 <div className="text-xs text-yellow-600 font-medium mb-1">
                   {tournamentMatch.round === 1 ? 'Çeyrek Final' :
@@ -1755,7 +1755,7 @@ return (
             </div>
           ) : (
             <div className="flex flex-col items-center space-y-1">
-              {/* Turnuva bilgisi ekle */}
+              {/* 🏆 TURNUVA BİLGİSİ EKLENDİ */}
               {gameMode === 'tournament' && tournamentMatch && (
                 <div className="text-xs text-yellow-600 font-medium">
                   {tournamentMatch.round === 1 ? 'Çeyrek Final' :
@@ -1771,7 +1771,7 @@ return (
             </div>
           )}
 
-          {/* Sağ taraf - Boş bırak veya rakip bilgisi */}
+          {/* Sağ taraf - Rakip bilgisi */}
           <div className="w-16 text-right">
             {gameMode === 'tournament' && (
               <div className="text-xs text-muted-foreground">
@@ -1780,9 +1780,9 @@ return (
             )}
           </div>
         </div>
-        {/* 🎯 HEADER KISMI BİTİŞ */}
+        {/* Header bitiş */}
 
-        {/* Turnuva uyarı kartı - SCORES'TAN ÖNCE EKLE */}
+        {/* 🏆 TURNUVA UYARI KARTI EKLENDİ */}
         {gameMode === 'tournament' && (
           <div className="mb-4">
             <Card className="border-yellow-200 bg-yellow-50">
