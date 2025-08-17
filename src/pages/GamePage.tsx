@@ -1716,19 +1716,22 @@ const createFireworksEffect = () => {
                   const selectionOrder = selectedLetters.findIndex(s => s.row === rowIndex && s.col === colIndex);
                   return (
                     <Button
-                      key={`${rowIndex}-${colIndex}`}
-                      className={`letter-button h-12 text-lg font-bold relative transition-all duration-150 ${
-                        isSelected ? 'selected' : ''
-                      } ${
-                        isHighlighted ? 'letter-glow-highlight' : ''
-                      }`}
-                      onMouseDown={(e) => handleLetterMouse(letter, rowIndex, colIndex, e)}
-                      onTouchStart={(e) => handleLetterTouch(letter, rowIndex, colIndex, e)}
-                      style={{ 
-                      touchAction: 'manipulation',
-                      userSelect: 'none',
-                      WebkitTapHighlightColor: 'transparent'
-                    }}
+  key={`${rowIndex}-${colIndex}`}
+  className={`letter-button h-12 text-lg font-bold relative transition-all duration-150 ${
+    isSelected ? 'selected' : ''
+  } ${
+    isHighlighted ? 'letter-glow-highlight' : ''
+  }`}
+  onClick={(e) => handleLetterMouse(letter, rowIndex, colIndex, e)}
+  onMouseDown={(e) => handleLetterMouse(letter, rowIndex, colIndex, e)}
+  onTouchStart={(e) => handleLetterTouch(letter, rowIndex, colIndex, e)}
+  style={{ 
+    /* touchAction: 'manipulation', ← BU SATIRI SİLDİK */
+    userSelect: 'none',
+    WebkitTapHighlightColor: 'transparent',
+    WebkitUserSelect: 'none',
+    MozUserSelect: 'none'
+  }}
 >
                       {letter}
                       {isSelected && selectionOrder >= 0 && (
