@@ -612,7 +612,7 @@ const MarketPage = () => {
 
           <CardContent className="relative z-10 p-4">
             <div className="flex items-start justify-between mb-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
+              <div className="p-2 bg-gradient-to-br from-primary/30 to-accent/30 rounded-lg backdrop-blur-sm group-hover:scale-110 transition-transform duration-300">
                 <item.icon className="w-5 h-5 text-white" />
               </div>
               <div className="text-right">
@@ -709,7 +709,7 @@ const MarketPage = () => {
         </div>
 
         {/* User Status */}
-        <Card>
+        <Card className="border-0 bg-gradient-to-r from-primary/20 to-accent/20 backdrop-blur-md border-primary/30">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
