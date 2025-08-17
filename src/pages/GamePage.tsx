@@ -2225,6 +2225,8 @@ return (
     <Send className="w-4 h-4 mr-2" />
     {isValidating ? 'Kontrol Ediliyor...' : 'Gönder'}
   </Button>
+    </div>
+  </div>
 </div>
 
     {/* Exit Confirmation Dialog */}
