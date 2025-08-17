@@ -697,11 +697,22 @@ All colors MUST be HSL.
   transition: all 0.2s ease;
   box-shadow: var(--shadow-card);
   color: hsl(var(--foreground));
+  cursor: pointer;
   touch-action: manipulation;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
-  cursor: pointer;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  min-height: 48px;
+  min-width: 48px;
+  @media (hover: none) and (pointer: coarse) {
+    &:hover {
+      transform: none;
+      box-shadow: var(--shadow-card);
+    }
+  }
 }
 
 .letter-button:hover {
@@ -715,10 +726,26 @@ All colors MUST be HSL.
   color: hsl(var(--primary-foreground));
   transform: scale(0.95);
 }
+@media (max-width: 768px) {
+  .letter-button {
+    min-height: 56px;
+    min-width: 56px;
+    padding: 8px;
+    font-size: 1.25rem;
+  }
+}
 
 .letter-button:active {
   transform: scale(0.95);
-  transition: transform 0.05s ease-out;
+  transition: transform 0.1s ease-out;
+  background: hsl(var(--game-primary) / 0.8);
+  border-color: hsl(var(--game-primary));
+}
+@media (hover: hover) and (pointer: fine) {
+  .letter-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px hsl(var(--game-primary) / 0.3);
+  }
 }
 
 /* Mobile dokunma alanını genişlet */
