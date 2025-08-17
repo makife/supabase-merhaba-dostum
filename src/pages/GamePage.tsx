@@ -231,7 +231,7 @@ const GamePage = ({
 
   // Oyun biti fonksiyonunu güncelle
   const handleGameEnd = () => {
-    const finalUserScore = score;
+    const finalUserScore = playerScore;
     const finalOpponentScore = opponentScore;
 
     // İstatistikleri güncelle
