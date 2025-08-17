@@ -177,6 +177,132 @@ const GamePage = ({
   const [matchmakingTimeout, setMatchmakingTimeout] = useState<NodeJS.Timeout | null>(null);
   const [timeoutCountdown, setTimeoutCountdown] = useState(30);
 
+
+  const handleTournamentGameEnd = (userScore: number, opponentScore: number) => {
+    if (!user || !tournamentMatch || !onGameComplete) return;
+
+    console.log('🏁 Turnuva maçı bitiyor:', { userScore, opponentScore });
+
+    // Kazananı belirle
+    const isUserWinner = userScore > opponentScore;
+    const winnerId = isUserWinner ? user.id : (
+      tournamentMatch.player1_id === user.id ? 
+      tournamentMatch.player2_id : 
+      tournamentMatch.player1_id
+    );
+
+    if (!winnerId) {
+      console.error('❌ Winner ID bulunamadı');
+      return;
+    }
+
+    // Skorları düzenle (kim player1, kim player2?)
+    const isUserPlayer1 = tournamentMatch.player1_id === user.id;
+    const player1Score = isUserPlayer1 ? userScore : opponentScore;
+    const player2Score = isUserPlayer1 ? opponentScore : userScore;
+
+    console.log('📊 Final skoru:', {
+      player1Score,
+      player2Score,
+      winnerId,
+      isUserWinner,
+      isUserPlayer1
+    });
+
+    // Parent component'e bildir
+    onGameComplete(winnerId, player1Score, player2Score);
+  };
+
+  // Oyun biti fonksiyonunu güncelle
+  const handleGameEnd = () => {
+    const finalUserScore = score;
+    const finalOpponentScore = opponentScore;
+
+    // İstatistikleri güncelle
+    updatePlayerStatistics(
+      user?.id || '',
+      finalUserScore,
+      words.map(w => ({ word: w.word, score: w.points })),
+      finalUserScore > finalOpponentScore
+    );
+
+    // Turnuva modundaysa özel işlem
+    if (gameMode === 'tournament' && tournamentMatch) {
+      handleTournamentGameEnd(finalUserScore, finalOpponentScore);
+      return; // Erken çık, UI değişikliği parent component yapacak
+    }
+
+    // Normal mod için mevcut kod devam eder...
+    setGameEnded(true);
+    setShowResults(true);
+  };
+
+  useEffect(() => {
+    if (gameMode === 'tournament' && !tournamentMatch) {
+      console.error('❌ Turnuva modu ama maç bilgisi yok!');
+      return;
+    }
+
+    // Turnuva modunda AI opponent ekle
+    if (gameMode === 'tournament' && tournamentMatch) {
+      const opponentId = tournamentMatch.player1_id === user?.id ? 
+        tournamentMatch.player2_id : 
+        tournamentMatch.player1_id;
+      
+      // Eğer opponent bir bot ise veya null ise AI aktif et
+      if (!opponentId || opponentId.startsWith('bot_')) {
+        setIsAIOpponent(true);
+        setOpponentName('Turnuva Botu');
+      } else {
+        setIsAIOpponent(false);
+        setOpponentName('Turnuva Rakibi');
+      }
+
+      // Game type'ı ayarla
+      if (propGameType) {
+        setGameType(propGameType);
+        if (propGameType === 'timed') {
+          setTimeLimit(120); // 2 dakika
+          setTargetScore(0);
+        } else {
+          setTargetScore(500);
+          setTimeLimit(0);
+        }
+      }
+    }
+  }, [gameMode, tournamentMatch, propGameType, user?.id]);
+
+  // Rakip ismini göster - turnuva için
+  const getOpponentDisplayName = () => {
+    if (gameMode === 'tournament' && tournamentMatch) {
+      const opponentId = tournamentMatch.player1_id === user?.id ? 
+        tournamentMatch.player2_id : 
+        tournamentMatch.player1_id;
+      
+      if (!opponentId) return 'Turnuva Botu';
+      if (opponentId.startsWith('bot_')) return 'Turnuva Botu';
+      return opponentName || 'Turnuva Rakibi';
+    }
+    
+    return opponentName || 'AI Rakip';
+  };
+
+  // Turnuva modunda geri dönüş engelle
+  const handleBackToMenu = () => {
+    if (gameMode === 'tournament') {
+      toast({
+        title: '⚠️ Uyarı',
+        description: 'Turnuva maçından çıkamazsınız! Maçı tamamlamanız gerekiyor.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    // Normal modda ana menüye dön
+    navigate('/');
+  };
+
+
   // JOKER FONKSİYONLARI
 
   // 1. Değiştir Jokeri - 5 harf değiştir (3 sesli, 2 sessiz)
@@ -1532,34 +1658,63 @@ const createFireworksEffect = () => {
   }
 
   const opponent = getOpponentInfo();
-  return (
-    <>
+return (
+  <>
     <div className="min-h-screen bg-gradient-to-br from-background to-muted relative overflow-hidden"
-       style={{ 
-         paddingTop: 'env(safe-area-inset-top, 8px)', 
-         paddingBottom: 'env(safe-area-inset-bottom, 8px)',
-         paddingLeft: 'env(safe-area-inset-left, 4px)',
-         paddingRight: 'env(safe-area-inset-right, 4px)'
-       }}>
+         style={{ 
+           paddingTop: 'env(safe-area-inset-top, 8px)', 
+           paddingBottom: 'env(safe-area-inset-bottom, 8px)',
+           paddingLeft: 'env(safe-area-inset-left, 4px)',
+           paddingRight: 'env(safe-area-inset-right, 4px)'
+         }}>
       <div className="h-full flex flex-col px-2">
-        {/* Header */}
+        
+        {/* 🎯 BU HEADER KISMI DEĞİŞTİRİLECEK */}
         <div className="flex items-center justify-between py-2 shrink-0">
-          <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-8" onClick={() => {
-            if (gameMode === 'random-match' && !gameEnded) {
-              setShowExitDialog(true);
-            } else if (gameMode === 'private-room' && !gameEnded) {
-              if (confirm('Oyundan çıkmak istediğinizde arkadaşınız tek kalacak. Emin misiniz?')) {
+          {/* Sol taraf - Geri butonu */}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="text-xs px-2 py-1 h-8" 
+            onClick={() => {
+              // 🔥 BU KISMI DEĞİŞTİR
+              if (gameMode === 'tournament') {
+                toast({
+                  title: '⚠️ Uyarı',
+                  description: 'Turnuva maçından çıkamazsınız! Maçı tamamlamanız gerekiyor.',
+                  variant: 'destructive',
+                });
+                return;
+              }
+              
+              if (gameMode === 'random-match' && !gameEnded) {
+                setShowExitDialog(true);
+              } else if (gameMode === 'private-room' && !gameEnded) {
+                if (confirm('Oyundan çıkmak istediğinizde arkadaşınız tek kalacak. Emin misiniz?')) {
+                  navigate('/');
+                }
+              } else {
                 navigate('/');
               }
-            } else {
-              navigate('/');
-            }
-          }}>
+            }}
+            disabled={gameMode === 'tournament'} // Turnuvada disable et
+          >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Çıkış
+            {gameMode === 'tournament' ? 'Turnuva Maçı' : 'Çıkış'}
           </Button>
+
+          {/* Orta kısım - Timer veya hedef */}
           {gameType === 'timed' ? (
             <div className="flex flex-col items-center space-y-2">
+              {/* Turnuva bilgisi ekle */}
+              {gameMode === 'tournament' && tournamentMatch && (
+                <div className="text-xs text-yellow-600 font-medium mb-1">
+                  {tournamentMatch.round === 1 ? 'Çeyrek Final' :
+                   tournamentMatch.round === 2 ? 'Yarı Final' : 'Final'} - 
+                  Maç {tournamentMatch.match_number}
+                </div>
+              )}
+              
               <div className={`flex items-center space-x-2 transition-all duration-300 ${
                 timeLeft <= 15 ? 'animate-pulse text-red-500' : 'text-foreground'
               }`}>
@@ -1583,11 +1738,49 @@ const createFireworksEffect = () => {
               </div>
             </div>
           ) : (
-            <div className="flex items-center space-x-2">
-              <Target className="w-4 h-4" />
-              <span className="text-sm font-medium">500 Puana Kadar</span>
+            <div className="flex flex-col items-center space-y-1">
+              {/* Turnuva bilgisi ekle */}
+              {gameMode === 'tournament' && tournamentMatch && (
+                <div className="text-xs text-yellow-600 font-medium">
+                  {tournamentMatch.round === 1 ? 'Çeyrek Final' :
+                   tournamentMatch.round === 2 ? 'Yarı Final' : 'Final'} - 
+                  Maç {tournamentMatch.match_number}
+                </div>
+              )}
+              
+              <div className="flex items-center space-x-2">
+                <Target className="w-4 h-4" />
+                <span className="text-sm font-medium">500 Puana Kadar</span>
+              </div>
             </div>
           )}
+
+          {/* Sağ taraf - Boş bırak veya rakip bilgisi */}
+          <div className="w-16 text-right">
+            {gameMode === 'tournament' && (
+              <div className="text-xs text-muted-foreground">
+                vs {getOpponentDisplayName()}
+              </div>
+            )}
+          </div>
+        </div>
+        {/* 🎯 HEADER KISMI BİTİŞ */}
+
+        {/* Turnuva uyarı kartı - SCORES'TAN ÖNCE EKLE */}
+        {gameMode === 'tournament' && (
+          <div className="mb-4">
+            <Card className="border-yellow-200 bg-yellow-50">
+              <CardContent className="p-3">
+                <div className="flex items-center space-x-2">
+                  <Trophy className="w-4 h-4 text-yellow-600" />
+                  <span className="text-xs font-medium text-yellow-800">
+                    Turnuva maçı! Kazanırsan sonraki tura geçeceksin.
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
         </div>
 
         {/* Scores */}
