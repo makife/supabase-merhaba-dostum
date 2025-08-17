@@ -1606,21 +1606,21 @@ const createFireworksEffect = () => {
           <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
             {winner === 'player' && (
               <img 
-                src="/public/sevinc.gif" 
+                src="/sevinc.gif" 
                 alt="Sevinç" 
                 className="w-16 h-16 object-contain animate-bounce"
               />
             )}
             {winner === 'opponent' && (
               <img 
-                src="/public/uzgun.gif" 
+                src="/uzgun.gif" 
                 alt="Üzgün" 
                 className="w-16 h-16 object-contain"
               />
             )}
             {winner === 'tie' && (
               <img 
-                src="/public/sabit.gif" 
+                src="/sabit.gif" 
                 alt="Beraberlik" 
                 className="w-16 h-16 object-contain"
               />
