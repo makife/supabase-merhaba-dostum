@@ -137,36 +137,37 @@ const ProfilePage = () => {
         
           if (newData.total_score !== undefined) {
             const levelData = calculateLevel(newData.total_score);
-            setProfileData(prev => ({
-              ...prev,
-              totalScore: newData.total_score,
-              totalGames: newData.total_games || prev.totalGames,
-              wins: newData.wins || prev.wins,
-              losses: newData.losses || prev.losses,
-              longestWord: newData.longest_word || prev.longestWord,
-              currentStreak: newData.win_streak || prev.currentStreak,
-              winRate: newData.total_games > 0 ? Math.round(((newData.wins || 0) / newData.total_games) * 100) : 0,
-              level: levelData.level,
-              experience: levelData.experience,
-              nextLevelExp: levelData.nextLevelExp,
-              dailyGames: newData.daily_games || prev.dailyGames,
-              dailyWins: newData.wins || prev.dailyWins,
-              bestStreak: newData.win_streak || prev.bestStreak,
-              averageScore: newData.average_word_length || prev.averageScore,
-              totalWords: newData.total_words_created || prev.totalWords,
-              favoriteLetter: prev.favoriteLetter,
-              playTime: prev.playTime,
-            }));
-          
-            // 🎯 ÖNEMLİ: Level up kontrolü
-            if (levelData.level > prev.level) {
-              toast.success(`🎉 Seviye ${levelData.level}'e ulaştınız!`, {
+            setProfileData(prev => {
+             // Level kontrolünü ekle
+             if (levelData.level > prev.level) {
+               toast.success(`🎉 Seviye ${levelData.level}'e ulaştınız!`, {
                 duration: 5000,
-              });
-            }
+             });
           }
-        }
-      )
+    
+    // Return ekle
+    return {
+      ...prev,
+      totalScore: newData.total_score,
+      totalGames: newData.total_games || prev.totalGames,
+      wins: newData.wins || prev.wins,
+      losses: newData.losses || prev.losses,
+      longestWord: newData.longest_word || prev.longestWord,
+      currentStreak: newData.win_streak || prev.currentStreak,
+      winRate: newData.total_games > 0 ? Math.round(((newData.wins || 0) / newData.total_games) * 100) : 0,
+      level: levelData.level,
+      experience: levelData.experience,
+      nextLevelExp: levelData.nextLevelExp,
+      dailyGames: newData.daily_games || prev.dailyGames,
+      dailyWins: newData.wins || prev.dailyWins,
+      bestStreak: newData.win_streak || prev.bestStreak,
+      averageScore: newData.average_word_length || prev.averageScore,
+      totalWords: newData.total_words_created || prev.totalWords,
+      favoriteLetter: prev.favoriteLetter,
+      playTime: prev.playTime,
+    };
+  });
+}
       // 🏆 YENİ: Rozet güncellemeleri için listener ekle
       .on(
         'postgres_changes',
