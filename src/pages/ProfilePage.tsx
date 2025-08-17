@@ -144,8 +144,7 @@ const ProfilePage = () => {
                 duration: 5000,
              });
           }
-        }
-      )
+
     
     // Return ekle
     return {
@@ -167,9 +166,10 @@ const ProfilePage = () => {
       totalWords: newData.total_words_created || prev.totalWords,
       favoriteLetter: prev.favoriteLetter,
       playTime: prev.playTime,
-    };
-  });
-}
+    });
+          }
+        }
+      )
       // 🏆 YENİ: Rozet güncellemeleri için listener ekle
       .on(
         'postgres_changes',
