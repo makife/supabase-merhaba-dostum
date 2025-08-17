@@ -1797,7 +1797,7 @@ return (
             </Card>
           </div>
         )}
-        </div>
+
 
         {/* Scores */}
         <div className="grid grid-cols-2 gap-4">
@@ -1977,8 +1977,7 @@ return (
         </div>
       </div>
     </div>
-  </div>
-  </>
+
     {/* Exit Confirmation Dialog */}
     <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
       <AlertDialogContent className="max-w-sm mx-auto">
