@@ -95,7 +95,7 @@ const calculateTimeUntilNextCredit = () => {
   
   if (now >= nextRefresh) {
     // Otomatik 1 kredi ekle
-    refreshCredits();
+    // refreshCredits();
     setTimeUntilNextCredit('');
     return;
   }
