@@ -2032,12 +2032,25 @@ return (
     </div>
     <div className="grid grid-cols-3 gap-1">
       <Button
-        variant={selectedJoker === 'degistir' ? 'default' : 'outline'}
-        size="sm"
-        className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-green-100 to-emerald-200 hover:from-green-200 hover:to-emerald-300 border-green-300"
-        onClick={useDegisTirJoker}
-        disabled={jokers.degistir <= 0 || isJokerActive}
-      >
+    variant={selectedJoker === 'degistir' ? 'default' : 'outline'}
+    size="sm"
+    className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-green-100 to-emerald-200 hover:from-green-200 hover:to-emerald-300 border-green-300"
+    onTouchStart={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      useDegisTirJoker();
+    }}
+    onClick={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      useDegisTirJoker();
+    }}
+    disabled={jokers.degistir <= 0 || isJokerActive}
+    style={{
+      touchAction: 'manipulation',
+      WebkitTapHighlightColor: 'transparent'
+    }}
+  >
         <Shuffle className="w-3 h-3 mb-0.5" />
         <span className="text-xs">Değiştir</span>
         <Badge variant="secondary" className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center">
@@ -2046,12 +2059,26 @@ return (
       </Button>
 
       <Button
-        variant={selectedJoker === 'fisilida' ? 'default' : 'outline'}
-        size="sm"
-        className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-blue-100 to-cyan-200 hover:from-blue-200 hover:to-cyan-300 border-blue-300"
-        onClick={useFisildaJoker}
-        disabled={jokers.fisilida <= 0 || isJokerActive}
-      >
+  variant={selectedJoker === 'fisilida' ? 'default' : 'outline'}
+  size="sm"
+  className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-blue-100 to-cyan-200 hover:from-blue-200 hover:to-cyan-300 border-blue-300"
+  onTouchStart={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    useFisildaJoker();
+  }}
+  onClick={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    useFisildaJoker();
+  }}
+  disabled={jokers.fisilida <= 0 || isJokerActive}
+  style={{
+    touchAction: 'manipulation',
+    WebkitTapHighlightColor: 'transparent'
+  }}
+>
+
         <Lightbulb className="w-4 h-4 mb-1" />
         <span className="text-xs">Fısılda</span>
         <Badge variant="secondary" className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center">
@@ -2060,12 +2087,25 @@ return (
       </Button>
 
       <Button
-        variant={selectedJoker === 'senYaz' ? 'default' : 'outline'}
-        size="sm"
-        className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-purple-100 to-violet-200 hover:from-purple-200 hover:to-violet-300 border-purple-300"
-        onClick={useSenYazJoker}
-        disabled={jokers.senYaz <= 0 || isJokerActive}
-      >
+  variant={selectedJoker === 'senYaz' ? 'default' : 'outline'}
+  size="sm"
+  className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-purple-100 to-violet-200 hover:from-purple-200 hover:to-violet-300 border-purple-300"
+  onTouchStart={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    useSenYazJoker();
+  }}
+  onClick={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    useSenYazJoker();
+  }}
+  disabled={jokers.senYaz <= 0 || isJokerActive}
+  style={{
+    touchAction: 'manipulation',
+    WebkitTapHighlightColor: 'transparent'
+  }}
+>
         <PenTool className="w-4 h-4 mb-1" />
         <span className="text-xs">Sen Yaz</span>
         <Badge variant="secondary" className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center">
@@ -2096,62 +2136,92 @@ return (
 
         {/* Game Grid */}
         <Card className="game-grid border-0 mb-2 flex-1">
-          <CardContent className="p-3 h-full flex items-center justify-center">
-            <div className="grid grid-cols-4 gap-2 w-full max-w-xs">
-              {gameGrid.map((row, rowIndex) =>
-                row.map((letter, colIndex) => {
-                  const isSelected = selectedLetters.some(s => s.row === rowIndex && s.col === colIndex);
-                  const isHighlighted = highlightedLetters.some(h => h.row === rowIndex && h.col === colIndex);
-                  const selectionOrder = selectedLetters.findIndex(s => s.row === rowIndex && s.col === colIndex);
-                  return (
-                    <Button
-                      key={`${rowIndex}-${colIndex}`}
-                      className={`letter-button h-12 text-lg font-bold relative transition-all duration-300 ${
-                        isSelected ? 'selected' : ''
-                      } ${
-                        isHighlighted ? 'letter-glow-highlight' : ''
-                      }`}
-                      onClick={() => handleLetterClick(letter, rowIndex, colIndex)} // ← Sadece onClick
->
-                      {letter}
-                      {isSelected && selectionOrder >= 0 && (
-                        <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold border-2 border-white">
-                          {selectionOrder + 1}
-                        </span>
-                      )}
-                    </Button>
-                  );
-                })
+  <CardContent className="p-3 h-full flex items-center justify-center">
+    <div className="grid grid-cols-4 gap-2 w-full max-w-xs">
+      {gameGrid.map((row, rowIndex) =>
+        row.map((letter, colIndex) => {
+          const isSelected = selectedLetters.some(s => s.row === rowIndex && s.col === colIndex);
+          const isHighlighted = highlightedLetters.some(h => h.row === rowIndex && h.col === colIndex);
+          const selectionOrder = selectedLetters.findIndex(s => s.row === rowIndex && s.col === colIndex);
+          return (
+            <Button
+              key={`${rowIndex}-${colIndex}`}
+              className={`letter-button h-12 text-lg font-bold relative transition-all duration-300 ${
+                isSelected ? 'selected' : ''
+              } ${
+                isHighlighted ? 'letter-glow-highlight' : ''
+              }`}
+              onTouchStart={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleLetterClick(letter, rowIndex, colIndex);
+              }}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleLetterClick(letter, rowIndex, colIndex);
+              }}
+              style={{
+                touchAction: 'manipulation',
+                WebkitTapHighlightColor: 'transparent',
+                WebkitTouchCallout: 'none',
+                WebkitUserSelect: 'none',
+                userSelect: 'none'
+              }}
+            >
+              {letter}
+              {isSelected && selectionOrder >= 0 && (
+                <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold border-2 border-white">
+                  {selectionOrder + 1}
+                </span>
               )}
-            </div>
-          </CardContent>
-        </Card>
+            </Button>
+          );
+        })
+      )}
+    </div>
+  </CardContent>
+</Card>
 
         {/* Action Buttons */}
         <div className="grid grid-cols-2 gap-2 shrink-0">
-          <Button 
-            variant="outline" 
-            onClick={clearWord}
-            className="h-12"
-            disabled={selectedLetters.length === 0 || isJokerActive}
-          >
-            <Trash2 className="w-4 h-4 mr-2" />
-            Sil
-          </Button>
-          <Button 
-            onClick={() => {
-              playSound('buttonClick');
-              submitWord();
-            }}
-            className="h-12"
-            disabled={currentWord.length < 3 || isValidating || isJokerActive}
-          >
-            <Send className="w-4 h-4 mr-2" />
-            {isValidating ? 'Kontrol Ediliyor...' : 'Gönder'}
-          </Button>
-        </div>
-      </div>
-    </div>
+  <Button 
+    variant="outline" 
+    onTouchStart={(e) => {
+      e.preventDefault();
+      clearWord();
+    }}
+    onClick={(e) => {
+      e.preventDefault();
+      clearWord();
+    }}
+    className="h-12"
+    disabled={selectedLetters.length === 0 || isJokerActive}
+    style={{ touchAction: 'manipulation' }}
+  >
+    <Trash2 className="w-4 h-4 mr-2" />
+    Sil
+  </Button>
+  
+  <Button 
+    onTouchStart={(e) => {
+      e.preventDefault();
+      playSound('buttonClick');
+      submitWord();
+    }}
+    onClick={(e) => {
+      e.preventDefault();
+      playSound('buttonClick');
+      submitWord();
+    }}
+    className="h-12"
+    disabled={currentWord.length < 3 || isValidating || isJokerActive}
+    style={{ touchAction: 'manipulation' }}
+  >
+    <Send className="w-4 h-4 mr-2" />
+    {isValidating ? 'Kontrol Ediliyor...' : 'Gönder'}
+  </Button>
+</div>
 
     {/* Exit Confirmation Dialog */}
     <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
