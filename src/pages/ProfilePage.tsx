@@ -134,7 +134,7 @@ const ProfilePage = () => {
         (payload) => {
           console.log('📊 Profile updated:', payload.new);
           const newData = payload.new;
-          
+        
           if (newData.total_score !== undefined) {
             const levelData = calculateLevel(newData.total_score);
             setProfileData(prev => ({
@@ -150,14 +150,50 @@ const ProfilePage = () => {
               experience: levelData.experience,
               nextLevelExp: levelData.nextLevelExp,
               dailyGames: newData.daily_games || prev.dailyGames,
-              dailyWins: newData.wins || prev.dailyWins,  // Use wins instead of daily_wins
-              bestStreak: newData.win_streak || prev.bestStreak,  // Use win_streak instead of best_streak
-              averageScore: newData.average_word_length || prev.averageScore,  // Use average_word_length instead of average_score
-              totalWords: newData.total_words_created || prev.totalWords,  // Use total_words_created instead of total_words
-              favoriteLetter: prev.favoriteLetter,  // Keep previous value since field doesn't exist
-              playTime: prev.playTime,  // Keep previous value since field doesn't exist
+              dailyWins: newData.wins || prev.dailyWins,
+              bestStreak: newData.win_streak || prev.bestStreak,
+              averageScore: newData.average_word_length || prev.averageScore,
+              totalWords: newData.total_words_created || prev.totalWords,
+              favoriteLetter: prev.favoriteLetter,
+              playTime: prev.playTime,
             }));
+          
+            // 🎯 ÖNEMLİ: Level up kontrolü
+            if (levelData.level > prev.level) {
+              toast.success(`🎉 Seviye ${levelData.level}'e ulaştınız!`, {
+                duration: 5000,
+              });
+            }
           }
+        }
+      )
+      // 🏆 YENİ: Rozet güncellemeleri için listener ekle
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'user_badges',
+          filter: `user_id=eq.${user.id}`
+        },
+        async (payload) => {
+          console.log('🏆 New badge earned:', payload.new);
+        
+          // Yeni rozet bilgisini al
+          const { data: badgeData } = await supabase
+            .from('badges')
+            .select('name, icon')
+            .eq('id', payload.new.badge_id)
+            .single();
+        
+          if (badgeData) {
+            toast.success(`🏆 Yeni Rozet: ${badgeData.name} ${badgeData.icon}`, {
+              duration: 5000,
+            });
+          }
+        
+          // Rozet listesini yeniden yükle
+          fetchBadges();
         }
       )
       .subscribe();
@@ -235,6 +271,8 @@ const ProfilePage = () => {
     earned_at?: string;
   }>>([]);
 
+  const subscriptionInfo = getSubscriptionInfo();
+
   // Fetch badges from database
   useEffect(() => {
     const fetchBadges = async () => {
@@ -283,7 +321,7 @@ const ProfilePage = () => {
     fetchBadges();
   }, [user]);
 
-  const subscriptionInfo = getSubscriptionInfo();
+  
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
