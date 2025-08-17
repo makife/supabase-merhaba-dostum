@@ -142,13 +142,10 @@ const TournamentPage = () => {
           current_round: 1,
           max_participants: 8,
           game_type: gameType
-          timeout_duration: 900, // 15 dakika (300 → 900)
-          expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString() // 15 dakika
         })
         .select()
         .single();
-  };
-
+      
       if (error) throw error;
 
       // Join the tournament
