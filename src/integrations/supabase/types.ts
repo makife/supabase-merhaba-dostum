@@ -564,6 +564,7 @@ export type Database = {
           round: number
           status: string | null
           tournament_id: string | null
+          updated_at: string | null
           winner_id: string | null
         }
         Insert: {
@@ -576,6 +577,7 @@ export type Database = {
           round: number
           status?: string | null
           tournament_id?: string | null
+          updated_at?: string | null
           winner_id?: string | null
         }
         Update: {
@@ -588,6 +590,7 @@ export type Database = {
           round?: number
           status?: string | null
           tournament_id?: string | null
+          updated_at?: string | null
           winner_id?: string | null
         }
         Relationships: [
