@@ -144,6 +144,8 @@ const ProfilePage = () => {
                 duration: 5000,
              });
           }
+        }
+      )
     
     // Return ekle
     return {
