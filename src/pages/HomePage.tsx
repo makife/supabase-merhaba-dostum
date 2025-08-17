@@ -93,7 +93,9 @@ const calculateTimeUntilNextCredit = () => {
   const nextRefresh = new Date(lastRefresh.getTime() + (15 * 60 * 1000)); // 15 dakika ekle
   
   if (now >= nextRefresh) {
-    setTimeUntilNextCredit('Hemen!');
+    // Otomatik kredi yenileme yap
+    refreshCredits();
+    setTimeUntilNextCredit('');
     return;
   }
 
