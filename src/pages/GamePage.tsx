@@ -1717,20 +1717,15 @@ const createFireworksEffect = () => {
                   return (
                     <Button
   key={`${rowIndex}-${colIndex}`}
-  className={`letter-button h-12 text-lg font-bold relative transition-all duration-150 ${
+  className={`letter-button h-12 text-lg font-bold relative transition-all duration-300 ${
     isSelected ? 'selected' : ''
   } ${
     isHighlighted ? 'letter-glow-highlight' : ''
   }`}
-  onClick={(e) => handleLetterMouse(letter, rowIndex, colIndex, e)}
-  onMouseDown={(e) => handleLetterMouse(letter, rowIndex, colIndex, e)}
-  onTouchStart={(e) => handleLetterTouch(letter, rowIndex, colIndex, e)}
+  onClick={() => handleLetterClick(letter, rowIndex, colIndex)}  // ← Sadece onClick
   style={{ 
-    /* touchAction: 'manipulation', ← BU SATIRI SİLDİK */
     userSelect: 'none',
-    WebkitTapHighlightColor: 'transparent',
-    WebkitUserSelect: 'none',
-    MozUserSelect: 'none'
+    WebkitTapHighlightColor: 'transparent'
   }}
 >
                       {letter}
