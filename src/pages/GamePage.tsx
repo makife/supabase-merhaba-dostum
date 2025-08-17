@@ -302,7 +302,6 @@ const GamePage = ({
         tournamentMatch.player2_id : 
         tournamentMatch.player1_id;
     
-      // Eğer opponent bir bot ise veya null ise AI aktif et
       if (!opponentId || opponentId.startsWith('bot_')) {
         setIsAIOpponent(true);
         setOpponentName('Turnuva Botu');
@@ -313,13 +312,12 @@ const GamePage = ({
 
       // Game type'ı ayarla
       if (propGameType) {
-        // gameType zaten const olarak tanımlı, setGameType'a gerek yok
         if (propGameType === 'timed') {
-          setTimeLimit(120); // 2 dakika
+          setTimeLeft(120); // setTimeLimit → setTimeLeft
           setTargetScore(0);
         } else {
           setTargetScore(500);
-          setTimeLimit(0);
+          setTimeLeft(0); // setTimeLimit → setTimeLeft
         }
       }
     } else {
