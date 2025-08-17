@@ -17,6 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import PrivateRoomModal from '@/components/PrivateRoomModal';
 import MatchmakingModal from '@/components/MatchmakingModal';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { toast } from 'sonner';
 import {
   Bot,
   Users,
@@ -93,7 +94,7 @@ const calculateTimeUntilNextCredit = () => {
   const nextRefresh = new Date(lastRefresh.getTime() + (15 * 60 * 1000)); // 15 dakika ekle
   
   if (now >= nextRefresh) {
-    // Otomatik kredi yenileme yap
+    // Otomatik 1 kredi ekle
     refreshCredits();
     setTimeUntilNextCredit('');
     return;
@@ -105,6 +106,35 @@ const calculateTimeUntilNextCredit = () => {
   
   setTimeUntilNextCredit(`${minutes}:${seconds.toString().padStart(2, '0')}`);
 };
+
+  const refreshCredits = async () => {
+  if (!user || isPremium) return;
+  
+  const currentCredits = profile?.game_credits || 0;
+  
+    // Eğer zaten 5 kredi varsa hiçbir şey yapma
+    if (currentCredits >= 5) return;
+  
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          game_credits: currentCredits + 1, // Sadece 1 kredi ekle
+          last_credit_refresh: new Date().toISOString() 
+        })
+        .eq('id', user.id);
+      
+      if (!error) {
+        toast.success(`🎮 +1 Kredi eklendi! (${currentCredits + 1}/5)`, {
+          description: `${5 - (currentCredits + 1)} kredi daha kazanabilirsin`,
+          duration: 3000,
+        });
+        playSound('buttonClick');
+      }
+    } catch (error) {
+      console.error('Kredi yenileme hatası:', error);
+    }
+  };
   
   // Timer effect for credit countdown
 useEffect(() => {
@@ -345,9 +375,9 @@ useEffect(() => {
       <span className="text-xs text-muted-foreground">Oyun Hakları</span>
       <div className="flex items-center gap-2">
         <span className="text-xs font-medium text-foreground">{profile?.game_credits || 0}/5</span>
-        {timeUntilNextCredit && (
+        {timeUntilNextCredit && (profile?.game_credits < 5) && (
           <span className="text-xs text-orange-500 bg-orange-100 px-2 py-1 rounded-full">
-            {timeUntilNextCredit}
+            +1 {timeUntilNextCredit}
           </span>
         )}
       </div>
@@ -355,24 +385,24 @@ useEffect(() => {
     <div className="flex gap-1 h-2 w-full">
       {Array.from({ length: 5 }, (_, i) => {
         const isActive = i < (profile?.game_credits || 0);
-        let segmentColor = 'bg-black/20'; // Varsayılan renk (boş)
+        let segmentColor = 'bg-black/20';
         
         if (isActive) {
           switch (i + 1) {
             case 1:
-              segmentColor = 'bg-red-500'; // 1 hak - kırmızı
+              segmentColor = 'bg-red-500';
               break;
             case 2:
-              segmentColor = 'bg-red-400'; // 2 hak - açık kırmızı
+              segmentColor = 'bg-red-400';
               break;
             case 3:
-              segmentColor = 'bg-orange-500'; // 3 hak - turuncu
+              segmentColor = 'bg-orange-500';
               break;
             case 4:
-              segmentColor = 'bg-green-400'; // 4 hak - açık yeşil
+              segmentColor = 'bg-green-400';
               break;
             case 5:
-              segmentColor = 'bg-green-500'; // 5 hak - yeşil
+              segmentColor = 'bg-green-500';
               break;
             default:
               segmentColor = 'bg-black/20';
@@ -387,6 +417,15 @@ useEffect(() => {
         );
       })}
     </div>
+    
+    {/* Ek bilgi - krediler 5'ten az ise */}
+    {(profile?.game_credits < 5) && timeUntilNextCredit && (
+      <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded-lg">
+        <p className="text-xs text-orange-700 text-center">
+          💡 Sonraki kredi {timeUntilNextCredit} sonra gelecek
+        </p>
+      </div>
+    )}
   </div>
 )}
               
