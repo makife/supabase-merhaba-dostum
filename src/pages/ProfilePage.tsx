@@ -271,7 +271,7 @@ const ProfilePage = () => {
     earned_at?: string;
   }>>([]);
 
-  const subscriptionInfo = getSubscriptionInfo();
+  
 
   // Fetch badges from database
   useEffect(() => {
@@ -321,7 +321,7 @@ const ProfilePage = () => {
     fetchBadges();
   }, [user]);
 
-  
+  const subscriptionInfo = getSubscriptionInfo();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
