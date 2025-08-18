@@ -13,14 +13,10 @@ import {
   ArrowLeft,
   Trophy,
   Target,
-  Clock,
   Zap,
   Crown,
   Edit,
-  Calendar,
-  Star,
-  TrendingUp,
-  FileText
+  TrendingUp
 } from 'lucide-react';
 
 const ProfilePage = () => {
@@ -145,18 +141,12 @@ const ProfilePage = () => {
           winRate: data.total_games > 0 ? Math.round(((data.wins || 0) / data.total_games) * 100) : 0,
           longestWord: data.longest_word || '',
           currentStreak: data.win_streak || 0,
-          fastestWord: data.fastest_word_time ? `${data.fastest_word_time}s` : '0s',
           level: levelData.level,
           experience: levelData.experience,
           nextLevelExp: levelData.nextLevelExp,
           premiumUntil: data.premium_until,
-          dailyGames: data.daily_games || 0,
-          dailyWins: data.daily_wins || 0,
-          bestStreak: data.best_streak || data.win_streak || 0,
           averageScore: data.average_score || 0,
           totalWords: data.total_words || data.total_words_created || 0,
-          favoriteLetter: data.favorite_letter || '',
-          playTime: data.total_play_time || 0
         }));
       }
     };
@@ -345,18 +335,12 @@ const ProfilePage = () => {
           winRate: data.total_games > 0 ? Math.round(((data.wins || 0) / data.total_games) * 100) : 0,
           longestWord: data.longest_word || '',
           currentStreak: data.win_streak || 0,
-          fastestWord: data.fastest_word_time ? `${data.fastest_word_time}s` : '0s',
           level: levelData.level,
           experience: levelData.experience,
           nextLevelExp: levelData.nextLevelExp,
           premiumUntil: data.premium_until,
-          dailyGames: data.daily_games || 0,
-          dailyWins: data.daily_wins || 0,
-          bestStreak: data.best_streak || data.win_streak || 0,
           averageScore: data.average_score || 0,
           totalWords: data.total_words || data.total_words_created || 0,
-          favoriteLetter: data.favorite_letter || '',
-          playTime: data.total_play_time || 0,
         }));
       }
     
@@ -509,31 +493,9 @@ const ProfilePage = () => {
           </Card>
           <Card>
             <CardContent className="p-4 text-center">
-              <Clock className="w-8 h-8 mx-auto mb-2 text-orange-500" />
-              <p className="text-2xl font-bold">{profileData.fastestWord}</p>
-              <p className="text-sm text-muted-foreground">En Hızlı</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
               <Zap className="w-8 h-8 mx-auto mb-2 text-purple-500" />
               <p className="text-2xl font-bold">{profileData.currentStreak}</p>
               <p className="text-sm text-muted-foreground">Seri</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <Calendar className="w-8 h-8 mx-auto mb-2 text-indigo-500" />
-              <p className="text-2xl font-bold">{profileData.dailyGames}</p>
-              <p className="text-sm text-muted-foreground">Günlük</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4 text-center">
-              <Star className="w-8 h-8 mx-auto mb-2 text-pink-500" />
-              <p className="text-2xl font-bold">{profileData.bestStreak}</p>
-              <p className="text-sm text-muted-foreground">En İyi Seri</p>
             </CardContent>
           </Card>
           
@@ -542,14 +504,6 @@ const ProfilePage = () => {
               <TrendingUp className="w-8 h-8 mx-auto mb-2 text-cyan-500" />
               <p className="text-2xl font-bold">{Math.round(profileData.averageScore)}</p>
               <p className="text-sm text-muted-foreground">Ort. Puan</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4 text-center">
-              <FileText className="w-8 h-8 mx-auto mb-2 text-emerald-500" />
-              <p className="text-2xl font-bold">{profileData.totalWords}</p>
-              <p className="text-sm text-muted-foreground">Toplam Kelime</p>
             </CardContent>
           </Card>
         </div>
@@ -620,24 +574,8 @@ const ProfilePage = () => {
               <span className="font-bold">{profileData.winRate}%</span>
             </div>
             <div className="flex justify-between">
-              <span>Günlük Kazanma:</span>
-              <span className="font-bold">{profileData.dailyWins}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>En İyi Seri:</span>
-              <span className="font-bold">{profileData.bestStreak}</span>
-            </div>
-            <div className="flex justify-between">
               <span>Ortalama Puan:</span>
               <span className="font-bold">{Math.round(profileData.averageScore)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Toplam Kelime:</span>
-              <span className="font-bold">{profileData.totalWords}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Favori Harf:</span>
-              <span className="font-bold">{profileData.favoriteLetter || 'Henüz yok'}</span>
             </div>
             <div className="flex justify-between">
               <span>Oyun Süresi:</span>
