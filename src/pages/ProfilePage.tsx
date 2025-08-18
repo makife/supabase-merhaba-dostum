@@ -14,11 +14,11 @@ import {
   Trophy,
   Target,
   Zap,
-  Calendar,
-  Clock,
   Crown,
   Edit,
-  TrendingUp
+  TrendingUp,
+  Calendar,
+  Clock
 } from 'lucide-react';
 
 const ProfilePage = () => {
