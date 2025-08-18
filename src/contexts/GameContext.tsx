@@ -689,27 +689,16 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   }, [currentRoom]);
 
 
-  // Update game statistics for a player
+  // Update game statistics for a player - NOW HANDLED BY DATABASE TRIGGERS
   const updatePlayerStatistics = useCallback(async (
     userId: string, 
     gameScore: number, 
     words: Array<{word: string, score: number}>, 
     isWinner: boolean = false
   ) => {
-    try {
-      console.log('📊 İstatistikler güncelleniyor:', { userId, gameScore, words: words.length, isWinner });
-      
-      await supabase.rpc('update_game_statistics', {
-        p_user_id: userId,
-        p_game_score: gameScore,
-        p_words: words,
-        p_is_winner: isWinner
-      });
-      
-      console.log('✅ İstatistikler güncellendi');
-    } catch (error) {
-      console.error('❌ İstatistik güncelleme hatası:', error);
-    }
+    // Statistics are now automatically handled by database triggers
+    // when game room status is updated to 'finished'
+    console.log('📊 Istatistikler artık database trigger ile otomatik güncelleniyor');
    }, []);
 
   // Check and award badges for a user
@@ -778,48 +767,101 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   if (!currentRoom) return;
 
   try {
-    console.log('🏁 Oyun bitiyor - istatistikler güncelleniyor:', currentRoom.id.slice(-8));
+    console.log('🏁 Oyun bitiyor - room güncelleniyor:', currentRoom.id.slice(-8));
     
-    // Update player statistics if provided
+    // Determine winner and add words to game_words table
+    let winnerId: string | null = null;
+    let player1Id: string | null = null;
+    let player2Id: string | null = null;
+    let player1Score = 0;
+    let player2Score = 0;
+    
     if (playerStats) {
-      await updatePlayerStatistics(
-        playerStats.userId,
-        playerStats.score,
-        playerStats.words,
-        playerStats.isWinner
-      );
-      
-      // Check for new badges after updating statistics
-      await checkBadges(playerStats.userId, playerStats.words.length);
+      if (participants.some(p => p.user_id === playerStats.userId)) {
+        player1Id = playerStats.userId;
+        player1Score = playerStats.score;
+        if (playerStats.isWinner) winnerId = playerStats.userId;
+        
+        // Add player's words to game_words table
+        for (const word of playerStats.words) {
+          await supabase
+            .from('game_words')
+            .insert({
+              room_id: currentRoom.id,
+              player_id: playerStats.userId,
+              word: word.word,
+              points: word.score
+            });
+        }
+      }
     }
     
-    // Update opponent statistics if provided
     if (opponentStats && !participants.find(p => p.user_id === opponentStats.userId && p.is_bot)) {
-      await updatePlayerStatistics(
-        opponentStats.userId,
-        opponentStats.score,
-        opponentStats.words,
-        opponentStats.isWinner
-      );
+      player2Id = opponentStats.userId;
+      player2Score = opponentStats.score;
+      if (opponentStats.isWinner) winnerId = opponentStats.userId;
       
-      // Check for new badges for opponent too
+      // Add opponent's words to game_words table
+      for (const word of opponentStats.words) {
+        await supabase
+          .from('game_words')
+          .insert({
+            room_id: currentRoom.id,
+            player_id: opponentStats.userId,
+            word: word.word,
+            points: word.score
+          });
+      }
+    }
+    
+    // Update room with final status and winner - THIS TRIGGERS THE DATABASE FUNCTION
+    await supabase
+      .from('game_rooms')
+      .update({
+        status: 'finished',
+        finished_at: new Date().toISOString(),
+        winner_id: winnerId,
+        player1_id: player1Id,
+        player2_id: player2Id,
+        player1_score: player1Score,
+        player2_score: player2Score
+      })
+      .eq('id', currentRoom.id);
+    
+    console.log('✅ Room updated with game completion - triggers will handle stats');
+    
+    // Wait a moment for triggers to process
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Check for new badges after database triggers complete
+    if (playerStats) {
+      await checkBadges(playerStats.userId, playerStats.words.length);
+    }
+    if (opponentStats && !participants.find(p => p.user_id === opponentStats.userId && p.is_bot)) {
       await checkBadges(opponentStats.userId, opponentStats.words.length);
     }
     
-    // Delete the room
-    await supabase
-      .from('game_rooms')
-      .delete()
-      .eq('id', currentRoom.id);
+    // Clean up room after a delay to allow triggers to complete
+    setTimeout(async () => {
+      try {
+        await supabase
+          .from('game_rooms')
+          .delete()
+          .eq('id', currentRoom.id);
+        console.log('✅ Room cleaned up after stats processing');
+      } catch (error) {
+        console.error('❌ Room cleanup error:', error);
+      }
+    }, 2000);
     
     setCurrentRoom(null);
     setParticipants([]);
-    console.log('✅ Oyun bitti, oda silindi, istatistikler güncellendi');
+    console.log('✅ Oyun bitti, istatistikler database trigger ile güncellendi');
     
   } catch (error) {
     console.error('❌ End game hatası:', error);
   }
-}, [currentRoom, participants, updatePlayerStatistics]);
+}, [currentRoom, participants, checkBadges]);
 
   // Check if room is full and close it
   useEffect(() => {

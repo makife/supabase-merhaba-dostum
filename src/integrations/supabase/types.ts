@@ -882,6 +882,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_average_word_length: {
+        Args: { p_user_id: string }
+        Returns: number
+      }
       check_and_award_badges: {
         Args: { p_user_id: string }
         Returns: {
@@ -965,6 +969,10 @@ export type Database = {
       get_user_tournament_status: {
         Args: { p_tournament_id: string; p_user_id: string }
         Returns: Json
+      }
+      recalculate_user_stats: {
+        Args: { p_user_id: string }
+        Returns: undefined
       }
       reset_daily_games: {
         Args: Record<PropertyKey, never>
