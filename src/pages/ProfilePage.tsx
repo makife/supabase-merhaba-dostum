@@ -14,6 +14,8 @@ import {
   Trophy,
   Target,
   Zap,
+  Calendar,
+  Clock,
   Crown,
   Edit,
   TrendingUp
@@ -145,7 +147,6 @@ const ProfilePage = () => {
           nextLevelExp: levelData.nextLevelExp,
           premiumUntil: data.premium_until,
           averageScore: data.average_score || 0,
-          totalWords: data.total_words || data.total_words_created || 0,
         }));
       }
     };
@@ -195,7 +196,6 @@ const ProfilePage = () => {
                 experience: levelData.experience,
                 nextLevelExp: levelData.nextLevelExp,
                 averageScore: newData.average_score || prev.averageScore,
-                totalWords: newData.total_words || newData.total_words_created || prev.totalWords,
               };
             });
           }
