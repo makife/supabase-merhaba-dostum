@@ -77,8 +77,9 @@ const GamePage = ({
   const { fadeOutBackgroundMusic, fadeInBackgroundMusic } = useMusic();
   const [searchParams] = useSearchParams();
   const [lastClickTime, setLastClickTime] = useState(0);
-  const [audioWow1] = useState(new Audio('/wow1.mp3'));
+  const [audioYes] = useState(new Audio('/yes.mp3'));
   const [audioWow2] = useState(new Audio('/wow2.mp3'));
+  const [audioYahoo] = useState(new Audio('/yahoo.mp3'));
   
   // Joker state'leri
   const [jokers, setJokers] = useState<JokerState>({
@@ -967,8 +968,9 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
 }, [wordlist, wordlistLoaded]);
   
   useEffect(() => {
-    audioWow1.volume = 0.7; // %70 ses
+    audioYes.volume = 0.7; // %70 ses
     audioWow2.volume = 0.7; // %70 ses
+    audioYahoo.volume = 0.7; // %70 ses
     const initializeGame = async () => {
       fadeOutBackgroundMusic(1500);
       
@@ -1484,11 +1486,14 @@ const triggerWordEffects = () => {
   
   // Kelime uzunluğuna göre ses çal
   if (currentWord.length === 4) {
-    audioWow1.currentTime = 0; // Baştan başlat
-    audioWow1.play().catch(e => console.log('Audio play failed:', e));
-  } else if (currentWord.length >= 5) {
+    audioYes.currentTime = 0; // Baştan başlat
+    audioYes.play().catch(e => console.log('Audio play failed:', e));
+  } else if (currentWord.length === 5) {
     audioWow2.currentTime = 0; // Baştan başlat
     audioWow2.play().catch(e => console.log('Audio play failed:', e));
+  } else if (currentWord.length >= 6) {
+    audioYahoo.currentTime = 0; // Baştan başlat
+    audioYahoo.play().catch(e => console.log('Audio play failed:', e));
   }
   
   if (hasConfetti && hasFireworks) {
