@@ -1098,7 +1098,7 @@ useEffect(() => {
 
     setTimeout(() => {
         checkBadges(user.id, playerWordsWithScores.length);
-      }, 1000);
+      }, 500);
     }
 
     // Apply end game bonus for player
