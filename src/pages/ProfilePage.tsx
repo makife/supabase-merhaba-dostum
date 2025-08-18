@@ -38,7 +38,6 @@ const ProfilePage = () => {
     experience: 0,
     nextLevelExp: 1000,
     averageScore: 0,        // Ortalama puan
-    totalWords: 0,          // Toplam kelime
     premiumUntil: null as string | null,
   });
 
@@ -195,13 +194,8 @@ const ProfilePage = () => {
                 level: levelData.level,
                 experience: levelData.experience,
                 nextLevelExp: levelData.nextLevelExp,
-                dailyGames: newData.daily_games || prev.dailyGames,
-                dailyWins: newData.daily_wins || prev.dailyWins,
-                bestStreak: newData.best_streak || newData.win_streak || prev.bestStreak,
                 averageScore: newData.average_score || prev.averageScore,
                 totalWords: newData.total_words || newData.total_words_created || prev.totalWords,
-                favoriteLetter: newData.favorite_letter || prev.favoriteLetter,
-                playTime: newData.total_play_time || prev.playTime,
               };
             });
           }
@@ -340,7 +334,6 @@ const ProfilePage = () => {
           nextLevelExp: levelData.nextLevelExp,
           premiumUntil: data.premium_until,
           averageScore: data.average_score || 0,
-          totalWords: data.total_words || data.total_words_created || 0,
         }));
       }
     
@@ -576,10 +569,6 @@ const ProfilePage = () => {
             <div className="flex justify-between">
               <span>Ortalama Puan:</span>
               <span className="font-bold">{Math.round(profileData.averageScore)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Oyun Süresi:</span>
-              <span className="font-bold">{Math.round(profileData.playTime / 60)} dakika</span>
             </div>
           </CardContent>
         </Card>
