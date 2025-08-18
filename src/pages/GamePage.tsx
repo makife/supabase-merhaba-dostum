@@ -2240,15 +2240,24 @@ return (
     variant="outline" 
     onTouchStart={(e) => {
       e.preventDefault();
-      clearWord();
+      e.stopPropagation();
+      if (!isSubmitting) {
+        clearWord();
+      }
     }}
     onClick={(e) => {
       e.preventDefault();
-      clearWord();
+      e.stopPropagation();
+      if (!isSubmitting) {
+        clearWord();
+      }
     }}
     className="h-12"
-    disabled={selectedLetters.length === 0 || isJokerActive}
-    style={{ touchAction: 'manipulation' }}
+    disabled={selectedLetters.length === 0 || isJokerActive || isSubmitting}
+    style={{ 
+      touchAction: 'manipulation',
+      WebkitTapHighlightColor: 'transparent'
+    }}
   >
     <Trash2 className="w-4 h-4 mr-2" />
     Sil
@@ -2257,22 +2266,34 @@ return (
   <Button 
     onTouchStart={(e) => {
       e.preventDefault();
-      playSound('buttonClick');
-      submitWord();
+      e.stopPropagation();
+      if (!isSubmitting && currentWord.length >= 3) {
+        playSound('buttonClick');
+        submitWord();
+      }
     }}
     onClick={(e) => {
       e.preventDefault();
-      playSound('buttonClick');
-      submitWord();
+      e.stopPropagation();
+      if (!isSubmitting && currentWord.length >= 3) {
+        playSound('buttonClick');
+        submitWord();
+      }
     }}
-    className="h-12"
-    disabled={currentWord.length < 3 || isValidating || isJokerActive}
-    style={{ touchAction: 'manipulation' }}
+    className={`h-12 transition-all duration-200 ${
+      isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+    }`}
+    disabled={currentWord.length < 3 || isValidating || isJokerActive || isSubmitting}
+    style={{ 
+      touchAction: 'manipulation',
+      WebkitTapHighlightColor: 'transparent'
+    }}
   >
-    <Send className="w-4 h-4 mr-2" />
-    {isValidating ? 'Kontrol Ediliyor...' : 'Gönder'}
+    <Send className={`w-4 h-4 mr-2 ${isSubmitting ? 'animate-spin' : ''}`} />
+    {isSubmitting ? 'Gönderiliyor...' : 
+     isValidating ? 'Kontrol Ediliyor...' : 'Gönder'}
   </Button>
-    </div>
+</div>
   </div>
 </div>
 
