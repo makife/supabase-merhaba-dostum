@@ -298,7 +298,7 @@ const GamePage = ({
   const checkBadges = async (userId: string, wordsCount?: number) => {
     try {
       console.log('🏆 Rozet kontrolü yapılıyor:', userId);
-      /*
+      
       // Yeni basitleştirilmiş fonksiyon - her şeyi tek başına halleder
       const { data: badges, error } = await supabase.rpc('check_and_award_badges_simple', {
         p_user_id: userId
@@ -314,7 +314,7 @@ const GamePage = ({
             duration: 4000,
           });
         });
-      }*/
+      }
   
       console.log('✅ Rozet kontrolü tamamlandı');
     } catch (error) {
@@ -1117,6 +1117,10 @@ useEffect(() => {
           description: `+${bonusPoints} bonus EXP kazandınız!`,
           duration: 2000,
         });
+      }, 1000);
+
+      setTimeout(() => {
+        checkBadges(user.id, playerWordsWithScores.length);
       }, 1000);
     }
     
