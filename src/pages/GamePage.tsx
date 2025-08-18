@@ -298,19 +298,19 @@ const GamePage = ({
   const checkBadges = async (userId: string, wordsCount?: number) => {
     try {
       console.log('🏆 Rozet kontrolü yapılıyor:', userId);
-      
-      // Yeni basitleştirilmiş fonksiyon - her şeyi tek başına halleder
-      const { data: badges, error } = await supabase.rpc('check_and_award_badges_simple', {
+  
+      // ESKİ fonksiyon adını kullan (TypeScript'te tanımlı)
+      const { data: badges, error } = await supabase.rpc('check_and_award_badges', {
         p_user_id: userId
       });
   
       if (error) {
         console.error('❌ Rozet kontrolü hatası:', error);
-      } else if (badges && badges.length > 0) {
+      } else if (badges && Array.isArray(badges) && badges.length > 0) {
         badges.forEach((badge: any) => {
           toast({
             title: '🏆 Yeni Rozet!',
-            description: `"${badge.badge_name}" rozetini kazandınız! ${badge.badge_icon}`,
+            description: `"${badge.new_badge_name}" rozetini kazandınız! ${badge.new_badge_icon}`,
             duration: 4000,
           });
         });
