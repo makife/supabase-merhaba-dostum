@@ -1096,6 +1096,11 @@ useEffect(() => {
       }
     }
 
+    setTimeout(() => {
+        checkBadges(user.id, playerWordsWithScores.length);
+      }, 1000);
+    }
+
     // Apply end game bonus for player
     if (user && bonusPoints > 0) {
       const { data: currentProfile } = await supabase
@@ -1119,10 +1124,7 @@ useEffect(() => {
         });
       }, 1000);
 
-      setTimeout(() => {
-        checkBadges(user.id, playerWordsWithScores.length);
-      }, 1000);
-    }
+      
     
     // End the game and cleanup room (for multiplayer modes)
     if (currentRoom && (gameMode === 'random-match' || gameMode === 'private-room')) {
