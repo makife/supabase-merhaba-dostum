@@ -263,16 +263,33 @@ const GamePage = ({
   ) => {
     try {
       console.log('📊 Oyun istatistikleri güncelleniyor:', { userId, gameScore, words: words.length, isWinner });
-  
-      await supabase.rpc('update_game_stats', {
+    
+      const gameDuration = gameType === 'timed' ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
+    
+      console.log('📞 RPC çağrısı yapılıyor:', {
         p_user_id: userId,
         p_score: gameScore,
         p_words: words,
         p_is_winner: isWinner,
-        p_game_duration: gameType === 'timed' ? 120 : Math.floor((Date.now() - gameStartTime) / 1000) // Gerçek süre
+        p_game_duration: gameDuration
       });
   
-      console.log('✅ Oyun istatistikleri güncellendi');
+      // TypeScript hatasını önlemek için (any) cast
+      const { data, error } = await (supabase.rpc as any)('update_game_stats', {
+        p_user_id: userId,
+        p_score: gameScore,
+        p_words: words,
+        p_is_winner: isWinner,
+        p_game_duration: gameDuration
+      });
+    
+      console.log('📊 RPC sonucu:', { data, error });
+  
+      if (error) {
+        console.error('❌ RPC hatası:', error);
+      } else {
+        console.log('✅ Oyun istatistikleri güncellendi');
+      }
     } catch (error) {
       console.error('❌ İstatistik güncelleme hatası:', error);
     }
@@ -281,7 +298,7 @@ const GamePage = ({
   const checkBadges = async (userId: string, wordsCount?: number) => {
     try {
       console.log('🏆 Rozet kontrolü yapılıyor:', userId);
-  
+      /*
       // Yeni basitleştirilmiş fonksiyon - her şeyi tek başına halleder
       const { data: badges, error } = await supabase.rpc('check_and_award_badges_simple', {
         p_user_id: userId
@@ -297,7 +314,7 @@ const GamePage = ({
             duration: 4000,
           });
         });
-      }
+      }*/
   
       console.log('✅ Rozet kontrolü tamamlandı');
     } catch (error) {
