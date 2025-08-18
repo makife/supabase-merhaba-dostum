@@ -197,8 +197,6 @@ const GamePage = ({
   const [opponentName, setOpponentName] = useState('');
   const [targetScore, setTargetScore] = useState(gameType === 'score' ? 500 : 0);
   const [gameStartTime, setGameStartTime] = useState<number>(Date.now());
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [lastSubmitTime, setLastSubmitTime] = useState(0);
 
 
 
@@ -1337,22 +1335,22 @@ useEffect(() => {
 
   // Handle letter click
   const handleLetterClick = useCallback((letter: string, row: number, col: number) => {
-    if (gameEnded || waitingForPlayer || isJokerActive || isSubmitting) return;
+  if (gameEnded || waitingForPlayer || isJokerActive) return;
 
-    const now = Date.now();
-    // 100ms debounce (mobil için optimize)
-    if (now - lastClickTime < 100) return;
+  const now = Date.now();
+    // 150ms debounce (mobil için daha uzun)
+    if (now - lastClickTime < 150) return;
     setLastClickTime(now);
 
     // Haptic feedback (mobil cihazlarda titreşim)
     if ('vibrate' in navigator) {
-      navigator.vibrate(30); // 50ms → 30ms daha yumuşak
+      navigator.vibrate(50);
     }
 
     playSound('letterSelect');
-
+  
     const isSelected = selectedLetters.some(s => s.row === row && s.col === col);
-
+  
     if (isSelected) {
       const newSelected = selectedLetters.filter(s => !(s.row === row && s.col === col));
       setSelectedLetters(newSelected);
@@ -1362,154 +1360,118 @@ useEffect(() => {
       setSelectedLetters(newSelected);
       setCurrentWord(newSelected.map(s => s.letter).join(''));
     }
-  }, [gameEnded, waitingForPlayer, isJokerActive, isSubmitting, lastClickTime, selectedLetters, playSound]);
+  }, [gameEnded, waitingForPlayer, isJokerActive, lastClickTime, selectedLetters, playSound]);
 
-  // clearWord fonksiyonunu da güncelle:
+  // Clear current word
   const clearWord = () => {
-    if (isSubmitting) return; // Submit sırasında clear engelle
     setSelectedLetters([]);
     setCurrentWord('');
   };
 
   // Submit word - Using local wordlist validation
   const submitWord = async () => {
-    if (waitingForPlayer || isJokerActive || isSubmitting) {
-      console.log('🚫 Submit engellendi:', { waitingForPlayer, isJokerActive, isSubmitting });
-      return;
-    }
-  
-    // Çok hızlı submit önleme (mobil için 1000ms)
-    const now = Date.now();
-    if (now - lastSubmitTime < 1000) {
-      console.log('🚫 Çok hızlı submit engellendi:', now - lastSubmitTime);
-      return;
-    }
-  
-    setLastSubmitTime(now);
-    setIsSubmitting(true); // Submit başladı
+    if (waitingForPlayer || isJokerActive) return;
+    
     setLastPlayerAction(Date.now());
-  
-    try {
-      if (currentWord.length < 3) {
-        toast({
-          title: 'Geçersiz Kelime',
-          description: 'Kelime en az 3 harf olmalıdır.',
-          variant: 'destructive',
-          duration: 400,
-        });
-        return;
-      }
-
-      const normalizedWord = currentWord.toUpperCase();
     
-      // Önce kullanılmış kelime kontrolü yap
-      if (usedWords.has(normalizedWord)) {
-        toast({
-          title: 'Kelimeyi Zaten Kullandınız',
-          description: 'Bu kelimeyi daha önce kullandınız.',
-          variant: 'destructive',
-          duration: 400,
-        });
-        playSound('wrongWord');
-        clearWord();
-        return;
-      }
-
-      console.log('🔍 Validating word locally:', currentWord);
-    
-      // LOCAL WORDLIST VALIDATION
-      const result = validateWordLocal(currentWord);
-    
-      if (!result.isValid) {
-        playSound('wrongWord');
-        toast({
-          title: 'Geçersiz Kelime',
-          description: result.message,
-          variant: 'destructive',
-          duration: 400,
-        });
-        clearWord();
-        return;
-      }
-
-      console.log('✅ Word accepted (local validation):', currentWord, 'Points:', result.points);
-    
-      const newUsedWords = new Set([...usedWords, normalizedWord]);
-      setUsedWords(newUsedWords);
-    
-      playSound('correctWord');
-      const newScore = playerScore + result.points;
-      setPlayerScore(newScore);
-    
-      setPlayerWords(prev => [...prev, currentWord]);
-      setPlayerWordsWithScores(prev => [...prev, { word: currentWord, score: result.points }]);
-    
-      triggerWordEffects();
-    
-      if (currentRoom) {
-        await updateScore(newScore);
-      }
-
-      // Update total score in database for level progression
-      if (user) {
-        const { data: currentProfile } = await supabase
-          .from('profiles')
-          .select('total_score')
-          .eq('id', user.id)
-          .single();
-
-        const calculateLevel = (totalScore: number) => {
-          const baseExp = 1000;
-          const expIncreasePerLevel = 100;
-        
-          let level = 1;
-          let totalExpNeeded = 0;
-          let currentLevelExp = baseExp;
-
-          while (totalScore >= totalExpNeeded + currentLevelExp) {
-            totalExpNeeded += currentLevelExp;
-            level++;
-            currentLevelExp = baseExp + (level - 1) * expIncreasePerLevel;
-          }
-
-          return level;
-        };
-
-        const currentLevel = calculateLevel(currentProfile?.total_score || 0);
-        const levelMultiplier = 1 + (currentLevel - 1) * 0.1;
-        const bonusPoints = Math.floor(result.points * levelMultiplier);
-      
-        const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
-      
-        await supabase
-          .from('profiles')
-          .update({ total_score: newTotalScore })
-          .eq('id', user.id);
-      }
-
-      clearWord();
-    
-      // Başarı toast'ını göster
+    if (currentWord.length < 3) {
       toast({
-        title: '✅ Kelime Kabul Edildi!',
-        description: `"${currentWord}" için ${result.points} puan kazandınız!`,
-        duration: 1500,
-      });
-    
-    } catch (error) {
-      console.error('❌ Submit error:', error);
-      toast({
-        title: 'Hata',
-        description: 'Beklenmeyen bir hata oluştu.',
+        title: 'Geçersiz Kelime',
+        description: 'Kelime en az 3 harf olmalıdır.',
         variant: 'destructive',
-        duration: 1000,
+        duration: 400, // 0.5 saniye
       });
-    } finally {
-      // Her durumda submit flag'i kaldır
-      setTimeout(() => {
-        setIsSubmitting(false);
-      }, 500); // 500ms sonra tekrar submit izin ver
+      return;
     }
+
+    const normalizedWord = currentWord.toUpperCase();
+    
+    // Önce kullanılmış kelime kontrolü yap
+    if (usedWords.has(normalizedWord)) {
+      toast({
+        title: 'Kelimeyi Zaten Kullandınız',
+        description: 'Bu kelimeyi daha önce kullandınız.',
+        variant: 'destructive',
+        duration: 400, // 0.5 saniye
+      });
+      playSound('wrongWord');
+      clearWord();
+      return;
+    }
+
+    console.log('🔍 Validating word locally:', currentWord);
+    
+    // LOCAL WORDLIST VALIDATION
+    const result = validateWordLocal(currentWord);
+    
+    if (!result.isValid) {
+      playSound('wrongWord');
+      toast({
+        title: 'Geçersiz Kelime',
+        description: result.message,
+        variant: 'destructive',
+        duration: 400, // 0.5 saniye
+      });
+      clearWord();
+      return;
+    }
+
+    console.log('✅ Word accepted (local validation):', currentWord, 'Points:', result.points);
+    
+    const newUsedWords = new Set([...usedWords, normalizedWord]);
+    setUsedWords(newUsedWords);
+    
+    playSound('correctWord');
+    const newScore = playerScore + result.points;
+    setPlayerScore(newScore);
+    
+    setPlayerWords(prev => [...prev, currentWord]);
+    setPlayerWordsWithScores(prev => [...prev, { word: currentWord, score: result.points }]);
+    
+    triggerWordEffects();
+    
+    if (currentRoom) {
+      await updateScore(newScore);
+    }
+
+    // Update total score in database for level progression
+    if (user) {
+      const { data: currentProfile } = await supabase
+        .from('profiles')
+        .select('total_score')
+        .eq('id', user.id)
+        .single();
+
+      const calculateLevel = (totalScore: number) => {
+        const baseExp = 1000;
+        const expIncreasePerLevel = 100;
+        
+        let level = 1;
+        let totalExpNeeded = 0;
+        let currentLevelExp = baseExp;
+
+        while (totalScore >= totalExpNeeded + currentLevelExp) {
+          totalExpNeeded += currentLevelExp;
+          level++;
+          currentLevelExp = baseExp + (level - 1) * expIncreasePerLevel;
+        }
+
+        return level;
+      };
+
+      const currentLevel = calculateLevel(currentProfile?.total_score || 0);
+      const levelMultiplier = 1 + (currentLevel - 1) * 0.1;
+      const bonusPoints = Math.floor(result.points * levelMultiplier);
+      
+      const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
+      
+      await supabase
+        .from('profiles')
+        .update({ total_score: newTotalScore })
+        .eq('id', user.id);
+    }
+
+    clearWord();
   };
 
 
@@ -2278,24 +2240,15 @@ return (
     variant="outline" 
     onTouchStart={(e) => {
       e.preventDefault();
-      e.stopPropagation();
-      if (!isSubmitting) {
-        clearWord();
-      }
+      clearWord();
     }}
     onClick={(e) => {
       e.preventDefault();
-      e.stopPropagation();
-      if (!isSubmitting) {
-        clearWord();
-      }
+      clearWord();
     }}
     className="h-12"
-    disabled={selectedLetters.length === 0 || isJokerActive || isSubmitting}
-    style={{ 
-      touchAction: 'manipulation',
-      WebkitTapHighlightColor: 'transparent'
-    }}
+    disabled={selectedLetters.length === 0 || isJokerActive}
+    style={{ touchAction: 'manipulation' }}
   >
     <Trash2 className="w-4 h-4 mr-2" />
     Sil
@@ -2304,33 +2257,23 @@ return (
   <Button 
     onTouchStart={(e) => {
       e.preventDefault();
-      e.stopPropagation();
-      if (!isSubmitting && currentWord.length >= 3) {
-        playSound('buttonClick');
-        submitWord();
-      }
+      playSound('buttonClick');
+      submitWord();
     }}
     onClick={(e) => {
       e.preventDefault();
-      e.stopPropagation();
-      if (!isSubmitting && currentWord.length >= 3) {
-        playSound('buttonClick');
-        submitWord();
-      }
+      playSound('buttonClick');
+      submitWord();
     }}
-    className={`h-12 transition-all duration-200 ${
-      isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
-    }`}
-    disabled={currentWord.length < 3 || isValidating || isJokerActive || isSubmitting}
-    style={{ 
-      touchAction: 'manipulation',
-      WebkitTapHighlightColor: 'transparent'
-    }}
+    className="h-12"
+    disabled={currentWord.length < 3 || isValidating || isJokerActive}
+    style={{ touchAction: 'manipulation' }}
   >
-    <Send className={`w-4 h-4 mr-2 ${isSubmitting ? 'animate-spin' : ''}`} />
-    {isSubmitting ? 'Gönderiliyor...' : 
-     isValidating ? 'Kontrol Ediliyor...' : 'Gönder'}
+    <Send className="w-4 h-4 mr-2" />
+    {isValidating ? 'Kontrol Ediliyor...' : 'Gönder'}
   </Button>
+    </div>
+  </div>
 </div>
 
     {/* Exit Confirmation Dialog */}
