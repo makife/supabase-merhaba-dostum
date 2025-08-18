@@ -196,6 +196,7 @@ const GamePage = ({
   const [isAIOpponent, setIsAIOpponent] = useState(false);
   const [opponentName, setOpponentName] = useState('');
   const [targetScore, setTargetScore] = useState(gameType === 'score' ? 500 : 0);
+  const [gameStartTime, setGameStartTime] = useState<number>(Date.now());
 
 
 
@@ -262,14 +263,15 @@ const GamePage = ({
   ) => {
     try {
       console.log('📊 Oyun istatistikleri güncelleniyor:', { userId, gameScore, words: words.length, isWinner });
-    
-      await supabase.rpc('update_game_statistics', {
+  
+      await supabase.rpc('update_game_stats', {
         p_user_id: userId,
-        p_game_score: gameScore,
+        p_score: gameScore,
         p_words: words,
-        p_is_winner: isWinner
+        p_is_winner: isWinner,
+        p_game_duration: gameType === 'timed' ? 120 : Math.floor((Date.now() - gameStartTime) / 1000) // Gerçek süre
       });
-    
+  
       console.log('✅ Oyun istatistikleri güncellendi');
     } catch (error) {
       console.error('❌ İstatistik güncelleme hatası:', error);
@@ -279,49 +281,30 @@ const GamePage = ({
   const checkBadges = async (userId: string, wordsCount?: number) => {
     try {
       console.log('🏆 Rozet kontrolü yapılıyor:', userId);
-    
-      // General badge check
-      const { data: generalBadges, error: generalError } = await supabase.rpc('check_and_award_badges', {
+  
+      // Yeni basitleştirilmiş fonksiyon - her şeyi tek başına halleder
+      const { data: badges, error } = await supabase.rpc('check_and_award_badges_simple', {
         p_user_id: userId
       });
-    
-      if (generalError) {
-        console.error('❌ Genel rozet kontrolü hatası:', generalError);
-      } else if (generalBadges && generalBadges.length > 0) {
-        generalBadges.forEach((badge: any) => {
+  
+      if (error) {
+        console.error('❌ Rozet kontrolü hatası:', error);
+      } else if (badges && badges.length > 0) {
+        badges.forEach((badge: any) => {
           toast({
             title: '🏆 Yeni Rozet!',
-            description: `"${badge.new_badge_name}" rozetini kazandınız! ${badge.new_badge_icon}`,
+            description: `"${badge.badge_name}" rozetini kazandınız! ${badge.badge_icon}`,
             duration: 4000,
           });
         });
       }
-    
-      // Words per game badge check
-      if (wordsCount && wordsCount > 0) {
-        const { data: wordsBadges, error: wordsError } = await supabase.rpc('check_words_per_game_badge', {
-          p_user_id: userId,
-          p_words_count: wordsCount
-        });
-      
-        if (wordsError) {
-          console.error('❌ Kelime rozeti kontrolü hatası:', wordsError);
-        } else if (wordsBadges && wordsBadges.length > 0) {
-          wordsBadges.forEach((badge: any) => {
-            toast({
-              title: '🏆 Yeni Rozet!',
-              description: `"${badge.new_badge_name}" rozetini kazandınız! ${badge.new_badge_icon}`,
-              duration: 4000,
-            });
-          });
-        }
-      }
-    
+  
       console.log('✅ Rozet kontrolü tamamlandı');
     } catch (error) {
       console.error('❌ Rozet kontrolü hatası:', error);
     }
   };
+
 
   // Oyun biti fonksiyonunu güncelle
   const handleGameEnd = () => {
@@ -1024,6 +1007,13 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
       return () => clearInterval(timer);
     }
   }, [gameStarted, gameEnded, gameType, timeWarningPlayed, playTimeWarningSequence]);
+
+  // Timer useEffect'inden SONRA ekleyin
+useEffect(() => {
+  if (gameStarted && !gameEnded) {
+    setGameStartTime(Date.now());
+  }
+}, [gameStarted, gameEnded]);
 
   // Check for winner and apply end game bonuses
   const checkWinnerWithScores = useCallback(async (currentPlayerScore: number, currentOpponentScore: number) => {
