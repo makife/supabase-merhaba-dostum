@@ -308,39 +308,39 @@ const GamePage = ({
 
   // Oyun biti fonksiyonunu güncelle
   const handleGameEnd = () => {
-  console.log('🏁 handleGameEnd çağrıldı!'); // DEBUG EKLE
-  console.log('🎮 gameMode:', gameMode, 'user:', user?.id); // DEBUG EKLE
-  console.log('🏆 playerScore:', playerScore, 'opponentScore:', opponentScore); // DEBUG EKLE
+    console.log('🏁 handleGameEnd çağrıldı!'); // DEBUG EKLE
+    console.log('🎮 gameMode:', gameMode, 'user:', user?.id); // DEBUG EKLE
+    console.log('🏆 playerScore:', playerScore, 'opponentScore:', opponentScore); // DEBUG EKLE
   
-  const finalUserScore = playerScore;
-  const finalOpponentScore = opponentScore;
+    const finalUserScore = playerScore;
+    const finalOpponentScore = opponentScore;
   
-  // İstatistikleri güncelle - sadece vs-computer modunda
-  if (gameMode === 'vs-computer' && user) {
-    console.log('✅ updatePlayerStatistics çağrılıyor!'); // DEBUG EKLE
+    // İstatistikleri güncelle - sadece vs-computer modunda
+    if (gameMode === 'vs-computer' && user) {
+      console.log('✅ updatePlayerStatistics çağrılıyor!'); // DEBUG EKLE
     
-    updatePlayerStatistics(
-      user.id,
-      finalUserScore,
-      playerWordsWithScores, // words yerine playerWordsWithScores kullan
-      finalUserScore > finalOpponentScore
-    );
-  } else {
-    console.log('❌ updatePlayerStatistics ÇAĞRILMADI - gameMode:', gameMode, 'user:', !!user); // DEBUG EKLE
-  }
+      updatePlayerStatistics(
+        user.id,
+        finalUserScore,
+        playerWordsWithScores, // words yerine playerWordsWithScores kullan
+        finalUserScore > finalOpponentScore
+      );
+    } else {
+      console.log('❌ updatePlayerStatistics ÇAĞRILMADI - gameMode:', gameMode, 'user:', !!user); // DEBUG EKLE
+    }
   
-  // Turnuva modundaysa özel işlem
-  if (gameMode === 'tournament' && tournamentMatch) {
-    console.log('🏆 Tournament mode - handleTournamentGameEnd çağrılıyor'); // DEBUG EKLE
-    handleTournamentGameEnd(finalUserScore, finalOpponentScore);
-    return; // Erken çık, UI değişikliği parent component yapacak
-  }
+    // Turnuva modundaysa özel işlem
+    if (gameMode === 'tournament' && tournamentMatch) {
+      console.log('🏆 Tournament mode - handleTournamentGameEnd çağrılıyor'); // DEBUG EKLE
+      handleTournamentGameEnd(finalUserScore, finalOpponentScore);
+      return; // Erken çık, UI değişikliği parent component yapacak
+    }
   
-  // Normal mod için mevcut kod devam eder...
-  console.log('🎯 setGameEnded(true) çağrılıyor'); // DEBUG EKLE
-  setGameEnded(true);
-  // setShowResults burada kullanılmıyor, sadece state tanımla
-};
+    // Normal mod için mevcut kod devam eder...
+    console.log('🎯 setGameEnded(true) çağrılıyor'); // DEBUG EKLE
+    setGameEnded(true);
+    // setShowResults burada kullanılmıyor, sadece state tanımla
+  };
 
   useEffect(() => {
     if (gameMode === 'tournament' && !tournamentMatch) {
