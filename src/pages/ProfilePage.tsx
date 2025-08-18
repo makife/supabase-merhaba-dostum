@@ -36,19 +36,13 @@ const ProfilePage = () => {
     losses: 0,
     totalScore: 0,
     winRate: 0,
-    fastestWord: '0s',
     longestWord: '',
     currentStreak: 0,
     level: 1,
     experience: 0,
     nextLevelExp: 1000,
-    dailyGames: 0,          // Günlük oyun sayısı
-    dailyWins: 0,           // Günlük kazanma
-    bestStreak: 0,          // En iyi seri
     averageScore: 0,        // Ortalama puan
     totalWords: 0,          // Toplam kelime
-    favoriteLetter: '',     // En çok kullandığı harf
-    playTime: 0,            // Toplam oyun süresi
     premiumUntil: null as string | null,
   });
 
