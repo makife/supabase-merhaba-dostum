@@ -37,7 +37,7 @@ interface UserProfile {
 interface UserContextType {
   profile: UserProfile | null;
   loading: boolean;
-  refreshProfile: () => Promise<void>;
+  refreshProfile: (forceRefresh?: boolean) => Promise<void>;
   updateCredits: (newCredits: number) => void;
   addBonusCredits: (bonusCredits: number) => Promise<void>;
   consumeCredit: () => Promise<boolean>;
@@ -45,6 +45,7 @@ interface UserContextType {
   getTotalCredits: () => number;
   getDisplayCredits: () => { base: number; bonus: number };
   isPremium: boolean;
+  forceRefreshProfile: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -66,7 +67,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const refreshProfile = async () => {
+  const refreshProfile = async (forceRefresh = false) => {
     if (!user) {
       setProfile(null);
       return;
@@ -74,6 +75,9 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
     setLoading(true);
     try {
+      // Önbelleği atlamak için timestamp ekle
+      const cacheBreaker = forceRefresh ? `?t=${Date.now()}` : '';
+      
       // Tüm alanları seç - sadece bazılarını değil
       const { data, error } = await supabase
         .from('profiles')
@@ -83,6 +87,18 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
       if (!error && data) {
         setProfile(data);
+        
+        // Browser önbelleğini temizle
+        if (forceRefresh && 'caches' in window) {
+          try {
+            const cacheNames = await caches.keys();
+            await Promise.all(
+              cacheNames.map(cacheName => caches.delete(cacheName))
+            );
+          } catch (cacheError) {
+            console.log('Cache clearing failed:', cacheError);
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -133,10 +149,14 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     
     try {
       await supabase.rpc('check_and_refresh_credits', { user_id: user.id });
-      await refreshProfile();
+      await refreshProfile(true); // Force refresh
     } catch (error) {
       console.error('Error checking credits:', error);
     }
+  };
+
+  const forceRefreshProfile = async () => {
+    await refreshProfile(true);
   };
 
   const getTotalCredits = () => {
@@ -211,7 +231,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   };
 
   useEffect(() => {
-    refreshProfile();
+    refreshProfile(true); // İlk yüklemede force refresh
     // İlk yüklemede kredi kontrolü yap
     if (user) {
       checkAndRefreshCredits();
@@ -267,7 +287,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       checkAndRefreshCredits,
       getTotalCredits,
       getDisplayCredits,
-      isPremium 
+      isPremium,
+      forceRefreshProfile
     }}>
       {children}
     </UserContext.Provider>
