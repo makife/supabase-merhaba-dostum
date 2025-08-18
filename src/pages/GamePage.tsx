@@ -1045,12 +1045,12 @@ useEffect(() => {
   // Check for winner and apply end game bonuses
   const checkWinnerWithScores = useCallback(async (currentPlayerScore: number, currentOpponentScore: number) => {
     if (gameEnded || winner !== null) return;
-  
+
     console.log('🏆 Checking winner with scores - Player:', currentPlayerScore, 'Opponent:', currentOpponentScore);
-  
+
     let gameResult: 'player' | 'opponent' | 'tie';
     let bonusPoints = 0;
-  
+
     if (currentPlayerScore > currentOpponentScore) {
       gameResult = 'player';
       bonusPoints = 50;
@@ -1071,35 +1071,35 @@ useEffect(() => {
       console.log('🏆 It\'s a tie! Both scores:', currentPlayerScore);
     }
 
-    // ✅ YENİ: İSTATİSTİK GÜNCELLEMESİ BURAYA EKLE
+  // ✅ YENİ: İSTATİSTİK GÜNCELLEMESİ BURAYA EKLE
     if (user && gameMode === 'vs-computer') {
-  console.log('📊 checkWinnerWithScores - İstatistik güncelleniyor...');
-  
-  try {
-    const gameDuration = gameType === 'timed' ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
+      console.log('📊 checkWinnerWithScores - İstatistik güncelleniyor...');
     
-    const { data, error } = await (supabase.rpc as any)('update_game_stats', {
-      p_user_id: user.id,
-      p_score: currentPlayerScore,
-      p_words: playerWordsWithScores,
-      p_is_winner: gameResult === 'player',
-      p_game_duration: gameDuration
-    });
-    
-    if (error) {
-      console.error('❌ İstatistik güncelleme hatası:', error);
-    } else {
-      console.log('✅ İstatistikler başarıyla güncellendi!');
+      try {
+        const gameDuration = gameType === 'timed' ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
       
-      // Rozet kontrolü
-      setTimeout(() => {
-        checkBadges(user.id, playerWordsWithScores.length);
-      }, 500);
+        const { data, error } = await (supabase.rpc as any)('update_game_stats', {
+          p_user_id: user.id,
+          p_score: currentPlayerScore,
+          p_words: playerWordsWithScores,
+          p_is_winner: gameResult === 'player',
+          p_game_duration: gameDuration
+        });
+      
+        if (error) {
+          console.error('❌ İstatistik güncelleme hatası:', error);
+        } else {
+          console.log('✅ İstatistikler başarıyla güncellendi!');
+        
+          // Rozet kontrolü
+          setTimeout(() => {
+            checkBadges(user.id, playerWordsWithScores.length);
+          }, 500);
+        }
+      } catch (error) {
+        console.error('❌ İstatistik güncelleme hatası:', error);
+      }
     }
-  } catch (error) {
-    console.error('❌ İstatistik güncelleme hatası:', error);
-  }
-}
 
     // Apply end game bonus for player
     if (user && bonusPoints > 0) {
@@ -1110,7 +1110,7 @@ useEffect(() => {
         .single();
 
       const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
-    
+  
       await supabase
         .from('profiles')
         .update({ total_score: newTotalScore })
@@ -1123,9 +1123,8 @@ useEffect(() => {
           duration: 2000,
         });
       }, 1000);
-
-      
-    
+    }
+  
     // End the game and cleanup room (for multiplayer modes)
     if (currentRoom && (gameMode === 'random-match' || gameMode === 'private-room')) {
       setTimeout(async () => {
@@ -1135,7 +1134,7 @@ useEffect(() => {
           words: playerWordsWithScores,
           isWinner: gameResult === 'player'
         } : undefined;
-        
+      
         const opponentParticipant = participants.find(p => p.user_id !== user?.id && !p.is_bot);
         const opponentStats = opponentParticipant?.user_id ? {
           userId: opponentParticipant.user_id,
@@ -1143,7 +1142,7 @@ useEffect(() => {
           words: opponentWordsWithScores,
           isWinner: gameResult === 'opponent'
         } : undefined;
-        
+      
         await endGame(playerStats, opponentStats);
       }, 3000);
     }
