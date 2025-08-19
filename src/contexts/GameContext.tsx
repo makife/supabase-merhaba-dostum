@@ -302,33 +302,62 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   // Fetch participants
   const fetchParticipants = useCallback(async (roomId: string) => {
     try {
-      console.log('📊 Katılımcılar yükleniyor:', roomId.slice(-8));
+      console.log('📊 === PARTICIPANTS DEBUG BAŞLADI ===');
+      console.log('📊 Room ID:', roomId.slice(-8));
+      console.log('📊 User ID:', user?.id?.slice(-8));
     
-      // TypeScript hatası nedeniyle RPC'yi direkt kullanamıyoruz, fallback'e geç
-      console.log('📊 Normal sorgu kullanılıyor (RPC tip sorunu)');
-    
-      const { data } = await supabase
+      // Manual SQL query ile test et
+      const { data, error, count } = await supabase
         .from('game_participants')
         .select(`
           *,
           profiles:user_id (username, avatar_url)
-        `)
+        `, { count: 'exact' })
         .eq('room_id', roomId);
     
-      if (data) {
-        console.log('📊 Participants yüklendi:', data.length);
-        setParticipants(data as GameParticipant[]);
+      console.log('📊 SQL Query Result:', {
+        data: data?.length || 0,
+        error: error?.message,
+        count,
+        participants: data
+      });
+    
+      if (error) {
+        console.error('❌ SQL Error:', error);
+        return;
       }
+    
+      if (data) {
+        console.log('📊 Raw participants data:');
+        data.forEach((p, i) => {
+          console.log(`  ${i+1}. User: ${p.user_id?.slice(-8) || 'null'}, Bot: ${p.is_bot}, Score: ${p.score}`);
+          console.log(`      Profile: ${(p as any).profiles?.username || 'N/A'}`);
+        });
+      
+        setParticipants(data as GameParticipant[]);
+        console.log('✅ Participants state güncellendi:', data.length);
+      } else {
+        console.log('⚠️ No participants data received');
+        setParticipants([]);
+      }
+    
+      console.log('📊 === PARTICIPANTS DEBUG BİTTİ ===');
     } catch (error) {
-      console.error('❌ Katılımcı yükleme hatası:', error);
+      console.error('❌ fetchParticipants HATA:', error);
+      setParticipants([]);
     }
-  }, []);
+  }, [user?.id]);
 
   // Create room
   const createRoom = useCallback(async (gameMode: string, roomCode?: string): Promise<GameRoom | null> => {
     if (!user) return null;
 
     try {
+      console.log('🏠 === ROOM CREATE DEBUG BAŞLADI ===');
+      console.log('🏠 Game Mode:', gameMode);
+      console.log('🏠 Room Code:', roomCode);
+      console.log('🏠 User ID:', user.id.slice(-8));
+    
       const grid = generateRandomGrid();
       const { data: room, error } = await supabase
         .from('game_rooms')
@@ -344,21 +373,37 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Room creation error:', error);
+        throw error;
+      }
+    
+      console.log('✅ Room created:', room.id.slice(-8));
 
-      // Join as participant
-      await supabase
+      // Join as participant - DEBUG
+      console.log('👤 Adding self as participant...');
+      const { data: participantData, error: participantError } = await supabase
         .from('game_participants')
         .insert({
           room_id: room.id,
           user_id: user.id,
           score: 0,
           is_bot: false
-        });
+        })
+        .select()
+        .single();
+
+      if (participantError) {
+        console.error('❌ Participant creation error:', participantError);
+        throw participantError;
+      }
+    
+      console.log('✅ Participant created:', participantData.id);
 
       // Add AI for vs-computer mode
       if (gameMode === 'vs-computer') {
-        await supabase
+        console.log('🤖 Adding AI opponent...');
+        const { error: aiError } = await supabase
           .from('game_participants')
           .insert({
             room_id: room.id,
@@ -366,18 +411,31 @@ export const GameProvider = ({ children }: GameProviderProps) => {
             score: 0,
             is_bot: true
           });
+        
+        if (aiError) {
+          console.error('❌ AI creation error:', aiError);
+        } else {
+          console.log('✅ AI opponent added');
+        }
       }
 
       setCurrentRoom(room);
-      
+    
+      // MANUEL PARTICIPANTS FETCH
+      console.log('🔄 Manual participants fetch...');
+      setTimeout(() => {
+        fetchParticipants(room.id);
+      }, 500); // 500ms bekle
+    
       toast({
         title: 'Oda Oluşturuldu',
         description: roomCode ? `Oda kodu: ${roomCode}` : 'Oyuna hazırsınız',
       });
 
+      console.log('🏠 === ROOM CREATE DEBUG BİTTİ ===');
       return room;
     } catch (error) {
-      console.error('Error creating room:', error);
+      console.error('❌ Error creating room:', error);
       toast({
         title: 'Hata',
         description: 'Oda oluşturulamadı',
@@ -385,7 +443,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       });
       return null;
     }
-  }, [user, toast]);
+  }, [user, toast, fetchParticipants]);
 
   // Join room
   const joinRoom = useCallback(async (roomCode: string): Promise<boolean> => {
