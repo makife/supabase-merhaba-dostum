@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/contexts/UserContext';
 import { Button } from '@/components/ui/button';
@@ -77,7 +77,7 @@ const GamePage = ({
   const { fadeOutBackgroundMusic, fadeInBackgroundMusic } = useMusic();
   const [searchParams] = useSearchParams();
   const [lastClickTime, setLastClickTime] = useState(0);
-  const cleanupRef = User<(() => void)[]>([]);
+  const cleanupRef = useRef<(() => void)[]>([]);
   const [audioYes] = useState(() => {
     const audio = new Audio('/yes.mp3');
     audio.volume = 0.7;
