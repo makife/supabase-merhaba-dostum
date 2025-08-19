@@ -1460,9 +1460,9 @@ useEffect(() => {
   // Submit word - Using local wordlist validation
   const submitWord = async () => {
   if (waitingForPlayer || isJokerActive) return;
-
+  
   setLastPlayerAction(Date.now());
-
+  
   if (currentWord.length < 3) {
     toast({
       title: 'Geçersiz Kelime',
@@ -1474,8 +1474,8 @@ useEffect(() => {
   }
 
   const normalizedWord = currentWord.toUpperCase();
-
-  // 🔥 GLOBAL kelime kontrolü - Tüm oyuncular için
+  
+  // GLOBAL kelime kontrolü - Tüm oyuncular için
   if (globalUsedWords.has(normalizedWord)) {
     toast({
       title: 'Kelime Zaten Kullanıldı',
@@ -1489,10 +1489,10 @@ useEffect(() => {
   }
 
   console.log('🔍 Validating word globally:', currentWord, 'Global used:', globalUsedWords.size);
-
+  
   // LOCAL WORDLIST VALIDATION
   const result = validateWordLocal(currentWord);
-
+  
   if (!result.isValid) {
     playSound('wrongWord');
     toast({
@@ -1505,80 +1505,28 @@ useEffect(() => {
     return;
   }
 
-  // Kelimeyi HEMEN local state'e ekle (race condition önlemek için)
+  // Kelimeyi HEMEN global state'e ekle (race condition önlemek için)
   setGlobalUsedWords(prev => new Set([...prev, normalizedWord]));
   setUsedWords(prev => new Set([...prev, normalizedWord]));
 
   console.log('✅ Word accepted (global validation):', currentWord, 'Points:', result.points);
-
-  // Database'e kelimeyi kaydet - HATA YÖNETİMİ İLE
+  
+  // Database'e kelimeyi kaydet
   if (currentRoom && user) {
     try {
-      // 🔧 FİX: upsert kullanarak duplicate key hatasını önle
-      const { data, error } = await supabase
+      await supabase
         .from('game_words')
-        .upsert({
+        .insert({
           room_id: currentRoom.id,
           player_id: user.id,
           word: normalizedWord,
           points: result.points
-        }, {
-          onConflict: 'room_id,word', // Bu kombinasyon zaten varsa güncelle
-          ignoreDuplicates: false
         });
-
-      if (error) {
-        console.error('❌ Database word save error:', error);
-        
-        // 🔧 FİX: Eğer kelime zaten kullanılmışsa (409), local state'i geri al
-        if (error.code === '23505' || error.message?.includes('duplicate')) {
-          setGlobalUsedWords(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(normalizedWord);
-            return newSet;
-          });
-          setUsedWords(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(normalizedWord);
-            return newSet;
-          });
-          
-          toast({
-            title: 'Kelime Zaten Kullanıldı',
-            description: 'Bu kelime başka bir oyuncu tarafından kullanılmış.',
-            variant: 'destructive',
-          });
-          clearWord();
-          return;
-        }
-        
-        // Diğer hatalar için genel mesaj
-        toast({
-          title: 'Hata',
-          description: 'Kelime kaydedilemedi, tekrar deneyin.',
-          variant: 'destructive',
-        });
-        
-        // State'i geri al
-        setGlobalUsedWords(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(normalizedWord);
-          return newSet;
-        });
-        setUsedWords(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(normalizedWord);
-          return newSet;
-        });
-        clearWord();
-        return;
-      }
-
+      
       console.log('✅ Word saved to database:', normalizedWord);
     } catch (error) {
-      console.error('❌ Database word save exception:', error);
-      
-      // State'i geri al
+      console.error('❌ Database word save error:', error);
+      // Eğer database'e kayıt başarısızsa geri al
       setGlobalUsedWords(prev => {
         const newSet = new Set(prev);
         newSet.delete(normalizedWord);
@@ -1589,10 +1537,9 @@ useEffect(() => {
         newSet.delete(normalizedWord);
         return newSet;
       });
-      
       toast({
         title: 'Hata',
-        description: 'Bağlantı hatası, tekrar deneyin.',
+        description: 'Kelime kaydedilemedi, tekrar deneyin.',
         variant: 'destructive',
       });
       clearWord();
@@ -1600,66 +1547,54 @@ useEffect(() => {
     }
   }
 
-  // Kelime başarıyla kaydedildiyse devam et
   playSound('correctWord');
   const newScore = playerScore + result.points;
   setPlayerScore(newScore);
-
+  
   setPlayerWords(prev => [...prev, currentWord]);
   setPlayerWordsWithScores(prev => [...prev, { word: currentWord, score: result.points }]);
-
+  
   triggerWordEffects();
-
-  // 🔧 FİX: updateScore fonksiyonuna da hata yönetimi ekle
+  
   if (currentRoom) {
-    try {
-      await updateScore(newScore);
-    } catch (error) {
-      console.error('❌ Score update error:', error);
-      // Skor güncellemesi başarısız olsa bile kelime kabul edildi
-    }
+    await updateScore(newScore);
   }
 
-  // Update total score in database for level progression
+  // Total score güncelleme
   if (user) {
-    try {
-      const { data: currentProfile } = await supabase
-        .from('profiles')
-        .select('total_score')
-        .eq('id', user.id)
-        .single();
+    const { data: currentProfile } = await supabase
+      .from('profiles')
+      .select('total_score')
+      .eq('id', user.id)
+      .single();
 
-      const calculateLevel = (totalScore: number) => {
-        const baseExp = 1000;
-        const expIncreasePerLevel = 100;
-        
-        let level = 1;
-        let totalExpNeeded = 0;
-        let currentLevelExp = baseExp;
-
-        while (totalScore >= totalExpNeeded + currentLevelExp) {
-          totalExpNeeded += currentLevelExp;
-          level++;
-          currentLevelExp = baseExp + (level - 1) * expIncreasePerLevel;
-        }
-
-        return level;
-      };
-
-      const currentLevel = calculateLevel(currentProfile?.total_score || 0);
-      const levelMultiplier = 1 + (currentLevel - 1) * 0.1;
-      const bonusPoints = Math.floor(result.points * levelMultiplier);
+    const calculateLevel = (totalScore: number) => {
+      const baseExp = 1000;
+      const expIncreasePerLevel = 100;
       
-      const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
-      
-      await supabase
-        .from('profiles')
-        .update({ total_score: newTotalScore })
-        .eq('id', user.id);
-    } catch (error) {
-      console.error('❌ Profile update error:', error);
-      // Profil güncellemesi başarısız olsa bile oyun devam eder
-    }
+      let level = 1;
+      let totalExpNeeded = 0;
+      let currentLevelExp = baseExp;
+
+      while (totalScore >= totalExpNeeded + currentLevelExp) {
+        totalExpNeeded += currentLevelExp;
+        level++;
+        currentLevelExp = baseExp + (level - 1) * expIncreasePerLevel;
+      }
+
+      return level;
+    };
+
+    const currentLevel = calculateLevel(currentProfile?.total_score || 0);
+    const levelMultiplier = 1 + (currentLevel - 1) * 0.1;
+    const bonusPoints = Math.floor(result.points * levelMultiplier);
+    
+    const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
+    
+    await supabase
+      .from('profiles')
+      .update({ total_score: newTotalScore })
+      .eq('id', user.id);
   }
 
   clearWord();
