@@ -77,6 +77,7 @@ const GamePage = ({
   const { fadeOutBackgroundMusic, fadeInBackgroundMusic } = useMusic();
   const [searchParams] = useSearchParams();
   const [lastClickTime, setLastClickTime] = useState(0);
+  const cleanupRef = useRef<(() => void)[]>([]);
   const [audioYes] = useState(() => {
     const audio = new Audio('/yes.mp3');
     audio.volume = 0.7;
@@ -93,6 +94,10 @@ const GamePage = ({
     return audio;
   });
   const [globalUsedWords, setGlobalUsedWords] = useState<Set<string>>(new Set());
+
+  const addCleanup = useCallback((cleanupFn: () => void) => {
+  cleanupRef.current.push(cleanupFn);
+}, []);
   
   // Joker state'leri
   const [jokers, setJokers] = useState<JokerState>({
