@@ -304,35 +304,20 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     try {
       console.log('📊 Katılımcılar yükleniyor:', roomId.slice(-8));
     
-      // RPC ile profil bilgileriyle beraber al
-      const { data: rpcData, error: rpcError } = await supabase.rpc(
-        'get_room_participants_with_profiles', 
-        { room_id: roomId }
-      );
-
-      if (rpcError) {
-        console.error('❌ RPC hatası, fallback kullanılıyor:', rpcError);
-        // Fallback: Normal sorgu
-        const { data } = await supabase
-          .from('game_participants')
-          .select(`
-            *,
-            profiles:user_id (username, avatar_url)
-          `)
-          .eq('room_id', roomId);
-      
-        if (data) {
-          console.log('📊 Fallback participants yüklendi:', data.length);
-          setParticipants(data as GameParticipant[]);
-        }
-      } else {
-        // RPC JSON sonucunu parse et
-        const parsedParticipants = typeof rpcData === 'string' 
-          ? JSON.parse(rpcData) 
-          : rpcData;
-      
-        console.log('📊 RPC participants yüklendi:', parsedParticipants?.length || 0);
-        setParticipants(parsedParticipants || []);
+      // TypeScript hatası nedeniyle RPC'yi direkt kullanamıyoruz, fallback'e geç
+      console.log('📊 Normal sorgu kullanılıyor (RPC tip sorunu)');
+    
+      const { data } = await supabase
+        .from('game_participants')
+        .select(`
+          *,
+          profiles:user_id (username, avatar_url)
+        `)
+        .eq('room_id', roomId);
+    
+      if (data) {
+        console.log('📊 Participants yüklendi:', data.length);
+        setParticipants(data as GameParticipant[]);
       }
     } catch (error) {
       console.error('❌ Katılımcı yükleme hatası:', error);
@@ -429,39 +414,30 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
       console.log('✅ Oda bulundu:', room.id.slice(-8));
 
-      // Mevcut katılımcıları kontrol et - RPC kullan
-      const { data: participants, error: participantsError } = await supabase.rpc(
-        'get_room_participants', 
-        { room_id: room.id }
-      );
+      // Mevcut katılımcıları kontrol et - Normal sorgu kullan (RPC tip sorunu)
+      const { data: participants, error: participantsError } = await supabase
+        .from('game_participants')
+        .select('user_id, is_bot')
+        .eq('room_id', room.id);
 
       if (participantsError) {
         console.error('❌ Katılımcı kontrolü hatası:', participantsError);
-        // Fallback: Normal sorgu dene
-        const { data: fallbackParticipants } = await supabase
-          .from('game_participants')
-          .select('user_id, is_bot')
-          .eq('room_id', room.id);
-      
-        const realPlayerCount = fallbackParticipants?.filter(p => !p.is_bot).length || 0;
-        if (realPlayerCount >= 2) {
-          toast({
-            title: 'Hata',
-            description: 'Oda dolu',
-            variant: 'destructive ',
-          });
-          return false;
-        }
-      } else {
-        const realPlayerCount = participants?.filter(p => !p.is_bot).length || 0;
-        if (realPlayerCount >= 2) {
-          toast({
-            title: 'Hata',
-            description: 'Oda dolu',
-            variant: 'destructive',
-          });
-          return false;
-        }
+        toast({
+          title: 'Hata',
+          description: 'Katılımcı kontrolü başarısız',
+          variant: 'destructive',
+        });
+        return false;
+      }
+
+      const realPlayerCount = participants?.filter(p => !p.is_bot).length || 0;
+      if (realPlayerCount >= 2) {
+        toast({
+          title: 'Hata',
+          description: 'Oda dolu',
+          variant: 'destructive', // destructive " -> destructive (boşluk kaldır)
+        });
+        return false;
       }
 
       // Kullanıcı zaten katılmış mı kontrol et
@@ -781,16 +757,17 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   const checkBadges = useCallback(async (userId: string, wordsCount?: number) => {
     try {
       console.log('🏆 Rozet kontrolü yapılıyor:', userId);
-      
-      // General badge check
+    
+      // General badge check - Type assertion ile düzelt
       const { data: generalBadges, error: generalError } = await supabase.rpc('check_and_award_badges', {
         p_user_id: userId
       });
-      
+    
       if (generalError) {
         console.error('❌ Genel rozet kontrolü hatası:', generalError);
-      } else if (generalBadges && generalBadges.length > 0) {
-        generalBadges.forEach((badge: any) => {
+      } else if (generalBadges && Array.isArray(generalBadges) && generalBadges.length > 0) {
+        // Type assertion: generalBadges as any[]
+        (generalBadges as any[]).forEach((badge: any) => {
           toast({
             title: '🏆 Yeni Rozet!',
             description: `"${badge.new_badge_name}" rozetini kazandınız! ${badge.new_badge_icon}`,
@@ -798,18 +775,19 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           });
         });
       }
-      
+    
       // Words per game badge check
       if (wordsCount && wordsCount > 0) {
         const { data: wordsBadges, error: wordsError } = await supabase.rpc('check_words_per_game_badge', {
           p_user_id: userId,
           p_words_count: wordsCount
         });
-        
+      
         if (wordsError) {
           console.error('❌ Kelime rozeti kontrolü hatası:', wordsError);
-        } else if (wordsBadges && wordsBadges.length > 0) {
-          wordsBadges.forEach((badge: any) => {
+        } else if (wordsBadges && Array.isArray(wordsBadges) && wordsBadges.length > 0) {
+          // Type assertion: wordsBadges as any[]
+          (wordsBadges as any[]).forEach((badge: any) => {
             toast({
               title: '🏆 Yeni Rozet!',
               description: `"${badge.new_badge_name}" rozetini kazandınız! ${badge.new_badge_icon}`,
@@ -818,7 +796,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           });
         }
       }
-      
+    
       console.log('✅ Rozet kontrolü tamamlandı');
     } catch (error) {
       console.error('❌ Rozet kontrolü hatası:', error);
