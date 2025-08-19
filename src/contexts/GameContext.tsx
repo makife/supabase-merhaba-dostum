@@ -496,7 +496,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           .single();
 
         if (existingParticipant) {
-          console.log('⚠️ Zaten bu odada katılımcısınız');
+          console.log('⚠️ Zaten bu odada katılımcısınız, oda güncelleniyor');
           setCurrentRoom(targetRoom);
           return true;
         }
@@ -559,7 +559,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
     if (roomError) throw roomError;
 
-    // Add self to room
+    // Add self to room as participant (host can play too)
     const { error: participantError } = await supabase
       .from('game_participants')
       .insert({
@@ -569,10 +569,14 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         is_bot: false
       });
 
-    if (participantError) throw participantError;
+    if (participantError) {
+      console.error('❌ Katılımcı ekleme hatası:', participantError);
+      throw participantError;
+    }
 
     setCurrentRoom(newRoom);
     console.log('🆕 Yeni oda oluşturuldu:', newRoom.id.slice(-8));
+    console.log('👤 Host kendini katılımcı olarak ekledi:', user.id.slice(-8));
     console.log('🔍 ===== MATCHMAKING BİTTİ (BEKLEMEDE) =====');
     
     toast({

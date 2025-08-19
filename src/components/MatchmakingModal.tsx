@@ -50,7 +50,7 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
           roomId: payload.new.room_id?.slice(-8)
         });
         
-        // SADECE gerçek oyuncu VE farklı kullanıcı ise
+        // SADECE gerçek oyuncu VE farklı kullanıcı ise (kendi katılımını ignore et)
         if (!payload.new.is_bot && 
             payload.new.user_id !== user.id && 
             payload.new.user_id !== null &&
