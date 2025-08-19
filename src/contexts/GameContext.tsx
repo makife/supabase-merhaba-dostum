@@ -252,44 +252,6 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     }
   }, [toast, user?.id]);
 
-  // Exit dialog'da da güvenlik önlemi ekle
-const handleBackToMenu = () => {
-  if (gameMode === 'tournament') {
-    toast({
-      title: '⚠️ Uyarı',
-      description: 'Turnuva maçından çıkamazsınız! Maçı tamamlamanız gerekiyor.',
-      variant: 'destructive',
-    });
-    return;
-  }
-  
-  // Aktif oyunda uyarı göster
-  if (currentRoom?.status === 'active' && gameMode !== 'vs-computer') {
-    setShowExitDialog(true);
-  } else {
-    // Güvenli çıkış
-    navigate('/');
-  }
-};
-
-// Exit dialog onay fonksiyonu
-const handleConfirmExit = async () => {
-  if (user && currentRoom?.status === 'active') {
-    console.log('🚪 Manuel çıkış - ceza uygulanacak:', user.id.slice(-8));
-    
-    // Kendine ceza ver
-    await applyDisconnectPenalty(user.id, true);
-    
-    // Room'dan ayrıl
-    await supabase
-      .from('game_participants')
-      .delete()
-      .eq('room_id', currentRoom.id)
-      .eq('user_id', user.id);
-  }
-  
-  navigate('/');
-};
 
   // Apply win bonus
   const applyWinBonus = useCallback(async (userId: string | undefined, bonusAmount: number = 100) => {
