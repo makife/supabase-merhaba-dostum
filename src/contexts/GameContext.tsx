@@ -784,69 +784,19 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 }, [user, currentRoom, applyDisconnectPenalty]);
 
   // Update score
-  const updateScore = async (newScore) => {
-  if (!currentRoom || !user) {
-    console.error('❌ updateScore: Room veya user yok');
-    return;
-  }
+  const updateScore = useCallback(async (score: number): Promise<void> => {
+    if (!user || !currentRoom) return;
 
-  try {
-    console.log('📊 Updating score:', { 
-      roomId: currentRoom.id.slice(-8), 
-      userId: user.id.slice(-8), 
-      newScore 
-    });
-
-    // 🔧 FİX: Önce participant'ı bul ve güncelle
-    const { data: participants, error: participantsError } = await supabase
-      .from('game_participants')
-      .select('*')
-      .eq('room_id', currentRoom.id)
-      .eq('user_id', user.id);
-
-    if (participantsError) {
-      console.error('❌ Participants fetch error:', participantsError);
-      return;
-    }
-
-    if (!participants || participants.length === 0) {
-      console.error('❌ Participant not found in room');
-      return;
-    }
-
-    // 🔧 FİX: Participant skorunu güncelle
-    const { error: updateError } = await supabase
-      .from('game_participants')
-      .update({ 
-        score: newScore,
-      })
-      .eq('room_id', currentRoom.id)
-      .eq('user_id', user.id);
-
-    if (updateError) {
-      console.error('❌ Participant score update error:', updateError);
-      return;
-    }
-
-    console.log('✅ Score updated successfully');
-
-    // 🔧 FİX: Room'un son aktivitesini güncelle (opsiyonel)
     try {
       await supabase
-        .from('game_rooms')
-        .update({ 
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', currentRoom.id);
-    } catch (roomUpdateError) {
-      console.error('❌ Room update error (non-critical):', roomUpdateError);
-      // Bu hata kritik değil, devam et
+        .from('game_participants')
+        .update({ score })
+        .eq('room_id', currentRoom.id)
+        .eq('user_id', user.id);
+    } catch (error) {
+      console.error('Error updating score:', error);
     }
-
-  } catch (error) {
-    console.error('❌ updateScore general error:', error);
-  }
-};
+  }, [user, currentRoom]);
 
   // Start game
   const startGame = useCallback(async (): Promise<void> => {
