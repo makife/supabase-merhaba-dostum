@@ -956,15 +956,8 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
     };
   }
 
-  // 🔥 GLOBAL used words check
-  if (globalUsedWords.has(normalizedWord)) {
-    console.log('🚫 Word already used globally:', normalizedWord);
-    return {
-      isValid: false,
-      points: 0,
-      message: 'Bu kelime bu oyunda zaten kullanıldı'
-    };
-  }
+
+  
 
   // Wordlist check - sadece orijinal
   if (wordlistLoaded) {
