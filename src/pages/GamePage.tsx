@@ -77,9 +77,21 @@ const GamePage = ({
   const { fadeOutBackgroundMusic, fadeInBackgroundMusic } = useMusic();
   const [searchParams] = useSearchParams();
   const [lastClickTime, setLastClickTime] = useState(0);
-  const [audioYes] = useState(new Audio('/yes.mp3'));
-  const [audioWow2] = useState(new Audio('/wow2.mp3'));
-  const [audioYahoo] = useState(new Audio('/yahoo.mp3'));
+  const [audioYes] = useState(() => {
+    const audio = new Audio('/yes.mp3');
+    audio.volume = 0.7;
+    return audio;
+  });
+  const [audioWow2] = useState(() => {
+    const audio = new Audio('/wow2.mp3');
+    audio.volume = 0.7;
+    return audio;
+  });
+  const [audioYahoo] = useState(() => {
+    const audio = new Audio('/yahoo.mp3');
+    audio.volume = 0.7;
+    return audio;
+  });
   const [globalUsedWords, setGlobalUsedWords] = useState<Set<string>>(new Set());
   
   // Joker state'leri
@@ -116,7 +128,7 @@ const GamePage = ({
   const [showExitDialog, setShowExitDialog] = useState(false);
 
   // Game state - Generate random letters each time
-  const generateRandomGrid = (): string[][] => {
+  const generateRandomGrid = useCallback((): string[][] => {
     const letterPool = [
       'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A', // A - very common
       'E', 'E', 'E', 'E', 'E', 'E', 'E',       // E - very common
@@ -159,7 +171,7 @@ const GamePage = ({
       grid.push(row);
     }
     return grid;
-  };
+  }, []);
 
   const [gameGrid, setGameGrid] = useState<string[][]>(() => {
     if (currentRoom?.current_grid) {
@@ -994,9 +1006,6 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
 }, [wordlist, wordlistLoaded, globalUsedWords]);
   
   useEffect(() => {
-    audioYes.volume = 0.7; // %70 ses
-    audioWow2.volume = 0.7; // %70 ses
-    audioYahoo.volume = 0.7; // %70 ses
     const initializeGame = async () => {
       fadeOutBackgroundMusic(1500);
       
