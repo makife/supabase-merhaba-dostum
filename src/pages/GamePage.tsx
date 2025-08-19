@@ -1137,39 +1137,40 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
 
   // Timer effect - for both timed and score modes
   useEffect(() => {
-    if (!gameStarted || gameEnded) return;
+  if (!gameStarted || gameEnded) return;
 
-    // For timed mode, use countdown timer
-    if (gameType === 'timed') {
-      const timer = setInterval(() => {
-        setTimeLeft((prev) => {
-          // Play time warning at 15 seconds
-          if (prev === 15 && !timeWarningPlayed) {
-            playTimeWarningSequence();
-            setTimeWarningPlayed(true);
-          }
-          
-          if (prev <= 1) {
-            setGameEnded(true);
-            // Use setTimeout to ensure we get the latest scores
-            setTimeout(() => {
-              setPlayerScore(currentPlayerScore => {
-                setOpponentScore(currentOpponentScore => {
-                  checkWinnerWithScores(currentPlayerScore, currentOpponentScore);
-                  return currentOpponentScore;
-                });
-                return currentPlayerScore;
+  if (gameType === 'timed') {
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev === 15 && !timeWarningPlayed) {
+          playTimeWarningSequence();
+          setTimeWarningPlayed(true);
+        }
+        
+        if (prev <= 1) {
+          setGameEnded(true);
+          setTimeout(() => {
+            setPlayerScore(currentPlayerScore => {
+              setOpponentScore(currentOpponentScore => {
+                checkWinnerWithScores(currentPlayerScore, currentOpponentScore);
+                return currentOpponentScore;
               });
-            }, 100);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+              return currentPlayerScore;
+            });
+          }, 100);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
 
-      return () => clearInterval(timer);
-    }
-  }, [gameStarted, gameEnded, gameType, timeWarningPlayed, playTimeWarningSequence]);
+    // Cleanup fonksiyonunu ekle
+    const cleanup = () => clearInterval(timer);
+    addCleanup(cleanup);
+
+    return cleanup;
+  }
+}, [gameStarted, gameEnded, gameType, timeWarningPlayed, addCleanup]);
 
   // Timer useEffect'inden SONRA ekleyin
 useEffect(() => {
