@@ -177,28 +177,39 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
   // Apply disconnect penalty with notifications
   const applyDisconnectPenalty = useCallback(async (userId: string, isCurrentUser: boolean = false) => {
-    if (!userId) return;
+    if (!userId) {
+      console.log('⚠️ applyDisconnectPenalty: userId boş');
+      return;
+    }
     
     try {
-      console.log('⚖️ Ayrılma cezası uygulanıyor:', userId.slice(-8));
-      
+      console.log('⚖️ Ceza uygulanacak oyuncu:', userId.slice(-8));
+      console.log('⚖️ Current user mi?', isCurrentUser);
+      console.log('⚖️ Actual current user:', user?.id?.slice(-8));
+    
+      // Double check: Kendine ceza verme!
+      if (userId === user?.id && !isCurrentUser) {
+        console.log('🛡️ KORUNMA: Kendine ceza vermeyi engellendi!');
+        return;
+      }
+    
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('total_score, disconnect_count, username')
         .eq('id', userId)
         .single();
-      
+    
       if (error) {
         console.error('❌ Profile fetch error:', error);
         return;
       }
-      
+    
       if (profile) {
         const currentScore = profile.total_score || 0;
         const disconnectCount = (profile.disconnect_count || 0) + 1;
         const penaltyAmount = Math.min(50 + (disconnectCount * 10), 200);
         const newScore = Math.max(0, currentScore - penaltyAmount);
-        
+      
         const { error: updateError } = await supabase
           .from('profiles')
           .update({ 
@@ -207,34 +218,78 @@ export const GameProvider = ({ children }: GameProviderProps) => {
             last_disconnect: new Date().toISOString()
           })
           .eq('id', userId);
-        
+      
         if (updateError) {
           console.error('❌ Profile update error:', updateError);
           return;
         }
-        
-        console.log('⚖️ Ceza uygulandı:', penaltyAmount, 'puan');
-        
-        // Show notifications
+      
+        console.log('⚖️ Ceza uygulandı:', {
+          userId: userId.slice(-8),
+          penaltyAmount,
+          newScore,
+          username: profile.username
+        });
+      
+        // Notifications
         if (isCurrentUser) {
-          // Show penalty notification to the user who disconnected
+          // Kendine ceza mesajı
           toast({
             title: '⚖️ Ayrılma Cezası',
             description: `Oyundan ayrıldığınız için ${penaltyAmount} puan kaybettiniz`,
             variant: 'destructive',
           });
         } else {
-          // Show notification about opponent leaving
+          // Rakip ayrıldı mesajı (kazanan için)
           toast({
             title: '🚪 Rakip Ayrıldı',
-            description: `${profile.username} oyundan ayrıldı ve ceza aldı. Siz kazandınız!`,
+            description: `${profile.username} oyundan ayrıldı ve ceza aldı.`,
           });
         }
       }
     } catch (error) {
       console.error('❌ Ceza uygulama hatası:', error);
     }
-  }, [toast]);
+  }, [toast, user?.id]);
+
+  // Exit dialog'da da güvenlik önlemi ekle
+const handleBackToMenu = () => {
+  if (gameMode === 'tournament') {
+    toast({
+      title: '⚠️ Uyarı',
+      description: 'Turnuva maçından çıkamazsınız! Maçı tamamlamanız gerekiyor.',
+      variant: 'destructive',
+    });
+    return;
+  }
+  
+  // Aktif oyunda uyarı göster
+  if (currentRoom?.status === 'active' && gameMode !== 'vs-computer') {
+    setShowExitDialog(true);
+  } else {
+    // Güvenli çıkış
+    navigate('/');
+  }
+};
+
+// Exit dialog onay fonksiyonu
+const handleConfirmExit = async () => {
+  if (user && currentRoom?.status === 'active') {
+    console.log('🚪 Manuel çıkış - ceza uygulanacak:', user.id.slice(-8));
+    
+    // Kendine ceza ver
+    await applyDisconnectPenalty(user.id, true);
+    
+    // Room'dan ayrıl
+    await supabase
+      .from('game_participants')
+      .delete()
+      .eq('room_id', currentRoom.id)
+      .eq('user_id', user.id);
+  }
+  
+  navigate('/');
+};
 
   // Apply win bonus
   const applyWinBonus = useCallback(async (userId: string | undefined, bonusAmount: number = 100) => {
@@ -1002,84 +1057,94 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   const currentGameMode = getGameModeFromRoom(currentRoom);
 
   const channel = supabase
-    .channel(`room-${currentRoom.id}`)
-    .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'game_participants',
-      filter: `room_id=eq.${currentRoom.id}`
-    }, async (payload: RealtimePayload) => {
-      console.log('📡 ===== REAL-TIME EVENT =====');
-      console.log('📡 Event Type:', payload.eventType);
-      console.log('📡 Game Mode:', currentGameMode);
-      console.log('📡 Payload:', payload.new?.user_id?.slice(-8), 'Bot:', payload.new?.is_bot);
+  .channel(`room-${currentRoom.id}`)
+  .on('postgres_changes', {
+    event: '*',
+    schema: 'public',
+    table: 'game_participants',
+    filter: `room_id=eq.${currentRoom.id}`
+  }, async (payload: RealtimePayload) => {
+    console.log('📡 ===== REAL-TIME EVENT =====');
+    console.log('📡 Event Type:', payload.eventType);
+    console.log('📡 Current User:', user?.id?.slice(-8));
+    console.log('📡 Payload User:', payload.new?.user_id?.slice(-8) || payload.old?.user_id?.slice(-8));
+    
+    // PRIVATE ROOM için özel INSERT handling
+    if (payload.eventType === 'INSERT' && payload.new) {
+      console.log('👤 Yeni katılımcı tespit edildi:', payload.new.user_id?.slice(-8));
       
-      // PRIVATE ROOM için özel INSERT handling
-      if (payload.eventType === 'INSERT' && payload.new) {
-        console.log('👤 Yeni katılımcı tespit edildi:', payload.new.user_id?.slice(-8));
+      if (!payload.new.is_bot && 
+          payload.new.user_id && 
+          payload.new.user_id !== user?.id) {
         
-        // Gerçek oyuncu mu kontrol et
-        if (!payload.new.is_bot && 
-            payload.new.user_id && 
-            payload.new.user_id !== user?.id) {
-          
-          console.log('✅ GERÇEK OYUNCU KATILDI! Private room eşleşmesi');
-          
-          // Toast göster
-          toast({
-            title: '🎉 Oyuncu Katıldı!',
-            description: 'İkinci oyuncu odaya katıldı, oyun başlıyor...',
-            duration: 2000,
-          });
-        }
+        console.log('✅ GERÇEK OYUNCU KATILDI! Private room eşleşmesi');
+        
+        toast({
+          title: '🎉 Oyuncu Katıldı!',
+          description: 'İkinci oyuncu odaya katıldı, oyun başlıyor...',
+          duration: 2000,
+        });
       }
+    }
+    
+    // Handle DELETE events - OYUNCU AYRILDI - DÜZELTME
+    if (payload.eventType === 'DELETE' && payload.old) {
+      console.log('🚪 OYUNCU AYRILDI!');
+      console.log('🚪 Ayrılan oyuncu:', payload.old.user_id?.slice(-8));
+      console.log('🚪 Mevcut oyuncu:', user?.id?.slice(-8));
+      console.log('🚪 Room status:', currentRoom.status);
       
-      // Handle DELETE events - OYUNCU AYRILDI
-      if (payload.eventType === 'DELETE' && payload.old) {
-        console.log('🚪 OYUNCU AYRILDI!');
+      // SADECE gerçek rakip ayrıldıysa işlem yap
+      if (!payload.old.is_bot && 
+          payload.old.user_id && 
+          payload.old.user_id !== user?.id && // ÖNEMLİ: Kendisi değilse
+          currentRoom.status === 'active') {
         
-        if (!payload.old.is_bot && 
-            payload.old.user_id && 
-            payload.old.user_id !== user?.id &&
-            currentRoom.status === 'active') {
-          
-          console.log('🏆 RAKIP AYRILDI - KAZANDIN!');
-          
-          // Ceza ver
-          await applyDisconnectPenalty(payload.old.user_id, false);
-          
-          // Bonus ver
-          await applyWinBonus(user?.id);
+        console.log('🏆 RAKIP AYRILDI - SEN KAZANDIN!');
+        
+        // Ayrılan oyuncuya ceza ver
+        await applyDisconnectPenalty(payload.old.user_id, false);
+        
+        // Kalan oyuncuya (sen) bonus ver
+        if (user?.id) {
+          await applyWinBonus(user.id);
           
           toast({
             title: '🏆 Kazandınız!',
             description: 'Rakip oyundan ayrıldı. +100 bonus puan!',
             duration: 4000,
           });
-          
-          // ★★★ KILIT NOKTA: ODAYI SİL! ★★★
-          console.log('🗑️ ODA SİLİNİYOR - TEKRAR EŞLEŞME ÖNLEME');
-          await supabase
-            .from('game_rooms')
-            .delete()
-            .eq('id', currentRoom.id);
-          
-          // Disconnect event gönder
-          window.dispatchEvent(new CustomEvent('playerDisconnected', {
-            detail: { winner: 'player', reason: 'opponent_left' }
-          }));
-          
-          // State temizle
-          setTimeout(() => {
-            setCurrentRoom(null);
-            setParticipants([]);
-          }, 2000);
         }
+        
+        // ★★★ ODAYI SİL! ★★★
+        console.log('🗑️ ODA SİLİNİYOR');
+        await supabase
+          .from('game_rooms')
+          .delete()
+          .eq('id', currentRoom.id);
+        
+        // Game end event gönder
+        window.dispatchEvent(new CustomEvent('playerDisconnected', {
+          detail: { winner: 'player', reason: 'opponent_left' }
+        }));
+        
+        // State temizle
+        setTimeout(() => {
+          setCurrentRoom(null);
+          setParticipants([]);
+        }, 2000);
+      } else {
+        console.log('🔄 DELETE event ama işlem yapmıyoruz:', {
+          isBot: payload.old.is_bot,
+          isCurrentUser: payload.old.user_id === user?.id,
+          roomStatus: currentRoom.status
+        });
       }
-      
-      // Participants'ı güncelle
-      await fetchParticipants(currentRoom.id);
-    })
+    }
+    
+    // Participants'ı güncelle
+    await fetchParticipants(currentRoom.id);
+  })
     .on('postgres_changes', {
       event: 'UPDATE',
       schema: 'public', 
