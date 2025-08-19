@@ -80,6 +80,7 @@ const GamePage = ({
   const [audioYes] = useState(new Audio('/yes.mp3'));
   const [audioWow2] = useState(new Audio('/wow2.mp3'));
   const [audioYahoo] = useState(new Audio('/yahoo.mp3'));
+  const [globalUsedWords, setGlobalUsedWords] = useState<Set<string>>(new Set());
   
   // Joker state'leri
   const [jokers, setJokers] = useState<JokerState>({
@@ -915,20 +916,15 @@ const useSenYazJoker = async () => {
 
   // Local word validation - Sözlükteki kelimeleri Türkçe'ye çevir
 const validateWordLocal = useCallback((word: string): { isValid: boolean; points: number; message: string } => {
-  // Latin karakterleri Türkçe'ye çevir
-  const latinToTurkish = (text: string): string => {
-    return text
-      .toUpperCase()
-      .replace(/I/g, 'İ')  // Latin I -> Turkish İ
-      .replace(/S/g, 'Ş')  // Bazı S'ler Ş olabilir (opsiyonel)
-      .replace(/G/g, 'Ğ')  // Bazı G'ler Ğ olabilir (opsiyonel)  
-      .replace(/C/g, 'Ç')  // Bazı C'ler Ç olabilir (opsiyonel)
-      .replace(/U/g, 'Ü')  // Bazı U'lar Ü olabilir (opsiyonel)
-      .replace(/O/g, 'Ö')  // Bazı O'lar Ö olabilir (opsiyonel)
-      .trim();
-  };
-
   const normalizedWord = word.toUpperCase().trim();
+  
+  console.log('🔍 Mobile validation debug:', {
+    originalWord: word,
+    normalizedWord,
+    length: normalizedWord.length,
+    globalUsedCount: globalUsedWords.size,
+    isUsed: globalUsedWords.has(normalizedWord)
+  });
   
   // Basic checks
   if (normalizedWord.length < 3) {
@@ -946,6 +942,16 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
       isValid: false,
       points: 0,
       message: 'Sadece Türkçe harfler kullanabilirsiniz'
+    };
+  }
+
+  // 🔥 GLOBAL used words check - MOBILE İÇİN ÖNEMLİ
+  if (globalUsedWords.has(normalizedWord)) {
+    console.log('🚫 Mobile: Word already used globally:', normalizedWord);
+    return {
+      isValid: false,
+      points: 0,
+      message: 'Bu kelime bu oyunda zaten kullanıldı'
     };
   }
 
@@ -985,10 +991,10 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
   
   return {
     isValid: true,
-    points,
+    points: calculatePoints(normalizedWord),
     message: 'Geçerli kelime'
   };
-}, [wordlist, wordlistLoaded]);
+}, [wordlist, wordlistLoaded, globalUsedWords]);
   
   useEffect(() => {
     audioYes.volume = 0.7; // %70 ses
@@ -1208,6 +1214,64 @@ useEffect(() => {
     return aiStatus;
   }, [gameMode, participants]);
 
+  // Real-time kelime senkronizasyonu
+useEffect(() => {
+  if (!currentRoom) return;
+
+  console.log('🔄 === WORD SYNC BAŞLADI ===');
+  console.log('🔄 Room ID:', currentRoom.id.slice(-8));
+
+  // Room'daki tüm kelimeleri al ve sync et
+  const syncUsedWords = async () => {
+    try {
+      const { data: roomWords } = await supabase
+        .from('game_words')
+        .select('word')
+        .eq('room_id', currentRoom.id);
+
+      if (roomWords) {
+        const wordsSet = new Set(roomWords.map(w => w.word.toUpperCase()));
+        console.log('🔄 Syncing used words:', wordsSet.size, 'words');
+        console.log('🔄 Words:', Array.from(wordsSet));
+        setGlobalUsedWords(wordsSet);
+        setUsedWords(wordsSet); // Local state'i de güncelle
+      }
+    } catch (error) {
+      console.error('❌ Word sync error:', error);
+    }
+  };
+
+  // İlk sync
+  syncUsedWords();
+
+  // Real-time word changes dinle
+  const wordChannel = supabase
+    .channel(`words-${currentRoom.id}`)
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'game_words',
+      filter: `room_id=eq.${currentRoom.id}`
+    }, (payload) => {
+      console.log('📝 New word detected via real-time:', payload.new?.word);
+      if (payload.new?.word) {
+        const newWord = payload.new.word.toUpperCase();
+        setGlobalUsedWords(prev => {
+          const newSet = new Set([...prev, newWord]);
+          console.log('📝 Global words updated:', newSet.size, 'total words');
+          return newSet;
+        });
+        setUsedWords(prev => new Set([...prev, newWord]));
+      }
+    })
+    .subscribe();
+
+  return () => {
+    console.log('🧹 Word sync cleanup');
+    supabase.removeChannel(wordChannel);
+  };
+}, [currentRoom?.id]);
+
   // AI continuous play effect - unified for all modes when playing with AI
   useEffect(() => {
     const aiPlaying = isPlayingWithAI();
@@ -1315,22 +1379,15 @@ useEffect(() => {
 
   // Private room logic
   useEffect(() => {
-    console.log('🏠 Private room effect - Mode:', gameMode, 'Participants:', participants.length);
-    console.log('👥 Participants detay:');
-    participants.forEach((p, i) => {
-      console.log(`  ${i+1}. ${p.is_bot ? '🤖 Bot' : '👤 Real'} ${p.user_id?.slice(-8)} - ${(p as any).profiles?.username || 'N/A'}`);
-    });
-
     if (gameMode === 'private-room') {
-      // Gerçek oyuncu sayısını hesapla (bot olmayan ve null olmayan)
       const realPlayers = participants.filter(p => !p.is_bot && p.user_id !== null);
-      console.log('👤 Gerçek oyuncu sayısı:', realPlayers.length);
-
+    
       if (realPlayers.length >= 2) {
         console.log('✅ 2 gerçek oyuncu hazır - PRIVATE ROOM OYUNU BAŞLIYOR!');
         setWaitingForPlayer(false);
         setGameStarted(true);
-        setUsedWords(new Set());
+        setUsedWords(new Set()); // Local state temizle
+        setGlobalUsedWords(new Set()); // 🔥 Global state temizle
       
         if (!hasShownStartMessage) {
           setHasShownStartMessage(true);
@@ -1341,17 +1398,12 @@ useEffect(() => {
           });
         }
       } else {
-        console.log('⏳ İkinci gerçek oyuncu bekleniyor... (mevcut:', realPlayers.length, ')');
         setWaitingForPlayer(true);
         setGameStarted(false);
         setHasShownStartMessage(false);
         setUsedWords(new Set());
+        setGlobalUsedWords(new Set()); // 🔥 Global state temizle
       }
-    } else {
-      // Diğer modlar için mevcut mantık
-      setGameStarted(true);
-      setWaitingForPlayer(false);
-      setUsedWords(new Set());
     }
   }, [participants, gameMode, hasShownStartMessage, gameType, toast]);
 
@@ -1407,50 +1459,92 @@ useEffect(() => {
   // Submit word - Using local wordlist validation
   const submitWord = async () => {
     if (waitingForPlayer || isJokerActive) return;
-    
+  
     setLastPlayerAction(Date.now());
-    
+  
     if (currentWord.length < 3) {
       toast({
         title: 'Geçersiz Kelime',
         description: 'Kelime en az 3 harf olmalıdır.',
         variant: 'destructive',
-        duration: 400, // 0.5 saniye
+        duration: 400,
       });
       return;
     }
 
     const normalizedWord = currentWord.toUpperCase();
-    
-    // Önce kullanılmış kelime kontrolü yap
-    if (usedWords.has(normalizedWord)) {
+  
+    // 🔥 GLOBAL kelime kontrolü - Tüm oyuncular için
+    if (globalUsedWords.has(normalizedWord)) {
       toast({
-        title: 'Kelimeyi Zaten Kullandınız',
-        description: 'Bu kelimeyi daha önce kullandınız.',
+        title: 'Kelime Zaten Kullanıldı',
+        description: 'Bu kelime bu oyunda zaten kullanıldı.',
         variant: 'destructive',
-        duration: 400, // 0.5 saniye
+        duration: 1000,
       });
       playSound('wrongWord');
       clearWord();
       return;
     }
 
-    console.log('🔍 Validating word locally:', currentWord);
-    
+    console.log('🔍 Validating word globally:', currentWord, 'Global used:', globalUsedWords.size);
+  
     // LOCAL WORDLIST VALIDATION
     const result = validateWordLocal(currentWord);
-    
+  
     if (!result.isValid) {
       playSound('wrongWord');
       toast({
         title: 'Geçersiz Kelime',
         description: result.message,
         variant: 'destructive',
-        duration: 400, // 0.5 saniye
+        duration: 1000,
       });
       clearWord();
       return;
     }
+
+  // Kelimeyi HEMEN global state'e ekle (race condition önlemek için)
+  setGlobalUsedWords(prev => new Set([...prev, normalizedWord]));
+  setUsedWords(prev => new Set([...prev, normalizedWord]));
+
+  console.log('✅ Word accepted (global validation):', currentWord, 'Points:', result.points);
+  
+  // Database'e kelimeyi kaydet
+  if (currentRoom && user) {
+    try {
+      await supabase
+        .from('game_words')
+        .insert({
+          room_id: currentRoom.id,
+          player_id: user.id,
+          word: normalizedWord,
+          points: result.points
+        });
+      
+      console.log('✅ Word saved to database:', normalizedWord);
+    } catch (error) {
+      console.error('❌ Database word save error:', error);
+      // Eğer database'e kayıt başarısızsa geri al
+      setGlobalUsedWords(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(normalizedWord);
+        return newSet;
+      });
+      setUsedWords(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(normalizedWord);
+        return newSet;
+      });
+      toast({
+        title: 'Hata',
+        description: 'Kelime kaydedilemedi, tekrar deneyin.',
+        variant: 'destructive',
+      });
+      clearWord();
+      return;
+    }
+  }
 
     console.log('✅ Word accepted (local validation):', currentWord, 'Points:', result.points);
     
