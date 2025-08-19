@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSounds } from '@/hooks/useSounds';
 import { Button } from '@/components/ui/button';
-import { GlobalChat } from '@/components/GlobalChat';
+import { useChatNotifications } from '@/hooks/useChatNotifications';
 
 
 import {
@@ -34,6 +34,7 @@ export function FloatingMenu() {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const { playSound } = useSounds();
+  const { unreadCount } = useChatNotifications();
 
   const handleToggle = () => {
     playSound('buttonClick');
@@ -48,7 +49,7 @@ export function FloatingMenu() {
 
   const handleChatOpen = () => {
     playSound('buttonClick');
-    setIsChatOpen(true);
+    navigate('/chat');
     setIsOpen(false);
   };
 
@@ -144,6 +145,13 @@ export function FloatingMenu() {
             >
               <div className="absolute inset-0 bg-white/20 scale-0 group-hover:scale-100 transition-transform duration-300 rounded-full" />
               <MessageCircle className="w-4 h-4 relative z-10" />
+              
+              {/* Notification Badge */}
+              {unreadCount > 0 && (
+                <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 border-white animate-pulse">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </div>
+              )}
             </Button>
           </div>
         </div>
@@ -217,11 +225,6 @@ export function FloatingMenu() {
         </Button>
       </div>
 
-      {/* Global Chat */}
-      <GlobalChat 
-        isOpen={isChatOpen} 
-        onClose={() => setIsChatOpen(false)} 
-      />
     </div>
   );
 }

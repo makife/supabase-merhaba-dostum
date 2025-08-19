@@ -21,6 +21,7 @@ import TestMatchmakingPage from "@/pages/TestMatchmakingPage";
 import NotFound from "./pages/NotFound";
 import LeaderboardPage from "@/pages/LeaderboardPage";
 import TournamentMatchPage from './pages/TournamentMatchPage';
+import ChatPage from './pages/ChatPage';
 
 const queryClient = new QueryClient();
 
@@ -92,6 +93,11 @@ const AppRoutes = () => {
       <Route path="/leaderboard" element={
         <ProtectedRoute>
           <LeaderboardPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/chat" element={
+        <ProtectedRoute>
+          <ChatPage />
         </ProtectedRoute>
       } />
       <Route path="/test-matchmaking" element={

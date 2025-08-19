@@ -34,6 +34,7 @@ interface MessageReaction {
 interface GlobalChatProps {
   isOpen: boolean;
   onClose: () => void;
+  isFullPage?: boolean;
 }
 
 type ViewMode = 'global' | 'users' | 'private-chat';
@@ -44,7 +45,7 @@ interface SelectedUser {
   avatar_url?: string;
 }
 
-export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
+export function GlobalChat({ isOpen, onClose, isFullPage = false }: GlobalChatProps) {
   const { user } = useAuth();
   const { profile } = useUser();
   const { playSound } = useSounds();
@@ -912,6 +913,15 @@ export function GlobalChat({ isOpen, onClose }: GlobalChatProps) {
   );
 
   if (!isOpen) return null;
+
+  // If it's full page mode, don't wrap in modal
+  if (isFullPage) {
+    return (
+      <div className="h-full w-full flex flex-col">
+        {renderGlobalChat()}
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
