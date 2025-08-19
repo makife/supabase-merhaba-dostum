@@ -77,7 +77,7 @@ const GamePage = ({
   const { fadeOutBackgroundMusic, fadeInBackgroundMusic } = useMusic();
   const [searchParams] = useSearchParams();
   const [lastClickTime, setLastClickTime] = useState(0);
-  const cleanupRef = useRef<(() => void)[]>([]);
+  const cleanupRef = User<(() => void)[]>([]);
   const [audioYes] = useState(() => {
     const audio = new Audio('/yes.mp3');
     audio.volume = 0.7;
