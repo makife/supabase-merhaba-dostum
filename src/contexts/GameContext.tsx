@@ -302,20 +302,40 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   // Fetch participants
   const fetchParticipants = useCallback(async (roomId: string) => {
     try {
-      const { data } = await supabase
-        .from('game_participants')
-        .select(`
-          *,
-          profiles:user_id (username, avatar_url)
-        `)
-        .eq('room_id', roomId);
+      console.log('📊 Katılımcılar yükleniyor:', roomId.slice(-8));
+    
+      // RPC ile profil bilgileriyle beraber al
+      const { data: rpcData, error: rpcError } = await supabase.rpc(
+        'get_room_participants_with_profiles', 
+        { room_id: roomId }
+      );
+
+      if (rpcError) {
+        console.error('❌ RPC hatası, fallback kullanılıyor:', rpcError);
+        // Fallback: Normal sorgu
+        const { data } = await supabase
+          .from('game_participants')
+          .select(`
+            *,
+            profiles:user_id (username, avatar_url)
+          `)
+          .eq('room_id', roomId);
       
-      if (data) {
-        console.log('👥 Katılımcılar güncellendi:', data.length);
-        setParticipants(data as GameParticipant[]);
+        if (data) {
+          console.log('📊 Fallback participants yüklendi:', data.length);
+          setParticipants(data as GameParticipant[]);
+        }
+      } else {
+        // RPC JSON sonucunu parse et
+        const parsedParticipants = typeof rpcData === 'string' 
+          ? JSON.parse(rpcData) 
+          : rpcData;
+      
+        console.log('📊 RPC participants yüklendi:', parsedParticipants?.length || 0);
+        setParticipants(parsedParticipants || []);
       }
     } catch (error) {
-      console.error('Error fetching participants:', error);
+      console.error('❌ Katılımcı yükleme hatası:', error);
     }
   }, []);
 
@@ -387,6 +407,9 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     if (!user) return false;
 
     try {
+      console.log('🔍 Özel oda aranıyor:', roomCode);
+    
+      // Önce oda var mı kontrol et
       const { data: room, error: roomError } = await supabase
         .from('game_rooms')
         .select('*')
@@ -395,43 +418,92 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         .single();
 
       if (roomError || !room) {
+        console.error('❌ Oda bulunamadı:', roomError);
         toast({
           title: 'Hata',
-          description: 'Oda bulunamadı',
+          description: 'Oda bulunamadı veya dolu',
           variant: 'destructive',
         });
         return false;
       }
 
-      // Check if already in room
-      const { data: existing } = await supabase
-        .from('game_participants')
-        .select('*')
-        .eq('room_id', room.id)
-        .eq('user_id', user.id)
-        .single();
+      console.log('✅ Oda bulundu:', room.id.slice(-8));
 
-      if (!existing) {
-        await supabase
+      // Mevcut katılımcıları kontrol et - RPC kullan
+      const { data: participants, error: participantsError } = await supabase.rpc(
+        'get_room_participants', 
+        { room_id: room.id }
+      );
+
+      if (participantsError) {
+        console.error('❌ Katılımcı kontrolü hatası:', participantsError);
+        // Fallback: Normal sorgu dene
+        const { data: fallbackParticipants } = await supabase
           .from('game_participants')
-          .insert({
-            room_id: room.id,
-            user_id: user.id,
-            score: 0,
-            is_bot: false
+          .select('user_id, is_bot')
+          .eq('room_id', room.id);
+      
+        const realPlayerCount = fallbackParticipants?.filter(p => !p.is_bot).length || 0;
+        if (realPlayerCount >= 2) {
+          toast({
+            title: 'Hata',
+            description: 'Oda dolu',
+            variant: 'destructive ',
           });
+          return false;
+        }
+      } else {
+        const realPlayerCount = participants?.filter(p => !p.is_bot).length || 0;
+        if (realPlayerCount >= 2) {
+          toast({
+            title: 'Hata',
+            description: 'Oda dolu',
+            variant: 'destructive',
+          });
+          return false;
+        }
       }
 
+      // Kullanıcı zaten katılmış mı kontrol et
+      const isAlreadyJoined = participants?.some(p => p.user_id === user.id);
+      if (isAlreadyJoined) {
+        console.log('✅ Kullanıcı zaten katılmış, room state güncelleniyor');
+        setCurrentRoom(room);
+        await fetchParticipants(room.id);
+        return true;
+      }
+
+      // Odaya katıl
+      const { error: joinError } = await supabase
+        .from('game_participants')
+        .insert({
+          room_id: room.id,
+          user_id: user.id,
+          score: 0,
+          is_bot: false
+        });
+
+      if (joinError) {
+        console.error('❌ Odaya katılma hatası:', joinError);
+        toast({
+          title: 'Hata',
+          description: 'Odaya katılamadı',
+          variant: 'destructive',
+        });
+        return false;
+      }
+
+      console.log('✅ Odaya katılım başarılı');
       setCurrentRoom(room);
-      
+    
       toast({
         title: 'Odaya Katıldınız',
-        description: 'Oyun başlamayı bekliyor',
+        description: 'Diğer oyuncuyu bekleniyor...',
       });
 
       return true;
-    } catch (error) {
-      console.error('Error joining room:', error);
+    } catch (error: any) {
+      console.error('❌ Özel oda katılım hatası:', error);
       toast({
         title: 'Hata',
         description: 'Odaya katılamadı',
@@ -439,7 +511,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       });
       return false;
     }
-  }, [user, toast]);
+  }, [user, toast, fetchParticipants]);
 
   // Find random match - race condition prevention
   const findRandomMatch = useCallback(async (gameType: 'timed' | 'score'): Promise<boolean> => {
@@ -870,9 +942,10 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   // Check if room is full and close it
   useEffect(() => {
     if (!currentRoom || currentRoom.status !== 'waiting') return;
-    
+  
     const realPlayers = participants.filter(p => !p.is_bot);
-    
+    console.log('🔍 Oda kontrolü - Gerçek oyuncu sayısı:', realPlayers.length);
+  
     if (realPlayers.length >= 2) {
       console.log('🔒 Oda dolu, kapatılıyor...');
       closeFullRoom(currentRoom.id);
@@ -903,6 +976,27 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       console.log('📡 ===== REAL-TIME EVENT =====');
       console.log('📡 Event Type:', payload.eventType);
       console.log('📡 Game Mode:', currentGameMode);
+      console.log('📡 Payload:', payload.new?.user_id?.slice(-8), 'Bot:', payload.new?.is_bot);
+      
+      // PRIVATE ROOM için özel INSERT handling
+      if (payload.eventType === 'INSERT' && payload.new) {
+        console.log('👤 Yeni katılımcı tespit edildi:', payload.new.user_id?.slice(-8));
+        
+        // Gerçek oyuncu mu kontrol et
+        if (!payload.new.is_bot && 
+            payload.new.user_id && 
+            payload.new.user_id !== user?.id) {
+          
+          console.log('✅ GERÇEK OYUNCU KATILDI! Private room eşleşmesi');
+          
+          // Toast göster
+          toast({
+            title: '🎉 Oyuncu Katıldı!',
+            description: 'İkinci oyuncu odaya katıldı, oyun başlıyor...',
+            duration: 2000,
+          });
+        }
+      }
       
       // Handle DELETE events - OYUNCU AYRILDI
       if (payload.eventType === 'DELETE' && payload.old) {
@@ -947,7 +1041,17 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         }
       }
       
-      fetchParticipants(currentRoom.id);
+      // Participants'ı güncelle
+      await fetchParticipants(currentRoom.id);
+    })
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public', 
+      table: 'game_rooms',
+      filter: `id=eq.${currentRoom.id}`
+    }, (payload) => {
+      console.log('🏠 Room güncelleme:', payload.new);
+      setCurrentRoom(payload.new as GameRoom);
     })
     .on('presence', { event: 'leave' }, async ({ key }) => {
       console.log('🚪 Bağlantı koptu:', key);
@@ -998,7 +1102,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     console.log('🔌 Real-time bağlantı kesiliyor');
     supabase.removeChannel(channel);
   };
-}, [currentRoom?.id, currentRoom?.status, user?.id]);
+}, [currentRoom?.id, currentRoom?.status, user?.id, fetchParticipants, toast, applyDisconnectPenalty, applyWinBonus, getGameModeFromRoom]);
 
   // Handle page close/refresh cleanup
   useEffect(() => {
