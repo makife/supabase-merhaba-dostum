@@ -174,31 +174,7 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
   };
 
   return (
-    <Card className="w-full max-w-md h-[600px] flex flex-col bg-background border-2 border-primary/20">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
-        <div className="flex items-center space-x-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onBack}
-            className="p-1"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <UserAvatar
-            src={otherUser.avatar_url}
-            alt={otherUser.username}
-            fallback={otherUser.username.charAt(0).toUpperCase()}
-            size="xxs"
-          />
-          <div>
-            <h3 className="font-semibold">{otherUser.username}</h3>
-            <p className="text-xs text-muted-foreground">Özel Sohbet</p>
-          </div>
-        </div>
-      </div>
-
+    <div className="w-full h-full flex flex-col bg-background">
       {/* Messages */}
       <ScrollArea className="flex-1 p-4 overflow-hidden">
         <div className="space-y-4 overflow-hidden">
@@ -236,7 +212,7 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
       <Separator />
 
       {/* Message Input */}
-      <div className="p-4">
+      <div className="p-4 bg-background">
         <div className="flex space-x-2">
           <Input
             value={newMessage}
@@ -251,7 +227,7 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
             onClick={sendMessage}
             disabled={!newMessage.trim() || isLoading}
             size="sm"
-            className="px-3"
+            className="px-3 flex-shrink-0"
           >
             <Send className="w-4 h-4" />
           </Button>
@@ -260,6 +236,6 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
           {newMessage.length}/500
         </div>
       </div>
-    </Card>
+    </div>
   );
 }

@@ -21,6 +21,18 @@ const config: CapacitorConfig = {
       splashFullScreen: true,
       splashImmersive: true
     },
+    StatusBar: {
+      style: 'DARK',
+      backgroundColor: '#F7FAFC'
+    },
+    SafeArea: {
+      enabled: true,
+      customColorsForSystemBars: true,
+      statusBarColor: '#F7FAFC',
+      statusBarStyle: 'DARK',
+      navigationBarColor: '#F7FAFC',
+      navigationBarStyle: 'DARK'
+    },
     AdMob: {
       appId: 'ca-app-pub-4768026665961339~9319477813', // Android App ID
       androidAppId: 'ca-app-pub-4768026665961339~9319477813',

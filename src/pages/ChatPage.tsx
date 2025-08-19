@@ -5,10 +5,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSounds } from '@/hooks/useSounds';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, Users, MessageCircle, Hash } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { ArrowLeft, Users, MessageCircle, Hash, Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { GlobalChat } from '@/components/GlobalChat';
 import { PrivateChat } from '@/components/PrivateChat';
+import { UserAvatar } from '@/components/UserAvatar';
 
 type ViewMode = 'global' | 'users' | 'private-chat';
 
@@ -107,55 +109,110 @@ export default function ChatPage() {
 
   const renderUsersList = () => (
     <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
+      {/* Mobile Header */}
+      <div className="flex items-center justify-between p-4 border-b border-border bg-background sticky top-0 z-10">
         <div className="flex items-center space-x-3">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => handleViewChange('global')}
-            className="p-1"
+            className="p-2 hover:bg-accent rounded-full"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-5 h-5" />
           </Button>
           <Users className="w-5 h-5 text-primary" />
           <h2 className="text-lg font-semibold">Özel Sohbet</h2>
         </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleBackToMenu}
+          className="p-2 hover:bg-accent rounded-full"
+        >
+          <Home className="w-5 h-5" />
+        </Button>
       </div>
 
-      {/* Users List */}
-      <div className="flex-1 p-4 space-y-2">
-        {allUsers.map((targetUser) => (
-          <Card
-            key={targetUser.id}
-            className="p-3 hover:bg-accent cursor-pointer transition-colors"
-            onClick={() => startPrivateChat(targetUser)}
-          >
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                <span className="text-sm font-semibold">
-                  {targetUser.username?.charAt(0).toUpperCase()}
-                </span>
+      {/* Users List - Scrollable */}
+      <ScrollArea className="flex-1">
+        <div className="p-4 space-y-3">
+          {allUsers.map((targetUser) => (
+            <Card
+              key={targetUser.id}
+              className="p-4 hover:bg-accent cursor-pointer transition-colors active:bg-accent/80"
+              onClick={() => startPrivateChat(targetUser)}
+            >
+              <div className="flex items-center space-x-3">
+                <UserAvatar
+                  src={targetUser.avatar_url}
+                  alt={targetUser.username}
+                  fallback={targetUser.username?.charAt(0).toUpperCase()}
+                  size="sm"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">{targetUser.username}</p>
+                  <p className="text-sm text-muted-foreground">Özel mesaj gönder</p>
+                </div>
+                <MessageCircle className="w-5 h-5 text-muted-foreground flex-shrink-0" />
               </div>
-              <div>
-                <p className="font-medium">{targetUser.username}</p>
-                <p className="text-xs text-muted-foreground">Özel mesaj gönder</p>
-              </div>
+            </Card>
+          ))}
+          {allUsers.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p>Henüz kullanıcı bulunamadı</p>
             </div>
-          </Card>
-        ))}
-      </div>
+          )}
+        </div>
+      </ScrollArea>
     </div>
   );
 
   const renderContent = () => {
     if (viewMode === 'private-chat' && selectedUser && activeChatId) {
       return (
-        <PrivateChat
-          chatId={activeChatId}
-          otherUser={selectedUser}
-          onBack={() => handleViewChange('users')}
-        />
+        <div className="h-full flex flex-col">
+          {/* Private Chat Header */}
+          <div className="flex items-center justify-between p-4 border-b border-border bg-background sticky top-0 z-10">
+            <div className="flex items-center space-x-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleViewChange('users')}
+                className="p-2 hover:bg-accent rounded-full"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+              <UserAvatar
+                src={selectedUser.avatar_url}
+                alt={selectedUser.username}
+                fallback={selectedUser.username?.charAt(0).toUpperCase()}
+                size="sm"
+              />
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-semibold truncate">{selectedUser.username}</h2>
+                <p className="text-sm text-muted-foreground">Özel Sohbet</p>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBackToMenu}
+              className="p-2 hover:bg-accent rounded-full flex-shrink-0"
+            >
+              <Home className="w-5 h-5" />
+            </Button>
+          </div>
+          
+          {/* Private Chat Content */}
+          <div className="flex-1 min-h-0">
+            <PrivateChat
+              chatId={activeChatId}
+              otherUser={selectedUser}
+              onBack={() => handleViewChange('users')}
+            />
+          </div>
+        </div>
       );
     }
 
@@ -166,16 +223,16 @@ export default function ChatPage() {
     // Global chat
     return (
       <div className="h-full flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
+        {/* Global Chat Header */}
+        <div className="flex items-center justify-between p-4 border-b border-border bg-background sticky top-0 z-10">
           <div className="flex items-center space-x-3">
             <Button
               variant="ghost"
               size="sm"
               onClick={handleBackToMenu}
-              className="p-1"
+              className="p-2 hover:bg-accent rounded-full"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-5 h-5" />
             </Button>
             <Hash className="w-5 h-5 text-primary" />
             <h2 className="text-lg font-semibold">Genel Sohbet</h2>
@@ -187,12 +244,12 @@ export default function ChatPage() {
             className="flex items-center space-x-2"
           >
             <MessageCircle className="w-4 h-4" />
-            <span>Özel Mesaj</span>
+            <span className="hidden sm:inline">Özel Mesaj</span>
           </Button>
         </div>
 
-        {/* Chat Content */}
-        <div className="flex-1">
+        {/* Global Chat Content */}
+        <div className="flex-1 min-h-0">
           <GlobalChat isOpen={true} onClose={() => {}} isFullPage={true} />
         </div>
       </div>
@@ -201,11 +258,17 @@ export default function ChatPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto max-w-4xl h-screen flex flex-col">
-        <Card className="flex-1 m-4 flex flex-col overflow-hidden">
+      {/* Safe area top */}
+      <div className="safe-area-top"></div>
+      
+      <div className="h-screen flex flex-col">
+        <div className="flex-1 min-h-0">
           {renderContent()}
-        </Card>
+        </div>
       </div>
+      
+      {/* Safe area bottom */}
+      <div className="safe-area-bottom"></div>
     </div>
   );
 }
