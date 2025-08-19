@@ -819,7 +819,6 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       .from('game_participants')
       .update({ 
         score: newScore,
-        updated_at: new Date().toISOString()
       })
       .eq('room_id', currentRoom.id)
       .eq('user_id', user.id);
