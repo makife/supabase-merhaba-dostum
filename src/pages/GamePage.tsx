@@ -918,10 +918,9 @@ const useSenYazJoker = async () => {
 const validateWordLocal = useCallback((word: string): { isValid: boolean; points: number; message: string } => {
   const normalizedWord = word.toUpperCase().trim();
   
-  console.log('🔍 Mobile validation debug:', {
+  console.log('🔍 Word validation:', {
     originalWord: word,
     normalizedWord,
-    length: normalizedWord.length,
     globalUsedCount: globalUsedWords.size,
     isUsed: globalUsedWords.has(normalizedWord)
   });
@@ -945,9 +944,9 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
     };
   }
 
-  // 🔥 GLOBAL used words check - MOBILE İÇİN ÖNEMLİ
+  // 🔥 GLOBAL used words check
   if (globalUsedWords.has(normalizedWord)) {
-    console.log('🚫 Mobile: Word already used globally:', normalizedWord);
+    console.log('🚫 Word already used globally:', normalizedWord);
     return {
       isValid: false,
       points: 0,
@@ -955,13 +954,11 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
     };
   }
 
-  // Check against wordlist - HEM ORİJİNAL HEM TÜRKÇELEŞTİRİLMİŞ HALİ
+  // Wordlist check - sadece orijinal
   if (wordlistLoaded) {
-    const wordExists = Array.from(wordlist).some(dictWord => {
-      const originalMatch = dictWord.toUpperCase() === normalizedWord;
-      const turkishMatch = latinToTurkish(dictWord).toUpperCase() === normalizedWord;
-      return originalMatch || turkishMatch;
-    });
+    const wordExists = Array.from(wordlist).some(dictWord => 
+      dictWord.toUpperCase() === normalizedWord
+    );
     
     if (!wordExists) {
       return {
@@ -991,7 +988,7 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
   
   return {
     isValid: true,
-    points: calculatePoints(normalizedWord),
+    points,
     message: 'Geçerli kelime'
   };
 }, [wordlist, wordlistLoaded, globalUsedWords]);
