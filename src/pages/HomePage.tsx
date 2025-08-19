@@ -57,7 +57,6 @@ const HomePage = () => {
   const [matchmakingGameType, setMatchmakingGameType] = useState<'timed' | 'score'>('timed');
   const [userAvatar, setUserAvatar] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { useNakama, toggleNakama } = useGame();
   const [timeUntilNextCredit, setTimeUntilNextCredit] = useState<string>('');
 
   // Level hesaplama fonksiyonu
@@ -457,28 +456,6 @@ useEffect(() => {
             </CardContent>
           </Card>
         )}
-
-        {/* Nakama Toggle Button */}
-<div className="mb-4 p-4 bg-muted rounded-lg">
-  <div className="flex items-center justify-between">
-    <div>
-      <h3 className="font-semibold">Matchmaking Engine</h3>
-      <p className="text-sm text-muted-foreground">
-        {useNakama ? '🚀 Nakama (Hızlı)' : '📊 Supabase (Mevcut)'}
-      </p>
-    </div>
-    <button
-      onClick={toggleNakama}
-      className={`px-4 py-2 rounded-lg font-medium transition-all ${
-        useNakama 
-          ? 'bg-green-500 text-white hover:bg-green-600' 
-          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-      }`}
-    >
-      {useNakama ? 'Nakama Aktif' : 'Supabase Aktif'}
-    </button>
-  </div>
-</div>
 
         {/* Game Modes */}
         <div>
