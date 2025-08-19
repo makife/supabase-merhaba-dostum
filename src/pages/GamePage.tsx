@@ -1520,39 +1520,74 @@ useEffect(() => {
   
   // Database'e kelimeyi kaydet
   if (currentRoom && user) {
-    try {
-      await supabase
-        .from('game_words')
-        .insert({
-          room_id: currentRoom.id,
-          player_id: user.id,
-          word: normalizedWord,
-          points: result.points
-        });
-      
-      console.log('✅ Word saved to database:', normalizedWord);
-    } catch (error) {
+  try {
+    const { data, error } = await supabase
+      .from('game_words')
+      .insert({
+        room_id: currentRoom.id,
+        player_id: user.id,
+        word: normalizedWord,
+        points: result.points
+      });
+
+    if (error) {
       console.error('❌ Database word save error:', error);
-      // Eğer database'e kayıt başarısızsa geri al
-      setGlobalUsedWords(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(normalizedWord);
-        return newSet;
-      });
-      setUsedWords(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(normalizedWord);
-        return newSet;
-      });
-      toast({
-        title: 'Hata',
-        description: 'Kelime kaydedilemedi, tekrar deneyin.',
-        variant: 'destructive',
-      });
-      clearWord();
-      return;
+      
+      // 🔧 Duplicate key hatası (constraint violation)
+      if (error.code === '23505') {
+        console.log('⚠️ Kelime zaten kullanılmış (constraint):', normalizedWord);
+        
+        // Local state'i geri al
+        setGlobalUsedWords(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(normalizedWord);
+          return newSet;
+        });
+        setUsedWords(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(normalizedWord);
+          return newSet;
+        });
+        
+        toast({
+          title: 'Kelime Zaten Kullanıldı',
+          description: 'Bu kelime başka bir oyuncu tarafından kullanılmış.',
+          variant: 'destructive',
+        });
+        playSound('wrongWord');
+        clearWord();
+        return;
+      }
+      
+      // Diğer database hataları
+      throw error;
     }
+
+    console.log('✅ Word saved to database:', normalizedWord);
+  } catch (error) {
+    console.error('❌ Database word save exception:', error);
+    
+    // State'i geri al
+    setGlobalUsedWords(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(normalizedWord);
+      return newSet;
+    });
+    setUsedWords(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(normalizedWord);
+      return newSet;
+    });
+    
+    toast({
+      title: 'Hata',
+      description: 'Bağlantı hatası, tekrar deneyin.',
+      variant: 'destructive',
+    });
+    clearWord();
+    return;
   }
+}
 
     console.log('✅ Word accepted (local validation):', currentWord, 'Points:', result.points);
     
