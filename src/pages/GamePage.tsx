@@ -815,7 +815,7 @@ const useSenYazJoker = async () => {
       for (let i = 0; i < 4; i++) {
         roomGrid.push(flatGrid.slice(i * 4, (i + 1) * 4));
       }
-      
+    
       const isGridDifferent = JSON.stringify(gameGrid) !== JSON.stringify(roomGrid);
       if (isGridDifferent) {
         console.log('📐 Updating grid from room data');
@@ -825,32 +825,55 @@ const useSenYazJoker = async () => {
 
     const fetchAvatars = async () => {
       if (!user) return;
-      
+    
+      // Kendi avatar'ını al
       const { data: playerData } = await supabase
         .from('profiles')
         .select('avatar_url')
         .eq('id', user.id)
         .maybeSingle();
-      
+    
       if (playerData?.avatar_url) {
         setPlayerAvatar(playerData.avatar_url);
       }
 
-      if (gameMode === 'private-room' && participants.length >= 2) {
-        const opponent = participants.find(p => p.user_id !== user.id);
-        if (opponent && (opponent as any).profiles) {
-          const opponentProfile = (opponent as any).profiles;
-          if (opponentProfile.avatar_url) {
-            setOpponentAvatar(opponentProfile.avatar_url);
-          }
-        }
+      // Private room modunda rakip bilgilerini al
+      if (gameMode === 'private-room') {
+        console.log('👥 Private room - participants kontrol ediliyor:', participants.length);
+      
+        if (participants.length >= 2) {
+          const opponent = participants.find(p => p.user_id !== user.id && !p.is_bot);
         
-        if (opponent && opponent.score !== undefined && !gameEnded) {
-          console.log('🔄 Updating opponent score from participants:', opponent.score);
-          setOpponentScore(opponent.score);
+          if (opponent) {
+            console.log('👤 Gerçek rakip bulundu:', {
+              userId: opponent.user_id?.slice(-8),
+              username: (opponent as any).profiles?.username,
+              avatar: (opponent as any).profiles?.avatar_url
+            });
+          
+            // Avatar ve isim güncelle
+            if ((opponent as any).profiles?.avatar_url) {
+              setOpponentAvatar((opponent as any).profiles.avatar_url);
+            }
+          
+            if ((opponent as any).profiles?.username) {
+              setOpponentName((opponent as any).profiles.username);
+            }
+          
+            // Opponent score güncellemesi
+            if (opponent.score !== undefined && !gameEnded) {
+              console.log('🔄 Updating opponent score from participants:', opponent.score);
+              setOpponentScore(opponent.score);
+            }
+          } else {
+            console.log('🤖 Bot opponent detected in private room');
+          }
+        } else {
+          console.log('⏳ Private room - waiting for opponent (participants: ' + participants.length + ')');
         }
       }
-      
+    
+      // Random match modunda da rakip bilgilerini güncelle
       if (gameMode === 'random-match' && participants.length >= 2 && !gameEnded) {
         const opponent = participants.find(p => p.user_id !== user.id && !p.is_bot);
         if (opponent && opponent.score !== undefined) {
@@ -861,7 +884,7 @@ const useSenYazJoker = async () => {
     };
 
     fetchAvatars();
-  }, [user, participants, gameMode, currentRoom]);
+  }, [user, participants, gameMode, currentRoom, gameEnded]);
 
   // Load wordlist from public/wordlist.txt
   useEffect(() => {
@@ -1292,34 +1315,45 @@ useEffect(() => {
 
   // Private room logic
   useEffect(() => {
+    console.log('🏠 Private room effect - Mode:', gameMode, 'Participants:', participants.length);
+    console.log('👥 Participants detay:');
+    participants.forEach((p, i) => {
+      console.log(`  ${i+1}. ${p.is_bot ? '🤖 Bot' : '👤 Real'} ${p.user_id?.slice(-8)} - ${(p as any).profiles?.username || 'N/A'}`);
+    });
+
     if (gameMode === 'private-room') {
-      if (participants.length >= 2) {
-        console.log('✅ 2 players ready - START GAME FOR BOTH');
+      // Gerçek oyuncu sayısını hesapla (bot olmayan ve null olmayan)
+      const realPlayers = participants.filter(p => !p.is_bot && p.user_id !== null);
+      console.log('👤 Gerçek oyuncu sayısı:', realPlayers.length);
+
+      if (realPlayers.length >= 2) {
+        console.log('✅ 2 gerçek oyuncu hazır - PRIVATE ROOM OYUNU BAŞLIYOR!');
         setWaitingForPlayer(false);
         setGameStarted(true);
         setUsedWords(new Set());
-        
+      
         if (!hasShownStartMessage) {
           setHasShownStartMessage(true);
           toast({
-            title: '🎮 Oyun Başladı!',
-            description: `${gameType === 'score' ? 'Puanlı' : 'Süreli'} oyun başladı!`,
+            title: '🎮 Özel Oda Oyunu Başladı!',
+            description: `${gameType === 'score' ? 'Puanlı' : 'Süreli'} özel oda oyunu başladı!`,
             duration: 2000,
           });
         }
       } else {
-        console.log('⏳ Waiting for second player...');
+        console.log('⏳ İkinci gerçek oyuncu bekleniyor... (mevcut:', realPlayers.length, ')');
         setWaitingForPlayer(true);
         setGameStarted(false);
         setHasShownStartMessage(false);
         setUsedWords(new Set());
       }
     } else {
+      // Diğer modlar için mevcut mantık
       setGameStarted(true);
       setWaitingForPlayer(false);
       setUsedWords(new Set());
     }
-  }, [participants, gameMode, hasShownStartMessage, gameType]);
+  }, [participants, gameMode, hasShownStartMessage, gameType, toast]);
 
   // Touch olayları için optimize edilmiş handler
   const handleLetterTouch = (letter: string, row: number, col: number, event: React.TouchEvent) => {
@@ -1864,6 +1898,25 @@ const createFireworksEffect = () => {
               <p className="text-muted-foreground">
                 İkinci oyuncuyu bekliyoruz...
               </p>
+            
+              {/* Mevcut katılımcıları göster - SADECE GERÇEK OYUNCULAR */}
+              <div className="bg-muted rounded-lg p-4 space-y-2">
+                <p className="text-sm font-medium">
+                  Katılımcılar ({participants.filter(p => !p.is_bot && p.user_id !== null).length}/2)
+                </p>
+                {participants
+                  .filter(p => !p.is_bot && p.user_id !== null)
+                  .map((participant, index) => (
+                  <div key={participant.user_id} className="flex items-center justify-center space-x-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm">
+                      {participant.user_id === user?.id ? 'Siz' : 
+                       (participant as any).profiles?.username || 'Oyuncu'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            
               <div className="bg-muted rounded-lg p-4">
                 <p className="text-sm font-medium">Oda Kodu</p>
                 <div className="flex items-center justify-center space-x-2 mt-2">
@@ -1888,9 +1941,20 @@ const createFireworksEffect = () => {
               <p className="text-sm text-muted-foreground">
                 Bu kodu arkadaşınızla paylaşın
               </p>
-              <div className="text-xs text-muted-foreground">
-                Katılımcılar: {participants.length}/2
-              </div>
+            
+              {/* Debug bilgisi (development modunda) */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+                  <p>🏠 Oda: {currentRoom?.id?.slice(-8)}</p>
+                  <p>📊 Total: {participants.length} | Real: {participants.filter(p => !p.is_bot && p.user_id !== null).length}</p>
+                  {participants.map((p, i) => (
+                    <p key={i}>
+                      {i+1}. {p.is_bot ? '🤖 Bot' : '👤 Real'} {p.user_id?.slice(-8) || 'null'} 
+                      {p.user_id === user?.id ? ' (SİZ)' : ''}
+                    </p>
+                  ))}
+                </div>
+              )}
             </div>
             <Button 
               variant="outline" 
