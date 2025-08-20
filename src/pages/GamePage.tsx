@@ -71,7 +71,7 @@ const GamePage = ({
   const { hasPurchased, settings } = useUserPurchases();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { currentRoom, updateScore, participants, endGame } = useGame();
+  const { currentRoom, updateScore, participants, endGame, leaveRoom } = useGame();
   const { validateWord, isValidating } = useWordValidation();
   const { playSound, playTimeWarningSequence, playCelebrationSound, playGameLoseSound } = useSounds();
   const { fadeOutBackgroundMusic, fadeInBackgroundMusic } = useMusic();
@@ -219,6 +219,7 @@ const GamePage = ({
   const [opponentName, setOpponentName] = useState('');
   const [targetScore, setTargetScore] = useState(gameType === 'score' ? 500 : 0);
   const [gameStartTime, setGameStartTime] = useState<number>(Date.now());
+  
 
 
 
@@ -458,19 +459,41 @@ const GamePage = ({
   };
 
   // Turnuva modunda geri dönüş engelle
-  const handleBackToMenu = () => {
-    if (gameMode === 'tournament') {
-      toast({
-        title: '⚠️ Uyarı',
-        description: 'Turnuva maçından çıkamazsınız! Maçı tamamlamanız gerekiyor.',
-        variant: 'destructive',
-      });
-      return;
-    }
+  const handleBackToMenu = async () => {
+  if (gameMode === 'tournament') {
+    toast({
+      title: '⚠️ Uyarı',
+      description: 'Turnuva maçından çıkamazsınız! Maçı tamamlamanız gerekiyor.',
+      variant: 'destructive',
+    });
+    return;
+  }
+  
+  // 🔥 FIX: Gerçek aktif oyun kontrolü
+  const isRealActiveGame = gameStarted && 
+                          !gameEnded && 
+                          participants.length >= 2 && 
+                          participants.some(p => !p.is_bot && p.user_id !== user?.id);
+  
+  if (isRealActiveGame) {
+    const confirmed = confirm(
+      `Aktif oyundan çıkarsanız ceza alacaksınız! Yine de çıkmak istiyor musunuz?`
+    );
     
-    // Normal modda ana menüye dön
-    navigate('/');
-  };
+    if (!confirmed) {
+      return; // İptal edildi
+    }
+  }
+  
+  // Odadan ayrıl (GameContext'ten)
+  if (currentRoom) {
+    console.log('🚪 handleBackToMenu - odadan ayrılıyor...');
+    await leaveRoom();
+  }
+  
+  // Ana menüye git
+  navigate('/');
+};
 
 
   // JOKER FONKSİYONLARI
