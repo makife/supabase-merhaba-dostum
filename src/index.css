@@ -1278,6 +1278,23 @@ All colors MUST be HSL.
   opacity: 0.6 !important;
 }
 
+/* Gönder butonu yeşil gradient */
+.grid-cols-2 .h-12:last-child {
+  background: linear-gradient(135deg, hsl(120 60% 50%), hsl(130 65% 55%), hsl(110 55% 45%)) !important;
+  border-color: hsl(120 60% 50%) !important;
+  color: white !important;
+}
+
+.grid-cols-2 .h-12:last-child:hover {
+  background: linear-gradient(135deg, hsl(120 65% 55%), hsl(130 70% 60%), hsl(110 60% 50%)) !important;
+  box-shadow: 0 4px 15px hsl(120 60% 50% / 0.4) !important;
+}
+
+.grid-cols-2 .h-12:last-child:disabled {
+  background: linear-gradient(135deg, hsl(120 20% 70%), hsl(130 25% 75%), hsl(110 15% 65%)) !important;
+  opacity: 0.6 !important;
+}
+  
 /* Eğer daha dramatik efekt istersen, class name'i değiştir */
 .letter-fire-highlight {
   animation: letter-fire-highlight 1.0s ease-in-out;
