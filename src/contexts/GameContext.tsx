@@ -758,30 +758,72 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
   // Leave room
   const leaveRoom = useCallback(async (): Promise<void> => {
-  if (!user || !currentRoom) return;
-
-  try {
-    console.log('🚪 Manual leave - oda siliniyor:', currentRoom.id.slice(-8));
-    
-    // Aktif oyunsa ceza uygula
-    if (currentRoom.status === 'active') {
-      await applyDisconnectPenalty(user.id, true);
-    }
-
-    // ★★★ SIMPLE: ODAYI HEMEN SİL ★★★
-    await supabase
-      .from('game_rooms')
-      .delete()
-      .eq('id', currentRoom.id);
-
+  if (!user || !currentRoom) {
+    // Eğer currentRoom yoksa sadece state temizle
+    console.log('🧹 Room yok ama state temizleniyor');
     setCurrentRoom(null);
     setParticipants([]);
-    console.log('✅ Oda silindi, state temizlendi');
+    return;
+  }
+
+  try {
+    console.log('🚪 Manual leave başlıyor:', {
+      roomId: currentRoom.id.slice(-8),
+      status: currentRoom.status,
+      participantCount: participants.length,
+      userId: user.id.slice(-8)
+    });
+    
+    // 🔥 FIX: Sadece gerçekten aktif oyun + gerçek rakipli durumda ceza
+    const shouldApplyPenalty = currentRoom.status === 'active' && 
+                              participants.length >= 2 &&
+                              participants.some(p => !p.is_bot && p.user_id !== user.id);
+    
+    if (shouldApplyPenalty) {
+      console.log('⚖️ Ceza uygulanacak (aktif oyun + gerçek rakip)');
+      await applyDisconnectPenalty(user.id, true);
+    } else {
+      console.log('✅ Ceza yok:', {
+        isActive: currentRoom.status === 'active',
+        hasEnoughParticipants: participants.length >= 2,
+        hasRealOpponent: participants.some(p => !p.is_bot && p.user_id !== user.id)
+      });
+    }
+
+    // Participant'ı sil
+    await supabase
+      .from('game_participants')
+      .delete()
+      .eq('room_id', currentRoom.id)
+      .eq('user_id', user.id);
+
+    console.log('✅ Participant silindi');
+
+    // Eğer host isen veya tek kalınsa odayı sil
+    const remainingParticipants = participants.filter(p => p.user_id !== user.id);
+    const realPlayersRemaining = remainingParticipants.filter(p => !p.is_bot);
+    
+    if (currentRoom.host_id === user.id || realPlayersRemaining.length === 0) {
+      console.log('🗑️ Oda siliniyor (host ayrıldı veya gerçek oyuncu kalmadı)');
+      await supabase
+        .from('game_rooms')
+        .delete()
+        .eq('id', currentRoom.id);
+    }
+
+    // 🔥 STATE TEMİZLEME - HER DURUMDA!
+    console.log('🧹 Local state temizleniyor...');
+    setCurrentRoom(null);
+    setParticipants([]);
+    console.log('✅ Leave room tamamlandı, state temizlendi');
     
   } catch (error) {
     console.error('❌ Leave room hatası:', error);
+    // Hata olsa bile state'i temizle
+    setCurrentRoom(null);
+    setParticipants([]);
   }
-}, [user, currentRoom, applyDisconnectPenalty]);
+}, [user, currentRoom, participants, applyDisconnectPenalty]);
 
   // Update score
   const updateScore = useCallback(async (score: number): Promise<void> => {
