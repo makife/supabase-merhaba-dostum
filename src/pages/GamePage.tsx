@@ -1887,6 +1887,22 @@ const createFireworksEffect = () => {
   
   // Get opponent info based on game mode with avatar
   const getOpponentInfo = () => {
+
+    const realOpponent = participants.find(p => 
+    !p.is_bot && 
+    p.user_id !== user?.id && 
+    p.user_id !== null
+  );
+
+  // Gerçek rakip varsa onun bilgilerini kullan
+  if (realOpponent && (realOpponent as any).profiles) {
+    return { 
+      name: (realOpponent as any).profiles.username || 'Oyuncu', 
+      icon: User, 
+      avatar: (realOpponent as any).profiles.avatar_url 
+    };
+  }
+    
     switch (gameMode) {
       case 'vs-computer':
         return { name: 'Bilgisayar', icon: Bot, avatar: null };
