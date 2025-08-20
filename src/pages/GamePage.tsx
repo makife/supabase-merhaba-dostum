@@ -1490,29 +1490,20 @@ useEffect(() => {
 
   // Custom toast fonksiyonu
   const showCustomToast = (title: string, description: string) => {
-  console.log('Toast called:', title, description);
-  
   const toastDiv = document.createElement('div');
-  toastDiv.className = 'fixed bg-red-500 text-white p-3 rounded-lg shadow-lg z-50 transition-transform duration-300';
-  toastDiv.style.top = '200px';
-  toastDiv.style.right = '16px';
-  toastDiv.style.transform = 'translateX(100%)';
-  toastDiv.innerHTML = '<div class="font-bold">' + title + '</div><div class="text-sm">' + description + '</div>';
+  toastDiv.className = 'fixed top-52 right-4 bg-red-500 text-white p-3 rounded-lg shadow-lg z-50 transition-transform duration-300 transform translate-x-full'; // top-48 → top-32
+  toastDiv.innerHTML = `<div class="font-bold">${title}</div><div class="text-sm">${description}</div>`;
   
   document.body.appendChild(toastDiv);
   
   setTimeout(() => {
     toastDiv.style.transform = 'translateX(0)';
-  }, 50);
+  }, 10);
   
   setTimeout(() => {
     toastDiv.style.transform = 'translateX(100%)';
-    setTimeout(() => {
-      if (document.body.contains(toastDiv)) {
-        document.body.removeChild(toastDiv);
-      }
-    }, 300);
-  }, 2000);
+    setTimeout(() => document.body.removeChild(toastDiv), 300);
+  }, 1000);
 };
 
   // Submit word - Using local wordlist validation
