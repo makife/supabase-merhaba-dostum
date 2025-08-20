@@ -1488,6 +1488,30 @@ useEffect(() => {
     setCurrentWord('');
   };
 
+  // Custom toast div oluştur
+const showCustomToast = (title: string, description: string) => {
+  const toastDiv = document.createElement('div');
+  toastDiv.className = 'fixed top-48 right-4 bg-red-500 text-white p-3 rounded-lg shadow-lg z-50 transition-transform duration-300 transform translate-x-full';
+  toastDiv.innerHTML = `<div class="font-bold">${title}</div><div class="text-sm">${description}</div>`;
+  
+  document.body.appendChild(toastDiv);
+  
+  // Sağdan sola gir
+  setTimeout(() => {
+    toastDiv.style.transform = 'translateX(0)';
+  }, 10);
+  
+  // 1 saniye sonra sağa geri git
+  setTimeout(() => {
+    toastDiv.style.transform = 'translateX(100%)';
+    setTimeout(() => document.body.removeChild(toastDiv), 300);
+  }, 1000);
+};
+
+// Toast çağrılarını değiştir:
+showCustomToast('Kelime Zaten Kullanıldı');
+showCustomToast('Geçersiz Kelime', result.message);
+
   // Submit word - Using local wordlist validation
   const submitWord = async () => {
   if (waitingForPlayer || isJokerActive) return;
@@ -1503,12 +1527,7 @@ useEffect(() => {
   
   try {
     if (currentWord.length < 3) {
-      toast({
-        title: 'Geçersiz Kelime',
-        description: 'Kelime en az 3 harf olmalıdır.',
-        variant: 'destructive',
-        duration: 400,
-      });
+      showCustomToast('Geçersiz Kelime', result.message);
       return;
     }
   
@@ -1543,12 +1562,7 @@ useEffect(() => {
       allLocalWords: Array.from(usedWords),
       allGlobalWords: Array.from(globalUsedWords)
     });
-    toast({
-      title: 'Kelime Zaten Kullanıldı',
-      description: 'Bu kelime bu oyunda zaten kullanıldı.',
-      variant: 'destructive',
-      duration: 1000,
-    });
+    showCustomToast('Kelime Zaten Kullanıldı');
     playSound('wrongWord');
     clearWord();
     return;
@@ -1561,12 +1575,7 @@ useEffect(() => {
   
   if (!result.isValid) {
     playSound('wrongWord');
-    toast({
-      title: 'Geçersiz Kelime',
-      description: result.message,
-      variant: 'destructive',
-      duration: 1000,
-    });
+    showCustomToast('Geçersiz Kelime', result.message);
     clearWord();
     return;
   }
