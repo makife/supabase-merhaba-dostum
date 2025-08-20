@@ -756,8 +756,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   }
 }, [currentRoom]);
 
-  // Leave room
-  // Leave room
+// Leave room
 const leaveRoom = useCallback(async (): Promise<void> => {
   if (!user || !currentRoom) {
     // Eğer currentRoom yoksa sadece state temizle
@@ -780,24 +779,14 @@ const leaveRoom = useCallback(async (): Promise<void> => {
                               participants.length >= 2 &&
                               participants.some(p => !p.is_bot && p.user_id !== user.id);
     
-    // 🔥 YENİ: Karşı tarafa bildirim gönder (manuel ayrılmadan önce)
+    // 🔥 YENİ: Karşı tarafa bonus ver (manuel ayrılmadan önce)
     const realOpponent = participants.find(p => !p.is_bot && p.user_id !== user.id);
     if (realOpponent && (currentRoom.status === 'active' || currentRoom.status === 'waiting')) {
-      console.log('📢 Karşı tarafa bildirim gönderiliyor:', realOpponent.user_id?.slice(-8));
+      console.log('📢 Karşı tarafa bonus veriliyor:', realOpponent.user_id?.slice(-8));
       
       // Karşı tarafa kazanma bonusu ver
       await applyWinBonus(realOpponent.user_id!, 100);
-      
-      // Real-time bildirim gönder - custom event
-      await supabase
-        .from('game_notifications')
-        .insert({
-          user_id: realOpponent.user_id,
-          type: 'opponent_left',
-          title: '🏆 Kazandınız!',
-          message: 'Rakip oyundan ayrıldı. +100 bonus puan kazandınız!',
-          room_id: currentRoom.id
-        });
+      console.log('💰 Rakip +100 bonus puan aldı');
     }
     
     if (shouldApplyPenalty) {
