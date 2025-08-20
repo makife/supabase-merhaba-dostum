@@ -1434,7 +1434,7 @@ useEffect(() => {
 
   const now = Date.now();
     // 150ms debounce (mobil için daha uzun)
-    if (now - lastClickTime < 150) return;
+    if (now - lastClickTime < 200) return;
     setLastClickTime(now);
 
     // Haptic feedback (mobil cihazlarda titreşim)
