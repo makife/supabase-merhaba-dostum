@@ -1108,59 +1108,45 @@ const leaveRoom = useCallback(async (): Promise<void> => {
     
     // Handle DELETE events - OYUNCU AYRILDI - DÜZELTME
     if (payload.eventType === 'DELETE' && payload.old) {
-      console.log('🚪 OYUNCU AYRILDI!');
-      console.log('🚪 Ayrılan oyuncu:', payload.old.user_id?.slice(-8));
-      console.log('🚪 Mevcut oyuncu:', user?.id?.slice(-8));
-      console.log('🚪 Room status:', currentRoom.status);
-      
-      // SADECE gerçek rakip ayrıldıysa işlem yap
-      if (!payload.old.is_bot && 
-    payload.old.user_id && 
-    payload.old.user_id !== user?.id && // ÖNEMLİ: Kendisi değilse
-    (currentRoom.status === 'active' || currentRoom.status === 'waiting')) {
-        
-        console.log('🏆 RAKIP AYRILDI - SEN KAZANDIN!');
-        
-        // Ayrılan oyuncuya ceza ver
-        await applyDisconnectPenalty(payload.old.user_id, false);
-        
-        // Kalan oyuncuya (sen) bonus ver
-        if (user?.id) {
-          await applyWinBonus(user.id);
-          
-          toast({
-            title: '🏆 Kazandınız!',
-            description: 'Rakip oyundan ayrıldı. +100 bonus puan!',
-            duration: 4000,
-          });
-        }
-        
-        // ★★★ ODAYI SİL! ★★★
-        console.log('🗑️ ODA SİLİNİYOR');
-        await supabase
-          .from('game_rooms')
-          .delete()
-          .eq('id', currentRoom.id);
-        
-        // Game end event gönder
-        window.dispatchEvent(new CustomEvent('playerDisconnected', {
-          detail: { winner: 'player', reason: 'opponent_left' }
-        }));
-
-        
-        // State temizle
-        setTimeout(() => {
-          setCurrentRoom(null);
-          setParticipants([]);
-        }, 2000);
-      } else {
-        console.log('🔄 DELETE event ama işlem yapmıyoruz:', {
-          isBot: payload.old.is_bot,
-          isCurrentUser: payload.old.user_id === user?.id,
-          roomStatus: currentRoom.status
-        });
-      }
+  console.log('🚪 OYUNCU AYRILDI!');
+  console.log('🚪 Ayrılan oyuncu:', payload.old.user_id?.slice(-8));
+  console.log('🚪 Mevcut oyuncu:', user?.id?.slice(-8));
+  console.log('🚪 Room status:', currentRoom.status);
+  
+  // SADECE gerçek rakip ayrıldıysa VE aktif oyunda işlem yap
+  if (!payload.old.is_bot && 
+      payload.old.user_id && 
+      payload.old.user_id !== user?.id && 
+      currentRoom.status === 'active') { // Sadece aktif oyunda
+    
+    console.log('🏆 RAKIP AYRILDI - SEN KAZANDIN!');
+    
+    await applyDisconnectPenalty(payload.old.user_id, false);
+    
+    if (user?.id) {
+      await applyWinBonus(user.id);
+      toast({
+        title: '🏆 Kazandınız!',
+        description: 'Rakip oyundan ayrıldı. +100 bonus puan!',
+        duration: 4000,
+      });
     }
+    
+    console.log('🗑️ ODA SİLİNİYOR');
+    await supabase
+      .from('game_rooms')
+      .delete()
+      .eq('id', currentRoom.id);
+    
+    // State temizle
+    setTimeout(() => {
+      setCurrentRoom(null);
+      setParticipants([]);
+    }, 2000);
+  } else {
+    console.log('🔄 DELETE event ama işlem yapmıyoruz');
+  }
+}
     
     // Participants'ı güncelle
     await fetchParticipants(currentRoom.id);
