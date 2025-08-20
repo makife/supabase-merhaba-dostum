@@ -1491,18 +1491,29 @@ useEffect(() => {
   // Custom toast fonksiyonu
   const showCustomToast = (title: string, description: string) => {
   const toastDiv = document.createElement('div');
-  toastDiv.className = 'fixed top-52 right-4 bg-red-500 text-white p-3 rounded-lg shadow-lg z-50 transition-transform duration-300 transform translate-x-full'; // top-48 → top-32
-  toastDiv.innerHTML = `<div class="font-bold">${title}</div><div class="text-sm">${description}</div>`;
+  toastDiv.className = 'fixed bg-red-500 text-white p-3 rounded-lg shadow-lg z-50 transition-transform duration-300 left-1/2';
+  toastDiv.style.bottom = '0px'; // Alttan başla
+  toastDiv.style.transform = 'translateX(-50%) translateY(100%)'; // Ortala ve aşağıda gizle
+  toastDiv.innerHTML = '<div class="font-bold">' + title + '</div><div class="text-sm">' + description + '</div>';
   
   document.body.appendChild(toastDiv);
   
-  setTimeout(() => {
-    toastDiv.style.transform = 'translateX(0)';
-  }, 10);
+  // Kartın yüksekliğini al
+  const cardHeight = toastDiv.offsetHeight;
   
+  // Yukarı çık (kart yüksekliği kadar)
   setTimeout(() => {
-    toastDiv.style.transform = 'translateX(100%)';
-    setTimeout(() => document.body.removeChild(toastDiv), 300);
+    toastDiv.style.transform = 'translateX(-50%) translateY(-' + cardHeight + 'px)';
+  }, 50);
+  
+  // 2 saniye sonra aşağı in
+  setTimeout(() => {
+    toastDiv.style.transform = 'translateX(-50%) translateY(100%)';
+    setTimeout(() => {
+      if (document.body.contains(toastDiv)) {
+        document.body.removeChild(toastDiv);
+      }
+    }, 300);
   }, 1000);
 };
 
