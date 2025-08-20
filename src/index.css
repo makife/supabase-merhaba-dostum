@@ -1382,52 +1382,6 @@ All colors MUST be HSL.
   color: rgba(0, 0, 0, 0.5) !important;
 }
 
-/* Toast animasyonları - sağdan sola çıkış, sağa giriş */
-@keyframes slideInFromRight {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-@keyframes slideOutToRight {
-  from {
-    transform: translateX(0);
-    opacity: 1;
-  }
-  to {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-}
-
-/* Toast container pozisyonu - joker yazısı hizasından */
-[data-sonner-toaster] {
-  position: fixed !important;
-  top: 180px !important; /* Joker yazısı hizası */
-  right: 16px !important;
-  left: auto !important;
-  z-index: 999999 !important;
-}
-
-/* Toast animasyon süresi */
-[data-sonner-toast] {
-  animation: slideInFromRight 0.3s ease-out !important;
-}
-
-[data-sonner-toast][data-removed="true"] {
-  animation: slideOutToRight 0.3s ease-in !important;
-}
-
-/* Toast genişlik ayarı */
-[data-sonner-toast] {
-  max-width: 300px !important;
-  width: auto !important;
-}
 
 /* Eğer daha dramatik efekt istersen, class name'i değiştir */
 .letter-fire-highlight {
