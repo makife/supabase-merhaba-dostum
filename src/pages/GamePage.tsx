@@ -379,6 +379,10 @@ const GamePage = ({
   };
 
   useEffect(() => {
+  console.log('🔍 Timer Debug - gameStarted:', gameStarted, 'gameEnded:', gameEnded, 'timeLeft:', timeLeft, 'gameType:', gameType);
+}, [gameStarted, gameEnded, timeLeft, gameType]);
+
+  useEffect(() => {
     if (gameMode === 'tournament' && !tournamentMatch) {
       console.error('❌ Turnuva modu ama maç bilgisi yok!');
       return;
@@ -1142,43 +1146,21 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
 
   // Timer effect - for both timed and score modes
   useEffect(() => {
-  console.log('⏰ Timer Effect Check:', { 
-    gameStarted, 
-    gameEnded, 
-    gameType, 
-    timeLeft,
-    gameMode 
-  });
-  
-  if (!gameStarted || gameEnded) {
-    console.log('⏰ Timer durdu - gameStarted:', gameStarted, 'gameEnded:', gameEnded);
-    return;
-  }
+  if (!gameStarted || gameEnded) return;
 
-  // For timed mode, use countdown timer
   if (gameType === 'timed') {
-    console.log('⏰ Starting timer for timed mode, timeLeft:', timeLeft);
-    
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
-        console.log('⏰ Timer tick - prev:', prev);
-        
-        // Play time warning at 15 seconds
         if (prev === 15 && !timeWarningPlayed) {
-          console.log('⚠️ Playing time warning');
           playTimeWarningSequence();
           setTimeWarningPlayed(true);
         }
         
         if (prev <= 1) {
-          console.log('⏰ Timer ended!');
           setGameEnded(true);
-          
-          // Use setTimeout to ensure we get the latest scores
           setTimeout(() => {
             setPlayerScore(currentPlayerScore => {
               setOpponentScore(currentOpponentScore => {
-                console.log('🏁 Final scores - Player:', currentPlayerScore, 'Opponent:', currentOpponentScore);
                 checkWinnerWithScores(currentPlayerScore, currentOpponentScore);
                 return currentOpponentScore;
               });
@@ -1192,18 +1174,12 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
     }, 1000);
 
     // Cleanup fonksiyonunu ekle
-    const cleanup = () => {
-      console.log('⏰ Clearing timer');
-      clearInterval(timer);
-    };
-    
-    if (addCleanup) {
-      addCleanup(cleanup);
-    }
+    const cleanup = () => clearInterval(timer);
+    addCleanup(cleanup);
 
     return cleanup;
   }
-}, [gameStarted, gameEnded, gameType, timeWarningPlayed, playTimeWarningSequence, checkWinnerWithScores, addCleanup]);
+}, [gameStarted, gameEnded, gameType, timeWarningPlayed, addCleanup]);
 
   // Timer useEffect'inden SONRA ekleyin
 useEffect(() => {
