@@ -1141,6 +1141,12 @@ const leaveRoom = useCallback(async (): Promise<void> => {
         window.dispatchEvent(new CustomEvent('playerDisconnected', {
           detail: { winner: 'player', reason: 'opponent_left' }
         }));
+
+        // 🔥 YENİ: Ana sayfaya yönlendir
+    console.log('🏠 Ana sayfaya yönlendiriliyor...');
+    setTimeout(() => {
+      window.location.href = '/'; // Zorla ana sayfaya git
+    }, 2000); // 2 saniye sonra
         
         // State temizle
         setTimeout(() => {
