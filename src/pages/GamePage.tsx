@@ -1481,8 +1481,18 @@ useEffect(() => {
 
   const normalizedWord = currentWord.toUpperCase();
   
-  // GLOBAL kelime kontrolü - Tüm oyuncular için
-  if (globalUsedWords.has(normalizedWord)) {
+  // 🔥 MOBİL FIX: Kelime kontrolünü daha güvenli hale getir
+  console.log('📱 Mobile word check:', {
+    word: normalizedWord,
+    localUsedSize: usedWords.size,
+    globalUsedSize: globalUsedWords.size,
+    isInLocal: usedWords.has(normalizedWord),
+    isInGlobal: globalUsedWords.has(normalizedWord)
+  });
+  
+  // ÇOKLU KONTROL - hem local hem global
+  if (usedWords.has(normalizedWord) || globalUsedWords.has(normalizedWord)) {
+    console.log('❌ Mobile: Word already used!');
     toast({
       title: 'Kelime Zaten Kullanıldı',
       description: 'Bu kelime bu oyunda zaten kullanıldı.',
@@ -1494,12 +1504,31 @@ useEffect(() => {
     return;
   }
 
-  console.log('🔍 Validating word globally:', currentWord, 'Global used:', globalUsedWords.size);
+  // 🔥 MOBİL FIX: Kelimeyi HEMEN ÖNCE her iki state'e de ekle
+  const tempUsedWords = new Set([...usedWords, normalizedWord]);
+  const tempGlobalWords = new Set([...globalUsedWords, normalizedWord]);
   
+  setUsedWords(tempUsedWords);
+  setGlobalUsedWords(tempGlobalWords);
+  
+  console.log('📱 Mobile: Word added to temp states immediately');
+
   // LOCAL WORDLIST VALIDATION
   const result = validateWordLocal(currentWord);
   
   if (!result.isValid) {
+    // Kelime geçersizse geri al
+    setUsedWords(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(normalizedWord);
+      return newSet;
+    });
+    setGlobalUsedWords(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(normalizedWord);
+      return newSet;
+    });
+    
     playSound('wrongWord');
     toast({
       title: 'Geçersiz Kelime',
@@ -1511,14 +1540,10 @@ useEffect(() => {
     return;
   }
 
-  // Kelimeyi HEMEN global state'e ekle (race condition önlemek için)
-  setGlobalUsedWords(prev => new Set([...prev, normalizedWord]));
-  setUsedWords(prev => new Set([...prev, normalizedWord]));
-
-  console.log('✅ Word accepted (global validation):', currentWord, 'Points:', result.points);
+  console.log('✅ Mobile: Word accepted:', currentWord, 'Points:', result.points);
   
-  // Database'e kelimeyi kaydet
-  if (currentRoom && user) {
+  // Database'e kelimeyi kaydet (sadece multiplayer modlarda)
+  if (currentRoom && user && (gameMode === 'private-room' || gameMode === 'random-match')) {
     try {
       await supabase
         .from('game_words')
@@ -1529,16 +1554,16 @@ useEffect(() => {
           points: result.points
         });
       
-      console.log('✅ Word saved to database:', normalizedWord);
+      console.log('✅ Mobile: Word saved to database:', normalizedWord);
     } catch (error) {
-      console.error('❌ Database word save error:', error);
-      // Eğer database'e kayıt başarısızsa geri al
-      setGlobalUsedWords(prev => {
+      console.error('❌ Mobile: Database word save error:', error);
+      // Database hatası durumunda state'leri geri al
+      setUsedWords(prev => {
         const newSet = new Set(prev);
         newSet.delete(normalizedWord);
         return newSet;
       });
-      setUsedWords(prev => {
+      setGlobalUsedWords(prev => {
         const newSet = new Set(prev);
         newSet.delete(normalizedWord);
         return newSet;
@@ -1553,6 +1578,7 @@ useEffect(() => {
     }
   }
 
+  // Ses efektleri ve puan hesaplama
   playSound('correctWord');
   const newScore = playerScore + result.points;
   setPlayerScore(newScore);
@@ -1560,14 +1586,15 @@ useEffect(() => {
   setPlayerWords(prev => [...prev, currentWord]);
   setPlayerWordsWithScores(prev => [...prev, { word: currentWord, score: result.points }]);
   
+  // 🔥 MOBİL SES FIX: Audio dosyalarını mobil-friendly şekilde çal
   triggerWordEffects();
   
   if (currentRoom) {
     await updateScore(newScore);
   }
 
-  // Total score güncelleme
-  if (user) {
+  // Total score güncelleme (vs-computer modunda)
+  if (user && gameMode === 'vs-computer') {
     const { data: currentProfile } = await supabase
       .from('profiles')
       .select('total_score')
