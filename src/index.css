@@ -1069,7 +1069,7 @@ All colors MUST be HSL.
   left: -5px;
   right: -5px;
   bottom: -5px;
-  background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #ffeaa7, #dda0dd);
+  background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #ffeaa7, #e0b11b);
   background-size: 400% 400%;
   animation: gradient-shift 10s ease infinite;
   border-radius: 15px;
@@ -1263,5 +1263,5 @@ All colors MUST be HSL.
 
 /* Eğer daha dramatik efekt istersen, class name'i değiştir */
 .letter-fire-highlight {
-  animation: letter-fire-highlight 1.2s ease-in-out;
+  animation: letter-fire-highlight 1.0s ease-in-out;
 }
