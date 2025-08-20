@@ -323,12 +323,12 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     console.log('📊 Room ID:', roomId.slice(-8));
     console.log('📊 User ID:', user?.id?.slice(-8));
   
-    // 🔥 FIX: Profiles ile JOIN yaparak username'leri çek
+    // 🔥 FIX: LEFT JOIN kullan - profile olmasa da participant'ı getir
     const { data, error, count } = await supabase
       .from('game_participants')
       .select(`
         *,
-        profiles!inner (
+        profiles (
           id,
           username,
           avatar_url
@@ -352,8 +352,8 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       console.log('📊 Raw participants data:');
       data.forEach((p, i) => {
         console.log(`  ${i+1}. User: ${p.user_id?.slice(-8) || 'null'}, Bot: ${p.is_bot}, Score: ${p.score}`);
-        console.log(`      Real Username: ${p.profiles?.username || 'N/A'}`);
-        console.log(`      Avatar: ${p.profiles?.avatar_url || 'N/A'}`);
+        console.log(`      Username: ${(p as any).profiles?.username || 'N/A'}`);
+        console.log(`      Avatar: ${(p as any).profiles?.avatar_url || 'N/A'}`);
       });
     
       setParticipants(data as GameParticipant[]);
