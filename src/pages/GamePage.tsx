@@ -216,6 +216,8 @@ const GamePage = ({
   const [opponentName, setOpponentName] = useState('');
   const [targetScore, setTargetScore] = useState(gameType === 'score' ? 500 : 0);
   const [gameStartTime, setGameStartTime] = useState<number>(Date.now());
+  const syncingRef = useRef(false);
+
 
 
 
@@ -1230,6 +1232,13 @@ useEffect(() => {
 
   // Room'daki tüm kelimeleri al ve sync et
   const syncUsedWords = async () => {
+    if (syncingRef.current) {
+      console.log('📱 Sync already in progress, skipping');
+      return;
+    }
+    
+    syncingRef.current = true;
+    
     try {
       const { data: roomWords } = await supabase
         .from('game_words')
@@ -1245,6 +1254,8 @@ useEffect(() => {
       }
     } catch (error) {
       console.error('❌ Word sync error:', error);
+    } finally {
+      syncingRef.current = false;
     }
   };
 
