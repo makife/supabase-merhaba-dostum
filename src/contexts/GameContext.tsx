@@ -1170,35 +1170,26 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   // Handle page close/refresh cleanup
   useEffect(() => {
     const handleBeforeUnload = async () => {
-      if (currentRoom && user && currentRoom.status === 'active') {
-        console.log('🚪 Oyuncu oyunu kapatıyor - ceza uygulanacak');
-        
-        // Apply penalty to self and show notification
-        await applyDisconnectPenalty(user.id, true);
-        
-        // Leave room
-        await supabase
-          .from('game_participants')
-          .delete()
-          .eq('room_id', currentRoom.id)
-          .eq('user_id', user.id);
+      // 🔥 TAMAMEN DEVİRE DIŞI - Real-time listener ile yönetilecek
+      console.log('🚪 Page unload detected, but handling via real-time listeners only');
+      
+      // Sadece manual cleanup, ceza yok
+      if (currentRoom && user) {
+        console.log('🧹 Manual cleanup on page close');
       }
     };
 
-    // Handle page close
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    // 🔥 ŞİMDİLİK DEVRE DIŞI - beforeunload listener'ı kaldır
+    // window.addEventListener('beforeunload', handleBeforeUnload);
     
     // Cleanup on component unmount
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
+      // window.removeEventListener('beforeunload', handleBeforeUnload);
       
-      // Check on component unmount as well
-      if (currentRoom && user && currentRoom.status === 'active') {
-        // Run in background (non-blocking)
-        handleBeforeUnload();
-      }
+      // 🔥 Component unmount'da da sadece log
+      console.log('🧹 GameContext component unmounting');
     };
-  }, [currentRoom, user, applyDisconnectPenalty]);
+  }, [currentRoom, user, participants, applyDisconnectPenalty]);
 
   // Initialize cleanup on mount
   useEffect(() => {
