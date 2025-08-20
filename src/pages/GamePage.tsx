@@ -1492,19 +1492,37 @@ useEffect(() => {
   const submitWord = async () => {
   if (waitingForPlayer || isJokerActive) return;
   
-  setLastPlayerAction(Date.now());
-  
-  if (currentWord.length < 3) {
-    toast({
-      title: 'Geçersiz Kelime',
-      description: 'Kelime en az 3 harf olmalıdır.',
-      variant: 'destructive',
-      duration: 400,
-    });
+  // Prevent accidental double-taps/duplicate submissions (mobile)
+  if (submissionLockRef.current) {
+    console.log('⏳ Submission locked - ignoring duplicate tap');
     return;
   }
-
-  const normalizedWord = currentWord.toUpperCase();
+  submissionLockRef.current = true;
+  
+  setLastPlayerAction(Date.now());
+  
+  try {
+    if (currentWord.length < 3) {
+      toast({
+        title: 'Geçersiz Kelime',
+        description: 'Kelime en az 3 harf olmalıdır.',
+        variant: 'destructive',
+        duration: 400,
+      });
+      return;
+    }
+  
+    const normalizedWord = currentWord.toUpperCase();
+  
+    // Ignore rapid duplicate submission of the same word (e.g., double tap)
+    if (recentSubmissionsRef.current.has(normalizedWord)) {
+      console.log('⏳ Ignoring rapid duplicate submission for:', normalizedWord);
+      return;
+    }
+    recentSubmissionsRef.current.add(normalizedWord);
+    setTimeout(() => {
+      recentSubmissionsRef.current.delete(normalizedWord);
+    }, 800);
   
   // 🔥 MOBİL FIX: Kelime kontrolünü daha güvenli hale getir
   console.log('📱 Mobile word check:', {
@@ -1638,6 +1656,9 @@ useEffect(() => {
   }
 
   clearWord();
+} finally {
+  submissionLockRef.current = false;
+}
 };
 
   // Trigger word effects (confetti/fireworks) if purchased
