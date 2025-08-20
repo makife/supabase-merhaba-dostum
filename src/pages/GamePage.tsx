@@ -1663,6 +1663,7 @@ useEffect(() => {
 
   // Trigger word effects (confetti/fireworks) if purchased
 const triggerWordEffects = () => {
+  console.log('🎵 WORD EFFECTS TRIGGERED:', currentWord.length);
   if (!(settings?.effects_enabled ?? true)) return;
   
   const hasConfetti = hasPurchased('effect_confetti') && (settings?.confetti_effect_enabled ?? true);
