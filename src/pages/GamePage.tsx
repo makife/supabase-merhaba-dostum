@@ -1261,7 +1261,7 @@ useEffect(() => {
       filter: `room_id=eq.${currentRoom.id}`
     }, (payload) => {
       console.log('📱 Mobile real-time word:', payload.new?.word);
-      if (payload.new?.word && !isSyncing) {
+      if (payload.new?.word && !syncingRef.current) {
         const newWord = payload.new.word.toUpperCase();
         
         // Debounced update
