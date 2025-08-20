@@ -1311,7 +1311,41 @@ All colors MUST be HSL.
   background: linear-gradient(135deg, hsl(220 5% 50%), hsl(210 10% 55%), hsl(200 0% 45%)) !important;
   opacity: 0.6 !important;
 }
-  
+
+/* Joker butonları - Daha canlı gradientler */
+.bg-gradient-to-br.from-green-100.to-emerald-200 {
+  background: linear-gradient(135deg, hsl(120 80% 60%), hsl(140 75% 55%), hsl(160 70% 50%)) !important;
+  border-color: hsl(120 80% 60%) !important;
+  color: white !important;
+}
+
+.bg-gradient-to-br.from-green-100.to-emerald-200:hover {
+  background: linear-gradient(135deg, hsl(120 85% 65%), hsl(140 80% 60%), hsl(160 75% 55%)) !important;
+  box-shadow: 0 4px 15px hsl(120 80% 60% / 0.4) !important;
+}
+
+.bg-gradient-to-br.from-blue-100.to-cyan-200 {
+  background: linear-gradient(135deg, hsl(200 90% 60%), hsl(190 85% 55%), hsl(180 80% 50%)) !important;
+  border-color: hsl(200 90% 60%) !important;
+  color: white !important;
+}
+
+.bg-gradient-to-br.from-blue-100.to-cyan-200:hover {
+  background: linear-gradient(135deg, hsl(200 95% 65%), hsl(190 90% 60%), hsl(180 85% 55%)) !important;
+  box-shadow: 0 4px 15px hsl(200 90% 60% / 0.4) !important;
+}
+
+.bg-gradient-to-br.from-purple-100.to-violet-200 {
+  background: linear-gradient(135deg, hsl(270 80% 60%), hsl(280 75% 55%), hsl(290 70% 50%)) !important;
+  border-color: hsl(270 80% 60%) !important;
+  color: white !important;
+}
+
+.bg-gradient-to-br.from-purple-100.to-violet-200:hover {
+  background: linear-gradient(135deg, hsl(270 85% 65%), hsl(280 80% 60%), hsl(290 75% 55%)) !important;
+  box-shadow: 0 4px 15px hsl(270 80% 60% / 0.4) !important;
+}
+
 /* Eğer daha dramatik efekt istersen, class name'i değiştir */
 .letter-fire-highlight {
   animation: letter-fire-highlight 1.0s ease-in-out;
