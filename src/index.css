@@ -1374,11 +1374,11 @@ All colors MUST be HSL.
 }
 
 /* Input field yazı rengi siyah */
-.text-white.placeholder\\:text-white\\/70 {
+.game-grid input {
   color: black !important;
 }
 
-.text-white.placeholder\\:text-white\\/70::placeholder {
+.game-grid input::placeholder {
   color: rgba(0, 0, 0, 0.5) !important;
 }
 
