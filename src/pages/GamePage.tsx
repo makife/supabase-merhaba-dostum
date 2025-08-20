@@ -1429,33 +1429,39 @@ useEffect(() => {
 
   // Private room logic
   useEffect(() => {
-    if (gameMode === 'private-room') {
-      const realPlayers = participants.filter(p => !p.is_bot && p.user_id !== null);
+  if (gameMode === 'private-room') {
+    const realPlayers = participants.filter(p => !p.is_bot && p.user_id !== null);
+  
+    if (realPlayers.length >= 2) {
+      console.log('✅ 2 gerçek oyuncu hazır - PRIVATE ROOM OYUNU BAŞLIYOR!');
+      setWaitingForPlayer(false);
+      setGameStarted(true);
+      setUsedWords(new Set()); // Local state temizle
+      setGlobalUsedWords(new Set()); // 🔥 Global state temizle
     
-      if (realPlayers.length >= 2) {
-        console.log('✅ 2 gerçek oyuncu hazır - PRIVATE ROOM OYUNU BAŞLIYOR!');
-        setWaitingForPlayer(false);
-        setGameStarted(true);
-        setUsedWords(new Set()); // Local state temizle
-        setGlobalUsedWords(new Set()); // 🔥 Global state temizle
-      
-        if (!hasShownStartMessage) {
-          setHasShownStartMessage(true);
-          toast({
-            title: '🎮 Özel Oda Oyunu Başladı!',
-            description: `${gameType === 'score' ? 'Puanlı' : 'Süreli'} özel oda oyunu başladı!`,
-            duration: 2000,
-          });
-        }
-      } else {
-        setWaitingForPlayer(true);
-        setGameStarted(false);
-        setHasShownStartMessage(false);
-        setUsedWords(new Set());
-        setGlobalUsedWords(new Set()); // 🔥 Global state temizle
+      if (!hasShownStartMessage) {
+        setHasShownStartMessage(true);
+        toast({
+          title: '🎮 Özel Oda Oyunu Başladı!',
+          description: `${gameType === 'score' ? 'Puanlı' : 'Süreli'} özel oda oyunu başladı!`,
+          duration: 2000,
+        });
       }
+    } else if (realPlayers.length === 1) {
+      // 🔥 YENİ: Tek oyuncu kaldıysa bekleme moduna geç
+      console.log('⏳ Tek oyuncu kaldı, bekleme moduna geçiliyor');
+      setWaitingForPlayer(true);
+      setGameStarted(false);
+      setHasShownStartMessage(false);
+      setUsedWords(new Set());
+      setGlobalUsedWords(new Set());
+    } else {
+      // 🔥 YENİ: Hiç oyuncu yoksa ana sayfaya git
+      console.log('🏠 Hiç oyuncu yok, ana sayfaya yönlendiriliyor');
+      navigate('/');
     }
-  }, [participants, gameMode, hasShownStartMessage, gameType, toast]);
+  }
+}, [participants, gameMode, hasShownStartMessage, gameType, toast, navigate]);
 
   // Touch olayları için optimize edilmiş handler
   const handleLetterTouch = (letter: string, row: number, col: number, event: React.TouchEvent) => {
