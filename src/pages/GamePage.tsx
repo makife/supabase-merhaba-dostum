@@ -78,6 +78,9 @@ const GamePage = ({
   const [searchParams] = useSearchParams();
   const [lastClickTime, setLastClickTime] = useState(0);
   const cleanupRef = useRef<(() => void)[]>([]);
+  const syncingRef = useRef(false);
+  const submissionLockRef = useRef(false);
+  const recentSubmissionsRef = useRef<Set<string>>(new Set());
   const [audioYes] = useState(() => {
     const audio = new Audio('/yes.mp3');
     audio.volume = 0.7;
@@ -216,8 +219,7 @@ const GamePage = ({
   const [opponentName, setOpponentName] = useState('');
   const [targetScore, setTargetScore] = useState(gameType === 'score' ? 500 : 0);
   const [gameStartTime, setGameStartTime] = useState<number>(Date.now());
-  const syncingRef = useRef(false);
-  const recentSubmissionsRef = useRef<Set<string>>(new Set());
+
 
 
 
@@ -1479,13 +1481,9 @@ useEffect(() => {
   // Submit word - Using local wordlist validation
   const submitWord = async () => {
   if (waitingForPlayer || isJokerActive) return;
-
-  // 🔥 MOBİL FIX: Submission lock - aynı anda sadece 1 submission
-  if (submissionLockRef.current) {
-    console.log('📱 Submission already in progress, blocking duplicate');
-    return;
-  }
-
+  
+  setLastPlayerAction(Date.now());
+  
   if (currentWord.length < 3) {
     toast({
       title: 'Geçersiz Kelime',
@@ -1498,21 +1496,18 @@ useEffect(() => {
 
   const normalizedWord = currentWord.toUpperCase();
   
-  // 🔥 MOBİL FIX: Triple check - üçlü kontrol sistemi
-  console.log('📱 TRIPLE CHECK:', {
+  // 🔥 MOBİL FIX: Kelime kontrolünü daha güvenli hale getir
+  console.log('📱 Mobile word check:', {
     word: normalizedWord,
-    inUsedWords: usedWords.has(normalizedWord),
-    inGlobalWords: globalUsedWords.has(normalizedWord),
-    inRecentSubmissions: recentSubmissionsRef.current.has(normalizedWord),
-    submissionLocked: submissionLockRef.current
+    localUsedSize: usedWords.size,
+    globalUsedSize: globalUsedWords.size,
+    isInLocal: usedWords.has(normalizedWord),
+    isInGlobal: globalUsedWords.has(normalizedWord)
   });
-
-  // ÜÇ FARKLI KONTROLDE BİRİ BİLE TRİGGER OLURSA REJECT ET
-  if (usedWords.has(normalizedWord) || 
-      globalUsedWords.has(normalizedWord) || 
-      recentSubmissionsRef.current.has(normalizedWord)) {
-    
-    console.log('❌ TRIPLE CHECK FAILED - Word already used!');
+  
+  // ÇOKLU KONTROL - hem local hem global
+  if (usedWords.has(normalizedWord) || globalUsedWords.has(normalizedWord)) {
+    console.log('❌ Mobile: Word already used!');
     toast({
       title: 'Kelime Zaten Kullanıldı',
       description: 'Bu kelime bu oyunda zaten kullanıldı.',
@@ -1524,179 +1519,20 @@ useEffect(() => {
     return;
   }
 
-  // 🔥 MOBİL FIX: Hemen lock'la ve recent submissions'a ekle
-  submissionLockRef.current = true;
-  recentSubmissionsRef.current.add(normalizedWord);
+  // 🔥 MOBİL FIX: Kelimeyi HEMEN ÖNCE her iki state'e de ekle
+  const tempUsedWords = new Set([...usedWords, normalizedWord]);
+  const tempGlobalWords = new Set([...globalUsedWords, normalizedWord]);
   
-  // 3 saniye sonra recent submissions'dan çıkar
-  setTimeout(() => {
-    recentSubmissionsRef.current.delete(normalizedWord);
-  }, 3000);
-
-  setLastPlayerAction(Date.now());
-
-  console.log('📱 PROCESSING WORD:', normalizedWord);
-
-  // 🔥 MOBİL FIX: State'leri HEMEN güncellemek yerine validate'ten sonra güncelle
-  let validationResult;
+  setUsedWords(tempUsedWords);
+  setGlobalUsedWords(tempGlobalWords);
   
-  try {
-    // LOCAL WORDLIST VALIDATION
-    validationResult = validateWordLocal(currentWord);
-    
-    if (!validationResult.isValid) {
-      console.log('❌ Validation failed:', validationResult.message);
-      
-      // HEMEN UNLOCK YAP
-      submissionLockRef.current = false;
-      recentSubmissionsRef.current.delete(normalizedWord);
-      
-      playSound('wrongWord');
-      toast({
-        title: 'Geçersiz Kelime',
-        description: validationResult.message,
-        variant: 'destructive',
-        duration: 1000,
-      });
-      clearWord();
-      return;
-    }
+  console.log('📱 Mobile: Word added to temp states immediately');
 
-    console.log('✅ Validation passed:', normalizedWord, 'Points:', validationResult.points);
-
-    // 🔥 MOBİL FIX: Şimdi state'leri güncelle
-    setUsedWords(prev => new Set([...prev, normalizedWord]));
-    setGlobalUsedWords(prev => new Set([...prev, normalizedWord]));
-
-    // Database'e kelimeyi kaydet (sadece multiplayer modlarda)
-    if (currentRoom && user && (gameMode === 'private-room' || gameMode === 'random-match')) {
-      try {
-        const { error: dbError } = await supabase
-          .from('game_words')
-          .insert({
-            room_id: currentRoom.id,
-            player_id: user.id,
-            word: normalizedWord,
-            points: validationResult.points
-          });
-        
-        if (dbError) {
-          console.error('❌ Database error:', dbError);
-          
-          // Database hatası durumunda state'leri geri al
-          setUsedWords(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(normalizedWord);
-            return newSet;
-          });
-          setGlobalUsedWords(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(normalizedWord);
-            return newSet;
-          });
-          
-          // UNLOCK YAP
-          submissionLockRef.current = false;
-          recentSubmissionsRef.current.delete(normalizedWord);
-          
-          toast({
-            title: 'Hata',
-            description: 'Kelime kaydedilemedi, tekrar deneyin.',
-            variant: 'destructive',
-          });
-          clearWord();
-          return;
-        }
-        
-        console.log('✅ Word saved to database:', normalizedWord);
-      } catch (dbError) {
-        console.error('❌ Database save failed:', dbError);
-        
-        // ROLLBACK
-        setUsedWords(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(normalizedWord);
-          return newSet;
-        });
-        setGlobalUsedWords(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(normalizedWord);
-          return newSet;
-        });
-        
-        submissionLockRef.current = false;
-        recentSubmissionsRef.current.delete(normalizedWord);
-        
-        toast({
-          title: 'Hata',
-          description: 'Kelime kaydedilemedi, tekrar deneyin.',
-          variant: 'destructive',
-        });
-        clearWord();
-        return;
-      }
-    }
-
-    // 🎉 SUCCESS PATH
-    console.log('🎉 Word successfully processed:', normalizedWord);
-
-    // Ses efektleri ve puan hesaplama
-    playSound('correctWord');
-    const newScore = playerScore + validationResult.points;
-    setPlayerScore(newScore);
-    
-    setPlayerWords(prev => [...prev, currentWord]);
-    setPlayerWordsWithScores(prev => [...prev, { word: currentWord, score: validationResult.points }]);
-    
-    triggerWordEffects();
-    
-    if (currentRoom) {
-      await updateScore(newScore);
-    }
-
-    // Total score güncelleme (vs-computer modunda)
-    if (user && gameMode === 'vs-computer') {
-      const { data: currentProfile } = await supabase
-        .from('profiles')
-        .select('total_score')
-        .eq('id', user.id)
-        .single();
-
-      const calculateLevel = (totalScore: number) => {
-        const baseExp = 1000;
-        const expIncreasePerLevel = 100;
-        
-        let level = 1;
-        let totalExpNeeded = 0;
-        let currentLevelExp = baseExp;
-
-        while (totalScore >= totalExpNeeded + currentLevelExp) {
-          totalExpNeeded += currentLevelExp;
-          level++;
-          currentLevelExp = baseExp + (level - 1) * expIncreasePerLevel;
-        }
-
-        return level;
-      };
-
-      const currentLevel = calculateLevel(currentProfile?.total_score || 0);
-      const levelMultiplier = 1 + (currentLevel - 1) * 0.1;
-      const bonusPoints = Math.floor(validationResult.points * levelMultiplier);
-      
-      const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
-      
-      await supabase
-        .from('profiles')
-        .update({ total_score: newTotalScore })
-        .eq('id', user.id);
-    }
-
-    clearWord();
-
-  } catch (error) {
-    console.error('❌ CRITICAL ERROR in submitWord:', error);
-    
-    // ROLLBACK EVERYTHING
+  // LOCAL WORDLIST VALIDATION
+  const result = validateWordLocal(currentWord);
+  
+  if (!result.isValid) {
+    // Kelime geçersizse geri al
     setUsedWords(prev => {
       const newSet = new Set(prev);
       newSet.delete(normalizedWord);
@@ -1708,17 +1544,108 @@ useEffect(() => {
       return newSet;
     });
     
+    playSound('wrongWord');
     toast({
-      title: 'Hata',
-      description: 'Beklenmeyen bir hata oluştu.',
+      title: 'Geçersiz Kelime',
+      description: result.message,
       variant: 'destructive',
+      duration: 1000,
     });
     clearWord();
-  } finally {
-    // 🔥 MOBİL FIX: MUTLAKA UNLOCK YAP
-    submissionLockRef.current = false;
-    console.log('📱 Submission unlocked');
+    return;
   }
+
+  console.log('✅ Mobile: Word accepted:', currentWord, 'Points:', result.points);
+  
+  // Database'e kelimeyi kaydet (sadece multiplayer modlarda)
+  if (currentRoom && user && (gameMode === 'private-room' || gameMode === 'random-match')) {
+    try {
+      await supabase
+        .from('game_words')
+        .insert({
+          room_id: currentRoom.id,
+          player_id: user.id,
+          word: normalizedWord,
+          points: result.points
+        });
+      
+      console.log('✅ Mobile: Word saved to database:', normalizedWord);
+    } catch (error) {
+      console.error('❌ Mobile: Database word save error:', error);
+      // Database hatası durumunda state'leri geri al
+      setUsedWords(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(normalizedWord);
+        return newSet;
+      });
+      setGlobalUsedWords(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(normalizedWord);
+        return newSet;
+      });
+      toast({
+        title: 'Hata',
+        description: 'Kelime kaydedilemedi, tekrar deneyin.',
+        variant: 'destructive',
+      });
+      clearWord();
+      return;
+    }
+  }
+
+  // Ses efektleri ve puan hesaplama
+  playSound('correctWord');
+  const newScore = playerScore + result.points;
+  setPlayerScore(newScore);
+  
+  setPlayerWords(prev => [...prev, currentWord]);
+  setPlayerWordsWithScores(prev => [...prev, { word: currentWord, score: result.points }]);
+  
+  // 🔥 MOBİL SES FIX: Audio dosyalarını mobil-friendly şekilde çal
+  triggerWordEffects();
+  
+  if (currentRoom) {
+    await updateScore(newScore);
+  }
+
+  // Total score güncelleme (vs-computer modunda)
+  if (user && gameMode === 'vs-computer') {
+    const { data: currentProfile } = await supabase
+      .from('profiles')
+      .select('total_score')
+      .eq('id', user.id)
+      .single();
+
+    const calculateLevel = (totalScore: number) => {
+      const baseExp = 1000;
+      const expIncreasePerLevel = 100;
+      
+      let level = 1;
+      let totalExpNeeded = 0;
+      let currentLevelExp = baseExp;
+
+      while (totalScore >= totalExpNeeded + currentLevelExp) {
+        totalExpNeeded += currentLevelExp;
+        level++;
+        currentLevelExp = baseExp + (level - 1) * expIncreasePerLevel;
+      }
+
+      return level;
+    };
+
+    const currentLevel = calculateLevel(currentProfile?.total_score || 0);
+    const levelMultiplier = 1 + (currentLevel - 1) * 0.1;
+    const bonusPoints = Math.floor(result.points * levelMultiplier);
+    
+    const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
+    
+    await supabase
+      .from('profiles')
+      .update({ total_score: newTotalScore })
+      .eq('id', user.id);
+  }
+
+  clearWord();
 };
 
   // Trigger word effects (confetti/fireworks) if purchased
