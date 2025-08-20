@@ -1100,9 +1100,9 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       
       // SADECE gerçek rakip ayrıldıysa işlem yap
       if (!payload.old.is_bot && 
-          payload.old.user_id && 
-          payload.old.user_id !== user?.id && // ÖNEMLİ: Kendisi değilse
-          currentRoom.status === 'active') {
+    payload.old.user_id && 
+    payload.old.user_id !== user?.id && // ÖNEMLİ: Kendisi değilse
+    (currentRoom.status === 'active' || currentRoom.status === 'waiting')) {
         
         console.log('🏆 RAKIP AYRILDI - SEN KAZANDIN!');
         
