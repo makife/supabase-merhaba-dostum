@@ -1491,7 +1491,7 @@ useEffect(() => {
   // Custom toast fonksiyonu
   const showCustomToast = (title: string, description: string) => {
     const toastDiv = document.createElement('div');
-    toastDiv.className = 'fixed top-48 right-4 bg-red-500 text-white p-2 rounded-lg shadow-lg z-50 transition-transform duration-300 transform translate-x-full';
+    toastDiv.className = 'fixed top-48 right-4 bg-red-500 text-white p-3 rounded-lg shadow-lg z-50 transition-transform duration-300 transform translate-x-full';
     toastDiv.innerHTML = `<div class="font-bold">${title}</div><div class="text-sm">${description}</div>`;
   
     document.body.appendChild(toastDiv);
