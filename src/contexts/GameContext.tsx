@@ -318,52 +318,57 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
   // Fetch participants
   const fetchParticipants = useCallback(async (roomId: string) => {
-    try {
-      console.log('📊 === PARTICIPANTS DEBUG BAŞLADI ===');
-      console.log('📊 Room ID:', roomId.slice(-8));
-      console.log('📊 User ID:', user?.id?.slice(-8));
-    
-      // Manual SQL query ile test et
-      const { data, error, count } = await supabase
-        .from('game_participants')
-        .select(`
-          *,
-          profiles:user_id (username, avatar_url)
-        `, { count: 'exact' })
-        .eq('room_id', roomId);
-    
-      console.log('📊 SQL Query Result:', {
-        data: data?.length || 0,
-        error: error?.message,
-        count,
-        participants: data
+  try {
+    console.log('📊 === PARTICIPANTS DEBUG BAŞLADI ===');
+    console.log('📊 Room ID:', roomId.slice(-8));
+    console.log('📊 User ID:', user?.id?.slice(-8));
+  
+    // 🔥 FIX: Profiles ile JOIN yaparak username'leri çek
+    const { data, error, count } = await supabase
+      .from('game_participants')
+      .select(`
+        *,
+        profiles!inner (
+          id,
+          username,
+          avatar_url
+        )
+      `, { count: 'exact' })
+      .eq('room_id', roomId);
+  
+    console.log('📊 SQL Query Result:', {
+      data: data?.length || 0,
+      error: error?.message,
+      count,
+      participants: data
+    });
+  
+    if (error) {
+      console.error('❌ SQL Error:', error);
+      return;
+    }
+  
+    if (data) {
+      console.log('📊 Raw participants data:');
+      data.forEach((p, i) => {
+        console.log(`  ${i+1}. User: ${p.user_id?.slice(-8) || 'null'}, Bot: ${p.is_bot}, Score: ${p.score}`);
+        console.log(`      Real Username: ${p.profiles?.username || 'N/A'}`);
+        console.log(`      Avatar: ${p.profiles?.avatar_url || 'N/A'}`);
       });
     
-      if (error) {
-        console.error('❌ SQL Error:', error);
-        return;
-      }
-    
-      if (data) {
-        console.log('📊 Raw participants data:');
-        data.forEach((p, i) => {
-          console.log(`  ${i+1}. User: ${p.user_id?.slice(-8) || 'null'}, Bot: ${p.is_bot}, Score: ${p.score}`);
-          console.log(`      Profile: ${(p as any).profiles?.username || 'N/A'}`);
-        });
-      
-        setParticipants(data as GameParticipant[]);
-        console.log('✅ Participants state güncellendi:', data.length);
-      } else {
-        console.log('⚠️ No participants data received');
-        setParticipants([]);
-      }
-    
-      console.log('📊 === PARTICIPANTS DEBUG BİTTİ ===');
-    } catch (error) {
-      console.error('❌ fetchParticipants HATA:', error);
+      setParticipants(data as GameParticipant[]);
+      console.log('✅ Participants state güncellendi:', data.length);
+    } else {
+      console.log('⚠️ No participants data received');
       setParticipants([]);
     }
-  }, [user?.id]);
+  
+    console.log('📊 === PARTICIPANTS DEBUG BİTTİ ===');
+  } catch (error) {
+    console.error('❌ fetchParticipants HATA:', error);
+    setParticipants([]);
+  }
+}, [user?.id]);
 
   // Create room
   const createRoom = useCallback(async (gameMode: string, roomCode?: string): Promise<GameRoom | null> => {
