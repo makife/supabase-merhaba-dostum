@@ -1610,6 +1610,20 @@ useEffect(() => {
   
   setPlayerWords(prev => [...prev, currentWord]);
   setPlayerWordsWithScores(prev => [...prev, { word: currentWord, score: result.points }]);
+
+  const wordLength = currentWord.length;
+
+  // Ses efektlerini direkt çal
+  if (wordLength === 4) {
+    audioYes.currentTime = 0;
+    audioYes.play().catch(e => console.log('Audio failed:', e));
+  } else if (wordLength === 5) {
+    audioWow2.currentTime = 0;
+    audioWow2.play().catch(e => console.log('Audio failed:', e));
+  } else if (wordLength >= 6) {
+    audioYahoo.currentTime = 0;
+    audioYahoo.play().catch(e => console.log('Audio failed:', e));
+  }
   
   // 🔥 MOBİL SES FIX: Audio dosyalarını mobil-friendly şekilde çal
   triggerWordEffects();
