@@ -1373,6 +1373,15 @@ All colors MUST be HSL.
   transform: translateY(-1px) !important;
 }
 
+/* Input field yazı rengi siyah */
+.text-white.placeholder\\:text-white\\/70 {
+  color: black !important;
+}
+
+.text-white.placeholder\\:text-white\\/70::placeholder {
+  color: rgba(0, 0, 0, 0.5) !important;
+}
+
 /* Eğer daha dramatik efekt istersen, class name'i değiştir */
 .letter-fire-highlight {
   animation: letter-fire-highlight 1.0s ease-in-out;
