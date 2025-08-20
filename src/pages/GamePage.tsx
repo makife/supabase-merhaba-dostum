@@ -1490,31 +1490,26 @@ useEffect(() => {
 
   // Custom toast fonksiyonu
   const showCustomToast = (title: string, description: string) => {
-  console.log('🔔 Toast çağrıldı:', title, description); // Debug için
+  console.log('Toast called:', title, description);
   
   const toastDiv = document.createElement('div');
   toastDiv.className = 'fixed bg-red-500 text-white p-3 rounded-lg shadow-lg z-50 transition-transform duration-300';
-  toastDiv.style.top = '200px'; // Sabit pozisyon
+  toastDiv.style.top = '200px';
   toastDiv.style.right = '16px';
-  toastDiv.style.transform = 'translateX(100%)'; // Başlangıçta sağda
-  toastDiv.innerHTML = `<div class="font-bold">${title}</div><div class="text-sm">${description}</div>`;
+  toastDiv.style.transform = 'translateX(100%)';
+  toastDiv.innerHTML = '<div class="font-bold">' + title + '</div><div class="text-sm">' + description + '</div>';
   
   document.body.appendChild(toastDiv);
-  console.log('🔔 Toast DOM\\'a eklendi'); // Debug için
   
-  // Sağdan sola gir
   setTimeout(() => {
     toastDiv.style.transform = 'translateX(0)';
-    console.log('🔔 Toast gösterildi'); // Debug için
   }, 50);
   
-  // 2 saniye sonra sağa geri git
   setTimeout(() => {
     toastDiv.style.transform = 'translateX(100%)';
     setTimeout(() => {
       if (document.body.contains(toastDiv)) {
         document.body.removeChild(toastDiv);
-        console.log('🔔 Toast kaldırıldı'); // Debug için
       }
     }, 300);
   }, 2000);
