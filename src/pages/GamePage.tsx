@@ -1569,7 +1569,7 @@ useEffect(() => {
   
   if (!result.isValid) {
     playSound('wrongWord');
-    showCustomToast('Geçersiz Kelime', result.message);
+    showCustomToast('Geçersiz Kelime');
     clearWord();
     return;
   }
