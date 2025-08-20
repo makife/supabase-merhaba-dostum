@@ -2164,26 +2164,33 @@ return (
             size="sm" 
             className="text-xs px-2 py-1 h-8" 
             onClick={() => {
-              // 🔥 TURNUVA KONTROLÜ EKLENDİ
-              if (gameMode === 'tournament') {
-                toast({
-                  title: '⚠️ Uyarı',
-                  description: 'Turnuva maçından çıkamazsınız! Maçı tamamlamanız gerekiyor.',
-                  variant: 'destructive',
-                });
-                return;
-              }
-              
-              if (gameMode === 'random-match' && !gameEnded) {
-                setShowExitDialog(true);
-              } else if (gameMode === 'private-room' && !gameEnded) {
-                if (confirm('Oyundan çıkmak istediğinizde arkadaşınız tek kalacak. Emin misiniz?')) {
-                  navigate('/');
-                }
-              } else {
-                navigate('/');
-              }
-            }}
+  // 🔥 TURNUVA KONTROLÜ EKLENDİ + OYUN DURUMU KONTROLÜ
+  if (gameMode === 'tournament') {
+    toast({
+      title: '⚠️ Uyarı',
+      description: 'Turnuva maçından çıkamazsınız! Maçı tamamlamanız gerekiyor.',
+      variant: 'destructive',
+    });
+    return;
+  }
+  
+  // 🔥 FIX: Sadece gerçekten aktif oyun sırasında exit dialog göster
+  if (gameMode === 'random-match' && !gameEnded && gameStarted && 
+      participants.length >= 2 && 
+      participants.some(p => !p.is_bot && p.user_id !== user?.id)) {
+    setShowExitDialog(true);
+  } else if (gameMode === 'private-room' && !gameEnded && gameStarted &&
+             participants.length >= 2 && 
+             participants.some(p => !p.is_bot && p.user_id !== user?.id)) {
+    if (confirm('Aktif oyundan çıkmak istediğinizde ceza alacaksınız. Emin misiniz?')) {
+      navigate('/');
+    }
+  } else {
+    // Oyun başlamamışsa veya tek kişi varsa direkt çık
+    console.log('🚪 Oyun başlamamış veya tek oyuncu - direkt çıkış');
+    navigate('/');
+  }
+}}
             disabled={gameMode === 'tournament'} // Turnuvada disable et
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
