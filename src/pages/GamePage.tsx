@@ -2183,38 +2183,11 @@ return (
         <div className="flex items-center justify-between py-2 shrink-0">
           {/* Sol taraf - Geri butonu */}
           <Button 
-            variant="outline" 
-            size="sm" 
-            className="text-xs px-2 py-1 h-8" 
-            onClick={() => {
-  // 🔥 TURNUVA KONTROLÜ EKLENDİ + OYUN DURUMU KONTROLÜ
-  if (gameMode === 'tournament') {
-    toast({
-      title: '⚠️ Uyarı',
-      description: 'Turnuva maçından çıkamazsınız! Maçı tamamlamanız gerekiyor.',
-      variant: 'destructive',
-    });
-    return;
-  }
-  
-  // 🔥 FIX: Sadece gerçekten aktif oyun sırasında exit dialog göster
-  if (gameMode === 'random-match' && !gameEnded && gameStarted && 
-      participants.length >= 2 && 
-      participants.some(p => !p.is_bot && p.user_id !== user?.id)) {
-    setShowExitDialog(true);
-  } else if (gameMode === 'private-room' && !gameEnded && gameStarted &&
-             participants.length >= 2 && 
-             participants.some(p => !p.is_bot && p.user_id !== user?.id)) {
-    if (confirm('Aktif oyundan çıkmak istediğinizde ceza alacaksınız. Emin misiniz?')) {
-      navigate('/');
-    }
-  } else {
-    // Oyun başlamamışsa veya tek kişi varsa direkt çık
-    console.log('🚪 Oyun başlamamış veya tek oyuncu - direkt çıkış');
-    navigate('/');
-  }
-}}
-            disabled={gameMode === 'tournament'} // Turnuvada disable et
+  variant="outline" 
+  size="sm" 
+  className="text-xs px-2 py-1 h-8" 
+  onClick={handleBackToMenu}
+  disabled={gameMode === 'tournament'}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             {gameMode === 'tournament' ? 'Turnuva Maçı' : 'Çıkış'}
