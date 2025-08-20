@@ -757,7 +757,8 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 }, [currentRoom]);
 
   // Leave room
-  const leaveRoom = useCallback(async (): Promise<void> => {
+  // Leave room
+const leaveRoom = useCallback(async (): Promise<void> => {
   if (!user || !currentRoom) {
     // Eğer currentRoom yoksa sadece state temizle
     console.log('🧹 Room yok ama state temizleniyor');
@@ -778,6 +779,26 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     const shouldApplyPenalty = currentRoom.status === 'active' && 
                               participants.length >= 2 &&
                               participants.some(p => !p.is_bot && p.user_id !== user.id);
+    
+    // 🔥 YENİ: Karşı tarafa bildirim gönder (manuel ayrılmadan önce)
+    const realOpponent = participants.find(p => !p.is_bot && p.user_id !== user.id);
+    if (realOpponent && (currentRoom.status === 'active' || currentRoom.status === 'waiting')) {
+      console.log('📢 Karşı tarafa bildirim gönderiliyor:', realOpponent.user_id?.slice(-8));
+      
+      // Karşı tarafa kazanma bonusu ver
+      await applyWinBonus(realOpponent.user_id!, 100);
+      
+      // Real-time bildirim gönder - custom event
+      await supabase
+        .from('game_notifications')
+        .insert({
+          user_id: realOpponent.user_id,
+          type: 'opponent_left',
+          title: '🏆 Kazandınız!',
+          message: 'Rakip oyundan ayrıldı. +100 bonus puan kazandınız!',
+          room_id: currentRoom.id
+        });
+    }
     
     if (shouldApplyPenalty) {
       console.log('⚖️ Ceza uygulanacak (aktif oyun + gerçek rakip)');
@@ -823,7 +844,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     setCurrentRoom(null);
     setParticipants([]);
   }
-}, [user, currentRoom, participants, applyDisconnectPenalty]);
+}, [user, currentRoom, participants, applyDisconnectPenalty, applyWinBonus]);
 
   // Update score
   const updateScore = useCallback(async (score: number): Promise<void> => {
