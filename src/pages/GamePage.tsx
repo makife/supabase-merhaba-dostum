@@ -1488,29 +1488,23 @@ useEffect(() => {
     setCurrentWord('');
   };
 
-  // Custom toast div oluştur
-const showCustomToast = (title: string, description: string) => {
-  const toastDiv = document.createElement('div');
-  toastDiv.className = 'fixed top-48 right-4 bg-red-500 text-white p-3 rounded-lg shadow-lg z-50 transition-transform duration-300 transform translate-x-full';
-  toastDiv.innerHTML = `<div class="font-bold">${title}</div><div class="text-sm">${description}</div>`;
+  // Custom toast fonksiyonu
+  const showCustomToast = (title: string, description: string) => {
+    const toastDiv = document.createElement('div');
+    toastDiv.className = 'fixed top-48 right-4 bg-red-500 text-white p-3 rounded-lg shadow-lg z-50 transition-transform duration-300 transform translate-x-full';
+    toastDiv.innerHTML = `<div class="font-bold">${title}</div><div class="text-sm">${description}</div>`;
   
-  document.body.appendChild(toastDiv);
+    document.body.appendChild(toastDiv);
   
-  // Sağdan sola gir
-  setTimeout(() => {
-    toastDiv.style.transform = 'translateX(0)';
-  }, 10);
+    setTimeout(() => {
+      toastDiv.style.transform = 'translateX(0)';
+    }, 10);
   
-  // 1 saniye sonra sağa geri git
-  setTimeout(() => {
-    toastDiv.style.transform = 'translateX(100%)';
-    setTimeout(() => document.body.removeChild(toastDiv), 300);
-  }, 1000);
-};
-
-// Toast çağrılarını değiştir:
-showCustomToast('Kelime Zaten Kullanıldı');
-showCustomToast('Geçersiz Kelime', result.message);
+    setTimeout(() => {
+      toastDiv.style.transform = 'translateX(100%)';
+      setTimeout(() => document.body.removeChild(toastDiv), 300);
+    }, 1000);
+  };
 
   // Submit word - Using local wordlist validation
   const submitWord = async () => {
