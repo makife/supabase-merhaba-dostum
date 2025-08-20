@@ -1504,12 +1504,19 @@ useEffect(() => {
     localUsedSize: usedWords.size,
     globalUsedSize: globalUsedWords.size,
     isInLocal: usedWords.has(normalizedWord),
-    isInGlobal: globalUsedWords.has(normalizedWord)
+    isInGlobal: globalUsedWords.has(normalizedWord),
+    currentUsedWords: Array.from(usedWords),
+    currentGlobalWords: Array.from(globalUsedWords)
   });
   
   // ÇOKLU KONTROL - hem local hem global
   if (usedWords.has(normalizedWord) || globalUsedWords.has(normalizedWord)) {
-    console.log('❌ Mobile: Word already used!');
+    console.log('❌ Mobile: Word already used!', {
+      foundInLocal: usedWords.has(normalizedWord),
+      foundInGlobal: globalUsedWords.has(normalizedWord),
+      allLocalWords: Array.from(usedWords),
+      allGlobalWords: Array.from(globalUsedWords)
+    });
     toast({
       title: 'Kelime Zaten Kullanıldı',
       description: 'Bu kelime bu oyunda zaten kullanıldı.',
@@ -1521,31 +1528,12 @@ useEffect(() => {
     return;
   }
 
-  // 🔥 MOBİL FIX: Kelimeyi HEMEN ÖNCE her iki state'e de ekle
-  const tempUsedWords = new Set([...usedWords, normalizedWord]);
-  const tempGlobalWords = new Set([...globalUsedWords, normalizedWord]);
-  
-  setUsedWords(tempUsedWords);
-  setGlobalUsedWords(tempGlobalWords);
-  
-  console.log('📱 Mobile: Word added to temp states immediately');
+  // Don't add to sets immediately - wait for successful validation and database save
 
   // LOCAL WORDLIST VALIDATION
   const result = validateWordLocal(currentWord);
   
   if (!result.isValid) {
-    // Kelime geçersizse geri al
-    setUsedWords(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(normalizedWord);
-      return newSet;
-    });
-    setGlobalUsedWords(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(normalizedWord);
-      return newSet;
-    });
-    
     playSound('wrongWord');
     toast({
       title: 'Geçersiz Kelime',
@@ -1574,17 +1562,6 @@ useEffect(() => {
       console.log('✅ Mobile: Word saved to database:', normalizedWord);
     } catch (error) {
       console.error('❌ Mobile: Database word save error:', error);
-      // Database hatası durumunda state'leri geri al
-      setUsedWords(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(normalizedWord);
-        return newSet;
-      });
-      setGlobalUsedWords(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(normalizedWord);
-        return newSet;
-      });
       toast({
         title: 'Hata',
         description: 'Kelime kaydedilemedi, tekrar deneyin.',
@@ -1594,6 +1571,11 @@ useEffect(() => {
       return;
     }
   }
+
+  // 🔥 Add word to local sets only AFTER successful database save (or for single player)
+  setUsedWords(prev => new Set([...prev, normalizedWord]));
+  setGlobalUsedWords(prev => new Set([...prev, normalizedWord]));
+  console.log('✅ Mobile: Word added to local sets after validation:', normalizedWord);
 
   // Ses efektleri ve puan hesaplama
   playSound('correctWord');
