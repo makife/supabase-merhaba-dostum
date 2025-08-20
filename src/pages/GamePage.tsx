@@ -1490,21 +1490,35 @@ useEffect(() => {
 
   // Custom toast fonksiyonu
   const showCustomToast = (title: string, description: string) => {
-    const toastDiv = document.createElement('div');
-    toastDiv.className = 'fixed top-50 right-4 bg-red-500 text-white p-2 rounded-lg shadow-lg z-50 transition-transform duration-300 transform translate-x-full';
-    toastDiv.innerHTML = `<div class="font-bold">${title}</div><div class="text-sm">${description}</div>`;
+  console.log('🔔 Toast çağrıldı:', title, description); // Debug için
   
-    document.body.appendChild(toastDiv);
+  const toastDiv = document.createElement('div');
+  toastDiv.className = 'fixed bg-red-500 text-white p-3 rounded-lg shadow-lg z-50 transition-transform duration-300';
+  toastDiv.style.top = '200px'; // Sabit pozisyon
+  toastDiv.style.right = '16px';
+  toastDiv.style.transform = 'translateX(100%)'; // Başlangıçta sağda
+  toastDiv.innerHTML = `<div class="font-bold">${title}</div><div class="text-sm">${description}</div>`;
   
+  document.body.appendChild(toastDiv);
+  console.log('🔔 Toast DOM\\'a eklendi'); // Debug için
+  
+  // Sağdan sola gir
+  setTimeout(() => {
+    toastDiv.style.transform = 'translateX(0)';
+    console.log('🔔 Toast gösterildi'); // Debug için
+  }, 50);
+  
+  // 2 saniye sonra sağa geri git
+  setTimeout(() => {
+    toastDiv.style.transform = 'translateX(100%)';
     setTimeout(() => {
-      toastDiv.style.transform = 'translateX(0)';
-    }, 10);
-  
-    setTimeout(() => {
-      toastDiv.style.transform = 'translateX(100%)';
-      setTimeout(() => document.body.removeChild(toastDiv), 300);
-    }, 1000);
-  };
+      if (document.body.contains(toastDiv)) {
+        document.body.removeChild(toastDiv);
+        console.log('🔔 Toast kaldırıldı'); // Debug için
+      }
+    }, 300);
+  }, 2000);
+};
 
   // Submit word - Using local wordlist validation
   const submitWord = async () => {
