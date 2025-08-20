@@ -1274,11 +1274,13 @@ useEffect(() => {
       table: 'game_words',
       filter: `room_id=eq.${currentRoom.id}`
     }, (payload) => {
-      console.log('📱 Mobile real-time word:', payload.new?.word);
-      if (payload.new?.word && !syncingRef.current) {
+      console.log('📱 Mobile real-time word:', payload.new?.word, 'from player:', payload.new?.player_id);
+      
+      // Don't process words from the current user to prevent duplicate validation
+      if (payload.new?.word && !syncingRef.current && payload.new?.player_id !== user?.id) {
         const newWord = payload.new.word.toUpperCase();
         
-        // Debounced update
+        // Debounced update - only for other players' words
         setTimeout(() => {
           setGlobalUsedWords(prev => new Set([...prev, newWord]));
           setUsedWords(prev => new Set([...prev, newWord]));
