@@ -1249,32 +1249,33 @@ useEffect(() => {
   };
 
   // İlk sync
-  syncUsedWords();
+  const initialSyncTimer = setTimeout(syncUsedWords, 500);
 
   // Real-time word changes dinle
   const wordChannel = supabase
-    .channel(`words-${currentRoom.id}`)
+    .channel(`mobile-words-${currentRoom.id}`)
     .on('postgres_changes', {
       event: 'INSERT',
       schema: 'public',
       table: 'game_words',
       filter: `room_id=eq.${currentRoom.id}`
     }, (payload) => {
-      console.log('📝 New word detected via real-time:', payload.new?.word);
-      if (payload.new?.word) {
+      console.log('📱 Mobile real-time word:', payload.new?.word);
+      if (payload.new?.word && !isSyncing) {
         const newWord = payload.new.word.toUpperCase();
-        setGlobalUsedWords(prev => {
-          const newSet = new Set([...prev, newWord]);
-          console.log('📝 Global words updated:', newSet.size, 'total words');
-          return newSet;
-        });
-        setUsedWords(prev => new Set([...prev, newWord]));
+        
+        // Debounced update
+        setTimeout(() => {
+          setGlobalUsedWords(prev => new Set([...prev, newWord]));
+          setUsedWords(prev => new Set([...prev, newWord]));
+        }, 100);
       }
     })
     .subscribe();
 
   return () => {
-    console.log('🧹 Word sync cleanup');
+    clearTimeout(initialSyncTimer);
+    console.log('📱 Mobile word sync cleanup');
     supabase.removeChannel(wordChannel);
   };
 }, [currentRoom?.id]);
@@ -1434,7 +1435,7 @@ useEffect(() => {
 
   const now = Date.now();
     // 150ms debounce (mobil için daha uzun)
-    if (now - lastClickTime < 200) return;
+    if (now - lastClickTime < 150) return;
     setLastClickTime(now);
 
     // Haptic feedback (mobil cihazlarda titreşim)
