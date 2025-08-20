@@ -200,7 +200,7 @@ const GamePage = ({
   const [playerScore, setPlayerScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(gameType === 'timed' ? 120 : 0);
-  const [gameStarted, setGameStarted] = useState(false);
+  const [gameStarted, setGameStarted] = useState(true);
   const [waitingForPlayer, setWaitingForPlayer] = useState(false);
   const [gameEnded, setGameEnded] = useState(false);
   const [winner, setWinner] = useState<'player' | 'opponent' | 'tie' | null>(null);
@@ -377,10 +377,6 @@ const GamePage = ({
     setGameEnded(true);
     // setShowResults burada kullanılmıyor, sadece state tanımla
   };
-
-  useEffect(() => {
-  console.log('🔍 Timer Debug - gameStarted:', gameStarted, 'gameEnded:', gameEnded, 'timeLeft:', timeLeft, 'gameType:', gameType);
-}, [gameStarted, gameEnded, timeLeft, gameType]);
 
   useEffect(() => {
     if (gameMode === 'tournament' && !tournamentMatch) {
