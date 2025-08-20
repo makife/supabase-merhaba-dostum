@@ -1521,7 +1521,7 @@ useEffect(() => {
   
   try {
     if (currentWord.length < 3) {
-      showCustomToast('Geçersiz Kelime', result.message);
+      showCustomToast('Geçersiz Kelime');
       return;
     }
   
