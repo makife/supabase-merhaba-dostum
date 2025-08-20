@@ -435,30 +435,41 @@ const GamePage = ({
 
   // Rakip ismini göster - turnuva için
   const getOpponentDisplayName = () => {
-    if (gameMode === 'tournament' && tournamentMatch) {
-      const opponentId = tournamentMatch.player1_id === user?.id ? 
-        tournamentMatch.player2_id : 
-        tournamentMatch.player1_id;
-    
-      if (!opponentId) return 'Turnuva Botu';
-      if (opponentId.startsWith('bot_')) return 'Turnuva Botu';
-      return opponentName || 'Turnuva Rakibi';
-    }
+  if (gameMode === 'tournament' && tournamentMatch) {
+    const opponentId = tournamentMatch.player1_id === user?.id ? 
+      tournamentMatch.player2_id : 
+      tournamentMatch.player1_id;
   
-    // Diğer modlar için
-    switch (gameMode) {
-      case 'vs-computer':
-        return 'Bilgisayar';
-      case 'private-room':
-        return opponentName || 'Arkadaş';
-      case 'random-match':
-        return opponentName || 'Rakip';
-      default:
-        return 'AI Rakip';
-    }
-  };
+    if (!opponentId) return 'Turnuva Botu';
+    if (opponentId.startsWith('bot_')) return 'Turnuva Botu';
+    return opponentName || 'Turnuva Rakibi';
+  }
 
-  // Turnuva modunda geri dönüş engelle
+  // 🔥 FIX: Gerçek rakip username'ini bul
+  const realOpponent = participants.find(p => 
+    !p.is_bot && 
+    p.user_id !== user?.id && 
+    p.user_id !== null
+  );
+
+  if (realOpponent && (realOpponent as any).profiles?.username) {
+    return (realOpponent as any).profiles.username;
+  }
+
+  // Diğer modlar için fallback
+  switch (gameMode) {
+    case 'vs-computer':
+      return 'Bilgisayar';
+    case 'private-room':
+      return 'Arkadaş';
+    case 'random-match':
+      return 'Rakip';
+    default:
+      return 'AI Rakip';
+  }
+};
+
+
   // Turnuva modunda geri dönüş engelle
 const handleBackToMenu = async () => {
   if (gameMode === 'tournament') {
