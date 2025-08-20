@@ -2264,7 +2264,7 @@ return (
 
         {/* Scores */}
         <div className="grid grid-cols-2 gap-4">
-          <Card className="bg-gradient-to-br from-blue-50 to-indigo-100 border border-blue-200 shadow-lg">
+          <Card className="silver-gradient border border-gray-300 shadow-lg">
             <CardContent className="p-4 text-center relative overflow-hidden">
               <Avatar className="w-16 h-16 mx-auto mb-2">
                 <AvatarImage 
@@ -2287,7 +2287,7 @@ return (
               )}
             </CardContent>
           </Card>
-          <Card className="light-gradient border-0">
+          <Card className="silver-gradient border border-gray-300 shadow-lg">
             <CardContent className="p-4 text-center relative overflow-hidden">
               <Avatar className="w-16 h-16 mx-auto mb-2 bg-transparent">
                 <AvatarImage 
