@@ -1521,7 +1521,7 @@ useEffect(() => {
   
   try {
     if (currentWord.length < 3) {
-      showCustomToast('Geçersiz Kelime');
+      showCustomToast('Geçersiz Kelime','..');
       return;
     }
   
@@ -1556,7 +1556,7 @@ useEffect(() => {
       allLocalWords: Array.from(usedWords),
       allGlobalWords: Array.from(globalUsedWords)
     });
-    showCustomToast('Kelime Zaten Kullanıldı');
+    showCustomToast('Kelime Zaten Kullanıldı','..');
     playSound('wrongWord');
     clearWord();
     return;
@@ -1569,7 +1569,7 @@ useEffect(() => {
   
   if (!result.isValid) {
     playSound('wrongWord');
-    showCustomToast('Geçersiz Kelime');
+    showCustomToast('Geçersiz Kelime','..');
     clearWord();
     return;
   }
@@ -1591,11 +1591,7 @@ useEffect(() => {
       console.log('✅ Mobile: Word saved to database:', normalizedWord);
     } catch (error) {
       console.error('❌ Mobile: Database word save error:', error);
-      toast({
-        title: 'Hata',
-        description: 'Kelime kaydedilemedi, tekrar deneyin.',
-        variant: 'destructive',
-      });
+      showCustomToast('Kelime kaydedilemedi','..');
       clearWord();
       return;
     }
