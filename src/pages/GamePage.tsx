@@ -459,7 +459,8 @@ const GamePage = ({
   };
 
   // Turnuva modunda geri dönüş engelle
-  const handleBackToMenu = async () => {
+  // Turnuva modunda geri dönüş engelle
+const handleBackToMenu = async () => {
   if (gameMode === 'tournament') {
     toast({
       title: '⚠️ Uyarı',
@@ -469,20 +470,15 @@ const GamePage = ({
     return;
   }
   
-  // 🔥 FIX: Gerçek aktif oyun kontrolü
+  // 🔥 Aktif oyun kontrolü - kendi dialog'umuz
   const isRealActiveGame = gameStarted && 
                           !gameEnded && 
                           participants.length >= 2 && 
                           participants.some(p => !p.is_bot && p.user_id !== user?.id);
   
   if (isRealActiveGame) {
-    const confirmed = confirm(
-      `Aktif oyundan çıkarsanız ceza alacaksınız! Yine de çıkmak istiyor musunuz?`
-    );
-    
-    if (!confirmed) {
-      return; // İptal edildi
-    }
+    setShowExitDialog(true); // Kendi dialog'umuzu göster
+    return;
   }
   
   // Odadan ayrıl (GameContext'ten)
@@ -494,7 +490,6 @@ const GamePage = ({
   // Ana menüye git
   navigate('/');
 };
-
 
   // JOKER FONKSİYONLARI
 
@@ -2526,30 +2521,37 @@ return (
 </div>
 
     {/* Exit Confirmation Dialog */}
-    <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
-      <AlertDialogContent className="max-w-sm mx-auto">
-        <AlertDialogHeader>
-          <AlertDialogTitle className="text-center">⚠️ Oyundan Çıkış</AlertDialogTitle>
-          <AlertDialogDescription className="text-center">
-            Oyundan şimdi çıkarsanız <span className="font-bold text-destructive">50-200 puan</span> kaybedeceksiniz! 
-            Ayrıca ayrılma sayacınız artacak.
-            <br /><br />
-            Yine de çıkmak istiyor musunuz?
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter className="flex-col space-y-2 sm:flex-col sm:space-y-2 sm:space-x-0">
-          <AlertDialogAction 
-            onClick={() => navigate('/')}
-            className="w-full bg-destructive hover:bg-destructive/90"
-          >
-            Evet, Çıkış Yap
-          </AlertDialogAction>
-          <AlertDialogCancel className="w-full">
-            Hayır, Oyuna Devam Et
-          </AlertDialogCancel>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+<AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
+  <AlertDialogContent className="max-w-sm mx-auto">
+    <AlertDialogHeader>
+      <AlertDialogTitle className="text-center">⚠️ Aktif Oyun Uyarısı</AlertDialogTitle>
+      <AlertDialogDescription className="text-center">
+        Şu an aktif bir oyun oynuyorsun! 
+        <br /><br />
+        Oyundan çıkarsan <span className="font-bold text-destructive">ceza alacaksın</span> ve rakibin kazanacak.
+        <br /><br />
+        <span className="text-muted-foreground text-sm">Emin misin?</span>
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter className="flex-col space-y-2 sm:flex-col sm:space-y-2 sm:space-x-0">
+      <AlertDialogAction 
+        onClick={async () => {
+          setShowExitDialog(false);
+          if (currentRoom) {
+            await leaveRoom();
+          }
+          navigate('/');
+        }}
+        className="w-full bg-destructive hover:bg-destructive/90"
+      >
+        🚪 Evet, Çıkış Yap
+      </AlertDialogAction>
+      <AlertDialogCancel className="w-full">
+        🎮 Hayır, Oyuna Devam Et
+      </AlertDialogCancel>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
     </>
   );
 };
