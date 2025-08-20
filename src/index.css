@@ -1294,6 +1294,23 @@ All colors MUST be HSL.
   background: linear-gradient(135deg, hsl(120 20% 70%), hsl(130 25% 75%), hsl(110 15% 65%)) !important;
   opacity: 0.6 !important;
 }
+
+  /* Çıkış butonu siyah gradient */
+.text-xs.px-2.py-1.h-8 {
+  background: linear-gradient(135deg, hsl(220 15% 25%), hsl(210 20% 30%), hsl(200 10% 20%)) !important;
+  border-color: hsl(220 15% 25%) !important;
+  color: white !important;
+}
+
+.text-xs.px-2.py-1.h-8:hover {
+  background: linear-gradient(135deg, hsl(220 20% 30%), hsl(210 25% 35%), hsl(200 15% 25%)) !important;
+  box-shadow: 0 4px 15px hsl(220 15% 25% / 0.4) !important;
+}
+
+.text-xs.px-2.py-1.h-8:disabled {
+  background: linear-gradient(135deg, hsl(220 5% 50%), hsl(210 10% 55%), hsl(200 0% 45%)) !important;
+  opacity: 0.6 !important;
+}
   
 /* Eğer daha dramatik efekt istersen, class name'i değiştir */
 .letter-fire-highlight {
