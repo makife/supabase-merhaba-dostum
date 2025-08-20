@@ -1243,6 +1243,14 @@ useEffect(() => {
     syncingRef.current = true;
     
     try {
+      // 🔥 VS-COMPUTER FIX: Tek oyuncu modunda önceki kelimeleri yükleme
+      if (gameMode === 'vs-computer') {
+        console.log('🤖 vs-computer mode: Not loading previous words, starting fresh');
+        setGlobalUsedWords(new Set());
+        setUsedWords(new Set());
+        return;
+      }
+
       const { data: roomWords } = await supabase
         .from('game_words')
         .select('word')
