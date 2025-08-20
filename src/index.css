@@ -1346,14 +1346,14 @@ All colors MUST be HSL.
   box-shadow: 0 4px 15px hsl(270 80% 60% / 0.4) !important;
 }
 
-/* İki profil kartı için aynı gümüş gradient */
+/* Profil kartları - Ortadan dışa siyah gradient */
 .silver-gradient {
-  background: linear-gradient(135deg, hsl(220 20% 85%), hsl(210 25% 80%), hsl(200 30% 75%)) !important;
+  background: radial-gradient(circle at center, hsl(0 0% 95%) 0%, hsl(0 0% 80%) 30%, hsl(0 0% 60%) 60%, hsl(0 0% 30%) 90%, hsl(0 0% 15%) 100%) !important;
 }
 
 .silver-gradient:hover {
-  background: linear-gradient(135deg, hsl(220 25% 90%), hsl(210 30% 85%), hsl(200 35% 80%)) !important;
-  box-shadow: 0 4px 15px hsl(220 20% 70% / 0.3) !important;
+  background: radial-gradient(circle at center, hsl(0 0% 98%) 0%, hsl(0 0% 85%) 30%, hsl(0 0% 65%) 60%, hsl(0 0% 35%) 90%, hsl(0 0% 20%) 100%) !important;
+  box-shadow: 0 4px 15px hsl(0 0% 20% / 0.4) !important;
 }
 
 /* Eğer daha dramatik efekt istersen, class name'i değiştir */
