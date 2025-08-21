@@ -506,49 +506,52 @@ const handleBackToMenu = async () => {
 
   // 1. Değiştir Jokeri - 5 harf değiştir (3 sesli, 2 sessiz)
   const useDegisTirJoker = () => {
-    if (jokers.degistir <= 0 || isJokerActive) return;
-
-    
-    const vowels = ['A', 'E', 'İ', 'I', 'O', 'U', 'Ü', 'Ö'];
-    const consonants = ['B', 'C', 'Ç', 'D', 'F', 'G', 'Ğ', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'R', 'S', 'Ş', 'T', 'V', 'Y', 'Z'];
-    
-    const newGrid = [...gameGrid.map(row => [...row])];
-    
-    // Rastgele 5 pozisyon seç
-    const positions: {row: number, col: number}[] = [];
-    while (positions.length < 5) {
-      const row = Math.floor(Math.random() * 4);
-      const col = Math.floor(Math.random() * 4);
-      if (!positions.some(p => p.row === row && p.col === col)) {
-        positions.push({ row, col });
-      }
-    }
-    
-    // İlk 3 pozisyona sesli harf
-    for (let i = 0; i < 3; i++) {
-      const randomVowel = vowels[Math.floor(Math.random() * vowels.length)];
-      newGrid[positions[i].row][positions[i].col] = randomVowel;
-    }
-    
-    // Son 2 pozisyona sessiz harf
-    for (let i = 3; i < 5; i++) {
-      const randomConsonant = consonants[Math.floor(Math.random() * consonants.length)];
-      newGrid[positions[i].row][positions[i].col] = randomConsonant;
-    }
-
-    setHighlightedLetters(positions); // Tüm değişen pozisyonları highlight et
+  if (jokers.degistir <= 0 || isJokerActive) return;
   
-    setTimeout(() => {
-    setHighlightedLetters([]); // 1 saniye sonra highlight'ı kaldır
+  // ✅ BU SATIRI BURAYA TAŞI (en başa)
+  setJokers(prev => ({ ...prev, degistir: prev.degistir - 1 }));
+  
+  const vowels = ['A', 'E', 'İ', 'I', 'O', 'U', 'Ü', 'Ö'];
+  const consonants = ['B', 'C', 'Ç', 'D', 'F', 'G', 'Ğ', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'R', 'S', 'Ş', 'T', 'V', 'Y', 'Z'];
+  
+  const newGrid = [...gameGrid.map(row => [...row])];
+  
+  // Rastgele 5 pozisyon seç
+  const positions: {row: number, col: number}[] = [];
+  while (positions.length < 5) {
+    const row = Math.floor(Math.random() * 4);
+    const col = Math.floor(Math.random() * 4);
+    if (!positions.some(p => p.row === row && p.col === col)) {
+      positions.push({ row, col });
+    }
+  }
+  
+  // İlk 3 pozisyona sesli harf
+  for (let i = 0; i < 3; i++) {
+    const randomVowel = vowels[Math.floor(Math.random() * vowels.length)];
+    newGrid[positions[i].row][positions[i].col] = randomVowel;
+  }
+  
+  // Son 2 pozisyona sessiz harf
+  for (let i = 3; i < 5; i++) {
+    const randomConsonant = consonants[Math.floor(Math.random() * consonants.length)];
+    newGrid[positions[i].row][positions[i].col] = randomConsonant;
+  }
+  
+  setHighlightedLetters(positions);
+  
+  setTimeout(() => {
+    setHighlightedLetters([]);
   }, 1000);
-    
-    setGameGrid(newGrid);
-    setJokers(prev => ({ ...prev, degistir: prev.degistir - 1 }));
-    setSelectedLetters([]);
-    setCurrentWord('');
-    
-    playSound('correctWord');
-  };
+  
+  setGameGrid(newGrid);
+  // ❌ BU SATIRI SİL (artık en başta var)
+  // setJokers(prev => ({ ...prev, degistir: prev.degistir - 1 }));
+  setSelectedLetters([]);
+  setCurrentWord('');
+  
+  playSound('correctWord');
+};
 
 
 // 2. Fısılda Jokeri - Sözlükteki orijinal haliyle göster (çevirme yapma!)
