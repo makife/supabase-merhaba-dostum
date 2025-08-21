@@ -14,9 +14,56 @@ interface Letter {
   maxAge: number;
 }
 
-const HeaderAnimationComponent = () => {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+interface HeaderAnimationProps {
+  theme: "light" | "dark";
+}
 
+export const HeaderAnimation: React.FC<HeaderAnimationProps> = ({ theme }) => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const lettersRef = useRef<Letter[]>([]);
+
+  const colorsByTheme = {
+    dark: [
+      "rgba(147, 51, 234, 0.6)",
+      "rgba(59, 130, 246, 0.6)",
+      "rgba(34, 197, 94, 0.6)",
+      "rgba(234, 179, 8, 0.6)"
+    ],
+    light: [
+      "rgba(168, 85, 247, 0.6)",
+      "rgba(16, 185, 129, 0.6)",
+      "rgba(239, 68, 68, 0.6)",
+      "rgba(249, 115, 22, 0.6)"
+    ]
+  };
+
+  const fonts = ["Fredoka", "Comfortaa", "Righteous", "Bungee", "Orbitron"];
+  const letters = "ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ".split("");
+
+  // Harf oluşturma fonksiyonu
+  const createLetter = (): Letter => {
+    const colorList = colorsByTheme[theme];
+    return {
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * 120,
+      dx: (Math.random() - 0.5) * 1.2,
+      dy: (Math.random() - 0.5) * 1.2,
+      char: letters[Math.floor(Math.random() * letters.length)],
+      color: colorList[Math.floor(Math.random() * colorList.length)],
+      font: fonts[Math.floor(Math.random() * fonts.length)],
+      rotation: Math.random() * 360,
+      rotationSpeed: (Math.random() - 0.5) * 4,
+      age: 0,
+      maxAge: 100 + Math.random() * 50
+    };
+  };
+
+  // Başlangıç harfleri
+  useEffect(() => {
+    lettersRef.current = Array.from({ length: 15 }, () => createLetter());
+  }, []);
+
+  // Animasyon döngüsü
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -24,61 +71,25 @@ const HeaderAnimationComponent = () => {
     if (!ctx) return;
 
     canvas.width = window.innerWidth;
-    canvas.height = 120; // header yüksekliği
-
-    const letters = "ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ".split("");
-    const colors = [
-      "rgba(147, 51, 234, 0.6)", // mor
-      "rgba(59, 130, 246, 0.6)", // mavi
-      "rgba(34, 197, 94, 0.6)",  // yeşil
-      "rgba(234, 179, 8, 0.6)",  // sarı
-      "rgba(168, 85, 247, 0.6)", // lila
-      "rgba(239, 68, 68, 0.6)"   // kırmızı
-    ];
-    const fonts = ["Fredoka", "Comfortaa", "Righteous", "Bungee", "Orbitron"];
-
-    const floating: Letter[] = [];
-
-    const createLetter = (): Letter => {
-      return {
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        dx: (Math.random() - 0.5) * 1.5,
-        dy: (Math.random() - 0.5) * 1.5,
-        char: letters[Math.floor(Math.random() * letters.length)],
-        color: colors[Math.floor(Math.random() * colors.length)],
-        font: fonts[Math.floor(Math.random() * fonts.length)],
-        rotation: Math.random() * 360,
-        rotationSpeed: (Math.random() - 0.5) * 4,
-        age: 0,
-        maxAge: 120 + Math.random() * 60
-      };
-    };
-
-    for (let i = 0; i < 30; i++) {
-      floating.push(createLetter());
-    }
+    canvas.height = 120;
 
     let frameId: number;
 
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      floating.forEach((f, i) => {
+      lettersRef.current.forEach((f, i) => {
         f.x += f.dx;
         f.y += f.dy;
         f.rotation += f.rotationSpeed;
         f.age++;
 
-        // opacity hesaplama
+        // opacity
         let opacity = 0.8;
         const fadeIn = f.maxAge * 0.2;
         const fadeOutStart = f.maxAge * 0.7;
-        if (f.age < fadeIn) {
-          opacity = (f.age / fadeIn) * 0.8;
-        } else if (f.age > fadeOutStart) {
-          opacity = ((f.maxAge - f.age) / (f.maxAge - fadeOutStart)) * 0.8;
-        }
+        if (f.age < fadeIn) opacity = (f.age / fadeIn) * 0.8;
+        else if (f.age > fadeOutStart) opacity = ((f.maxAge - f.age) / (f.maxAge - fadeOutStart)) * 0.8;
 
         ctx.save();
         ctx.translate(f.x, f.y);
@@ -90,14 +101,8 @@ const HeaderAnimationComponent = () => {
         ctx.fillText(f.char, 0, 0);
         ctx.restore();
 
-        if (
-          f.x < -50 ||
-          f.x > canvas.width + 50 ||
-          f.y < -50 ||
-          f.y > canvas.height + 50 ||
-          f.age > f.maxAge
-        ) {
-          floating[i] = createLetter();
+        if (f.x < -50 || f.x > canvas.width + 50 || f.y < -50 || f.y > canvas.height + 50 || f.age > f.maxAge) {
+          lettersRef.current[i] = createLetter();
         }
       });
 
@@ -109,12 +114,18 @@ const HeaderAnimationComponent = () => {
     return () => cancelAnimationFrame(frameId);
   }, []);
 
+  // Tema değiştiğinde harf renklerini güncelle
+  useEffect(() => {
+    const colorList = colorsByTheme[theme];
+    lettersRef.current = lettersRef.current.map(f => ({
+      ...f,
+      color: colorList[Math.floor(Math.random() * colorList.length)]
+    }));
+  }, [theme]);
+
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden">
       <canvas ref={canvasRef} className="w-full h-full" />
     </div>
   );
 };
-
-// 🔥 Named export
-export const HeaderAnimation = HeaderAnimationComponent;
