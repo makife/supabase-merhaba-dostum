@@ -118,6 +118,18 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     }
   };
 
+  const setUserOffline = async () => {
+  if (!user?.id) return;
+  
+  try {
+    await supabase.from('user_presence' as any).update({ 
+      is_online: false 
+    }).eq('user_id', user.id);
+  } catch (error) {
+    console.error('Error setting offline:', error);
+  }
+};
+
   const updateCredits = (newCredits: number) => {
     if (profile) {
       setProfile({ ...profile, game_credits: newCredits });
@@ -334,6 +346,7 @@ const refreshOnlineUsers = async () => {
   return () => {
     clearInterval(interval);
     supabase.removeChannel(channel);
+    setUserOffline();
   };
 }, [user?.id]);
 
