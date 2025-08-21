@@ -333,6 +333,20 @@ const refreshOnlineUsers = async () => {
   }
 };
 
+  const handleBeforeUnload = () => {
+    setUserOffline();
+  };
+
+  // Sayfa görünürlüğü değiştiğinde
+  const handleVisibilityChange = () => {
+    if (document.hidden) {
+      setUserOffline();
+    } else {
+      updatePresence();
+      fetchOnlineUsers();
+    }
+  };
+
   updatePresence();
   fetchOnlineUsers();
   
@@ -343,10 +357,16 @@ const refreshOnlineUsers = async () => {
   table: 'user_presence' as any
 }, fetchOnlineUsers).subscribe();
 
+  window.addEventListener('beforeunload', handleBeforeUnload);
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+
   return () => {
     clearInterval(interval);
     supabase.removeChannel(channel);
     setUserOffline();
+    // Event listener'ları temizle
+    window.removeEventListener('beforeunload', handleBeforeUnload);
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
   };
 }, [user?.id]);
 
