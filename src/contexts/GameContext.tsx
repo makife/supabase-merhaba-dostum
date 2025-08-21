@@ -1084,11 +1084,13 @@ const leaveRoom = useCallback(async (): Promise<void> => {
   console.log('🚪 Mevcut oyuncu:', user?.id?.slice(-8));
   console.log('🚪 Room status:', currentRoom.status);
   
-  // SADECE gerçek rakip ayrıldıysa VE aktif oyunda işlem yap
+  // BÜYÜk DEĞİŞİKLİK: Sadece aktif oyunda VE gerçek rakip ayrıldığında işlem yap
+  // Room creator'ın kendisinin ayrılması durumunda hiçbir şey yapma
   if (!payload.old.is_bot && 
       payload.old.user_id && 
       payload.old.user_id !== user?.id && 
-      currentRoom.status === 'active') { // Sadece aktif oyunda
+      currentRoom.status === 'active' &&
+      participants.length >= 2) { // En az 2 oyuncu olduğunda
     
     console.log('🏆 RAKIP AYRILDI - SEN KAZANDIN!');
     
@@ -1115,7 +1117,12 @@ const leaveRoom = useCallback(async (): Promise<void> => {
       setParticipants([]);
     }, 2000);
   } else {
-    console.log('🔄 DELETE event ama işlem yapmıyoruz');
+    console.log('🔄 DELETE event ama işlem yapmıyoruz - durum:', {
+      isBot: payload.old.is_bot,
+      isCurrentUser: payload.old.user_id === user?.id,
+      roomStatus: currentRoom.status,
+      participantCount: participants.length
+    });
   }
 }
     
@@ -1132,20 +1139,27 @@ const leaveRoom = useCallback(async (): Promise<void> => {
       setCurrentRoom(payload.new as GameRoom);
     })
     .on('presence', { event: 'leave' }, async ({ key }) => {
-      console.log('🚪 Bağlantı koptu:', key);
+      console.log('🚪 Presence leave event:', key);
       
-      if (currentRoom.status === 'active' && key !== `user-${user?.id}`) {
+      // SADECE aktif oyunda VE başka bir oyuncunun presence'ı gittiğinde işlem yap
+      if (currentRoom.status === 'active' && 
+          key !== `user-${user?.id}` && 
+          participants.length >= 2) {
+        
+        console.log('⏱️ Bağlantı kopması kontrolü başlıyor, 10 saniye bekleniyor...');
+        
         setTimeout(async () => {
-          const { data: participants } = await supabase
+          // Mevcut katılımcıları kontrol et
+          const { data: currentParticipants } = await supabase
             .from('game_participants')
             .select('user_id, is_bot')
-            .eq('room_id', currentRoom.id)
-            .neq('user_id', user?.id);
+            .eq('room_id', currentRoom.id);
           
-          const realPlayers = participants?.filter(p => !p.is_bot) || [];
+          const realPlayers = currentParticipants?.filter(p => !p.is_bot && p.user_id !== user?.id) || [];
           
-          if (realPlayers.length === 0) {
-            console.log('🏆 Bağlantı kopması - kazandın!');
+          // Sadece gerçekten hiç gerçek oyuncu kalmadıysa işlem yap
+          if (realPlayers.length === 0 && currentRoom.status === 'active') {
+            console.log('🏆 Gerçek rakip yok - kazandın!');
             
             await applyWinBonus(user?.id, 50);
             
@@ -1155,7 +1169,6 @@ const leaveRoom = useCallback(async (): Promise<void> => {
               duration: 4000,
             });
             
-            // ★★★ KILIT NOKTA: ODAYI SİL! ★★★
             console.log('🗑️ ODA SİLİNİYOR - BAĞLANTI KOPMASI');
             await supabase
               .from('game_rooms')
@@ -1170,8 +1183,16 @@ const leaveRoom = useCallback(async (): Promise<void> => {
               setCurrentRoom(null);
               setParticipants([]);
             }, 2000);
+          } else {
+            console.log('🔄 Presence leave ama gerçek rakip hala var, işlem yapmıyoruz');
           }
-        }, 5000); // 5 saniye bekle
+        }, 10000); // 10 saniye bekle (daha uzun süre)
+      } else {
+        console.log('🔄 Presence leave ama koşullar uygun değil:', {
+          roomStatus: currentRoom.status,
+          isOwnKey: key === `user-${user?.id}`,
+          participantCount: participants.length
+        });
       }
     })
     .subscribe();
