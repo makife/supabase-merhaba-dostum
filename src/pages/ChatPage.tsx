@@ -6,12 +6,13 @@ import { useSounds } from '@/hooks/useSounds';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, Users, MessageCircle, Hash, Home } from 'lucide-react';
+import { ArrowLeft, Users, MessageCircle, Hash, Home, Dot } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { GlobalChat } from '@/components/GlobalChat';
 import { PrivateChat } from '@/components/PrivateChat';
 import { UserAvatar } from '@/components/UserAvatar';
 const { profile, onlineUsers, isUserOnline } = useUser();
+
 
 type ViewMode = 'global' | 'users' | 'private-chat';
 
