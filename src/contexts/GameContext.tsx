@@ -1225,7 +1225,7 @@ const leaveRoom = useCallback(async (): Promise<void> => {
       // 🔥 Component unmount'da da sadece log
       console.log('🧹 GameContext component unmounting');
     };
-  }, [currentRoom, user, participants, applyDisconnectPenalty]);
+  }, [currentRoom?.id, user?.id, applyDisconnectPenalty]); // participants'ı kaldırdık!
 
   // Initialize cleanup on mount
   useEffect(() => {
