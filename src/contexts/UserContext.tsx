@@ -249,7 +249,7 @@ const isUserOnline = (userId: string) => {
 // Online kullanıcıları yenile
 const refreshOnlineUsers = async () => {
   try {
-    const { data } = await supabase
+    const { data }: any = await supabase
       .from('user_presence' as any)
       .select(`
         user_id, 
@@ -263,7 +263,7 @@ const refreshOnlineUsers = async () => {
       .gte('last_seen', new Date(Date.now() - 5 * 60 * 1000).toISOString());
     
     if (data) {
-      setOnlineUsers(data.map(item => ({
+      setOnlineUsers(data.map((item: any) => ({
         id: item.user_id,
         username: item.profiles.username || 'Unknown',
         avatar_url: item.profiles.avatar_url,
@@ -291,32 +291,32 @@ const refreshOnlineUsers = async () => {
   };
 
   const fetchOnlineUsers = async () => {
-    try {
-      const { data } = await supabase
-        .from('user_presence' as any)
-        .select(`
-          user_id, 
-          last_seen, 
-          profiles!inner(
-            username, 
-            avatar_url
-          )
-        `)
-        .eq('is_online', true)
-        .gte('last_seen', new Date(Date.now() - 5 * 60 * 1000).toISOString());
-      
-      if (data) {
-        setOnlineUsers(data.map(item => ({
-          id: item.user_id,
-          username: item.profiles.username || 'Unknown',
-          avatar_url: item.profiles.avatar_url,
-          last_seen: item.last_seen
-        })));
-      }
-    } catch (error) {
-      console.error('Error fetching online users:', error);
+  try {
+    const { data }: any = await supabase
+      .from('user_presence' as any)
+      .select(`
+        user_id, 
+        last_seen, 
+        profiles!inner(
+          username, 
+          avatar_url
+        )
+      `)
+      .eq('is_online', true)
+      .gte('last_seen', new Date(Date.now() - 5 * 60 * 1000).toISOString());
+    
+    if (data) {
+      setOnlineUsers(data.map((item: any) => ({
+        id: item.user_id,
+        username: item.profiles.username || 'Unknown',
+        avatar_url: item.profiles.avatar_url,
+        last_seen: item.last_seen
+      })));
     }
-  };
+  } catch (error) {
+    console.error('Error fetching online users:', error);
+  }
+};
 
   updatePresence();
   fetchOnlineUsers();
