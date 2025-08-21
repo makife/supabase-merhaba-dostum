@@ -292,6 +292,7 @@ const refreshOnlineUsers = async () => {
 
   const fetchOnlineUsers = async () => {
   try {
+    console.log('Fetching online users...');
     const { data }: any = await supabase
       .from('user_presence' as any)
       .select(`
@@ -304,6 +305,8 @@ const refreshOnlineUsers = async () => {
       `)
       .eq('is_online', true)
       .gte('last_seen', new Date(Date.now() - 5 * 60 * 1000).toISOString());
+
+    console.log('Fetched data:', data);
     
     if (data) {
       setOnlineUsers(data.map((item: any) => ({
