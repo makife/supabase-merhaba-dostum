@@ -115,6 +115,8 @@ export default function ChatPage() {
   };
 
   const renderUsersList = () => (
+    console.log('renderUsersList - onlineUsers:', onlineUsers);
+    console.log('renderUsersList - onlineUsers.length:', onlineUsers.length);
     <div className="h-full flex flex-col">
       {/* Mobile Header */}
       <div className="flex items-center justify-between p-4 border-b border-border bg-background sticky top-0 z-10">
