@@ -32,6 +32,9 @@ interface UserProfile {
   win_count?: number;
   last_disconnect?: string;
   last_win?: string;
+  id: string;
+  username: string;
+  last_seen: string;
 }
 
 interface UserContextType {
@@ -46,6 +49,9 @@ interface UserContextType {
   getDisplayCredits: () => { base: number; bonus: number };
   isPremium: boolean;
   forceRefreshProfile: () => Promise<void>;
+  onlineUsers: OnlineUser[];
+  isUserOnline: (userId: string) => boolean;
+  refreshOnlineUsers: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -66,6 +72,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(false);
+  const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
 
   const refreshProfile = async (forceRefresh = false) => {
     if (!user) {
@@ -230,6 +237,99 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     }
   };
 
+  // Kullanıcının online olup olmadığını kontrol et
+const isUserOnline = (userId: string) => {
+  return onlineUsers.some(user => user.id === userId);
+};
+
+// Online kullanıcıları yenile
+const refreshOnlineUsers = async () => {
+  try {
+    const { data } = await supabase
+      .from('user_presence')
+      .select(`
+        user_id, 
+        last_seen, 
+        profiles!inner(
+          username, 
+          avatar_url
+        )
+      `)
+      .eq('is_online', true)
+      .gte('last_seen', new Date(Date.now() - 5 * 60 * 1000).toISOString());
+    
+    if (data) {
+      setOnlineUsers(data.map(item => ({
+        id: item.user_id,
+        username: item.profiles.username || 'Unknown',
+        avatar_url: item.profiles.avatar_url,
+        last_seen: item.last_seen
+      })));
+    }
+  } catch (error) {
+    console.error('Error refreshing online users:', error);
+  }
+};
+
+  useEffect(() => {
+  if (!user?.id) return;
+
+  const updatePresence = async () => {
+    try {
+      await supabase.from('user_presence').upsert({ 
+        user_id: user.id, 
+        is_online: true, 
+        last_seen: new Date().toISOString() 
+      });
+    } catch (error) {
+      console.error('Error updating presence:', error);
+    }
+  };
+
+  const fetchOnlineUsers = async () => {
+    try {
+      const { data } = await supabase
+        .from('user_presence')
+        .select(`
+          user_id, 
+          last_seen, 
+          profiles!inner(
+            username, 
+            avatar_url
+          )
+        `)
+        .eq('is_online', true)
+        .gte('last_seen', new Date(Date.now() - 5 * 60 * 1000).toISOString());
+      
+      if (data) {
+        setOnlineUsers(data.map(item => ({
+          id: item.user_id,
+          username: item.profiles.username || 'Unknown',
+          avatar_url: item.profiles.avatar_url,
+          last_seen: item.last_seen
+        })));
+      }
+    } catch (error) {
+      console.error('Error fetching online users:', error);
+    }
+  };
+
+  updatePresence();
+  fetchOnlineUsers();
+  
+  const interval = setInterval(updatePresence, 30000);
+  const channel = supabase.channel('presence_changes').on('postgres_changes', {
+    event: '*', 
+    schema: 'public', 
+    table: 'user_presence'
+  }, fetchOnlineUsers).subscribe();
+
+  return () => {
+    clearInterval(interval);
+    supabase.removeChannel(channel);
+  };
+}, [user?.id]);
+
   useEffect(() => {
     refreshProfile(true); // İlk yüklemede force refresh
     // İlk yüklemede kredi kontrolü yap
@@ -288,7 +388,10 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       getTotalCredits,
       getDisplayCredits,
       isPremium,
-      forceRefreshProfile
+      forceRefreshProfile,
+      onlineUsers,
+      isUserOnline,
+      refreshOnlineUsers
     }}>
       {children}
     </UserContext.Provider>
