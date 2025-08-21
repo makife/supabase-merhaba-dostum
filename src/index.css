@@ -1023,7 +1023,7 @@ All colors MUST be HSL.
   overflow: hidden;
 }
 
-.joker-button::after {
+/*.joker-button::after {
   content: '';
   position: absolute;
   top: 50%;
@@ -1039,7 +1039,7 @@ All colors MUST be HSL.
 .joker-button:active::after {
   width: 200px;
   height: 200px;
-}
+}*/
 
 /* Word Formation Animation */
 @keyframes word-formation {
