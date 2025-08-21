@@ -100,23 +100,4 @@ const LoadingScreen = ({ onLoadingComplete }) => {
   );
 };
 
-  return (
-    <div className="loading-screen">
-      <div className="tip-container">
-        <div className="tip-text">{currentTip}</div>
-      </div>
-      
-      <div className="loading-container">
-        <div className="progress-bar-container">
-          <div 
-            className="progress-bar" 
-            style={{ width: `${progress}%` }}
-          ></div>
-        </div>
-        <div className="loading-text">{loadingText}</div>
-      </div>
-    </div>
-  );
-};
-
 export default LoadingScreen;
