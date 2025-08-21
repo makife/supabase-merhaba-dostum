@@ -139,7 +139,7 @@ export default function ChatPage() {
           <Home className="w-5 h-5" />
         </Button>
       </div>
-      // Online Users Section ekle (mevcut header'dan sonra)
+      {/* Online Users Section */}
 {onlineUsers.length > 0 && (
   <div className="p-4 border-b border-border bg-muted/20">
     <div className="flex items-center space-x-2 mb-3">
