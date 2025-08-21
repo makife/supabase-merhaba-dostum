@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 
 interface Letter {
   x: number;
@@ -14,13 +14,12 @@ interface Letter {
   maxAge: number;
 }
 
-interface HeaderAnimationProps {
-  theme: "light" | "dark";
-}
-
-export const HeaderAnimation: React.FC<HeaderAnimationProps> = ({ theme }) => {
+export const HeaderAnimation: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const lettersRef = useRef<Letter[]>([]);
+  const [theme, setTheme] = useState<"dark" | "light">(
+    window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+  );
 
   const colorsByTheme = {
     dark: [
@@ -112,16 +111,28 @@ export const HeaderAnimation: React.FC<HeaderAnimationProps> = ({ theme }) => {
     animate();
 
     return () => cancelAnimationFrame(frameId);
-  }, []);
-
-  // Tema değiştiğinde harf renklerini güncelle
-  useEffect(() => {
-    const colorList = colorsByTheme[theme];
-    lettersRef.current = lettersRef.current.map(f => ({
-      ...f,
-      color: colorList[Math.floor(Math.random() * colorList.length)]
-    }));
   }, [theme]);
+
+  // Tema değişimini dinle
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = (e: MediaQueryListEvent) => setTheme(e.matches ? "dark" : "light");
+
+    if ("addEventListener" in mediaQuery) {
+      mediaQuery.addEventListener("change", handler);
+    } else {
+      // eski tarayıcılar için
+      mediaQuery.addListener(handler);
+    }
+
+    return () => {
+      if ("removeEventListener" in mediaQuery) {
+        mediaQuery.removeEventListener("change", handler);
+      } else {
+        mediaQuery.removeListener(handler);
+      }
+    };
+  }, []);
 
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden">
