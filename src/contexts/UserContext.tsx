@@ -279,16 +279,16 @@ const refreshOnlineUsers = async () => {
   if (!user?.id) return;
 
   const updatePresence = async () => {
-    try {
-      await supabase.from('user_presence').upsert({ 
-        user_id: user.id, 
-        is_online: true, 
-        last_seen: new Date().toISOString() 
-      });
-    } catch (error) {
-      console.error('Error updating presence:', error);
-    }
-  };
+  try {
+    await supabase.from('user_presence' as any).upsert({ 
+      user_id: user.id, 
+      is_online: true, 
+      last_seen: new Date().toISOString() 
+    });
+  } catch (error) {
+    console.error('Error updating presence:', error);
+  }
+};
 
   const fetchOnlineUsers = async () => {
   try {
@@ -323,10 +323,10 @@ const refreshOnlineUsers = async () => {
   
   const interval = setInterval(updatePresence, 30000);
   const channel = supabase.channel('presence_changes').on('postgres_changes', {
-    event: '*', 
-    schema: 'public', 
-    table: 'user_presence'
-  }, fetchOnlineUsers).subscribe();
+  event: '*', 
+  schema: 'public', 
+  table: 'user_presence' as any
+}, fetchOnlineUsers).subscribe();
 
   return () => {
     clearInterval(interval);
