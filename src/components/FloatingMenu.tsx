@@ -1,4 +1,4 @@
-// FloatingMenu.tsx - Mobil performans dostu versiyon
+// FloatingMenu.tsx - Mobil dostu + blur efektli versiyon
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -42,6 +42,14 @@ export function FloatingMenu() {
   return (
     <div className="fixed bottom-6 right-6 z-50">
 
+      {/* Menü arka plan blur */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/20 backdrop-blur-[2px] -z-10"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
       {/* Menü item container */}
       <div className={`absolute bottom-20 right-0 flex flex-col items-end space-y-3 transition-transform duration-200
         ${isOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0 pointer-events-none'}`}>
@@ -50,7 +58,7 @@ export function FloatingMenu() {
           <Button
             key={item.route}
             onClick={() => handleMenuClick(item.route)}
-            className={`flex items-center space-x-2 bg-black/80 rounded-full px-3 py-1.5 
+            className={`flex items-center space-x-2 bg-black/70 backdrop-blur-[2px] rounded-full px-3 py-1.5 
                        text-white shadow-md transform transition-all duration-200
                        hover:scale-105 bg-gradient-to-r ${item.color}`}
             style={{ transitionDelay: `${index * 30}ms` }}
@@ -63,7 +71,7 @@ export function FloatingMenu() {
         {/* Chat Button */}
         <Button
           onClick={() => handleMenuClick('/chat')}
-          className="flex items-center space-x-2 bg-teal-500 rounded-full px-3 py-1.5 text-white shadow-md hover:scale-105 transform transition-all duration-200"
+          className="flex items-center space-x-2 bg-teal-500/70 backdrop-blur-[2px] rounded-full px-3 py-1.5 text-white shadow-md hover:scale-105 transform transition-all duration-200"
         >
           <MessageCircle className="w-4 h-4" />
           <span className="text-sm font-semibold">Sohbet</span>
@@ -77,7 +85,7 @@ export function FloatingMenu() {
         {/* Logout Button */}
         <Button
           onClick={handleLogout}
-          className="flex items-center space-x-2 bg-red-500 rounded-full px-3 py-1.5 text-white shadow-md hover:scale-105 transform transition-all duration-200"
+          className="flex items-center space-x-2 bg-red-500/70 backdrop-blur-[2px] rounded-full px-3 py-1.5 text-white shadow-md hover:scale-105 transform transition-all duration-200"
         >
           <LogOut className="w-4 h-4" />
           <span className="text-sm font-semibold">Çıkış</span>
