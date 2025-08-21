@@ -194,13 +194,15 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false }: GlobalChatPr
           table: 'global_chat'
         },
         (payload) => {
+          console.log('REAL-TIME MESSAGE RECEIVED:', payload);
           const newMessage = payload.new as ChatMessage;
           
           // Kendi mesajımızı tekrar ekleme, zaten manuel olarak eklendi
           if (newMessage.user_id === user?.id) {
+            console.log('Skipping own message');
             return;
           }
-          
+          console.log('Adding message to UI:', newMessage);
           setMessages(prev => [...prev, newMessage]);
           
           // Play sound for new messages from other users - use fixed callback to avoid dependency
