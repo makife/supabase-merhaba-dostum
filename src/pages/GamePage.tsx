@@ -1282,15 +1282,21 @@ useEffect(() => {
 
       const { data: roomWords } = await supabase
         .from('game_words')
-        .select('word')
+        .select('word, player_id')
         .eq('room_id', currentRoom.id);
 
       if (roomWords) {
-        const wordsSet = new Set(roomWords.map(w => w.word.toUpperCase()));
-        console.log('🔄 Syncing used words:', wordsSet.size, 'words');
-        console.log('🔄 Words:', Array.from(wordsSet));
-        setGlobalUsedWords(wordsSet);
-        setUsedWords(wordsSet); // Local state'i de güncelle
+        // AYRI AYRI LİSTELER: Her oyuncunun kendi kelimeleri ayrı tutulmalı
+        const allWordsSet = new Set(roomWords.map(w => w.word.toUpperCase()));
+        const myWordsSet = new Set(
+          roomWords
+            .filter(w => w.player_id === user?.id)
+            .map(w => w.word.toUpperCase())
+        );
+        
+        console.log('🔄 Syncing - All words:', allWordsSet.size, 'My words:', myWordsSet.size);
+        setGlobalUsedWords(allWordsSet); // Tüm kelimeler (info için)
+        setUsedWords(myWordsSet); // Sadece kendi kelimelerim!
       }
     } catch (error) {
       console.error('❌ Word sync error:', error);
@@ -1584,12 +1590,11 @@ useEffect(() => {
     currentGlobalWords: Array.from(globalUsedWords)
   });
   
-  // ÇOKLU KONTROL - hem local hem global
-  if (usedWords.has(normalizedWord) || globalUsedWords.has(normalizedWord)) {
-    console.log('❌ Mobile: Word already used!', {
-      foundInLocal: usedWords.has(normalizedWord),
-      foundInGlobal: globalUsedWords.has(normalizedWord),
-      allLocalWords: Array.from(usedWords),
+  // SADECE KENDİ KELİMELERİMİ KONTROL ET - rakibin kelimelerini değil!
+  if (usedWords.has(normalizedWord)) {
+    console.log('❌ Mobile: Word already used by me!', {
+      foundInMyList: usedWords.has(normalizedWord),
+      myWords: Array.from(usedWords),
       allGlobalWords: Array.from(globalUsedWords)
     });
     showCustomToast('Kelime Zaten Kullanıldı','');
@@ -1633,9 +1638,8 @@ useEffect(() => {
     }
   }
 
-  // 🔥 Add word to local sets only AFTER successful database save (or for single player)
+  // SADECE KENDİ LİSTEME EKLE - global'a ekleme, o real-time olarak gelecek
   setUsedWords(prev => new Set([...prev, normalizedWord]));
-  setGlobalUsedWords(prev => new Set([...prev, normalizedWord]));
   console.log('✅ Mobile: Word added to local sets after validation:', normalizedWord);
 
   // Ses efektleri ve puan hesaplama
