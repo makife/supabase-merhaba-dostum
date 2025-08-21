@@ -39,7 +39,6 @@ export const HeaderAnimation: React.FC = () => {
   const fonts = ["Fredoka", "Comfortaa", "Righteous", "Bungee", "Orbitron"];
   const letters = "ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ".split("");
 
-  // Harf oluşturma fonksiyonu
   const createLetter = (): Letter => {
     const colorList = colorsByTheme[theme];
     return {
@@ -83,7 +82,6 @@ export const HeaderAnimation: React.FC = () => {
         f.rotation += f.rotationSpeed;
         f.age++;
 
-        // opacity
         let opacity = 0.8;
         const fadeIn = f.maxAge * 0.2;
         const fadeOutStart = f.maxAge * 0.7;
@@ -118,19 +116,10 @@ export const HeaderAnimation: React.FC = () => {
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const handler = (e: MediaQueryListEvent) => setTheme(e.matches ? "dark" : "light");
 
-    if ("addEventListener" in mediaQuery) {
-      mediaQuery.addEventListener("change", handler);
-    } else {
-      // eski tarayıcılar için
-      mediaQuery.addListener(handler);
-    }
+    mediaQuery.addEventListener("change", handler);
 
     return () => {
-      if ("removeEventListener" in mediaQuery) {
-        mediaQuery.removeEventListener("change", handler);
-      } else {
-        mediaQuery.removeListener(handler);
-      }
+      mediaQuery.removeEventListener("change", handler);
     };
   }, []);
 
