@@ -1,4 +1,4 @@
-import './LoadingScreen.css';
+import React, { useState, useEffect } from 'react';
 
 const LoadingScreen = () => {
   const [tips, setTips] = useState(['Oyun yükleniyor...']);
