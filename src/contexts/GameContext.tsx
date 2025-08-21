@@ -423,6 +423,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       toast({
         title: 'Oda Oluşturuldu',
         description: roomCode ? `Oda kodu: ${roomCode}` : 'Oyuna hazırsınız',
+        duration: 2000
       });
 
       console.log('🏠 === ROOM CREATE DEBUG BİTTİ ===');
