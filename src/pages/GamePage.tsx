@@ -507,6 +507,8 @@ const handleBackToMenu = async () => {
   // 1. Değiştir Jokeri - 5 harf değiştir (3 sesli, 2 sessiz)
   const useDegisTirJoker = () => {
     if (jokers.degistir <= 0 || isJokerActive) return;
+
+    setIsJokerActive(true);
     
     const vowels = ['A', 'E', 'İ', 'I', 'O', 'U', 'Ü', 'Ö'];
     const consonants = ['B', 'C', 'Ç', 'D', 'F', 'G', 'Ğ', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'R', 'S', 'Ş', 'T', 'V', 'Y', 'Z'];
