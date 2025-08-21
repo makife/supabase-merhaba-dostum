@@ -26,6 +26,11 @@ export default function ChatPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { profile, onlineUsers, isUserOnline } = useUser();
+
+  console.log('Online users:', onlineUsers);
+  console.log('Current user ID:', user?.id);
+  console.log('Profile:', profile);
+  
   const { playSound } = useSounds();
   const [viewMode, setViewMode] = useState<ViewMode>('global');
   const [selectedUser, setSelectedUser] = useState<SelectedUser | null>(null);
