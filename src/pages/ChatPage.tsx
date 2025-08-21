@@ -217,8 +217,6 @@ export default function ChatPage() {
  );
 };
 
-  };
-
 const renderContent = () => {
   if (viewMode === 'private-chat' && selectedUser && activeChatId) {
     return (
