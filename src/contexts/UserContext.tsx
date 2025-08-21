@@ -316,7 +316,7 @@ const refreshOnlineUsers = async () => {
         )
       `)
       .eq('is_online', true)
-      .gte('last_seen', new Date(Date.now() - 5 * 60 * 1000).toISOString());
+      .gte('last_seen', new Date(Date.now() - 15 * 1000).toISOString());
 
     console.log('Fetched data:', data);
     
