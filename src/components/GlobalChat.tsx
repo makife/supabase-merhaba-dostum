@@ -191,7 +191,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false }: GlobalChatPr
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'global_messages'
+          table: 'global_chat'
         },
         (payload) => {
           const newMessage = payload.new as ChatMessage;
@@ -396,10 +396,11 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false }: GlobalChatPr
       const displayName = user.user_metadata?.username || user.email?.split('@')[0] || 'Anonim';
 
       const { data, error } = await supabase
-        .from('global_messages')
+        .from('global_chat')
         .insert({
           user_id: user.id,
-          content: trimmedMessage
+          username: displayName, 
+          message: trimmedMessage
         })
         .select()
         .single();
