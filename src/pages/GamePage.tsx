@@ -508,8 +508,8 @@ const handleBackToMenu = async () => {
   const useDegisTirJoker = () => {
   if (jokers.degistir <= 0 || isJokerActive) return;
   
-  // ✅ BU SATIRI BURAYA TAŞI (en başa)
-  setJokers(prev => ({ ...prev, degistir: prev.degistir - 1 }));
+  // ✅ Diğer jokerler gibi kendini koru
+  setIsJokerActive(true);
   
   const vowels = ['A', 'E', 'İ', 'I', 'O', 'U', 'Ü', 'Ö'];
   const consonants = ['B', 'C', 'Ç', 'D', 'F', 'G', 'Ğ', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'R', 'S', 'Ş', 'T', 'V', 'Y', 'Z'];
@@ -537,16 +537,17 @@ const handleBackToMenu = async () => {
     const randomConsonant = consonants[Math.floor(Math.random() * consonants.length)];
     newGrid[positions[i].row][positions[i].col] = randomConsonant;
   }
-  
+
   setHighlightedLetters(positions);
   
   setTimeout(() => {
     setHighlightedLetters([]);
+    // ✅ İşlem bitince aktif durumu kapat
+    setIsJokerActive(false);
   }, 1000);
   
   setGameGrid(newGrid);
-  // ❌ BU SATIRI SİL (artık en başta var)
-  // setJokers(prev => ({ ...prev, degistir: prev.degistir - 1 }));
+  setJokers(prev => ({ ...prev, degistir: prev.degistir - 1 }));
   setSelectedLetters([]);
   setCurrentWord('');
   
