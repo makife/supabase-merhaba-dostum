@@ -289,6 +289,17 @@ const renderContent = () => {
           <Hash className="w-5 h-5 text-primary" />
           <h2 className="text-lg font-semibold">Genel Sohbet</h2>
         </div>
+
+        <Button 
+  onClick={() => {
+    console.log('Test button clicked');
+    setViewMode('users');
+  }}
+  className="bg-red-500 text-white"
+>
+  TEST
+</Button>
+        
         <Button
           variant="outline"
           size="sm"
