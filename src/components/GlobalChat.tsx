@@ -54,7 +54,6 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false }: GlobalChatPr
   const [isLoading, setIsLoading] = useState(false);
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
   const [currentChannel, setCurrentChannel] = useState<any>(null);
   const [messageReactions, setMessageReactions] = useState<{[messageId: string]: MessageReaction[]}>({});
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
@@ -356,7 +355,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false }: GlobalChatPr
   const fetchMessages = async () => {
     try {
       const { data, error } = await supabase
-        .from('global_messages')
+        .from('global_messages' as any)
         .select(`
           id,
           content,
@@ -730,7 +729,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false }: GlobalChatPr
           <div>
             <h3 className="font-semibold text-lg">Global Sohbet</h3>
             <p className="text-xs text-muted-foreground">
-              {onlineUsers.size > 0 ? `${onlineUsers.size} kişi çevrimiçi` : 'Kimse çevrimiçi değil'}
+              {onlineUsers.length > 0 ? `${onlineUsers.length} kişi çevrimiçi` : 'Kimse çevrimiçi değil'}
             </p>
           </div>
         </div>
