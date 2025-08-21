@@ -160,7 +160,7 @@ export default function ChatPage() {
          </div>
          <div className="space-y-2">
            {onlineUsers
-             .filter(onlineUser => onlineUser.id !== user?.id)
+             //.filter(onlineUser => onlineUser.id !== user?.id)
              .map((targetUser) => (
                <Card key={targetUser.id} className="p-3 hover:bg-accent cursor-pointer">
                  <div className="flex items-center space-x-3">
