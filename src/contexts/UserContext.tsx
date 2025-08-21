@@ -272,7 +272,7 @@ const refreshOnlineUsers = async () => {
         )
       `)
       .eq('is_online', true)
-      .gte('last_seen', new Date(Date.now() - 5 * 60 * 1000).toISOString());
+      .gte('last_seen', new Date(Date.now() - 15 * 1000).toISOString());
     
     if (data) {
       setOnlineUsers(data.map((item: any) => ({
@@ -350,7 +350,7 @@ const refreshOnlineUsers = async () => {
   updatePresence();
   fetchOnlineUsers();
   
-  const interval = setInterval(updatePresence, 30000);
+  const interval = setInterval(updatePresence, 5000);
   const channel = supabase.channel('presence_changes').on('postgres_changes', {
   event: '*', 
   schema: 'public', 
