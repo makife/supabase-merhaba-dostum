@@ -10,6 +10,7 @@ import { GameProvider } from "@/contexts/GameContext";
 import { MusicProvider } from "@/contexts/MusicContext";
 import { UserProvider } from "@/contexts/UserContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import LoadingScreen from "@/components/LoadingScreen";
 import AuthPage from "@/pages/AuthPage";
 import HomePage from "@/pages/HomePage";
 import GamePage from "@/pages/GamePage";
@@ -29,14 +30,7 @@ const AppRoutes = () => {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center game-grid">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto"></div>
-          <p className="text-lg font-medium">Kelimeci yükleniyor...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   return (
