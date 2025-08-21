@@ -1326,7 +1326,7 @@ useEffect(() => {
         // Debounced update - only for other players' words
         setTimeout(() => {
           setGlobalUsedWords(prev => new Set([...prev, newWord]));
-          setUsedWords(prev => new Set([...prev, newWord]));
+          // Do NOT add to setUsedWords here; keep my words separate
         }, 100);
       }
     })
