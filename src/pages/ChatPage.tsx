@@ -117,7 +117,11 @@ export default function ChatPage() {
   const renderUsersList = () => (
     console.log('renderUsersList - onlineUsers:', onlineUsers);
     console.log('renderUsersList - onlineUsers.length:', onlineUsers.length);
+    return (
     <div className="h-full flex flex-col">
+        <div className="p-4 bg-red-200">
+        <p>DEBUG: Online users count: {onlineUsers.length}</p>
+      </div>
       {/* Mobile Header */}
       <div className="flex items-center justify-between p-4 border-b border-border bg-background sticky top-0 z-10">
         <div className="flex items-center space-x-3">
@@ -205,6 +209,7 @@ export default function ChatPage() {
       </ScrollArea>
     </div>
   );
+  };
 
   const renderContent = () => {
     if (viewMode === 'private-chat' && selectedUser && activeChatId) {
