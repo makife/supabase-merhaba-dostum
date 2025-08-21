@@ -218,6 +218,7 @@ export default function ChatPage() {
 };
 
 const renderContent = () => {
+  console.log('renderContent called, viewMode:', viewMode);
   if (viewMode === 'private-chat' && selectedUser && activeChatId) {
     return (
       <div className="h-full flex flex-col">
@@ -266,8 +267,10 @@ const renderContent = () => {
   }
 
   if (viewMode === 'users') {
+    console.log('Calling renderUsersList');
     return renderUsersList();
   }
+  console.log('Returning global chat');
 
   // Global chat
   return (
