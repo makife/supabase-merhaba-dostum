@@ -307,7 +307,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false }: GlobalChatPr
         console.log('Final online users:', Array.from(online));
         console.log('Final typing users:', Array.from(typing));
         setTypingUsers(typing);
-        setOnlineUsers(online);
+
       })
       .on('presence', { event: 'join' }, ({ newPresences }) => {
         console.log('User joined presence:', newPresences);
@@ -328,9 +328,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false }: GlobalChatPr
           };
           
           console.log('Tracking presence:', presenceData);
-          
-          // Add immediate fallback
-          setOnlineUsers(prev => new Set([...prev, cachedUsername]));
+
           
           // Try tracking - but don't wait for it
           channel.track(presenceData).then(result => {
@@ -347,7 +345,6 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false }: GlobalChatPr
         supabase.removeChannel(channel);
       }
       setCurrentChannel(null);
-      setOnlineUsers(new Set());
       setTypingUsers(new Set());
     };
   }, [isOpen, user?.id]); // playSound'u dependency'den çıkardım
@@ -362,15 +359,22 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false }: GlobalChatPr
           created_at,
           user_id,
           profiles:user_id (
-          username,
-          avatar_url
-        )
-      `)
+            username,
+            avatar_url
+          )
+        `)
         .order('created_at', { ascending: true })
         .limit(50);
 
       if (error) throw error;
-      setMessages(data || []);
+      const formattedMessages = data?.map((msg: any) => ({
+  id: msg.id,
+  user_id: msg.user_id,
+  username: msg.profiles?.username || 'Unknown',
+  message: msg.content,
+  created_at: msg.created_at,
+  avatar_url: msg.profiles?.avatar_url
+})) || [];
     } catch (error) {
       console.error('Error fetching messages:', error);
       toast.error('Mesajlar yüklenirken hata oluştu');
@@ -395,8 +399,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false }: GlobalChatPr
         .from('global_messages')
         .insert({
           user_id: user.id,
-          username: displayName,
-          message: trimmedMessage
+          content: trimmedMessage
         })
         .select()
         .single();
