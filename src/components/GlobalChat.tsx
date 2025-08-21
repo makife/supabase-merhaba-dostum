@@ -47,7 +47,7 @@ interface SelectedUser {
 
 export function GlobalChat({ isOpen, onClose, isFullPage = false }: GlobalChatProps) {
   const { user } = useAuth();
-  const { profile } = useUser();
+  const { profile, onlineUsers, isUserOnline } = useUser();
   const { playSound } = useSounds();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -192,7 +192,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false }: GlobalChatPr
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'global_chat'
+          table: 'global_messages'
         },
         (payload) => {
           const newMessage = payload.new as ChatMessage;
@@ -356,8 +356,17 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false }: GlobalChatPr
   const fetchMessages = async () => {
     try {
       const { data, error } = await supabase
-        .from('global_chat')
-        .select('*')
+        .from('global_messages')
+        .select(`
+          id,
+          content,
+          created_at,
+          user_id,
+          profiles:user_id (
+          username,
+          avatar_url
+        )
+      `)
         .order('created_at', { ascending: true })
         .limit(50);
 
@@ -384,7 +393,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false }: GlobalChatPr
       const displayName = user.user_metadata?.username || user.email?.split('@')[0] || 'Anonim';
 
       const { data, error } = await supabase
-        .from('global_chat')
+        .from('global_messages')
         .insert({
           user_id: user.id,
           username: displayName,
@@ -774,7 +783,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false }: GlobalChatPr
                   >
                     {message.username}
                   </span>
-                  {onlineUsers.has(message.username) && (
+                  {isUserOnline(message.user_id) && (
                     <div className="w-2 h-2 bg-green-500 rounded-full" title="Çevrimiçi"></div>
                   )}
                   <span className="text-xs text-muted-foreground">
