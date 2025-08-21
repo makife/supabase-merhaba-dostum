@@ -1,109 +1,121 @@
-import { useState, useEffect } from 'react';
+import React, { useRef, useEffect } from "react";
 
-interface AnimatedLetter {
-  id: number;
-  letter: string;
+interface Letter {
   x: number;
   y: number;
-  color: string;
-  font: string;
   dx: number;
   dy: number;
+  char: string;
+  color: string;
+  font: string;
   rotation: number;
   rotationSpeed: number;
   age: number;
   maxAge: number;
 }
 
-export const HeaderAnimation = () => {
-  const [animatedLetters, setAnimatedLetters] = useState<AnimatedLetter[]>([]);
-
-  const letters = 'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ';
-  const colors = [
-    'text-primary/60',
-    'text-secondary/60', 
-    'text-accent/60',
-    'text-muted-foreground/40',
-    'text-purple-500/60',
-    'text-blue-500/60',
-    'text-green-500/60',
-    'text-yellow-500/60'
-  ];
-  const fonts = ['font-fredoka', 'font-comfortaa', 'font-righteous', 'font-bungee', 'font-orbitron'];
+const HeaderAnimationCanvas = () => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const newLetter: AnimatedLetter = {
-        id: Date.now() + Math.random(),
-        letter: letters[Math.floor(Math.random() * letters.length)],
-        x: Math.random() * 100,
-        y: Math.random() * 100,
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    canvas.width = window.innerWidth;
+    canvas.height = 120; // header yüksekliği
+
+    const letters = "ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ".split("");
+    const colors = [
+      "rgba(147, 51, 234, 0.6)", // mor
+      "rgba(59, 130, 246, 0.6)", // mavi
+      "rgba(34, 197, 94, 0.6)",  // yeşil
+      "rgba(234, 179, 8, 0.6)",  // sarı
+      "rgba(168, 85, 247, 0.6)", // lila
+      "rgba(239, 68, 68, 0.6)"   // kırmızı
+    ];
+    const fonts = ["Fredoka", "Comfortaa", "Righteous", "Bungee", "Orbitron"];
+
+    const floating: Letter[] = [];
+
+    // Yeni harf oluştur
+    const createLetter = () => {
+      return {
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        dx: (Math.random() - 0.5) * 1.5,
+        dy: (Math.random() - 0.5) * 1.5,
+        char: letters[Math.floor(Math.random() * letters.length)],
         color: colors[Math.floor(Math.random() * colors.length)],
         font: fonts[Math.floor(Math.random() * fonts.length)],
-        dx: (Math.random() - 0.5) * 1.2,
-        dy: (Math.random() - 0.5) * 1.2,
         rotation: Math.random() * 360,
-        rotationSpeed: (Math.random() - 0.5) * 6,
+        rotationSpeed: (Math.random() - 0.5) * 4,
         age: 0,
         maxAge: 120 + Math.random() * 60
       };
-      
-      setAnimatedLetters(prev => [...prev.slice(-60), newLetter]);
-    }, 150);
+    };
 
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    const moveInterval = setInterval(() => {
-      setAnimatedLetters(prev => 
-        prev.map(letter => ({
-          ...letter,
-          x: letter.x + letter.dx,
-          y: letter.y + letter.dy,
-          rotation: letter.rotation + letter.rotationSpeed,
-          age: letter.age + 1
-        })).filter(letter => 
-          letter.x >= -10 && letter.x <= 110 && 
-          letter.y >= -10 && letter.y <= 110 && 
-          letter.age < letter.maxAge
-        )
-      );
-    }, 30);
-
-    return () => clearInterval(moveInterval);
-  }, []);
-
-  const getOpacity = (age: number, maxAge: number) => {
-    const fadeInDuration = maxAge * 0.2;
-    const fadeOutStart = maxAge * 0.7;
-    
-    if (age < fadeInDuration) {
-      return (age / fadeInDuration) * 0.8;
-    } else if (age > fadeOutStart) {
-      return ((maxAge - age) / (maxAge - fadeOutStart)) * 0.8;
+    // Başlangıç harfleri
+    for (let i = 0; i < 30; i++) {
+      floating.push(createLetter());
     }
-    return 0.8;
-  };
+
+    let frameId: number;
+
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      floating.forEach((f, i) => {
+        f.x += f.dx;
+        f.y += f.dy;
+        f.rotation += f.rotationSpeed;
+        f.age++;
+
+        // opacity ayarı
+        let opacity = 0.8;
+        const fadeIn = f.maxAge * 0.2;
+        const fadeOutStart = f.maxAge * 0.7;
+        if (f.age < fadeIn) {
+          opacity = (f.age / fadeIn) * 0.8;
+        } else if (f.age > fadeOutStart) {
+          opacity = ((f.maxAge - f.age) / (f.maxAge - fadeOutStart)) * 0.8;
+        }
+
+        ctx.save();
+        ctx.translate(f.x, f.y);
+        ctx.rotate((f.rotation * Math.PI) / 180);
+        ctx.font = `bold 24px ${f.font}, sans-serif`;
+        ctx.fillStyle = f.color.replace("0.6", opacity.toString());
+        ctx.shadowColor = f.color;
+        ctx.shadowBlur = 8;
+        ctx.fillText(f.char, 0, 0);
+        ctx.restore();
+
+        if (
+          f.x < -50 ||
+          f.x > canvas.width + 50 ||
+          f.y < -50 ||
+          f.y > canvas.height + 50 ||
+          f.age > f.maxAge
+        ) {
+          floating[i] = createLetter();
+        }
+      });
+
+      frameId = requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    return () => cancelAnimationFrame(frameId);
+  }, []);
 
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden">
-      {animatedLetters.map((letter) => (
-        <div
-          key={letter.id}
-          className={`absolute text-2xl md:text-3xl font-bold ${letter.color} ${letter.font} transition-opacity duration-300`}
-          style={{
-            left: `${letter.x}%`,
-            top: `${letter.y}%`,
-            transform: `rotate(${letter.rotation}deg)`,
-            textShadow: '0 0 8px currentColor',
-            opacity: getOpacity(letter.age, letter.maxAge),
-            zIndex: 1
-          }}
-        >
-          {letter.letter}
-        </div>
-      ))}
+      <canvas ref={canvasRef} className="w-full h-full" />
     </div>
   );
 };
+
+export default HeaderAnimationCanvas;
