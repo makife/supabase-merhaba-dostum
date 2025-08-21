@@ -14,7 +14,7 @@ interface Letter {
   maxAge: number;
 }
 
-const HeaderAnimationCanvas = () => {
+const HeaderAnimationComponent = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -39,8 +39,7 @@ const HeaderAnimationCanvas = () => {
 
     const floating: Letter[] = [];
 
-    // Yeni harf oluştur
-    const createLetter = () => {
+    const createLetter = (): Letter => {
       return {
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
@@ -56,7 +55,6 @@ const HeaderAnimationCanvas = () => {
       };
     };
 
-    // Başlangıç harfleri
     for (let i = 0; i < 30; i++) {
       floating.push(createLetter());
     }
@@ -72,7 +70,7 @@ const HeaderAnimationCanvas = () => {
         f.rotation += f.rotationSpeed;
         f.age++;
 
-        // opacity ayarı
+        // opacity hesaplama
         let opacity = 0.8;
         const fadeIn = f.maxAge * 0.2;
         const fadeOutStart = f.maxAge * 0.7;
@@ -118,4 +116,5 @@ const HeaderAnimationCanvas = () => {
   );
 };
 
-export default HeaderAnimationCanvas;
+// 🔥 Named export
+export const HeaderAnimation = HeaderAnimationComponent;
