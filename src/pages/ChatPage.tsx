@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { GlobalChat } from '@/components/GlobalChat';
 import { PrivateChat } from '@/components/PrivateChat';
 import { UserAvatar } from '@/components/UserAvatar';
+const { profile, onlineUsers, isUserOnline } = useUser();
 
 type ViewMode = 'global' | 'users' | 'private-chat';
 
@@ -121,8 +122,13 @@ export default function ChatPage() {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <Users className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-semibold">Özel Sohbet</h2>
-        </div>
+          <div>
+    <h2 className="text-lg font-semibold">Özel Sohbet</h2>
+    <p className="text-xs text-muted-foreground">
+      {onlineUsers.length} kişi çevrimiçi
+    </p>
+  </div>
+</div>
         <Button
           variant="ghost"
           size="sm"
@@ -132,6 +138,30 @@ export default function ChatPage() {
           <Home className="w-5 h-5" />
         </Button>
       </div>
+      // Online Users Section ekle (mevcut header'dan sonra)
+{onlineUsers.length > 0 && (
+  <div className="p-4 border-b border-border bg-muted/20">
+    <div className="flex items-center space-x-2 mb-3">
+      <Dot className="w-4 h-4 text-green-500 animate-pulse" />
+      <span className="text-sm font-medium text-green-600">Çevrimiçi</span>
+    </div>
+    <div className="space-y-2">
+      {onlineUsers
+        .filter(onlineUser => onlineUser.id !== user?.id)
+        .map((targetUser) => (
+          <Card key={targetUser.id} className="p-3 hover:bg-accent cursor-pointer">
+            <div className="flex items-center space-x-3">
+              <div className="relative">
+                <UserAvatar src={targetUser.avatar_url} />
+                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-background"></div>
+              </div>
+              <span>{targetUser.username}</span>
+            </div>
+          </Card>
+        ))}
+    </div>
+  </div>
+)}
 
       {/* Users List - Scrollable */}
       <ScrollArea className="flex-1">
