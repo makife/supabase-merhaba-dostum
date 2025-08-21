@@ -2,6 +2,13 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { useAuth } from './AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
+interface OnlineUser {
+  id: string;
+  username: string;
+  avatar_url?: string;
+  last_seen: string;
+}
+
 interface UserProfile {
   game_credits: number;
   bonus_credits: number;
@@ -32,9 +39,6 @@ interface UserProfile {
   win_count?: number;
   last_disconnect?: string;
   last_win?: string;
-  id: string;
-  username: string;
-  last_seen: string;
 }
 
 interface UserContextType {
@@ -246,7 +250,7 @@ const isUserOnline = (userId: string) => {
 const refreshOnlineUsers = async () => {
   try {
     const { data } = await supabase
-      .from('user_presence')
+      .from('user_presence' as any)
       .select(`
         user_id, 
         last_seen, 
@@ -289,7 +293,7 @@ const refreshOnlineUsers = async () => {
   const fetchOnlineUsers = async () => {
     try {
       const { data } = await supabase
-        .from('user_presence')
+        .from('user_presence' as any)
         .select(`
           user_id, 
           last_seen, 
