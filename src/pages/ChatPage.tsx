@@ -216,3 +216,110 @@ export default function ChatPage() {
    </div>
  );
 };
+
+  };
+
+const renderContent = () => {
+  if (viewMode === 'private-chat' && selectedUser && activeChatId) {
+    return (
+      <div className="h-full flex flex-col">
+        {/* Private Chat Header */}
+        <div className="flex items-center justify-between p-4 border-b border-border bg-background sticky top-0 z-10">
+          <div className="flex items-center space-x-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleViewChange('users')}
+              className="p-2 hover:bg-accent rounded-full"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <UserAvatar
+              src={selectedUser.avatar_url}
+              alt={selectedUser.username}
+              fallback={selectedUser.username?.charAt(0).toUpperCase()}
+              size="sm"
+            />
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg font-semibold truncate">{selectedUser.username}</h2>
+              <p className="text-sm text-muted-foreground">Özel Sohbet</p>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleBackToMenu}
+            className="p-2 hover:bg-accent rounded-full flex-shrink-0"
+          >
+            <Home className="w-5 h-5" />
+          </Button>
+        </div>
+        
+        {/* Private Chat Content */}
+        <div className="flex-1 min-h-0">
+          <PrivateChat
+            chatId={activeChatId}
+            otherUser={selectedUser}
+            onBack={() => handleViewChange('users')}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (viewMode === 'users') {
+    return renderUsersList();
+  }
+
+  // Global chat
+  return (
+    <div className="h-full flex flex-col">
+      {/* Global Chat Header */}
+      <div className="flex items-center justify-between p-4 border-b border-border bg-background sticky top-0 z-10">
+        <div className="flex items-center space-x-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleBackToMenu}
+            className="p-2 hover:bg-accent rounded-full"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <Hash className="w-5 h-5 text-primary" />
+          <h2 className="text-lg font-semibold">Genel Sohbet</h2>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => handleViewChange('users')}
+          className="flex items-center space-x-2"
+        >
+          <MessageCircle className="w-4 h-4" />
+          <span className="hidden sm:inline">Özel Mesaj</span>
+        </Button>
+      </div>
+
+      {/* Global Chat Content */}
+      <div className="flex-1 min-h-0">
+        <GlobalChat isOpen={true} onClose={() => {}} isFullPage={true} />
+      </div>
+    </div>
+  );
+};
+
+return (
+  <div className="min-h-screen bg-background">
+    {/* Safe area top */}
+    <div className="safe-area-top"></div>
+    
+    <div className="h-screen flex flex-col">
+      <div className="flex-1 min-h-0">
+        {renderContent()}
+      </div>
+    </div>
+    
+    {/* Safe area bottom */}
+    <div className="safe-area-bottom"></div>
+  </div>
+);
+}
