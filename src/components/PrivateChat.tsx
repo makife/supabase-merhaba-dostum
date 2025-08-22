@@ -54,14 +54,14 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
     }
   }, [chatId]);
 
-  // PrivateChat.tsx'e real-time subscription ekle
+// PrivateChat.tsx'e real-time subscription ekle
 useEffect(() => {
   if (!chatId || !user?.id) return;
 
-  console.log('Setting up private chat real-time for chat:', chatId);
+  console.log('🔄 Setting up PRIVATE real-time for chat:', chatId);
 
   const channel = supabase
-    .channel(`private-chat-${chatId}`)
+    .channel(`private-chat-${chatId}-realtime`)
     .on(
       'postgres_changes',
       {
@@ -71,12 +71,12 @@ useEffect(() => {
         filter: `chat_id=eq.${chatId}`
       },
       async (payload) => {
-        console.log('NEW PRIVATE MESSAGE REAL-TIME:', payload);
+        console.log('📨 REAL-TIME PRIVATE MESSAGE:', payload);
         const newMsg = payload.new as any;
         
-        // Kendi mesajımızı tekrar ekleme
-        if (newMsg.sender_id === user?.id) {
-          console.log('Skipping own private message');
+        // Kendi mesajımızı ignore et
+        if (newMsg.sender_id === user.id) {
+          console.log('⏭️ Skipping own private message');
           return;
         }
 
@@ -101,27 +101,48 @@ useEffect(() => {
 
         // Mesajı state'e ekle
         setMessages(prev => {
-          const messageExists = prev.some(msg => msg.id === newMsg.id);
-          if (messageExists) {
+          const alreadyExists = prev.some(msg => msg.id === newMsg.id);
+          if (alreadyExists) {
+            console.log('⚠️ Private message already exists, skipping');
             return prev;
           }
-          
+
+          console.log('✅ Adding new private message to state');
           return [...prev, {
-            ...newMsg,
-            username,
-            avatar_url
+            id: newMsg.id,
+            chat_id: newMsg.chat_id,
+            sender_id: newMsg.sender_id,
+            message: newMsg.message,
+            created_at: newMsg.created_at,
+            is_read: newMsg.is_read,
+            username: username,
+            avatar_url: avatar_url
           }];
         });
+
+        // Okundu olarak işaretle
+        try {
+          await supabase
+            .from('private_messages')
+            .update({ is_read: true })
+            .eq('id', newMsg.id)
+            .eq('chat_id', chatId);
+        } catch (error) {
+          console.warn('Could not mark message as read:', error);
+        }
 
         playSound('correctWord');
       }
     )
     .subscribe((status) => {
-      console.log('Private chat real-time status:', status);
+      console.log('📡 Private chat real-time status:', status);
+      if (status === 'SUBSCRIBED') {
+        console.log('✅ Private chat real-time subscribed successfully');
+      }
     });
 
   return () => {
-    console.log('Cleaning up private chat real-time channel');
+    console.log('🧹 Cleaning up private chat real-time channel');
     supabase.removeChannel(channel);
   };
 }, [chatId, user?.id, playSound]);
