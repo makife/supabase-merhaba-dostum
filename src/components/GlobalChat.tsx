@@ -171,21 +171,15 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false }: GlobalChatPr
     }
   }, [messages]);
 
-  // Set up realtime subscription and presence
-  // GlobalChat.tsx içinde - useEffect içine bu kodu ekle
-useEffect(() => {
-  if (!isOpen || !user?.id || !profile) return;
 
-  console.log('Setting up presence for user:', user.id);
-  
-  const cachedUsername = profile.username || user.email?.split('@')[0] || 'Anonim';
+// Real-time subscription useEffect'ini güncelle
+useEffect(() => {
+  if (!isOpen || !user?.id) return;
+
+  console.log('Setting up real-time subscriptions');
 
   const channel = supabase
-    .channel(`global-chat-${user.id}`, {
-      config: {
-        presence: { key: user.id }
-      }
-    })
+    .channel('global-chat-realtime')
     .on(
       'postgres_changes',
       {
@@ -194,17 +188,34 @@ useEffect(() => {
         table: 'global_chat'
       },
       (payload) => {
-        console.log('REAL-TIME MESSAGE RECEIVED:', payload);
-        const newMessage = payload.new as ChatMessage;
+        console.log('NEW MESSAGE REAL-TIME:', payload);
+        const newMessage = payload.new as any;
         
+        // Kendi mesajımızı tekrar ekleme
         if (newMessage.user_id === user?.id) {
-          console.log('Skipping own message');
+          console.log('Skipping own message in real-time');
           return;
         }
         
-        console.log('Adding message to UI:', newMessage);
-        setMessages(prev => [...prev, newMessage]);
-        
+        // Mevcut mesajlarda bu ID var mı kontrol et
+        setMessages(prev => {
+          const messageExists = prev.some(msg => msg.id === newMessage.id);
+          if (messageExists) {
+            console.log('Message already exists, skipping');
+            return prev;
+          }
+          
+          console.log('Adding new message via real-time');
+          return [...prev, {
+            id: newMessage.id,
+            user_id: newMessage.user_id,
+            username: newMessage.username || 'Anonim',
+            message: newMessage.message || newMessage.content || '',
+            created_at: newMessage.created_at,
+            avatar_url: newMessage.avatar_url
+          }];
+        });
+
         try {
           playSound('correctWord');
         } catch (e) {
@@ -220,118 +231,19 @@ useEffect(() => {
         table: 'global_chat'
       },
       (payload) => {
-        const deletedMessage = payload.old as ChatMessage;
+        const deletedMessage = payload.old as any;
         setMessages(prev => prev.filter(m => m.id !== deletedMessage.id));
-        
-        setMessageReactions(prev => {
-          const newReactions = { ...prev };
-          delete newReactions[deletedMessage.id];
-          return newReactions;
-        });
       }
     )
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'message_reactions'
-      },
-      (payload) => {
-        const newReaction = payload.new as MessageReaction;
-        console.log('New reaction received:', newReaction);
-        
-        setMessageReactions(prev => {
-          const existing = prev[newReaction.message_id] || [];
-          const hasTemp = existing.some(r => r.id.startsWith('temp-') && r.user_id === newReaction.user_id && r.emoji === newReaction.emoji);
-          
-          if (hasTemp) {
-            return {
-              ...prev,
-              [newReaction.message_id]: existing.map(r => 
-                r.id.startsWith('temp-') && r.user_id === newReaction.user_id && r.emoji === newReaction.emoji 
-                  ? newReaction 
-                  : r
-              )
-            };
-          } else {
-            return {
-              ...prev,
-              [newReaction.message_id]: [...existing, newReaction]
-            };
-          }
-        });
-      }
-    )
-    .on(
-      'postgres_changes',
-      {
-        event: 'DELETE',
-        schema: 'public',
-        table: 'message_reactions'
-      },
-      (payload) => {
-        const deletedReaction = payload.old as MessageReaction;
-        console.log('Reaction deleted:', deletedReaction);
-        setMessageReactions(prev => ({
-          ...prev,
-          [deletedReaction.message_id]: (prev[deletedReaction.message_id] || [])
-            .filter(r => r.id !== deletedReaction.id)
-        }));
-      }
-    )
-    .on('presence', { event: 'sync' }, () => {
-      const newState = channel.presenceState();
-      console.log('Presence sync - raw state:', newState);
-      
-      const typingUsersSet = new Set<string>();
-      
-      Object.values(newState).forEach((presences: any) => {
-        presences.forEach((presence: any) => {
-          if (presence.typing && presence.username) {
-            typingUsersSet.add(presence.username);
-          }
-        });
-      });
-      
-      console.log('Typing users:', Array.from(typingUsersSet));
-      setTypingUsers(typingUsersSet);
-    })
-    .on('presence', { event: 'join' }, ({ newPresences }) => {
-      console.log('User joined presence:', newPresences);
-    })
-    .on('presence', { event: 'leave' }, ({ leftPresences }) => {
-      console.log('User left presence:', leftPresences);
-    })
-    .subscribe(async (status) => {
-      console.log('Channel status:', status);
-      if (status === 'SUBSCRIBED') {
-        setCurrentChannel(channel);
-        
-        // Presence tracking - düzgün şekilde
-        try {
-          await channel.track({
-            user_id: user.id,
-            username: cachedUsername,
-            typing: false,
-            online_at: new Date().toISOString(),
-          });
-          console.log('Presence tracking started successfully');
-        } catch (error) {
-          console.error('Presence tracking error:', error);
-        }
-      }
+    .subscribe((status) => {
+      console.log('Real-time subscription status:', status);
     });
 
   return () => {
-    console.log('Cleaning up channel');
-    if (channel) {
-      supabase.removeChannel(channel);
-    }
-    setCurrentChannel(null);
-    setTypingUsers(new Set());
+    console.log('Cleaning up real-time channel');
+    supabase.removeChannel(channel);
   };
-}, [isOpen, user?.id, profile]); // profile'ı da dependency'e ekledik
+}, [isOpen, user?.id, playSound]);
 
   const fetchMessages = async () => {
   try {
@@ -369,47 +281,60 @@ useEffect(() => {
   }
 };
 
+const sendMessage = async () => {
+  if (!newMessage.trim() || !user || !profile) return;
 
-  const sendMessage = async () => {
-    if (!newMessage.trim() || !user || !profile) return;
+  const trimmedMessage = newMessage.trim();
+  if (trimmedMessage.length > 200) {
+    toast.error('Mesaj 200 karakterden uzun olamaz');
+    return;
+  }
 
-    const trimmedMessage = newMessage.trim();
-    if (trimmedMessage.length > 200) {
-      toast.error('Mesaj 200 karakterden uzun olamaz');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      // Use cached username to avoid API call
-      const displayName = user.user_metadata?.username || user.email?.split('@')[0] || 'Anonim';
-
-      const { data, error } = await supabase
-        .from('global_chat')
-        .insert({
-          user_id: user.id,
-          username: displayName, 
-          message: trimmedMessage
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Anında kendi mesajımızı listeye ekle
-      if (data) {
-        setMessages(prev => [...prev, data]);
-      }
-
-      setNewMessage('');
-      playSound('buttonClick');
-    } catch (error) {
-      console.error('Error sending message:', error);
-      toast.error('Mesaj gönderilirken hata oluştu');
-    } finally {
-      setIsLoading(false);
-    }
+  // Optimistic update - hemen ekranı güncelle
+  const tempMessage: ChatMessage = {
+    id: `temp-${Date.now()}`,
+    user_id: user.id,
+    username: profile.username || user.email?.split('@')[0] || 'Anonim',
+    message: trimmedMessage,
+    created_at: new Date().toISOString(),
+    avatar_url: profile.avatar_url
   };
+
+  setMessages(prev => [...prev, tempMessage]);
+  setNewMessage('');
+  scrollToBottom();
+
+  setIsLoading(true);
+  try {
+    const { data, error } = await supabase
+      .from('global_chat')
+      .insert({
+        user_id: user.id,
+        username: profile.username || user.email?.split('@')[0] || 'Anonim',
+        message: trimmedMessage,
+        avatar_url: profile.avatar_url
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Temp mesajı gerçek mesajla değiştir
+    setMessages(prev => prev.map(msg => 
+      msg.id === tempMessage.id ? data : msg
+    ));
+
+    playSound('buttonClick');
+  } catch (error) {
+    console.error('Error sending message:', error);
+    toast.error('Mesaj gönderilirken hata oluştu');
+    
+    // Hata durumunda temp mesajı kaldır
+    setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
   setNewMessage(e.target.value);
