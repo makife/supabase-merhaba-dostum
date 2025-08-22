@@ -12,8 +12,6 @@ import { GlobalChat } from '@/components/GlobalChat';
 import { PrivateChat } from '@/components/PrivateChat';
 import { UserAvatar } from '@/components/UserAvatar';
 
-
-
 type ViewMode = 'global' | 'users' | 'private-chat';
 
 interface SelectedUser {
@@ -26,10 +24,6 @@ export default function ChatPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { profile, onlineUsers, isUserOnline } = useUser();
-
-  console.log('Online users:', onlineUsers);
-  console.log('Current user ID:', user?.id);
-  console.log('Profile:', profile);
   
   const { playSound } = useSounds();
   const [viewMode, setViewMode] = useState<ViewMode>('global');
@@ -115,272 +109,196 @@ export default function ChatPage() {
   };
 
   const renderUsersList = () => {
- console.log('renderUsersList - onlineUsers:', onlineUsers);
- console.log('renderUsersList - onlineUsers.length:', onlineUsers.length);
- 
- return (
-   <div className="h-full flex flex-col">
-     <div className="p-4 bg-red-200">
-       <p>DEBUG: Online users count: {onlineUsers.length}</p>
-     </div>
-     {/* Mobile Header */}
-     <div className="flex items-center justify-between p-4 border-b border-border bg-background sticky top-0 z-10">
-       <div className="flex items-center space-x-3">
-         <Button
-           variant="ghost"
-           size="sm"
-           onClick={() => handleViewChange('global')}
-           className="p-2 hover:bg-accent rounded-full"
-         >
-           <ArrowLeft className="w-5 h-5" />
-         </Button>
-         <Users className="w-5 h-5 text-primary" />
-         <div>
-           <h2 className="text-lg font-semibold">Özel Sohbet</h2>
-           <p className="text-xs text-muted-foreground">
-             {onlineUsers.length} kişi çevrimiçi
-           </p>
-         </div>
-       </div>
-       <Button
-         variant="ghost"
-         size="sm"
-         onClick={handleBackToMenu}
-         className="p-2 hover:bg-accent rounded-full"
-       >
-         <Home className="w-5 h-5" />
-       </Button>
-     </div>
-     {/* Online Users Section */}
-     {onlineUsers.length > 0 && (
-       <div className="p-4 border-b border-border bg-muted/20">
-         <div className="flex items-center space-x-2 mb-3">
-           <Dot className="w-4 h-4 text-green-500 animate-pulse" />
-           <span className="text-sm font-medium text-green-600">Çevrimiçi</span>
-         </div>
-         <div className="space-y-2">
-           {onlineUsers
-             //.filter(onlineUser => onlineUser.id !== user?.id)
-             .map((targetUser) => (
-               <Card key={targetUser.id} className="p-3 hover:bg-accent cursor-pointer">
-                 <div className="flex items-center space-x-3">
-                   <div className="relative">
-                     <UserAvatar 
-                       src={targetUser.avatar_url}
-                       alt={targetUser.username}
-                       fallback={targetUser.username?.charAt(0).toUpperCase()}
-                       size="sm"
-                     />
-                     <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-background"></div>
-                   </div>
-                   <span>{targetUser.username}</span>
-                 </div>
-               </Card>
-             ))}
-         </div>
-       </div>
-     )}
-
-     {/* Users List - Scrollable */}
-     <ScrollArea className="flex-1">
-       <div className="p-4 space-y-3">
-         {allUsers.map((targetUser) => (
-           <Card
-             key={targetUser.id}
-             className="p-4 hover:bg-accent cursor-pointer transition-colors active:bg-accent/80"
-             onClick={() => startPrivateChat(targetUser)}
-           >
-             <div className="flex items-center space-x-3">
-               <UserAvatar
-                 src={targetUser.avatar_url}
-                 alt={targetUser.username}
-                 fallback={targetUser.username?.charAt(0).toUpperCase()}
-                 size="sm"
-               />
-               <div className="flex-1 min-w-0">
-                 <p className="font-medium truncate">{targetUser.username}</p>
-                 <p className="text-sm text-muted-foreground">Özel mesaj gönder</p>
-               </div>
-               <MessageCircle className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-             </div>
-           </Card>
-         ))}
-         {allUsers.length === 0 && (
-           <div className="text-center py-8 text-muted-foreground">
-             <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
-             <p>Henüz kullanıcı bulunamadı</p>
-           </div>
-         )}
-       </div>
-     </ScrollArea>
-   </div>
- );
-};
-
-const renderContent = () => {
-  console.log('renderContent called, viewMode:', viewMode);
-  
-  if (viewMode === 'private-chat' && selectedUser && activeChatId) {
     return (
-      <div className="h-full flex flex-col">
-        {/* Private Chat Header - BURASI YETERLİ */}
-        <div className="flex items-center justify-between p-4 border-b border-border bg-chat-500 text-white">
-          <div className="flex items-center space-x-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleViewChange('users')}
-              className="p-2 hover:bg-chat-600 rounded-full text-white"
+      <ScrollArea className="flex-1">
+        <div className="p-4 space-y-3">
+          {allUsers.map((targetUser) => (
+            <Card
+              key={targetUser.id}
+              className="p-4 hover:bg-accent cursor-pointer transition-colors active:bg-accent/80"
+              onClick={() => startPrivateChat(targetUser)}
             >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <UserAvatar
-              src={selectedUser.avatar_url}
-              alt={selectedUser.username}
-              fallback={selectedUser.username?.charAt(0).toUpperCase()}
-              size="sm"
-            />
-            <div className="flex-1 min-w-0">
-              <h2 className="text-lg font-semibold truncate text-white">{selectedUser.username}</h2>
-              <p className="text-sm text-chat-100">Özel Sohbet</p>
+              <div className="flex items-center space-x-3">
+                <UserAvatar
+                  src={targetUser.avatar_url}
+                  alt={targetUser.username}
+                  fallback={targetUser.username?.charAt(0).toUpperCase()}
+                  size="sm"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">{targetUser.username}</p>
+                  <p className="text-sm text-muted-foreground">Özel mesaj gönder</p>
+                </div>
+                <MessageCircle className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+              </div>
+            </Card>
+          ))}
+          {allUsers.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p>Henüz kullanıcı bulunamadı</p>
             </div>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleBackToMenu}
-            className="p-2 hover:bg-chat-600 rounded-full flex-shrink-0 text-white"
-          >
-            <Home className="w-5 h-5" />
-          </Button>
+          )}
         </div>
-        
-        {/* Private Chat Content */}
-        <div className="flex-1 min-h-0">
-          <PrivateChat
-            chatId={activeChatId}
-            otherUser={selectedUser}
-            onBack={() => handleViewChange('users')}
-          />
-        </div>
-      </div>
+      </ScrollArea>
     );
-  }
+  };
 
-  if (viewMode === 'users') {
-    return (
-      <div className="h-full flex flex-col">
-        {/* Users List Header - BURASI YETERLİ */}
-        <div className="flex items-center justify-between p-4 border-b border-border bg-chat-500 text-white">
-          <div className="flex items-center space-x-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleViewChange('global')}
-              className="p-2 hover:bg-chat-600 rounded-full text-white"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <Users className="w-5 h-5" />
-            <div>
-              <h2 className="text-lg font-semibold">Özel Sohbet</h2>
-              <p className="text-sm text-chat-100">
-                {onlineUsers.length} kişi çevrimiçi
-              </p>
-            </div>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleBackToMenu}
-            className="p-2 hover:bg-chat-600 rounded-full text-white"
-          >
-            <Home className="w-5 h-5" />
-          </Button>
-        </div>
-        
-        {/* Users List Content */}
-        {renderUsersList()}
-      </div>
-    );
-  }
-
-  // Global chat - HEADER OLMADAN sadece content
-  return (
-    <div className="h-full flex flex-col">
-      {/* Global Chat Content - HEADER OLMADAN */}
-      <div className="flex-1 min-h-0">
-        <GlobalChat isOpen={true} onClose={() => {}} isFullPage={true} />
-      </div>
-    </div>
-  );
-};
-
-// ChatPage.tsx - Yeni tasarım
-return (
-  <div className="min-h-screen bg-chat-50">
-    {/* Safe area top */}
-    <div className="safe-area-top"></div>
+  const renderContent = () => {
+    console.log('renderContent called, viewMode:', viewMode);
     
-    <div className="h-screen flex flex-col max-w-4xl mx-auto bg-white rounded-lg shadow-lg m-4 overflow-hidden border border-chat-200">
-      {/* ANA HEADER - SADCE viewMode 'global' İKEN GÖSTERME */}
-      {viewMode === 'global' && (
-        <div className="bg-chat-500 text-white p-4 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
+    if (viewMode === 'private-chat' && selectedUser && activeChatId) {
+      return (
+        <div className="h-full flex flex-col">
+          {/* Private Chat Header */}
+          <div className="flex items-center justify-between p-4 border-b border-border bg-chat-500 text-white">
+            <div className="flex items-center space-x-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleViewChange('users')}
+                className="p-2 hover:bg-chat-600 rounded-full text-white"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+              <UserAvatar
+                src={selectedUser.avatar_url}
+                alt={selectedUser.username}
+                fallback={selectedUser.username?.charAt(0).toUpperCase()}
+                size="sm"
+              />
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-semibold truncate text-white">{selectedUser.username}</h2>
+                <p className="text-sm text-chat-100">Özel Sohbet</p>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBackToMenu}
+              className="p-2 hover:bg-chat-600 rounded-full flex-shrink-0 text-white"
+            >
+              <Home className="w-5 h-5" />
+            </Button>
+          </div>
+          
+          {/* Private Chat Content */}
+          <div className="flex-1 min-h-0">
+            <PrivateChat
+              chatId={activeChatId}
+              otherUser={selectedUser}
+              onBack={() => handleViewChange('users')}
+            />
+          </div>
+        </div>
+      );
+    }
+
+    if (viewMode === 'users') {
+      return (
+        <div className="h-full flex flex-col">
+          {/* Users List Header */}
+          <div className="flex items-center justify-between p-4 border-b border-border bg-chat-500 text-white">
+            <div className="flex items-center space-x-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleViewChange('global')}
+                className="p-2 hover:bg-chat-600 rounded-full text-white"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+              <Users className="w-5 h-5" />
+              <div>
+                <h2 className="text-lg font-semibold">Özel Sohbet</h2>
+                <p className="text-sm text-chat-100">
+                  {onlineUsers.length} kişi çevrimiçi
+                </p>
+              </div>
+            </div>
             <Button
               variant="ghost"
               size="sm"
               onClick={handleBackToMenu}
               className="p-2 hover:bg-chat-600 rounded-full text-white"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <Home className="w-5 h-5" />
             </Button>
-            <div>
-              <h1 className="text-xl font-bold">Sohbet Odası</h1>
-              <p className="text-chat-100 text-sm">
-                {onlineUsers.length} kişi çevrimiçi
-              </p>
-            </div>
           </div>
           
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleViewChange('global')}
-              className={`p-2 rounded-full ${
-                viewMode === 'global' 
-                  ? 'bg-chat-600 text-white' 
-                  : 'text-chat-100 hover:bg-chat-600'
-              }`}
-            >
-              <Hash className="w-5 h-5" />
-            </Button>
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleViewChange('users')}
-              className={`p-2 rounded-full ${
-                viewMode === 'users' 
-                  ? 'bg-chat-600 text-white' 
-                  : 'text-chat-100 hover:bg-chat-600'
-              }`}
-            >
-              <Users className="w-5 h-5" />
-            </Button>
-          </div>
+          {/* Users List Content */}
+          {renderUsersList()}
         </div>
-      )}
+      );
+    }
 
-      {/* Content Area - HEADERSIZ */}
-      <div className="flex-1 min-h-0">
-        {renderContent()}
+    // Global chat - HEADER OLMADAN sadece content
+    return (
+      <div className="h-full flex flex-col">
+        <div className="flex-1 min-h-0">
+          <GlobalChat isOpen={true} onClose={() => {}} isFullPage={true} />
+        </div>
       </div>
+    );
+  };
+
+  // BURASI ANA RETURN - fonksiyonun dışında olmalı
+  return (
+    <div className="min-h-screen bg-chat-50">
+      {/* Safe area top */}
+      <div className="safe-area-top"></div>
+      
+      <div className="h-screen flex flex-col max-w-4xl mx-auto bg-white rounded-lg shadow-lg m-4 overflow-hidden border border-chat-200">
+        {/* ANA HEADER - SADCE viewMode 'global' İKEN GÖSTERME */}
+        {viewMode === 'global' && (
+          <div className="bg-chat-500 text-white p-4 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBackToMenu}
+                className="p-2 hover:bg-chat-600 rounded-full text-white"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+              <div>
+                <h1 className="text-xl font-bold">Sohbet Odası</h1>
+                <p className="text-chat-100 text-sm">
+                  {onlineUsers.length} kişi çevrimiçi
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleViewChange('global')}
+                className="p-2 rounded-full bg-chat-600 text-white"
+              >
+                <Hash className="w-5 h-5" />
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleViewChange('users')}
+                className="p-2 rounded-full text-chat-100 hover:bg-chat-600"
+              >
+                <Users className="w-5 h-5" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Content Area */}
+        <div className="flex-1 min-h-0">
+          {renderContent()}
+        </div>
+      </div>
+      
+      {/* Safe area bottom */}
+      <div className="safe-area-bottom"></div>
     </div>
-    
-    {/* Safe area bottom */}
-    <div className="safe-area-bottom"></div>
-  </div>
-);
+  );
 }
