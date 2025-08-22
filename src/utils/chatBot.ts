@@ -3,9 +3,14 @@ import { supabase } from '@/integrations/supabase/client';
 
 // Yasaklı kelime listesi
 export const BANNED_WORDS = [
-  'küfür1', 'küfür2', 'argo1', 'argo2', 
-  'hakaret1', 'hakaret2', 'rasist1'
-  // ... diğer yasaklı kelimeler
+  // Küfürler
+  'am', 'çük', 'sik','yarak', 'göt', 'amına','koduğum', 'goduğum', 'ibne','ibine', 'ipne', 'gavat','kavat', 'oç', 'o.ç','kahpe', 'piç', 'pic','orospu', 'orosbu', 'orusbu',
+  // Argo kelimeler
+  'yavşak', 'yavsak', 'it','lan', 'aptal', 'mal','hayvan', 'pipi', 'öküz','manyak', 'yalarım', 'sokarım',
+  // Hakaretler
+  'şerefsiz', 'beyinsiz','salak', 'zalak', 'mal','it', 'köpek', 'orusbu',
+  // Bypass attempt'leri
+  'sikti*r', 'sikti-r', 's i k t i r',
 ];
 
 // Kullanıcı yasaklı mı kontrol et
