@@ -136,7 +136,7 @@ export function FloatingMenu() {
             >
               Sohbet
             </span>
-            
+            <div className="relative">
             <Button
               onClick={handleChatOpen}
               className="group relative overflow-hidden bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700
@@ -145,6 +145,7 @@ export function FloatingMenu() {
             >
               <div className="absolute inset-0 bg-white/20 scale-0 group-hover:scale-100 transition-transform duration-300 rounded-full" />
               <MessageCircle className="w-4 h-4 relative z-10" />
+              </Button>
               
               {/* Notification Badge */}
               {unreadCount > 0 && (
