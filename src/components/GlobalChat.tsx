@@ -187,6 +187,7 @@ useEffect(() => {
       localStorage.setItem('chat_welcome_shown', 'true');
     }
   };
+  
   sendBotWelcome();
 
   const channel = supabase
@@ -233,10 +234,8 @@ useEffect(() => {
                 avatar_url: '/bot-avatar.png'
               });
           }
+          return; // Yasaklı mesajı işleme, return et
         }
-      }
-    )
-    .subscribe();
         
         // Kendi mesajımızı ignore et (optimistic update zaten ekledi)
         if (newMessage.user_id === user.id) {
