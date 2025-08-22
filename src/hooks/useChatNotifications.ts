@@ -3,11 +3,11 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
+// hooks/useChatNotifications.ts - Gerçek zamanlı güncelleme
 export function useChatNotifications() {
   const { user } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Okunmamış bildirimleri çek
   const fetchUnreadCount = async () => {
     if (!user) return;
 
@@ -18,18 +18,14 @@ export function useChatNotifications() {
         .eq('user_id', user.id)
         .eq('is_read', false);
 
-      if (error) {
-        console.error('Error fetching notifications:', error);
-        return;
-      }
-
+      if (error) throw error;
       setUnreadCount(count || 0);
     } catch (error) {
-      console.error('Error in fetchUnreadCount:', error);
+      console.error('Error fetching unread count:', error);
     }
   };
 
-  // Real-time bildirim takibi
+  // Real-time subscription
   useEffect(() => {
     if (!user) return;
 
@@ -40,27 +36,13 @@ export function useChatNotifications() {
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
           table: 'notifications',
           filter: `user_id=eq.${user.id}`
         },
         () => {
-          // Yeni bildirim geldiğinde sayacı güncelle
-          fetchUnreadCount();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`
-        },
-        () => {
-          // Bildirim güncellendiğinde sayacı güncelle
-          fetchUnreadCount();
+          fetchUnreadCount(); // Her değişiklikte sayacı güncelle
         }
       )
       .subscribe();
