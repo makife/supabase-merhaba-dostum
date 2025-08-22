@@ -1,4 +1,4 @@
-// FloatingMenu.tsx - Eski içerik + Yeni güzel tasarım
+// FloatingMenu.tsx - Düzeltilmiş versiyon
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSounds } from '@/hooks/useSounds';
 import { Button } from '@/components/ui/button';
 import { useChatNotifications } from '@/hooks/useChatNotifications';
-
+import { toast } from 'sonner'; // toast import edilmemişti
 
 import {
   User,
@@ -17,8 +17,20 @@ import {
   X,
   Home,
   MessageCircle,
-  Trophy  // <- Bu satırı ekle
+  Trophy
 } from 'lucide-react';
+
+// isUserBanned ve getBanTimeLeft fonksiyonlarını import etmeniz veya tanımlamanız gerekiyor
+// Bu örnekte placeholder fonksiyonlar kullanıyorum
+const isUserBanned = async (userId: string): Promise<boolean> => {
+  // Gerçek implementasyon burada olacak
+  return false;
+};
+
+const getBanTimeLeft = async (userId: string): Promise<string> => {
+  // Gerçek implementasyon burada olacak
+  return "1 saat 30 dakika";
+};
 
 const menuItems = [
   { title: 'Ana Sayfa', route: '/', icon: Home, color: 'from-blue-500 to-blue-600', hoverColor: 'hover:from-blue-600 hover:to-blue-700' },
@@ -30,9 +42,8 @@ const menuItems = [
 
 export function FloatingMenu() {
   const [isOpen, setIsOpen] = useState(false);
-  const [isChatOpen, setIsChatOpen] = useState(false);
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth(); // user context'ten alınmalı
   const { playSound } = useSounds();
   const { unreadCount } = useChatNotifications();
 
@@ -47,28 +58,27 @@ export function FloatingMenu() {
     setIsOpen(false);
   };
 
-  // FloatingMenu.tsx - handleChatOpen detaylandır
-const handleChatOpen = async () => {
-  playSound('buttonClick');
-  
-  const isBanned = await isUserBanned(user.id);
-  
-  if (isBanned) {
-    const timeLeft = await getBanTimeLeft(user.id);
+  const handleChatOpen = async () => {
+    playSound('buttonClick');
     
-    toast.error(
-      `Sohbet yasağınız bulunuyor. 🚫\nKalan süre: ${timeLeft}\nYasak sebebi: Yasaklı kelime kullanımı`,
-      {
-        duration: 7000,
-        icon: '⏰'
-      }
-    );
-    return;
-  }
+    const isBanned = await isUserBanned(user.id);
+    
+    if (isBanned) {
+      const timeLeft = await getBanTimeLeft(user.id);
+      
+      toast.error(
+        `Sohbet yasağınız bulunuyor. 🚫\nKalan süre: ${timeLeft}\nYasak sebebi: Yasaklı kelime kullanımı`,
+        {
+          duration: 7000,
+          icon: '⏰'
+        }
+      );
+      return;
+    }
 
-  navigate('/chat');
-  setIsOpen(false);
-};
+    navigate('/chat');
+    setIsOpen(false);
+  };
 
   const handleLogout = async () => {
     playSound('buttonClick');
@@ -154,25 +164,24 @@ const handleChatOpen = async () => {
               Sohbet
             </span>
             <div className="relative">
-            <Button
-              onClick={handleChatOpen}
-              className="group relative overflow-hidden bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700
-                         text-white border-2 border-white shadow-lg hover:shadow-xl transform hover:scale-105 
-                         transition-all duration-200 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-            >
-              <div className="absolute inset-0 bg-white/20 scale-0 group-hover:scale-100 transition-transform duration-300 rounded-full" />
-              <MessageCircle className="w-4 h-4 relative z-10" />
+              <Button
+                onClick={handleChatOpen}
+                className="group relative overflow-hidden bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700
+                           text-white border-2 border-white shadow-lg hover:shadow-xl transform hover:scale-105 
+                           transition-all duration-200 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+              >
+                <div className="absolute inset-0 bg-white/20 scale-0 group-hover:scale-100 transition-transform duration-300 rounded-full" />
+                <MessageCircle className="w-4 h-4 relative z-10" />
               </Button>
               
               {/* Notification Badge */}
               {unreadCount > 0 && (
                 <div className="absolute -top-3 -right-3 w-7 h-7 bg-red-500 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 border-white shadow-xl animate-bounce z-50">
                   {unreadCount > 9 ? '9+' : unreadCount}
-                 <div className="absolute inset-0 bg-white/30 rounded-full animate-ping" />
-               </div>
+                  <div className="absolute inset-0 bg-white/30 rounded-full animate-ping" />
+                </div>
               )}
-              </div>
-            </Button>
+            </div>
           </div>
         </div>
 
@@ -244,7 +253,6 @@ const handleChatOpen = async () => {
                          transition-transform duration-150 rounded-full" />
         </Button>
       </div>
-
     </div>
   );
 }
