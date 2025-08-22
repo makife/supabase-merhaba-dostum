@@ -75,3 +75,27 @@ export const containsBannedWords = (message: string): boolean => {
   const lowerMessage = message.toLowerCase();
   return BANNED_WORDS.some(word => lowerMessage.includes(word.toLowerCase()));
 };
+
+export const getBanTimeLeft = async (userId: string): Promise<string> => {
+  try {
+    const { data, error } = await supabase
+      .from('banned_users')
+      .select('banned_until')
+      .eq('user_id', userId)
+      .gt('banned_until', new Date().toISOString())
+      .single();
+
+    if (!data) return '';
+
+    const bannedUntil = new Date(data.banned_until);
+    const now = new Date();
+    const diffMs = bannedUntil.getTime() - now.getTime();
+    
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    
+    return `${hours} saat ${minutes} dakika`;
+  } catch (error) {
+    return '';
+  }
+};
