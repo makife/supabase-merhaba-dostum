@@ -236,7 +236,11 @@ export default function ChatPage() {
     return (
       <div className="h-full flex flex-col">
         <div className="flex-1 min-h-0">
-          <GlobalChat isOpen={true} onClose={() => {}} isFullPage={true} />
+          <GlobalChat 
+             isOpen={true} 
+             onClose={() => {}} 
+             isFullPage={true}
+             onStartPrivateChat={startPrivateChat} />
         </div>
       </div>
     );
