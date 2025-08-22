@@ -54,38 +54,77 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
     }
   }, [chatId]);
 
-  // Set up realtime subscription
-  useEffect(() => {
-    if (!chatId || !user?.id) return;
+  // PrivateChat.tsx'e real-time subscription ekle
+useEffect(() => {
+  if (!chatId || !user?.id) return;
 
-    const channel = supabase
-      .channel(`private-chat-${chatId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'private_messages',
-          filter: `chat_id=eq.${chatId}`
-        },
-        (payload) => {
-          const newMsg = payload.new as PrivateMessage;
-          
-          // Don't duplicate our own messages
-          if (newMsg.sender_id === user?.id) {
-            return;
+  console.log('Setting up private chat real-time for chat:', chatId);
+
+  const channel = supabase
+    .channel(`private-chat-${chatId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'private_messages',
+        filter: `chat_id=eq.${chatId}`
+      },
+      async (payload) => {
+        console.log('NEW PRIVATE MESSAGE REAL-TIME:', payload);
+        const newMsg = payload.new as any;
+        
+        // Kendi mesajımızı tekrar ekleme
+        if (newMsg.sender_id === user?.id) {
+          console.log('Skipping own private message');
+          return;
+        }
+
+        // Kullanıcı bilgilerini al
+        let username = 'Bilinmeyen';
+        let avatar_url = null;
+
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('username, avatar_url')
+            .eq('id', newMsg.sender_id)
+            .single();
+
+          if (profile) {
+            username = profile.username;
+            avatar_url = profile.avatar_url;
+          }
+        } catch (error) {
+          console.warn('Could not fetch user profile for real-time message:', error);
+        }
+
+        // Mesajı state'e ekle
+        setMessages(prev => {
+          const messageExists = prev.some(msg => msg.id === newMsg.id);
+          if (messageExists) {
+            return prev;
           }
           
-          setMessages(prev => [...prev, newMsg]);
-          playSound('correctWord');
-        }
-      )
-      .subscribe();
+          return [...prev, {
+            ...newMsg,
+            username,
+            avatar_url
+          }];
+        });
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [chatId, user?.id, playSound]);
+        playSound('correctWord');
+      }
+    )
+    .subscribe((status) => {
+      console.log('Private chat real-time status:', status);
+    });
+
+  return () => {
+    console.log('Cleaning up private chat real-time channel');
+    supabase.removeChannel(channel);
+  };
+}, [chatId, user?.id, playSound]);
 
   const fetchMessages = async () => {
   try {
@@ -150,60 +189,67 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
   }
 };
 
-  const sendMessage = async () => {
-    if (!newMessage.trim() || !user || !chatId) {
-      console.log('Private message send blocked:', { 
-        messageEmpty: !newMessage.trim(), 
-        noUser: !user, 
-        noChatId: !chatId 
-      });
-      return;
-    }
+const sendMessage = async () => {
+  if (!newMessage.trim() || !user || !chatId) {
+    return;
+  }
 
-    const trimmedMessage = newMessage.trim();
-    if (trimmedMessage.length > 500) {
-      toast.error('Mesaj 500 karakterden uzun olamaz');
-      return;
-    }
+  const trimmedMessage = newMessage.trim();
+  if (trimmedMessage.length > 500) {
+    toast.error('Mesaj 500 karakterden uzun olamaz');
+    return;
+  }
 
-    console.log('Sending private message:', {
-      chatId,
-      senderId: user.id,
-      message: trimmedMessage
-    });
-
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('private_messages')
-        .insert({
-          chat_id: chatId,
-          sender_id: user.id,
-          message: trimmedMessage
-        })
-        .select()
-        .single();
-
-      console.log('Private message insert result:', { data, error });
-
-      if (error) throw error;
-
-      // Add message immediately to UI
-      if (data) {
-        console.log('Adding private message to UI:', data);
-        setMessages(prev => [...prev, data]);
-      }
-
-      setNewMessage('');
-      playSound('buttonClick');
-      console.log('Private message sent successfully');
-    } catch (error) {
-      console.error('Error sending private message:', error);
-      toast.error('Mesaj gönderilirken hata oluştu');
-    } finally {
-      setIsLoading(false);
-    }
+  // Optimistic update
+  const tempMessage: any = {
+    id: `temp-${Date.now()}`,
+    chat_id: chatId,
+    sender_id: user.id,
+    message: trimmedMessage,
+    created_at: new Date().toISOString(),
+    is_read: false,
+    username: 'Sen', // Geçici değer
+    avatar_url: null
   };
+
+  setMessages(prev => [...prev, tempMessage]);
+  setNewMessage('');
+  scrollToBottom();
+
+  setIsLoading(true);
+  try {
+    const { data, error } = await supabase
+      .from('private_messages')
+      .insert({
+        chat_id: chatId,
+        sender_id: user.id,
+        message: trimmedMessage
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Temp mesajı gerçek mesajla değiştir
+    setMessages(prev => prev.map(msg => 
+      msg.id === tempMessage.id ? {
+        ...data,
+        username: 'Sen', // Gerçek veri geldiğinde
+        avatar_url: null
+      } : msg
+    ));
+
+    playSound('buttonClick');
+  } catch (error) {
+    console.error('Error sending private message:', error);
+    toast.error('Mesaj gönderilirken hata oluştu');
+    
+    // Hata durumunda temp mesajı kaldır
+    setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
