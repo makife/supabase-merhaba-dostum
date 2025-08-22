@@ -398,53 +398,42 @@ useEffect(() => {
   };
 
   const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    setNewMessage(e.target.value);
-    
-    // Typing indicator
-    if (user && currentChannel && currentChannel.state === 'joined') {
-      try {
-        // Use cached username to avoid API call
-        const displayName = user.user_metadata?.username || user.email?.split('@')[0] || 'Anonim';
-        
-        if (currentChannel && currentChannel.state === 'joined') {
-          // Send typing status
-          try {
-            await currentChannel.track({
-              user_id: user.id,
-              username: displayName,
-              typing: true,
-              online_at: new Date().toISOString(),
-            });
-            
-            // Clear previous timeout
-            if (typingTimeout) {
-              clearTimeout(typingTimeout);
-            }
-            
-            // Set new timeout to stop typing
-            const timeout = setTimeout(async () => {
-              try {
-                await currentChannel.track({
-                  user_id: user.id,
-                  username: displayName,
-                  typing: false,
-                  online_at: new Date().toISOString(),
-                });
-              } catch (error) {
-                console.error('Error stopping typing indicator:', error);
-              }
-            }, 2000);
-            
-            setTypingTimeout(timeout);
-          } catch (error) {
-            console.error('Error sending typing indicator:', error);
-          }
-        }
-      } catch (error) {
-        console.error('Error handling typing indicator:', error);
+  setNewMessage(e.target.value);
+  
+  if (user && currentChannel && currentChannel.state === 'joined') {
+    try {
+      const displayName = profile?.username || user.email?.split('@')[0] || 'Anonim';
+      
+      // Typing durumunu güncelle
+      await currentChannel.track({
+        user_id: user.id,
+        username: displayName,
+        typing: e.target.value.length > 0, // Yazı yazılıyorsa true
+        online_at: new Date().toISOString(),
+      });
+      
+      // Timeout'u temizle ve yeniden kur
+      if (typingTimeout) {
+        clearTimeout(typingTimeout);
       }
+      
+      const timeout = setTimeout(async () => {
+        if (currentChannel && currentChannel.state === 'joined') {
+          await currentChannel.track({
+            user_id: user.id,
+            username: displayName,
+            typing: false, // Yazma durduruldu
+            online_at: new Date().toISOString(),
+          });
+        }
+      }, 2000);
+      
+      setTypingTimeout(timeout);
+    } catch (error) {
+      console.error('Error handling typing indicator:', error);
     }
-  };
+  }
+};
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
