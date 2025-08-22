@@ -172,184 +172,166 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false }: GlobalChatPr
   }, [messages]);
 
   // Set up realtime subscription and presence
-  useEffect(() => {
-    if (!isOpen || !user?.id) return;
+  // GlobalChat.tsx içinde - useEffect içine bu kodu ekle
+useEffect(() => {
+  if (!isOpen || !user?.id || !profile) return;
 
-    console.log('Setting up presence for user:', user.id);
-    
-    // Cache username to avoid repeated API calls
-    const cachedUsername = user.user_metadata?.username || user.email?.split('@')[0] || 'Anonim';
+  console.log('Setting up presence for user:', user.id);
+  
+  const cachedUsername = profile.username || user.email?.split('@')[0] || 'Anonim';
 
-    const channel = supabase
-      .channel(`global-chat-${user.id}`, {
-        config: {
-          presence: { key: user.id }
-        }
-      })
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'global_chat'
-        },
-        (payload) => {
-          console.log('REAL-TIME MESSAGE RECEIVED:', payload);
-          const newMessage = payload.new as ChatMessage;
-          
-          // Kendi mesajımızı tekrar ekleme, zaten manuel olarak eklendi
-          if (newMessage.user_id === user?.id) {
-            console.log('Skipping own message');
-            return;
-          }
-          console.log('Adding message to UI:', newMessage);
-          setMessages(prev => [...prev, newMessage]);
-          
-          // Play sound for new messages from other users - use fixed callback to avoid dependency
-          try {
-            playSound('correctWord');
-          } catch (e) {
-            console.log('Sound play failed:', e);
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'global_chat'
-        },
-        (payload) => {
-          const deletedMessage = payload.old as ChatMessage;
-          setMessages(prev => prev.filter(m => m.id !== deletedMessage.id));
-          
-          // Also remove reactions for this message
-          setMessageReactions(prev => {
-            const newReactions = { ...prev };
-            delete newReactions[deletedMessage.id];
-            return newReactions;
-          });
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'message_reactions'
-        },
-        (payload) => {
-          const newReaction = payload.new as MessageReaction;
-          console.log('New reaction received:', newReaction);
-          
-          // Don't add if it's already in state (optimistic update)
-          setMessageReactions(prev => {
-            const existing = prev[newReaction.message_id] || [];
-            const hasTemp = existing.some(r => r.id.startsWith('temp-') && r.user_id === newReaction.user_id && r.emoji === newReaction.emoji);
-            
-            if (hasTemp) {
-              // Replace temp reaction with real one
-              return {
-                ...prev,
-                [newReaction.message_id]: existing.map(r => 
-                  r.id.startsWith('temp-') && r.user_id === newReaction.user_id && r.emoji === newReaction.emoji 
-                    ? newReaction 
-                    : r
-                )
-              };
-            } else {
-              // Add new reaction
-              return {
-                ...prev,
-                [newReaction.message_id]: [...existing, newReaction]
-              };
-            }
-          });
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'message_reactions'
-        },
-        (payload) => {
-          const deletedReaction = payload.old as MessageReaction;
-          console.log('Reaction deleted:', deletedReaction);
-          setMessageReactions(prev => ({
-            ...prev,
-            [deletedReaction.message_id]: (prev[deletedReaction.message_id] || [])
-              .filter(r => r.id !== deletedReaction.id)
-          }));
-        }
-      )
-      .on('presence', { event: 'sync' }, () => {
-        const newState = channel.presenceState();
-        console.log('Presence sync - raw state:', newState);
+  const channel = supabase
+    .channel(`global-chat-${user.id}`, {
+      config: {
+        presence: { key: user.id }
+      }
+    })
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'global_chat'
+      },
+      (payload) => {
+        console.log('REAL-TIME MESSAGE RECEIVED:', payload);
+        const newMessage = payload.new as ChatMessage;
         
-        const typing = new Set<string>();
-        const online = new Set<string>();
+        if (newMessage.user_id === user?.id) {
+          console.log('Skipping own message');
+          return;
+        }
         
-        Object.values(newState).forEach((presences: any) => {
-          console.log('Processing presences array:', presences);
-          presences.forEach((presence: any) => {
-            console.log('Processing presence:', presence);
-            if (presence.username) {
-              online.add(presence.username);
-              console.log('Added to online:', presence.username);
-              if (presence.typing) {
-                typing.add(presence.username);
-              }
-            }
-          });
+        console.log('Adding message to UI:', newMessage);
+        setMessages(prev => [...prev, newMessage]);
+        
+        try {
+          playSound('correctWord');
+        } catch (e) {
+          console.log('Sound play failed:', e);
+        }
+      }
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'global_chat'
+      },
+      (payload) => {
+        const deletedMessage = payload.old as ChatMessage;
+        setMessages(prev => prev.filter(m => m.id !== deletedMessage.id));
+        
+        setMessageReactions(prev => {
+          const newReactions = { ...prev };
+          delete newReactions[deletedMessage.id];
+          return newReactions;
         });
+      }
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'message_reactions'
+      },
+      (payload) => {
+        const newReaction = payload.new as MessageReaction;
+        console.log('New reaction received:', newReaction);
         
-        console.log('Final online users:', Array.from(online));
-        console.log('Final typing users:', Array.from(typing));
-        setTypingUsers(typing);
-
-      })
-      .on('presence', { event: 'join' }, ({ newPresences }) => {
-        console.log('User joined presence:', newPresences);
-      })
-      .on('presence', { event: 'leave' }, ({ leftPresences }) => {
-        console.log('User left presence:', leftPresences);
-      })
-      .subscribe(async (status) => {
-        console.log('Channel status:', status);
-        if (status === 'SUBSCRIBED') {
-          setCurrentChannel(channel);
+        setMessageReactions(prev => {
+          const existing = prev[newReaction.message_id] || [];
+          const hasTemp = existing.some(r => r.id.startsWith('temp-') && r.user_id === newReaction.user_id && r.emoji === newReaction.emoji);
           
-          const presenceData = {
+          if (hasTemp) {
+            return {
+              ...prev,
+              [newReaction.message_id]: existing.map(r => 
+                r.id.startsWith('temp-') && r.user_id === newReaction.user_id && r.emoji === newReaction.emoji 
+                  ? newReaction 
+                  : r
+              )
+            };
+          } else {
+            return {
+              ...prev,
+              [newReaction.message_id]: [...existing, newReaction]
+            };
+          }
+        });
+      }
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'message_reactions'
+      },
+      (payload) => {
+        const deletedReaction = payload.old as MessageReaction;
+        console.log('Reaction deleted:', deletedReaction);
+        setMessageReactions(prev => ({
+          ...prev,
+          [deletedReaction.message_id]: (prev[deletedReaction.message_id] || [])
+            .filter(r => r.id !== deletedReaction.id)
+        }));
+      }
+    )
+    .on('presence', { event: 'sync' }, () => {
+      const newState = channel.presenceState();
+      console.log('Presence sync - raw state:', newState);
+      
+      const typingUsersSet = new Set<string>();
+      
+      Object.values(newState).forEach((presences: any) => {
+        presences.forEach((presence: any) => {
+          if (presence.typing && presence.username) {
+            typingUsersSet.add(presence.username);
+          }
+        });
+      });
+      
+      console.log('Typing users:', Array.from(typingUsersSet));
+      setTypingUsers(typingUsersSet);
+    })
+    .on('presence', { event: 'join' }, ({ newPresences }) => {
+      console.log('User joined presence:', newPresences);
+    })
+    .on('presence', { event: 'leave' }, ({ leftPresences }) => {
+      console.log('User left presence:', leftPresences);
+    })
+    .subscribe(async (status) => {
+      console.log('Channel status:', status);
+      if (status === 'SUBSCRIBED') {
+        setCurrentChannel(channel);
+        
+        // Presence tracking - düzgün şekilde
+        try {
+          await channel.track({
             user_id: user.id,
             username: cachedUsername,
             typing: false,
             online_at: new Date().toISOString(),
-          };
-          
-          console.log('Tracking presence:', presenceData);
-
-          
-          // Try tracking - but don't wait for it
-          channel.track(presenceData).then(result => {
-            console.log('Track result:', result);
-          }).catch(error => {
-            console.log('Track error (using fallback):', error);
           });
+          console.log('Presence tracking started successfully');
+        } catch (error) {
+          console.error('Presence tracking error:', error);
         }
-      });
-
-    return () => {
-      console.log('Cleaning up channel');
-      if (channel) {
-        supabase.removeChannel(channel);
       }
-      setCurrentChannel(null);
-      setTypingUsers(new Set());
-    };
-  }, [isOpen, user?.id]); // playSound'u dependency'den çıkardım
+    });
+
+  return () => {
+    console.log('Cleaning up channel');
+    if (channel) {
+      supabase.removeChannel(channel);
+    }
+    setCurrentChannel(null);
+    setTypingUsers(new Set());
+  };
+}, [isOpen, user?.id, profile]); // profile'ı da dependency'e ekledik
 
   const fetchMessages = async () => {
   try {
@@ -615,25 +597,43 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false }: GlobalChatPr
 
   // Start private chat
   const startPrivateChat = async (targetUser: SelectedUser) => {
-    if (!user) return;
-    
-    try {
-      const { data: chatId, error } = await supabase
-        .rpc('get_or_create_private_chat', {
-          other_user_id: targetUser.id
+  if (!user) return;
+  
+  try {
+    // Chat ID oluştur (sıralı şekilde)
+    const participants = [user.id, targetUser.id].sort();
+    const chatId = `private_${participants.join('_')}`;
+
+    // Chat var mı kontrol et
+    const { data: existingChat } = await supabase
+      .from('private_chats')
+      .select('id')
+      .eq('id', chatId)
+      .single();
+
+    if (!existingChat) {
+      // Yeni chat oluştur
+      const { error } = await supabase
+        .from('private_chats')
+        .insert({
+          id: chatId,
+          user1_id: participants[0],
+          user2_id: participants[1],
+          created_at: new Date().toISOString()
         });
 
       if (error) throw error;
-      
-      setActiveChatId(chatId);
-      setSelectedUser(targetUser);
-      setViewMode('private-chat');
-      toast.success(`${targetUser.username} ile özel sohbet başlatıldı`);
-    } catch (error) {
-      console.error('Error starting private chat:', error);
-      toast.error('Özel sohbet başlatılırken hata oluştu');
     }
-  };
+
+    setActiveChatId(chatId);
+    setSelectedUser(targetUser);
+    setViewMode('private-chat');
+    toast.success(`${targetUser.username} ile özel sohbet başlatıldı`);
+  } catch (error) {
+    console.error('Error starting private chat:', error);
+    toast.error('Özel sohbet başlatılırken hata oluştu');
+  }
+};
 
   // Render different views
   const renderContent = () => {
@@ -726,7 +726,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false }: GlobalChatPr
           <div>
             <h3 className="font-semibold text-lg">Global Sohbet</h3>
             <p className="text-xs text-muted-foreground">
-              {onlineUsers.length > 0 ? `${onlineUsers.length} kişi çevrimiçi` : 'Kimse çevrimiçi değil'}
+              {onlineUsers.length} kişi çevrimiçi
             </p>
           </div>
         </div>
