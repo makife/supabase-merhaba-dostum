@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { GameProvider } from "@/contexts/GameContext";
 import { MusicProvider } from "@/contexts/MusicContext";
 import { UserProvider } from "@/contexts/UserContext";
+import { NotificationProvider } from '@/contexts/NotificationContext'; // ← Bu importu ekle
 import ProtectedRoute from "@/components/ProtectedRoute";
 import LoadingScreen from "@/components/LoadingScreen";
 import AuthPage from "@/pages/AuthPage";
@@ -67,7 +68,6 @@ const AppRoutes = () => {
         </ProtectedRoute>
       } />
       
-      {/* Turnuva route'ları - sıralama önemli! */}
       <Route path="/tournament/:tournamentId" element={
         <ProtectedRoute>
           <TournamentMatchPage />
@@ -124,7 +124,9 @@ const App = () => {
               <ThemeProvider>
                 <MusicProvider>
                   <GameProvider>
-                    <AppRoutes />
+                    <NotificationProvider>
+                      <AppRoutes />
+                    </NotificationProvider>
                   </GameProvider>
                 </MusicProvider>
               </ThemeProvider>
