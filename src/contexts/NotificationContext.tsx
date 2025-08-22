@@ -1,7 +1,7 @@
 // contexts/NotificationContext.tsx
 import { createContext, useContext, ReactNode } from 'react';
 import { useChatNotifications } from '@/hooks/useChatNotifications';
-import { supabase } from '@/lib/supabase';
+
 
 interface NotificationContextType {
   unreadCount: number;
