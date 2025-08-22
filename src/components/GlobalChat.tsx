@@ -336,25 +336,78 @@ useEffect(() => {
   const fetchMessages = async () => {
   try {
     const { data, error } = await supabase
-      .from('global_chat') // global_messages yerine global_chat
-      .select(`
-        id,
-        message,
-        created_at,
-        user_id,
-        username,
-        avatar_url
-      `)
+      .from('global_chat')
+      .select('*')
       .order('created_at', { ascending: true })
       .limit(50);
 
-    if (error) throw error;
-    setMessages(data || []);
+    if (error) {
+      console.error('Global chat fetch error:', error);
+      throw error;
+    }
+
+    console.log('Fetched global messages:', data);
+    
+    // Eğer data varsa ve içinde user_id yoksa, mevcut kullanıcıyı kullan
+    const formattedData = data?.map(msg => ({
+      ...msg,
+      user_id: msg.user_id || user?.id || 'unknown',
+      username: msg.username || 'Anonim'
+    })) || [];
+
+    setMessages(formattedData);
+    
+    // Avatar'ları çek
+    const userIds = [...new Set(formattedData.map(msg => msg.user_id))];
+    if (userIds.length > 0) {
+      await fetchUserAvatars(userIds);
+    }
+    
   } catch (error) {
-    console.error('Error fetching messages:', error);
+    console.error('Error fetching global messages:', error);
     toast.error('Mesajlar yüklenirken hata oluştu');
   }
 };
+
+  // Debug için tüm tablo şemalarını kontrol et
+const checkAllTableStructures = async () => {
+  try {
+    // Global chat yapısı
+    const { data: globalChatColumns } = await supabase
+      .from('information_schema.columns')
+      .select('column_name, data_type')
+      .eq('table_name', 'global_chat')
+      .order('column_name');
+
+    console.log('Global chat table columns:', globalChatColumns);
+
+    // Private messages yapısı
+    const { data: privateMessagesColumns } = await supabase
+      .from('information_schema.columns')
+      .select('column_name, data_type')
+      .eq('table_name', 'private_messages')
+      .order('column_name');
+
+    console.log('Private messages table columns:', privateMessagesColumns);
+
+    // Private chats yapısı (zaten biliyoruz)
+    console.log('Private chats table columns:', [
+      { column_name: 'id', data_type: 'uuid' },
+      { column_name: 'user1_id', data_type: 'uuid' },
+      { column_name: 'user2_id', data_type: 'uuid' },
+      { column_name: 'created_at', data_type: 'timestamp with time zone' },
+      { column_name: 'updated_at', data_type: 'timestamp with time zone' }
+    ]);
+
+  } catch (error) {
+    console.error('Error checking table structures:', error);
+  }
+};
+
+// Component mount olduğunda çalıştır
+useEffect(() => {
+  checkAllTableStructures();
+}, []);
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !user || !profile) return;
