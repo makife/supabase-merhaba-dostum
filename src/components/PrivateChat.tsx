@@ -148,6 +148,36 @@ useEffect(() => {
   };
 }, [chatId, user?.id, playSound]);
 
+  // PrivateChat.tsx - Mesajları okundu olarak işaretle
+useEffect(() => {
+  if (!chatId || !user) return;
+
+  // Bu sohbetteki okunmamış mesajları okundu yap
+  const markMessagesAsRead = async () => {
+    try {
+      await supabase
+        .from('private_messages')
+        .update({ is_read: true })
+        .eq('chat_id', chatId)
+        .eq('receiver_id', user.id)
+        .eq('is_read', false);
+
+      // Bildirimleri de okundu yap
+      await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('user_id', user.id)
+        .eq('type', 'message')
+        .eq('related_id', chatId);
+
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+    }
+  };
+
+  markMessagesAsRead();
+}, [chatId, user]);
+
   const fetchMessages = async () => {
   try {
     console.log('Fetching private messages for chat:', chatId);
