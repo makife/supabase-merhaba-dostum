@@ -407,7 +407,7 @@ const sendMessage = async () => {
         // BİLDİRİM GÖNDER
         await sendMentionNotification(
           mentionedUser.id, 
-          displayName, 
+          profile?.username || user.email?.split('@')[0] || 'Anonim',
           trimmedMessage
         );
       }
