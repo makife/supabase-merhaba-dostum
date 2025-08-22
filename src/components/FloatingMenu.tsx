@@ -171,6 +171,7 @@ const handleChatOpen = async () => {
                  <div className="absolute inset-0 bg-white/30 rounded-full animate-ping" />
                </div>
               )}
+              </div>
             </Button>
           </div>
         </div>
