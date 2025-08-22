@@ -319,13 +319,63 @@ const renderContent = () => {
   );
 };
 
+// ChatPage.tsx - Yeni tasarım
 return (
-  <div className="min-h-screen bg-background">
+  <div className="min-h-screen bg-chat-50">
     {/* Safe area top */}
     <div className="safe-area-top"></div>
     
-    <div className="h-screen flex flex-col">
-      <div className="flex-1 min-h-0">
+    <div className="h-screen flex flex-col max-w-4xl mx-auto bg-white rounded-lg shadow-lg m-4 overflow-hidden border border-chat-200">
+      {/* Header */}
+      <div className="bg-chat-500 text-white p-4 flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleBackToMenu}
+            className="p-2 hover:bg-chat-600 rounded-full text-white"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div>
+            <h1 className="text-xl font-bold">Sohbet Odası</h1>
+            <p className="text-chat-100 text-sm">
+              {onlineUsers.length} kişi çevrimiçi
+            </p>
+          </div>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleViewChange('global')}
+            className={`p-2 rounded-full ${
+              viewMode === 'global' 
+                ? 'bg-chat-600 text-white' 
+                : 'text-chat-100 hover:bg-chat-600'
+            }`}
+          >
+            <Hash className="w-5 h-5" />
+          </Button>
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleViewChange('users')}
+            className={`p-2 rounded-full ${
+              viewMode === 'users' 
+                ? 'bg-chat-600 text-white' 
+                : 'text-chat-100 hover:bg-chat-600'
+            }`}
+          >
+            <Users className="w-5 h-5" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Content Area */}
+      <div className="flex-1 min-h-0 bg-chat-50">
         {renderContent()}
       </div>
     </div>
