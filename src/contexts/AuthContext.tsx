@@ -121,5 +121,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     signOut,
   };
 
+  const signOut = async () => {
+  try {
+    // Bildirimleri temizle (opsiyonel)
+    await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('user_id', user.id);
+    
+    await supabase.auth.signOut();
+    setUser(null);
+  } catch (error) {
+    console.error('Error signing out:', error);
+  }
+};
+
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
