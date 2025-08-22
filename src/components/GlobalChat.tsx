@@ -13,6 +13,7 @@ import { Send, MessageCircle, X, Trash2, Mail, Users } from 'lucide-react';
 import { UserAvatar } from '@/components/UserAvatar';
 import { PrivateChat } from '@/components/PrivateChat';
 import { toast } from 'sonner';
+import { sendMentionNotification } from '@/utils/notifications';
 
 interface ChatMessage {
   id: string;
@@ -343,6 +344,30 @@ const sendMessage = async () => {
       .single();
 
     if (error) throw error;
+    
+    // MENTION KONTROLÜ
+    const mentionRegex = /@(\w+)/g;
+    let match;
+    
+    while ((match = mentionRegex.exec(trimmedMessage)) !== null) {
+      const mentionedUsername = match[1];
+      
+      // Kullanıcıyı bul
+      const { data: mentionedUser } = await supabase
+        .from('profiles')
+        .select('id, username')
+        .eq('username', mentionedUsername)
+        .single();
+      
+      if (mentionedUser && mentionedUser.id !== user.id) {
+        // BİLDİRİM GÖNDER
+        await sendMentionNotification(
+          mentionedUser.id, 
+          displayName, 
+          trimmedMessage
+        );
+      }
+    }
 
     // Temp mesajı gerçek mesajla değiştir
     setMessages(prev => prev.map(msg => 
