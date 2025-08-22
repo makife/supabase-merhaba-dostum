@@ -729,40 +729,6 @@ const startPrivateChat = async (targetUser: SelectedUser) => {
   // GlobalChat.tsx - Yeni tasarım
 const renderGlobalChat = () => (
   <>
-    {/* Header */}
-    <div className="bg-chat-400 text-white p-4 flex items-center justify-between">
-      <div className="flex items-center space-x-2">
-        <MessageCircle className="w-6 h-6" />
-        <div>
-          <h3 className="font-semibold text-lg">Global Sohbet</h3>
-          <p className="text-chat-100 text-sm">
-            {onlineUsers.length} kişi çevrimiçi
-          </p>
-        </div>
-      </div>
-      
-      <div className="flex items-center space-x-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setViewMode('users')}
-          className="text-white hover:bg-chat-500 p-2 rounded-full"
-          title="Özel Mesajlar"
-        >
-          <Mail className="w-5 h-5" />
-        </Button>
-        
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onClose}
-          className="text-white hover:bg-chat-500 p-2 rounded-full"
-        >
-          <X className="w-5 h-5" />
-        </Button>
-      </div>
-    </div>
-
     {/* Messages */}
     <ScrollArea className="flex-1 p-4 bg-chat-50">
       <div className="space-y-3">
