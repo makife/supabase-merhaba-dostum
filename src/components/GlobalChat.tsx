@@ -352,36 +352,27 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false }: GlobalChatPr
   }, [isOpen, user?.id]); // playSound'u dependency'den çıkardım
 
   const fetchMessages = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('global_messages' as any)
-        .select(`
-          id,
-          content,
-          created_at,
-          user_id,
-          profiles:user_id (
-            username,
-            avatar_url
-          )
-        `)
-        .order('created_at', { ascending: true })
-        .limit(50);
+  try {
+    const { data, error } = await supabase
+      .from('global_chat') // global_messages yerine global_chat
+      .select(`
+        id,
+        message,
+        created_at,
+        user_id,
+        username,
+        avatar_url
+      `)
+      .order('created_at', { ascending: true })
+      .limit(50);
 
-      if (error) throw error;
-      const formattedMessages = data?.map((msg: any) => ({
-  id: msg.id,
-  user_id: msg.user_id,
-  username: msg.profiles?.username || 'Unknown',
-  message: msg.content,
-  created_at: msg.created_at,
-  avatar_url: msg.profiles?.avatar_url
-})) || [];
-    } catch (error) {
-      console.error('Error fetching messages:', error);
-      toast.error('Mesajlar yüklenirken hata oluştu');
-    }
-  };
+    if (error) throw error;
+    setMessages(data || []);
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+    toast.error('Mesajlar yüklenirken hata oluştu');
+  }
+};
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !user || !profile) return;
