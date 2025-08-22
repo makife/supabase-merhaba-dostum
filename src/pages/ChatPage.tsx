@@ -126,41 +126,93 @@ export default function ChatPage() {
     }
   };
 
-  const renderUsersList = () => {
-    return (
-      <ScrollArea className="flex-1">
-        <div className="p-4 space-y-3">
-          {allUsers.map((targetUser) => (
+  // ChatPage.tsx - renderUsersList fonksiyonunu güncelle
+const renderUsersList = () => {
+  const [unreadCounts, setUnreadCounts] = useState<{[key: string]: number}>({});
+
+  // Okunmamış mesajları çek
+  useEffect(() => {
+    const fetchUnreadCounts = async () => {
+      if (!user) return;
+
+      try {
+        // Her kullanıcı için okunmamış mesaj sayısını al
+        const { data: unreadData } = await supabase
+          .from('private_messages')
+          .select('sender_id, count')
+          .eq('receiver_id', user.id)
+          .eq('is_read', false)
+          .group('sender_id');
+
+        const counts: {[key: string]: number} = {};
+        unreadData?.forEach(item => {
+          counts[item.sender_id] = item.count;
+        });
+
+        setUnreadCounts(counts);
+      } catch (error) {
+        console.error('Error fetching unread counts:', error);
+      }
+    };
+
+    fetchUnreadCounts();
+  }, [user]);
+
+  return (
+    <ScrollArea className="flex-1">
+      <div className="p-4 space-y-3">
+        {allUsers.map((targetUser) => {
+          const unreadCount = unreadCounts[targetUser.id] || 0;
+          
+          return (
             <Card
               key={targetUser.id}
-              className="p-4 hover:bg-accent cursor-pointer transition-colors active:bg-accent/80"
+              className={`p-4 hover:shadow-md transition-all cursor-pointer border-2 ${
+                unreadCount > 0 
+                  ? 'border-chat-500 bg-chat-50' 
+                  : 'border-chat-200'
+              }`}
               onClick={() => startPrivateChat(targetUser)}
             >
               <div className="flex items-center space-x-3">
                 <UserAvatar
                   src={targetUser.avatar_url}
                   alt={targetUser.username}
-                  fallback={targetUser.username?.charAt(0).toUpperCase()}
+                  fallback={targetUser.username.charAt(0).toUpperCase()}
                   size="sm"
+                  className={unreadCount > 0 ? 'ring-2 ring-chat-500' : ''}
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{targetUser.username}</p>
-                  <p className="text-sm text-muted-foreground">Özel mesaj gönder</p>
+                  <p className="font-medium text-gray-800 truncate">
+                    {targetUser.username}
+                  </p>
+                  {unreadCount > 0 ? (
+                    <p className="text-sm text-chat-600 font-semibold">
+                      {unreadCount} okunmamış mesaj
+                    </p>
+                  ) : (
+                    <p className="text-sm text-gray-500">Özel mesaj gönder</p>
+                  )}
                 </div>
-                <MessageCircle className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                <div className="flex items-center space-x-2">
+                  {isUserOnline(targetUser.id) && (
+                    <div className="w-2 h-2 bg-green-500 rounded-full" title="Çevrimiçi" />
+                  )}
+                  {unreadCount > 0 && (
+                    <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-xs text-white font-bold">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </div>
+                  )}
+                  <Mail className="w-5 h-5 text-chat-500" />
+                </div>
               </div>
             </Card>
-          ))}
-          {allUsers.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>Henüz kullanıcı bulunamadı</p>
-            </div>
-          )}
-        </div>
-      </ScrollArea>
-    );
-  };
+          );
+        })}
+      </div>
+    </ScrollArea>
+  );
+};
 
   const renderContent = () => {
     console.log('renderContent called, viewMode:', viewMode);
