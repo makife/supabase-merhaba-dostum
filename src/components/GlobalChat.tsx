@@ -180,6 +180,15 @@ useEffect(() => {
 
   console.log('🔄 Setting up GLOBAL real-time subscription');
 
+  const sendBotWelcome = async () => {
+    const hasWelcome = localStorage.getItem('chat_welcome_shown');
+    if (!hasWelcome) {
+      await sendWelcomeMessage();
+      localStorage.setItem('chat_welcome_shown', 'true');
+    }
+  };
+  sendBotWelcome();
+
   const channel = supabase
     .channel('global-chat-realtime')
     .on(
@@ -192,6 +201,42 @@ useEffect(() => {
       async (payload) => {
         console.log('📨 REAL-TIME GLOBAL MESSAGE:', payload);
         const newMessage = payload.new as any;
+
+        // Bot mesajlarını ignore et
+        if (newMessage.user_id === '00000000-0000-0000-0000-000000000000') {
+          return;
+        }
+
+        // Yasaklı kelime kontrolü
+        if (containsBannedWords(newMessage.message)) {
+          // Mesajı sil
+          await supabase
+            .from('global_chat')
+            .delete()
+            .eq('id', newMessage.id);
+
+          // Kullanıcıyı yasakla
+          const banSuccess = await banUser(
+            newMessage.user_id,
+            `Yasaklı kelime kullanımı: "${newMessage.message.substring(0, 20)}..."`,
+            48 // 2 gün
+          );
+
+          if (banSuccess) {
+            // Yasaklama mesajı gönder
+            await supabase
+              .from('global_chat')
+              .insert({
+                user_id: '00000000-0000-0000-0000-000000000000',
+                username: 'kelimeciBot',
+                message: `@${newMessage.username} yasaklı kelime kullandığı için 2 gün sohbet yasağı uygulanmıştır.`,
+                avatar_url: '/bot-avatar.png'
+              });
+          }
+        }
+      }
+    )
+    .subscribe();
         
         // Kendi mesajımızı ignore et (optimistic update zaten ekledi)
         if (newMessage.user_id === user.id) {
