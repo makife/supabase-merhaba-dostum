@@ -547,25 +547,30 @@ const sendMessage = async () => {
     return grouped;
   };
 
-  // Start private chat
-  const startPrivateChat = async (targetUser: SelectedUser) => {
+const startPrivateChat = async (targetUser: SelectedUser) => {
   if (!user) return;
   
   try {
-    // Chat ID oluştur (sıralı şekilde)
+    playSound('buttonClick');
+    
+    // Chat ID oluştur
     const participants = [user.id, targetUser.id].sort();
     const chatId = `private_${participants.join('_')}`;
 
     // Chat var mı kontrol et
-    const { data: existingChat } = await supabase
+    const { data: existingChat, error: chatError } = await supabase
       .from('private_chats')
       .select('id')
       .eq('id', chatId)
       .single();
 
+    if (chatError && chatError.code !== 'PGRST116') {
+      throw chatError;
+    }
+
+    // Yeni chat oluştur
     if (!existingChat) {
-      // Yeni chat oluştur
-      const { error } = await supabase
+      const { error: createError } = await supabase
         .from('private_chats')
         .insert({
           id: chatId,
@@ -574,13 +579,18 @@ const sendMessage = async () => {
           created_at: new Date().toISOString()
         });
 
-      if (error) throw error;
+      if (createError) throw createError;
     }
 
-    setActiveChatId(chatId);
     setSelectedUser(targetUser);
+    setActiveChatId(chatId);
     setViewMode('private-chat');
-    toast.success(`${targetUser.username} ile özel sohbet başlatıldı`);
+    
+    toast.success(`${targetUser.username} ile özel sohbet başlatıldı`, {
+      icon: '💛',
+      duration: 2000
+    });
+    
   } catch (error) {
     console.error('Error starting private chat:', error);
     toast.error('Özel sohbet başlatılırken hata oluştu');
@@ -611,263 +621,275 @@ const sendMessage = async () => {
   };
 
   const renderUsersList = () => (
-    <>
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
-        <div className="flex items-center space-x-2">
-          <MessageCircle className="w-5 h-5 text-primary" />
+  <>
+    {/* Header */}
+    <div className="bg-chat-500 text-white p-4 flex items-center justify-between">
+      <div className="flex items-center space-x-2">
+        <Users className="w-6 h-6" />
+        <div>
           <h3 className="font-semibold text-lg">Kullanıcılar</h3>
+          <p className="text-chat-100 text-sm">
+            {onlineUsers.length} kişi çevrimiçi
+          </p>
         </div>
+      </div>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setViewMode('global')}
+        className="text-white hover:bg-chat-600 p-2 rounded-full"
+      >
+        <X className="w-5 h-5" />
+      </Button>
+    </div>
+
+    {/* Online Users */}
+    {onlineUsers.length > 0 && (
+      <div className="p-4 bg-chat-50 border-b border-chat-200">
+        <div className="flex items-center space-x-2 mb-3">
+          <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+          <span className="text-sm font-medium text-green-700">Çevrimiçi</span>
+        </div>
+        <div className="space-y-2">
+          {onlineUsers.map((targetUser) => (
+            <Card 
+              key={targetUser.id} 
+              className="p-3 hover:shadow-md transition-all cursor-pointer border-chat-200"
+              onClick={() => startPrivateChat(targetUser)}
+            >
+              <div className="flex items-center space-x-3">
+                <div className="relative">
+                  <UserAvatar 
+                    src={targetUser.avatar_url}
+                    alt={targetUser.username}
+                    fallback={targetUser.username?.charAt(0).toUpperCase()}
+                    size="sm"
+                    className="border-2 border-green-400"
+                  />
+                  <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                </div>
+                <div className="flex-1">
+                  <div className="font-medium text-gray-800">{targetUser.username}</div>
+                  <div className="text-xs text-green-600">Çevrimiçi</div>
+                </div>
+                <MessageCircle className="w-5 h-5 text-chat-500" />
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {/* All Users */}
+    <ScrollArea className="flex-1">
+      <div className="p-4 space-y-3">
+        <div className="flex items-center space-x-2 mb-3">
+          <Users className="w-4 h-4 text-gray-500" />
+          <span className="text-sm font-medium text-gray-700">Tüm Kullanıcılar</span>
+        </div>
+        
+        {allUsers.map((targetUser) => (
+          <Card
+            key={targetUser.id}
+            className="p-4 hover:shadow-md transition-all cursor-pointer border-chat-100"
+            onClick={() => startPrivateChat(targetUser)}
+          >
+            <div className="flex items-center space-x-3">
+              <UserAvatar
+                src={targetUser.avatar_url}
+                alt={targetUser.username}
+                fallback={targetUser.username.charAt(0).toUpperCase()}
+                size="sm"
+                className="border-2 border-chat-300"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-gray-800 truncate">{targetUser.username}</p>
+                <p className="text-sm text-gray-500">Özel mesaj gönder</p>
+              </div>
+              <div className="flex items-center space-x-2">
+                {isUserOnline(targetUser.id) && (
+                  <div className="w-2 h-2 bg-green-500 rounded-full" title="Çevrimiçi"></div>
+                )}
+                <Mail className="w-5 h-5 text-chat-500" />
+              </div>
+            </div>
+          </Card>
+        ))}
+        
+        {allUsers.length === 0 && (
+          <div className="text-center py-8 text-gray-500">
+            <Users className="w-12 h-12 mx-auto mb-3 opacity-50 text-chat-300" />
+            <p>Henüz kullanıcı bulunamadı</p>
+          </div>
+        )}
+      </div>
+    </ScrollArea>
+  </>
+);
+  // GlobalChat.tsx - Yeni tasarım
+const renderGlobalChat = () => (
+  <>
+    {/* Header */}
+    <div className="bg-chat-400 text-white p-4 flex items-center justify-between">
+      <div className="flex items-center space-x-2">
+        <MessageCircle className="w-6 h-6" />
+        <div>
+          <h3 className="font-semibold text-lg">Global Sohbet</h3>
+          <p className="text-chat-100 text-sm">
+            {onlineUsers.length} kişi çevrimiçi
+          </p>
+        </div>
+      </div>
+      
+      <div className="flex items-center space-x-2">
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setViewMode('global')}
-          className="text-muted-foreground hover:text-foreground"
+          onClick={() => setViewMode('users')}
+          className="text-white hover:bg-chat-500 p-2 rounded-full"
+          title="Özel Mesajlar"
         >
-          <X className="w-4 h-4" />
+          <Mail className="w-5 h-5" />
+        </Button>
+        
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onClose}
+          className="text-white hover:bg-chat-500 p-2 rounded-full"
+        >
+          <X className="w-5 h-5" />
         </Button>
       </div>
+    </div>
 
-      {/* Users List */}
-      <ScrollArea className="flex-1 p-4">
-        <div className="space-y-2">
-          {allUsers.length === 0 ? (
-            <div className="text-center text-muted-foreground py-8">
-              Henüz kullanıcı yok
-            </div>
-          ) : (
-            allUsers.map((targetUser) => (
-              <div
-                key={targetUser.id}
-                className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors"
-              >
-                <div className="flex items-center space-x-3">
-                  <UserAvatar
-                    src={targetUser.avatar_url}
-                    alt={targetUser.username}
-                    fallback={targetUser.username.charAt(0).toUpperCase()}
-                    size="xxs"
-                  />
-                  <div>
-                    <div className="font-medium">{targetUser.username}</div>
-                  </div>
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => startPrivateChat(targetUser)}
-                  className="flex items-center space-x-2"
-                >
-                  <Mail className="w-4 h-4" />
-                  <span>Sohbet</span>
-                </Button>
-              </div>
-            ))
-          )}
-        </div>
-      </ScrollArea>
-    </>
-  );
-
-  const renderGlobalChat = () => (
-    <>
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
-        <div className="flex items-center space-x-2">
-          <MessageCircle className="w-5 h-5 text-primary" />
-          <div>
-            <h3 className="font-semibold text-lg">Global Sohbet</h3>
-            <p className="text-xs text-muted-foreground">
-              {onlineUsers.length} kişi çevrimiçi
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-muted-foreground">Özel Mesaj</span>
-            <Switch
-              checked={privateChatEnabled}
-              onCheckedChange={setPrivateChatEnabled}
-            />
-          </div>
-          {privateChatEnabled && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setViewMode('users')}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <Mail className="w-4 h-4" />
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <X className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
-
-      {/* Messages */}
-      <ScrollArea className="flex-1 p-4 overflow-hidden">
-        <div className="space-y-4 overflow-hidden">
-          {messages.map((message) => (
-            <div key={message.id} className="group flex flex-col space-y-1 hover:bg-muted/30 rounded-lg p-2 -m-2 transition-colors">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <UserAvatar
-                    src={userAvatars[message.user_id]}
-                    alt={message.username}
-                    fallback={message.username.charAt(0).toUpperCase()}
-                    size="xxs"
-                  />
-                  <span 
-                    className={`text-sm font-medium ${
-                      message.user_id === user?.id ? 'text-primary' : 'text-muted-foreground'
-                    }`}
-                  >
-                    {message.username}
-                  </span>
-                  {isUserOnline(message.user_id) && (
-                    <div className="w-2 h-2 bg-green-500 rounded-full" title="Çevrimiçi"></div>
-                  )}
-                  <span className="text-xs text-muted-foreground">
-                    {formatTime(message.created_at)}
-                  </span>
-                  
-                  {/* Private Message Button */}
-                  {privateChatEnabled && message.user_id !== user?.id && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => startPrivateChat({
-                        id: message.user_id,
-                        username: message.username,
-                        avatar_url: userAvatars[message.user_id]
-                      })}
-                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/20"
-                      title="Özel mesaj gönder"
-                    >
-                      <Mail className="w-3 h-3 text-primary" />
-                    </Button>
-                  )}
-                </div>
+    {/* Messages */}
+    <ScrollArea className="flex-1 p-4 bg-chat-50">
+      <div className="space-y-3">
+        {messages.map((message) => (
+          <div key={message.id} className="group flex flex-col space-y-1 p-3 rounded-lg bg-white shadow-sm border border-chat-100 hover:border-chat-300 transition-all">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <UserAvatar
+                  src={userAvatars[message.user_id]}
+                  alt={message.username}
+                  fallback={message.username.charAt(0).toUpperCase()}
+                  size="xs"
+                  className="border-2 border-chat-300"
+                />
+                <span className={`text-sm font-medium ${
+                  message.user_id === user?.id 
+                    ? 'text-chat-600' 
+                    : 'text-gray-700'
+                }`}>
+                  {message.username}
+                </span>
+                {isUserOnline(message.user_id) && (
+                  <div className="w-2 h-2 bg-green-500 rounded-full" title="Çevrimiçi"></div>
+                )}
+                <span className="text-xs text-gray-500">
+                  {formatTime(message.created_at)}
+                </span>
                 
-                {/* Delete button for own messages */}
-                {message.user_id === user?.id && (
-                  <button
-                    onClick={() => deleteMessage(message.id)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-destructive/20 rounded"
-                    title="Mesajı sil"
+                {message.user_id !== user?.id && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => startPrivateChat({
+                      id: message.user_id,
+                      username: message.username,
+                      avatar_url: userAvatars[message.user_id]
+                    })}
+                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-chat-100"
+                    title="Özel mesaj gönder"
                   >
-                    <Trash2 className="w-3 h-3 text-destructive" />
-                  </button>
+                    <Mail className="w-3 h-3 text-chat-600" />
+                  </Button>
                 )}
               </div>
-              <div className="break-words text-foreground">
-                {message.message}
-              </div>
               
-              {/* Reactions */}
-              <div className="flex items-center space-x-2 mt-1">
-                {/* Show existing reactions */}
-                {messageReactions[message.id] && Object.entries(groupReactions(messageReactions[message.id])).map(([emoji, reactions]) => (
+              {message.user_id === user?.id && (
+                <button
+                  onClick={() => deleteMessage(message.id)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-100 rounded"
+                  title="Mesajı sil"
+                >
+                  <Trash2 className="w-3 h-3 text-red-500" />
+                </button>
+              )}
+            </div>
+            
+            <div className="text-gray-800 break-words">
+              {message.message}
+            </div>
+            
+            {/* Reactions - temp mesajlar için gösterme */}
+            {!message.id.startsWith('temp-') && messageReactions[message.id] && (
+              <div className="flex items-center space-x-2 mt-2">
+                {Object.entries(groupReactions(messageReactions[message.id])).map(([emoji, reactions]) => (
                   <button
                     key={emoji}
                     onClick={() => toggleReaction(message.id, emoji)}
                     className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs transition-colors ${
                       reactions.some(r => r.user_id === user?.id)
-                        ? 'bg-primary/20 text-primary border border-primary/30'
-                        : 'bg-muted hover:bg-muted/80'
+                        ? 'bg-chat-100 text-chat-700 border border-chat-300'
+                        : 'bg-gray-100 hover:bg-gray-200'
                     }`}
                   >
                     <span>{emoji}</span>
                     <span>{reactions.length}</span>
                   </button>
                 ))}
-                
-                {/* Add reaction button */}
-                <div className="relative">
-                  <button
-                    onClick={() => setShowEmojiPicker(showEmojiPicker === message.id ? null : message.id)}
-                    className="w-6 h-6 rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center text-xs"
-                    title="Reaksiyon ekle"
-                  >
-                    +
-                  </button>
-                  
-                  {/* Quick emoji picker */}
-                  {showEmojiPicker === message.id && (
-                    <div className="absolute bottom-full left-0 mb-1 bg-popover border rounded-lg p-2 shadow-md z-10">
-                      <div className="flex space-x-1">
-                        {['👍', '❤️', '😂', '😮', '😢', '😡'].map(emoji => (
-                          <button
-                            key={emoji}
-                            onClick={() => addReaction(message.id, emoji)}
-                            className="w-8 h-8 rounded hover:bg-muted/50 flex items-center justify-center"
-                          >
-                            {emoji}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
               </div>
+            )}
+          </div>
+        ))}
+        
+        {/* Typing indicator */}
+        {typingUsers.size > 0 && (
+          <div className="flex items-center space-x-2 text-chat-600 text-sm italic p-2 bg-chat-100 rounded-lg">
+            <div className="flex space-x-1">
+              <div className="w-2 h-2 bg-chat-600 rounded-full animate-bounce"></div>
+              <div className="w-2 h-2 bg-chat-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+              <div className="w-2 h-2 bg-chat-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
             </div>
-          ))}
-          
-          {/* Typing indicator */}
-          {typingUsers.size > 0 && (
-            <div className="flex items-center space-x-2 text-muted-foreground text-sm italic">
-              <div className="flex space-x-1">
-                <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-              </div>
-              <span>
-                {Array.from(typingUsers).slice(0, 2).join(', ')} yazıyor...
-                {typingUsers.size > 2 && ` ve ${typingUsers.size - 2} kişi daha`}
-              </span>
-            </div>
-          )}
-          
-          <div ref={messagesEndRef} />
-        </div>
-      </ScrollArea>
-
-      <Separator />
-
-      {/* Message Input */}
-      <div className="p-4">
-        <div className="flex space-x-2">
-          <Input
-            value={newMessage}
-            onChange={handleInputChange}
-            onKeyPress={handleKeyPress}
-            placeholder="Mesajınızı yazın..."
-            maxLength={200}
-            disabled={isLoading}
-            className="flex-1"
-          />
-          <Button
-            onClick={sendMessage}
-            disabled={!newMessage.trim() || isLoading}
-            size="sm"
-            className="px-3"
-          >
-            <Send className="w-4 h-4" />
-          </Button>
-        </div>
-        <div className="text-xs text-muted-foreground mt-1 text-right">
-          {newMessage.length}/200
-        </div>
+            <span>
+              {Array.from(typingUsers).slice(0, 2).join(', ')} yazıyor...
+            </span>
+          </div>
+        )}
+        
+        <div ref={messagesEndRef} />
       </div>
-    </>
-  );
+    </ScrollArea>
+
+    {/* Message Input */}
+    <div className="p-4 bg-white border-t border-chat-200">
+      <div className="flex space-x-2">
+        <Input
+          value={newMessage}
+          onChange={handleInputChange}
+          onKeyPress={handleKeyPress}
+          placeholder="Mesajınızı yazın..."
+          maxLength={200}
+          disabled={isLoading}
+          className="flex-1 border-chat-300 focus:border-chat-500 focus:ring-chat-500"
+        />
+        <Button
+          onClick={sendMessage}
+          disabled={!newMessage.trim() || isLoading}
+          size="sm"
+          className="px-4 bg-chat-500 hover:bg-chat-600 text-white"
+        >
+          <Send className="w-4 h-4" />
+        </Button>
+      </div>
+      <div className="text-xs text-gray-500 mt-1 text-right">
+        {newMessage.length}/200
+      </div>
+    </div>
+  </>
+);
 
   if (!isOpen) return null;
 
