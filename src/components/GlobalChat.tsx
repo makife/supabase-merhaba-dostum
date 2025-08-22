@@ -35,6 +35,7 @@ interface GlobalChatProps {
   isOpen: boolean;
   onClose: () => void;
   isFullPage?: boolean;
+  onStartPrivateChat?: (user: SelectedUser) => void;
 }
 
 type ViewMode = 'global' | 'users' | 'private-chat';
@@ -45,7 +46,7 @@ interface SelectedUser {
   avatar_url?: string;
 }
 
-export function GlobalChat({ isOpen, onClose, isFullPage = false }: GlobalChatProps) {
+export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivateChat }: GlobalChatProps) {
   const { user } = useAuth();
   const { profile, onlineUsers, isUserOnline } = useUser();
   const { playSound } = useSounds();
@@ -757,21 +758,23 @@ const renderGlobalChat = () => (
                   {formatTime(message.created_at)}
                 </span>
                 
-                {message.user_id !== user?.id && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => startPrivateChat({
-                      id: message.user_id,
-                      username: message.username,
-                      avatar_url: userAvatars[message.user_id]
-                    })}
-                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-chat-100"
-                    title="Özel mesaj gönder"
-                  >
-                    <Mail className="w-3 h-3 text-chat-600" />
-                  </Button>
-                )}
+                {message.user_id !== user?.id && onStartPrivateChat && (
+  <Button
+    size="sm"
+    variant="ghost"
+    onClick={() => {
+      onStartPrivateChat({
+        id: message.user_id,
+        username: message.username,
+        avatar_url: userAvatars[message.user_id]
+      });
+    }}
+    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-chat-100"
+    title="Özel mesaj gönder"
+  >
+    <Mail className="w-3 h-3 text-chat-600" />
+  </Button>
+)}
               </div>
               
               {message.user_id === user?.id && (
