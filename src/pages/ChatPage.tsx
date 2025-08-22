@@ -49,8 +49,26 @@ export default function ChatPage() {
   };
 
   useEffect(() => {
-    fetchAllUsers();
-  }, []);
+  // Sohbet sayfası açıldığında bildirimleri temizle
+  const markChatNotificationsAsRead = async () => {
+    if (!user) return;
+
+    try {
+      // Özel mesaj bildirimlerini okundu olarak işaretle
+      await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('user_id', user.id)
+        .eq('type', 'message');
+      
+      console.log('Chat notifications marked as read');
+    } catch (error) {
+      console.error('Error marking notifications as read:', error);
+    }
+  };
+
+  markChatNotificationsAsRead();
+}, [user]);
 
   const handleBackToMenu = () => {
     playSound('buttonClick');
