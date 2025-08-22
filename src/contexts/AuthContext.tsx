@@ -31,6 +31,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { signOut: supabaseSignOut } = useSupabaseAuth();
+
 
   useEffect(() => {
     // Auth state listener'ı önce kur
@@ -121,18 +123,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     signOut,
   };
 
-  const signOut = async () => {
+  const signOutUser = async () => {
   try {
-    // Bildirimleri temizle (opsiyonel)
-    await supabase
-      .from('notifications')
-      .update({ is_read: true })
-      .eq('user_id', user.id);
-    
-    await supabase.auth.signOut();
+    await supabaseSignOut();
     setUser(null);
+    // ... diğer işlemler
   } catch (error) {
-    console.error('Error signing out:', error);
+    console.error('Sign out error:', error);
   }
 };
 
