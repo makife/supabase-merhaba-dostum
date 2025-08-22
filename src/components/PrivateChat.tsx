@@ -211,6 +211,7 @@ useEffect(() => {
   }
 };
 
+// PrivateChat.tsx - sendMessage fonksiyonunu düzelt
 const sendMessage = async () => {
   if (!newMessage.trim() || !user || !chatId) {
     return;
@@ -221,6 +222,9 @@ const sendMessage = async () => {
     toast.error('Mesaj 500 karakterden uzun olamaz');
     return;
   }
+
+  // Kullanıcı adını user bilgilerinden al
+  const username = user.user_metadata?.username || user.email?.split('@')[0] || 'Anonim';
 
   // Optimistic update
   const tempMessage: any = {
@@ -251,13 +255,19 @@ const sendMessage = async () => {
       .single();
 
     if (error) throw error;
-    await sendMessageNotification(otherUser.id, profile?.username || 'Birisi');
+
+    // BİLDİRİM GÖNDER - user bilgilerini kullan
+    await sendMessageNotification(
+      otherUser.id, 
+      username,  // user.user_metadata'den alıyoruz
+      chatId
+    );
 
     // Temp mesajı gerçek mesajla değiştir
     setMessages(prev => prev.map(msg => 
       msg.id === tempMessage.id ? {
         ...data,
-        username: 'Sen', // Gerçek veri geldiğinde
+        username: 'Sen',
         avatar_url: null
       } : msg
     ));
