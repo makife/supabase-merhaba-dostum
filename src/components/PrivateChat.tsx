@@ -88,21 +88,32 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
   }, [chatId, user?.id, playSound]);
 
   const fetchMessages = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('private_messages')
-        .select('*')
-        .eq('chat_id', chatId)
-        .order('created_at', { ascending: true })
-        .limit(100);
+  try {
+    const { data, error } = await supabase
+      .from('private_messages')
+      .select(`
+        *,
+        profiles:sender_id (username, avatar_url)
+      `)
+      .eq('chat_id', chatId)
+      .order('created_at', { ascending: true })
+      .limit(100);
 
-      if (error) throw error;
-      setMessages(data || []);
-    } catch (error) {
-      console.error('Error fetching messages:', error);
-      toast.error('Mesajlar yüklenirken hata oluştu');
-    }
-  };
+    if (error) throw error;
+    
+    // Format the messages properly
+    const formattedMessages = data?.map(msg => ({
+      ...msg,
+      username: msg.profiles?.username || 'Unknown',
+      avatar_url: msg.profiles?.avatar_url
+    })) || [];
+    
+    setMessages(formattedMessages);
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+    toast.error('Mesajlar yüklenirken hata oluştu');
+  }
+};
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !user || !chatId) {
