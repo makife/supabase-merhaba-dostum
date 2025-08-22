@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
-import { Send, MessageCircle, X, Trash2, Mail } from 'lucide-react';
+import { Send, MessageCircle, X, Trash2, Mail, Users } from 'lucide-react';
 import { UserAvatar } from '@/components/UserAvatar';
 import { PrivateChat } from '@/components/PrivateChat';
 import { toast } from 'sonner';
