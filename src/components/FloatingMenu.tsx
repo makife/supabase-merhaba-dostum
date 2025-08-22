@@ -148,10 +148,10 @@ export function FloatingMenu() {
               
               {/* Notification Badge */}
               {unreadCount > 0 && (
-               <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 border-white shadow-xl animate-pulse-glow">
-                 {unreadCount > 9 ? '9+' : unreadCount}
-                  <div className="absolute inset-0 bg-white/30 rounded-full animate-ping" />
-                </div>
+                <div className="absolute -top-3 -right-3 w-7 h-7 bg-red-500 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 border-white shadow-xl animate-bounce z-50">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                 <div className="absolute inset-0 bg-white/30 rounded-full animate-ping" />
+               </div>
               )}
             </Button>
           </div>
