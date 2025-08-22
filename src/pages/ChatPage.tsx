@@ -219,17 +219,18 @@ export default function ChatPage() {
 
 const renderContent = () => {
   console.log('renderContent called, viewMode:', viewMode);
+  
   if (viewMode === 'private-chat' && selectedUser && activeChatId) {
     return (
       <div className="h-full flex flex-col">
-        {/* Private Chat Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border bg-background sticky top-0 z-10">
+        {/* Private Chat Header - BURASI YETERLİ */}
+        <div className="flex items-center justify-between p-4 border-b border-border bg-chat-500 text-white">
           <div className="flex items-center space-x-3">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => handleViewChange('users')}
-              className="p-2 hover:bg-accent rounded-full"
+              className="p-2 hover:bg-chat-600 rounded-full text-white"
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
@@ -240,15 +241,15 @@ const renderContent = () => {
               size="sm"
             />
             <div className="flex-1 min-w-0">
-              <h2 className="text-lg font-semibold truncate">{selectedUser.username}</h2>
-              <p className="text-sm text-muted-foreground">Özel Sohbet</p>
+              <h2 className="text-lg font-semibold truncate text-white">{selectedUser.username}</h2>
+              <p className="text-sm text-chat-100">Özel Sohbet</p>
             </div>
           </div>
           <Button
             variant="ghost"
             size="sm"
             onClick={handleBackToMenu}
-            className="p-2 hover:bg-accent rounded-full flex-shrink-0"
+            className="p-2 hover:bg-chat-600 rounded-full flex-shrink-0 text-white"
           >
             <Home className="w-5 h-5" />
           </Button>
@@ -267,51 +268,47 @@ const renderContent = () => {
   }
 
   if (viewMode === 'users') {
-    console.log('Calling renderUsersList');
-    return renderUsersList();
-  }
-  console.log('Returning global chat');
-
-  // Global chat
-  return (
-    <div className="h-full flex flex-col">
-      {/* Global Chat Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border bg-background sticky top-0 z-10">
-        <div className="flex items-center space-x-3">
+    return (
+      <div className="h-full flex flex-col">
+        {/* Users List Header - BURASI YETERLİ */}
+        <div className="flex items-center justify-between p-4 border-b border-border bg-chat-500 text-white">
+          <div className="flex items-center space-x-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleViewChange('global')}
+              className="p-2 hover:bg-chat-600 rounded-full text-white"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <Users className="w-5 h-5" />
+            <div>
+              <h2 className="text-lg font-semibold">Özel Sohbet</h2>
+              <p className="text-sm text-chat-100">
+                {onlineUsers.length} kişi çevrimiçi
+              </p>
+            </div>
+          </div>
           <Button
             variant="ghost"
             size="sm"
             onClick={handleBackToMenu}
-            className="p-2 hover:bg-accent rounded-full"
+            className="p-2 hover:bg-chat-600 rounded-full text-white"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <Home className="w-5 h-5" />
           </Button>
-          <Hash className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-semibold">Genel Sohbet</h2>
         </div>
-
-        <Button 
-  onClick={() => {
-    console.log('Test button clicked');
-    setViewMode('users');
-  }}
-  className="bg-red-500 text-white"
->
-  TEST
-</Button>
         
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => handleViewChange('users')}
-          className="flex items-center space-x-2"
-        >
-          <MessageCircle className="w-4 h-4" />
-          <span className="hidden sm:inline">Özel Mesaj</span>
-        </Button>
+        {/* Users List Content */}
+        {renderUsersList()}
       </div>
+    );
+  }
 
-      {/* Global Chat Content */}
+  // Global chat - HEADER OLMADAN sadece content
+  return (
+    <div className="h-full flex flex-col">
+      {/* Global Chat Content - HEADER OLMADAN */}
       <div className="flex-1 min-h-0">
         <GlobalChat isOpen={true} onClose={() => {}} isFullPage={true} />
       </div>
@@ -326,56 +323,58 @@ return (
     <div className="safe-area-top"></div>
     
     <div className="h-screen flex flex-col max-w-4xl mx-auto bg-white rounded-lg shadow-lg m-4 overflow-hidden border border-chat-200">
-      {/* Header */}
-      <div className="bg-chat-500 text-white p-4 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleBackToMenu}
-            className="p-2 hover:bg-chat-600 rounded-full text-white"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="text-xl font-bold">Sohbet Odası</h1>
-            <p className="text-chat-100 text-sm">
-              {onlineUsers.length} kişi çevrimiçi
-            </p>
+      {/* ANA HEADER - SADCE viewMode 'global' İKEN GÖSTERME */}
+      {viewMode === 'global' && (
+        <div className="bg-chat-500 text-white p-4 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBackToMenu}
+              className="p-2 hover:bg-chat-600 rounded-full text-white"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <h1 className="text-xl font-bold">Sohbet Odası</h1>
+              <p className="text-chat-100 text-sm">
+                {onlineUsers.length} kişi çevrimiçi
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleViewChange('global')}
+              className={`p-2 rounded-full ${
+                viewMode === 'global' 
+                  ? 'bg-chat-600 text-white' 
+                  : 'text-chat-100 hover:bg-chat-600'
+              }`}
+            >
+              <Hash className="w-5 h-5" />
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleViewChange('users')}
+              className={`p-2 rounded-full ${
+                viewMode === 'users' 
+                  ? 'bg-chat-600 text-white' 
+                  : 'text-chat-100 hover:bg-chat-600'
+              }`}
+            >
+              <Users className="w-5 h-5" />
+            </Button>
           </div>
         </div>
-        
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleViewChange('global')}
-            className={`p-2 rounded-full ${
-              viewMode === 'global' 
-                ? 'bg-chat-600 text-white' 
-                : 'text-chat-100 hover:bg-chat-600'
-            }`}
-          >
-            <Hash className="w-5 h-5" />
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleViewChange('users')}
-            className={`p-2 rounded-full ${
-              viewMode === 'users' 
-                ? 'bg-chat-600 text-white' 
-                : 'text-chat-100 hover:bg-chat-600'
-            }`}
-          >
-            <Users className="w-5 h-5" />
-          </Button>
-        </div>
-      </div>
+      )}
 
-      {/* Content Area */}
-      <div className="flex-1 min-h-0 bg-chat-50">
+      {/* Content Area - HEADERSIZ */}
+      <div className="flex-1 min-h-0">
         {renderContent()}
       </div>
     </div>
