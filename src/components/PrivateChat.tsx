@@ -89,29 +89,64 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
 
   const fetchMessages = async () => {
   try {
-    const { data, error } = await supabase
+    console.log('Fetching private messages for chat:', chatId);
+    
+    // Mevcut tablo yapısına göre sorgu
+    const { data: messagesData, error: messagesError } = await supabase
       .from('private_messages')
       .select(`
-        *,
-        profiles:sender_id (username, avatar_url)
+        id,
+        chat_id,
+        sender_id,
+        message,
+        created_at,
+        is_read
       `)
       .eq('chat_id', chatId)
       .order('created_at', { ascending: true })
       .limit(100);
 
-    if (error) throw error;
-    
-    // Format the messages properly
-    const formattedMessages = data?.map(msg => ({
-      ...msg,
-      username: msg.profiles?.username || 'Unknown',
-      avatar_url: msg.profiles?.avatar_url
-    })) || [];
-    
+    if (messagesError) {
+      console.error('Private messages fetch error:', messagesError);
+      throw messagesError;
+    }
+
+    if (!messagesData || messagesData.length === 0) {
+      setMessages([]);
+      return;
+    }
+
+    // Kullanıcı ID'lerini topla
+    const senderIds = [...new Set(messagesData.map(msg => msg.sender_id))];
+    console.log('Sender IDs found:', senderIds);
+
+    // Kullanıcı bilgilerini çek
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, username, avatar_url')
+      .in('id', senderIds);
+
+    // Hata olsa bile mesajları göster
+    if (profilesError) {
+      console.warn('Profiles fetch warning:', profilesError);
+    }
+
+    // Mesajları formatla
+    const formattedMessages = messagesData.map(msg => {
+      const userProfile = profilesData?.find(profile => profile.id === msg.sender_id);
+      return {
+        ...msg,
+        username: userProfile?.username || 'Bilinmeyen',
+        avatar_url: userProfile?.avatar_url || null
+      };
+    });
+
+    console.log('Formatted private messages:', formattedMessages);
     setMessages(formattedMessages);
+    
   } catch (error) {
-    console.error('Error fetching messages:', error);
-    toast.error('Mesajlar yüklenirken hata oluştu');
+    console.error('Error fetching private messages:', error);
+    toast.error('Özel mesajlar yüklenirken hata oluştu');
   }
 };
 
