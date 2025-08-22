@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { Send, ArrowLeft } from 'lucide-react';
 import { UserAvatar } from '@/components/UserAvatar';
 import { toast } from 'sonner';
+import { sendMessageNotification } from '@/utils/notifications';
 
 interface PrivateMessage {
   id: string;
@@ -250,6 +251,7 @@ const sendMessage = async () => {
       .single();
 
     if (error) throw error;
+    await sendMessageNotification(otherUser.id, profile?.username || 'Birisi');
 
     // Temp mesajı gerçek mesajla değiştir
     setMessages(prev => prev.map(msg => 
