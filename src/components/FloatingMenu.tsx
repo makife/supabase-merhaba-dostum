@@ -1,4 +1,4 @@
-// FloatingMenu.tsx - Düzeltilmiş versiyon
+// FloatingMenu.tsx - TypeScript uyumlu versiyon
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -21,16 +21,17 @@ import {
   Trophy
 } from 'lucide-react';
 
-// Ban kontrol fonksiyonları
-const checkUserBanStatus = async (userId: string): Promise<{
-  is_banned: boolean;
-  ban_reason?: string;
-  banned_until?: string;
-  remaining_hours?: number;
-}> => {
+// Ban kontrol fonksiyonu - Direct query kullanarak
+const checkUserBanStatus = async (userId: string) => {
   try {
     const { data, error } = await supabase
-      .rpc('check_user_ban_status', { p_user_id: userId });
+      .from('user_bans' as any)
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .gte('banned_until', new Date().toISOString())
+      .order('banned_until', { ascending: false })
+      .limit(1);
     
     if (error) {
       console.error('Ban check error:', error);
@@ -39,11 +40,16 @@ const checkUserBanStatus = async (userId: string): Promise<{
     
     if (data && data.length > 0) {
       const banInfo = data[0];
+      const bannedUntil = new Date(banInfo.banned_until);
+      const now = new Date();
+      const remainingMs = bannedUntil.getTime() - now.getTime();
+      const remainingHours = Math.max(0, remainingMs / (1000 * 60 * 60));
+      
       return {
-        is_banned: banInfo.is_banned || false,
-        ban_reason: banInfo.ban_reason,
+        is_banned: remainingHours > 0,
+        ban_reason: banInfo.reason,
         banned_until: banInfo.banned_until,
-        remaining_hours: banInfo.remaining_hours
+        remaining_hours: remainingHours
       };
     }
     
