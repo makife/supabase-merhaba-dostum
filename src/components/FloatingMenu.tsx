@@ -6,7 +6,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSounds } from '@/hooks/useSounds';
 import { Button } from '@/components/ui/button';
 import { useChatNotifications } from '@/hooks/useChatNotifications';
-import { toast } from 'sonner'; // toast import edilmemişti
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 import {
   User,
@@ -20,16 +21,53 @@ import {
   Trophy
 } from 'lucide-react';
 
-// isUserBanned ve getBanTimeLeft fonksiyonlarını import etmeniz veya tanımlamanız gerekiyor
-// Bu örnekte placeholder fonksiyonlar kullanıyorum
-const isUserBanned = async (userId: string): Promise<boolean> => {
-  // Gerçek implementasyon burada olacak
-  return false;
+// Ban kontrol fonksiyonları
+const checkUserBanStatus = async (userId: string): Promise<{
+  is_banned: boolean;
+  ban_reason?: string;
+  banned_until?: string;
+  remaining_hours?: number;
+}> => {
+  try {
+    const { data, error } = await supabase
+      .rpc('check_user_ban_status', { p_user_id: userId });
+    
+    if (error) {
+      console.error('Ban check error:', error);
+      return { is_banned: false };
+    }
+    
+    if (data && data.length > 0) {
+      const banInfo = data[0];
+      return {
+        is_banned: banInfo.is_banned || false,
+        ban_reason: banInfo.ban_reason,
+        banned_until: banInfo.banned_until,
+        remaining_hours: banInfo.remaining_hours
+      };
+    }
+    
+    return { is_banned: false };
+  } catch (error) {
+    console.error('Error checking ban status:', error);
+    return { is_banned: false };
+  }
 };
 
-const getBanTimeLeft = async (userId: string): Promise<string> => {
-  // Gerçek implementasyon burada olacak
-  return "1 saat 30 dakika";
+const formatBanTimeLeft = (hours: number): string => {
+  if (hours <= 0) return "Yakında";
+  
+  const days = Math.floor(hours / 24);
+  const remainingHours = Math.floor(hours % 24);
+  const minutes = Math.floor((hours % 1) * 60);
+  
+  if (days > 0) {
+    return `${days} gün ${remainingHours} saat`;
+  } else if (remainingHours > 0) {
+    return `${remainingHours} saat ${minutes} dakika`;
+  } else {
+    return `${minutes} dakika`;
+  }
 };
 
 const menuItems = [
@@ -43,7 +81,7 @@ const menuItems = [
 export function FloatingMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
-  const { signOut, user } = useAuth(); // user context'ten alınmalı
+  const { signOut, user } = useAuth();
   const { playSound } = useSounds();
   const { unreadCount } = useChatNotifications();
 
@@ -61,23 +99,39 @@ export function FloatingMenu() {
   const handleChatOpen = async () => {
     playSound('buttonClick');
     
-    const isBanned = await isUserBanned(user.id);
-    
-    if (isBanned) {
-      const timeLeft = await getBanTimeLeft(user.id);
-      
-      toast.error(
-        `Sohbet yasağınız bulunuyor. 🚫\nKalan süre: ${timeLeft}\nYasak sebebi: Yasaklı kelime kullanımı`,
-        {
-          duration: 7000,
-          icon: '⏰'
-        }
-      );
+    if (!user?.id) {
+      toast.error('Giriş yapmalısınız');
       return;
     }
+    
+    try {
+      const banStatus = await checkUserBanStatus(user.id);
+      
+      if (banStatus.is_banned) {
+        const timeLeft = formatBanTimeLeft(banStatus.remaining_hours || 0);
+        
+        toast.error(
+          `Sohbet yasağınız bulunuyor! 🚫`,
+          {
+            duration: 7000,
+            description: `Kalan süre: ${timeLeft}\nSebep: ${banStatus.ban_reason || 'Yasaklı kelime kullanımı'}`,
+            action: {
+              label: 'Tamam',
+              onClick: () => {}
+            }
+          }
+        );
+        return;
+      }
 
-    navigate('/chat');
-    setIsOpen(false);
+      navigate('/chat');
+      setIsOpen(false);
+    } catch (error) {
+      console.error('Error checking ban status:', error);
+      // Hata durumunda sohbete girmesine izin ver
+      navigate('/chat');
+      setIsOpen(false);
+    }
   };
 
   const handleLogout = async () => {
