@@ -86,41 +86,12 @@ export default function ChatPage() {
 
 // ChatPage.tsx için güncellenmiş ban kontrol useEffect
 useEffect(() => {
-  if (!user?.id) return;
-
-  const checkBanStatus = async () => {
-    try {
-      const banStatus = await checkUserBanStatus(user.id);
-      
-      if (banStatus.is_banned) {
-        setIsBanned(true);
-        setBanInfo(banStatus);
-        
-        const timeLeft = formatBanTimeLeft(banStatus.remaining_hours || 0);
-        
-        toast.error(
-          `Sohbet yasağınız bulunuyor! 🚫`,
-          {
-            duration: 10000,
-            description: `Kalan süre: ${timeLeft}\nSebep: ${banStatus.ban_reason || 'Yasaklı kelime kullanımı'}`,
-            action: {
-              label: 'Ana Sayfaya Dön',
-              onClick: () => navigate('/')
-            }
-          }
-        );
-      } else {
-        setIsBanned(false);
-        setBanInfo(null);
-      }
-    } catch (error) {
-      console.error('Ban control error:', error);
-      // Hata durumunda sohbete devam etmesine izin ver
-    }
+  const markChatNotificationsAsRead = async () => {
+    if (!user) return;
+    console.log('Chat notifications marked as read');
   };
-
-  checkBanStatus();
-}, [user?.id, navigate]);
+  markChatNotificationsAsRead();
+}, [user]);
 
   // Fetch all users for private chat
   const fetchAllUsers = async () => {
