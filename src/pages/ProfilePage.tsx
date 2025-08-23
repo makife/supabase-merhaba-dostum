@@ -356,10 +356,6 @@ const ProfilePage = () => {
           <h1 className="text-2xl font-bold">Profil</h1>
           <div className="flex space-x-2">
             {/* 🔄 YENİ: Refresh butonu */}
-            <Button variant="outline" size="sm" onClick={refreshStats}>
-              <TrendingUp className="w-4 h-4 mr-2" />
-              Yenile
-            </Button>
             {isEditing ? (
               <Button variant="outline" size="sm" onClick={handleSaveProfile}>
                 Kaydet
