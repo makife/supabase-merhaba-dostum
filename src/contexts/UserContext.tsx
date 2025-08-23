@@ -39,6 +39,7 @@ interface UserProfile {
   win_count?: number;
   last_disconnect?: string;
   last_win?: string;
+  banned_until?: string | null;
 }
 
 interface UserContextType {
