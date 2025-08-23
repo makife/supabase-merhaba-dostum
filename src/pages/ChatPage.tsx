@@ -84,43 +84,43 @@ export default function ChatPage() {
   const [isBanned, setIsBanned] = useState(false);
   const [banInfo, setBanInfo] = useState<any>(null);
 
-  // Ban durumunu kontrol et
-  useEffect(() => {
-    if (!user?.id) return;
+// ChatPage.tsx için güncellenmiş ban kontrol useEffect
+useEffect(() => {
+  if (!user?.id) return;
 
-    const checkBanStatus = async () => {
-      try {
-        const banStatus = await checkUserBanStatus(user.id);
+  const checkBanStatus = async () => {
+    try {
+      const banStatus = await checkUserBanStatus(user.id);
+      
+      if (banStatus.is_banned) {
+        setIsBanned(true);
+        setBanInfo(banStatus);
         
-        if (banStatus.is_banned) {
-          setIsBanned(true);
-          setBanInfo(banStatus);
-          
-          const timeLeft = formatBanTimeLeft(banStatus.remaining_hours || 0);
-          
-          toast.error(
-            `Sohbet yasağınız bulunuyor! 🚫`,
-            {
-              duration: 10000,
-              description: `Kalan süre: ${timeLeft}\nSebep: ${banStatus.ban_reason || 'Yasaklı kelime kullanımı'}`,
-              action: {
-                label: 'Ana Sayfaya Dön',
-                onClick: () => navigate('/')
-              }
+        const timeLeft = formatBanTimeLeft(banStatus.remaining_hours || 0);
+        
+        toast.error(
+          `Sohbet yasağınız bulunuyor! 🚫`,
+          {
+            duration: 10000,
+            description: `Kalan süre: ${timeLeft}\nSebep: ${banStatus.ban_reason || 'Yasaklı kelime kullanımı'}`,
+            action: {
+              label: 'Ana Sayfaya Dön',
+              onClick: () => navigate('/')
             }
-          );
-        } else {
-          setIsBanned(false);
-          setBanInfo(null);
-        }
-      } catch (error) {
-        console.error('Ban control error:', error);
-        // Hata durumunda sohbete devam etmesine izin ver
+          }
+        );
+      } else {
+        setIsBanned(false);
+        setBanInfo(null);
       }
-    };
+    } catch (error) {
+      console.error('Ban control error:', error);
+      // Hata durumunda sohbete devam etmesine izin ver
+    }
+  };
 
-    checkBanStatus();
-  }, [user?.id, navigate]);
+  checkBanStatus();
+}, [user?.id, navigate]);
 
   // Fetch all users for private chat
   const fetchAllUsers = async () => {
