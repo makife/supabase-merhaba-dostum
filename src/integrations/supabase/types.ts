@@ -6,14 +6,6 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export interface RematchRequest {
-  id: string;
-  room_id: string;
-  sender_id: string;
-  recipient_id: string;
-  status: 'pending' | 'accepted' | 'rejected';
-  created_at: string;
-}
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
@@ -53,6 +45,41 @@ export type Database = {
         }
         Relationships: []
       }
+
+      rematch_requests: {
+  Row: {
+    id: string
+    room_code: string
+    from_user_id: string
+    to_user_id: string
+    status: 'pending' | 'accepted' | 'rejected'
+    game_type: 'timed' | 'score'
+    created_at?: string
+    responded_at?: string
+  }
+  Insert: {
+    id?: string
+    room_code: string
+    from_user_id: string
+    to_user_id: string
+    status: 'pending' | 'accepted' | 'rejected'
+    game_type: 'timed' | 'score'
+    created_at?: string
+    responded_at?: string
+  }
+  Update: {
+    id?: string
+    room_code?: string
+    from_user_id?: string
+    to_user_id?: string
+    status?: 'pending' | 'accepted' | 'rejected'
+    game_type?: 'timed' | 'score'
+    created_at?: string
+    responded_at?: string
+  }
+  Relationships: []
+}
+      
       banned_users: {
         Row: {
           banned_by: string | null
