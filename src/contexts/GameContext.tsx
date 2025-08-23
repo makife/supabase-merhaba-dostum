@@ -51,6 +51,7 @@ interface GameContextType {
   sendRematchRequest: (roomCode: string, gameType: 'timed' | 'score') => Promise<void>;
   respondRematchRequest: (requestId: string, accepted: boolean) => Promise<void>;
   currentRematchRequest: RematchRequest | null;
+  setCurrentRematchRequest: (request: RematchRequest | null) => void; // BU SATIRI EKLEYİN
   joinRoom: (roomCode: string) => Promise<boolean>;
   findRandomMatch: (gameType: 'timed' | 'score') => Promise<boolean>;
   addAIOpponent: () => Promise<void>;
@@ -1378,7 +1379,8 @@ useEffect(() => {
       createRoom,
       sendRematchRequest, 
       respondRematchRequest, 
-      currentRematchRequest, 
+      currentRematchRequest,
+      setCurrentRematchRequest,
       joinRoom,
       findRandomMatch,
       addAIOpponent,
