@@ -102,43 +102,11 @@ export function FloatingMenu() {
     setIsOpen(false);
   };
 
-  const handleChatOpen = async () => {
-    playSound('buttonClick');
-    
-    if (!user?.id) {
-      toast.error('Giriş yapmalısınız');
-      return;
-    }
-    
-    try {
-      const banStatus = await checkUserBanStatus(user.id);
-      
-      if (banStatus.is_banned) {
-        const timeLeft = formatBanTimeLeft(banStatus.remaining_hours || 0);
-        
-        toast.error(
-          `Sohbet yasağınız bulunuyor! 🚫`,
-          {
-            duration: 7000,
-            description: `Kalan süre: ${timeLeft}\nSebep: ${banStatus.ban_reason || 'Yasaklı kelime kullanımı'}`,
-            action: {
-              label: 'Tamam',
-              onClick: () => {}
-            }
-          }
-        );
-        return;
-      }
-
-      navigate('/chat');
-      setIsOpen(false);
-    } catch (error) {
-      console.error('Error checking ban status:', error);
-      // Hata durumunda sohbete girmesine izin ver
-      navigate('/chat');
-      setIsOpen(false);
-    }
-  };
+const handleChatOpen = async () => {
+  playSound('buttonClick');
+  navigate('/chat');
+  setIsOpen(false);
+};
 
   const handleLogout = async () => {
     playSound('buttonClick');
