@@ -5,21 +5,21 @@ import { supabase } from '@/integrations/supabase/client';
 export const sendMessageNotification = async (receiverId: string, senderUsername: string, chatId?: string) => {
   try {
     const { error } = await supabase.rpc(
-      'send_private_message_notification' as any, // Type assertion
+      'send_private_message_notification' as any,
       {
-        p_receiver_id: receiverId,
+        p_recipient_id: receiverId,  // ✅ Doğru parametre ismi
         p_sender_username: senderUsername,
         p_chat_id: chatId
       } as any
     );
 
     if (error) {
-      console.error('Error sending message notification via RPC:', error);
+      console.warn('Notification error (non-critical):', error.message);
       return false;
     }
     return true;
   } catch (error) {
-    console.error('Error in sendMessageNotification:', error);
+    console.warn('Error in sendMessageNotification (non-critical):', error);
     return false;
   }
 };
