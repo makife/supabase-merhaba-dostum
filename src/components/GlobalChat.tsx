@@ -297,7 +297,7 @@ const sendBotWelcome = async () => {
     console.log('🧹 Cleaning up global real-time channel');
     supabase.removeChannel(channel);
   };
-}, [isOpen, user?.id, playSound]);
+}, [isOpen, user?.id]);
 
   const fetchMessages = async () => {
   try {
