@@ -14,6 +14,7 @@ import { UserAvatar } from '@/components/UserAvatar';
 import { PrivateChat } from '@/components/PrivateChat';
 import { toast } from 'sonner';
 import { sendMentionNotification } from '@/utils/notifications';
+import { sendWelcomeMessage, containsBannedWords, banUser } from '@/utils/chatBot';
 
 interface ChatMessage {
   id: string;

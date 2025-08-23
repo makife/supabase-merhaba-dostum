@@ -31,7 +31,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const { signOut: supabaseSignOut } = useSupabaseAuth();
 
 
   useEffect(() => {
@@ -123,15 +122,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     signOut,
   };
 
-  const signOutUser = async () => {
-  try {
-    await supabaseSignOut();
-    setUser(null);
-    // ... diğer işlemler
-  } catch (error) {
-    console.error('Sign out error:', error);
-  }
-};
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

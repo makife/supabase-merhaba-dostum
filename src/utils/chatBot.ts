@@ -57,7 +57,7 @@ export const banUser = async (
 };
 
 // Hoşgeldin mesajı gönder
-export const sendWelcomeMessage = async (chatId: string) => {
+export const sendWelcomeMessage = async (chatId?: string) => {
   try {
     const { error } = await supabase
       .from('global_chat')

@@ -159,16 +159,11 @@ useEffect(() => {
         .from('private_messages')
         .update({ is_read: true })
         .eq('chat_id', chatId)
-        .eq('receiver_id', user.id)
+        .neq('sender_id', user.id)
         .eq('is_read', false);
 
-      // Bildirimleri de okundu yap
-      await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('user_id', user.id)
-        .eq('type', 'message')
-        .eq('related_id', chatId);
+      // Bildirimleri de okundu yap - şimdilik pas geç
+      console.log('Marking notifications as read for chat:', chatId);
 
     } catch (error) {
       console.error('Error marking messages as read:', error);

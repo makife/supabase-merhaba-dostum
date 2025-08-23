@@ -44,6 +44,33 @@ export type Database = {
         }
         Relationships: []
       }
+      banned_users: {
+        Row: {
+          banned_by: string | null
+          banned_until: string
+          created_at: string | null
+          id: string
+          reason: string
+          user_id: string | null
+        }
+        Insert: {
+          banned_by?: string | null
+          banned_until: string
+          created_at?: string | null
+          id?: string
+          reason: string
+          user_id?: string | null
+        }
+        Update: {
+          banned_by?: string | null
+          banned_until?: string
+          created_at?: string | null
+          id?: string
+          reason?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       daily_leaderboard: {
         Row: {
           avatar_url: string | null
@@ -87,6 +114,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "daily_leaderboard_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daily_stats: {
+        Row: {
+          created_at: string
+          date: string
+          games_played: number | null
+          games_won: number | null
+          id: string
+          play_time: number | null
+          total_score: number | null
+          updated_at: string
+          user_id: string
+          words_created: number | null
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          games_played?: number | null
+          games_won?: number | null
+          id?: string
+          play_time?: number | null
+          total_score?: number | null
+          updated_at?: string
+          user_id: string
+          words_created?: number | null
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          games_played?: number | null
+          games_won?: number | null
+          id?: string
+          play_time?: number | null
+          total_score?: number | null
+          updated_at?: string
+          user_id?: string
+          words_created?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_stats_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -183,10 +257,12 @@ export type Database = {
           created_at: string | null
           current_grid: string[] | null
           finished_at: string | null
+          game_duration: number | null
           game_mode: string
           game_type_new: string | null
           host_id: string | null
           id: string
+          max_players: number | null
           max_score: number | null
           player1_id: string | null
           player1_score: number | null
@@ -196,6 +272,7 @@ export type Database = {
           started_at: string | null
           status: string | null
           time_limit: number | null
+          updated_at: string | null
           used_words: Json | null
           winner_id: string | null
         }
@@ -203,10 +280,12 @@ export type Database = {
           created_at?: string | null
           current_grid?: string[] | null
           finished_at?: string | null
+          game_duration?: number | null
           game_mode: string
           game_type_new?: string | null
           host_id?: string | null
           id?: string
+          max_players?: number | null
           max_score?: number | null
           player1_id?: string | null
           player1_score?: number | null
@@ -216,6 +295,7 @@ export type Database = {
           started_at?: string | null
           status?: string | null
           time_limit?: number | null
+          updated_at?: string | null
           used_words?: Json | null
           winner_id?: string | null
         }
@@ -223,10 +303,12 @@ export type Database = {
           created_at?: string | null
           current_grid?: string[] | null
           finished_at?: string | null
+          game_duration?: number | null
           game_mode?: string
           game_type_new?: string | null
           host_id?: string | null
           id?: string
+          max_players?: number | null
           max_score?: number | null
           player1_id?: string | null
           player1_score?: number | null
@@ -236,6 +318,7 @@ export type Database = {
           started_at?: string | null
           status?: string | null
           time_limit?: number | null
+          updated_at?: string | null
           used_words?: Json | null
           winner_id?: string | null
         }
@@ -252,25 +335,34 @@ export type Database = {
       game_words: {
         Row: {
           created_at: string | null
+          direction: string | null
           id: string
           player_id: string
           points: number | null
+          position_x: number | null
+          position_y: number | null
           room_id: string
           word: string
         }
         Insert: {
           created_at?: string | null
+          direction?: string | null
           id?: string
           player_id: string
           points?: number | null
+          position_x?: number | null
+          position_y?: number | null
           room_id: string
           word: string
         }
         Update: {
           created_at?: string | null
+          direction?: string | null
           id?: string
           player_id?: string
           points?: number | null
+          position_x?: number | null
+          position_y?: number | null
           room_id?: string
           word?: string
         }
@@ -293,27 +385,65 @@ export type Database = {
       }
       global_chat: {
         Row: {
-          created_at: string
+          avatar_url: string | null
+          created_at: string | null
+          deleted_at: string | null
           id: string
+          is_deleted: boolean | null
           message: string
-          user_id: string
+          user_id: string | null
           username: string
         }
         Insert: {
-          created_at?: string
+          avatar_url?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
           id?: string
+          is_deleted?: boolean | null
           message: string
-          user_id: string
+          user_id?: string | null
           username: string
         }
         Update: {
-          created_at?: string
+          avatar_url?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
           id?: string
+          is_deleted?: boolean | null
           message?: string
-          user_id?: string
+          user_id?: string | null
           username?: string
         }
         Relationships: []
+      }
+      global_messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "global_messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       matchmaking_rooms: {
         Row: {
@@ -370,64 +500,86 @@ export type Database = {
           message_id?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "fk_message_reactions_message_id"
-            columns: ["message_id"]
-            isOneToOne: false
-            referencedRelation: "global_chat"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          related_id: string | null
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          related_id?: string | null
+          type: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          related_id?: string | null
+          type?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       private_chats: {
         Row: {
-          created_at: string
+          created_at: string | null
           id: string
-          updated_at: string
-          user1_id: string
-          user2_id: string
+          updated_at: string | null
+          user1_id: string | null
+          user2_id: string | null
         }
         Insert: {
-          created_at?: string
-          id?: string
-          updated_at?: string
-          user1_id: string
-          user2_id: string
+          created_at?: string | null
+          id: string
+          updated_at?: string | null
+          user1_id?: string | null
+          user2_id?: string | null
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           id?: string
-          updated_at?: string
-          user1_id?: string
-          user2_id?: string
+          updated_at?: string | null
+          user1_id?: string | null
+          user2_id?: string | null
         }
         Relationships: []
       }
       private_messages: {
         Row: {
-          chat_id: string
-          created_at: string
+          chat_id: string | null
+          created_at: string | null
           id: string
-          is_read: boolean
+          is_read: boolean | null
           message: string
-          sender_id: string
+          sender_id: string | null
         }
         Insert: {
-          chat_id: string
-          created_at?: string
+          chat_id?: string | null
+          created_at?: string | null
           id?: string
-          is_read?: boolean
+          is_read?: boolean | null
           message: string
-          sender_id: string
+          sender_id?: string | null
         }
         Update: {
-          chat_id?: string
-          created_at?: string
+          chat_id?: string | null
+          created_at?: string | null
           id?: string
-          is_read?: boolean
+          is_read?: boolean | null
           message?: string
-          sender_id?: string
+          sender_id?: string | null
         }
         Relationships: [
           {
@@ -778,6 +930,32 @@ export type Database = {
         }
         Relationships: []
       }
+      user_presence: {
+        Row: {
+          is_online: boolean | null
+          last_seen: string | null
+          user_id: string
+        }
+        Insert: {
+          is_online?: boolean | null
+          last_seen?: string | null
+          user_id: string
+        }
+        Update: {
+          is_online?: boolean | null
+          last_seen?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_presence_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_purchases: {
         Row: {
           expires_at: string | null
@@ -886,6 +1064,10 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: number
       }
+      calculate_profile_stats: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
       check_and_award_badges: {
         Args: { p_user_id: string }
         Returns: {
@@ -893,6 +1075,10 @@ export type Database = {
           new_badge_id: string
           new_badge_name: string
         }[]
+      }
+      check_and_award_badges_simple: {
+        Args: { p_user_id: string }
+        Returns: undefined
       }
       check_and_refresh_credits: {
         Args: { user_id: string }
@@ -907,6 +1093,10 @@ export type Database = {
         }[]
       }
       cleanup_expired_matchmaking_rooms: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      cleanup_expired_rooms: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
@@ -962,6 +1152,19 @@ export type Database = {
         Args: { other_user_id: string }
         Returns: string
       }
+      get_room_participants: {
+        Args: { room_id: string }
+        Returns: {
+          created_at: string
+          is_bot: boolean
+          score: number
+          user_id: string
+        }[]
+      }
+      get_room_participants_with_profiles: {
+        Args: { room_id: string }
+        Returns: Json
+      }
       get_tournament_status: {
         Args: { p_tournament_id: string }
         Returns: Json
@@ -986,6 +1189,10 @@ export type Database = {
         Args: { p_tournament_id: string }
         Returns: Json
       }
+      test_game_completion: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
       update_daily_leaderboard: {
         Args: {
           p_avatar_url: string
@@ -997,10 +1204,30 @@ export type Database = {
         }
         Returns: undefined
       }
+      update_daily_stats: {
+        Args: {
+          p_game_won?: boolean
+          p_play_time?: number
+          p_score?: number
+          p_user_id: string
+          p_words_count?: number
+        }
+        Returns: undefined
+      }
       update_game_statistics: {
         Args: {
           p_game_score: number
           p_is_winner?: boolean
+          p_user_id: string
+          p_words: Json
+        }
+        Returns: undefined
+      }
+      update_game_stats: {
+        Args: {
+          p_game_duration?: number
+          p_is_winner?: boolean
+          p_score: number
           p_user_id: string
           p_words: Json
         }
