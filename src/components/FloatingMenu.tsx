@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useChatNotifications } from '@/hooks/useChatNotifications';
 import { toast } from 'sonner'; // toast import edilmemişti
 import { supabase } from '@/integrations/supabase/client';
+import { useUnreadCount } from '@/hooks/useUnreadCount';
 
 import {
   User,
@@ -99,6 +100,7 @@ export function FloatingMenu() {
   const { signOut, user } = useAuth(); // user context'ten alınmalı
   const { playSound } = useSounds();
   const { unreadCount } = useChatNotifications();
+  const unreadCount = useUnreadCount();
 
   const handleToggle = () => {
     playSound('buttonClick');
