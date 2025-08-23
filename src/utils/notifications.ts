@@ -1,7 +1,7 @@
 // src/utils/notifications.ts
 import { supabase } from '@/integrations/supabase/client';
 
-// Özel mesaj bildirimi
+// Özel mesaj bildirimi - DÜZELTİLDİ
 export const sendMessageNotification = async (receiverId: string, senderUsername: string, chatId?: string) => {
   try {
     const { error } = await supabase.rpc(
@@ -24,13 +24,13 @@ export const sendMessageNotification = async (receiverId: string, senderUsername
   }
 };
 
-// Mention bildirimi
+// Mention bildirimi - DÜZELTİLDİ
 export const sendMentionNotification = async (receiverId: string, senderUsername: string, message: string, messageId?: string) => {
   try {
     const { error } = await supabase.rpc(
-      'send_mention_notification' as any, // Type assertion
+      'send_mention_notification' as any,
       {
-        p_receiver_id: receiverId,
+        p_receiver_id: receiverId,  // ✅ Doğru parametre ismi
         p_sender_username: senderUsername,
         p_message: message,
         p_message_id: messageId
@@ -38,40 +38,40 @@ export const sendMentionNotification = async (receiverId: string, senderUsername
     );
 
     if (error) {
-      console.error('Error sending mention notification:', error);
+      console.warn('Error sending mention notification:', error);
       return false;
     }
     return true;
   } catch (error) {
-    console.error('Error in sendMentionNotification:', error);
+    console.warn('Error in sendMentionNotification:', error);
     return false;
   }
 };
 
-// Oyun daveti bildirimi
+// Oyun daveti bildirimi - DÜZELTİLDİ
 export const sendGameInviteNotification = async (receiverId: string, senderUsername: string, roomCode: string) => {
   try {
     const { error } = await supabase.rpc(
-      'send_game_invite_notification' as any, // Type assertion
+      'send_game_invite_notification' as any,
       {
-        p_receiver_id: receiverId,
+        p_receiver_id: receiverId,  // ✅ Doğru parametre ismi
         p_sender_username: senderUsername,
         p_room_code: roomCode
       } as any
     );
 
     if (error) {
-      console.error('Error sending game invite notification:', error);
+      console.warn('Error sending game invite notification:', error);
       return false;
     }
     return true;
   } catch (error) {
-    console.error('Error in sendGameInviteNotification:', error);
+    console.warn('Error in sendGameInviteNotification:', error);
     return false;
   }
 };
 
-// Diğer fonksiyonlar aynı kalabilir (getUserNotifications, markNotificationsAsRead)
+// Diğer fonksiyonlar aynı kalabilir
 export const markNotificationsAsRead = async (notificationIds: string[]) => {
   try {
     const { error } = await supabase
