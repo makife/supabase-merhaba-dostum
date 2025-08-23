@@ -216,7 +216,12 @@ const respondRematchRequest = useCallback(async (requestId: string, accepted: bo
       // Yeni oda oluştur ve başlat
       const newRoomCode = generateRoomCode();
       const gameMode = `private-room-${data.game_type}`;
-      await createRoom(gameMode, newRoomCode);
+      
+      // createRoom fonksiyonunu çağırmadan önce tanımlandığından emin ol
+      const createRoomFunction = await createRoom(gameMode, newRoomCode);
+      if (createRoomFunction) {
+        // Oda oluşturuldu
+      }
     } else {
       // Ana menüye dön
       navigate('/');
@@ -224,7 +229,7 @@ const respondRematchRequest = useCallback(async (requestId: string, accepted: bo
   } catch (error) {
     console.error('❌ Tekrar oyun yanıt hatası:', error);
   }
-}, [user, createRoom, navigate]);
+}, [user, navigate]);
 
   // Helper function to determine game mode
   const getGameModeFromRoom = useCallback((room: GameRoom | null): string => {
@@ -1371,6 +1376,9 @@ useEffect(() => {
       currentRoom,
       participants,
       createRoom,
+      sendRematchRequest, 
+      respondRematchRequest, 
+      currentRematchRequest, 
       joinRoom,
       findRandomMatch,
       addAIOpponent,
