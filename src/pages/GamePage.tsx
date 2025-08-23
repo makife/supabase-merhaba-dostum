@@ -2467,6 +2467,8 @@ return (
     </div>
   );
 }
+</Card>
+
 
         {/* Joker Panel - EN ÖNEMLİ KISIM! */}
 <Card className="bg-gradient-to-r from-amber-50 to-orange-100 border-amber-200 shadow-md">
@@ -2728,6 +2730,10 @@ return (
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  </>
+);
+</div>
+    </div>
   </>
 );
 
