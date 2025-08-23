@@ -322,7 +322,7 @@ const renderUsersList = () => {
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <div>
-                <h1 className="text-xl font-bold">Sohbet Odası</h1>
+                <h1 className="text-xl font-bold">^^Kelimeci Sohbet^^</h1>
                 <p className="text-chat-100 text-sm">
                   {onlineUsers.length} kişi çevrimiçi
                 </p>
