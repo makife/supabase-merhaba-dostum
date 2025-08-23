@@ -23,13 +23,44 @@ import {
 // isUserBanned ve getBanTimeLeft fonksiyonlarını import etmeniz veya tanımlamanız gerekiyor
 // Bu örnekte placeholder fonksiyonlar kullanıyorum
 const isUserBanned = async (userId: string): Promise<boolean> => {
-  // Gerçek implementasyon burada olacak
-  return false;
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('banned_until')
+      .eq('id', userId)
+      .single();
+
+    if (error) return false;
+    
+    return data?.banned_until ? new Date(data.banned_until) > new Date() : false;
+  } catch (error) {
+    return false;
+  }
 };
 
 const getBanTimeLeft = async (userId: string): Promise<string> => {
-  // Gerçek implementasyon burada olacak
-  return "1 saat 30 dakika";
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('banned_until')
+      .eq('id', userId)
+      .single();
+
+    if (error || !data?.banned_until) return "bilinmiyor";
+
+    const banTime = new Date(data.banned_until).getTime();
+    const now = Date.now();
+    const diff = banTime - now;
+
+    if (diff <= 0) return "yok";
+
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+    return `${hours} saat ${minutes} dakika`;
+  } catch (error) {
+    return "bilinmiyor";
+  }
 };
 
 const menuItems = [
