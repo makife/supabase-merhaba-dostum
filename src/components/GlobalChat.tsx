@@ -197,23 +197,10 @@ useEffect(() => {
 
   console.log('🔄 Setting up GLOBAL real-time subscription');
 
-  const sendBotWelcome = async () => {
-    const hasWelcome = localStorage.getItem('chat_welcome_shown');
-    if (!hasWelcome) {
-      // Bot hoşgeldin mesajı gönder
-      await supabase
-        .from('global_chat')
-        .insert({
-          user_id: '00000000-0000-0000-0000-000000000000',
-          username: 'kelimeciBot',
-          message: 'Hoşgeldiniz! 🎉 Lütfen kurallar çerçevesinde sohbet ediniz. Küfür, argo ve hakaret içeren mesajlar otomatik olarak tespit edilir ve 2 gün sohbet yasağı uygulanır.',
-          avatar_url: '/bot-avatar.png'
-        });
-      localStorage.setItem('chat_welcome_shown', 'true');
-    }
-  };
-  
-  sendBotWelcome();
+  // Bot hoşgeldin mesajı - user login olduktan sonra
+  if (profile) {
+    sendBotWelcomeMessage();
+  }
 
   const channel = supabase
     .channel('global-chat-realtime')
@@ -331,7 +318,7 @@ useEffect(() => {
     console.log('🧹 Cleaning up global real-time channel');
     supabase.removeChannel(channel);
   };
-}, [isOpen, user?.id, playSound, sentMessageIds]);
+}, [isOpen, user?.id, profile, playSound, sentMessageIds]);
 
   const fetchMessages = async () => {
   try {
@@ -379,13 +366,39 @@ const sendMessage = async () => {
     return;
   }
 
-  // İlk yasaklanma kontrolü (frontend'de hızlı kontrol)
-  const username = profile.username || user.email?.split('@')[0] || 'Anonim';
+  // Frontend'de basit yasaklı kelime kontrolü
+  const bannedWords = [
+    'amk', 'amq', 'oç', 'orospu', 'piç', 'sik', 'götün', 'anan', 'sikim', 
+    'sikeyim', 'götüne', 'amına', 'fuck', 'shit', 'bitch', 'asshole'
+  ];
   
-  // Geçerli UUID formatında temp ID oluştur
+  const lowerMessage = trimmedMessage.toLowerCase();
+  const containsBanned = bannedWords.some(word => lowerMessage.includes(word));
+  
+  if (containsBanned) {
+    toast.error('Yasaklı kelime kullandınız! 2 gün sohbet yasağı alacaksınız.', {
+      duration: 5000,
+      icon: '🚫'
+    });
+    
+    // Kullanıcıyı banla
+    try {
+      await supabase.rpc('ban_user_for_inappropriate_content', {
+        p_user_id: user.id,
+        p_reason: 'Yasaklı kelime kullanımı',
+        p_ban_duration_hours: 48
+      });
+    } catch (banError) {
+      console.error('Error banning user:', banError);
+    }
+    
+    return;
+  }
+
+  const username = profile.username || user.email?.split('@')[0] || 'Anonim';
   const tempId = generateTempUUID();
   
-  // Optimistic update - hemen ekranı güncelle
+  // Optimistic update
   const tempMessage: ChatMessage = {
     id: tempId,
     user_id: user.id,
@@ -393,7 +406,7 @@ const sendMessage = async () => {
     message: trimmedMessage,
     created_at: new Date().toISOString(),
     avatar_url: profile.avatar_url,
-    is_temp: true // Temp mesaj olduğunu işaretle
+    is_temp: true
   };
 
   setMessages(prev => [...prev, tempMessage]);
@@ -402,37 +415,25 @@ const sendMessage = async () => {
 
   setIsLoading(true);
   try {
-    // Backend moderasyon ile mesaj gönder
-    const { data: moderationResult, error } = await supabase
-      .rpc('moderate_and_insert_message', {
-        p_user_id: user.id,
-        p_username: username,
-        p_message: trimmedMessage,
-        p_avatar_url: profile.avatar_url
-      });
+    // Direkt global_chat tablosuna insert et
+    const { data, error } = await supabase
+      .from('global_chat')
+      .insert({
+        user_id: user.id,
+        username: username,
+        message: trimmedMessage,
+        avatar_url: profile.avatar_url
+      })
+      .select()
+      .single();
 
-    if (error) throw error;
-
-    // Type the result properly
-    const result = moderationResult as any;
-    
-    if (!result?.success) {
-      // Mesaj reddedildi - temp mesajı kaldır
-      setMessages(prev => prev.filter(msg => msg.id !== tempId));
-      
-      if (result?.error === 'user_banned') {
-        toast.error('Sohbet yasağınız bulunmaktadır');
-      } else if (result?.moderated) {
-        toast.error('Mesajınız yasaklı içerik nedeniyle engellendi ve 2 gün yasaklandınız');
-      }
-      return;
+    if (error) {
+      console.error('Insert error:', error);
+      throw error;
     }
 
-    // Başarılı - temp mesajı gerçek ID ile güncelle
-    setSentMessageIds(prev => new Set(prev).add(result.id));
-    
-    // Real-time subscription ile mesaj gelince temp mesajı otomatik değiştirecek
-    // Bu yüzden burada manuel güncelleme yapmıyoruz
+    // Gerçek mesaj ID'sini kaydet
+    setSentMessageIds(prev => new Set(prev).add(data.id));
 
     // MENTION KONTROLÜ
     const mentionRegex = /@(\w+)/g;
@@ -441,20 +442,22 @@ const sendMessage = async () => {
     while ((match = mentionRegex.exec(trimmedMessage)) !== null) {
       const mentionedUsername = match[1];
       
-      // Kullanıcıyı bul
-      const { data: mentionedUser } = await supabase
-        .from('profiles')
-        .select('id, username')
-        .eq('username', mentionedUsername)
-        .single();
-      
-      if (mentionedUser && mentionedUser.id !== user.id) {
-        // BİLDİRİM GÖNDER
-        await sendMentionNotification(
-          mentionedUser.id, 
-          username,
-          trimmedMessage
-        );
+      try {
+        const { data: mentionedUser } = await supabase
+          .from('profiles')
+          .select('id, username')
+          .eq('username', mentionedUsername)
+          .single();
+        
+        if (mentionedUser && mentionedUser.id !== user.id) {
+          await sendMentionNotification(
+            mentionedUser.id, 
+            username,
+            trimmedMessage
+          );
+        }
+      } catch (mentionError) {
+        console.warn('Mention notification failed:', mentionError);
       }
     }
 
@@ -470,7 +473,57 @@ const sendMessage = async () => {
   }
 };
 
-  const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+// Bot mesajı için ayrı fonksiyon
+const sendBotWelcomeMessage = async () => {
+  const hasWelcome = localStorage.getItem(`chat_welcome_shown_${user?.id}`);
+  if (!hasWelcome && user?.id) {
+    try {
+      // Bot için özel sistem mesajı gönder
+      const { error } = await supabase
+        .from('global_chat')
+        .insert({
+          user_id: user.id, // Gerçek user ID'si kullan ama bot olarak göster
+          username: '🤖 kelimeciBot',
+          message: `Hoşgeldin ${profile?.username || 'Dostum'}! 🎉 Sohbet kurallarına uygun davranmayı unutma. Yasaklı içerik paylaşanlar otomatik olarak 2 gün yasaklanır. İyi sohbetler! 💬`,
+          avatar_url: null
+        });
+      
+      if (!error) {
+        localStorage.setItem(`chat_welcome_shown_${user.id}`, 'true');
+      }
+    } catch (error) {
+      console.error('Error sending bot welcome:', error);
+    }
+  }
+};
+
+// Ban kontrolü için yardımcı fonksiyon
+const checkUserBanStatus = async (userId: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase
+      .from('user_bans')
+      .select('banned_until')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .single();
+    
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error checking ban status:', error);
+      return false;
+    }
+    
+    if (data && new Date(data.banned_until) > new Date()) {
+      return true; // Hala yasaklı
+    }
+    
+    return false;
+  } catch (error) {
+    console.error('Ban check error:', error);
+    return false;
+  }
+};
+
+const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
   setNewMessage(e.target.value);
   
   if (user && currentChannel && currentChannel.state === 'joined') {
