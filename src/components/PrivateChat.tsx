@@ -19,6 +19,9 @@ interface PrivateMessage {
   message: string;
   created_at: string;
   is_read: boolean;
+  username?: string;
+  avatar_url?: string;
+  is_temp?: boolean; // Temp mesaj flag'i
 }
 
 interface PrivateChatProps {
@@ -31,12 +34,22 @@ interface PrivateChatProps {
   onBack: () => void;
 }
 
+// UUID v4 generator fonksiyonu
+const generateTempUUID = () => {
+  return 'temp-xxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
   const { user } = useAuth();
   const { playSound } = useSounds();
   const [messages, setMessages] = useState<PrivateMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [sentMessageIds, setSentMessageIds] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Scroll to bottom when new messages arrive
@@ -55,7 +68,7 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
     }
   }, [chatId]);
 
-// PrivateChat.tsx'e real-time subscription ekle
+// PrivateChat.tsx'e real-time subscription ekle - DÜZELTİLMİŞ
 useEffect(() => {
   if (!chatId || !user?.id) return;
 
@@ -75,15 +88,41 @@ useEffect(() => {
         console.log('📨 REAL-TIME PRIVATE MESSAGE:', payload);
         const newMsg = payload.new as any;
         
-        // Kendi mesajımızı ignore et
+        // Kendi gönderdiğimiz mesajı kontrol et
         if (newMsg.sender_id === user.id) {
-          console.log('⏭️ Skipping own private message');
+          // Eğer bu mesajı daha önce göndermediyksek, optimistic update'i gerçek mesajla değiştir
+          if (!sentMessageIds.has(newMsg.id)) {
+            console.log('✅ Replacing temp private message with real message');
+            setMessages(prev => {
+              // Temp mesajı bul ve gerçek mesajla değiştir
+              const tempIndex = prev.findIndex(msg => 
+                msg.is_temp && 
+                msg.sender_id === user.id && 
+                msg.message === newMsg.message
+              );
+              
+              if (tempIndex !== -1) {
+                const newMessages = [...prev];
+                newMessages[tempIndex] = {
+                  ...newMsg,
+                  username: 'Sen',
+                  avatar_url: null,
+                  is_temp: false
+                };
+                return newMessages;
+              }
+              
+              return prev;
+            });
+            
+            setSentMessageIds(prev => new Set(prev).add(newMsg.id));
+          }
           return;
         }
 
         // Kullanıcı bilgilerini al
-        let username = 'Bilinmeyen';
-        let avatar_url = null;
+        let username = otherUser.username || 'Bilinmeyen';
+        let avatar_url = otherUser.avatar_url || null;
 
         try {
           const { data: profile } = await supabase
@@ -93,11 +132,11 @@ useEffect(() => {
             .single();
 
           if (profile) {
-            username = profile.username;
-            avatar_url = profile.avatar_url;
+            username = profile.username || username;
+            avatar_url = profile.avatar_url || avatar_url;
           }
         } catch (error) {
-          console.warn('Could not fetch user profile for real-time message:', error);
+          console.warn('Could not fetch user profile for real-time private message:', error);
         }
 
         // Mesajı state'e ekle
@@ -117,11 +156,12 @@ useEffect(() => {
             created_at: newMsg.created_at,
             is_read: newMsg.is_read,
             username: username,
-            avatar_url: avatar_url
+            avatar_url: avatar_url,
+            is_temp: false
           }];
         });
 
-        // Okundu olarak işaretle
+        // Okundu olarak işaretle (sadece diğer kullanıcıdan gelen mesajlar için)
         try {
           await supabase
             .from('private_messages')
@@ -146,7 +186,7 @@ useEffect(() => {
     console.log('🧹 Cleaning up private chat real-time channel');
     supabase.removeChannel(channel);
   };
-}, [chatId, user?.id, playSound]);
+}, [chatId, user?.id, playSound, sentMessageIds, otherUser.username, otherUser.avatar_url]);
 
   // PrivateChat.tsx - Mesajları okundu olarak işaretle
 useEffect(() => {
@@ -222,8 +262,9 @@ useEffect(() => {
       const userProfile = profilesData?.find(profile => profile.id === msg.sender_id);
       return {
         ...msg,
-        username: userProfile?.username || 'Bilinmeyen',
-        avatar_url: userProfile?.avatar_url || null
+        username: msg.sender_id === user?.id ? 'Sen' : (userProfile?.username || otherUser.username || 'Bilinmeyen'),
+        avatar_url: userProfile?.avatar_url || null,
+        is_temp: false
       };
     });
 
@@ -238,7 +279,7 @@ useEffect(() => {
 
 // PrivateChat.tsx - sendMessage fonksiyonunu düzelt
 const sendMessage = async () => {
-  if (!newMessage.trim() || !user || !chatId) {
+  if (!newMessage.trim() || !user || !chatId || isLoading) {
     return;
   }
 
@@ -251,16 +292,20 @@ const sendMessage = async () => {
   // Kullanıcı adını user bilgilerinden al
   const username = user.user_metadata?.username || user.email?.split('@')[0] || 'Anonim';
 
+  // Geçerli UUID formatında temp ID oluştur
+  const tempId = generateTempUUID();
+
   // Optimistic update
-  const tempMessage: any = {
-    id: `temp-${Date.now()}`,
+  const tempMessage: PrivateMessage = {
+    id: tempId,
     chat_id: chatId,
     sender_id: user.id,
     message: trimmedMessage,
     created_at: new Date().toISOString(),
     is_read: false,
-    username: 'Sen', // Geçici değer
-    avatar_url: null
+    username: 'Sen',
+    avatar_url: null,
+    is_temp: true
   };
 
   setMessages(prev => [...prev, tempMessage]);
@@ -288,14 +333,11 @@ const sendMessage = async () => {
       chatId
     );
 
-    // Temp mesajı gerçek mesajla değiştir
-    setMessages(prev => prev.map(msg => 
-      msg.id === tempMessage.id ? {
-        ...data,
-        username: 'Sen',
-        avatar_url: null
-      } : msg
-    ));
+    // Gerçek mesaj ID'sini kaydet
+    setSentMessageIds(prev => new Set(prev).add(data.id));
+
+    // Real-time subscription ile mesaj gelince temp mesajı otomatik değiştirecek
+    // Bu yüzden burada manuel güncelleme yapmıyoruz
 
     playSound('buttonClick');
   } catch (error) {
@@ -303,7 +345,7 @@ const sendMessage = async () => {
     toast.error('Mesaj gönderilirken hata oluştu');
     
     // Hata durumunda temp mesajı kaldır
-    setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
+    setMessages(prev => prev.filter(msg => msg.id !== tempId));
   } finally {
     setIsLoading(false);
   }
@@ -336,8 +378,10 @@ const sendMessage = async () => {
               }`}
             >
               <div
-                className={`max-w-[70%] p-3 rounded-lg ${
-                  message.sender_id === user?.id
+                className={`max-w-[70%] p-3 rounded-lg transition-all ${
+                  message.is_temp
+                    ? 'bg-gray-100 opacity-70'
+                    : message.sender_id === user?.id
                     ? 'bg-primary text-primary-foreground ml-auto'
                     : 'bg-muted'
                 }`}
@@ -345,12 +389,15 @@ const sendMessage = async () => {
                 <div className="break-words text-sm">
                   {message.message}
                 </div>
-                <div className={`text-xs mt-1 ${
+                <div className={`text-xs mt-1 flex items-center justify-between ${
                   message.sender_id === user?.id
                     ? 'text-primary-foreground/70'
                     : 'text-muted-foreground'
                 }`}>
-                  {formatTime(message.created_at)}
+                  <span>{formatTime(message.created_at)}</span>
+                  {message.is_temp && (
+                    <span className="italic ml-2">Gönderiliyor...</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -379,7 +426,11 @@ const sendMessage = async () => {
             size="sm"
             className="px-3 flex-shrink-0"
           >
-            <Send className="w-4 h-4" />
+            {isLoading ? (
+              <div className="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
           </Button>
         </div>
         <div className="text-xs text-muted-foreground mt-1 text-right">
