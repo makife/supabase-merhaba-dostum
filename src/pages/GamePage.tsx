@@ -2669,39 +2669,66 @@ return (
 </div>
 
     {/* Exit Confirmation Dialog */}
-<AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
-  <AlertDialogContent className="max-w-sm mx-auto">
-    <AlertDialogHeader>
-      <AlertDialogTitle className="text-center">⚠️ Aktif Oyun Uyarısı</AlertDialogTitle>
-      <AlertDialogDescription className="text-center">
-        Şu an aktif bir oyun oynuyorsun! 
-        <br /><br />
-        Oyundan çıkarsan <span className="font-bold text-destructive">ceza alacaksın</span> ve rakibin kazanacak.
-        <br /><br />
-        <span className="text-muted-foreground text-sm">Emin misin?</span>
-      </AlertDialogDescription>
-    </AlertDialogHeader>
-    <AlertDialogFooter className="flex-col space-y-2 sm:flex-col sm:space-y-2 sm:space-x-0">
-      <AlertDialogAction 
-        onClick={async () => {
-          setShowExitDialog(false);
-          if (currentRoom) {
-            await leaveRoom();
-          }
-          navigate('/');
-        }}
-        className="w-full bg-destructive hover:bg-destructive/90"
-      >
-        🚪 Evet, Çıkış Yap
-      </AlertDialogAction>
-      <AlertDialogCancel className="w-full">
-        🎮 Hayır, Oyuna Devam Et
-      </AlertDialogCancel>
-    </AlertDialogFooter>
-  </AlertDialogContent>
-</AlertDialog>
-    </>
-  );
-};
+    <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
+      <AlertDialogContent className="max-w-sm mx-auto">
+        <AlertDialogHeader>
+          <AlertDialogTitle className="text-center">⚠️ Aktif Oyun Uyarısı</AlertDialogTitle>
+          <AlertDialogDescription className="text-center">
+            Şu an aktif bir oyun oynuyorsun! 
+            <br /><br />
+            Oyundan çıkarsan <span className="font-bold text-destructive">ceza alacaksın</span> ve rakibin kazanacak.
+            <br /><br />
+            <span className="text-muted-foreground text-sm">Emin misin?</span>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="flex-col space-y-2 sm:flex-col sm:space-y-2 sm:space-x-0">
+          <AlertDialogAction 
+            onClick={async () => {
+              setShowExitDialog(false);
+              if (currentRoom) {
+                await leaveRoom();
+              }
+              navigate('/');
+            }}
+            className="w-full bg-destructive hover:bg-destructive/90"
+          >
+            🚪 Evet, Çıkış Yap
+          </AlertDialogAction>
+          <AlertDialogCancel className="w-full">
+            🎮 Hayır, Oyuna Devam Et
+          </AlertDialogCancel>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    {/* Tekrar oyun isteği dialog'u - BURAYA DA EKLE */}
+    <AlertDialog open={!!currentRematchRequest} onOpenChange={() => setCurrentRematchRequest(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>🔄 Tekrar Oyun İsteği</AlertDialogTitle>
+          <AlertDialogDescription>
+            Rakibiniz tekrar oynamak istiyor. Kabul ediyor musunuz?
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={async () => {
+            if (currentRematchRequest) {
+              await respondRematchRequest(currentRematchRequest.id, false);
+            }
+          }}>
+            Hayır
+          </AlertDialogCancel>
+          <AlertDialogAction onClick={async () => {
+            if (currentRematchRequest) {
+              await respondRematchRequest(currentRematchRequest.id, true);
+            }
+          }}>
+            Evet, Tekrar Oyna
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </>
+);
 
 export default GamePage;
