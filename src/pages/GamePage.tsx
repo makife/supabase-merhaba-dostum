@@ -141,50 +141,52 @@ const GamePage = ({
   const [timeWarningPlayed, setTimeWarningPlayed] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
 
-  const generateRandomGrid = useCallback((): string[][] => {
-    const letterPool = [
-      'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A',
-      'E', 'E', 'E', 'E', 'E', 'E', 'E',
-      'İ', 'İ', 'İ', 'İ', 'İ', 'İ',
-      'I', 'I', 'I', 'I', 'I',
-      'O', 'O', 'O', 'O', 'O',
-      'U', 'U', 'U', 'U',
-      'Ü', 'Ü', 'Ü',
-      'Ö', 'Ö', 'Ö',
-      'L', 'L', 'L', 'L', 'L',
-      'N', 'N', 'N', 'N', 'N',
-      'R', 'R', 'R', 'R', 'R',
-      'K', 'K', 'K', 'K',
-      'M', 'M', 'M', 'M',
-      'T', 'T', 'T', 'T',
-      'S', 'S', 'S', 'S',
-      'D', 'D', 'D',
-      'Y', 'Y', 'Y',
-      'B', 'B', 'B',
-      'C', 'C',
-      'Ç', 'Ç',
-      'F', 'F',
-      'G', 'G',
-      'Ğ', 'Ğ',
-      'H', 'H',
-      'J',
-      'P', 'P',
-      'Ş', 'Ş',
-      'V', 'V',
-      'Z',
-    ];
-    
-    const grid: string[][] = [];
-    for (let i = 0; i < 4; i++) {
-      const row: string[] = [];
-      for (let j = 0; j < 4; j++) {
-        const randomIndex = Math.floor(Math.random() * letterPool.length);
-        row.push(letterPool[randomIndex]);
-      }
-      grid.push(row);
+  // generateRandomGrid fonksiyonunu şu şekilde güncelleyin:
+const generateRandomGrid = useCallback((): string[][] => {
+  // LetterPool'u fonksiyon içinde tanımlayarak circular dependency'yi önleyelim
+  const letterPool = [
+    'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A', // A - very common
+    'E', 'E', 'E', 'E', 'E', 'E', 'E',       // E - very common
+    'İ', 'İ', 'İ', 'İ', 'İ', 'İ',           // İ - common
+    'I', 'I', 'I', 'I', 'I',                 // I - common
+    'O', 'O', 'O', 'O', 'O',                 // O - common
+    'U', 'U', 'U', 'U',                      // U - common
+    'Ü', 'Ü', 'Ü',                           // Ü - common
+    'Ö', 'Ö', 'Ö',                           // Ö - common
+    'L', 'L', 'L', 'L', 'L',                 // L - common
+    'N', 'N', 'N', 'N', 'N',                 // N - common
+    'R', 'R', 'R', 'R', 'R',                 // R - common
+    'K', 'K', 'K', 'K',                      // K - common
+    'M', 'M', 'M', 'M',                      // M - common
+    'T', 'T', 'T', 'T',                      // T - common
+    'S', 'S', 'S', 'S',                      // S - common
+    'D', 'D', 'D',                           // D - common
+    'Y', 'Y', 'Y',                           // Y - common
+    'B', 'B', 'B',                           // B - medium
+    'C', 'C',                                // C - medium
+    'Ç', 'Ç',                                // Ç - medium
+    'F', 'F',                                // F - medium
+    'G', 'G',                                // G - medium
+    'Ğ', 'Ğ',                                // Ğ - medium
+    'H', 'H',                                // H - medium
+    'J',                                     // J - rare
+    'P', 'P',                                // P - medium
+    'Ş', 'Ş',                                // Ş - medium
+    'V', 'V',                                // V - medium
+    'Z',                                     // Z - rare
+  ];
+  
+  const grid: string[][] = [];
+  for (let i = 0; i < 4; i++) {
+    const row: string[] = [];
+    for (let j = 0; j < 4; j++) {
+      const randomIndex = Math.floor(Math.random() * letterPool.length);
+      row.push(letterPool[randomIndex]);
     }
-    return grid;
-  }, []);
+    grid.push(row);
+  }
+  return grid;
+}, []);
 
   const [gameGrid, setGameGrid] = useState<string[][]>(() => {
     if (currentRoom?.current_grid) {
