@@ -160,7 +160,11 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     return grid;
   };
 
-const opponent = participants.find(p => !p.is_bot && p.user_id !== user.id);
+const sendRematchRequest = useCallback(async (roomCode: string, gameType: 'timed' | 'score') => {
+  if (!user || !currentRoom) return;
+  
+  // Rakibi bul
+  const opponent = participants.find(p => !p.is_bot && p.user_id !== user.id);
   if (!opponent || !opponent.user_id) return;
   
   try {
