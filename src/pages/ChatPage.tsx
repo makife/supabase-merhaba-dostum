@@ -322,7 +322,7 @@ const renderUsersList = () => {
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <div>
-                <div className="flex-1 min-w-0">
+
                     <h1 className="text-xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent drop-shadow-lg"
                         style={{
                           textShadow: '1px 1px 0px hsl(var(--primary)), 2px 2px 0px rgba(0,0,0,0.3), 0 0 15px hsl(var(--primary) / 0.5)',
