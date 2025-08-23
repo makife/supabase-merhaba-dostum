@@ -11,10 +11,10 @@ export function useChatNotifications() {
     if (!user) return;
     
     try {
-      // Özel sohbetlerdeki okunmamış mesajları say
-      const { count, error } = await supabase
+      // Önce eski yöntemle count alalım
+      const { data, error } = await supabase
         .from('private_messages')
-        .select('*', { count: 'exact' })
+        .select('id')
         .eq('recipient_id', user.id)
         .eq('is_read', false);
 
@@ -23,51 +23,49 @@ export function useChatNotifications() {
         return;
       }
 
-      setUnreadCount(count || 0);
+      setUnreadCount(data?.length || 0);
     } catch (error) {
       console.error('Error in fetchUnreadCount:', error);
     }
   };
 
   useEffect(() => {
-    if (user) {
-      fetchUnreadCount();
-      
-      // Real-time subscription for new messages
-      const channel = supabase
-        .channel('private-messages-notifications')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'private_messages',
-            filter: `recipient_id=eq.${user.id}`
-          },
-          () => {
-            // Yeni mesaj geldiğinde sayacı güncelle
-            fetchUnreadCount();
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'private_messages',
-            filter: `recipient_id=eq.${user.id}`
-          },
-          () => {
-            // Mesaj okunduğunda sayacı güncelle
-            fetchUnreadCount();
-          }
-        )
-        .subscribe();
+    if (!user) return;
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
+    fetchUnreadCount();
+    
+    // Real-time subscription for new messages
+    const channel = supabase
+      .channel('private-messages-notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'private_messages',
+          filter: `recipient_id=eq.${user.id}`
+        },
+        () => {
+          fetchUnreadCount();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'private_messages',
+          filter: `recipient_id=eq.${user.id}`
+        },
+        () => {
+          fetchUnreadCount();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   return { unreadCount, fetchUnreadCount };
