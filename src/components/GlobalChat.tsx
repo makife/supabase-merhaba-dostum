@@ -226,8 +226,8 @@ useEffect(() => {
         const newMessage = payload.new as any;
         
         // Kendi mesajımızı ignore et (optimistic update zaten ekledi)
-        if (newMessage.user_id === user.id) {
-          console.log('⏭️ Skipping own message');
+        if (newMessage.user_id === user.id && newMessage.id.startsWith('temp-')) {
+          console.log('⏭️ Skipping own temp message');
           return;
         }
 
@@ -305,37 +305,33 @@ useEffect(() => {
 
   const fetchMessages = async () => {
   try {
+    console.log('🔍 Fetching messages from database...');
+    
     const { data, error } = await supabase
       .from('global_chat')
       .select('*')
-      .order('created_at', { ascending: true })
-      .limit(50);
+      .order('created_at', { ascending: true }) // ⚠️ ASCENDING TRUE YAP (eskiden yeniye)
+      .limit(100);
 
-    if (error) {
-      console.error('Global chat fetch error:', error);
-      throw error;
-    }
+    if (error) throw error;
 
-    console.log('Fetched global messages:', data);
-    
-    // Eğer data varsa ve içinde user_id yoksa, mevcut kullanıcıyı kullan
-    const formattedData = data?.map(msg => ({
-      ...msg,
-      user_id: msg.user_id || user?.id || 'unknown',
-      username: msg.username || 'Anonim'
-    })) || [];
+    console.log('📨 Raw messages from DB:', data);
 
+    // ⚠️ FORMATA DİKKAT - Veritabanındaki isimlerle aynı olsun
+    const formattedData = data.map(msg => ({
+      id: msg.id,
+      user_id: msg.user_id,
+      username: msg.username, 
+      message: msg.message,
+      created_at: msg.created_at,
+      avatar_url: msg.avatar_url
+    }));
+
+    console.log('✅ Formatted messages:', formattedData);
     setMessages(formattedData);
-    
-    // Avatar'ları çek
-    const userIds = [...new Set(formattedData.map(msg => msg.user_id))];
-    if (userIds.length > 0) {
-      await fetchUserAvatars(userIds);
-    }
-    
+
   } catch (error) {
-    console.error('Error fetching global messages:', error);
-    toast.error('Mesajlar yüklenirken hata oluştu');
+    console.error('❌ Error fetching messages:', error);
   }
 };
 
