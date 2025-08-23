@@ -32,10 +32,21 @@ interface GameParticipant {
   };
 }
 
+interface RematchRequest {
+  roomId: string;
+  fromUserId: string;
+  toUserId: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  gameType: 'timed' | 'score';
+}
+
 interface GameContextType {
   currentRoom: GameRoom | null;
   participants: GameParticipant[];
   createRoom: (gameMode: string, roomCode?: string) => Promise<GameRoom | null>;
+  sendRematchRequest: (roomCode: string, gameType: 'timed' | 'score') => Promise<void>;
+  respondRematchRequest: (requestId: string, accepted: boolean) => Promise<void>;
+  currentRematchRequest: RematchRequest | null;
   joinRoom: (roomCode: string) => Promise<boolean>;
   findRandomMatch: (gameType: 'timed' | 'score') => Promise<boolean>;
   addAIOpponent: () => Promise<void>;
@@ -96,6 +107,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   const [participants, setParticipants] = useState<GameParticipant[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [useNakama, setUseNakama] = useState(false);
+  const [currentRematchRequest, setCurrentRematchRequest] = useState<RematchRequest | null>(null);
 
   const toggleNakama = () => {
   setUseNakama(!useNakama);
@@ -147,6 +159,62 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     }
     return grid;
   };
+
+const opponent = participants.find(p => !p.is_bot && p.user_id !== user.id);
+  if (!opponent || !opponent.user_id) return;
+  
+  try {
+    const { data, error } = await supabase
+      .from('rematch_requests')
+      .insert({
+        room_code: roomCode,
+        from_user_id: user.id,
+        to_user_id: opponent.user_id,
+        status: 'pending',
+        game_type: gameType
+      })
+      .select()
+      .single();
+      
+    if (error) throw error;
+    
+    console.log('🔄 Tekrar oyun isteği gönderildi');
+  } catch (error) {
+    console.error('❌ Tekrar oyun isteği hatası:', error);
+  }
+}, [user, currentRoom, participants]);
+
+const respondRematchRequest = useCallback(async (requestId: string, accepted: boolean) => {
+  if (!user) return;
+  
+  try {
+    const { data, error } = await supabase
+      .from('rematch_requests')
+      .update({
+        status: accepted ? 'accepted' : 'rejected',
+        responded_at: new Date().toISOString()
+      })
+      .eq('id', requestId)
+      .select()
+      .single();
+      
+    if (error) throw error;
+    
+    console.log('✅ Tekrar oyun isteğine yanıt verildi:', accepted);
+    
+    if (accepted) {
+      // Yeni oda oluştur ve başlat
+      const newRoomCode = generateRoomCode();
+      const gameMode = `private-room-${data.game_type}`;
+      await createRoom(gameMode, newRoomCode);
+    } else {
+      // Ana menüye dön
+      navigate('/');
+    }
+  } catch (error) {
+    console.error('❌ Tekrar oyun yanıt hatası:', error);
+  }
+}, [user, createRoom, navigate]);
 
   // Helper function to determine game mode
   const getGameModeFromRoom = useCallback((room: GameRoom | null): string => {
@@ -1203,6 +1271,51 @@ const leaveRoom = useCallback(async (): Promise<void> => {
     supabase.removeChannel(channel);
   };
 }, [currentRoom?.id, currentRoom?.status, user?.id, fetchParticipants, toast, applyDisconnectPenalty, applyWinBonus, getGameModeFromRoom]);
+
+// Real-time rematch listener ekle
+useEffect(() => {
+  if (!user || !currentRoom) return;
+  
+  const rematchChannel = supabase
+    .channel(`rematch-${user.id}`)
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'rematch_requests',
+      filter: `to_user_id=eq.${user.id}`
+    }, (payload) => {
+      console.log('🔄 Tekrar oyun isteği alındı');
+      setCurrentRematchRequest(payload.new as RematchRequest);
+    })
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'rematch_requests',
+      filter: `from_user_id=eq.${user.id}`
+    }, (payload) => {
+      if (payload.new.status === 'accepted') {
+        console.log('✅ Tekrar oyun isteği kabul edildi');
+        toast({
+          title: '🎮 Tekrar Oyun',
+          description: 'Rakibiniz tekrar oynamayı kabul etti!',
+        });
+        // Yeni odaya katıl
+        joinRoom(payload.new.room_code);
+      } else if (payload.new.status === 'rejected') {
+        console.log('❌ Tekrar oyun isteği reddedildi');
+        toast({
+          title: '😢 Tekrar Oyun',
+          description: 'Rakibiniz tekrar oynamak istemiyor.',
+        });
+        navigate('/');
+      }
+    })
+    .subscribe();
+    
+  return () => {
+    supabase.removeChannel(rematchChannel);
+  };
+}, [user, currentRoom, toast, navigate, joinRoom]);
 
   // Handle page close/refresh cleanup
   useEffect(() => {
