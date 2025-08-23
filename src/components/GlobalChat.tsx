@@ -339,7 +339,7 @@ sendBotWelcome();
 const sendMessage = async () => {
   if (!newMessage.trim() || !user || !profile) return;
 
-    // Önce ban kontrolü yap
+  // Önce ban kontrolü yap
   try {
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
@@ -347,15 +347,20 @@ const sendMessage = async () => {
       .eq('id', user.id)
       .single();
 
-    if (profileError) throw profileError;
-
-    if (profileData?.banned_until && new Date(profileData.banned_until) > new Date()) {
-      const timeLeft = Math.ceil((new Date(profileData.banned_until).getTime() - Date.now()) / (1000 * 60 * 60));
-      toast.error(`Sohbet yasağınız bulunuyor. Kalan süre: ${timeLeft} saat`);
-      return;
+    if (profileError) {
+      console.error('Ban kontrolü hatası:', profileError);
+      // Hata durumunda devam et, belki banned_until alanı yoktur
+    } else if (profileData?.banned_until) {
+      const banDate = new Date(profileData.banned_until);
+      if (banDate > new Date()) {
+        const timeLeft = Math.ceil((banDate.getTime() - Date.now()) / (1000 * 60 * 60));
+        toast.error(`Sohbet yasağınız bulunuyor. Kalan süre: ${timeLeft} saat`);
+        return;
+      }
     }
   } catch (error) {
     console.error('Ban kontrolü hatası:', error);
+    // Hata durumunda mesaj göndermeye devam et
   }
 
   const trimmedMessage = newMessage.trim();
