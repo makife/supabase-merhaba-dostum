@@ -31,10 +31,14 @@ const isUserBanned = async (userId: string): Promise<boolean> => {
       .eq('id', userId)
       .single();
 
-    if (error) return false;
+    if (error) {
+      console.log('Ban kontrolü hatası (belki banned_until alanı yok):', error);
+      return false;
+    }
     
     return data?.banned_until ? new Date(data.banned_until) > new Date() : false;
   } catch (error) {
+    console.error('Ban kontrolü hatası:', error);
     return false;
   }
 };
@@ -47,7 +51,10 @@ const getBanTimeLeft = async (userId: string): Promise<string> => {
       .eq('id', userId)
       .single();
 
-    if (error || !data?.banned_until) return "bilinmiyor";
+    if (error || !data?.banned_until) {
+      console.log('Ban süresi alınamadı:', error);
+      return "bilinmiyor";
+    }
 
     const banTime = new Date(data.banned_until).getTime();
     const now = Date.now();
@@ -60,6 +67,7 @@ const getBanTimeLeft = async (userId: string): Promise<string> => {
 
     return `${hours} saat ${minutes} dakika`;
   } catch (error) {
+    console.error('Ban süresi hesaplama hatası:', error);
     return "bilinmiyor";
   }
 };
