@@ -21,8 +21,34 @@ import {
   Trophy
 } from 'lucide-react';
 
+
+// FloatingMenu.tsx - isUserBanned fonksiyonunu ekle
+const isUserBanned = async (userId: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('banned_until')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      console.log('Ban kontrolü hatası:', error);
+      return false;
+    }
+
+    // Data yoksa veya banned_until null ise
+    if (!data || !data.banned_until) {
+      return false;
+    }
+
+    return new Date(data.banned_until) > new Date();
+  } catch (error) {
+    console.error('Ban kontrolü hatası:', error);
+    return false;
+  }
+};
+
 // isUserBanned ve getBanTimeLeft fonksiyonlarını import etmeniz veya tanımlamanız gerekiyor
-// Bu örnekte placeholder fonksiyonlar kullanıyorum
 const getBanTimeLeft = async (userId: string): Promise<string> => {
   try {
     const { data, error } = await supabase
