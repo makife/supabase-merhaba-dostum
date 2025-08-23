@@ -1968,10 +1968,12 @@ const createFireworksEffect = () => {
     }
   };
 
-  if (gameEnded) {
+  // GamePage.tsx'teki oyun sonu ekranını şu şekilde düzelt:
+
+if (gameEnded) {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 game-grid relative overflow-hidden">
-      {/* Anima<div className="space-y-2">syonlar aynı kalır */}
+      {/* Animasyonlar aynı kalır */}
       {winner === 'player' && (
         <div className="absolute inset-0 pointer-events-none">
           {[...Array(50)].map((_, i) => (
@@ -2132,6 +2134,34 @@ const createFireworksEffect = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Tekrar oyun isteği dialog'u - BU KISMI EKLE */}
+      <AlertDialog open={!!currentRematchRequest} onOpenChange={() => setCurrentRematchRequest(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>🔄 Tekrar Oyun İsteği</AlertDialogTitle>
+            <AlertDialogDescription>
+              Rakibiniz tekrar oynamak istiyor. Kabul ediyor musunuz?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={async () => {
+              if (currentRematchRequest) {
+                await respondRematchRequest(currentRematchRequest.id, false);
+              }
+            }}>
+              Hayır
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={async () => {
+              if (currentRematchRequest) {
+                await respondRematchRequest(currentRematchRequest.id, true);
+              }
+            }}>
+              Evet, Tekrar Oyna
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
