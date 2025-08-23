@@ -84,32 +84,36 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     }
   }, [isOpen]);
 
-  // Fetch reactions for messages
-  const fetchReactions = async () => {
-    try {
-      const messageIds = messages.map(m => m.id);
-      if (messageIds.length === 0) return;
+// GlobalChat.tsx - fetchReactions fonksiyonu
+const fetchReactions = async () => {
+  try {
+    // Sadece gerçek UUID'leri filtrele (temp- ile başlamayanlar)
+    const realMessageIds = messages
+      .filter(m => !m.id.startsWith('temp-'))
+      .map(m => m.id);
+    
+    if (realMessageIds.length === 0) return;
 
-      const { data, error } = await supabase
-        .from('message_reactions')
-        .select('*')
-        .in('message_id', messageIds);
+    const { data, error } = await supabase
+      .from('message_reactions')
+      .select('*')
+      .in('message_id', realMessageIds);
 
-      if (error) throw error;
+    if (error) throw error;
 
-      const reactionsByMessage: {[messageId: string]: MessageReaction[]} = {};
-      data?.forEach(reaction => {
-        if (!reactionsByMessage[reaction.message_id]) {
-          reactionsByMessage[reaction.message_id] = [];
-        }
-        reactionsByMessage[reaction.message_id].push(reaction);
-      });
+    const reactionsByMessage: {[messageId: string]: MessageReaction[]} = {};
+    data?.forEach(reaction => {
+      if (!reactionsByMessage[reaction.message_id]) {
+        reactionsByMessage[reaction.message_id] = [];
+      }
+      reactionsByMessage[reaction.message_id].push(reaction);
+    });
 
-      setMessageReactions(reactionsByMessage);
-    } catch (error) {
-      console.error('Error fetching reactions:', error);
-    }
-  };
+    setMessageReactions(reactionsByMessage);
+  } catch (error) {
+    console.error('Error fetching reactions:', error);
+  }
+};
 
   // Fetch user avatars
   const fetchUserAvatars = async (userIds: string[]) => {
@@ -181,23 +185,29 @@ useEffect(() => {
 
   console.log('🔄 Setting up GLOBAL real-time subscription');
 
-  const sendBotWelcome = async () => {
-    const hasWelcome = localStorage.getItem('chat_welcome_shown');
-    if (!hasWelcome) {
-      // Bot hoşgeldin mesajı gönder
+// GlobalChat.tsx - useEffect içinde
+const sendBotWelcome = async () => {
+  const hasWelcome = localStorage.getItem('chat_welcome_shown');
+  if (!hasWelcome) {
+    try {
       await supabase
         .from('global_chat')
         .insert({
-          user_id: '00000000-0000-0000-0000-000000000000',
+          user_id: '00000000-0000-0000-0000-000000000000', // Bot ID
           username: 'kelimeciBot',
           message: 'Hoşgeldiniz! 🎉 Lütfen kurallar çerçevesinde sohbet ediniz. Küfür, argo ve hakaret içeren mesajlar otomatik olarak tespit edilir ve 2 gün sohbet yasağı uygulanır.',
           avatar_url: '/bot-avatar.png'
         });
       localStorage.setItem('chat_welcome_shown', 'true');
+    } catch (error) {
+      console.error('Bot mesajı gönderilemedi:', error);
     }
-  };
-  
-  sendBotWelcome();
+  }
+};
+
+// Bu fonksiyonu çağır
+sendBotWelcome();
+
 
   const channel = supabase
     .channel('global-chat-realtime')
