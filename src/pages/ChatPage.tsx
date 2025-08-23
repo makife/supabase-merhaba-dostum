@@ -30,6 +30,7 @@ export default function ChatPage() {
   const [selectedUser, setSelectedUser] = useState<SelectedUser | null>(null);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [allUsers, setAllUsers] = useState<SelectedUser[]>([]);
+  const [unreadCounts, setUnreadCounts] = useState<{[key: string]: number}>({});
 
   // Fetch all users for private chat
   const fetchAllUsers = async () => {
@@ -48,12 +49,24 @@ export default function ChatPage() {
     }
   };
 
+  // Fetch unread counts
+  const fetchUnreadCounts = async () => {
+    if (!user) return;
+    try {
+      // Basit bir yaklaşımla unread counts hesapla
+      setUnreadCounts({}); // Şimdilik boş bırak
+    } catch (error) {
+      console.error('Error with unread counts:', error);
+    }
+  };
+
   // Fetch users when viewMode changes to users
   useEffect(() => {
     if (viewMode === 'users') {
       fetchAllUsers();
+      fetchUnreadCounts();
     }
-  }, [viewMode]);
+  }, [viewMode, user]);
 
   useEffect(() => {
   // Sohbet sayfası açıldığında bildirimleri temizle
@@ -128,25 +141,8 @@ export default function ChatPage() {
     }
   };
 
-  // ChatPage.tsx - renderUsersList fonksiyonunu güncelle
+// ChatPage.tsx - renderUsersList fonksiyonunu güncelle
 const renderUsersList = () => {
-  const [unreadCounts, setUnreadCounts] = useState<{[key: string]: number}>({});
-
-  // Okunmamış mesajları çek
-  useEffect(() => {
-    const fetchUnreadCounts = async () => {
-      if (!user) return;
-
-      try {
-        // Basit bir yaklaşımla unread counts hesapla
-        setUnreadCounts({}); // Şimdilik boş bırak
-      } catch (error) {
-        console.error('Error with unread counts:', error);
-      }
-    };
-
-    fetchUnreadCounts();
-  }, [user]);
 
   return (
     <ScrollArea className="flex-1">
