@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { useAuth } from './AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useNakamaMatchmaking } from '@/hooks/useNakamaMatchmaking';
+import { useNavigate } from 'react-router-dom';
 
 interface GameRoom {
   id: string;
@@ -33,11 +34,14 @@ interface GameParticipant {
 }
 
 interface RematchRequest {
-  roomId: string;
-  fromUserId: string;
-  toUserId: string;
+  id: string; 
+  room_code: string;
+  from_user_id: string;
+  to_user_id: string;
   status: 'pending' | 'accepted' | 'rejected';
-  gameType: 'timed' | 'score';
+  game_type: 'timed' | 'score';
+  created_at?: string;
+  responded_at?: string;
 }
 
 interface GameContextType {
@@ -103,11 +107,13 @@ interface GameProviderProps {
 export const GameProvider = ({ children }: GameProviderProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [currentRoom, setCurrentRoom] = useState<GameRoom | null>(null);
   const [participants, setParticipants] = useState<GameParticipant[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [useNakama, setUseNakama] = useState(false);
   const [currentRematchRequest, setCurrentRematchRequest] = useState<RematchRequest | null>(null);
+  
 
   const toggleNakama = () => {
   setUseNakama(!useNakama);
@@ -225,6 +231,16 @@ const respondRematchRequest = useCallback(async (requestId: string, accepted: bo
     if (!room) return 'unknown';
     return room.game_mode;
   }, []);
+
+  // generateRoomCode fonksiyonunu ekle
+const generateRoomCode = () => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let result = '';
+  for (let i = 0; i < 6; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+};
 
   // Cleanup old rooms
   const cleanupOldRooms = useCallback(async () => {
