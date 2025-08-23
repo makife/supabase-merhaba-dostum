@@ -23,6 +23,7 @@ interface ChatMessage {
   message: string;
   created_at: string;
   avatar_url?: string;
+  is_temp?: boolean; // Temp mesaj flag'i
 }
 
 interface MessageReaction {
@@ -48,6 +49,15 @@ interface SelectedUser {
   avatar_url?: string;
 }
 
+// UUID v4 generator fonksiyonu
+const generateTempUUID = () => {
+  return 'temp-xxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivateChat }: GlobalChatProps) {
   const { user } = useAuth();
   const { profile, onlineUsers, isUserOnline } = useUser();
@@ -66,6 +76,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   const [selectedUser, setSelectedUser] = useState<SelectedUser | null>(null);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [allUsers, setAllUsers] = useState<SelectedUser[]>([]);
+  const [sentMessageIds, setSentMessageIds] = useState<Set<string>>(new Set()); // Gönderilen mesajları takip et
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Scroll to bottom when new messages arrive
@@ -84,16 +95,20 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     }
   }, [isOpen]);
 
-  // Fetch reactions for messages
+  // Fetch reactions for messages - SADECE GERÇEK MESAJLAR İÇİN
   const fetchReactions = async () => {
     try {
-      const messageIds = messages.map(m => m.id);
-      if (messageIds.length === 0) return;
+      // Sadece gerçek mesajların ID'lerini al (temp- ile başlamayanlar)
+      const realMessageIds = messages
+        .filter(m => !m.is_temp && !m.id.startsWith('temp-'))
+        .map(m => m.id);
+      
+      if (realMessageIds.length === 0) return;
 
       const { data, error } = await supabase
         .from('message_reactions')
         .select('*')
-        .in('message_id', messageIds);
+        .in('message_id', realMessageIds);
 
       if (error) throw error;
 
@@ -168,12 +183,13 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     }
   }, [privateChatEnabled, isOpen]);
 
+  // Reactions fetch - sadece gerçek mesajlar için
   useEffect(() => {
-    if (messages.length > 0) {
+    const realMessages = messages.filter(m => !m.is_temp);
+    if (realMessages.length > 0) {
       fetchReactions();
     }
-  }, [messages]);
-
+  }, [messages.filter(m => !m.is_temp).length]); // Sadece gerçek mesaj sayısı değiştiğinde çalıştır
 
 // Real-time subscription için ayrı bir useEffect
 useEffect(() => {
@@ -212,9 +228,35 @@ useEffect(() => {
         console.log('📨 REAL-TIME GLOBAL MESSAGE:', payload);
         const newMessage = payload.new as any;
         
-        // Kendi mesajımızı ignore et (optimistic update zaten ekledi)
+        // Kendi gönderdiğimiz mesajı kontrol et
         if (newMessage.user_id === user.id) {
-          console.log('⏭️ Skipping own message');
+          // Eğer bu mesajı daha önce göndermediyksek, optimistic update'i gerçek mesajla değiştir
+          if (!sentMessageIds.has(newMessage.id)) {
+            console.log('✅ Replacing temp message with real message');
+            setMessages(prev => {
+              // Temp mesajı bul ve gerçek mesajla değiştir
+              const tempIndex = prev.findIndex(msg => 
+                msg.is_temp && 
+                msg.user_id === user.id && 
+                msg.message === newMessage.message
+              );
+              
+              if (tempIndex !== -1) {
+                const newMessages = [...prev];
+                newMessages[tempIndex] = {
+                  ...newMessage,
+                  username: newMessage.username || prev[tempIndex].username,
+                  avatar_url: newMessage.avatar_url || prev[tempIndex].avatar_url,
+                  is_temp: false
+                };
+                return newMessages;
+              }
+              
+              return prev;
+            });
+            
+            setSentMessageIds(prev => new Set(prev).add(newMessage.id));
+          }
           return;
         }
 
@@ -255,7 +297,8 @@ useEffect(() => {
             username: username,
             message: newMessage.message || newMessage.content || '',
             created_at: newMessage.created_at,
-            avatar_url: avatar_url
+            avatar_url: avatar_url,
+            is_temp: false
           }];
         });
 
@@ -288,7 +331,7 @@ useEffect(() => {
     console.log('🧹 Cleaning up global real-time channel');
     supabase.removeChannel(channel);
   };
-}, [isOpen, user?.id, playSound]);
+}, [isOpen, user?.id, playSound, sentMessageIds]);
 
   const fetchMessages = async () => {
   try {
@@ -309,7 +352,8 @@ useEffect(() => {
     const formattedData = data?.map(msg => ({
       ...msg,
       user_id: msg.user_id || user?.id || 'unknown',
-      username: msg.username || 'Anonim'
+      username: msg.username || 'Anonim',
+      is_temp: false
     })) || [];
 
     setMessages(formattedData);
@@ -327,7 +371,7 @@ useEffect(() => {
 };
 
 const sendMessage = async () => {
-  if (!newMessage.trim() || !user || !profile) return;
+  if (!newMessage.trim() || !user || !profile || isLoading) return;
 
   const trimmedMessage = newMessage.trim();
   if (trimmedMessage.length > 200) {
@@ -338,14 +382,18 @@ const sendMessage = async () => {
   // İlk yasaklanma kontrolü (frontend'de hızlı kontrol)
   const username = profile.username || user.email?.split('@')[0] || 'Anonim';
   
+  // Geçerli UUID formatında temp ID oluştur
+  const tempId = generateTempUUID();
+  
   // Optimistic update - hemen ekranı güncelle
   const tempMessage: ChatMessage = {
-    id: `temp-${Date.now()}`,
+    id: tempId,
     user_id: user.id,
     username: username,
     message: trimmedMessage,
     created_at: new Date().toISOString(),
-    avatar_url: profile.avatar_url
+    avatar_url: profile.avatar_url,
+    is_temp: true // Temp mesaj olduğunu işaretle
   };
 
   setMessages(prev => [...prev, tempMessage]);
@@ -369,8 +417,8 @@ const sendMessage = async () => {
     const result = moderationResult as any;
     
     if (!result?.success) {
-      // Mesaj reddedildi
-      setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
+      // Mesaj reddedildi - temp mesajı kaldır
+      setMessages(prev => prev.filter(msg => msg.id !== tempId));
       
       if (result?.error === 'user_banned') {
         toast.error('Sohbet yasağınız bulunmaktadır');
@@ -381,12 +429,10 @@ const sendMessage = async () => {
     }
 
     // Başarılı - temp mesajı gerçek ID ile güncelle
-    setMessages(prev => prev.map(msg => 
-      msg.id === tempMessage.id ? {
-        ...tempMessage,
-        id: result.id
-      } : msg
-    ));
+    setSentMessageIds(prev => new Set(prev).add(result.id));
+    
+    // Real-time subscription ile mesaj gelince temp mesajı otomatik değiştirecek
+    // Bu yüzden burada manuel güncelleme yapmıyoruz
 
     // MENTION KONTROLÜ
     const mentionRegex = /@(\w+)/g;
@@ -418,7 +464,7 @@ const sendMessage = async () => {
     toast.error('Mesaj gönderilirken hata oluştu');
     
     // Hata durumunda temp mesajı kaldır
-    setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
+    setMessages(prev => prev.filter(msg => msg.id !== tempId));
   } finally {
     setIsLoading(false);
   }
@@ -470,7 +516,7 @@ const sendMessage = async () => {
   };
 
   const addReaction = async (messageId: string, emoji: string) => {
-    if (!user) return;
+    if (!user || messageId.startsWith('temp-')) return; // Temp mesajlar için reaksiyon yok
 
     // Check if user already has this reaction
     const existingReaction = messageReactions[messageId]?.find(
@@ -535,7 +581,7 @@ const sendMessage = async () => {
 
   // Remove emoji reaction
   const removeReaction = async (messageId: string, emoji: string) => {
-    if (!user) return;
+    if (!user || messageId.startsWith('temp-')) return;
 
     try {
       const { error } = await supabase
@@ -555,7 +601,7 @@ const sendMessage = async () => {
 
   // Toggle emoji reaction
   const toggleReaction = async (messageId: string, emoji: string) => {
-    if (!user) return;
+    if (!user || messageId.startsWith('temp-')) return;
 
     const userReaction = messageReactions[messageId]?.find(
       r => r.user_id === user.id && r.emoji === emoji
@@ -570,7 +616,7 @@ const sendMessage = async () => {
 
   // Delete message
   const deleteMessage = async (messageId: string) => {
-    if (!user) return;
+    if (!user || messageId.startsWith('temp-')) return;
 
     const confirmed = window.confirm('Bu mesajı silmek istediğinizden emin misiniz?');
     if (!confirmed) return;
@@ -790,6 +836,7 @@ const startPrivateChat = async (targetUser: SelectedUser) => {
     </ScrollArea>
   </>
 );
+
   // GlobalChat.tsx - Yeni tasarım
 const renderGlobalChat = () => (
   <>
@@ -797,7 +844,11 @@ const renderGlobalChat = () => (
     <ScrollArea className="flex-1 p-4 bg-chat-50">
       <div className="space-y-3">
         {messages.map((message) => (
-          <div key={message.id} className="group flex flex-col space-y-1 p-3 rounded-lg bg-white shadow-sm border border-chat-100 hover:border-chat-300 transition-all">
+          <div key={message.id} className={`group flex flex-col space-y-1 p-3 rounded-lg shadow-sm border transition-all ${
+            message.is_temp 
+              ? 'bg-gray-50 border-gray-200 opacity-70' 
+              : 'bg-white border-chat-100 hover:border-chat-300'
+          }`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <UserAvatar
@@ -814,33 +865,36 @@ const renderGlobalChat = () => (
                 }`}>
                   {message.username}
                 </span>
-                {isUserOnline(message.user_id) && (
+                {!message.is_temp && isUserOnline(message.user_id) && (
                   <div className="w-2 h-2 bg-green-500 rounded-full" title="Çevrimiçi"></div>
                 )}
                 <span className="text-xs text-gray-500">
                   {formatTime(message.created_at)}
                 </span>
+                {message.is_temp && (
+                  <span className="text-xs text-gray-400 italic">Gönderiliyor...</span>
+                )}
                 
-                {message.user_id !== user?.id && onStartPrivateChat && (
-  <Button
-    size="sm"
-    variant="ghost"
-    onClick={() => {
-      onStartPrivateChat({
-        id: message.user_id,
-        username: message.username,
-        avatar_url: userAvatars[message.user_id]
-      });
-    }}
-    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-chat-100"
-    title="Özel mesaj gönder"
-  >
-    <Mail className="w-3 h-3 text-chat-600" />
-  </Button>
-)}
+                {!message.is_temp && message.user_id !== user?.id && onStartPrivateChat && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      onStartPrivateChat({
+                        id: message.user_id,
+                        username: message.username,
+                        avatar_url: userAvatars[message.user_id]
+                      });
+                    }}
+                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-chat-100"
+                    title="Özel mesaj gönder"
+                  >
+                    <Mail className="w-3 h-3 text-chat-600" />
+                  </Button>
+                )}
               </div>
               
-              {message.user_id === user?.id && (
+              {!message.is_temp && message.user_id === user?.id && (
                 <button
                   onClick={() => deleteMessage(message.id)}
                   className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-100 rounded"
@@ -855,8 +909,8 @@ const renderGlobalChat = () => (
               {message.message}
             </div>
             
-            {/* Reactions - temp mesajlar için gösterme */}
-            {!message.id.startsWith('temp-') && messageReactions[message.id] && (
+            {/* Reactions - sadece gerçek mesajlar için göster */}
+            {!message.is_temp && !message.id.startsWith('temp-') && messageReactions[message.id] && (
               <div className="flex items-center space-x-2 mt-2">
                 {Object.entries(groupReactions(messageReactions[message.id])).map(([emoji, reactions]) => (
                   <button
@@ -913,7 +967,11 @@ const renderGlobalChat = () => (
           size="sm"
           className="px-4 bg-chat-500 hover:bg-chat-600 text-white"
         >
-          <Send className="w-4 h-4" />
+          {isLoading ? (
+            <div className="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+          ) : (
+            <Send className="w-4 h-4" />
+          )}
         </Button>
       </div>
       <div className="text-xs text-gray-500 mt-1 text-right">
