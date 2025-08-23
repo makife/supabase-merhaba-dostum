@@ -184,7 +184,15 @@ useEffect(() => {
   const sendBotWelcome = async () => {
     const hasWelcome = localStorage.getItem('chat_welcome_shown');
     if (!hasWelcome) {
-      await sendWelcomeMessage();
+      // Bot hoşgeldin mesajı gönder
+      await supabase
+        .from('global_chat')
+        .insert({
+          user_id: '00000000-0000-0000-0000-000000000000',
+          username: 'kelimeciBot',
+          message: 'Hoşgeldiniz! 🎉 Lütfen kurallar çerçevesinde sohbet ediniz. Küfür, argo ve hakaret içeren mesajlar otomatik olarak tespit edilir ve 2 gün sohbet yasağı uygulanır.',
+          avatar_url: '/bot-avatar.png'
+        });
       localStorage.setItem('chat_welcome_shown', 'true');
     }
   };
@@ -203,40 +211,6 @@ useEffect(() => {
       async (payload) => {
         console.log('📨 REAL-TIME GLOBAL MESSAGE:', payload);
         const newMessage = payload.new as any;
-
-        // Bot mesajlarını ignore et
-        if (newMessage.user_id === '00000000-0000-0000-0000-000000000000') {
-          return;
-        }
-
-        // Yasaklı kelime kontrolü
-        if (containsBannedWords(newMessage.message)) {
-          // Mesajı sil
-          await supabase
-            .from('global_chat')
-            .delete()
-            .eq('id', newMessage.id);
-
-          // Kullanıcıyı yasakla
-          const banSuccess = await banUser(
-            newMessage.user_id,
-            `Yasaklı kelime kullanımı: "${newMessage.message.substring(0, 20)}..."`,
-            48 // 2 gün
-          );
-
-          if (banSuccess) {
-            // Yasaklama mesajı gönder
-            await supabase
-              .from('global_chat')
-              .insert({
-                user_id: '00000000-0000-0000-0000-000000000000',
-                username: 'kelimeciBot',
-                message: `@${newMessage.username} yasaklı kelime kullandığı için 2 gün sohbet yasağı uygulanmıştır.`,
-                avatar_url: '/bot-avatar.png'
-              });
-          }
-          return; // Yasaklı mesajı işleme, return et
-        }
         
         // Kendi mesajımızı ignore et (optimistic update zaten ekledi)
         if (newMessage.user_id === user.id) {
@@ -361,11 +335,14 @@ const sendMessage = async () => {
     return;
   }
 
+  // İlk yasaklanma kontrolü (frontend'de hızlı kontrol)
+  const username = profile.username || user.email?.split('@')[0] || 'Anonim';
+  
   // Optimistic update - hemen ekranı güncelle
   const tempMessage: ChatMessage = {
     id: `temp-${Date.now()}`,
     user_id: user.id,
-    username: profile.username || user.email?.split('@')[0] || 'Anonim',
+    username: username,
     message: trimmedMessage,
     created_at: new Date().toISOString(),
     avatar_url: profile.avatar_url
@@ -377,19 +354,40 @@ const sendMessage = async () => {
 
   setIsLoading(true);
   try {
-    const { data, error } = await supabase
-      .from('global_chat')
-      .insert({
-        user_id: user.id,
-        username: profile.username || user.email?.split('@')[0] || 'Anonim',
-        message: trimmedMessage,
-        avatar_url: profile.avatar_url
-      })
-      .select()
-      .single();
+    // Backend moderasyon ile mesaj gönder
+    const { data: moderationResult, error } = await supabase
+      .rpc('moderate_and_insert_message', {
+        p_user_id: user.id,
+        p_username: username,
+        p_message: trimmedMessage,
+        p_avatar_url: profile.avatar_url
+      });
 
     if (error) throw error;
+
+    // Type the result properly
+    const result = moderationResult as any;
     
+    if (!result?.success) {
+      // Mesaj reddedildi
+      setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
+      
+      if (result?.error === 'user_banned') {
+        toast.error('Sohbet yasağınız bulunmaktadır');
+      } else if (result?.moderated) {
+        toast.error('Mesajınız yasaklı içerik nedeniyle engellendi ve 2 gün yasaklandınız');
+      }
+      return;
+    }
+
+    // Başarılı - temp mesajı gerçek ID ile güncelle
+    setMessages(prev => prev.map(msg => 
+      msg.id === tempMessage.id ? {
+        ...tempMessage,
+        id: result.id
+      } : msg
+    ));
+
     // MENTION KONTROLÜ
     const mentionRegex = /@(\w+)/g;
     let match;
@@ -408,16 +406,11 @@ const sendMessage = async () => {
         // BİLDİRİM GÖNDER
         await sendMentionNotification(
           mentionedUser.id, 
-          profile?.username || user.email?.split('@')[0] || 'Anonim',
+          username,
           trimmedMessage
         );
       }
     }
-
-    // Temp mesajı gerçek mesajla değiştir
-    setMessages(prev => prev.map(msg => 
-      msg.id === tempMessage.id ? data : msg
-    ));
 
     playSound('buttonClick');
   } catch (error) {

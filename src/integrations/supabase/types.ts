@@ -1173,6 +1173,15 @@ export type Database = {
         Args: { p_tournament_id: string; p_user_id: string }
         Returns: Json
       }
+      moderate_and_insert_message: {
+        Args: {
+          p_avatar_url?: string
+          p_message: string
+          p_user_id: string
+          p_username: string
+        }
+        Returns: Json
+      }
       recalculate_user_stats: {
         Args: { p_user_id: string }
         Returns: undefined
