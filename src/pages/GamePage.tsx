@@ -96,6 +96,22 @@ const GamePage = ({
     audio.volume = 0.7;
     return audio;
   });
+  const [audioDegistir] = useState(() => {
+    const audio = new Audio('/degistir.mp3');
+    audio.volume = 0.7;
+    return audio;
+  });
+  const [audioFisilda] = useState(() => {
+    const audio = new Audio('/fisilda.mp3');
+    audio.volume = 0.7;
+    return audio;
+  });
+  const [audioSenyaz] = useState(() => {
+    const audio = new Audio('/senyaz.mp3');
+    audio.volume = 0.7;
+    return audio;
+  });
+  
   const [globalUsedWords, setGlobalUsedWords] = useState<Set<string>>(new Set());
 
   const addCleanup = useCallback((cleanupFn: () => void) => {
@@ -507,6 +523,9 @@ const handleBackToMenu = async () => {
   // 1. Değiştir Jokeri - 5 harf değiştir (3 sesli, 2 sessiz)
   const useDegisTirJoker = () => {
   if (jokers.degistir <= 0 || isJokerActive) return;
+
+  audioDegistir.currentTime = 0;
+  audioDegistir.play().catch(e => console.log('Joker sesi çalınamadı:', e));
   
   // ✅ Diğer jokerler gibi kendini koru
   setIsJokerActive(true);
@@ -558,6 +577,9 @@ const handleBackToMenu = async () => {
 // 2. Fısılda Jokeri - Sözlükteki orijinal haliyle göster (çevirme yapma!)
 const useFisildaJoker = async () => {
   if (jokers.fisilida <= 0 || isJokerActive) return;
+
+  audioFisilda.currentTime = 0;
+  audioFisilda.play().catch(e => console.log('Joker sesi çalınamadı:', e));
   
   setIsJokerActive(true);
   
@@ -679,6 +701,9 @@ const useFisildaJoker = async () => {
   // 3. Sen Yaz Jokeri - Otomatik kelime üret ve gönder
 const useSenYazJoker = async () => {
   if (jokers.senYaz <= 0 || isJokerActive) return;
+
+  audioSenyaz.currentTime = 0;
+  audioSenyaz.play().catch(e => console.log('Joker sesi çalınamadı:', e));
   
   setIsJokerActive(true);
   
