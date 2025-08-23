@@ -597,6 +597,7 @@ export type Database = {
           average_score: number | null
           average_word_length: number | null
           best_streak: number | null
+          banned_until?: string | null;
           bonus_credits: number | null
           created_at: string | null
           daily_games: number | null
@@ -634,6 +635,7 @@ export type Database = {
           average_score?: number | null
           average_word_length?: number | null
           best_streak?: number | null
+          banned_until?: string | null;
           bonus_credits?: number | null
           created_at?: string | null
           daily_games?: number | null
@@ -671,6 +673,7 @@ export type Database = {
           average_score?: number | null
           average_word_length?: number | null
           best_streak?: number | null
+          banned_until?: string | null;
           bonus_credits?: number | null
           created_at?: string | null
           daily_games?: number | null
