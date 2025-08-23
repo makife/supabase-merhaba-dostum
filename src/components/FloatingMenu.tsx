@@ -57,34 +57,7 @@ const getBanTimeLeft = async (userId: string): Promise<string> => {
   }
 };
 
-const getBanTimeLeft = async (userId: string): Promise<string> => {
-  try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('banned_until')
-      .eq('id', userId)
-      .single();
 
-    if (error || !data?.banned_until) {
-      console.log('Ban süresi alınamadı:', error);
-      return "bilinmiyor";
-    }
-
-    const banTime = new Date(data.banned_until).getTime();
-    const now = Date.now();
-    const diff = banTime - now;
-
-    if (diff <= 0) return "yok";
-
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-    return `${hours} saat ${minutes} dakika`;
-  } catch (error) {
-    console.error('Ban süresi hesaplama hatası:', error);
-    return "bilinmiyor";
-  }
-};
 
 const menuItems = [
   { title: 'Ana Sayfa', route: '/', icon: Home, color: 'from-blue-500 to-blue-600', hoverColor: 'hover:from-blue-600 hover:to-blue-700' },
