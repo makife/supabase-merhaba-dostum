@@ -179,16 +179,13 @@ const fetchReactions = async () => {
   }, [messages]);
 
 
-// Real-time subscription için ayrı bir useEffect
+// Bot hoşgeldin mesajı için ayrı useEffect
 useEffect(() => {
-  if (!isOpen || !user?.id) return;
-
-  console.log('🔄 Setting up GLOBAL real-time subscription');
-
-// GlobalChat.tsx - useEffect içinde
-const sendBotWelcome = async () => {
+  const sendBotWelcome = async () => {
+    if (!user?.id || !isOpen) return;
+    
     const hasWelcome = localStorage.getItem('chat_welcome_shown');
-    if (!hasWelcome && user.id) {
+    if (!hasWelcome) {
       try {
         await supabase
           .from('global_chat')
@@ -205,8 +202,15 @@ const sendBotWelcome = async () => {
     }
   };
 
-  sendBotWelcome(); 
+  sendBotWelcome();
+}, [isOpen, user?.id]); // Sadece bir kere çalışsın
 
+
+// Real-time subscription için ayrı bir useEffect
+useEffect(() => {
+  if (!isOpen || !user?.id) return;
+
+  console.log('🔄 Setting up GLOBAL real-time subscription');
 
   const channel = supabase
     .channel('global-chat-realtime')
