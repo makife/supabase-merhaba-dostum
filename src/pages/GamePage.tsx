@@ -2617,4 +2617,5 @@ return (
     </AlertDialog>
   </>
 );
+}
 export default GamePage;
