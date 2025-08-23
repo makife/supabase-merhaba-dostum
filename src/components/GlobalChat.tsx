@@ -187,26 +187,25 @@ useEffect(() => {
 
 // GlobalChat.tsx - useEffect içinde
 const sendBotWelcome = async () => {
-  const hasWelcome = localStorage.getItem('chat_welcome_shown');
-  if (!hasWelcome) {
-    try {
-      await supabase
-        .from('global_chat')
-        .insert({
-          user_id: '00000000-0000-0000-0000-000000000000', // Bot ID
-          username: 'kelimeciBot',
-          message: 'Hoşgeldiniz! 🎉 Lütfen kurallar çerçevesinde sohbet ediniz. Küfür, argo ve hakaret içeren mesajlar otomatik olarak tespit edilir ve 2 gün sohbet yasağı uygulanır.',
-          avatar_url: '/bot-avatar.png'
-        });
-      localStorage.setItem('chat_welcome_shown', 'true');
-    } catch (error) {
-      console.error('Bot mesajı gönderilemedi:', error);
+    const hasWelcome = localStorage.getItem('chat_welcome_shown');
+    if (!hasWelcome && user.id) {
+      try {
+        await supabase
+          .from('global_chat')
+          .insert({
+            user_id: '00000000-0000-0000-0000-000000000000',
+            username: 'kelimeciBot',
+            message: 'Hoşgeldiniz! 🎉 Lütfen kurallar çerçevesinde sohbet ediniz. Küfür, argo ve hakaret içeren mesajlar otomatik olarak tespit edilir ve 2 gün sohbet yasağı uygulanır.',
+            avatar_url: '/bot-avatar.png'
+          });
+        localStorage.setItem('chat_welcome_shown', 'true');
+      } catch (error) {
+        console.error('Bot mesajı gönderilemedi:', error);
+      }
     }
-  }
-};
+  };
 
-// Bu fonksiyonu çağır
-sendBotWelcome();
+  sendBotWelcome(); 
 
 
   const channel = supabase
@@ -348,9 +347,9 @@ const sendMessage = async () => {
       .single();
 
     if (profileError) {
-      console.error('Ban kontrolü hatası:', profileError);
+      console.log('Ban kontrolü hatası (kolon yok olabilir):', profileError);
       // Hata durumunda devam et, belki banned_until alanı yoktur
-    } else if (profileData?.banned_until) {
+    } else if (profileData && profileData.banned_until) {
       const banDate = new Date(profileData.banned_until);
       if (banDate > new Date()) {
         const timeLeft = Math.ceil((banDate.getTime() - Date.now()) / (1000 * 60 * 60));
