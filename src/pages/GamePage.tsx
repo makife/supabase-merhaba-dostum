@@ -71,7 +71,7 @@ const GamePage = ({
   const { hasPurchased, settings } = useUserPurchases();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { currentRoom, updateScore, participants, endGame, leaveRoom } = useGame();
+  const { currentRoom, updateScore, participants, endGame, leaveRoom,sendRematchRequest,respondRematchRequest,currentRematchRequest } = useGame();
   const { validateWord, isValidating } = useWordValidation();
   const { playSound, playTimeWarningSequence, playCelebrationSound, playGameLoseSound } = useSounds();
   const { fadeOutBackgroundMusic, fadeInBackgroundMusic } = useMusic();
@@ -1971,7 +1971,7 @@ const createFireworksEffect = () => {
   if (gameEnded) {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 game-grid relative overflow-hidden">
-      {/* Animasyonlar aynı kalır */}
+      {/* Anima<div className="space-y-2">syonlar aynı kalır */}
       {winner === 'player' && (
         <div className="absolute inset-0 pointer-events-none">
           {[...Array(50)].map((_, i) => (
@@ -2376,6 +2376,67 @@ return (
             </CardContent>
           </Card>
         </div>
+
+  <div className="space-y-2">
+            {/* Özel oda modunda tekrar oyna butonu ekle */}
+            {gameMode === 'private-room' && currentRoom?.room_code && (
+              <Button 
+                onClick={async () => {
+                  playSound('buttonClick');
+                  // Tekrar oyun isteği gönder
+                  await sendRematchRequest(currentRoom.room_code!, gameType);
+                  toast({
+                    title: '🔄 Tekrar Oyun İsteği',
+                    description: 'Rakibinize tekrar oyun isteği gönderildi...',
+                  });
+                }}
+                className="w-full"
+                variant="secondary"
+              >
+                🔄 Tekrar Oyna
+              </Button>
+            )}
+            
+            <Button onClick={() => {
+              playSound('buttonClick');
+              navigate('/');
+            }} className="w-full">
+              Ana Menüye Dön
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Tekrar oyun isteği dialog'u */}
+      <AlertDialog open={!!currentRematchRequest} onOpenChange={() => setCurrentRematchRequest(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>🔄 Tekrar Oyun İsteği</AlertDialogTitle>
+            <AlertDialogDescription>
+              Rakibiniz tekrar oynamak istiyor. Kabul ediyor musunuz?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={async () => {
+              if (currentRematchRequest) {
+                await respondRematchRequest(currentRematchRequest.id, false);
+              }
+            }}>
+              Hayır
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={async () => {
+              if (currentRematchRequest) {
+                await respondRematchRequest(currentRematchRequest.id, true);
+              }
+            }}>
+              Evet, Tekrar Oyna
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
 
         {/* Joker Panel - EN ÖNEMLİ KISIM! */}
 <Card className="bg-gradient-to-r from-amber-50 to-orange-100 border-amber-200 shadow-md">
