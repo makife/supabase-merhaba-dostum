@@ -1,21 +1,17 @@
 // src/utils/notifications.ts
 import { supabase } from '@/integrations/supabase/client';
 
-// Özel mesaj bildirimi
+// Özel mesaj bildirimi (Güncellenmiş versiyon)
 export const sendMessageNotification = async (receiverId: string, senderUsername: string, chatId?: string) => {
   try {
-    const { error } = await supabase
-      .from('notifications')
-      .insert({
-        user_id: receiverId,
-        type: 'message',
-        message: `${senderUsername} sana özel mesaj gönderdi`,
-        is_read: false,
-        related_id: chatId
-      });
+    const { error } = await supabase.rpc('send_private_message_notification', {
+      p_receiver_id: receiverId,
+      p_sender_username: senderUsername,
+      p_chat_id: chatId
+    });
 
     if (error) {
-      console.error('Error sending message notification:', error);
+      console.error('Error sending message notification via RPC:', error);
       return false;
     }
     return true;
@@ -25,18 +21,17 @@ export const sendMessageNotification = async (receiverId: string, senderUsername
   }
 };
 
-// Mention bildirimi
+// Diğer fonksiyonlar için de benzer şekilde RPC function'ları oluşturabilirsiniz
+// Mention bildirimi için
 export const sendMentionNotification = async (receiverId: string, senderUsername: string, message: string, messageId?: string) => {
   try {
-    const { error } = await supabase
-      .from('notifications')
-      .insert({
-        user_id: receiverId,
-        type: 'mention',
-        message: `${senderUsername} seni bir mesajda etiketledi: "${message.substring(0, 50)}..."`,
-        is_read: false,
-        related_id: messageId
-      });
+    // Önce Supabase'de benzer bir function oluşturmanız gerekecek
+    const { error } = await supabase.rpc('send_mention_notification', {
+      p_receiver_id: receiverId,
+      p_sender_username: senderUsername,
+      p_message: message,
+      p_message_id: messageId
+    });
 
     if (error) {
       console.error('Error sending mention notification:', error);
@@ -49,18 +44,15 @@ export const sendMentionNotification = async (receiverId: string, senderUsername
   }
 };
 
-// Oyun daveti bildirimi
+// Oyun daveti bildirimi için
 export const sendGameInviteNotification = async (receiverId: string, senderUsername: string, roomCode: string) => {
   try {
-    const { error } = await supabase
-      .from('notifications')
-      .insert({
-        user_id: receiverId,
-        type: 'invite',
-        message: `${senderUsername} sana oyun daveti gönderdi`,
-        is_read: false,
-        related_id: roomCode
-      });
+    // Önce Supabase'de benzer bir function oluşturmanız gerekecek
+    const { error } = await supabase.rpc('send_game_invite_notification', {
+      p_receiver_id: receiverId,
+      p_sender_username: senderUsername,
+      p_room_code: roomCode
+    });
 
     if (error) {
       console.error('Error sending game invite notification:', error);
@@ -73,7 +65,7 @@ export const sendGameInviteNotification = async (receiverId: string, senderUsern
   }
 };
 
-// Bildirimleri okundu olarak işaretle
+// Diğer fonksiyonlar aynı kalabilir (getUserNotifications, markNotificationsAsRead)
 export const markNotificationsAsRead = async (notificationIds: string[]) => {
   try {
     const { error } = await supabase
@@ -92,7 +84,6 @@ export const markNotificationsAsRead = async (notificationIds: string[]) => {
   }
 };
 
-// Kullanıcının tüm bildirimlerini getir
 export const getUserNotifications = async (userId: string, limit = 20) => {
   try {
     const { data, error } = await supabase
