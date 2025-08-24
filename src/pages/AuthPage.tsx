@@ -1,3 +1,4 @@
+// AuthPage.tsx
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -5,13 +6,24 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Mail } from 'lucide-react';
 import { HeaderAnimation } from '@/components/HeaderAnimation';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
 const AuthPage = () => {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, resetPassword } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
   const [signInData, setSignInData] = useState({
     email: '',
@@ -38,6 +50,17 @@ const AuthPage = () => {
     setLoading(false);
   };
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetLoading(true);
+    const { error } = await resetPassword(resetEmail);
+    setResetLoading(false);
+    
+    if (!error) {
+      setResetDialogOpen(false);
+      setResetEmail('');
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 game-grid">
@@ -114,6 +137,45 @@ const AuthPage = () => {
                       </Button>
                     </div>
                   </div>
+                  
+                  <div className="text-right">
+                    <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="link"
+                          className="px-0 text-sm text-muted-foreground hover:text-primary"
+                        >
+                          Şifremi unuttum
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Şifre Sıfırlama</DialogTitle>
+                          <DialogDescription>
+                            E-posta adresinize şifre sıfırlama linki göndereceğiz.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <form onSubmit={handleResetPassword} className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="reset-email">E-posta</Label>
+                            <Input
+                              id="reset-email"
+                              type="email"
+                              placeholder="ornek@email.com"
+                              value={resetEmail}
+                              onChange={(e) => setResetEmail(e.target.value)}
+                              required
+                            />
+                          </div>
+                          <Button type="submit" className="w-full" disabled={resetLoading}>
+                            {resetLoading ? 'Gönderiliyor...' : 'Şifre Sıfırlama Linki Gönder'}
+                          </Button>
+                        </form>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
                   </Button>
