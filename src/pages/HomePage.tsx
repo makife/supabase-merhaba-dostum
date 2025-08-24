@@ -523,11 +523,16 @@ useEffect(() => {
   variant="outline"
   onClick={() => {
     playSound('buttonClick');
-                    // Diğer oyun modları için modal aç
-                    setSelectedMode(mode.id);
+    if (mode.id === 'tournament') {
+      // Turnuva için direkt turnuva sayfasına git
+      navigate('/tournaments');
+    } else {
+      // Diğer oyun modları için modal aç
+      setSelectedMode(mode.id);
+    }
   }}
 >
-  Oyuna Başla
+  {mode.id === 'tournament' ? 'Giriş Yap' : 'Oyuna Başla'}
 </Button>
                 </CardContent>
               </Card>
