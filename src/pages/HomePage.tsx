@@ -18,6 +18,7 @@ import PrivateRoomModal from '@/components/PrivateRoomModal';
 import MatchmakingModal from '@/components/MatchmakingModal';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from 'sonner';
+import { useSubscription } from '@supabase/supabase-js';
 import {
   Bot,
   Users,
@@ -47,7 +48,7 @@ const isGiftPremium = (profile: any) => {
 
 const HomePage = () => {
   const { user } = useAuth();
-  const { profile, isPremium } = useUser();
+  const { profile, isPremium, refreshProfile } = useUser();
   const navigate = useNavigate();
   const { playSound } = useSounds();
   const { startBackgroundMusic, musicEnabled, setMusicEnabled } = useMusic();
@@ -58,6 +59,7 @@ const HomePage = () => {
   const [userAvatar, setUserAvatar] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [timeUntilNextCredit, setTimeUntilNextCredit] = useState<string>('');
+  
 
   // Level hesaplama fonksiyonu
   const calculateLevel = (totalScore: number) => {
@@ -106,43 +108,81 @@ const calculateTimeUntilNextCredit = () => {
   setTimeUntilNextCredit(`${minutes}:${seconds.toString().padStart(2, '0')}`);
 };
 
-  const refreshCredits = async () => {
+const refreshCredits = async () => {
   if (!user || isPremium) return;
   
   const currentCredits = profile?.game_credits || 0;
   
-    // Eğer zaten 5 kredi varsa hiçbir şey yapma
-    if (currentCredits >= 5) return;
+  if (currentCredits >= 5) return;
   
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ 
-          game_credits: currentCredits + 1, // Sadece 1 kredi ekle
-          last_credit_refresh: new Date().toISOString() 
-        })
-        .eq('id', user.id);
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ 
+        game_credits: Math.min(currentCredits + 1, 5), // Maksimum 5 kredi
+        last_credit_refresh: new Date().toISOString() 
+      })
+      .eq('id', user.id);
+    
+    if (!error) {
+      // Profili manuel olarak refresh et
+      await refreshProfile();
       
-      if (!error) {
-        toast.success(`🎮 +1 Kredi eklendi! (${currentCredits + 1}/5)`, {
-          description: `${5 - (currentCredits + 1)} kredi daha kazanabilirsin`,
-          duration: 3000,
-        });
-        playSound('buttonClick');
-      }
-    } catch (error) {
-      console.error('Kredi yenileme hatası:', error);
+      toast.success(`🎮 +1 Kredi eklendi! (${Math.min(currentCredits + 1, 5)}/5)`, {
+        description: `${5 - (currentCredits + 1)} kredi daha kazanabilirsin`,
+        duration: 3000,
+      });
+      playSound('buttonClick');
     }
-  };
+  } catch (error) {
+    console.error('Kredi yenileme hatası:', error);
+  }
+};
   
   // Timer effect for credit countdown
 useEffect(() => {
   if (!isPremium && profile) {
     calculateTimeUntilNextCredit();
-    const interval = setInterval(calculateTimeUntilNextCredit, 1000);
+    const interval = setInterval(() => {
+      calculateTimeUntilNextCredit();
+      
+      // 15 dakika dolduysa otomatik kredi ekle
+      if (profile?.last_credit_refresh && !isPremium && profile.game_credits < 5) {
+        const now = new Date();
+        const lastRefresh = new Date(profile.last_credit_refresh);
+        const nextRefresh = new Date(lastRefresh.getTime() + (15 * 60 * 1000));
+        
+        if (now >= nextRefresh) {
+          refreshCredits();
+        }
+      }
+    }, 1000);
     return () => clearInterval(interval);
   }
-}, [profile, isPremium]);
+}, [profile, isPremium, refreshCredits]);
+
+// Real-time subscription için useEffect ekle:
+useEffect(() => {
+  if (!user) return;
+
+  // Profile değişikliklerini dinle
+  const subscription = supabase
+    .channel('profile_changes')
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'profiles',
+      filter: `id=eq.${user.id}`
+    }, (payload) => {
+      // Profil güncellendiğinde context'i refresh et
+      refreshProfile();
+    })
+    .subscribe();
+
+  return () => {
+    subscription.unsubscribe();
+  };
+}, [user, refreshProfile]);
 
   // Start background music when component mounts
   useEffect(() => {
