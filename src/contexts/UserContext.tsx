@@ -179,20 +179,9 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     }
   };
 
-
-  const refreshProfile = async () => {
-  if (!user) return;
-  
-  const { data: profileData } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
-  
-  if (profileData) {
-    setProfile(profileData);
-  }
-};
+  const forceRefreshProfile = async () => {
+    await refreshProfile(true);
+  };
 
   const getTotalCredits = () => {
     if (!profile) return 0;
