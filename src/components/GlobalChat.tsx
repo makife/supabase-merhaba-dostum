@@ -184,10 +184,20 @@ useEffect(() => {
   const sendBotWelcome = async () => {
     if (!user?.id || !isOpen) return;
     
-    const hasWelcome = localStorage.getItem('chat_welcome_shown');
-    if (!hasWelcome) {
-      try {
-        await supabase
+    // Son 24 saatte bot mesajı var mı kontrol et
+    try {
+      const { data: recentBotMessages } = await supabase
+        .from('global_chat')
+        .select('id')
+        .eq('username', 'kelimeciBot')
+        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+        .limit(1);
+
+      // Eğer son 24 saatte bot mesajı yoksa hoşgeldin mesajı gönder
+      if (!recentBotMessages || recentBotMessages.length === 0) {
+        console.log('🤖 Bot hoşgeldin mesajı gönderiliyor...');
+        
+        const { error } = await supabase
           .from('global_chat')
           .insert({
             user_id: '00000000-0000-0000-0000-000000000000',
@@ -195,15 +205,22 @@ useEffect(() => {
             message: 'Hoşgeldiniz! 🎉 Lütfen kurallar çerçevesinde sohbet ediniz. Küfür, argo ve hakaret içeren mesajlar otomatik olarak tespit edilir ve 2 gün sohbet yasağı uygulanır.',
             avatar_url: '/bot-avatar.png'
           });
-        localStorage.setItem('chat_welcome_shown', 'true');
-      } catch (error) {
-        console.error('Bot mesajı gönderilemedi:', error);
+
+        if (error) {
+          console.error('❌ Bot mesajı gönderilemedi:', error);
+        } else {
+          console.log('✅ Bot hoşgeldin mesajı gönderildi!');
+        }
+      } else {
+        console.log('ℹ️ Bot bugün zaten mesaj göndermiş, yeniden göndermiyor');
       }
+    } catch (error) {
+      console.error('❌ Bot kontrolü hatası:', error);
     }
   };
 
   sendBotWelcome();
-}, [isOpen, user?.id]); // Sadece bir kere çalışsın
+}, [isOpen, user?.id]);
 
 
 // Real-time subscription için ayrı bir useEffect

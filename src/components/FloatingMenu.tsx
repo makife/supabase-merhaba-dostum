@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSounds } from '@/hooks/useSounds';
 import { Button } from '@/components/ui/button';
 import { useChatNotifications } from '@/hooks/useChatNotifications';
-import { toast } from 'sonner'; // toast import edilmemişti
+import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
 
