@@ -528,6 +528,18 @@ const createTournament = async (selectedGameType: 'timed' | 'score') => {
           </div>
         )}
 
+{/* Game Mode Selector Modal */}
+{showGameModeSelector && (
+  <GameModeSelector
+    mode="tournament"
+    onStart={(selectedGameType) => {
+      setShowGameModeSelector(false);
+      createTournament(selectedGameType);
+    }}
+    onClose={() => setShowGameModeSelector(false)}
+  />
+)}
+        
       </div>
     </div>
   );
