@@ -2084,14 +2084,20 @@ if (gameEnded) {
       </Button>
     )}
     {winner === 'player' && (
-      <Button onClick={() => {
-        playSound('buttonClick');
-        navigate(`/tournament/${tournamentMatch?.tournament_id}`);
-      }} className="w-full">
-        <Trophy className="w-4 h-4 mr-2" />
-        Turnuvaya Dön
-      </Button>
-    )}
+  <Button onClick={() => {
+    playSound('buttonClick');
+    console.log('🏆 Turnuvaya dön tıklandı:', tournamentMatch?.tournament_id);
+    if (tournamentMatch?.tournament_id) {
+      navigate(`/tournament/${tournamentMatch.tournament_id}`);
+    } else {
+      console.error('❌ Tournament ID bulunamadı!');
+      navigate('/tournaments');
+    }
+  }} className="w-full">
+    <Trophy className="w-4 h-4 mr-2" />
+    Turnuvaya Dön
+  </Button>
+)}
   </>
             ) : (
               // Normal mod butonları
