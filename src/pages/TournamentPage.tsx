@@ -276,39 +276,66 @@ const loadTournamentParticipants = async (tournamentId: string) => {
 };
 
   const startTournamentWithBots = async () => {
-    if (!currentTournament) return;
+  if (!currentTournament) return;
 
-    try {
-      // Yeni Supabase fonksiyonu ile turnuvayı başlat
-      const { data, error } = await supabase.rpc('start_tournament_automatically', {
-        p_tournament_id: currentTournament.id
-      });
+  // ÖNCE TURNUVA DURUMUNU KONTROL ET
+  const { data: tournamentCheck } = await supabase
+    .from('tournaments')
+    .select('status')
+    .eq('id', currentTournament.id)
+    .single();
 
-      if (error) throw error;
+  if (tournamentCheck?.status !== 'waiting') {
+    console.log('⚠️ Turnuva zaten başlamış, detay sayfasına yönlendiriliyor...');
+    navigate(`/tournament/${currentTournament.id}`);
+    return;
+  }
 
-      const result = data as any;
-      if (result?.success) {
-        toast({
-          title: 'Turnuva Başladı!',
-          description: `İlk tur maçları oluşturuldu. ${result.matches_created || 4} maç, ${result.participants || 8} katılımcı.`,
-        });
+  try {
+    // Yeni Supabase fonksiyonu ile turnuvayı başlat
+    const { data, error } = await supabase.rpc('start_tournament_automatically', {
+      p_tournament_id: currentTournament.id
+    });
 
+    if (error) {
+      if (error.message?.includes('already started')) {
+        console.log('⚠️ Turnuva başka bir yerden başlatılmış, detay sayfasına git');
         navigate(`/tournament/${currentTournament.id}`);
-      } else {
-        throw new Error(result?.error || 'Turnuva başlatılamadı');
+        return;
       }
-
-    } catch (error) {
-      console.error('Error starting tournament:', error);
-      toast({
-        title: 'Hata',
-        description: typeof error === 'object' && error !== null && 'message' in error 
-          ? (error as Error).message 
-          : 'Turnuva başlatılamadı',
-        variant: 'destructive',
-      });
+      throw error;
     }
-  };
+
+    const result = data as any;
+    if (result?.success) {
+      toast({
+        title: 'Turnuva Başladı!',
+        description: `İlk tur maçları oluşturuldu. ${result.matches_created || 4} maç, ${result.participants || 8} katılımcı.`,
+      });
+
+      navigate(`/tournament/${currentTournament.id}`);
+    } else {
+      throw new Error(result?.error || 'Turnuva başlatılamadı');
+    }
+
+  } catch (error) {
+    console.error('Error starting tournament:', error);
+    
+    // Hata durumunda da detay sayfasına git, belki orada bilgi var
+    if (error.message?.includes('already started')) {
+      navigate(`/tournament/${currentTournament.id}`);
+      return;
+    }
+    
+    toast({
+      title: 'Hata',
+      description: typeof error === 'object' && error !== null && 'message' in error 
+        ? (error as Error).message 
+        : 'Turnuva başlatılamadı',
+      variant: 'destructive',
+    });
+  }
+};
 
   // Bu fonksiyon artık kullanılmıyor, Supabase fonksiyonu kullanıyoruz
   // const createTournamentMatches = async (tournamentId: string) => {
