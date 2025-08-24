@@ -374,25 +374,41 @@ const autoStartMatch = async (matchId: string) => {
 };
 
   // 🏁 Maçı bitirme fonksiyonu
-  const completeMatch = async (winnerId: string, player1Score: number, player2Score: number) => {
-    if (!currentMatch) return;
+const completeMatch = async (winnerId: string, player1Score: number, player2Score: number) => {
+  if (!currentMatch) return;
 
-    try {
-      console.log('🏁 Maç bitiriliyor:', { winnerId, player1Score, player2Score });
+  try {
+    // Maçı tamamla
+    const { error: updateError } = await supabase
+      .from('tournament_matches')
+      .update({
+        status: 'completed',
+        winner_id: winnerId,
+        player1_score: player1Score,
+        player2_score: player2Score,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', currentMatch.id);
 
-      // Önce maçı tamamla
-      const { error: updateError } = await supabase
-        .from('tournament_matches')
-        .update({
-          status: 'completed',
-          winner_id: winnerId,
-          player1_score: player1Score,
-          player2_score: player2Score,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', currentMatch.id);
+    if (updateError) throw updateError;
 
-      if (updateError) throw updateError;
+    // 🔥 YENİ: Room'u temizle
+    if (currentMatch.room_id) {
+      console.log('🧹 Tournament room temizleniyor...');
+      
+      // Room'u sil
+      await supabase
+        .from('game_rooms')
+        .delete()
+        .eq('id', currentMatch.room_id);
+        
+      // GameContext state'ini temizle  
+      if (currentRoom?.id === currentMatch.room_id) {
+        // leaveRoom() çağırmadan direkt state temizle
+        setCurrentRoom(null);
+        setParticipants([]);
+      }
+    }
 
       // 🎯 ÖNEMLİ: İSTATİSTİKLERİ GÜNCELLE!
     
