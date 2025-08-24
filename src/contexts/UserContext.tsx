@@ -391,31 +391,37 @@ const refreshOnlineUsers = async () => {
   }, [user, isPremium]);
 
   // Real-time subscription for profile changes
-  useEffect(() => {
-    if (!user) return;
+useEffect(() => {
+  if (!user) return;
 
-    const channel = supabase
-      .channel('profile-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'profiles',
-          filter: `id=eq.${user.id}`
-        },
-        (payload) => {
-          if (payload.new) {
-            setProfile(payload.new as UserProfile);
-          }
+  console.log('Setting up real-time profile subscription for user:', user.id);
+
+  const channel = supabase
+    .channel('profile-realtime-updates')
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'profiles',
+        filter: `id=eq.${user.id}`
+      },
+      (payload) => {
+        console.log('Profile updated via real-time:', payload.new);
+        if (payload.new) {
+          setProfile(payload.new as UserProfile);
         }
-      )
-      .subscribe();
+      }
+    )
+    .subscribe((status) => {
+      console.log('Subscription status:', status);
+    });
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user]);
+  return () => {
+    console.log('Cleaning up profile subscription');
+    supabase.removeChannel(channel);
+  };
+}, [user]);
 
   return (
     <UserContext.Provider value={{ 
