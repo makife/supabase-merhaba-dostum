@@ -436,7 +436,7 @@ const createTournament = async (selectedGameType: 'timed' | 'score') => {
       src={turnuvaGif} 
       alt="Turnuva" 
       className="w-full h-48 object-cover"
-      style={{ objectPosition: '50% 30%' }}
+      style={{ objectPosition: '50% 15%' }}
     />
     <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
       <div className="text-center space-y-4">
