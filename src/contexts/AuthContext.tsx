@@ -113,6 +113,30 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     });
   };
 
+const resetPassword = async (email: string) => {
+  const redirectUrl = `${window.location.origin}/auth/reset-password`;
+  
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: redirectUrl,
+  });
+
+  if (error) {
+    toast({
+      title: 'Hata',
+      description: 'Şifre sıfırlama maili gönderilemedi.',
+      variant: 'destructive',
+    });
+  } else {
+    toast({
+      title: 'Mail Gönderildi',
+      description: 'Şifre sıfırlama linki e-posta adresinize gönderildi.',
+    });
+  }
+
+  return { error };
+};
+
+
   const value = {
     user,
     session,
@@ -120,6 +144,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     signIn,
     signUp,
     signOut,
+    resetPassword,
   };
 
 
