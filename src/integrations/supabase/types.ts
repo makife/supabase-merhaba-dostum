@@ -6,7 +6,6 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
@@ -45,41 +44,6 @@ export type Database = {
         }
         Relationships: []
       }
-
-      rematch_requests: {
-  Row: {
-    id: string
-    room_code: string
-    from_user_id: string
-    to_user_id: string
-    status: 'pending' | 'accepted' | 'rejected'
-    game_type: 'timed' | 'score'
-    created_at?: string
-    responded_at?: string
-  }
-  Insert: {
-    id?: string
-    room_code: string
-    from_user_id: string
-    to_user_id: string
-    status: 'pending' | 'accepted' | 'rejected'
-    game_type: 'timed' | 'score'
-    created_at?: string
-    responded_at?: string
-  }
-  Update: {
-    id?: string
-    room_code?: string
-    from_user_id?: string
-    to_user_id?: string
-    status?: 'pending' | 'accepted' | 'rejected'
-    game_type?: 'timed' | 'score'
-    created_at?: string
-    responded_at?: string
-  }
-  Relationships: []
-}
-      
       banned_users: {
         Row: {
           banned_by: string | null
@@ -104,6 +68,27 @@ export type Database = {
           id?: string
           reason?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      banned_words: {
+        Row: {
+          created_at: string | null
+          id: number
+          severity: number | null
+          word: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          severity?: number | null
+          word: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          severity?: number | null
+          word?: string
         }
         Relationships: []
       }
@@ -426,7 +411,10 @@ export type Database = {
           deleted_at: string | null
           id: string
           is_deleted: boolean | null
+          is_moderated: boolean | null
           message: string
+          moderated_at: string | null
+          moderated_reason: string | null
           user_id: string | null
           username: string
         }
@@ -436,7 +424,10 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           is_deleted?: boolean | null
+          is_moderated?: boolean | null
           message: string
+          moderated_at?: string | null
+          moderated_reason?: string | null
           user_id?: string | null
           username: string
         }
@@ -446,7 +437,10 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           is_deleted?: boolean | null
+          is_moderated?: boolean | null
           message?: string
+          moderated_at?: string | null
+          moderated_reason?: string | null
           user_id?: string | null
           username?: string
         }
@@ -599,6 +593,7 @@ export type Database = {
           id: string
           is_read: boolean | null
           message: string
+          recipient_id: string | null
           sender_id: string | null
         }
         Insert: {
@@ -607,6 +602,7 @@ export type Database = {
           id?: string
           is_read?: boolean | null
           message: string
+          recipient_id?: string | null
           sender_id?: string | null
         }
         Update: {
@@ -615,6 +611,7 @@ export type Database = {
           id?: string
           is_read?: boolean | null
           message?: string
+          recipient_id?: string | null
           sender_id?: string | null
         }
         Relationships: [
@@ -632,8 +629,8 @@ export type Database = {
           avatar_url: string | null
           average_score: number | null
           average_word_length: number | null
+          banned_until: string | null
           best_streak: number | null
-          banned_until?: string | null;
           bonus_credits: number | null
           created_at: string | null
           daily_games: number | null
@@ -670,8 +667,8 @@ export type Database = {
           avatar_url?: string | null
           average_score?: number | null
           average_word_length?: number | null
+          banned_until?: string | null
           best_streak?: number | null
-          banned_until?: string | null;
           bonus_credits?: number | null
           created_at?: string | null
           daily_games?: number | null
@@ -708,8 +705,8 @@ export type Database = {
           avatar_url?: string | null
           average_score?: number | null
           average_word_length?: number | null
+          banned_until?: string | null
           best_streak?: number | null
-          banned_until?: string | null;
           bonus_credits?: number | null
           created_at?: string | null
           daily_games?: number | null
@@ -743,6 +740,54 @@ export type Database = {
           wins?: number | null
         }
         Relationships: []
+      }
+      rematch_requests: {
+        Row: {
+          created_at: string | null
+          from_user_id: string | null
+          game_type: string
+          id: string
+          responded_at: string | null
+          room_code: string
+          status: string
+          to_user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          from_user_id?: string | null
+          game_type: string
+          id?: string
+          responded_at?: string | null
+          room_code: string
+          status?: string
+          to_user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          from_user_id?: string | null
+          game_type?: string
+          id?: string
+          responded_at?: string | null
+          room_code?: string
+          status?: string
+          to_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rematch_requests_from_user_id_fkey"
+            columns: ["from_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rematch_requests_to_user_id_fkey"
+            columns: ["to_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tournament_matches: {
         Row: {
@@ -945,6 +990,39 @@ export type Database = {
           },
         ]
       }
+      user_bans: {
+        Row: {
+          banned_at: string | null
+          banned_by: string | null
+          banned_until: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          reason: string
+          user_id: string | null
+        }
+        Insert: {
+          banned_at?: string | null
+          banned_by?: string | null
+          banned_until: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          reason: string
+          user_id?: string | null
+        }
+        Update: {
+          banned_at?: string | null
+          banned_by?: string | null
+          banned_until?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          reason?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_inventory: {
         Row: {
           id: string
@@ -1099,6 +1177,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      ban_user_for_inappropriate_content: {
+        Args: {
+          p_ban_duration_hours?: number
+          p_reason?: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
       calculate_average_word_length: {
         Args: { p_user_id: string }
         Returns: number
@@ -1123,6 +1209,15 @@ export type Database = {
         Args: { user_id: string }
         Returns: undefined
       }
+      check_user_ban_status: {
+        Args: { p_user_id: string }
+        Returns: {
+          ban_reason: string
+          banned_until: string
+          is_banned: boolean
+          remaining_hours: number
+        }[]
+      }
       check_words_per_game_badge: {
         Args: { p_user_id: string; p_words_count: number }
         Returns: {
@@ -1130,6 +1225,10 @@ export type Database = {
           new_badge_id: string
           new_badge_name: string
         }[]
+      }
+      cleanup_expired_bans: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       cleanup_expired_matchmaking_rooms: {
         Args: Record<PropertyKey, never>
@@ -1214,12 +1313,19 @@ export type Database = {
       }
       moderate_and_insert_message: {
         Args: {
-          p_avatar_url?: string
+          p_avatar_url: string
           p_message: string
           p_user_id: string
           p_username: string
         }
         Returns: Json
+      }
+      moderate_message_simple: {
+        Args: { p_message: string; p_user_id: string }
+        Returns: {
+          is_appropriate: boolean
+          reason: string
+        }[]
       }
       recalculate_user_stats: {
         Args: { p_user_id: string }
@@ -1228,6 +1334,31 @@ export type Database = {
       reset_daily_games: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      send_game_invite_notification: {
+        Args: {
+          p_receiver_id: string
+          p_room_code: string
+          p_sender_username: string
+        }
+        Returns: boolean
+      }
+      send_mention_notification: {
+        Args: {
+          p_message: string
+          p_message_id?: string
+          p_receiver_id: string
+          p_sender_username: string
+        }
+        Returns: boolean
+      }
+      send_private_message_notification: {
+        Args: {
+          p_chat_id: string
+          p_recipient_id: string
+          p_sender_username: string
+        }
+        Returns: boolean
       }
       start_tournament_automatically: {
         Args: { p_tournament_id: string }
