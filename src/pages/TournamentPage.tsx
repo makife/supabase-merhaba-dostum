@@ -42,6 +42,10 @@ interface TournamentParticipant {
   seed: number;
   is_bot: boolean;
   eliminated_at: string | null;
+  profiles?: {
+    username: string;
+    avatar_url: string | null;
+  };
 }
 
 const TournamentPage = () => {
