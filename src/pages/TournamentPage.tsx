@@ -252,21 +252,24 @@ const createTournament = async (selectedGameType: 'timed' | 'score') => {
     setIsJoining(false);
   };
 
-  const loadTournamentParticipants = async (tournamentId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('tournament_participants')
-        .select('*')
-        .eq('tournament_id', tournamentId)
-        .order('seed');
+const loadTournamentParticipants = async (tournamentId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('tournament_participants')
+      .select(`
+        *,
+        profiles:user_id (username, avatar_url)
+      `)
+      .eq('tournament_id', tournamentId)
+      .order('seed');
 
-      if (!error && data) {
-        setParticipants(data);
-      }
-    } catch (error) {
-      console.error('Error loading participants:', error);
+    if (!error && data) {
+      setParticipants(data);
     }
-  };
+  } catch (error) {
+    console.error('Error loading participants:', error);
+  }
+};
 
   const startTournamentWithBots = async () => {
     if (!currentTournament) return;
@@ -389,18 +392,21 @@ const createTournament = async (selectedGameType: 'timed' | 'score') => {
                 {participants.map((participant, index) => (
                   <div key={participant.id} className="flex items-center space-x-2 p-2 rounded-lg bg-muted">
                     {participant.is_bot ? (
-                      <Bot className="w-5 h-5" />
-                    ) : (
-                      <User className="w-5 h-5" />
-                    )}
-                    <span className="font-medium">
-                      {participant.is_bot ? `Bot ${index + 1}` : `Oyuncu ${index + 1}`}
-                    </span>
+                     <Bot className="w-5 h-5" />
+                       ) : (
+                        <User className="w-5 h-5" />
+                        )}
+                        <span className="font-medium">
+                       {participant.is_bot ? 
+                     `Bot ${index + 1}` : 
+                     (participant.profiles?.username || `Oyuncu ${index + 1}`)
+                     }
+                     </span>
                     <Badge variant="outline" className="ml-auto">
-                      #{participant.seed}
-                    </Badge>
-                  </div>
-                ))}
+                   #{participant.seed}
+                 </Badge>
+                </div>
+              ))}
                 {Array.from({ length: 8 - participants.length }, (_, i) => (
                   <div key={`empty-${i}`} className="flex items-center space-x-2 p-2 rounded-lg border-2 border-dashed border-muted">
                     <div className="w-5 h-5 bg-muted rounded" />
