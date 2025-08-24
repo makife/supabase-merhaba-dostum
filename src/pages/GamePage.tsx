@@ -400,54 +400,54 @@ const GamePage = ({
     // setShowResults burada kullanılmıyor, sadece state tanımla
   };
 
-  useEffect(() => {
-    if (gameMode === 'tournament' && !tournamentMatch) {
-      console.error('❌ Turnuva modu ama maç bilgisi yok!');
-      return;
-    }
+// 🔧 5. GamePage.tsx - Turnuva modu rakip belirleme düzeltmesi
+useEffect(() => {
+  if (gameMode === 'tournament' && tournamentMatch) {
+    const opponentId = tournamentMatch.player1_id === user?.id ? 
+      tournamentMatch.player2_id : 
+      tournamentMatch.player1_id;
+  
+    console.log('🎯 Turnuva rakip analizi:', {
+      matchId: tournamentMatch.id,
+      player1: tournamentMatch.player1_id?.slice(-8),
+      player2: tournamentMatch.player2_id?.slice(-8),
+      currentUser: user?.id?.slice(-8),
+      opponentId: opponentId?.slice(-8)
+    });
 
-    // Turnuva modunda rakip ayarla
-    if (gameMode === 'tournament' && tournamentMatch) {
-      const opponentId = tournamentMatch.player1_id === user?.id ? 
-        tournamentMatch.player2_id : 
-        tournamentMatch.player1_id;
-    
-      if (!opponentId || opponentId.startsWith('bot_')) {
-        setIsAIOpponent(true);
-        setOpponentName('Turnuva Botu');
-      } else {
-        setIsAIOpponent(false);
-        setOpponentName('Turnuva Rakibi');
-      }
-
-      // Game type'ı ayarla
-      if (propGameType) {
-        if (propGameType === 'timed') {
-          setTimeLeft(120); // setTimeLimit → setTimeLeft
-          setTargetScore(0);
-        } else {
-          setTargetScore(500);
-          setTimeLeft(0); // setTimeLimit → setTimeLeft
-        }
-      }
+    if (!opponentId) {
+      console.log('❌ Rakip ID bulunamadı');
+      setIsAIOpponent(true);
+      setOpponentName('Bekleniyor...');
+    } else if (opponentId.startsWith('bot_')) {
+      console.log('🤖 Bot rakip tespit edildi');
+      setIsAIOpponent(true);
+      setOpponentName('Turnuva Botu');
     } else {
-      // Diğer modlar için default ayarlar
-      switch (gameMode) {
-        case 'vs-computer':
-          setIsAIOpponent(true);
-          setOpponentName('Bilgisayar');
-          break;
-        case 'private-room':
-          setIsAIOpponent(false);
-          setOpponentName('Arkadaş');
-          break;
-        case 'random-match':
-          setIsAIOpponent(false);
-          setOpponentName('Rakip');
-          break;
+      console.log('👥 Gerçek oyuncu rakip tespit edildi');
+      setIsAIOpponent(false);
+      
+      // Gerçek oyuncu ismini participants'tan bul
+      const realOpponent = participants.find(p => p.user_id === opponentId);
+      if (realOpponent && (realOpponent as any).profiles?.username) {
+        setOpponentName((realOpponent as any).profiles.username);
+      } else {
+        setOpponentName('Turnuva Oyuncusu');
       }
     }
-  }, [gameMode, tournamentMatch, propGameType, user?.id]);
+
+    // Game type ayarlarını uygula
+    if (propGameType) {
+      if (propGameType === 'timed') {
+        setTimeLeft(120);
+        setTargetScore(0);
+      } else {
+        setTargetScore(500);
+        setTimeLeft(0);
+      }
+    }
+  }
+}, [gameMode, tournamentMatch, propGameType, user?.id, participants]);
 
   // Rakip ismini göster - turnuva için
   const getOpponentDisplayName = () => {
