@@ -18,7 +18,7 @@ import PrivateRoomModal from '@/components/PrivateRoomModal';
 import MatchmakingModal from '@/components/MatchmakingModal';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from 'sonner';
-import { useSubscription } from '@/hooks/useSubscription';
+
 import {
   Bot,
   Users,
