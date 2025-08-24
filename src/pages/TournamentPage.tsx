@@ -360,7 +360,7 @@ const startTournamentWithBots = async () => {
       .order('seed');
 
     // MEVCUT FONKSİYONUNUZU ÇAĞIRIN (parametre almıyorsa)
-    await createTournamentMatches();
+    await createTournamentMatches(currentTournament.id, finalParticipants || []);
 
     // TURNUVAYI AKTİF YAP
     await supabase
@@ -399,7 +399,7 @@ const createTournamentMatches = async (tournamentId: string, realParticipants: a
     console.log('👥 Gelen katılımcılar:', realParticipants.length);
 
     // SADECE GERÇEK KATILIMCILAR - bot olanları filtrele
-    const participants = realParticipants.filter(p => p.user_id && !p.is_bot);
+    const participants = realParticipants.filter(p => p.user_id !== null && p.is_bot === false);
     console.log('✅ Gerçek oyuncular:', participants.length);
 
     if (participants.length < 1) {
