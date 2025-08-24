@@ -300,7 +300,7 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
         return {
           icon: Zap,
           title: 'Oyuncu Aranıyor...',
-          description: `${gameType === 'timed' ? 'Zamana karşı' : 'Puana karşı'} oyun için eşleşme bekleniyor`,
+          description: `${gameType === 'timed' ? 'Zamana karşı' : 'Puanlı'} oyun için eşleşme bekleniyor`,
           color: 'text-primary',
           bgColor: 'bg-primary'
         };
