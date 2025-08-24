@@ -306,34 +306,65 @@ useEffect(() => {
 // Otomatik maç başlatma fonksiyonu
 const autoStartMatch = async (matchId: string) => {
   try {
-    console.log('🎮 Maç otomatik başlatılıyor:', matchId);
+    console.log('🎮 Turnuva maçı otomatik başlatılıyor (REAL-TIME):', matchId);
 
-    // Maçı aktif duruma getir
+    // Maç bilgilerini al
+    const match = matches.find(m => m.id === matchId);
+    if (!match) return;
+
+    // 🔥 YENİ: İki oyuncu için real-time room oluştur
+    console.log('🏠 Turnuva için multiplayer room oluşturuluyor...');
+    
+    // Room'u tournament mod ile oluştur
+    const room = await createRoom(`tournament-${tournament?.game_type || 'timed'}`, undefined);
+    
+    if (!room) {
+      throw new Error('Room oluşturulamadı');
+    }
+
+    console.log('✅ Tournament room oluşturuldu:', room.id.slice(-8));
+
+    // Rakip oyuncuyu da aynı room'a ekle
+    const opponentId = match.player1_id === user?.id ? match.player2_id : match.player1_id;
+    
+    if (opponentId && !opponentId.startsWith('bot_')) {
+      console.log('👥 Rakip oyuncu room\'a ekleniyor:', opponentId.slice(-8));
+      
+      // Rakibi de participant olarak ekle
+      await supabase
+        .from('game_participants')
+        .insert({
+          room_id: room.id,
+          user_id: opponentId,
+          score: 0,
+          is_bot: false
+        });
+    }
+
+    // Maçı aktif duruma getir ve room_id'yi kaydet
     const { error } = await supabase
       .from('tournament_matches')
       .update({ 
         status: 'active',
+        room_id: room.id, // 🔥 ÖNEMLİ: Room ID'yi kaydet
         updated_at: new Date().toISOString()
       })
       .eq('id', matchId);
 
     if (error) throw error;
 
-    // Maç bilgilerini al
-    const match = matches.find(m => m.id === matchId);
-    if (match) {
-      setCurrentMatch(match);
-      setIsPlaying(true);
-      
-      toast({
-        title: '🎮 Turnuva Maçı Başladı!',
-        description: 'Maç otomatik olarak başlatıldı',
-        duration: 3000,
-      });
-    }
+    // Current match'i güncelle
+    setCurrentMatch({...match, room_id: room.id});
+    setIsPlaying(true);
+    
+    toast({
+      title: '🎮 Turnuva Maçı Başladı!',
+      description: 'Rakibinizle real-time multiplayer maç başladı',
+      duration: 3000,
+    });
 
   } catch (error) {
-    console.error('Error auto-starting match:', error);
+    console.error('Error auto-starting tournament match:', error);
     toast({
       title: 'Hata',
       description: 'Maç otomatik başlatılamadı',
