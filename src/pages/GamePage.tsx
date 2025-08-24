@@ -401,7 +401,8 @@ const GamePage = ({
   };
 
   useEffect(() => {
-    if (gameMode === 'tournament' && !tournamentMatch) {
+    if (gameMode === 'tournament' && tournamentMatch?.room_id) {
+      console.log('🏆 Tournament mode: Room\'a bağlanılıyor...');
       console.error('❌ Turnuva modu ama maç bilgisi yok!');
       return;
     }
@@ -447,7 +448,20 @@ const GamePage = ({
           break;
       }
     }
-  }, [gameMode, tournamentMatch, propGameType, user?.id]);
+
+    const realOpponent = participants.find(p => 
+      !p.is_bot && 
+      p.user_id !== user?.id && 
+      p.user_id !== null
+    );
+
+    if (realOpponent) {
+      console.log('👥 Tournament real opponent found:', (realOpponent as any).profiles?.username);
+      setIsAIOpponent(false);
+      setOpponentName((realOpponent as any).profiles?.username || 'Turnuva Rakibi');
+    }
+  }           
+}, [gameMode, tournamentMatch, propGameType, user?.id]);
 
   // Rakip ismini göster - turnuva için
   const getOpponentDisplayName = () => {
