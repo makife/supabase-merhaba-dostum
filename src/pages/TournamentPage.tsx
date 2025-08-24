@@ -509,18 +509,18 @@ const createTournament = async (selectedGameType: 'timed' | 'score') => {
                         </span>
                       </div>
                     </div>
-<Button 
-  onClick={() => {
-    if (tournament.status === 'waiting') {
-      joinTournament(tournament.id);
-    } else {
-      navigate(`/tournament/${tournament.id}`);  // Turnuva detayına git
-    }
-  }}
-  disabled={isJoining}
->
-  {tournament.status === 'waiting' ? 'Katıl' : 'Görüntüle'}
-</Button>
+                 <Button 
+                    onClick={() => {
+                    if (tournament.status === 'waiting') {
+                    joinTournament(tournament.id);
+                    } else {
+                    navigate(`/tournament/${tournament.id}`);  // Turnuva detayına git
+                   }
+                 }}
+                 disabled={isJoining}
+              >
+                {tournament.status === 'waiting' ? 'Katıl' : 'Görüntüle'}
+                 </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -528,17 +528,17 @@ const createTournament = async (selectedGameType: 'timed' | 'score') => {
           </div>
         )}
 
-{/* Game Mode Selector Modal */}
-{showGameModeSelector && (
-  <GameModeSelector
-    mode="tournament"
-    onStart={(selectedGameType) => {
-      setShowGameModeSelector(false);
-      createTournament(selectedGameType);
-    }}
-    onClose={() => setShowGameModeSelector(false)}
-  />
-)}
+       {/* Game Mode Selector Modal */}
+        {showGameModeSelector && (
+         <GameModeSelector
+           mode="tournament"
+           onStart={(selectedGameType) => {
+           setShowGameModeSelector(false);
+           createTournament(selectedGameType);
+          }}
+         onClose={() => setShowGameModeSelector(false)}
+        />
+        )}
         
       </div>
     </div>
