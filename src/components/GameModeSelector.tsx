@@ -127,7 +127,7 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-lg">Puana Karşı</span>
+                      <span className="font-bold text-lg">Puanlı</span>
                       {selectedType === 'score' && (
                         <div className="w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center animate-scale-in">
                           <div className="w-2 h-2 bg-white rounded-full"></div>
