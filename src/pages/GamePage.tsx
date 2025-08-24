@@ -2068,29 +2068,31 @@ if (gameEnded) {
           
           <div className="space-y-2">
             {/* 🎯 TURNUVA MODUNDA FARKLI BUTONLAR */}
-            {gameMode === 'tournament' ? (
-              <>
-                <Button onClick={() => {
-                  playSound('buttonClick');
-                  navigate(`/tournament/${tournamentMatch?.tournament_id}`);
-                }} className="w-full">
-                  <Trophy className="w-4 h-4 mr-2" />
-                  Turnuvaya Dön
-                </Button>
-                {winner === 'opponent' && (
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      playSound('buttonClick');
-                      navigate('/tournaments');
-                    }} 
-                    className="w-full"
-                  >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Turnuva Listesi
-                  </Button>
-                )}
-              </>
+{gameMode === 'tournament' ? (
+  <>
+    {winner === 'opponent' && (
+      <Button 
+        variant="outline" 
+        onClick={() => {
+          playSound('buttonClick');
+          navigate('/tournaments');
+        }} 
+        className="w-full"
+      >
+        <ArrowLeft className="w-4 h-4 mr-2" />
+        Turnuva Listesi
+      </Button>
+    )}
+    {winner === 'player' && (
+      <Button onClick={() => {
+        playSound('buttonClick');
+        navigate(`/tournament/${tournamentMatch?.tournament_id}`);
+      }} className="w-full">
+        <Trophy className="w-4 h-4 mr-2" />
+        Turnuvaya Dön
+      </Button>
+    )}
+  </>
             ) : (
               // Normal mod butonları
               <>
