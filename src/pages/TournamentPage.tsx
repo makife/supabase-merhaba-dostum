@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import turnuvaGif from '@/assets/turnuvagif.gif';
+import GameModeSelector from '@/components/GameModeSelector';
 import {
   ArrowLeft,
   Trophy,
@@ -54,6 +55,7 @@ const TournamentPage = () => {
   const [waitingTime, setWaitingTime] = useState(60);
   const [isJoining, setIsJoining] = useState(false);
   const [gameType, setGameType] = useState<'timed' | 'score'>('timed');
+  const [showGameModeSelector, setShowGameModeSelector] = useState(false);
   
   // Get game type from navigation state if available
   useEffect(() => {
@@ -130,36 +132,36 @@ const TournamentPage = () => {
     }
   };
 
-  const createTournament = async () => {
-    if (!user) return;
+const createTournament = async (selectedGameType: 'timed' | 'score') => {
+  if (!user) return;
 
-    try {
-      const { data: tournament, error } = await supabase
-        .from('tournaments')
-        .insert({
-          name: `Turnuva ${new Date().toLocaleTimeString('tr-TR')}`,
-          status: 'waiting',
-          current_round: 1,
-          max_participants: 8,
-          game_type: gameType
-        })
-        .select()
-        .single();
-      
-      if (error) throw error;
+  try {
+    const { data: tournament, error } = await supabase
+      .from('tournaments')
+      .insert({
+        name: `Turnuva ${new Date().toLocaleTimeString('tr-TR')}`,
+        status: 'waiting',
+        current_round: 1,
+        max_participants: 8,
+        game_type: selectedGameType
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
 
-      // Join the tournament
-      await joinTournament(tournament.id);
-      
-    } catch (error) {
-      console.error('Error creating tournament:', error);
-      toast({
-        title: 'Hata',
-        description: 'Turnuva oluşturulamadı',
-        variant: 'destructive',
-      });
-    }
-  };
+    // Join the tournament
+    await joinTournament(tournament.id);
+    
+  } catch (error) {
+    console.error('Error creating tournament:', error);
+    toast({
+      title: 'Hata',
+      description: 'Turnuva oluşturulamadı',
+      variant: 'destructive',
+    });
+  }
+};
 
   const joinTournament = async (tournamentId: string) => {
     if (!user || isJoining) return;
@@ -459,7 +461,7 @@ const TournamentPage = () => {
             <div className="flex items-center space-x-4">
               <div className="flex-1">
                 <Button 
-                  onClick={createTournament} 
+                  onClick={() => setShowGameModeSelector(true)} 
                   className="w-full"
                   disabled={isJoining}
                 >
