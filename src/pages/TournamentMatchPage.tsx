@@ -73,86 +73,100 @@ const TournamentMatchPage = () => {
   const [loading, setLoading] = useState(true);
 
   // 🎯 Oyun bitince sonraki aşama kontrolü
-  const checkNextRoundOrFinish = async () => {
-    if (!tournament) return;
+const checkNextRoundOrFinish = async () => {
+  if (!tournament) return;
 
-    try {
-      // Mevcut turdaki tüm maçları kontrol et
-      const { data: currentRoundMatches } = await supabase
-        .from('tournament_matches')
-        .select('*')
-        .eq('tournament_id', tournamentId)
-        .eq('round', tournament.current_round);
+  try {
+    // ÖNEMLİ: Güncel turnuva verisini tekrar çek
+    const { data: currentTournament } = await supabase
+      .from('tournaments')
+      .select('*')
+      .eq('id', tournamentId)
+      .single();
 
-      const completedMatches = currentRoundMatches?.filter(m => m.status === 'completed') || [];
-      const totalMatches = currentRoundMatches?.length || 0;
+    if (!currentTournament) return;
 
-      console.log(`🔍 Tur ${tournament.current_round}: ${completedMatches.length}/${totalMatches} maç tamamlandı`);
+    // Mevcut turdaki tüm maçları kontrol et
+    const { data: currentRoundMatches } = await supabase
+      .from('tournament_matches')
+      .select('*')
+      .eq('tournament_id', tournamentId)
+      .eq('round', currentTournament.current_round);
 
-      // Eğer tüm maçlar tamamlandıysa
-      if (completedMatches.length === totalMatches) {
-        if (tournament.current_round === 3) {
-          // 🏆 FİNAL BİTTİ - TURNUVA TAMAMLANDI
-          const finalMatch = completedMatches[0];
-          const winner = participants.find(p => p.user_id === finalMatch.winner_id);
+    const completedMatches = currentRoundMatches?.filter(m => m.status === 'completed') || [];
+    const totalMatches = currentRoundMatches?.length || 0;
 
-          await supabase
-            .from('tournaments')
-            .update({ 
-              status: 'finished',
-              finished_at: new Date().toISOString()
-            })
-            .eq('id', tournamentId);
+    console.log(`🔍 Tur ${currentTournament.current_round}: ${completedMatches.length}/${totalMatches} maç tamamlandı`);
 
-          toast({
-            title: '🏆 Turnuva Bitti!',
-            description: `Şampiyon: ${winner?.profiles?.username || 'Bilinmeyen'}`,
-            duration: 5000,
+    // Eğer tüm maçlar tamamlandıysa
+    if (completedMatches.length === totalMatches) {
+      if (currentTournament.current_round === 3) {
+        // 🏆 FİNAL BİTTİ - TURNUVA TAMAMLANDI
+        const finalMatch = completedMatches[0];
+        const winner = participants.find(p => p.user_id === finalMatch.winner_id);
+
+        await supabase
+          .from('tournaments')
+          .update({ 
+            status: 'finished',
+            finished_at: new Date().toISOString()
+          })
+          .eq('id', tournamentId);
+
+        toast({
+          title: '🏆 Turnuva Bitti!',
+          description: `Şampiyon: ${winner?.profiles?.username || 'Bilinmeyen'}`,
+          duration: 5000,
+        });
+
+        // Turnuva verisini güncelle
+        await loadTournamentData();
+
+      } else {
+        // 📈 SONRAKİ TURA GEÇ
+        const nextRound = currentTournament.current_round + 1;
+        console.log(`📈 Sonraki tura geçiliyor: ${nextRound}`);
+
+        // Kazananları al
+        const winners = completedMatches.map(match => match.winner_id).filter(Boolean);
+        
+        // Sonraki tur maçlarını oluştur
+        const nextRoundMatches = [];
+        for (let i = 0; i < winners.length; i += 2) {
+          nextRoundMatches.push({
+            tournament_id: tournamentId,
+            round: nextRound,
+            match_number: Math.floor(i / 2) + 1,
+            player1_id: winners[i] || null,
+            player2_id: winners[i + 1] || null,
+            status: 'pending'
           });
-
-        } else {
-          // 📈 SONRAKİ TURA GEÇ
-          const nextRound = tournament.current_round + 1;
-          console.log(`📈 Sonraki tura geçiliyor: ${nextRound}`);
-
-          // Kazananları al
-          const winners = completedMatches.map(match => match.winner_id).filter(Boolean);
-          
-          // Sonraki tur maçlarını oluştur
-          const nextRoundMatches = [];
-          for (let i = 0; i < winners.length; i += 2) {
-            nextRoundMatches.push({
-              tournament_id: tournamentId,
-              round: nextRound,
-              match_number: Math.floor(i / 2) + 1,
-              player1_id: winners[i] || null,
-              player2_id: winners[i + 1] || null,
-              status: 'pending'
-            });
-          }
-
-          // Veritabanını güncelle
-          await supabase.from('tournament_matches').insert(nextRoundMatches);
-          
-          await supabase
-            .from('tournaments')
-            .update({ current_round: nextRound })
-            .eq('id', tournamentId);
-
-          toast({
-            title: `🎉 ${nextRound === 2 ? 'Yarı Final' : 'Final'} Başlıyor!`,
-            description: 'Sonraki tur maçları oluşturuldu',
-            duration: 3000,
-          });
-
-          // Verileri yeniden yükle
-          loadTournamentData();
         }
+
+        // Veritabanını güncelle
+        const { error: insertError } = await supabase.from('tournament_matches').insert(nextRoundMatches);
+        if (insertError) throw insertError;
+        
+        const { error: updateError } = await supabase
+          .from('tournaments')
+          .update({ current_round: nextRound })
+          .eq('id', tournamentId);
+        if (updateError) throw updateError;
+
+        toast({
+          title: `🎉 ${nextRound === 2 ? 'Yarı Final' : 'Final'} Başlıyor!`,
+          description: 'Sonraki tur maçları oluşturuldu',
+          duration: 3000,
+        });
+
+        // Verileri yeniden yükle
+        await loadTournamentData();
       }
-    } catch (error) {
-      console.error('❌ Sonraki tur kontrolü hatası:', error);
     }
-  };
+  } catch (error) {
+    console.error('❌ Sonraki tur kontrolü hatası:', error);
+  }
+};
 
   // Turnuva verilerini yükle
   const loadTournamentData = async () => {
