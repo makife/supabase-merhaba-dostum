@@ -179,9 +179,6 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     }
   };
 
-  const forceRefreshProfile = async () => {
-    await refreshProfile(true);
-  };
 
   const refreshProfile = async () => {
   if (!user) return;
