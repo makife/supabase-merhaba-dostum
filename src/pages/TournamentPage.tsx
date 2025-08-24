@@ -430,55 +430,33 @@ const createTournament = async (selectedGameType: 'timed' | 'score') => {
           <div className="w-16" />
         </div>
 
-        <Card className="border-primary">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Trophy className="w-5 h-5 mr-2" />
-              Yeni Turnuva
-            </CardTitle>
-            <CardDescription>
-              8 kişilik turnuva oluştur veya mevcut turnuvaya katıl
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-3">
-              <div className="text-center p-4 bg-muted rounded-lg">
-                <div className="flex items-center justify-center space-x-2 mb-2">
-                  {gameType === 'timed' ? (
-                    <Clock className="w-5 h-5 text-primary" />
-                  ) : (
-                    <Target className="w-5 h-5 text-primary" />
-                  )}
-                  <span className="font-semibold">
-                    {gameType === 'timed' ? 'Süreli Oyun (2 dakika)' : 'Puanlı Oyun (500 puan)'}
-                  </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                  Oyun türü seçildi
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="flex-1">
-                <Button 
-                  onClick={() => setShowGameModeSelector(true)} 
-                  className="w-full"
-                  disabled={isJoining}
-                >
-                  <Trophy className="w-4 h-4 mr-2" />
-                  Yeni Turnuva Oluştur
-                </Button>
-              </div>
-              <div className="w-20 h-20 rounded-lg overflow-hidden">
-                <img 
-                  src={turnuvaGif} 
-                  alt="Turnuva" 
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+   <Card className="border-primary relative overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-300">
+  <div className="relative">
+    <img 
+      src={turnuvaGif} 
+      alt="Turnuva" 
+      className="w-full h-48 object-cover"
+    />
+    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+      <div className="text-center space-y-4">
+        <div className="flex items-center justify-center space-x-2">
+          <Trophy className="w-8 h-8 text-white" />
+          <h3 className="text-2xl font-bold text-white">Yeni Turnuva</h3>
+        </div>
+        <p className="text-white/90 text-sm">8 kişilik turnuva oluştur</p>
+        <Button 
+          onClick={() => setShowGameModeSelector(true)} 
+          className="bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50 backdrop-blur-sm font-semibold px-6 py-3"
+          variant="outline"
+          disabled={isJoining}
+        >
+          <Trophy className="w-4 h-4 mr-2" />
+          Yeni Turnuva Oluştur
+        </Button>
+      </div>
+    </div>
+  </div>
+</Card>
 
         {activeTournaments.length > 0 && (
           <div className="space-y-4">
