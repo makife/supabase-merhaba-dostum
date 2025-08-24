@@ -306,78 +306,34 @@ useEffect(() => {
 // Otomatik maç başlatma fonksiyonu
 const autoStartMatch = async (matchId: string) => {
   try {
-    console.log('🎮 Turnuva maçı otomatik başlatılıyor (REAL-TIME):', matchId);
+    console.log('🎮 Maç otomatik başlatılıyor:', matchId);
 
-    // Maç bilgilerini al
-    const match = matches.find(m => m.id === matchId);
-    if (!match) {
-      console.error('❌ Maç bulunamadı:', matchId);
-      return;
-    }
-
-    console.log('🏠 Turnuva için multiplayer room oluşturuluyor...');
-    
-    // Tournament room oluştur
-    const gameTypeForRoom = tournament?.game_type === 'score' ? 'tournament-score' : 'tournament-timed';
-    const room = await createRoom(gameTypeForRoom);
-    
-    if (!room) {
-      throw new Error('Room oluşturulamadı');
-    }
-
-    console.log('✅ Tournament room oluşturuldu:', room.id.slice(-8));
-
-    // Rakip oyuncuyu da aynı room'a ekle
-    const opponentId = match.player1_id === user?.id ? match.player2_id : match.player1_id;
-    
-    if (opponentId && !opponentId.startsWith('bot_')) {
-      console.log('👥 Rakip oyuncu room\'a ekleniyor:', opponentId.slice(-8));
-      
-      try {
-        await supabase
-          .from('game_participants')
-          .insert({
-            room_id: room.id,
-            user_id: opponentId,
-            score: 0,
-            is_bot: false
-          });
-        console.log('✅ Rakip başarıyla eklendi');
-      } catch (error) {
-        console.error('❌ Rakip ekleme hatası:', error);
-      }
-    } else {
-      console.log('🤖 Bot opponent veya ID yok');
-    }
-
-    // Maçı aktif duruma getir ve room_id'yi kaydet
+    // Maçı aktif duruma getir
     const { error } = await supabase
       .from('tournament_matches')
       .update({ 
         status: 'active',
-        room_id: room.id,
         updated_at: new Date().toISOString()
       })
       .eq('id', matchId);
 
-    if (error) {
-      console.error('❌ Match update error:', error);
-      throw error;
+    if (error) throw error;
+
+    // Maç bilgilerini al
+    const match = matches.find(m => m.id === matchId);
+    if (match) {
+      setCurrentMatch(match);
+      setIsPlaying(true);
+      
+      toast({
+        title: '🎮 Turnuva Maçı Başladı!',
+        description: 'Maç otomatik olarak başlatıldı',
+        duration: 3000,
+      });
     }
 
-    // Current match'i güncelle
-    const updatedMatch = {...match, room_id: room.id};
-    setCurrentMatch(updatedMatch);
-    setIsPlaying(true);
-    
-    toast({
-      title: '🎮 Turnuva Maçı Başladı!',
-      description: 'Rakibinizle real-time multiplayer maç başladı',
-      duration: 3000,
-    });
-
   } catch (error) {
-    console.error('❌ Error auto-starting tournament match:', error);
+    console.error('Error auto-starting match:', error);
     toast({
       title: 'Hata',
       description: 'Maç otomatik başlatılamadı',
@@ -387,41 +343,25 @@ const autoStartMatch = async (matchId: string) => {
 };
 
   // 🏁 Maçı bitirme fonksiyonu
-const completeMatch = async (winnerId: string, player1Score: number, player2Score: number) => {
-  if (!currentMatch) return;
+  const completeMatch = async (winnerId: string, player1Score: number, player2Score: number) => {
+    if (!currentMatch) return;
 
-  try {
-    // Maçı tamamla
-    const { error: updateError } = await supabase
-      .from('tournament_matches')
-      .update({
-        status: 'completed',
-        winner_id: winnerId,
-        player1_score: player1Score,
-        player2_score: player2Score,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', currentMatch.id);
+    try {
+      console.log('🏁 Maç bitiriliyor:', { winnerId, player1Score, player2Score });
 
-    if (updateError) throw updateError;
+      // Önce maçı tamamla
+      const { error: updateError } = await supabase
+        .from('tournament_matches')
+        .update({
+          status: 'completed',
+          winner_id: winnerId,
+          player1_score: player1Score,
+          player2_score: player2Score,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', currentMatch.id);
 
-    // 🔥 YENİ: Room'u temizle
-    if (currentMatch.room_id) {
-      console.log('🧹 Tournament room temizleniyor...');
-      
-      // Room'u sil
-      await supabase
-        .from('game_rooms')
-        .delete()
-        .eq('id', currentMatch.room_id);
-        
-      // GameContext state'ini temizle  
-      if (currentRoom?.id === currentMatch.room_id) {
-        // leaveRoom() çağırmadan direkt state temizle
-        setCurrentRoom(null);
-        setParticipants([]);
-      }
-    }
+      if (updateError) throw updateError;
 
       // 🎯 ÖNEMLİ: İSTATİSTİKLERİ GÜNCELLE!
     
