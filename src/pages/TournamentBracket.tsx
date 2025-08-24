@@ -62,35 +62,45 @@ const TournamentBracket: React.FC<TournamentBracketProps> = ({
   }, {} as Record<number, TournamentMatch[]>);
 
   // Katılımcı bilgilerini getir
-  const getParticipantInfo = (userId: string | null) => {
-    if (!userId) {
-      return {
-        name: 'TBD',
-        avatar: null,
-        isBot: false,
-        isCurrentUser: false
-      };
-    }
-
-    const participant = participantMap[userId];
-    if (!participant) {
-      return {
-        name: 'Bilinmeyen',
-        avatar: null,
-        isBot: false,
-        isCurrentUser: false
-      };
-    }
-
+const getParticipantInfo = (userId: string | null) => {
+  if (!userId) {
     return {
-      name: participant.is_bot 
-        ? `Bot ${participant.seed}` 
-        : participant.profiles?.username || `Oyuncu ${participant.seed}`,
-      avatar: participant.profiles?.avatar_url,
-      isBot: participant.is_bot,
-      isCurrentUser: userId === currentUserId
+      name: 'TBD',
+      avatar: null,
+      isBot: false,
+      isCurrentUser: false
     };
+  }
+
+  // BOT KONTROLÜ - ID'ye göre
+  if (userId.startsWith('bot_')) {
+    return {
+      name: 'Turnuva Botu',
+      avatar: null,
+      isBot: true,
+      isCurrentUser: false
+    };
+  }
+
+  const participant = participantMap[userId];
+  if (!participant) {
+    return {
+      name: 'Bilinmeyen',
+      avatar: null,
+      isBot: false,
+      isCurrentUser: false
+    };
+  }
+
+  return {
+    name: participant.is_bot 
+      ? 'Turnuva Botu'
+      : participant.profiles?.username || `Oyuncu ${participant.seed}`,
+    avatar: participant.profiles?.avatar_url,
+    isBot: participant.is_bot || userId.startsWith('bot_'),
+    isCurrentUser: userId === currentUserId
   };
+};
 
   // Maç kartı bileşeni
   const MatchCard = ({ match, roundName }: { match: TournamentMatch; roundName: string }) => {
