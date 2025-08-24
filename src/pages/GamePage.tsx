@@ -400,55 +400,90 @@ const GamePage = ({
     // setShowResults burada kullanılmıyor, sadece state tanımla
   };
 
-  // Tournament mode için özel room connection
-useEffect(() => {
-  if (gameMode === 'tournament' && tournamentMatch?.room_id && !currentRoom) {
-    console.log('🏆 Tournament mode: Room bilgisi var ama bağlantı yok');
-    console.log('🏆 Room ID:', tournamentMatch.room_id);
+  useEffect(() => {
+    if (gameMode === 'tournament' && !tournamentMatch) {
+      console.error('❌ Turnuva modu ama maç bilgisi yok!');
+      return;
+    }
+
+    // Turnuva modunda rakip ayarla
+    if (gameMode === 'tournament' && tournamentMatch) {
+      const opponentId = tournamentMatch.player1_id === user?.id ? 
+        tournamentMatch.player2_id : 
+        tournamentMatch.player1_id;
     
-    // Room bilgilerini manuel yükle
-    const loadTournamentRoom = async () => {
-      try {
-        const { data: roomData, error } = await supabase
-          .from('game_rooms')
-          .select('*')
-          .eq('id', tournamentMatch.room_id)
-          .single();
-          
-        if (!error && roomData) {
-          console.log('✅ Tournament room loaded:', roomData.id.slice(-8));
-          // Room'u context'e manuel set et (bu fonksiyon yoksa eklememiz gerekebilir)
-        }
-      } catch (error) {
-        console.error('❌ Tournament room load error:', error);
+      if (!opponentId || opponentId.startsWith('bot_')) {
+        setIsAIOpponent(true);
+        setOpponentName('Turnuva Botu');
+      } else {
+        setIsAIOpponent(false);
+        setOpponentName('Turnuva Rakibi');
       }
-    };
-    
-    loadTournamentRoom();
-  }
-}, [gameMode, tournamentMatch?.room_id, currentRoom]);
 
-// Tournament participants için opponent name güncelleme
-useEffect(() => {
-  if (gameMode === 'tournament' && participants.length >= 2) {
-    const realOpponent = participants.find(p => 
-      !p.is_bot && 
-      p.user_id !== user?.id && 
-      p.user_id !== null
-    );
-
-    if (realOpponent) {
-      console.log('👥 Tournament real opponent found:', (realOpponent as any).profiles?.username);
-      setIsAIOpponent(false);
-      setOpponentName((realOpponent as any).profiles?.username || 'Turnuva Rakibi');
-      
-      // Avatar güncelle
-      if ((realOpponent as any).profiles?.avatar_url) {
-        setOpponentAvatar((realOpponent as any).profiles.avatar_url);
+      // Game type'ı ayarla
+      if (propGameType) {
+        if (propGameType === 'timed') {
+          setTimeLeft(120); // setTimeLimit → setTimeLeft
+          setTargetScore(0);
+        } else {
+          setTargetScore(500);
+          setTimeLeft(0); // setTimeLimit → setTimeLeft
+        }
+      }
+    } else {
+      // Diğer modlar için default ayarlar
+      switch (gameMode) {
+        case 'vs-computer':
+          setIsAIOpponent(true);
+          setOpponentName('Bilgisayar');
+          break;
+        case 'private-room':
+          setIsAIOpponent(false);
+          setOpponentName('Arkadaş');
+          break;
+        case 'random-match':
+          setIsAIOpponent(false);
+          setOpponentName('Rakip');
+          break;
       }
     }
+  }, [gameMode, tournamentMatch, propGameType, user?.id]);
+
+  // Rakip ismini göster - turnuva için
+  const getOpponentDisplayName = () => {
+  if (gameMode === 'tournament' && tournamentMatch) {
+    const opponentId = tournamentMatch.player1_id === user?.id ? 
+      tournamentMatch.player2_id : 
+      tournamentMatch.player1_id;
+  
+    if (!opponentId) return 'Turnuva Botu';
+    if (opponentId.startsWith('bot_')) return 'Turnuva Botu';
+    return opponentName || 'Turnuva Rakibi';
   }
-}, [gameMode, participants, user?.id]);
+
+  // 🔥 FIX: Gerçek rakip username'ini bul
+  const realOpponent = participants.find(p => 
+    !p.is_bot && 
+    p.user_id !== user?.id && 
+    p.user_id !== null
+  );
+
+  if (realOpponent && (realOpponent as any).profiles?.username) {
+    return (realOpponent as any).profiles.username;
+  }
+
+  // Diğer modlar için fallback
+  switch (gameMode) {
+    case 'vs-computer':
+      return 'Bilgisayar';
+    case 'private-room':
+      return 'Arkadaş';
+    case 'random-match':
+      return 'Rakip';
+    default:
+      return 'AI Rakip';
+  }
+};
 
 
   // Turnuva modunda geri dönüş engelle
