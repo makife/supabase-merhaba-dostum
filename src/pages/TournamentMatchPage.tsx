@@ -285,21 +285,38 @@ useEffect(() => {
   );
 
   if (userPendingMatch) {
-    console.log('⏰ Pending maç bulundu, 10 saniye sonra otomatik başlatılacak:', userPendingMatch.id);
+    console.log('⏰ Pending maç bulundu:', userPendingMatch.id);
     
-    // 10 saniye geri sayım
-    let countdown = 10;
-    const countdownInterval = setInterval(() => {
-      countdown--;
-      
-      if (countdown <= 0) {
-        clearInterval(countdownInterval);
-        // Otomatik olarak maçı başlat
+    // GERÇEK RAKIP KONTROLÜ
+    const opponentId = userPendingMatch.player1_id === user.id ? 
+      userPendingMatch.player2_id : 
+      userPendingMatch.player1_id;
+    
+    const isOpponentBot = !opponentId || opponentId.startsWith('bot_');
+    console.log('🤖 Rakip bot mu?', isOpponentBot, 'Rakip ID:', opponentId?.slice(-8));
+    
+    if (isOpponentBot) {
+      // Bot rakip - hemen başlat (3 saniye bekle)
+      setTimeout(() => {
+        console.log('🤖 Bot rakip ile maç başlatılıyor');
         autoStartMatch(userPendingMatch.id);
-      }
-    }, 1000);
+      }, 3000);
+    } else {
+      // Gerçek rakip - 10 saniye bekle
+      let countdown = 10;
+      const countdownInterval = setInterval(() => {
+        countdown--;
+        console.log(`⏰ Gerçek rakip ile ${countdown} saniye kaldı`);
+        
+        if (countdown <= 0) {
+          clearInterval(countdownInterval);
+          console.log('👥 Gerçek rakip ile maç başlatılıyor');
+          autoStartMatch(userPendingMatch.id);
+        }
+      }, 1000);
 
-    return () => clearInterval(countdownInterval);
+      return () => clearInterval(countdownInterval);
+    }
   }
 }, [tournament, matches, user]);
 
