@@ -183,6 +183,20 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     await refreshProfile(true);
   };
 
+  const refreshProfile = async () => {
+  if (!user) return;
+  
+  const { data: profileData } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+  
+  if (profileData) {
+    setProfile(profileData);
+  }
+};
+
   const getTotalCredits = () => {
     if (!profile) return 0;
     return profile.game_credits + profile.bonus_credits;
