@@ -188,7 +188,7 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center justify-between">
-                              <span className="font-semibold">Puana Karşı</span>
+                              <span className="font-semibold">Puanlı</span>
                               {gameType === 'score' && (
                                 <div className="w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center">
                                   <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
