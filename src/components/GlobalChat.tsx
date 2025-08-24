@@ -200,7 +200,7 @@ useEffect(() => {
         const { error } = await supabase
           .from('global_chat')
           .insert({
-            user_id: '00000000-0000-0000-0000-000000000000',
+            user_id: null,
             username: 'kelimeciBot',
             message: 'Hoşgeldiniz! 🎉 Lütfen kurallar çerçevesinde sohbet ediniz. Küfür, argo ve hakaret içeren mesajlar otomatik olarak tespit edilir ve 2 gün sohbet yasağı uygulanır.',
             avatar_url: '/bot-avatar.png'
