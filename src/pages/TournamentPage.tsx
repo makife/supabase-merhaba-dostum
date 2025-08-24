@@ -452,11 +452,7 @@ const createTournament = async (selectedGameType: 'timed' | 'score') => {
                   <span className="font-semibold">
                     {gameType === 'timed' ? 'Süreli Oyun (2 dakika)' : 'Puanlı Oyun (500 puan)'}
                   </span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Oyun türü seçildi
-                </p>
-              </div>
+
             </div>
             <div className="flex items-center space-x-4">
               <div className="flex-1">
