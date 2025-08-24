@@ -69,21 +69,30 @@ export default function ChatPage() {
   }, [viewMode, user]);
 
   useEffect(() => {
-  // Sohbet sayfası açıldığında bildirimleri temizle
-  const markChatNotificationsAsRead = async () => {
-    if (!user) return;
+    // Chat sayfası açıldığında özel mesaj bildirimlerini temizle
+    const markPrivateMessagesAsRead = async () => {
+      if (!user?.id) return;
 
-    try {
-      // Chat notifications için supabase.rpc kullanmayı deneyelim daha sonra
-      
-      console.log('Chat notifications marked as read');
-    } catch (error) {
-      console.error('Error marking notifications as read:', error);
-    }
-  };
+      try {
+        // Okunmamış özel mesajları okundu olarak işaretle
+        const { error } = await supabase
+          .from('private_messages')
+          .update({ is_read: true })
+          .eq('recipient_id', user.id)
+          .eq('is_read', false);
 
-  markChatNotificationsAsRead();
-}, [user]);
+        if (error) {
+          console.error('Mesajlar okundu olarak işaretlenirken hata:', error);
+        } else {
+          console.log('✅ Özel mesajlar okundu olarak işaretlendi');
+        }
+      } catch (error) {
+        console.error('Error marking messages as read:', error);
+      }
+    };
+
+    markPrivateMessagesAsRead();
+  }, [user?.id]);
 
   const handleBackToMenu = () => {
     playSound('buttonClick');
