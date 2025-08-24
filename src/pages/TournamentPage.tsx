@@ -392,57 +392,43 @@ const startTournamentWithBots = async () => {
   }
 };
 
-
-const createTournamentMatches = async (tournamentId: string, allParticipants: any[]) => {
+// 🔧 Bu fonksiyonu TournamentPage component'inin içine ekleyin (diğer fonksiyonların yanına)
+const createTournamentMatches = async (tournamentId: string, realParticipants: any[]) => {
   try {
     console.log('🏟️ Manuel maç oluşturma başlıyor:', tournamentId);
-    console.log('👥 Gelen toplam katılımcı:', allParticipants.length);
+    console.log('👥 Gelen katılımcılar:', realParticipants.length);
 
-    // DEBUG: Hangi katılımcılar geldi?
-    console.log('🔍 KATILIMCI ANALİZİ:');
-    allParticipants.forEach((p, index) => {
-      console.log(`  ${index + 1}. ID: ${p.user_id?.slice(-8) || 'null'} | is_bot: ${p.is_bot} | seed: ${p.seed}`);
-    });
+    // SADECE GERÇEK KATILIMCILAR - bot olanları filtrele
+    const participants = realParticipants.filter(p => p.user_id && !p.is_bot);
+    console.log('✅ Gerçek oyuncular:', participants.length);
 
-    // GERÇEK VE BOT KATILIMCILAR - HEPSİNİ DAHIL ET
-    const realPlayers = allParticipants.filter(p => p.user_id !== null && p.is_bot === false);
-    const botPlayers = allParticipants.filter(p => p.user_id === null || p.is_bot === true);
-    
-    console.log('✅ Gerçek oyuncu:', realPlayers.length);
-    console.log('🤖 Bot sayısı:', botPlayers.length);
-    console.log('📊 Toplam:', realPlayers.length + botPlayers.length);
-
-    if (allParticipants.length < 8) {
-      throw new Error(`Toplam 8 katılımcı olmalı. Şu an ${allParticipants.length} katılımcı var.`);
+    if (participants.length < 1) {
+      throw new Error('En az 1 gerçek oyuncu bulunmalı');
     }
 
-    // TÜM KATILIMCILARI SEED SIRASINA GÖRE SIRALA
-    const sortedParticipants = [...allParticipants].sort((a, b) => a.seed - b.seed);
+    // 8 kişilik turnuva için seed sıralaması
+    const shuffledParticipants = [...participants].sort(() => Math.random() - 0.5);
     
-    console.log('📋 Sıralanmış katılımcılar:');
-    sortedParticipants.forEach((p, index) => {
-      console.log(`  ${index + 1}. Seed ${p.seed}: ${p.user_id?.slice(-8) || 'BOT'} (${p.is_bot ? 'Bot' : 'Human'})`);
-    });
-
     const matches = [];
 
-    // 4 MAÇ OLUŞTUR (8 kişilik turnuva için)
+    // 4 maç oluştur (çeyrek final)
     for (let i = 0; i < 4; i++) {
-      const player1Index = i * 2;
-      const player2Index = i * 2 + 1;
-      
-      const player1 = sortedParticipants[player1Index];
-      const player2 = sortedParticipants[player2Index];
-      
-      // Player ID'leri belirle
-      let player1_id = player1?.user_id;
-      let player2_id = player2?.user_id;
-      
-      // Bot ise özel ID oluştur
-      if (!player1_id || player1?.is_bot) {
+      let player1_id = null;
+      let player2_id = null;
+
+      // Gerçek oyuncuları sırayla yerleştir
+      if (i * 2 < shuffledParticipants.length) {
+        player1_id = shuffledParticipants[i * 2].user_id;
+      }
+      if (i * 2 + 1 < shuffledParticipants.length) {
+        player2_id = shuffledParticipants[i * 2 + 1].user_id;
+      }
+
+      // Eksikse bot ID'si generate et
+      if (!player1_id) {
         player1_id = `bot_${Math.random().toString(36).substr(2, 9)}`;
       }
-      if (!player2_id || player2?.is_bot) {
+      if (!player2_id) {
         player2_id = `bot_${Math.random().toString(36).substr(2, 9)}`;
       }
 
@@ -456,21 +442,17 @@ const createTournamentMatches = async (tournamentId: string, allParticipants: an
       };
 
       matches.push(match);
-      
-      console.log(`🥊 Maç ${i + 1}:`, {
-        player1: player1_id.includes('bot_') ? '🤖 Bot' : `👤 ${player1_id.slice(-8)}`,
-        player2: player2_id.includes('bot_') ? '🤖 Bot' : `👤 ${player2_id.slice(-8)}`
-      });
+      console.log(`🥊 Maç ${i + 1}: ${player1_id.includes('bot_') ? '🤖 Bot' : '👤 ' + player1_id.slice(-8)} vs ${player2_id.includes('bot_') ? '🤖 Bot' : '👤 ' + player2_id.slice(-8)}`);
     }
 
-    // DATABASE'E KAYDET
+    // Database'e kaydet
     const { data, error } = await supabase
       .from('tournament_matches')
       .insert(matches)
       .select();
 
     if (error) {
-      console.error('❌ Supabase maç kaydetme hatası:', error);
+      console.error('❌ Maç kaydetme hatası:', error);
       throw error;
     }
 
@@ -482,6 +464,11 @@ const createTournamentMatches = async (tournamentId: string, allParticipants: an
     throw error;
   }
 };
+
+  // Bu fonksiyon artık kullanılmıyor, Supabase fonksiyonu kullanıyoruz
+  // const createTournamentMatches = async (tournamentId: string) => {
+  //   // Artık start_tournament_automatically fonksiyonu içinde yapılıyor
+  // };
 
   const leaveTournament = async () => {
     if (!user || !currentTournament) return;
