@@ -173,13 +173,12 @@ const createTournament = async (selectedGameType: 'timed' | 'score') => {
     setIsJoining(true);
 
     try {
-      // Check if already in tournament
       const { data: existingParticipant } = await supabase
         .from('tournament_participants')
         .select('*')
         .eq('tournament_id', tournamentId)
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (existingParticipant) {
         toast({

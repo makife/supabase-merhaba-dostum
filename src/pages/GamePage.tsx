@@ -1274,8 +1274,14 @@ useEffect(() => {
           const hasAI = participants.some(p => p.is_bot);
           const hasRealOpponent = participants.filter(p => !p.is_bot).length >= 2;
           return hasAI && !hasRealOpponent;
-        case 'tournament':
-          return true; // Tournament is always vs AI for now
+        case 'tournament': {
+          // Tournament: AI sadece rakip yoksa
+          if (tournamentMatch && user) {
+            const opponentId = tournamentMatch.player1_id === user.id ? tournamentMatch.player2_id : tournamentMatch.player1_id;
+            return !opponentId; // opponent yoksa AI
+          }
+          return false;
+        }
         default:
           return false;
       }
@@ -1283,7 +1289,7 @@ useEffect(() => {
     
     console.log(`🤖 AI Status Check - Mode: ${gameMode}, Participants: ${participants.length}, PlayingWithAI: ${aiStatus}`);
     return aiStatus;
-  }, [gameMode, participants]);
+  }, [gameMode, participants, tournamentMatch, user?.id]);
 
   // Real-time kelime senkronizasyonu
 useEffect(() => {
