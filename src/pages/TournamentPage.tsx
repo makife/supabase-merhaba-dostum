@@ -120,10 +120,18 @@ useEffect(() => {
       filter: `tournament_id=eq.${currentTournament.id}`
     }, (payload) => {
       console.log('📡 Katılımcı değişikliği:', payload);
-      // Katılımcıları yeniden yükle
-      loadTournamentParticipants(currentTournament.id);
+      
+      // ⚡ ANINDA katılımcıları yeniden yükle
+      setTimeout(() => {
+        loadTournamentParticipants(currentTournament.id);
+      }, 100);
     })
-    .subscribe();
+    .subscribe((status) => {
+      console.log('📡 Subscription durumu:', status);
+    });
+
+  // İlk yükleme de yap
+  loadTournamentParticipants(currentTournament.id);
 
   return () => {
     console.log('🔌 Turnuva real-time dinlemesi kesildi');
