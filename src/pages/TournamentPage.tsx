@@ -291,6 +291,8 @@ const createTournament = async (selectedGameType: 'timed' | 'score') => {
 
 const loadTournamentParticipants = async (tournamentId: string) => {
   try {
+    console.log('🔄 loadTournamentParticipants çağrıldı:', tournamentId);
+    
     const { data, error } = await supabase
       .from('tournament_participants')
       .select(`
@@ -299,6 +301,16 @@ const loadTournamentParticipants = async (tournamentId: string) => {
       `)
       .eq('tournament_id', tournamentId)
       .order('seed');
+
+    console.log('📊 Katılımcı sorgusu sonucu:', {
+      error,
+      count: data?.length || 0,
+      data: data?.map(p => ({
+        seed: p.seed,
+        username: p.profiles?.username,
+        is_bot: p.is_bot
+      }))
+    });
 
     if (!error && data) {
       setParticipants(data);
