@@ -51,6 +51,7 @@ interface GamePageProps {
   onGameComplete?: (winnerId: string, player1Score: number, player2Score: number) => void;
   tournamentMatch?: TournamentMatch;
   gameType?: 'timed' | 'score';
+  participants?: any[];
 }
 
 // Joker türleri
@@ -64,14 +65,15 @@ const GamePage = ({
   gameMode = 'vs-computer', 
   onGameComplete,
   tournamentMatch,
-  gameType: propGameType 
+  gameType: propGameType,
+  participants: propsParticipants = []
 }: GamePageProps) => {
   const { user } = useAuth();
   const { consumeCredit, isPremium } = useUser();
   const { hasPurchased, settings } = useUserPurchases();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { currentRoom, updateScore, participants, endGame, leaveRoom,sendRematchRequest,respondRematchRequest,currentRematchRequest,setCurrentRematchRequest } = useGame();
+  const { currentRoom, updateScore, participants: gameParticipants, endGame, leaveRoom,sendRematchRequest,respondRematchRequest,currentRematchRequest,setCurrentRematchRequest } = useGame();
   const { validateWord, isValidating } = useWordValidation();
   const { playSound, playTimeWarningSequence, playCelebrationSound, playGameLoseSound } = useSounds();
   const { fadeOutBackgroundMusic, fadeInBackgroundMusic } = useMusic();
