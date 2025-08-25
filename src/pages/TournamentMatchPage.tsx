@@ -173,7 +173,9 @@ const loadTournamentData = async () => {
   if (!tournamentId) return;
 
   try {
-    // 🔥 ÖNCELİKLE participants'ı yükle
+    console.log('🔄 Tournament verileri yükleniyor...');
+    
+    // Önce participants'ı yükle
     const { data: participantsData, error: participantsError } = await supabase
       .from('tournament_participants')
       .select(`
@@ -207,37 +209,15 @@ const loadTournamentData = async () => {
       .order('match_number');
 
     if (matchesError) throw matchesError;
-
-    // 🔍 DEBUG: Matches'ı kontrol et
-    console.log('📊 Matches yüklendi:', {
-      count: matchesData?.length || 0,
-      matches: matchesData?.map(m => ({
-        id: m.id.slice(-8),
-        player1: m.player1_id?.slice(-8) || 'NULL',
-        player2: m.player2_id?.slice(-8) || 'NULL', 
-        status: m.status
-      }))
-    });
     
     setMatches(matchesData || []);
 
-    // Aktif maç kontrolü
-    if (user && matchesData) {
-      const userActiveMatch = matchesData.find(match => 
-        (match.player1_id === user.id || match.player2_id === user.id) && 
-        match.status === 'active'
-      );
-
-    console.log('👤 Kullanıcının aktif maçı:', {
-      found: !!userActiveMatch,
-      matchId: userActiveMatch?.id?.slice(-8),
-      player1: userActiveMatch?.player1_id?.slice(-8) || 'NULL',
-      player2: userActiveMatch?.player2_id?.slice(-8) || 'NULL',
-      status: userActiveMatch?.status
+    // Debug info
+    console.log('📊 Tournament verileri:', {
+      participants: participantsData?.length,
+      tournament: !!tournamentData,
+      matches: matchesData?.length
     });
-      
-      setCurrentMatch(userActiveMatch || null);
-    }
 
   } catch (error) {
     console.error('Error loading tournament data:', error);
@@ -251,33 +231,27 @@ const loadTournamentData = async () => {
   }, [tournamentId, user]);
 
   // Real-time güncellemeler için subscription
-  useEffect(() => {
-    if (!tournamentId) return;
+useEffect(() => {
+  if (!tournamentId) return;
 
-    const channel = supabase
-      .channel(`tournament-${tournamentId}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'tournament_matches',
-        filter: `tournament_id=eq.${tournamentId}`
-      }, () => {
-        loadTournamentData();
-      })
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'tournaments',
-        filter: `id=eq.${tournamentId}`
-      }, () => {
-        loadTournamentData();
-      })
-      .subscribe();
+  // Katılımcılar için real-time subscription
+  const participantsChannel = supabase
+    .channel(`tournament-participants-${tournamentId}`)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'tournament_participants',
+      filter: `tournament_id=eq.${tournamentId}`
+    }, () => {
+      console.log('📡 Tournament katılımcı değişikliği');
+      loadTournamentData(); // Tüm verileri yeniden yükle
+    })
+    .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [tournamentId]);
+  return () => {
+    supabase.removeChannel(participantsChannel);
+  };
+}, [tournamentId]);
 
   // Otomatik maç başlatma effect'i ekle
 useEffect(() => {
