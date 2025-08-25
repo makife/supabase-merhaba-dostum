@@ -75,7 +75,15 @@ const GamePage = ({
   const { toast } = useToast();
   const { currentRoom, updateScore, participants: gameParticipants, endGame, leaveRoom,sendRematchRequest,respondRematchRequest,currentRematchRequest,setCurrentRematchRequest } = useGame();
   const participants = useMemo(() => {
-  return gameMode === 'tournament' ? (propsParticipants || []) : gameParticipants;
+  console.log('🔍 Participants memo - Mode:', gameMode, 'Props:', propsParticipants?.length || 0, 'Game:', gameParticipants?.length || 0);
+  
+  if (gameMode === 'tournament') {
+    console.log('🏆 Tournament mode - Using propsParticipants:', propsParticipants?.length || 0);
+    return propsParticipants || [];
+  }
+  
+  console.log('🎮 Other mode - Using gameParticipants:', gameParticipants?.length || 0);
+  return gameParticipants || [];
 }, [gameMode, propsParticipants, gameParticipants]);
   const { validateWord, isValidating } = useWordValidation();
   const { playSound, playTimeWarningSequence, playCelebrationSound, playGameLoseSound } = useSounds();
