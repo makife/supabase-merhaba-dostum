@@ -386,84 +386,23 @@ const startTournamentWithBots = async () => {
    }
    console.log('🏁 Turnuva başlatılıyor:', currentTournament.id);
    
-   // Önce turnuvayı active yap ki duplicate işlem olmasın
-   await supabase
-     .from('tournaments')
-     .update({ status: 'active', started_at: new Date().toISOString() })
-     .eq('id', currentTournament.id)
-     .eq('status', 'waiting');
-   
-   // KATILIMCI KONTROLÜ
-   const { data: allParticipants, error } = await supabase
-     .from('tournament_participants')
-     .select(`
-       *,
-       profiles:user_id (username, avatar_url)
-     `)
-     .eq('tournament_id', currentTournament.id)
-     .order('seed');
-
-   if (error) throw error;
-   console.log('🔍 TÜM KATILIMCILAR:', allParticipants?.length);
-   
-   // GERÇEK OYUNCULAR - is_bot false ve user_id null olmayan
-   const realPlayers = allParticipants?.filter(p => 
-     p.user_id !== null && p.is_bot === false
-   ) || [];
-   
-   console.log('👥 Gerçek oyuncu sayısı:', realPlayers.length);
-   
-   if (realPlayers.length < 1) {
-     // Turnuvayı geri waiting durumuna çevir
-     await supabase
-       .from('tournaments')
-       .update({ status: 'waiting' })
-       .eq('id', currentTournament.id);
-       
-     toast({
-       title: '⚠️ Yetersiz Katılımcı',
-       description: 'Turnuva için en az 1 gerçek oyuncu gereklidir.',
-       variant: 'destructive',
+   // Database fonksiyonu ile turnuvayı başlat
+   const { data: result, error } = await supabase
+     .rpc('start_tournament_automatically', {
+       p_tournament_id: currentTournament.id
      });
-     return;
+   
+   if (error) throw error;
+   
+   if (!result?.success) {
+     throw new Error(result?.error || 'Turnuva başlatılamadı');
    }
    
-   // BOT EKLEME
-   const currentTotal = allParticipants?.length || 0;
-   const botsNeeded = 8 - currentTotal;
-   
-   if (botsNeeded > 0) {
-     console.log('🤖 Bot ekleniyor:', botsNeeded);
-     const botsToAdd = [];
-     for (let i = 0; i < botsNeeded; i++) {
-       botsToAdd.push({
-         tournament_id: currentTournament.id,
-         user_id: null,
-         seed: currentTotal + i + 1,
-         is_bot: true
-       });
-     }
-     await supabase.from('tournament_participants').insert(botsToAdd);
-     console.log('✅ Botlar eklendi');
-   }
-   
-   // Bot eklendikten sonra TÜM katılımcıları al (gerçek + bot)
-   const { data: allFinalParticipants } = await supabase
-     .from('tournament_participants')
-     .select(`
-       *,
-       profiles:user_id (username, avatar_url)
-     `)
-     .eq('tournament_id', currentTournament.id)
-     .order('seed');
-   
-   // MAÇ OLUŞTURMA - TÜM katılımcıları gönder
-   console.log('🎯 Maç oluşturma başlıyor...');
-   await createTournamentMatches(currentTournament.id, allFinalParticipants || []);
+   console.log('✅ Turnuva başlatıldı:', result);
    
    toast({
      title: '🏁 Turnuva Başladı!',
-     description: `${realPlayers.length} gerçek oyuncu ile turnuva başladı.`,
+     description: `${result.participants} katılımcı ile turnuva başladı.`,
      duration: 3000,
    });
    
@@ -492,82 +431,6 @@ const startTournamentWithBots = async () => {
  }
 };
 
-// 🔧 Bu fonksiyonu TournamentPage component'inin içine ekleyin (diğer fonksiyonların yanına)
-const createTournamentMatches = async (tournamentId: string, realParticipants: any[]) => {
-  try {
-    console.log('🏟️ Manuel maç oluşturma başlıyor:', tournamentId);
-    console.log('👥 Gelen katılımcılar:', realParticipants.length);
-
-    const participants = realParticipants;
-    console.log('✅ Katılımcılar:', participants.length);
-
-    if (participants.length < 1) {
-      throw new Error('En az 1 gerçek oyuncu bulunmalı');
-    }
-
-    const shuffledParticipants = [...participants].sort(() => Math.random() - 0.5);
-    const matches = [];
-
-    // 4 maç oluştur (çeyrek final)
-    for (let i = 0; i < 4; i++) {
-      let player1_id = null;
-      let player2_id = null;
-
-      // Gerçek oyuncuları sırayla yerleştir
-      if (i * 2 < shuffledParticipants.length) {
-        // ✅ user_id'yi kontrol et
-        const p1 = shuffledParticipants[i * 2];
-        player1_id = p1?.user_id || null;
-        console.log(`🔍 Player 1 for match ${i+1}:`, {
-          participant: p1,
-          user_id: player1_id,
-          is_bot: p1?.is_bot
-        });
-      }
-      
-      if (i * 2 + 1 < shuffledParticipants.length) {
-        // ✅ user_id'yi kontrol et
-        const p2 = shuffledParticipants[i * 2 + 1];
-        player2_id = p2?.user_id || null;
-        console.log(`🔍 Player 2 for match ${i+1}:`, {
-          participant: p2,
-          user_id: player2_id,
-          is_bot: p2?.is_bot
-        });
-      }
-
-      const match = {
-        tournament_id: tournamentId,
-        round: 1,
-        match_number: i + 1,
-        player1_id,
-        player2_id,
-        status: 'pending'
-      };
-
-      matches.push(match);
-      console.log(`🥊 Maç ${i + 1}: ${player1_id ? '👤 ' + player1_id.slice(-8) : '🤖 Bot'} vs ${player2_id ? '👤 ' + player2_id.slice(-8) : '🤖 Bot'}`);
-    }
-
-    // Database'e kaydet
-    const { data, error } = await supabase
-      .from('tournament_matches')
-      .insert(matches)
-      .select();
-
-    if (error) {
-      console.error('❌ Maç kaydetme hatası:', error);
-      throw error;
-    }
-
-    console.log('✅ Maçlar başarıyla oluşturuldu:', data?.length);
-    return data;
-
-  } catch (error) {
-    console.error('❌ createTournamentMatches hatası:', error);
-    throw error;
-  }
-};
 
   // Bu fonksiyon artık kullanılmıyor, Supabase fonksiyonu kullanıyoruz
   // const createTournamentMatches = async (tournamentId: string) => {

@@ -1066,7 +1066,26 @@ const leaveRoom = useCallback(async (): Promise<void> => {
       }
     }
     
-    // Update room with final status and winner - THIS TRIGGERS THE DATABASE FUNCTION
+    // Use database function to update game stats
+    if (playerStats) {
+      await supabase.rpc('update_game_stats', {
+        p_user_id: playerStats.userId,
+        p_score: playerStats.score,
+        p_words: playerStats.words,
+        p_is_winner: playerStats.isWinner
+      });
+    }
+    
+    if (opponentStats && !participants.find(p => p.user_id === opponentStats.userId && p.is_bot)) {
+      await supabase.rpc('update_game_stats', {
+        p_user_id: opponentStats.userId,
+        p_score: opponentStats.score,
+        p_words: opponentStats.words,
+        p_is_winner: opponentStats.isWinner
+      });
+    }
+    
+    // Update room with final status
     await supabase
       .from('game_rooms')
       .update({
