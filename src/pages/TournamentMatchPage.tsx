@@ -207,6 +207,18 @@ const loadTournamentData = async () => {
       .order('match_number');
 
     if (matchesError) throw matchesError;
+
+    // 🔍 DEBUG: Matches'ı kontrol et
+    console.log('📊 Matches yüklendi:', {
+      count: matchesData?.length || 0,
+      matches: matchesData?.map(m => ({
+        id: m.id.slice(-8),
+        player1: m.player1_id?.slice(-8) || 'NULL',
+        player2: m.player2_id?.slice(-8) || 'NULL', 
+        status: m.status
+      }))
+    });
+    
     setMatches(matchesData || []);
 
     // Aktif maç kontrolü
@@ -215,6 +227,15 @@ const loadTournamentData = async () => {
         (match.player1_id === user.id || match.player2_id === user.id) && 
         match.status === 'active'
       );
+
+    console.log('👤 Kullanıcının aktif maçı:', {
+      found: !!userActiveMatch,
+      matchId: userActiveMatch?.id?.slice(-8),
+      player1: userActiveMatch?.player1_id?.slice(-8) || 'NULL',
+      player2: userActiveMatch?.player2_id?.slice(-8) || 'NULL',
+      status: userActiveMatch?.status
+    });
+      
       setCurrentMatch(userActiveMatch || null);
     }
 
