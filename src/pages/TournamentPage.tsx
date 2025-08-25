@@ -107,35 +107,48 @@ const TournamentPage = () => {
 
 // Real-time katılımcı güncellemeleri için subscription
 useEffect(() => {
-  if (!currentTournament) return;
+  if (!currentTournament?.id) return;
 
   console.log('🔗 Turnuva real-time dinlemeye başlıyor:', currentTournament.id);
+  
+  let channel: any = null;
 
-  const channel = supabase
-    .channel(`tournament-participants-${currentTournament.id}`)
-    .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'tournament_participants',
-      filter: `tournament_id=eq.${currentTournament.id}`
-    }, (payload) => {
-      console.log('📡 Katılımcı değişikliği:', payload);
+  const setupSubscription = async () => {
+    try {
+      channel = supabase
+        .channel(`tournament-participants-${currentTournament.id}`)
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'tournament_participants',
+          filter: `tournament_id=eq.${currentTournament.id}`
+        }, (payload) => {
+          console.log('📡 Katılımcı değişikliği:', payload);
+          
+          // Debounced update
+          setTimeout(() => {
+            loadTournamentParticipants(currentTournament.id);
+          }, 200);
+        })
+        .subscribe((status) => {
+          console.log('📡 Subscription durumu:', status);
+        });
+
+      // İlk yükleme
+      await loadTournamentParticipants(currentTournament.id);
       
-      // ⚡ ANINDA katılımcıları yeniden yükle
-      setTimeout(() => {
-        loadTournamentParticipants(currentTournament.id);
-      }, 100);
-    })
-    .subscribe((status) => {
-      console.log('📡 Subscription durumu:', status);
-    });
+    } catch (error) {
+      console.error('❌ Subscription kurulum hatası:', error);
+    }
+  };
 
-  // İlk yükleme de yap
-  loadTournamentParticipants(currentTournament.id);
+  setupSubscription();
 
   return () => {
-    console.log('🔌 Turnuva real-time dinlemesi kesildi');
-    supabase.removeChannel(channel);
+    if (channel) {
+      console.log('🔌 Turnuva real-time dinlemesi kesildi');
+      supabase.removeChannel(channel);
+    }
   };
 }, [currentTournament?.id]);
 
