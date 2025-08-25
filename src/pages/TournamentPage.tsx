@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -302,7 +302,7 @@ const createTournament = async (selectedGameType: 'timed' | 'score') => {
     setIsJoining(false);
   };
 
-const loadTournamentParticipants = useCallback(async (tournamentId: string) => {
+const loadTournamentParticipants = async (tournamentId: string) => {
   try {
     console.log('🔄 loadTournamentParticipants çağrıldı:', tournamentId);
     
@@ -321,19 +321,17 @@ const loadTournamentParticipants = useCallback(async (tournamentId: string) => {
       data: data?.map(p => ({
         seed: p.seed,
         username: p.profiles?.username,
-        is_bot: p.is_bot,
-        user_id: p.user_id?.slice(-8)
+        is_bot: p.is_bot
       }))
     });
 
     if (!error && data) {
       setParticipants(data);
-      console.log('✅ Participants state güncellendi:', data.length);
     }
   } catch (error) {
     console.error('Error loading participants:', error);
   }
-}, []); // No dependencies - pure function
+};
 
 let isStarting = false; // Race condition önleyici
 
