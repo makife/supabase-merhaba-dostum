@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -87,30 +88,15 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
     setLoading(true);
     try {
-      // Önbelleği atlamak için timestamp ekle
-      const cacheBreaker = forceRefresh ? `?t=${Date.now()}` : '';
-      
-      // Tüm alanları seç - sadece bazılarını değil
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')  // Tüm alanları seç
+        .select('*')
         .eq('id', user.id)
         .single();
 
       if (!error && data) {
+        console.log('Profile refreshed:', data);
         setProfile(data);
-        
-        // Browser önbelleğini temizle
-        if (forceRefresh && 'caches' in window) {
-          try {
-            const cacheNames = await caches.keys();
-            await Promise.all(
-              cacheNames.map(cacheName => caches.delete(cacheName))
-            );
-          } catch (cacheError) {
-            console.log('Cache clearing failed:', cacheError);
-          }
-        }
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -120,20 +106,22 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   };
 
   const setUserOffline = async () => {
-  if (!user?.id) return;
-  
-  try {
-    await supabase.from('user_presence' as any).update({ 
-      is_online: false 
-    }).eq('user_id', user.id);
-  } catch (error) {
-    console.error('Error setting offline:', error);
-  }
-};
+    if (!user?.id) return;
+    
+    try {
+      await supabase.from('user_presence' as any).update({ 
+        is_online: false 
+      }).eq('user_id', user.id);
+    } catch (error) {
+      console.error('Error setting offline:', error);
+    }
+  };
 
   const updateCredits = (newCredits: number) => {
     if (profile) {
-      setProfile({ ...profile, game_credits: newCredits });
+      const updatedProfile = { ...profile, game_credits: newCredits };
+      setProfile(updatedProfile);
+      console.log('Credits updated locally:', updatedProfile);
     }
   };
 
@@ -141,7 +129,6 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     if (!user || !profile) return;
     
     try {
-      // Önce ana hakları 5'e tamamla
       const currentBase = profile.game_credits;
       const neededForFull = Math.max(0, 5 - currentBase);
       const newBase = Math.min(5, currentBase + bonusCredits);
@@ -158,11 +145,13 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
       if (error) throw error;
 
-      setProfile({ 
+      const updatedProfile = { 
         ...profile, 
         game_credits: newBase,
         bonus_credits: newTotalBonus
-      });
+      };
+      setProfile(updatedProfile);
+      console.log('Bonus credits added:', updatedProfile);
     } catch (error) {
       console.error('Error adding bonus credits:', error);
     }
@@ -173,7 +162,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     
     try {
       await supabase.rpc('check_and_refresh_credits', { user_id: user.id });
-      await refreshProfile(true); // Force refresh
+      await refreshProfile(true);
     } catch (error) {
       console.error('Error checking credits:', error);
     }
@@ -204,17 +193,11 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       return false;
     }
     
-    console.log('consumeCredit: profile?.premium_until:', profile?.premium_until);
-    console.log('consumeCredit: isPremium:', isPremium);
-    console.log('consumeCredit: current date:', new Date());
-    
-    // Premium kullanıcılar için kredi tüketimi yok
     if (isPremium) {
       console.log('consumeCredit: User is premium, returning true');
       return true;
     }
     
-    // Toplam kredi kontrolü
     const totalCredits = getTotalCredits();
     if (totalCredits <= 0) return false;
     
@@ -222,15 +205,12 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       let newGameCredits = profile.game_credits;
       let newBonusCredits = profile.bonus_credits;
       
-      // Önce ana hakları kullan
       if (profile.game_credits > 0) {
         newGameCredits = profile.game_credits - 1;
       } else if (profile.bonus_credits > 0) {
-        // Ana haklar bitmiş, bonus hakları kullan
         newBonusCredits = profile.bonus_credits - 1;
       }
       
-      // Veritabanını güncelle
       const { error } = await supabase
         .from('profiles')
         .update({ 
@@ -241,12 +221,13 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       
       if (error) throw error;
       
-      // Local state'i güncelle
-      setProfile({ 
+      const updatedProfile = { 
         ...profile, 
         game_credits: newGameCredits,
         bonus_credits: newBonusCredits
-      });
+      };
+      setProfile(updatedProfile);
+      console.log('Credit consumed:', updatedProfile);
       return true;
     } catch (error) {
       console.error('Error consuming credit:', error);
@@ -254,174 +235,180 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     }
   };
 
-  // Kullanıcının online olup olmadığını kontrol et
-const isUserOnline = (userId: string) => {
-  return onlineUsers.some(user => user.id === userId);
-};
-
-// Online kullanıcıları yenile
-const refreshOnlineUsers = async () => {
-  try {
-    const { data }: any = await supabase
-      .from('user_presence' as any)
-      .select(`
-        user_id, 
-        last_seen, 
-        profiles!inner(
-          username, 
-          avatar_url
-        )
-      `)
-      .eq('is_online', true)
-      .gte('last_seen', new Date(Date.now() - 15 * 1000).toISOString());
-    
-    if (data) {
-      setOnlineUsers(data.map((item: any) => ({
-        id: item.user_id,
-        username: item.profiles.username || 'Unknown',
-        avatar_url: item.profiles.avatar_url,
-        last_seen: item.last_seen
-      })));
-    }
-  } catch (error) {
-    console.error('Error refreshing online users:', error);
-  }
-};
-
-  useEffect(() => {
-  if (!user?.id) return;
-
-  const updatePresence = async () => {
-  try {
-    await supabase.from('user_presence' as any).upsert({ 
-      user_id: user.id, 
-      is_online: true, 
-      last_seen: new Date().toISOString() 
-    });
-  } catch (error) {
-    console.error('Error updating presence:', error);
-  }
-};
-
-  const fetchOnlineUsers = async () => {
-  try {
-    console.log('Fetching online users...');
-    const { data }: any = await supabase
-      .from('user_presence' as any)
-      .select(`
-        user_id, 
-        last_seen, 
-        profiles!inner(
-          username, 
-          avatar_url
-        )
-      `)
-      .eq('is_online', true)
-      .gte('last_seen', new Date(Date.now() - 15 * 1000).toISOString());
-
-    console.log('Fetched data:', data);
-    
-    if (data) {
-      setOnlineUsers(data.map((item: any) => ({
-        id: item.user_id,
-        username: item.profiles.username || 'Unknown',
-        avatar_url: item.profiles.avatar_url,
-        last_seen: item.last_seen
-      })));
-    }
-  } catch (error) {
-    console.error('Error fetching online users:', error);
-  }
-};
-
-  const handleBeforeUnload = () => {
-    setUserOffline();
+  const isUserOnline = (userId: string) => {
+    return onlineUsers.some(user => user.id === userId);
   };
 
-  // Sayfa görünürlüğü değiştiğinde
-  const handleVisibilityChange = () => {
-    if (document.hidden) {
+  const refreshOnlineUsers = async () => {
+    try {
+      const { data }: any = await supabase
+        .from('user_presence' as any)
+        .select(`
+          user_id, 
+          last_seen, 
+          profiles!inner(
+            username, 
+            avatar_url
+          )
+        `)
+        .eq('is_online', true)
+        .gte('last_seen', new Date(Date.now() - 15 * 1000).toISOString());
+      
+      if (data) {
+        setOnlineUsers(data.map((item: any) => ({
+          id: item.user_id,
+          username: item.profiles.username || 'Unknown',
+          avatar_url: item.profiles.avatar_url,
+          last_seen: item.last_seen
+        })));
+      }
+    } catch (error) {
+      console.error('Error refreshing online users:', error);
+    }
+  };
+
+  // User presence management
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const updatePresence = async () => {
+      try {
+        await supabase.from('user_presence' as any).upsert({ 
+          user_id: user.id, 
+          is_online: true, 
+          last_seen: new Date().toISOString() 
+        });
+      } catch (error) {
+        console.error('Error updating presence:', error);
+      }
+    };
+
+    const fetchOnlineUsers = async () => {
+      try {
+        const { data }: any = await supabase
+          .from('user_presence' as any)
+          .select(`
+            user_id, 
+            last_seen, 
+            profiles!inner(
+              username, 
+              avatar_url
+            )
+          `)
+          .eq('is_online', true)
+          .gte('last_seen', new Date(Date.now() - 15 * 1000).toISOString());
+
+        if (data) {
+          setOnlineUsers(data.map((item: any) => ({
+            id: item.user_id,
+            username: item.profiles.username || 'Unknown',
+            avatar_url: item.profiles.avatar_url,
+            last_seen: item.last_seen
+          })));
+        }
+      } catch (error) {
+        console.error('Error fetching online users:', error);
+      }
+    };
+
+    const handleBeforeUnload = () => {
       setUserOffline();
-    } else {
-      updatePresence();
-      fetchOnlineUsers();
-    }
-  };
+    };
 
-  updatePresence();
-  fetchOnlineUsers();
-  
-  const interval = setInterval(updatePresence, 5000);
-  const channel = supabase.channel('presence_changes').on('postgres_changes', {
-  event: '*', 
-  schema: 'public', 
-  table: 'user_presence' as any
-}, fetchOnlineUsers).subscribe();
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setUserOffline();
+      } else {
+        updatePresence();
+        fetchOnlineUsers();
+      }
+    };
 
-  window.addEventListener('beforeunload', handleBeforeUnload);
-  document.addEventListener('visibilitychange', handleVisibilityChange);
+    updatePresence();
+    fetchOnlineUsers();
+    
+    const interval = setInterval(updatePresence, 5000);
+    const channel = supabase.channel('presence_changes').on('postgres_changes', {
+      event: '*', 
+      schema: 'public', 
+      table: 'user_presence' as any
+    }, fetchOnlineUsers).subscribe();
 
-  return () => {
-    clearInterval(interval);
-    supabase.removeChannel(channel);
-    setUserOffline();
-    // Event listener'ları temizle
-    window.removeEventListener('beforeunload', handleBeforeUnload);
-    document.removeEventListener('visibilitychange', handleVisibilityChange);
-  };
-}, [user?.id]);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+      setUserOffline();
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user?.id]);
+
+  // Initial profile load
   useEffect(() => {
-    refreshProfile(true); // İlk yüklemede force refresh
-    // İlk yüklemede kredi kontrolü yap
     if (user) {
+      refreshProfile(true);
       checkAndRefreshCredits();
+    } else {
+      setProfile(null);
     }
   }, [user]);
 
-  // Her 15 dakikada bir kredi kontrolü yap
+  // Credit check interval
   useEffect(() => {
     if (!user || isPremium) return;
     
     const interval = setInterval(() => {
       checkAndRefreshCredits();
-    }, 15 * 60 * 1000); // 15 dakika
+    }, 15 * 60 * 1000);
 
     return () => clearInterval(interval);
   }, [user, isPremium]);
 
-  // Real-time subscription for profile changes
-useEffect(() => {
-  if (!user) return;
+  // ENHANCED Real-time profile subscription
+  useEffect(() => {
+    if (!user) return;
 
-  console.log('Setting up real-time profile subscription for user:', user.id);
+    console.log('🔄 Setting up real-time profile subscription for user:', user.id);
 
-  const channel = supabase
-    .channel('profile-realtime-updates')
-    .on(
-      'postgres_changes',
-      {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'profiles',
-        filter: `id=eq.${user.id}`
-      },
-      (payload) => {
-        console.log('Profile updated via real-time:', payload.new);
-        if (payload.new) {
-          setProfile(payload.new as UserProfile);
+    const channel = supabase
+      .channel('profile-realtime-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('🎯 Profile updated via real-time:', payload.new);
+          if (payload.new) {
+            // Immediately update the profile state
+            setProfile(prevProfile => {
+              const newProfile = payload.new as UserProfile;
+              console.log('📊 Profile stats updated:', {
+                total_score: newProfile.total_score,
+                wins: newProfile.wins,
+                losses: newProfile.losses,
+                game_credits: newProfile.game_credits
+              });
+              return newProfile;
+            });
+          }
         }
-      }
-    )
-    .subscribe((status) => {
-      console.log('Subscription status:', status);
-    });
+      )
+      .subscribe((status) => {
+        console.log('📡 Real-time subscription status:', status);
+      });
 
-  return () => {
-    console.log('Cleaning up profile subscription');
-    supabase.removeChannel(channel);
-  };
-}, [user]);
+    return () => {
+      console.log('🔌 Cleaning up profile subscription');
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   return (
     <UserContext.Provider value={{ 

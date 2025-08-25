@@ -1,28 +1,24 @@
-import React, { useEffect, useState } from 'react';
+
+import React, { useMemo } from 'react';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Crown, Zap } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { useUser } from '@/contexts/UserContext';
 
 interface LevelProgressProps {
   className?: string;
 }
 
 export const LevelProgress = ({ className = "" }: LevelProgressProps) => {
-  const { user } = useAuth();
-  const [levelData, setLevelData] = useState({
-    level: 1,
-    experience: 0,
-    nextLevelExp: 1000,
-    totalScore: 0
-  });
+  const { profile } = useUser();
 
-  // Calculate level from total score
-  const calculateLevel = (totalScore: number) => {
+  // Calculate level from total score - memoized for performance
+  const levelData = useMemo(() => {
+    const totalScore = profile?.total_score || 0;
+    
     const baseExp = 1000;
-    const expIncreasePerLevel = 100; // Her seviyede +100 EXP daha fazla gerekecek
+    const expIncreasePerLevel = 100;
     
     let level = 1;
     let totalExpNeeded = 0;
@@ -38,60 +34,12 @@ export const LevelProgress = ({ className = "" }: LevelProgressProps) => {
     const nextLevelExp = currentLevelExp;
 
     return { level, experience, nextLevelExp, totalScore };
-  };
+  }, [profile?.total_score]);
 
   // Calculate level-based exp multiplier
   const getLevelMultiplier = (level: number) => {
-    // Base multiplier of 1x, increases by 0.1x every level
     return 1 + (level - 1) * 0.1;
   };
-
-  useEffect(() => {
-    const fetchLevelData = async () => {
-      if (!user) return;
-
-      const { data } = await supabase
-        .from('profiles')
-        .select('total_score')
-        .eq('id', user.id)
-        .single();
-
-      if (data) {
-        const calculatedLevel = calculateLevel(data.total_score || 0);
-        setLevelData(calculatedLevel);
-      }
-    };
-
-    fetchLevelData();
-  }, [user]);
-
-  // Listen for real-time updates to total_score
-  useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel('level-progress-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'profiles',
-          filter: `id=eq.${user.id}`
-        },
-        (payload) => {
-          if (payload.new.total_score !== undefined) {
-            const calculatedLevel = calculateLevel(payload.new.total_score);
-            setLevelData(calculatedLevel);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user]);
 
   const progressPercentage = (levelData.experience / levelData.nextLevelExp) * 100;
 

@@ -42,7 +42,6 @@ const isGiftPremium = (profile: any) => {
   const createdAt = new Date(profile.created_at);
   const daysDiff = Math.ceil((premiumUntil.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
   
-  // If premium duration is around 7 days from creation, it's likely gift premium
   return daysDiff >= 6 && daysDiff <= 8 && premiumUntil > new Date();
 };
 
@@ -59,7 +58,6 @@ const HomePage = () => {
   const [userAvatar, setUserAvatar] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [timeUntilNextCredit, setTimeUntilNextCredit] = useState<string>('');
-  
 
   // Level hesaplama fonksiyonu
   const calculateLevel = (totalScore: number) => {
@@ -82,107 +80,79 @@ const HomePage = () => {
     return { level, experience, nextLevelExp };
   };
 
-// Kalan süreyi hesaplama fonksiyonu
-const calculateTimeUntilNextCredit = () => {
-  // Premium ise veya haklar zaten full ise gösterme
-  if (!profile?.last_credit_refresh || isPremium || (profile?.game_credits >= 5)) {
-    setTimeUntilNextCredit('');
-    return;
-  }
-
-  const now = new Date();
-  const lastRefresh = new Date(profile.last_credit_refresh);
-  const nextRefresh = new Date(lastRefresh.getTime() + (15 * 60 * 1000)); // 15 dakika ekle
-  
-  if (now >= nextRefresh) {
-    // Otomatik 1 kredi ekle
-    // refreshCredits();
-    setTimeUntilNextCredit('');
-    return;
-  }
-
-  const timeDiff = nextRefresh.getTime() - now.getTime();
-  const minutes = Math.floor(timeDiff / (1000 * 60));
-  const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
-  
-  setTimeUntilNextCredit(`${minutes}:${seconds.toString().padStart(2, '0')}`);
-};
-
-const refreshCredits = async () => {
-  if (!user || isPremium) return;
-  
-  const currentCredits = profile?.game_credits || 0;
-  
-  if (currentCredits >= 5) return;
-  
-  try {
-    const { error } = await supabase
-      .from('profiles')
-      .update({ 
-        game_credits: Math.min(currentCredits + 1, 5), // Maksimum 5 kredi
-        last_credit_refresh: new Date().toISOString() 
-      })
-      .eq('id', user.id);
-    
-    if (!error) {
-      // Profili manuel olarak refresh et
-      await refreshProfile();
-      
-      toast.success(`🎮 +1 Kredi eklendi! (${Math.min(currentCredits + 1, 5)}/5)`, {
-        description: `${5 - (currentCredits + 1)} kredi daha kazanabilirsin`,
-        duration: 3000,
-      });
-      playSound('buttonClick');
+  // Kalan süreyi hesaplama fonksiyonu
+  const calculateTimeUntilNextCredit = () => {
+    if (!profile?.last_credit_refresh || isPremium || (profile?.game_credits >= 5)) {
+      setTimeUntilNextCredit('');
+      return;
     }
-  } catch (error) {
-    console.error('Kredi yenileme hatası:', error);
-  }
-};
+
+    const now = new Date();
+    const lastRefresh = new Date(profile.last_credit_refresh);
+    const nextRefresh = new Date(lastRefresh.getTime() + (15 * 60 * 1000));
+    
+    if (now >= nextRefresh) {
+      setTimeUntilNextCredit('');
+      return;
+    }
+
+    const timeDiff = nextRefresh.getTime() - now.getTime();
+    const minutes = Math.floor(timeDiff / (1000 * 60));
+    const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+    
+    setTimeUntilNextCredit(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+  };
+
+  const refreshCredits = async () => {
+    if (!user || isPremium) return;
+    
+    const currentCredits = profile?.game_credits || 0;
+    
+    if (currentCredits >= 5) return;
+    
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          game_credits: Math.min(currentCredits + 1, 5),
+          last_credit_refresh: new Date().toISOString() 
+        })
+        .eq('id', user.id);
+      
+      if (!error) {
+        await refreshProfile();
+        
+        toast.success(`🎮 +1 Kredi eklendi! (${Math.min(currentCredits + 1, 5)}/5)`, {
+          description: `${5 - (currentCredits + 1)} kredi daha kazanabilirsin`,
+          duration: 3000,
+        });
+        playSound('buttonClick');
+      }
+    } catch (error) {
+      console.error('Kredi yenileme hatası:', error);
+    }
+  };
   
   // Timer effect for credit countdown
-useEffect(() => {
-  if (!isPremium && profile) {
-    calculateTimeUntilNextCredit();
-    const interval = setInterval(() => {
+  useEffect(() => {
+    if (!isPremium && profile) {
       calculateTimeUntilNextCredit();
-      
-      // 15 dakika dolduysa otomatik kredi ekle
-      if (profile?.last_credit_refresh && !isPremium && profile.game_credits < 5) {
-        const now = new Date();
-        const lastRefresh = new Date(profile.last_credit_refresh);
-        const nextRefresh = new Date(lastRefresh.getTime() + (15 * 60 * 1000));
+      const interval = setInterval(() => {
+        calculateTimeUntilNextCredit();
         
-        if (now >= nextRefresh) {
-          refreshCredits();
+        if (profile?.last_credit_refresh && !isPremium && profile.game_credits < 5) {
+          const now = new Date();
+          const lastRefresh = new Date(profile.last_credit_refresh);
+          const nextRefresh = new Date(lastRefresh.getTime() + (15 * 60 * 1000));
+          
+          if (now >= nextRefresh) {
+            refreshCredits();
+          }
         }
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }
-}, [profile, isPremium, refreshCredits]);
-
-// Real-time subscription için useEffect ekle:
-useEffect(() => {
-  if (!user) return;
-
-  // Profile değişikliklerini dinle
-  const subscription = supabase
-    .channel('profile_changes')
-    .on('postgres_changes', {
-      event: 'UPDATE',
-      schema: 'public',
-      table: 'profiles',
-      filter: `id=eq.${user.id}`
-    }, (payload) => {
-      // Profil güncellendiğinde context'i refresh et
-      refreshProfile();
-    })
-    .subscribe();
-
-  return () => {
-    subscription.unsubscribe();
-  };
-}, [user, refreshProfile]);
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [profile, isPremium, refreshCredits]);
 
   // Start background music when component mounts
   useEffect(() => {
@@ -221,51 +191,49 @@ useEffect(() => {
       setUserAvatar(avatarUrl);
     }
     
-    // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
   const gameModesConfig = [
-  {
-    id: 'vs-computer',
-    title: 'Yapay Zekaya Karşı',
-    description: 'AI rakibine karşı pratik yap',
-    icon: Bot,
-    color: 'bg-blue-500',
-    gradient: 'bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700',
-    route: '/game/vs-computer',
-  },
-  {
-    id: 'private-room',
-    title: 'Özel Oda',
-    description: 'Arkadaşınla özel oda oluştur',
-    icon: Users,
-    color: 'bg-green-500',
-    gradient: 'bg-gradient-to-br from-green-500 via-emerald-600 to-green-700',
-    route: '/game/private-room',
-  },
-  {
-    id: 'random-match',
-    title: 'Rastgele Rakip',
-    description: 'Rastgele oyuncu ile eşleş',
-    icon: Zap,
-    color: 'bg-purple-500',
-    gradient: 'bg-gradient-to-br from-purple-500 via-violet-600 to-purple-700',
-    route: '/game/random-match',
-  },
-  
-  {
-    id: 'tournament',
-    title: 'Turnuva',
-    description: '8 kişilik turnuvaya katıl',
-    icon: Trophy,
-    color: 'bg-yellow-500',
-    gradient: 'bg-gradient-to-br from-yellow-500 via-orange-500 to-yellow-600',
-    route: '/tournament',
-  },
-];
+    {
+      id: 'vs-computer',
+      title: 'Yapay Zekaya Karşı',
+      description: 'AI rakibine karşı pratik yap',
+      icon: Bot,
+      color: 'bg-blue-500',
+      gradient: 'bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700',
+      route: '/game/vs-computer',
+    },
+    {
+      id: 'private-room',
+      title: 'Özel Oda',
+      description: 'Arkadaşınla özel oda oluştur',
+      icon: Users,
+      color: 'bg-green-500',
+      gradient: 'bg-gradient-to-br from-green-500 via-emerald-600 to-green-700',
+      route: '/game/private-room',
+    },
+    {
+      id: 'random-match',
+      title: 'Rastgele Rakip',
+      description: 'Rastgele oyuncu ile eşleş',
+      icon: Zap,
+      color: 'bg-purple-500',
+      gradient: 'bg-gradient-to-br from-purple-500 via-violet-600 to-purple-700',
+      route: '/game/random-match',
+    },
+    {
+      id: 'tournament',
+      title: 'Turnuva',
+      description: '8 kişilik turnuvaya katıl',
+      icon: Trophy,
+      color: 'bg-yellow-500',
+      gradient: 'bg-gradient-to-br from-yellow-500 via-orange-500 to-yellow-600',
+      route: '/tournament',
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
@@ -274,7 +242,7 @@ useEffect(() => {
         <Card className="border-0 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/10 shadow-2xl relative overflow-hidden">
           <HeaderAnimation />
           
-          {/* Müzik Toggle - Mobil optimized */}
+          {/* Müzik Toggle */}
           <Button
             variant="outline"
             size="sm"
@@ -301,7 +269,6 @@ useEffect(() => {
               {/* Üst satır - Avatar ve Kelimeci başlığı */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  {/* Hidden file input */}
                   <Input
                     ref={fileInputRef}
                     type="file"
@@ -350,7 +317,7 @@ useEffect(() => {
                   </div>
                 </div>
 
-                {/* Sağ taraf - Hak durumu (sadece premium badge) */}
+                {/* Sağ taraf - Premium badge */}
                 <div className="flex-shrink-0">
                   {isPremium && (
                     <div className="flex items-center space-x-1">
@@ -362,7 +329,7 @@ useEffect(() => {
               </div>
             </div>
 
-            {/* Mobil optimized seviye progress */}
+            {/* Seviye progress - Real-time güncellemeler için profile state'ini direkt kullan */}
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 shadow-inner">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center space-x-2">
@@ -388,7 +355,7 @@ useEffect(() => {
                 </div>
               </div>
               
-              {/* Progress bar */}
+              {/* Progress bar - Real-time güncellemeler */}
               <div className="space-y-1">
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>İlerleme</span>
@@ -407,59 +374,59 @@ useEffect(() => {
 
             {/* Alt kısım - Hak barı ve istatistikler */}
             <div className="space-y-2 mt-2 pt-2 border-t border-white/20">
-              {/* Hak barı - sadece premium değilse göster */}
-{!isPremium && (
-  <div className="space-y-1">
-    <div className="flex justify-between items-center">
-      <span className="text-xs text-muted-foreground">Oyun Hakları</span>
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-medium text-foreground">{profile?.game_credits || 0}/5</span>
-        {timeUntilNextCredit && (profile?.game_credits < 5) && (
-          <span className="text-xs text-orange-500 bg-orange-100 px-2 py-1 rounded-full">
-            +1 {timeUntilNextCredit}
-          </span>
-        )}
-      </div>
-    </div>
-    <div className="flex gap-1 h-2 w-full">
-      {Array.from({ length: 5 }, (_, i) => {
-        const isActive = i < (profile?.game_credits || 0);
-        let segmentColor = 'bg-black/20';
-        
-        if (isActive) {
-          switch (i + 1) {
-            case 1:
-              segmentColor = 'bg-red-500';
-              break;
-            case 2:
-              segmentColor = 'bg-red-400';
-              break;
-            case 3:
-              segmentColor = 'bg-orange-500';
-              break;
-            case 4:
-              segmentColor = 'bg-green-400';
-              break;
-            case 5:
-              segmentColor = 'bg-green-500';
-              break;
-            default:
-              segmentColor = 'bg-black/20';
-          }
-        }
-        
-        return (
-          <div
-            key={i}
-            className={`flex-1 rounded-full transition-all duration-500 ease-out shadow-sm ${segmentColor}`}
-          />
-        );
-      })}
-    </div>
-  </div>
-)}
+              {/* Hak barı - Real-time güncellemeler */}
+              {!isPremium && (
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-muted-foreground">Oyun Hakları</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-foreground">{profile?.game_credits || 0}/5</span>
+                      {timeUntilNextCredit && (profile?.game_credits < 5) && (
+                        <span className="text-xs text-orange-500 bg-orange-100 px-2 py-1 rounded-full">
+                          +1 {timeUntilNextCredit}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-1 h-2 w-full">
+                    {Array.from({ length: 5 }, (_, i) => {
+                      const isActive = i < (profile?.game_credits || 0);
+                      let segmentColor = 'bg-black/20';
+                      
+                      if (isActive) {
+                        switch (i + 1) {
+                          case 1:
+                            segmentColor = 'bg-red-500';
+                            break;
+                          case 2:
+                            segmentColor = 'bg-red-400';
+                            break;
+                          case 3:
+                            segmentColor = 'bg-orange-500';
+                            break;
+                          case 4:
+                            segmentColor = 'bg-green-400';
+                            break;
+                          case 5:
+                            segmentColor = 'bg-green-500';
+                            break;
+                          default:
+                            segmentColor = 'bg-black/20';
+                        }
+                      }
+                      
+                      return (
+                        <div
+                          key={i}
+                          className={`flex-1 rounded-full transition-all duration-500 ease-out shadow-sm ${segmentColor}`}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               
-              {/* İstatistik badge'leri */}
+              {/* İstatistik badge'leri - Real-time güncellemeler */}
               <div className="flex flex-wrap gap-2 justify-center">
                 <Badge variant="secondary" className="bg-white/20 text-foreground border-white/30 text-xs">
                   <Target className="w-3 h-3 mr-1" />
@@ -559,21 +526,19 @@ useEffect(() => {
                     </Badge>
                   </div>
                   <Button 
-  className="w-full bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50 backdrop-blur-sm font-semibold" 
-  variant="outline"
-  onClick={() => {
-    playSound('buttonClick');
-    if (mode.id === 'tournament') {
-      // Turnuva için direkt turnuva sayfasına git
-      navigate('/tournaments');
-    } else {
-      // Diğer oyun modları için modal aç
-      setSelectedMode(mode.id);
-    }
-  }}
->
-  {mode.id === 'tournament' ? 'Giriş Yap' : 'Oyuna Başla'}
-</Button>
+                    className="w-full bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50 backdrop-blur-sm font-semibold" 
+                    variant="outline"
+                    onClick={() => {
+                      playSound('buttonClick');
+                      if (mode.id === 'tournament') {
+                        navigate('/tournaments');
+                      } else {
+                        setSelectedMode(mode.id);
+                      }
+                    }}
+                  >
+                    {mode.id === 'tournament' ? 'Giriş Yap' : 'Oyuna Başla'}
+                  </Button>
                 </CardContent>
               </Card>
             ))}
