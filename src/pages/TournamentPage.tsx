@@ -324,8 +324,6 @@ const createTournament = async (selectedGameType: 'timed' | 'score') => {
 
 const loadTournamentParticipants = async (tournamentId: string) => {
   try {
-    console.log('🔄 loadTournamentParticipants çağrıldı:', tournamentId);
-    
     const { data, error } = await supabase
       .from('tournament_participants')
       .select(`
@@ -333,36 +331,22 @@ const loadTournamentParticipants = async (tournamentId: string) => {
         profiles:user_id (username, avatar_url)
       `)
       .eq('tournament_id', tournamentId)
-      .order('seed');
+      .order('created_at');
 
-    console.log('📊 Katılımcı sorgusu sonucu:', {
-      error,
-      count: data?.length || 0,
-      data: data?.map(p => ({
-        id: p.id,
-        seed: p.seed,
-        username: p.profiles?.username,
-        is_bot: p.is_bot,
-        user_id: p.user_id
-      }))
+    if (error) throw error;
+
+    // DEBUG: Tüm katılımcıları logla
+    console.log('🔍 Tüm katılımcılar:');
+    data.forEach((p, i) => {
+      const isBot = p.is_bot || !p.user_id || p.user_id.startsWith('bot_');
+      console.log(`   ${i + 1}. ${isBot ? '🤖' : '👤'} ${
+        p.profiles?.username || p.user_id?.slice(-8) || 'Bot'
+      } - user_id: ${p.user_id} - is_bot: ${p.is_bot}`);
     });
 
-    if (!error && data) {
-      setParticipants(data);
-      
-      // Debug için: Tüm katılımcıları konsola yazdır
-      data.forEach((participant, index) => {
-        console.log(`👥 Katılımcı ${index + 1}:`, {
-          id: participant.id,
-          user_id: participant.user_id,
-          username: participant.profiles?.username,
-          is_bot: participant.is_bot,
-          seed: participant.seed
-        });
-      });
-    }
+    setParticipants(data || []);
   } catch (error) {
-    console.error('Error loading participants:', error);
+    console.error('❌ Katılımcı yükleme hatası:', error);
   }
 };
 
