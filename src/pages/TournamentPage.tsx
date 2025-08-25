@@ -424,12 +424,12 @@ const createTournamentMatches = async (tournamentId: string, realParticipants: a
         player2_id = shuffledParticipants[i * 2 + 1].user_id;
       }
 
-      // Eksikse bot ID'si generate et
+      // Eksikse bot için NULL kullan (UUID yerine)
       if (!player1_id) {
-        player1_id = `bot_${Math.random().toString(36).substr(2, 9)}`;
+        player1_id = null;
       }
       if (!player2_id) {
-        player2_id = `bot_${Math.random().toString(36).substr(2, 9)}`;
+        player2_id = null;
       }
 
       const match = {
@@ -442,7 +442,7 @@ const createTournamentMatches = async (tournamentId: string, realParticipants: a
       };
 
       matches.push(match);
-      console.log(`🥊 Maç ${i + 1}: ${player1_id.includes('bot_') ? '🤖 Bot' : '👤 ' + player1_id.slice(-8)} vs ${player2_id.includes('bot_') ? '🤖 Bot' : '👤 ' + player2_id.slice(-8)}`);
+      console.log(`🥊 Maç ${i + 1}: ${player1_id ? '👤 ' + player1_id.slice(-8) : '🤖 Bot'} vs ${player2_id ? '👤 ' + player2_id.slice(-8) : '🤖 Bot'}`);
     }
 
     // Database'e kaydet
