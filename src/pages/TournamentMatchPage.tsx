@@ -173,22 +173,7 @@ const loadTournamentData = async () => {
   if (!tournamentId) return;
 
   try {
-    // Turnuva bilgilerini getir
-    const { data: tournamentData, error: tournamentError } = await supabase
-      .from('tournaments')
-      .select('*')
-      .eq('id', tournamentId)
-      .single();
-
-    if (tournamentError) throw tournamentError;
-    
-    const processedTournament = {
-      ...tournamentData,
-      game_type: (tournamentData.game_type === 'score' ? 'score' : 'timed') as 'timed' | 'score'
-    };
-    setTournament(processedTournament);
-
-    // 🔥 FIX: Katılımcıları getir - ÖNCE PARTICIPANTS
+    // 🔥 ÖNCELİKLE participants'ı yükle
     const { data: participantsData, error: participantsError } = await supabase
       .from('tournament_participants')
       .select(`
@@ -203,7 +188,17 @@ const loadTournamentData = async () => {
     console.log('✅ Participants yüklendi:', participantsData?.length || 0);
     setParticipants(participantsData || []);
 
-    // Maçları getir - PARTICIPANTS'TAN SONRA
+    // Sonra tournament
+    const { data: tournamentData, error: tournamentError } = await supabase
+      .from('tournaments')
+      .select('*')
+      .eq('id', tournamentId)
+      .single();
+
+    if (tournamentError) throw tournamentError;
+    setTournament(tournamentData);
+
+    // Son olarak matches
     const { data: matchesData, error: matchesError } = await supabase
       .from('tournament_matches')
       .select('*')
@@ -212,19 +207,11 @@ const loadTournamentData = async () => {
       .order('match_number');
 
     if (matchesError) throw matchesError;
-    
-    const processedMatches = (matchesData || []).map((match: any) => ({
-      ...match,
-      player1_score: match.player1_score ?? 0,
-      player2_score: match.player2_score ?? 0,
-      updated_at: match.updated_at || match.created_at,
-      status: match.status as 'pending' | 'active' | 'completed'
-    })) as TournamentMatch[];
-    setMatches(processedMatches);
+    setMatches(matchesData || []);
 
-    // Kullanıcının aktif maçını bul
-    if (user && processedMatches) {
-      const userActiveMatch = processedMatches.find(match => 
+    // Aktif maç kontrolü
+    if (user && matchesData) {
+      const userActiveMatch = matchesData.find(match => 
         (match.player1_id === user.id || match.player2_id === user.id) && 
         match.status === 'active'
       );
@@ -233,11 +220,6 @@ const loadTournamentData = async () => {
 
   } catch (error) {
     console.error('Error loading tournament data:', error);
-    toast({
-      title: 'Hata',
-      description: 'Turnuva verileri yüklenirken hata oluştu',
-      variant: 'destructive',
-    });
   } finally {
     setLoading(false);
   }
@@ -573,6 +555,7 @@ const autoStartMatch = async (matchId: string) => {
         onGameComplete={completeMatch}
         tournamentMatch={currentMatch}
         gameType={(tournament.game_type as string) === 'score' ? 'score' : 'timed'}
+        participants={participants}
       />
     );
   }
