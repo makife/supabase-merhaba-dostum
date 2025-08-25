@@ -432,17 +432,14 @@ const createTournamentMatches = async (tournamentId: string, realParticipants: a
     console.log('🏟️ Manuel maç oluşturma başlıyor:', tournamentId);
     console.log('👥 Gelen katılımcılar:', realParticipants.length);
 
-    // SADECE GERÇEK KATILIMCILAR - bot olanları filtrele
     const participants = realParticipants;
-    console.log('✅ Gerçek oyuncular:', participants.length);
+    console.log('✅ Katılımcılar:', participants.length);
 
     if (participants.length < 1) {
       throw new Error('En az 1 gerçek oyuncu bulunmalı');
     }
 
-    // 8 kişilik turnuva için seed sıralaması
     const shuffledParticipants = [...participants].sort(() => Math.random() - 0.5);
-    
     const matches = [];
 
     // 4 maç oluştur (çeyrek final)
@@ -452,18 +449,25 @@ const createTournamentMatches = async (tournamentId: string, realParticipants: a
 
       // Gerçek oyuncuları sırayla yerleştir
       if (i * 2 < shuffledParticipants.length) {
-        player1_id = shuffledParticipants[i * 2].user_id;
+        // ✅ user_id'yi kontrol et
+        const p1 = shuffledParticipants[i * 2];
+        player1_id = p1?.user_id || null;
+        console.log(`🔍 Player 1 for match ${i+1}:`, {
+          participant: p1,
+          user_id: player1_id,
+          is_bot: p1?.is_bot
+        });
       }
+      
       if (i * 2 + 1 < shuffledParticipants.length) {
-        player2_id = shuffledParticipants[i * 2 + 1].user_id;
-      }
-
-      // Eksikse bot için NULL kullan (UUID yerine)
-      if (!player1_id) {
-        player1_id = null;
-      }
-      if (!player2_id) {
-        player2_id = null;
+        // ✅ user_id'yi kontrol et
+        const p2 = shuffledParticipants[i * 2 + 1];
+        player2_id = p2?.user_id || null;
+        console.log(`🔍 Player 2 for match ${i+1}:`, {
+          participant: p2,
+          user_id: player2_id,
+          is_bot: p2?.is_bot
+        });
       }
 
       const match = {
