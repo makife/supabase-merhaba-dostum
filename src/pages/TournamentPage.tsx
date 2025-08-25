@@ -122,13 +122,33 @@ useEffect(() => {
           schema: 'public',
           table: 'tournament_participants',
           filter: `tournament_id=eq.${currentTournament.id}`
-        }, (payload) => {
+        }, async (payload) => {
           console.log('📡 Katılımcı değişikliği:', payload);
           
-          // Debounced update
-          setTimeout(() => {
-            loadTournamentParticipants(currentTournament.id);
-          }, 200);
+          // HEMEN güncelle, debounce kaldır
+          await loadTournamentParticipants(currentTournament.id);
+          
+          // Turnuva bilgilerini de güncelle
+          const { data: tournament } = await supabase
+            .from('tournaments')
+            .select('*')
+            .eq('id', currentTournament.id)
+            .single();
+            
+          if (tournament) {
+            setCurrentTournament(tournament);
+          }
+        })
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'tournaments',
+          filter: `id=eq.${currentTournament.id}`
+        }, (payload) => {
+          console.log('📡 Turnuva değişikliği:', payload);
+          if (payload.new) {
+            setCurrentTournament(payload.new as Tournament);
+          }
         })
         .subscribe((status) => {
           console.log('📡 Subscription durumu:', status);
@@ -319,14 +339,27 @@ const loadTournamentParticipants = async (tournamentId: string) => {
       error,
       count: data?.length || 0,
       data: data?.map(p => ({
+        id: p.id,
         seed: p.seed,
         username: p.profiles?.username,
-        is_bot: p.is_bot
+        is_bot: p.is_bot,
+        user_id: p.user_id
       }))
     });
 
     if (!error && data) {
       setParticipants(data);
+      
+      // Debug için: Tüm katılımcıları konsola yazdır
+      data.forEach((participant, index) => {
+        console.log(`👥 Katılımcı ${index + 1}:`, {
+          id: participant.id,
+          user_id: participant.user_id,
+          username: participant.profiles?.username,
+          is_bot: participant.is_bot,
+          seed: participant.seed
+        });
+      });
     }
   } catch (error) {
     console.error('Error loading participants:', error);
@@ -614,36 +647,53 @@ const createTournamentMatches = async (tournamentId: string, realParticipants: a
           )}
 
           <Card>
-            <CardHeader>
-              <CardTitle>Katılımcılar ({participants.length}/8)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                {participants.map((participant, index) => (
-                  <div key={participant.id} className="flex items-center space-x-2 p-2 rounded-lg bg-muted">
-                    {participant.is_bot ? (
-                     <Bot className="w-5 h-5" />
-                       ) : (
-                        <User className="w-5 h-5" />
-                        )}
-                        <span className="font-medium">
-                       {participant.is_bot ? 
-                     `Bot ${index + 1}` : 
-                     (participant.profiles?.username || `Oyuncu ${index + 1}`)
-                     }
-                     </span>
-                    <Badge variant="outline" className="ml-auto">
-                   #{participant.seed}
-                 </Badge>
-                </div>
-              ))}
-                {Array.from({ length: 8 - participants.length }, (_, i) => (
-                  <div key={`empty-${i}`} className="flex items-center space-x-2 p-2 rounded-lg border-2 border-dashed border-muted">
-                    <div className="w-5 h-5 bg-muted rounded" />
-                    <span className="text-muted-foreground">Bekleniyor...</span>
-                  </div>
-                ))}
-              </div>
+  <CardHeader>
+    <CardTitle>Katılımcılar ({participants.length}/8)</CardTitle>
+    <CardDescription>
+      {participants.length >= 2 ? `${participants.length} oyuncu katıldı` : 'Diğer oyuncular bekleniyor'}
+    </CardDescription>
+  </CardHeader>
+  <CardContent>
+    <div className="grid grid-cols-2 gap-4">
+      {participants.map((participant, index) => (
+        <div key={participant.id} className="flex items-center space-x-2 p-2 rounded-lg bg-muted">
+          {participant.is_bot ? (
+            <Bot className="w-5 h-5" />
+          ) : (
+            <User className="w-5 h-5" />
+          )}
+          <span className="font-medium">
+            {participant.is_bot ? 
+              `Bot ${index + 1}` : 
+              (participant.profiles?.username || `Oyuncu ${participant.seed}`)
+            }
+            {!participant.is_bot && participant.user_id === user?.id && ' (Siz)'}
+          </span>
+          <Badge variant="outline" className="ml-auto">
+            #{participant.seed}
+          </Badge>
+        </div>
+      ))}
+      {Array.from({ length: 8 - participants.length }, (_, i) => (
+        <div key={`empty-${i}`} className="flex items-center space-x-2 p-2 rounded-lg border-2 border-dashed border-muted">
+          <div className="w-5 h-5 bg-muted rounded" />
+          <span className="text-muted-foreground">Bekleniyor...</span>
+        </div>
+      ))}
+    </div>
+    
+    {/* Debug info for development */}
+    {process.env.NODE_ENV === 'development' && (
+      <div className="mt-4 p-2 bg-gray-100 rounded text-xs">
+        <p>🔍 Debug: {participants.length} katılımcı</p>
+        {participants.map((p, i) => (
+          <p key={i}>
+            {i+1}. {p.is_bot ? '🤖' : '👤'} {p.profiles?.username || 'Unknown'} 
+            {p.user_id === user?.id ? ' (SİZ)' : ''}
+          </p>
+        ))}
+      </div>
+    )}
             </CardContent>
           </Card>
         </div>
