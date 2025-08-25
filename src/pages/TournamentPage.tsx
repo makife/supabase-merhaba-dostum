@@ -105,6 +105,32 @@ const TournamentPage = () => {
     }
   }, [currentTournament]);
 
+// Real-time katılımcı güncellemeleri için subscription
+useEffect(() => {
+  if (!currentTournament) return;
+
+  console.log('🔗 Turnuva real-time dinlemeye başlıyor:', currentTournament.id);
+
+  const channel = supabase
+    .channel(`tournament-participants-${currentTournament.id}`)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'tournament_participants',
+      filter: `tournament_id=eq.${currentTournament.id}`
+    }, (payload) => {
+      console.log('📡 Katılımcı değişikliği:', payload);
+      // Katılımcıları yeniden yükle
+      loadTournamentParticipants(currentTournament.id);
+    })
+    .subscribe();
+
+  return () => {
+    console.log('🔌 Turnuva real-time dinlemesi kesildi');
+    supabase.removeChannel(channel);
+  };
+}, [currentTournament?.id]);
+
   const loadActiveTournaments = async () => {
     try {
       // First cleanup expired tournaments
