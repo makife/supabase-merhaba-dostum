@@ -122,33 +122,13 @@ useEffect(() => {
           schema: 'public',
           table: 'tournament_participants',
           filter: `tournament_id=eq.${currentTournament.id}`
-        }, async (payload) => {
+        }, (payload) => {
           console.log('📡 Katılımcı değişikliği:', payload);
           
-          // HEMEN güncelle, debounce kaldır
-          await loadTournamentParticipants(currentTournament.id);
-          
-          // Turnuva bilgilerini de güncelle
-          const { data: tournament } = await supabase
-            .from('tournaments')
-            .select('*')
-            .eq('id', currentTournament.id)
-            .single();
-            
-          if (tournament) {
-            setCurrentTournament(tournament);
-          }
-        })
-        .on('postgres_changes', {
-          event: '*',
-          schema: 'public',
-          table: 'tournaments',
-          filter: `id=eq.${currentTournament.id}`
-        }, (payload) => {
-          console.log('📡 Turnuva değişikliği:', payload);
-          if (payload.new) {
-            setCurrentTournament(payload.new as Tournament);
-          }
+          // Debounced update
+          setTimeout(() => {
+            loadTournamentParticipants(currentTournament.id);
+          }, 200);
         })
         .subscribe((status) => {
           console.log('📡 Subscription durumu:', status);
