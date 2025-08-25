@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/contexts/UserContext';
 import { Button } from '@/components/ui/button';
@@ -60,6 +60,10 @@ interface JokerState {
   fisilida: number;
   senYaz: number;
 }
+
+const participants = useMemo(() => {
+  return gameMode === 'tournament' ? (propsParticipants || []) : gameParticipants;
+}, [gameMode, propsParticipants, gameParticipants]);
 
 const GamePage = ({ 
   gameMode = 'vs-computer', 
