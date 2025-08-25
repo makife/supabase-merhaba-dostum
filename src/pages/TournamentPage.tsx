@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,7 +8,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import turnuvaGif from '@/assets/turnuvagif.gif';
-import GameModeSelector from '@/components/GameModeSelector';
 import {
   ArrowLeft,
   Trophy,
@@ -32,7 +31,7 @@ interface Tournament {
   finished_at: string | null;
   expires_at: string | null;
   timeout_duration: number;
-  game_type: 'timed' | 'score' | string;
+  game_type: 'timed' | 'score';
 }
 
 interface TournamentParticipant {
@@ -42,10 +41,6 @@ interface TournamentParticipant {
   seed: number;
   is_bot: boolean;
   eliminated_at: string | null;
-  profiles?: {
-    username: string;
-    avatar_url: string | null;
-  };
 }
 
 const TournamentPage = () => {
@@ -59,7 +54,6 @@ const TournamentPage = () => {
   const [waitingTime, setWaitingTime] = useState(60);
   const [isJoining, setIsJoining] = useState(false);
   const [gameType, setGameType] = useState<'timed' | 'score'>('timed');
-  const [showGameModeSelector, setShowGameModeSelector] = useState(false);
   
   // Get game type from navigation state if available
   useEffect(() => {
@@ -105,73 +99,6 @@ const TournamentPage = () => {
     }
   }, [currentTournament]);
 
-// Real-time katılımcı güncellemeleri için subscription
-useEffect(() => {
-  if (!currentTournament?.id) return;
-
-  console.log('🔗 Turnuva real-time dinlemeye başlıyor:', currentTournament.id);
-  
-  let channel: any = null;
-
-  const setupSubscription = async () => {
-    try {
-      channel = supabase
-        .channel(`tournament-participants-${currentTournament.id}`)
-        .on('postgres_changes', {
-          event: '*',
-          schema: 'public',
-          table: 'tournament_participants',
-          filter: `tournament_id=eq.${currentTournament.id}`
-        }, async (payload) => {
-          console.log('📡 Katılımcı değişikliği:', payload);
-          
-          // HEMEN güncelle, debounce kaldır
-          await loadTournamentParticipants(currentTournament.id);
-          
-          // Turnuva bilgilerini de güncelle
-          const { data: tournament } = await supabase
-            .from('tournaments')
-            .select('*')
-            .eq('id', currentTournament.id)
-            .single();
-            
-          if (tournament) {
-            setCurrentTournament(tournament);
-          }
-        })
-        .on('postgres_changes', {
-          event: '*',
-          schema: 'public',
-          table: 'tournaments',
-          filter: `id=eq.${currentTournament.id}`
-        }, (payload) => {
-          console.log('📡 Turnuva değişikliği:', payload);
-          if (payload.new) {
-            setCurrentTournament(payload.new as Tournament);
-          }
-        })
-        .subscribe((status) => {
-          console.log('📡 Subscription durumu:', status);
-        });
-
-      // İlk yükleme
-      await loadTournamentParticipants(currentTournament.id);
-      
-    } catch (error) {
-      console.error('❌ Subscription kurulum hatası:', error);
-    }
-  };
-
-  setupSubscription();
-
-  return () => {
-    if (channel) {
-      console.log('🔌 Turnuva real-time dinlemesi kesildi');
-      supabase.removeChannel(channel);
-    }
-  };
-}, [currentTournament?.id]);
-
   const loadActiveTournaments = async () => {
     try {
       // First cleanup expired tournaments
@@ -203,36 +130,36 @@ useEffect(() => {
     }
   };
 
-const createTournament = async (selectedGameType: 'timed' | 'score') => {
-  if (!user) return;
+  const createTournament = async () => {
+    if (!user) return;
 
-  try {
-    const { data: tournament, error } = await supabase
-      .from('tournaments')
-      .insert({
-        name: `Turnuva ${new Date().toLocaleTimeString('tr-TR')}`,
-        status: 'waiting',
-        current_round: 1,
-        max_participants: 8,
-        game_type: selectedGameType
-      })
-      .select()
-      .single();
-    
-    if (error) throw error;
+    try {
+      const { data: tournament, error } = await supabase
+        .from('tournaments')
+        .insert({
+          name: `Turnuva ${new Date().toLocaleTimeString('tr-TR')}`,
+          status: 'waiting',
+          current_round: 1,
+          max_participants: 8,
+          game_type: gameType
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
 
-    // Join the tournament
-    await joinTournament(tournament.id);
-    
-  } catch (error) {
-    console.error('Error creating tournament:', error);
-    toast({
-      title: 'Hata',
-      description: 'Turnuva oluşturulamadı',
-      variant: 'destructive',
-    });
-  }
-};
+      // Join the tournament
+      await joinTournament(tournament.id);
+      
+    } catch (error) {
+      console.error('Error creating tournament:', error);
+      toast({
+        title: 'Hata',
+        description: 'Turnuva oluşturulamadı',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const joinTournament = async (tournamentId: string) => {
     if (!user || isJoining) return;
@@ -240,12 +167,13 @@ const createTournament = async (selectedGameType: 'timed' | 'score') => {
     setIsJoining(true);
 
     try {
+      // Check if already in tournament
       const { data: existingParticipant } = await supabase
         .from('tournament_participants')
         .select('*')
         .eq('tournament_id', tournamentId)
         .eq('user_id', user.id)
-        .maybeSingle();
+        .single();
 
       if (existingParticipant) {
         toast({
@@ -322,99 +250,56 @@ const createTournament = async (selectedGameType: 'timed' | 'score') => {
     setIsJoining(false);
   };
 
-const loadTournamentParticipants = async (tournamentId: string) => {
-  try {
-    const { data, error } = await supabase
-      .from('tournament_participants')
-      .select(`
-        *,
-        profiles:user_id (username, avatar_url)
-      `)
-      .eq('tournament_id', tournamentId)
-      .order('created_at');
+  const loadTournamentParticipants = async (tournamentId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('tournament_participants')
+        .select('*')
+        .eq('tournament_id', tournamentId)
+        .order('seed');
 
-    if (error) throw error;
+      if (!error && data) {
+        setParticipants(data);
+      }
+    } catch (error) {
+      console.error('Error loading participants:', error);
+    }
+  };
 
-    // DEBUG: Tüm katılımcıları logla
-    console.log('🔍 Tüm katılımcılar:');
-    data.forEach((p, i) => {
-      const isBot = p.is_bot || !p.user_id || p.user_id.startsWith('bot_');
-      console.log(`   ${i + 1}. ${isBot ? '🤖' : '👤'} ${
-        p.profiles?.username || p.user_id?.slice(-8) || 'Bot'
-      } - user_id: ${p.user_id} - is_bot: ${p.is_bot}`);
-    });
+  const startTournamentWithBots = async () => {
+    if (!currentTournament) return;
 
-    setParticipants(data || []);
-  } catch (error) {
-    console.error('❌ Katılımcı yükleme hatası:', error);
-  }
-};
+    try {
+      // Yeni Supabase fonksiyonu ile turnuvayı başlat
+      const { data, error } = await supabase.rpc('start_tournament_automatically', {
+        p_tournament_id: currentTournament.id
+      });
 
-let isStarting = false; // Race condition önleyici
+      if (error) throw error;
 
-const startTournamentWithBots = async () => {
- if (!currentTournament || isStarting) return;
- 
- isStarting = true;
- try {
-   // ÖNCE TURNUVA DURUMUNU KONTROL ET
-   const { data: tournamentCheck } = await supabase
-     .from('tournaments')
-     .select('status')
-     .eq('id', currentTournament.id)
-     .single();
-   if (tournamentCheck?.status !== 'waiting') {
-     console.log('⚠️ Turnuva zaten başlamış, detay sayfasına yönlendiriliyor...');
-     navigate(`/tournament/${currentTournament.id}`);
-     return;
-   }
-   console.log('🏁 Turnuva başlatılıyor:', currentTournament.id);
-   
-   // Database fonksiyonu ile turnuvayı başlat
-   const { data: result, error } = await supabase
-     .rpc('start_tournament_automatically', {
-       p_tournament_id: currentTournament.id
-     });
-   
-   if (error) throw error;
-   
-   if (!result?.success) {
-     throw new Error(result?.error || 'Turnuva başlatılamadı');
-   }
-   
-   console.log('✅ Turnuva başlatıldı:', result);
-   
-   toast({
-     title: '🏁 Turnuva Başladı!',
-     description: `${result.participants} katılımcı ile turnuva başladı.`,
-     duration: 3000,
-   });
-   
-   navigate(`/tournament/${currentTournament.id}`);
-   
- } catch (error) {
-   console.error('❌ Turnuva başlatma hatası:', error);
-   
-   // Hata durumunda turnuvayı geri waiting durumuna çevir
-   if (currentTournament) {
-     await supabase
-       .from('tournaments')
-       .update({ status: 'waiting' })
-       .eq('id', currentTournament.id);
-   }
-   
-   toast({
-     title: 'Hata',
-     description: typeof error === 'object' && error !== null && 'message' in error 
-       ? (error as Error).message 
-       : 'Turnuva başlatılamadı',
-     variant: 'destructive',
-   });
- } finally {
-   isStarting = false;
- }
-};
+      const result = data as any;
+      if (result?.success) {
+        toast({
+          title: 'Turnuva Başladı!',
+          description: `İlk tur maçları oluşturuldu. ${result.matches_created || 4} maç, ${result.participants || 8} katılımcı.`,
+        });
 
+        navigate(`/tournament/${currentTournament.id}`);
+      } else {
+        throw new Error(result?.error || 'Turnuva başlatılamadı');
+      }
+
+    } catch (error) {
+      console.error('Error starting tournament:', error);
+      toast({
+        title: 'Hata',
+        description: typeof error === 'object' && error !== null && 'message' in error 
+          ? (error as Error).message 
+          : 'Turnuva başlatılamadı',
+        variant: 'destructive',
+      });
+    }
+  };
 
   // Bu fonksiyon artık kullanılmıyor, Supabase fonksiyonu kullanıyoruz
   // const createTournamentMatches = async (tournamentId: string) => {
@@ -494,53 +379,33 @@ const startTournamentWithBots = async () => {
           )}
 
           <Card>
-  <CardHeader>
-    <CardTitle>Katılımcılar ({participants.length}/8)</CardTitle>
-    <CardDescription>
-      {participants.length >= 2 ? `${participants.length} oyuncu katıldı` : 'Diğer oyuncular bekleniyor'}
-    </CardDescription>
-  </CardHeader>
-  <CardContent>
-    <div className="grid grid-cols-2 gap-4">
-      {participants.map((participant, index) => (
-        <div key={participant.id} className="flex items-center space-x-2 p-2 rounded-lg bg-muted">
-          {participant.is_bot ? (
-            <Bot className="w-5 h-5" />
-          ) : (
-            <User className="w-5 h-5" />
-          )}
-          <span className="font-medium">
-            {participant.is_bot ? 
-              `Bot ${index + 1}` : 
-              (participant.profiles?.username || `Oyuncu ${participant.seed}`)
-            }
-            {!participant.is_bot && participant.user_id === user?.id && ' (Siz)'}
-          </span>
-          <Badge variant="outline" className="ml-auto">
-            #{participant.seed}
-          </Badge>
-        </div>
-      ))}
-      {Array.from({ length: 8 - participants.length }, (_, i) => (
-        <div key={`empty-${i}`} className="flex items-center space-x-2 p-2 rounded-lg border-2 border-dashed border-muted">
-          <div className="w-5 h-5 bg-muted rounded" />
-          <span className="text-muted-foreground">Bekleniyor...</span>
-        </div>
-      ))}
-    </div>
-    
-    {/* Debug info for development */}
-    {process.env.NODE_ENV === 'development' && (
-      <div className="mt-4 p-2 bg-gray-100 rounded text-xs">
-        <p>🔍 Debug: {participants.length} katılımcı</p>
-        {participants.map((p, i) => (
-          <p key={i}>
-            {i+1}. {p.is_bot ? '🤖' : '👤'} {p.profiles?.username || 'Unknown'} 
-            {p.user_id === user?.id ? ' (SİZ)' : ''}
-          </p>
-        ))}
-      </div>
-    )}
+            <CardHeader>
+              <CardTitle>Katılımcılar ({participants.length}/8)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4">
+                {participants.map((participant, index) => (
+                  <div key={participant.id} className="flex items-center space-x-2 p-2 rounded-lg bg-muted">
+                    {participant.is_bot ? (
+                      <Bot className="w-5 h-5" />
+                    ) : (
+                      <User className="w-5 h-5" />
+                    )}
+                    <span className="font-medium">
+                      {participant.is_bot ? `Bot ${index + 1}` : `Oyuncu ${index + 1}`}
+                    </span>
+                    <Badge variant="outline" className="ml-auto">
+                      #{participant.seed}
+                    </Badge>
+                  </div>
+                ))}
+                {Array.from({ length: 8 - participants.length }, (_, i) => (
+                  <div key={`empty-${i}`} className="flex items-center space-x-2 p-2 rounded-lg border-2 border-dashed border-muted">
+                    <div className="w-5 h-5 bg-muted rounded" />
+                    <span className="text-muted-foreground">Bekleniyor...</span>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -563,34 +428,55 @@ const startTournamentWithBots = async () => {
           <div className="w-16" />
         </div>
 
-   <Card className="border-primary relative overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-300">
-  <div className="relative">
-    <img 
-      src={turnuvaGif} 
-      alt="Turnuva" 
-      className="w-full h-48 object-cover"
-      style={{ objectPosition: '50% 15%' }}
-    />
-    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-      <div className="text-center space-y-4">
-        <div className="flex items-center justify-center space-x-2">
-          <Trophy className="w-8 h-8 text-white" />
-          <h3 className="text-2xl font-bold text-white">Yeni Turnuva</h3>
-        </div>
-        <p className="text-white/90 text-sm">8 kişilik turnuva oluştur</p>
-        <Button 
-          onClick={() => setShowGameModeSelector(true)} 
-          className="bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50 backdrop-blur-sm font-semibold px-6 py-3"
-          variant="outline"
-          disabled={isJoining}
-        >
-          <Trophy className="w-4 h-4 mr-2" />
-          Yeni Turnuva Oluştur
-        </Button>
-      </div>
-    </div>
-  </div>
-</Card>
+        <Card className="border-primary">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Trophy className="w-5 h-5 mr-2" />
+              Yeni Turnuva
+            </CardTitle>
+            <CardDescription>
+              8 kişilik turnuva oluştur veya mevcut turnuvaya katıl
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-3">
+              <div className="text-center p-4 bg-muted rounded-lg">
+                <div className="flex items-center justify-center space-x-2 mb-2">
+                  {gameType === 'timed' ? (
+                    <Clock className="w-5 h-5 text-primary" />
+                  ) : (
+                    <Target className="w-5 h-5 text-primary" />
+                  )}
+                  <span className="font-semibold">
+                    {gameType === 'timed' ? 'Süreli Oyun (2 dakika)' : 'Puanlı Oyun (500 puan)'}
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Oyun türü seçildi
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="flex-1">
+                <Button 
+                  onClick={createTournament} 
+                  className="w-full"
+                  disabled={isJoining}
+                >
+                  <Trophy className="w-4 h-4 mr-2" />
+                  Yeni Turnuva Oluştur
+                </Button>
+              </div>
+              <div className="w-20 h-20 rounded-lg overflow-hidden">
+                <img 
+                  src={turnuvaGif} 
+                  alt="Turnuva" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {activeTournaments.length > 0 && (
           <div className="space-y-4">
@@ -621,18 +507,18 @@ const startTournamentWithBots = async () => {
                         </span>
                       </div>
                     </div>
-                 <Button 
-                    onClick={() => {
-                    if (tournament.status === 'waiting') {
-                    joinTournament(tournament.id);
-                    } else {
-                    navigate(`/tournament/${tournament.id}`);  // Turnuva detayına git
-                   }
-                 }}
-                 disabled={isJoining}
-              >
-                {tournament.status === 'waiting' ? 'Katıl' : 'Görüntüle'}
-                 </Button>
+<Button 
+  onClick={() => {
+    if (tournament.status === 'waiting') {
+      joinTournament(tournament.id);
+    } else {
+      navigate(`/tournament/${tournament.id}`);  // Turnuva detayına git
+    }
+  }}
+  disabled={isJoining}
+>
+  {tournament.status === 'waiting' ? 'Katıl' : 'Görüntüle'}
+</Button>
                   </div>
                 </CardContent>
               </Card>
@@ -640,18 +526,6 @@ const startTournamentWithBots = async () => {
           </div>
         )}
 
-       {/* Game Mode Selector Modal */}
-        {showGameModeSelector && (
-         <GameModeSelector
-           mode="tournament"
-           onStart={(selectedGameType) => {
-           setShowGameModeSelector(false);
-           createTournament(selectedGameType);
-          }}
-         onClose={() => setShowGameModeSelector(false)}
-        />
-        )}
-        
       </div>
     </div>
   );
