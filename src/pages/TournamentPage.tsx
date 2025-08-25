@@ -277,126 +277,127 @@ const loadTournamentParticipants = async (tournamentId: string) => {
 let isStarting = false; // Race condition önleyici
 
 const startTournamentWithBots = async () => {
-  if (!currentTournament || isStarting) return;
-  
-  isStarting = true;
+ if (!currentTournament || isStarting) return;
+ 
+ isStarting = true;
+ try {
+   // ÖNCE TURNUVA DURUMUNU KONTROL ET
+   const { data: tournamentCheck } = await supabase
+     .from('tournaments')
+     .select('status')
+     .eq('id', currentTournament.id)
+     .single();
+   if (tournamentCheck?.status !== 'waiting') {
+     console.log('⚠️ Turnuva zaten başlamış, detay sayfasına yönlendiriliyor...');
+     navigate(`/tournament/${currentTournament.id}`);
+     return;
+   }
+   console.log('🏁 Turnuva başlatılıyor:', currentTournament.id);
+   
+   // Önce turnuvayı active yap ki duplicate işlem olmasın
+   await supabase
+     .from('tournaments')
+     .update({ status: 'active', started_at: new Date().toISOString() })
+     .eq('id', currentTournament.id)
+     .eq('status', 'waiting');
+   
+   // KATILIMCI KONTROLÜ
+   const { data: allParticipants, error } = await supabase
+     .from('tournament_participants')
+     .select(`
+       *,
+       profiles:user_id (username, avatar_url)
+     `)
+     .eq('tournament_id', currentTournament.id)
+     .order('seed');
 
-  try {
-    // ÖNCE TURNUVA DURUMUNU KONTROL ET
-    const { data: tournamentCheck } = await supabase
-      .from('tournaments')
-      .select('status')
-      .eq('id', currentTournament.id)
-      .single();
-
-    if (tournamentCheck?.status !== 'waiting') {
-      console.log('⚠️ Turnuva zaten başlamış, detay sayfasına yönlendiriliyor...');
-      navigate(`/tournament/${currentTournament.id}`);
-      return;
-    }
-
-    console.log('🏁 Turnuva başlatılıyor:', currentTournament.id);
-
-    // Önce turnuvayı active yap ki duplicate işlem olmasın
-    await supabase
-      .from('tournaments')
-      .update({ status: 'active', started_at: new Date().toISOString() })
-      .eq('id', currentTournament.id)
-      .eq('status', 'waiting'); // Sadece waiting durumundaysa update et
-
-    // KATILIMCI KONTROLÜ
-    const { data: allParticipants, error } = await supabase
-      .from('tournament_participants')
-      .select(`
-        *,
-        profiles:user_id (username, avatar_url)
-      `)
-      .eq('tournament_id', currentTournament.id)
-      .order('seed');
-
-    if (error) throw error;
-
-    console.log('🔍 TÜM KATILIMCILAR:', allParticipants?.length);
-
-    // GERÇEK OYUNCULAR - is_bot false ve user_id null olmayan
-    const realPlayers = allParticipants?.filter(p => 
-      p.user_id !== null && p.is_bot === false
-    ) || [];
-
-    console.log('👥 Gerçek oyuncu sayısı:', realPlayers.length);
-    console.log('👥 Gerçek oyuncu detayları:', realPlayers.map(p => ({
-      user_id: p.user_id?.slice(-8),
-      seed: p.seed
-    })));
-
-    if (realPlayers.length < 1) {
-      // Turnuvayı geri waiting durumuna çevir
-      await supabase
-        .from('tournaments')
-        .update({ status: 'waiting' })
-        .eq('id', currentTournament.id);
-        
-      toast({
-        title: '⚠️ Yetersiz Katılımcı',
-        description: 'Turnuva için en az 1 gerçek oyuncu gereklidir.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // BOT EKLEME
-    const currentTotal = allParticipants?.length || 0;
-    const botsNeeded = 8 - currentTotal;
-    
-    if (botsNeeded > 0) {
-      console.log('🤖 Bot ekleniyor:', botsNeeded);
-      const botsToAdd = [];
-      for (let i = 0; i < botsNeeded; i++) {
-        botsToAdd.push({
-          tournament_id: currentTournament.id,
-          user_id: null,
-          seed: currentTotal + i + 1,
-          is_bot: true
-        });
-      }
-
-      await supabase.from('tournament_participants').insert(botsToAdd);
-      console.log('✅ Botlar eklendi');
-    }
-
-    // MAÇ OLUŞTURMA - Gerçek oyuncuları direkt kullan
-    console.log('🎯 Maç oluşturma başlıyor...');
-    await createTournamentMatches(currentTournament.id, realPlayers);
-
-    toast({
-      title: '🏁 Turnuva Başladı!',
-      description: `${realPlayers.length} gerçek oyuncu ile turnuva başladı.`,
-      duration: 3000,
-    });
-
-    navigate(`/tournament/${currentTournament.id}`);
-
-  } catch (error) {
-    console.error('❌ Turnuva başlatma hatası:', error);
-    
-    // Hata durumunda turnuvayı geri waiting durumuna çevir
-    if (currentTournament) {
-      await supabase
-        .from('tournaments')
-        .update({ status: 'waiting' })
-        .eq('id', currentTournament.id);
-    }
-    
-    toast({
-      title: 'Hata',
-      description: typeof error === 'object' && error !== null && 'message' in error 
-        ? (error as Error).message 
-        : 'Turnuva başlatılamadı',
-      variant: 'destructive',
-    });
-  } finally {
-    isStarting = false;
-  }
+   if (error) throw error;
+   console.log('🔍 TÜM KATILIMCILAR:', allParticipants?.length);
+   
+   // GERÇEK OYUNCULAR - is_bot false ve user_id null olmayan
+   const realPlayers = allParticipants?.filter(p => 
+     p.user_id !== null && p.is_bot === false
+   ) || [];
+   
+   console.log('👥 Gerçek oyuncu sayısı:', realPlayers.length);
+   
+   if (realPlayers.length < 1) {
+     // Turnuvayı geri waiting durumuna çevir
+     await supabase
+       .from('tournaments')
+       .update({ status: 'waiting' })
+       .eq('id', currentTournament.id);
+       
+     toast({
+       title: '⚠️ Yetersiz Katılımcı',
+       description: 'Turnuva için en az 1 gerçek oyuncu gereklidir.',
+       variant: 'destructive',
+     });
+     return;
+   }
+   
+   // BOT EKLEME
+   const currentTotal = allParticipants?.length || 0;
+   const botsNeeded = 8 - currentTotal;
+   
+   if (botsNeeded > 0) {
+     console.log('🤖 Bot ekleniyor:', botsNeeded);
+     const botsToAdd = [];
+     for (let i = 0; i < botsNeeded; i++) {
+       botsToAdd.push({
+         tournament_id: currentTournament.id,
+         user_id: null,
+         seed: currentTotal + i + 1,
+         is_bot: true
+       });
+     }
+     await supabase.from('tournament_participants').insert(botsToAdd);
+     console.log('✅ Botlar eklendi');
+   }
+   
+   // Bot eklendikten sonra TÜM katılımcıları al (gerçek + bot)
+   const { data: allFinalParticipants } = await supabase
+     .from('tournament_participants')
+     .select(`
+       *,
+       profiles:user_id (username, avatar_url)
+     `)
+     .eq('tournament_id', currentTournament.id)
+     .order('seed');
+   
+   // MAÇ OLUŞTURMA - TÜM katılımcıları gönder
+   console.log('🎯 Maç oluşturma başlıyor...');
+   await createTournamentMatches(currentTournament.id, allFinalParticipants || []);
+   
+   toast({
+     title: '🏁 Turnuva Başladı!',
+     description: `${realPlayers.length} gerçek oyuncu ile turnuva başladı.`,
+     duration: 3000,
+   });
+   
+   navigate(`/tournament/${currentTournament.id}`);
+   
+ } catch (error) {
+   console.error('❌ Turnuva başlatma hatası:', error);
+   
+   // Hata durumunda turnuvayı geri waiting durumuna çevir
+   if (currentTournament) {
+     await supabase
+       .from('tournaments')
+       .update({ status: 'waiting' })
+       .eq('id', currentTournament.id);
+   }
+   
+   toast({
+     title: 'Hata',
+     description: typeof error === 'object' && error !== null && 'message' in error 
+       ? (error as Error).message 
+       : 'Turnuva başlatılamadı',
+     variant: 'destructive',
+   });
+ } finally {
+   isStarting = false;
+ }
 };
 
 // 🔧 Bu fonksiyonu TournamentPage component'inin içine ekleyin (diğer fonksiyonların yanına)
@@ -406,7 +407,7 @@ const createTournamentMatches = async (tournamentId: string, realParticipants: a
     console.log('👥 Gelen katılımcılar:', realParticipants.length);
 
     // SADECE GERÇEK KATILIMCILAR - bot olanları filtrele
-    const participants = realParticipants.filter(p => p.user_id !== null && p.is_bot === false);
+    const participants = realParticipants;
     console.log('✅ Gerçek oyuncular:', participants.length);
 
     if (participants.length < 1) {
