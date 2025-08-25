@@ -61,10 +61,6 @@ interface JokerState {
   senYaz: number;
 }
 
-const participants = useMemo(() => {
-  return gameMode === 'tournament' ? (propsParticipants || []) : gameParticipants;
-}, [gameMode, propsParticipants, gameParticipants]);
-
 const GamePage = ({ 
   gameMode = 'vs-computer', 
   onGameComplete,
@@ -78,6 +74,9 @@ const GamePage = ({
   const navigate = useNavigate();
   const { toast } = useToast();
   const { currentRoom, updateScore, participants: gameParticipants, endGame, leaveRoom,sendRematchRequest,respondRematchRequest,currentRematchRequest,setCurrentRematchRequest } = useGame();
+  const participants = useMemo(() => {
+  return gameMode === 'tournament' ? (propsParticipants || []) : gameParticipants;
+}, [gameMode, propsParticipants, gameParticipants]);
   const { validateWord, isValidating } = useWordValidation();
   const { playSound, playTimeWarningSequence, playCelebrationSound, playGameLoseSound } = useSounds();
   const { fadeOutBackgroundMusic, fadeInBackgroundMusic } = useMusic();
