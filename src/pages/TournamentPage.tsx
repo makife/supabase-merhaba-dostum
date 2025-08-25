@@ -275,26 +275,37 @@ const loadTournamentParticipants = async (tournamentId: string) => {
   }
 };
 
+let isStarting = false; // Race condition önleyici
+
 const startTournamentWithBots = async () => {
-  if (!currentTournament) return;
-
-  // ÖNCE TURNUVA DURUMUNU KONTROL ET
-  const { data: tournamentCheck } = await supabase
-    .from('tournaments')
-    .select('status')
-    .eq('id', currentTournament.id)
-    .single();
-
-  if (tournamentCheck?.status !== 'waiting') {
-    console.log('⚠️ Turnuva zaten başlamış, detay sayfasına yönlendiriliyor...');
-    navigate(`/tournament/${currentTournament.id}`);
-    return;
-  }
+  if (!currentTournament || isStarting) return;
+  
+  isStarting = true;
 
   try {
+    // ÖNCE TURNUVA DURUMUNU KONTROL ET
+    const { data: tournamentCheck } = await supabase
+      .from('tournaments')
+      .select('status')
+      .eq('id', currentTournament.id)
+      .single();
+
+    if (tournamentCheck?.status !== 'waiting') {
+      console.log('⚠️ Turnuva zaten başlamış, detay sayfasına yönlendiriliyor...');
+      navigate(`/tournament/${currentTournament.id}`);
+      return;
+    }
+
     console.log('🏁 Turnuva başlatılıyor:', currentTournament.id);
 
-    // KATILIMCI KONTROLÜ - DEBUG EKLE
+    // Önce turnuvayı active yap ki duplicate işlem olmasın
+    await supabase
+      .from('tournaments')
+      .update({ status: 'active', started_at: new Date().toISOString() })
+      .eq('id', currentTournament.id)
+      .eq('status', 'waiting'); // Sadece waiting durumundaysa update et
+
+    // KATILIMCI KONTROLÜ
     const { data: allParticipants, error } = await supabase
       .from('tournament_participants')
       .select(`
@@ -307,20 +318,25 @@ const startTournamentWithBots = async () => {
     if (error) throw error;
 
     console.log('🔍 TÜM KATILIMCILAR:', allParticipants?.length);
-    console.log('🔍 Detaylar:', allParticipants?.map(p => ({
-      user_id: p.user_id?.slice(-8) || 'null',
-      is_bot: p.is_bot,
-      seed: p.seed
-    })));
 
-    // DOĞRU FİLTRE - NULL ve FALSE kontrolü
+    // GERÇEK OYUNCULAR - is_bot false ve user_id null olmayan
     const realPlayers = allParticipants?.filter(p => 
       p.user_id !== null && p.is_bot === false
     ) || [];
 
     console.log('👥 Gerçek oyuncu sayısı:', realPlayers.length);
+    console.log('👥 Gerçek oyuncu detayları:', realPlayers.map(p => ({
+      user_id: p.user_id?.slice(-8),
+      seed: p.seed
+    })));
 
     if (realPlayers.length < 1) {
+      // Turnuvayı geri waiting durumuna çevir
+      await supabase
+        .from('tournaments')
+        .update({ status: 'waiting' })
+        .eq('id', currentTournament.id);
+        
       toast({
         title: '⚠️ Yetersiz Katılımcı',
         description: 'Turnuva için en az 1 gerçek oyuncu gereklidir.',
@@ -349,27 +365,9 @@ const startTournamentWithBots = async () => {
       console.log('✅ Botlar eklendi');
     }
 
-    // MAÇ OLUŞTURMA - MEVCUT FONKSİYONUNUZU ÇAĞIR
+    // MAÇ OLUŞTURMA - Gerçek oyuncuları direkt kullan
     console.log('🎯 Maç oluşturma başlıyor...');
-    
-    // Final katılımcı listesi
-    const { data: finalParticipants } = await supabase
-      .from('tournament_participants')
-      .select('*')
-      .eq('tournament_id', currentTournament.id)
-      .order('seed');
-
-    // MEVCUT FONKSİYONUNUZU ÇAĞIRIN (parametre almıyorsa)
-    await createTournamentMatches(currentTournament.id, finalParticipants || []);
-
-    // TURNUVAYI AKTİF YAP
-    await supabase
-      .from('tournaments')
-      .update({ 
-        status: 'active',
-        started_at: new Date().toISOString()
-      })
-      .eq('id', currentTournament.id);
+    await createTournamentMatches(currentTournament.id, realPlayers);
 
     toast({
       title: '🏁 Turnuva Başladı!',
@@ -382,6 +380,14 @@ const startTournamentWithBots = async () => {
   } catch (error) {
     console.error('❌ Turnuva başlatma hatası:', error);
     
+    // Hata durumunda turnuvayı geri waiting durumuna çevir
+    if (currentTournament) {
+      await supabase
+        .from('tournaments')
+        .update({ status: 'waiting' })
+        .eq('id', currentTournament.id);
+    }
+    
     toast({
       title: 'Hata',
       description: typeof error === 'object' && error !== null && 'message' in error 
@@ -389,6 +395,8 @@ const startTournamentWithBots = async () => {
         : 'Turnuva başlatılamadı',
       variant: 'destructive',
     });
+  } finally {
+    isStarting = false;
   }
 };
 
