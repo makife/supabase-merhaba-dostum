@@ -211,7 +211,7 @@ const GamePage = ({
   }, []);
 
 
-  const generateTournamentGrid = useCallback((seed: string): string[][] => {
+const generateTournamentGrid = useCallback((seed: string): string[][] => {
   // Seed'e dayalı deterministik grid üret
   const seedNum = parseInt(seed) || Date.now();
   Math.random = function() {
@@ -1321,6 +1321,36 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
   }
 }, [gameStarted, gameEnded, gameType, timeWarningPlayed, addCleanup]);
 
+  // Sayfa focus süre koruma
+useEffect(() => {
+  if (gameType !== 'timed' || !gameStarted || gameEnded) return;
+
+  let gameStartTime = Date.now();
+  let pausedTime = 0;
+  
+  const handleVisibilityChange = () => {
+    if (document.hidden) {
+      // Sayfa gizlendi - durakla
+      pausedTime = Date.now();
+      console.log('⏸️ Oyun duraklatıldı');
+    } else {
+      // Sayfa geri geldi - devam et
+      if (pausedTime > 0) {
+        const pauseDuration = Date.now() - pausedTime;
+        gameStartTime += pauseDuration; // Başlama zamanını öteleyerek pause süresini kompanse et
+        console.log('▶️ Oyun devam ediyor, pause süresi:', pauseDuration, 'ms');
+        pausedTime = 0;
+      }
+    }
+  };
+
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  
+  return () => {
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+  };
+}, [gameType, gameStarted, gameEnded]);
+
   // Timer useEffect'inden SONRA ekleyin
 useEffect(() => {
   if (gameStarted && !gameEnded) {
@@ -1420,6 +1450,43 @@ useEffect(() => {
       syncingRef.current = false;
     }
   };
+
+  // Turnuva real-time senkronizasyonu
+useEffect(() => {
+  if (gameMode !== 'tournament' || !tournamentMatch) return;
+
+  console.log('🏆 Turnuva real-time senkronizasyon başlatıldı');
+
+  // Tournament match değişikliklerini dinle
+  const tournamentChannel = supabase
+    .channel(`tournament-match-${tournamentMatch.id}`)
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'tournament_matches',
+      filter: `id=eq.${tournamentMatch.id}`
+    }, (payload) => {
+      console.log('🔄 Tournament match güncellendi:', payload.new);
+      
+      // Rakip skorunu real-time güncelle
+      const newMatch = payload.new as any;
+      if (user) {
+        const isPlayer1 = newMatch.player1_id === user.id;
+        const newOpponentScore = isPlayer1 ? newMatch.player2_score : newMatch.player1_score;
+        
+        if (newOpponentScore !== undefined && newOpponentScore !== opponentScore) {
+          console.log('🔄 Rakip skoru güncellendi:', newOpponentScore);
+          setOpponentScore(newOpponentScore);
+        }
+      }
+    })
+    .subscribe();
+
+  return () => {
+    console.log('🏆 Turnuva real-time temizliği');
+    supabase.removeChannel(tournamentChannel);
+  };
+}, [gameMode, tournamentMatch?.id, user?.id, opponentScore]);
 
   // İlk sync
   const initialSyncTimer = setTimeout(syncUsedWords, 500);
