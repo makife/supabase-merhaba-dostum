@@ -1995,84 +1995,66 @@ const submitWord = async () => {
 
     const wordLength = currentWord.length;
 
-    // Ses efektlerini direkt çal
-    if (wordLength === 4) {
-      audioYes.currentTime = 0;
-      audioYes.play().catch(e => console.log('Audio failed:', e));
-    } else if (wordLength === 5) {
-      audioWow2.currentTime = 0;
-      audioWow2.play().catch(e => console.log('Audio failed:', e));
-    } else if (wordLength >= 6) {
-      audioYahoo.currentTime = 0;
-      audioYahoo.play().catch(e => console.log('Audio failed:', e));
-    }
-    
-    triggerWordEffects();
-    
-    if (currentRoom) {
-      await updateScore(newScore);
-    }
-
-    // 🔥 YENİ: Turnuva modunda gerçek rakip puanını güncelle
-    if (gameMode === 'tournament' && tournamentMatch && user) {
-      try {
-        const isPlayer1 = tournamentMatch.player1_id === user.id;
-        
-        await supabase
-          .from('tournament_matches')
-          .update({
-            [isPlayer1 ? 'player1_score' : 'player2_score']: newScore,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', tournamentMatch.id);
-        
-        console.log('🏆 Turnuva skoru güncellendi:', newScore);
-      } catch (error) {
-        console.error('❌ Turnuva skor güncellenme hatası:', error);
-      }
-    }
-
-    // Total score güncelleme (vs-computer modunda)
-    if (user && gameMode === 'vs-computer') {
-      const { data: currentProfile } = await supabase
-        .from('profiles')
-        .select('total_score')
-        .eq('id', user.id)
-        .single();
-
-      const calculateLevel = (totalScore: number) => {
-        const baseExp = 1000;
-        const expIncreasePerLevel = 100;
-        
-        let level = 1;
-        let totalExpNeeded = 0;
-        let currentLevelExp = baseExp;
-
-        while (totalScore >= totalExpNeeded + currentLevelExp) {
-          totalExpNeeded += currentLevelExp;
-          level++;
-          currentLevelExp = baseExp + (level - 1) * expIncreasePerLevel;
-        }
-
-        return level;
-      };
-
-      const currentLevel = calculateLevel(currentProfile?.total_score || 0);
-      const levelMultiplier = 1 + (currentLevel - 1) * 0.1;
-      const bonusPoints = Math.floor(result.points * levelMultiplier);
-      
-      const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
-      
-      await supabase
-        .from('profiles')
-        .update({ total_score: newTotalScore })
-        .eq('id', user.id);
-    }
-
-    clearWord();
-  } finally {
-    submissionLockRef.current = false;
+  // Ses efektlerini direkt çal
+  if (wordLength === 4) {
+    audioYes.currentTime = 0;
+    audioYes.play().catch(e => console.log('Audio failed:', e));
+  } else if (wordLength === 5) {
+    audioWow2.currentTime = 0;
+    audioWow2.play().catch(e => console.log('Audio failed:', e));
+  } else if (wordLength >= 6) {
+    audioYahoo.currentTime = 0;
+    audioYahoo.play().catch(e => console.log('Audio failed:', e));
   }
+  
+  // 🔥 MOBİL SES FIX: Audio dosyalarını mobil-friendly şekilde çal
+  triggerWordEffects();
+  
+  if (currentRoom) {
+    await updateScore(newScore);
+  }
+
+  // Total score güncelleme (vs-computer modunda)
+  if (user && gameMode === 'vs-computer') {
+    const { data: currentProfile } = await supabase
+      .from('profiles')
+      .select('total_score')
+      .eq('id', user.id)
+      .single();
+
+    const calculateLevel = (totalScore: number) => {
+      const baseExp = 1000;
+      const expIncreasePerLevel = 100;
+      
+      let level = 1;
+      let totalExpNeeded = 0;
+      let currentLevelExp = baseExp;
+
+      while (totalScore >= totalExpNeeded + currentLevelExp) {
+        totalExpNeeded += currentLevelExp;
+        level++;
+        currentLevelExp = baseExp + (level - 1) * expIncreasePerLevel;
+      }
+
+      return level;
+    };
+
+    const currentLevel = calculateLevel(currentProfile?.total_score || 0);
+    const levelMultiplier = 1 + (currentLevel - 1) * 0.1;
+    const bonusPoints = Math.floor(result.points * levelMultiplier);
+    
+    const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
+    
+    await supabase
+      .from('profiles')
+      .update({ total_score: newTotalScore })
+      .eq('id', user.id);
+  }
+
+  clearWord();
+} finally {
+  submissionLockRef.current = false;
+}
 };
 
   // Trigger word effects (confetti/fireworks) if purchased
