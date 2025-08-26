@@ -565,16 +565,16 @@ const autoStartMatch = async (matchId: string) => {
 
   // 🎮 Oyun modunda ise GamePage'i göster
   if (isPlaying && currentMatch) {
-    return (
-      <GamePage 
-        gameMode="tournament"
-        onGameComplete={completeMatch}
-        tournamentMatch={currentMatch}
-        gameType={(tournament.game_type as string) === 'score' ? 'score' : 'timed'}
-        participants={participants}
-      />
-    );
-  }
+  return (
+    <GamePage 
+      gameMode="tournament"
+      onGameComplete={completeMatch}
+      tournamentMatch={currentMatch} // Bu doğru match'i içermeli
+      gameType={(tournament.game_type as string) === 'score' ? 'score' : 'timed'}
+      participants={participants}
+    />
+  );
+}
 
   const userNextMatch = getUserNextMatch();
 
