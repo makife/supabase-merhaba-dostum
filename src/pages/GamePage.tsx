@@ -163,6 +163,7 @@ const GamePage = ({
   const gameType = getGameType();
   const [timeWarningPlayed, setTimeWarningPlayed] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
+  const [showTournamentExitDialog, setShowTournamentExitDialog] = useState(false);
 
   // Game state - Generate random letters each time
   const generateRandomGrid = useCallback((): string[][] => {
