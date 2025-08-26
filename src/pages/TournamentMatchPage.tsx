@@ -335,23 +335,25 @@ const autoStartMatch = async (matchId: string) => {
       })
       .eq('id', matchId);
 
-    // HATA KONTROLÜ EKLE
     if (error) {
       console.error('❌ Database güncelleme hatası:', error);
-      return; // Hata varsa fonksiyondan çık
+      return;
     }
 
     console.log('✅ Match başarıyla güncellendi:', data);
 
     toast({
       title: '🎮 Turnuva Maçı Başladı!',
-      description: 'Maç otomatik olarak başlatıldı',
-      duration: 3000,
+      description: 'Otomatik olarak oyuna yönlendiriliyorsunuz...',
+      duration: 2000,
     });
 
-    // Veri yenilemeyi geciktir
+    // Veri güncelle
+    await loadTournamentData();
+    
+    // ÖNEMLİ: Otomatik olarak oyunu başlat
     setTimeout(() => {
-      loadTournamentData();
+      setIsPlaying(true);
     }, 1000);
 
   } catch (error) {
@@ -618,23 +620,17 @@ const autoStartMatch = async (matchId: string) => {
     </CardHeader>
     <CardContent>
       {currentMatch ? (
-        <div className="space-y-4">
-          <div className="text-center">
-            <Badge variant="default" className="text-lg px-4 py-2">
-              🎮 Aktif Maçınız Var!
-            </Badge>
-          </div>
-          <div className="flex justify-center">
-            <Button 
-              onClick={() => setIsPlaying(true)} // Devam et
-              className="px-8 py-3"
-            >
-              <Play className="w-4 h-4 mr-2" />
-              Maça Devam Et
-            </Button>
-          </div>
-        </div>
-      ) : userNextMatch ? (
+  <div className="space-y-4">
+    <div className="text-center">
+      <Badge variant="default" className="text-lg px-4 py-2 animate-pulse">
+        🎮 Oyun Başlıyor...
+      </Badge>
+      <p className="text-sm text-muted-foreground mt-2">
+        Otomatik olarak oyuna yönlendiriliyorsunuz
+      </p>
+    </div>
+  </div>
+) : userNextMatch ? (
         <div className="space-y-4">
           <div className="text-center">
             <Badge variant="secondary" className="text-lg px-4 py-2 animate-pulse">
