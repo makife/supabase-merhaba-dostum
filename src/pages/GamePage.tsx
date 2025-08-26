@@ -1299,9 +1299,10 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
     }
   }, [gameEnded, winner, user, currentRoom, gameMode, endGame, playSound, playCelebrationSound, playGameLoseSound, toast, participants, playerWordsWithScores, opponentWordsWithScores]);
 
-  const startTimer = useCallback(() => {
+const startTimer = useCallback(() => {
   if (timerRef.current) clearInterval(timerRef.current);
   
+  // MEVCUT ZAMANI KORU - 120'ye resetleme
   console.log('Timer başlatılıyor, initial time:', timeLeftRef.current);
   
   timerRef.current = setInterval(() => {
@@ -1330,6 +1331,43 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
     }
   }, 1000);
 }, [playTimeWarningSequence, timeWarningPlayed, checkWinnerWithScores]);
+
+
+const handleTournamentExit = async () => {
+  if (!user || !tournamentMatch || !onGameComplete) return;
+
+  console.log('🚪 Turnuva maçından ayrılıyor:', user.id);
+
+  // İstatistikleri güncelle (kaybeden olarak)
+  try {
+    await updatePlayerStatistics(
+      user.id,
+      playerScore,
+      playerWordsWithScores,
+      false // Kaybeden
+    );
+  } catch (error) {
+    console.error('❌ Çıkış istatistik güncelleme hatası:', error);
+  }
+
+  // Rakibi kazanan olarak ayarla
+  const winnerId = tournamentMatch.player1_id === user.id ? 
+    tournamentMatch.player2_id : 
+    tournamentMatch.player1_id;
+
+  if (!winnerId) {
+    console.error('❌ Winner ID bulunamadı');
+    return;
+  }
+
+  // Skorları ayarla
+  const isUserPlayer1 = tournamentMatch.player1_id === user.id;
+  const player1Score = isUserPlayer1 ? 0 : 500;
+  const player2Score = isUserPlayer1 ? 500 : 0;
+
+  onGameComplete(winnerId, player1Score, player2Score);
+  navigate('/');
+};
   
   // Timer effect - for both timed and score modes
   useEffect(() => {
