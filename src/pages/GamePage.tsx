@@ -1300,10 +1300,12 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
   }, [gameEnded, winner, user, currentRoom, gameMode, endGame, playSound, playCelebrationSound, playGameLoseSound, toast, participants, playerWordsWithScores, opponentWordsWithScores]);
 
 const startTimer = useCallback(() => {
-  if (timerRef.current) clearInterval(timerRef.current);
+  if (timerRef.current) {
+    console.log('Timer zaten çalışıyor, yeni timer başlatılmıyor');
+    return;
+  }
   
-  // MEVCUT ZAMANI KORU - 120'ye resetleme
-  console.log('Timer başlatılıyor, initial time:', timeLeftRef.current);
+  console.log('Timer başlatılıyor, current time:', timeLeftRef.current);
   
   timerRef.current = setInterval(() => {
     timeLeftRef.current -= 1;
@@ -1318,6 +1320,7 @@ const startTimer = useCallback(() => {
     
     if (timeLeftRef.current <= 0) {
       clearInterval(timerRef.current!);
+      timerRef.current = null;
       setGameEnded(true);
       setTimeout(() => {
         setPlayerScore(currentPlayerScore => {
@@ -1336,41 +1339,47 @@ const startTimer = useCallback(() => {
 const handleTournamentExit = async () => {
   if (!user || !tournamentMatch || !onGameComplete) return;
 
-  console.log('🚪 Turnuva maçından ayrılıyor:', user.id);
+  console.log('Turnuva maçından ayrılıyor:', user.id);
 
-  // İstatistikleri güncelle (kaybeden olarak)
   try {
+    // İstatistikleri güncelle (kaybeden olarak)
     await updatePlayerStatistics(
       user.id,
       playerScore,
       playerWordsWithScores,
       false // Kaybeden
     );
+
+    // Rakibi kazanan olarak ayarla
+    const winnerId = tournamentMatch.player1_id === user.id ? 
+      tournamentMatch.player2_id : 
+      tournamentMatch.player1_id;
+
+    if (!winnerId) {
+      console.error('Winner ID bulunamadı');
+      navigate('/');
+      return;
+    }
+
+    // Skorları ayarla (çıkan kişi 0 puan)
+    const isUserPlayer1 = tournamentMatch.player1_id === user.id;
+    const player1Score = isUserPlayer1 ? 0 : 500;
+    const player2Score = isUserPlayer1 ? 500 : 0;
+
+    // Parent component'e bildir ve bekle
+    await onGameComplete(winnerId, player1Score, player2Score);
+    
+    // Ana menüye dön
+    navigate('/');
+    
   } catch (error) {
-    console.error('❌ Çıkış istatistik güncelleme hatası:', error);
+    console.error('Çıkış hatası:', error);
+    navigate('/'); // Hata olsa bile çık
   }
-
-  // Rakibi kazanan olarak ayarla
-  const winnerId = tournamentMatch.player1_id === user.id ? 
-    tournamentMatch.player2_id : 
-    tournamentMatch.player1_id;
-
-  if (!winnerId) {
-    console.error('❌ Winner ID bulunamadı');
-    return;
-  }
-
-  // Skorları ayarla
-  const isUserPlayer1 = tournamentMatch.player1_id === user.id;
-  const player1Score = isUserPlayer1 ? 0 : 500;
-  const player2Score = isUserPlayer1 ? 500 : 0;
-
-  onGameComplete(winnerId, player1Score, player2Score);
-  navigate('/');
 };
   
   // Timer effect - for both timed and score modes
-  useEffect(() => {
+useEffect(() => {
   console.log('Timer useEffect çalışıyor:', {
     gameStarted,
     gameEnded, 
@@ -1380,17 +1389,23 @@ const handleTournamentExit = async () => {
   });
 
   if (gameType === 'timed' && gameStarted && !gameEnded) {
-    startTimer();
+    // Timer zaten çalışıyorsa yeniden başlatma
+    if (!timerRef.current) {
+      startTimer();
+    }
   } else if (timerRef.current) {
     clearInterval(timerRef.current);
+    timerRef.current = null;
   }
   
   return () => {
-    if (timerRef.current) {
+    // Cleanup sadece unmount'ta olsun
+    if (timerRef.current && (gameEnded || !gameStarted)) {
       clearInterval(timerRef.current);
+      timerRef.current = null;
     }
   };
-}, [gameStarted, gameEnded, gameType, startTimer]);
+}, [gameStarted, gameEnded, gameType]);
 
   // Sayfa focus süre koruma
 useEffect(() => {
