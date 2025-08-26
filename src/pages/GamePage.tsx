@@ -1726,8 +1726,8 @@ useEffect(() => {
   }, 1000);
 };
 
-  // Submit word - Using local wordlist validation
-  const submitWord = async () => {
+// Submit word - Using local wordlist validation
+const submitWord = async () => {
   if (waitingForPlayer || isJokerActive) return;
   
   // Prevent accidental double-taps/duplicate submissions (mobile)
@@ -1757,139 +1757,155 @@ useEffect(() => {
       recentSubmissionsRef.current.delete(normalizedWord);
     }, 800);
   
-  // 🔥 MOBİL FIX: Kelime kontrolünü daha güvenli hale getir
-  console.log('📱 Mobile word check:', {
-    word: normalizedWord,
-    localUsedSize: usedWords.size,
-    globalUsedSize: globalUsedWords.size,
-    isInLocal: usedWords.has(normalizedWord),
-    isInGlobal: globalUsedWords.has(normalizedWord),
-    currentUsedWords: Array.from(usedWords),
-    currentGlobalWords: Array.from(globalUsedWords)
-  });
-  
-  // SADECE KENDİ KELİMELERİMİ KONTROL ET - rakibin kelimelerini değil!
-  if (usedWords.has(normalizedWord)) {
-    console.log('❌ Mobile: Word already used by me!', {
-      foundInMyList: usedWords.has(normalizedWord),
-      myWords: Array.from(usedWords),
-      allGlobalWords: Array.from(globalUsedWords)
+    // Mobile word check
+    console.log('📱 Mobile word check:', {
+      word: normalizedWord,
+      localUsedSize: usedWords.size,
+      globalUsedSize: globalUsedWords.size,
+      isInLocal: usedWords.has(normalizedWord),
+      isInGlobal: globalUsedWords.has(normalizedWord),
+      currentUsedWords: Array.from(usedWords),
+      currentGlobalWords: Array.from(globalUsedWords)
     });
-    showCustomToast('Kelime Zaten Kullanıldı','');
-    playSound('wrongWord');
-    clearWord();
-    return;
-  }
-
-  // Don't add to sets immediately - wait for successful validation and database save
-
-  // LOCAL WORDLIST VALIDATION
-  const result = validateWordLocal(currentWord);
   
-  if (!result.isValid) {
-    playSound('wrongWord');
-    showCustomToast('Geçersiz Kelime','');
-    clearWord();
-    return;
-  }
-
-  console.log('✅ Mobile: Word accepted:', currentWord, 'Points:', result.points);
-  
-  // Database'e kelimeyi kaydet (sadece multiplayer modlarda)
-  if (currentRoom && user && (gameMode === 'private-room' || gameMode === 'random-match')) {
-    try {
-      await supabase
-        .from('game_words')
-        .insert({
-          room_id: currentRoom.id,
-          player_id: user.id,
-          word: normalizedWord,
-          points: result.points
-        });
-      
-      console.log('✅ Mobile: Word saved to database:', normalizedWord);
-    } catch (error) {
-      console.error('❌ Mobile: Database word save error:', error);
-      showCustomToast('Kelime kaydedilemedi','');
+    // SADECE KENDİ KELİMELERİMİ KONTROL ET - rakibin kelimelerini değil!
+    if (usedWords.has(normalizedWord)) {
+      console.log('❌ Mobile: Word already used by me!', {
+        foundInMyList: usedWords.has(normalizedWord),
+        myWords: Array.from(usedWords),
+        allGlobalWords: Array.from(globalUsedWords)
+      });
+      showCustomToast('Kelime Zaten Kullanıldı','');
+      playSound('wrongWord');
       clearWord();
       return;
     }
-  }
 
-  // SADECE KENDİ LİSTEME EKLE - global'a ekleme, o real-time olarak gelecek
-  setUsedWords(prev => new Set([...prev, normalizedWord]));
-  console.log('✅ Mobile: Word added to local sets after validation:', normalizedWord);
+    // LOCAL WORDLIST VALIDATION
+    const result = validateWordLocal(currentWord);
+    
+    if (!result.isValid) {
+      playSound('wrongWord');
+      showCustomToast('Geçersiz Kelime','');
+      clearWord();
+      return;
+    }
 
-  // Ses efektleri ve puan hesaplama
-  playSound('correctWord');
-  const newScore = playerScore + result.points;
-  setPlayerScore(newScore);
-  
-  setPlayerWords(prev => [...prev, currentWord]);
-  setPlayerWordsWithScores(prev => [...prev, { word: currentWord, score: result.points }]);
-
-  const wordLength = currentWord.length;
-
-  // Ses efektlerini direkt çal
-  if (wordLength === 4) {
-    audioYes.currentTime = 0;
-    audioYes.play().catch(e => console.log('Audio failed:', e));
-  } else if (wordLength === 5) {
-    audioWow2.currentTime = 0;
-    audioWow2.play().catch(e => console.log('Audio failed:', e));
-  } else if (wordLength >= 6) {
-    audioYahoo.currentTime = 0;
-    audioYahoo.play().catch(e => console.log('Audio failed:', e));
-  }
-  
-  // 🔥 MOBİL SES FIX: Audio dosyalarını mobil-friendly şekilde çal
-  triggerWordEffects();
-  
-  if (currentRoom) {
-    await updateScore(newScore);
-  }
-
-  // Total score güncelleme (vs-computer modunda)
-  if (user && gameMode === 'vs-computer') {
-    const { data: currentProfile } = await supabase
-      .from('profiles')
-      .select('total_score')
-      .eq('id', user.id)
-      .single();
-
-    const calculateLevel = (totalScore: number) => {
-      const baseExp = 1000;
-      const expIncreasePerLevel = 100;
-      
-      let level = 1;
-      let totalExpNeeded = 0;
-      let currentLevelExp = baseExp;
-
-      while (totalScore >= totalExpNeeded + currentLevelExp) {
-        totalExpNeeded += currentLevelExp;
-        level++;
-        currentLevelExp = baseExp + (level - 1) * expIncreasePerLevel;
+    console.log('✅ Mobile: Word accepted:', currentWord, 'Points:', result.points);
+    
+    // Database'e kelimeyi kaydet (sadece multiplayer modlarda)
+    if (currentRoom && user && (gameMode === 'private-room' || gameMode === 'random-match')) {
+      try {
+        await supabase
+          .from('game_words')
+          .insert({
+            room_id: currentRoom.id,
+            player_id: user.id,
+            word: normalizedWord,
+            points: result.points
+          });
+        
+        console.log('✅ Mobile: Word saved to database:', normalizedWord);
+      } catch (error) {
+        console.error('❌ Mobile: Database word save error:', error);
+        showCustomToast('Kelime kaydedilemedi','');
+        clearWord();
+        return;
       }
+    }
 
-      return level;
-    };
+    // SADECE KENDİ LİSTEME EKLE - global'a ekleme, o real-time olarak gelecek
+    setUsedWords(prev => new Set([...prev, normalizedWord]));
+    console.log('✅ Mobile: Word added to local sets after validation:', normalizedWord);
 
-    const currentLevel = calculateLevel(currentProfile?.total_score || 0);
-    const levelMultiplier = 1 + (currentLevel - 1) * 0.1;
-    const bonusPoints = Math.floor(result.points * levelMultiplier);
+    // Ses efektleri ve puan hesaplama
+    playSound('correctWord');
+    const newScore = playerScore + result.points;
+    setPlayerScore(newScore);
     
-    const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
+    setPlayerWords(prev => [...prev, currentWord]);
+    setPlayerWordsWithScores(prev => [...prev, { word: currentWord, score: result.points }]);
+
+    const wordLength = currentWord.length;
+
+    // Ses efektlerini direkt çal
+    if (wordLength === 4) {
+      audioYes.currentTime = 0;
+      audioYes.play().catch(e => console.log('Audio failed:', e));
+    } else if (wordLength === 5) {
+      audioWow2.currentTime = 0;
+      audioWow2.play().catch(e => console.log('Audio failed:', e));
+    } else if (wordLength >= 6) {
+      audioYahoo.currentTime = 0;
+      audioYahoo.play().catch(e => console.log('Audio failed:', e));
+    }
     
-    await supabase
-      .from('profiles')
-      .update({ total_score: newTotalScore })
-      .eq('id', user.id);
+    triggerWordEffects();
+    
+    if (currentRoom) {
+      await updateScore(newScore);
+    }
+
+    // 🔥 YENİ: Turnuva modunda gerçek rakip puanını güncelle
+    if (gameMode === 'tournament' && tournamentMatch && user) {
+      try {
+        const isPlayer1 = tournamentMatch.player1_id === user.id;
+        
+        await supabase
+          .from('tournament_matches')
+          .update({
+            [isPlayer1 ? 'player1_score' : 'player2_score']: newScore,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', tournamentMatch.id);
+        
+        console.log('🏆 Turnuva skoru güncellendi:', newScore);
+      } catch (error) {
+        console.error('❌ Turnuva skor güncellenme hatası:', error);
+      }
+    }
+
+    // Total score güncelleme (vs-computer modunda)
+    if (user && gameMode === 'vs-computer') {
+      const { data: currentProfile } = await supabase
+        .from('profiles')
+        .select('total_score')
+        .eq('id', user.id)
+        .single();
+
+      const calculateLevel = (totalScore: number) => {
+        const baseExp = 1000;
+        const expIncreasePerLevel = 100;
+        
+        let level = 1;
+        let totalExpNeeded = 0;
+        let currentLevelExp = baseExp;
+
+        while (totalScore >= totalExpNeeded + currentLevelExp) {
+          totalExpNeeded += currentLevelExp;
+          level++;
+          currentLevelExp = baseExp + (level - 1) * expIncreasePerLevel;
+        }
+
+        return level;
+      };
+
+      const currentLevel = calculateLevel(currentProfile?.total_score || 0);
+      const levelMultiplier = 1 + (currentLevel - 1) * 0.1;
+      const bonusPoints = Math.floor(result.points * levelMultiplier);
+      
+      const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
+      
+      await supabase
+        .from('profiles')
+        .update({ total_score: newTotalScore })
+        .eq('id', user.id);
+    }
+
+    clearWord();
+  } finally {
+    submissionLockRef.current = false;
   }
-
-  clearWord();
-} finally {
-  submissionLockRef.current = false;
-}
 };
 
   // Trigger word effects (confetti/fireworks) if purchased
