@@ -392,37 +392,7 @@ const generateTournamentGrid = useCallback((seed: string): string[][] => {
     onGameComplete(winnerId, player1Score, player2Score);
   };
 
-const startTimer = useCallback(() => {
-  if (timerRef.current) clearInterval(timerRef.current);
-  
-  console.log('Timer başlatılıyor, initial time:', timeLeftRef.current);
-  
-  timerRef.current = setInterval(() => {
-    timeLeftRef.current -= 1;
-    setDisplayTime(timeLeftRef.current);
-    
-    console.log('Timer tick:', timeLeftRef.current);
-    
-    if (timeLeftRef.current === 15 && !timeWarningPlayed) {
-      playTimeWarningSequence();
-      setTimeWarningPlayed(true);
-    }
-    
-    if (timeLeftRef.current <= 0) {
-      clearInterval(timerRef.current!);
-      setGameEnded(true);
-      setTimeout(() => {
-        setPlayerScore(currentPlayerScore => {
-          setOpponentScore(currentOpponentScore => {
-            checkWinnerWithScores(currentPlayerScore, currentOpponentScore);
-            return currentOpponentScore;
-          });
-          return currentPlayerScore;
-        });
-      }, 100);
-    }
-  }, 1000);
-}, [playTimeWarningSequence, timeWarningPlayed, checkWinnerWithScores]);
+
 
 
   const updatePlayerStatistics = async (
@@ -568,11 +538,13 @@ useEffect(() => {
     // Game type ayarlarını uygula
     if (propGameType) {
       if (propGameType === 'timed') {
-        setTimeLeft(120);
+        timeLeftRef.current = 120;
+        setDisplayTime(120);
         setTargetScore(0);
       } else {
         setTargetScore(500);
-        setTimeLeft(0);
+        timeLeftRef.current = 0;
+        setDisplayTime(0);
       }
     }
   }
@@ -1327,6 +1299,38 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
     }
   }, [gameEnded, winner, user, currentRoom, gameMode, endGame, playSound, playCelebrationSound, playGameLoseSound, toast, participants, playerWordsWithScores, opponentWordsWithScores]);
 
+  const startTimer = useCallback(() => {
+  if (timerRef.current) clearInterval(timerRef.current);
+  
+  console.log('Timer başlatılıyor, initial time:', timeLeftRef.current);
+  
+  timerRef.current = setInterval(() => {
+    timeLeftRef.current -= 1;
+    setDisplayTime(timeLeftRef.current);
+    
+    console.log('Timer tick:', timeLeftRef.current);
+    
+    if (timeLeftRef.current === 15 && !timeWarningPlayed) {
+      playTimeWarningSequence();
+      setTimeWarningPlayed(true);
+    }
+    
+    if (timeLeftRef.current <= 0) {
+      clearInterval(timerRef.current!);
+      setGameEnded(true);
+      setTimeout(() => {
+        setPlayerScore(currentPlayerScore => {
+          setOpponentScore(currentOpponentScore => {
+            checkWinnerWithScores(currentPlayerScore, currentOpponentScore);
+            return currentOpponentScore;
+          });
+          return currentPlayerScore;
+        });
+      }, 100);
+    }
+  }, 1000);
+}, [playTimeWarningSequence, timeWarningPlayed, checkWinnerWithScores]);
+  
   // Timer effect - for both timed and score modes
   useEffect(() => {
   console.log('Timer useEffect çalışıyor:', {
@@ -2313,7 +2317,8 @@ if (gameEnded) {
                     setOpponentWordsWithScores([]);
                     setPlayerScore(0);
                     setOpponentScore(0);
-                    setTimeLeft(gameType === 'timed' ? 120 : Infinity);
+                    timeLeftRef.current = gameType === 'timed' ? 120 : 0;
+                    setDisplayTime(timeLeftRef.current);
                     setGameStarted(true);
                     setGameEnded(false);
                     setWinner(null);
@@ -2491,12 +2496,12 @@ return (
               )}
               
               <div className={`flex items-center space-x-2 transition-all duration-300 ${
-                timeLeft <= 15 ? 'animate-pulse text-red-500' : 'text-foreground'
+                displayTime <= 15 ? 'animate-pulse text-red-500' : 'text-foreground'
               }`}>
                 <span className={`text-lg transition-all duration-300 inline-block ${
-                  timeLeft <= 15 ? 'animate-pulse text-red-500' : ''
+                  displayTime <= 15 ? 'animate-pulse text-red-500' : ''
                 }`} style={{
-                  animation: timeLeft <= 15 ? 'pulse 1s infinite, hourglassFlip 2s ease-in-out infinite' : 'hourglassFlip 4s ease-in-out infinite'
+                  animation: displayTime <= 15 ? 'pulse 1s infinite, hourglassFlip 2s ease-in-out infinite' : 'hourglassFlip 4s ease-in-out infinite'
                 }}>⏳</span>
                 <span className={`font-mono text-lg font-bold transition-all duration-300 ${
                   displayTime <= 15 ? 'text-red-500 scale-110' : ''
