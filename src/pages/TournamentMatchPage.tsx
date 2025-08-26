@@ -323,8 +323,7 @@ useEffect(() => {
       return () => clearInterval(countdownInterval);
     }
   }
-}, [tournament, matches, user]);
-
+}, [tournament, matches, user]); // Dependencies kontrol et
 // Otomatik maç başlatma fonksiyonu
 const autoStartMatch = async (matchId: string) => {
   try {
