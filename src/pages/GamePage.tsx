@@ -338,32 +338,27 @@ const generateTournamentGrid = useCallback((seed: string): string[][] => {
 
 
 
-  const handleTournamentGameEnd = async (userScore: number, opponentScore: number) => {
-    if (!user || !tournamentMatch || !onGameComplete) return;
+const handleTournamentGameEnd = async (userScore: number, opponentScore: number) => {
+  if (!user || !tournamentMatch || !onGameComplete) return;
 
-    console.log('🏁 Turnuva maçı bitiyor:', { userScore, opponentScore });
+  console.log('🏁 Turnuva maçı bitiyor:', { userScore, opponentScore });
 
-    // 🎯 ÖNEMLİ: ÖNCE İSTATİSTİKLERİ GÜNCELLE
-    try {
-      // Kullanıcı istatistiklerini güncelle
-      const isUserWinner = userScore > opponentScore;
+  try {
+    // İstatistikleri güncelle
+    const isUserWinner = userScore > opponentScore;
     
-      await updatePlayerStatistics(
-        user.id,
-        userScore,
-        playerWordsWithScores, // Gerçek kelimeler
-        isUserWinner
-      );
+    await updatePlayerStatistics(
+      user.id,
+      userScore,
+      playerWordsWithScores,
+      isUserWinner
+    );
     
-      // Rozet kontrolü
-      await checkBadges(user.id, playerWordsWithScores.length);
+    await checkBadges(user.id, playerWordsWithScores.length);
     
-      console.log('✅ Turnuva istatistikleri güncellendi');
-    } catch (error) {
-      console.error('❌ Turnuva istatistik güncelleme hatası:', error);
-    }
-
-    // Kazananı belirle
+    console.log('✅ Turnuva istatistikleri güncellendi');
+    
+    // Kazananı belirle ve parent'e bildir
     const winnerId = userScore > opponentScore ? user.id : (
       tournamentMatch.player1_id === user.id ? 
       tournamentMatch.player2_id : 
@@ -378,19 +373,11 @@ const generateTournamentGrid = useCallback((seed: string): string[][] => {
       // Parent component'e bildir ve bekle
       await onGameComplete(winnerId, player1Score, player2Score);
     }
-
-
-    console.log('📊 Final skoru:', {
-      player1Score,
-      player2Score,
-      winnerId,
-      isUserWinner: userScore > opponentScore,
-      isUserPlayer1
-    });
-
-    // Parent component'e bildir
-    onGameComplete(winnerId, player1Score, player2Score);
-  };
+    
+  } catch (error) {
+    console.error('❌ Turnuva maç bitiş hatası:', error);
+  }
+};
 
 
 
