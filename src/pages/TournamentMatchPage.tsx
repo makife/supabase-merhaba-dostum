@@ -283,7 +283,6 @@ const loadTournamentData = async () => {
 useEffect(() => {
   if (!tournament || !user) return;
 
-  // Kullanıcının pending maçı var mı?
   const userPendingMatch = matches.find(match => 
     (match.player1_id === user.id || match.player2_id === user.id) && 
     match.status === 'pending'
@@ -292,45 +291,43 @@ useEffect(() => {
   if (userPendingMatch) {
     console.log('⏰ Pending maç bulundu:', userPendingMatch.id);
     
-    // GERÇEK RAKIP KONTROLÜ
+    // DUPLICATE BAŞLATMA ENGELLEYİCİ EKLE
+    const alreadyStarting = localStorage.getItem(`starting_${userPendingMatch.id}`);
+    if (alreadyStarting) {
+      console.log('⚠️ Bu maç zaten başlatılıyor, atlanıyor');
+      return;
+    }
+    
+    // İşaret koy
+    localStorage.setItem(`starting_${userPendingMatch.id}`, 'true');
+    
     const opponentId = userPendingMatch.player1_id === user.id ? 
       userPendingMatch.player2_id : 
       userPendingMatch.player1_id;
     
     const isOpponentBot = !opponentId || opponentId.startsWith('bot_');
-    console.log('🤖 Rakip bot mu?', isOpponentBot, 'Rakip ID:', opponentId?.slice(-8));
+    
+    const startMatch = async () => {
+      await autoStartMatch(userPendingMatch.id);
+      // İşlemi bitince işareti kaldır
+      localStorage.removeItem(`starting_${userPendingMatch.id}`);
+    };
     
     if (isOpponentBot) {
-      // Bot rakip - hemen başlat (3 saniye bekle)
-      setTimeout(() => {
-        console.log('🤖 Bot rakip ile maç başlatılıyor');
-        autoStartMatch(userPendingMatch.id);
-      }, 3000);
+      setTimeout(startMatch, 3000);
     } else {
-      // Gerçek rakip - 10 saniye bekle
-      let countdown = 10;
-      const countdownInterval = setInterval(() => {
-        countdown--;
-        console.log(`⏰ Gerçek rakip ile ${countdown} saniye kaldı`);
-        
-        if (countdown <= 0) {
-          clearInterval(countdownInterval);
-          console.log('👥 Gerçek rakip ile maç başlatılıyor');
-          autoStartMatch(userPendingMatch.id);
-        }
-      }, 1000);
-
-      return () => clearInterval(countdownInterval);
+      setTimeout(startMatch, 10000);
     }
   }
-}, [tournament, matches, user]); // Dependencies kontrol et
+}, [tournament, matches, user]);
+  
+  // Dependencies kontrol et
 // Otomatik maç başlatma fonksiyonu
 const autoStartMatch = async (matchId: string) => {
   try {
     console.log('🎮 Maç otomatik başlatılıyor:', matchId);
 
-    // Maçı aktif duruma getir - room_id'ye dokunma
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('tournament_matches')
       .update({ 
         status: 'active',
@@ -338,7 +335,13 @@ const autoStartMatch = async (matchId: string) => {
       })
       .eq('id', matchId);
 
-    if (error) throw error;
+    // HATA KONTROLÜ EKLE
+    if (error) {
+      console.error('❌ Database güncelleme hatası:', error);
+      return; // Hata varsa fonksiyondan çık
+    }
+
+    console.log('✅ Match başarıyla güncellendi:', data);
 
     toast({
       title: '🎮 Turnuva Maçı Başladı!',
@@ -346,10 +349,13 @@ const autoStartMatch = async (matchId: string) => {
       duration: 3000,
     });
 
-    await loadTournamentData();
+    // Veri yenilemeyi geciktir
+    setTimeout(() => {
+      loadTournamentData();
+    }, 1000);
 
   } catch (error) {
-    console.error('Error auto-starting match:', error);
+    console.error('❌ autoStartMatch genel hatası:', error);
   }
 };
 
