@@ -1318,32 +1318,24 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
 useEffect(() => {
   if (gameType !== 'timed' || !gameStarted || gameEnded) return;
 
-  let gameStartTime = Date.now();
-  let pausedTime = 0;
+  // Focus/blur olaylarında hiçbir şey yapma - sadece timer devam etsin
+  const handleFocus = () => {
+    console.log('📱 Sayfa focus aldı - timer devam ediyor');
+  };
   
-  const handleVisibilityChange = () => {
-    if (document.hidden) {
-      // Sayfa gizlendi - durakla
-      pausedTime = Date.now();
-      console.log('⏸️ Oyun duraklatıldı');
-    } else {
-      // Sayfa geri geldi - devam et
-      if (pausedTime > 0) {
-        const pauseDuration = Date.now() - pausedTime;
-        gameStartTime += pauseDuration; // Başlama zamanını öteleyerek pause süresini kompanse et
-        console.log('▶️ Oyun devam ediyor, pause süresi:', pauseDuration, 'ms');
-        pausedTime = 0;
-      }
-    }
+  const handleBlur = () => {
+    console.log('📱 Sayfa focus kaybetti - timer devam ediyor'); 
   };
 
-  document.addEventListener('visibilitychange', handleVisibilityChange);
+  window.addEventListener('focus', handleFocus);
+  window.addEventListener('blur', handleBlur);
   
   return () => {
-    document.removeEventListener('visibilitychange', handleVisibilityChange);
+    window.removeEventListener('focus', handleFocus);
+    window.removeEventListener('blur', handleBlur);
   };
 }, [gameType, gameStarted, gameEnded]);
-
+  
   // Timer useEffect'inden SONRA ekleyin
 useEffect(() => {
   if (gameStarted && !gameEnded) {
