@@ -213,11 +213,13 @@ const GamePage = ({
 
 
 const generateTournamentGrid = useCallback((seed: string): string[][] => {
-  // Seed'e dayalı deterministik grid üret
-  const seedNum = parseInt(seed) || Date.now();
-  Math.random = function() {
-    const x = Math.sin(seedNum) * 10000;
-    return x - Math.floor(x);
+  // Basit LCG (Linear Congruential Generator) ile seed-based random
+  const seedNum = parseInt(seed.slice(-8), 16) || Date.now();
+  let currentSeed = seedNum;
+  
+  const seededRandom = () => {
+    currentSeed = (currentSeed * 1664525 + 1013904223) % 4294967296;
+    return currentSeed / 4294967296;
   };
   
   const letterPool = [
@@ -256,17 +258,13 @@ const generateTournamentGrid = useCallback((seed: string): string[][] => {
   for (let i = 0; i < 4; i++) {
     const row: string[] = [];
     for (let j = 0; j < 4; j++) {
-      const randomIndex = Math.floor(Math.random() * letterPool.length);
+      const randomIndex = Math.floor(seededRandom() * letterPool.length);
       row.push(letterPool[randomIndex]);
     }
     grid.push(row);
   }
   
-  // Math.random'u normale döndür
-  Math.random = function() {
-    return crypto.getRandomValues(new Uint32Array(1))[0] / 4294967295;
-  };
-  
+  console.log('🎯 Tournament grid generated with seed:', seed, 'Grid preview:', grid[0]);
   return grid;
 }, []);
 
