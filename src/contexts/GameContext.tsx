@@ -18,6 +18,11 @@ interface GameRoom {
   created_at: string;
   started_at: string | null;
   finished_at: string | null;
+  player1_id?: string | null;
+  player2_id?: string | null;
+  winner_id?: string | null;
+  player1_score?: number;
+  player2_score?: number;
 }
 
 interface GameParticipant {
@@ -827,84 +832,137 @@ const generateRoomCode = () => {
   }
 }, [currentRoom]);
 
-// Leave room
-const leaveRoom = useCallback(async (): Promise<void> => {
-  if (!user || !currentRoom) {
-    // Eğer currentRoom yoksa sadece state temizle
-    console.log('🧹 Room yok ama state temizleniyor');
-    setCurrentRoom(null);
-    setParticipants([]);
-    return;
-  }
+  // Leave room
+  const leaveRoom = useCallback(async (): Promise<void> => {
+    if (!currentRoom || !user) return;
 
-  try {
-    console.log('🚪 Manual leave başlıyor:', {
-      roomId: currentRoom.id.slice(-8),
-      status: currentRoom.status,
-      participantCount: participants.length,
-      userId: user.id.slice(-8)
-    });
-    
-    // 🔥 FIX: Sadece gerçekten aktif oyun + gerçek rakipli durumda ceza
-    const shouldApplyPenalty = currentRoom.status === 'active' && 
-                              participants.length >= 2 &&
-                              participants.some(p => !p.is_bot && p.user_id !== user.id);
-    
-    // 🔥 YENİ: Karşı tarafa bonus ver (manuel ayrılmadan önce)
-    const realOpponent = participants.find(p => !p.is_bot && p.user_id !== user.id);
-    if (realOpponent && (currentRoom.status === 'active' || currentRoom.status === 'waiting')) {
-      console.log('📢 Karşı tarafa bonus veriliyor:', realOpponent.user_id?.slice(-8));
+    try {
+      console.log('🚪 Oyundan çıkış işlemi başlıyor');
       
-      // Karşı tarafa kazanma bonusu ver
-      await applyWinBonus(realOpponent.user_id!, 100);
-      console.log('💰 Rakip +100 bonus puan aldı');
+      const gameMode = getGameModeFromRoom(currentRoom);
+      console.log('🎮 Game mode:', gameMode);
+      
+      // Oyun aktif mi kontrol et
+      const isActiveGame = currentRoom.status === 'active';
+      console.log('🎯 Aktif oyun mu?', isActiveGame);
+      
+      if (isActiveGame && gameMode === 'private') {
+        // Aktif özel oyundan ayrılma - ceza uygula
+        console.log('💀 Aktif özel oyundan ayrılma - ceza uygulanıyor');
+        await applyDisconnectPenalty(user.id, true);
+        
+        toast({
+          title: '⚠️ Oyun Cezası',
+          description: 'Aktif oyundan ayrıldığınız için -25 puan cezası aldınız.',
+          variant: 'destructive',
+          duration: 4000,
+        });
+      } else if (isActiveGame && gameMode === 'tournament') {
+        // Turnuva oyunundan ayrılma - özel işlem gerekiyor
+        console.log('🏆 Turnuva oyunundan ayrılma - bot ekleniyor');
+        
+        // Turnuva maçında ayrılma cezası
+        await applyDisconnectPenalty(user.id, true);
+        
+        // Kullanıcının yerine bot ekle (tournament match güncelle)
+        const opponentId = currentRoom.player1_id === user.id ? 
+          currentRoom.player2_id : currentRoom.player1_id;
+        
+        if (opponentId) {
+          // Mevcut turnuva maçını bul
+          const { data: tournamentMatch } = await supabase
+            .from('tournament_matches')
+            .select('*')
+            .eq('room_id', currentRoom.id)
+            .single();
+            
+          if (tournamentMatch) {
+            // Çıkan oyuncunun yerine bot koy
+            const updateField = tournamentMatch.player1_id === user.id ? 'player1_id' : 'player2_id';
+            const botId = `bot_replacement_${Date.now()}`;
+            
+            await supabase
+              .from('tournament_matches')
+              .update({ [updateField]: botId })
+              .eq('id', tournamentMatch.id);
+              
+            // Game room'u da güncelle
+            const roomUpdateField = currentRoom.player1_id === user.id ? 'player1_id' : 'player2_id';
+            await supabase
+              .from('game_rooms')
+              .update({ [roomUpdateField]: botId })
+              .eq('id', currentRoom.id);
+      
+      // Participant ekle
+      await supabase
+        .from('game_participants')
+        .insert({
+          room_id: currentRoom.id,
+          user_id: botId,
+          is_bot: true,
+          score: 0
+        });
+        
+      console.log('🤖 Bot replacement eklendi:', botId);
     }
-    
-    if (shouldApplyPenalty) {
-      console.log('⚖️ Ceza uygulanacak (aktif oyun + gerçek rakip)');
-      await applyDisconnectPenalty(user.id, true);
-    } else {
-      console.log('✅ Ceza yok:', {
-        isActive: currentRoom.status === 'active',
-        hasEnoughParticipants: participants.length >= 2,
-        hasRealOpponent: participants.some(p => !p.is_bot && p.user_id !== user.id)
+  }
+  
+  toast({
+    title: '🏆 Turnuva Cezası',
+    description: 'Turnuva maçından ayrıldığınız için -50 puan cezası aldınız. Yerinize bot devam edecek.',
+    variant: 'destructive',
+    duration: 4000,
+  });
+}
+      
+      // Participant'ı sil
+      const { error: deleteError } = await supabase
+        .from('game_participants')
+        .delete()
+        .eq('room_id', currentRoom.id)
+        .eq('user_id', user.id);
+
+      if (deleteError) {
+        console.error('❌ Participant silme hatası:', deleteError);
+      } else {
+        console.log('✅ Participant silindi');
+      }
+      
+      // Normal oyun için room kontrolü
+      if (gameMode !== 'tournament') {
+        // Room durumunu kontrol et ve gerekirse sil
+        const { data: remainingParticipants } = await supabase
+          .from('game_participants')
+          .select('user_id, is_bot')
+          .eq('room_id', currentRoom.id);
+          
+        const realPlayers = remainingParticipants?.filter(p => !p.is_bot) || [];
+        
+        // Eğer gerçek oyuncu kalmadıysa odayı sil
+        if (realPlayers.length === 0) {
+          console.log('🗑️ Gerçek oyuncu kalmadı, oda siliniyor');
+          await supabase
+            .from('game_rooms')
+            .delete()
+            .eq('id', currentRoom.id);
+        }
+      }
+      
+      // State temizle
+      setCurrentRoom(null);
+      setParticipants([]);
+      
+      console.log('✅ Oyundan çıkış tamamlandı');
+      
+    } catch (error) {
+      console.error('❌ Oyundan çıkış hatası:', error);
+      toast({
+        title: 'Hata',
+        description: 'Oyundan çıkış sırasında bir hata oluştu',
+        variant: 'destructive',
       });
     }
-
-    // Participant'ı sil
-    await supabase
-      .from('game_participants')
-      .delete()
-      .eq('room_id', currentRoom.id)
-      .eq('user_id', user.id);
-
-    console.log('✅ Participant silindi');
-
-    // Eğer host isen veya tek kalınsa odayı sil
-    const remainingParticipants = participants.filter(p => p.user_id !== user.id);
-    const realPlayersRemaining = remainingParticipants.filter(p => !p.is_bot);
-    
-    if (currentRoom.host_id === user.id || realPlayersRemaining.length === 0) {
-      console.log('🗑️ Oda siliniyor (host ayrıldı veya gerçek oyuncu kalmadı)');
-      await supabase
-        .from('game_rooms')
-        .delete()
-        .eq('id', currentRoom.id);
-    }
-
-    // 🔥 STATE TEMİZLEME - HER DURUMDA!
-    console.log('🧹 Local state temizleniyor...');
-    setCurrentRoom(null);
-    setParticipants([]);
-    console.log('✅ Leave room tamamlandı, state temizlendi');
-    
-  } catch (error) {
-    console.error('❌ Leave room hatası:', error);
-    // Hata olsa bile state'i temizle
-    setCurrentRoom(null);
-    setParticipants([]);
-  }
-}, [user, currentRoom, participants, applyDisconnectPenalty, applyWinBonus]);
+  }, [currentRoom, user, applyDisconnectPenalty, toast, getGameModeFromRoom]);
 
   // Update score
   const updateScore = useCallback(async (score: number): Promise<void> => {
@@ -1198,45 +1256,82 @@ const leaveRoom = useCallback(async (): Promise<void> => {
   console.log('🚪 Mevcut oyuncu:', user?.id?.slice(-8));
   console.log('🚪 Room status:', currentRoom.status);
   
-  // BÜYÜk DEĞİŞİKLİK: Sadece aktif oyunda VE gerçek rakip ayrıldığında işlem yap
-  // Room creator'ın kendisinin ayrılması durumunda hiçbir şey yapma
-  if (!payload.old.is_bot && 
-      payload.old.user_id && 
-      payload.old.user_id !== user?.id && 
-      currentRoom.status === 'active' &&
-      participants.length >= 2) { // En az 2 oyuncu olduğunda
-    
-    console.log('🏆 RAKIP AYRILDI - SEN KAZANDIN!');
-    
-    await applyDisconnectPenalty(payload.old.user_id, false);
-    
-    if (user?.id) {
-      await applyWinBonus(user.id);
-      toast({
-        title: '🏆 Kazandınız!',
-        description: 'Rakip oyundan ayrıldı. +100 bonus puan!',
-        duration: 4000,
+  // Turnuva kontrolü - eğer bu turnuva oyunuysa farklı davran
+  const gameMode = getGameModeFromRoom(currentRoom);
+  
+  if (gameMode === 'tournament') {
+    // Turnuva oyununda çıkış - bot replacement logic
+    if (!payload.old.is_bot && 
+        payload.old.user_id && 
+        payload.old.user_id !== user?.id && 
+        currentRoom.status === 'active') {
+      
+      console.log('🏆 TURNUVA: Rakip ayrıldı, bot replacement kontrol ediliyor...');
+      
+      // Turnuva maçını bul ve bot kontrolü yap
+      const { data: tournamentMatch } = await supabase
+        .from('tournament_matches')
+        .select('*')
+        .eq('room_id', currentRoom.id)
+        .single();
+        
+      if (tournamentMatch) {
+        // Eğer ayrılan oyuncu yerine bot eklenmişse, oyuna devam et
+        const leftPlayerId = payload.old.user_id;
+        const isPlayer1Left = tournamentMatch.player1_id === leftPlayerId;
+        const isPlayer2Left = tournamentMatch.player2_id === leftPlayerId;
+        
+        if (isPlayer1Left && tournamentMatch.player1_id?.startsWith('bot_replacement_')) {
+          console.log('🤖 Player 1 yerine bot eklendi, oyun devam ediyor');
+          return; // Oyun devam etsin
+        } else if (isPlayer2Left && tournamentMatch.player2_id?.startsWith('bot_replacement_')) {
+          console.log('🤖 Player 2 yerine bot eklendi, oyun devam ediyor');
+          return; // Oyun devam etsin
+        }
+      }
+    }
+  } else {
+    // Normal oyun mantığı
+    // BÜYÜk DEĞİŞİKLİK: Sadece aktif oyunda VE gerçek rakip ayrıldığında işlem yap
+    // Room creator'ın kendisinin ayrılması durumunda hiçbir şey yapma
+    if (!payload.old.is_bot && 
+        payload.old.user_id && 
+        payload.old.user_id !== user?.id && 
+        currentRoom.status === 'active' &&
+        participants.length >= 2) { // En az 2 oyuncu olduğunda
+      
+      console.log('🏆 RAKIP AYRILDI - SEN KAZANDIN!');
+      
+      await applyDisconnectPenalty(payload.old.user_id, false);
+      
+      if (user?.id) {
+        await applyWinBonus(user.id);
+        toast({
+          title: '🏆 Kazandınız!',
+          description: 'Rakip oyundan ayrıldı. +100 bonus puan!',
+          duration: 4000,
+        });
+      }
+      
+      console.log('🗑️ ODA SİLİNİYOR');
+      await supabase
+        .from('game_rooms')
+        .delete()
+        .eq('id', currentRoom.id);
+      
+      // State temizle
+      setTimeout(() => {
+        setCurrentRoom(null);
+        setParticipants([]);
+      }, 2000);
+    } else {
+      console.log('🔄 DELETE event ama işlem yapmıyoruz - durum:', {
+        isBot: payload.old.is_bot,
+        isCurrentUser: payload.old.user_id === user?.id,
+        roomStatus: currentRoom.status,
+        participantCount: participants.length
       });
     }
-    
-    console.log('🗑️ ODA SİLİNİYOR');
-    await supabase
-      .from('game_rooms')
-      .delete()
-      .eq('id', currentRoom.id);
-    
-    // State temizle
-    setTimeout(() => {
-      setCurrentRoom(null);
-      setParticipants([]);
-    }, 2000);
-  } else {
-    console.log('🔄 DELETE event ama işlem yapmıyoruz - durum:', {
-      isBot: payload.old.is_bot,
-      isCurrentUser: payload.old.user_id === user?.id,
-      roomStatus: currentRoom.status,
-      participantCount: participants.length
-    });
   }
 }
     
