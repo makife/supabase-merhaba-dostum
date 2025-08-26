@@ -397,7 +397,7 @@ const startTournamentWithBots = async () => {
    
    // BOT EKLEME
    const currentTotal = allParticipants?.length || 0;
-   const botsNeeded = 8 - currentTotal;
+    const botsNeeded = 8 - currentTotal;
    
    if (botsNeeded > 0) {
      console.log('🤖 Bot ekleniyor:', botsNeeded);

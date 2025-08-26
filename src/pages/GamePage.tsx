@@ -163,6 +163,7 @@ const GamePage = ({
   const gameType = getGameType();
   const [timeWarningPlayed, setTimeWarningPlayed] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
+  const [showTournamentExitDialog, setShowTournamentExitDialog] = useState(false);
 
   // Game state - Generate random letters each time
   const generateRandomGrid = useCallback((): string[][] => {
@@ -253,6 +254,52 @@ const GamePage = ({
 
 
 
+
+  const handleTournamentExit = async () => {
+    if (!user || !tournamentMatch || !onGameComplete) return;
+
+    console.log('🚪 Turnuva maçından ayrılıyor:', user.id);
+
+    // İstatistikleri güncelle (kaybeden olarak)
+    try {
+      await updatePlayerStatistics(
+        user.id,
+        playerScore, // Mevcut skorla
+        playerWordsWithScores,
+        false // Kaybeden
+      );
+    } catch (error) {
+      console.error('❌ Çıkış istatistik güncelleme hatası:', error);
+    }
+
+    // Rakibi kazanan olarak ayarla
+    const winnerId = tournamentMatch.player1_id === user.id ? 
+      tournamentMatch.player2_id : 
+      tournamentMatch.player1_id;
+
+    if (!winnerId) {
+      console.error('❌ Winner ID bulunamadı');
+      return;
+    }
+
+    // Skorları ayarla - çıkan kişi 0 puan
+    const isUserPlayer1 = tournamentMatch.player1_id === user.id;
+    const player1Score = isUserPlayer1 ? 0 : 500; // Çıkan 0, kalan kazanır
+    const player2Score = isUserPlayer1 ? 500 : 0;
+
+    console.log('🚪 Çıkış skorları:', {
+      player1Score,
+      player2Score,
+      winnerId,
+      exitingUser: user.id
+    });
+
+    // Oyunu bitir ve turnuva yöneticisine bildir
+    onGameComplete(winnerId, player1Score, player2Score);
+
+    // Ana sayfaya yönlendir
+    navigate('/');
+  };
 
   const handleTournamentGameEnd = async (userScore: number, opponentScore: number) => {
     if (!user || !tournamentMatch || !onGameComplete) return;
@@ -2664,6 +2711,40 @@ return (
           </AlertDialogAction>
           <AlertDialogCancel className="w-full">
             🎮 Hayır, Oyuna Devam Et
+          </AlertDialogCancel>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    {/* Tournament Exit Dialog */}
+    <AlertDialog open={showTournamentExitDialog} onOpenChange={setShowTournamentExitDialog}>
+      <AlertDialogContent className="max-w-sm mx-auto">
+        <AlertDialogHeader>
+          <AlertDialogTitle className="text-center">🏆 Turnuva Maçı Uyarısı</AlertDialogTitle>
+          <AlertDialogDescription className="text-center">
+            Turnuva maçından ayrılırsan:
+            <br /><br />
+            • <span className="font-bold text-destructive">Maçı kaybedersin</span>
+            <br />
+            • <span className="font-bold text-yellow-600">Yerine bot devam eder</span>
+            <br />
+            • <span className="font-bold text-blue-600">Turnuvadan elenir</span>
+            <br /><br />
+            <span className="text-muted-foreground text-sm">Emin misin?</span>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="flex-col space-y-2 sm:flex-col sm:space-y-2 sm:space-x-0">
+          <AlertDialogAction 
+            onClick={async () => {
+              setShowTournamentExitDialog(false);
+              await handleTournamentExit();
+            }}
+            className="w-full bg-destructive hover:bg-destructive/90"
+          >
+            🚪 Evet, Ayrıl
+          </AlertDialogAction>
+          <AlertDialogCancel className="w-full">
+            🏆 Hayır, Maça Devam Et
           </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
