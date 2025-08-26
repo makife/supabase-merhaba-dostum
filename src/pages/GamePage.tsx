@@ -573,7 +573,7 @@ const handleBackToMenu = async () => {
     return;
   }
   
-  // Normal aktif oyun kontrolü
+  // Diğer modlar için normal akış
   const isRealActiveGame = gameStarted && 
                           !gameEnded && 
                           participants.length >= 2 && 
