@@ -428,19 +428,19 @@ useEffect(() => {
       opponentId: opponentId?.slice(-8)
     });
 
-    if (!opponentId) {
-      console.log('❌ Rakip ID bulunamadı');
+    // Bot kontrolü: sadece oyunculardan biri eksikse bot vardır
+    const bothPlayersPresent = Boolean(tournamentMatch.player1_id && tournamentMatch.player2_id);
+    if (!bothPlayersPresent) {
+      console.log('🤖 Bot rakip tespit edildi (eksik oyuncu)');
       setIsAIOpponent(true);
-      setOpponentName('Bekleniyor...');
-    } else if (opponentId.startsWith('bot_')) {
-      console.log('🤖 Bot rakip tespit edildi');
+      setOpponentName('Turnuva Botu');
+    } else if (!opponentId) {
+      console.log('❌ Rakip ID bulunamadı');
       setIsAIOpponent(true);
       setOpponentName('Turnuva Botu');
     } else {
       console.log('👥 Gerçek oyuncu rakip tespit edildi');
       setIsAIOpponent(false);
-      
-      // Gerçek oyuncu ismini participants'tan bul
       const realOpponent = participants.find(p => p.user_id === opponentId);
       if (realOpponent && (realOpponent as any).profiles?.username) {
         setOpponentName((realOpponent as any).profiles.username);
@@ -1289,9 +1289,9 @@ useEffect(() => {
           return hasAI && !hasRealOpponent;
         case 'tournament': {
           // Tournament: AI sadece rakip yoksa
-          if (tournamentMatch && user) {
-            const opponentId = tournamentMatch.player1_id === user.id ? tournamentMatch.player2_id : tournamentMatch.player1_id;
-            return !opponentId; // opponent yoksa AI
+          if (tournamentMatch) {
+            const bothPlayersPresent = Boolean(tournamentMatch.player1_id && tournamentMatch.player2_id);
+            return !bothPlayersPresent;
           }
           return false;
         }
