@@ -1469,6 +1469,43 @@ useEffect(() => {
     }
   };
 
+useEffect(() => {
+  if (gameMode !== 'tournament' || !tournamentMatch) return;
+
+  console.log('🏆 Turnuva real-time senkronizasyon başlatıldı');
+
+  // Tournament match değişikliklerini dinle
+  const tournamentChannel = supabase
+    .channel(`tournament-match-${tournamentMatch.id}`)
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'tournament_matches',
+      filter: `id=eq.${tournamentMatch.id}`
+    }, (payload) => {
+      console.log('🔄 Tournament match güncellendi:', payload.new);
+      
+      // Rakip skorunu real-time güncelle
+      const newMatch = payload.new as any;
+      if (user) {
+        const isPlayer1 = newMatch.player1_id === user.id;
+        const newOpponentScore = isPlayer1 ? newMatch.player2_score : newMatch.player1_score;
+        
+        if (newOpponentScore !== undefined && newOpponentScore !== opponentScore) {
+          console.log('🔄 Rakip skoru güncellendi:', newOpponentScore);
+          setOpponentScore(newOpponentScore);
+        }
+      }
+    })
+    .subscribe();
+
+  return () => {
+    console.log('🏆 Turnuva real-time temizliği');
+    supabase.removeChannel(tournamentChannel);
+  };
+}, [gameMode, tournamentMatch?.id, user?.id, opponentScore]);
+
+
   // İlk sync
   const initialSyncTimer = setTimeout(syncUsedWords, 500);
 
