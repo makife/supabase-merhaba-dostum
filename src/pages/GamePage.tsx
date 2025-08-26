@@ -501,27 +501,33 @@ useEffect(() => {
 
   // Turnuva modunda geri dönüş engelle
 const handleBackToMenu = async () => {
-  // Turnuva modunda özel çıkış dialog'u göster
   if (gameMode === 'tournament') {
-    setShowTournamentExitDialog(true);
+    toast({
+      title: '⚠️ Uyarı',
+      description: 'Turnuva maçından çıkamazsınız! Maçı tamamlamanız gerekiyor.',
+      variant: 'destructive',
+    });
     return;
   }
   
-  // Normal aktif oyun kontrolü
+  // 🔥 Aktif oyun kontrolü - kendi dialog'umuz
   const isRealActiveGame = gameStarted && 
                           !gameEnded && 
                           participants.length >= 2 && 
                           participants.some(p => !p.is_bot && p.user_id !== user?.id);
   
   if (isRealActiveGame) {
-    setShowExitDialog(true);
+    setShowExitDialog(true); // Kendi dialog'umuzu göster
     return;
   }
   
+  // Odadan ayrıl (GameContext'ten)
   if (currentRoom) {
+    console.log('🚪 handleBackToMenu - odadan ayrılıyor...');
     await leaveRoom();
   }
   
+  // Ana menüye git
   navigate('/');
 };
 
@@ -2287,14 +2293,13 @@ return (
         <div className="flex items-center justify-between py-2 shrink-0">
           {/* Sol taraf - Geri butonu */}
           <Button 
-            variant="outline" 
-            size="sm" 
-            className="text-xs px-2 py-1 h-8" 
-            onClick={handleBackToMenu}
-            disabled={gameMode === 'tournament'}
-          >
+             variant="outline" 
+             size="sm" 
+             className="text-xs px-2 py-1 h-8" 
+             onClick={handleBackToMenu}
+       >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            {gameMode === 'tournament' ? 'Turnuva Maçı' : 'Çıkış'}
+            {gameMode === 'tournament' ? 'Çıkış' : 'Çıkış'}
           </Button>
 
           {/* Orta kısım - Timer veya hedef + Turnuva bilgisi */}
