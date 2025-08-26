@@ -146,19 +146,35 @@ const GamePage = ({
   const [wordlistLoaded, setWordlistLoaded] = useState(false);
   
   // Get game type from room or URL params
-  const getGameType = useCallback((): 'timed' | 'score' => {
-    if (gameMode === 'vs-computer') {
-      const urlType = (searchParams.get('type') as 'timed' | 'score') || 'timed';
-      return urlType;
-    }
-    
-    if (currentRoom?.game_mode) {
-      if (currentRoom.game_mode.includes('score')) return 'score';
-      if (currentRoom.game_mode.includes('timed')) return 'timed';
-    }
+const getGameType = useCallback((): 'timed' | 'score' => {
+  let result: 'timed' | 'score';
+  
+  if (gameMode === 'tournament') {
+    // Turnuva modunda propGameType kullan
+    result = propGameType || 'timed';
+    console.log('🏆 Tournament gameType:', result, 'from propGameType:', propGameType);
+    return result;
+  }
+  
+  if (gameMode === 'vs-computer') {
     const urlType = (searchParams.get('type') as 'timed' | 'score') || 'timed';
-    return urlType;
-  }, [gameMode, currentRoom?.game_mode, searchParams]);
+    result = urlType;
+    console.log('🤖 VS-Computer gameType:', result);
+    return result;
+  }
+  
+  if (currentRoom?.game_mode) {
+    if (currentRoom.game_mode.includes('score')) result = 'score';
+    else if (currentRoom.game_mode.includes('timed')) result = 'timed';
+    else result = 'timed';
+  } else {
+    const urlType = (searchParams.get('type') as 'timed' | 'score') || 'timed';
+    result = urlType;
+  }
+  
+  console.log('🎮 Other mode gameType:', result);
+  return result;
+}, [gameMode, currentRoom?.game_mode, searchParams, propGameType]);
   
   const gameType = getGameType();
   const [timeWarningPlayed, setTimeWarningPlayed] = useState(false);
@@ -1279,11 +1295,23 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
 
   // Timer effect - for both timed and score modes
   useEffect(() => {
+  console.log('🔍 Timer useEffect çalışıyor:', {
+    gameStarted,
+    gameEnded, 
+    gameType,
+    gameMode,
+    timeLeft
+  });
+
   if (!gameStarted || gameEnded) return;
 
   if (gameType === 'timed') {
+    console.log('⏰ Timer başlatılıyor, current time:', timeLeft);
+    
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
+        console.log('⏰ Timer tick:', prev, '-> ', prev - 1);
+        
         if (prev === 15 && !timeWarningPlayed) {
           playTimeWarningSequence();
           setTimeWarningPlayed(true);
@@ -1306,8 +1334,10 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
       });
     }, 1000);
 
-    // Cleanup fonksiyonunu ekle
-    const cleanup = () => clearInterval(timer);
+    const cleanup = () => {
+      console.log('🧹 Timer temizleniyor');
+      clearInterval(timer);
+    };
     addCleanup(cleanup);
 
     return cleanup;
