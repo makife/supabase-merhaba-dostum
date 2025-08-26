@@ -1286,41 +1286,6 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
     }
   }, [gameEnded, winner, user, currentRoom, gameMode, endGame, playSound, playCelebrationSound, playGameLoseSound, toast, participants, playerWordsWithScores, opponentWordsWithScores]);
 
-const startTimer = useCallback(() => {
-  if (timerRef.current) {
-    console.log('Timer zaten çalışıyor, yeni timer başlatılmıyor');
-    return;
-  }
-  
-  console.log('Timer başlatılıyor, current time:', timeLeftRef.current);
-  
-  timerRef.current = setInterval(() => {
-    timeLeftRef.current -= 1;
-    setDisplayTime(timeLeftRef.current);
-    
-    console.log('Timer tick:', timeLeftRef.current);
-    
-    if (timeLeftRef.current === 15 && !timeWarningPlayed) {
-      playTimeWarningSequence();
-      setTimeWarningPlayed(true);
-    }
-    
-    if (timeLeftRef.current <= 0) {
-      clearInterval(timerRef.current!);
-      timerRef.current = null;
-      setGameEnded(true);
-      setTimeout(() => {
-        setPlayerScore(currentPlayerScore => {
-          setOpponentScore(currentOpponentScore => {
-            checkWinnerWithScores(currentPlayerScore, currentOpponentScore);
-            return currentOpponentScore;
-          });
-          return currentPlayerScore;
-        });
-      }, 100);
-    }
-  }, 1000);
-}, [playTimeWarningSequence, timeWarningPlayed, checkWinnerWithScores]);
 
 
 const handleTournamentExit = async () => {
@@ -1344,7 +1309,6 @@ const handleTournamentExit = async () => {
 
     if (!winnerId) {
       console.error('Winner ID bulunamadı');
-      navigate('/');
       return;
     }
 
@@ -1353,15 +1317,15 @@ const handleTournamentExit = async () => {
     const player1Score = isUserPlayer1 ? 0 : 500;
     const player2Score = isUserPlayer1 ? 500 : 0;
 
-    // Parent component'e bildir ve bekle
-    await onGameComplete(winnerId, player1Score, player2Score);
+    // Parent component'e bildir
+    onGameComplete(winnerId, player1Score, player2Score);
     
-    // Ana menüye dön
-    navigate('/');
-    
+    // Ana menüye gitme, turnuva sayfasında kal
+    // navigate('/'); <- Bu satırı kaldır
+
   } catch (error) {
     console.error('Çıkış hatası:', error);
-    navigate('/'); // Hata olsa bile çık
+    // Hata olsa bile turnuva sayfasında kal
   }
 };
   
@@ -1372,24 +1336,46 @@ useEffect(() => {
     gameEnded, 
     gameType,
     gameMode,
-    displayTime
+    displayTime: timeLeftRef.current
   });
 
+  // Timer sadece timed modda ve oyun başladığında çalışsın
   if (gameType === 'timed' && gameStarted && !gameEnded) {
-    // Timer zaten çalışıyorsa yeniden başlatma
-    if (!timerRef.current) {
-      startTimer();
+    // Eğer timer zaten çalışıyorsa hiçbir şey yapma
+    if (timerRef.current) {
+      console.log('Timer zaten çalışıyor, yeni timer başlatılmıyor');
+      return;
     }
-  } else if (timerRef.current) {
-    clearInterval(timerRef.current);
-    timerRef.current = null;
+    
+    console.log('Timer başlatılıyor, initial time:', timeLeftRef.current);
+    
+    timerRef.current = setInterval(() => {
+      timeLeftRef.current -= 1;
+      setDisplayTime(timeLeftRef.current);
+      
+      if (timeLeftRef.current === 15 && !timeWarningPlayed) {
+        playTimeWarningSequence();
+        setTimeWarningPlayed(true);
+      }
+      
+      if (timeLeftRef.current <= 0) {
+        clearInterval(timerRef.current!);
+        timerRef.current = null;
+        setGameEnded(true);
+        setTimeout(() => {
+          handleGameEnd();
+        }, 100);
+      }
+    }, 1000);
   }
   
+  // Cleanup sadece gerektiğinde
   return () => {
-    // Cleanup sadece unmount'ta olsun
-    if (timerRef.current && (gameEnded || !gameStarted)) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
+    if (gameEnded || !gameStarted) {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     }
   };
 }, [gameStarted, gameEnded, gameType]);
