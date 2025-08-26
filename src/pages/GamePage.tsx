@@ -370,15 +370,15 @@ const generateTournamentGrid = useCallback((seed: string): string[][] => {
       tournamentMatch.player1_id
     );
 
-    if (!winnerId) {
-      console.error('❌ Winner ID bulunamadı');
-      return;
+    if (winnerId) {
+      const isUserPlayer1 = tournamentMatch.player1_id === user.id;
+      const player1Score = isUserPlayer1 ? userScore : opponentScore;
+      const player2Score = isUserPlayer1 ? opponentScore : userScore;
+
+      // Parent component'e bildir ve bekle
+      await onGameComplete(winnerId, player1Score, player2Score);
     }
 
-    // Skorları düzenle (kim player1, kim player2?)
-    const isUserPlayer1 = tournamentMatch.player1_id === user.id;
-    const player1Score = isUserPlayer1 ? userScore : opponentScore;
-    const player2Score = isUserPlayer1 ? opponentScore : userScore;
 
     console.log('📊 Final skoru:', {
       player1Score,
