@@ -313,7 +313,9 @@ const generateTournamentGrid = useCallback((seed: string): string[][] => {
   const [opponentWordsWithScores, setOpponentWordsWithScores] = useState<Array<{word: string, score: number}>>([]);
   const [playerScore, setPlayerScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(gameType === 'timed' ? 120 : 0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timeLeftRef = useRef<number>(gameType === 'timed' ? 120 : 0);
+  const [displayTime, setDisplayTime] = useState<number>(timeLeftRef.current);
   const [gameStarted, setGameStarted] = useState(true);
   const [waitingForPlayer, setWaitingForPlayer] = useState(false);
   const [gameEnded, setGameEnded] = useState(false);
@@ -389,6 +391,38 @@ const generateTournamentGrid = useCallback((seed: string): string[][] => {
     // Parent component'e bildir
     onGameComplete(winnerId, player1Score, player2Score);
   };
+
+const startTimer = useCallback(() => {
+  if (timerRef.current) clearInterval(timerRef.current);
+  
+  console.log('Timer başlatılıyor, initial time:', timeLeftRef.current);
+  
+  timerRef.current = setInterval(() => {
+    timeLeftRef.current -= 1;
+    setDisplayTime(timeLeftRef.current);
+    
+    console.log('Timer tick:', timeLeftRef.current);
+    
+    if (timeLeftRef.current === 15 && !timeWarningPlayed) {
+      playTimeWarningSequence();
+      setTimeWarningPlayed(true);
+    }
+    
+    if (timeLeftRef.current <= 0) {
+      clearInterval(timerRef.current!);
+      setGameEnded(true);
+      setTimeout(() => {
+        setPlayerScore(currentPlayerScore => {
+          setOpponentScore(currentOpponentScore => {
+            checkWinnerWithScores(currentPlayerScore, currentOpponentScore);
+            return currentOpponentScore;
+          });
+          return currentPlayerScore;
+        });
+      }, 100);
+    }
+  }, 1000);
+}, [playTimeWarningSequence, timeWarningPlayed, checkWinnerWithScores]);
 
 
   const updatePlayerStatistics = async (
@@ -1295,54 +1329,26 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
 
   // Timer effect - for both timed and score modes
   useEffect(() => {
-  console.log('🔍 Timer useEffect çalışıyor:', {
+  console.log('Timer useEffect çalışıyor:', {
     gameStarted,
     gameEnded, 
     gameType,
     gameMode,
-    timeLeft
+    displayTime
   });
 
-  if (!gameStarted || gameEnded) return;
-
-  if (gameType === 'timed') {
-    console.log('⏰ Timer başlatılıyor, current time:', timeLeft);
-    
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        console.log('⏰ Timer tick:', prev, '-> ', prev - 1);
-        
-        if (prev === 15 && !timeWarningPlayed) {
-          playTimeWarningSequence();
-          setTimeWarningPlayed(true);
-        }
-        
-        if (prev <= 1) {
-          setGameEnded(true);
-          setTimeout(() => {
-            setPlayerScore(currentPlayerScore => {
-              setOpponentScore(currentOpponentScore => {
-                checkWinnerWithScores(currentPlayerScore, currentOpponentScore);
-                return currentOpponentScore;
-              });
-              return currentPlayerScore;
-            });
-          }, 100);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    const cleanup = () => {
-      console.log('🧹 Timer temizleniyor');
-      clearInterval(timer);
-    };
-    addCleanup(cleanup);
-
-    return cleanup;
+  if (gameType === 'timed' && gameStarted && !gameEnded) {
+    startTimer();
+  } else if (timerRef.current) {
+    clearInterval(timerRef.current);
   }
-}, [gameStarted, gameEnded, gameType, timeWarningPlayed, addCleanup]);
+  
+  return () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+  };
+}, [gameStarted, gameEnded, gameType, startTimer]);
 
   // Sayfa focus süre koruma
 useEffect(() => {
@@ -2461,11 +2467,16 @@ return (
              variant="outline" 
              size="sm" 
              className="text-xs px-2 py-1 h-8" 
-             onClick={handleBackToMenu}
+             onClick={(e) => {
+               console.log('🚪 Çıkış butonuna tıklandı - gameMode:', gameMode);
+               e.preventDefault();
+               e.stopPropagation();
+              handleBackToMenu();
+           }}
        >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            {gameMode === 'tournament' ? 'Çıkış' : 'Çıkış'}
-          </Button>
+          Çıkış
+        </Button>
 
           {/* Orta kısım - Timer veya hedef + Turnuva bilgisi */}
           {gameType === 'timed' ? (
@@ -2488,18 +2499,18 @@ return (
                   animation: timeLeft <= 15 ? 'pulse 1s infinite, hourglassFlip 2s ease-in-out infinite' : 'hourglassFlip 4s ease-in-out infinite'
                 }}>⏳</span>
                 <span className={`font-mono text-lg font-bold transition-all duration-300 ${
-                  timeLeft <= 15 ? 'text-red-500 scale-110' : ''
+                  displayTime <= 15 ? 'text-red-500 scale-110' : ''
                 }`}>
-                  {formatTime(timeLeft)}
+                  {formatTime(displayTime)}
                 </span>
               </div>
               <div className="w-32 h-1 bg-muted rounded-full overflow-hidden">
                 <div 
                   className={`h-full transition-all duration-1000 ease-out ${
-                    timeLeft <= 15 ? 'bg-red-500 animate-pulse' : 
-                    timeLeft <= 30 ? 'bg-orange-500' : 'bg-green-500'
+                    displayTime <= 15 ? 'bg-red-500 animate-pulse' :
+                    displayTime <= 30 ? 'bg-orange-500' : 'bg-green-500'
                   }`}
-                  style={{ width: `${(timeLeft / 120) * 100}%` }}
+                  style={{ width: `${(displayTime / 120) * 100}%` }}
                 />
               </div>
             </div>
