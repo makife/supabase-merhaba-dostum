@@ -614,35 +614,29 @@ useEffect(() => {
 };
 
 
-  // Turnuva modunda geri dönüş engelle
+  // Turnuva modunda geri dönüş
 const handleBackToMenu = async () => {
+  // Turnuva modunda özel çıkış dialog'u göster
   if (gameMode === 'tournament') {
-    toast({
-      title: '⚠️ Uyarı',
-      description: 'Turnuva maçından çıkamazsınız! Maçı tamamlamanız gerekiyor.',
-      variant: 'destructive',
-    });
+    setShowTournamentExitDialog(true);
     return;
   }
   
-  // 🔥 Aktif oyun kontrolü - kendi dialog'umuz
+  // Normal aktif oyun kontrolü
   const isRealActiveGame = gameStarted && 
                           !gameEnded && 
                           participants.length >= 2 && 
                           participants.some(p => !p.is_bot && p.user_id !== user?.id);
   
   if (isRealActiveGame) {
-    setShowExitDialog(true); // Kendi dialog'umuzu göster
+    setShowExitDialog(true);
     return;
   }
   
-  // Odadan ayrıl (GameContext'ten)
   if (currentRoom) {
-    console.log('🚪 handleBackToMenu - odadan ayrılıyor...');
     await leaveRoom();
   }
   
-  // Ana menüye git
   navigate('/');
 };
 
@@ -2609,11 +2603,11 @@ return (
             size="sm" 
             className="text-xs px-2 py-1 h-8" 
             onClick={handleBackToMenu}
-            disabled={gameMode === 'tournament'}
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            {gameMode === 'tournament' ? 'Turnuva Maçı' : 'Çıkış'}
-          </Button>
+            // disabled kısmını kaldır - artık çıkış yapabilir
+      >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+         {gameMode === 'tournament' ? 'Çıkış' : 'Çıkış'}
+        </Button>
 
           {/* Orta kısım - Timer veya hedef + Turnuva bilgisi */}
           {gameType === 'timed' ? (
