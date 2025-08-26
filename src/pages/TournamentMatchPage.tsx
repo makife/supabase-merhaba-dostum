@@ -330,16 +330,11 @@ const autoStartMatch = async (matchId: string) => {
   try {
     console.log('🎮 Maç otomatik başlatılıyor:', matchId);
 
-    // 🔥 GRID SEED EKLE - Aynı ızgarayı sağlamak için
-    const gridSeed = Date.now().toString();
-    console.log('🎯 Grid seed oluşturuldu:', gridSeed);
-
-    // Maçı aktif duruma getir VE grid seed'i kaydet
+    // Maçı aktif duruma getir - room_id'ye dokunma
     const { error } = await supabase
       .from('tournament_matches')
       .update({ 
         status: 'active',
-        room_id: gridSeed, // room_id'ye seed'i kaydet
         updated_at: new Date().toISOString()
       })
       .eq('id', matchId);
@@ -352,7 +347,7 @@ const autoStartMatch = async (matchId: string) => {
       duration: 3000,
     });
 
-    await loadTournamentData(); // Güncel verileri yükle
+    await loadTournamentData();
 
   } catch (error) {
     console.error('Error auto-starting match:', error);
