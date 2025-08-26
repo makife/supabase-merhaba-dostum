@@ -211,16 +211,24 @@ const GamePage = ({
   }, []);
 
   const [gameGrid, setGameGrid] = useState<string[][]>(() => {
-    if (currentRoom?.current_grid) {
-      const flatGrid = currentRoom.current_grid;
-      const grid: string[][] = [];
-      for (let i = 0; i < 4; i++) {
-        grid.push(flatGrid.slice(i * 4, (i + 1) * 4));
-      }
-      return grid;
+  // Turnuva modunda match ID'yi seed olarak kullan
+  if (gameMode === 'tournament' && tournamentMatch?.id) {
+    console.log('🎯 Turnuva grid - match ID seed kullanılıyor:', tournamentMatch.id);
+    return generateTournamentGrid(tournamentMatch.id);
+  }
+  
+  // Normal room grid kontrolü
+  if (currentRoom?.current_grid) {
+    const flatGrid = currentRoom.current_grid;
+    const grid: string[][] = [];
+    for (let i = 0; i < 4; i++) {
+      grid.push(flatGrid.slice(i * 4, (i + 1) * 4));
     }
-    return generateRandomGrid();
-  });
+    return grid;
+  }
+  
+  return generateRandomGrid();
+});
   
   const [selectedLetters, setSelectedLetters] = useState<{letter: string, row: number, col: number}[]>([]);
   const [currentWord, setCurrentWord] = useState('');
