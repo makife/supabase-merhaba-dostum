@@ -2887,6 +2887,40 @@ return (
       </AlertDialogContent>
     </AlertDialog>
 
+    {/* Tournament Exit Dialog */}
+    <AlertDialog open={showTournamentExitDialog} onOpenChange={setShowTournamentExitDialog}>
+      <AlertDialogContent className="max-w-sm mx-auto">
+        <AlertDialogHeader>
+          <AlertDialogTitle className="text-center">⚠️ Turnuva Maçı Uyarısı</AlertDialogTitle>
+          <AlertDialogDescription className="text-center">
+            Turnuva maçından ayrılırsan:
+            <br /><br />
+            • <span className="font-bold text-destructive">Maçı kaybedersin</span>
+            <br />
+            • <span className="font-bold text-yellow-600">Rakip kazanır</span>
+            <br />
+            • <span className="font-bold text-blue-600">Turnuvadan elenirsin</span>
+            <br /><br />
+            <span className="text-muted-foreground text-sm">Emin misin?</span>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="flex-col space-y-2 sm:flex-col sm:space-y-2 sm:space-x-0">
+          <AlertDialogAction 
+            onClick={async () => {
+              setShowTournamentExitDialog(false);
+              await handleTournamentExit();
+            }}
+            className="w-full bg-destructive hover:bg-destructive/90"
+          >
+            🚪 Evet, Ayrıl
+          </AlertDialogAction>
+          <AlertDialogCancel className="w-full">
+            🏆 Hayır, Maça Devam Et
+          </AlertDialogCancel>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
     {/* Tekrar oyun isteği dialog'u - BURAYA DA EKLE */}
     <AlertDialog open={!!currentRematchRequest} onOpenChange={() => setCurrentRematchRequest(null)}>
       <AlertDialogContent>
