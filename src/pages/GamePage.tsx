@@ -211,6 +211,65 @@ const GamePage = ({
     return grid;
   }, []);
 
+  const generateTournamentGrid = useCallback((seed: string): string[][] => {
+  // Seed'e dayalı deterministik grid üret
+  const seedNum = parseInt(seed) || Date.now();
+  Math.random = function() {
+    const x = Math.sin(seedNum) * 10000;
+    return x - Math.floor(x);
+  };
+  
+  const letterPool = [
+    'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A',
+    'E', 'E', 'E', 'E', 'E', 'E', 'E',
+    'İ', 'İ', 'İ', 'İ', 'İ', 'İ',
+    'I', 'I', 'I', 'I', 'I',
+    'O', 'O', 'O', 'O', 'O',
+    'U', 'U', 'U', 'U',
+    'Ü', 'Ü', 'Ü',
+    'Ö', 'Ö', 'Ö',
+    'L', 'L', 'L', 'L', 'L',
+    'N', 'N', 'N', 'N', 'N',
+    'R', 'R', 'R', 'R', 'R',
+    'K', 'K', 'K', 'K',
+    'M', 'M', 'M', 'M',
+    'T', 'T', 'T', 'T',
+    'S', 'S', 'S', 'S',
+    'D', 'D', 'D',
+    'Y', 'Y', 'Y',
+    'B', 'B', 'B',
+    'C', 'C',
+    'Ç', 'Ç',
+    'F', 'F',
+    'G', 'G',
+    'Ğ', 'Ğ',
+    'H', 'H',
+    'J',
+    'P', 'P',
+    'Ş', 'Ş',
+    'V', 'V',
+    'Z',
+  ];
+  
+  const grid: string[][] = [];
+  for (let i = 0; i < 4; i++) {
+    const row: string[] = [];
+    for (let j = 0; j < 4; j++) {
+      const randomIndex = Math.floor(Math.random() * letterPool.length);
+      row.push(letterPool[randomIndex]);
+    }
+    grid.push(row);
+  }
+  
+  // Math.random'u normale döndür
+  Math.random = function() {
+    return crypto.getRandomValues(new Uint32Array(1))[0] / 4294967295;
+  };
+  
+  return grid;
+}, []);
+  
+
   const [gameGrid, setGameGrid] = useState<string[][]>(() => {
     if (currentRoom?.current_grid) {
       const flatGrid = currentRoom.current_grid;
