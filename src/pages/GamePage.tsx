@@ -568,33 +568,27 @@ useEffect(() => {
 
   // Turnuva modunda geri dönüş engelle
 const handleBackToMenu = async () => {
+  // Turnuva modunda özel çıkış dialog'u göster
   if (gameMode === 'tournament') {
-    toast({
-      title: '⚠️ Uyarı',
-      description: 'Turnuva maçından çıkamazsınız! Maçı tamamlamanız gerekiyor.',
-      variant: 'destructive',
-    });
+    setShowTournamentExitDialog(true);
     return;
   }
   
-  // 🔥 Aktif oyun kontrolü - kendi dialog'umuz
+  // Normal aktif oyun kontrolü
   const isRealActiveGame = gameStarted && 
                           !gameEnded && 
                           participants.length >= 2 && 
                           participants.some(p => !p.is_bot && p.user_id !== user?.id);
   
   if (isRealActiveGame) {
-    setShowExitDialog(true); // Kendi dialog'umuzu göster
+    setShowExitDialog(true);
     return;
   }
   
-  // Odadan ayrıl (GameContext'ten)
   if (currentRoom) {
-    console.log('🚪 handleBackToMenu - odadan ayrılıyor...');
     await leaveRoom();
   }
   
-  // Ana menüye git
   navigate('/');
 };
 
