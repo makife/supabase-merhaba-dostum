@@ -372,8 +372,27 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
       const player1Score = isUserPlayer1 ? userScore : opponentScore;
       const player2Score = isUserPlayer1 ? opponentScore : userScore;
 
-      // Parent component'e bildir ve bekle
+      // Parent component'e bildir
+      console.log('🏆 onGameComplete çağrılıyor:', { winnerId, player1Score, player2Score });
       await onGameComplete(winnerId, player1Score, player2Score);
+
+      // ✅ OTOMATIK YÖNLENDİRME - Sadece kazanan için
+      if (isUserWinner) {
+        // Kazanma kartı göster
+        setWinner('player');
+        
+        // 5 saniye sonra otomatik turnuva sayfasına git
+        setTimeout(() => {
+          console.log('🚀 Otomatik turnuva sayfasına yönlendiriliyor...');
+          navigate(`/tournament/${tournamentMatch.tournament_id}`, { replace: true });
+        }, 5000);
+        
+        toast({
+          title: '🏆 Maçı Kazandınız!',
+          description: '5 saniye içinde turnuva sayfasına yönlendirileceksiniz...',
+          duration: 5000,
+        });
+      }
     }
     
   } catch (error) {
@@ -2272,7 +2291,7 @@ const createFireworksEffect = () => {
 if (gameEnded) {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 game-grid relative overflow-hidden">
-      {/* Animasyonlar aynı kalır */}
+      {/* Victory animations */}
       {winner === 'player' && (
         <div className="absolute inset-0 pointer-events-none">
           {[...Array(50)].map((_, i) => (
@@ -2325,20 +2344,22 @@ if (gameEnded) {
               />
             )}
           </div>
+
+          {/* Başlık */}
           
           <h2 className={`text-2xl font-bold mb-2 ${
-            winner === 'player' ? 'text-yellow-600 animate-pulse' : ''
+            winner === 'player' ? 'text-yellow-600 animate-pulse' : 'text-gray-600'
           }`}>
-            {/* 🏆 TURNUVA MODUNDAKİ MESAJLARI ÖZELLEŞTIR */}
             {gameMode === 'tournament' ? (
-              winner === 'player' ? 'Sonraki Tura Geçtiniz! 🎉' :
-              winner === 'opponent' ? 'Turnuvadan Elendiniz!' : 'Beraberlik!'
+              winner === 'player' ? 'Maçı Kazandınız!' : 
+              winner === 'opponent' ? 'Maçı Kaybettiniz!' : 'Beraberlik!'
             ) : (
-              winner === 'player' ? 'Kazandınız! 🎉' :
+              winner === 'player' ? 'Kazandınız!' :
               winner === 'opponent' ? 'Kaybettiniz!' : 'Beraberlik!'
             )}
           </h2>
           
+          {/* Skorlar */}
           <div className="space-y-2 mb-6">
             <div className="flex justify-between">
               <span>Sizin Puanınız:</span>
@@ -2348,25 +2369,26 @@ if (gameEnded) {
               <span>Rakip:</span>
               <span className="font-bold">{opponentScore}</span>
             </div>
-            {/* 🏆 TURNUVA DURUMU GÖSTER */}
-            {gameMode === 'tournament' && tournamentMatch && (
-              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-sm text-yellow-800">
-                  <Trophy className="w-4 h-4 inline mr-1" />
-                  {tournamentMatch.round === 1 ? 'Çeyrek Final' :
-                   tournamentMatch.round === 2 ? 'Yarı Final' : 'Final'} maçı
-                </p>
-                {winner === 'player' && tournamentMatch.round < 3 && (
-                  <p className="text-xs text-yellow-600 mt-1">
-                    {tournamentMatch.round === 1 ? 'Yarı Finale' : 'Finale'} hazırlanın!
-                  </p>
-                )}
-              </div>
-            )}
           </div>
           
+            {/* 🏆 TURNUVA DURUMU GÖSTER */}
+            {gameMode === 'tournament' && winner === 'player' && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+              <p className="text-yellow-800 text-sm font-medium">
+                🏆 Turnuva eşleşme sayfasına yönlendiriliyorsunuz...
+              </p>
+              <div className="mt-2">
+                <div className="animate-pulse text-yellow-600">
+                  5 saniye içinde otomatik yönlendirme
+                </div>
+              </div>
+            </div>
+          )}
+          </div>
+
+        {/* Butonlar - Sadece manuel durumlar için */}
+          
           <div className="space-y-2">
-            {/* 🎯 TURNUVA MODUNDA FARKLI BUTONLAR */}
             {gameMode === 'tournament' ? (
               <>
                 {winner === 'opponent' && (
@@ -2383,21 +2405,21 @@ if (gameEnded) {
                   </Button>
                 )}
                 {winner === 'player' && (
-                  <Button onClick={() => {
-                    playSound('buttonClick');
-                    console.log('🏆 Turnuvaya dön tıklandı:', tournamentMatch?.tournament_id);
-                    if (tournamentMatch?.tournament_id) {
-                      navigate(`/tournament/${tournamentMatch.tournament_id}`);
-                    } else {
-                      navigate('/tournaments');
-                    }
-                  }} className="w-full">
+                  <Button 
+                    variant="outline"
+                    onClick={() => {
+                      // Manuel geçiş için fallback
+                      navigate(`/tournament/${tournamentMatch?.tournament_id}`);
+                    }} 
+                    className="w-full"
+                  >
                     <Trophy className="w-4 h-4 mr-2" />
-                    Turnuvaya Dön
+                    Turnuvaya Git (Manuel)
                   </Button>
                 )}
               </>
             ) : (
+      
               // Normal mod butonları
               <>
                 <Button onClick={() => {
