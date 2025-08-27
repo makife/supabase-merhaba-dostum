@@ -90,6 +90,7 @@ const GamePage = ({
   const { fadeOutBackgroundMusic, fadeInBackgroundMusic } = useMusic();
   const [searchParams] = useSearchParams();
   const [lastClickTime, setLastClickTime] = useState(0);
+  const [isNavigating, setIsNavigating] = useState(false);
   const cleanupRef = useRef<(() => void)[]>([]);
   const syncingRef = useRef(false);
   const submissionLockRef = useRef(false);
@@ -2366,37 +2367,36 @@ if (gameEnded) {
           
           <div className="space-y-2">
             {/* 🎯 TURNUVA MODUNDA FARKLI BUTONLAR */}
-{gameMode === 'tournament' ? (
-  <>
-    {winner === 'opponent' && (
-      <Button 
-        variant="outline" 
-        onClick={() => {
-          playSound('buttonClick');
-          navigate('/tournaments');
-        }} 
-        className="w-full"
-      >
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Turnuva Listesi
-      </Button>
-    )}
-    {winner === 'player' && (
-  <Button onClick={() => {
-    playSound('buttonClick');
-    console.log('🏆 Turnuvaya dön tıklandı:', tournamentMatch?.tournament_id);
-    if (tournamentMatch?.tournament_id) {
-      navigate(`/tournament/${tournamentMatch.tournament_id}`);
-    } else {
-      console.error('❌ Tournament ID bulunamadı!');
-      navigate('/tournaments');
-    }
-  }} className="w-full">
-    <Trophy className="w-4 h-4 mr-2" />
-    Turnuvaya Dön
-  </Button>
-)}
-  </>
+            {gameMode === 'tournament' ? (
+              <>
+                {winner === 'opponent' && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      playSound('buttonClick');
+                      navigate('/tournaments');
+                    }} 
+                    className="w-full"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Turnuva Listesi
+                  </Button>
+                )}
+                {winner === 'player' && (
+                  <Button onClick={() => {
+                    playSound('buttonClick');
+                    console.log('🏆 Turnuvaya dön tıklandı:', tournamentMatch?.tournament_id);
+                    if (tournamentMatch?.tournament_id) {
+                      navigate(`/tournament/${tournamentMatch.tournament_id}`);
+                    } else {
+                      navigate('/tournaments');
+                    }
+                  }} className="w-full">
+                    <Trophy className="w-4 h-4 mr-2" />
+                    Turnuvaya Dön
+                  </Button>
+                )}
+              </>
             ) : (
               // Normal mod butonları
               <>
