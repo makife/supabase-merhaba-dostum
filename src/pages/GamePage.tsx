@@ -1290,7 +1290,43 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
     }
   }, [gameEnded, winner, user, currentRoom, gameMode, endGame, playSound, playCelebrationSound, playGameLoseSound, toast, participants, playerWordsWithScores, opponentWordsWithScores]);
 
+  // 🏆 TURNUVA MAÇLARI İÇİN REAL-TIME SCORE SYNC
+  useEffect(() => {
+    if (gameMode !== 'tournament' || !tournamentMatch || !user) return;
 
+    console.log('🔄 Turnuva maçı real-time subscription başlatılıyor:', tournamentMatch.id);
+    
+    const channel = supabase
+      .channel(`tournament-match-${tournamentMatch.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'tournament_matches',
+          filter: `id=eq.${tournamentMatch.id}`
+        },
+        (payload) => {
+          console.log('🏆 Turnuva maçı güncellendi:', payload);
+          const newData = payload.new as any;
+          
+          // Karşı oyuncunun skorunu güncelle
+          const isPlayer1 = tournamentMatch.player1_id === user.id;
+          const opponentScore = isPlayer1 ? newData.player2_score : newData.player1_score;
+          
+          if (opponentScore !== undefined && !gameEnded) {
+            console.log('🔄 Rakip skoru real-time güncellemesi:', opponentScore);
+            setOpponentScore(opponentScore);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('🔌 Turnuva maçı subscription temizleniyor');
+      supabase.removeChannel(channel);
+    };
+  }, [gameMode, tournamentMatch, user, gameEnded]);
 
 const handleTournamentExit = async () => {
   if (!user || !tournamentMatch) return;
