@@ -403,7 +403,6 @@ const startUserMatchAutomatically = async (matchId: string, roundName: string) =
     console.error('❌ Otomatik maç başlatma hatası:', error);
   }
 };
-
 // Progress card'ı kapatma fonksiyonu
 const handleProgressContinue = async () => {
   if (!progressCardData) return;
