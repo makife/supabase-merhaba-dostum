@@ -199,13 +199,33 @@ const checkNextRoundOrFinish = async () => {
        const allWinners = updatedCompletedMatches.map(match => match.winner_id).filter(Boolean);
 
        // Gerçek oyuncuları ve botları ayır
-       const realWinners = allWinners.filter(winnerId => 
-         winnerId && !winnerId.startsWith('bot_') && participants.find(p => p.user_id === winnerId && !p.is_bot)
-       );
-       const botWinners = allWinners.filter(winnerId => 
-         !winnerId || winnerId.startsWith('bot_') || !realWinners.includes(winnerId)
-       );
+       const realWinners = allWinners.filter(winnerId => {
+        if (!winnerId || winnerId.startsWith('bot_')) return false;
+  
+        // Participants'tan kontrol et
+        const participant = participants.find(p => p.user_id === winnerId);
+        return participant && !participant.is_bot;
+       });
 
+       const botWinners = allWinners.filter(winnerId => {
+        if (!winnerId) return true;
+        if (winnerId.startsWith('bot_')) return true;
+  
+        const participant = participants.find(p => p.user_id === winnerId);
+        return !participant || participant.is_bot;
+       });
+
+       console.log('Eşleştirme analizi:', {
+        allWinners: allWinners.map(w => w?.slice(-8)),
+        realWinners: realWinners.map(w => w?.slice(-8)),
+        botWinners: botWinners.map(w => w?.slice(-8)),
+        participants: participants.map(p => ({
+          id: p.user_id?.slice(-8),
+          isBot: p.is_bot,
+          username: p.profiles?.username
+         }))
+        });
+       
        console.log('Kazananlar - Gerçek:', realWinners.length, 'Bot:', botWinners.length);
 
        // Eşleşme algoritması - gerçek oyuncular öncelikli
