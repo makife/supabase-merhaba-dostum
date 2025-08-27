@@ -970,6 +970,53 @@ const completeMatch = async (winnerId: string, player1Score: number, player2Scor
     }
   };
 
+  // TournamentMatchPage.tsx'e bu fonksiyonu ekle
+const fixBrokenMatches = async () => {
+  try {
+    console.log('🔧 Bozuk maçlar düzeltiliyor...');
+    
+    // player2_id'si null olan maçları bul
+    const { data: brokenMatches } = await supabase
+      .from('tournament_matches')
+      .select('*')
+      .eq('tournament_id', tournamentId)
+      .is('player2_id', null);
+
+    if (brokenMatches && brokenMatches.length > 0) {
+      console.log(`🛠️ ${brokenMatches.length} bozuk maç bulundu`);
+      
+      for (const match of brokenMatches) {
+        // Bozuk maçları düzelt
+        const { error } = await supabase
+          .from('tournament_matches')
+          .update({
+            player2_id: `bot_fixed_${match.id}`,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', match.id);
+        
+        if (error) {
+          console.error('❌ Maç düzeltme hatası:', error);
+        } else {
+          console.log('✅ Maç düzeltildi:', match.id);
+        }
+      }
+      
+      // Verileri yeniden yükle
+      await loadTournamentData();
+    }
+  } catch (error) {
+    console.error('❌ Bozuk maç düzeltme hatası:', error);
+  }
+};
+
+// useEffect içinde çağır
+useEffect(() => {
+  if (tournamentId) {
+    fixBrokenMatches();
+  }
+}, [tournamentId]);
+
 
   // Kullanıcının sıradaki maçını bul
   const getUserNextMatch = () => {
@@ -1105,6 +1152,36 @@ const completeMatch = async (winnerId: string, player1Score: number, player2Scor
     </CardContent>
   </Card>
 )}
+
+        {user && tournament?.status === 'active' && (
+        <Card className="bg-orange-50 border-orange-200 mt-4">
+          <CardContent className="p-4">
+            <h3 className="font-semibold text-orange-800 mb-2">⚠️ Manuel İlerleme</h3>
+            <p className="text-sm text-orange-600 mb-3">
+              Otomatik ilerleme çalışmazsa bu butonu kullanın
+            </p>
+            <div className="space-y-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={checkNextRoundOrFinish}
+                className="w-full"
+              >
+                🔄 Sonraki Turu Zorla
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={checkUserNextMatch}
+                className="w-full"
+              >
+                🔍 Maçımı Kontrol Et
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
         {/* Turnuva Ağacı */}
         <TournamentBracket 
           matches={matches}
