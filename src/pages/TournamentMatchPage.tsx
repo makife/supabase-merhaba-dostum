@@ -179,7 +179,6 @@ const checkNextRoundOrFinish = async () => {
   try {
     console.log('🔄 Sonraki tur kontrolü başlıyor...');
     
-    // Güncel turnuva verisini çek
     const { data: currentTournament } = await supabase
       .from('tournaments')
       .select('*')
@@ -188,9 +187,6 @@ const checkNextRoundOrFinish = async () => {
 
     if (!currentTournament) return;
 
-    console.log('📊 Mevcut tur:', currentTournament.current_round);
-
-    // Mevcut turdaki tüm maçları kontrol et
     const { data: currentRoundMatches } = await supabase
       .from('tournament_matches')
       .select('*')
@@ -202,16 +198,11 @@ const checkNextRoundOrFinish = async () => {
 
     console.log(`Tur ${currentTournament.current_round}: ${completedMatches.length}/${totalMatches} maç tamamlandı`);
 
-    // Eğer tüm maçlar tamamlandıysa
     if (completedMatches.length === totalMatches && totalMatches > 0) {
       
       if (currentTournament.current_round === 3) {
-        // FINAL BİTTİ - TURNUVA TAMAMLANDI
+        // FINAL BİTTİ
         console.log('🏆 Final tamamlandı, turnuva bitiyor...');
-        
-        const finalMatch = completedMatches[0];
-        const winner = participants.find(p => p.user_id === finalMatch.winner_id);
-
         await supabase
           .from('tournaments')
           .update({ 
@@ -220,24 +211,25 @@ const checkNextRoundOrFinish = async () => {
           })
           .eq('id', tournamentId);
 
-        console.log('🏆 Turnuva tamamlandı! Şampiyon:', winner?.profiles?.username);
-        
       } else {
         // SONRAKI TURA GEÇ
         const nextRound = currentTournament.current_round + 1;
         console.log(`📈 Sonraki tura geçiliyor: ${nextRound}`);
 
-        // Tüm kazananları topla
-        const allWinners = completedMatches.map(match => match.winner_id).filter(Boolean);
-        
+        // Tüm kazananları topla - BOTLARI DA İŞLE
+        const allWinners = completedMatches.map(match => {
+          // Eğer winner bot ise, özel bot ID'si oluştur
+          if (!match.winner_id || match.winner_id.toString().includes('bot')) {
+            return `bot_winner_${match.id}_${nextRound}`;
+          }
+          return match.winner_id;
+        }).filter(Boolean);
+
         console.log('🏆 Kazananlar:', allWinners);
 
         // Eğer yeterli kazanan yoksa, bot ekle
-        if (allWinners.length < 2) {
-          console.log('⚠️ Yeterli kazanan yok, bot ekleniyor...');
-          for (let i = allWinners.length; i < 2; i++) {
-            allWinners.push(`bot_${Date.now()}_${i}`);
-          }
+        while (allWinners.length < 2) {
+          allWinners.push(`bot_placeholder_${Date.now()}_${allWinners.length}`);
         }
 
         // Yeni tur için maçları oluştur
@@ -263,10 +255,7 @@ const checkNextRoundOrFinish = async () => {
             .from('tournament_matches')
             .insert(nextRoundMatches);
           
-          if (insertError) {
-            console.error('❌ Maç ekleme hatası:', insertError);
-            throw insertError;
-          }
+          if (insertError) throw insertError;
 
           // Turnuva turunu güncelle
           const { error: updateError } = await supabase
@@ -274,10 +263,7 @@ const checkNextRoundOrFinish = async () => {
             .update({ current_round: nextRound })
             .eq('id', tournamentId);
           
-          if (updateError) {
-            console.error('❌ Tur güncelleme hatası:', updateError);
-            throw updateError;
-          }
+          if (updateError) throw updateError;
 
           console.log(`✅ ${nextRound}. tur için ${nextRoundMatches.length} maç oluşturuldu`);
         }
@@ -286,14 +272,11 @@ const checkNextRoundOrFinish = async () => {
       // Verileri yeniden yükle
       await loadTournamentData();
       
-    } else {
-      console.log('⏳ Henüz tüm maçlar tamamlanmadı, bekleniyor...');
     }
   } catch (error) {
     console.error('❌ Sonraki tur kontrolü hatası:', error);
   }
 };
-
 // YENİ FONKSIYON: Kullanıcının sonraki maçını kontrol et
 const checkUserNextMatch = async () => {
   if (!user || !tournament) return;
