@@ -1329,46 +1329,36 @@ const handleTournamentExit = async () => {
   }
 };
   
-  // Timer effect - for both timed and score modes
+  // Timer effect - for both timed and score 
 useEffect(() => {
-  if (gameType !== 'timed' || !gameStarted || gameEnded) return;
-  
-  // Timer zaten başlamışsa hiçbir şey yapma
-  if (timerRef.current) return;
-  
-  console.log('Timer başlatılıyor, time:', timeLeftRef.current);
-  
-  timerRef.current = setInterval(() => {
-    timeLeftRef.current -= 1;
-    setDisplayTime(timeLeftRef.current);
+  if (gameType useEffect(() => {
+  if (gameType === 'timed' && gameStarted && !gameEnded) {
+    // Timer zaten çalışıyorsa yeni timer başlatma
+    if (timerRef.current) return;
     
-    if (timeLeftRef.current === 15 && !timeWarningPlayed) {
-      playTimeWarningSequence();
-      setTimeWarningPlayed(true);
-    }
+    console.log('Timer başlatılıyor, time:', timeLeftRef.current);
     
-    if (timeLeftRef.current <= 0) {
-      clearInterval(timerRef.current!);
-      timerRef.current = null;
-      setGameEnded(true);
-      setTimeout(() => {
+    timerRef.current = setInterval(() => {
+      timeLeftRef.current -= 1;
+      setDisplayTime(timeLeftRef.current);
+      
+      if (timeLeftRef.current <= 0) {
+        clearInterval(timerRef.current!);
+        timerRef.current = null;
+        setGameEnded(true);
         handleGameEnd();
-      }, 100);
-    }
-  }, 1000);
+      }
+    }, 1000);
+  }
   
-  // Cleanup sadece unmount'ta
   return () => {
-    if (timerRef.current) {
+    // Sadece game bittiğinde temizle
+    if (gameEnded && timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
   };
-}, []);
-  
-  // Sayfa focus süre koruma
-useEffect(() => {
-  if (gameType !== 'timed' || !gameStarted || gameEnded) return;
+}, [gameType, gameStarted, gameEnded]); // Bu dependency'ler yeterli!== 'timed' || !gameStarted || gameEnded) return;
 
   // Focus/blur olaylarında hiçbir şey yapma - sadece timer devam etsin
   const handleFocus = () => {
@@ -1422,9 +1412,7 @@ const isPlayingWithAI = useCallback(() => {
             tournamentMatch.player1_id;
           
           // Bot veya null ise AI
-          const isBot = !opponentId || opponentId.startsWith('bot_');
-          console.log('Tournament AI check:', { opponentId: opponentId?.slice(-8), isBot });
-          return isBot;
+          return !opponentId || opponentId.startsWith('bot_');
         }
         return false;
       }
@@ -1439,7 +1427,7 @@ const isPlayingWithAI = useCallback(() => {
     }
   })();
   
-  console.log(`AI Status Check - Mode: ${gameMode}, PlayingWithAI: ${aiStatus}`);
+  console.log('AI Status Check - Mode:', gameMode, 'PlayingWithAI:', aiStatus);
   return aiStatus;
 }, [gameMode, participants, tournamentMatch, user?.id]);
 
