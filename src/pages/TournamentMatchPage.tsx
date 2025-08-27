@@ -294,6 +294,75 @@ const checkNextRoundOrFinish = async () => {
   }
 };
 
+const completeBotMatches = async () => {
+  try {
+    console.log('🤖 Bot maçları tamamlanıyor...');
+    
+    const { data: currentTournament } = await supabase
+      .from('tournaments')
+      .select('*')
+      .eq('id', tournamentId)
+      .single();
+
+    if (!currentTournament) return;
+
+    // Mevcut turdaki TÜM maçları al
+    const { data: currentRoundMatches } = await supabase
+      .from('tournament_matches')
+      .select('*')
+      .eq('tournament_id', tournamentId)
+      .eq('round', currentTournament.current_round);
+
+    if (!currentRoundMatches) return;
+
+    // Bot maçlarını bul (player1_id veya player2_id null olanlar)
+    const botMatches = currentRoundMatches.filter(match => 
+      match.status === 'pending' && 
+      (match.player1_id === null || match.player2_id === null)
+    );
+
+    console.log(`🤖 ${botMatches.length} bot maçı bulundu`);
+
+    // Her bot maçını otomatik tamamla
+    for (const match of botMatches) {
+      console.log(`🤖 Bot maçı tamamlanıyor: ${match.id}`);
+      
+      // Rastgele kazanan seç (50/50 şans)
+      const randomWinner = Math.random() > 0.5 ? match.player1_id : match.player2_id;
+      const player1Score = Math.floor(Math.random() * 50) + 10;
+      const player2Score = Math.floor(Math.random() * 50) + 10;
+
+      // Maçı tamamla
+      const { error } = await supabase
+        .from('tournament_matches')
+        .update({
+          status: 'completed',
+          winner_id: randomWinner,
+          player1_score: player1Score,
+          player2_score: player2Score,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', match.id);
+
+      if (error) {
+        console.error(`❌ Bot maçı tamamlama hatası:`, error);
+      } else {
+        console.log(`✅ Bot maçı tamamlandı: ${match.id}`);
+      }
+    }
+
+    // Tüm bot maçları tamamlandıktan sonra sonraki turu kontrol et
+    if (botMatches.length > 0) {
+      setTimeout(() => {
+        checkNextRoundOrFinish();
+      }, 2000);
+    }
+
+  } catch (error) {
+    console.error('❌ Bot maçları tamamlama hatası:', error);
+  }
+};
+
   
 // YENİ FONKSIYON: Kullanıcının sonraki maçını kontrol et
 const checkUserNextMatch = async () => {
@@ -847,13 +916,10 @@ const completeMatch = async (winnerId: string, player1Score: number, player2Scor
 
     console.log('✅ Maç başarıyla tamamlandı');
 
-    // ✅✅✅ HEMEN sonraki turu kontrol et - bekleme yapma
-    console.log('🔄 Sonraki tur kontrolü BAŞLIYOR...');
-    await checkNextRoundOrFinish();
-    
-    // Hemen kullanıcının maçını kontrol et
-    console.log('🔍 Kullanıcının sonraki maçı kontrol ediliyor...');
-    await checkUserNextMatch();
+    // ✅✅✅ ÖNEMLİ: Bot maçlarını otomatik tamamla
+    setTimeout(() => {
+      completeBotMatches();
+    }, 1000);
 
   } catch (error) {
     console.error('Error completing match:', error);
