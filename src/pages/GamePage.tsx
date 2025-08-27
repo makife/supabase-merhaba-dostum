@@ -336,75 +336,51 @@ const generateTournamentGrid = useCallback((seed: string): string[][] => {
   const [gameStartTime, setGameStartTime] = useState<number>(Date.now());
   
 const handleTournamentGameEnd = async (userScore: number, opponentScore: number) => {
-  if (!user || !tournamentMatch || !onGameComplete) {
-    console.log('❌ handleTournamentGameEnd: Eksik parametreler', {
-      user: !!user,
-      tournamentMatch: !!tournamentMatch,
-      onGameComplete: !!onGameComplete
-    });
+  if (!user || !tournamentMatch) {
+    console.log('❌ handleTournamentGameEnd: Eksik parametreler');
     return;
   }
 
-  console.log('🏁 Turnuva maçı bitiyor:', { userScore, opponentScore });
+  console.log('🏁 handleTournamentGameEnd çağrıldı:', { userScore, opponentScore });
 
   try {
-    // İstatistikleri güncelle
     const isUserWinner = userScore > opponentScore;
     
-    await updatePlayerStatistics(
-      user.id,
-      userScore,
-      playerWordsWithScores,
-      isUserWinner
-    );
-    
-    await checkBadges(user.id, playerWordsWithScores.length);
-    
-    console.log('✅ Turnuva istatistikleri güncellendi');
-    
-    // Kazananı belirle
-    const winnerId = userScore > opponentScore ? user.id : (
-      tournamentMatch.player1_id === user.id ? 
-      tournamentMatch.player2_id : 
-      tournamentMatch.player1_id
-    );
-
-    if (winnerId) {
-      const isUserPlayer1 = tournamentMatch.player1_id === user.id;
-      const player1Score = isUserPlayer1 ? userScore : opponentScore;
-      const player2Score = isUserPlayer1 ? opponentScore : userScore;
-
-      // Parent component'e bildir - ÖNEMLİ: await kaldırıldı
-      console.log('🏆 onGameComplete çağrılıyor:', { winnerId, player1Score, player2Score });
-      onGameComplete(winnerId, player1Score, player2Score); // await kaldırıldı
-
-      // ✅ OTOMATIK YÖNLENDİRME - Sadece kazanan için
-      if (isUserWinner) {
-        // Kazanma kartı göster
-        setWinner('player');
-        
-        // 5 saniye sonra otomatik turnuva sayfasına git
-        setTimeout(() => {
-          console.log('🚀 Otomatik turnuva sayfasına yönlendiriliyor...');
-          navigate(`/tournament/${tournamentMatch.tournament_id}`, { replace: true });
-        }, 5000);
-        
-        toast({
-          title: '🏆 Maçı Kazandınız!',
-          description: '5 saniye içinde turnuva sayfasına yönlendirileceksiniz...',
-          duration: 5000,
-        });
-      } else {
-        // Kaybeden için direkt yönlendirme
-        setTimeout(() => {
-          console.log('🚀 Kaybeden olarak turnuva sayfasına yönlendiriliyor...');
-          navigate(`/tournament/${tournamentMatch.tournament_id}`, { replace: true });
-        }, 3000);
-      }
+    let winnerId;
+    if (tournamentMatch.player2_id === null) {
+      winnerId = isUserWinner ? user.id : null;
+    } else {
+      winnerId = isUserWinner ? user.id : (
+        tournamentMatch.player1_id === user.id ? 
+        tournamentMatch.player2_id : 
+        tournamentMatch.player1_id
+      );
     }
-    
+
+    console.log('🏆 Kazanan belirlendi:', winnerId);
+
+    // ✅✅✅ ÖNEMLİ: onGameComplete'i AWAIT ile bekle
+    if (onGameComplete) {
+      console.log('📞 onGameComplete çağrılıyor...');
+      const player1Score = tournamentMatch.player1_id === user.id ? userScore : opponentScore;
+      const player2Score = tournamentMatch.player1_id === user.id ? opponentScore : userScore;
+      
+      await onGameComplete(winnerId, player1Score, player2Score);
+      console.log('✅ onGameComplete tamamlandı');
+    }
+
+    // ✅✅✅ KESİN YÖNLENDİRME - 3 saniye bekle ve git
+    setTimeout(() => {
+      console.log('🚀 Yönlendirme yapılıyor...');
+      navigate(`/tournament/${tournamentMatch.tournament_id}`);
+    }, 3000);
+
   } catch (error) {
     console.error('❌ Turnuva maç bitiş hatası:', error);
+    // HATA olursa bile yönlendir
+    setTimeout(() => {
+      navigate(`/tournament/${tournamentMatch.tournament_id}`);
+    }, 2000);
   }
 };
 
@@ -2405,16 +2381,22 @@ if (gameEnded) {
                 )}
                 {winner === 'player' && (
                   <Button 
-                    variant="outline"
-                    onClick={() => {
-                      // Manuel geçiş için fallback
-                      navigate(`/tournament/${tournamentMatch?.tournament_id}`);
-                    }} 
-                    className="w-full"
-                  >
-                    <Trophy className="w-4 h-4 mr-2" />
-                    Turnuvaya Git (Manuel)
-                  </Button>
+  variant="outline"
+  onClick={() => {
+    console.log('🚀 Manuel yönlendirme yapılıyor...');
+    // Önce tournamentMatch kontrol et
+    if (tournamentMatch && tournamentMatch.tournament_id) {
+      navigate(`/tournament/${tournamentMatch.tournament_id}`);
+    } else {
+      console.error('❌ Tournament ID bulunamadı');
+      navigate('/tournaments'); // Fallback
+    }
+  }} 
+  className="w-full"
+>
+  <Trophy className="w-4 h-4 mr-2" />
+  Turnuva Sayfasına Git
+</Button>
                 )}
               </>
             ) : (
