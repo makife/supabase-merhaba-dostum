@@ -841,67 +841,13 @@ const completeMatch = async (winnerId: string, player1Score: number, player2Scor
 
     console.log('✅ Maç başarıyla tamamlandı');
 
-    // İstatistikleri güncelle
-    if (currentMatch.player1_id && !currentMatch.player1_id.startsWith('bot_')) {
-      const isPlayer1Winner = winnerId === currentMatch.player1_id;
-      const player1Words = Array.from({length: Math.floor(player1Score / 8)}, (_, i) => ({
-        word: `KELIME${i + 1}`,
-        score: 8
-      }));
-      
-      await updatePlayerStatistics(
-        currentMatch.player1_id,
-        player1Score,
-        player1Words,
-        isPlayer1Winner
-      );
-      await checkBadges(currentMatch.player1_id, player1Words.length);
-    }
+    // ✅✅✅ HEMEN sonraki turu kontrol et - bekleme yapma
+    console.log('🔄 Sonraki tur kontrolü BAŞLIYOR...');
+    await checkNextRoundOrFinish();
     
-    if (currentMatch.player2_id && !currentMatch.player2_id.startsWith('bot_')) {
-      const isPlayer2Winner = winnerId === currentMatch.player2_id;
-      const player2Words = Array.from({length: Math.floor(player2Score / 8)}, (_, i) => ({
-        word: `KELIME${i + 1}`,
-        score: 8
-      }));
-      
-      await updatePlayerStatistics(
-        currentMatch.player2_id,
-        player2Score,
-        player2Words,
-        isPlayer2Winner
-      );
-      await checkBadges(currentMatch.player2_id, player2Words.length);
-    }
-
-    // Kaybedeni eleme
-    const loserId = winnerId === currentMatch.player1_id ? currentMatch.player2_id : currentMatch.player1_id;
-    if (loserId) {
-      await supabase
-        .from('tournament_participants')
-        .update({ eliminated_at: new Date().toISOString() })
-        .eq('user_id', loserId)
-        .eq('tournament_id', tournamentId);
-    }
-
-    // Oyun durumunu resetle
-    setIsPlaying(false);
-    setCurrentMatch(null);
-
-    // Verileri yeniden yükle
-    await loadTournamentData();
-
-    // ✅ OTOMATIK SONRAKI TUR SİSTEMİ
-    // Önce sonraki turu kontrol et ve oluştur
-    setTimeout(async () => {
-      console.log('🔄 Sonraki tur kontrolü başlıyor...');
-      await checkNextRoundOrFinish();
-      
-      // Sonraki tur oluşturulduktan sonra kullanıcının maçını kontrol et
-      setTimeout(() => {
-        checkUserNextMatch();
-      }, 2000);
-    }, 1000);
+    // Hemen kullanıcının maçını kontrol et
+    console.log('🔍 Kullanıcının sonraki maçı kontrol ediliyor...');
+    await checkUserNextMatch();
 
   } catch (error) {
     console.error('Error completing match:', error);
