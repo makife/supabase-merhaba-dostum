@@ -185,20 +185,32 @@ const checkNextRoundOrFinish = async () => {
       .eq('id', tournamentId)
       .single();
 
-    if (!currentTournament) return;
+    if (!currentTournament) {
+      console.log('❌ Turnuva bulunamadı');
+      return;
+    }
 
-    const { data: currentRoundMatches } = await supabase
+    console.log('📊 Mevcut tur:', currentTournament.current_round);
+
+    const { data: currentRoundMatches, error: matchesError } = await supabase
       .from('tournament_matches')
       .select('*')
       .eq('tournament_id', tournamentId)
       .eq('round', currentTournament.current_round);
+
+    if (matchesError) {
+      console.error('❌ Maçları çekme hatası:', matchesError);
+      return;
+    }
 
     const completedMatches = currentRoundMatches?.filter(m => m.status === 'completed') || [];
     const totalMatches = currentRoundMatches?.length || 0;
 
     console.log(`Tur ${currentTournament.current_round}: ${completedMatches.length}/${totalMatches} maç tamamlandı`);
 
+    // ✅✅✅ CRITICAL: Tüm maçlar tamamlandı mı?
     if (completedMatches.length === totalMatches && totalMatches > 0) {
+      console.log('✅ Tüm maçlar tamamlandı, sonraki tur hazırlanıyor...');
       
       if (currentTournament.current_round === 3) {
         // FINAL BİTTİ
@@ -216,72 +228,66 @@ const checkNextRoundOrFinish = async () => {
         const nextRound = currentTournament.current_round + 1;
         console.log(`📈 Sonraki tura geçiliyor: ${nextRound}`);
 
-        // Kazananları topla - NULL (bot) kazananları handle et
-        const allWinners = completedMatches.map(match => {
-          // Eğer winner NULL ise (bot kazandıysa), bu maç için özel bir işaret koy
-          if (match.winner_id === null) {
-            return `bot_winner_${match.id}`;
-          }
-          return match.winner_id;
-        }).filter(winner => winner !== null);
-
+        // ✅✅✅ KAZANANLARI TOPLA
+        const allWinners = completedMatches.map(match => match.winner_id).filter(Boolean);
         console.log('🏆 Kazananlar:', allWinners);
 
-        // Yeni tur için maçları oluştur - SADECE UUID'ler için
+        // Yeni tur için maçları oluştur
         const nextRoundMatches = [];
         for (let i = 0; i < allWinners.length; i += 2) {
           if (i + 1 < allWinners.length) {
-            // ✅ SADECE UUID'leri kullan, string bot ID'leri kullanma
-            const player1_id = allWinners[i].toString().startsWith('bot_') ? null : allWinners[i];
-            const player2_id = allWinners[i + 1].toString().startsWith('bot_') ? null : allWinners[i + 1];
-
             const match = {
               tournament_id: tournamentId,
               round: nextRound,
               match_number: nextRoundMatches.length + 1,
-              player1_id: player1_id,
-              player2_id: player2_id,
+              player1_id: allWinners[i],
+              player2_id: allWinners[i + 1],
               winner_id: null,
-              room_id: null,
               status: 'pending',
               player1_score: 0,
               player2_score: 0,
-              grid_seed: `seed_${tournamentId}_${nextRound}_${i}`,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             };
-            
             nextRoundMatches.push(match);
-            console.log(`🥊 Yeni maç: ${player1_id || 'BOT'} vs ${player2_id || 'BOT'}`);
+            console.log(`🥊 Yeni maç: ${allWinners[i]} vs ${allWinners[i + 1]}`);
           }
         }
 
-        // Database'e kaydet - TEK TEK
-        for (const match of nextRoundMatches) {
-          const { error } = await supabase
+        // ✅✅✅ DATABASE'E KAYDET
+        if (nextRoundMatches.length > 0) {
+          console.log(`💾 ${nextRoundMatches.length} maç kaydediliyor...`);
+          const { error: insertError } = await supabase
             .from('tournament_matches')
-            .insert(match);
+            .insert(nextRoundMatches);
           
-          if (error) {
-            console.error('❌ Maç ekleme hatası:', error);
-            throw error;
+          if (insertError) {
+            console.error('❌ Maç ekleme hatası:', insertError);
+            throw insertError;
           }
+
+          // ✅✅✅ TURNUVA TURUNU GÜNCELLE
+          const { error: updateError } = await supabase
+            .from('tournaments')
+            .update({ current_round: nextRound })
+            .eq('id', tournamentId);
+          
+          if (updateError) {
+            console.error('❌ Tur güncelleme hatası:', updateError);
+            throw updateError;
+          }
+
+          console.log(`✅ ${nextRound}. tur için ${nextRoundMatches.length} maç oluşturuldu`);
+        } else {
+          console.log('⚠️ Yeni maç oluşturulamadı');
         }
-
-        // Turnuva turunu güncelle
-        const { error: updateError } = await supabase
-          .from('tournaments')
-          .update({ current_round: nextRound })
-          .eq('id', tournamentId);
-        
-        if (updateError) throw updateError;
-
-        console.log(`✅ ${nextRound}. tur için ${nextRoundMatches.length} maç oluşturuldu`);
       }
 
-      // Verileri yeniden yükle
+      // ✅✅✅ VERİLERİ YENİDEN YÜKLE
       await loadTournamentData();
       
+    } else {
+      console.log('⏳ Henüz tüm maçlar tamamlanmadı');
     }
   } catch (error) {
     console.error('❌ Sonraki tur kontrolü hatası:', error);

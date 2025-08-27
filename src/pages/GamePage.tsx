@@ -2383,14 +2383,26 @@ if (gameEnded) {
                   <Button 
   variant="outline"
   onClick={() => {
-    console.log('🚀 Manuel yönlendirme yapılıyor...');
-    // Önce tournamentMatch kontrol et
-    if (tournamentMatch && tournamentMatch.tournament_id) {
-      navigate(`/tournament/${tournamentMatch.tournament_id}`);
-    } else {
-      console.error('❌ Tournament ID bulunamadı');
-      navigate('/tournaments'); // Fallback
+    console.log('🚀 Manuel yönlendirme denemesi...');
+    
+    // Önce tournamentMatch'i kontrol et
+    if (!tournamentMatch) {
+      console.error('❌ tournamentMatch yok');
+      navigate('/tournaments');
+      return;
     }
+
+    // Tournament ID'yi kontrol et
+    if (!tournamentMatch.tournament_id) {
+      console.error('❌ tournament_id yok');
+      navigate('/tournaments');
+      return;
+    }
+
+    console.log('🔍 Tournament ID:', tournamentMatch.tournament_id);
+    
+    // ✅✅✅ DIRECT YÖNLENDİRME - router yerine window.location
+    window.location.href = `/tournament/${tournamentMatch.tournament_id}`;
   }} 
   className="w-full"
 >
