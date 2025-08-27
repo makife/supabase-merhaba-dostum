@@ -93,6 +93,7 @@ const GamePage = ({
   const cleanupRef = useRef<(() => void)[]>([]);
   const syncingRef = useRef(false);
   const submissionLockRef = useRef(false);
+  const timerStartedRef = useRef(false);
   const recentSubmissionsRef = useRef<Set<string>>(new Set());
   const [audioYes] = useState(() => {
     const audio = new Audio('/yes.mp3');
@@ -538,26 +539,29 @@ useEffect(() => {
 }, [gameMode, tournamentMatch, propGameType, user?.id, participants]);
 
   // Rakip ismini göster - turnuva için
-  const getOpponentDisplayName = () => {
+const getOpponentDisplayName = () => {
   if (gameMode === 'tournament' && tournamentMatch) {
     const opponentId = tournamentMatch.player1_id === user?.id ? 
       tournamentMatch.player2_id : 
       tournamentMatch.player1_id;
   
-    if (!opponentId) return 'Turnuva Botu';
-    if (opponentId.startsWith('bot_')) return 'Turnuva Botu';
-    return opponentName || 'Turnuva Rakibi';
-  }
-
-  // 🔥 FIX: Gerçek rakip username'ini bul
-  const realOpponent = participants.find(p => 
-    !p.is_bot && 
-    p.user_id !== user?.id && 
-    p.user_id !== null
-  );
-
-  if (realOpponent && (realOpponent as any).profiles?.username) {
-    return (realOpponent as any).profiles.username;
+    // Bot kontrolü önce
+    if (!opponentId || opponentId.startsWith('bot_')) {
+      return 'Turnuva Botu';
+    }
+    
+    // Gerçek oyuncu kontrolü
+    const realOpponent = participants.find(p => 
+      p.user_id === opponentId && 
+      !p.is_bot && 
+      p.user_id !== null
+    );
+    
+    if (realOpponent && realOpponent.profiles?.username) {
+      return realOpponent.profiles.username;
+    }
+    
+    return 'Turnuva Oyuncusu';
   }
 
   // Diğer modlar için fallback
@@ -1335,19 +1339,13 @@ useEffect(() => {
     gameStarted,
     gameEnded, 
     gameType,
-    gameMode,
-    displayTime: timeLeftRef.current
+    timerStarted: timerStartedRef.current
   });
 
-  // Timer sadece timed modda ve oyun başladığında çalışsın
-  if (gameType === 'timed' && gameStarted && !gameEnded) {
-    // Eğer timer zaten çalışıyorsa hiçbir şey yapma
-    if (timerRef.current) {
-      console.log('Timer zaten çalışıyor, yeni timer başlatılmıyor');
-      return;
-    }
-    
-    console.log('Timer başlatılıyor, initial time:', timeLeftRef.current);
+  // Timer sadece bir kez başlasın
+  if (gameType === 'timed' && gameStarted && !gameEnded && !timerStartedRef.current) {
+    console.log('Timer ilk kez başlatılıyor, time:', timeLeftRef.current);
+    timerStartedRef.current = true;
     
     timerRef.current = setInterval(() => {
       timeLeftRef.current -= 1;
@@ -1361,6 +1359,7 @@ useEffect(() => {
       if (timeLeftRef.current <= 0) {
         clearInterval(timerRef.current!);
         timerRef.current = null;
+        timerStartedRef.current = false;
         setGameEnded(true);
         setTimeout(() => {
           handleGameEnd();
@@ -1369,17 +1368,15 @@ useEffect(() => {
     }, 1000);
   }
   
-  // Cleanup sadece gerektiğinde
+  // Cleanup
   return () => {
-    if (gameEnded || !gameStarted) {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
+    if (gameEnded && timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+      timerStartedRef.current = false;
     }
   };
 }, [gameStarted, gameEnded, gameType]);
-
   // Sayfa focus süre koruma
 useEffect(() => {
   if (gameType !== 'timed' || !gameStarted || gameEnded) return;
@@ -1424,33 +1421,38 @@ useEffect(() => {
   }, [playerScore, opponentScore, checkWinnerWithScores, gameType, currentRoom?.max_score]);
 
   // Check if playing with AI (unified logic for all modes)
-  const isPlayingWithAI = useCallback(() => {
-    const aiStatus = (() => {
-      switch (gameMode) {
-        case 'vs-computer':
-          return true; // Always AI
-        case 'private-room':
-          return participants.length < 2; // AI if no second player
-        case 'random-match':
-          const hasAI = participants.some(p => p.is_bot);
-          const hasRealOpponent = participants.filter(p => !p.is_bot).length >= 2;
-          return hasAI && !hasRealOpponent;
-        case 'tournament': {
-          // Tournament: AI sadece rakip yoksa
-          if (tournamentMatch && user) {
-            const opponentId = tournamentMatch.player1_id === user.id ? tournamentMatch.player2_id : tournamentMatch.player1_id;
-            return !opponentId; // opponent yoksa AI
-          }
-          return false;
+const isPlayingWithAI = useCallback(() => {
+  const aiStatus = (() => {
+    switch (gameMode) {
+      case 'vs-computer':
+        return true;
+      case 'tournament': {
+        if (tournamentMatch && user) {
+          const opponentId = tournamentMatch.player1_id === user.id ? 
+            tournamentMatch.player2_id : 
+            tournamentMatch.player1_id;
+          
+          // Bot veya null ise AI
+          const isBot = !opponentId || opponentId.startsWith('bot_');
+          console.log('Tournament AI check:', { opponentId: opponentId?.slice(-8), isBot });
+          return isBot;
         }
-        default:
-          return false;
+        return false;
       }
-    })();
-    
-    console.log(`🤖 AI Status Check - Mode: ${gameMode}, Participants: ${participants.length}, PlayingWithAI: ${aiStatus}`);
-    return aiStatus;
-  }, [gameMode, participants, tournamentMatch, user?.id]);
+      case 'private-room':
+        return participants.length < 2;
+      case 'random-match':
+        const hasAI = participants.some(p => p.is_bot);
+        const hasRealOpponent = participants.filter(p => !p.is_bot).length >= 2;
+        return hasAI && !hasRealOpponent;
+      default:
+        return false;
+    }
+  })();
+  
+  console.log(`AI Status Check - Mode: ${gameMode}, PlayingWithAI: ${aiStatus}`);
+  return aiStatus;
+}, [gameMode, participants, tournamentMatch, user?.id]);
 
   // Real-time kelime senkronizasyonu
 useEffect(() => {
@@ -2897,11 +2899,12 @@ return (
             onClick={async () => {
               setShowTournamentExitDialog(false);
               await handleTournamentExit();
-            }}
+    // navigate('/'); satırını kaldır - handleTournamentExit içinde zaten parent'e bildirim yapılıyor
+           }}
             className="w-full bg-destructive hover:bg-destructive/90"
-          >
-            🚪 Evet, Ayrıl
-          </AlertDialogAction>
+           >
+         Evet, Ayrıl
+       </AlertDialogAction>
           <AlertDialogCancel className="w-full">
             🏆 Hayır, Maça Devam Et
           </AlertDialogCancel>
