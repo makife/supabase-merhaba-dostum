@@ -187,6 +187,8 @@ const checkNextRoundOrFinish = async () => {
       .single();
 
     if (!currentTournament) return;
+    
+    console.log('📊 Mevcut tur:', currentTournament.current_round);
 
     // Mevcut turdaki tüm maçları kontrol et
     const { data: currentRoundMatches } = await supabase
@@ -202,9 +204,11 @@ const checkNextRoundOrFinish = async () => {
 
     // Eğer tüm maçlar tamamlandıysa
     if (completedMatches.length === totalMatches && totalMatches > 0) {
+      console.log('✅ Tüm maçlar tamamlandı, sonraki tur hazırlanıyor...');
       
       if (currentTournament.current_round === 3) {
         // FINAL BİTTİ - TURNUVA TAMAMLANDI
+        console.log('🏆 Final tamamlandı, turnuva bitiyor...');
         const finalMatch = completedMatches[0];
         const winner = participants.find(p => p.user_id === finalMatch.winner_id);
 
@@ -788,6 +792,8 @@ const completeMatch = async (winnerId: string, player1Score: number, player2Scor
 
     if (updateError) throw updateError;
 
+    console.log('✅ Maç başarıyla tamamlandı');
+
     // İstatistikleri güncelle
     if (currentMatch.player1_id && !currentMatch.player1_id.startsWith('bot_')) {
       const isPlayer1Winner = winnerId === currentMatch.player1_id;
@@ -841,6 +847,7 @@ const completeMatch = async (winnerId: string, player1Score: number, player2Scor
     // ✅ OTOMATIK SONRAKI TUR SİSTEMİ
     // Önce sonraki turu kontrol et ve oluştur
     setTimeout(async () => {
+      console.log('🔄 Sonraki tur kontrolü başlıyor...');
       await checkNextRoundOrFinish();
       
       // Sonraki tur oluşturulduktan sonra kullanıcının maçını kontrol et
