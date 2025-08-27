@@ -523,8 +523,8 @@ useEffect(() => {
       }
     }
 
-    // Game type ayarlarını uygula
-    if (propGameType) {
+    // Game type ayarlarını uygula - SADECE ILK SEFER
+    if (propGameType && timeLeftRef.current === 0) {
       if (propGameType === 'timed') {
         timeLeftRef.current = 120;
         setDisplayTime(120);
@@ -1329,13 +1329,10 @@ const handleTournamentExit = async () => {
   }
 };
   
-  // Timer effect - Sadece turnuva modunda sürekli çalışır
+  // Timer effect - TEK SEFER başlatılır ve sürekli çalışır
 useEffect(() => {
-  if (gameType === 'timed' && gameStarted && !gameEnded) {
-    // Timer zaten çalışıyorsa yeni timer başlatma
-    if (timerRef.current) return;
-    
-    console.log('Timer başlatılıyor, time:', timeLeftRef.current);
+  if (gameType === 'timed' && gameStarted && !gameEnded && !timerRef.current) {
+    console.log('⏱️ Timer BAŞLATILIYOR - Tek sefer, time:', timeLeftRef.current);
     
     timerRef.current = setInterval(() => {
       timeLeftRef.current -= 1;
@@ -1351,13 +1348,13 @@ useEffect(() => {
   }
   
   return () => {
-    // Sadece game bittiğinde temizle
-    if (gameEnded && timerRef.current) {
+    // Sadece component unmount olduğunda temizle
+    if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
   };
-}, [gameType, gameStarted, gameEnded]);
+}, [gameStarted]); // Sadece gameStarted'a bağlı
   
   // Focus/blur event handler
   useEffect(() => {
