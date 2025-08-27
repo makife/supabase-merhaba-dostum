@@ -318,80 +318,120 @@ const checkNextRoundOrFinish = async () => {
 
 // MEVCUT loadTournamentData fonksiyonunu bununla değiştir:
 const loadTournamentData = async () => {
-  if (!tournamentId) return;
+ if (!tournamentId) return;
 
-  try {
-    // 🔥 ÖNCELİKLE participants'ı yükle
-    const { data: participantsData, error: participantsError } = await supabase
-      .from('tournament_participants')
-      .select(`
-        *,
-        profiles:user_id (username, avatar_url)
-      `)
-      .eq('tournament_id', tournamentId)
-      .order('seed');
+ try {
+   // Öncelikle participants'ı yükle
+   const { data: participantsData, error: participantsError } = await supabase
+     .from('tournament_participants')
+     .select(`
+       *,
+       profiles:user_id (username, avatar_url)
+     `)
+     .eq('tournament_id', tournamentId)
+     .order('seed');
 
-    if (participantsError) throw participantsError;
-    
-    console.log('✅ Participants yüklendi:', participantsData?.length || 0);
-    setParticipants(participantsData || []);
+   if (participantsError) throw participantsError;
+   
+   console.log('✅ Participants yüklendi:', participantsData?.length || 0);
+   setParticipants(participantsData || []);
 
-    // Sonra tournament
-    const { data: tournamentData, error: tournamentError } = await supabase
-      .from('tournaments')
-      .select('*')
-      .eq('id', tournamentId)
-      .single();
+   // Tournament verilerini yükle
+   const { data: tournamentData, error: tournamentError } = await supabase
+     .from('tournaments')
+     .select('*')
+     .eq('id', tournamentId)
+     .single();
 
-    if (tournamentError) throw tournamentError;
-    setTournament(tournamentData);
+   if (tournamentError) throw tournamentError;
+   setTournament(tournamentData);
 
-    // Son olarak matches
-    const { data: matchesData, error: matchesError } = await supabase
-      .from('tournament_matches')
-      .select('*')
-      .eq('tournament_id', tournamentId)
-      .order('round')
-      .order('match_number');
+   // Matches verilerini yükle
+   const { data: matchesData, error: matchesError } = await supabase
+     .from('tournament_matches')
+     .select('*')
+     .eq('tournament_id', tournamentId)
+     .order('round')
+     .order('match_number');
 
-    if (matchesError) throw matchesError;
+   if (matchesError) throw matchesError;
 
-    // 🔍 DEBUG: Matches'ı kontrol et
-    console.log('📊 Matches yüklendi:', {
-      count: matchesData?.length || 0,
-      matches: matchesData?.map(m => ({
-        id: m.id.slice(-8),
-        player1: m.player1_id?.slice(-8) || 'NULL',
-        player2: m.player2_id?.slice(-8) || 'NULL', 
-        status: m.status
-      }))
-    });
-    
-    setMatches(matchesData || []);
+   // Matches debug bilgisi
+   console.log('📊 Matches yüklendi:', {
+     count: matchesData?.length || 0,
+     matches: matchesData?.map(m => ({
+       id: m.id.slice(-8),
+       round: m.round,
+       match_number: m.match_number,
+       player1: m.player1_id?.slice(-8) || 'NULL',
+       player2: m.player2_id?.slice(-8) || 'NULL', 
+       status: m.status,
+       winner: m.winner_id?.slice(-8) || 'NULL'
+     }))
+   });
+   
+   setMatches(matchesData || []);
 
-    // Aktif maç kontrolü
-    if (user && matchesData) {
-      const userActiveMatch = matchesData.find(match => 
-        (match.player1_id === user.id || match.player2_id === user.id) && 
-        match.status === 'active'
-      );
+   // Aktif maç kontrolü - geliştirilmiş versiyon
+   if (user && matchesData && matchesData.length > 0) {
+     const userActiveMatch = matchesData.find(match => {
+       const isPlayer1 = match.player1_id === user.id;
+       const isPlayer2 = match.player2_id === user.id;
+       const isActive = match.status === 'active';
+       
+       return (isPlayer1 || isPlayer2) && isActive;
+     });
 
-    console.log('👤 Kullanıcının aktif maçı:', {
-      found: !!userActiveMatch,
-      matchId: userActiveMatch?.id?.slice(-8),
-      player1: userActiveMatch?.player1_id?.slice(-8) || 'NULL',
-      player2: userActiveMatch?.player2_id?.slice(-8) || 'NULL',
-      status: userActiveMatch?.status
-    });
-      
-      setCurrentMatch(userActiveMatch || null);
-    }
+     // Debug için detaylı log
+     console.log('👤 Kullanıcının aktif maç kontrolü:', {
+       userId: user.id.slice(-8),
+       totalMatches: matchesData.length,
+       activeMatchFound: !!userActiveMatch,
+       activeMatchDetails: userActiveMatch ? {
+         id: userActiveMatch.id.slice(-8),
+         round: userActiveMatch.round,
+         player1: userActiveMatch.player1_id?.slice(-8) || 'NULL',
+         player2: userActiveMatch.player2_id?.slice(-8) || 'NULL',
+         status: userActiveMatch.status,
+         isUserPlayer1: userActiveMatch.player1_id === user.id,
+         isUserPlayer2: userActiveMatch.player2_id === user.id
+       } : null
+     });
+     
+     setCurrentMatch(userActiveMatch || null);
 
-  } catch (error) {
-    console.error('Error loading tournament data:', error);
-  } finally {
-    setLoading(false);
-  }
+     // Pending maç kontrolü de ekle
+     if (!userActiveMatch) {
+       const userPendingMatch = matchesData.find(match => {
+         const isPlayer1 = match.player1_id === user.id;
+         const isPlayer2 = match.player2_id === user.id;
+         const isPending = match.status === 'pending';
+         
+         return (isPlayer1 || isPlayer2) && isPending;
+       });
+
+       console.log('⏰ Kullanıcının pending maçı:', {
+         found: !!userPendingMatch,
+         matchDetails: userPendingMatch ? {
+           id: userPendingMatch.id.slice(-8),
+           round: userPendingMatch.round,
+           player1: userPendingMatch.player1_id?.slice(-8) || 'NULL',
+           player2: userPendingMatch.player2_id?.slice(-8) || 'NULL'
+         } : null
+       });
+     }
+   }
+
+ } catch (error) {
+   console.error('❌ Error loading tournament data:', error);
+   toast({
+     title: 'Hata',
+     description: 'Turnuva verileri yüklenemedi',
+     variant: 'destructive',
+   });
+ } finally {
+   setLoading(false);
+ }
 };
 
   useEffect(() => {
