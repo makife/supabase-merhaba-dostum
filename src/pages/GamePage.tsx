@@ -1329,9 +1329,8 @@ const handleTournamentExit = async () => {
   }
 };
   
-  // Timer effect - for both timed and score 
+  // Timer effect - Sadece turnuva modunda sürekli çalışır
 useEffect(() => {
-  if (gameType useEffect(() => {
   if (gameType === 'timed' && gameStarted && !gameEnded) {
     // Timer zaten çalışıyorsa yeni timer başlatma
     if (timerRef.current) return;
@@ -1358,32 +1357,36 @@ useEffect(() => {
       timerRef.current = null;
     }
   };
-}, [gameType, gameStarted, gameEnded]); // Bu dependency'ler yeterli!== 'timed' || !gameStarted || gameEnded) return;
-
-  // Focus/blur olaylarında hiçbir şey yapma - sadece timer devam etsin
-  const handleFocus = () => {
-    console.log('📱 Sayfa focus aldı - timer devam ediyor');
-  };
-  
-  const handleBlur = () => {
-    console.log('📱 Sayfa focus kaybetti - timer devam ediyor'); 
-  };
-
-  window.addEventListener('focus', handleFocus);
-  window.addEventListener('blur', handleBlur);
-  
-  return () => {
-    window.removeEventListener('focus', handleFocus);
-    window.removeEventListener('blur', handleBlur);
-  };
 }, [gameType, gameStarted, gameEnded]);
   
+  // Focus/blur event handler
+  useEffect(() => {
+    if (gameType !== 'timed' || !gameStarted || gameEnded) return;
+
+    // Focus/blur olaylarında hiçbir şey yapma - sadece timer devam etsin
+    const handleFocus = () => {
+      console.log('📱 Sayfa focus aldı - timer devam ediyor');
+    };
+    
+    const handleBlur = () => {
+      console.log('📱 Sayfa focus kaybetti - timer devam ediyor'); 
+    };
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('blur', handleBlur);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, [gameType, gameStarted, gameEnded]);
+  
   // Timer useEffect'inden SONRA ekleyin
-useEffect(() => {
-  if (gameStarted && !gameEnded) {
-    setGameStartTime(Date.now());
-  }
-}, [gameStarted, gameEnded]);
+  useEffect(() => {
+    if (gameStarted && !gameEnded) {
+      setGameStartTime(Date.now());
+    }
+  }, [gameStarted, gameEnded]);
 
   
 

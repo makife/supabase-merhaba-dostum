@@ -472,7 +472,20 @@ const createTournamentMatches = async (tournamentId: string, realParticipants: a
       throw new Error('En az 1 gerçek oyuncu bulunmalı');
     }
 
-    const shuffledParticipants = [...participants].sort(() => Math.random() - 0.5);
+    // Gerçek oyuncuları ve botları ayır
+    const realPlayers = participants.filter(p => p.user_id !== null && !p.is_bot);
+    const bots = participants.filter(p => p.user_id === null || p.is_bot);
+    
+    console.log('👥 Gerçek oyuncular:', realPlayers.length);
+    console.log('🤖 Botlar:', bots.length);
+    
+    // Önce gerçek oyuncuları karıştır, sonra botları ekle
+    const shuffledRealPlayers = [...realPlayers].sort(() => Math.random() - 0.5);
+    const shuffledBots = [...bots].sort(() => Math.random() - 0.5);
+    
+    // Tüm katılımcıları sırala: önce gerçek oyuncular, sonra botlar
+    const orderedParticipants = [...shuffledRealPlayers, ...shuffledBots];
+    
     const matches = [];
 
     // 4 maç oluştur (çeyrek final)
@@ -480,10 +493,9 @@ const createTournamentMatches = async (tournamentId: string, realParticipants: a
       let player1_id = null;
       let player2_id = null;
 
-      // Gerçek oyuncuları sırayla yerleştir
-      if (i * 2 < shuffledParticipants.length) {
-        // ✅ user_id'yi kontrol et
-        const p1 = shuffledParticipants[i * 2];
+      // Katılımcıları sırayla yerleştir
+      if (i * 2 < orderedParticipants.length) {
+        const p1 = orderedParticipants[i * 2];
         player1_id = p1?.user_id || null;
         console.log(`🔍 Player 1 for match ${i+1}:`, {
           participant: p1,
@@ -492,9 +504,8 @@ const createTournamentMatches = async (tournamentId: string, realParticipants: a
         });
       }
       
-      if (i * 2 + 1 < shuffledParticipants.length) {
-        // ✅ user_id'yi kontrol et
-        const p2 = shuffledParticipants[i * 2 + 1];
+      if (i * 2 + 1 < orderedParticipants.length) {
+        const p2 = orderedParticipants[i * 2 + 1];
         player2_id = p2?.user_id || null;
         console.log(`🔍 Player 2 for match ${i+1}:`, {
           participant: p2,
