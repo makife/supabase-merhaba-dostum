@@ -294,6 +294,351 @@ const checkNextRoundOrFinish = async () => {
   }
 };
 
+
+const startAllMatchesSimultaneously = async () => {
+  // Tüm maçları aynı anda başlat
+  const { error } = await supabase
+    .from('tournament_matches')
+    .update({ 
+      status: 'active',
+      started_at: new Date().toISOString(),
+      player1_score: 0,  // 🔥 PUANLI SİSTEM İÇİN
+      player2_score: 0   // 🔥 PUANLI SİSTEM İÇİN
+    })
+    .eq('tournament_id', tournamentId)
+    .eq('round', currentRound)
+    .eq('status', 'pending');
+};
+
+const simulateBotMatch = async (match) => {
+  // Bot maçını simüle et - puanlı sistem
+  let p1Score = 0;
+  let p2Score = 0;
+  let winner = null;
+
+  // Rastgele puan artışıyla 500'e ulaşana kadar simüle et
+  while (!winner) {
+    p1Score += Math.floor(Math.random() * 20) + 5;
+    p2Score += Math.floor(Math.random() * 20) + 5;
+
+    if (p1Score >= 500) winner = match.player1_id;
+    if (p2Score >= 500) winner = match.player2_id;
+
+    // Her 100ms'de bir puan artışı (gerçekçi olsun diye)
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+
+  // Maçı tamamla
+  await supabase
+    .from('tournament_matches')
+    .update({
+      status: 'completed',
+      winner_id: winner,
+      player1_score: p1Score,
+      player2_score: p2Score,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', match.id);
+};
+
+const completeAllBotMatchesSimultaneously = async () => {
+  const botMatches = await getBotMatches();
+  
+  // TÜM bot maçlarını AYNI ANDA simüle et (parallel)
+  await Promise.all(botMatches.map(match => 
+    simulateBotMatch(match)
+  ));
+};
+
+// Tüm maçlar bitene kadar bekle
+const waitForAllMatchesToComplete = async () => {
+  while (true) {
+    const { data: matches } = await supabase
+      .from('tournament_matches')
+      .select('status')
+      .eq('tournament_id', tournamentId)
+      .eq('round', currentRound);
+
+    const allCompleted = matches.every(m => m.status === 'completed');
+    
+    if (allCompleted) {
+      console.log('✅ Tüm maçlar tamamlandı!');
+      break;
+    }
+    
+    // 5 saniye bekle ve tekrar kontrol et
+    await new Promise(resolve => setTimeout(resolve, 5000));
+  }
+  
+  // Sonraki turu başlat
+  startNextRound();
+};
+
+// Tournament maçı oluştururken zaman sınırı ekle
+const createTournamentMatches = async (tournamentId: string, realParticipants: any[]) => {
+  try {
+    console.log('🏟️ Manuel maç oluşturma başlıyor:', tournamentId);
+
+    // ⛔ Duplicate guard
+    const { data: existingMatches } = await supabase
+      .from('tournament_matches')
+      .select('id')
+      .eq('tournament_id', tournamentId)
+      .eq('round', 1);
+
+    if (existingMatches && existingMatches.length > 0) {
+      console.log('⛔ İlk tur maçları zaten mevcut');
+      return existingMatches;
+    }
+
+    // Katılımcıları seed'e göre sırala
+    const orderedParticipants = [...realParticipants].sort((a, b) => a.seed - b.seed);
+    
+    const matches = [];
+    const TIME_LIMIT = 10 * 60 * 1000; // 🔥 10 DAKİKA zaman sınırı
+
+    // 4 maç oluştur
+    for (let i = 0; i < 4; i++) {
+      let player1_id = null;
+      let player2_id = null;
+
+      if (i * 2 < orderedParticipants.length) {
+        const p1 = orderedParticipants[i * 2];
+        player1_id = p1?.user_id || null;
+      }
+      
+      if (i * 2 + 1 < orderedParticipants.length) {
+        const p2 = orderedParticipants[i * 2 + 1];
+        player2_id = p2?.user_id || null;
+      }
+
+      const match = {
+        tournament_id: tournamentId,
+        round: 1,
+        match_number: i + 1,
+        player1_id: player1_id,
+        player2_id: player2_id,
+        winner_id: null,
+        room_id: null,
+        status: 'pending',
+        player1_score: 0, // 🔥 PUANLI SİSTEM İÇİN
+        player2_score: 0, // 🔥 PUANLI SİSTEM İÇİN
+        time_limit: TIME_LIMIT, // 🔥 ZAMAN SINIRI EKLENDİ
+        grid_seed: `seed_${tournamentId}_${i}`,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      matches.push(match);
+    }
+
+    // ✅✅✅ TEK TEK INSERT et
+    for (let i = 0; i < matches.length; i++) {
+      console.log(`💾 Maç ${i+1} kaydediliyor...`);
+      const { error } = await supabase
+        .from('tournament_matches')
+        .insert(matches[i]);
+
+      if (error) {
+        console.error(`❌ Maç ${i+1} kaydetme hatası:`, error);
+        throw error;
+      }
+      console.log(`✅ Maç ${i+1} kaydedildi`);
+    }
+
+    console.log('✅ Tüm maçlar başarıyla oluşturuldu');
+    return matches;
+
+  } catch (error) {
+    console.error('❌ createTournamentMatches hatası:', error);
+    throw error;
+  }
+};
+
+// Aktivite kaydetme fonksiyonu
+const recordPlayerActivity = async (matchId: string, playerId: string) => {
+  try {
+    await supabase
+      .from('player_activities')
+      .upsert({
+        match_id: matchId,
+        player_id: playerId,
+        last_action_time: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+  } catch (error) {
+    console.error('❌ Aktivite kaydetme hatası:', error);
+  }
+};
+
+// Her maç için aktivite takibi
+const checkActivity = async (matchId: string, playerId: string) => {
+  try {
+    const { data: activity } = await supabase
+      .from('player_activities')
+      .select('last_action_time')
+      .eq('match_id', matchId)
+      .eq('player_id', playerId)
+      .single();
+
+    const now = new Date();
+    const lastActionTime = new Date(activity?.last_action_time || now);
+    const inactiveTime = now - lastActionTime;
+
+    return { inactive: inactiveTime > 60000, time: inactiveTime };
+  } catch (error) {
+    console.error('❌ Aktivite kontrol hatası:', error);
+    return { inactive: false, time: 0 };
+  }
+};
+
+// 2 dakika boyunca kelime girişi yoksa elenme
+const checkForElimination = async (matchId) => {
+  const { data: match } = await supabase
+    .from('tournament_matches')
+    .select('*')
+    .eq('id', matchId)
+    .single();
+
+  // Her iki oyuncunun da aktivitesini kontrol et
+  const player1Activity = await checkActivity(matchId, match.player1_id);
+  const player2Activity = await checkActivity(matchId, match.player2_id);
+
+  // Eğer bir oyuncu 2 dakika boyunca kelime girmemişse
+  if (player1Activity.inactive && player1Activity.time > 120000) {
+    await eliminatePlayer(matchId, match.player1_id, 'inactivity');
+  }
+  
+  if (player2Activity.inactive && player2Activity.time > 120000) {
+    await eliminatePlayer(matchId, match.player2_id, 'inactivity');
+  }
+};
+
+const eliminatePlayer = async (matchId: string, playerId: string, reason: string) => {
+  try {
+    console.log(`❌ ${playerId} elendi - Sebep: ${reason}`);
+    
+    // Maç bilgilerini al
+    const { data: match } = await supabase
+      .from('tournament_matches')
+      .select('*')
+      .eq('id', matchId)
+      .single();
+
+    if (!match) return;
+
+    // Kazananı belirle (elenenin rakibi)
+    const winnerId = match.player1_id === playerId ? match.player2_id : match.player1_id;
+
+    // Maçı tamamla
+    await supabase
+      .from('tournament_matches')
+      .update({
+        status: 'completed',
+        winner_id: winnerId,
+        player1_score: match.player1_id === winnerId ? 500 : 0,
+        player2_score: match.player2_id === winnerId ? 500 : 0,
+        end_reason: reason,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', matchId);
+
+    // Oyuncuyu turnuvadan elenmiş olarak işaretle
+    await supabase
+      .from('tournament_participants')
+      .update({
+        eliminated_at: new Date().toISOString(),
+        elimination_reason: reason
+      })
+      .eq('tournament_id', match.tournament_id)
+      .eq('user_id', playerId);
+
+  } catch (error) {
+    console.error('❌ Elenme hatası:', error);
+  }
+};
+
+// Her maç için zaman aşımı kontrolü
+const checkTimeLimit = async (matchId: string) => {
+  try {
+    const { data: match } = await supabase
+      .from('tournament_matches')
+      .select('created_at, time_limit, status, player1_score, player2_score, player1_id, player2_id, tournament_id')
+      .eq('id', matchId)
+      .single();
+
+    if (!match || match.status !== 'active') return;
+
+    const now = new Date();
+    const startTime = new Date(match.created_at);
+    const elapsedTime = now - startTime;
+
+    // Zaman aşımı olduysa
+    if (elapsedTime > match.time_limit) {
+      // En yüksek puanlı oyuncu kazanır
+      let winnerId = null;
+      if (match.player1_score > match.player2_score) {
+        winnerId = match.player1_id;
+      } else if (match.player2_score > match.player1_score) {
+        winnerId = match.player2_id;
+      } else {
+        // Beraberlikse rastgele kazanan seç
+        winnerId = Math.random() > 0.5 ? match.player1_id : match.player2_id;
+      }
+
+      await supabase
+        .from('tournament_matches')
+        .update({
+          status: 'completed',
+          winner_id: winnerId,
+          end_reason: 'time_limit',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', matchId);
+    }
+  } catch (error) {
+    console.error('❌ Zaman aşımı kontrol hatası:', error);
+  }
+};
+
+// Tüm maçları monitor et
+const monitorTournamentMatches = async () => {
+  if (!tournamentId) return;
+
+  try {
+    // Aktif maçları getir
+    const { data: activeMatches } = await supabase
+      .from('tournament_matches')
+      .select('*')
+      .eq('tournament_id', tournamentId)
+      .eq('status', 'active');
+
+    if (!activeMatches) return;
+
+    for (const match of activeMatches) {
+      // Zaman aşımı kontrolü
+      await checkTimeLimit(match.id);
+      
+      // Her iki oyuncu için aktivite kontrolü
+      if (match.player1_id) {
+        const activity1 = await checkActivity(match.id, match.player1_id);
+        if (activity1.inactive && activity1.time > 120000) {
+          await eliminatePlayer(match.id, match.player1_id, 'inactivity');
+        }
+      }
+      
+      if (match.player2_id) {
+        const activity2 = await checkActivity(match.id, match.player2_id);
+        if (activity2.inactive && activity2.time > 120000) {
+          await eliminatePlayer(match.id, match.player2_id, 'inactivity');
+        }
+      }
+    }
+  } catch (error) {
+    console.error('❌ Turnuva monitor hatası:', error);
+  }
+};
+
 const autoCompleteBotMatches = async () => {
   try {
     console.log('🤖 Otomatik bot maç tamamlama başlıyor...');
@@ -807,6 +1152,106 @@ const loadTournamentData = async () => {
    setLoading(false);
  }
 };
+
+// ✅✅✅ useEffect'İN İÇİNE EKLE - Diğer useEffect'lerin yanına
+useEffect(() => {
+  if (!tournamentId) return;
+
+  // 30 saniyede bir turnuva maçlarını kontrol et
+  const monitorInterval = setInterval(() => {
+    monitorTournamentMatches();
+  }, 30000);
+
+  return () => clearInterval(monitorInterval);
+}, [tournamentId]);
+
+// Tüm aktif maçları sürekli kontrol et
+useEffect(() => {
+  const tournamentMonitor = setInterval(async () => {
+    if (!tournamentId) return;
+
+    // Aktif maçları getir
+    const { data: activeMatches } = await supabase
+      .from('tournament_matches')
+      .select('*')
+      .eq('tournament_id', tournamentId)
+      .eq('status', 'active');
+
+    if (!activeMatches) return;
+
+    // Her maç için kontrol yap
+    for (const match of activeMatches) {
+      // Zaman aşımı kontrolü
+      await checkTimeLimit(match.id);
+      
+      // Aktivite kontrolü
+      await checkForElimination(match.id);
+      
+      // Puan kontrolü (500'e ulaşan var mı?)
+      if (match.player1_score >= 500 || match.player2_score >= 500) {
+        const winner = match.player1_score >= 500 ? 
+                      match.player1_id : match.player2_id;
+        await completeMatch(winner, match.player1_score, match.player2_score);
+      }
+    }
+  }, 30000); // 30 saniyede bir kontrol et
+
+  return () => clearInterval(tournamentMonitor);
+}, [tournamentId]);
+
+// Kelime girişi yapılmadığında uyarı göster
+useEffect(() => {
+  const inactivityCheck = setInterval(async () => {
+    if (!currentMatch || !user) return;
+
+    const activity = await checkActivity(currentMatch.id, user.id);
+    
+    if (activity.inactive) {
+      // 1 dakika: Uyarı göster
+      if (activity.time > 60000 && activity.time < 120000) {
+        toast({
+          title: '⏰ Uyarı!',
+          description: '1 dakikadır kelime girişi yapılmadı. 1 dakika sonra elenebilirsiniz!',
+          variant: 'destructive',
+        });
+      }
+      // 2 dakika: Elenme
+      else if (activity.time > 120000) {
+        await eliminatePlayer(currentMatch.id, user.id, 'inactivity');
+      }
+    }
+  }, 30000); // 30 saniyede bir kontrol
+
+  return () => clearInterval(inactivityCheck);
+}, [currentMatch, user]);
+
+// Her skor güncellemesinde kazananı kontrol et
+useEffect(() => {
+  if (gameType === 'score') {
+    // 500 puana ulaşan var mı?
+    if (playerScore >= 500 || opponentScore >= 500) {
+      const winner = playerScore >= 500 ? user.id : opponentId;
+      completeMatch(winner, playerScore, opponentScore);
+    }
+  }
+}, [playerScore, opponentScore, gameType]);
+
+// Tüm maçların durumunu real-time takip et
+useEffect(() => {
+  const channel = supabase
+    .channel('tournament-sync')
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      table: 'tournament_matches',
+      filter: `tournament_id=eq.${tournamentId}`
+    }, (payload) => {
+      // Maç bitince diğerlerini de bitir
+      if (payload.new.status === 'completed') {
+        completeAllBotMatchesSimultaneously();
+      }
+    })
+    .subscribe();
+}, []);
 
 
 // Real-time turnuva ilerlemesi için yeni useEffect
