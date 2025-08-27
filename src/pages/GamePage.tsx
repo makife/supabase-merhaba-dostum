@@ -336,7 +336,14 @@ const generateTournamentGrid = useCallback((seed: string): string[][] => {
   const [gameStartTime, setGameStartTime] = useState<number>(Date.now());
   
 const handleTournamentGameEnd = async (userScore: number, opponentScore: number) => {
-  if (!user || !tournamentMatch || !onGameComplete) return;
+  if (!user || !tournamentMatch || !onGameComplete) {
+    console.log('❌ handleTournamentGameEnd: Eksik parametreler', {
+      user: !!user,
+      tournamentMatch: !!tournamentMatch,
+      onGameComplete: !!onGameComplete
+    });
+    return;
+  }
 
   console.log('🏁 Turnuva maçı bitiyor:', { userScore, opponentScore });
 
@@ -355,7 +362,7 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
     
     console.log('✅ Turnuva istatistikleri güncellendi');
     
-    // Kazananı belirle ve parent'e bildir
+    // Kazananı belirle
     const winnerId = userScore > opponentScore ? user.id : (
       tournamentMatch.player1_id === user.id ? 
       tournamentMatch.player2_id : 
@@ -367,9 +374,9 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
       const player1Score = isUserPlayer1 ? userScore : opponentScore;
       const player2Score = isUserPlayer1 ? opponentScore : userScore;
 
-      // Parent component'e bildir
+      // Parent component'e bildir - ÖNEMLİ: await kaldırıldı
       console.log('🏆 onGameComplete çağrılıyor:', { winnerId, player1Score, player2Score });
-      await onGameComplete(winnerId, player1Score, player2Score);
+      onGameComplete(winnerId, player1Score, player2Score); // await kaldırıldı
 
       // ✅ OTOMATIK YÖNLENDİRME - Sadece kazanan için
       if (isUserWinner) {
@@ -387,6 +394,12 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
           description: '5 saniye içinde turnuva sayfasına yönlendirileceksiniz...',
           duration: 5000,
         });
+      } else {
+        // Kaybeden için direkt yönlendirme
+        setTimeout(() => {
+          console.log('🚀 Kaybeden olarak turnuva sayfasına yönlendiriliyor...');
+          navigate(`/tournament/${tournamentMatch.tournament_id}`, { replace: true });
+        }, 3000);
       }
     }
     
