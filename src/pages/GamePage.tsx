@@ -2346,7 +2346,6 @@ if (gameEnded) {
           </div>
 
           {/* Başlık */}
-          
           <h2 className={`text-2xl font-bold mb-2 ${
             winner === 'player' ? 'text-yellow-600 animate-pulse' : 'text-gray-600'
           }`}>
@@ -2371,8 +2370,8 @@ if (gameEnded) {
             </div>
           </div>
           
-            {/* 🏆 TURNUVA DURUMU GÖSTER */}
-            {gameMode === 'tournament' && winner === 'player' && (
+          {/* Turnuva için otomatik yönlendirme mesajı */}
+          {gameMode === 'tournament' && winner === 'player' && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
               <p className="text-yellow-800 text-sm font-medium">
                 🏆 Turnuva eşleşme sayfasına yönlendiriliyorsunuz...
@@ -2384,10 +2383,8 @@ if (gameEnded) {
               </div>
             </div>
           )}
-          </div>
-
-        {/* Butonlar - Sadece manuel durumlar için */}
           
+          {/* Butonlar - Sadece manuel durumlar için */}
           <div className="space-y-2">
             {gameMode === 'tournament' ? (
               <>
@@ -2419,7 +2416,6 @@ if (gameEnded) {
                 )}
               </>
             ) : (
-      
               // Normal mod butonları
               <>
                 <Button onClick={() => {
@@ -2464,7 +2460,7 @@ if (gameEnded) {
         </CardContent>
       </Card>
 
-      {/* Tekrar oyun isteği dialog'u - BU KISMI EKLE */}
+      {/* Tekrar oyun isteği dialog'u */}
       <AlertDialog open={!!currentRematchRequest} onOpenChange={() => setCurrentRematchRequest(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
