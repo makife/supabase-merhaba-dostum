@@ -336,12 +336,9 @@ const generateTournamentGrid = useCallback((seed: string): string[][] => {
   const [gameStartTime, setGameStartTime] = useState<number>(Date.now());
   
 const handleTournamentGameEnd = async (userScore: number, opponentScore: number) => {
-  if (!user || !tournamentMatch) {
-    console.log('❌ handleTournamentGameEnd: Eksik parametreler');
-    return;
-  }
+  if (!user || !tournamentMatch) return;
 
-  console.log('🏁 handleTournamentGameEnd çağrıldı:', { userScore, opponentScore });
+  console.log('🏁 Turnuva maçı bitiyor:', { userScore, opponentScore });
 
   try {
     const isUserWinner = userScore > opponentScore;
@@ -359,27 +356,24 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
 
     console.log('🏆 Kazanan belirlendi:', winnerId);
 
-    // ✅✅✅ ÖNEMLİ: onGameComplete'i AWAIT ile bekle
+    // onGameComplete çağır
     if (onGameComplete) {
-      console.log('📞 onGameComplete çağrılıyor...');
       const player1Score = tournamentMatch.player1_id === user.id ? userScore : opponentScore;
       const player2Score = tournamentMatch.player1_id === user.id ? opponentScore : userScore;
       
       await onGameComplete(winnerId, player1Score, player2Score);
-      console.log('✅ onGameComplete tamamlandı');
     }
 
-    // ✅✅✅ KESİN YÖNLENDİRME - 3 saniye bekle ve git
+    // ✅✅✅ OTOMATİK YÖNLENDİRME - 3 saniye bekle
     setTimeout(() => {
-      console.log('🚀 Yönlendirme yapılıyor...');
-      navigate(`/tournament/${tournamentMatch.tournament_id}`);
+      console.log('🚀 Otomatik yönlendirme yapılıyor...');
+      window.location.href = `/tournament/${tournamentMatch.tournament_id}`;
     }, 3000);
 
   } catch (error) {
     console.error('❌ Turnuva maç bitiş hatası:', error);
-    // HATA olursa bile yönlendir
     setTimeout(() => {
-      navigate(`/tournament/${tournamentMatch.tournament_id}`);
+      window.location.href = `/tournament/${tournamentMatch.tournament_id}`;
     }, 2000);
   }
 };
