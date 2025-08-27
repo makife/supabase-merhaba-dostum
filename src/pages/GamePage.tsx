@@ -1293,7 +1293,7 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
 
 
 const handleTournamentExit = async () => {
-  if (!user || !tournamentMatch || !onGameComplete) return;
+  if (!user || !tournamentMatch) return;
 
   console.log('Turnuva maçından ayrılıyor:', user.id);
 
@@ -1306,77 +1306,66 @@ const handleTournamentExit = async () => {
       false // Kaybeden
     );
 
-    // Rakibi kazanan olarak ayarla
+    // Rakibi kazanan olarak ayarla - DÜZELTME
     const winnerId = tournamentMatch.player1_id === user.id ? 
       tournamentMatch.player2_id : 
       tournamentMatch.player1_id;
 
-    if (!winnerId) {
-      console.error('Winner ID bulunamadı');
-      return;
-    }
+    // Eğer winnerId null ise bot kazanır
+    const finalWinnerId = winnerId || `bot_${Date.now()}`;
 
     // Skorları ayarla (çıkan kişi 0 puan)
     const isUserPlayer1 = tournamentMatch.player1_id === user.id;
     const player1Score = isUserPlayer1 ? 0 : 500;
     const player2Score = isUserPlayer1 ? 500 : 0;
 
-    // Parent component'e bildir
-    onGameComplete(winnerId, player1Score, player2Score);
-    
-    // Ana menüye gitme, turnuva sayfasında kal
-    // navigate('/'); <- Bu satırı kaldır
+    // onGameComplete varsa çağır
+    if (onGameComplete) {
+      onGameComplete(finalWinnerId, player1Score, player2Score);
+    }
 
   } catch (error) {
     console.error('Çıkış hatası:', error);
-    // Hata olsa bile turnuva sayfasında kal
   }
 };
   
   // Timer effect - for both timed and score modes
 useEffect(() => {
-  console.log('Timer useEffect çalışıyor:', {
-    gameStarted,
-    gameEnded, 
-    gameType,
-    timerStarted: timerStartedRef.current
-  });
-
-  // Timer sadece bir kez başlasın
-  if (gameType === 'timed' && gameStarted && !gameEnded && !timerStartedRef.current) {
-    console.log('Timer ilk kez başlatılıyor, time:', timeLeftRef.current);
-    timerStartedRef.current = true;
-    
-    timerRef.current = setInterval(() => {
-      timeLeftRef.current -= 1;
-      setDisplayTime(timeLeftRef.current);
-      
-      if (timeLeftRef.current === 15 && !timeWarningPlayed) {
-        playTimeWarningSequence();
-        setTimeWarningPlayed(true);
-      }
-      
-      if (timeLeftRef.current <= 0) {
-        clearInterval(timerRef.current!);
-        timerRef.current = null;
-        timerStartedRef.current = false;
-        setGameEnded(true);
-        setTimeout(() => {
-          handleGameEnd();
-        }, 100);
-      }
-    }, 1000);
-  }
+  if (gameType !== 'timed' || !gameStarted || gameEnded) return;
   
-  // Cleanup
+  // Timer zaten başlamışsa hiçbir şey yapma
+  if (timerRef.current) return;
+  
+  console.log('Timer başlatılıyor, time:', timeLeftRef.current);
+  
+  timerRef.current = setInterval(() => {
+    timeLeftRef.current -= 1;
+    setDisplayTime(timeLeftRef.current);
+    
+    if (timeLeftRef.current === 15 && !timeWarningPlayed) {
+      playTimeWarningSequence();
+      setTimeWarningPlayed(true);
+    }
+    
+    if (timeLeftRef.current <= 0) {
+      clearInterval(timerRef.current!);
+      timerRef.current = null;
+      setGameEnded(true);
+      setTimeout(() => {
+        handleGameEnd();
+      }, 100);
+    }
+  }, 1000);
+  
+  // Cleanup sadece unmount'ta
   return () => {
-    if (gameEnded && timerRef.current) {
+    if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
-      timerStartedRef.current = false;
     }
   };
-}, [gameStarted, gameEnded, gameType]);
+}, []);
+  
   // Sayfa focus süre koruma
 useEffect(() => {
   if (gameType !== 'timed' || !gameStarted || gameEnded) return;
@@ -1576,19 +1565,15 @@ useEffect(() => {
 }, [currentRoom?.id]);
 
   // AI continuous play effect - unified for all modes when playing with AI
-  useEffect(() => {
-    const aiPlaying = isPlayingWithAI();
-    console.log('🤖 AI Effect Check:', { 
-      aiPlaying, 
-      gameStarted, 
-      gameEnded, 
-      gameMode, 
-      participantsLength: participants.length 
-    });
-    
-    if (!aiPlaying || !gameStarted || gameEnded) return;
+useEffect(() => {
+  const aiPlaying = isPlayingWithAI();
+  
+  if (!aiPlaying || !gameStarted || gameEnded) {
+    // AI interval'ını temizle ama return'de yapma
+    return;
+  }
 
-    console.log('🤖 Starting AI play interval for game mode:', gameMode);
+  console.log('🤖 Starting AI play interval for game mode:', gameMode);
 
     const aiPlayInterval = setInterval(() => {
       // Check if player recently took action, if so wait longer
@@ -1678,7 +1663,7 @@ useEffect(() => {
       console.log('🤖 Stopping AI play interval for game mode:', gameMode);
       clearInterval(aiPlayInterval);
     };
-  }, [gameStarted, gameEnded, gameMode, participants.length, usedWords, playSound, lastPlayerAction, isPlayingWithAI, wordlist, wordlistLoaded]);
+  }, [gameStarted, gameEnded, gameMode]);
 
   // Private room logic
   useEffect(() => {
