@@ -336,47 +336,75 @@ const generateTournamentGrid = useCallback((seed: string): string[][] => {
   const [gameStartTime, setGameStartTime] = useState<number>(Date.now());
   
 const handleTournamentGameEnd = async (userScore: number, opponentScore: number) => {
-  if (!user || !tournamentMatch) return;
+  if (!user || !tournamentMatch || !onGameComplete) {
+    console.log('❌ handleTournamentGameEnd: Eksik parametreler', {
+      user: !!user,
+      tournamentMatch: !!tournamentMatch,
+      onGameComplete: !!onGameComplete
+    });
+    return;
+  }
 
   console.log('🏁 Turnuva maçı bitiyor:', { userScore, opponentScore });
 
   try {
+    // İstatistikleri güncelle
     const isUserWinner = userScore > opponentScore;
     
-    // ✅✅✅ CRITICAL FIX: UUID alanlarına SADCE UUID veya NULL gönder
-    let winnerId;
-    if (tournamentMatch.player2_id === null) {
-      // BOT maçı - user kazanırsa user ID, bot kazanırsa NULL
-      winnerId = isUserWinner ? user.id : null;
-    } else {
-      // NORMAL maç
-      winnerId = isUserWinner ? user.id : (
-        tournamentMatch.player1_id === user.id ? 
-        tournamentMatch.player2_id : 
-        tournamentMatch.player1_id
-      );
+    await updatePlayerStatistics(
+      user.id,
+      userScore,
+      playerWordsWithScores,
+      isUserWinner
+    );
+    
+    await checkBadges(user.id, playerWordsWithScores.length);
+    
+    console.log('✅ Turnuva istatistikleri güncellendi');
+    
+    // Kazananı belirle
+    const winnerId = userScore > opponentScore ? user.id : (
+      tournamentMatch.player1_id === user.id ? 
+      tournamentMatch.player2_id : 
+      tournamentMatch.player1_id
+    );
+
+    if (winnerId) {
+      const isUserPlayer1 = tournamentMatch.player1_id === user.id;
+      const player1Score = isUserPlayer1 ? userScore : opponentScore;
+      const player2Score = isUserPlayer1 ? opponentScore : userScore;
+
+      // Parent component'e bildir - ÖNEMLİ: await kaldırıldı
+      console.log('🏆 onGameComplete çağrılıyor:', { winnerId, player1Score, player2Score });
+      onGameComplete(winnerId, player1Score, player2Score); // await kaldırıldı
+
+      // ✅ OTOMATIK YÖNLENDİRME - Sadece kazanan için
+      if (isUserWinner) {
+        // Kazanma kartı göster
+        setWinner('player');
+        
+        // 5 saniye sonra otomatik turnuva sayfasına git
+        setTimeout(() => {
+          console.log('🚀 Otomatik turnuva sayfasına yönlendiriliyor...');
+          navigate(`/tournament/${tournamentMatch.tournament_id}`, { replace: true });
+        }, 5000);
+        
+        toast({
+          title: '🏆 Maçı Kazandınız!',
+          description: '5 saniye içinde turnuva sayfasına yönlendirileceksiniz...',
+          duration: 5000,
+        });
+      } else {
+        // Kaybeden için direkt yönlendirme
+        setTimeout(() => {
+          console.log('🚀 Kaybeden olarak turnuva sayfasına yönlendiriliyor...');
+          navigate(`/tournament/${tournamentMatch.tournament_id}`, { replace: true });
+        }, 3000);
+      }
     }
-
-    console.log('🏆 Kazanan belirlendi:', winnerId);
-
-    // onGameComplete çağır
-    if (onGameComplete) {
-      const player1Score = tournamentMatch.player1_id === user.id ? userScore : opponentScore;
-      const player2Score = tournamentMatch.player1_id === user.id ? opponentScore : userScore;
-      
-      onGameComplete(winnerId, player1Score, player2Score);
-    }
-
-    // Yönlendirme
-    setTimeout(() => {
-      navigate(`/tournament/${tournamentMatch.tournament_id}`);
-    }, 3000);
-
+    
   } catch (error) {
     console.error('❌ Turnuva maç bitiş hatası:', error);
-    setTimeout(() => {
-      navigate(`/tournament/${tournamentMatch.tournament_id}`);
-    }, 2000);
   }
 };
 
@@ -1501,13 +1529,9 @@ const isPlayingWithAI = useCallback(() => {
       case 'vs-computer':
         return true;
       case 'tournament': {
-        if (tournamentMatch && user) {
-          const opponentId = tournamentMatch.player1_id === user.id ? 
-            tournamentMatch.player2_id : 
-            tournamentMatch.player1_id;
-          
-          // ✅✅✅ SADECE NULL kontrolü - string bot ID'leri YOK
-          return opponentId === null;
+        if (tournamentMatch) {
+          // ✅✅✅ CRITICAL FIX: Sadece NULL kontrolü
+          return tournamentMatch.player2_id === null;
         }
         return false;
       }
@@ -1522,12 +1546,9 @@ const isPlayingWithAI = useCallback(() => {
     }
   })();
   
-  return aiStatus;
-}, [gameMode, participants, tournamentMatch, user?.id]);
-  
   console.log('AI Status Check - Mode:', gameMode, 'PlayingWithAI:', aiStatus);
   return aiStatus;
-}, [gameMode, participants, tournamentMatch, user?.id]);
+}, [gameMode, participants, tournamentMatch]);
 
   // Real-time kelime senkronizasyonu
 useEffect(() => {
