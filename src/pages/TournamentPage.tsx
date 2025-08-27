@@ -465,9 +465,23 @@ const createTournamentMatches = async (tournamentId: string, realParticipants: a
     console.log('🏟️ Manuel maç oluşturma başlıyor:', tournamentId);
     console.log('👥 Gelen katılımcılar:', realParticipants.length);
 
+    // ⛔ Duplicate guard: İlk tur maçları zaten varsa yeniden oluşturma
+    const { data: existingMatches, error: existingErr } = await supabase
+      .from('tournament_matches')
+      .select('id')
+      .eq('tournament_id', tournamentId)
+      .eq('round', 1);
+
+    if (existingErr) {
+      console.error('❌ Mevcut maç kontrol hatası:', existingErr);
+    }
+    if (existingMatches && existingMatches.length > 0) {
+      console.log('⛔ İlk tur maçları zaten mevcut, yeniden oluşturulmayacak:', existingMatches.length);
+      return existingMatches;
+    }
+
     const participants = realParticipants;
     console.log('✅ Katılımcılar:', participants.length);
-
     if (participants.length < 1) {
       throw new Error('En az 1 gerçek oyuncu bulunmalı');
     }
