@@ -1641,6 +1641,44 @@ useEffect(() => {
   };
 }, [currentRoom?.id]);
 
+// ✅✅✅ useEffect İÇİNE AKTİVİTE KONTROLÜ EKLE
+useEffect(() => {
+  if (!user || !tournamentMatch || gameEnded) return;
+
+  // Aktivite kontrol interval'i
+  const activityInterval = setInterval(async () => {
+    const activity = await checkActivity(tournamentMatch.id, user.id);
+    
+    if (activity.inactive) {
+      // 1 dakika: Uyarı göster
+      if (activity.time > 60000 && activity.time < 120000) {
+        toast({
+          title: '⏰ Uyarı!',
+          description: '1 dakikadır kelime girişi yapılmadı. 1 dakika sonra elenebilirsiniz!',
+          variant: 'destructive',
+          duration: 5000,
+        });
+      }
+      // 2 dakika: Elenme
+      else if (activity.time > 120000) {
+        toast({
+          title: '❌ Elendiniz!',
+          description: '2 dakika boyunca kelime girişi yapılmadığı için turnuvadan elendiniz.',
+          variant: 'destructive',
+          duration: 5000,
+        });
+        
+        // Maçı bitir ve turnuva sayfasına yönlendir
+        setTimeout(() => {
+          navigate(`/tournament/${tournamentMatch.tournament_id}`);
+        }, 3000);
+      }
+    }
+  }, 30000); // 30 saniyede bir kontrol
+
+  return () => clearInterval(activityInterval);
+}, [user, tournamentMatch, gameEnded]);
+
   // AI continuous play effect - unified for all modes when playing with AI
 useEffect(() => {
   const aiPlaying = isPlayingWithAI();
@@ -1866,6 +1904,11 @@ const submitWord = async () => {
   setLastPlayerAction(Date.now());
   
   try {
+
+    if (user && tournamentMatch) {
+      await recordPlayerActivity(tournamentMatch.id, user.id);
+    }
+    
     if (currentWord.length < 3) {
       showCustomToast('Geçersiz Kelime','');
       return;
