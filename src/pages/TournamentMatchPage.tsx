@@ -216,57 +216,67 @@ const checkNextRoundOrFinish = async () => {
         const nextRound = currentTournament.current_round + 1;
         console.log(`📈 Sonraki tura geçiliyor: ${nextRound}`);
 
-        // Tüm kazananları topla - BOTLARI DA İŞLE
+        // Kazananları topla - NULL (bot) kazananları handle et
         const allWinners = completedMatches.map(match => {
-          // Eğer winner bot ise, özel bot ID'si oluştur
-          if (!match.winner_id || match.winner_id.toString().includes('bot')) {
-            return `bot_winner_${match.id}_${nextRound}`;
+          // Eğer winner NULL ise (bot kazandıysa), bu maç için özel bir işaret koy
+          if (match.winner_id === null) {
+            return `bot_winner_${match.id}`;
           }
           return match.winner_id;
-        }).filter(Boolean);
+        }).filter(winner => winner !== null);
 
         console.log('🏆 Kazananlar:', allWinners);
 
-        // Eğer yeterli kazanan yoksa, bot ekle
-        while (allWinners.length < 2) {
-          allWinners.push(`bot_placeholder_${Date.now()}_${allWinners.length}`);
-        }
-
-        // Yeni tur için maçları oluştur
+        // Yeni tur için maçları oluştur - SADECE UUID'ler için
         const nextRoundMatches = [];
         for (let i = 0; i < allWinners.length; i += 2) {
           if (i + 1 < allWinners.length) {
+            // ✅ SADECE UUID'leri kullan, string bot ID'leri kullanma
+            const player1_id = allWinners[i].toString().startsWith('bot_') ? null : allWinners[i];
+            const player2_id = allWinners[i + 1].toString().startsWith('bot_') ? null : allWinners[i + 1];
+
             const match = {
               tournament_id: tournamentId,
               round: nextRound,
               match_number: nextRoundMatches.length + 1,
-              player1_id: allWinners[i],
-              player2_id: allWinners[i + 1],
-              status: 'pending'
+              player1_id: player1_id,
+              player2_id: player2_id,
+              winner_id: null,
+              room_id: null,
+              status: 'pending',
+              player1_score: 0,
+              player2_score: 0,
+              grid_seed: `seed_${tournamentId}_${nextRound}_${i}`,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
             };
+            
             nextRoundMatches.push(match);
-            console.log(`🥊 Yeni maç: ${allWinners[i]} vs ${allWinners[i + 1]}`);
+            console.log(`🥊 Yeni maç: ${player1_id || 'BOT'} vs ${player2_id || 'BOT'}`);
           }
         }
 
-        // Database'e kaydet
-        if (nextRoundMatches.length > 0) {
-          const { error: insertError } = await supabase
+        // Database'e kaydet - TEK TEK
+        for (const match of nextRoundMatches) {
+          const { error } = await supabase
             .from('tournament_matches')
-            .insert(nextRoundMatches);
+            .insert(match);
           
-          if (insertError) throw insertError;
-
-          // Turnuva turunu güncelle
-          const { error: updateError } = await supabase
-            .from('tournaments')
-            .update({ current_round: nextRound })
-            .eq('id', tournamentId);
-          
-          if (updateError) throw updateError;
-
-          console.log(`✅ ${nextRound}. tur için ${nextRoundMatches.length} maç oluşturuldu`);
+          if (error) {
+            console.error('❌ Maç ekleme hatası:', error);
+            throw error;
+          }
         }
+
+        // Turnuva turunu güncelle
+        const { error: updateError } = await supabase
+          .from('tournaments')
+          .update({ current_round: nextRound })
+          .eq('id', tournamentId);
+        
+        if (updateError) throw updateError;
+
+        console.log(`✅ ${nextRound}. tur için ${nextRoundMatches.length} maç oluşturuldu`);
       }
 
       // Verileri yeniden yükle
@@ -277,6 +287,8 @@ const checkNextRoundOrFinish = async () => {
     console.error('❌ Sonraki tur kontrolü hatası:', error);
   }
 };
+
+  
 // YENİ FONKSIYON: Kullanıcının sonraki maçını kontrol et
 const checkUserNextMatch = async () => {
   if (!user || !tournament) return;
