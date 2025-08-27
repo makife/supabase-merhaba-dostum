@@ -294,6 +294,72 @@ const checkNextRoundOrFinish = async () => {
   }
 };
 
+const autoCompleteBotMatches = async () => {
+  try {
+    console.log('🤖 Otomatik bot maç tamamlama başlıyor...');
+    
+    if (!tournament) return;
+
+    // Mevcut turdaki TÜM maçları al
+    const { data: currentRoundMatches } = await supabase
+      .from('tournament_matches')
+      .select('*')
+      .eq('tournament_id', tournamentId)
+      .eq('round', tournament.current_round)
+      .eq('status', 'pending'); // Sadece pending olanları
+
+    if (!currentRoundMatches || currentRoundMatches.length === 0) return;
+
+    // Bot maçlarını bul (player1_id veya player2_id null olanlar)
+    const botMatches = currentRoundMatches.filter(match => 
+      match.player1_id === null || match.player2_id === null
+    );
+
+    console.log(`🤖 ${botMatches.length} bot maçı bulundu`);
+
+    // Her bot maçını otomatik tamamla
+    for (const match of botMatches) {
+      console.log(`🤖 Bot maçı otomatik tamamlanıyor: ${match.id}`);
+      
+      // Rastgele kazanan seç (50/50 şans)
+      const randomWinner = Math.random() > 0.5 ? match.player1_id : match.player2_id;
+      const player1Score = Math.floor(Math.random() * 50) + 10;
+      const player2Score = Math.floor(Math.random() * 50) + 10;
+
+      // Maçı tamamla
+      const { error } = await supabase
+        .from('tournament_matches')
+        .update({
+          status: 'completed',
+          winner_id: randomWinner,
+          player1_score: player1Score,
+          player2_score: player2Score,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', match.id);
+
+      if (error) {
+        console.error(`❌ Bot maçı tamamlama hatası:`, error);
+      } else {
+        console.log(`✅ Bot maçı tamamlandı: ${match.id}`);
+      }
+
+      // 1 saniye bekle (database overload önlemek için)
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    console.log('✅ Tüm bot maçları otomatik tamamlandı');
+    
+    // Bot maçları tamamlandıktan sonra sonraki turu kontrol et
+    setTimeout(() => {
+      checkNextRoundOrFinish();
+    }, 2000);
+
+  } catch (error) {
+    console.error('❌ Otomatik bot maç tamamlama hatası:', error);
+  }
+};
+
 const completeBotMatches = async () => {
   try {
     console.log('🤖 Bot maçları tamamlanıyor...');
@@ -719,6 +785,17 @@ const loadTournamentData = async () => {
      }
    }
 
+   if (matchesData && matchesData.length > 0) {
+      const pendingMatches = matchesData.filter(m => m.status === 'pending');
+      if (pendingMatches.length > 0) {
+        console.log(`⏰ ${pendingMatches.length} pending maç var, botlar kontrol ediliyor...`);
+        setTimeout(() => {
+          autoCompleteBotMatches();
+        }, 3000);
+      }
+    }
+
+
  } catch (error) {
    console.error('❌ Error loading tournament data:', error);
    toast({
@@ -916,9 +993,9 @@ const completeMatch = async (winnerId: string, player1Score: number, player2Scor
 
     console.log('✅ Maç başarıyla tamamlandı');
 
-    // ✅✅✅ ÖNEMLİ: Bot maçlarını otomatik tamamla
+    // ✅✅✅ OTOMATİK: Bot maçlarını hemen tamamla
     setTimeout(() => {
-      completeBotMatches();
+      autoCompleteBotMatches();
     }, 1000);
 
   } catch (error) {
@@ -1046,6 +1123,20 @@ useEffect(() => {
     fixBrokenMatches();
   }
 }, [tournamentId]);
+
+useEffect(() => {
+  if (!tournamentId || !tournament) return;
+
+  // Her 10 saniyede bir bot maçlarını kontrol et
+  const botCheckInterval = setInterval(() => {
+    if (tournament.status === 'active') {
+      console.log('⏰ Bot maçları kontrol ediliyor...');
+      autoCompleteBotMatches();
+    }
+  }, 10000); // 10 saniye
+
+  return () => clearInterval(botCheckInterval);
+}, [tournamentId, tournament?.status]);
 
 
   // Kullanıcının sıradaki maçını bul
