@@ -1544,6 +1544,7 @@ useEffect(() => {
         console.log('⏰ Süre bitti! Final skorlar - Player:', playerScore, 'Opponent:', opponentScore);
   
         // ✅ Sadece handleGameEnd çağır - o zaten gerekli her şeyi yapıyor
+        updatePlayerStatistics();
         handleGameEnd();
        }
     }, 1000);
