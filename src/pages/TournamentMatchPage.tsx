@@ -52,48 +52,54 @@ const TournamentMatchPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   // Otomatik maç başlatma sistemi
-  const startAutoMatch = async (match: TournamentMatch) => {
-    if (!user) return;
+const startAutoMatch = async (match: TournamentMatch) => {
+  if (!user) return;
 
-    try {
-      console.log('🚀 Otomatik maç başlatılıyor:', match.id);
+  try {
+    console.log('🚀 Otomatik maç başlatılıyor:', match.id);
 
-      // Create game room for the match
-      const { data: gameRoom, error: roomError } = await supabase
-        .from('game_rooms')
-        .insert({
-          host_id: user.id,
-          game_mode: 'tournament',
-          status: 'active',
-          time_limit: 120,
-          max_score: 500,
-          player1_id: match.player1_id,
-          player2_id: match.player2_id,
-          current_grid: []
-        })
-        .select()
-        .single();
+    // Create game room for the match
+    const { data: gameRoom, error: roomError } = await supabase
+      .from('game_rooms')
+      .insert({
+        host_id: user.id,
+        game_mode: 'tournament',
+        status: 'active',
+        time_limit: 120,
+        max_score: 500,
+        player1_id: match.player1_id,
+        player2_id: match.player2_id,
+        current_grid: []
+      })
+      .select()
+      .single();
 
-      if (roomError) throw roomError;
+    if (roomError) throw roomError;
 
-      // Update match with room_id and active status
-      const { error: matchError } = await supabase
-        .from('tournament_matches')
-        .update({
-          room_id: gameRoom.id,
-          status: 'active'
-        })
-        .eq('id', match.id);
+    // Update match with room_id and active status
+    const { error: matchError } = await supabase
+      .from('tournament_matches')
+      .update({
+        room_id: gameRoom.id,
+        status: 'active'
+      })
+      .eq('id', match.id);
 
-      if (matchError) throw matchError;
+    if (matchError) throw matchError;
 
-      // Navigate to game page
-      navigate(`/game?room=${gameRoom.id}&tournament=${tournamentId}&match=${match.id}&type=timed`);
+    // ✅ BURAYA propGameType='timed' EKLE
+    navigate(`/game?room=${gameRoom.id}&tournament=${tournamentId}&match=${match.id}&type=timed`, {
+      state: {
+        gameMode: 'tournament',
+        gameType: 'timed',  // ✅ propGameType olarak geçecek
+        tournamentMatch: match
+      }
+    });
 
-    } catch (error) {
-      console.error('Otomatik maç başlatma hatası:', error);
-    }
-  };
+  } catch (error) {
+    console.error('Otomatik maç başlatma hatası:', error);
+  }
+};
 
   // Turnuva durumunu kontrol et ve sonraki turu başlat
   const checkTournamentProgress = async () => {
