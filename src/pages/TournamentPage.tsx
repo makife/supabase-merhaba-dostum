@@ -214,23 +214,7 @@ const createTournament = async (selectedGameType: 'timed' | 'score') => {
   }
 };
 
-const checkTournamentProgress = async (tournamentId: string) => {
-  try {
-    console.log('🏆 Turnuva ilerleme kontrolü:', tournamentId);
-    
-    const { error } = await supabase.rpc('check_tournament_progress_v2', {
-      p_tournament_id: tournamentId
-    });
-    
-    if (error) {
-      console.error('❌ Turnuva ilerleme kontrolü hatası:', error);
-    } else {
-      console.log('✅ Turnuva ilerleme kontrolü başarılı');
-    }
-  } catch (error) {
-    console.error('❌ Turnuva ilerleme fonksiyonu hatası:', error);
-  }
-};
+
 
   const joinTournament = async (tournamentId: string) => {
     if (!user || isJoining) return;
