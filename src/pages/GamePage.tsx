@@ -64,7 +64,7 @@ interface JokerState {
 const GamePage = ({ 
   gameMode = 'vs-computer', 
   onGameComplete,
-  tournamentMatch,
+  tournamentMatch: propTournamentMatch, // ✅ Prop'tan gelen
   gameType: propGameType,
   participants: propsParticipants = []
 }: GamePageProps) => {
@@ -72,24 +72,38 @@ const GamePage = ({
   const { consumeCredit, isPremium } = useUser();
   const { hasPurchased, settings } = useUserPurchases();
   const navigate = useNavigate();
+  const location = useLocation(); // ✅ Bu satırı ekle
   const { toast } = useToast();
   const { currentRoom, updateScore, participants: gameParticipants, endGame, leaveRoom,sendRematchRequest,respondRematchRequest,currentRematchRequest,setCurrentRematchRequest } = useGame();
+  
+  // ✅ State'ten tournament verilerini al
+  const stateTournamentMatch = location.state?.tournamentMatch;
+  const stateGameMode = location.state?.gameMode;
+  const stateParticipants = location.state?.participants || [];
+  
+  // ✅ Öncelik sırası: state > props
+  const tournamentMatch = stateTournamentMatch || propTournamentMatch;
+  const finalGameMode = stateGameMode || gameMode;
+  
   // Tournament participant state
   const [tournamentParticipants, setTournamentParticipants] = useState<any[]>([]);
   
   const participants = useMemo(() => {
-  console.log('🔍 Participants memo - Mode:', gameMode, 'Props:', propsParticipants?.length || 0, 'Game:', gameParticipants?.length || 0, 'Tournament:', tournamentParticipants?.length || 0);
+    console.log('🔍 Participants memo - Mode:', finalGameMode, 'Props:', propsParticipants?.length || 0, 'Game:', gameParticipants?.length || 0, 'Tournament:', tournamentParticipants?.length || 0, 'State:', stateParticipants?.length || 0);
+    
+    if (finalGameMode === 'tournament') {
+      // ✅ Öncelik sırası: state > props > loaded tournament participants
+      const tournamentParts = stateParticipants?.length > 0 ? stateParticipants : 
+                             propsParticipants?.length > 0 ? propsParticipants : 
+                             tournamentParticipants;
+      console.log('🏆 Tournament mode - Using participants:', tournamentParts?.length || 0);
+      return tournamentParts || [];
+    }
+    
+    console.log('🎮 Other mode - Using gameParticipants:', gameParticipants?.length || 0);
+    return gameParticipants || [];
+  }, [finalGameMode, propsParticipants, gameParticipants, tournamentParticipants, stateParticipants]);
   
-  if (gameMode === 'tournament') {
-    // First try propsParticipants, then fallback to loaded tournament participants
-    const tournamentParts = propsParticipants?.length > 0 ? propsParticipants : tournamentParticipants;
-    console.log('🏆 Tournament mode - Using participants:', tournamentParts?.length || 0);
-    return tournamentParts || [];
-  }
-  
-  console.log('🎮 Other mode - Using gameParticipants:', gameParticipants?.length || 0);
-  return gameParticipants || [];
-}, [gameMode, propsParticipants, gameParticipants, tournamentParticipants]);
   const { validateWord, isValidating } = useWordValidation();
   const { playSound, playTimeWarningSequence, playCelebrationSound, playGameLoseSound } = useSounds();
   const { fadeOutBackgroundMusic, fadeInBackgroundMusic } = useMusic();
