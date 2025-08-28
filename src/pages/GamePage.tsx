@@ -424,7 +424,6 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
   }
 };
 
-
   const updatePlayerStatistics = async (
     userId: string,
     gameScore: number,
@@ -2455,17 +2454,17 @@ if (gameEnded) {
           
           {/* Turnuva için otomatik yönlendirme mesajı */}
           {gameMode === 'tournament' && winner === 'player' && (
-  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-    <p className="text-yellow-800 text-sm font-medium">
-      🏆 Turnuva sayfasına yönlendirildiniz!
-    </p>
-    <div className="mt-2">
-      <div className="text-yellow-600">
-        Sonraki tur için bekleyiniz
-      </div>
-    </div>
-  </div>
-)}
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+              <p className="text-yellow-800 text-sm font-medium">
+                🏆 Turnuva eşleşme sayfasına yönlendiriliyorsunuz...
+              </p>
+              <div className="mt-2">
+                <div className="animate-pulse text-yellow-600">
+                  5 saniye içinde otomatik yönlendirme
+                </div>
+              </div>
+            </div>
+          )}
           
           {/* Butonlar - Sadece manuel durumlar için */}
           <div className="space-y-2">
@@ -2485,31 +2484,30 @@ if (gameEnded) {
                   </Button>
                 )}
                 {winner === 'player' && (
-  <Button 
-    variant="outline"
-    onClick={() => {
-      console.log('🚀 Manuel yönlendirme denemesi...');
-      
-      // ✅ URL'den tournament ID al
-      const tournamentId = searchParams.get('tournament');
-      
-      if (!tournamentId) {
-        console.error('❌ tournament ID URL parameter missing');
-        navigate('/tournaments');
-        return;
-      }
+                  <Button 
+  variant="outline"
+  onClick={() => {
+    console.log('🚀 Manuel yönlendirme denemesi...');
+    
+    // Önce tournamentMatch'i kontrol et
+    if (!tournamentMatch) {
+      console.error('❌ tournamentMatch yok');
+      navigate('/tournaments');
+      return;
+    }
 
-      console.log('🏆 Tournament ID from URL:', tournamentId);
-      
-      // ✅ DOĞRUDAN YÖNLENDİRME
-      window.location.href = `/tournament/${tournamentId}`;
-    }} 
-    className="w-full"
-  >
-    <Trophy className="w-4 h-4 mr-2" />
-    Turnuva Sayfasına Git
-  </Button>
-)}
+    // Tournament ID'yi kontrol et
+    if (!tournamentMatch.tournament_id) {
+      console.error('❌ tournament_id yok');
+      navigate('/tournaments');
+      return;
+    }
+
+    console.log('🔍 Tournament ID:', tournamentMatch.tournament_id);
+    
+    // ✅✅✅ DIRECT YÖNLENDİRME - router yerine window.location
+    window.location.href = `/tournament/${tournamentMatch.tournament_id}`;
+  }} 
   className="w-full"
 >
   <Trophy className="w-4 h-4 mr-2" />
