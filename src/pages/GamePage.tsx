@@ -2485,34 +2485,29 @@ if (gameEnded) {
                 )}
                 {winner === 'player' && (
                   <Button 
-  variant="outline"
-  onClick={() => {
-    console.log('🚀 Manuel yönlendirme denemesi...');
-    
-    // Önce tournamentMatch'i kontrol et
-    if (!tournamentMatch) {
-      console.error('❌ tournamentMatch yok');
-      navigate('/tournaments');
-      return;
-    }
+    variant="outline"
+    onClick={() => {
+      console.log('🚀 Manuel yönlendirme denemesi...');
+      
+      // ✅ URL'den tournament ID al
+      const tournamentId = searchParams.get('tournament');
+      
+      if (!tournamentId) {
+        console.error('❌ tournament ID URL parameter missing');
+        navigate('/tournaments');
+        return;
+      }
 
-    // Tournament ID'yi kontrol et
-    if (!tournamentMatch.tournament_id) {
-      console.error('❌ tournament_id yok');
-      navigate('/tournaments');
-      return;
-    }
-
-    console.log('🔍 Tournament ID:', tournamentMatch.tournament_id);
-    
-    // ✅✅✅ DIRECT YÖNLENDİRME - router yerine window.location
-    window.location.href = `/tournament/${tournamentMatch.tournament_id}`;
-  }} 
-  className="w-full"
->
-  <Trophy className="w-4 h-4 mr-2" />
-  Turnuva Sayfasına Git
-</Button>
+      console.log('🏆 Tournament ID from URL:', tournamentId);
+      
+      // ✅ DOĞRUDAN YÖNLENDİRME
+      window.location.href = `/tournament/${tournamentId}`;
+    }} 
+    className="w-full"
+  >
+    <Trophy className="w-4 h-4 mr-2" />
+    Turnuva Sayfasına Git
+  </Button>
                 )}
               </>
             ) : (
