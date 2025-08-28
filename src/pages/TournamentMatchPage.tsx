@@ -142,7 +142,7 @@ const checkCurrentTournamentProgress = async () => {
       }
 
       // Sonraki tur maçlarını OLUŞTUR ama HEMEN KAYDETME!
-      const newMatches = createNextRoundMatches(nextRound, winners);
+      const newMatches = setNextRoundMatches(nextRound, winners);
       
       if (newMatches.length > 0) {
         // State'i güncelle ve countdown başlat
@@ -681,7 +681,7 @@ useEffect(() => {
         if (payload.new.status === 'completed' && tournament?.status !== 'finished') {
           console.log('✅ Maç tamamlandı, ilerleme kontrolü yapılıyor...');
           setTimeout(() => {
-            checkCurrentTournamentProgress();
+            checkTournamentProgress();
           }, 3000);
         }
         
