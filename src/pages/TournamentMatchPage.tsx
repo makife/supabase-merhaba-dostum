@@ -180,11 +180,10 @@ const TournamentMatchPage: React.FC = () => {
 const createNextRoundMatches = async (completedRound: number) => {
   try {
     console.log('⚔️ Sonraki tur maçları oluşturuluyor:', completedRound + 1);
-
-    // Bu turun tamamlanan maçlarının kazananlarını al
+    
     const { data: roundMatches, error: matchError } = await supabase
       .from('tournament_matches')
-      .select('id, tournament_id, round, match_number, player1_id, player2_id, winner_id, status, player1_score, player2_score, created_at')
+      .select('*')
       .eq('tournament_id', tournamentId)
       .eq('round', completedRound)
       .eq('status', 'completed');
@@ -196,15 +195,15 @@ const createNextRoundMatches = async (completedRound: number) => {
 
     console.log(`🏆 ${completedRound}. tur tamamlanan maç sayısı:`, roundMatches?.length || 0);
     
-    // HER MAÇI DETAYLI KONTROL ET
-    roundMatches?.forEach((match, index) => {
+    // HER MAÇI DETAYLI KONTROL ET - TYPE ASSERTION KULLAN
+    roundMatches?.forEach((match: any, index) => {
       console.log(`Maç ${index + 1}:`, {
         id: match.id.slice(-8),
         player1: match.player1_id?.slice(-8) || 'null',
         player2: match.player2_id?.slice(-8) || 'null', 
         winner: match.winner_id?.slice(-8) || 'NULL',
-        score1: (match as any).player1_score || 0,  // Type assertion ekle
-        score2: (match as any).player2_score || 0,  // Type assertion ekle
+        score1: match.player1_score || 0,
+        score2: match.player2_score || 0,
         status: match.status
       });
     });
@@ -215,7 +214,7 @@ const createNextRoundMatches = async (completedRound: number) => {
     }
 
     const winners = roundMatches
-      .map(m => {
+      .map((m: any) => {
         console.log('Kazanan kontrol:', m.winner_id ? m.winner_id.slice(-8) : 'NULL');
         return m.winner_id;
       })
@@ -298,6 +297,7 @@ const createNextRoundMatches = async (completedRound: number) => {
     console.error('❌ Sonraki tur oluşturma hatası:', error);
   }
 };
+  
   // TURNUVA BİTİRME
   const finishTournament = async (finalWinner: string | null) => {
     if (!finalWinner) return;
