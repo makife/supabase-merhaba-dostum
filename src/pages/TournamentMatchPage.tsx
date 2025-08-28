@@ -184,7 +184,7 @@ const createNextRoundMatches = async (completedRound: number) => {
     // Bu turun tamamlanan maçlarının kazananlarını al
     const { data: roundMatches, error: matchError } = await supabase
       .from('tournament_matches')
-      .select('*')
+      .select('id, tournament_id, round, match_number, player1_id, player2_id, winner_id, status, player1_score, player2_score, created_at')
       .eq('tournament_id', tournamentId)
       .eq('round', completedRound)
       .eq('status', 'completed');
@@ -203,8 +203,8 @@ const createNextRoundMatches = async (completedRound: number) => {
         player1: match.player1_id?.slice(-8) || 'null',
         player2: match.player2_id?.slice(-8) || 'null', 
         winner: match.winner_id?.slice(-8) || 'NULL',
-        score1: match.player1_score,
-        score2: match.player2_score,
+        score1: (match as any).player1_score || 0,  // Type assertion ekle
+        score2: (match as any).player2_score || 0,  // Type assertion ekle
         status: match.status
       });
     });
