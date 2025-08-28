@@ -142,7 +142,7 @@ const checkCurrentTournamentProgress = async () => {
       }
 
       // Sonraki tur maçlarını OLUŞTUR ama HEMEN KAYDETME!
-      const newMatches = setNextRoundMatches(nextRound, winners);
+      const newMatches = createNextRoundMatches(nextRound, winners);
       
       if (newMatches.length > 0) {
         // State'i güncelle ve countdown başlat
