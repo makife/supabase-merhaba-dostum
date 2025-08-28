@@ -67,6 +67,11 @@ const AppRoutes = () => {
           <GamePage gameMode="random-match" />
         </ProtectedRoute>
       } />
+      <Route path="/game" element={
+        <ProtectedRoute>
+          <GamePage gameMode="tournament" />
+        </ProtectedRoute>
+      } />
       
       <Route path="/tournament/:tournamentId" element={
         <ProtectedRoute>
