@@ -76,7 +76,7 @@ const startAutoMatch = async (match: TournamentMatch) => {
 };
 
   // Turnuva durumunu kontrol et ve sonraki turu başlat
-const checkTournamentProgress = async () => {
+const checkCurrentTournamentProgress = async () => {
   if (!tournamentId) return;
 
   try {
