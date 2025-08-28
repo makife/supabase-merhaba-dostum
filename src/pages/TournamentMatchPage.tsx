@@ -125,26 +125,62 @@ const TournamentMatchPage: React.FC = () => {
   };
 
   // BOT MAÇLARI SİMÜLE ET
-  const simulateBotMatch = async (match: TournamentMatch) => {
-    console.log('🤖 Bot maçı simüle ediliyor:', match.id);
-    
-    // Bot maçında rastgele kazanan seç
-    const winner = Math.random() > 0.5 ? match.player1_id : match.player2_id;
-    const winnerScore = Math.floor(Math.random() * 200) + 100; // 100-300 arası
-    const loserScore = Math.floor(Math.random() * winnerScore); // Kazanandan düşük
+ const simulateBotMatch = async (match: TournamentMatch) => {
+  console.log('🤖 Bot maçı simüle ediliyor:', match.id.slice(-8));
+  
+  // Eğer zaten completed ise atla
+  if (match.status === 'completed') {
+    console.log('⚠️ Maç zaten tamamlanmış, atlanıyor');
+    return;
+  }
+  
+  // Bot maçında rastgele kazanan seç
+  // Eğer player1_id null ise player2 kazansın, değilse rastgele
+  let winner: string | null;
+  
+  if (match.player1_id === null && match.player2_id === null) {
+    // İki bot da null - rastgele birini seç (1 veya 2)
+    winner = Math.random() > 0.5 ? 'bot1' : 'bot2';
+  } else if (match.player1_id === null) {
+    winner = match.player2_id; // Player2 kazanır
+  } else if (match.player2_id === null) {
+    winner = match.player1_id; // Player1 kazanır  
+  } else {
+    // İki gerçek oyuncu - rastgele
+    winner = Math.random() > 0.5 ? match.player1_id : match.player2_id;
+  }
+  
+  const winnerScore = Math.floor(Math.random() * 200) + 100; // 100-300 arası
+  const loserScore = Math.floor(Math.random() * winnerScore); // Kazanandan düşük
 
-    await supabase
-      .from('tournament_matches')
-      .update({
-        status: 'completed',
-        winner_id: winner,
-        player1_score: winner === match.player1_id ? winnerScore : loserScore,
-        player2_score: winner === match.player2_id ? winnerScore : loserScore
-      })
-      .eq('id', match.id);
+  console.log('🏆 Bot maçı sonucu:', {
+    matchId: match.id.slice(-8),
+    winner: winner === 'bot1' || winner === 'bot2' ? winner : winner?.slice(-8),
+    winnerScore,
+    loserScore
+  });
 
-    console.log('✅ Bot maçı tamamlandı, kazanan:', winner);
-  };
+  // ⚠️ ÖZEL DURUM: İki bot da null ise dummy winner koy
+  if (match.player1_id === null && match.player2_id === null) {
+    winner = match.player1_id || match.player2_id || 'dummy-bot-winner';
+  }
+
+  const { error } = await supabase
+    .from('tournament_matches')
+    .update({
+      status: 'completed',
+      winner_id: winner,
+      player1_score: winner === match.player1_id ? winnerScore : loserScore,
+      player2_score: winner === match.player2_id ? winnerScore : loserScore
+    })
+    .eq('id', match.id);
+
+  if (error) {
+    console.error('❌ Bot maçı güncelleme hatası:', error);
+  } else {
+    console.log('✅ Bot maçı tamamlandı');
+  }
+};
 
   // OYUNCU İSMİ ALMA
   const getPlayerName = (playerId: string | null): string => {
@@ -349,31 +385,32 @@ const createNextRoundMatches = async (completedRound: number) => {
   }, [currentUserMatch, user]);
 
   // BOT MAÇLARINI OTOMATIK SİMÜLE ET
-  useEffect(() => {
-    const handleBotMatches = async () => {
-      const botMatches = matches.filter(match => 
-        match.status === 'pending' && (
-          // İki oyuncu da bot
-          (match.player1_id === null && match.player2_id === null) ||
-          // Biri bot biri gerçek ama gerçek oyuncu değil current user
-          (match.player1_id !== user?.id && match.player2_id !== user?.id)
-        )
-      );
+useEffect(() => {
+  const handleBotMatches = async () => {
+    const botMatches = matches.filter(match => 
+      match.status === 'pending' && (
+        // İki oyuncu da bot VEYA null
+        (match.player1_id === null || match.player2_id === null) ||
+        // Kullanıcının maçı değilse
+        (match.player1_id !== user?.id && match.player2_id !== user?.id)
+      )
+    );
 
-      for (const match of botMatches) {
-        // Kullanıcının maçı değilse simüle et
-        if (match.player1_id !== user?.id && match.player2_id !== user?.id) {
-          await simulateBotMatch(match);
-        }
+    console.log('🤖 Simüle edilecek bot maçları:', botMatches.length);
+
+    for (const match of botMatches) {
+      // Sadece completed olmayan maçları simüle et
+      if (match.status !== 'completed') {
+        console.log('🤖 Bot maçı simüle ediliyor:', match.id.slice(-8));
+        await simulateBotMatch(match);
       }
-    };
-
-    if (matches.length > 0 && participants.length > 0 && user) {
-      // 2 saniye gecikme ile bot maçlarını başlat
-      setTimeout(handleBotMatches, 2000);
     }
-  }, [matches, participants, user]);
+  };
 
+  if (matches.length > 0 && participants.length > 0 && user) {
+    setTimeout(handleBotMatches, 2000);
+  }
+}, [matches, participants, user]);
   // MAÇ TAMAMLANMA KONTROLÜ VE SONRAKİ TUR
  useEffect(() => {
   const checkRoundCompletion = async () => {
