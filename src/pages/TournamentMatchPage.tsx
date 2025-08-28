@@ -188,42 +188,76 @@ const checkCurrentTournamentProgress = async () => {
     }
   };
 
- const loadTournamentData = async () => {
+const loadTournamentData = async () => {
   if (!tournamentId || !user) return;
 
   try {
-    // 3 sorguyu paralel çalıştır
-    const [tournamentData, matchesData, participantsData] = await Promise.all([
-      supabase.from('tournaments').select('*').eq('id', tournamentId).single(),
-      supabase.from('tournament_matches').select('*')
-        .eq('tournament_id', tournamentId)
-        .order('round', { ascending: true })
-        .order('match_number', { ascending: true }),
-      supabase.from('tournament_participants').select(`
+    console.log('📊 Turnuva verileri yükleniyor:', tournamentId);
+    
+    // Tüm katılımcıları çek (sadece bu turnuva için)
+    const { data: allParticipants, error: partsError } = await supabase
+      .from('tournament_participants')
+      .select(`
         *,
         profiles:user_id (
           username,
           avatar_url
         )
-      `).eq('tournament_id', tournamentId)
-    ]);
+      `)
+      .eq('tournament_id', tournamentId);
 
-    // Hızlıca state'leri güncelle
-    if (tournamentData.data) setTournament(tournamentData.data);
-    
-    if (matchesData.data) {
-      setMatches(matchesData.data);
-      const userMatch = matchesData.data.find(match => 
+    if (partsError) {
+      console.error('❌ Katılımcı yükleme hatası:', partsError);
+    } else {
+      console.log('👥 Tüm katılımcılar:', allParticipants);
+      setParticipants(allParticipants || []);
+    }
+
+    // Turnuva bilgilerini çek
+    const { data: tournamentData, error: tourError } = await supabase
+      .from('tournaments')
+      .select('*')
+      .eq('id', tournamentId)
+      .single();
+
+    if (tourError) {
+      console.error('❌ Turnuva yükleme hatası:', tourError);
+    } else {
+      setTournament(tournamentData);
+    }
+
+    // Maçları çek
+    const { data: matchesData, error: matchesError } = await supabase
+      .from('tournament_matches')
+      .select('*')
+      .eq('tournament_id', tournamentId)
+      .order('round', { ascending: true })
+      .order('match_number', { ascending: true });
+
+    if (matchesError) {
+      console.error('❌ Maç yükleme hatası:', matchesError);
+    } else if (matchesData) {
+      setMatches(matchesData);
+      
+      // Kullanıcının mevcut maçını bul
+      const userMatch = matchesData.find(match => 
         (match.player1_id === user.id || match.player2_id === user.id) && 
         match.status === 'pending'
       );
       setCurrentMatch(userMatch || null);
+      
+      // Debug için
+      console.log('🥊 Maçlar yüklendi:', matchesData.length);
+      matchesData.forEach(match => {
+        console.log(`🥊 Maç ${match.round}-${match.match_number}:`, 
+          `${getPlayerName(match.player1_id)} vs ${getPlayerName(match.player2_id)}`, 
+          `- ${match.status}`
+        );
+      });
     }
-    
-    if (participantsData.data) setParticipants(participantsData.data);
 
   } catch (error) {
-    console.error('Turnuva veri yükleme hatası:', error);
+    console.error('❌ Turnuva veri yükleme hatası:', error);
   } finally {
     setLoading(false);
   }
@@ -252,11 +286,26 @@ const checkCurrentTournamentProgress = async () => {
     }
   };
 
-  const getPlayerName = (playerId: string | null): string => {
-    if (!playerId) return 'Bot';
-    const participant = participants.find(p => p.user_id === playerId);
-    return participant?.profiles?.username || 'Bilinmeyen Oyuncu';
-  };
+const getPlayerName = (playerId: string | null): string => {
+  if (!playerId) return 'Bot';
+  
+  // Önce participants içinde ara
+  const participant = participants.find(p => p.user_id === playerId);
+  
+  if (participant) {
+    if (participant.is_bot) {
+      return `Bot ${participant.seed}`;
+    }
+    return participant.profiles?.username || 'Bilinmeyen Oyuncu';
+  }
+  
+  // Eğer participants'ta bulamazsak, direkt olarak user bilgisini kontrol et
+  if (playerId === user?.id) {
+    return user.user_metadata?.name || user.email?.split('@')[0] || 'Ben';
+  }
+  
+  return 'Bilinmeyen Oyuncu';
+};
 
   const renderCountdown = () => {
     if (countdown === null || !currentMatch) return null;
@@ -279,112 +328,161 @@ const checkCurrentTournamentProgress = async () => {
     );
   };
 
-  const renderBracket = () => {
-    const round1Matches = matches.filter(m => m.round === 1);
-    const round2Matches = matches.filter(m => m.round === 2);
-    const round3Matches = matches.filter(m => m.round === 3);
+ const renderBracket = () => {
+  const round1Matches = matches.filter(m => m.round === 1);
+  const round2Matches = matches.filter(m => m.round === 2);
+  const round3Matches = matches.filter(m => m.round === 3);
 
-    return (
-      <div className="space-y-8">
-        {/* Round 1 - Quarterfinals */}
+  return (
+    <div className="space-y-8">
+      {/* Round 1 - Quarterfinals */}
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Çeyrek Final</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {round1Matches.map((match, index) => (
+            <Card key={match.id} className={`p-4 ${match.winner_id ? 'border-green-200 bg-green-50' : ''}`}>
+              <div className="space-y-2">
+                <div className={`flex items-center justify-between p-2 rounded ${
+                  match.winner_id === match.player1_id ? 'bg-green-100 border border-green-300' : 'bg-gray-100'
+                }`}>
+                  <span className="font-medium">{getPlayerName(match.player1_id)}</span>
+                  {match.player1_score !== undefined && (
+                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-bold">
+                      {match.player1_score}
+                    </span>
+                  )}
+                </div>
+                
+                <div className="text-center text-sm text-muted-foreground">vs</div>
+                
+                <div className={`flex items-center justify-between p-2 rounded ${
+                  match.winner_id === match.player2_id ? 'bg-green-100 border border-green-300' : 'bg-gray-100'
+                }`}>
+                  <span className="font-medium">{getPlayerName(match.player2_id)}</span>
+                  {match.player2_score !== undefined && (
+                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-bold">
+                      {match.player2_score}
+                    </span>
+                  )}
+                </div>
+                
+                <div className="text-center mt-2">
+                  {match.status === 'active' && (
+                    <Badge variant="default" className="animate-pulse">Devam Ediyor</Badge>
+                  )}
+                  {match.status === 'completed' && (
+                    <Badge variant="secondary" className="bg-green-100 text-green-800">
+                      ✅ Tamamlandı
+                    </Badge>
+                  )}
+                  {match.status === 'pending' && (
+                    <Badge variant="outline">Bekliyor</Badge>
+                  )}
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* Round 2 - Semifinals */}
+      {round2Matches.length > 0 && (
         <div>
-          <h3 className="text-lg font-semibold mb-4">Çeyrek Final</h3>
-          <div className="grid grid-cols-2 gap-4">
-            {round1Matches.map((match, index) => (
-              <Card key={match.id} className="p-4">
+          <h3 className="text-lg font-semibold mb-4">Yarı Final</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-md mx-auto">
+            {round2Matches.map((match) => (
+              <Card key={match.id} className={`p-4 ${match.winner_id ? 'border-green-200 bg-green-50' : ''}`}>
                 <div className="space-y-2">
-                  <div className={`p-2 rounded ${match.winner_id === match.player1_id ? 'bg-green-100' : ''}`}>
-                    {getPlayerName(match.player1_id)}
+                  <div className={`flex items-center justify-between p-2 rounded ${
+                    match.winner_id === match.player1_id ? 'bg-green-100 border border-green-300' : 'bg-gray-100'
+                  }`}>
+                    <span className="font-medium">{getPlayerName(match.player1_id)}</span>
+                    {match.player1_score !== undefined && (
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-bold">
+                        {match.player1_score}
+                      </span>
+                    )}
                   </div>
+                  
                   <div className="text-center text-sm text-muted-foreground">vs</div>
-                  <div className={`p-2 rounded ${match.winner_id === match.player2_id ? 'bg-green-100' : ''}`}>
-                    {getPlayerName(match.player2_id)}
+                  
+                  <div className={`flex items-center justify-between p-2 rounded ${
+                    match.winner_id === match.player2_id ? 'bg-green-100 border border-green-300' : 'bg-gray-100'
+                  }`}>
+                    <span className="font-medium">{getPlayerName(match.player2_id)}</span>
+                    {match.player2_score !== undefined && (
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-bold">
+                        {match.player2_score}
+                      </span>
+                    )}
                   </div>
-                  <div className="text-center">
-                    {match.status === 'active' && (
-                      <div className="text-orange-600 font-medium">Devam Ediyor</div>
-                    )}
-                    {match.status === 'completed' && (
-                      <div className="text-green-600 font-medium">Tamamlandı</div>
-                    )}
-                    {match.status === 'pending' && (
-                      <div className="text-blue-600 font-medium">Bekliyor</div>
-                    )}
+                  
+                  <div className="text-center mt-2">
+                    {match.status === 'active' && <Badge variant="default" className="animate-pulse">Devam Ediyor</Badge>}
+                    {match.status === 'completed' && <Badge variant="secondary" className="bg-green-100 text-green-800">✅ Tamamlandı</Badge>}
+                    {match.status === 'pending' && <Badge variant="outline">Bekliyor</Badge>}
                   </div>
                 </div>
               </Card>
             ))}
           </div>
         </div>
+      )}
 
-        {/* Round 2 - Semifinals */}
-        {round2Matches.length > 0 && (
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Yarı Final</h3>
-            <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
-              {round2Matches.map((match) => (
-                <Card key={match.id} className="p-4">
-                  <div className="space-y-2">
-                    <div className={`p-2 rounded ${match.winner_id === match.player1_id ? 'bg-green-100' : ''}`}>
-                      {getPlayerName(match.player1_id)}
-                    </div>
-                    <div className="text-center text-sm text-muted-foreground">vs</div>
-                    <div className={`p-2 rounded ${match.winner_id === match.player2_id ? 'bg-green-100' : ''}`}>
-                      {getPlayerName(match.player2_id)}
-                    </div>
-                    <div className="text-center">
-                      {match.status === 'active' && (
-                        <div className="text-orange-600 font-medium">Devam Ediyor</div>
-                      )}
-                      {match.status === 'completed' && (
-                        <div className="text-green-600 font-medium">Tamamlandı</div>
-                      )}
-                      {match.status === 'pending' && (
-                        <div className="text-blue-600 font-medium">Bekliyor</div>
-                      )}
-                    </div>
+      {/* Round 3 - Final */}
+      {round3Matches.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold mb-4">Final</h3>
+          <div className="max-w-sm mx-auto">
+            {round3Matches.map((match) => (
+              <Card key={match.id} className={`p-4 ${match.winner_id ? 'border-yellow-200 bg-yellow-50' : ''}`}>
+                <div className="space-y-2">
+                  <div className={`flex items-center justify-between p-2 rounded ${
+                    match.winner_id === match.player1_id ? 'bg-yellow-100 border border-yellow-300' : 'bg-gray-100'
+                  }`}>
+                    <span className="font-medium">{getPlayerName(match.player1_id)}</span>
+                    {match.player1_score !== undefined && (
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-bold">
+                        {match.player1_score}
+                      </span>
+                    )}
                   </div>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Round 3 - Final */}
-        {round3Matches.length > 0 && (
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Final</h3>
-            <div className="max-w-sm mx-auto">
-              {round3Matches.map((match) => (
-                <Card key={match.id} className="p-4">
-                  <div className="space-y-2">
-                    <div className={`p-2 rounded ${match.winner_id === match.player1_id ? 'bg-green-100' : ''}`}>
-                      {getPlayerName(match.player1_id)}
-                    </div>
-                    <div className="text-center text-sm text-muted-foreground">vs</div>
-                    <div className={`p-2 rounded ${match.winner_id === match.player2_id ? 'bg-green-100' : ''}`}>
-                      {getPlayerName(match.player2_id)}
-                    </div>
-                    <div className="text-center">
-                      {match.status === 'active' && (
-                        <div className="text-orange-600 font-medium">Devam Ediyor</div>
-                      )}
-                      {match.status === 'completed' && (
-                        <div className="text-green-600 font-medium">Tamamlandı</div>
-                      )}
-                      {match.status === 'pending' && (
-                        <div className="text-blue-600 font-medium">Bekliyor</div>
-                      )}
-                    </div>
+                  
+                  <div className="text-center text-sm text-muted-foreground">vs</div>
+                  
+                  <div className={`flex items-center justify-between p-2 rounded ${
+                    match.winner_id === match.player2_id ? 'bg-yellow-100 border border-yellow-300' : 'bg-gray-100'
+                  }`}>
+                    <span className="font-medium">{getPlayerName(match.player2_id)}</span>
+                    {match.player2_score !== undefined && (
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-bold">
+                        {match.player2_score}
+                      </span>
+                    )}
                   </div>
-                </Card>
-              ))}
-            </div>
+                  
+                  <div className="text-center mt-2">
+                    {match.status === 'active' && <Badge variant="default" className="animate-pulse">Devam Ediyor</Badge>}
+                    {match.status === 'completed' && <Badge variant="secondary" className="bg-green-100 text-green-800">✅ Tamamlandı</Badge>}
+                    {match.status === 'pending' && <Badge variant="outline">Bekliyor</Badge>}
+                  </div>
+                  
+                  {match.winner_id && (
+                    <div className="text-center mt-2">
+                      <Badge variant="default" className="bg-gold-500 text-white">
+                        🏆 Kazanan: {getPlayerName(match.winner_id)}
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            ))}
           </div>
-        )}
-      </div>
-    );
-  };
+        </div>
+      )}
+    </div>
+  );
+};
 
   // 10 saniye geri sayım ve otomatik başlatma
   useEffect(() => {
