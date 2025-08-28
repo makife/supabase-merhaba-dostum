@@ -436,7 +436,7 @@ useEffect(() => {
           console.log('✅ Maç tamamlandı, ilerleme kontrolü yapılıyor...');
           
           try {
-            const { error } = await supabase.rpc('check_tournament_progress', {
+            const { error } = await supabase.rpc('check_tournament_progress_v2', {
               p_tournament_id: tournamentId
             });
             
