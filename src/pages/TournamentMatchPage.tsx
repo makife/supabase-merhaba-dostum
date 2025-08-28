@@ -681,7 +681,7 @@ useEffect(() => {
         if (payload.new.status === 'completed' && tournament?.status !== 'finished') {
           console.log('✅ Maç tamamlandı, ilerleme kontrolü yapılıyor...');
           setTimeout(() => {
-            checkTournamentProgress();
+            checkCurrentTournamentProgress();
           }, 3000);
         }
         
