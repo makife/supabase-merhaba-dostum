@@ -126,58 +126,22 @@ const TournamentMatchPage: React.FC = () => {
 
   // BOT MAÇLARI SİMÜLE ET
 const simulateBotMatch = async (match: TournamentMatch) => {
-  console.log('🤖 BOT MAÇI SİMÜLE EDİLİYOR:', {
-    id: match.id.slice(-8),
-    status: match.status,
-    player1: match.player1_id?.slice(-8) || 'null',
-    player2: match.player2_id?.slice(-8) || 'null'
-  });
+  if (match.status === 'completed') return;
   
-  if (match.status === 'completed') {
-    console.log('⚠️ Maç zaten tamamlanmış, atlanıyor');
-    return;
-  }
-  
-  let winner: string | null = null;
-  
-  // İki bot da null ise - rastgele NULL bırak (böylece hiçbir kazanan yok)
-  if (match.player1_id === null && match.player2_id === null) {
-    // Bu durumda winner_id NULL kalacak - bu bot vs bot maçı
-    winner = null;
-  } else if (match.player1_id === null) {
-    winner = match.player2_id; // Player2 kazanır
-  } else if (match.player2_id === null) {
-    winner = match.player1_id; // Player1 kazanır  
-  } else {
-    // İki gerçek oyuncu - rastgele
-    winner = Math.random() > 0.5 ? match.player1_id : match.player2_id;
-  }
-  
+  // Rastgele kazanan seç
+  const winner = Math.random() > 0.5 ? match.player1_id : match.player2_id;
   const winnerScore = Math.floor(Math.random() * 200) + 100;
   const loserScore = Math.floor(Math.random() * winnerScore);
 
-  console.log('🏆 Bot maçı sonucu:', {
-    matchId: match.id.slice(-8),
-    winner: winner?.slice(-8) || 'NULL',
-    winnerScore,
-    loserScore
-  });
-
-  const { error } = await supabase
+  await supabase
     .from('tournament_matches')
     .update({
       status: 'completed',
-      winner_id: winner, // NULL veya geçerli UUID
+      winner_id: winner,  // Artık geçerli UUID
       player1_score: winner === match.player1_id ? winnerScore : loserScore,
       player2_score: winner === match.player2_id ? winnerScore : loserScore
     })
     .eq('id', match.id);
-
-  if (error) {
-    console.error('❌ Bot maçı güncelleme hatası:', error);
-  } else {
-    console.log('✅ Bot maçı tamamlandı');
-  }
 };
 
   // OYUNCU İSMİ ALMA
