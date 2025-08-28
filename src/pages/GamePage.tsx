@@ -2489,7 +2489,7 @@ if (gameEnded) {
                   </Button>
                 )}
                 {winner === 'player' && (
-                  <Button 
+  <Button 
     variant="outline"
     onClick={() => {
       console.log('🚀 Manuel yönlendirme denemesi...');
@@ -2513,7 +2513,7 @@ if (gameEnded) {
     <Trophy className="w-4 h-4 mr-2" />
     Turnuva Sayfasına Git
   </Button>
-                )}
+)}
               </>
             ) : (
               // Normal mod butonları
