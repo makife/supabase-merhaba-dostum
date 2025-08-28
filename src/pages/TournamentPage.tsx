@@ -329,7 +329,7 @@ const manualTournamentProgressCheck = async (tournamentId: string) => {
         loadTournamentParticipants(tournamentId);
 
         setTimeout(() => {
-         checkTournamentProgress(tournamentId);
+         triggerTournamentProgressCheck(tournamentId);
        }, 2000);
         
         // Calculate initial waiting time from expires_at
