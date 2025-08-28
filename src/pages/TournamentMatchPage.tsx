@@ -177,68 +177,110 @@ const TournamentMatchPage: React.FC = () => {
   };
 
   // SONRAKİ TUR MAÇLARİNİ OLUŞTUR
-  const createNextRoundMatches = async (completedRound: number) => {
-    try {
-      console.log('⚔️ Sonraki tur maçları oluşturuluyor:', completedRound + 1);
+const createNextRoundMatches = async (completedRound: number) => {
+  try {
+    console.log('⚔️ Sonraki tur maçları oluşturuluyor:', completedRound + 1);
 
-      // Bu turun tamamlanan maçlarının kazananlarını al
-      const roundMatches = matches.filter(m => m.round === completedRound && m.status === 'completed');
-      const winners = roundMatches.map(m => m.winner_id).filter(Boolean);
+    // Bu turun tamamlanan maçlarının kazananlarını al
+    const { data: roundMatches, error: matchError } = await supabase
+      .from('tournament_matches')
+      .select('*')
+      .eq('tournament_id', tournamentId)
+      .eq('round', completedRound)
+      .eq('status', 'completed');
 
-      if (winners.length !== roundMatches.length) {
-        console.log('⏳ Tur henüz tamamlanmadı');
-        return;
-      }
-
-      const nextRound = completedRound + 1;
-      
-      // Sonraki tur maçları zaten var mı kontrol et
-      const existingNextRoundMatches = matches.filter(m => m.round === nextRound);
-      if (existingNextRoundMatches.length > 0) {
-        console.log('⛔ Sonraki tur maçları zaten mevcut');
-        return;
-      }
-
-      // Sonraki tur maçları oluştur
-      const nextRoundMatches = [];
-      const matchesPerRound = winners.length / 2;
-
-      for (let i = 0; i < matchesPerRound; i++) {
-        nextRoundMatches.push({
-          tournament_id: tournamentId,
-          round: nextRound,
-          match_number: i + 1,
-          player1_id: winners[i * 2],
-          player2_id: winners[i * 2 + 1],
-          winner_id: null,
-          status: 'pending',
-          player1_score: 0,
-          player2_score: 0,
-          created_at: new Date().toISOString()
-        });
-      }
-
-      // Maçları veritabanına kaydet
-      for (const match of nextRoundMatches) {
-        await supabase.from('tournament_matches').insert(match);
-      }
-
-      // Turnuva round'unu güncelle
-      await supabase
-        .from('tournaments')
-        .update({ current_round: nextRound })
-        .eq('id', tournamentId);
-
-      console.log('✅ Sonraki tur maçları oluşturuldu:', nextRound);
-
-      // Verileri yenile
-      await loadTournamentData();
-
-    } catch (error) {
-      console.error('❌ Sonraki tur oluşturma hatası:', error);
+    if (matchError) {
+      console.error('Maç sorgulama hatası:', matchError);
+      return;
     }
-  };
 
+    console.log(`🏆 ${completedRound}. tur tamamlanan maç sayısı:`, roundMatches?.length || 0);
+    
+    if (!roundMatches || roundMatches.length === 0) {
+      console.log('⏳ Tamamlanan maç bulunamadı');
+      return;
+    }
+
+    const winners = roundMatches
+      .map(m => m.winner_id)
+      .filter(Boolean) as string[];
+
+    console.log('🏆 Kazananlar:', winners.length, 'kişi');
+
+    if (winners.length < 2) {
+      console.log('⏳ Sonraki tur için yeterli kazanan yok');
+      return;
+    }
+
+    const nextRound = completedRound + 1;
+    
+    // Sonraki tur maçları zaten var mı kontrol et
+    const { data: existingMatches } = await supabase
+      .from('tournament_matches')
+      .select('id')
+      .eq('tournament_id', tournamentId)
+      .eq('round', nextRound);
+
+    if (existingMatches && existingMatches.length > 0) {
+      console.log('⛔ Sonraki tur maçları zaten mevcut');
+      return;
+    }
+
+    // Sonraki tur maçları oluştur
+    const nextRoundMatches = [];
+    const matchesPerRound = Math.floor(winners.length / 2);
+
+    console.log(`🎯 ${nextRound}. tur için ${matchesPerRound} maç oluşturuluyor`);
+
+    for (let i = 0; i < matchesPerRound; i++) {
+      nextRoundMatches.push({
+        tournament_id: tournamentId,
+        round: nextRound,
+        match_number: i + 1,
+        player1_id: winners[i * 2],
+        player2_id: winners[i * 2 + 1],
+        winner_id: null,
+        status: 'pending',
+        player1_score: 0,
+        player2_score: 0,
+        created_at: new Date().toISOString()
+      });
+    }
+
+    // Maçları veritabanına kaydet
+    for (const match of nextRoundMatches) {
+      const { error: insertError } = await supabase
+        .from('tournament_matches')
+        .insert(match);
+
+      if (insertError) {
+        console.error('Maç ekleme hatası:', insertError);
+        return;
+      }
+    }
+
+    // Turnuva round'unu güncelle
+    const { error: updateError } = await supabase
+      .from('tournaments')
+      .update({ current_round: nextRound })
+      .eq('id', tournamentId);
+
+    if (updateError) {
+      console.error('Turnuva round güncelleme hatası:', updateError);
+      return;
+    }
+
+    console.log(`✅ ${nextRound}. tur maçları başarıyla oluşturuldu`);
+
+    // Verileri yenile
+    setTimeout(() => {
+      loadTournamentData();
+    }, 1000);
+
+  } catch (error) {
+    console.error('❌ Sonraki tur oluşturma hatası:', error);
+  }
+};
   // TURNUVA BİTİRME
   const finishTournament = async (finalWinner: string | null) => {
     if (!finalWinner) return;
@@ -316,33 +358,38 @@ const TournamentMatchPage: React.FC = () => {
   }, [matches, participants, user]);
 
   // MAÇ TAMAMLANMA KONTROLÜ VE SONRAKİ TUR
-  useEffect(() => {
-    const checkRoundCompletion = async () => {
-      if (!tournament || matches.length === 0) return;
+ useEffect(() => {
+  const checkRoundCompletion = async () => {
+    if (!tournament || matches.length === 0) return;
 
-      const currentRound = tournament.current_round;
-      const currentRoundMatches = matches.filter(m => m.round === currentRound);
-      const completedMatches = currentRoundMatches.filter(m => m.status === 'completed');
+    const currentRound = tournament.current_round;
+    const currentRoundMatches = matches.filter(m => m.round === currentRound);
+    const completedMatches = currentRoundMatches.filter(m => m.status === 'completed');
 
-      // Tur tamamlandı mı?
-      if (currentRoundMatches.length > 0 && completedMatches.length === currentRoundMatches.length) {
-        console.log('✅ Tur tamamlandı:', currentRound);
+    console.log(`🔍 Tur kontrolü - Round: ${currentRound}, Total: ${currentRoundMatches.length}, Completed: ${completedMatches.length}`);
 
-        if (currentRound === 3) {
-          // Final tamamlandı, turnuva bitir
-          const finalMatch = completedMatches[0];
-          await finishTournament(finalMatch.winner_id);
-        } else {
-          // Sonraki tur maçlarını oluştur
-          setTimeout(() => {
-            createNextRoundMatches(currentRound);
-          }, 3000); // 3 saniye bekle
-        }
+    // Tur tamamlandı mı?
+    if (currentRoundMatches.length > 0 && completedMatches.length === currentRoundMatches.length) {
+      console.log('✅ Tur tamamlandı:', currentRound);
+
+      if (currentRound === 3) {
+        // Final tamamlandı, turnuva bitir
+        const finalMatch = completedMatches[0];
+        await finishTournament(finalMatch.winner_id);
+      } else {
+        // Sonraki tur maçlarını oluştur
+        console.log('🔄 3 saniye sonra sonraki tur oluşturulacak...');
+        setTimeout(() => {
+          createNextRoundMatches(currentRound);
+        }, 3000);
       }
-    };
+    } else {
+      console.log(`⏳ Tur henüz tamamlanmadı: ${completedMatches.length}/${currentRoundMatches.length}`);
+    }
+  };
 
-    checkRoundCompletion();
-  }, [matches, tournament]);
+  checkRoundCompletion();
+}, [matches, tournament]);
 
   // REAL-TIME GÜNCELLEMELER
   useEffect(() => {
