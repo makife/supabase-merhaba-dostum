@@ -1190,7 +1190,7 @@ export type Database = {
         Args: {
           p_tournament_id: string;
         };
-        Returns: void
+        Returns: void;
         }
       
       calculate_average_word_length: {
