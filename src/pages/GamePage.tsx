@@ -341,36 +341,47 @@ const generateTournamentGrid = useCallback((seed: string): string[][] => {
   const [gameStartTime, setGameStartTime] = useState<number>(Date.now());
   
 const handleTournamentGameEnd = async (userScore: number, opponentScore: number) => {
-  if (!user || !tournamentMatch) return;
+  if (!user || !tournamentMatch) {
+    console.error('❌ handleTournamentGameEnd: Gerekli veriler eksik', {
+      user: !!user,
+      tournamentMatch: !!tournamentMatch
+    });
+    return;
+  }
 
-  console.log('🏁 Turnuva maçı bitiyor:', { userScore, opponentScore });
+  console.log('🏁 Turnuva maçı bitiyor:', { 
+    matchId: tournamentMatch.id,
+    userScore, 
+    opponentScore 
+  });
 
   try {
     const isUserWinner = userScore > opponentScore;
-    const tournamentId = searchParams.get('tournament');
-    const matchId = searchParams.get('match');
     
-    if (!tournamentId || !matchId) {
-      console.error('❌ URL parametreleri eksik');
-      navigate('/tournaments');
+    // URL'den tournament ID al
+    const tournamentId = searchParams.get('tournament') || tournamentMatch.tournament_id;
+    
+    if (!tournamentId) {
+      console.error('❌ Tournament ID bulunamadı');
+      setGameEnded(true);
       return;
     }
 
     // Kazananı belirle
-    let winnerId;
-    if (tournamentMatch.player2_id === null) {
-      winnerId = isUserWinner ? user.id : null;
-    } else {
-      winnerId = isUserWinner ? user.id : (
-        tournamentMatch.player1_id === user.id ? 
-        tournamentMatch.player2_id : 
-        tournamentMatch.player1_id
-      );
-    }
+    const winnerId = isUserWinner ? user.id : (
+      tournamentMatch.player1_id === user.id ? 
+      tournamentMatch.player2_id : 
+      tournamentMatch.player1_id
+    );
 
-    console.log('🏆 Kazanan belirlendi:', winnerId);
+    console.log('🏆 Maç güncelleniyor:', {
+      matchId: tournamentMatch.id,
+      winnerId: winnerId?.slice(-8),
+      userScore,
+      opponentScore
+    });
 
-    // Maçı tamamla ve kazananı kaydet
+    // ✅ MATCH DURUMUNU GÜNCELLE
     const { error: updateError } = await supabase
       .from('tournament_matches')
       .update({
@@ -380,49 +391,29 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
         player2_score: tournamentMatch.player1_id === user.id ? opponentScore : userScore,
         updated_at: new Date().toISOString()
       })
-      .eq('id', matchId);
+      .eq('id', tournamentMatch.id);
 
     if (updateError) {
       console.error('❌ Maç güncelleme hatası:', updateError);
     } else {
-      console.log('✅ Maç durumu güncellendi');
+      console.log('✅ Maç başarıyla güncellendi');
     }
 
-    // Kaybedenı eleme
-    const loserId = winnerId === tournamentMatch.player1_id ? tournamentMatch.player2_id : tournamentMatch.player1_id;
-    if (loserId && loserId !== winnerId) {
-      await supabase
-        .from('tournament_participants')
-        .update({ eliminated_at: new Date().toISOString() })
-        .eq('tournament_id', tournamentId)
-        .eq('user_id', loserId);
-      
-      console.log('✅ Kaybeden elendi');
-    }
-
-    // ✅ OYUNU BİTİR
+    // Oyunu bitir
     setGameEnded(true);
     
-    // ✅ 3 SANİYE BEKLE SONRA YÖNLENDİR
+    // 2 saniye bekle, ardından yönlendir
     setTimeout(() => {
-      console.log('🚀 3 saniye sonra turnuva sayfasına yönlendiriliyor...');
+      console.log('🚀 Turnuva sayfasına yönlendiriliyor...');
       window.location.href = `/tournament/${tournamentId}`;
-    }, 3000);
+    }, 2000);
 
   } catch (error) {
     console.error('❌ Turnuva maç bitiş hatası:', error);
-    
-    // Hata durumunda da yönlendir
-    setTimeout(() => {
-      const tournamentId = searchParams.get('tournament');
-      if (tournamentId) {
-        window.location.href = `/tournament/${tournamentId}`;
-      } else {
-        window.location.href = '/tournaments';
-      }
-    }, 2000);
+    setGameEnded(true);
   }
 };
+  
   const updatePlayerStatistics = async (
     userId: string,
     gameScore: number,
@@ -492,18 +483,24 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
 
 
   // Oyun biti fonksiyonunu güncelle
- const handleGameEnd = () => {
+const handleGameEnd = () => {
   console.log('🏁 handleGameEnd çağrıldı!');
-  console.log('🎮 gameMode:', gameMode, 'user:', user?.id);
-  console.log('🏆 playerScore:', playerScore, 'opponentScore:', opponentScore);
-
+  console.log('🎮 gameMode:', gameMode, 'tournamentMatch:', !!tournamentMatch);
+  
   const finalUserScore = playerScore;
   const finalOpponentScore = opponentScore;
 
-  // İstatistikleri güncelle - sadece vs-computer modunda
-  if (gameMode === 'vs-computer' && user) {
-    console.log('✅ updatePlayerStatistics çağrılıyor!');
+  // ✅ TURNUVA KONTROLÜ - tournamentMatch var mı?
+  if (gameMode === 'tournament' && tournamentMatch && user) {
+    console.log('🏆 Tournament handleTournamentGameEnd çağrılacak!');
     
+    // Hemen çağır
+    handleTournamentGameEnd(finalUserScore, finalOpponentScore);
+    return; // Erken çık
+  }
+
+  // vs-computer modunda istatistik güncelle
+  if (gameMode === 'vs-computer' && user) {
     updatePlayerStatistics(
       user.id,
       finalUserScore,
@@ -512,23 +509,9 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
     );
   }
 
-  // ✅ TURNUVA MOD FIX - DOĞRUDAN ÇAĞIR
-  if (gameMode === 'tournament' && tournamentMatch && user) {
-    console.log('🏆 Tournament mode - handleTournamentGameEnd çağrılıyor');
-    
-    // Hemen turnuva işlemini yap
-    setTimeout(() => {
-      handleTournamentGameEnd(finalUserScore, finalOpponentScore);
-    }, 500); // Kısa bir gecikme ile
-    
-    return; // Erken çık
-  }
-
-  // Normal mod için mevcut kod devam eder...
-  console.log('🎯 setGameEnded(true) çağrılıyor');
+  // Normal oyun sonu
   setGameEnded(true);
 };
-
 // 🔧 5. GamePage.tsx - Turnuva modu rakip belirleme düzeltmesi
 useEffect(() => {
   if (gameMode === 'tournament' && tournamentMatch) {
