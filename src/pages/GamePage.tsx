@@ -1225,7 +1225,7 @@ useEffect(() => {
     console.log('🏆 Loading tournament match data:', { tournamentId, matchId });
     
     try {
-      // Load match data
+      // Load match data first
       const { data: matchData } = await supabase
         .from('tournament_matches')
         .select('*')
@@ -1234,10 +1234,10 @@ useEffect(() => {
       
       if (matchData) {
         console.log('🏆 Tournament match loaded:', matchData.id);
-        setTournamentMatch(matchData);
+        setTournamentMatch(matchData); // State'e kaydet
       }
       
-      // Load tournament participants
+      // Existing participant loading code...
       const { data: participantsData } = await supabase
         .from('tournament_participants')
         .select(`
@@ -1249,28 +1249,22 @@ useEffect(() => {
         `)
         .eq('tournament_id', tournamentId);
         
-      if (participantsData) {
-        console.log('👥 Tournament participants loaded:', participantsData.length);
+      if (participantsData && matchData) {
+        const matchParticipants = participantsData
+          .filter(p => p.user_id === matchData.player1_id || p.user_id === matchData.player2_id)
+          .map(p => ({
+            id: p.id,
+            room_id: searchParams.get('room'),
+            user_id: p.user_id,
+            score: 0,
+            joined_at: p.joined_at,
+            is_bot: p.is_bot,
+            profiles: p.profiles
+          }));
         
-        if (matchData) {
-          // Filter participants for this match
-          const matchParticipants = participantsData
-            .filter(p => p.user_id === matchData.player1_id || p.user_id === matchData.player2_id)
-            .map(p => ({
-              id: p.id,
-              room_id: searchParams.get('room'),
-              user_id: p.user_id,
-              score: 0,
-              joined_at: p.joined_at,
-              is_bot: p.is_bot,
-              profiles: p.profiles
-            }));
-          
-          console.log('🔄 Setting tournament participants:', matchParticipants.length);
-          setTournamentParticipants(matchParticipants);
-        }
+        setTournamentParticipants(matchParticipants);
       }
-      
+        
     } catch (error) {
       console.error('❌ Error loading tournament data:', error);
     }
