@@ -365,6 +365,14 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
       tournamentMatch.player1_id
     );
 
+    console.log('🏆 Winner belirlendi:', {
+      isUserWinner,
+      userId: user.id.slice(-8),
+      player1: tournamentMatch.player1_id?.slice(-8),
+      player2: tournamentMatch.player2_id?.slice(-8),
+      finalWinner: winnerId?.slice(-8)
+    });
+
     console.log('🏆 Maç güncelleniyor:', {
       matchId: tournamentMatch.id,
       winnerId: winnerId?.slice(-8),
