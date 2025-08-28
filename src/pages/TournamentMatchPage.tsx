@@ -83,6 +83,51 @@ const startAutoMatch = async (match: TournamentMatch) => {
   }
 };
 
+// TournamentMatchPage.tsx - createNextRoundMatches fonksiyonunu ekle
+const createNextRoundMatches = (nextRound: number, winners: (string | null)[]): TournamentMatch[] => {
+  const validWinners = winners.filter(winner => winner !== null) as string[];
+  const nextRoundMatches: TournamentMatch[] = [];
+
+  if (nextRound === 2 && validWinners.length === 4) {
+    console.log('🎯 Yarı final maçları oluşturuluyor');
+    for (let i = 0; i < 4; i += 2) {
+      nextRoundMatches.push({
+        id: `temp-${Date.now()}-${i}`, // Geçici ID
+        tournament_id: tournamentId!,
+        round: 2,
+        match_number: Math.floor(i / 2) + 1,
+        player1_id: validWinners[i],
+        player2_id: validWinners[i + 1],
+        winner_id: null,
+        status: 'pending',
+        room_id: null,
+        created_at: new Date().toISOString(),
+        player1_score: 0,
+        player2_score: 0
+      } as TournamentMatch);
+    }
+  } else if (nextRound === 3 && validWinners.length === 2) {
+    console.log('🎯 Final maçı oluşturuluyor');
+    nextRoundMatches.push({
+      id: `temp-${Date.now()}`,
+      tournament_id: tournamentId!,
+      round: 3,
+      match_number: 1,
+      player1_id: validWinners[0],
+      player2_id: validWinners[1],
+      winner_id: null,
+      status: 'pending',
+      room_id: null,
+      created_at: new Date().toISOString(),
+      player1_score: 0,
+      player2_score: 0
+    } as TournamentMatch);
+  }
+
+  console.log(`✅ ${nextRound}. tur için ${nextRoundMatches.length} maç oluşturuldu`);
+  return nextRoundMatches;
+};
+
   // Turnuva durumunu kontrol et ve sonraki turu başlat
 const checkCurrentTournamentProgress = async () => {
   if (!tournamentId) return;
