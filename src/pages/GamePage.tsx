@@ -400,7 +400,7 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
       // ✅ TURNUVA İLERLEME KONTROLÜNÜ TETİKLE
       setTimeout(async () => {
         try {
-          const { error: progressError } = await supabase.rpc('check_tournament_progress', {
+          const { error: progressError } = await supabase.rpc('check_tournament_progress_v2', {
             p_tournament_id: tournamentId
           });
           
