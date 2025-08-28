@@ -341,44 +341,93 @@ const generateTournamentGrid = useCallback((seed: string): string[][] => {
   const [gameStartTime, setGameStartTime] = useState<number>(Date.now());
   
 const handleTournamentGameEnd = async (userScore: number, opponentScore: number) => {
-  if (!user || !tournamentMatch) return;
+  if (!user) return;
 
   console.log('🏁 Turnuva maçı bitiyor:', { userScore, opponentScore });
 
   try {
     const isUserWinner = userScore > opponentScore;
+    const tournamentId = searchParams.get('tournament');
+    const matchId = searchParams.get('match');
     
+    if (!tournamentId || !matchId) {
+      console.error('❌ URL parametreleri eksik');
+      navigate('/tournaments');
+      return;
+    }
+
+    // Maç verilerini yükle
+    const { data: matchData } = await supabase
+      .from('tournament_matches')
+      .select('*')
+      .eq('id', matchId)
+      .single();
+
+    if (!matchData) {
+      console.error('❌ Maç verisi bulunamadı');
+      navigate('/tournaments');
+      return;
+    }
+
+    // Kazananı belirle
     let winnerId;
-    if (tournamentMatch.player2_id === null) {
+    if (matchData.player2_id === null) {
       winnerId = isUserWinner ? user.id : null;
     } else {
       winnerId = isUserWinner ? user.id : (
-        tournamentMatch.player1_id === user.id ? 
-        tournamentMatch.player2_id : 
-        tournamentMatch.player1_id
+        matchData.player1_id === user.id ? 
+        matchData.player2_id : 
+        matchData.player1_id
       );
     }
 
     console.log('🏆 Kazanan belirlendi:', winnerId);
 
+    // Maçı tamamla ve kazananı kaydet
+    await supabase
+      .from('tournament_matches')
+      .update({
+        status: 'completed',
+        winner_id: winnerId,
+        player1_score: matchData.player1_id === user.id ? userScore : opponentScore,
+        player2_score: matchData.player1_id === user.id ? opponentScore : userScore,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', matchId);
+
+    // Kaybedenı eleme
+    const loserId = winnerId === matchData.player1_id ? matchData.player2_id : matchData.player1_id;
+    if (loserId && loserId !== winnerId) {
+      await supabase
+        .from('tournament_participants')
+        .update({ eliminated_at: new Date().toISOString() })
+        .eq('tournament_id', tournamentId)
+        .eq('user_id', loserId);
+    }
+
     // onGameComplete çağır
     if (onGameComplete) {
-      const player1Score = tournamentMatch.player1_id === user.id ? userScore : opponentScore;
-      const player2Score = tournamentMatch.player1_id === user.id ? opponentScore : userScore;
+      const player1Score = matchData.player1_id === user.id ? userScore : opponentScore;
+      const player2Score = matchData.player1_id === user.id ? opponentScore : userScore;
       
       await onGameComplete(winnerId, player1Score, player2Score);
     }
 
-    // ✅✅✅ OTOMATİK YÖNLENDİRME - 3 saniye bekle
+    // ✅ OTOMATIK DÖNÜŞ - 3 saniye bekle
     setTimeout(() => {
-      console.log('🚀 Otomatik yönlendirme yapılıyor...');
-      window.location.href = `/tournament/${tournamentMatch.tournament_id}`;
+      console.log('🚀 Turnuva sayfasına dönülüyor...');
+      window.location.href = `/tournament/${tournamentId}`;
     }, 3000);
 
   } catch (error) {
     console.error('❌ Turnuva maç bitiş hatası:', error);
+    const tournamentId = searchParams.get('tournament');
     setTimeout(() => {
-      window.location.href = `/tournament/${tournamentMatch.tournament_id}`;
+      if (tournamentId) {
+        window.location.href = `/tournament/${tournamentId}`;
+      } else {
+        window.location.href = '/tournaments';
+      }
     }, 2000);
   }
 };
