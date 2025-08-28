@@ -492,40 +492,42 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
 
 
   // Oyun biti fonksiyonunu güncelle
-  const handleGameEnd = () => {
-    console.log('🏁 handleGameEnd çağrıldı!'); // DEBUG EKLE
-    console.log('🎮 gameMode:', gameMode, 'user:', user?.id); // DEBUG EKLE
-    console.log('🏆 playerScore:', playerScore, 'opponentScore:', opponentScore); // DEBUG EKLE
-  
-    const finalUserScore = playerScore;
-    const finalOpponentScore = opponentScore;
-  
-    // İstatistikleri güncelle - sadece vs-computer modunda
-    if (gameMode === 'vs-computer' && user) {
-      console.log('✅ updatePlayerStatistics çağrılıyor!'); // DEBUG EKLE
+ const handleGameEnd = () => {
+  console.log('🏁 handleGameEnd çağrıldı!');
+  console.log('🎮 gameMode:', gameMode, 'user:', user?.id);
+  console.log('🏆 playerScore:', playerScore, 'opponentScore:', opponentScore);
+
+  const finalUserScore = playerScore;
+  const finalOpponentScore = opponentScore;
+
+  // İstatistikleri güncelle - sadece vs-computer modunda
+  if (gameMode === 'vs-computer' && user) {
+    console.log('✅ updatePlayerStatistics çağrılıyor!');
     
-      updatePlayerStatistics(
-        user.id,
-        finalUserScore,
-        playerWordsWithScores, // words yerine playerWordsWithScores kullan
-        finalUserScore > finalOpponentScore
-      );
-    } else {
-      console.log('❌ updatePlayerStatistics ÇAĞRILMADI - gameMode:', gameMode, 'user:', !!user); // DEBUG EKLE
-    }
-  
-    // Turnuva modundaysa özel işlem
-    if (gameMode === 'tournament' && tournamentMatch) {
-      console.log('🏆 Tournament mode - handleTournamentGameEnd çağrılıyor'); // DEBUG EKLE
+    updatePlayerStatistics(
+      user.id,
+      finalUserScore,
+      playerWordsWithScores,
+      finalUserScore > finalOpponentScore
+    );
+  }
+
+  // ✅ TURNUVA MOD FIX - DOĞRUDAN ÇAĞIR
+  if (gameMode === 'tournament' && tournamentMatch && user) {
+    console.log('🏆 Tournament mode - handleTournamentGameEnd çağrılıyor');
+    
+    // Hemen turnuva işlemini yap
+    setTimeout(() => {
       handleTournamentGameEnd(finalUserScore, finalOpponentScore);
-      return; // Erken çık, UI değişikliği parent component yapacak
-    }
-  
-    // Normal mod için mevcut kod devam eder...
-    console.log('🎯 setGameEnded(true) çağrılıyor'); // DEBUG EKLE
-    setGameEnded(true);
-    // setShowResults burada kullanılmıyor, sadece state tanımla
-  };
+    }, 500); // Kısa bir gecikme ile
+    
+    return; // Erken çık
+  }
+
+  // Normal mod için mevcut kod devam eder...
+  console.log('🎯 setGameEnded(true) çağrılıyor');
+  setGameEnded(true);
+};
 
 // 🔧 5. GamePage.tsx - Turnuva modu rakip belirleme düzeltmesi
 useEffect(() => {
