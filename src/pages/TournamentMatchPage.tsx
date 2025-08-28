@@ -58,41 +58,15 @@ const startAutoMatch = async (match: TournamentMatch) => {
   try {
     console.log('🚀 Otomatik maç başlatılıyor:', match.id);
 
-    // Create game room for the match
-    const { data: gameRoom, error: roomError } = await supabase
-      .from('game_rooms')
-      .insert({
-        host_id: user.id,
-        game_mode: 'tournament',
-        status: 'active',
-        time_limit: 120,
-        max_score: 500,
-        player1_id: match.player1_id,
-        player2_id: match.player2_id,
-        current_grid: []
-      })
-      .select()
-      .single();
-
-    if (roomError) throw roomError;
-
-    // Update match with room_id and active status
-    const { error: matchError } = await supabase
-      .from('tournament_matches')
-      .update({
-        room_id: gameRoom.id,
-        status: 'active'
-      })
-      .eq('id', match.id);
-
-    if (matchError) throw matchError;
-
-    // ✅ BURAYA propGameType='timed' EKLE
-    navigate(`/game?room=${gameRoom.id}&tournament=${tournamentId}&match=${match.id}&type=timed`, {
+    // ✅ DOĞRUDAN GamePage'e yönlendir - room oluşturma
+    navigate(`/game`, {
       state: {
         gameMode: 'tournament',
-        gameType: 'timed',  // ✅ propGameType olarak geçecek
-        tournamentMatch: match
+        tournamentMatch: match,  // ✅ Bu çok önemli!
+        gameType: 'timed',
+        participants: participants.filter(p => 
+          p.user_id === match.player1_id || p.user_id === match.player2_id
+        )
       }
     });
 
