@@ -64,7 +64,7 @@ interface JokerState {
 const GamePage = ({ 
   gameMode = 'vs-computer', 
   onGameComplete,
-  tournamentMatch: propTournamentMatch, // ✅ Prop'tan gelen
+  tournamentMatch: propTournamentMatch,
   gameType: propGameType,
   participants: propsParticipants = []
 }: GamePageProps) => {
@@ -72,37 +72,28 @@ const GamePage = ({
   const { consumeCredit, isPremium } = useUser();
   const { hasPurchased, settings } = useUserPurchases();
   const navigate = useNavigate();
-  const location = useLocation(); // ✅ Bu satırı ekle
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
   const { currentRoom, updateScore, participants: gameParticipants, endGame, leaveRoom,sendRematchRequest,respondRematchRequest,currentRematchRequest,setCurrentRematchRequest } = useGame();
   
-  // ✅ State'ten tournament verilerini al
-  const stateTournamentMatch = location.state?.tournamentMatch;
-  const stateGameMode = location.state?.gameMode;
-  const stateParticipants = location.state?.participants || [];
-  
-  // ✅ Öncelik sırası: state > props
-  const tournamentMatch = stateTournamentMatch || propTournamentMatch;
-  const finalGameMode = stateGameMode || gameMode;
+  // Tournament match bilgisini URL'den al
+  const [tournamentMatch, setTournamentMatch] = useState(propTournamentMatch || null);
   
   // Tournament participant state
   const [tournamentParticipants, setTournamentParticipants] = useState<any[]>([]);
   
   const participants = useMemo(() => {
-    console.log('🔍 Participants memo - Mode:', finalGameMode, 'Props:', propsParticipants?.length || 0, 'Game:', gameParticipants?.length || 0, 'Tournament:', tournamentParticipants?.length || 0, 'State:', stateParticipants?.length || 0);
+    console.log('🔍 Participants memo - Mode:', gameMode, 'Props:', propsParticipants?.length || 0, 'Game:', gameParticipants?.length || 0, 'Tournament:', tournamentParticipants?.length || 0);
     
-    if (finalGameMode === 'tournament') {
-      // ✅ Öncelik sırası: state > props > loaded tournament participants
-      const tournamentParts = stateParticipants?.length > 0 ? stateParticipants : 
-                             propsParticipants?.length > 0 ? propsParticipants : 
-                             tournamentParticipants;
+    if (gameMode === 'tournament') {
+      const tournamentParts = propsParticipants?.length > 0 ? propsParticipants : tournamentParticipants;
       console.log('🏆 Tournament mode - Using participants:', tournamentParts?.length || 0);
       return tournamentParts || [];
     }
     
     console.log('🎮 Other mode - Using gameParticipants:', gameParticipants?.length || 0);
     return gameParticipants || [];
-  }, [finalGameMode, propsParticipants, gameParticipants, tournamentParticipants, stateParticipants]);
+  }, [gameMode, propsParticipants, gameParticipants, tournamentParticipants]);
   
   const { validateWord, isValidating } = useWordValidation();
   const { playSound, playTimeWarningSequence, playCelebrationSound, playGameLoseSound } = useSounds();
@@ -1224,64 +1215,69 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
   }, []);
 
   // Load tournament match data from URL parameters
-  useEffect(() => {
-    const loadTournamentData = async () => {
-      const tournamentId = searchParams.get('tournament');
-      const matchId = searchParams.get('match');
-      
-      if (!tournamentId || !matchId || !user || gameMode !== 'tournament') return;
-      
-      console.log('🏆 Loading tournament match data:', { tournamentId, matchId });
-      
-      try {
-        // Load tournament participants for this match
-        const { data: participantsData } = await supabase
-          .from('tournament_participants')
-          .select(`
-            *,
-            profiles:user_id (
-              username,
-              avatar_url
-            )
-          `)
-          .eq('tournament_id', tournamentId);
-          
-        if (participantsData) {
-          console.log('👥 Tournament participants loaded:', participantsData.length);
-          
-          // Get match data to find player IDs
-          const { data: matchData } = await supabase
-            .from('tournament_matches')
-            .select('*')
-            .eq('id', matchId)
-            .single();
-          
-          if (matchData) {
-            // Filter participants for this match and convert to game participant format
-            const matchParticipants = participantsData
-              .filter(p => p.user_id === matchData.player1_id || p.user_id === matchData.player2_id)
-              .map(p => ({
-                id: p.id,
-                room_id: searchParams.get('room'),
-                user_id: p.user_id,
-                score: 0,
-                joined_at: p.joined_at,
-                is_bot: p.is_bot,
-                profiles: p.profiles
-              }));
-            
-            console.log('🔄 Setting tournament participants:', matchParticipants);
-            setTournamentParticipants(matchParticipants);
-          }
-        }
-        
-      } catch (error) {
-        console.error('❌ Error loading tournament data:', error);
-      }
-    };
+useEffect(() => {
+  const loadTournamentData = async () => {
+    const tournamentId = searchParams.get('tournament');
+    const matchId = searchParams.get('match');
     
-    loadTournamentData();
-  }, [gameMode, searchParams, user]);
+    if (!tournamentId || !matchId || !user || gameMode !== 'tournament') return;
+    
+    console.log('🏆 Loading tournament match data:', { tournamentId, matchId });
+    
+    try {
+      // Load match data
+      const { data: matchData } = await supabase
+        .from('tournament_matches')
+        .select('*')
+        .eq('id', matchId)
+        .single();
+      
+      if (matchData) {
+        console.log('🏆 Tournament match loaded:', matchData.id);
+        setTournamentMatch(matchData);
+      }
+      
+      // Load tournament participants
+      const { data: participantsData } = await supabase
+        .from('tournament_participants')
+        .select(`
+          *,
+          profiles:user_id (
+            username,
+            avatar_url
+          )
+        `)
+        .eq('tournament_id', tournamentId);
+        
+      if (participantsData) {
+        console.log('👥 Tournament participants loaded:', participantsData.length);
+        
+        if (matchData) {
+          // Filter participants for this match
+          const matchParticipants = participantsData
+            .filter(p => p.user_id === matchData.player1_id || p.user_id === matchData.player2_id)
+            .map(p => ({
+              id: p.id,
+              room_id: searchParams.get('room'),
+              user_id: p.user_id,
+              score: 0,
+              joined_at: p.joined_at,
+              is_bot: p.is_bot,
+              profiles: p.profiles
+            }));
+          
+          console.log('🔄 Setting tournament participants:', matchParticipants.length);
+          setTournamentParticipants(matchParticipants);
+        }
+      }
+      
+    } catch (error) {
+      console.error('❌ Error loading tournament data:', error);
+    }
+  };
+  
+  loadTournamentData();
+}, [gameMode, searchParams, user]);
 
   // Check for winner and apply end game bonuses
 
