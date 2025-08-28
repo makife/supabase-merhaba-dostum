@@ -48,6 +48,7 @@ const TournamentMatchPage: React.FC = () => {
   const [matches, setMatches] = useState<TournamentMatch[]>([]);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [currentMatch, setCurrentMatch] = useState<TournamentMatch | null>(null);
+  const [countdown, setCountdown] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadTournamentData = async () => {
@@ -101,21 +102,19 @@ const TournamentMatchPage: React.FC = () => {
       }
 
     } catch (error) {
-      console.error('Error loading tournament data:', error);
-      toast({
-        title: 'Hata',
-        description: 'Turnuva verileri yüklenirken hata oluştu',
-        variant: 'destructive'
-      });
+      console.error('Turnuva veri yükleme hatası:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const startMatch = async (match: TournamentMatch) => {
+
+  const startAutoMatch = async (match: TournamentMatch) => {
     if (!user) return;
 
     try {
+      console.log('🚀 Otomatik maç başlatılıyor:', match.id);
+
       // Create game room for the match
       const { data: gameRoom, error: roomError } = await supabase
         .from('game_rooms')
@@ -146,17 +145,13 @@ const TournamentMatchPage: React.FC = () => {
       if (matchError) throw matchError;
 
       // Navigate to game page
-      navigate(`/game?room=${gameRoom.id}&tournament=${tournamentId}&match=${match.id}`);
+      navigate(`/game?room=${gameRoom.id}&tournament=${tournamentId}&match=${match.id}&type=timed`);
 
     } catch (error) {
-      console.error('Error starting match:', error);
-      toast({
-        title: 'Hata',
-        description: 'Maç başlatılırken hata oluştu',
-        variant: 'destructive'
-      });
+      console.error('Otomatik maç başlatma hatası:', error);
     }
   };
+
 
   const simulateBotMatch = async (match: TournamentMatch) => {
     // Simulate bot vs bot match
@@ -178,6 +173,108 @@ const TournamentMatchPage: React.FC = () => {
         .update({ eliminated_at: new Date().toISOString() })
         .eq('tournament_id', tournamentId)
         .eq('user_id', loserId);
+    }
+  };
+
+ // Turnuva durumunu kontrol et ve sonraki turu başlat
+  const checkTournamentProgress = async () => {
+    if (!tournamentId) return;
+
+    try {
+      const { data: currentTournament } = await supabase
+        .from('tournaments')
+        .select('*')
+        .eq('id', tournamentId)
+        .single();
+
+      if (!currentTournament) return;
+
+      const currentRound = currentTournament.current_round;
+      
+      // Mevcut turun tüm maçları tamamlandı mı kontrol et
+      const { data: roundMatches } = await supabase
+        .from('tournament_matches')
+        .select('*')
+        .eq('tournament_id', tournamentId)
+        .eq('round', currentRound);
+
+      if (!roundMatches) return;
+
+      const allCompleted = roundMatches.every(match => match.status === 'completed');
+      
+      if (allCompleted && currentRound < 3) {
+        console.log('🏆 Tur tamamlandı, sonraki tur oluşturuluyor...');
+        
+        // Sonraki turu oluştur
+        await createNextRound(currentRound + 1, roundMatches);
+        
+        // Tournament current_round güncelle
+        await supabase
+          .from('tournaments')
+          .update({ current_round: currentRound + 1 })
+          .eq('id', tournamentId);
+
+        // Verileri yenile
+        loadTournamentData();
+      } else if (allCompleted && currentRound === 3) {
+        console.log('🏆 Turnuva tamamlandı!');
+        
+        // Turnuvayı bitir
+        await supabase
+          .from('tournaments')
+          .update({ 
+            status: 'finished',
+            finished_at: new Date().toISOString()
+          })
+          .eq('id', tournamentId);
+      }
+    } catch (error) {
+      console.error('Turnuva ilerleme kontrolü hatası:', error);
+    }
+  };
+
+  // Sonraki turu oluştur
+  const createNextRound = async (nextRound: number, previousMatches: TournamentMatch[]) => {
+    try {
+      const winners = previousMatches
+        .filter(match => match.winner_id)
+        .map(match => match.winner_id);
+
+      const nextRoundMatches = [];
+      
+      if (nextRound === 2) {
+        // Yarı final: 4 kazanan -> 2 maç
+        for (let i = 0; i < winners.length; i += 2) {
+          nextRoundMatches.push({
+            tournament_id: tournamentId,
+            round: 2,
+            match_number: Math.floor(i / 2) + 1,
+            player1_id: winners[i],
+            player2_id: winners[i + 1] || null,
+            status: 'pending'
+          });
+        }
+      } else if (nextRound === 3) {
+        // Final: 2 kazanan -> 1 maç
+        nextRoundMatches.push({
+          tournament_id: tournamentId,
+          round: 3,
+          match_number: 1,
+          player1_id: winners[0],
+          player2_id: winners[1] || null,
+          status: 'pending'
+        });
+      }
+
+      if (nextRoundMatches.length > 0) {
+        await supabase
+          .from('tournament_matches')
+          .insert(nextRoundMatches);
+        
+        console.log(`✅ ${nextRound}. tur maçları oluşturuldu:`, nextRoundMatches.length);
+      }
+    } catch (error) {
+      console.error('Sonraki tur oluşturma hatası:', error);
     }
   };
 
@@ -300,9 +397,96 @@ const TournamentMatchPage: React.FC = () => {
     );
   };
 
-  useEffect(() => {
-    loadTournamentData();
-  }, [tournamentId, user]);
+    // Component render
+  const renderCountdown = () => {
+    if (countdown === null || !currentMatch) return null;
+
+    return (
+      <Card className="mb-6 border-orange-500 bg-orange-50">
+        <CardContent className="p-6 text-center">
+          <div className="text-6xl font-bold text-orange-600 mb-4">
+            {countdown}
+          </div>
+          <h3 className="text-xl font-semibold mb-2">Maç Başlıyor!</h3>
+          <p className="text-muted-foreground">
+            {getPlayerName(currentMatch.player1_id)} vs {getPlayerName(currentMatch.player2_id)}
+          </p>
+          <p className="text-sm text-orange-600 mt-2">
+            Otomatik olarak oyun başlatılacak...
+          </p>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+          <p className="mt-4">Turnuva yükleniyor...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto p-4">
+      <div className="mb-6">
+        <Button 
+          variant="outline" 
+          onClick={() => navigate('/tournaments')}
+          className="mb-4"
+        >
+          ← Turnuva Listesine Dön
+        </Button>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>{tournament?.name}</CardTitle>
+            <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+              <span>Durum: {tournament?.status === 'active' ? 'Aktif' : tournament?.status === 'finished' ? 'Tamamlandı' : 'Bekliyor'}</span>
+              <span>Tur: {tournament?.current_round}</span>
+              <span>Katılımcı: {participants.length}</span>
+            </div>
+          </CardHeader>
+        </Card>
+      </div>
+
+      {/* Countdown gösterimi */}
+      {renderCountdown()}
+
+      {/* Normal maç bilgileri */}
+      {!countdown && currentMatch && (
+        <Card className="mb-6 border-primary">
+          <CardHeader>
+            <CardTitle className="text-primary">Sıradaki Maçınız</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div>
+                <p>{getPlayerName(currentMatch.player1_id)} vs {getPlayerName(currentMatch.player2_id)}</p>
+                <p className="text-sm text-muted-foreground">Tur {currentMatch.round}, Maç {currentMatch.match_number}</p>
+                <p className="text-sm text-orange-600 mt-2">10 saniye içinde otomatik başlatılacak...</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Turnuva Eşleşmeleri</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {renderBracket()}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+
 
   // Real-time updates for tournament matches
   useEffect(() => {
@@ -319,20 +503,15 @@ const TournamentMatchPage: React.FC = () => {
           filter: `tournament_id=eq.${tournamentId}`
         },
         (payload) => {
-          console.log('Tournament match updated:', payload);
-          loadTournamentData();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'tournaments',
-          filter: `id=eq.${tournamentId}`
-        },
-        (payload) => {
-          console.log('Tournament updated:', payload);
+          console.log('🔄 Turnuva maç güncellemesi:', payload);
+          
+          // Eğer bir maç tamamlandıysa, turnuva ilerlemesini kontrol et
+          if (payload.eventType === 'UPDATE' && (payload.new as any).status === 'completed') {
+            setTimeout(() => {
+              checkTournamentProgress();
+            }, 2000); // 2 saniye bekle sonra kontrol et
+          }
+          
           loadTournamentData();
         }
       )
@@ -342,6 +521,38 @@ const TournamentMatchPage: React.FC = () => {
       supabase.removeChannel(channel);
     };
   }, [tournamentId]);
+
+  useEffect(() => {
+    loadTournamentData();
+  }, [tournamentId, user]);
+
+    // 10 saniye geri sayım ve otomatik başlatma
+  useEffect(() => {
+    if (!currentMatch || !user) return;
+
+    // Sadece kullanıcının maçı varsa countdown başlat
+    const isUserMatch = currentMatch.player1_id === user.id || currentMatch.player2_id === user.id;
+    if (!isUserMatch) return;
+
+    console.log('⏰ 10 saniye countdown başlıyor...');
+    setCountdown(10);
+
+    const countdownInterval = setInterval(() => {
+      setCountdown(prev => {
+        if (prev === null || prev <= 1) {
+          clearInterval(countdownInterval);
+          // Otomatik maç başlat
+          startAutoMatch(currentMatch);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      clearInterval(countdownInterval);
+    };
+  }, [currentMatch, user]);
 
   // Auto-simulate bot matches
   useEffect(() => {
