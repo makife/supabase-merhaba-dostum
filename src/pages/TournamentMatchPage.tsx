@@ -125,7 +125,7 @@ const TournamentMatchPage: React.FC = () => {
   };
 
   // BOT MAÇLARI SİMÜLE ET
- const simulateBotMatch = async (match: TournamentMatch) => {
+const simulateBotMatch = async (match: TournamentMatch) => {
   console.log('🤖 BOT MAÇI SİMÜLE EDİLİYOR:', {
     id: match.id.slice(-8),
     status: match.status,
@@ -133,19 +133,17 @@ const TournamentMatchPage: React.FC = () => {
     player2: match.player2_id?.slice(-8) || 'null'
   });
   
-  // Eğer zaten completed ise atla
   if (match.status === 'completed') {
     console.log('⚠️ Maç zaten tamamlanmış, atlanıyor');
     return;
   }
   
-  // Bot maçında rastgele kazanan seç
-  // Eğer player1_id null ise player2 kazansın, değilse rastgele
-  let winner: string | null;
+  let winner: string | null = null;
   
+  // İki bot da null ise - rastgele NULL bırak (böylece hiçbir kazanan yok)
   if (match.player1_id === null && match.player2_id === null) {
-    // İki bot da null - rastgele birini seç (1 veya 2)
-    winner = Math.random() > 0.5 ? 'bot1' : 'bot2';
+    // Bu durumda winner_id NULL kalacak - bu bot vs bot maçı
+    winner = null;
   } else if (match.player1_id === null) {
     winner = match.player2_id; // Player2 kazanır
   } else if (match.player2_id === null) {
@@ -155,26 +153,21 @@ const TournamentMatchPage: React.FC = () => {
     winner = Math.random() > 0.5 ? match.player1_id : match.player2_id;
   }
   
-  const winnerScore = Math.floor(Math.random() * 200) + 100; // 100-300 arası
-  const loserScore = Math.floor(Math.random() * winnerScore); // Kazanandan düşük
+  const winnerScore = Math.floor(Math.random() * 200) + 100;
+  const loserScore = Math.floor(Math.random() * winnerScore);
 
   console.log('🏆 Bot maçı sonucu:', {
     matchId: match.id.slice(-8),
-    winner: winner === 'bot1' || winner === 'bot2' ? winner : winner?.slice(-8),
+    winner: winner?.slice(-8) || 'NULL',
     winnerScore,
     loserScore
   });
-
-  // ⚠️ ÖZEL DURUM: İki bot da null ise dummy winner koy
-  if (match.player1_id === null && match.player2_id === null) {
-    winner = match.player1_id || match.player2_id || 'dummy-bot-winner';
-  }
 
   const { error } = await supabase
     .from('tournament_matches')
     .update({
       status: 'completed',
-      winner_id: winner,
+      winner_id: winner, // NULL veya geçerli UUID
       player1_score: winner === match.player1_id ? winnerScore : loserScore,
       player2_score: winner === match.player2_id ? winnerScore : loserScore
     })
@@ -220,7 +213,7 @@ const TournamentMatchPage: React.FC = () => {
   // SONRAKİ TUR MAÇLARİNİ OLUŞTUR
 const createNextRoundMatches = async (completedRound: number) => {
   try {
-    console.log('⚔️ Sonraki tur maçları oluşturuluyor:', completedRound + 1);
+    console.log('Sonraki tur maçları oluşturuluyor:', completedRound + 1);
     
     const { data: roundMatches, error: matchError } = await supabase
       .from('tournament_matches')
@@ -234,9 +227,9 @@ const createNextRoundMatches = async (completedRound: number) => {
       return;
     }
 
-    console.log(`🏆 ${completedRound}. tur tamamlanan maç sayısı:`, roundMatches?.length || 0);
+    console.log(`${completedRound}. tur tamamlanan maç sayısı:`, roundMatches?.length || 0);
     
-    // HER MAÇI DETAYLI KONTROL ET - TYPE ASSERTION KULLAN
+    // HER MAÇI DETAYLI KONTROL ET
     roundMatches?.forEach((match: any, index) => {
       console.log(`Maç ${index + 1}:`, {
         id: match.id.slice(-8),
@@ -250,22 +243,43 @@ const createNextRoundMatches = async (completedRound: number) => {
     });
     
     if (!roundMatches || roundMatches.length === 0) {
-      console.log('⏳ Tamamlanan maç bulunamadı');
+      console.log('Tamamlanan maç bulunamadı');
       return;
     }
 
-    const winners = roundMatches
-      .map((m: any) => {
-        console.log('Kazanan kontrol:', m.winner_id ? m.winner_id.slice(-8) : 'NULL');
-        return m.winner_id;
-      })
-      .filter(Boolean) as string[];
+    // Bot vs bot maçlarını atla, sadece gerçek kazananları al
+    const validWinners: string[] = [];
+    
+    for (const match of roundMatches) {
+      if (match.player1_id === null && match.player2_id === null) {
+        // Bot vs bot - atla, kazanan yok
+        console.log('Bot vs bot maç atlandı:', match.id.slice(-8));
+        continue;
+      } else if (match.winner_id) {
+        // Gerçek kazanan var
+        validWinners.push(match.winner_id);
+        console.log('Geçerli kazanan eklendi:', match.winner_id.slice(-8));
+      }
+    }
 
-    console.log('🏆 Filtreli kazananlar:', winners.map(w => w.slice(-8)));
-    console.log('🏆 Kazanan sayısı:', winners.length);
+    console.log('Geçerli kazanan sayısı:', validWinners.length);
+    console.log('Geçerli kazananlar:', validWinners.map(w => w.slice(-8)));
 
-    if (winners.length < 2) {
-      console.log('⏳ Sonraki tur için yeterli kazanan yok');
+    // Eğer tek kazanan varsa (örneğin sadece sen), otomatik şampiyon yap
+    if (validWinners.length === 1) {
+      console.log('Tek kazanan kaldı, turnuva bitiriliyor');
+      await finishTournament(validWinners[0]);
+      return;
+    }
+
+    // Çift sayıda kazanan olmalı
+    if (validWinners.length < 2 || validWinners.length % 2 !== 0) {
+      console.log('Sonraki tur için yeterli veya geçerli sayıda kazanan yok');
+      
+      // Eğer tek kazanan varsa şampiyon yap
+      if (validWinners.length === 1) {
+        await finishTournament(validWinners[0]);
+      }
       return;
     }
 
@@ -279,23 +293,23 @@ const createNextRoundMatches = async (completedRound: number) => {
       .eq('round', nextRound);
 
     if (existingMatches && existingMatches.length > 0) {
-      console.log('⛔ Sonraki tur maçları zaten mevcut');
+      console.log('Sonraki tur maçları zaten mevcut');
       return;
     }
 
     // Sonraki tur maçları oluştur
     const nextRoundMatches = [];
-    const matchesPerRound = Math.floor(winners.length / 2);
+    const matchesPerRound = Math.floor(validWinners.length / 2);
 
-    console.log(`🎯 ${nextRound}. tur için ${matchesPerRound} maç oluşturuluyor`);
+    console.log(`${nextRound}. tur için ${matchesPerRound} maç oluşturuluyor`);
 
     for (let i = 0; i < matchesPerRound; i++) {
       nextRoundMatches.push({
         tournament_id: tournamentId,
         round: nextRound,
         match_number: i + 1,
-        player1_id: winners[i * 2],
-        player2_id: winners[i * 2 + 1],
+        player1_id: validWinners[i * 2],
+        player2_id: validWinners[i * 2 + 1],
         winner_id: null,
         status: 'pending',
         player1_score: 0,
@@ -327,7 +341,7 @@ const createNextRoundMatches = async (completedRound: number) => {
       return;
     }
 
-    console.log(`✅ ${nextRound}. tur maçları başarıyla oluşturuldu`);
+    console.log(`${nextRound}. tur maçları başarıyla oluşturuldu`);
 
     // Verileri yenile
     setTimeout(() => {
@@ -335,7 +349,7 @@ const createNextRoundMatches = async (completedRound: number) => {
     }, 1000);
 
   } catch (error) {
-    console.error('❌ Sonraki tur oluşturma hatası:', error);
+    console.error('Sonraki tur oluşturma hatası:', error);
   }
 };
   
