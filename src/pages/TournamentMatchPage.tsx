@@ -197,62 +197,46 @@ const TournamentMatchPage: React.FC = () => {
     }
   };
 
-  const loadTournamentData = async () => {
-    if (!tournamentId || !user) return;
+ const loadTournamentData = async () => {
+  if (!tournamentId || !user) return;
 
-    try {
-      // Load tournament info
-      const { data: tournamentData } = await supabase
-        .from('tournaments')
-        .select('*')
-        .eq('id', tournamentId)
-        .single();
-
-      if (tournamentData) {
-        setTournament(tournamentData);
-      }
-
-      // Load matches
-      const { data: matchesData } = await supabase
-        .from('tournament_matches')
-        .select('*')
+  try {
+    // 3 sorguyu paralel çalıştır
+    const [tournamentData, matchesData, participantsData] = await Promise.all([
+      supabase.from('tournaments').select('*').eq('id', tournamentId).single(),
+      supabase.from('tournament_matches').select('*')
         .eq('tournament_id', tournamentId)
         .order('round', { ascending: true })
-        .order('match_number', { ascending: true });
+        .order('match_number', { ascending: true }),
+      supabase.from('tournament_participants').select(`
+        *,
+        profiles:user_id (
+          username,
+          avatar_url
+        )
+      `).eq('tournament_id', tournamentId)
+    ]);
 
-      if (matchesData) {
-        setMatches(matchesData);
-        
-        // Find user's current match
-        const userMatch = matchesData.find(match => 
-          (match.player1_id === user.id || match.player2_id === user.id) && 
-          match.status === 'pending'
-        );
-        setCurrentMatch(userMatch || null);
-      }
-
-      // Load participants
-      const { data: participantsData } = await supabase
-        .from('tournament_participants')
-        .select(`
-          *,
-          profiles:user_id (
-            username,
-            avatar_url
-          )
-        `)
-        .eq('tournament_id', tournamentId);
-
-      if (participantsData) {
-        setParticipants(participantsData);
-      }
-
-    } catch (error) {
-      console.error('Turnuva veri yükleme hatası:', error);
-    } finally {
-      setLoading(false);
+    // Hızlıca state'leri güncelle
+    if (tournamentData.data) setTournament(tournamentData.data);
+    
+    if (matchesData.data) {
+      setMatches(matchesData.data);
+      const userMatch = matchesData.data.find(match => 
+        (match.player1_id === user.id || match.player2_id === user.id) && 
+        match.status === 'pending'
+      );
+      setCurrentMatch(userMatch || null);
     }
-  };
+    
+    if (participantsData.data) setParticipants(participantsData.data);
+
+  } catch (error) {
+    console.error('Turnuva veri yükleme hatası:', error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const simulateBotMatch = async (match: TournamentMatch) => {
     // Simulate bot vs bot match
@@ -503,16 +487,19 @@ const TournamentMatchPage: React.FC = () => {
     }
   }, [matches, participants, tournamentId]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-          <p className="mt-4">Turnuva yükleniyor...</p>
-        </div>
+if (loading) {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        <p className="mt-4">Turnuva veriler yükleniyor...</p>
+        <p className="text-sm text-muted-foreground mt-2">
+          Sonraki tur eşleştirmesi kontrol ediliyor...
+        </p>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   if (!tournament) {
     return (
