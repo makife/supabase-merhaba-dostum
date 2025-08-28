@@ -653,7 +653,7 @@ useEffect(() => {
           // 5 saniye bekle ve ilerleme kontrolü yap
           setTimeout(async () => {
             console.log('🏆 Maç tamamlandıktan sonra ilerleme kontrolü yapılıyor...');
-            await checkTournamentProgress();
+            await checkCurrentTournamentProgress();
           }, 5000);
         }
         
