@@ -395,6 +395,8 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
       })
       .eq('id', matchId);
 
+    console.log('✅ Maç durumu güncellendi');
+
     // Kaybedenı eleme
     const loserId = winnerId === matchData.player1_id ? matchData.player2_id : matchData.player1_id;
     if (loserId && loserId !== winnerId) {
@@ -403,32 +405,22 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
         .update({ eliminated_at: new Date().toISOString() })
         .eq('tournament_id', tournamentId)
         .eq('user_id', loserId);
-    }
-
-    // onGameComplete çağır
-    if (onGameComplete) {
-      const player1Score = matchData.player1_id === user.id ? userScore : opponentScore;
-      const player2Score = matchData.player1_id === user.id ? opponentScore : userScore;
       
-      await onGameComplete(winnerId, player1Score, player2Score);
+      console.log('✅ Kaybeden elendi');
     }
 
-    // ✅ OTOMATIK DÖNÜŞ - 3 saniye bekle
-    setTimeout(() => {
-      console.log('🚀 Turnuva sayfasına dönülüyor...');
-      window.location.href = `/tournament/${tournamentId}`;
-    }, 3000);
+    // ✅ DOĞRUDAN YÖNLENDİRME - setTimeout kullanma
+    console.log('🚀 Hemen turnuva sayfasına yönlendiriliyor...');
+    window.location.href = `/tournament/${tournamentId}`;
 
   } catch (error) {
     console.error('❌ Turnuva maç bitiş hatası:', error);
     const tournamentId = searchParams.get('tournament');
-    setTimeout(() => {
-      if (tournamentId) {
-        window.location.href = `/tournament/${tournamentId}`;
-      } else {
-        window.location.href = '/tournaments';
-      }
-    }, 2000);
+    if (tournamentId) {
+      window.location.href = `/tournament/${tournamentId}`;
+    } else {
+      window.location.href = '/tournaments';
+    }
   }
 };
 
@@ -2463,17 +2455,17 @@ if (gameEnded) {
           
           {/* Turnuva için otomatik yönlendirme mesajı */}
           {gameMode === 'tournament' && winner === 'player' && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-              <p className="text-yellow-800 text-sm font-medium">
-                🏆 Turnuva eşleşme sayfasına yönlendiriliyorsunuz...
-              </p>
-              <div className="mt-2">
-                <div className="animate-pulse text-yellow-600">
-                  5 saniye içinde otomatik yönlendirme
-                </div>
-              </div>
-            </div>
-          )}
+  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+    <p className="text-yellow-800 text-sm font-medium">
+      🏆 Turnuva sayfasına yönlendirildiniz!
+    </p>
+    <div className="mt-2">
+      <div className="text-yellow-600">
+        Sonraki tur için bekleyiniz
+      </div>
+    </div>
+  </div>
+)}
           
           {/* Butonlar - Sadece manuel durumlar için */}
           <div className="space-y-2">
@@ -2493,30 +2485,31 @@ if (gameEnded) {
                   </Button>
                 )}
                 {winner === 'player' && (
-                  <Button 
-  variant="outline"
-  onClick={() => {
-    console.log('🚀 Manuel yönlendirme denemesi...');
-    
-    // Önce tournamentMatch'i kontrol et
-    if (!tournamentMatch) {
-      console.error('❌ tournamentMatch yok');
-      navigate('/tournaments');
-      return;
-    }
+  <Button 
+    variant="outline"
+    onClick={() => {
+      console.log('🚀 Manuel yönlendirme denemesi...');
+      
+      // ✅ URL'den tournament ID al
+      const tournamentId = searchParams.get('tournament');
+      
+      if (!tournamentId) {
+        console.error('❌ tournament ID URL parameter missing');
+        navigate('/tournaments');
+        return;
+      }
 
-    // Tournament ID'yi kontrol et
-    if (!tournamentMatch.tournament_id) {
-      console.error('❌ tournament_id yok');
-      navigate('/tournaments');
-      return;
-    }
-
-    console.log('🔍 Tournament ID:', tournamentMatch.tournament_id);
-    
-    // ✅✅✅ DIRECT YÖNLENDİRME - router yerine window.location
-    window.location.href = `/tournament/${tournamentMatch.tournament_id}`;
-  }} 
+      console.log('🏆 Tournament ID from URL:', tournamentId);
+      
+      // ✅ DOĞRUDAN YÖNLENDİRME
+      window.location.href = `/tournament/${tournamentId}`;
+    }} 
+    className="w-full"
+  >
+    <Trophy className="w-4 h-4 mr-2" />
+    Turnuva Sayfasına Git
+  </Button>
+)}
   className="w-full"
 >
   <Trophy className="w-4 h-4 mr-2" />
