@@ -2453,7 +2453,7 @@ if (gameEnded) {
           </div>
           
           {/* Turnuva için otomatik yönlendirme mesajı */}
-          {{gameMode === 'tournament' && winner === 'player' && (
+          {gameMode === 'tournament' && winner === 'player' && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
               <p className="text-yellow-800 text-sm font-medium">
                 🏆 Turnuva sayfasına yönlendirildiniz!
