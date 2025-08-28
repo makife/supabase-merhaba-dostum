@@ -1,4 +1,3 @@
-// 2. TournamentMatchPage.tsx - Güncellenmiş Turnuva Detay Sayfası
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,7 +16,7 @@ interface TournamentMatch {
   player1_id: string | null;
   player2_id: string | null;
   winner_id: string | null;
-  status: 'pending' | 'active' | 'completed';
+  status: string; // Database'den gelen genel string türü
   player1_score?: number;
   player2_score?: number;
   created_at: string;
@@ -26,7 +25,7 @@ interface TournamentMatch {
 interface Tournament {
   id: string;
   name: string;
-  status: 'waiting' | 'active' | 'finished';
+  status: string; // Database'den gelen genel string türü
   current_round: number;
 }
 
@@ -70,18 +69,18 @@ const TournamentMatchPage: React.FC = () => {
         `).eq('tournament_id', tournamentId).order('seed')
       ]);
 
-      if (tournamentRes.data) setTournament(tournamentRes.data);
+      if (tournamentRes.data) setTournament(tournamentRes.data as Tournament);
       if (matchesRes.data) {
-        setMatches(matchesRes.data);
+        setMatches(matchesRes.data as TournamentMatch[]);
         
         // Kullanıcının aktif maçını bul
-        const userMatch = matchesRes.data.find(match => 
+        const userMatch = (matchesRes.data as TournamentMatch[]).find(match => 
           (match.player1_id === user.id || match.player2_id === user.id) && 
           match.status === 'pending'
         );
         setCurrentUserMatch(userMatch || null);
       }
-      if (participantsRes.data) setParticipants(participantsRes.data);
+      if (participantsRes.data) setParticipants(participantsRes.data as Participant[]);
 
     } catch (error) {
       console.error('❌ Turnuva veri yükleme hatası:', error);
