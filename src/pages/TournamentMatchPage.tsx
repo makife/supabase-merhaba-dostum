@@ -55,6 +55,9 @@ const TournamentMatchPage: React.FC = () => {
   const [currentMatch, setCurrentMatch] = useState<TournamentMatch | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [nextRoundMatches, setNextRoundMatches] = useState<TournamentMatch[]>([]);
+  const [nextRoundCountdown, setNextRoundCountdown] = useState<number | null>(null);
+  const [nextRoundNumber, setNextRoundNumber] = useState<number | null>(null);
 
   // Otomatik maç başlatma sistemi
 const startAutoMatch = async (match: TournamentMatch) => {
@@ -98,8 +101,6 @@ const checkCurrentTournamentProgress = async () => {
       return;
     }
 
-    console.log('🏆 Mevcut turnuva durumu:', currentTournament);
-    
     // Eğer turnuva zaten finished durumundaysa ilerleme kontrolü yapma!
     if (currentTournament.status === 'finished') {
       console.log('⏹️ Turnuva zaten tamamlanmış, ilerleme kontrolü yapılmıyor');
@@ -124,77 +125,47 @@ const checkCurrentTournamentProgress = async () => {
     const allCompleted = roundMatches.every(match => match.status === 'completed');
     console.log('🏆 Tüm maçlar tamamlandı mı?', allCompleted);
     
-    // EĞER TUR 1'DEYSEK VE TÜM MAÇLAR TAMAMLANDIYSA
-    if (allCompleted && currentRound === 1) {
-      console.log('🏆 Çeyrek final tamamlandı, yarı final oluşturuluyor...');
-      
-      // Kazananları topla - SADCE winner_id olanları al
-      const winners = roundMatches
-        .filter(match => match.winner_id !== null)
-        .map(match => match.winner_id);
-
-      console.log('🏆 Çeyrek final kazananları:', winners);
-
-      if (winners.length < 4) {
-        console.error('❌ Yeterli kazanan yok! 4 kazanan gerekli, bulunan:', winners.length);
-        return;
-      }
-
-      // Yarı final maçlarını oluştur
-      await createNextRound(2, winners);
-      
-      // Tournament current_round'u 2 yap
-      const { error: updateError } = await supabase
-        .from('tournaments')
-        .update({ 
-          current_round: 2,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', tournamentId);
-
-      if (updateError) {
-        console.error('❌ Tur güncelleme hatası:', updateError);
-      } else {
-        console.log('✅ Yarı final turu oluşturuldu');
-        loadTournamentData();
-      }
-    }
-    // EĞER TUR 2'DEYSEK VE TÜM MAÇLAR TAMAMLANDIYSA
-    else if (allCompleted && currentRound === 2) {
-      console.log('🏆 Yarı final tamamlandı, final oluşturuluyor...');
+    if (allCompleted && currentRound < 3) {
+      const nextRound = currentRound + 1;
+      console.log(`🏆 Tur ${currentRound} tamamlandı, tur ${nextRound} için hazırlanıyor...`);
       
       // Kazananları topla
       const winners = roundMatches
         .filter(match => match.winner_id !== null)
         .map(match => match.winner_id);
 
-      console.log('🏆 Yarı final kazananları:', winners);
+      console.log('🏆 Kazananlar:', winners);
 
-      if (winners.length < 2) {
-        console.error('❌ Yeterli kazanan yok! 2 kazanan gerekli, bulunan:', winners.length);
+      if ((nextRound === 2 && winners.length < 4) || (nextRound === 3 && winners.length < 2)) {
+        console.error('❌ Yeterli kazanan yok!');
         return;
       }
 
-      // Final maçını oluştur
-      await createNextRound(3, winners);
+      // Sonraki tur maçlarını OLUŞTUR ama HEMEN KAYDETME!
+      const newMatches = createNextRoundMatches(nextRound, winners);
       
-      // Tournament current_round'u 3 yap
-      const { error: updateError } = await supabase
-        .from('tournaments')
-        .update({ 
-          current_round: 3,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', tournamentId);
+      if (newMatches.length > 0) {
+        // State'i güncelle ve countdown başlat
+        setNextRoundMatches(newMatches);
+        setNextRoundNumber(nextRound);
+        setNextRoundCountdown(10); // 10 saniye countdown
+        
+        console.log(`⏰ ${nextRound}. tur için 10 saniye countdown başlatıldı`);
+        
+        // Tournament current_round'u güncelle (ama maçları henüz kaydetme)
+        const { error: updateError } = await supabase
+          .from('tournaments')
+          .update({ 
+            current_round: nextRound,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', tournamentId);
 
-      if (updateError) {
-        console.error('❌ Tur güncelleme hatası:', updateError);
-      } else {
-        console.log('✅ Final turu oluşturuldu');
-        loadTournamentData();
+        if (updateError) {
+          console.error('❌ Tur güncelleme hatası:', updateError);
+        }
       }
     }
-    // EĞER TUR 3'TEYSEK VE TÜM MAÇLAR TAMAMLANDIYSA
     else if (allCompleted && currentRound === 3) {
       console.log('🏆 Turnuva tamamlandı!');
       
@@ -393,6 +364,49 @@ const loadTournamentData = async () => {
     }
   };
 
+// Maçları veritabanına kaydet
+const saveNextRoundMatches = async () => {
+  if (nextRoundMatches.length === 0 || !nextRoundNumber) return;
+
+  try {
+    console.log('💾 Sonraki tur maçları kaydediliyor:', nextRoundMatches);
+    
+    // Geçici ID'leri kaldır
+    const matchesToSave = nextRoundMatches.map(match => ({
+      ...match,
+      id: undefined // ID'yi undefined yap ki Supabase otomatik oluştursun
+    }));
+
+    const { error: insertError } = await supabase
+      .from('tournament_matches')
+      .insert(matchesToSave);
+
+    if (insertError) {
+      console.error('❌ Maç kaydetme hatası:', insertError);
+    } else {
+      console.log(`✅ ${nextRoundNumber}. tur maçları kaydedildi`);
+      
+      // State'leri temizle
+      setNextRoundMatches([]);
+      setNextRoundNumber(null);
+      setNextRoundCountdown(null);
+      
+      // Verileri yenile
+      loadTournamentData();
+      
+      // Kullanıcıya bilgi ver
+      toast({
+        title: `🏆 ${nextRoundNumber === 2 ? 'Yarı Final' : 'Final'} Başlıyor!`,
+        description: 'Yeni tur maçları oluşturuldu.',
+        duration: 3000,
+      });
+    }
+  } catch (error) {
+    console.error('❌ Maç kaydetme hatası:', error);
+  }
+};
+  
+
 const getPlayerName = (playerId: string | null): string => {
   if (!playerId) return 'Bot';
   
@@ -414,26 +428,29 @@ const getPlayerName = (playerId: string | null): string => {
   return 'Bilinmeyen Oyuncu';
 };
 
-  const renderCountdown = () => {
-    if (countdown === null || !currentMatch) return null;
 
-    return (
-      <Card className="mb-6 border-orange-500 bg-orange-50">
-        <CardContent className="p-6 text-center">
-          <div className="text-6xl font-bold text-orange-600 mb-4">
-            {countdown}
-          </div>
-          <h3 className="text-xl font-semibold mb-2">Maç Başlıyor!</h3>
-          <p className="text-muted-foreground">
-            {getPlayerName(currentMatch.player1_id)} vs {getPlayerName(currentMatch.player2_id)}
-          </p>
-          <p className="text-sm text-orange-600 mt-2">
-            Otomatik olarak oyun başlatılacak...
-          </p>
-        </CardContent>
-      </Card>
-    );
-  };
+const renderNextRoundCountdown = () => {
+  if (nextRoundCountdown === null || !nextRoundNumber) return null;
+
+  return (
+    <Card className="mb-6 border-blue-500 bg-blue-50">
+      <CardContent className="p-6 text-center">
+        <div className="text-6xl font-bold text-blue-600 mb-4">
+          {nextRoundCountdown}
+        </div>
+        <h3 className="text-xl font-semibold mb-2">
+          {nextRoundNumber === 2 ? 'Yarı Final' : 'Final'} Başlıyor!
+        </h3>
+        <p className="text-muted-foreground">
+          {nextRoundNumber === 2 ? '4 kazanan' : '2 kazanan'} yeni tur için hazırlanıyor...
+        </p>
+        <p className="text-sm text-blue-600 mt-2">
+          Otomatik olarak {nextRoundNumber === 2 ? 'yarı final' : 'final'} maçları başlatılacak...
+        </p>
+      </CardContent>
+    </Card>
+  );
+};
 
 const renderBracket = () => {
   const round1Matches = matches.filter(m => m.round === 1);
@@ -597,6 +614,26 @@ const renderBracket = () => {
   );
 };
 
+// TournamentMatchPage.tsx - Countdown useEffect'i
+useEffect(() => {
+  if (nextRoundCountdown === null || nextRoundCountdown <= 0) return;
+
+  const timer = setInterval(() => {
+    setNextRoundCountdown(prev => {
+      if (prev === null || prev <= 1) {
+        clearInterval(timer);
+        // Countdown bittiğinde maçları KAYDET
+        saveNextRoundMatches();
+        return 0;
+      }
+      return prev - 1;
+    });
+  }, 1000);
+
+  return () => clearInterval(timer);
+}, [nextRoundCountdown]);
+
+
   // 10 saniye geri sayım ve otomatik başlatma
   useEffect(() => {
     if (!currentMatch || !user) return;
@@ -627,7 +664,7 @@ const renderBracket = () => {
 
   // Real-time updates
 useEffect(() => {
-  if (!tournamentId) return;
+  if (!tournamentId || nextRoundCountdown !== null) return;
 
   const channel = supabase
     .channel(`tournament-${tournamentId}`)
@@ -640,24 +677,14 @@ useEffect(() => {
         filter: `tournament_id=eq.${tournamentId}`
       },
       async (payload) => {
-        console.log('🔄 Turnuva maç güncellemesi:', {
-          matchId: payload.new.id,
-          status: payload.new.status,
-          winner: payload.new.winner_id
-        });
-        
-        // Eğer bir maç tamamlandıysa VE turnuva henüz bitmediyse
+        // Eğer countdown yoksa ve maç tamamlandıysa
         if (payload.new.status === 'completed' && tournament?.status !== 'finished') {
-          console.log('✅ Maç tamamlandı, 5 saniye sonra ilerleme kontrolü yapılacak...');
-          
-          // 5 saniye bekle ve ilerleme kontrolü yap
-          setTimeout(async () => {
-            console.log('🏆 Maç tamamlandıktan sonra ilerleme kontrolü yapılıyor...');
-            await checkCurrentTournamentProgress();
-          }, 5000);
+          console.log('✅ Maç tamamlandı, ilerleme kontrolü yapılıyor...');
+          setTimeout(() => {
+            checkTournamentProgress();
+          }, 3000);
         }
         
-        // Her durumda verileri yenile
         loadTournamentData();
       }
     )
@@ -666,7 +693,7 @@ useEffect(() => {
   return () => {
     supabase.removeChannel(channel);
   };
-}, [tournamentId, tournament?.status]);
+}, [tournamentId, tournament?.status, nextRoundCountdown]);
 
   useEffect(() => {
     loadTournamentData();
@@ -751,7 +778,7 @@ if (loading) {
       </div>
 
       {/* Countdown gösterimi */}
-      {renderCountdown()}
+      {renderNextRoundCountdown()}
 
       {/* Normal maç bilgileri */}
       {!countdown && currentMatch && (
