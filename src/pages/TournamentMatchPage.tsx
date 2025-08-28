@@ -4,7 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
+
 
 interface Tournament {
   id: string;
@@ -26,6 +28,8 @@ interface TournamentMatch {
   status: string;
   room_id: string | null;
   created_at: string;
+  player1_score?: number;
+  player2_score?: number;
 }
 
 interface Participant {
@@ -33,6 +37,7 @@ interface Participant {
   user_id: string;
   is_bot: boolean;
   eliminated_at: string | null;
+  seed: number;
   profiles?: {
     username: string;
     avatar_url: string;
@@ -294,7 +299,7 @@ const getPlayerName = (playerId: string | null): string => {
   
   if (participant) {
     if (participant.is_bot) {
-      return `Bot ${participant.seed}`;
+      return `Bot ${participant.seed || '?'}`; // ✅ seed kontrolü ekle
     }
     return participant.profiles?.username || 'Bilinmeyen Oyuncu';
   }
@@ -328,7 +333,7 @@ const getPlayerName = (playerId: string | null): string => {
     );
   };
 
- const renderBracket = () => {
+const renderBracket = () => {
   const round1Matches = matches.filter(m => m.round === 1);
   const round2Matches = matches.filter(m => m.round === 2);
   const round3Matches = matches.filter(m => m.round === 3);
@@ -346,7 +351,8 @@ const getPlayerName = (playerId: string | null): string => {
                   match.winner_id === match.player1_id ? 'bg-green-100 border border-green-300' : 'bg-gray-100'
                 }`}>
                   <span className="font-medium">{getPlayerName(match.player1_id)}</span>
-                  {match.player1_score !== undefined && (
+                  {/* ✅ player1_score kontrolü */}
+                  {match.player1_score !== undefined && match.player1_score !== null && (
                     <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-bold">
                       {match.player1_score}
                     </span>
@@ -359,7 +365,8 @@ const getPlayerName = (playerId: string | null): string => {
                   match.winner_id === match.player2_id ? 'bg-green-100 border border-green-300' : 'bg-gray-100'
                 }`}>
                   <span className="font-medium">{getPlayerName(match.player2_id)}</span>
-                  {match.player2_score !== undefined && (
+                  {/* ✅ player2_score kontrolü */}
+                  {match.player2_score !== undefined && match.player2_score !== null && (
                     <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-bold">
                       {match.player2_score}
                     </span>
@@ -397,7 +404,8 @@ const getPlayerName = (playerId: string | null): string => {
                     match.winner_id === match.player1_id ? 'bg-green-100 border border-green-300' : 'bg-gray-100'
                   }`}>
                     <span className="font-medium">{getPlayerName(match.player1_id)}</span>
-                    {match.player1_score !== undefined && (
+                    {/* ✅ player1_score kontrolü */}
+                    {match.player1_score !== undefined && match.player1_score !== null && (
                       <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-bold">
                         {match.player1_score}
                       </span>
@@ -410,7 +418,8 @@ const getPlayerName = (playerId: string | null): string => {
                     match.winner_id === match.player2_id ? 'bg-green-100 border border-green-300' : 'bg-gray-100'
                   }`}>
                     <span className="font-medium">{getPlayerName(match.player2_id)}</span>
-                    {match.player2_score !== undefined && (
+                    {/* ✅ player2_score kontrolü */}
+                    {match.player2_score !== undefined && match.player2_score !== null && (
                       <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-bold">
                         {match.player2_score}
                       </span>
@@ -441,7 +450,8 @@ const getPlayerName = (playerId: string | null): string => {
                     match.winner_id === match.player1_id ? 'bg-yellow-100 border border-yellow-300' : 'bg-gray-100'
                   }`}>
                     <span className="font-medium">{getPlayerName(match.player1_id)}</span>
-                    {match.player1_score !== undefined && (
+                    {/* ✅ player1_score kontrolü */}
+                    {match.player1_score !== undefined && match.player1_score !== null && (
                       <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-bold">
                         {match.player1_score}
                       </span>
@@ -454,7 +464,8 @@ const getPlayerName = (playerId: string | null): string => {
                     match.winner_id === match.player2_id ? 'bg-yellow-100 border border-yellow-300' : 'bg-gray-100'
                   }`}>
                     <span className="font-medium">{getPlayerName(match.player2_id)}</span>
-                    {match.player2_score !== undefined && (
+                    {/* ✅ player2_score kontrolü */}
+                    {match.player2_score !== undefined && match.player2_score !== null && (
                       <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-bold">
                         {match.player2_score}
                       </span>
@@ -469,7 +480,7 @@ const getPlayerName = (playerId: string | null): string => {
                   
                   {match.winner_id && (
                     <div className="text-center mt-2">
-                      <Badge variant="default" className="bg-gold-500 text-white">
+                      <Badge variant="default" className="bg-yellow-500 text-white">
                         🏆 Kazanan: {getPlayerName(match.winner_id)}
                       </Badge>
                     </div>
