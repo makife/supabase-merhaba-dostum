@@ -158,34 +158,26 @@ const GamePage = ({
   
   // Get game type from room or URL params
 const getGameType = useCallback((): 'timed' | 'score' => {
-  let result: 'timed' | 'score';
-  
+  // TURNUVA MODU HER ZAMAN SÜRELİ!
   if (gameMode === 'tournament') {
-    // Turnuva modunda propGameType kullan
-    result = propGameType || 'timed';
-    console.log('🏆 Tournament gameType:', result, 'from propGameType:', propGameType);
-    return result;
+    console.log('🏆 Tournament mode: FORCED to timed');
+    return 'timed';
   }
   
   if (gameMode === 'vs-computer') {
     const urlType = (searchParams.get('type') as 'timed' | 'score') || 'timed';
-    result = urlType;
-    console.log('🤖 VS-Computer gameType:', result);
-    return result;
+    return urlType;
   }
   
+  // Diğer modlar için mevcut mantık
   if (currentRoom?.game_mode) {
-    if (currentRoom.game_mode.includes('score')) result = 'score';
-    else if (currentRoom.game_mode.includes('timed')) result = 'timed';
-    else result = 'timed';
-  } else {
-    const urlType = (searchParams.get('type') as 'timed' | 'score') || 'timed';
-    result = urlType;
+    if (currentRoom.game_mode.includes('score')) return 'score';
+    else return 'timed';
   }
   
-  console.log('🎮 Other mode gameType:', result);
-  return result;
-}, [gameMode, currentRoom?.game_mode, searchParams, propGameType]);
+  const urlType = (searchParams.get('type') as 'timed' | 'score') || 'timed';
+  return urlType;
+}, [gameMode, currentRoom?.game_mode, searchParams]);
   
   const gameType = getGameType();
   const [timeWarningPlayed, setTimeWarningPlayed] = useState(false);
@@ -350,7 +342,7 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
     return;
   }
 
-  console.log('🏁 Turnuva maçı bitiyor:', { 
+  console.log('🏆 Turnuva maçı bitiyor:', { 
     matchId: tournamentMatch.id,
     userScore, 
     opponentScore 
@@ -380,7 +372,7 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
       opponentScore
     });
 
-    // ✅ MATCH DURUMUNU GÜNCELLE
+    // MATCH DURUMUNU GÜNCELLE
     const { error: updateError } = await supabase
       .from('tournament_matches')
       .update({
@@ -394,39 +386,128 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
 
     if (updateError) {
       console.error('❌ Maç güncelleme hatası:', updateError);
-    } else {
-      console.log('✅ Maç başarıyla güncellendi');
-      
-      // ✅ TURNUVA İLERLEME KONTROLÜNÜ TETİKLE
-      setTimeout(async () => {
-        try {
-          const { error: progressError } = await supabase.rpc('check_tournament_progress_v2', {
-            p_tournament_id: tournamentId
-          });
-          
-          if (progressError) {
-            console.error('❌ Turnuva ilerleme kontrolü hatası:', progressError);
-          } else {
-            console.log('✅ Turnuva ilerleme kontrolü tetiklendi');
-          }
-        } catch (error) {
-          console.error('❌ Turnuva ilerleme fonksiyonu hatası:', error);
-        }
-      }, 1000);
+      setGameEnded(true);
+      return;
     }
 
-    // Oyunu bitir
+    console.log('✅ Maç başarıyla güncellendi');
     setGameEnded(true);
-    
-    // 3 saniye bekle, ardından yönlendir
+
+    // OYUN BİTİŞ KARTINI GÖSTER
     setTimeout(() => {
-      console.log('🚀 Turnuva sayfasına yönlendiriliyor...');
-      navigate(`/tournament/${tournamentId}`);
-    }, 3000);
+      showTournamentEndCard(isUserWinner, userScore, opponentScore, tournamentId);
+    }, 2000);
 
   } catch (error) {
     console.error('❌ Turnuva maç bitiş hatası:', error);
     setGameEnded(true);
+    // Hata durumunda da turnuva sayfasına git
+    setTimeout(() => navigate('/tournaments'), 3000);
+  }
+};
+
+// YENİ FONKSİYON: Turnuva bitiş kartını göster
+const showTournamentEndCard = async (isWinner: boolean, userScore: number, opponentScore: number, tournamentId: string) => {
+  try {
+    // Mevcut turu ve durumu kontrol et
+    const { data: tournament } = await supabase
+      .from('tournaments')
+      .select('current_round, status')
+      .eq('id', tournamentId)
+      .single();
+
+    if (!tournament) {
+      navigate('/tournaments');
+      return;
+    }
+
+    let message = '';
+    let buttonText = 'Turnuva Sayfasına Dön';
+
+    if (isWinner) {
+      if (tournament.current_round === 1) {
+        message = '🎉 Tebrikler! Yarı finale çıkmaya hak kazandınız. Turnuva sayfasına yönlendiriliyorsunuz...';
+      } else if (tournament.current_round === 2) {
+        message = '🔥 Muhteşem! Finale hak kazandınız. Turnuva sayfasına yönlendiriliyorsunuz...';
+      } else if (tournament.current_round === 3) {
+        message = '👑 Tebrikler! TURNUVA ŞAMPİYONU OLDUNUZ!';
+        buttonText = 'Ana Sayfaya Dön';
+      }
+    } else {
+      message = '😢 Maalesef elendınız. Turnuva sayfasına yönlendiriliyorsunız...';
+    }
+
+    // Custom modal/toast göster
+    const modalDiv = document.createElement('div');
+    modalDiv.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4';
+    modalDiv.innerHTML = `
+      <div class="bg-white rounded-lg p-6 max-w-md w-full text-center shadow-2xl">
+        <div class="text-2xl mb-4">${isWinner ? '🏆' : '😢'}</div>
+        <h3 class="text-lg font-bold mb-4">${message}</h3>
+        <div class="text-sm text-gray-600 mb-6">
+          Skor: ${userScore} - ${opponentScore}
+        </div>
+        ${tournament.current_round === 3 && isWinner ? `
+          <div class="space-y-2">
+            <button id="tournament-btn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded font-medium">
+              Turnuva Sayfasına Dön
+            </button>
+            <button id="home-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded font-medium">
+              Ana Sayfaya Dön
+            </button>
+          </div>
+        ` : `
+          <button id="continue-btn" class="w-full bg-primary hover:bg-primary/80 text-white px-4 py-2 rounded font-medium">
+            ${buttonText}
+          </button>
+        `}
+      </div>
+    `;
+    
+    document.body.appendChild(modalDiv);
+
+    // Button event listeners
+    const continueBtn = modalDiv.querySelector('#continue-btn');
+    const tournamentBtn = modalDiv.querySelector('#tournament-btn');
+    const homeBtn = modalDiv.querySelector('#home-btn');
+
+    if (continueBtn) {
+      continueBtn.addEventListener('click', () => {
+        document.body.removeChild(modalDiv);
+        if (tournament.current_round === 3 && isWinner) {
+          navigate('/');
+        } else {
+          navigate(`/tournament/${tournamentId}`);
+        }
+      });
+    }
+
+    if (tournamentBtn) {
+      tournamentBtn.addEventListener('click', () => {
+        document.body.removeChild(modalDiv);
+        navigate(`/tournament/${tournamentId}`);
+      });
+    }
+
+    if (homeBtn) {
+      homeBtn.addEventListener('click', () => {
+        document.body.removeChild(modalDiv);
+        navigate('/');
+      });
+    }
+
+    // Otomatik yönlendirme (şampiyon değilse)
+    if (!(tournament.current_round === 3 && isWinner)) {
+      setTimeout(() => {
+        if (document.body.contains(modalDiv)) {
+          document.body.removeChild(modalDiv);
+        }
+        navigate(`/tournament/${tournamentId}`);
+      }, 5000);
+    }
+
+  } catch (error) {
+    console.error('❌ Turnuva bitiş kartı hatası:', error);
     navigate('/tournaments');
   }
 };
@@ -580,6 +661,8 @@ useEffect(() => {
   }
 }, [gameMode, tournamentMatch, propGameType, user?.id, participants]);
 
+
+  
   // Rakip ismini göster - turnuva için
 const getOpponentDisplayName = () => {
   if (gameMode === 'tournament' && tournamentMatch) {
@@ -587,12 +670,10 @@ const getOpponentDisplayName = () => {
       tournamentMatch.player2_id : 
       tournamentMatch.player1_id;
   
-    // Bot kontrolü önce
     if (!opponentId || opponentId.startsWith('bot_')) {
       return 'Turnuva Botu';
     }
     
-    // Gerçek oyuncu kontrolü
     const realOpponent = participants.find(p => 
       p.user_id === opponentId && 
       !p.is_bot && 
@@ -603,7 +684,7 @@ const getOpponentDisplayName = () => {
       return realOpponent.profiles.username;
     }
     
-    return 'Turnuva Oyuncusu';
+    return 'Turnuva Rakibi';
   }
 
   // Diğer modlar için fallback
@@ -1497,39 +1578,29 @@ const handleTournamentExit = async () => {
   console.log('Turnuva maçından ayrılıyor:', user.id);
 
   try {
-    // İstatistikleri güncelle (kaybeden olarak)
-    await updatePlayerStatistics(
-      user.id,
-      playerScore,
-      playerWordsWithScores,
-      false // Kaybeden
-    );
-
-    // Rakibi kazanan olarak ayarla
+    // Rakibi kazanan yap
     const winnerId = tournamentMatch.player1_id === user.id ? 
       tournamentMatch.player2_id : 
       tournamentMatch.player1_id;
 
-    // Eğer winnerId null ise bot kazanır
-    const finalWinnerId = winnerId || `bot_${Date.now()}`;
-
-    // Skorları ayarla (çıkan kişi 0 puan)
+    // Maçı tamamla (çıkan kişi 0 puan alır)
     const isUserPlayer1 = tournamentMatch.player1_id === user.id;
-    const player1Score = isUserPlayer1 ? 0 : 500;
-    const player2Score = isUserPlayer1 ? 500 : 0;
+    await supabase
+      .from('tournament_matches')
+      .update({
+        status: 'completed',
+        winner_id: winnerId || 'forfeit',
+        player1_score: isUserPlayer1 ? 0 : 500,
+        player2_score: isUserPlayer1 ? 500 : 0,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', tournamentMatch.id);
 
-    // onGameComplete varsa çağır ve navigate işlemini buraya taşı
-    if (onGameComplete) {
-      await onGameComplete(finalWinnerId, player1Score, player2Score);
-    }
-    
-    // ✅ FIX: Çıkış işleminden sonra manuel navigation
     setShowTournamentExitDialog(false);
     navigate('/tournaments');
 
   } catch (error) {
     console.error('Çıkış hatası:', error);
-    // Hata durumunda da tournuva listesine git
     navigate('/tournaments');
   }
 };
