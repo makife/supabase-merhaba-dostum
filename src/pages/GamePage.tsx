@@ -73,7 +73,6 @@ const GamePage = ({
   const { hasPurchased, settings } = useUserPurchases();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [searchParams] = useSearchParams();
   const { currentRoom, updateScore, participants: gameParticipants, endGame, leaveRoom,sendRematchRequest,respondRematchRequest,currentRematchRequest,setCurrentRematchRequest } = useGame();
   
   // Tournament match bilgisini URL'den al
@@ -1225,7 +1224,7 @@ useEffect(() => {
     console.log('🏆 Loading tournament match data:', { tournamentId, matchId });
     
     try {
-      // Load match data first
+      // Load match data
       const { data: matchData } = await supabase
         .from('tournament_matches')
         .select('*')
@@ -1234,10 +1233,10 @@ useEffect(() => {
       
       if (matchData) {
         console.log('🏆 Tournament match loaded:', matchData.id);
-        setTournamentMatch(matchData); // State'e kaydet
+        setTournamentMatch(matchData);
       }
       
-      // Existing participant loading code...
+      // Load tournament participants
       const { data: participantsData } = await supabase
         .from('tournament_participants')
         .select(`
@@ -1249,22 +1248,28 @@ useEffect(() => {
         `)
         .eq('tournament_id', tournamentId);
         
-      if (participantsData && matchData) {
-        const matchParticipants = participantsData
-          .filter(p => p.user_id === matchData.player1_id || p.user_id === matchData.player2_id)
-          .map(p => ({
-            id: p.id,
-            room_id: searchParams.get('room'),
-            user_id: p.user_id,
-            score: 0,
-            joined_at: p.joined_at,
-            is_bot: p.is_bot,
-            profiles: p.profiles
-          }));
+      if (participantsData) {
+        console.log('👥 Tournament participants loaded:', participantsData.length);
         
-        setTournamentParticipants(matchParticipants);
+        if (matchData) {
+          // Filter participants for this match
+          const matchParticipants = participantsData
+            .filter(p => p.user_id === matchData.player1_id || p.user_id === matchData.player2_id)
+            .map(p => ({
+              id: p.id,
+              room_id: searchParams.get('room'),
+              user_id: p.user_id,
+              score: 0,
+              joined_at: p.joined_at,
+              is_bot: p.is_bot,
+              profiles: p.profiles
+            }));
+          
+          console.log('🔄 Setting tournament participants:', matchParticipants.length);
+          setTournamentParticipants(matchParticipants);
+        }
       }
-        
+      
     } catch (error) {
       console.error('❌ Error loading tournament data:', error);
     }
