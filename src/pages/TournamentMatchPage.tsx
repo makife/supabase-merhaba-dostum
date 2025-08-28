@@ -59,10 +59,10 @@ const startAutoMatch = async (match: TournamentMatch) => {
     console.log('🚀 Otomatik maç başlatılıyor:', match.id);
 
     // ✅ DOĞRUDAN GamePage'e yönlendir - room oluşturma
-    navigate(`/game`, {
+    navigate(`/game?tournament=${tournamentId}&match=${match.id}&type=timed`, {
       state: {
         gameMode: 'tournament',
-        tournamentMatch: match,  // ✅ Bu çok önemli!
+        tournamentMatch: match,
         gameType: 'timed',
         participants: participants.filter(p => 
           p.user_id === match.player1_id || p.user_id === match.player2_id
