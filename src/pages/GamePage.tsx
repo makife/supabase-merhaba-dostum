@@ -346,10 +346,7 @@ const generateTournamentGrid = useCallback((seed: string): string[][] => {
   
 const handleTournamentGameEnd = async (userScore: number, opponentScore: number) => {
   if (!user || !tournamentMatch) {
-    console.error('❌ handleTournamentGameEnd: Gerekli veriler eksik', {
-      user: !!user,
-      tournamentMatch: !!tournamentMatch
-    });
+    console.error('❌ handleTournamentGameEnd: Gerekli veriler eksik');
     return;
   }
 
@@ -361,8 +358,6 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
 
   try {
     const isUserWinner = userScore > opponentScore;
-    
-    // URL'den tournament ID al
     const tournamentId = searchParams.get('tournament') || tournamentMatch.tournament_id;
     
     if (!tournamentId) {
@@ -401,20 +396,38 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
       console.error('❌ Maç güncelleme hatası:', updateError);
     } else {
       console.log('✅ Maç başarıyla güncellendi');
+      
+      // ✅ TURNUVA İLERLEME KONTROLÜNÜ TETİKLE
+      setTimeout(async () => {
+        try {
+          const { error: progressError } = await supabase.rpc('check_tournament_progress', {
+            p_tournament_id: tournamentId
+          });
+          
+          if (progressError) {
+            console.error('❌ Turnuva ilerleme kontrolü hatası:', progressError);
+          } else {
+            console.log('✅ Turnuva ilerleme kontrolü tetiklendi');
+          }
+        } catch (error) {
+          console.error('❌ Turnuva ilerleme fonksiyonu hatası:', error);
+        }
+      }, 1000);
     }
 
     // Oyunu bitir
     setGameEnded(true);
     
-    // 2 saniye bekle, ardından yönlendir
+    // 3 saniye bekle, ardından yönlendir
     setTimeout(() => {
       console.log('🚀 Turnuva sayfasına yönlendiriliyor...');
-      window.location.href = `/tournament/${tournamentId}`;
-    }, 2000);
+      navigate(`/tournament/${tournamentId}`);
+    }, 3000);
 
   } catch (error) {
     console.error('❌ Turnuva maç bitiş hatası:', error);
     setGameEnded(true);
+    navigate('/tournaments');
   }
 };
   
