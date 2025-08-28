@@ -1186,7 +1186,7 @@ export type Database = {
         Returns: undefined
       }
 
-      check_tournament_progress: {
+      check_tournament_progress_v2: {
         Args: {
           p_tournament_id: string;
         };
