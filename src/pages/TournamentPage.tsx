@@ -214,9 +214,9 @@ const createTournament = async (selectedGameType: 'timed' | 'score') => {
   }
 };
 
-  const checkTournamentProgress = async (tournamentId: string) => {
+const triggerTournamentProgressCheck = async (tournamentId: string) => {
   try {
-    console.log('🏆 Turnuva ilerleme kontrolü:', tournamentId);
+    console.log('🏆 Turnuva ilerleme kontrolü tetikleniyor:', tournamentId);
     
     const { error } = await supabase.rpc('check_tournament_progress_v2', {
       p_tournament_id: tournamentId
@@ -224,11 +224,43 @@ const createTournament = async (selectedGameType: 'timed' | 'score') => {
     
     if (error) {
       console.error('❌ Turnuva ilerleme kontrolü hatası:', error);
+      
+      // RPC hatası durumunda manuel kontrol yap
+      await manualTournamentProgressCheck(tournamentId);
     } else {
       console.log('✅ Turnuva ilerleme kontrolü başarılı');
     }
   } catch (error) {
     console.error('❌ Turnuva ilerleme fonksiyonu hatası:', error);
+    await manualTournamentProgressCheck(tournamentId);
+  }
+};
+
+// TournamentPage.tsx - Manuel kontrol için yardımcı fonksiyon
+const manualTournamentProgressCheck = async (tournamentId: string) => {
+  try {
+    console.log('🛠️ Manuel turnuva ilerleme kontrolü:', tournamentId);
+    
+    const { data: tournament, error } = await supabase
+      .from('tournaments')
+      .select('current_round, status')
+      .eq('id', tournamentId)
+      .single();
+      
+    if (error) {
+      console.error('❌ Tournament sorgu hatası:', error);
+      return;
+    }
+    
+    console.log('🛠️ Turnuva durumu:', tournament);
+    
+    // Eğer turnuva aktifse ve current_round 1 ise, belki ilerleme gerekir
+    if (tournament.status === 'active' && tournament.current_round === 1) {
+      console.log('🛠️ Turnuva ilerlemesi gerekli olabilir');
+      // Burada gerekirse ek işlemler yapılabilir
+    }
+  } catch (error) {
+    console.error('❌ Manuel kontrol hatası:', error);
   }
 };
 
