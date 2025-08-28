@@ -74,17 +74,22 @@ const GamePage = ({
   const navigate = useNavigate();
   const { toast } = useToast();
   const { currentRoom, updateScore, participants: gameParticipants, endGame, leaveRoom,sendRematchRequest,respondRematchRequest,currentRematchRequest,setCurrentRematchRequest } = useGame();
+  // Tournament participant state
+  const [tournamentParticipants, setTournamentParticipants] = useState<any[]>([]);
+  
   const participants = useMemo(() => {
-  console.log('🔍 Participants memo - Mode:', gameMode, 'Props:', propsParticipants?.length || 0, 'Game:', gameParticipants?.length || 0);
+  console.log('🔍 Participants memo - Mode:', gameMode, 'Props:', propsParticipants?.length || 0, 'Game:', gameParticipants?.length || 0, 'Tournament:', tournamentParticipants?.length || 0);
   
   if (gameMode === 'tournament') {
-    console.log('🏆 Tournament mode - Using propsParticipants:', propsParticipants?.length || 0);
-    return propsParticipants || [];
+    // First try propsParticipants, then fallback to loaded tournament participants
+    const tournamentParts = propsParticipants?.length > 0 ? propsParticipants : tournamentParticipants;
+    console.log('🏆 Tournament mode - Using participants:', tournamentParts?.length || 0);
+    return tournamentParts || [];
   }
   
   console.log('🎮 Other mode - Using gameParticipants:', gameParticipants?.length || 0);
   return gameParticipants || [];
-}, [gameMode, propsParticipants, gameParticipants]);
+}, [gameMode, propsParticipants, gameParticipants, tournamentParticipants]);
   const { validateWord, isValidating } = useWordValidation();
   const { playSound, playTimeWarningSequence, playCelebrationSound, playGameLoseSound } = useSounds();
   const { fadeOutBackgroundMusic, fadeInBackgroundMusic } = useMusic();
@@ -1179,6 +1184,66 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
       fadeInBackgroundMusic(1000);
     };
   }, []);
+
+  // Load tournament match data from URL parameters
+  useEffect(() => {
+    const loadTournamentData = async () => {
+      const tournamentId = searchParams.get('tournament');
+      const matchId = searchParams.get('match');
+      
+      if (!tournamentId || !matchId || !user || gameMode !== 'tournament') return;
+      
+      console.log('🏆 Loading tournament match data:', { tournamentId, matchId });
+      
+      try {
+        // Load tournament participants for this match
+        const { data: participantsData } = await supabase
+          .from('tournament_participants')
+          .select(`
+            *,
+            profiles:user_id (
+              username,
+              avatar_url
+            )
+          `)
+          .eq('tournament_id', tournamentId);
+          
+        if (participantsData) {
+          console.log('👥 Tournament participants loaded:', participantsData.length);
+          
+          // Get match data to find player IDs
+          const { data: matchData } = await supabase
+            .from('tournament_matches')
+            .select('*')
+            .eq('id', matchId)
+            .single();
+          
+          if (matchData) {
+            // Filter participants for this match and convert to game participant format
+            const matchParticipants = participantsData
+              .filter(p => p.user_id === matchData.player1_id || p.user_id === matchData.player2_id)
+              .map(p => ({
+                id: p.id,
+                room_id: searchParams.get('room'),
+                user_id: p.user_id,
+                score: 0,
+                joined_at: p.joined_at,
+                is_bot: p.is_bot,
+                profiles: p.profiles
+              }));
+            
+            console.log('🔄 Setting tournament participants:', matchParticipants);
+            setTournamentParticipants(matchParticipants);
+          }
+        }
+        
+      } catch (error) {
+        console.error('❌ Error loading tournament data:', error);
+      }
+    };
+    
+    loadTournamentData();
+  }, [gameMode, searchParams, user]);
 
   // Check for winner and apply end game bonuses
 const checkWinnerWithScores = useCallback(async (currentPlayerScore: number, currentOpponentScore: number) => {
