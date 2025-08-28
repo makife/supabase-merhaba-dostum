@@ -126,7 +126,12 @@ const TournamentMatchPage: React.FC = () => {
 
   // BOT MAÇLARI SİMÜLE ET
  const simulateBotMatch = async (match: TournamentMatch) => {
-  console.log('🤖 Bot maçı simüle ediliyor:', match.id.slice(-8));
+  console.log('🤖 BOT MAÇI SİMÜLE EDİLİYOR:', {
+    id: match.id.slice(-8),
+    status: match.status,
+    player1: match.player1_id?.slice(-8) || 'null',
+    player2: match.player2_id?.slice(-8) || 'null'
+  });
   
   // Eğer zaten completed ise atla
   if (match.status === 'completed') {
@@ -387,30 +392,45 @@ const createNextRoundMatches = async (completedRound: number) => {
   // BOT MAÇLARINI OTOMATIK SİMÜLE ET
 useEffect(() => {
   const handleBotMatches = async () => {
+    console.log('🔍 Bot maçları kontrol ediliyor...');
+    console.log('📊 Toplam maç sayısı:', matches.length);
+    console.log('👥 Katılımcı sayısı:', participants.length);
+    console.log('👤 User ID:', user?.id?.slice(-8));
+
     const botMatches = matches.filter(match => 
       match.status === 'pending' && (
-        // İki oyuncu da bot VEYA null
         (match.player1_id === null || match.player2_id === null) ||
-        // Kullanıcının maçı değilse
         (match.player1_id !== user?.id && match.player2_id !== user?.id)
       )
     );
 
     console.log('🤖 Simüle edilecek bot maçları:', botMatches.length);
+    botMatches.forEach(match => {
+      console.log('Bot maç:', {
+        id: match.id.slice(-8),
+        status: match.status,
+        player1: match.player1_id?.slice(-8) || 'null',
+        player2: match.player2_id?.slice(-8) || 'null'
+      });
+    });
 
     for (const match of botMatches) {
-      // Sadece completed olmayan maçları simüle et
       if (match.status !== 'completed') {
-        console.log('🤖 Bot maçı simüle ediliyor:', match.id.slice(-8));
+        console.log('🎯 Simüle ediliyor:', match.id.slice(-8));
         await simulateBotMatch(match);
       }
     }
   };
 
   if (matches.length > 0 && participants.length > 0 && user) {
+    console.log('🚀 Bot maç simülasyonu başlatılıyor...');
     setTimeout(handleBotMatches, 2000);
+  } else {
+    console.log('⏸️ Bot simülasyonu için koşullar hazır değil');
   }
 }, [matches, participants, user]);
+
+  
   // MAÇ TAMAMLANMA KONTROLÜ VE SONRAKİ TUR
  useEffect(() => {
   const checkRoundCompletion = async () => {
