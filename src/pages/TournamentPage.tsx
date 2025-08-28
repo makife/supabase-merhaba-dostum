@@ -285,18 +285,20 @@ const TournamentPage = () => {
       const botsNeeded = 8 - currentTotal;
 
       if (botsNeeded > 0) {
-        console.log('🤖 Bot ekleniyor:', botsNeeded);
-        const botsToAdd = [];
-        for (let i = 0; i < botsNeeded; i++) {
-          botsToAdd.push({
-            tournament_id: currentTournament.id,
-            user_id: null, // Bot için null
-            seed: currentTotal + i + 1,
-            is_bot: true
-          });
-        }
-        await supabase.from('tournament_participants').insert(botsToAdd);
-      }
+  console.log('Bot ekleniyor:', botsNeeded);
+  const botsToAdd = [];
+  for (let i = 0; i < botsNeeded; i++) {
+    // Bot için UUID oluştur
+    const botUserId = crypto.randomUUID();
+    botsToAdd.push({
+      tournament_id: currentTournament.id,
+      user_id: botUserId,  // NULL yerine UUID
+      seed: currentTotal + i + 1,
+      is_bot: true
+    });
+  }
+  await supabase.from('tournament_participants').insert(botsToAdd);
+}
 
       // Çeyrek final maçları oluştur (4 maç)
       await createQuarterFinalMatches(currentTournament.id);
