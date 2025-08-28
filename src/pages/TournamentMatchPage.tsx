@@ -196,16 +196,33 @@ const createNextRoundMatches = async (completedRound: number) => {
 
     console.log(`🏆 ${completedRound}. tur tamamlanan maç sayısı:`, roundMatches?.length || 0);
     
+    // HER MAÇI DETAYLI KONTROL ET
+    roundMatches?.forEach((match, index) => {
+      console.log(`Maç ${index + 1}:`, {
+        id: match.id.slice(-8),
+        player1: match.player1_id?.slice(-8) || 'null',
+        player2: match.player2_id?.slice(-8) || 'null', 
+        winner: match.winner_id?.slice(-8) || 'NULL',
+        score1: match.player1_score,
+        score2: match.player2_score,
+        status: match.status
+      });
+    });
+    
     if (!roundMatches || roundMatches.length === 0) {
       console.log('⏳ Tamamlanan maç bulunamadı');
       return;
     }
 
     const winners = roundMatches
-      .map(m => m.winner_id)
+      .map(m => {
+        console.log('Kazanan kontrol:', m.winner_id ? m.winner_id.slice(-8) : 'NULL');
+        return m.winner_id;
+      })
       .filter(Boolean) as string[];
 
-    console.log('🏆 Kazananlar:', winners.length, 'kişi');
+    console.log('🏆 Filtreli kazananlar:', winners.map(w => w.slice(-8)));
+    console.log('🏆 Kazanan sayısı:', winners.length);
 
     if (winners.length < 2) {
       console.log('⏳ Sonraki tur için yeterli kazanan yok');
