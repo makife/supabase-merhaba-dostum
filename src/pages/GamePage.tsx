@@ -1540,13 +1540,15 @@ useEffect(() => {
       if (timeLeftRef.current <= 0) {
         clearInterval(timerRef.current!);
         timerRef.current = null;
-  
+        
         console.log('⏰ Süre bitti! Final skorlar - Player:', playerScore, 'Opponent:', opponentScore);
-  
-        // ✅ Sadece handleGameEnd çağır - o zaten gerekli her şeyi yapıyor
-        updatePlayerStatistics();
+        
+        // ✅ FIX: Timer bittiğinde mevcut skorlarla kazanan belirle
         handleGameEnd();
-       }
+        setTimeout(() => {
+          checkWinnerWithScores(playerScore, opponentScore);
+        }, 100);
+      }
     }, 1000);
   }
   
