@@ -1799,43 +1799,41 @@ useEffect(() => {
           
           // Kullanılmış kelime kontrolü - GLOBAL ve LOCAL ayrı kontrol
           if (!usedWords.has(normalizedWord) && !globalUsedWords.has(normalizedWord)) {
-            // LOCAL WORDLIST CHECK FOR AI
-            if (wordlistLoaded && wordlist.has(normalizedWord)) {
-              const points = Math.floor(Math.random() * 25) + 10;
-              console.log(`🤖 AI used validated word (local): ${word} in ${gameMode} mode with ${points} points`);
-              
-              // ✅ FIX: setOpponentScore yerine prev => prev + points kullan
-              setOpponentScore(prevScore => {
-                const newScore = prevScore + points;
-                console.log(`🤖 Bot score update: ${prevScore} + ${points} = ${newScore}`);
-                return newScore;
-              });
-              
-              // Store AI word with score for statistics
-              setOpponentWords(prev => [...prev, word]);
-              setOpponentWordsWithScores(prev => [...prev, { word, score: points }]);
-              
-              playSound('correctWord');
-              
-              // Update used words - GLOBAL'e de ekle
-              setUsedWords(prev => new Set([...prev, normalizedWord]));
-              setGlobalUsedWords(prev => new Set([...prev, normalizedWord]));
-              console.log('🤖 AI added word to used:', normalizedWord);
-              return;
-            } else if (!wordlistLoaded) {
-              // Fallback if wordlist not loaded
-              const points = Math.floor(Math.random() * 15) + 8;
-              console.log(`🤖 AI used word (no wordlist): ${word} with ${points} points`);
-              
-              setOpponentScore(prevScore => prevScore + points);
-              setOpponentWords(prev => [...prev, word]);
-              setOpponentWordsWithScores(prev => [...prev, { word, score: points }]);
-              playSound('correctWord');
-              setUsedWords(prev => new Set([...prev, normalizedWord]));
-              setGlobalUsedWords(prev => new Set([...prev, normalizedWord]));
-              return;
-            }
-          }
+  // LOCAL WORDLIST CHECK FOR AI
+  if (wordlistLoaded && wordlist.has(normalizedWord)) {
+    const points = Math.floor(Math.random() * 25) + 10;
+    console.log(`🤖 AI used validated word (local): ${word} in ${gameMode} mode with ${points} points`);
+    
+    setOpponentScore(prevScore => {
+      const newScore = prevScore + points;
+      console.log(`🤖 Bot score update: ${prevScore} + ${points} = ${newScore}`);
+      return newScore;
+    });
+    
+    setOpponentWords(prev => [...prev, word]);
+    setOpponentWordsWithScores(prev => [...prev, { word, score: points }]);
+    
+    playSound('correctWord');
+    
+    // ✅ SADECE GLOBAL'E EKLE - usedWords'e ekleme!
+    setGlobalUsedWords(prev => new Set([...prev, normalizedWord]));
+    console.log('🤖 AI added word to global used only:', normalizedWord);
+    return;
+  } else if (!wordlistLoaded) {
+    // Fallback if wordlist not loaded
+    const points = Math.floor(Math.random() * 15) + 8;
+    console.log(`🤖 AI used word (no wordlist): ${word} with ${points} points`);
+    
+    setOpponentScore(prevScore => prevScore + points);
+    setOpponentWords(prev => [...prev, word]);
+    setOpponentWordsWithScores(prev => [...prev, { word, score: points }]);
+    playSound('correctWord');
+    
+    // ✅ SADECE GLOBAL'E EKLE
+    setGlobalUsedWords(prev => new Set([...prev, normalizedWord]));
+    return;
+  }
+}
         }
         
         // If no valid word found, AI gets fewer points
