@@ -431,31 +431,16 @@ useEffect(() => {
       async (payload) => {
         console.log('🔄 Turnuva maç güncellemesi:', payload);
         
-        // Eğer bir maç tamamlandıysa, turnuva ilerlemesini kontrol et
         if (payload.eventType === 'UPDATE' && (payload.new as any).status === 'completed') {
           console.log('✅ Maç tamamlandı, ilerleme kontrolü yapılıyor...');
           
-          try {
-            const { error } = await supabase.rpc('check_tournament_progress_v2', {
-              p_tournament_id: tournamentId
-            });
-            
-            if (error) {
-              console.error('❌ Turnuva ilerleme kontrolü hatası:', error);
-            } else {
-              console.log('✅ Turnuva ilerleme kontrolü başarılı');
-              // Verileri yenile
-              setTimeout(() => {
-                loadTournamentData();
-              }, 1000);
-            }
-          } catch (error) {
-            console.error('❌ Turnuva ilerleme fonksiyonu hatası:', error);
-          }
-        } else {
-          // Diğer güncellemeler için sadece verileri yenile
-          loadTournamentData();
+          // RPC yerine manuel kontrol yap
+          setTimeout(() => {
+            checkCurrentTournamentProgress(); // Yerel fonksiyonu çağır
+          }, 2000);
         }
+        
+        loadTournamentData();
       }
     )
     .subscribe();
