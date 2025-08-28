@@ -1602,8 +1602,12 @@ const isPlayingWithAI = useCallback(() => {
         return true;
       case 'tournament': {
         if (tournamentMatch) {
-          // ✅✅✅ CRITICAL FIX: Sadece NULL kontrolü
-          return tournamentMatch.player2_id === null;
+          // ✅ FIX: player2_id null ise veya bot_ ile başlıyorsa AI
+          const opponentId = tournamentMatch.player1_id === user?.id ? 
+            tournamentMatch.player2_id : 
+            tournamentMatch.player1_id;
+          
+          return !opponentId || opponentId.startsWith('bot_') || opponentId === null;
         }
         return false;
       }
@@ -1618,9 +1622,10 @@ const isPlayingWithAI = useCallback(() => {
     }
   })();
   
-  console.log('AI Status Check - Mode:', gameMode, 'PlayingWithAI:', aiStatus);
+  console.log('AI Status Check - Mode:', gameMode, 'PlayingWithAI:', aiStatus, 'TournamentMatch:', tournamentMatch?.id?.slice(-8));
   return aiStatus;
-}, [gameMode, participants, tournamentMatch]);
+}, [gameMode, participants, tournamentMatch, user?.id]);
+
 
   // Real-time kelime senkronizasyonu
 useEffect(() => {
