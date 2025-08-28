@@ -1185,6 +1185,14 @@ export type Database = {
         }
         Returns: undefined
       }
+
+      check_tournament_progress: {
+        Args: {
+          p_tournament_id: string;
+        };
+        Returns: void
+        }
+      
       calculate_average_word_length: {
         Args: { p_user_id: string }
         Returns: number
