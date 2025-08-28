@@ -76,61 +76,72 @@ const startAutoMatch = async (match: TournamentMatch) => {
 };
 
   // Turnuva durumunu kontrol et ve sonraki turu başlat
-  const checkTournamentProgress = async () => {
-    if (!tournamentId) return;
+const checkTournamentProgress = async () => {
+  if (!tournamentId) return;
 
-    try {
-      const { data: currentTournament } = await supabase
-        .from('tournaments')
-        .select('*')
-        .eq('id', tournamentId)
-        .single();
+  try {
+    console.log('🏆 Turnuva ilerlemesi kontrol ediliyor...', tournamentId);
+    
+    const { data: currentTournament } = await supabase
+      .from('tournaments')
+      .select('*')
+      .eq('id', tournamentId)
+      .single();
 
-      if (!currentTournament) return;
-
-      const currentRound = currentTournament.current_round;
-      
-      // Mevcut turun tüm maçları tamamlandı mı kontrol et
-      const { data: roundMatches } = await supabase
-        .from('tournament_matches')
-        .select('*')
-        .eq('tournament_id', tournamentId)
-        .eq('round', currentRound);
-
-      if (!roundMatches) return;
-
-      const allCompleted = roundMatches.every(match => match.status === 'completed');
-      
-      if (allCompleted && currentRound < 3) {
-        console.log('🏆 Tur tamamlandı, sonraki tur oluşturuluyor...');
-        
-        // Sonraki turu oluştur
-        await createNextRound(currentRound + 1, roundMatches);
-        
-        // Tournament current_round güncelle
-        await supabase
-          .from('tournaments')
-          .update({ current_round: currentRound + 1 })
-          .eq('id', tournamentId);
-
-        // Verileri yenile
-        loadTournamentData();
-      } else if (allCompleted && currentRound === 3) {
-        console.log('🏆 Turnuva tamamlandı!');
-        
-        // Turnuvayı bitir
-        await supabase
-          .from('tournaments')
-          .update({ 
-            status: 'finished',
-            finished_at: new Date().toISOString()
-          })
-          .eq('id', tournamentId);
-      }
-    } catch (error) {
-      console.error('Turnuva ilerleme kontrolü hatası:', error);
+    if (!currentTournament) {
+      console.log('❌ Tournament bulunamadı');
+      return;
     }
-  };
+
+    console.log('🏆 Mevcut turnuva durumu:', currentTournament);
+    const currentRound = currentTournament.current_round;
+    
+    // Mevcut turun tüm maçları tamamlandı mı kontrol et
+    const { data: roundMatches } = await supabase
+      .from('tournament_matches')
+      .select('*')
+      .eq('tournament_id', tournamentId)
+      .eq('round', currentRound);
+
+    console.log(`🏆 Tur ${currentRound} maçları:`, roundMatches);
+
+    if (!roundMatches) return;
+
+    const allCompleted = roundMatches.every(match => match.status === 'completed');
+    console.log('🏆 Tüm maçlar tamamlandı mı?', allCompleted);
+    
+    if (allCompleted && currentRound < 3) {
+      console.log('🏆 Tur tamamlandı, sonraki tur oluşturuluyor...');
+      
+      // Sonraki turu oluştur
+      await createNextRound(currentRound + 1, roundMatches);
+      
+      // Tournament current_round güncelle
+      await supabase
+        .from('tournaments')
+        .update({ current_round: currentRound + 1 })
+        .eq('id', tournamentId);
+
+      console.log('✅ Sonraki tur oluşturuldu');
+      
+      // Verileri yenile
+      loadTournamentData();
+    } else if (allCompleted && currentRound === 3) {
+      console.log('🏆 Turnuva tamamlandı!');
+      
+      // Turnuvayı bitir
+      await supabase
+        .from('tournaments')
+        .update({ 
+          status: 'finished',
+          finished_at: new Date().toISOString()
+        })
+        .eq('id', tournamentId);
+    }
+  } catch (error) {
+    console.error('❌ Turnuva ilerleme kontrolü hatası:', error);
+  }
+};
 
   // Sonraki turu oluştur
   const createNextRound = async (nextRound: number, previousMatches: TournamentMatch[]) => {
@@ -404,38 +415,39 @@ const startAutoMatch = async (match: TournamentMatch) => {
   }, [currentMatch, user]);
 
   // Real-time updates
-  useEffect(() => {
-    if (!tournamentId) return;
+useEffect(() => {
+  if (!tournamentId) return;
 
-    const channel = supabase
-      .channel(`tournament-${tournamentId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'tournament_matches',
-          filter: `tournament_id=eq.${tournamentId}`
-        },
-        (payload) => {
-          console.log('🔄 Turnuva maç güncellemesi:', payload);
-          
-          // Eğer bir maç tamamlandıysa, turnuva ilerlemesini kontrol et
-          if (payload.eventType === 'UPDATE' && (payload.new as any).status === 'completed') {
-            setTimeout(() => {
-              checkTournamentProgress();
-            }, 2000); // 2 saniye bekle sonra kontrol et
-          }
-          
-          loadTournamentData();
+  const channel = supabase
+    .channel(`tournament-${tournamentId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'tournament_matches',
+        filter: `tournament_id=eq.${tournamentId}`
+      },
+      (payload) => {
+        console.log('🔄 Turnuva maç güncellemesi:', payload);
+        
+        // Eğer bir maç tamamlandıysa, turnuva ilerlemesini kontrol et
+        if (payload.eventType === 'UPDATE' && (payload.new as any).status === 'completed') {
+          console.log('✅ Maç tamamlandı, ilerleme kontrolü yapılıyor...');
+          setTimeout(() => {
+            checkTournamentProgress();
+          }, 2000);
         }
-      )
-      .subscribe();
+        
+        loadTournamentData();
+      }
+    )
+    .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [tournamentId]);
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, [tournamentId]);
 
   useEffect(() => {
     loadTournamentData();
