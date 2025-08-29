@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
@@ -17,6 +17,7 @@ const TournamentPage = () => {
   const [activeTournaments, setActiveTournaments] = useState([]);
   const [isJoining, setIsJoining] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'tournament'>('list');
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const {
     currentTournament,
@@ -28,8 +29,8 @@ const TournamentPage = () => {
     clearTournament
   } = useTournament();
 
-  // Aktif turnuvaları yükle - memoized
-  const loadActiveTournaments = useCallback(async () => {
+  // Aktif turnuvaları yükle
+  const loadActiveTournaments = async () => {
     try {
       const { data, error } = await supabase
         .from('tournaments')
@@ -46,15 +47,17 @@ const TournamentPage = () => {
     } catch (error) {
       console.error('Error loading tournaments:', error);
     }
-  }, []);
+  };
 
-  // Sadece mount'ta çalış - dependency yok
+  // İlk yükleme - sadece bir kez
   useEffect(() => {
-    console.log('TournamentPage mounted - initializing');
-    setViewMode('list');
-    loadActiveTournaments();
-    // clearTournament çağrısını kaldırdık
-  }, [loadActiveTournaments]);
+    if (!isInitialized) {
+      console.log('TournamentPage initializing');
+      setIsInitialized(true);
+      setViewMode('list');
+      loadActiveTournaments();
+    }
+  }, [isInitialized]);
 
   // Periyodik güncelleme - sadece liste modundayken
   useEffect(() => {
@@ -65,7 +68,7 @@ const TournamentPage = () => {
     }, 30000);
     
     return () => clearInterval(interval);
-  }, [viewMode, loadActiveTournaments]);
+  }, [viewMode]);
 
   const handleCreateTournament = async () => {
     if (!user || isJoining) return;
@@ -168,7 +171,6 @@ const TournamentPage = () => {
   const handleLeaveTournament = async () => {
     try {
       await leaveTournament();
-      clearTournament(); // Sadece burada temizle
       setViewMode('list');
       await loadActiveTournaments();
       
