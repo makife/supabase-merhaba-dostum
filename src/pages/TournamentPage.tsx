@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
@@ -28,8 +28,8 @@ const TournamentPage = () => {
     clearTournament
   } = useTournament();
 
-  // Aktif turnuvaları yükle
-  const loadActiveTournaments = async () => {
+  // Aktif turnuvaları yükle - memoized
+  const loadActiveTournaments = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('tournaments')
@@ -46,23 +46,26 @@ const TournamentPage = () => {
     } catch (error) {
       console.error('Error loading tournaments:', error);
     }
-  };
-
-  // İlk yükleme
-  useEffect(() => {
-    console.log('TournamentPage mounted - resetting state');
-    clearTournament();
-    setViewMode('list');
-    loadActiveTournaments();
   }, []);
 
-  // Periyodik güncelleme - sadece liste görünümündeyken
+  // Sadece mount'ta çalış - dependency yok
+  useEffect(() => {
+    console.log('TournamentPage mounted - initializing');
+    setViewMode('list');
+    loadActiveTournaments();
+    // clearTournament çağrısını kaldırdık
+  }, [loadActiveTournaments]);
+
+  // Periyodik güncelleme - sadece liste modundayken
   useEffect(() => {
     if (viewMode !== 'list') return;
     
-    const interval = setInterval(loadActiveTournaments, 30000);
+    const interval = setInterval(() => {
+      loadActiveTournaments();
+    }, 30000);
+    
     return () => clearInterval(interval);
-  }, [viewMode]);
+  }, [viewMode, loadActiveTournaments]);
 
   const handleCreateTournament = async () => {
     if (!user || isJoining) return;
@@ -100,11 +103,7 @@ const TournamentPage = () => {
           if (isAlreadyParticipant) {
             console.log('Kullanıcı zaten katılmış');
             await refreshTournament();
-            
-            // Başarılı refresh sonrası view'ı değiştir
-            setTimeout(() => {
-              setViewMode('tournament');
-            }, 100);
+            setViewMode('tournament');
             
             toast({
               title: 'Zaten Katıldınız!',
@@ -112,11 +111,7 @@ const TournamentPage = () => {
             });
           } else {
             await joinTournament(tournament.id);
-            
-            // Başarılı katılım sonrası view'ı değiştir
-            setTimeout(() => {
-              setViewMode('tournament');
-            }, 100);
+            setViewMode('tournament');
             
             toast({
               title: 'Turnuvaya Katıldınız!',
@@ -127,11 +122,7 @@ const TournamentPage = () => {
       } else {
         console.log('Yeni turnuva oluşturuluyor');
         await createTournament();
-        
-        // Başarılı oluşturma sonrası view'ı değiştir
-        setTimeout(() => {
-          setViewMode('tournament');
-        }, 100);
+        setViewMode('tournament');
         
         toast({
           title: 'Turnuva Oluşturuldu!',
@@ -156,10 +147,7 @@ const TournamentPage = () => {
     
     try {
       await joinTournament(tournamentId);
-      
-      setTimeout(() => {
-        setViewMode('tournament');
-      }, 100);
+      setViewMode('tournament');
       
       toast({
         title: 'Turnuvaya Katıldınız!',
@@ -180,6 +168,7 @@ const TournamentPage = () => {
   const handleLeaveTournament = async () => {
     try {
       await leaveTournament();
+      clearTournament(); // Sadece burada temizle
       setViewMode('list');
       await loadActiveTournaments();
       
@@ -199,9 +188,7 @@ const TournamentPage = () => {
 
   const handleGoToTournament = async () => {
     await refreshTournament();
-    setTimeout(() => {
-      setViewMode('tournament');
-    }, 100);
+    setViewMode('tournament');
   };
 
   // Turnuva görünümü
