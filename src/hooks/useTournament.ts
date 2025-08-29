@@ -95,11 +95,11 @@ export const useTournament = () => {
   };
 
   // TEMİZLEME FONKSİYONU - önemli!
-  const clearTournament = () => {
+  const clearTournament = useCallback(() => {
     console.log('🧹 Clearing tournament data');
     setCurrentTournament(null);
     setUserParticipation(null);
-  };
+  }, []);
 
   // Turnuva oluştur
   const createTournament = async () => {
