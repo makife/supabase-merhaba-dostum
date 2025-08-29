@@ -150,6 +150,92 @@ const handleCreateTournament = async () => {
     }
   }
 
+  useEffect(() => {
+  if (!tournament?.id) return;
+
+  console.log('🔄 Setting up tournament real-time subscriptions');
+
+  // Tournament durumu değişikliklerini dinle
+  const tournamentChannel = supabase
+    .channel(`tournament-${tournament.id}`)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'tournaments',
+      filter: `id=eq.${tournament.id}`
+    }, (payload) => {
+      console.log('🏆 Tournament updated:', payload);
+      // Tournament durumunu güncelle
+      if (payload.new) {
+        setTournament(payload.new);
+      }
+    })
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public', 
+      table: 'tournament_matches',
+      filter: `tournament_id=eq.${tournament.id}`
+    }, (payload) => {
+      console.log('🎯 Tournament match updated:', payload);
+      // Maç durumlarını güncelle
+      loadTournamentData();
+    })
+    .subscribe();
+
+  // Auto-refresh timer (fallback)
+  const refreshInterval = setInterval(() => {
+    loadTournamentData();
+  }, 10000); // 10 saniye
+
+  return () => {
+    console.log('🔌 Cleaning up tournament subscriptions');
+    supabase.removeChannel(tournamentChannel);
+    clearInterval(refreshInterval);
+  };
+}, [tournament?.id]);
+
+// Match başlatma fonksiyonunu da düzelt:
+const startMatch = async (match: any) => {
+  if (!userParticipation || !user) return;
+  
+  // Kullanıcının bu maçta olduğunu kontrol et
+  const isUserInMatch = match.player1_id === user.id || match.player2_id === user.id;
+  
+  if (!isUserInMatch) {
+    toast({
+      title: 'Hata',
+      description: 'Bu maç size ait değil',
+      variant: 'destructive',
+    });
+    return;
+  }
+
+  try {
+    // Maçı aktif olarak işaretle
+    const { error } = await supabase
+      .from('tournament_matches')
+      .update({ 
+        status: 'active',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', match.id);
+
+    if (error) throw error;
+
+    // GamePage'e yönlendir - proper URL parametreleri ile
+    const navigate = useNavigate();
+    navigate(`/game/tournament?tournament=${tournament.id}&match=${match.id}&type=timed`);
+    
+  } catch (error) {
+    console.error('Error starting match:', error);
+    toast({
+      title: 'Hata',
+      description: 'Maç başlatılamadı',
+      variant: 'destructive',
+    });
+  }
+};
+
   // Ana turnuva listesi
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
