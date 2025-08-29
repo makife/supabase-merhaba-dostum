@@ -211,6 +211,7 @@ const TournamentPage = () => {
         <TournamentBracket 
           tournament={currentTournament}
           userParticipation={userParticipation}
+          onBackToList={() => setViewMode('list')} 
         />
       );
     }
