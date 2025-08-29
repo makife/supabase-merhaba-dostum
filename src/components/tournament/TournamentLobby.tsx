@@ -11,6 +11,7 @@ import { ArrowLeft, Clock, Bot, User } from 'lucide-react';
 interface TournamentLobbyProps {
   tournament: any;
   onLeave: () => void;
+  onStart?: () => void;
 }
 
 const TournamentLobby = ({ tournament, onLeave }: TournamentLobbyProps) => {
