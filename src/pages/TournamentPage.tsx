@@ -172,7 +172,7 @@ const TournamentPage = () => {
                         if (tournament.status === 'waiting') {
                           handleJoinTournament(tournament.id);
                         } else {
-                          navigate(`/tournament/${tournament.id}`);
+                          navigate(`/tournament`);
                         }
                       }}
                       disabled={isJoining}

@@ -12,7 +12,7 @@ export const useTournament = () => {
     if (!user) return;
 
     try {
-      // Kullanıcının katıldığı aktif turnuvaları bul
+      // Kullanıcının katıldığı aktif turnuvayı bul (son katıldığı kayıt)
       const { data: participation, error } = await supabase
         .from('tournament_participants')
         .select(`
@@ -21,7 +21,9 @@ export const useTournament = () => {
         `)
         .eq('user_id', user.id)
         .in('tournaments.status', ['waiting', 'active'])
-        .single();
+        .order('joined_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
       if (!error && participation) {
         setCurrentTournament(participation.tournaments);
@@ -142,6 +144,27 @@ export const useTournament = () => {
       supabase.removeChannel(participationChannel);
     };
   }, [user]);
+
+  // Turnuva durumunu dinle (status, current_round vs.)
+  useEffect(() => {
+    if (!currentTournament?.id) return;
+
+    const tournamentChannel = supabase
+      .channel(`tournament-${currentTournament.id}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'tournaments',
+        filter: `id=eq.${currentTournament.id}`
+      }, (payload) => {
+        setCurrentTournament(payload.new);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(tournamentChannel);
+    };
+  }, [currentTournament?.id]);
 
   return {
     currentTournament,
