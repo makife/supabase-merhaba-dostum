@@ -42,27 +42,66 @@ const TournamentPage = () => {
     }
   };
 
-  const handleCreateTournament = async () => {
-    if (!user || isJoining) return;
-    setIsJoining(true);
+const handleCreateTournament = async () => {
+  if (!user || isJoining) return;
+  setIsJoining(true);
+  
+  try {
+    // Önce bekleyen turnuva var mı kontrol et
+    const { data: waitingTournaments } = await supabase
+      .from('tournaments')
+      .select('*')
+      .eq('status', 'waiting')
+      .order('created_at', { ascending: true })
+      .limit(1);
     
-    try {
+    if (waitingTournaments && waitingTournaments.length > 0) {
+      // Bekleyen turnuva var, ona katıl
+      const tournament = waitingTournaments[0];
+      
+      // Zaten katılım kontrolü
+      const { data: existingParticipation } = await supabase
+        .from('tournament_participants')
+        .select('id')
+        .eq('tournament_id', tournament.id)
+        .eq('user_id', user.id)
+        .single();
+      
+      if (existingParticipation) {
+        toast({
+          title: 'Zaten Katıldınız!',
+          description: 'Bu turnuvaya zaten katılmışsınız.',
+          variant: 'destructive',
+        });
+        setIsJoining(false);
+        return;
+      }
+      
+      // Turnuvaya katıl
+      await joinTournament(tournament.id);
+      toast({
+        title: '🏆 Turnuvaya Katıldınız!',
+        description: 'Bekleyen turnuvaya katıldınız...',
+      });
+    } else {
+      // Bekleyen turnuva yok, yeni oluştur
       await createTournament();
       toast({
         title: '🏆 Turnuva Oluşturuldu!',
         description: '30 saniye içinde turnuva başlayacak...',
       });
-    } catch (error) {
-      console.error('Error creating tournament:', error);
-      toast({
-        title: 'Hata',
-        description: 'Turnuva oluşturulamadı',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsJoining(false);
     }
-  };
+  } catch (error) {
+    console.error('Error handling tournament:', error);
+    toast({
+      title: 'Hata',
+      description: 'Turnuva işlemi tamamlanamadı',
+      variant: 'destructive',
+    });
+  } finally {
+    setIsJoining(false);
+  }
+};
 
   const handleJoinTournament = async (tournamentId: string) => {
     if (!user || isJoining) return;
