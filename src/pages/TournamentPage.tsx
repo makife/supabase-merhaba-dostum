@@ -30,24 +30,28 @@ const TournamentPage = () => {
   } = useTournament();
 
   // Aktif turnuvaları yükle
-  const loadActiveTournaments = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('tournaments')
-        .select(`
-          *,
-          tournament_participants(user_id, is_bot)
-        `)
-        .in('status', ['waiting', 'active'])
-        .order('created_at', { ascending: false });
+ const loadActiveTournaments = async () => {
+  try {
+    const now = new Date().toISOString();
+    
+    const { data, error } = await supabase
+      .from('tournaments')
+      .select(`
+        *,
+        tournament_participants(user_id, is_bot)
+      `)
+      .in('status', ['waiting', 'active'])
+      .gt('expires_at', now) // Süresi dolmamış olanlar
+      .order('created_at', { ascending: false })
+      .limit(10); // Sadece son 10 turnuva
 
-      if (!error && data) {
-        setActiveTournaments(data);
-      }
-    } catch (error) {
-      console.error('Error loading tournaments:', error);
+    if (!error && data) {
+      setActiveTournaments(data);
     }
-  };
+  } catch (error) {
+    console.error('Error loading tournaments:', error);
+  }
+};
 
   // İlk yükleme - sadece bir kez
   useEffect(() => {
