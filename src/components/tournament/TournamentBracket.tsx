@@ -12,6 +12,7 @@ import TournamentAdvanceCard from './TournamentAdvanceCard';
 interface TournamentBracketProps {
   tournament: any;
   userParticipation: any;
+  onStartMatch?: (match: any) => void;
 }
 
 const TournamentBracket = ({ tournament, userParticipation }: TournamentBracketProps) => {
