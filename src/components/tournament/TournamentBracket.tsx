@@ -11,10 +11,9 @@ import { ArrowLeft, Trophy, User, Bot, Play, Clock, CheckCircle } from 'lucide-r
 interface TournamentBracketProps {
   tournament: any;
   userParticipation: any;
-  onBackToList?: () => void;
 }
 
-const TournamentBracket = ({ tournament, userParticipation }: TournamentBracketProps) => {
+const TournamentBracket = ({ tournament, userParticipation, onBackToList }: TournamentBracketProps) => {
   const [matches, setMatches] = useState<any[]>([]);
   const [participants, setParticipants] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -265,12 +264,14 @@ const getParticipantInfo = (userId: string | null) => {
 <Button 
   variant="outline" 
   size="sm" 
-  onClick={() => {
+  onClick={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
     console.log('Turnuva Listesi butonuna tıklandı');
-    if (onBackToList) {
-      onBackToList(); // Parent'a state değiştirmesini söyle
-    } else {
+    try {
       navigate('/tournament');
+    } catch (error) {
+      console.error('Navigation hatası:', error);
     }
   }}
 >
