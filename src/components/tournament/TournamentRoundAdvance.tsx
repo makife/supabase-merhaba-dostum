@@ -1,4 +1,4 @@
-// TournamentRoundAdvance.tsx
+// TournamentRoundAdvance.tsx (match oluşturma düzeltmesi)
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -27,7 +27,7 @@ const TournamentRoundAdvance = ({ tournament, onRoundAdvanced }: TournamentRound
         return;
       }
 
-      const allMatchesCompleted = matches.every(match => match.status === 'completed');
+      const allMatchesCompleted = matches && matches.every(match => match.status === 'completed');
       
       if (allMatchesCompleted && tournament.current_round < 3) {
         // Advance to next round
