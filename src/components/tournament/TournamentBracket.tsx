@@ -51,26 +51,35 @@ const TournamentBracket = ({ tournament, userParticipation }: TournamentBracketP
   };
 
   // Katılımcı bilgisini al
-  const getParticipantInfo = (userId: string | null) => {
-    if (!userId) return { name: 'TBD', isBot: false, avatar: null };
-    
-    const participant = participants.find(p => p.user_id === userId);
-    if (!participant) return { name: 'Bilinmiyor', isBot: false, avatar: null };
-    
-    if (participant.is_bot) {
-      return { 
-        name: `Bot ${participant.seed}`, 
-        isBot: true, 
-        avatar: null 
-      };
-    }
-    
-    return {
-      name: participant.profiles?.username || `Oyuncu ${participant.seed}`,
-      isBot: false,
-      avatar: participant.profiles?.avatar_url
+const getParticipantInfo = (userId: string | null) => {
+  if (!userId) {
+    // user_id null = Bot
+    const participant = participants.find(p => p.user_id === null);
+    const seed = participant?.seed || Math.floor(Math.random() * 8) + 1;
+    return { 
+      name: `Bot ${seed}`, 
+      isBot: true, 
+      avatar: null 
     };
+  }
+  
+  const participant = participants.find(p => p.user_id === userId);
+  if (!participant) return { name: 'Bilinmiyor', isBot: false, avatar: null };
+  
+  if (participant.is_bot) {
+    return { 
+      name: `Bot ${participant.seed}`, 
+      isBot: true, 
+      avatar: null 
+    };
+  }
+  
+  return {
+    name: participant.profiles?.username || `Oyuncu ${participant.seed}`,
+    isBot: false,
+    avatar: participant.profiles?.avatar_url
   };
+};
 
   // Maça başla
   const startMatch = async (match: any) => {
