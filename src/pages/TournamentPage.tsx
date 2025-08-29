@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, Trophy } from 'lucide-react';
 import TournamentLobby from '@/components/tournament/TournamentLobby';
 import TournamentBracket from '@/components/tournament/TournamentBracket';
+import TournamentFlowManager from '@/components/tournament/TournamentFlowManager';
 import { useTournament } from '@/hooks/useTournament';
 
 const TournamentPage = () => {
@@ -17,6 +18,10 @@ const TournamentPage = () => {
   const [activeTournaments, setActiveTournaments] = useState([]);
   const [isJoining, setIsJoining] = useState(false);
   const [showTournamentView, setShowTournamentView] = useState(false); // YENİ STATE
+
+  if (showTournamentView && currentTournament && userParticipation) {
+    return <TournamentFlowManager />;
+  }
 
   const {
     currentTournament,
