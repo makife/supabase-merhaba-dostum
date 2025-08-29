@@ -6,9 +6,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, Trophy } from 'lucide-react';
+import TournamentFlowManager from '@/components/tournament/TournamentFlowManager';
 import TournamentLobby from '@/components/tournament/TournamentLobby';
 import TournamentBracket from '@/components/tournament/TournamentBracket';
-import TournamentFlowManager from '@/components/tournament/TournamentFlowManager';
 import { useTournament } from '@/hooks/useTournament';
 
 const TournamentPage = () => {
