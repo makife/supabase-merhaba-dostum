@@ -121,7 +121,7 @@ const getParticipantInfo = (userId: string | null) => {
       if (error) throw error;
 
       // GamePage'e yönlendir
-      navigate(`/game/tournament?tournament=${tournament.id}&match=${match.id}&type=timed`);
+      navigate(`/game?gameMode=tournament&tournament=${tournament.id}&match=${match.id}&type=timed`);
       
     } catch (error) {
       console.error('Error starting match:', error);
