@@ -1,7 +1,6 @@
-// TournamentResultCard.tsx
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Trophy, Home, RotateCcw, Sad } from 'lucide-react';
+import { Trophy, Home, RotateCcw, Frown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface TournamentResultCardProps {
@@ -26,15 +25,15 @@ const TournamentResultCard = ({ won, round, tournamentName, onContinue }: Tourna
     if (round === 1) {
       return won 
         ? 'Çeyrek finali geçtiniz! Yarı finale yükseldiniz.' 
-        : 'Çeyrek finalde elendiniz.';
+        : 'Çeyrek finalde elendiniz. Turnuva sayfasına yönlendiriliyorsunuz.';
     } else if (round === 2) {
       return won 
         ? 'Yarı finali geçtiniz! Finale yükseldiniz.' 
-        : 'Yarı finalde elendiniz.';
+        : 'Yarı finalde elendiniz. Turnuva sayfasına yönlendiriliyorsunuz.';
     } else {
       return won 
         ? 'Tebrikler! Turnuva şampiyonu oldunuz.' 
-        : 'Final maçını kaybettiniz.';
+        : 'Final maçını kaybettiniz. Turnuva sayfasına yönlendiriliyorsunuz.';
     }
   };
   
@@ -55,7 +54,7 @@ const TournamentResultCard = ({ won, round, tournamentName, onContinue }: Tourna
               {won ? (
                 <Trophy className="w-20 h-20 text-yellow-500" />
               ) : (
-                <Sad className="w-20 h-20 text-blue-500" />
+                <Frown className="w-20 h-20 text-blue-500" />
               )}
             </div>
           </div>
