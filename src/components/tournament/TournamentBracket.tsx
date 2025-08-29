@@ -11,6 +11,7 @@ import { ArrowLeft, Trophy, User, Bot, Play, Clock, CheckCircle } from 'lucide-r
 interface TournamentBracketProps {
   tournament: any;
   userParticipation: any;
+  onBackToList?: () => void;
 }
 
 const TournamentBracket = ({ tournament, userParticipation, onBackToList }: TournamentBracketProps) => {
