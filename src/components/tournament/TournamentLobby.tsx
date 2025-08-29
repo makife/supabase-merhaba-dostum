@@ -71,12 +71,12 @@ const startTournament = async () => {
     if (botsNeeded > 0) {
       console.log('🤖 Bot ekleniyor:', botsNeeded);
       
-      // Her bot için unique ID oluştur
+      // Her bot için gerçek UUID oluştur
       const botsToAdd = [];
       for (let i = 0; i < botsNeeded; i++) {
         botsToAdd.push({
           tournament_id: tournament.id,
-          user_id: `bot_${tournament.id}_${Date.now()}_${i}`, // Unique bot ID
+          user_id: crypto.randomUUID(), // Gerçek UUID
           seed: currentTotal + i + 1,
           is_bot: true
         });
@@ -99,6 +99,9 @@ const startTournament = async () => {
         console.log('✅ Botlar başarıyla eklendi');
       }
     }
+
+    // Kısa bekle - botların eklenmesi için
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     // Turnuvayı aktif yap
     const { error: updateError } = await supabase
@@ -133,7 +136,6 @@ const startTournament = async () => {
   }
 };
 
-
   // Çeyrek final maçları oluştur
 const createQuarterFinalMatches = async () => {
   try {
@@ -151,17 +153,13 @@ const createQuarterFinalMatches = async () => {
       throw fetchError;
     }
 
+    console.log(`📋 ${allParticipants?.length || 0} katılımcı bulundu`);
+
     if (!allParticipants || allParticipants.length < 2) {
       throw new Error(`Yetersiz katılımcı: ${allParticipants?.length || 0}`);
     }
 
-    console.log(`📋 ${allParticipants.length} katılımcı bulundu:`, allParticipants.map(p => ({ 
-      seed: p.seed, 
-      isBot: p.is_bot, 
-      userId: p.user_id.slice(-8) 
-    })));
-
-    // Eşleşmeleri oluştur - esnek sistem
+    // Eşleşmeleri oluştur - 8 kişilik standart bracket
     const matches = [];
     
     if (allParticipants.length >= 8) {
@@ -179,29 +177,19 @@ const createQuarterFinalMatches = async () => {
           status: 'pending'
         });
       }
-    } else if (allParticipants.length >= 4) {
-      // 4-7 kişi varsa yarı final formatı
-      const matchCount = Math.floor(allParticipants.length / 2);
-      for (let i = 0; i < matchCount; i++) {
+    } else {
+      // Daha az kişi varsa sırayla eşleştir
+      const pairCount = Math.floor(allParticipants.length / 2);
+      for (let i = 0; i < pairCount; i++) {
         matches.push({
           tournament_id: tournament.id,
           round: 1,
           match_number: i + 1,
           player1_id: allParticipants[i * 2].user_id,
-          player2_id: allParticipants[i * 2 + 1]?.user_id || null,
+          player2_id: allParticipants[i * 2 + 1].user_id,
           status: 'pending'
         });
       }
-    } else {
-      // 2-3 kişi varsa tek maç
-      matches.push({
-        tournament_id: tournament.id,
-        round: 1,
-        match_number: 1,
-        player1_id: allParticipants[0].user_id,
-        player2_id: allParticipants[1]?.user_id || null,
-        status: 'pending'
-      });
     }
 
     // Maçları kaydet
