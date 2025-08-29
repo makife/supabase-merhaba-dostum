@@ -1,6 +1,7 @@
-// TournamentFlowManager.tsx
 import { useState, useEffect } from 'react';
 import { useTournament } from '@/hooks/useTournament';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import TournamentCountdown from '@/components/tournament/TournamentCountdown';
 import TournamentRoundAdvance from '@/components/tournament/TournamentRoundAdvance';
 import TournamentResultCard from '@/components/tournament/TournamentResultCard';
@@ -8,13 +9,14 @@ import TournamentBracket from '@/components/tournament/TournamentBracket';
 import TournamentLobby from '@/components/tournament/TournamentLobby';
 
 const TournamentFlowManager = () => {
+  const { user } = useAuth();
   const { currentTournament, userParticipation, refreshTournament } = useTournament();
   const [currentStep, setCurrentStep] = useState<'lobby' | 'countdown' | 'bracket' | 'result'>('lobby');
   const [countdownType, setCountdownType] = useState<'waiting' | 'quarter' | 'semi' | 'final'>('waiting');
   const [matchResult, setMatchResult] = useState<{ won: boolean; round: number } | null>(null);
 
   useEffect(() => {
-    if (!currentTournament) return;
+    if (!currentTournament || !user) return;
 
     const checkTournamentProgress = async () => {
       await refreshTournament();
@@ -61,16 +63,18 @@ const TournamentFlowManager = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentTournament]);
+  }, [currentTournament, user, refreshTournament]);
 
   // Handle different steps of the tournament
   const renderStep = () => {
+    if (!currentTournament) return null;
+    
     switch (currentStep) {
       case 'lobby':
-        return <TournamentLobby tournament={currentTournament} onStart={() => {
-          setCountdownType('quarter');
-          setCurrentStep('countdown');
-        }} />;
+        return <TournamentLobby 
+          tournament={currentTournament} 
+          onLeave={() => window.location.href = '/tournament'}
+        />;
       
       case 'countdown':
         return (
@@ -85,7 +89,18 @@ const TournamentFlowManager = () => {
         );
       
       case 'bracket':
-        return <TournamentBracket tournament={currentTournament} userParticipation={userParticipation} />;
+        return (
+          <>
+            <TournamentBracket tournament={currentTournament} userParticipation={userParticipation} />
+            <TournamentRoundAdvance 
+              tournament={currentTournament} 
+              onRoundAdvanced={(newRound) => {
+                setCountdownType(newRound === 2 ? 'semi' : 'final');
+                setCurrentStep('countdown');
+              }} 
+            />
+          </>
+        );
       
       case 'result':
         if (!matchResult) return null;
