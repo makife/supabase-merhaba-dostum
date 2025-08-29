@@ -264,15 +264,10 @@ const getParticipantInfo = (userId: string | null) => {
 <Button 
   variant="outline" 
   size="sm" 
-  onClick={(e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log('Turnuva Listesi butonuna tıklandı');
-    try {
-      navigate('/tournament');
-    } catch (error) {
-      console.error('Navigation hatası:', error);
-    }
+  onClick={() => {
+    console.log('Turnuva bracket sayfasından ana listeye dönülüyor');
+    // Sayfayı tamamen yenile ve ana turnuva listesine git
+    window.location.replace('/tournament');
   }}
 >
   <ArrowLeft className="w-4 h-4 mr-2" />
