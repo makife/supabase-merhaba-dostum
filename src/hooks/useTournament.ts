@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -47,11 +47,11 @@ export const useTournament = () => {
         .maybeSingle();
 
       if (!error && participation) {
-        console.log('✅ User tournament found:', participation.tournaments.name);
+        console.log('User tournament found:', participation.tournaments.name);
         setCurrentTournament(participation.tournaments);
         setUserParticipation(participation);
       } else {
-        console.log('ℹ️ No active tournament for user');
+        console.log('No active tournament for user');
         setCurrentTournament(null);
         setUserParticipation(null);
       }
@@ -94,12 +94,12 @@ export const useTournament = () => {
     }
   };
 
-  // TEMİZLEME FONKSİYONU - önemli!
-  const clearTournament = useCallback(() => {
-    console.log('🧹 Clearing tournament data');
+  // TEMİZLEME FONKSİYONU - basit versiyon
+  const clearTournament = () => {
+    console.log('Clearing tournament data');
     setCurrentTournament(null);
     setUserParticipation(null);
-  }, []);
+  };
 
   // Turnuva oluştur
   const createTournament = async () => {
@@ -120,7 +120,7 @@ export const useTournament = () => {
 
     if (error) throw error;
 
-    console.log('🏆 Tournament created:', tournament.name);
+    console.log('Tournament created:', tournament.name);
 
     // Otomatik katıl
     await joinTournament(tournament.id);
@@ -141,7 +141,7 @@ export const useTournament = () => {
       .maybeSingle();
 
     if (existingParticipant) {
-      console.log('⚠️ User already joined tournament');
+      console.log('User already joined tournament');
       // Mevcut turnuva bilgisini al
       await checkUserTournament();
       return;
@@ -170,7 +170,7 @@ export const useTournament = () => {
 
     if (error) throw error;
 
-    console.log('✅ User joined tournament');
+    console.log('User joined tournament');
 
     // Turnuva durumunu güncelle
     await checkUserTournament();
@@ -188,7 +188,7 @@ export const useTournament = () => {
 
     if (error) throw error;
 
-    console.log('👋 User left tournament');
+    console.log('User left tournament');
     
     // Durumu temizle
     clearTournament();
@@ -198,7 +198,7 @@ export const useTournament = () => {
   useEffect(() => {
     if (!currentTournament?.id) return;
 
-    console.log('🔄 Setting up real-time for tournament:', currentTournament.name);
+    console.log('Setting up real-time for tournament:', currentTournament.name);
 
     const tournamentChannel = supabase
       .channel(`tournament-${currentTournament.id}`)
@@ -208,13 +208,13 @@ export const useTournament = () => {
         table: 'tournaments',
         filter: `id=eq.${currentTournament.id}`
       }, (payload) => {
-        console.log('🏆 Tournament updated:', payload.new);
+        console.log('Tournament updated:', payload.new);
         setCurrentTournament(payload.new);
       })
       .subscribe();
 
     return () => {
-      console.log('🔌 Cleaning tournament channel');
+      console.log('Cleaning tournament channel');
       supabase.removeChannel(tournamentChannel);
     };
   }, [currentTournament?.id]);
@@ -227,6 +227,6 @@ export const useTournament = () => {
     leaveTournament,
     refreshTournament: checkUserTournament,
     clearTournament,
-    checkUserRoundResult // Bu fonksiyonu da export et
+    checkUserRoundResult
   };
 };
