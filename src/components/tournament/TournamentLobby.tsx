@@ -57,31 +57,28 @@ const startTournament = async () => {
     console.log('Mevcut durum:', { currentTotal, realPlayerCount });
     
     if (realPlayerCount < 1) {
-    // Turnuvayı expired yap
-    await supabase
-      .from('tournaments')
-      .update({ status: 'expired' })
-      .eq('id', tournament.id);
-    
-    toast({
-      title: 'Turnuva İptal Edildi',
-      description: 'Yeterli katılımcı bulunamadı.',
-      variant: 'destructive',
-    });
-    return;
-  }
+      await supabase
+        .from('tournaments')
+        .update({ status: 'expired' })
+        .eq('id', tournament.id);
+      
+      toast({
+        title: 'Turnuva İptal Edildi',
+        description: 'Yeterli katılımcı bulunamadı.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     const botsNeeded = 8 - currentTotal;
-
     if (botsNeeded > 0) {
       console.log('Bot ekleniyor:', botsNeeded);
       
-      // Basit bot ekleme - user_id null
       const botsToAdd = [];
       for (let i = 0; i < botsNeeded; i++) {
         botsToAdd.push({
           tournament_id: tournament.id,
-          user_id: null, // Nullable field, foreign key yok
+          user_id: null,
           seed: currentTotal + i + 1,
           is_bot: true
         });
@@ -93,20 +90,13 @@ const startTournament = async () => {
       
       if (botError) {
         console.error('Bot ekleme hatası:', botError);
-        toast({
-          title: 'Bot Ekleme Hatası',
-          description: 'Botlar eklenemedi, mevcut oyuncularla devam ediliyor.',
-          variant: 'destructive',
-        });
       } else {
         console.log(`${botsNeeded} bot başarıyla eklendi`);
       }
     }
 
-    // Botların eklenmesi için kısa bekle
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    // Turnuvayı aktif yap
     const { error: updateError } = await supabase
       .from('tournaments')
       .update({ 
@@ -117,8 +107,12 @@ const startTournament = async () => {
 
     if (updateError) throw updateError;
 
-    // Çeyrek final maçları oluştur
     await createQuarterFinalMatches();
+    
+    // Bot vs Bot maçlarını otomatik tamamla
+    setTimeout(async () => {
+      await completeBotMatches(tournament.id, 1);
+    }, 3000); // 3 saniye sonra bot maçlarını bitir
     
     toast({
       title: 'Turnuva Başladı!',
@@ -133,6 +127,47 @@ const startTournament = async () => {
       description: 'Turnuva başlatılamadı',
       variant: 'destructive',
     });
+  }
+};
+
+// Bu fonksiyonu da TournamentLobby.tsx'e ekleyin:
+const completeBotMatches = async (tournamentId: string, round: number) => {
+  try {
+    console.log(`Bot maçları tamamlanıyor - Round ${round}`);
+    
+    const { data: botMatches } = await supabase
+      .from('tournament_matches')
+      .select('*')
+      .eq('tournament_id', tournamentId)
+      .eq('round', round)
+      .eq('status', 'pending');
+
+    for (const match of botMatches || []) {
+      const isUserMatch = match.player1_id === user?.id || match.player2_id === user?.id;
+      
+      if (!isUserMatch) {
+        const winner = Math.random() > 0.5 ? match.player1_id : match.player2_id;
+        const winnerScore = Math.floor(Math.random() * 20) + 25; // 25-45
+        const loserScore = Math.floor(Math.random() * 15) + 10;  // 10-25
+        
+        await supabase
+          .from('tournament_matches')
+          .update({
+            status: 'completed',
+            winner_id: winner,
+            player1_score: winner === match.player1_id ? winnerScore : loserScore,
+            player2_score: winner === match.player2_id ? winnerScore : loserScore,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', match.id);
+        
+        console.log(`Bot maçı tamamlandı: ${match.id}`);
+      }
+    }
+    
+    console.log(`Round ${round} bot maçları tamamlandı`);
+  } catch (error) {
+    console.error('Bot maçları tamamlama hatası:', error);
   }
 };
 
