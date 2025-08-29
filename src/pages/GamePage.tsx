@@ -373,13 +373,6 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
       finalWinner: winnerId?.slice(-8)
     });
 
-    console.log('🏆 Maç güncelleniyor:', {
-      matchId: tournamentMatch.id,
-      winnerId: winnerId?.slice(-8),
-      userScore,
-      opponentScore
-    });
-
     // MATCH DURUMUNU GÜNCELLE
     const { error: updateError } = await supabase
       .from('tournament_matches')
@@ -399,6 +392,53 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
     }
 
     console.log('✅ Maç başarıyla güncellendi');
+
+    // YENİ: TURNUVA ROUND İLERLETME KONTROLÜ
+    try {
+      console.log('🔄 Checking tournament round progression...');
+      
+      // Mevcut round'daki tüm maçların durumunu kontrol et
+      const { data: roundMatches } = await supabase
+        .from('tournament_matches')
+        .select('id, status, winner_id')
+        .eq('tournament_id', tournamentId)
+        .eq('round', tournamentMatch.round);
+      
+      if (roundMatches) {
+        const completedMatches = roundMatches.filter(m => m.status === 'completed');
+        const totalMatches = roundMatches.length;
+        
+        console.log('📊 Round status:', {
+          round: tournamentMatch.round,
+          completed: completedMatches.length,
+          total: totalMatches
+        });
+        
+        // Tüm maçlar tamamlandıysa round'u ilerlet
+        if (completedMatches.length === totalMatches) {
+          console.log('🚀 All matches completed, advancing round...');
+          
+          // Database function'ını çağır (yukarıda oluşturduğumuz SQL function)
+          const { data: advanceResult, error: advanceError } = await supabase
+            .rpc('advance_tournament_round', { p_tournament_id: tournamentId });
+          
+          if (advanceError) {
+            console.error('❌ Round advance error:', advanceError);
+          } else if (advanceResult?.success) {
+            console.log('✅ Tournament round advanced successfully:', advanceResult);
+            
+            if (advanceResult.tournament_completed) {
+              console.log('🏆 Tournament completed! Winner:', advanceResult.winner_id?.slice(-8));
+            } else {
+              console.log('➡️ Next round created:', advanceResult.next_round);
+            }
+          }
+        }
+      }
+    } catch (advanceError) {
+      console.error('❌ Tournament progression error:', advanceError);
+    }
+
     setGameEnded(true);
 
     // OYUN BİTİŞ KARTINI GÖSTER
@@ -1697,26 +1737,12 @@ const isPlayingWithAI = useCallback(() => {
         return true;
       case 'tournament': {
         if (tournamentMatch) {
+          // ✅ FIX: player2_id null ise veya bot_ ile başlıyorsa AI
           const opponentId = tournamentMatch.player1_id === user?.id ? 
             tournamentMatch.player2_id : 
             tournamentMatch.player1_id;
           
-          // Bot kontrolü - null, undefined veya bot_ ile başlayan ID'ler
-          const isBot = !opponentId || 
-                       opponentId === null || 
-                       opponentId.startsWith('bot_') ||
-                       opponentId === 'bot';
-                       
-          console.log('🤖 Tournament AI Check:', {
-            matchId: tournamentMatch.id.slice(-8),
-            opponentId: opponentId?.slice(-8) || 'NULL',
-            isBot,
-            player1: tournamentMatch.player1_id?.slice(-8),
-            player2: tournamentMatch.player2_id?.slice(-8),
-            currentUser: user?.id?.slice(-8)
-          });
-          
-          return isBot;
+          return !opponentId || opponentId.startsWith('bot_') || opponentId === null;
         }
         return false;
       }
@@ -1731,7 +1757,7 @@ const isPlayingWithAI = useCallback(() => {
     }
   })();
   
-  console.log('🤖 AI Status Final - Mode:', gameMode, 'PlayingWithAI:', aiStatus);
+  console.log('AI Status Check - Mode:', gameMode, 'PlayingWithAI:', aiStatus, 'TournamentMatch:', tournamentMatch?.id?.slice(-8));
   return aiStatus;
 }, [gameMode, participants, tournamentMatch, user?.id]);
 
@@ -1864,22 +1890,21 @@ useEffect(() => {
   const aiPlaying = isPlayingWithAI();
   
   if (!aiPlaying || !gameStarted || gameEnded) {
-    console.log('🤖 AI not playing:', { aiPlaying, gameStarted, gameEnded });
     return;
   }
 
-  console.log('🤖 Starting AI play interval for game mode:', gameMode, 'Match:', tournamentMatch?.id?.slice(-8));
+  console.log('🤖 Starting AI play interval for game mode:', gameMode);
 
   const aiPlayInterval = setInterval(() => {
-    // Oyuncu son eyleminden sonra minimum bekleme
+    // Check if player recently took action, if so wait longer
     const timeSincePlayerAction = Date.now() - lastPlayerAction;
-    const minDelayAfterPlayerAction = 2000; // 2 saniye
+    const minDelayAfterPlayerAction = 3000; // 3 saniye minimum bekleme
     
     if (timeSincePlayerAction < minDelayAfterPlayerAction) {
-      return;
+      return; // Bu round'u atla
     }
     
-    // AI kelime seçimi
+    // AI word selection with validation
     const selectAIWord = async () => {
       try {
         const potentialWords = [
@@ -1888,78 +1913,82 @@ useEffect(() => {
           'SEVGİ', 'MUTLULUK', 'UMUT', 'HAYAL', 'RENKLER', 'MÜZİK', 'DANS', 'ŞARKI',
           'OYUN', 'SPOR', 'FUTBOL', 'BASKETBOL', 'TENİS', 'YÜZME', 'KOŞU', 'BİSİKLET',
           'YEMEK', 'EKMEK', 'PEYNİR', 'DOMATES', 'SALATA', 'ÇORBA', 'MEYVE',
-          'ELMA', 'ARMUT', 'ÇİLEK', 'KIRAZ', 'ÜZÜM', 'PORTAKAL', 'MANGO'
+          'ELMA', 'ARMUT', 'ÇİLEK', 'KIRAZ', 'ÜZÜM', 'PORTAKAL', 'MANGO',
+          'SEBZE', 'HAVUÇ', 'PATLICAN', 'BİBER', 'SOĞAN', 'SARIMSAK', 'PATATES',
+          'KALE', 'KEDİ', 'KÖPEK', 'KUŞU', 'BALINA', 'ASLAN', 'KAPLAN', 'FİL',
+          'SÜT', 'KOLA', 'ÇAY', 'KAHVE', 'ŞEKER', 'TUZ', 'YAĞLI', 'EKŞİ',
+          'EV', 'KAPI', 'PENCERE', 'ODA', 'SALON', 'MUTFAK', 'BANYO', 'YATAK',
+          'ANNE', 'BABA', 'KARDEŞ', 'DEDE', 'NINE', 'AMCA', 'TEYZE', 'HALA',
+          'ARKADAŞ', 'AİLE', 'İNSAN', 'ÇOCUK', 'BEBEK', 'YAŞ', 'GÜN', 'GECE',
+          'SABAH', 'ÖĞLE', 'AKŞAM', 'HAFTA', 'AY', 'YIL', 'ZAMAN', 'SAAT'
         ];
         
+        // Shuffle and try words until we find a valid unused one
         const shuffledWords = potentialWords.sort(() => Math.random() - 0.5);
         
         for (const word of shuffledWords) {
           const normalizedWord = word.toUpperCase();
           
-          // Global kullanılmış kelimeler kontrolü (tüm oyuncuların kelimelerini içerir)
-          if (!globalUsedWords.has(normalizedWord)) {
-            const points = Math.floor(Math.random() * 20) + 10; // 10-30 puan
-            
-            console.log(`🤖 AI used word in ${gameMode}: ${word} with ${points} points`);
-            
-            setOpponentScore(prevScore => {
-              const newScore = prevScore + points;
-              console.log(`🤖 Bot score update: ${prevScore} + ${points} = ${newScore}`);
-              return newScore;
-            });
-            
-            setOpponentWords(prev => [...prev, word]);
-            setOpponentWordsWithScores(prev => [...prev, { word, score: points }]);
-            
-            playSound('correctWord');
-            
-            // Global kullanılmış kelimeler listesine ekle
-            setGlobalUsedWords(prev => new Set([...prev, normalizedWord]));
-            
-            // Turnuva modunda bot skorunu da güncelle
-            if (gameMode === 'tournament' && tournamentMatch && user) {
-              const isPlayer1 = tournamentMatch.player1_id === user.id;
-              const updateField = isPlayer1 ? 'player2_score' : 'player1_score';
-              
-              try {
-                await supabase
-                  .from('tournament_matches')
-                  .update({
-                    [updateField]: prevScore + points,
-                    updated_at: new Date().toISOString()
-                  })
-                  .eq('id', tournamentMatch.id);
-                
-                console.log('🏆 Tournament bot score updated:', prevScore + points);
-              } catch (error) {
-                console.error('❌ Bot score update error:', error);
-              }
-            }
-            
-            return;
-          }
+          // Kullanılmış kelime kontrolü - GLOBAL ve LOCAL ayrı kontrol
+          if (!usedWords.has(normalizedWord) && !globalUsedWords.has(normalizedWord)) {
+  // LOCAL WORDLIST CHECK FOR AI
+  if (wordlistLoaded && wordlist.has(normalizedWord)) {
+    const points = Math.floor(Math.random() * 25) + 10;
+    console.log(`🤖 AI used validated word (local): ${word} in ${gameMode} mode with ${points} points`);
+    
+    setOpponentScore(prevScore => {
+      const newScore = prevScore + points;
+      console.log(`🤖 Bot score update: ${prevScore} + ${points} = ${newScore}`);
+      return newScore;
+    });
+    
+    setOpponentWords(prev => [...prev, word]);
+    setOpponentWordsWithScores(prev => [...prev, { word, score: points }]);
+    
+    playSound('correctWord');
+    
+    // ✅ SADECE GLOBAL'E EKLE - usedWords'e ekleme!
+    setGlobalUsedWords(prev => new Set([...prev, normalizedWord]));
+    console.log('🤖 AI added word to global used only:', normalizedWord);
+    return;
+  } else if (!wordlistLoaded) {
+    // Fallback if wordlist not loaded
+    const points = Math.floor(Math.random() * 15) + 8;
+    console.log(`🤖 AI used word (no wordlist): ${word} with ${points} points`);
+    
+    setOpponentScore(prevScore => prevScore + points);
+    setOpponentWords(prev => [...prev, word]);
+    setOpponentWordsWithScores(prev => [...prev, { word, score: points }]);
+    playSound('correctWord');
+    
+    // ✅ SADECE GLOBAL'E EKLE
+    setGlobalUsedWords(prev => new Set([...prev, normalizedWord]));
+    return;
+  }
+}
         }
         
-        // Kelime bulunamazsa küçük puan ver
-        const fallbackPoints = Math.floor(Math.random() * 8) + 5;
-        setOpponentScore(prevScore => prevScore + fallbackPoints);
-        console.log(`🤖 AI couldn't find word, got ${fallbackPoints} points`);
+        // If no valid word found, AI gets fewer points
+        const opponentPoints = Math.floor(Math.random() * 10) + 5;
+        setOpponentScore(prevScore => prevScore + opponentPoints);
+        console.log(`🤖 AI couldn't find unused word, got ${opponentPoints} points in ${gameMode} mode`);
         
       } catch (error) {
-        console.error('🤖 AI word selection error:', error);
-        const errorPoints = Math.floor(Math.random() * 10) + 5;
-        setOpponentScore(prevScore => prevScore + errorPoints);
+        console.error('AI word selection error:', error);
+        const opponentPoints = Math.floor(Math.random() * 10) + 5;
+        setOpponentScore(prevScore => prevScore + opponentPoints);
+        console.log(`🤖 AI error, got ${opponentPoints} points in ${gameMode} mode`);
       }
     };
 
     selectAIWord();
-  }, 3000 + Math.random() * 4000); // 3-7 saniye arası
+  }, 4000 + Math.random() * 3000); // 4-7 saniye arasında
 
   return () => {
     console.log('🤖 Stopping AI play interval for game mode:', gameMode);
     clearInterval(aiPlayInterval);
   };
-}, [gameStarted, gameEnded, gameMode, globalUsedWords, isPlayingWithAI, tournamentMatch, user]);
+}, [gameStarted, gameEnded, gameMode, usedWords, globalUsedWords]); 
 
   // Private room logic
   useEffect(() => {
