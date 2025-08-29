@@ -605,7 +605,7 @@ const showTournamentEndCard = async (isWinner: boolean, userScore: number, oppon
         if (tournament.current_round === 3 && isWinner) {
           navigate('/');
         } else {
-          navigate(`/tournament/${tournamentId}`);
+          navigate('/tournament');
         }
       });
     }
@@ -613,7 +613,7 @@ const showTournamentEndCard = async (isWinner: boolean, userScore: number, oppon
     if (tournamentBtn) {
       tournamentBtn.addEventListener('click', () => {
         document.body.removeChild(modalDiv);
-        navigate(`/tournament/${tournamentId}`);
+        navigate('/tournament');
       });
     }
 
@@ -630,7 +630,7 @@ const showTournamentEndCard = async (isWinner: boolean, userScore: number, oppon
         if (document.body.contains(modalDiv)) {
           document.body.removeChild(modalDiv);
         }
-        navigate(`/tournament/${tournamentId}`);
+        navigate('/tournament');
       }, 5000);
     }
 
@@ -2764,7 +2764,7 @@ if (gameEnded) {
       console.log('🏆 Tournament ID from URL:', tournamentId);
       
       // ✅ DOĞRUDAN YÖNLENDİRME
-      window.location.href = `/tournament/${tournamentId}`;
+      window.location.href = '/tournament';
     }} 
     className="w-full"
   >
