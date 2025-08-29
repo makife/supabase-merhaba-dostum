@@ -2,6 +2,23 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
+// Tournament match türü tanımı
+interface TournamentMatch {
+  id: string;
+  tournament_id: string;
+  round: number;
+  match_number: number;
+  player1_id: string | null;
+  player2_id: string | null;
+  player1_score: number | null;
+  player2_score: number | null;
+  winner_id: string | null;
+  status: string;
+  room_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export const useTournament = () => {
   const [currentTournament, setCurrentTournament] = useState<any>(null);
   const [userParticipation, setUserParticipation] = useState<any>(null);
@@ -45,37 +62,39 @@ export const useTournament = () => {
     }
   };
 
-const checkUserRoundResult = async (tournamentId: string, round: number) => {
-  if (!user) return null;
+  const checkUserRoundResult = async (tournamentId: string, round: number) => {
+    if (!user) return null;
 
-  try {
-    const { data: match, error } = await supabase
-      .from('tournament_matches')
-      .select('*')
-      .eq('tournament_id', tournamentId)
-      .eq('round', round)
-      .or(`player1_id.eq.${user.id},player2_id.eq.${user.id}`)
-      .maybeSingle();
+    try {
+      const { data: match, error } = await supabase
+        .from('tournament_matches')
+        .select('*')
+        .eq('tournament_id', tournamentId)
+        .eq('round', round)
+        .or(`player1_id.eq.${user.id},player2_id.eq.${user.id}`)
+        .maybeSingle();
 
-    if (error) throw error;
+      if (error) throw error;
 
-    if (match && match.status === 'completed') {
-      return {
-        won: match.winner_id === user.id,
-        score: match.player1_id === user.id ? match.player1_score : match.player2_score,
-        opponentScore: match.player1_id === user.id ? match.player2_score : match.player1_score
-      };
+      // Türü açıkça belirt
+      const typedMatch = match as TournamentMatch;
+
+      if (typedMatch && typedMatch.status === 'completed') {
+        return {
+          won: typedMatch.winner_id === user.id,
+          score: typedMatch.player1_id === user.id ? typedMatch.player1_score : typedMatch.player2_score,
+          opponentScore: typedMatch.player1_id === user.id ? typedMatch.player2_score : typedMatch.player1_score
+        };
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error checking round result:', error);
+      return null;
     }
+  };
 
-    return null;
-  } catch (error) {
-    console.error('Error checking round result:', error);
-    return null;
-  }
-};
-
-
-  // TEMIZLEME FONKSİYONU - önemli!
+  // TEMİZLEME FONKSİYONU - önemli!
   const clearTournament = () => {
     console.log('🧹 Clearing tournament data');
     setCurrentTournament(null);
@@ -175,11 +194,6 @@ const checkUserRoundResult = async (tournamentId: string, round: number) => {
     clearTournament();
   };
 
-  // OTOMATIK YÜKLEME KALDIRILDI - sadece manuel çağırımlarda veri al
-  // useEffect(() => {
-  //   checkUserTournament();
-  // }, [user]);
-
   // Sadece mevcut turnuva varsa real-time dinle
   useEffect(() => {
     if (!currentTournament?.id) return;
@@ -212,6 +226,7 @@ const checkUserRoundResult = async (tournamentId: string, round: number) => {
     joinTournament,
     leaveTournament,
     refreshTournament: checkUserTournament,
-    clearTournament // YENİ - temizleme fonksiyonu
+    clearTournament,
+    checkUserRoundResult // Bu fonksiyonu da export et
   };
 };
