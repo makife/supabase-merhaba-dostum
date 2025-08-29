@@ -1,92 +1,152 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Trophy, Clock, Users, ArrowLeft } from 'lucide-react';
-import TournamentAdvanceCard from './TournamentAdvanceCard';
+import { ArrowLeft, Trophy, User, Bot, Play, Clock, CheckCircle } from 'lucide-react';
 
 interface TournamentBracketProps {
   tournament: any;
   userParticipation: any;
-  onStartMatch?: (match: any) => void;
 }
 
 const TournamentBracket = ({ tournament, userParticipation }: TournamentBracketProps) => {
   const [matches, setMatches] = useState<any[]>([]);
   const [participants, setParticipants] = useState<any[]>([]);
-  const [countdown, setCountdown] = useState(10);
-  const [userMatch, setUserMatch] = useState<any>(null);
-  const [showAdvanceCard, setShowAdvanceCard] = useState(false);
-  const [advanceCardData, setAdvanceCardData] = useState<any>(null);
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Maçları ve katılımcıları yükle
   const loadTournamentData = async () => {
     try {
       // Maçları yükle
-      const { data: matchesData, error: matchesError } = await supabase
+      const { data: matchData } = await supabase
         .from('tournament_matches')
         .select('*')
         .eq('tournament_id', tournament.id)
-        .eq('round', tournament.current_round)
+        .order('round')
         .order('match_number');
 
-      if (!matchesError && matchesData) {
-        setMatches(matchesData);
-        
-        // Kullanıcının maçını bul
-        const currentUserMatch = matchesData.find(
-          m => m.player1_id === user?.id || m.player2_id === user?.id
-        );
-        setUserMatch(currentUserMatch);
-      }
-
       // Katılımcıları yükle
-      const { data: participantsData, error: participantsError } = await supabase
+      const { data: participantData } = await supabase
         .from('tournament_participants')
         .select(`
           *,
           profiles:user_id (username, avatar_url)
         `)
-        .eq('tournament_id', tournament.id);
+        .eq('tournament_id', tournament.id)
+        .order('seed');
 
-      if (!participantsError && participantsData) {
-        setParticipants(participantsData);
-      }
+      if (matchData) setMatches(matchData);
+      if (participantData) setParticipants(participantData);
+      
     } catch (error) {
       console.error('Error loading tournament data:', error);
     }
   };
 
-  // Kullanıcının maçını başlat
-  const startUserMatch = () => {
-    if (userMatch) {
-      navigate(`/tournament/match/${userMatch.id}`);
+  // Katılımcı bilgisini al
+  const getParticipantInfo = (userId: string | null) => {
+    if (!userId) return { name: 'TBD', isBot: false, avatar: null };
+    
+    const participant = participants.find(p => p.user_id === userId);
+    if (!participant) return { name: 'Bilinmiyor', isBot: false, avatar: null };
+    
+    if (participant.is_bot) {
+      return { 
+        name: `Bot ${participant.seed}`, 
+        isBot: true, 
+        avatar: null 
+      };
+    }
+    
+    return {
+      name: participant.profiles?.username || `Oyuncu ${participant.seed}`,
+      isBot: false,
+      avatar: participant.profiles?.avatar_url
+    };
+  };
+
+  // Maça başla
+  const startMatch = async (match: any) => {
+    if (!user || loading) return;
+    
+    // Kullanıcının bu maçta olduğunu kontrol et
+    const isUserInMatch = match.player1_id === user.id || match.player2_id === user.id;
+    
+    if (!isUserInMatch) {
+      toast({
+        title: 'Bu Maç Size Ait Değil',
+        description: 'Bu maçta oynamıyorsunuz.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (match.status !== 'pending') {
+      toast({
+        title: 'Maç Zaten Başladı',
+        description: 'Bu maç zaten başlamış veya tamamlanmış.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setLoading(true);
+    
+    try {
+      // Maçı aktif olarak işaretle
+      const { error } = await supabase
+        .from('tournament_matches')
+        .update({ 
+          status: 'active',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', match.id);
+
+      if (error) throw error;
+
+      // GamePage'e yönlendir
+      navigate(`/game/tournament?tournament=${tournament.id}&match=${match.id}&type=timed`);
+      
+    } catch (error) {
+      console.error('Error starting match:', error);
+      toast({
+        title: 'Hata',
+        description: 'Maç başlatılamadı',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Geri sayım ve otomatik başlatma
-  useEffect(() => {
-    if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
-      return () => clearTimeout(timer);
-    } else {
-      startUserMatch();
+  // Round adını al
+  const getRoundName = (round: number) => {
+    switch (round) {
+      case 1: return 'Çeyrek Final';
+      case 2: return 'Yarı Final';
+      case 3: return 'Final';
+      default: return `${round}. Tur`;
     }
-  }, [countdown]);
+  };
+
+  // Round'a göre maçları grupla
+  const getMatchesByRound = (round: number) => {
+    return matches.filter(m => m.round === round);
+  };
 
   // Real-time updates
   useEffect(() => {
     loadTournamentData();
     
-    const matchesChannel = supabase
-      .channel(`tournament-matches-${tournament.id}`)
+    const channel = supabase
+      .channel(`tournament-bracket-${tournament.id}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
@@ -97,147 +157,185 @@ const TournamentBracket = ({ tournament, userParticipation }: TournamentBracketP
       })
       .subscribe();
 
-    const tournamentChannel = supabase
-      .channel(`tournament-${tournament.id}`)
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'tournaments',
-        filter: `id=eq.${tournament.id}`
-      }, (payload) => {
-        const updatedTournament = payload.new;
-        
-        // Tur değiştiğinde ilerleme kartını göster
-        if (updatedTournament.current_round !== tournament.current_round) {
-          const roundNames = {
-            2: 'yarı finale',
-            3: 'finale'
-          };
-          
-          setAdvanceCardData({
-            nextRound: roundNames[updatedTournament.current_round as keyof typeof roundNames] || 'bir sonraki tura',
-            currentRound: updatedTournament.current_round
-          });
-          setShowAdvanceCard(true);
-        }
-      })
-      .subscribe();
-
     return () => {
-      supabase.removeChannel(matchesChannel);
-      supabase.removeChannel(tournamentChannel);
+      supabase.removeChannel(channel);
     };
   }, [tournament.id]);
 
-  const getParticipantName = (userId: string) => {
-    const participant = participants.find(p => p.user_id === userId);
-    if (participant?.is_bot) {
-      return `Bot ${participant.seed}`;
-    }
-    return participant?.profiles?.username || 'Oyuncu';
-  };
-
-  const getRoundName = (round: number) => {
-    switch (round) {
-      case 1: return 'Çeyrek Final';
-      case 2: return 'Yarı Final';
-      case 3: return 'Final';
-      default: return `${round}. Tur`;
-    }
-  };
-
-  if (showAdvanceCard) {
+  // Match card component
+  const MatchCard = ({ match }: { match: any }) => {
+    const player1 = getParticipantInfo(match.player1_id);
+    const player2 = getParticipantInfo(match.player2_id);
+    const isUserMatch = match.player1_id === user?.id || match.player2_id === user?.id;
+    
     return (
-      <TournamentAdvanceCard
-        nextRound={advanceCardData.nextRound}
-        onContinue={() => {
-          setShowAdvanceCard(false);
-          setCountdown(10); // Yeni tur için geri sayım
-        }}
-      />
+      <Card className={`${isUserMatch ? 'border-primary ring-2 ring-primary/20' : ''}`}>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm">
+              Maç {match.match_number}
+            </CardTitle>
+            <Badge variant={
+              match.status === 'completed' ? 'default' :
+              match.status === 'active' ? 'destructive' : 'secondary'
+            }>
+              {match.status === 'completed' ? 'Bitti' :
+               match.status === 'active' ? 'Devam Ediyor' : 'Bekliyor'}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {/* Player 1 */}
+          <div className={`flex items-center justify-between p-2 rounded ${
+            match.winner_id === match.player1_id ? 'bg-green-100 border border-green-300' : 'bg-muted'
+          }`}>
+            <div className="flex items-center space-x-2">
+              {player1.isBot ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
+              <span className={`font-medium ${match.player1_id === user?.id ? 'text-primary' : ''}`}>
+                {player1.name}
+              </span>
+              {match.winner_id === match.player1_id && <CheckCircle className="w-4 h-4 text-green-600" />}
+            </div>
+            <span className="font-bold">
+              {match.player1_score !== null ? match.player1_score : '-'}
+            </span>
+          </div>
+          
+          {/* VS */}
+          <div className="text-center text-sm text-muted-foreground">VS</div>
+          
+          {/* Player 2 */}
+          <div className={`flex items-center justify-between p-2 rounded ${
+            match.winner_id === match.player2_id ? 'bg-green-100 border border-green-300' : 'bg-muted'
+          }`}>
+            <div className="flex items-center space-x-2">
+              {player2.isBot ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
+              <span className={`font-medium ${match.player2_id === user?.id ? 'text-primary' : ''}`}>
+                {player2.name}
+              </span>
+              {match.winner_id === match.player2_id && <CheckCircle className="w-4 h-4 text-green-600" />}
+            </div>
+            <span className="font-bold">
+              {match.player2_score !== null ? match.player2_score : '-'}
+            </span>
+          </div>
+
+          {/* Action button */}
+          {isUserMatch && match.status === 'pending' && (
+            <Button 
+              onClick={() => startMatch(match)}
+              disabled={loading}
+              className="w-full"
+            >
+              <Play className="w-4 h-4 mr-2" />
+              {loading ? 'Başlatılıyor...' : 'Maça Başla'}
+            </Button>
+          )}
+          
+          {isUserMatch && match.status === 'active' && (
+            <Button 
+              onClick={() => navigate(`/game/tournament?tournament=${tournament.id}&match=${match.id}&type=timed`)}
+              variant="destructive"
+              className="w-full"
+            >
+              <Clock className="w-4 h-4 mr-2" />
+              Maça Devam Et
+            </Button>
+          )}
+        </CardContent>
+      </Card>
     );
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-6">
+        {/* Header */}
         <div className="flex items-center justify-between">
-          <Button variant="outline" size="sm" onClick={() => navigate('/tournament')}>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => navigate('/tournament')}
+          >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Turnuvalar
+            Turnuva Listesi
           </Button>
           <h1 className="text-2xl font-bold flex items-center">
             <Trophy className="w-6 h-6 mr-2" />
             {tournament.name}
           </h1>
-          <Badge variant="default">
-            {getRoundName(tournament.current_round)}
-          </Badge>
+          <div className="w-16" />
         </div>
 
-        {/* Geri sayım kartı */}
-        <Card className="border-primary">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-center">
-              <Clock className="w-5 h-5 mr-2" />
-              {getRoundName(tournament.current_round)} Başlıyor
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center space-y-4">
-              <div className="text-4xl font-bold text-primary">{countdown}</div>
-              <div className="text-lg">saniye sonra maçınız başlayacak</div>
-              <div className="text-sm text-muted-foreground">
-                2 dakika süreniz olacak
+        {/* Tournament Info */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold">Turnuva Durumu</h3>
+                <p className="text-sm text-muted-foreground">
+                  {getRoundName(tournament.current_round)} - {tournament.status === 'active' ? 'Devam Ediyor' : 'Tamamlandı'}
+                </p>
               </div>
+              <Badge variant={tournament.status === 'active' ? 'default' : 'secondary'}>
+                {tournament.status === 'active' ? 'Aktif' : 'Bitti'}
+              </Badge>
             </div>
           </CardContent>
         </Card>
 
-        {/* Maç eşleşmeleri */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Users className="w-5 h-5 mr-2" />
-              {getRoundName(tournament.current_round)} Eşleşmeleri
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4">
-              {matches.map((match, index) => (
-                <div 
-                  key={match.id} 
-                  className={`p-4 rounded-lg border-2 ${
-                    match.player1_id === user?.id || match.player2_id === user?.id
-                      ? 'border-primary bg-primary/5'
-                      : 'border-muted bg-muted/50'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="text-center flex-1">
-                      <div className="font-medium">
-                        {getParticipantName(match.player1_id)}
-                      </div>
-                    </div>
-                    <div className="mx-4 text-2xl font-bold text-muted-foreground">
-                      VS
-                    </div>
-                    <div className="text-center flex-1">
-                      <div className="font-medium">
-                        {getParticipantName(match.player2_id)}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-center mt-2">
-                    <Badge variant="outline">
-                      Maç {index + 1}
-                    </Badge>
-                  </div>
+        {/* Bracket */}
+        <div className="space-y-8">
+          {[1, 2, 3].map(round => {
+            const roundMatches = getMatchesByRound(round);
+            if (roundMatches.length === 0) return null;
+            
+            return (
+              <div key={round}>
+                <h2 className="text-xl font-semibold mb-4 flex items-center">
+                  <Trophy className="w-5 h-5 mr-2" />
+                  {getRoundName(round)}
+                </h2>
+                <div className={`grid gap-4 ${
+                  round === 1 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4' :
+                  round === 2 ? 'grid-cols-1 md:grid-cols-2' :
+                  'grid-cols-1'
+                }`}>
+                  {roundMatches.map(match => (
+                    <MatchCard key={match.id} match={match} />
+                  ))}
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Tournament Winner */}
+        {tournament.status === 'completed' && tournament.winner_id && (
+          <Card className="border-yellow-500 bg-yellow-50">
+            <CardContent className="p-6 text-center">
+              <Trophy className="w-12 h-12 mx-auto mb-4 text-yellow-600" />
+              <h2 className="text-2xl font-bold text-yellow-800 mb-2">
+                Turnuva Şampiyonu!
+              </h2>
+              <p className="text-lg text-yellow-700">
+                {getParticipantInfo(tournament.winner_id).name}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {matches.length === 0 && (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <Clock className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-lg font-semibold mb-2">Maçlar Hazırlanıyor</h3>
+              <p className="text-muted-foreground">
+                Turnuva maçları oluşturuluyor...
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
