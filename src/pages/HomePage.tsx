@@ -531,7 +531,7 @@ const HomePage = () => {
                     onClick={() => {
                       playSound('buttonClick');
                       if (mode.id === 'tournament') {
-                        navigate('/tournaments');
+                        navigate('/tournament');
                       } else {
                         setSelectedMode(mode.id);
                       }
@@ -586,7 +586,7 @@ const HomePage = () => {
             mode={selectedMode}
             onStart={(gameType) => {
               playSound('buttonClick');
-              navigate('/tournaments', { state: { gameType } });
+              navigate('/tournament', { state: { gameType } });
               setSelectedMode(null);
             }}
             onClose={() => {
