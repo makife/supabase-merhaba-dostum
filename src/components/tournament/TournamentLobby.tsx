@@ -57,13 +57,19 @@ const startTournament = async () => {
     console.log('Mevcut durum:', { currentTotal, realPlayerCount });
     
     if (realPlayerCount < 1) {
-      toast({
-        title: 'Yetersiz Katılımcı',
-        description: 'Turnuva için en az 1 oyuncu gereklidir.',
-        variant: 'destructive',
-      });
-      return;
-    }
+    // Turnuvayı expired yap
+    await supabase
+      .from('tournaments')
+      .update({ status: 'expired' })
+      .eq('id', tournament.id);
+    
+    toast({
+      title: 'Turnuva İptal Edildi',
+      description: 'Yeterli katılımcı bulunamadı.',
+      variant: 'destructive',
+    });
+    return;
+  }
 
     const botsNeeded = 8 - currentTotal;
 
