@@ -19,10 +19,7 @@ const TournamentPage = () => {
   const [isJoining, setIsJoining] = useState(false);
   const [showTournamentView, setShowTournamentView] = useState(false); // YENİ STATE
 
-  if (showTournamentView && currentTournament && userParticipation) {
-    return <TournamentFlowManager />;
-  }
-
+  // useTournament hook'u burada çağırılıyor
   const {
     currentTournament,
     userParticipation,
@@ -32,6 +29,11 @@ const TournamentPage = () => {
     refreshTournament,
     clearTournament
   } = useTournament();
+
+  // Bu kontrolü hook'tan sonra yapıyoruz
+  if (showTournamentView && currentTournament && userParticipation) {
+    return <TournamentFlowManager />;
+  }
 
   // Sayfa ilk yüklendiğinde temizle
   useEffect(() => {
