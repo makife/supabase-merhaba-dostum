@@ -42,9 +42,8 @@ const TournamentLobby = ({ tournament, onLeave }: TournamentLobbyProps) => {
   // Turnuva otomatik başlatma
 const startTournament = async () => {
   try {
-    console.log('🚀 Turnuva başlatılıyor...');
+    console.log('Turnuva başlatılıyor...');
     
-    // Mevcut katılımcıları al
     const { data: allParticipants } = await supabase
       .from('tournament_participants')
       .select('*')
@@ -54,53 +53,50 @@ const startTournament = async () => {
     const currentTotal = allParticipants?.length || 0;
     const realPlayerCount = allParticipants?.filter(p => !p.is_bot).length || 0;
     
-    console.log('📊 Mevcut durum:', { currentTotal, realPlayerCount });
+    console.log('Mevcut durum:', { currentTotal, realPlayerCount });
     
     if (realPlayerCount < 1) {
       toast({
-        title: '⚠️ Yetersiz Katılımcı',
+        title: 'Yetersiz Katılımcı',
         description: 'Turnuva için en az 1 oyuncu gereklidir.',
         variant: 'destructive',
       });
       return;
     }
 
-    // Bot ekleme - Toplam 8 olana kadar
     const botsNeeded = 8 - currentTotal;
 
     if (botsNeeded > 0) {
-      console.log('🤖 Bot ekleniyor:', botsNeeded);
+      console.log('Bot ekleniyor:', botsNeeded);
       
-      // Her bot için gerçek UUID oluştur
+      // Basit bot ekleme - user_id null
       const botsToAdd = [];
       for (let i = 0; i < botsNeeded; i++) {
         botsToAdd.push({
           tournament_id: tournament.id,
-          user_id: crypto.randomUUID(), // Gerçek UUID
+          user_id: null, // Nullable field, foreign key yok
           seed: currentTotal + i + 1,
           is_bot: true
         });
       }
       
-      // Botları tek seferde ekle
       const { error: botError } = await supabase
         .from('tournament_participants')
         .insert(botsToAdd);
       
       if (botError) {
-        console.error('❌ Bot ekleme hatası:', botError);
-        // Hata varsa devam et, botlar olmadan da oyun başlasın
+        console.error('Bot ekleme hatası:', botError);
         toast({
-          title: '⚠️ Bot Ekleme Hatası',
-          description: 'Bazı botlar eklenemedi, turnuva mevcut oyuncularla başlıyor.',
+          title: 'Bot Ekleme Hatası',
+          description: 'Botlar eklenemedi, mevcut oyuncularla devam ediliyor.',
           variant: 'destructive',
         });
       } else {
-        console.log('✅ Botlar başarıyla eklendi');
+        console.log(`${botsNeeded} bot başarıyla eklendi`);
       }
     }
 
-    // Kısa bekle - botların eklenmesi için
+    // Botların eklenmesi için kısa bekle
     await new Promise(resolve => setTimeout(resolve, 500));
 
     // Turnuvayı aktif yap
@@ -112,22 +108,19 @@ const startTournament = async () => {
       })
       .eq('id', tournament.id);
 
-    if (updateError) {
-      console.error('❌ Turnuva güncelleme hatası:', updateError);
-      throw updateError;
-    }
+    if (updateError) throw updateError;
 
     // Çeyrek final maçları oluştur
     await createQuarterFinalMatches();
     
     toast({
-      title: '🏆 Turnuva Başladı!',
+      title: 'Turnuva Başladı!',
       description: 'Çeyrek final maçları başlıyor...',
       duration: 3000,
     });
     
   } catch (error) {
-    console.error('❌ Turnuva başlatma hatası:', error);
+    console.error('Turnuva başlatma hatası:', error);
     toast({
       title: 'Hata',
       description: 'Turnuva başlatılamadı',
@@ -136,34 +129,28 @@ const startTournament = async () => {
   }
 };
 
-  // Çeyrek final maçları oluştur
 const createQuarterFinalMatches = async () => {
   try {
-    console.log('⚔️ Çeyrek final maçları oluşturuluyor...');
+    console.log('Çeyrek final maçları oluşturuluyor...');
     
-    // Güncel katılımcı listesini al
     const { data: allParticipants, error: fetchError } = await supabase
       .from('tournament_participants')
       .select('*')
       .eq('tournament_id', tournament.id)
       .order('seed');
 
-    if (fetchError) {
-      console.error('❌ Katılımcı yükleme hatası:', fetchError);
-      throw fetchError;
-    }
+    if (fetchError) throw fetchError;
 
-    console.log(`📋 ${allParticipants?.length || 0} katılımcı bulundu`);
+    console.log(`${allParticipants?.length || 0} katılımcı bulundu`);
 
     if (!allParticipants || allParticipants.length < 2) {
       throw new Error(`Yetersiz katılımcı: ${allParticipants?.length || 0}`);
     }
 
-    // Eşleşmeleri oluştur - 8 kişilik standart bracket
     const matches = [];
     
     if (allParticipants.length >= 8) {
-      // 8 kişilik standart bracket: 1vs8, 2vs7, 3vs6, 4vs5
+      // 8 kişilik bracket: 1vs8, 2vs7, 3vs6, 4vs5
       for (let i = 0; i < 4; i++) {
         const player1 = allParticipants[i];
         const player2 = allParticipants[7 - i];
@@ -172,13 +159,13 @@ const createQuarterFinalMatches = async () => {
           tournament_id: tournament.id,
           round: 1,
           match_number: i + 1,
-          player1_id: player1.user_id,
-          player2_id: player2.user_id,
+          player1_id: player1.user_id, // null olabilir (bot)
+          player2_id: player2.user_id, // null olabilir (bot)
           status: 'pending'
         });
       }
     } else {
-      // Daha az kişi varsa sırayla eşleştir
+      // Daha az katılımcı varsa çiftler halinde
       const pairCount = Math.floor(allParticipants.length / 2);
       for (let i = 0; i < pairCount; i++) {
         matches.push({
@@ -192,24 +179,18 @@ const createQuarterFinalMatches = async () => {
       }
     }
 
-    // Maçları kaydet
     if (matches.length > 0) {
       const { error: matchError } = await supabase
         .from('tournament_matches')
         .insert(matches);
 
-      if (matchError) {
-        console.error('❌ Maç kaydetme hatası:', matchError);
-        throw matchError;
-      }
+      if (matchError) throw matchError;
 
-      console.log(`✅ ${matches.length} maç başarıyla oluşturuldu`);
-    } else {
-      throw new Error('Hiç maç oluşturulamadı');
+      console.log(`${matches.length} maç oluşturuldu`);
     }
     
   } catch (error) {
-    console.error('❌ Çeyrek final maçları oluşturma hatası:', error);
+    console.error('Maç oluşturma hatası:', error);
     throw error;
   }
 };
