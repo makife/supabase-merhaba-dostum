@@ -193,7 +193,9 @@ const TournamentPage = () => {
   };
 
   const handleGoToTournament = async () => {
+    console.log('Refreshing tournament data...');
     await refreshTournament();
+    console.log('Current tournament after refresh:', currentTournament);
     setViewMode('tournament');
   };
 
