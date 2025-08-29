@@ -436,7 +436,7 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
   } catch (error) {
     console.error('❌ Turnuva maç bitiş hatası:', error);
     setGameEnded(true);
-    setTimeout(() => navigate('/tournaments'), 3000);
+    setTimeout(() => navigate('/tournament'), 3000);
   }
 };
 
@@ -545,7 +545,7 @@ const showTournamentEndCard = async (isWinner: boolean, userScore: number, oppon
       .single();
 
     if (!tournament) {
-      navigate('/tournaments');
+      navigate('/tournament');
       return;
     }
 
@@ -636,7 +636,7 @@ const showTournamentEndCard = async (isWinner: boolean, userScore: number, oppon
 
   } catch (error) {
     console.error('❌ Turnuva bitiş kartı hatası:', error);
-    navigate('/tournaments');
+    navigate('/tournament');
   }
 };
   
@@ -1725,11 +1725,11 @@ const handleTournamentExit = async () => {
       .eq('id', tournamentMatch.id);
 
     setShowTournamentExitDialog(false);
-    navigate('/tournaments');
+    navigate('/tournament');
 
   } catch (error) {
     console.error('Çıkış hatası:', error);
-    navigate('/tournaments');
+    navigate('/tournament');
   }
 };
   
@@ -2738,7 +2738,7 @@ if (gameEnded) {
                     variant="outline" 
                     onClick={() => {
                       playSound('buttonClick');
-                      navigate('/tournaments');
+                      navigate('/tournament');
                     }} 
                     className="w-full"
                   >
@@ -2757,7 +2757,7 @@ if (gameEnded) {
       
       if (!tournamentId) {
         console.error('❌ tournament ID URL parameter missing');
-        navigate('/tournaments');
+        navigate('/tournament');
         return;
       }
 
