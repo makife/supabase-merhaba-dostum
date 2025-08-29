@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
@@ -16,10 +16,8 @@ const TournamentPage = () => {
   const { user } = useAuth();
   const [activeTournaments, setActiveTournaments] = useState([]);
   const [isJoining, setIsJoining] = useState(false);
-  const [showTournamentView, setShowTournamentView] = useState(false);
-  const mountedRef = useRef(false);
+  const [viewMode, setViewMode] = useState<'list' | 'tournament'>('list');
 
-  // Hook'u hemen çağır
   const {
     currentTournament,
     userParticipation,
@@ -30,19 +28,8 @@ const TournamentPage = () => {
     clearTournament
   } = useTournament();
 
-  // Stabil callback fonksiyonları
-  const handleClearTournament = useCallback(() => {
-    if (mountedRef.current) {
-      console.log('TournamentPage - clearing tournament data');
-      clearTournament();
-      setShowTournamentView(false);
-    }
-  }, [clearTournament]);
-
-  // Aktif turnuvaları yükle - memoized
-  const loadActiveTournaments = useCallback(async () => {
-    if (!mountedRef.current) return;
-    
+  // Aktif turnuvaları yükle
+  const loadActiveTournaments = async () => {
     try {
       const { data, error } = await supabase
         .from('tournaments')
@@ -53,45 +40,39 @@ const TournamentPage = () => {
         .in('status', ['waiting', 'active'])
         .order('created_at', { ascending: false });
 
-      if (!error && data && mountedRef.current) {
+      if (!error && data) {
         setActiveTournaments(data);
       }
     } catch (error) {
       console.error('Error loading tournaments:', error);
     }
+  };
+
+  // İlk yükleme
+  useEffect(() => {
+    console.log('TournamentPage mounted - resetting state');
+    clearTournament();
+    setViewMode('list');
+    loadActiveTournaments();
   }, []);
 
-  // Mount/unmount tracking
+  // Periyodik güncelleme - sadece liste görünümündeyken
   useEffect(() => {
-    mountedRef.current = true;
+    if (viewMode !== 'list') return;
     
-    // İlk yükleme
-    handleClearTournament();
-    loadActiveTournaments();
-    
-    return () => {
-      mountedRef.current = false;
-    };
-  }, [handleClearTournament, loadActiveTournaments]);
-
-  // Periyodik güncelleme
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (mountedRef.current && !showTournamentView) {
-        loadActiveTournaments();
-      }
-    }, 30000);
-    
+    const interval = setInterval(loadActiveTournaments, 30000);
     return () => clearInterval(interval);
-  }, [loadActiveTournaments, showTournamentView]);
+  }, [viewMode]);
 
   const handleCreateTournament = async () => {
-    if (!user || isJoining || !mountedRef.current) return;
+    if (!user || isJoining) return;
+    
     setIsJoining(true);
     
     try {
-      console.log('🎮 Turnuva oluşturma/katılma işlemi başlatıldı');
+      console.log('Turnuva oluşturma/katılma işlemi başlatıldı');
       
+      // Bekleyen turnuva kontrolü
       const { data: waitingTournaments } = await supabase
         .from('tournaments')
         .select('*, tournament_participants(user_id)')
@@ -103,7 +84,7 @@ const TournamentPage = () => {
         const tournament = waitingTournaments[0];
         const participantCount = tournament.tournament_participants?.length || 0;
         
-        console.log('📋 Bekleyen turnuva bulundu:', tournament.name, 'Katılımcı:', participantCount);
+        console.log('Bekleyen turnuva bulundu:', tournament.name, 'Katılımcı:', participantCount);
         
         if (participantCount >= 8) {
           toast({
@@ -117,107 +98,114 @@ const TournamentPage = () => {
           );
           
           if (isAlreadyParticipant) {
-            console.log('⚠️ Kullanıcı zaten katılmış');
+            console.log('Kullanıcı zaten katılmış');
             await refreshTournament();
-            if (mountedRef.current) {
-              setShowTournamentView(true);
-              toast({
-                title: 'Zaten Katıldınız!',
-                description: 'Bu turnuvaya zaten katılmışsınız.',
-              });
-            }
+            
+            // Başarılı refresh sonrası view'ı değiştir
+            setTimeout(() => {
+              setViewMode('tournament');
+            }, 100);
+            
+            toast({
+              title: 'Zaten Katıldınız!',
+              description: 'Bu turnuvaya zaten katılmışsınız.',
+            });
           } else {
             await joinTournament(tournament.id);
-            if (mountedRef.current) {
-              setShowTournamentView(true);
-              toast({
-                title: 'Turnuvaya Katıldınız!',
-                description: `Bekleyen turnuvaya katıldınız (${participantCount + 1}/8)`,
-              });
-            }
+            
+            // Başarılı katılım sonrası view'ı değiştir
+            setTimeout(() => {
+              setViewMode('tournament');
+            }, 100);
+            
+            toast({
+              title: 'Turnuvaya Katıldınız!',
+              description: `Bekleyen turnuvaya katıldınız (${participantCount + 1}/8)`,
+            });
           }
         }
       } else {
-        console.log('🆕 Yeni turnuva oluşturuluyor');
+        console.log('Yeni turnuva oluşturuluyor');
         await createTournament();
-        if (mountedRef.current) {
-          setShowTournamentView(true);
-          toast({
-            title: 'Turnuva Oluşturuldu!',
-            description: 'Diğer oyuncular bekleniyor (1/8)...',
-          });
-        }
-      }
-    } catch (error) {
-      console.error('❌ Turnuva işlemi hatası:', error);
-      if (mountedRef.current) {
+        
+        // Başarılı oluşturma sonrası view'ı değiştir
+        setTimeout(() => {
+          setViewMode('tournament');
+        }, 100);
+        
         toast({
-          title: 'Hata',
-          description: 'Turnuva işlemi tamamlanamadı',
-          variant: 'destructive',
+          title: 'Turnuva Oluşturuldu!',
+          description: 'Diğer oyuncular bekleniyor (1/8)...',
         });
       }
+    } catch (error) {
+      console.error('Turnuva işlemi hatası:', error);
+      toast({
+        title: 'Hata',
+        description: 'Turnuva işlemi tamamlanamadı',
+        variant: 'destructive',
+      });
     } finally {
-      if (mountedRef.current) {
-        setIsJoining(false);
-      }
+      setIsJoining(false);
     }
   };
 
   const handleJoinExistingTournament = async (tournamentId: string) => {
-    if (!user || isJoining || !mountedRef.current) return;
+    if (!user || isJoining) return;
     setIsJoining(true);
     
     try {
       await joinTournament(tournamentId);
-      if (mountedRef.current) {
-        setShowTournamentView(true);
-        toast({
-          title: 'Turnuvaya Katıldınız!',
-          description: 'Turnuvaya başarıyla katıldınız!',
-        });
-      }
+      
+      setTimeout(() => {
+        setViewMode('tournament');
+      }, 100);
+      
+      toast({
+        title: 'Turnuvaya Katıldınız!',
+        description: 'Turnuvaya başarıyla katıldınız!',
+      });
     } catch (error) {
       console.error('Error joining tournament:', error);
-      if (mountedRef.current) {
-        toast({
-          title: 'Hata',
-          description: error instanceof Error ? error.message : 'Turnuvaya katılamadı',
-          variant: 'destructive',
-        });
-      }
+      toast({
+        title: 'Hata',
+        description: error instanceof Error ? error.message : 'Turnuvaya katılamadı',
+        variant: 'destructive',
+      });
     } finally {
-      if (mountedRef.current) {
-        setIsJoining(false);
-      }
+      setIsJoining(false);
     }
   };
 
   const handleLeaveTournament = async () => {
     try {
       await leaveTournament();
-      if (mountedRef.current) {
-        setShowTournamentView(false);
-        await loadActiveTournaments();
-        toast({
-          title: 'Turnuvadan Ayrıldınız',
-          description: 'Başarıyla turnuvadan ayrıldınız.',
-        });
-      }
+      setViewMode('list');
+      await loadActiveTournaments();
+      
+      toast({
+        title: 'Turnuvadan Ayrıldınız',
+        description: 'Başarıyla turnuvadan ayrıldınız.',
+      });
     } catch (error) {
       console.error('Error leaving tournament:', error);
-      if (mountedRef.current) {
-        toast({
-          title: 'Hata',
-          description: 'Turnuvadan ayrılamadı',
-          variant: 'destructive',
-        });
-      }
+      toast({
+        title: 'Hata',
+        description: 'Turnuvadan ayrılamadı',
+        variant: 'destructive',
+      });
     }
   };
 
-  // Turnuva view conditionally render
-  if (showTournamentView && currentTournament && userParticipation) {
+  const handleGoToTournament = async () => {
+    await refreshTournament();
+    setTimeout(() => {
+      setViewMode('tournament');
+    }, 100);
+  };
+
+  // Turnuva görünümü
+  if (viewMode === 'tournament' && currentTournament && userParticipation) {
     if (currentTournament.status === 'waiting') {
       return (
         <TournamentLobby 
@@ -235,7 +223,7 @@ const TournamentPage = () => {
     }
   }
 
-  // Ana turnuva listesi
+  // Ana liste görünümü
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
       <div className="max-w-2xl mx-auto space-y-6">
@@ -275,7 +263,7 @@ const TournamentPage = () => {
           </div>
         </Card>
 
-        {/* Aktif turnuvalar */}
+        {/* Aktif turnuvalar listesi */}
         {activeTournaments.length > 0 && (
           <div className="space-y-4">
             <h2 className="text-xl font-semibold">Mevcut Turnuvalar</h2>
@@ -305,12 +293,7 @@ const TournamentPage = () => {
                       </div>
                       {isUserParticipant ? (
                         <Button 
-                          onClick={async () => {
-                            await refreshTournament();
-                            if (mountedRef.current) {
-                              setShowTournamentView(true);
-                            }
-                          }}
+                          onClick={handleGoToTournament}
                           variant="outline"
                         >
                           Turnuvama Git
