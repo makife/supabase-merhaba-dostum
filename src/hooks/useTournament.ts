@@ -45,6 +45,36 @@ export const useTournament = () => {
     }
   };
 
+const checkUserRoundResult = async (tournamentId: string, round: number) => {
+  if (!user) return null;
+
+  try {
+    const { data: match, error } = await supabase
+      .from('tournament_matches')
+      .select('*')
+      .eq('tournament_id', tournamentId)
+      .eq('round', round)
+      .or(`player1_id.eq.${user.id},player2_id.eq.${user.id}`)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (match && match.status === 'completed') {
+      return {
+        won: match.winner_id === user.id,
+        score: match.player1_id === user.id ? match.player1_score : match.player2_score,
+        opponentScore: match.player1_id === user.id ? match.player2_score : match.player1_score
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error checking round result:', error);
+    return null;
+  }
+};
+
+
   // TEMIZLEME FONKSİYONU - önemli!
   const clearTournament = () => {
     console.log('🧹 Clearing tournament data');
