@@ -261,14 +261,23 @@ const getParticipantInfo = (userId: string | null) => {
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => navigate('/tournament')}
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Turnuva Listesi
-          </Button>
+<Button 
+  variant="outline" 
+  size="sm" 
+  onClick={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('Turnuva Listesi butonuna tıklandı');
+    try {
+      navigate('/tournament');
+    } catch (error) {
+      console.error('Navigation hatası:', error);
+    }
+  }}
+>
+  <ArrowLeft className="w-4 h-4 mr-2" />
+  Turnuva Listesi
+</Button>
           <h1 className="text-2xl font-bold flex items-center">
             <Trophy className="w-6 h-6 mr-2" />
             {tournament.name}
