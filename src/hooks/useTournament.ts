@@ -7,12 +7,16 @@ export const useTournament = () => {
   const [userParticipation, setUserParticipation] = useState<any>(null);
   const { user } = useAuth();
 
-  // Kullanıcının aktif turnuvasını kontrol et
+  // Manuel refresh - sadece istendiğinde çağırılır
   const checkUserTournament = async () => {
-    if (!user) return;
+    if (!user) {
+      setCurrentTournament(null);
+      setUserParticipation(null);
+      return;
+    }
 
     try {
-      // Kullanıcının katıldığı aktif turnuvayı bul (son katıldığı kayıt)
+      // Kullanıcının katıldığı aktif turnuvayı bul
       const { data: participation, error } = await supabase
         .from('tournament_participants')
         .select(`
@@ -26,15 +30,26 @@ export const useTournament = () => {
         .maybeSingle();
 
       if (!error && participation) {
+        console.log('✅ User tournament found:', participation.tournaments.name);
         setCurrentTournament(participation.tournaments);
         setUserParticipation(participation);
       } else {
+        console.log('ℹ️ No active tournament for user');
         setCurrentTournament(null);
         setUserParticipation(null);
       }
     } catch (error) {
       console.error('Error checking user tournament:', error);
+      setCurrentTournament(null);
+      setUserParticipation(null);
     }
+  };
+
+  // TEMIZLEME FONKSİYONU - önemli!
+  const clearTournament = () => {
+    console.log('🧹 Clearing tournament data');
+    setCurrentTournament(null);
+    setUserParticipation(null);
   };
 
   // Turnuva oluştur
@@ -44,17 +59,19 @@ export const useTournament = () => {
     const { data: tournament, error } = await supabase
       .from('tournaments')
       .insert({
-        name: `Süreli Turnuva ${new Date().toLocaleTimeString('tr-TR')}`,
+        name: `Turnuva ${new Date().toLocaleTimeString('tr-TR')}`,
         status: 'waiting',
         current_round: 1,
         max_participants: 8,
         game_type: 'timed',
-        expires_at: new Date(Date.now() + 30 * 1000).toISOString()
+        expires_at: new Date(Date.now() + 30 * 1000).toISOString() // 30 saniye
       })
       .select()
       .single();
 
     if (error) throw error;
+
+    console.log('🏆 Tournament created:', tournament.name);
 
     // Otomatik katıl
     await joinTournament(tournament.id);
@@ -75,7 +92,10 @@ export const useTournament = () => {
       .maybeSingle();
 
     if (existingParticipant) {
-      throw new Error('Bu turnuvaya zaten katılmışsınız');
+      console.log('⚠️ User already joined tournament');
+      // Mevcut turnuva bilgisini al
+      await checkUserTournament();
+      return;
     }
 
     // Mevcut katılımcı sayısını kontrol et
@@ -101,7 +121,9 @@ export const useTournament = () => {
 
     if (error) throw error;
 
-    // Turnuva durumunu yenile
+    console.log('✅ User joined tournament');
+
+    // Turnuva durumunu güncelle
     await checkUserTournament();
   };
 
@@ -117,37 +139,22 @@ export const useTournament = () => {
 
     if (error) throw error;
 
-    setCurrentTournament(null);
-    setUserParticipation(null);
+    console.log('👋 User left tournament');
+    
+    // Durumu temizle
+    clearTournament();
   };
 
-  // Real-time updates
-  useEffect(() => {
-    checkUserTournament();
+  // OTOMATIK YÜKLEME KALDIRILDI - sadece manuel çağırımlarda veri al
+  // useEffect(() => {
+  //   checkUserTournament();
+  // }, [user]);
 
-    if (!user) return;
-
-    // Kullanıcının katılımcı durumunu dinle
-    const participationChannel = supabase
-      .channel(`user-tournament-${user.id}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'tournament_participants',
-        filter: `user_id=eq.${user.id}`
-      }, () => {
-        checkUserTournament();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(participationChannel);
-    };
-  }, [user]);
-
-  // Turnuva durumunu dinle (status, current_round vs.)
+  // Sadece mevcut turnuva varsa real-time dinle
   useEffect(() => {
     if (!currentTournament?.id) return;
+
+    console.log('🔄 Setting up real-time for tournament:', currentTournament.name);
 
     const tournamentChannel = supabase
       .channel(`tournament-${currentTournament.id}`)
@@ -157,11 +164,13 @@ export const useTournament = () => {
         table: 'tournaments',
         filter: `id=eq.${currentTournament.id}`
       }, (payload) => {
+        console.log('🏆 Tournament updated:', payload.new);
         setCurrentTournament(payload.new);
       })
       .subscribe();
 
     return () => {
+      console.log('🔌 Cleaning tournament channel');
       supabase.removeChannel(tournamentChannel);
     };
   }, [currentTournament?.id]);
@@ -172,6 +181,7 @@ export const useTournament = () => {
     createTournament,
     joinTournament,
     leaveTournament,
-    refreshTournament: checkUserTournament
+    refreshTournament: checkUserTournament,
+    clearTournament // YENİ - temizleme fonksiyonu
   };
 };
