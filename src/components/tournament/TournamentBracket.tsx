@@ -11,6 +11,7 @@ import { ArrowLeft, Trophy, User, Bot, Play, Clock, CheckCircle } from 'lucide-r
 interface TournamentBracketProps {
   tournament: any;
   userParticipation: any;
+  onBackToList?: () => void;
 }
 
 const TournamentBracket = ({ tournament, userParticipation }: TournamentBracketProps) => {
@@ -265,9 +266,12 @@ const getParticipantInfo = (userId: string | null) => {
   variant="outline" 
   size="sm" 
   onClick={() => {
-    console.log('Turnuva bracket sayfasından ana listeye dönülüyor');
-    // Sayfayı tamamen yenile ve ana turnuva listesine git
-    window.location.replace('/tournament');
+    console.log('Turnuva Listesi butonuna tıklandı');
+    if (onBackToList) {
+      onBackToList(); // Parent'a state değiştirmesini söyle
+    } else {
+      navigate('/tournament');
+    }
   }}
 >
   <ArrowLeft className="w-4 h-4 mr-2" />
