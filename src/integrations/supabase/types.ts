@@ -562,6 +562,41 @@ export type Database = {
         }
         Relationships: []
       }
+      player_activities: {
+        Row: {
+          created_at: string | null
+          id: string
+          last_action_time: string | null
+          match_id: string | null
+          player_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          last_action_time?: string | null
+          match_id?: string | null
+          player_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          last_action_time?: string | null
+          match_id?: string | null
+          player_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_activities_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       private_chats: {
         Row: {
           created_at: string | null
@@ -792,10 +827,13 @@ export type Database = {
       tournament_matches: {
         Row: {
           created_at: string | null
+          grid_seed: string | null
           id: string
           match_number: number
           player1_id: string | null
+          player1_score: number | null
           player2_id: string | null
+          player2_score: number | null
           room_id: string | null
           round: number
           status: string | null
@@ -805,10 +843,13 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          grid_seed?: string | null
           id?: string
           match_number: number
           player1_id?: string | null
+          player1_score?: number | null
           player2_id?: string | null
+          player2_score?: number | null
           room_id?: string | null
           round: number
           status?: string | null
@@ -818,10 +859,13 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          grid_seed?: string | null
           id?: string
           match_number?: number
           player1_id?: string | null
+          player1_score?: number | null
           player2_id?: string | null
+          player2_score?: number | null
           room_id?: string | null
           round?: number
           status?: string | null
@@ -869,6 +913,7 @@ export type Database = {
       }
       tournament_participants: {
         Row: {
+          created_at: string | null
           eliminated_at: string | null
           id: string
           is_bot: boolean | null
@@ -878,6 +923,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          created_at?: string | null
           eliminated_at?: string | null
           id?: string
           is_bot?: boolean | null
@@ -887,6 +933,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          created_at?: string | null
           eliminated_at?: string | null
           id?: string
           is_bot?: boolean | null
@@ -925,6 +972,7 @@ export type Database = {
           started_at: string | null
           status: string | null
           timeout_duration: number | null
+          updated_at: string | null
         }
         Insert: {
           created_at?: string | null
@@ -938,6 +986,7 @@ export type Database = {
           started_at?: string | null
           status?: string | null
           timeout_duration?: number | null
+          updated_at?: string | null
         }
         Update: {
           created_at?: string | null
@@ -951,6 +1000,7 @@ export type Database = {
           started_at?: string | null
           status?: string | null
           timeout_duration?: number | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -1177,6 +1227,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      advance_tournament_round: {
+        Args: { p_tournament_id: string }
+        Returns: Json
+      }
       ban_user_for_inappropriate_content: {
         Args: {
           p_ban_duration_hours?: number
@@ -1185,14 +1239,6 @@ export type Database = {
         }
         Returns: undefined
       }
-
-      check_tournament_progress_v2: {
-        Args: {
-          p_tournament_id: string;
-        };
-        Returns: void;
-        }
-      
       calculate_average_word_length: {
         Args: { p_user_id: string }
         Returns: number
@@ -1215,6 +1261,14 @@ export type Database = {
       }
       check_and_refresh_credits: {
         Args: { user_id: string }
+        Returns: undefined
+      }
+      check_tournament_progress: {
+        Args: { p_tournament_id: string }
+        Returns: undefined
+      }
+      check_tournament_progress_v2: {
+        Args: { p_tournament_id: string }
         Returns: undefined
       }
       check_user_ban_status: {

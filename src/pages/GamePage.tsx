@@ -396,20 +396,13 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
       // Bot maçlarını tamamla (eğer varsa)
       await completeBotMatches(tournamentId, tournamentMatch.round);
       
-      // Round'u ilerlet (yeni maçlar oluştur)
+      // Round'u ilerlet - turnuva DB fonksiyonu kullan
       try {
-        const { data: advanceResult, error: advanceError } = await supabase.rpc(
-          'advance_tournament_round',
-          { p_tournament_id: tournamentId }
-        );
-
-        if (advanceError) {
-          console.warn('⚠️ Round advance not applied:', advanceError.message || advanceError);
-        } else {
-          console.log('✅ Round advance result:', advanceResult);
-        }
-      } catch (advanceRoundErr) {
-        console.error('❌ advance_tournament_round failed:', advanceRoundErr);
+        // complete_tournament_match fonksiyonu artık otomatik olarak ileri roundları oluşturduğu için
+        // ek RPC çağrısına gerek yok - sadece başarı logları
+        console.log('✅ Tournament match completed successfully');
+      } catch (roundError) {
+        console.error('❌ Round advance error:', roundError);
       }
       
     } catch (advanceError) {
