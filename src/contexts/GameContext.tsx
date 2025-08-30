@@ -1286,7 +1286,8 @@ useEffect(() => {
         
         if (gameMode === 'tournament') {
           // Tournament logic
-          if (!payload.old.is_bot && 
+          if (payload.old && 
+              !payload.old.is_bot && 
               payload.old.user_id && 
               payload.old.user_id !== user?.id && 
               currentRoom.status === 'active') {
@@ -1315,7 +1316,8 @@ useEffect(() => {
           }
         } else {
           // Normal game logic
-          if (!payload.old.is_bot && 
+          if (payload.old && 
+              !payload.old.is_bot && 
               payload.old.user_id && 
               payload.old.user_id !== user?.id && 
               currentRoom.status === 'active' &&
