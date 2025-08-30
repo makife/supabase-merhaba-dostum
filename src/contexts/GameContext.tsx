@@ -1247,115 +1247,111 @@ useEffect(() => {
   const channel = supabase
     .channel(`room-${currentRoom.id}`)
     .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'game_participants',
-      filter: `room_id=eq.${currentRoom.id}`
-    }, async (payload) => {
-      console.log('📡 ===== REAL-TIME EVENT =====');
-      console.log('📡 Event Type:', payload.eventType);
-      console.log('📡 Current User:', user?.id?.slice(-8));
-      console.log('📡 Payload User:', payload.new?.user_id?.slice(-8) || payload.old?.user_id?.slice(-8));
+  event: '*',
+  schema: 'public',
+  table: 'game_participants',
+  filter: `room_id=eq.${currentRoom.id}`
+}, async (payload) => {
+  console.log('📡 ===== REAL-TIME EVENT =====');
+  console.log('📡 Event Type:', payload.eventType);
+  console.log('📡 Current User:', user?.id?.slice(-8));
+  console.log('📡 Payload User:', payload.new?.user_id?.slice(-8) || payload.old?.user_id?.slice(-8));
+  
+  // INSERT event handler - payload.new kontrolü ekle
+  if (payload.eventType === 'INSERT' && payload.new) {
+    console.log('👤 Yeni katılımcı tespit edildi:', payload.new.user_id?.slice(-8));
+    
+    if (!payload.new.is_bot && 
+        payload.new.user_id && 
+        payload.new.user_id !== user?.id) {
       
-      if (payload.eventType === 'INSERT' && payload.new) {
-        console.log('👤 Yeni katılımcı tespit edildi:', payload.new.user_id?.slice(-8));
+      console.log('✅ GERÇEK OYUNCU KATILDI! Private room eşleşmesi');
+      
+      toast({
+        title: '🎉 Oyuncu Katıldı!',
+        description: 'İkinci oyuncu odaya katıldı, oyun başlıyor...',
+        duration: 2000,
+      });
+    }
+  }
+  
+  // DELETE event handler - payload.old kontrolü güçlendir
+  if (payload.eventType === 'DELETE' && payload.old) {
+    console.log('🚪 OYUNCU AYRILDI!');
+    console.log('🚪 Ayrılan oyuncu:', payload.old.user_id?.slice(-8));
+    console.log('🚪 Mevcut oyuncu:', user?.id?.slice(-8));
+    console.log('🚪 Room status:', currentRoom.status);
+    
+    const gameMode = getGameModeFromRoom(currentRoom);
+    
+    if (gameMode === 'tournament') {
+      // Tournament logic - payload.old kontrolü ekle
+      if (payload.old && 
+          !payload.old.is_bot && 
+          payload.old.user_id && 
+          payload.old.user_id !== user?.id && 
+          currentRoom.status === 'active') {
         
-        if (!payload.new.is_bot && 
-            payload.new.user_id && 
-            payload.new.user_id !== user?.id) {
+        console.log('🏆 TURNUVA: Rakip ayrıldı, bot replacement kontrol ediliyor...');
+        
+        const { data: tournamentMatch } = await supabase
+          .from('tournament_matches')
+          .select('*')
+          .eq('room_id', currentRoom.id)
+          .single();
           
-          console.log('✅ GERÇEK OYUNCU KATILDI! Private room eşleşmesi');
+        if (tournamentMatch) {
+          const leftPlayerId = payload.old.user_id;
+          const isPlayer1Left = tournamentMatch.player1_id === leftPlayerId;
+          const isPlayer2Left = tournamentMatch.player2_id === leftPlayerId;
           
-          if (toast) {
-            toast({
-              title: '🎉 Oyuncu Katıldı!',
-              description: 'İkinci oyuncu odaya katıldı, oyun başlıyor...',
-              duration: 2000,
-            });
+          if (isPlayer1Left && tournamentMatch.player1_id?.startsWith('bot_replacement_')) {
+            console.log('🤖 Player 1 yerine bot eklendi, oyun devam ediyor');
+            return;
+          } else if (isPlayer2Left && tournamentMatch.player2_id?.startsWith('bot_replacement_')) {
+            console.log('🤖 Player 2 yerine bot eklendi, oyun devam ediyor');
+            return;
           }
         }
       }
-      
-      if (payload.eventType === 'DELETE' && payload.old) {
-        console.log('🚪 OYUNCU AYRILDI!');
-        console.log('🚪 Ayrılan oyuncu:', payload.old.user_id?.slice(-8));
-        console.log('🚪 Mevcut oyuncu:', user?.id?.slice(-8));
-        console.log('🚪 Room status:', currentRoom.status);
+    } else {
+      // Normal game logic - payload.old kontrolü ekle
+      if (payload.old && 
+          !payload.old.is_bot && 
+          payload.old.user_id && 
+          payload.old.user_id !== user?.id && 
+          currentRoom.status === 'active' &&
+          participants.length >= 2) {
         
-        const gameMode = getGameModeFromRoom(currentRoom);
+        console.log('🏆 RAKIP AYRILDI - SEN KAZANDIN!');
         
-        if (gameMode === 'tournament') {
-          // Tournament logic
-          if (payload.old && 
-              !payload.old.is_bot && 
-              payload.old.user_id && 
-              payload.old.user_id !== user?.id && 
-              currentRoom.status === 'active') {
-            
-            console.log('🏆 TURNUVA: Rakip ayrıldı, bot replacement kontrol ediliyor...');
-            
-            const { data: tournamentMatch } = await supabase
-              .from('tournament_matches')
-              .select('*')
-              .eq('room_id', currentRoom.id)
-              .single();
-              
-            if (tournamentMatch) {
-              const leftPlayerId = payload.old.user_id;
-              const isPlayer1Left = tournamentMatch.player1_id === leftPlayerId;
-              const isPlayer2Left = tournamentMatch.player2_id === leftPlayerId;
-              
-              if (isPlayer1Left && tournamentMatch.player1_id?.startsWith('bot_replacement_')) {
-                console.log('🤖 Player 1 yerine bot eklendi, oyun devam ediyor');
-                return;
-              } else if (isPlayer2Left && tournamentMatch.player2_id?.startsWith('bot_replacement_')) {
-                console.log('🤖 Player 2 yerine bot eklendi, oyun devam ediyor');
-                return;
-              }
-            }
-          }
-        } else {
-          // Normal game logic
-          if (payload.old && 
-              !payload.old.is_bot && 
-              payload.old.user_id && 
-              payload.old.user_id !== user?.id && 
-              currentRoom.status === 'active' &&
-              participants.length >= 2) {
-            
-            console.log('🏆 RAKIP AYRILDI - SEN KAZANDIN!');
-            
-            if (applyDisconnectPenalty) {
-              await applyDisconnectPenalty(payload.old.user_id, false);
-            }
-            
-            if (user?.id && applyWinBonus) {
-              await applyWinBonus(user.id);
-              if (toast) {
-                toast({
-                  title: '🏆 Kazandınız!',
-                  description: 'Rakip oyundan ayrıldı. +100 bonus puan!',
-                  duration: 4000,
-                });
-              }
-            }
-            
-            console.log('🗑️ ODA SİLİNİYOR');
-            await supabase
-              .from('game_rooms')
-              .delete()
-              .eq('id', currentRoom.id);
-            
-            setTimeout(() => {
-              setCurrentRoom(null);
-              setParticipants([]);
-            }, 2000);
-          }
+        await applyDisconnectPenalty(payload.old.user_id, false);
+        
+        if (user?.id) {
+          await applyWinBonus(user.id);
+          toast({
+            title: '🏆 Kazandınız!',
+            description: 'Rakip oyundan ayrıldı. +100 bonus puan!',
+            duration: 4000,
+          });
         }
+        
+        console.log('🗑️ ODA SİLİNİYOR');
+        await supabase
+          .from('game_rooms')
+          .delete()
+          .eq('id', currentRoom.id);
+        
+        setTimeout(() => {
+          setCurrentRoom(null);
+          setParticipants([]);
+        }, 2000);
       }
-      
-      await fetchParticipants(currentRoom.id);
-    })
+    }
+  }
+  
+  await fetchParticipants(currentRoom.id);
+})
     .on('postgres_changes', {
       event: 'UPDATE',
       schema: 'public', 
