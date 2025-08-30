@@ -25,6 +25,13 @@ interface GameRoom {
   player2_score?: number;
 }
 
+interface GameParticipantPayload {
+  user_id?: string | null;
+  is_bot?: boolean;
+  room_id?: string;
+  score?: number;
+}
+
 interface GameParticipant {
   id: string;
   room_id: string;
@@ -96,6 +103,10 @@ interface RealtimePayload {
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
+
+const isValidParticipantPayload = (payload: any): payload is GameParticipantPayload => {
+  return payload && typeof payload === 'object';
+};
 
 export const useGame = () => {
   const context = useContext(GameContext);
@@ -1251,19 +1262,19 @@ useEffect(() => {
   schema: 'public',
   table: 'game_participants',
   filter: `room_id=eq.${currentRoom.id}`
-}, async (payload) => {
+}, async (payload: any) => {
   console.log('📡 ===== REAL-TIME EVENT =====');
   console.log('📡 Event Type:', payload.eventType);
   console.log('📡 Current User:', user?.id?.slice(-8));
-  console.log('📡 Payload User:', payload.new?.user_id?.slice(-8) || payload.old?.user_id?.slice(-8));
   
-  // INSERT event handler - payload.new kontrolü ekle
-  if (payload.eventType === 'INSERT' && payload.new) {
-    console.log('👤 Yeni katılımcı tespit edildi:', payload.new.user_id?.slice(-8));
+  // INSERT event - tip güvenli erişim
+  if (payload.eventType === 'INSERT' && isValidParticipantPayload(payload.new)) {
+    const newParticipant = payload.new as GameParticipantPayload;
+    console.log('👤 Yeni katılımcı tespit edildi:', newParticipant.user_id?.slice(-8));
     
-    if (!payload.new.is_bot && 
-        payload.new.user_id && 
-        payload.new.user_id !== user?.id) {
+    if (!newParticipant.is_bot && 
+        newParticipant.user_id && 
+        newParticipant.user_id !== user?.id) {
       
       console.log('✅ GERÇEK OYUNCU KATILDI! Private room eşleşmesi');
       
@@ -1275,21 +1286,21 @@ useEffect(() => {
     }
   }
   
-  // DELETE event handler - payload.old kontrolü güçlendir
-  if (payload.eventType === 'DELETE' && payload.old) {
+  // DELETE event - tip güvenli erişim  
+  if (payload.eventType === 'DELETE' && isValidParticipantPayload(payload.old)) {
+    const oldParticipant = payload.old as GameParticipantPayload;
     console.log('🚪 OYUNCU AYRILDI!');
-    console.log('🚪 Ayrılan oyuncu:', payload.old.user_id?.slice(-8));
+    console.log('🚪 Ayrılan oyuncu:', oldParticipant.user_id?.slice(-8));
     console.log('🚪 Mevcut oyuncu:', user?.id?.slice(-8));
     console.log('🚪 Room status:', currentRoom.status);
     
     const gameMode = getGameModeFromRoom(currentRoom);
     
     if (gameMode === 'tournament') {
-      // Tournament logic - payload.old kontrolü ekle
-      if (payload.old && 
-          !payload.old.is_bot && 
-          payload.old.user_id && 
-          payload.old.user_id !== user?.id && 
+      // Tournament logic
+      if (!oldParticipant.is_bot && 
+          oldParticipant.user_id && 
+          oldParticipant.user_id !== user?.id && 
           currentRoom.status === 'active') {
         
         console.log('🏆 TURNUVA: Rakip ayrıldı, bot replacement kontrol ediliyor...');
@@ -1301,7 +1312,7 @@ useEffect(() => {
           .single();
           
         if (tournamentMatch) {
-          const leftPlayerId = payload.old.user_id;
+          const leftPlayerId = oldParticipant.user_id;
           const isPlayer1Left = tournamentMatch.player1_id === leftPlayerId;
           const isPlayer2Left = tournamentMatch.player2_id === leftPlayerId;
           
@@ -1315,17 +1326,16 @@ useEffect(() => {
         }
       }
     } else {
-      // Normal game logic - payload.old kontrolü ekle
-      if (payload.old && 
-          !payload.old.is_bot && 
-          payload.old.user_id && 
-          payload.old.user_id !== user?.id && 
+      // Normal game logic
+      if (!oldParticipant.is_bot && 
+          oldParticipant.user_id && 
+          oldParticipant.user_id !== user?.id && 
           currentRoom.status === 'active' &&
           participants.length >= 2) {
         
         console.log('🏆 RAKIP AYRILDI - SEN KAZANDIN!');
         
-        await applyDisconnectPenalty(payload.old.user_id, false);
+        await applyDisconnectPenalty(oldParticipant.user_id, false);
         
         if (user?.id) {
           await applyWinBonus(user.id);
