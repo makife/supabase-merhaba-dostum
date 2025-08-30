@@ -239,6 +239,60 @@ const createQuarterFinalMatches = async () => {
   }
 };
 
+const createSemiFinalMatches = async (tournamentId: string, winners: string[]) => {
+  if (winners.length < 4) {
+    throw new Error('Semi-final için 4 kazanan gerekli');
+  }
+  
+  const matches = [
+    {
+      tournament_id: tournamentId,
+      round: 2,
+      match_number: 1,
+      player1_id: winners[0],
+      player2_id: winners[1],
+      status: 'pending'
+    },
+    {
+      tournament_id: tournamentId,
+      round: 2,
+      match_number: 2,
+      player1_id: winners[2],
+      player2_id: winners[3],
+      status: 'pending'
+    }
+  ];
+  
+  const { error } = await supabase
+    .from('tournament_matches')
+    .insert(matches);
+    
+  if (error) throw error;
+  console.log('Yarı final maçları oluşturuldu');
+};
+
+const createFinalMatch = async (tournamentId: string, winners: string[]) => {
+  if (winners.length < 2) {
+    throw new Error('Final için 2 kazanan gerekli');
+  }
+  
+  const match = {
+    tournament_id: tournamentId,
+    round: 3,
+    match_number: 1,
+    player1_id: winners[0],
+    player2_id: winners[1],
+    status: 'pending'
+  };
+  
+  const { error } = await supabase
+    .from('tournament_matches')
+    .insert([match]);
+    
+  if (error) throw error;
+  console.log('Final maçı oluşturuldu');
+};
+  
   // Timer effect
   useEffect(() => {
     if (tournament?.expires_at) {
