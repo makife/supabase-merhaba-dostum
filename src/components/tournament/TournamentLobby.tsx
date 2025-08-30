@@ -173,6 +173,20 @@ const completeBotMatches = async (tournamentId: string, round: number) => {
 
 const createQuarterFinalMatches = async () => {
   try {
+    console.log('=== createQuarterFinalMatches BAŞLADI ===');
+    
+    // Zaten maç oluşturulmuş mu kontrol et
+    const { data: existingMatches } = await supabase
+      .from('tournament_matches')
+      .select('id')
+      .eq('tournament_id', tournament.id)
+      .eq('round', 1);
+    
+    if (existingMatches && existingMatches.length > 0) {
+      console.log(`Çeyrek final maçları zaten oluşturulmuş (${existingMatches.length} maç), atlanıyor...`);
+      return;
+    }
+    
     console.log('Çeyrek final maçları oluşturuluyor...');
     
     const { data: allParticipants, error: fetchError } = await supabase
@@ -232,6 +246,7 @@ const createQuarterFinalMatches = async () => {
     if (matchError) throw matchError;
 
     console.log(`4 maç oluşturuldu`);
+    console.log('=== createQuarterFinalMatches BİTTİ ===');
     
   } catch (error) {
     console.error('Maç oluşturma hatası:', error);
