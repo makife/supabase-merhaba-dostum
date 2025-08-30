@@ -185,51 +185,53 @@ const createQuarterFinalMatches = async () => {
 
     console.log(`${allParticipants?.length || 0} katılımcı bulundu`);
 
-    if (!allParticipants || allParticipants.length < 2) {
+    if (!allParticipants || allParticipants.length < 8) {
       throw new Error(`Yetersiz katılımcı: ${allParticipants?.length || 0}`);
     }
 
-    const matches = [];
-    
-    if (allParticipants.length >= 8) {
-      // 8 kişilik bracket: 1vs8, 2vs7, 3vs6, 4vs5
-      for (let i = 0; i < 4; i++) {
-        const player1 = allParticipants[i];
-        const player2 = allParticipants[7 - i];
-        
-        matches.push({
-          tournament_id: tournament.id,
-          round: 1,
-          match_number: i + 1,
-          player1_id: player1.user_id, // null olabilir (bot)
-          player2_id: player2.user_id, // null olabilir (bot)
-          status: 'pending'
-        });
+    // SABİT 4 MAÇ - katılımcı sayısına bakma
+    const matches = [
+      {
+        tournament_id: tournament.id,
+        round: 1,
+        match_number: 1,
+        player1_id: allParticipants[0].user_id,
+        player2_id: allParticipants[7].user_id,
+        status: 'pending'
+      },
+      {
+        tournament_id: tournament.id,
+        round: 1,
+        match_number: 2,
+        player1_id: allParticipants[1].user_id,
+        player2_id: allParticipants[6].user_id,
+        status: 'pending'
+      },
+      {
+        tournament_id: tournament.id,
+        round: 1,
+        match_number: 3,
+        player1_id: allParticipants[2].user_id,
+        player2_id: allParticipants[5].user_id,
+        status: 'pending'
+      },
+      {
+        tournament_id: tournament.id,
+        round: 1,
+        match_number: 4,
+        player1_id: allParticipants[3].user_id,
+        player2_id: allParticipants[4].user_id,
+        status: 'pending'
       }
-    } else {
-      // Daha az katılımcı varsa çiftler halinde
-      const pairCount = Math.floor(allParticipants.length / 2);
-      for (let i = 0; i < pairCount; i++) {
-        matches.push({
-          tournament_id: tournament.id,
-          round: 1,
-          match_number: i + 1,
-          player1_id: allParticipants[i * 2].user_id,
-          player2_id: allParticipants[i * 2 + 1].user_id,
-          status: 'pending'
-        });
-      }
-    }
+    ];
 
-    if (matches.length > 0) {
-      const { error: matchError } = await supabase
-        .from('tournament_matches')
-        .insert(matches);
+    const { error: matchError } = await supabase
+      .from('tournament_matches')
+      .insert(matches);
 
-      if (matchError) throw matchError;
+    if (matchError) throw matchError;
 
-      console.log(`${matches.length} maç oluşturuldu`);
-    }
+    console.log(`4 maç oluşturuldu`);
     
   } catch (error) {
     console.error('Maç oluşturma hatası:', error);
