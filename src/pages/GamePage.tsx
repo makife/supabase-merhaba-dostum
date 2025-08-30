@@ -1912,6 +1912,41 @@ useEffect(() => {
   };
 }, [currentRoom?.id, user?.id]);
 
+const syncUsedWords = async () => {
+  if (syncingRef.current) return;
+  
+  syncingRef.current = true;
+  
+  try {
+    if (gameMode === 'vs-computer') {
+      setGlobalUsedWords(new Set());
+      setUsedWords(new Set());
+      return;
+    }
+
+    const { data: roomWords } = await supabase
+      .from('game_words')
+      .select('word, player_id')
+      .eq('room_id', currentRoom.id);
+
+    if (roomWords) {
+      const allWordsSet = new Set(roomWords.map(w => w.word.toUpperCase()));
+      const myWordsSet = new Set(
+        roomWords
+          .filter(w => w.player_id === user?.id)
+          .map(w => w.word.toUpperCase())
+      );
+      
+      setGlobalUsedWords(allWordsSet);
+      setUsedWords(myWordsSet);
+    }
+  } catch (error) {
+    console.error('❌ Word sync error:', error);
+  } finally {
+    syncingRef.current = false;
+  }
+};
+
 // Tournament activity tracking (removed - not needed for core functionality)
 
   // AI continuous play effect - unified for all modes when playing with AI
