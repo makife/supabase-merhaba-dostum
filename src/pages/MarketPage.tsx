@@ -694,8 +694,8 @@ const MarketPage = () => {
         </div>
 
         {/* Market Hero Section with Image */}
-        <div className="text-center mb-4 p-6 bg-gradient-to-br from-card/50 to-muted/50 rounded-2xl backdrop-blur-sm border border-border/20">
-          <div className="relative mx-auto w-64 h-40 mb-4">
+        <div className="text-center mb-8 p-6 bg-gradient-to-br from-card/50 to-muted/50 rounded-2xl backdrop-blur-sm border border-border/20">
+          <div className="relative mx-auto w-88 h-60 mb-4">
             <img 
               src="/marketimaj.png" 
               alt="Market" 
