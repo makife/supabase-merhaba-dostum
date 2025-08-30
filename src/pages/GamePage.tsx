@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/contexts/UserContext';
 import { Button } from '@/components/ui/button';
@@ -51,6 +51,7 @@ interface GamePageProps {
   onGameComplete?: (winnerId: string, player1Score: number, player2Score: number) => void;
   tournamentMatch?: TournamentMatch;
   gameType?: 'timed' | 'score';
+  participants?: any[];
 }
 
 // Joker türleri
@@ -64,22 +65,36 @@ const GamePage = ({
   gameMode = 'vs-computer', 
   onGameComplete,
   tournamentMatch,
-  gameType: propGameType 
+  gameType: propGameType,
+  participants: propsParticipants = []
 }: GamePageProps) => {
   const { user } = useAuth();
   const { consumeCredit, isPremium } = useUser();
   const { hasPurchased, settings } = useUserPurchases();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { currentRoom, updateScore, participants, endGame, leaveRoom,sendRematchRequest,respondRematchRequest,currentRematchRequest,setCurrentRematchRequest } = useGame();
+  const { currentRoom, updateScore, participants: gameParticipants, endGame, leaveRoom,sendRematchRequest,respondRematchRequest,currentRematchRequest,setCurrentRematchRequest } = useGame();
+  const participants = useMemo(() => {
+  console.log('🔍 Participants memo - Mode:', gameMode, 'Props:', propsParticipants?.length || 0, 'Game:', gameParticipants?.length || 0);
+  
+  if (gameMode === 'tournament') {
+    console.log('🏆 Tournament mode - Using propsParticipants:', propsParticipants?.length || 0);
+    return propsParticipants || [];
+  }
+  
+  console.log('🎮 Other mode - Using gameParticipants:', gameParticipants?.length || 0);
+  return gameParticipants || [];
+}, [gameMode, propsParticipants, gameParticipants]);
   const { validateWord, isValidating } = useWordValidation();
   const { playSound, playTimeWarningSequence, playCelebrationSound, playGameLoseSound } = useSounds();
   const { fadeOutBackgroundMusic, fadeInBackgroundMusic } = useMusic();
   const [searchParams] = useSearchParams();
   const [lastClickTime, setLastClickTime] = useState(0);
+  const [isNavigating, setIsNavigating] = useState(false);
   const cleanupRef = useRef<(() => void)[]>([]);
   const syncingRef = useRef(false);
   const submissionLockRef = useRef(false);
+  const timerStartedRef = useRef(false);
   const recentSubmissionsRef = useRef<Set<string>>(new Set());
   const [audioYes] = useState(() => {
     const audio = new Audio('/yes.mp3');
@@ -133,23 +148,40 @@ const GamePage = ({
   const [wordlistLoaded, setWordlistLoaded] = useState(false);
   
   // Get game type from room or URL params
-  const getGameType = useCallback((): 'timed' | 'score' => {
-    if (gameMode === 'vs-computer') {
-      const urlType = (searchParams.get('type') as 'timed' | 'score') || 'timed';
-      return urlType;
-    }
-    
-    if (currentRoom?.game_mode) {
-      if (currentRoom.game_mode.includes('score')) return 'score';
-      if (currentRoom.game_mode.includes('timed')) return 'timed';
-    }
+const getGameType = useCallback((): 'timed' | 'score' => {
+  let result: 'timed' | 'score';
+  
+  if (gameMode === 'tournament') {
+    // Turnuva modunda propGameType kullan
+    result = propGameType || 'timed';
+    console.log('🏆 Tournament gameType:', result, 'from propGameType:', propGameType);
+    return result;
+  }
+  
+  if (gameMode === 'vs-computer') {
     const urlType = (searchParams.get('type') as 'timed' | 'score') || 'timed';
-    return urlType;
-  }, [gameMode, currentRoom?.game_mode, searchParams]);
+    result = urlType;
+    console.log('🤖 VS-Computer gameType:', result);
+    return result;
+  }
+  
+  if (currentRoom?.game_mode) {
+    if (currentRoom.game_mode.includes('score')) result = 'score';
+    else if (currentRoom.game_mode.includes('timed')) result = 'timed';
+    else result = 'timed';
+  } else {
+    const urlType = (searchParams.get('type') as 'timed' | 'score') || 'timed';
+    result = urlType;
+  }
+  
+  console.log('🎮 Other mode gameType:', result);
+  return result;
+}, [gameMode, currentRoom?.game_mode, searchParams, propGameType]);
   
   const gameType = getGameType();
   const [timeWarningPlayed, setTimeWarningPlayed] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
+  const [showTournamentExitDialog, setShowTournamentExitDialog] = useState(false);
 
   // Game state - Generate random letters each time
   const generateRandomGrid = useCallback((): string[][] => {
@@ -197,17 +229,82 @@ const GamePage = ({
     return grid;
   }, []);
 
-  const [gameGrid, setGameGrid] = useState<string[][]>(() => {
-    if (currentRoom?.current_grid) {
-      const flatGrid = currentRoom.current_grid;
-      const grid: string[][] = [];
-      for (let i = 0; i < 4; i++) {
-        grid.push(flatGrid.slice(i * 4, (i + 1) * 4));
-      }
-      return grid;
+
+const generateTournamentGrid = useCallback((seed: string): string[][] => {
+  // Basit LCG (Linear Congruential Generator) ile seed-based random
+  const seedNum = parseInt(seed.slice(-8), 16) || Date.now();
+  let currentSeed = seedNum;
+  
+  const seededRandom = () => {
+    currentSeed = (currentSeed * 1664525 + 1013904223) % 4294967296;
+    return currentSeed / 4294967296;
+  };
+  
+  const letterPool = [
+    'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A',
+    'E', 'E', 'E', 'E', 'E', 'E', 'E',
+    'İ', 'İ', 'İ', 'İ', 'İ', 'İ',
+    'I', 'I', 'I', 'I', 'I',
+    'O', 'O', 'O', 'O', 'O',
+    'U', 'U', 'U', 'U',
+    'Ü', 'Ü', 'Ü',
+    'Ö', 'Ö', 'Ö',
+    'L', 'L', 'L', 'L', 'L',
+    'N', 'N', 'N', 'N', 'N',
+    'R', 'R', 'R', 'R', 'R',
+    'K', 'K', 'K', 'K',
+    'M', 'M', 'M', 'M',
+    'T', 'T', 'T', 'T',
+    'S', 'S', 'S', 'S',
+    'D', 'D', 'D',
+    'Y', 'Y', 'Y',
+    'B', 'B', 'B',
+    'C', 'C',
+    'Ç', 'Ç',
+    'F', 'F',
+    'G', 'G',
+    'Ğ', 'Ğ',
+    'H', 'H',
+    'J',
+    'P', 'P',
+    'Ş', 'Ş',
+    'V', 'V',
+    'Z',
+  ];
+  
+  const grid: string[][] = [];
+  for (let i = 0; i < 4; i++) {
+    const row: string[] = [];
+    for (let j = 0; j < 4; j++) {
+      const randomIndex = Math.floor(seededRandom() * letterPool.length);
+      row.push(letterPool[randomIndex]);
     }
-    return generateRandomGrid();
-  });
+    grid.push(row);
+  }
+  
+  console.log('🎯 Tournament grid generated with seed:', seed, 'Grid preview:', grid[0]);
+  return grid;
+}, []);
+
+  const [gameGrid, setGameGrid] = useState<string[][]>(() => {
+  // Turnuva modunda match ID'yi seed olarak kullan
+  if (gameMode === 'tournament' && tournamentMatch?.id) {
+    console.log('🎯 Turnuva grid - match ID seed kullanılıyor:', tournamentMatch.id);
+    return generateTournamentGrid(tournamentMatch.id);
+  }
+  
+  // Normal room grid kontrolü
+  if (currentRoom?.current_grid) {
+    const flatGrid = currentRoom.current_grid;
+    const grid: string[][] = [];
+    for (let i = 0; i < 4; i++) {
+      grid.push(flatGrid.slice(i * 4, (i + 1) * 4));
+    }
+    return grid;
+  }
+  
+  return generateRandomGrid();
+});
   
   const [selectedLetters, setSelectedLetters] = useState<{letter: string, row: number, col: number}[]>([]);
   const [currentWord, setCurrentWord] = useState('');
@@ -218,7 +315,9 @@ const GamePage = ({
   const [opponentWordsWithScores, setOpponentWordsWithScores] = useState<Array<{word: string, score: number}>>([]);
   const [playerScore, setPlayerScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(gameType === 'timed' ? 120 : 0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timeLeftRef = useRef<number>(gameType === 'timed' ? 120 : 0);
+  const [displayTime, setDisplayTime] = useState<number>(timeLeftRef.current);
   const [gameStarted, setGameStarted] = useState(true);
   const [waitingForPlayer, setWaitingForPlayer] = useState(false);
   const [gameEnded, setGameEnded] = useState(false);
@@ -241,59 +340,48 @@ const GamePage = ({
 
 
 
-  const handleTournamentGameEnd = async (userScore: number, opponentScore: number) => {
-    if (!user || !tournamentMatch || !onGameComplete) return;
+const handleTournamentGameEnd = async (userScore: number, opponentScore: number) => {
+  if (!user || !tournamentMatch || !onGameComplete) return;
 
-    console.log('🏁 Turnuva maçı bitiyor:', { userScore, opponentScore });
+  console.log('🏁 Turnuva maçı bitiyor:', { userScore, opponentScore });
 
-    // 🎯 ÖNEMLİ: ÖNCE İSTATİSTİKLERİ GÜNCELLE
-    try {
-      // Kullanıcı istatistiklerini güncelle
-      const isUserWinner = userScore > opponentScore;
+  try {
+    // İstatistikleri güncelle
+    const isUserWinner = userScore > opponentScore;
     
-      await updatePlayerStatistics(
-        user.id,
-        userScore,
-        playerWordsWithScores, // Gerçek kelimeler
-        isUserWinner
-      );
+    await updatePlayerStatistics(
+      user.id,
+      userScore,
+      playerWordsWithScores,
+      isUserWinner
+    );
     
-      // Rozet kontrolü
-      await checkBadges(user.id, playerWordsWithScores.length);
+    await checkBadges(user.id, playerWordsWithScores.length);
     
-      console.log('✅ Turnuva istatistikleri güncellendi');
-    } catch (error) {
-      console.error('❌ Turnuva istatistik güncelleme hatası:', error);
-    }
-
-    // Kazananı belirle
+    console.log('✅ Turnuva istatistikleri güncellendi');
+    
+    // Kazananı belirle ve parent'e bildir
     const winnerId = userScore > opponentScore ? user.id : (
       tournamentMatch.player1_id === user.id ? 
       tournamentMatch.player2_id : 
       tournamentMatch.player1_id
     );
 
-    if (!winnerId) {
-      console.error('❌ Winner ID bulunamadı');
-      return;
+    if (winnerId) {
+      const isUserPlayer1 = tournamentMatch.player1_id === user.id;
+      const player1Score = isUserPlayer1 ? userScore : opponentScore;
+      const player2Score = isUserPlayer1 ? opponentScore : userScore;
+
+      // Parent component'e bildir ve bekle
+      await onGameComplete(winnerId, player1Score, player2Score);
     }
+    
+  } catch (error) {
+    console.error('❌ Turnuva maç bitiş hatası:', error);
+  }
+};
 
-    // Skorları düzenle (kim player1, kim player2?)
-    const isUserPlayer1 = tournamentMatch.player1_id === user.id;
-    const player1Score = isUserPlayer1 ? userScore : opponentScore;
-    const player2Score = isUserPlayer1 ? opponentScore : userScore;
 
-    console.log('📊 Final skoru:', {
-      player1Score,
-      player2Score,
-      winnerId,
-      isUserWinner: userScore > opponentScore,
-      isUserPlayer1
-    });
-
-    // Parent component'e bildir
-    onGameComplete(winnerId, player1Score, player2Score);
-  };
 
 
   const updatePlayerStatistics = async (
@@ -400,76 +488,81 @@ const GamePage = ({
     // setShowResults burada kullanılmıyor, sadece state tanımla
   };
 
-  useEffect(() => {
-    if (gameMode === 'tournament' && !tournamentMatch) {
-      console.error('❌ Turnuva modu ama maç bilgisi yok!');
-      return;
-    }
-
-    // Turnuva modunda rakip ayarla
-    if (gameMode === 'tournament' && tournamentMatch) {
-      const opponentId = tournamentMatch.player1_id === user?.id ? 
-        tournamentMatch.player2_id : 
-        tournamentMatch.player1_id;
-    
-      if (!opponentId || opponentId.startsWith('bot_')) {
-        setIsAIOpponent(true);
-        setOpponentName('Turnuva Botu');
-      } else {
-        setIsAIOpponent(false);
-        setOpponentName('Turnuva Rakibi');
-      }
-
-      // Game type'ı ayarla
-      if (propGameType) {
-        if (propGameType === 'timed') {
-          setTimeLeft(120); // setTimeLimit → setTimeLeft
-          setTargetScore(0);
-        } else {
-          setTargetScore(500);
-          setTimeLeft(0); // setTimeLimit → setTimeLeft
-        }
-      }
-    } else {
-      // Diğer modlar için default ayarlar
-      switch (gameMode) {
-        case 'vs-computer':
-          setIsAIOpponent(true);
-          setOpponentName('Bilgisayar');
-          break;
-        case 'private-room':
-          setIsAIOpponent(false);
-          setOpponentName('Arkadaş');
-          break;
-        case 'random-match':
-          setIsAIOpponent(false);
-          setOpponentName('Rakip');
-          break;
-      }
-    }
-  }, [gameMode, tournamentMatch, propGameType, user?.id]);
-
-  // Rakip ismini göster - turnuva için
-  const getOpponentDisplayName = () => {
+// 🔧 5. GamePage.tsx - Turnuva modu rakip belirleme düzeltmesi
+useEffect(() => {
   if (gameMode === 'tournament' && tournamentMatch) {
     const opponentId = tournamentMatch.player1_id === user?.id ? 
       tournamentMatch.player2_id : 
       tournamentMatch.player1_id;
   
-    if (!opponentId) return 'Turnuva Botu';
-    if (opponentId.startsWith('bot_')) return 'Turnuva Botu';
-    return opponentName || 'Turnuva Rakibi';
+    console.log('🎯 Turnuva rakip analizi:', {
+      matchId: tournamentMatch.id,
+      player1: tournamentMatch.player1_id?.slice(-8),
+      player2: tournamentMatch.player2_id?.slice(-8),
+      currentUser: user?.id?.slice(-8),
+      opponentId: opponentId?.slice(-8)
+    });
+
+    if (!opponentId) {
+      console.log('❌ Rakip ID bulunamadı');
+      setIsAIOpponent(true);
+      setOpponentName('Bekleniyor...');
+    } else if (opponentId.startsWith('bot_')) {
+      console.log('🤖 Bot rakip tespit edildi');
+      setIsAIOpponent(true);
+      setOpponentName('Turnuva Botu');
+    } else {
+      console.log('👥 Gerçek oyuncu rakip tespit edildi');
+      setIsAIOpponent(false);
+      
+      // Gerçek oyuncu ismini participants'tan bul
+      const realOpponent = participants.find(p => p.user_id === opponentId);
+      if (realOpponent && (realOpponent as any).profiles?.username) {
+        setOpponentName((realOpponent as any).profiles.username);
+      } else {
+        setOpponentName('Turnuva Oyuncusu');
+      }
+    }
+
+    // Game type ayarlarını uygula - SADECE ILK SEFER
+    if (propGameType && timeLeftRef.current === 0) {
+      if (propGameType === 'timed') {
+        timeLeftRef.current = 120;
+        setDisplayTime(120);
+        setTargetScore(0);
+      } else {
+        setTargetScore(500);
+        timeLeftRef.current = 0;
+        setDisplayTime(0);
+      }
+    }
   }
+}, [gameMode, tournamentMatch, propGameType, user?.id, participants]);
 
-  // 🔥 FIX: Gerçek rakip username'ini bul
-  const realOpponent = participants.find(p => 
-    !p.is_bot && 
-    p.user_id !== user?.id && 
-    p.user_id !== null
-  );
-
-  if (realOpponent && (realOpponent as any).profiles?.username) {
-    return (realOpponent as any).profiles.username;
+  // Rakip ismini göster - turnuva için
+const getOpponentDisplayName = () => {
+  if (gameMode === 'tournament' && tournamentMatch) {
+    const opponentId = tournamentMatch.player1_id === user?.id ? 
+      tournamentMatch.player2_id : 
+      tournamentMatch.player1_id;
+  
+    // Bot kontrolü önce
+    if (!opponentId || opponentId.startsWith('bot_')) {
+      return 'Turnuva Botu';
+    }
+    
+    // Gerçek oyuncu kontrolü
+    const realOpponent = participants.find(p => 
+      p.user_id === opponentId && 
+      !p.is_bot && 
+      p.user_id !== null
+    );
+    
+    if (realOpponent && realOpponent.profiles?.username) {
+      return realOpponent.profiles.username;
+    }
+    
+    return 'Turnuva Oyuncusu';
   }
 
   // Diğer modlar için fallback
@@ -488,33 +581,27 @@ const GamePage = ({
 
   // Turnuva modunda geri dönüş engelle
 const handleBackToMenu = async () => {
+  // Turnuva modunda özel çıkış dialog'u göster
   if (gameMode === 'tournament') {
-    toast({
-      title: '⚠️ Uyarı',
-      description: 'Turnuva maçından çıkamazsınız! Maçı tamamlamanız gerekiyor.',
-      variant: 'destructive',
-    });
+    setShowTournamentExitDialog(true);
     return;
   }
   
-  // 🔥 Aktif oyun kontrolü - kendi dialog'umuz
+  // Diğer modlar için normal akış
   const isRealActiveGame = gameStarted && 
                           !gameEnded && 
                           participants.length >= 2 && 
                           participants.some(p => !p.is_bot && p.user_id !== user?.id);
   
   if (isRealActiveGame) {
-    setShowExitDialog(true); // Kendi dialog'umuzu göster
+    setShowExitDialog(true);
     return;
   }
   
-  // Odadan ayrıl (GameContext'ten)
   if (currentRoom) {
-    console.log('🚪 handleBackToMenu - odadan ayrılıyor...');
     await leaveRoom();
   }
   
-  // Ana menüye git
   navigate('/');
 };
 
@@ -1099,154 +1186,302 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
   }, []);
 
   // Check for winner and apply end game bonuses
-  const checkWinnerWithScores = useCallback(async (currentPlayerScore: number, currentOpponentScore: number) => {
-    if (gameEnded || winner !== null) return;
+const checkWinnerWithScores = useCallback(async (currentPlayerScore: number, currentOpponentScore: number) => {
+  if (gameEnded || winner !== null) return;
 
-    console.log('🏆 Checking winner with scores - Player:', currentPlayerScore, 'Opponent:', currentOpponentScore);
+  console.log('🏆 Checking winner with scores - Player:', currentPlayerScore, 'Opponent:', currentOpponentScore);
 
-    let gameResult: 'player' | 'opponent' | 'tie';
-    let bonusPoints = 0;
+  let gameResult: 'player' | 'opponent' | 'tie';
+  let bonusPoints = 0;
 
-    if (currentPlayerScore > currentOpponentScore) {
-      gameResult = 'player';
-      bonusPoints = 50;
-      setWinner('player');
-      playSound('gameWin');
-      setTimeout(() => playCelebrationSound(), 500);
-      console.log('🏆 Player wins! Score:', currentPlayerScore, 'vs', currentOpponentScore);
-    } else if (currentPlayerScore < currentOpponentScore) {
-      gameResult = 'opponent';
-      setWinner('opponent');
-      playSound('gameLose');
-      setTimeout(() => playGameLoseSound(), 500);
-      console.log('🏆 Opponent wins! Score:', currentOpponentScore, 'vs', currentPlayerScore);
-    } else {
-      gameResult = 'tie';
-      bonusPoints = 25;
-      setWinner('tie');
-      console.log('🏆 It\'s a tie! Both scores:', currentPlayerScore);
-    }
-
-  // ✅ YENİ: İSTATİSTİK GÜNCELLEMESİ BURAYA EKLE
-    if (user && gameMode === 'vs-computer') {
-      console.log('📊 checkWinnerWithScores - İstatistik güncelleniyor...');
-    
-      try {
-        const gameDuration = gameType === 'timed' ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
+  // ✅ TURNUVA MODUNDA BERABERLIK ENGELLEMESİ
+  if (gameMode === 'tournament') {
+    if (currentPlayerScore === currentOpponentScore) {
+      console.log('⚖️ Turnuva beraberlik durumu - tiebreaker uygulanıyor');
       
-        const { data, error } = await (supabase.rpc as any)('update_game_stats', {
-          p_user_id: user.id,
-          p_score: currentPlayerScore,
-          p_words: playerWordsWithScores,
-          p_is_winner: gameResult === 'player',
-          p_game_duration: gameDuration
-        });
+      // Tiebreaker kuralları:
+      // 1. En çok kelime yazan
+      // 2. En uzun kelime yazan  
+      // 3. En yüksek puanlı kelime yazan
       
-        if (error) {
-          console.error('❌ İstatistik güncelleme hatası:', error);
-        } else {
-          console.log('✅ İstatistikler başarıyla güncellendi!');
+      const playerWordCount = playerWordsWithScores.length;
+      const opponentWordCount = opponentWordsWithScores.length;
+      
+      if (playerWordCount > opponentWordCount) {
+        console.log('🎯 Tiebreaker: Player kazandı (daha çok kelime)');
+        currentPlayerScore += 1; // Minimal advantage
+      } else if (opponentWordCount > playerWordCount) {
+        console.log('🎯 Tiebreaker: Opponent kazandı (daha çok kelime)');  
+        currentOpponentScore += 1;
+      } else {
+        // Kelime sayısı eşit, en uzun kelime kontrolü
+        const playerLongestWord = Math.max(...playerWordsWithScores.map(w => w.word.length), 0);
+        const opponentLongestWord = Math.max(...opponentWordsWithScores.map(w => w.word.length), 0);
         
-          // Rozet kontrolü
-          setTimeout(() => {
-            checkBadges(user.id, playerWordsWithScores.length);
-          }, 500);
+        if (playerLongestWord > opponentLongestWord) {
+          console.log('🎯 Tiebreaker: Player kazandı (daha uzun kelime)');
+          currentPlayerScore += 1;
+        } else if (opponentLongestWord > playerLongestWord) {
+          console.log('🎯 Tiebreaker: Opponent kazandı (daha uzun kelime)');
+          currentOpponentScore += 1;
+        } else {
+          // En yüksek puanlı kelime kontrolü
+          const playerHighestScore = Math.max(...playerWordsWithScores.map(w => w.score), 0);
+          const opponentHighestScore = Math.max(...opponentWordsWithScores.map(w => w.score), 0);
+          
+          if (playerHighestScore > opponentHighestScore) {
+            console.log('🎯 Tiebreaker: Player kazandı (daha yüksek puanlı kelime)');
+            currentPlayerScore += 1;
+          } else {
+            console.log('🎯 Tiebreaker: Opponent kazandı (varsayılan)');
+            currentOpponentScore += 1;
+          }
         }
-      } catch (error) {
-        console.error('❌ İstatistik güncelleme hatası:', error);
       }
     }
+  }
 
-    // Apply end game bonus for player
-    if (user && bonusPoints > 0) {
-      const { data: currentProfile } = await supabase
-        .from('profiles')
-        .select('total_score')
-        .eq('id', user.id)
-        .single();
+  // Final winner determination
+  if (currentPlayerScore > currentOpponentScore) {
+    gameResult = 'player';
+    bonusPoints = 50;
+    setWinner('player');
+    playSound('gameWin');
+    setTimeout(() => playCelebrationSound(), 500);
+    console.log('🏆 Player wins! Score:', currentPlayerScore, 'vs', currentOpponentScore);
+  } else if (currentPlayerScore < currentOpponentScore) {
+    gameResult = 'opponent';
+    setWinner('opponent');
+    playSound('gameLose');
+    setTimeout(() => playGameLoseSound(), 500);
+    console.log('🏆 Opponent wins! Score:', currentOpponentScore, 'vs', currentPlayerScore);
+  } else {
+    // Normal modlarda beraberlik olabilir
+    gameResult = 'tie';
+    bonusPoints = 25;
+    setWinner('tie');
+    console.log('🏆 It\'s a tie! Both scores:', currentPlayerScore);
+  }
 
-      const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
+  // İstatistik güncelleme (vs-computer için)
+  if (user && gameMode === 'vs-computer') {
+    console.log('📊 checkWinnerWithScores - İstatistik güncelleniyor...');
   
-      await supabase
-        .from('profiles')
-        .update({ total_score: newTotalScore })
-        .eq('id', user.id);
-
-      setTimeout(() => {
-        toast({
-          title: gameResult === 'player' ? 'Kazanma Bonusu!' : 'Beraberlik Bonusu!',
-          description: `+${bonusPoints} bonus EXP kazandınız!`,
-          duration: 2000,
-        });
-      }, 1000);
-    }
-  
-    // End the game and cleanup room (for multiplayer modes)
-    if (currentRoom && (gameMode === 'random-match' || gameMode === 'private-room')) {
-      setTimeout(async () => {
-        const playerStats = user ? {
-          userId: user.id,
-          score: currentPlayerScore,
-          words: playerWordsWithScores,
-          isWinner: gameResult === 'player'
-        } : undefined;
+    try {
+      const gameDuration = gameType === 'timed' ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
+    
+      const { data, error } = await (supabase.rpc as any)('update_game_stats', {
+        p_user_id: user.id,
+        p_score: currentPlayerScore,
+        p_words: playerWordsWithScores,
+        p_is_winner: gameResult === 'player',
+        p_game_duration: gameDuration
+      });
+    
+      if (error) {
+        console.error('❌ İstatistik güncelleme hatası:', error);
+      } else {
+        console.log('✅ İstatistikler başarıyla güncellendi!');
       
-        const opponentParticipant = participants.find(p => p.user_id !== user?.id && !p.is_bot);
-        const opponentStats = opponentParticipant?.user_id ? {
-          userId: opponentParticipant.user_id,
-          score: currentOpponentScore,
-          words: opponentWordsWithScores,
-          isWinner: gameResult === 'opponent'
-        } : undefined;
-      
-        await endGame(playerStats, opponentStats);
-      }, 3000);
+        // Rozet kontrolü
+        setTimeout(() => {
+          checkBadges(user.id, playerWordsWithScores.length);
+        }, 500);
+      }
+    } catch (error) {
+      console.error('❌ İstatistik güncelleme hatası:', error);
     }
-  }, [gameEnded, winner, user, currentRoom, gameMode, endGame, playSound, playCelebrationSound, playGameLoseSound, toast, participants, playerWordsWithScores, opponentWordsWithScores]);
+  }
 
-  // Timer effect - for both timed and score modes
-  useEffect(() => {
-  if (!gameStarted || gameEnded) return;
+  // Apply end game bonus for player
+  if (user && bonusPoints > 0) {
+    const { data: currentProfile } = await supabase
+      .from('profiles')
+      .select('total_score')
+      .eq('id', user.id)
+      .single();
 
-  if (gameType === 'timed') {
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev === 15 && !timeWarningPlayed) {
-          playTimeWarningSequence();
-          setTimeWarningPlayed(true);
-        }
-        
-        if (prev <= 1) {
-          setGameEnded(true);
-          setTimeout(() => {
-            setPlayerScore(currentPlayerScore => {
-              setOpponentScore(currentOpponentScore => {
-                checkWinnerWithScores(currentPlayerScore, currentOpponentScore);
-                return currentOpponentScore;
-              });
-              return currentPlayerScore;
-            });
-          }, 100);
-          return 0;
-        }
-        return prev - 1;
+    const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
+
+    await supabase
+      .from('profiles')
+      .update({ total_score: newTotalScore })
+      .eq('id', user.id);
+
+    setTimeout(() => {
+      toast({
+        title: gameResult === 'player' ? 'Kazanma Bonusu!' : 'Beraberlik Bonusu!',
+        description: `+${bonusPoints} bonus EXP kazandınız!`,
+        duration: 2000,
       });
     }, 1000);
-
-    // Cleanup fonksiyonunu ekle
-    const cleanup = () => clearInterval(timer);
-    addCleanup(cleanup);
-
-    return cleanup;
   }
-}, [gameStarted, gameEnded, gameType, timeWarningPlayed, addCleanup]);
 
-  // Timer useEffect'inden SONRA ekleyin
+  // End the game and cleanup room (for multiplayer modes)
+  if (currentRoom && (gameMode === 'random-match' || gameMode === 'private-room')) {
+    setTimeout(async () => {
+      const playerStats = user ? {
+        userId: user.id,
+        score: currentPlayerScore,
+        words: playerWordsWithScores,
+        isWinner: gameResult === 'player'
+      } : undefined;
+    
+      const opponentParticipant = participants.find(p => p.user_id !== user?.id && !p.is_bot);
+      const opponentStats = opponentParticipant?.user_id ? {
+        userId: opponentParticipant.user_id,
+        score: currentOpponentScore,
+        words: opponentWordsWithScores,
+        isWinner: gameResult === 'opponent'
+      } : undefined;
+    
+      await endGame(playerStats, opponentStats);
+    }, 3000);
+  }
+}, [gameEnded, winner, user, currentRoom, gameMode, endGame, playSound, playCelebrationSound, playGameLoseSound, toast, participants, playerWordsWithScores, opponentWordsWithScores, gameStartTime, gameType]);
+
+  // 🏆 TURNUVA MAÇLARI İÇİN REAL-TIME SCORE SYNC
+  useEffect(() => {
+    if (gameMode !== 'tournament' || !tournamentMatch || !user) return;
+
+    console.log('🔄 Turnuva maçı real-time subscription başlatılıyor:', tournamentMatch.id);
+    
+    const channel = supabase
+      .channel(`tournament-match-${tournamentMatch.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'tournament_matches',
+          filter: `id=eq.${tournamentMatch.id}`
+        },
+        (payload) => {
+          console.log('🏆 Turnuva maçı güncellendi:', payload);
+          const newData = payload.new as any;
+          
+          // Karşı oyuncunun skorunu güncelle
+          const isPlayer1 = tournamentMatch.player1_id === user.id;
+          const opponentScore = isPlayer1 ? newData.player2_score : newData.player1_score;
+          
+          if (opponentScore !== undefined && !gameEnded) {
+            console.log('🔄 Rakip skoru real-time güncellemesi:', opponentScore);
+            setOpponentScore(opponentScore);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('🔌 Turnuva maçı subscription temizleniyor');
+      supabase.removeChannel(channel);
+    };
+  }, [gameMode, tournamentMatch, user, gameEnded]);
+
+const handleTournamentExit = async () => {
+  if (!user || !tournamentMatch) return;
+
+  console.log('Turnuva maçından ayrılıyor:', user.id);
+
+  try {
+    // İstatistikleri güncelle (kaybeden olarak)
+    await updatePlayerStatistics(
+      user.id,
+      playerScore,
+      playerWordsWithScores,
+      false // Kaybeden
+    );
+
+    // Rakibi kazanan olarak ayarla
+    const winnerId = tournamentMatch.player1_id === user.id ? 
+      tournamentMatch.player2_id : 
+      tournamentMatch.player1_id;
+
+    // Eğer winnerId null ise bot kazanır
+    const finalWinnerId = winnerId || `bot_${Date.now()}`;
+
+    // Skorları ayarla (çıkan kişi 0 puan)
+    const isUserPlayer1 = tournamentMatch.player1_id === user.id;
+    const player1Score = isUserPlayer1 ? 0 : 500;
+    const player2Score = isUserPlayer1 ? 500 : 0;
+
+    // onGameComplete varsa çağır ve navigate işlemini buraya taşı
+    if (onGameComplete) {
+      await onGameComplete(finalWinnerId, player1Score, player2Score);
+    }
+    
+    // ✅ FIX: Çıkış işleminden sonra manuel navigation
+    setShowTournamentExitDialog(false);
+    navigate('/tournaments');
+
+  } catch (error) {
+    console.error('Çıkış hatası:', error);
+    // Hata durumunda da tournuva listesine git
+    navigate('/tournaments');
+  }
+};
+  
+  // Timer effect - TEK SEFER başlatılır ve sürekli çalışır
 useEffect(() => {
-  if (gameStarted && !gameEnded) {
-    setGameStartTime(Date.now());
+  if (gameType === 'timed' && gameStarted && !gameEnded && !timerRef.current) {
+    console.log('⏱️ Timer BAŞLATILIYOR - Tek sefer, time:', timeLeftRef.current);
+    
+    timerRef.current = setInterval(() => {
+      timeLeftRef.current -= 1;
+      setDisplayTime(timeLeftRef.current);
+      
+      if (timeLeftRef.current <= 0) {
+        clearInterval(timerRef.current!);
+        timerRef.current = null;
+        
+        console.log('⏰ Süre bitti! Final skorlar - Player:', playerScore, 'Opponent:', opponentScore);
+        
+        // ✅ FIX: Timer bittiğinde mevcut skorlarla kazanan belirle
+        setGameEnded(true);
+        setTimeout(() => {
+          checkWinnerWithScores(playerScore, opponentScore);
+        }, 100);
+      }
+    }, 1000);
   }
-}, [gameStarted, gameEnded]);
+  
+  return () => {
+    // Sadece component unmount olduğunda temizle
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+}, [gameStarted, playerScore, opponentScore]);
+  
+  // Focus/blur event handler
+  useEffect(() => {
+    if (gameType !== 'timed' || !gameStarted || gameEnded) return;
+
+    // Focus/blur olaylarında hiçbir şey yapma - sadece timer devam etsin
+    const handleFocus = () => {
+      console.log('📱 Sayfa focus aldı - timer devam ediyor');
+    };
+    
+    const handleBlur = () => {
+      console.log('📱 Sayfa focus kaybetti - timer devam ediyor'); 
+    };
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('blur', handleBlur);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, [gameType, gameStarted, gameEnded]);
+  
+  // Timer useEffect'inden SONRA ekleyin
+  useEffect(() => {
+    if (gameStarted && !gameEnded) {
+      setGameStartTime(Date.now());
+    }
+  }, [gameStarted, gameEnded]);
 
   
 
@@ -1263,27 +1498,36 @@ useEffect(() => {
   }, [playerScore, opponentScore, checkWinnerWithScores, gameType, currentRoom?.max_score]);
 
   // Check if playing with AI (unified logic for all modes)
-  const isPlayingWithAI = useCallback(() => {
-    const aiStatus = (() => {
-      switch (gameMode) {
-        case 'vs-computer':
-          return true; // Always AI
-        case 'private-room':
-          return participants.length < 2; // AI if no second player
-        case 'random-match':
-          const hasAI = participants.some(p => p.is_bot);
-          const hasRealOpponent = participants.filter(p => !p.is_bot).length >= 2;
-          return hasAI && !hasRealOpponent;
-        case 'tournament':
-          return true; // Tournament is always vs AI for now
-        default:
-          return false;
+const isPlayingWithAI = useCallback(() => {
+  const aiStatus = (() => {
+    switch (gameMode) {
+      case 'vs-computer':
+        return true;
+      case 'tournament': {
+        if (tournamentMatch && user) {
+          const opponentId = tournamentMatch.player1_id === user.id ? 
+            tournamentMatch.player2_id : 
+            tournamentMatch.player1_id;
+          
+          // Bot veya null ise AI
+          return !opponentId || opponentId.startsWith('bot_');
+        }
+        return false;
       }
-    })();
-    
-    console.log(`🤖 AI Status Check - Mode: ${gameMode}, Participants: ${participants.length}, PlayingWithAI: ${aiStatus}`);
-    return aiStatus;
-  }, [gameMode, participants]);
+      case 'private-room':
+        return participants.length < 2;
+      case 'random-match':
+        const hasAI = participants.some(p => p.is_bot);
+        const hasRealOpponent = participants.filter(p => !p.is_bot).length >= 2;
+        return hasAI && !hasRealOpponent;
+      default:
+        return false;
+    }
+  })();
+  
+  console.log('AI Status Check - Mode:', gameMode, 'PlayingWithAI:', aiStatus);
+  return aiStatus;
+}, [gameMode, participants, tournamentMatch, user?.id]);
 
   // Real-time kelime senkronizasyonu
 useEffect(() => {
@@ -1335,6 +1579,43 @@ useEffect(() => {
     }
   };
 
+  // Turnuva real-time senkronizasyonu
+useEffect(() => {
+  if (gameMode !== 'tournament' || !tournamentMatch) return;
+
+  console.log('🏆 Turnuva real-time senkronizasyon başlatıldı');
+
+  // Tournament match değişikliklerini dinle
+  const tournamentChannel = supabase
+    .channel(`tournament-match-${tournamentMatch.id}`)
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'tournament_matches',
+      filter: `id=eq.${tournamentMatch.id}`
+    }, (payload) => {
+      console.log('🔄 Tournament match güncellendi:', payload.new);
+      
+      // Rakip skorunu real-time güncelle
+      const newMatch = payload.new as any;
+      if (user) {
+        const isPlayer1 = newMatch.player1_id === user.id;
+        const newOpponentScore = isPlayer1 ? newMatch.player2_score : newMatch.player1_score;
+        
+        if (newOpponentScore !== undefined && newOpponentScore !== opponentScore) {
+          console.log('🔄 Rakip skoru güncellendi:', newOpponentScore);
+          setOpponentScore(newOpponentScore);
+        }
+      }
+    })
+    .subscribe();
+
+  return () => {
+    console.log('🏆 Turnuva real-time temizliği');
+    supabase.removeChannel(tournamentChannel);
+  };
+}, [gameMode, tournamentMatch?.id, user?.id, opponentScore]);
+
   // İlk sync
   const initialSyncTimer = setTimeout(syncUsedWords, 500);
 
@@ -1370,109 +1651,111 @@ useEffect(() => {
 }, [currentRoom?.id]);
 
   // AI continuous play effect - unified for all modes when playing with AI
-  useEffect(() => {
-    const aiPlaying = isPlayingWithAI();
-    console.log('🤖 AI Effect Check:', { 
-      aiPlaying, 
-      gameStarted, 
-      gameEnded, 
-      gameMode, 
-      participantsLength: participants.length 
-    });
+useEffect(() => {
+  const aiPlaying = isPlayingWithAI();
+  
+  if (!aiPlaying || !gameStarted || gameEnded) {
+    return;
+  }
+
+  console.log('🤖 Starting AI play interval for game mode:', gameMode);
+
+  const aiPlayInterval = setInterval(() => {
+    // Check if player recently took action, if so wait longer
+    const timeSincePlayerAction = Date.now() - lastPlayerAction;
+    const minDelayAfterPlayerAction = 3000; // 3 saniye minimum bekleme
     
-    if (!aiPlaying || !gameStarted || gameEnded) return;
-
-    console.log('🤖 Starting AI play interval for game mode:', gameMode);
-
-    const aiPlayInterval = setInterval(() => {
-      // Check if player recently took action, if so wait longer
-      const timeSincePlayerAction = Date.now() - lastPlayerAction;
-      const minDelayAfterPlayerAction = 3000; // 3 saniye minimum bekleme
-      
-      if (timeSincePlayerAction < minDelayAfterPlayerAction) {
-        return; // Bu round'u atla
-      }
-      
-      // AI word selection with validation
-      const selectAIWord = async () => {
-        try {
-          const potentialWords = [
-            'KEDİ', 'MASA', 'ARABA', 'OKUL', 'KİTAP', 'DENİZ', 'AĞAÇ', 'ÇİÇEK', 
-            'DOSTLUK', 'GÜNEŞ', 'YILDIZ', 'BULUT', 'RÜZGAR', 'ATEŞ', 'TOPRAK',
-            'SEVGİ', 'MUTLULUK', 'UMUT', 'HAYAL', 'RENKLER', 'MÜZİK', 'DANS', 'ŞARKI',
-            'OYUN', 'SPOR', 'FUTBOL', 'BASKETBOL', 'TENİS', 'YÜZME', 'KOŞU', 'BİSİKLET',
-            'YEMEK', 'EKMEK', 'PEYNİR', 'DOMATES', 'SALATA', 'ÇORBA', 'MEYVE',
-            'ELMA', 'ARMUT', 'ÇİLEK', 'KIRAZ', 'ÜZÜM', 'PORTAKAL', 'MANGO',
-            'SEBZE', 'HAVUÇ', 'PATLICAN', 'BİBER', 'SOĞAN', 'SARIMSAK', 'PATATES',
-            'KALE', 'KEDİ', 'KÖPEK', 'KUŞU', 'BALINA', 'ASLAN', 'KAPLAN', 'FİL',
-            'SÜT', 'KOLA', 'ÇAY', 'KAHVE', 'ŞEKER', 'TUZ', 'YAĞLI', 'EKŞİ',
-            'EV', 'KAPI', 'PENCERE', 'ODA', 'SALON', 'MUTFAK', 'BANYO', 'YATAK',
-            'ANNE', 'BABA', 'KARDEŞ', 'DEDE', 'NINE', 'AMCA', 'TEYZE', 'HALA',
-            'ARKADAŞ', 'AILE', 'İNSAN', 'ÇOCUK', 'BEBEK', 'YAŞ', 'GÜN', 'GECE',
-            'SABAH', 'ÖĞLE', 'AKŞAM', 'HAFTA', 'AY', 'YIL', 'ZAMAN', 'SAAT'
-          ];
+    if (timeSincePlayerAction < minDelayAfterPlayerAction) {
+      return; // Bu round'u atla
+    }
+    
+    // AI word selection with validation
+    const selectAIWord = async () => {
+      try {
+        const potentialWords = [
+          'KEDİ', 'MASA', 'ARABA', 'OKUL', 'KİTAP', 'DENİZ', 'AĞAÇ', 'ÇİÇEK', 
+          'DOSTLUK', 'GÜNEŞ', 'YILDIZ', 'BULUT', 'RÜZGAR', 'ATEŞ', 'TOPRAK',
+          'SEVGİ', 'MUTLULUK', 'UMUT', 'HAYAL', 'RENKLER', 'MÜZİK', 'DANS', 'ŞARKI',
+          'OYUN', 'SPOR', 'FUTBOL', 'BASKETBOL', 'TENİS', 'YÜZME', 'KOŞU', 'BİSİKLET',
+          'YEMEK', 'EKMEK', 'PEYNİR', 'DOMATES', 'SALATA', 'ÇORBA', 'MEYVE',
+          'ELMA', 'ARMUT', 'ÇİLEK', 'KIRAZ', 'ÜZÜM', 'PORTAKAL', 'MANGO',
+          'SEBZE', 'HAVUÇ', 'PATLICAN', 'BİBER', 'SOĞAN', 'SARIMSAK', 'PATATES',
+          'KALE', 'KEDİ', 'KÖPEK', 'KUŞU', 'BALINA', 'ASLAN', 'KAPLAN', 'FİL',
+          'SÜT', 'KOLA', 'ÇAY', 'KAHVE', 'ŞEKER', 'TUZ', 'YAĞLI', 'EKŞİ',
+          'EV', 'KAPI', 'PENCERE', 'ODA', 'SALON', 'MUTFAK', 'BANYO', 'YATAK',
+          'ANNE', 'BABA', 'KARDEŞ', 'DEDE', 'NINE', 'AMCA', 'TEYZE', 'HALA',
+          'ARKADAŞ', 'AİLE', 'İNSAN', 'ÇOCUK', 'BEBEK', 'YAŞ', 'GÜN', 'GECE',
+          'SABAH', 'ÖĞLE', 'AKŞAM', 'HAFTA', 'AY', 'YIL', 'ZAMAN', 'SAAT'
+        ];
+        
+        // Shuffle and try words until we find a valid unused one
+        const shuffledWords = potentialWords.sort(() => Math.random() - 0.5);
+        
+        for (const word of shuffledWords) {
+          const normalizedWord = word.toUpperCase();
           
-          // Shuffle and try words until we find a valid unused one
-          const shuffledWords = potentialWords.sort(() => Math.random() - 0.5);
-          
-          for (const word of shuffledWords) {
-            const normalizedWord = word.toUpperCase();
-            
-            // Kullanılmış kelime kontrolü
-            if (!usedWords.has(normalizedWord)) {
-              // LOCAL WORDLIST CHECK FOR AI
-              if (wordlistLoaded && wordlist.has(normalizedWord)) {
-                const points = Math.floor(Math.random() * 25) + 10;
-                console.log(`🤖 AI used validated word (local): ${word} in ${gameMode} mode with ${points} points`);
-                
-                setOpponentScore(prev => prev + points);
-                
-                // Store AI word with score for statistics
-                setOpponentWords(prev => [...prev, word]);
-                setOpponentWordsWithScores(prev => [...prev, { word, score: points }]);
-                
-                playSound('correctWord');
-                
-                // Update used words
-                setUsedWords(prev => new Set([...prev, normalizedWord]));
-                console.log('🤖 AI added word to used:', normalizedWord);
-                return;
-              } else if (!wordlistLoaded) {
-                // Fallback if wordlist not loaded
-                const points = Math.floor(Math.random() * 15) + 8;
-                console.log(`🤖 AI used word (no wordlist): ${word} with ${points} points`);
-                
-                setOpponentScore(prev => prev + points);
-                setOpponentWords(prev => [...prev, word]);
-                setOpponentWordsWithScores(prev => [...prev, { word, score: points }]);
-                playSound('correctWord');
-                setUsedWords(prev => new Set([...prev, normalizedWord]));
-                return;
-              }
+          // Kullanılmış kelime kontrolü - GLOBAL ve LOCAL ayrı kontrol
+          if (!usedWords.has(normalizedWord) && !globalUsedWords.has(normalizedWord)) {
+            // LOCAL WORDLIST CHECK FOR AI
+            if (wordlistLoaded && wordlist.has(normalizedWord)) {
+              const points = Math.floor(Math.random() * 25) + 10;
+              console.log(`🤖 AI used validated word (local): ${word} in ${gameMode} mode with ${points} points`);
+              
+              // ✅ FIX: setOpponentScore yerine prev => prev + points kullan
+              setOpponentScore(prevScore => {
+                const newScore = prevScore + points;
+                console.log(`🤖 Bot score update: ${prevScore} + ${points} = ${newScore}`);
+                return newScore;
+              });
+              
+              // Store AI word with score for statistics
+              setOpponentWords(prev => [...prev, word]);
+              setOpponentWordsWithScores(prev => [...prev, { word, score: points }]);
+              
+              playSound('correctWord');
+              
+              // Update used words - GLOBAL'e de ekle
+              setUsedWords(prev => new Set([...prev, normalizedWord]));
+              setGlobalUsedWords(prev => new Set([...prev, normalizedWord]));
+              console.log('🤖 AI added word to used:', normalizedWord);
+              return;
+            } else if (!wordlistLoaded) {
+              // Fallback if wordlist not loaded
+              const points = Math.floor(Math.random() * 15) + 8;
+              console.log(`🤖 AI used word (no wordlist): ${word} with ${points} points`);
+              
+              setOpponentScore(prevScore => prevScore + points);
+              setOpponentWords(prev => [...prev, word]);
+              setOpponentWordsWithScores(prev => [...prev, { word, score: points }]);
+              playSound('correctWord');
+              setUsedWords(prev => new Set([...prev, normalizedWord]));
+              setGlobalUsedWords(prev => new Set([...prev, normalizedWord]));
+              return;
             }
           }
-          
-          // If no valid word found, AI gets fewer points
-          const opponentPoints = Math.floor(Math.random() * 10) + 5;
-          setOpponentScore(prev => prev + opponentPoints);
-          console.log(`🤖 AI couldn't find unused word, got ${opponentPoints} points in ${gameMode} mode`);
-          
-        } catch (error) {
-          console.error('AI word selection error:', error);
-          const opponentPoints = Math.floor(Math.random() * 10) + 5;
-          setOpponentScore(prev => prev + opponentPoints);
-          console.log(`🤖 AI error, got ${opponentPoints} points in ${gameMode} mode`);
         }
-      };
-
-      selectAIWord();
-    }, 4000 + Math.random() * 3000); // 4-7 saniye arasında
-
-    return () => {
-      console.log('🤖 Stopping AI play interval for game mode:', gameMode);
-      clearInterval(aiPlayInterval);
+        
+        // If no valid word found, AI gets fewer points
+        const opponentPoints = Math.floor(Math.random() * 10) + 5;
+        setOpponentScore(prevScore => prevScore + opponentPoints);
+        console.log(`🤖 AI couldn't find unused word, got ${opponentPoints} points in ${gameMode} mode`);
+        
+      } catch (error) {
+        console.error('AI word selection error:', error);
+        const opponentPoints = Math.floor(Math.random() * 10) + 5;
+        setOpponentScore(prevScore => prevScore + opponentPoints);
+        console.log(`🤖 AI error, got ${opponentPoints} points in ${gameMode} mode`);
+      }
     };
-  }, [gameStarted, gameEnded, gameMode, participants.length, usedWords, playSound, lastPlayerAction, isPlayingWithAI, wordlist, wordlistLoaded]);
+
+    selectAIWord();
+  }, 4000 + Math.random() * 3000); // 4-7 saniye arasında
+
+  return () => {
+    console.log('🤖 Stopping AI play interval for game mode:', gameMode);
+    clearInterval(aiPlayInterval);
+  };
+}, [gameStarted, gameEnded, gameMode, usedWords, globalUsedWords]); 
 
   // Private room logic
   useEffect(() => {
@@ -1578,8 +1861,8 @@ useEffect(() => {
   }, 1000);
 };
 
-  // Submit word - Using local wordlist validation
-  const submitWord = async () => {
+// Submit word - Using local wordlist validation
+const submitWord = async () => {
   if (waitingForPlayer || isJokerActive) return;
   
   // Prevent accidental double-taps/duplicate submissions (mobile)
@@ -1609,139 +1892,155 @@ useEffect(() => {
       recentSubmissionsRef.current.delete(normalizedWord);
     }, 800);
   
-  // 🔥 MOBİL FIX: Kelime kontrolünü daha güvenli hale getir
-  console.log('📱 Mobile word check:', {
-    word: normalizedWord,
-    localUsedSize: usedWords.size,
-    globalUsedSize: globalUsedWords.size,
-    isInLocal: usedWords.has(normalizedWord),
-    isInGlobal: globalUsedWords.has(normalizedWord),
-    currentUsedWords: Array.from(usedWords),
-    currentGlobalWords: Array.from(globalUsedWords)
-  });
-  
-  // SADECE KENDİ KELİMELERİMİ KONTROL ET - rakibin kelimelerini değil!
-  if (usedWords.has(normalizedWord)) {
-    console.log('❌ Mobile: Word already used by me!', {
-      foundInMyList: usedWords.has(normalizedWord),
-      myWords: Array.from(usedWords),
-      allGlobalWords: Array.from(globalUsedWords)
+    // Mobile word check
+    console.log('📱 Mobile word check:', {
+      word: normalizedWord,
+      localUsedSize: usedWords.size,
+      globalUsedSize: globalUsedWords.size,
+      isInLocal: usedWords.has(normalizedWord),
+      isInGlobal: globalUsedWords.has(normalizedWord),
+      currentUsedWords: Array.from(usedWords),
+      currentGlobalWords: Array.from(globalUsedWords)
     });
-    showCustomToast('Kelime Zaten Kullanıldı','');
-    playSound('wrongWord');
-    clearWord();
-    return;
-  }
-
-  // Don't add to sets immediately - wait for successful validation and database save
-
-  // LOCAL WORDLIST VALIDATION
-  const result = validateWordLocal(currentWord);
   
-  if (!result.isValid) {
-    playSound('wrongWord');
-    showCustomToast('Geçersiz Kelime','');
-    clearWord();
-    return;
-  }
-
-  console.log('✅ Mobile: Word accepted:', currentWord, 'Points:', result.points);
-  
-  // Database'e kelimeyi kaydet (sadece multiplayer modlarda)
-  if (currentRoom && user && (gameMode === 'private-room' || gameMode === 'random-match')) {
-    try {
-      await supabase
-        .from('game_words')
-        .insert({
-          room_id: currentRoom.id,
-          player_id: user.id,
-          word: normalizedWord,
-          points: result.points
-        });
-      
-      console.log('✅ Mobile: Word saved to database:', normalizedWord);
-    } catch (error) {
-      console.error('❌ Mobile: Database word save error:', error);
-      showCustomToast('Kelime kaydedilemedi','');
+    // SADECE KENDİ KELİMELERİMİ KONTROL ET - rakibin kelimelerini değil!
+    if (usedWords.has(normalizedWord)) {
+      console.log('❌ Mobile: Word already used by me!', {
+        foundInMyList: usedWords.has(normalizedWord),
+        myWords: Array.from(usedWords),
+        allGlobalWords: Array.from(globalUsedWords)
+      });
+      showCustomToast('Kelime Zaten Kullanıldı','');
+      playSound('wrongWord');
       clearWord();
       return;
     }
-  }
 
-  // SADECE KENDİ LİSTEME EKLE - global'a ekleme, o real-time olarak gelecek
-  setUsedWords(prev => new Set([...prev, normalizedWord]));
-  console.log('✅ Mobile: Word added to local sets after validation:', normalizedWord);
+    // LOCAL WORDLIST VALIDATION
+    const result = validateWordLocal(currentWord);
+    
+    if (!result.isValid) {
+      playSound('wrongWord');
+      showCustomToast('Geçersiz Kelime','');
+      clearWord();
+      return;
+    }
 
-  // Ses efektleri ve puan hesaplama
-  playSound('correctWord');
-  const newScore = playerScore + result.points;
-  setPlayerScore(newScore);
-  
-  setPlayerWords(prev => [...prev, currentWord]);
-  setPlayerWordsWithScores(prev => [...prev, { word: currentWord, score: result.points }]);
-
-  const wordLength = currentWord.length;
-
-  // Ses efektlerini direkt çal
-  if (wordLength === 4) {
-    audioYes.currentTime = 0;
-    audioYes.play().catch(e => console.log('Audio failed:', e));
-  } else if (wordLength === 5) {
-    audioWow2.currentTime = 0;
-    audioWow2.play().catch(e => console.log('Audio failed:', e));
-  } else if (wordLength >= 6) {
-    audioYahoo.currentTime = 0;
-    audioYahoo.play().catch(e => console.log('Audio failed:', e));
-  }
-  
-  // 🔥 MOBİL SES FIX: Audio dosyalarını mobil-friendly şekilde çal
-  triggerWordEffects();
-  
-  if (currentRoom) {
-    await updateScore(newScore);
-  }
-
-  // Total score güncelleme (vs-computer modunda)
-  if (user && gameMode === 'vs-computer') {
-    const { data: currentProfile } = await supabase
-      .from('profiles')
-      .select('total_score')
-      .eq('id', user.id)
-      .single();
-
-    const calculateLevel = (totalScore: number) => {
-      const baseExp = 1000;
-      const expIncreasePerLevel = 100;
-      
-      let level = 1;
-      let totalExpNeeded = 0;
-      let currentLevelExp = baseExp;
-
-      while (totalScore >= totalExpNeeded + currentLevelExp) {
-        totalExpNeeded += currentLevelExp;
-        level++;
-        currentLevelExp = baseExp + (level - 1) * expIncreasePerLevel;
+    console.log('✅ Mobile: Word accepted:', currentWord, 'Points:', result.points);
+    
+    // Database'e kelimeyi kaydet (sadece multiplayer modlarda)
+    if (currentRoom && user && (gameMode === 'private-room' || gameMode === 'random-match')) {
+      try {
+        await supabase
+          .from('game_words')
+          .insert({
+            room_id: currentRoom.id,
+            player_id: user.id,
+            word: normalizedWord,
+            points: result.points
+          });
+        
+        console.log('✅ Mobile: Word saved to database:', normalizedWord);
+      } catch (error) {
+        console.error('❌ Mobile: Database word save error:', error);
+        showCustomToast('Kelime kaydedilemedi','');
+        clearWord();
+        return;
       }
+    }
 
-      return level;
-    };
+    // SADECE KENDİ LİSTEME EKLE - global'a ekleme, o real-time olarak gelecek
+    setUsedWords(prev => new Set([...prev, normalizedWord]));
+    console.log('✅ Mobile: Word added to local sets after validation:', normalizedWord);
 
-    const currentLevel = calculateLevel(currentProfile?.total_score || 0);
-    const levelMultiplier = 1 + (currentLevel - 1) * 0.1;
-    const bonusPoints = Math.floor(result.points * levelMultiplier);
+    // Ses efektleri ve puan hesaplama
+    playSound('correctWord');
+    const newScore = playerScore + result.points;
+    setPlayerScore(newScore);
     
-    const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
+    setPlayerWords(prev => [...prev, currentWord]);
+    setPlayerWordsWithScores(prev => [...prev, { word: currentWord, score: result.points }]);
+
+    const wordLength = currentWord.length;
+
+    // Ses efektlerini direkt çal
+    if (wordLength === 4) {
+      audioYes.currentTime = 0;
+      audioYes.play().catch(e => console.log('Audio failed:', e));
+    } else if (wordLength === 5) {
+      audioWow2.currentTime = 0;
+      audioWow2.play().catch(e => console.log('Audio failed:', e));
+    } else if (wordLength >= 6) {
+      audioYahoo.currentTime = 0;
+      audioYahoo.play().catch(e => console.log('Audio failed:', e));
+    }
     
-    await supabase
-      .from('profiles')
-      .update({ total_score: newTotalScore })
-      .eq('id', user.id);
+    triggerWordEffects();
+    
+    if (currentRoom) {
+      await updateScore(newScore);
+    }
+
+    // 🔥 YENİ: Turnuva modunda gerçek rakip puanını güncelle
+    if (gameMode === 'tournament' && tournamentMatch && user) {
+      try {
+        const isPlayer1 = tournamentMatch.player1_id === user.id;
+        
+        await supabase
+          .from('tournament_matches')
+          .update({
+            [isPlayer1 ? 'player1_score' : 'player2_score']: newScore,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', tournamentMatch.id);
+        
+        console.log('🏆 Turnuva skoru güncellendi:', newScore);
+      } catch (error) {
+        console.error('❌ Turnuva skor güncellenme hatası:', error);
+      }
+    }
+
+    // Total score güncelleme (vs-computer modunda)
+    if (user && gameMode === 'vs-computer') {
+      const { data: currentProfile } = await supabase
+        .from('profiles')
+        .select('total_score')
+        .eq('id', user.id)
+        .single();
+
+      const calculateLevel = (totalScore: number) => {
+        const baseExp = 1000;
+        const expIncreasePerLevel = 100;
+        
+        let level = 1;
+        let totalExpNeeded = 0;
+        let currentLevelExp = baseExp;
+
+        while (totalScore >= totalExpNeeded + currentLevelExp) {
+          totalExpNeeded += currentLevelExp;
+          level++;
+          currentLevelExp = baseExp + (level - 1) * expIncreasePerLevel;
+        }
+
+        return level;
+      };
+
+      const currentLevel = calculateLevel(currentProfile?.total_score || 0);
+      const levelMultiplier = 1 + (currentLevel - 1) * 0.1;
+      const bonusPoints = Math.floor(result.points * levelMultiplier);
+      
+      const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
+      
+      await supabase
+        .from('profiles')
+        .update({ total_score: newTotalScore })
+        .eq('id', user.id);
+    }
+
+    clearWord();
+  } finally {
+    submissionLockRef.current = false;
   }
-
-  clearWord();
-} finally {
-  submissionLockRef.current = false;
-}
 };
 
   // Trigger word effects (confetti/fireworks) if purchased
@@ -2068,37 +2367,36 @@ if (gameEnded) {
           
           <div className="space-y-2">
             {/* 🎯 TURNUVA MODUNDA FARKLI BUTONLAR */}
-{gameMode === 'tournament' ? (
-  <>
-    {winner === 'opponent' && (
-      <Button 
-        variant="outline" 
-        onClick={() => {
-          playSound('buttonClick');
-          navigate('/tournaments');
-        }} 
-        className="w-full"
-      >
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Turnuva Listesi
-      </Button>
-    )}
-    {winner === 'player' && (
-  <Button onClick={() => {
-    playSound('buttonClick');
-    console.log('🏆 Turnuvaya dön tıklandı:', tournamentMatch?.tournament_id);
-    if (tournamentMatch?.tournament_id) {
-      navigate(`/tournament/${tournamentMatch.tournament_id}`);
-    } else {
-      console.error('❌ Tournament ID bulunamadı!');
-      navigate('/tournaments');
-    }
-  }} className="w-full">
-    <Trophy className="w-4 h-4 mr-2" />
-    Turnuvaya Dön
-  </Button>
-)}
-  </>
+            {gameMode === 'tournament' ? (
+              <>
+                {winner === 'opponent' && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      playSound('buttonClick');
+                      navigate('/tournaments');
+                    }} 
+                    className="w-full"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Turnuva Listesi
+                  </Button>
+                )}
+                {winner === 'player' && (
+                  <Button onClick={() => {
+                    playSound('buttonClick');
+                    console.log('🏆 Turnuvaya dön tıklandı:', tournamentMatch?.tournament_id);
+                    if (tournamentMatch?.tournament_id) {
+                      navigate(`/tournament/${tournamentMatch.tournament_id}`);
+                    } else {
+                      navigate('/tournaments');
+                    }
+                  }} className="w-full">
+                    <Trophy className="w-4 h-4 mr-2" />
+                    Turnuvaya Dön
+                  </Button>
+                )}
+              </>
             ) : (
               // Normal mod butonları
               <>
@@ -2123,7 +2421,8 @@ if (gameEnded) {
                     setOpponentWordsWithScores([]);
                     setPlayerScore(0);
                     setOpponentScore(0);
-                    setTimeLeft(gameType === 'timed' ? 120 : Infinity);
+                    timeLeftRef.current = gameType === 'timed' ? 120 : 0;
+                    setDisplayTime(timeLeftRef.current);
                     setGameStarted(true);
                     setGameEnded(false);
                     setWinner(null);
@@ -2274,15 +2573,19 @@ return (
         <div className="flex items-center justify-between py-2 shrink-0">
           {/* Sol taraf - Geri butonu */}
           <Button 
-            variant="outline" 
-            size="sm" 
-            className="text-xs px-2 py-1 h-8" 
-            onClick={handleBackToMenu}
-            disabled={gameMode === 'tournament'}
-          >
+             variant="outline" 
+             size="sm" 
+             className="text-xs px-2 py-1 h-8" 
+             onClick={(e) => {
+               console.log('🚪 Çıkış butonuna tıklandı - gameMode:', gameMode);
+               e.preventDefault();
+               e.stopPropagation();
+              handleBackToMenu();
+           }}
+       >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            {gameMode === 'tournament' ? 'Turnuva Maçı' : 'Çıkış'}
-          </Button>
+          Çıkış
+        </Button>
 
           {/* Orta kısım - Timer veya hedef + Turnuva bilgisi */}
           {gameType === 'timed' ? (
@@ -2297,26 +2600,26 @@ return (
               )}
               
               <div className={`flex items-center space-x-2 transition-all duration-300 ${
-                timeLeft <= 15 ? 'animate-pulse text-red-500' : 'text-foreground'
+                displayTime <= 15 ? 'animate-pulse text-red-500' : 'text-foreground'
               }`}>
                 <span className={`text-lg transition-all duration-300 inline-block ${
-                  timeLeft <= 15 ? 'animate-pulse text-red-500' : ''
+                  displayTime <= 15 ? 'animate-pulse text-red-500' : ''
                 }`} style={{
-                  animation: timeLeft <= 15 ? 'pulse 1s infinite, hourglassFlip 2s ease-in-out infinite' : 'hourglassFlip 4s ease-in-out infinite'
+                  animation: displayTime <= 15 ? 'pulse 1s infinite, hourglassFlip 2s ease-in-out infinite' : 'hourglassFlip 4s ease-in-out infinite'
                 }}>⏳</span>
                 <span className={`font-mono text-lg font-bold transition-all duration-300 ${
-                  timeLeft <= 15 ? 'text-red-500 scale-110' : ''
+                  displayTime <= 15 ? 'text-red-500 scale-110' : ''
                 }`}>
-                  {formatTime(timeLeft)}
+                  {formatTime(displayTime)}
                 </span>
               </div>
               <div className="w-32 h-1 bg-muted rounded-full overflow-hidden">
                 <div 
                   className={`h-full transition-all duration-1000 ease-out ${
-                    timeLeft <= 15 ? 'bg-red-500 animate-pulse' : 
-                    timeLeft <= 30 ? 'bg-orange-500' : 'bg-green-500'
+                    displayTime <= 15 ? 'bg-red-500 animate-pulse' :
+                    displayTime <= 30 ? 'bg-orange-500' : 'bg-green-500'
                   }`}
-                  style={{ width: `${(timeLeft / 120) * 100}%` }}
+                  style={{ width: `${(displayTime / 120) * 100}%` }}
                 />
               </div>
             </div>
@@ -2645,6 +2948,41 @@ return (
           </AlertDialogAction>
           <AlertDialogCancel className="w-full">
             🎮 Hayır, Oyuna Devam Et
+          </AlertDialogCancel>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    {/* Tournament Exit Dialog */}
+    <AlertDialog open={showTournamentExitDialog} onOpenChange={setShowTournamentExitDialog}>
+      <AlertDialogContent className="max-w-sm mx-auto">
+        <AlertDialogHeader>
+          <AlertDialogTitle className="text-center">⚠️ Turnuva Maçı Uyarısı</AlertDialogTitle>
+          <AlertDialogDescription className="text-center">
+            Turnuva maçından ayrılırsan:
+            <br /><br />
+            • <span className="font-bold text-destructive">Maçı kaybedersin</span>
+            <br />
+            • <span className="font-bold text-yellow-600">Rakip kazanır</span>
+            <br />
+            • <span className="font-bold text-blue-600">Turnuvadan elenirsin</span>
+            <br /><br />
+            <span className="text-muted-foreground text-sm">Emin misin?</span>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="flex-col space-y-2 sm:flex-col sm:space-y-2 sm:space-x-0">
+          <AlertDialogAction 
+            onClick={async () => {
+              setShowTournamentExitDialog(false);
+              await handleTournamentExit();
+    // navigate('/'); satırını kaldır - handleTournamentExit içinde zaten parent'e bildirim yapılıyor
+           }}
+            className="w-full bg-destructive hover:bg-destructive/90"
+           >
+         Evet, Ayrıl
+       </AlertDialogAction>
+          <AlertDialogCancel className="w-full">
+            🏆 Hayır, Maça Devam Et
           </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
