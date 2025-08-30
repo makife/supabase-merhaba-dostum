@@ -16,6 +16,100 @@ import {
   Play
 } from 'lucide-react';
 
+// Turnuva ilerlemesi için success kartları bileşeni
+const TournamentProgressCard = ({ 
+  currentRound, 
+  isWinner, 
+  tournamentName, 
+  onContinue 
+}: {
+  currentRound: number;
+  isWinner: boolean;
+  tournamentName: string;
+  onContinue: () => void;
+}) => {
+  const getRoundInfo = (round: number) => {
+    switch(round) {
+      case 1: return {
+        name: 'Çeyrek Final',
+        nextName: 'Yarı Final',
+        icon: '🥉',
+        message: isWinner ? 'Çeyrek finali geçtiniz!' : 'Çeyrek finalde elendiz!',
+        description: isWinner ? 'Yarı finale hazır olun!' : 'Turnuva deneyiminiz burada sona eriyor.'
+      };
+      case 2: return {
+        name: 'Yarı Final', 
+        nextName: 'Final',
+        icon: '🥈',
+        message: isWinner ? 'Yarı finali geçtiniz!' : 'Yarı finalde elendiz!',
+        description: isWinner ? 'Finale bir adım kaldı!' : 'İyi bir performans sergilediz!'
+      };
+      case 3: return {
+        name: 'Final',
+        nextName: 'Şampiyonluk',
+        icon: '🏆',
+        message: isWinner ? 'Turnuva şampiyonu oldunuz!' : 'Finalde elendiz!',
+        description: isWinner ? 'Tebrikler, şampiyon!' : 'Finale gelerek harika bir başarı gösterdiz!'
+      };
+      default: return {
+        name: 'Turnuva',
+        nextName: 'Sonraki Tur',
+        icon: '🎮',
+        message: 'Maç tamamlandı!',
+        description: ''
+      };
+    }
+  };
+
+  const roundInfo = getRoundInfo(currentRound);
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <Card className={`max-w-md w-full ${isWinner ? 'border-yellow-500 bg-gradient-to-br from-yellow-50 to-orange-50' : 'border-gray-400 bg-gray-50'}`}>
+        <CardContent className="p-8 text-center space-y-6">
+          {/* Ana İkon */}
+          <div className="text-6xl animate-bounce">
+            {isWinner ? roundInfo.icon : '😔'}
+          </div>
+          
+          {/* Başlık */}
+          <div>
+            <h2 className={`text-2xl font-bold ${isWinner ? 'text-yellow-700' : 'text-gray-700'}`}>
+              {roundInfo.message}
+            </h2>
+            <p className={`text-lg mt-2 ${isWinner ? 'text-yellow-600' : 'text-gray-600'}`}>
+              {roundInfo.name}
+            </p>
+          </div>
+
+          {/* Turnuva Adı */}
+          <div className="bg-white/50 rounded-lg p-3">
+            <p className="text-sm text-gray-600">Turnuva</p>
+            <p className="font-semibold">{tournamentName}</p>
+          </div>
+
+          {/* Açıklama */}
+          <p className="text-gray-700">
+            {roundInfo.description}
+          </p>
+
+          {/* İlerle Butonu */}
+          <Button 
+            onClick={onContinue}
+            className={`w-full py-3 text-lg font-semibold ${
+              isWinner 
+                ? 'bg-yellow-500 hover:bg-yellow-600 text-white' 
+                : 'bg-gray-500 hover:bg-gray-600 text-white'
+            }`}
+          >
+            {isWinner && currentRound < 3 ? `${roundInfo.nextName}'e Geç` : 'Turnuva Durumuna Dön'}
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
 interface Tournament {
   id: string;
   name: string;
@@ -71,13 +165,19 @@ const TournamentMatchPage = () => {
   const [currentMatch, setCurrentMatch] = useState<TournamentMatch | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showProgressCard, setShowProgressCard] = useState(false);
+  const [progressCardData, setProgressCardData] = useState<{
+    currentRound: number;
+    isWinner: boolean;
+    tournamentName: string;
+  } | null>(null);
 
   // 🎯 Oyun bitince sonraki aşama kontrolü
 const checkNextRoundOrFinish = async () => {
   if (!tournament) return;
 
   try {
-    // ÖNEMLİ: Güncel turnuva verisini tekrar çek
+    // Güncel turnuva verisini tekrar çek
     const { data: currentTournament } = await supabase
       .from('tournaments')
       .select('*')
@@ -94,15 +194,72 @@ const checkNextRoundOrFinish = async () => {
       .eq('round', currentTournament.current_round);
 
     const completedMatches = currentRoundMatches?.filter(m => m.status === 'completed') || [];
+    const pendingMatches = currentRoundMatches?.filter(m => m.status === 'pending') || [];
     const totalMatches = currentRoundMatches?.length || 0;
 
-    console.log(`🔍 Tur ${currentTournament.current_round}: ${completedMatches.length}/${totalMatches} maç tamamlandı`);
+    console.log(`Tur ${currentTournament.current_round}: ${completedMatches.length}/${totalMatches} maç tamamlandı`);
+
+    // Pending TBD maçlarını otomatik sonuçlandır (bot maçları vs)
+    for (const match of pendingMatches) {
+      if (!match.player1_id || !match.player2_id || 
+          match.player1_id.startsWith('bot_') || match.player2_id.startsWith('bot_')) {
+        
+        let winnerId = null;
+        let player1Score = 0;
+        let player2Score = 0;
+
+        // Basit bot logic
+        if (match.player1_id && !match.player1_id.startsWith('bot_') && !match.player2_id) {
+          winnerId = match.player1_id;
+          player1Score = 500;
+        } else if (match.player2_id && !match.player2_id.startsWith('bot_') && !match.player1_id) {
+          winnerId = match.player2_id;
+          player2Score = 500;
+        } else if (match.player1_id?.startsWith('bot_') && match.player2_id && !match.player2_id.startsWith('bot_')) {
+          winnerId = match.player2_id;
+          player2Score = 500;
+          player1Score = 200;
+        } else if (match.player2_id?.startsWith('bot_') && match.player1_id && !match.player1_id.startsWith('bot_')) {
+          winnerId = match.player1_id;
+          player1Score = 500;
+          player2Score = 200;
+        } else {
+          winnerId = match.player1_id || match.player2_id;
+          player1Score = Math.random() > 0.5 ? 500 : 300;
+          player2Score = player1Score === 500 ? 300 : 500;
+        }
+
+        if (winnerId) {
+          await supabase
+            .from('tournament_matches')
+            .update({
+              status: 'completed',
+              winner_id: winnerId,
+              player1_score: player1Score,
+              player2_score: player2Score,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', match.id);
+        }
+      }
+    }
+
+    // Güncellenmiş maç listesini tekrar çek
+    const { data: updatedMatches } = await supabase
+      .from('tournament_matches')
+      .select('*')
+      .eq('tournament_id', tournamentId)
+      .eq('round', currentTournament.current_round);
+
+    const updatedCompletedMatches = updatedMatches?.filter(m => m.status === 'completed') || [];
+    const updatedTotalMatches = updatedMatches?.length || 0;
 
     // Eğer tüm maçlar tamamlandıysa
-    if (completedMatches.length === totalMatches) {
+    if (updatedCompletedMatches.length === updatedTotalMatches && updatedTotalMatches > 0) {
+      
       if (currentTournament.current_round === 3) {
         // 🏆 FİNAL BİTTİ - TURNUVA TAMAMLANDI
-        const finalMatch = completedMatches[0];
+        const finalMatch = updatedCompletedMatches[0];
         const winner = participants.find(p => p.user_id === finalMatch.winner_id);
 
         await supabase
@@ -113,37 +270,96 @@ const checkNextRoundOrFinish = async () => {
           })
           .eq('id', tournamentId);
 
+        // ✅ ŞAMPIYON KARTI GÖSTER
+        if (finalMatch.winner_id === user?.id) {
+          setTimeout(() => {
+            setShowProgressCard(true);
+            setProgressCardData({
+              currentRound: 3,
+              isWinner: true,
+              tournamentName: tournament?.name || 'Turnuva'
+            });
+          }, 1000);
+        }
+
         toast({
           title: '🏆 Turnuva Bitti!',
           description: `Şampiyon: ${winner?.profiles?.username || 'Bilinmeyen'}`,
           duration: 5000,
         });
 
-        // Turnuva verisini güncelle
         await loadTournamentData();
 
       } else {
-        // 📈 SONRAKİ TURA GEÇ
+        // 📈 SONRAKI TURA GEÇ
         const nextRound = currentTournament.current_round + 1;
-        console.log(`📈 Sonraki tura geçiliyor: ${nextRound}`);
+        console.log(`Sonraki tura geçiliyor: ${nextRound}`);
 
-        // Kazananları al
-        const winners = completedMatches.map(match => match.winner_id).filter(Boolean);
+        // Tüm kazananları al ve eşleştir
+        const allWinners = updatedCompletedMatches.map(match => match.winner_id).filter(Boolean);
         
-        // Sonraki tur maçlarını oluştur
+        const realWinners = allWinners.filter(winnerId => {
+          if (!winnerId || winnerId.startsWith('bot_')) return false;
+          const participant = participants.find(p => p.user_id === winnerId);
+          return participant && !participant.is_bot;
+        });
+
+        const botWinners = allWinners.filter(winnerId => {
+          if (!winnerId) return true;
+          if (winnerId.startsWith('bot_')) return true;
+          const participant = participants.find(p => p.user_id === winnerId);
+          return !participant || participant.is_bot;
+        });
+
+        // Eşleşme algoritması
         const nextRoundMatches = [];
-        for (let i = 0; i < winners.length; i += 2) {
+        const usedWinners = new Set();
+
+        // Gerçek oyuncuları birbiriyle eşleştir
+        for (let i = 0; i < realWinners.length - 1; i += 2) {
+          if (!usedWinners.has(realWinners[i]) && !usedWinners.has(realWinners[i + 1])) {
+            nextRoundMatches.push({
+              tournament_id: tournamentId,
+              round: nextRound,
+              match_number: nextRoundMatches.length + 1,
+              player1_id: realWinners[i],
+              player2_id: realWinners[i + 1],
+              status: 'pending'
+            });
+            usedWinners.add(realWinners[i]);
+            usedWinners.add(realWinners[i + 1]);
+          }
+        }
+
+        // Kalan gerçek oyuncuları botlarla eşleştir
+        const remainingRealWinners = realWinners.filter(w => !usedWinners.has(w));
+        for (let i = 0; i < remainingRealWinners.length; i++) {
+          const botOpponent = botWinners[i] || null;
           nextRoundMatches.push({
             tournament_id: tournamentId,
             round: nextRound,
-            match_number: Math.floor(i / 2) + 1,
-            player1_id: winners[i] || null,
-            player2_id: winners[i + 1] || null,
+            match_number: nextRoundMatches.length + 1,
+            player1_id: remainingRealWinners[i],
+            player2_id: botOpponent,
+            status: 'pending'
+          });
+          if (botOpponent) usedWinners.add(botOpponent);
+        }
+
+        // Kalan botları birbiriyle eşleştir
+        const remainingBots = botWinners.filter(w => !usedWinners.has(w));
+        for (let i = 0; i < remainingBots.length - 1; i += 2) {
+          nextRoundMatches.push({
+            tournament_id: tournamentId,
+            round: nextRound,
+            match_number: nextRoundMatches.length + 1,
+            player1_id: remainingBots[i],
+            player2_id: remainingBots[i + 1],
             status: 'pending'
           });
         }
 
-        // Veritabanını güncelle
+        // Database'e kaydet
         const { error: insertError } = await supabase.from('tournament_matches').insert(nextRoundMatches);
         if (insertError) throw insertError;
         
@@ -153,11 +369,7 @@ const checkNextRoundOrFinish = async () => {
           .eq('id', tournamentId);
         if (updateError) throw updateError;
 
-        toast({
-          title: `🎉 ${nextRound === 2 ? 'Yarı Final' : 'Final'} Başlıyor!`,
-          description: 'Sonraki tur maçları oluşturuldu',
-          duration: 3000,
-        });
+        console.log(`✅ ${nextRound}. tur oluşturuldu: ${nextRoundMatches.length} maç`);
 
         // Verileri yeniden yükle
         await loadTournamentData();
@@ -168,78 +380,254 @@ const checkNextRoundOrFinish = async () => {
   }
 };
 
-  // Turnuva verilerini yükle
-  const loadTournamentData = async () => {
-    if (!tournamentId) return;
+// Progress card'ı kapatma fonksiyonu
+const handleProgressContinue = async () => {
+  if (!progressCardData) return;
 
-    try {
-      // Turnuva bilgilerini getir
-      const { data: tournamentData, error: tournamentError } = await supabase
-        .from('tournaments')
-        .select('*')
-        .eq('id', tournamentId)
-        .single();
+  const { currentRound, isWinner } = progressCardData;
+  
+  setShowProgressCard(false);
+  setProgressCardData(null);
+  
+  // Eğer kaybettiyse, sadece sonraki tur kontrolü yap
+  if (!isWinner) {
+    setTimeout(() => {
+      checkNextRoundOrFinish();
+    }, 500);
+    return;
+  }
+  
+  // KAZANIRSA - sonraki tur kontrolü ve hazırlık
+  console.log('🏆 Kullanıcı kazandı, sonraki tur hazırlığı:', currentRound);
+  
+  // Önce diğer maçların tamamlanması için sonraki tur kontrolü
+  setTimeout(async () => {
+    await checkNextRoundOrFinish();
+    
+    // Sonraki tur oluşturulduktan sonra, kullanıcının yeni maçını kontrol et
+    setTimeout(() => {
+      checkAndStartNextUserMatch(currentRound);
+    }, 1000);
+  }, 500);
+};
 
-      if (tournamentError) throw tournamentError;
+// 3. YENİ FONKSIYON: Kullanıcının sonraki maçını kontrol et ve başlat
+const checkAndStartNextUserMatch = async (completedRound: number) => {
+  if (!user || !tournament) return;
+  
+  try {
+    // Güncel maçları al
+    const { data: allMatches } = await supabase
+      .from('tournament_matches')
+      .select('*')
+      .eq('tournament_id', tournamentId)
+      .order('round')
+      .order('match_number');
+
+    if (!allMatches) return;
+
+    // Kullanıcının sonraki turda maçı var mı?
+    const nextRound = completedRound + 1;
+    const userNextMatch = allMatches.find(match => 
+      (match.player1_id === user.id || match.player2_id === user.id) && 
+      match.round === nextRound &&
+      match.status === 'pending'
+    );
+
+    console.log('🔍 Kullanıcının sonraki maçı:', {
+      nextRound,
+      found: !!userNextMatch,
+      matchId: userNextMatch?.id?.slice(-8)
+    });
+
+    if (userNextMatch) {
+      // Sonraki tur var, countdown göster
+      const roundName = nextRound === 2 ? 'Yarı Final' : nextRound === 3 ? 'Final' : 'Sonraki Tur';
       
-      const processedTournament = {
-        ...tournamentData,
-        game_type: (tournamentData.game_type === 'score' ? 'score' : 'timed') as 'timed' | 'score'
-      };
-      setTournament(processedTournament);
-
-      // Maçları getir
-      const { data: matchesData, error: matchesError } = await supabase
-        .from('tournament_matches')
-        .select('*')
-        .eq('tournament_id', tournamentId)
-        .order('round')
-        .order('match_number');
-
-      if (matchesError) throw matchesError;
-      
-      const processedMatches = (matchesData || []).map((match: any) => ({
-        ...match,
-        player1_score: match.player1_score ?? 0,
-        player2_score: match.player2_score ?? 0,
-        updated_at: match.updated_at || match.created_at,
-        status: match.status as 'pending' | 'active' | 'completed'
-      })) as TournamentMatch[];
-      setMatches(processedMatches);
-
-      // Katılımcıları getir
-      const { data: participantsData, error: participantsError } = await supabase
-        .from('tournament_participants')
-        .select(`
-          *,
-          profiles:user_id (username, avatar_url)
-        `)
-        .eq('tournament_id', tournamentId)
-        .order('seed');
-
-      if (participantsError) throw participantsError;
-      setParticipants(participantsData || []);
-
-      // Kullanıcının aktif maçını bul
-      if (user && processedMatches) {
-        const userActiveMatch = processedMatches.find(match => 
-          (match.player1_id === user.id || match.player2_id === user.id) && 
-          match.status === 'active'
-        );
-        setCurrentMatch(userActiveMatch || null);
-      }
-
-    } catch (error) {
-      console.error('Error loading tournament data:', error);
       toast({
-        title: 'Hata',
-        description: 'Turnuva verileri yüklenirken hata oluştu',
-        variant: 'destructive',
+        title: `🏆 ${roundName} Hazırlığı`,
+        description: '10 saniye içinde maçınız başlayacak...',
+        duration: 10000,
       });
-    } finally {
-      setLoading(false);
+
+      // 10 saniye bekle ve maçı başlat
+      setTimeout(async () => {
+        await startUserMatch(userNextMatch.id);
+      }, 10000);
+      
+    } else {
+      // Kullanıcının sonraki maçı yok (elendi veya turnuva bitti)
+      console.log('❌ Kullanıcının sonraki maçı bulunamadı');
+      
+      if (nextRound > 3) {
+        // Turnuva bitti
+        toast({
+          title: '🏆 Turnuva Tamamlandı!',
+          description: 'Turnuva sona erdi.',
+        });
+      }
     }
-  };
+
+  } catch (error) {
+    console.error('❌ Sonraki maç kontrolü hatası:', error);
+  }
+};
+
+// 4. YENİ FONKSIYON: Kullanıcının maçını başlat
+const startUserMatch = async (matchId: string) => {
+  try {
+    console.log('🎮 Kullanıcı maçı başlatılıyor:', matchId);
+
+    // Maçı active yap
+    const { error: updateError } = await supabase
+      .from('tournament_matches')
+      .update({ 
+        status: 'active',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', matchId);
+
+    if (updateError) {
+      console.error('❌ Maç başlatma hatası:', updateError);
+      return;
+    }
+
+    // Verileri yeniden yükle
+    await loadTournamentData();
+    
+    // Oyunu başlat
+    setTimeout(() => {
+      setIsPlaying(true);
+    }, 1000);
+
+    toast({
+      title: '🎮 Maç Başlıyor!',
+      description: 'Oyuna yönlendiriliyorsunuz...',
+      duration: 2000,
+    });
+
+  } catch (error) {
+    console.error('❌ startUserMatch hatası:', error);
+  }
+};
+
+// MEVCUT loadTournamentData fonksiyonunu bununla değiştir:
+const loadTournamentData = async () => {
+ if (!tournamentId) return;
+
+ try {
+   // Öncelikle participants'ı yükle
+   const { data: participantsData, error: participantsError } = await supabase
+     .from('tournament_participants')
+     .select(`
+       *,
+       profiles:user_id (username, avatar_url)
+     `)
+     .eq('tournament_id', tournamentId)
+     .order('seed');
+
+   if (participantsError) throw participantsError;
+   
+   console.log('✅ Participants yüklendi:', participantsData?.length || 0);
+   setParticipants(participantsData || []);
+
+   // Tournament verilerini yükle
+   const { data: tournamentData, error: tournamentError } = await supabase
+     .from('tournaments')
+     .select('*')
+     .eq('id', tournamentId)
+     .single();
+
+   if (tournamentError) throw tournamentError;
+   setTournament(tournamentData);
+
+   // Matches verilerini yükle
+   const { data: matchesData, error: matchesError } = await supabase
+     .from('tournament_matches')
+     .select('*')
+     .eq('tournament_id', tournamentId)
+     .order('round')
+     .order('match_number');
+
+   if (matchesError) throw matchesError;
+
+   // Matches debug bilgisi
+   console.log('📊 Matches yüklendi:', {
+     count: matchesData?.length || 0,
+     matches: matchesData?.map(m => ({
+       id: m.id.slice(-8),
+       round: m.round,
+       match_number: m.match_number,
+       player1: m.player1_id?.slice(-8) || 'NULL',
+       player2: m.player2_id?.slice(-8) || 'NULL', 
+       status: m.status,
+       winner: m.winner_id?.slice(-8) || 'NULL'
+     }))
+   });
+   
+   setMatches(matchesData || []);
+
+   // Aktif maç kontrolü - geliştirilmiş versiyon
+   if (user && matchesData && matchesData.length > 0) {
+     const userActiveMatch = matchesData.find(match => {
+       const isPlayer1 = match.player1_id === user.id;
+       const isPlayer2 = match.player2_id === user.id;
+       const isActive = match.status === 'active';
+       
+       return (isPlayer1 || isPlayer2) && isActive;
+     });
+
+     // Debug için detaylı log
+     console.log('👤 Kullanıcının aktif maç kontrolü:', {
+       userId: user.id.slice(-8),
+       totalMatches: matchesData.length,
+       activeMatchFound: !!userActiveMatch,
+       activeMatchDetails: userActiveMatch ? {
+         id: userActiveMatch.id.slice(-8),
+         round: userActiveMatch.round,
+         player1: userActiveMatch.player1_id?.slice(-8) || 'NULL',
+         player2: userActiveMatch.player2_id?.slice(-8) || 'NULL',
+         status: userActiveMatch.status,
+         isUserPlayer1: userActiveMatch.player1_id === user.id,
+         isUserPlayer2: userActiveMatch.player2_id === user.id
+       } : null
+     });
+     
+     setCurrentMatch(userActiveMatch || null);
+
+     // Pending maç kontrolü de ekle
+     if (!userActiveMatch) {
+       const userPendingMatch = matchesData.find(match => {
+         const isPlayer1 = match.player1_id === user.id;
+         const isPlayer2 = match.player2_id === user.id;
+         const isPending = match.status === 'pending';
+         
+         return (isPlayer1 || isPlayer2) && isPending;
+       });
+
+       console.log('⏰ Kullanıcının pending maçı:', {
+         found: !!userPendingMatch,
+         matchDetails: userPendingMatch ? {
+           id: userPendingMatch.id.slice(-8),
+           round: userPendingMatch.round,
+           player1: userPendingMatch.player1_id?.slice(-8) || 'NULL',
+           player2: userPendingMatch.player2_id?.slice(-8) || 'NULL'
+         } : null
+       });
+     }
+   }
+
+ } catch (error) {
+   console.error('❌ Error loading tournament data:', error);
+   toast({
+     title: 'Hata',
+     description: 'Turnuva verileri yüklenemedi',
+     variant: 'destructive',
+   });
+ } finally {
+   setLoading(false);
+ }
+};
 
   useEffect(() => {
     loadTournamentData();
@@ -278,38 +666,51 @@ const checkNextRoundOrFinish = async () => {
 useEffect(() => {
   if (!tournament || !user) return;
 
-  // Kullanıcının pending maçı var mı?
   const userPendingMatch = matches.find(match => 
     (match.player1_id === user.id || match.player2_id === user.id) && 
     match.status === 'pending'
   );
 
   if (userPendingMatch) {
-    console.log('⏰ Pending maç bulundu, 10 saniye sonra otomatik başlatılacak:', userPendingMatch.id);
+    console.log('Pending maç bulundu:', userPendingMatch.id);
     
-    // 10 saniye geri sayım
-    let countdown = 10;
-    const countdownInterval = setInterval(() => {
-      countdown--;
-      
-      if (countdown <= 0) {
-        clearInterval(countdownInterval);
-        // Otomatik olarak maçı başlat
-        autoStartMatch(userPendingMatch.id);
-      }
-    }, 1000);
-
-    return () => clearInterval(countdownInterval);
+    // Duplicate başlatma engelleyici
+    const alreadyStarting = localStorage.getItem(`starting_${userPendingMatch.id}`);
+    if (alreadyStarting) {
+      console.log('Bu maç zaten başlatılıyor, atlanıyor');
+      return;
+    }
+    
+    localStorage.setItem(`starting_${userPendingMatch.id}`, 'true');
+    
+    // Hangi turda olduğumuzu belirle
+    const roundName = userPendingMatch.round === 1 ? 'Çeyrek Final' : 
+                     userPendingMatch.round === 2 ? 'Yarı Final' : 'Final';
+    
+    // Bildirim göster
+    toast({
+      title: `${roundName} Maçınız!`,
+      description: '10 saniye içinde otomatik olarak oyuna başlayacaksınız...',
+      duration: 10000,
+    });
+    
+    const startMatch = async () => {
+      await autoStartMatch(userPendingMatch.id);
+      localStorage.removeItem(`starting_${userPendingMatch.id}`);
+    };
+    
+    // 10 saniye bekle ve başlat
+    setTimeout(startMatch, 10000);
   }
 }, [tournament, matches, user]);
-
+  
+  // Dependencies kontrol et
 // Otomatik maç başlatma fonksiyonu
 const autoStartMatch = async (matchId: string) => {
   try {
     console.log('🎮 Maç otomatik başlatılıyor:', matchId);
 
-    // Maçı aktif duruma getir
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('tournament_matches')
       .update({ 
         status: 'active',
@@ -317,132 +718,131 @@ const autoStartMatch = async (matchId: string) => {
       })
       .eq('id', matchId);
 
-    if (error) throw error;
-
-    // Maç bilgilerini al
-    const match = matches.find(m => m.id === matchId);
-    if (match) {
-      setCurrentMatch(match);
-      setIsPlaying(true);
-      
-      toast({
-        title: '🎮 Turnuva Maçı Başladı!',
-        description: 'Maç otomatik olarak başlatıldı',
-        duration: 3000,
-      });
+    if (error) {
+      console.error('❌ Database güncelleme hatası:', error);
+      return;
     }
 
-  } catch (error) {
-    console.error('Error auto-starting match:', error);
+    console.log('✅ Match başarıyla güncellendi:', data);
+
     toast({
-      title: 'Hata',
-      description: 'Maç otomatik başlatılamadı',
-      variant: 'destructive',
+      title: '🎮 Turnuva Maçı Başladı!',
+      description: 'Otomatik olarak oyuna yönlendiriliyorsunuz...',
+      duration: 2000,
     });
+
+    // Veri güncelle
+    await loadTournamentData();
+    
+    // ÖNEMLİ: Otomatik olarak oyunu başlat
+    setTimeout(() => {
+      setIsPlaying(true);
+    }, 1000);
+
+  } catch (error) {
+    console.error('❌ autoStartMatch genel hatası:', error);
   }
 };
 
   // 🏁 Maçı bitirme fonksiyonu
-  const completeMatch = async (winnerId: string, player1Score: number, player2Score: number) => {
-    if (!currentMatch) return;
+const completeMatch = async (winnerId: string, player1Score: number, player2Score: number) => {
+  if (!currentMatch) return;
 
-    try {
-      console.log('🏁 Maç bitiriliyor:', { winnerId, player1Score, player2Score });
+  try {
+    console.log('🏁 Maç bitiriliyor:', { winnerId, player1Score, player2Score });
 
-      // Önce maçı tamamla
-      const { error: updateError } = await supabase
-        .from('tournament_matches')
-        .update({
-          status: 'completed',
-          winner_id: winnerId,
-          player1_score: player1Score,
-          player2_score: player2Score,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', currentMatch.id);
+    // Önce maçı tamamla
+    const { error: updateError } = await supabase
+      .from('tournament_matches')
+      .update({
+        status: 'completed',
+        winner_id: winnerId,
+        player1_score: player1Score,
+        player2_score: player2Score,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', currentMatch.id);
 
-      if (updateError) throw updateError;
+    if (updateError) throw updateError;
 
-      // 🎯 ÖNEMLİ: İSTATİSTİKLERİ GÜNCELLE!
+    // İstatistikleri güncelle (her iki oyuncu için)
+    if (currentMatch.player1_id && !currentMatch.player1_id.startsWith('bot_')) {
+      const isPlayer1Winner = winnerId === currentMatch.player1_id;
+      const player1Words = Array.from({length: Math.floor(player1Score / 8)}, (_, i) => ({
+        word: `KELIME${i + 1}`,
+        score: 8
+      }));
+      
+      await updatePlayerStatistics(
+        currentMatch.player1_id,
+        player1Score,
+        player1Words,
+        isPlayer1Winner
+      );
+      await checkBadges(currentMatch.player1_id, player1Words.length);
+    }
     
-      // Player 1 istatistikleri
-      if (currentMatch.player1_id && !currentMatch.player1_id.startsWith('bot_')) {
-        const isPlayer1Winner = winnerId === currentMatch.player1_id;
+    if (currentMatch.player2_id && !currentMatch.player2_id.startsWith('bot_')) {
+      const isPlayer2Winner = winnerId === currentMatch.player2_id;
+      const player2Words = Array.from({length: Math.floor(player2Score / 8)}, (_, i) => ({
+        word: `KELIME${i + 1}`,
+        score: 8
+      }));
       
-        // Player 1 kelimelerini oluştur (simüle et)
-        const player1Words = Array.from({length: Math.floor(player1Score / 8)}, (_, i) => ({
-          word: `KELIME${i + 1}`,
-          score: 8
-        }));
-      
-        await updatePlayerStatistics(
-          currentMatch.player1_id,
-          player1Score,
-          player1Words,
-          isPlayer1Winner
-        );
-      
-        // Rozet kontrolü
-        await checkBadges(currentMatch.player1_id, player1Words.length);
-      }
-    
-      // Player 2 istatistikleri
-      if (currentMatch.player2_id && !currentMatch.player2_id.startsWith('bot_')) {
-        const isPlayer2Winner = winnerId === currentMatch.player2_id;
-      
-        // Player 2 kelimelerini oluştur (simüle et)
-        const player2Words = Array.from({length: Math.floor(player2Score / 8)}, (_, i) => ({
-          word: `KELIME${i + 1}`,
-          score: 8
-        }));
-      
-        await updatePlayerStatistics(
-          currentMatch.player2_id,
-          player2Score,
-          player2Words,
-          isPlayer2Winner
-        );
-      
-        // Rozet kontrolü
-        await checkBadges(currentMatch.player2_id, player2Words.length);
-      }
+      await updatePlayerStatistics(
+        currentMatch.player2_id,
+        player2Score,
+        player2Words,
+        isPlayer2Winner
+      );
+      await checkBadges(currentMatch.player2_id, player2Words.length);
+    }
 
     // Kaybedeni eleme
-      const loserId = winnerId === currentMatch.player1_id ? currentMatch.player2_id : currentMatch.player1_id;
-      if (loserId) {
-        await supabase
-          .from('tournament_participants')
-          .update({ eliminated_at: new Date().toISOString() })
-          .eq('user_id', loserId)
-          .eq('tournament_id', tournamentId);
-      }
-
-      setIsPlaying(false);
-      setCurrentMatch(null);
-
-      toast({
-        title: '🏆 Maç Tamamlandı!',
-        description: 'İstatistikler güncellendi, sonraki tur kontrol ediliyor...',
-      });
-
-      // Verileri yeniden yükle
-      await loadTournamentData();
-    
-      // Sonraki tur kontrolü yap
-      setTimeout(() => {
-        checkNextRoundOrFinish();
-      }, 1000);
-
-    } catch (error) {
-      console.error('Error completing match:', error);
-      toast({
-        title: 'Hata',
-        description: 'Maç tamamlanamadı',
-        variant: 'destructive',
-      });
+    const loserId = winnerId === currentMatch.player1_id ? currentMatch.player2_id : currentMatch.player1_id;
+    if (loserId) {
+      await supabase
+        .from('tournament_participants')
+        .update({ eliminated_at: new Date().toISOString() })
+        .eq('user_id', loserId)
+        .eq('tournament_id', tournamentId);
     }
-  };
 
+    // Oyun durumunu resetle
+    setIsPlaying(false);
+    setCurrentMatch(null);
+
+    // ✅ PROGRESS CARD GÖSTERİMİ
+    const userIsWinner = winnerId === user?.id;
+    const currentRound = currentMatch.round;
+    
+    setShowProgressCard(true);
+    setProgressCardData({
+      currentRound,
+      isWinner: userIsWinner,
+      tournamentName: tournament?.name || 'Turnuva'
+    });
+
+    toast({
+      title: '🏆 Maç Tamamlandı!',
+      description: 'İstatistikler güncellendi.',
+    });
+
+    // Verileri yeniden yükle
+    await loadTournamentData();
+
+    // NOT: Sonraki tur kontrolü handleProgressContinue'da yapılacak
+
+  } catch (error) {
+    console.error('Error completing match:', error);
+    toast({
+      title: 'Hata',
+      description: 'Maç tamamlanamadı',
+      variant: 'destructive',
+    });
+  }
+};
+  
   const updatePlayerStatistics = async (
     userId: string,
     gameScore: number,
@@ -548,15 +948,16 @@ const autoStartMatch = async (matchId: string) => {
 
   // 🎮 Oyun modunda ise GamePage'i göster
   if (isPlaying && currentMatch) {
-    return (
-      <GamePage 
-        gameMode="tournament"
-        onGameComplete={completeMatch}
-        tournamentMatch={currentMatch}
-        gameType={(tournament.game_type as string) === 'score' ? 'score' : 'timed'}
-      />
-    );
-  }
+  return (
+    <GamePage 
+      gameMode="tournament"
+      onGameComplete={completeMatch}
+      tournamentMatch={currentMatch} // Bu doğru match'i içermeli
+      gameType={(tournament.game_type as string) === 'score' ? 'score' : 'timed'}
+      participants={participants}
+    />
+  );
+}
 
   const userNextMatch = getUserNextMatch();
 
@@ -600,23 +1001,17 @@ const autoStartMatch = async (matchId: string) => {
     </CardHeader>
     <CardContent>
       {currentMatch ? (
-        <div className="space-y-4">
-          <div className="text-center">
-            <Badge variant="default" className="text-lg px-4 py-2">
-              🎮 Aktif Maçınız Var!
-            </Badge>
-          </div>
-          <div className="flex justify-center">
-            <Button 
-              onClick={() => setIsPlaying(true)} // Devam et
-              className="px-8 py-3"
-            >
-              <Play className="w-4 h-4 mr-2" />
-              Maça Devam Et
-            </Button>
-          </div>
-        </div>
-      ) : userNextMatch ? (
+  <div className="space-y-4">
+    <div className="text-center">
+      <Badge variant="default" className="text-lg px-4 py-2 animate-pulse">
+        🎮 Oyun Başlıyor...
+      </Badge>
+      <p className="text-sm text-muted-foreground mt-2">
+        Otomatik olarak oyuna yönlendiriliyorsunuz
+      </p>
+    </div>
+  </div>
+) : userNextMatch ? (
         <div className="space-y-4">
           <div className="text-center">
             <Badge variant="secondary" className="text-lg px-4 py-2 animate-pulse">
@@ -661,6 +1056,16 @@ const autoStartMatch = async (matchId: string) => {
 
         {/* Rest of the existing JSX... */}
         {/* (Diğer kartlar ve istatistikler aynı kalacak) */}
+
+        {/* Progress Card */}
+        {showProgressCard && progressCardData && (
+        <TournamentProgressCard 
+          currentRound={progressCardData.currentRound}
+          isWinner={progressCardData.isWinner}
+          tournamentName={progressCardData.tournamentName}
+          onContinue={handleProgressContinue}
+        />
+      )}
       </div>
     </div>
   );
