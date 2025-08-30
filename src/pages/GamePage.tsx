@@ -398,18 +398,18 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
       
       // Round'u ilerlet (yeni maçlar oluştur)
       try {
-        const { data: progressResult, error: progressError } = await supabase.rpc(
-          'check_tournament_progress_v2',
+        const { data: advanceResult, error: advanceError } = await supabase.rpc(
+          'advance_tournament_round',
           { p_tournament_id: tournamentId }
         );
 
-        if (progressError) {
-          console.error('❌ Tournament progress check error:', progressError);
+        if (advanceError) {
+          console.warn('⚠️ Round advance not applied:', advanceError.message || advanceError);
         } else {
-          console.log('✅ Tournament progress checked:', progressResult);
+          console.log('✅ Round advance result:', advanceResult);
         }
-      } catch (progressCheckError) {
-        console.error('❌ Tournament progress check failed:', progressCheckError);
+      } catch (advanceRoundErr) {
+        console.error('❌ advance_tournament_round failed:', advanceRoundErr);
       }
       
     } catch (advanceError) {
