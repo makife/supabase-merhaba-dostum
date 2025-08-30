@@ -1876,6 +1876,9 @@ useEffect(() => {
 }, [gameMode, tournamentMatch?.id, user?.id, opponentScore]);
 
   // İlk sync
+ useEffect(() => {
+  if (!currentRoom) return;
+
   const initialSyncTimer = setTimeout(syncUsedWords, 500);
 
   // Real-time word changes dinle
@@ -1907,7 +1910,7 @@ useEffect(() => {
     console.log('📱 Mobile word sync cleanup');
     supabase.removeChannel(wordChannel);
   };
-}, [currentRoom?.id]);
+}, [currentRoom?.id, user?.id]);
 
 // Tournament activity tracking (removed - not needed for core functionality)
 
