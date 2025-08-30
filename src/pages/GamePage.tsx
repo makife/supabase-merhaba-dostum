@@ -1653,10 +1653,12 @@ useEffect(() => {
         clearInterval(timerRef.current!);
         timerRef.current = null;
         
-        console.log('⏰ Süre bitti! Final skorlar - Player:', playerScore, 'Opponent:', opponentScore);
+        console.log('⏰ Süre bitti! Final skorlar');
         
         handleGameEnd();
         setTimeout(() => {
+          // Skorları buradan alın, dependency'den değil
+          setGameEnded(true);
           checkWinnerWithScores(playerScore, opponentScore);
         }, 100);
       }
@@ -1664,12 +1666,13 @@ useEffect(() => {
   }
   
   return () => {
+    // Sadece component unmount olduğunda temizle
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
   };
-}, [gameType, gameStarted, gameEnded, playerScore, opponentScore, handleGameEnd, checkWinnerWithScores]);
+}, [gameStarted, gameEnded, gameType]);
   
   // Focus/blur event handler
   useEffect(() => {
