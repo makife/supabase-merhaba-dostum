@@ -37,9 +37,10 @@ export const useTournamentAdvancement = (tournamentId: string | null) => {
   };
 
   // Sonraki tura geçiş
- // Sonraki tura geçiş
 const advanceToNextRound = async (tournamentId: string, currentRound: number, completedMatches: any[]) => {
   try {
+    console.log(`=== ADVANCE TO NEXT ROUND START - Round ${currentRound} ===`);
+    
     // Kazananları topla - null olanları filtrele
     const winners = completedMatches
       .map(match => match.winner_id)
@@ -47,26 +48,28 @@ const advanceToNextRound = async (tournamentId: string, currentRound: number, co
     
     console.log(`Round ${currentRound} kazananları:`, winners);
     console.log(`Toplam kazanan sayısı: ${winners.length}`);
-    console.log('Completed matches detayları:', completedMatches.map(m => ({
-      id: m.id.substring(0, 8),
-      match_number: m.match_number,
-      player1: m.player1_id ? m.player1_id.substring(0, 8) : 'null',
-      player2: m.player2_id ? m.player2_id.substring(0, 8) : 'null',
-      winner: m.winner_id ? m.winner_id.substring(0, 8) : 'null',
-      status: m.status
-    })));
 
     if (currentRound === 1) {
       // Çeyrek final bitti -> Yarı finale geç
       console.log(`Yarı final kontrolü: ${winners.length} kazanan var`);
       
-      // Minimum 2 kazanan olmalı gerçek yarı final için
+      // RACE CONDITION KORUMASI: Zaten yarı final oluşturulmuş mu?
+      const { data: existingSemiFinals } = await supabase
+        .from('tournament_matches')
+        .select('id')
+        .eq('tournament_id', tournamentId)
+        .eq('round', 2);
+      
+      if (existingSemiFinals && existingSemiFinals.length > 0) {
+        console.log('Yarı final maçları zaten oluşturulmuş, atlanıyor...');
+        return;
+      }
+      
       if (winners.length >= 2) {
         let finalWinners = [...winners];
         
         // Eğer 4'ten az kazanan varsa, mevcut kazananları kullanarak 4'e tamamla
         while (finalWinners.length < 4) {
-          // Mevcut kazananları tekrarla (bot vs bot durumu için)
           const additionalWinner = finalWinners[finalWinners.length % winners.length];
           finalWinners.push(additionalWinner);
           console.log(`Eksik kazanan tamamlandı: ${additionalWinner?.substring(0, 8)}`);
@@ -74,7 +77,8 @@ const advanceToNextRound = async (tournamentId: string, currentRound: number, co
         
         console.log(`Yarı final için kullanılacak kazananlar: ${finalWinners.length}`);
         
-        await createSemiFinalMatches(tournamentId, finalWinners.slice(0, 4));
+        // Atomic transaction ile yarı final oluştur
+        await createSemiFinalMatchesAtomic(tournamentId, finalWinners.slice(0, 4));
         await updateTournamentRound(tournamentId, 2);
         
         // Bot maçlarını otomatik tamamla
@@ -86,27 +90,38 @@ const advanceToNextRound = async (tournamentId: string, currentRound: number, co
           title: 'Yarı Final Başladı!',
           description: 'Yarı final maçları oluşturuldu',
         });
+        
+        console.log(`=== YARI FİNAL OLUŞTURULDU ===`);
       } else {
         console.log(`Yetersiz kazanan: ${winners.length}, minimum 2 gerekli`);
-        toast({
-          title: 'Turnuva Durumu',
-          description: `Sadece ${winners.length} kazanan var, yarı final için beklemede...`,
-          variant: 'destructive'
-        });
       }
       
     } else if (currentRound === 2) {
       // Yarı final bitti -> Finale geç
       console.log(`Final kontrolü: ${winners.length} kazanan var`);
       
+      // RACE CONDITION KORUMASI: Zaten final oluşturulmuş mu?
+      const { data: existingFinals } = await supabase
+        .from('tournament_matches')
+        .select('id')
+        .eq('tournament_id', tournamentId)
+        .eq('round', 3);
+      
+      if (existingFinals && existingFinals.length > 0) {
+        console.log('Final maçı zaten oluşturulmuş, atlanıyor...');
+        return;
+      }
+      
       if (winners.length >= 2) {
-        await createFinalMatch(tournamentId, winners.slice(0, 2));
+        await createFinalMatchAtomic(tournamentId, winners.slice(0, 2));
         await updateTournamentRound(tournamentId, 3);
         
         toast({
           title: 'Final Maçı Başladı!',
           description: 'Final maçı oluşturuldu',
         });
+        
+        console.log(`=== FİNAL OLUŞTURULDU ===`);
       } else {
         console.log(`Final için yetersiz kazanan: ${winners.length}`);
       }
@@ -122,10 +137,14 @@ const advanceToNextRound = async (tournamentId: string, currentRound: number, co
           title: 'Turnuva Tamamlandı!',
           description: 'Şampiyon belirlendi!',
         });
+        
+        console.log(`=== TURNUVA TAMAMLANDI ===`);
       } else {
         console.log('Final kazananı bulunamadı!');
       }
     }
+    
+    console.log(`=== ADVANCE TO NEXT ROUND END - Round ${currentRound} ===`);
     
   } catch (error) {
     console.error('Advance to next round error:', error);
@@ -137,6 +156,66 @@ const advanceToNextRound = async (tournamentId: string, currentRound: number, co
   }
 };
 
+// Atomic yarı final oluşturma
+const createSemiFinalMatchesAtomic = async (tournamentId: string, winners: string[]) => {
+  console.log('Atomic yarı final oluşturuluyor...');
+  
+  const matches = [
+    {
+      tournament_id: tournamentId,
+      round: 2,
+      match_number: 1,
+      player1_id: winners[0],
+      player2_id: winners[1],
+      status: 'pending'
+    },
+    {
+      tournament_id: tournamentId,
+      round: 2,
+      match_number: 2,
+      player1_id: winners[2],
+      player2_id: winners[3],
+      status: 'pending'
+    }
+  ];
+
+  const { error } = await supabase
+    .from('tournament_matches')
+    .insert(matches);
+
+  if (error) {
+    console.error('Yarı final oluşturma hatası:', error);
+    throw error;
+  }
+  
+  console.log('Yarı final maçları oluşturuldu (atomic)');
+};
+
+// Atomic final oluşturma
+const createFinalMatchAtomic = async (tournamentId: string, winners: string[]) => {
+  console.log('Atomic final oluşturuluyor...');
+  
+  const match = {
+    tournament_id: tournamentId,
+    round: 3,
+    match_number: 1,
+    player1_id: winners[0],
+    player2_id: winners[1],
+    status: 'pending'
+  };
+
+  const { error } = await supabase
+    .from('tournament_matches')
+    .insert([match]);
+
+  if (error) {
+    console.error('Final oluşturma hatası:', error);
+    throw error;
+  }
+  
+  console.log('Final maçı oluşturuldu (atomic)');
+};
+  
   // Yarı final maçları oluştur
   const createSemiFinalMatches = async (tournamentId: string, winners: string[]) => {
     const matches = [
