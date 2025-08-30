@@ -8,6 +8,7 @@ import { useTournamentAdvancement } from '@/hooks/useTournamentAdvancement';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, Trophy, User, Bot, Play, Clock, CheckCircle } from 'lucide-react';
+import TournamentResultCard from '@/components/tournament/TournamentResultCard';
 
 interface TournamentBracketProps {
   tournament: any;
@@ -19,14 +20,19 @@ const TournamentBracket = ({ tournament, userParticipation, onBackToList }: Tour
   const [matches, setMatches] = useState<any[]>([]);
   const [participants, setParticipants] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showResult, setShowResult] = useState<{won: boolean, round: number} | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
+  
+  // Tournament advancement hook'u
   const { checkRoundCompletion } = useTournamentAdvancement(tournament.id);
 
   // Maçları ve katılımcıları yükle
   const loadTournamentData = async () => {
     try {
+      console.log('Loading tournament data for tournament:', tournament.id);
+      
       // Maçları yükle
       const { data: matchData } = await supabase
         .from('tournament_matches')
@@ -45,8 +51,14 @@ const TournamentBracket = ({ tournament, userParticipation, onBackToList }: Tour
         .eq('tournament_id', tournament.id)
         .order('seed');
 
-      if (matchData) setMatches(matchData);
-      if (participantData) setParticipants(participantData);
+      if (matchData) {
+        console.log(`${matchData.length} maç yüklendi`);
+        setMatches(matchData);
+      }
+      if (participantData) {
+        console.log(`${participantData.length} katılımcı yüklendi`);
+        setParticipants(participantData);
+      }
       
     } catch (error) {
       console.error('Error loading tournament data:', error);
@@ -54,35 +66,35 @@ const TournamentBracket = ({ tournament, userParticipation, onBackToList }: Tour
   };
 
   // Katılımcı bilgisini al
-const getParticipantInfo = (userId: string | null) => {
-  if (!userId) {
-    // user_id null = Bot
-    const participant = participants.find(p => p.user_id === null);
-    const seed = participant?.seed || Math.floor(Math.random() * 8) + 1;
-    return { 
-      name: `Bot ${seed}`, 
-      isBot: true, 
-      avatar: null 
+  const getParticipantInfo = (userId: string | null) => {
+    if (!userId) {
+      // user_id null = Bot
+      const participant = participants.find(p => p.user_id === null);
+      const seed = participant?.seed || Math.floor(Math.random() * 8) + 1;
+      return { 
+        name: `Bot ${seed}`, 
+        isBot: true, 
+        avatar: null 
+      };
+    }
+    
+    const participant = participants.find(p => p.user_id === userId);
+    if (!participant) return { name: 'Bilinmiyor', isBot: false, avatar: null };
+    
+    if (participant.is_bot) {
+      return { 
+        name: `Bot ${participant.seed}`, 
+        isBot: true, 
+        avatar: null 
+      };
+    }
+    
+    return {
+      name: participant.profiles?.username || `Oyuncu ${participant.seed}`,
+      isBot: false,
+      avatar: participant.profiles?.avatar_url
     };
-  }
-  
-  const participant = participants.find(p => p.user_id === userId);
-  if (!participant) return { name: 'Bilinmiyor', isBot: false, avatar: null };
-  
-  if (participant.is_bot) {
-    return { 
-      name: `Bot ${participant.seed}`, 
-      isBot: true, 
-      avatar: null 
-    };
-  }
-  
-  return {
-    name: participant.profiles?.username || `Oyuncu ${participant.seed}`,
-    isBot: false,
-    avatar: participant.profiles?.avatar_url
   };
-};
 
   // Maça başla
   const startMatch = async (match: any) => {
@@ -153,39 +165,85 @@ const getParticipantInfo = (userId: string | null) => {
     return matches.filter(m => m.round === round);
   };
 
-  // Real-time updates - hem maçları hem de turnuva durumunu dinle
- useEffect(() => {
-  loadTournamentData();
-  
-  console.log('Setting up real-time subscription for tournament:', tournament.id);
-  
-  const channel = supabase
-    .channel(`tournament-bracket-${tournament.id}`)
-    .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'tournament_matches',
-      filter: `tournament_id=eq.${tournament.id}`
-    }, (payload) => {
-      console.log('TournamentBracket - Match update received:', payload);
-      loadTournamentData(); // Yeniden yükle
-    })
-    .on('postgres_changes', {
-      event: 'UPDATE',
-      schema: 'public', 
-      table: 'tournaments',
-      filter: `id=eq.${tournament.id}`
-    }, (payload) => {
-      console.log('TournamentBracket - Tournament update received:', payload);
-      loadTournamentData(); // Yeniden yükle
-    })
-    .subscribe();
-
-  return () => {
-    console.log('Cleaning up tournament bracket subscription');
-    supabase.removeChannel(channel);
+  // Result card'ı kapat ve bracket'e dön
+  const handleResultContinue = () => {
+    if (!showResult) return;
+    
+    if (showResult.won && showResult.round < 3) {
+      // Kazandıysa ve final değilse bracket'te kal
+      setShowResult(null);
+      loadTournamentData(); // Veriyi yenile
+      
+      toast({
+        title: 'Sonraki Tura Geçildi!',
+        description: `${getRoundName(showResult.round + 1)} maçınız için bekleyin.`,
+      });
+    } else {
+      // Kaybettiyse veya final ise turnuva listesine git
+      navigate('/tournament');
+    }
   };
-}, [tournament.id]);
+
+  // Real-time updates - hem maçları hem de turnuva durumunu dinle
+  useEffect(() => {
+    loadTournamentData();
+    
+    console.log('Setting up real-time subscription for tournament:', tournament.id);
+    
+    const channel = supabase
+      .channel(`tournament-bracket-${tournament.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'tournament_matches',
+        filter: `tournament_id=eq.${tournament.id}`
+      }, (payload) => {
+        console.log('TournamentBracket - Match update received:', payload);
+        
+        // Kullanıcının maçı tamamlandı mı kontrol et
+        const updatedMatch = payload.new as any;
+        if (updatedMatch.status === 'completed' && payload.eventType === 'UPDATE') {
+          const isUserMatch = updatedMatch.player1_id === user?.id || updatedMatch.player2_id === user?.id;
+          
+          if (isUserMatch) {
+            const userWon = updatedMatch.winner_id === user?.id;
+            console.log(`Kullanıcı maçı: ${userWon ? 'Kazandı' : 'Kaybetti'}, Round: ${updatedMatch.round}`);
+            
+            // Result card'ı göster
+            setShowResult({ won: userWon, round: updatedMatch.round });
+          }
+        }
+        
+        loadTournamentData(); // Veriyi yenile
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public', 
+        table: 'tournaments',
+        filter: `id=eq.${tournament.id}`
+      }, (payload) => {
+        console.log('TournamentBracket - Tournament update received:', payload);
+        loadTournamentData(); // Veriyi yenile
+      })
+      .subscribe();
+
+    return () => {
+      console.log('Cleaning up tournament bracket subscription');
+      supabase.removeChannel(channel);
+    };
+  }, [tournament.id, user?.id]);
+
+  // Result card görünüyorsa onu göster
+  if (showResult) {
+    return (
+      <TournamentResultCard
+        won={showResult.won}
+        round={showResult.round}
+        tournamentName={tournament.name}
+        onContinue={handleResultContinue}
+      />
+    );
+  }
 
   // Match card component
   const MatchCard = ({ match }: { match: any }) => {
@@ -277,23 +335,19 @@ const getParticipantInfo = (userId: string | null) => {
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-<Button 
-  variant="outline" 
-  size="sm" 
-  onClick={(e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log('Turnuva Listesi butonuna tıklandı');
-    try {
-      navigate('/tournament');
-    } catch (error) {
-      console.error('Navigation hatası:', error);
-    }
-  }}
->
-  <ArrowLeft className="w-4 h-4 mr-2" />
-  Turnuva Listesi
-</Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('Turnuva Listesi butonuna tıklandı');
+              navigate('/tournament');
+            }}
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Turnuva Listesi
+          </Button>
           <h1 className="text-2xl font-bold flex items-center">
             <Trophy className="w-6 h-6 mr-2" />
             {tournament.name}
@@ -367,6 +421,21 @@ const getParticipantInfo = (userId: string | null) => {
               <p className="text-muted-foreground">
                 Turnuva maçları oluşturuluyor...
               </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Debug bilgisi */}
+        {process.env.NODE_ENV === 'development' && (
+          <Card className="bg-gray-50">
+            <CardContent className="p-4">
+              <div className="text-xs text-gray-600">
+                <p>Tournament ID: {tournament.id}</p>
+                <p>Current Round: {tournament.current_round}</p>
+                <p>Status: {tournament.status}</p>
+                <p>Matches: {matches.length}</p>
+                <p>User ID: {user?.id}</p>
+              </div>
             </CardContent>
           </Card>
         )}
