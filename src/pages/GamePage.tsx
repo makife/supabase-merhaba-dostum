@@ -368,50 +368,54 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
     console.log('🏆 Winner belirlendi:', {
       isUserWinner,
       userId: user.id.slice(-8),
-      player1: tournamentMatch.player1_id?.slice(-8),
-      player2: tournamentMatch.player2_id?.slice(-8),
       finalWinner: winnerId?.slice(-8)
     });
 
-    // SUPABASE COMPLETE_TOURNAMENT_MATCH FONKSİYONUNU KULLAN
-    try {
-      const { data: result, error: matchError } = await supabase.rpc(
-        'complete_tournament_match',
-        {
-          p_match_id: tournamentMatch.id,
-          p_winner_id: winnerId,
-          p_player1_score: tournamentMatch.player1_id === user.id ? userScore : opponentScore,
-          p_player2_score: tournamentMatch.player1_id === user.id ? opponentScore : userScore
-        }
-      );
+    // 1. Maçı tamamla
+    const { error: matchError } = await supabase
+      .from('tournament_matches')
+      .update({
+        status: 'completed',
+        winner_id: winnerId,
+        player1_score: tournamentMatch.player1_id === user.id ? userScore : opponentScore,
+        player2_score: tournamentMatch.player1_id === user.id ? opponentScore : userScore,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', tournamentMatch.id);
 
-      if (matchError) throw matchError;
-      
-      console.log('✅ Turnuva maçı tamamlandı:', {
-        winner: isUserWinner ? 'User' : 'Opponent',
-        scores: `${userScore}-${opponentScore}`,
-        result: result
-      });
+    if (matchError) throw matchError;
 
-      // Bot maçlarını tamamla (eğer varsa)
-      await completeBotMatches(tournamentId, tournamentMatch.round);
+    console.log('✅ Maç tamamlandı');
+
+    // 2. Bot maçlarını tamamla
+    await completeBotMatches(tournamentId, tournamentMatch.round);
+
+    // 3. Aynı round'daki tüm maçların tamamlanıp tamamlanmadığını kontrol et
+    const { data: currentRoundMatches } = await supabase
+      .from('tournament_matches')
+      .select('id, status')
+      .eq('tournament_id', tournamentId)
+      .eq('round', tournamentMatch.round);
+
+    const allMatchesCompleted = currentRoundMatches?.every(match => match.status === 'completed');
+    
+    console.log('🔍 Round kontrolü:', {
+      round: tournamentMatch.round,
+      totalMatches: currentRoundMatches?.length,
+      completedMatches: currentRoundMatches?.filter(m => m.status === 'completed').length,
+      allCompleted: allMatchesCompleted
+    });
+
+    if (allMatchesCompleted && currentRoundMatches && currentRoundMatches.length > 0) {
+      console.log('🚀 Tüm maçlar tamamlandı, sonraki round oluşturuluyor...');
       
-      // Round'u ilerlet - turnuva DB fonksiyonu kullan
-      try {
-        // complete_tournament_match fonksiyonu artık otomatik olarak ileri roundları oluşturduğu için
-        // ek RPC çağrısına gerek yok - sadece başarı logları
-        console.log('✅ Tournament match completed successfully');
-      } catch (roundError) {
-        console.error('❌ Round advance error:', roundError);
-      }
-      
-    } catch (advanceError) {
-      console.error('❌ Tournament match completion error:', advanceError);
+      // 4. Sonraki round'u oluştur
+      await createNextRound(tournamentId, tournamentMatch.round);
     }
 
     setGameEnded(true);
 
-    // OYUN BİTİŞ KARTINI GÖSTER
+    // 5. Oyun bitiş kartını göster
     setTimeout(() => {
       showTournamentEndCard(isUserWinner, userScore, opponentScore, tournamentId);
     }, 2000);
