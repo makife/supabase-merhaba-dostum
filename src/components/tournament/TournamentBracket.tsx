@@ -152,25 +152,29 @@ const getParticipantInfo = (userId: string | null) => {
   };
 
   // Real-time updates
-  useEffect(() => {
-    loadTournamentData();
-    
-    const channel = supabase
-      .channel(`tournament-bracket-${tournament.id}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'tournament_matches',
-        filter: `tournament_id=eq.${tournament.id}`
-      }, () => {
-        loadTournamentData();
-      })
-      .subscribe();
+ useEffect(() => {
+  loadTournamentData();
+  
+  console.log('Setting up real-time subscription for tournament:', tournament.id);
+  
+  const channel = supabase
+    .channel(`tournament-bracket-${tournament.id}`)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'tournament_matches',
+      filter: `tournament_id=eq.${tournament.id}`
+    }, (payload) => {
+      console.log('TournamentBracket - Match update received:', payload);
+      loadTournamentData(); // Yeniden yükle
+    })
+    .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [tournament.id]);
+  return () => {
+    console.log('Cleaning up tournament bracket subscription');
+    supabase.removeChannel(channel);
+  };
+}, [tournament.id]);
 
   // Match card component
   const MatchCard = ({ match }: { match: any }) => {
