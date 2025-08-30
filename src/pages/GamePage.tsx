@@ -1672,7 +1672,7 @@ useEffect(() => {
       timerRef.current = null;
     }
   };
-}, [gameStarted, gameEnded, gameType]);
+}, [gameStarted, gameEnded, gameType, playerScore, opponentScore]);
   
   // Focus/blur event handler
   useEffect(() => {
