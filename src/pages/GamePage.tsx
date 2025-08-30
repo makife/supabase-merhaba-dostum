@@ -396,6 +396,22 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
       // Bot maçlarını tamamla (eğer varsa)
       await completeBotMatches(tournamentId, tournamentMatch.round);
       
+      // Round'u ilerlet (yeni maçlar oluştur)
+      try {
+        const { data: progressResult, error: progressError } = await supabase.rpc(
+          'check_tournament_progress_v2',
+          { p_tournament_id: tournamentId }
+        );
+
+        if (progressError) {
+          console.error('❌ Tournament progress check error:', progressError);
+        } else {
+          console.log('✅ Tournament progress checked:', progressResult);
+        }
+      } catch (progressCheckError) {
+        console.error('❌ Tournament progress check failed:', progressCheckError);
+      }
+      
     } catch (advanceError) {
       console.error('❌ Tournament match completion error:', advanceError);
     }
