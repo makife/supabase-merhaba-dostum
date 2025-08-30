@@ -37,55 +37,105 @@ export const useTournamentAdvancement = (tournamentId: string | null) => {
   };
 
   // Sonraki tura geçiş
-  const advanceToNextRound = async (tournamentId: string, currentRound: number, completedMatches: any[]) => {
-    try {
-      // Kazananları topla
-      const winners = completedMatches.map(match => match.winner_id).filter(Boolean);
+ // Sonraki tura geçiş
+const advanceToNextRound = async (tournamentId: string, currentRound: number, completedMatches: any[]) => {
+  try {
+    // Kazananları topla - null olanları filtrele
+    const winners = completedMatches
+      .map(match => match.winner_id)
+      .filter(id => id !== null && id !== undefined);
+    
+    console.log(`Round ${currentRound} kazananları:`, winners);
+    console.log(`Toplam kazanan sayısı: ${winners.length}`);
+    console.log('Completed matches detayları:', completedMatches.map(m => ({
+      id: m.id.substring(0, 8),
+      match_number: m.match_number,
+      player1: m.player1_id ? m.player1_id.substring(0, 8) : 'null',
+      player2: m.player2_id ? m.player2_id.substring(0, 8) : 'null',
+      winner: m.winner_id ? m.winner_id.substring(0, 8) : 'null',
+      status: m.status
+    })));
+
+    if (currentRound === 1) {
+      // Çeyrek final bitti -> Yarı finale geç
+      console.log(`Yarı final kontrolü: ${winners.length} kazanan var`);
       
-      console.log(`Round ${currentRound} kazananları:`, winners);
+      // Minimum 2 kazanan olmalı gerçek yarı final için
+      if (winners.length >= 2) {
+        let finalWinners = [...winners];
+        
+        // Eğer 4'ten az kazanan varsa, mevcut kazananları kullanarak 4'e tamamla
+        while (finalWinners.length < 4) {
+          // Mevcut kazananları tekrarla (bot vs bot durumu için)
+          const additionalWinner = finalWinners[finalWinners.length % winners.length];
+          finalWinners.push(additionalWinner);
+          console.log(`Eksik kazanan tamamlandı: ${additionalWinner?.substring(0, 8)}`);
+        }
+        
+        console.log(`Yarı final için kullanılacak kazananlar: ${finalWinners.length}`);
+        
+        await createSemiFinalMatches(tournamentId, finalWinners.slice(0, 4));
+        await updateTournamentRound(tournamentId, 2);
+        
+        // Bot maçlarını otomatik tamamla
+        setTimeout(() => {
+          completeBotMatches(tournamentId, 2);
+        }, 3000);
 
-      if (currentRound === 1) {
-        // Çeyrek final bitti -> Yarı finale geç
-        if (winners.length === 4) {
-          await createSemiFinalMatches(tournamentId, winners);
-          await updateTournamentRound(tournamentId, 2);
-          
-          // Bot maçlarını otomatik tamamla
-          setTimeout(() => {
-            completeBotMatches(tournamentId, 2);
-          }, 3000);
-
-          toast({
-            title: 'Yarı Final Başladı!',
-            description: 'Yarı final maçları oluşturuldu',
-          });
-        }
-      } else if (currentRound === 2) {
-        // Yarı final bitti -> Finale geç
-        if (winners.length === 2) {
-          await createFinalMatch(tournamentId, winners);
-          await updateTournamentRound(tournamentId, 3);
-          
-          toast({
-            title: 'Final Maçı Başladı!',
-            description: 'Final maçı oluşturuldu',
-          });
-        }
-      } else if (currentRound === 3) {
-        // Final bitti -> Turnuvayı bitir
-        if (winners.length === 1) {
-          await completeTournament(tournamentId, winners[0]);
-          
-          toast({
-            title: 'Turnuva Tamamlandı!',
-            description: 'Şampiyon belirlendi!',
-          });
-        }
+        toast({
+          title: 'Yarı Final Başladı!',
+          description: 'Yarı final maçları oluşturuldu',
+        });
+      } else {
+        console.log(`Yetersiz kazanan: ${winners.length}, minimum 2 gerekli`);
+        toast({
+          title: 'Turnuva Durumu',
+          description: `Sadece ${winners.length} kazanan var, yarı final için beklemede...`,
+          variant: 'destructive'
+        });
       }
-    } catch (error) {
-      console.error('Advance to next round error:', error);
+      
+    } else if (currentRound === 2) {
+      // Yarı final bitti -> Finale geç
+      console.log(`Final kontrolü: ${winners.length} kazanan var`);
+      
+      if (winners.length >= 2) {
+        await createFinalMatch(tournamentId, winners.slice(0, 2));
+        await updateTournamentRound(tournamentId, 3);
+        
+        toast({
+          title: 'Final Maçı Başladı!',
+          description: 'Final maçı oluşturuldu',
+        });
+      } else {
+        console.log(`Final için yetersiz kazanan: ${winners.length}`);
+      }
+      
+    } else if (currentRound === 3) {
+      // Final bitti -> Turnuvayı bitir
+      console.log(`Turnuva bitiş kontrolü: ${winners.length} kazanan var`);
+      
+      if (winners.length >= 1) {
+        await completeTournament(tournamentId, winners[0]);
+        
+        toast({
+          title: 'Turnuva Tamamlandı!',
+          description: 'Şampiyon belirlendi!',
+        });
+      } else {
+        console.log('Final kazananı bulunamadı!');
+      }
     }
-  };
+    
+  } catch (error) {
+    console.error('Advance to next round error:', error);
+    toast({
+      title: 'Tur İlerletme Hatası',
+      description: 'Sonraki tura geçiş başarısız oldu',
+      variant: 'destructive'
+    });
+  }
+};
 
   // Yarı final maçları oluştur
   const createSemiFinalMatches = async (tournamentId: string, winners: string[]) => {
