@@ -371,51 +371,75 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
       finalWinner: winnerId?.slice(-8)
     });
 
-    // 1. Maçı tamamla
-    const { error: matchError } = await supabase
-      .from('tournament_matches')
-      .update({
-        status: 'completed',
-        winner_id: winnerId,
-        player1_score: tournamentMatch.player1_id === user.id ? userScore : opponentScore,
-        player2_score: tournamentMatch.player1_id === user.id ? opponentScore : userScore,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', tournamentMatch.id);
+    // ✅ YENİ: Comprehensive tournament match completion fonksiyonunu kullan
+    try {
+      const { data: result, error: completionError } = await supabase.rpc(
+        'complete_tournament_match_with_advance', // Yeni comprehensive fonksiyon
+        {
+          p_match_id: tournamentMatch.id,
+          p_winner_id: winnerId,
+          p_player1_score: tournamentMatch.player1_id === user.id ? userScore : opponentScore,
+          p_player2_score: tournamentMatch.player1_id === user.id ? opponentScore : userScore
+        }
+      );
 
-    if (matchError) throw matchError;
+      if (completionError) {
+        console.error('❌ Comprehensive completion error:', completionError);
+        throw completionError;
+      }
 
-    console.log('✅ Maç tamamlandı');
+      console.log('✅ Comprehensive tournament completion result:', result);
 
-    // 2. Bot maçlarını tamamla
-    await completeBotMatches(tournamentId, tournamentMatch.round);
+      // Sonuçları analiz et
+      if (result?.match_completed) {
+        console.log('✅ Maç başarıyla tamamlandı');
+        
+        if (result?.round_completed) {
+          console.log('🎯 Round tamamlandı, yeni round oluşturuldu');
+          
+          if (result?.advance_result?.tournament_completed) {
+            console.log('🏁 Turnuva tamamen tamamlandı!');
+            console.log('👑 Şampiyon:', result.advance_result.champion_id);
+          } else if (result?.advance_result?.matches_created > 0) {
+            console.log(`🚀 ${result.advance_result.matches_created} yeni maç oluşturuldu`);
+            console.log('📈 Yeni round:', result.advance_result.next_round);
+          }
+        } else {
+          console.log('⏳ Round henüz tamamlanmadı, diğer maçlar bekleniyor');
+        }
+      }
 
-    // 3. Aynı round'daki tüm maçların tamamlanıp tamamlanmadığını kontrol et
-    const { data: currentRoundMatches } = await supabase
-      .from('tournament_matches')
-      .select('id, status')
-      .eq('tournament_id', tournamentId)
-      .eq('round', tournamentMatch.round);
-
-    const allMatchesCompleted = currentRoundMatches?.every(match => match.status === 'completed');
-    
-    console.log('🔍 Round kontrolü:', {
-      round: tournamentMatch.round,
-      totalMatches: currentRoundMatches?.length,
-      completedMatches: currentRoundMatches?.filter(m => m.status === 'completed').length,
-      allCompleted: allMatchesCompleted
-    });
-
-    if (allMatchesCompleted && currentRoundMatches && currentRoundMatches.length > 0) {
-      console.log('🚀 Tüm maçlar tamamlandı, sonraki round oluşturuluyor...');
+    } catch (rpcError) {
+      console.error('❌ RPC fonksiyon hatası:', rpcError);
       
-      // 4. Sonraki round'u oluştur
-      await createNextRound(tournamentId, tournamentMatch.round);
+      // Fallback: Manuel maç tamamlama
+      console.log('🔄 Fallback: Manuel maç tamamlama yapılıyor...');
+      
+      const { error: manualError } = await supabase
+        .from('tournament_matches')
+        .update({
+          status: 'completed',
+          winner_id: winnerId,
+          player1_score: tournamentMatch.player1_id === user.id ? userScore : opponentScore,
+          player2_score: tournamentMatch.player1_id === user.id ? opponentScore : userScore,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', tournamentMatch.id);
+
+      if (manualError) throw manualError;
+      
+      // Manuel bot maçları tamamlama
+      setTimeout(async () => {
+        await completeBotMatches(tournamentId, tournamentMatch.round);
+        
+        // Manuel round kontrolü ve ilerletme
+        await checkAndAdvanceRound(tournamentId, tournamentMatch.round);
+      }, 2000);
     }
 
     setGameEnded(true);
 
-    // 5. Oyun bitiş kartını göster
+    // Oyun bitiş kartını göster
     setTimeout(() => {
       showTournamentEndCard(isUserWinner, userScore, opponentScore, tournamentId);
     }, 2000);
@@ -541,13 +565,129 @@ const createNextRound = async (tournamentId: string, currentRound: number) => {
   }
 };
 
+// Yeni yardımcı fonksiyon: Manuel round kontrolü ve ilerletme
+const checkAndAdvanceRound = async (tournamentId: string, currentRound: number) => {
+  try {
+    console.log(`🔍 Manuel round kontrolü: Round ${currentRound}`);
+    
+    // Bu round'daki tüm maçların tamamlanıp tamamlanmadığını kontrol et
+    const { data: roundMatches } = await supabase
+      .from('tournament_matches')
+      .select('id, status, winner_id')
+      .eq('tournament_id', tournamentId)
+      .eq('round', currentRound);
+
+    const allCompleted = roundMatches?.every(match => match.status === 'completed');
+    
+    console.log('🔍 Round analizi:', {
+      totalMatches: roundMatches?.length || 0,
+      completedMatches: roundMatches?.filter(m => m.status === 'completed').length || 0,
+      allCompleted
+    });
+
+    if (allCompleted && roundMatches && roundMatches.length > 0) {
+      console.log('🚀 Manuel round advance başlatılıyor...');
+      
+      // Kazananları al
+      const winners = roundMatches
+        .map(match => match.winner_id)
+        .filter(Boolean);
+
+      if (winners.length >= 2) {
+        const nextRound = currentRound + 1;
+        const matches = [];
+
+        if (nextRound === 2) {
+          // Yarı final
+          if (winners.length >= 4) {
+            matches.push(
+              {
+                tournament_id: tournamentId,
+                round: 2,
+                match_number: 1,
+                player1_id: winners[0],
+                player2_id: winners[1],
+                status: 'pending'
+              },
+              {
+                tournament_id: tournamentId,
+                round: 2,
+                match_number: 2,
+                player1_id: winners[2],
+                player2_id: winners[3],
+                status: 'pending'
+              }
+            );
+          }
+        } else if (nextRound === 3) {
+          // Final
+          if (winners.length >= 2) {
+            matches.push({
+              tournament_id: tournamentId,
+              round: 3,
+              match_number: 1,
+              player1_id: winners[0],
+              player2_id: winners[1],
+              status: 'pending'
+            });
+          }
+        }
+
+        if (matches.length > 0) {
+          // Yeni maçları oluştur
+          const { error: insertError } = await supabase
+            .from('tournament_matches')
+            .insert(matches);
+
+          if (insertError) throw insertError;
+
+          // Tournament güncelle
+          const { error: updateError } = await supabase
+            .from('tournaments')
+            .update({ 
+              current_round: nextRound,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', tournamentId);
+
+          if (updateError) throw updateError;
+
+          console.log(`✅ Manuel round advance tamamlandı: ${matches.length} maç oluşturuldu`);
+
+          // Bot maçlarını tamamla
+          setTimeout(async () => {
+            await completeBotMatches(tournamentId, nextRound);
+          }, 3000);
+
+        } else if (nextRound > 3) {
+          // Turnuva tamamlandı
+          const { error: finishError } = await supabase
+            .from('tournaments')
+            .update({ 
+              status: 'completed',
+              winner_id: winners[0],
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', tournamentId);
+
+          if (finishError) throw finishError;
+          
+          console.log('🏁 Turnuva manuel olarak tamamlandı');
+        }
+      }
+    }
+
+  } catch (error) {
+    console.error('❌ Manuel round advance hatası:', error);
+  }
+};
 
 const completeBotMatches = async (tournamentId: string, round: number) => {
   try {
     console.log(`🤖 Bot maçları tamamlanıyor - Round ${round}`);
     
-    // 1 saniye bekle ki real maçlar önce tamamlansın
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Kısa bekleme - gerçek oyuncuların maçları önce tamamlansın
+    await new Promise(resolve => setTimeout(resolve, 1500));
     
     const { data: pendingMatches } = await supabase
       .from('tournament_matches')
@@ -556,16 +696,23 @@ const completeBotMatches = async (tournamentId: string, round: number) => {
       .eq('round', round)
       .eq('status', 'pending');
 
-    for (const match of pendingMatches || []) {
+    if (!pendingMatches || pendingMatches.length === 0) {
+      console.log('✅ Tamamlanacak bot maçı yok');
+      return;
+    }
+
+    console.log(`🤖 ${pendingMatches.length} bot maçı bulundu`);
+
+    for (const match of pendingMatches) {
       const isUserMatch = match.player1_id === user?.id || match.player2_id === user?.id;
       
       if (!isUserMatch) {
-        // Bu bir bot vs bot maçı
+        // Bu bir bot vs bot maçı veya user henüz oynamadı
         const winner = Math.random() > 0.5 ? match.player1_id : match.player2_id;
-        const winnerScore = Math.floor(Math.random() * 20) + 25; // 25-45
-        const loserScore = Math.floor(Math.random() * 15) + 10;  // 10-25
+        const winnerScore = Math.floor(Math.random() * 25) + 20; // 20-45
+        const loserScore = Math.floor(Math.random() * 15) + 5;   // 5-20
         
-        await supabase
+        const { error } = await supabase
           .from('tournament_matches')
           .update({
             status: 'completed',
@@ -576,14 +723,19 @@ const completeBotMatches = async (tournamentId: string, round: number) => {
           })
           .eq('id', match.id);
         
-        console.log(`🤖 Bot maçı tamamlandı: ${match.id}`);
+        if (error) {
+          console.error('❌ Bot maçı güncelleme hatası:', error);
+        } else {
+          console.log(`🤖 Bot maçı tamamlandı: ${match.id} - Kazanan: ${winner?.slice(-8)}`);
+        }
         
         // Bot maçları arasında kısa bekleme
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 800));
       }
     }
     
     console.log(`✅ Round ${round} bot maçları tamamlandı`);
+    
   } catch (error) {
     console.error('❌ Bot maçları tamamlama hatası:', error);
   }
