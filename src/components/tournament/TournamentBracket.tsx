@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTournamentAdvancement } from '@/hooks/useTournamentAdvancement';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, Trophy, User, Bot, Play, Clock, CheckCircle } from 'lucide-react';
@@ -21,6 +22,7 @@ const TournamentBracket = ({ tournament, userParticipation, onBackToList }: Tour
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { checkRoundCompletion } = useTournamentAdvancement(tournament.id);
 
   // Maçları ve katılımcıları yükle
   const loadTournamentData = async () => {
