@@ -1157,83 +1157,60 @@ const useSenYazJoker = async () => {
   }, 1500);
 };
   // Sync grid with room data and fetch avatars
-  useEffect(() => {
-    if (currentRoom?.current_grid) {
-      const flatGrid = currentRoom.current_grid;
-      const roomGrid: string[][] = [];
-      for (let i = 0; i < 4; i++) {
-        roomGrid.push(flatGrid.slice(i * 4, (i + 1) * 4));
-      }
-    
-      const isGridDifferent = JSON.stringify(gameGrid) !== JSON.stringify(roomGrid);
-      if (isGridDifferent) {
-        console.log('📐 Updating grid from room data');
-        setGameGrid(roomGrid);
-      }
+ useEffect(() => {
+  const fetchAvatars = async () => {
+    if (!user) return;
+  
+    const { data: playerData } = await supabase
+      .from('profiles')
+      .select('avatar_url')
+      .eq('id', user.id)
+      .maybeSingle();
+  
+    if (playerData?.avatar_url) {
+      setPlayerAvatar(playerData.avatar_url);
     }
 
-    const fetchAvatars = async () => {
-      if (!user) return;
+    if (gameMode === 'private-room') {
+      console.log('👥 Private room - participants kontrol ediliyor:', participants.length);
     
-      // Kendi avatar'ını al
-      const { data: playerData } = await supabase
-        .from('profiles')
-        .select('avatar_url')
-        .eq('id', user.id)
-        .maybeSingle();
-    
-      if (playerData?.avatar_url) {
-        setPlayerAvatar(playerData.avatar_url);
-      }
-
-      // Private room modunda rakip bilgilerini al
-      if (gameMode === 'private-room') {
-        console.log('👥 Private room - participants kontrol ediliyor:', participants.length);
-      
-        if (participants.length >= 2) {
-          const opponent = participants.find(p => p.user_id !== user.id && !p.is_bot);
-        
-          if (opponent) {
-            console.log('👤 Gerçek rakip bulundu:', {
-              userId: opponent.user_id?.slice(-8),
-              username: (opponent as any).profiles?.username,
-              avatar: (opponent as any).profiles?.avatar_url
-            });
-          
-            // Avatar ve isim güncelle
-            if ((opponent as any).profiles?.avatar_url) {
-              setOpponentAvatar((opponent as any).profiles.avatar_url);
-            }
-          
-            if ((opponent as any).profiles?.username) {
-              setOpponentName((opponent as any).profiles.username);
-            }
-          
-            // Opponent score güncellemesi
-            if (opponent.score !== undefined && !gameEnded) {
-              console.log('🔄 Updating opponent score from participants:', opponent.score);
-              setOpponentScore(opponent.score);
-            }
-          } else {
-            console.log('🤖 Bot opponent detected in private room');
-          }
-        } else {
-          console.log('⏳ Private room - waiting for opponent (participants: ' + participants.length + ')');
-        }
-      }
-    
-      // Random match modunda da rakip bilgilerini güncelle
-      if (gameMode === 'random-match' && participants.length >= 2 && !gameEnded) {
+      if (participants.length >= 2) {
         const opponent = participants.find(p => p.user_id !== user.id && !p.is_bot);
-        if (opponent && opponent.score !== undefined) {
-          console.log('🔄 Updating opponent score in random match:', opponent.score);
-          setOpponentScore(opponent.score);
+      
+        if (opponent) {
+          console.log('👤 Gerçek rakip bulundu:', {
+            userId: opponent.user_id?.slice(-8),
+            username: (opponent as any).profiles?.username,
+            avatar: (opponent as any).profiles?.avatar_url
+          });
+        
+          if ((opponent as any).profiles?.avatar_url) {
+            setOpponentAvatar((opponent as any).profiles.avatar_url);
+          }
+        
+          if ((opponent as any).profiles?.username) {
+            setOpponentName((opponent as any).profiles.username);
+          }
+        
+          if (opponent.score !== undefined && !gameEnded) {
+            console.log('🔄 Updating opponent score from participants:', opponent.score);
+            setOpponentScore(opponent.score);
+          }
         }
       }
-    };
+    }
+    
+    if (gameMode === 'random-match' && participants.length >= 2 && !gameEnded) {
+      const opponent = participants.find(p => p.user_id !== user.id && !p.is_bot);
+      if (opponent && opponent.score !== undefined) {
+        console.log('🔄 Updating opponent score in random match:', opponent.score);
+        setOpponentScore(opponent.score);
+      }
+    }
+  };
 
-    fetchAvatars();
-  }, [user, participants, gameMode, currentRoom, gameEnded]);
+  fetchAvatars();
+}, [user?.id, participants, gameMode, gameEnded]);
 
   // Load wordlist from public/wordlist.txt
   useEffect(() => {
@@ -1678,7 +1655,6 @@ useEffect(() => {
         
         console.log('⏰ Süre bitti! Final skorlar - Player:', playerScore, 'Opponent:', opponentScore);
         
-        // ✅ FIX: Timer bittiğinde mevcut skorlarla kazanan belirle
         handleGameEnd();
         setTimeout(() => {
           checkWinnerWithScores(playerScore, opponentScore);
@@ -1688,13 +1664,12 @@ useEffect(() => {
   }
   
   return () => {
-    // Sadece component unmount olduğunda temizle
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
   };
-}, [gameStarted, playerScore, opponentScore]);
+}, [gameType, gameStarted, gameEnded, playerScore, opponentScore, handleGameEnd, checkWinnerWithScores]);
   
   // Focus/blur event handler
   useEffect(() => {
@@ -1789,22 +1764,20 @@ const isPlayingWithAI = useCallback(() => {
 
   // Real-time kelime senkronizasyonu
 useEffect(() => {
-  if (!currentRoom) return;
+  if (!currentRoom || !user) return;
 
   console.log('🔄 === WORD SYNC BAŞLADI ===');
   console.log('🔄 Room ID:', currentRoom.id.slice(-8));
 
-  // Room'daki tüm kelimeleri al ve sync et
   const syncUsedWords = async () => {
     if (syncingRef.current) {
-      console.log('📱 Sync already in progress, skipping');
+      console.log('🔄 Sync already in progress, skipping');
       return;
     }
     
     syncingRef.current = true;
     
     try {
-      // 🔥 VS-COMPUTER FIX: Tek oyuncu modunda önceki kelimeleri yükleme
       if (gameMode === 'vs-computer') {
         console.log('🤖 vs-computer mode: Not loading previous words, starting fresh');
         setGlobalUsedWords(new Set());
@@ -1818,17 +1791,16 @@ useEffect(() => {
         .eq('room_id', currentRoom.id);
 
       if (roomWords) {
-        // AYRI AYRI LİSTELER: Her oyuncunun kendi kelimeleri ayrı tutulmalı
         const allWordsSet = new Set(roomWords.map(w => w.word.toUpperCase()));
         const myWordsSet = new Set(
           roomWords
-            .filter(w => w.player_id === user?.id)
+            .filter(w => w.player_id === user.id)
             .map(w => w.word.toUpperCase())
         );
         
         console.log('🔄 Syncing - All words:', allWordsSet.size, 'My words:', myWordsSet.size);
-        setGlobalUsedWords(allWordsSet); // Tüm kelimeler (info için)
-        setUsedWords(myWordsSet); // Sadece kendi kelimelerim!
+        setGlobalUsedWords(allWordsSet);
+        setUsedWords(myWordsSet);
       }
     } catch (error) {
       console.error('❌ Word sync error:', error);
@@ -1837,6 +1809,35 @@ useEffect(() => {
     }
   };
 
+  const initialSyncTimer = setTimeout(syncUsedWords, 500);
+
+  const wordChannel = supabase
+    .channel(`mobile-words-${currentRoom.id}`)
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'game_words',
+      filter: `room_id=eq.${currentRoom.id}`
+    }, (payload) => {
+      console.log('📱 Mobile real-time word:', payload.new?.word, 'from player:', payload.new?.player_id);
+      
+      if (payload.new?.word && !syncingRef.current && payload.new?.player_id !== user.id) {
+        const newWord = payload.new.word.toUpperCase();
+        
+        setTimeout(() => {
+          setGlobalUsedWords(prev => new Set([...prev, newWord]));
+        }, 100);
+      }
+    })
+    .subscribe();
+
+  return () => {
+    clearTimeout(initialSyncTimer);
+    console.log('📱 Mobile word sync cleanup');
+    supabase.removeChannel(wordChannel);
+  };
+}, [currentRoom?.id, user?.id, gameMode]);
+  
   // Turnuva real-time senkronizasyonu
 useEffect(() => {
   if (gameMode !== 'tournament' || !tournamentMatch) return;
@@ -1914,17 +1915,16 @@ useEffect(() => {
 useEffect(() => {
   const aiPlaying = isPlayingWithAI();
   
-  if (!aiPlaying || !gameStarted || gameEnded) {
+  if (!aiPlaying || !gameStarted || gameEnded || !user) {
     console.log('🤖 AI not playing:', { aiPlaying, gameStarted, gameEnded, gameMode });
     return;
   }
 
-  console.log('🤖 Starting AI play interval for game mode:', gameMode, 'Match ID:', tournamentMatch?.id?.slice(-8));
+  console.log('🤖 Starting AI play interval for game mode:', gameMode);
 
   const aiPlayInterval = setInterval(() => {
-    // Oyuncu son eyleminden sonra minimum bekleme
     const timeSincePlayerAction = Date.now() - lastPlayerAction;
-    const minDelayAfterPlayerAction = 1500; // 1.5 saniye
+    const minDelayAfterPlayerAction = 1500;
     
     if (timeSincePlayerAction < minDelayAfterPlayerAction) {
       console.log('🤖 Waiting for player action cooldown');
@@ -2033,13 +2033,13 @@ useEffect(() => {
     };
 
     selectAIWord();
-  }, 2500 + Math.random() * 3000); // 2.5-5.5 saniye arası (daha hızlı)
+  }, 2500 + Math.random() * 3000);
 
   return () => {
     console.log('🤖 Stopping AI play interval for game mode:', gameMode);
     clearInterval(aiPlayInterval);
   };
-}, [gameStarted, gameEnded, gameMode, globalUsedWords, isPlayingWithAI, tournamentMatch, user, opponentScore, lastPlayerAction, playSound]);
+}, [gameStarted, gameEnded, gameMode, user?.id, isPlayingWithAI, globalUsedWords, tournamentMatch?.id, opponentScore, lastPlayerAction, playSound]);
 
 // lastPlayerAction'ı başlat
 useEffect(() => {
