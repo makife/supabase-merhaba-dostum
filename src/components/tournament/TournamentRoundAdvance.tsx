@@ -1,4 +1,4 @@
-// TournamentRoundAdvance.tsx (match oluşturma düzeltmesi)
+// TournamentRoundAdvance.tsx - Basitleştirilmiş versiyon
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -12,132 +12,43 @@ const TournamentRoundAdvance = ({ tournament, onRoundAdvanced }: TournamentRound
   const { toast } = useToast();
 
   useEffect(() => {
-    const advanceRoundIfNeeded = async () => {
-      if (!tournament) return;
+    if (!tournament?.id) return;
 
-      // Check if all matches in current round are completed
-      const { data: matches, error } = await supabase
-        .from('tournament_matches')
-        .select('id, status')
-        .eq('tournament_id', tournament.id)
-        .eq('round', tournament.current_round);
+    console.log('TournamentRoundAdvance - Listening for tournament changes:', tournament.id);
 
-      if (error) {
-        console.error('Error fetching matches:', error);
-        return;
-      }
-
-      const allMatchesCompleted = matches && matches.every(match => match.status === 'completed');
-      
-      if (allMatchesCompleted && tournament.current_round < 3) {
-        // Advance to next round
-        const nextRound = tournament.current_round + 1;
-        
-        const { error: updateError } = await supabase
-          .from('tournaments')
-          .update({ current_round: nextRound })
-          .eq('id', tournament.id);
-
-        if (updateError) {
-          console.error('Error advancing round:', updateError);
-          return;
-        }
-
-        // Create matches for the next round
-        await createMatchesForRound(tournament.id, nextRound);
-        
-        onRoundAdvanced(nextRound);
-        
-        toast({
-          title: 'Tur Tamamlandı',
-          description: `Turnuva ${nextRound}. tura geçti`,
-        });
-      }
-    };
-
-    advanceRoundIfNeeded();
-
-    // Set up real-time listener for match updates
+    // Sadece turnuva güncellemelerini dinle
     const channel = supabase
       .channel(`tournament-round-advance-${tournament.id}`)
       .on('postgres_changes', {
         event: 'UPDATE',
         schema: 'public',
-        table: 'tournament_matches',
-        filter: `tournament_id=eq.${tournament.id}`
-      }, () => {
-        advanceRoundIfNeeded();
+        table: 'tournaments',
+        filter: `id=eq.${tournament.id}`
+      }, (payload) => {
+        console.log('Tournament updated:', payload.new);
+        const newTournament = payload.new as any;
+        
+        if (newTournament.current_round > tournament.current_round) {
+          console.log(`Round advanced: ${tournament.current_round} -> ${newTournament.current_round}`);
+          
+          onRoundAdvanced(newTournament.current_round);
+          
+          const roundName = newTournament.current_round === 2 ? 'Yarı Final' : 
+                           newTournament.current_round === 3 ? 'Final' : `${newTournament.current_round}. Tur`;
+          
+          toast({
+            title: 'Tur Tamamlandı',
+            description: `Turnuva ${roundName}'e geçti`,
+          });
+        }
       })
       .subscribe();
 
     return () => {
+      console.log('Cleaning up tournament round advance subscription');
       supabase.removeChannel(channel);
     };
-  }, [tournament, onRoundAdvanced, toast]);
-
-  const createMatchesForRound = async (tournamentId: string, round: number) => {
-    try {
-      // Get winners from previous round
-      const { data: winners } = await supabase
-        .from('tournament_matches')
-        .select('winner_id')
-        .eq('tournament_id', tournamentId)
-        .eq('round', round - 1)
-        .order('match_number');
-
-      if (!winners || winners.length === 0) {
-        throw new Error('No winners found for previous round');
-      }
-
-      const winnerIds = winners.map(w => w.winner_id).filter(Boolean);
-      
-      let matches = [];
-      
-      if (round === 2) {
-        // Semi-finals: 2 matches
-        matches = [
-          {
-            tournament_id: tournamentId,
-            round: 2,
-            match_number: 1,
-            player1_id: winnerIds[0],
-            player2_id: winnerIds[1],
-            status: 'pending'
-          },
-          {
-            tournament_id: tournamentId,
-            round: 2,
-            match_number: 2,
-            player1_id: winnerIds[2],
-            player2_id: winnerIds[3],
-            status: 'pending'
-          }
-        ];
-      } else if (round === 3) {
-        // Final: 1 match
-        matches = [
-          {
-            tournament_id: tournamentId,
-            round: 3,
-            match_number: 1,
-            player1_id: winnerIds[0],
-            player2_id: winnerIds[1],
-            status: 'pending'
-          }
-        ];
-      }
-
-      if (matches.length > 0) {
-        const { error } = await supabase
-          .from('tournament_matches')
-          .insert(matches);
-
-        if (error) throw error;
-      }
-    } catch (error) {
-      console.error('Error creating matches for round:', error);
-    }
-  };
+  }, [tournament?.id, tournament?.current_round, onRoundAdvanced, toast]);
 
   return null;
 };

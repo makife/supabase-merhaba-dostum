@@ -373,57 +373,31 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
       finalWinner: winnerId?.slice(-8)
     });
 
-    // MATCH DURUMUNU GÜNCELLE
-    const { error: updateError } = await supabase
-      .from('tournament_matches')
-      .update({
-        status: 'completed',
-        winner_id: winnerId,
-        player1_score: tournamentMatch.player1_id === user.id ? userScore : opponentScore,
-        player2_score: tournamentMatch.player1_id === user.id ? opponentScore : userScore,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', tournamentMatch.id);
-
-    if (updateError) {
-      console.error('❌ Maç güncelleme hatası:', updateError);
-      setGameEnded(true);
-      return;
-    }
-
-    console.log('✅ Maç başarıyla güncellendi');
-
-    // TURNUVA ROUND İLERLETME KONTROLÜ (Manual implementation)
+    // SUPABASE COMPLETE_TOURNAMENT_MATCH FONKSİYONUNU KULLAN
     try {
-      console.log('🔄 Checking tournament round progression...');
-      
-      // Mevcut round'daki tüm maçların durumunu kontrol et
-      const { data: roundMatches } = await supabase
-        .from('tournament_matches')
-        .select('id, status, winner_id')
-        .eq('tournament_id', tournamentId)
-        .eq('round', tournamentMatch.round);
-      
-      if (roundMatches) {
-        const completedMatches = roundMatches.filter(m => m.status === 'completed');
-        const totalMatches = roundMatches.length;
-        
-        console.log('📊 Round status:', {
-          round: tournamentMatch.round,
-          completed: completedMatches.length,
-          total: totalMatches
-        });
-        
-        // Tüm maçlar tamamlandıysa round'u ilerlet
-        if (completedMatches.length === totalMatches) {
-          console.log('🚀 All matches completed, advancing round...');
-          
-          // Manual round advancement
-          await advanceTournamentRound(tournamentId, tournamentMatch.round);
+      const { data: result, error: matchError } = await supabase.rpc(
+        'complete_tournament_match',
+        {
+          p_match_id: tournamentMatch.id,
+          p_winner_id: winnerId,
+          p_player1_score: tournamentMatch.player1_id === user.id ? userScore : opponentScore,
+          p_player2_score: tournamentMatch.player1_id === user.id ? opponentScore : userScore
         }
-      }
+      );
+
+      if (matchError) throw matchError;
+      
+      console.log('✅ Turnuva maçı tamamlandı:', {
+        winner: isUserWinner ? 'User' : 'Opponent',
+        scores: `${userScore}-${opponentScore}`,
+        result: result
+      });
+
+      // Bot maçlarını tamamla (eğer varsa)
+      await completeBotMatches(tournamentId, tournamentMatch.round);
+      
     } catch (advanceError) {
-      console.error('❌ Tournament progression error:', advanceError);
+      console.error('❌ Tournament match completion error:', advanceError);
     }
 
     setGameEnded(true);
@@ -440,111 +414,6 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
   }
 };
 
-  // Manual tournament advancement function
-const advanceTournamentRound = async (tournamentId: string, currentRound: number) => {
-  try {
-    // Kazananları doğru sırada al
-    const { data: winners } = await supabase
-      .from('tournament_matches')
-      .select('winner_id')
-      .eq('tournament_id', tournamentId)
-      .eq('round', currentRound)
-      .not('winner_id', 'is', null)
-      .order('match_number'); // Sıralama önemli!
-
-    if (!winners || winners.length === 0) {
-      console.error('No winners found for round advancement');
-      return;
-    }
-
-    const winnersArray = winners.map(w => w.winner_id).filter(Boolean);
-    const nextRound = currentRound + 1;
-    
-    console.log(`Round ${currentRound} winners:`, winnersArray.map(w => w?.slice(-8)));
-    
-    if (currentRound === 3) {
-      // Turnuva bitti
-      await supabase
-        .from('tournaments')
-        .update({ 
-          status: 'completed', 
-          winner_id: winnersArray[0],
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', tournamentId);
-        
-      console.log('Tournament completed! Winner:', winnersArray[0]?.slice(-8));
-      return;
-    }
-    
-    // Sonraki round için maçları oluştur
-    let newMatches = [];
-    
-    if (nextRound === 2) {
-      // Yarı final (4 kazanan -> 2 maç)
-      if (winnersArray.length >= 4) {
-        newMatches = [
-          {
-            tournament_id: tournamentId,
-            round: 2,
-            match_number: 1,
-            player1_id: winnersArray[0],
-            player2_id: winnersArray[1],
-            status: 'pending'
-          },
-          {
-            tournament_id: tournamentId,
-            round: 2,
-            match_number: 2,
-            player1_id: winnersArray[2],
-            player2_id: winnersArray[3],
-            status: 'pending'
-          }
-        ];
-      }
-    } else if (nextRound === 3) {
-      // Final (2 kazanan -> 1 maç)
-      if (winnersArray.length >= 2) {
-        newMatches = [
-          {
-            tournament_id: tournamentId,
-            round: 3,
-            match_number: 1,
-            player1_id: winnersArray[0],
-            player2_id: winnersArray[1],
-            status: 'pending'
-          }
-        ];
-      }
-    }
-    
-    if (newMatches.length > 0) {
-      const { error: matchError } = await supabase
-        .from('tournament_matches')
-        .insert(newMatches);
-        
-      if (matchError) throw matchError;
-      
-      console.log(`Created ${newMatches.length} matches for round ${nextRound}`);
-    }
-    
-    // Tournament round'u güncelle
-    const { error: tournamentError } = await supabase
-      .from('tournaments')
-      .update({ 
-        current_round: nextRound,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', tournamentId);
-      
-    if (tournamentError) throw tournamentError;
-    
-    console.log(`Tournament advanced to round: ${nextRound}`);
-    
-  } catch (error) {
-    console.error('Manual round advancement error:', error);
-  }
-};
 
 const completeBotMatches = async (tournamentId: string, round: number) => {
   try {

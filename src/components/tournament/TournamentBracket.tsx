@@ -151,7 +151,7 @@ const getParticipantInfo = (userId: string | null) => {
     return matches.filter(m => m.round === round);
   };
 
-  // Real-time updates
+  // Real-time updates - hem maçları hem de turnuva durumunu dinle
  useEffect(() => {
   loadTournamentData();
   
@@ -166,6 +166,15 @@ const getParticipantInfo = (userId: string | null) => {
       filter: `tournament_id=eq.${tournament.id}`
     }, (payload) => {
       console.log('TournamentBracket - Match update received:', payload);
+      loadTournamentData(); // Yeniden yükle
+    })
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public', 
+      table: 'tournaments',
+      filter: `id=eq.${tournament.id}`
+    }, (payload) => {
+      console.log('TournamentBracket - Tournament update received:', payload);
       loadTournamentData(); // Yeniden yükle
     })
     .subscribe();

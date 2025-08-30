@@ -90,16 +90,10 @@ const TournamentFlowManager = () => {
       
       case 'bracket':
         return (
-          <>
-            <TournamentBracket tournament={currentTournament} userParticipation={userParticipation} />
-            <TournamentRoundAdvance 
-              tournament={currentTournament} 
-              onRoundAdvanced={(newRound) => {
-                setCountdownType(newRound === 2 ? 'semi' : 'final');
-                setCurrentStep('countdown');
-              }} 
-            />
-          </>
+          <TournamentBracket 
+            tournament={currentTournament} 
+            userParticipation={userParticipation} 
+          />
         );
       
       case 'result':
