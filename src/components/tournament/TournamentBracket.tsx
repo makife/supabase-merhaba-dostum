@@ -74,12 +74,18 @@ const TournamentBracket = ({ tournament, userParticipation, onBackToList }: Tour
   // Katılımcı bilgisini al
   const getParticipantInfo = (userId: string | null) => {
     if (!userId) {
-      // user_id null = Bot
+      // Boş slot veya bot
       const participant = participants.find(p => p.user_id === null);
-      const seed = participant?.seed || Math.floor(Math.random() * 8) + 1;
+      if (participant) {
+        return { 
+          name: `Bot ${participant.seed}`, 
+          isBot: true, 
+          avatar: null 
+        };
+      }
       return { 
-        name: `Bot ${seed}`, 
-        isBot: true, 
+        name: 'TBD', 
+        isBot: false, 
         avatar: null 
       };
     }
