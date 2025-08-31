@@ -45,6 +45,18 @@ const startTournament = async () => {
   try {
     console.log('Turnuva başlatılıyor...');
     
+    // First check if tournament is already active to prevent duplicate execution
+    const { data: tournamentStatus } = await supabase
+      .from('tournaments')
+      .select('status')
+      .eq('id', tournament.id)
+      .single();
+      
+    if (tournamentStatus?.status !== 'waiting') {
+      console.log('Turnuva zaten başlamış, işlem iptal ediliyor');
+      return;
+    }
+    
     const { data: allParticipants } = await supabase
       .from('tournament_participants')
       .select('*')
@@ -254,28 +266,37 @@ const createQuarterFinalMatches = async () => {
   }
 };
 
-  // Timer effect
+  // Timer effect - with state to prevent multiple starts
   useEffect(() => {
-    if (tournament?.expires_at) {
+    if (tournament?.expires_at && tournament?.status === 'waiting') {
       const expiresAt = new Date(tournament.expires_at).getTime();
       const now = new Date().getTime();
       const remaining = Math.max(0, Math.ceil((expiresAt - now) / 1000));
       setWaitingTime(remaining);
+
+      // If already expired, start immediately
+      if (remaining <= 0) {
+        startTournament();
+        return;
+      }
+
+      const timer = setInterval(() => {
+        setWaitingTime(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            // Only start if tournament is still waiting
+            if (tournament.status === 'waiting') {
+              startTournament();
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
     }
-
-    const timer = setInterval(() => {
-      setWaitingTime(prev => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          startTournament();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [tournament]);
+  }, [tournament?.id, tournament?.status]); // More specific dependencies
 
   // Real-time updates
   useEffect(() => {
