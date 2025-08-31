@@ -261,6 +261,29 @@ const TournamentBracket = ({ tournament, userParticipation, onBackToList }: Tour
     const player2 = getParticipantInfo(match.player2_id);
     const isUserMatch = match.player1_id === user?.id || match.player2_id === user?.id;
     
+    // Empty match (waiting for players)
+    if (!match.player1_id && !match.player2_id) {
+      return (
+        <Card className="opacity-50">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm">
+                Maç {match.match_number}
+              </CardTitle>
+              <Badge variant="secondary">
+                Bekliyor
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="text-center text-muted-foreground py-4">
+              Oyuncular bekleniyor...
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+    
     return (
       <Card className={`${isUserMatch ? 'border-primary ring-2 ring-primary/20' : ''}`}>
         <CardHeader className="pb-2">

@@ -1228,7 +1228,9 @@ export type Database = {
     }
     Functions: {
       advance_tournament_round: {
-        Args: { p_tournament_id: string }
+        Args:
+          | { p_current_round: number; p_tournament_id: string }
+          | { p_tournament_id: string }
         Returns: Json
       }
       ban_user_for_inappropriate_content: {
@@ -1262,6 +1264,10 @@ export type Database = {
       check_and_refresh_credits: {
         Args: { user_id: string }
         Returns: undefined
+      }
+      check_round_completion: {
+        Args: { p_round: number; p_tournament_id: string }
+        Returns: Json
       }
       check_tournament_progress: {
         Args: { p_tournament_id: string }
@@ -1305,6 +1311,15 @@ export type Database = {
         Returns: undefined
       }
       complete_tournament_match: {
+        Args: {
+          p_match_id: string
+          p_player1_score: number
+          p_player2_score: number
+          p_winner_id: string
+        }
+        Returns: Json
+      }
+      complete_tournament_match_with_advance: {
         Args: {
           p_match_id: string
           p_player1_score: number
