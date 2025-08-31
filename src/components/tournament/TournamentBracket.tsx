@@ -27,6 +27,12 @@ const TournamentBracket = ({ tournament, userParticipation, onBackToList }: Tour
   
   // Tournament advancement hook'u
   const { checkRoundCompletion } = useTournamentAdvancement(tournament.id);
+  
+  // Manual advancement check fonksiyonu
+  const manualCheckAdvancement = async () => {
+    console.log('🔧 MANUAL: Tür ilerletme manuel kontrolü başlatılıyor...');
+    await checkRoundCompletion(tournament.id, tournament.current_round);
+  };
 
   // Maçları ve katılımcıları yükle
   const loadTournamentData = async () => {
@@ -166,13 +172,17 @@ const TournamentBracket = ({ tournament, userParticipation, onBackToList }: Tour
   };
 
   // Result card'ı kapat ve bracket'e dön
-  const handleResultContinue = () => {
+  const handleResultContinue = async () => {
     if (!showResult) return;
     
     if (showResult.won && showResult.round < 3) {
       // Kazandıysa ve final değilse bracket'te kal
       setShowResult(null);
       loadTournamentData(); // Veriyi yenile
+      
+      // Manuel advancement kontrolü yap
+      console.log('🎯 RESULT CONTINUE: Manuel advancement kontrolü başlatılıyor...');
+      await manualCheckAdvancement();
       
       toast({
         title: 'Sonraki Tura Geçildi!',

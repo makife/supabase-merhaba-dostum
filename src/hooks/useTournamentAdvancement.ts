@@ -342,7 +342,7 @@ const createFinalMatchAtomic = async (tournamentId: string, winners: string[]) =
   useEffect(() => {
     if (!tournamentId) return;
 
-    console.log('Tournament advancement listener kuruldu:', tournamentId);
+    console.log('🔄 Tournament advancement listener kuruldu:', tournamentId);
 
     const channel = supabase
       .channel(`tournament-advancement-${tournamentId}`)
@@ -352,18 +352,21 @@ const createFinalMatchAtomic = async (tournamentId: string, winners: string[]) =
         table: 'tournament_matches',
         filter: `tournament_id=eq.${tournamentId}`
       }, async (payload) => {
-        console.log('Match update detected:', payload.new);
+        console.log('🔥 ADVANCEMENT: Match update detected:', payload.new);
         
         const updatedMatch = payload.new as any;
         if (updatedMatch.status === 'completed') {
-          // Bu rounddaki tüm maçları kontrol et
-          await checkRoundCompletion(tournamentId, updatedMatch.round);
+          console.log(`🚀 ADVANCEMENT: Maç tamamlandı, round kontrolü başlatılıyor - Round ${updatedMatch.round}`);
+          // Kısa bir gecikme ile round kontrolü yap (race condition için)
+          setTimeout(async () => {
+            await checkRoundCompletion(tournamentId, updatedMatch.round);
+          }, 1000);
         }
       })
       .subscribe();
 
     return () => {
-      console.log('Tournament advancement listener temizlendi');
+      console.log('🔌 Tournament advancement listener temizlendi');
       supabase.removeChannel(channel);
     };
   }, [tournamentId]);
