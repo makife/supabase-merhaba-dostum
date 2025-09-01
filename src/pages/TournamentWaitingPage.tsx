@@ -174,70 +174,81 @@ const TournamentWaitingPage = () => {
     return () => clearInterval(timer);
   };
 
-  const startTournament = async () => {
-    try {
-      console.log('🚀 Turnuva başlatılıyor...');
+ const startTournament = async () => {
+  try {
+    console.log('🚀 Turnuva başlatılıyor...');
+    
+    const currentPlayers = participants.length;
+    const neededBots = 8 - currentPlayers;
+
+    console.log('🤖 Gerekli bot sayısı:', neededBots);
+
+    // Botları ekle
+    for (let i = 1; i <= neededBots; i++) {
+      const botId = `bot_${tournamentId}_${i}`;
+      console.log('➕ Bot ekleniyor:', botId);
       
-      // Önce tüm katılımcıları tekrar al (botlar eklendikten sonra)
-      await fetchParticipants();
-      
-      console.log('📊 Toplam katılımcılar:', participants.length);
+      const { error: botError } = await supabase
+        .from('tournament_participants')
+        .insert({
+          tournament_id: tournamentId,
+          user_id: botId,
+          is_bot: true,
+          joined_at: new Date().toISOString()
+        } as any);
 
-      const currentPlayers = participants.length;
-      const neededBots = 8 - currentPlayers;
-
-      console.log('🤖 Gerekli bot sayısı:', neededBots);
-
-      // Botları ekle
-      for (let i = 1; i <= neededBots; i++) {
-        const botId = `bot_${tournamentId}_${i}`;
-        console.log('➕ Bot ekleniyor:', botId);
-        
-        const { error: botError } = await supabase
-          .from('tournament_participants')
-          .insert({
-            tournament_id: tournamentId,
-            user_id: botId,
-            is_bot: true,
-            joined_at: new Date().toISOString()
-          } as any);
-
-        if (botError) {
-          console.error('Bot ekleme hatası:', botError);
-        } else {
-          console.log('✅ Bot eklendi:', botId);
-        }
+      if (botError) {
+        console.error('Bot ekleme hatası:', botError);
+      } else {
+        console.log('✅ Bot eklendi:', botId);
       }
-
-      // Turnuva durumunu güncelle
-      console.log('🔄 Turnuva durumu güncelleniyor...');
-      const { error: updateError } = await supabase
-        .from('tournaments')
-        .update({
-          status: 'in_progress',
-          started_at: new Date().toISOString(),
-          current_round: 8, // 8 katılımcı
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', tournamentId);
-
-      if (updateError) {
-        console.error('Turnuva güncelleme hatası:', updateError);
-        return;
-      }
-
-      console.log('✅ Turnuva durumu güncellendi!');
-      
-      // Maçları oluştur
-      console.log('⚔️ Maçlar oluşturuluyor...');
-      await createTournamentMatches();
-
-      // Yönlendirme işlemi artık real-time subscription üzerinden yapılacak
-      
-    } catch (error) {
-      console.error('Turnuva başlatma hatası:', error);
     }
-  };
+
+    // ÖNEMLİ: Botlar eklendikten sonra katılımcı listesini yenile
+    await fetchParticipants();
+
+    // Turnuva durumunu güncelle - MANUEL olarak state'i de güncelle
+    console.log('🔄 Turnuva durumu güncelleniyor...');
+    const { error: updateError } = await supabase
+      .from('tournaments')
+      .update({
+        status: 'in_progress',
+        started_at: new Date().toISOString(),
+        current_round: 8, // 8 katılımcı
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', tournamentId);
+
+    if (updateError) {
+      console.error('Turnuva güncelleme hatası:', updateError);
+      return;
+    }
+
+    console.log('✅ Turnuva durumu güncellendi!');
+    
+    // State'i manuel güncelle (real-time beklemeden)
+    setTournament(prev => prev ? {
+      ...prev,
+      status: 'in_progress',
+      current_players: 8,
+      current_round: 8
+    } : prev);
+
+    // Maçları oluştur
+    console.log('⚔️ Maçlar oluşturuluyor...');
+    await createTournamentMatches();
+
+    // 2 saniye bekle ve YÖNLENDİR
+    console.log('⏳ Yönlendirme için bekleniyor...');
+    setTimeout(() => {
+      console.log('🚀 TournamentBracket sayfasına yönlendiriliyor...');
+      navigate(`/tournament-bracket/${tournamentId}`);
+    }, 2000);
+    
+  } catch (error) {
+    console.error('Turnuva başlatma hatası:', error);
+  }
+};
 
   const createTournamentMatches = async () => {
     if (!tournamentId) return;
