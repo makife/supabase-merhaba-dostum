@@ -5,11 +5,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Trophy, Users, Clock, Plus, Swords } from 'lucide-react';
+import { Tournament } from '@/types/tournament';
 
 const TournamentPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [activeTournaments, setActiveTournaments] = useState([]);
+  const [activeTournaments, setActiveTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -46,7 +47,7 @@ const TournamentPage = () => {
           status: 'waiting',
           max_players: 8,
           current_players: 1
-        })
+        } as any) // Type assertion ekledik
         .select()
         .single();
 
@@ -58,13 +59,40 @@ const TournamentPage = () => {
             tournament_id: tournament.id,
             user_id: user.id,
             joined_at: new Date().toISOString()
-          });
+          } as any);
 
         // 15 saniye beklemeye başla
         navigate(`/tournament-waiting/${tournament.id}`);
       }
     } catch (error) {
       console.error('Turnuva oluşturma hatası:', error);
+    }
+  };
+
+  const joinTournament = async (tournamentId: string) => {
+    if (!user) return;
+
+    try {
+      // Katılımcı olarak ekle
+      const { error } = await supabase
+        .from('tournament_participants')
+        .insert({
+          tournament_id: tournamentId,
+          user_id: user.id,
+          joined_at: new Date().toISOString()
+        } as any);
+
+      if (!error) {
+        // Katılımcı sayısını güncelle (RPC yerine direkt update)
+        await supabase
+          .from('tournaments')
+          .update({ current_players: activeTournaments.find(t => t.id === tournamentId)!.current_players + 1 })
+          .eq('id', tournamentId);
+
+        navigate(`/tournament-waiting/${tournamentId}`);
+      }
+    } catch (error) {
+      console.error('Turnuvaya katılma hatası:', error);
     }
   };
 
