@@ -16,58 +16,37 @@ const TournamentWaitingPage = () => {
   const [timeLeft, setTimeLeft] = useState(15);
   const [tournament, setTournament] = useState<Tournament | null>(null);
 
-  useEffect(() => {
-    if (!tournamentId) return;
+ useEffect(() => {
+  if (!tournamentId) return;
 
-    fetchTournamentData();
-    startCountdown();
+  fetchTournamentData();
+  startCountdown();
 
-    // Real-time katılımcı takibi
-    const channel = supabase
-      .channel(`tournament-${tournamentId}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'tournament_participants',
-        filter: `tournament_id=eq.${tournamentId}`
-      }, (payload) => {
-        console.log('👥 Yeni katılımcı eklendi:', payload.new);
-        fetchParticipants(); // Katılımcı listesini yenile
-      })
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'tournaments',
-        filter: `id=eq.${tournamentId}`
-      }, async (payload) => {
-        const updatedTournament = payload.new as any;
-        console.log('🔄 Turnuva güncellendi - Status:', updatedTournament.status);
-        
-        // Turnuva state'ini güncelle
-        setTournament({
-          ...updatedTournament,
-          status: updatedTournament.status as 'waiting' | 'in_progress' | 'completed' | 'cancelled',
-          max_players: updatedTournament.max_participants,
-          current_players: updatedTournament.current_round
-        } as Tournament);
-        
-        // Eğer turnuva başladıysa, bracket sayfasına yönlendir
-        if (updatedTournament.status === 'in_progress') {
-          console.log('🚀 Turnuva başladı! Yönlendiriliyor...');
-          
-          // 2 saniye bekle ve yönlendir (animasyonlar için)
-          setTimeout(() => {
-            navigate(`/tournament-bracket/${tournamentId}`);
-          }, 2000);
-        }
-      })
-      .subscribe();
+  // Real-time katılımcı takibi
+  const channel = supabase
+    .channel(`tournament-${tournamentId}`)
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'tournament_participants',
+      filter: `tournament_id=eq.${tournamentId}`
+    }, (payload) => {
+      console.log('👥 Yeni katılımcı eklendi (real-time):', payload.new);
+      // Sadece yeni katılımcıyı state'e ekle, tüm listeyi yeniden çekme
+      setParticipants(prev => [...prev, {
+        ...payload.new,
+        profiles: payload.new.is_bot ? 
+          { username: `Bot ${payload.new.user_id.split('_').pop()}`, avatar_url: null } :
+          { username: 'Oyuncu', avatar_url: null }
+      } as TournamentParticipant]);
+    })
+    .subscribe();
 
-    return () => {
-      console.log('🔌 Real-time bağlantı kapatılıyor');
-      supabase.removeChannel(channel);
-    };
-  }, [tournamentId, navigate]);
+  return () => {
+    console.log('🔌 Real-time bağlantı kapatılıyor');
+    supabase.removeChannel(channel);
+  };
+}, [tournamentId]);
 
   const fetchTournamentData = async () => {
     try {
