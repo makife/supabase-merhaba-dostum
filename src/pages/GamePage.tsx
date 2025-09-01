@@ -793,21 +793,30 @@ const handleBackToMenu = async () => {
   navigate('/');
 };
 
+// Tournament match bilgisini al - SADECE gameMode 'tournament' ise
 useEffect(() => {
   const initializeTournamentMatch = async () => {
-    if (gameMode === 'tournament') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const matchId = urlParams.get('match');
+    // SADECE tournament modunda çalışsın
+    if (gameMode !== 'tournament') return;
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const matchId = urlParams.get('match');
+    
+    if (matchId) {
+      console.log('🎯 Turnuva maçı:', matchId);
       
-      if (matchId) {
-        console.log('🎯 Turnuva maçı:', matchId);
-        
+      try {
         // Maç bilgilerini al
-        const { data: matchData } = await supabase
+        const { data: matchData, error } = await supabase
           .from('tournament_matches')
           .select('*')
           .eq('id', matchId)
           .single();
+
+        if (error) {
+          console.error('Maç bilgisi alınamadı:', error);
+          return;
+        }
 
         if (matchData) {
           setTournamentMatch(matchData);
@@ -821,6 +830,8 @@ useEffect(() => {
             })
             .eq('id', matchId);
         }
+      } catch (error) {
+        console.error('Turnuva maçı başlatma hatası:', error);
       }
     }
   };
