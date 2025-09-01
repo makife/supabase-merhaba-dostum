@@ -26,7 +26,14 @@ const TournamentPage = () => {
         .order('created_at', { ascending: true });
 
       if (!error && data) {
-        setActiveTournaments(data);
+        // Eski isimleri yeni isimlere map et
+        const mappedData = data.map(tournament => ({
+          ...tournament,
+          max_players: tournament.max_participants,
+          current_players: tournament.current_round // Geçici çözüm
+        })) as Tournament[];
+        
+        setActiveTournaments(mappedData);
       }
     } catch (error) {
       console.error('Turnuva listeleme hatası:', error);
@@ -44,10 +51,13 @@ const TournamentPage = () => {
         .from('tournaments')
         .insert({
           creator_id: user.id,
+          name: `Turnuva ${new Date().toLocaleTimeString()}`,
           status: 'waiting',
-          max_players: 8,
-          current_players: 1
-        } as any) // Type assertion ekledik
+          game_type: 'timed',
+          max_participants: 8,
+          current_round: 1, // current_players yerine current_round kullan
+          timeout_duration: 15
+        })
         .select()
         .single();
 
@@ -59,7 +69,7 @@ const TournamentPage = () => {
             tournament_id: tournament.id,
             user_id: user.id,
             joined_at: new Date().toISOString()
-          } as any);
+          });
 
         // 15 saniye beklemeye başla
         navigate(`/tournament-waiting/${tournament.id}`);
@@ -69,34 +79,7 @@ const TournamentPage = () => {
     }
   };
 
-  const joinTournament = async (tournamentId: string) => {
-    if (!user) return;
-
-    try {
-      // Katılımcı olarak ekle
-      const { error } = await supabase
-        .from('tournament_participants')
-        .insert({
-          tournament_id: tournamentId,
-          user_id: user.id,
-          joined_at: new Date().toISOString()
-        } as any);
-
-      if (!error) {
-        // Katılımcı sayısını güncelle (RPC yerine direkt update)
-        await supabase
-          .from('tournaments')
-          .update({ current_players: activeTournaments.find(t => t.id === tournamentId)!.current_players + 1 })
-          .eq('id', tournamentId);
-
-        navigate(`/tournament-waiting/${tournamentId}`);
-      }
-    } catch (error) {
-      console.error('Turnuvaya katılma hatası:', error);
-    }
-  };
-
-  const joinTournament = async (tournamentId: string) => {
+  const handleJoinTournament = async (tournamentId: string) => {
     if (!user) return;
 
     try {
@@ -110,10 +93,14 @@ const TournamentPage = () => {
         });
 
       if (!error) {
-        // Katılımcı sayısını güncelle
-        await supabase.rpc('increment_tournament_players', {
-          tournament_id: tournamentId
-        });
+        // Katılımcı sayısını güncelle (current_round'u artırarak)
+        const tournament = activeTournaments.find(t => t.id === tournamentId);
+        if (tournament) {
+          await supabase
+            .from('tournaments')
+            .update({ current_round: tournament.current_round + 1 })
+            .eq('id', tournamentId);
+        }
 
         navigate(`/tournament-waiting/${tournamentId}`);
       }
@@ -171,16 +158,16 @@ const TournamentPage = () => {
                       <Trophy className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-white">Turnuva #{tournament.id.slice(-6)}</h3>
+                      <h3 className="font-bold text-white">{tournament.name}</h3>
                       <p className="text-gray-300 text-sm">
-                        {tournament.current_players}/8 Katılımcı
+                        {tournament.current_round || 1}/8 Katılımcı
                       </p>
                     </div>
                   </div>
                   
                   <Button 
-                    onClick={() => joinTournament(tournament.id)}
-                    disabled={tournament.current_players >= 8}
+                    onClick={() => handleJoinTournament(tournament.id)}
+                    disabled={(tournament.current_round || 1) >= 8}
                     className="bg-green-500 hover:bg-green-600 text-white"
                   >
                     <Swords className="w-4 h-4 mr-2" />
