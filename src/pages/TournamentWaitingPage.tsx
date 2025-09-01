@@ -39,8 +39,14 @@ const TournamentWaitingPage = () => {
         table: 'tournaments',
         filter: `id=eq.${tournamentId}`
       }, (payload) => {
-        setTournament(payload.new as Tournament);
-        if (payload.new.status === 'in_progress') {
+        const updatedTournament = payload.new as any;
+        setTournament({
+          ...updatedTournament,
+          max_players: updatedTournament.max_participants,
+          current_players: updatedTournament.current_round
+        });
+        
+        if (updatedTournament.status === 'in_progress') {
           navigate(`/tournament-bracket/${tournamentId}`);
         }
       })
@@ -60,7 +66,14 @@ const TournamentWaitingPage = () => {
         .eq('id', tournamentId)
         .single();
 
-      setTournament(tournamentData);
+      if (tournamentData) {
+        setTournament({
+          ...tournamentData,
+          max_players: tournamentData.max_participants,
+          current_players: tournamentData.current_round
+        });
+      }
+      
       fetchParticipants();
     } catch (error) {
       console.error('Turnuva verisi alınamadı:', error);
@@ -101,9 +114,8 @@ const TournamentWaitingPage = () => {
     return () => clearInterval(timer);
   };
 
- const startTournament = async () => {
+  const startTournament = async () => {
     try {
-      // RPC yerine manuel bot ekleme
       const currentPlayers = participants.length;
       const neededBots = 8 - currentPlayers;
 
@@ -116,7 +128,7 @@ const TournamentWaitingPage = () => {
             user_id: `bot_${tournamentId}_${i}`,
             is_bot: true,
             joined_at: new Date().toISOString()
-          } as any);
+          });
       }
 
       // Turnuva durumunu güncelle
@@ -125,7 +137,7 @@ const TournamentWaitingPage = () => {
         .update({
           status: 'in_progress',
           started_at: new Date().toISOString(),
-          current_players: 8
+          current_round: 8 // 8 katılımcı olduğunu belirt
         })
         .eq('id', tournamentId);
 
@@ -160,7 +172,7 @@ const TournamentWaitingPage = () => {
             player1_id: shuffledParticipants[i * 2].user_id,
             player2_id: shuffledParticipants[i * 2 + 1].user_id,
             status: 'pending'
-          } as any);
+          });
       }
     } catch (error) {
       console.error('Maç oluşturma hatası:', error);
