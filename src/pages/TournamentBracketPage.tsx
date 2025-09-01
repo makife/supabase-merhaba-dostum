@@ -86,7 +86,7 @@ const startRealMatches = async () => {
     if (match.player1_id?.startsWith('bot_') && match.player2_id?.startsWith('bot_')) {
       // AI vs AI maçı
       simulateAIMatch(match.id);
-    } else if (match.player1_id === user?.id || match.player2_id === user?.id) {
+    } else if (user && (match.player1_id === user.id || match.player2_id === user.id)) {
       // Kullanıcının maçı - GamePage'e yönlendir
       startUserMatch(match.id);
     } else {
