@@ -73,16 +73,10 @@ const AppRoutes = () => {
         </ProtectedRoute>
       } />
       
-      <Route path="/tournament/match/:matchId" element={
-        <ProtectedRoute>
-          <TournamentMatchPage />
-        </ProtectedRoute>
-      } />
-      <Route path="/tournament" element={
-        <ProtectedRoute>
-          <TournamentPage />
-        </ProtectedRoute>
-      } />
+      <Route path="/tournament" element={<TournamentPage />} />
+<Route path="/tournament-waiting/:tournamentId" element={<TournamentWaitingPage />} />
+<Route path="/tournament-bracket/:tournamentId" element={<TournamentBracketPage />} />
+<Route path="/tournament-game/:matchId" element={<GamePage gameMode="tournament" />} />
       
       <Route path="/market" element={
         <ProtectedRoute>
