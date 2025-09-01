@@ -1,15 +1,20 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext'; // BU EKLENDİ
 import { Card, CardContent } from '@/components/ui/card';
-import { Trophy, Users, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Trophy, Home, User, Bot } from 'lucide-react';
+import { TournamentMatch } from '@/types/tournament';
 
 const TournamentBracketPage = () => {
   const { tournamentId } = useParams();
-  const [matches, setMatches] = useState([]);
-  const [tournament, setTournament] = useState(null);
+  const navigate = useNavigate(); // BU EKLENDİ
+  const { user } = useAuth(); // BU EKLENDİ
+  const [matches, setMatches] = useState<TournamentMatch[]>([]);
   const [globalCountdown, setGlobalCountdown] = useState(10);
-
+  const [countdowns, setCountdowns] = useState<{[key: string]: number}>({});
+  
  useEffect(() => {
   if (tournamentId) {
     fetchMatches();
