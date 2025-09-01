@@ -340,22 +340,21 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
   if (!user || !tournamentMatch) return;
 
   try {
-    // Maçı tamamla
-    const { error } = await supabase
+    const winnerId = userScore > opponentScore ? user.id : tournamentMatch.player2_id;
+    
+    await supabase
       .from('tournament_matches')
       .update({
         status: 'completed',
         player1_score: userScore,
         player2_score: opponentScore,
-        winner_id: userScore > opponentScore ? user.id : tournamentMatch.player2_id,
+        winner_id: winnerId,
         updated_at: new Date().toISOString()
       })
       .eq('id', tournamentMatch.id);
 
-    if (!error) {
-      // Sonraki tur maçlarını kontrol et ve oluştur
-      await checkAndCreateNextRound(tournamentMatch.tournament_id);
-    }
+    console.log('✅ Turnuva maçı tamamlandı');
+
   } catch (error) {
     console.error('Turnuva maç bitiş hatası:', error);
   }
@@ -676,6 +675,7 @@ const handleGameEnd = () => {
   // Normal oyun sonu
   setGameEnded(true);
 };
+
 // 🔧 5. GamePage.tsx - Turnuva modu rakip belirleme düzeltmesi
 useEffect(() => {
   if (gameMode === 'tournament' && tournamentMatch) {
@@ -793,6 +793,41 @@ const handleBackToMenu = async () => {
   navigate('/');
 };
 
+useEffect(() => {
+  const initializeTournamentMatch = async () => {
+    if (gameMode === 'tournament') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const matchId = urlParams.get('match');
+      
+      if (matchId) {
+        console.log('🎯 Turnuva maçı:', matchId);
+        
+        // Maç bilgilerini al
+        const { data: matchData } = await supabase
+          .from('tournament_matches')
+          .select('*')
+          .eq('id', matchId)
+          .single();
+
+        if (matchData) {
+          setTournamentMatch(matchData);
+          
+          // Maç durumunu güncelle
+          await supabase
+            .from('tournament_matches')
+            .update({
+              status: 'in_progress',
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', matchId);
+        }
+      }
+    }
+  };
+
+  initializeTournamentMatch();
+}, [gameMode]);
+  
   // JOKER FONKSİYONLARI
 
   // 1. Değiştir Jokeri - 5 harf değiştir (3 sesli, 2 sessiz)
