@@ -12,6 +12,7 @@ export interface Tournament {
   updated_at: string;
   expires_at?: string;
   finished_at?: string;
+  
   // Eski isimler için alias
   max_players?: number;
   current_players?: number;
