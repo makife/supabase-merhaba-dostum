@@ -383,10 +383,7 @@ const checkAndCreateNextRound = async (tournamentId: string) => {
       const nextRound = currentRound[0].round + 1;
       
       if (nextRound <= 3) { // Finale kadar
-        await supabase.rpc('create_tournament_matches', {
-          p_tournament_id: tournamentId,
-          p_round: nextRound
-        });
+        await createTournamentMatches(tournamentId, nextRound);
       } else {
         // Turnuvayı tamamla
         await supabase
