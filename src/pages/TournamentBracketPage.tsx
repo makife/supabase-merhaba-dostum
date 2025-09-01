@@ -171,29 +171,45 @@ const TournamentBracketPage = () => {
   };
 
   // Gerçek kelime oyunu maçları
-  const startRealMatches = async () => {
-    const pendingMatches = matches.filter(m => m.status === 'in_progress');
-    
-    for (const match of pendingMatches) {
-      if (match.player1_id?.startsWith('bot_') && match.player2_id?.startsWith('bot_')) {
-        // AI vs AI maçı
-        simulateAIMatch(match.id);
-      } else if (user && (match.player1_id === user.id || match.player2_id === user.id)) {
-        // Kullanıcının maçı - GamePage'e yönlendir
-        startUserMatch(match.id);
-      } else {
-        // Diğer oyuncuların maçları
-        simulateAIMatch(match.id);
-      }
+ const startRealMatches = async () => {
+  const pendingMatches = matches.filter(m => m.status === 'in_progress');
+  
+  let userMatchFound = false;
+
+  for (const match of pendingMatches) {
+    if (match.player1_id?.startsWith('bot_') && match.player2_id?.startsWith('bot_')) {
+      // AI vs AI maçı - hemen başlat
+      console.log(`🤖 AI vs AI maçı: ${match.id}`);
+      simulateAIMatch(match.id);
+    } else if (user && (match.player1_id === user.id || match.player2_id === user.id)) {
+      // Kullanıcının maçı - işaretle ve döngüden çık
+      console.log(`🎯 Kullanıcı maçı bulundu: ${match.id}`);
+      userMatchFound = true;
+      startUserMatch(match.id);
+      break; // Döngüden çık, sadece bir maça yönlendir
+    } else {
+      // Diğer AI maçları - hemen başlat
+      console.log(`🤖 AI maçı: ${match.id}`);
+      simulateAIMatch(match.id);
     }
-  };
+  }
+
+  // Eğer kullanıcı maçı yoksa ve user varsa, hata ver
+  if (!userMatchFound && user) {
+    console.log('❌ Kullanıcı maçı bulunamadı!');
+    // Belki bir hata mesajı göster
+  }
+};
 
   // Kullanıcı maçı başlat
-  const startUserMatch = (matchId: string) => {
-    console.log('🎮 Kullanıcı maçı başlatılıyor:', matchId);
-    // GamePage'e yönlendir
+const startUserMatch = (matchId: string) => {
+  console.log('🎮 Kullanıcı maçı başlatılıyor:', matchId);
+  
+  // 1 saniye bekle ve yönlendir (animasyon için)
+  setTimeout(() => {
     navigate(`/game/tournament?match=${matchId}`);
-  };
+  }, 1000);
+};
 
   // AI vs AI maç simülasyonu (KELİME OYUNU MANTIĞIYLA)
   const simulateAIMatch = async (matchId: string) => {
