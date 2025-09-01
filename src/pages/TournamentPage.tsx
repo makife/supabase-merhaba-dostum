@@ -79,35 +79,58 @@ const TournamentPage = () => {
     }
   };
 
-  const handleJoinTournament = async (tournamentId: string) => {
-    if (!user) return;
+ const handleJoinTournament = async (tournamentId: string) => {
+  if (!user) return;
 
-    try {
-      // Katılımcı olarak ekle
-      const { error } = await supabase
-        .from('tournament_participants')
-        .insert({
-          tournament_id: tournamentId,
-          user_id: user.id,
-          joined_at: new Date().toISOString()
-        });
+  try {
+    console.log('🎯 Turnuvaya katılım:', tournamentId);
+    
+    // Önce katılımcı sayısını al
+    const { data: tournamentData } = await supabase
+      .from('tournaments')
+      .select('current_round')
+      .eq('id', tournamentId)
+      .single();
 
-      if (!error) {
-        // Katılımcı sayısını güncelle (current_round'u artırarak)
-        const tournament = activeTournaments.find(t => t.id === tournamentId);
-        if (tournament) {
-          await supabase
-            .from('tournaments')
-            .update({ current_round: tournament.current_round + 1 })
-            .eq('id', tournamentId);
-        }
-
-        navigate(`/tournament-waiting/${tournamentId}`);
-      }
-    } catch (error) {
-      console.error('Turnuvaya katılma hatası:', error);
+    if (!tournamentData) {
+      console.error('Turnuva bulunamadı!');
+      return;
     }
-  };
+
+    // Katılımcı olarak ekle
+    const { error: joinError } = await supabase
+      .from('tournament_participants')
+      .insert({
+        tournament_id: tournamentId,
+        user_id: user.id,
+        joined_at: new Date().toISOString()
+      });
+
+    if (joinError) {
+      console.error('Katılma hatası:', joinError);
+      return;
+    }
+
+    // Katılımcı sayısını güncelle (current_round'u artırarak)
+    const { error: updateError } = await supabase
+      .from('tournaments')
+      .update({ 
+        current_round: tournamentData.current_round + 1,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', tournamentId);
+
+    if (updateError) {
+      console.error('Güncelleme hatası:', updateError);
+    }
+
+    console.log('✅ Turnuvaya katıldı!');
+    navigate(`/tournament-waiting/${tournamentId}`);
+
+  } catch (error) {
+    console.error('Turnuvaya katılma hatası:', error);
+  }
+};
 
   if (loading) {
     return <div>Yükleniyor...</div>;
