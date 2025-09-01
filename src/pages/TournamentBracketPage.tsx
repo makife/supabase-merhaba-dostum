@@ -210,33 +210,56 @@ useEffect(() => {
   };
 
   // Gerçek kelime oyunu maçları
- const startRealMatches = async () => {
+const startRealMatches = async () => {
   const pendingMatches = matches.filter(m => m.status === 'in_progress');
   
+  console.log('🔍 Kullanıcı maçları aranıyor...');
+  console.log('👤 User ID:', user?.id);
+  console.log('👤 User UUID:', user?.id); // UUID formatında
+
   let userMatchFound = false;
 
   for (const match of pendingMatches) {
+    console.log('🔍 Maç kontrol:', {
+      matchId: match.id,
+      player1: match.player1_id,
+      player2: match.player2_id,
+      player1Type: typeof match.player1_id,
+      player2Type: typeof match.player2_id
+    });
+    
+    // User ID karşılaştırmasını düzelt
+    const isUserMatch = user && 
+      (match.player1_id === user.id || match.player2_id === user.id);
+
+    console.log('🎯 Kullanıcı maçı mı?:', isUserMatch);
+
     if (match.player1_id?.startsWith('bot_') && match.player2_id?.startsWith('bot_')) {
-      // AI vs AI maçı - hemen başlat
       console.log(`🤖 AI vs AI maçı: ${match.id}`);
       simulateAIMatch(match.id);
-    } else if (user && (match.player1_id === user.id || match.player2_id === user.id)) {
-      // Kullanıcının maçı - işaretle ve döngüden çık
-      console.log(`🎯 Kullanıcı maçı bulundu: ${match.id}`);
+    } else if (isUserMatch) {
+      console.log(`🎯 KULLANICI MAÇI BULUNDU: ${match.id}`);
       userMatchFound = true;
       startUserMatch(match.id);
-      break; // Döngüden çık, sadece bir maça yönlendir
+      break;
     } else {
-      // Diğer AI maçları - hemen başlat
       console.log(`🤖 AI maçı: ${match.id}`);
       simulateAIMatch(match.id);
     }
   }
 
-  // Eğer kullanıcı maçı yoksa ve user varsa, hata ver
   if (!userMatchFound && user) {
     console.log('❌ Kullanıcı maçı bulunamadı!');
-    // Belki bir hata mesajı göster
+    console.log('Tüm maçlar:', matches.map(m => ({
+      id: m.id.slice(-8),
+      p1: m.player1_id,
+      p2: m.player2_id,
+      p1Type: typeof m.player1_id,
+      p2Type: typeof m.player2_id,
+      status: m.status,
+      isUserP1: m.player1_id === user.id,
+      isUserP2: m.player2_id === user.id
+    })));
   }
 };
 
