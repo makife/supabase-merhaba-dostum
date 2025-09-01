@@ -16,58 +16,58 @@ const TournamentWaitingPage = () => {
   const [timeLeft, setTimeLeft] = useState(15);
   const [tournament, setTournament] = useState<Tournament | null>(null);
 
-useEffect(() => {
-  if (!tournamentId) return;
+  useEffect(() => {
+    if (!tournamentId) return;
 
-  fetchTournamentData();
-  startCountdown();
+    fetchTournamentData();
+    startCountdown();
 
-  // Real-time katılımcı takibi
-  const channel = supabase
-    .channel(`tournament-${tournamentId}`)
-    .on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'tournament_participants',
-      filter: `tournament_id=eq.${tournamentId}`
-    }, (payload) => {
-      console.log('👥 Yeni katılımcı eklendi:', payload.new);
-      fetchParticipants(); // Katılımcı listesini yenile
-    })
-    .on('postgres_changes', {
-      event: 'UPDATE',
-      schema: 'public',
-      table: 'tournaments',
-      filter: `id=eq.${tournamentId}`
-    }, async (payload) => {
-      const updatedTournament = payload.new as any;
-      console.log('🔄 Turnuva güncellendi - Status:', updatedTournament.status);
-      
-      // Turnuva state'ini güncelle
-      setTournament({
-        ...updatedTournament,
-        status: updatedTournament.status as 'waiting' | 'in_progress' | 'completed' | 'cancelled',
-        max_players: updatedTournament.max_participants,
-        current_players: updatedTournament.current_round
-      } as Tournament);
-      
-      // Eğer turnuva başladıysa, bracket sayfasına yönlendir
-      if (updatedTournament.status === 'in_progress') {
-        console.log('🚀 Turnuva başladı! Yönlendiriliyor...');
+    // Real-time katılımcı takibi
+    const channel = supabase
+      .channel(`tournament-${tournamentId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'tournament_participants',
+        filter: `tournament_id=eq.${tournamentId}`
+      }, (payload) => {
+        console.log('👥 Yeni katılımcı eklendi:', payload.new);
+        fetchParticipants(); // Katılımcı listesini yenile
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'tournaments',
+        filter: `id=eq.${tournamentId}`
+      }, async (payload) => {
+        const updatedTournament = payload.new as any;
+        console.log('🔄 Turnuva güncellendi - Status:', updatedTournament.status);
         
-        // 2 saniye bekle ve yönlendir (animasyonlar için)
-        setTimeout(() => {
-          navigate(`/tournament-bracket/${tournamentId}`);
-        }, 2000);
-      }
-    })
-    .subscribe();
+        // Turnuva state'ini güncelle
+        setTournament({
+          ...updatedTournament,
+          status: updatedTournament.status as 'waiting' | 'in_progress' | 'completed' | 'cancelled',
+          max_players: updatedTournament.max_participants,
+          current_players: updatedTournament.current_round
+        } as Tournament);
+        
+        // Eğer turnuva başladıysa, bracket sayfasına yönlendir
+        if (updatedTournament.status === 'in_progress') {
+          console.log('🚀 Turnuva başladı! Yönlendiriliyor...');
+          
+          // 2 saniye bekle ve yönlendir (animasyonlar için)
+          setTimeout(() => {
+            navigate(`/tournament-bracket/${tournamentId}`);
+          }, 2000);
+        }
+      })
+      .subscribe();
 
-  return () => {
-    console.log('🔌 Real-time bağlantı kapatılıyor');
-    supabase.removeChannel(channel);
-  };
-}, [tournamentId, navigate]);
+    return () => {
+      console.log('🔌 Real-time bağlantı kapatılıyor');
+      supabase.removeChannel(channel);
+    };
+  }, [tournamentId, navigate]);
 
   const fetchTournamentData = async () => {
     try {
@@ -93,72 +93,72 @@ useEffect(() => {
     }
   };
 
-const fetchParticipants = async () => {
-  try {
-    console.log('👥 Katılımcılar alınıyor...');
-    
-    // Önce sadece temel katılımcı bilgilerini al
-    const { data: participantsData, error } = await supabase
-      .from('tournament_participants')
-      .select('*')
-      .eq('tournament_id', tournamentId)
-      .order('joined_at', { ascending: true });
+  const fetchParticipants = async () => {
+    try {
+      console.log('👥 Katılımcılar alınıyor...');
+      
+      // Önce sadece temel katılımcı bilgilerini al
+      const { data: participantsData, error } = await supabase
+        .from('tournament_participants')
+        .select('*')
+        .eq('tournament_id', tournamentId)
+        .order('joined_at', { ascending: true });
 
-    if (error) {
+      if (error) {
+        console.error('Katılımcılar alınamadı:', error);
+        return;
+      }
+
+      if (!participantsData) {
+        console.log('Katılımcı bulunamadı');
+        setParticipants([]);
+        return;
+      }
+
+      console.log('📊 Katılımcılar alındı:', participantsData.length);
+
+      // Eğer bot değilse, kullanıcı bilgilerini ayrıca al
+      const participantsWithProfiles = await Promise.all(
+        participantsData.map(async (participant) => {
+          if (participant.is_bot) {
+            return {
+              ...participant,
+              profiles: {
+                username: `Bot ${participant.user_id.split('_').pop()}`,
+                avatar_url: null
+              }
+            };
+          }
+
+          try {
+            // Kullanıcı bilgilerini ayrıca al
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('username, avatar_url')
+              .eq('id', participant.user_id)
+              .single();
+
+            return {
+              ...participant,
+              profiles: profileData || { username: 'Oyuncu', avatar_url: null }
+            };
+          } catch (error) {
+            console.error('Profil bilgisi alınamadı:', error);
+            return {
+              ...participant,
+              profiles: { username: 'Oyuncu', avatar_url: null }
+            };
+          }
+        })
+      );
+
+      setParticipants(participantsWithProfiles);
+      
+    } catch (error) {
       console.error('Katılımcılar alınamadı:', error);
-      return;
     }
+  };
 
-    if (!participantsData) {
-      console.log('Katılımcı bulunamadı');
-      setParticipants([]);
-      return;
-    }
-
-    console.log('📊 Katılımcılar alındı:', participantsData.length);
-
-    // Eğer bot değilse, kullanıcı bilgilerini ayrıca al
-    const participantsWithProfiles = await Promise.all(
-      participantsData.map(async (participant) => {
-        if (participant.is_bot) {
-          return {
-            ...participant,
-            profiles: {
-              username: `Bot ${participant.user_id.split('_').pop()}`,
-              avatar_url: null
-            }
-          };
-        }
-
-        try {
-          // Kullanıcı bilgilerini ayrıca al
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('username, avatar_url')
-            .eq('id', participant.user_id)
-            .single();
-
-          return {
-            ...participant,
-            profiles: profileData || { username: 'Oyuncu', avatar_url: null }
-          };
-        } catch (error) {
-          console.error('Profil bilgisi alınamadı:', error);
-          return {
-            ...participant,
-            profiles: { username: 'Oyuncu', avatar_url: null }
-          };
-        }
-      })
-    );
-
-    setParticipants(participantsWithProfiles);
-    
-  } catch (error) {
-    console.error('Katılımcılar alınamadı:', error);
-  }
-};
-  
   const startCountdown = () => {
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
@@ -174,116 +174,153 @@ const fetchParticipants = async () => {
     return () => clearInterval(timer);
   };
 
-const startTournament = async () => {
-  try {
-    console.log('🚀 Turnuva başlatılıyor...');
-    
-    // Önce tüm katılımcıları tekrar al (botlar eklendikten sonra)
-    await fetchParticipants();
-    
-    console.log('📊 Toplam katılımcılar:', participants.length);
+  const startTournament = async () => {
+    try {
+      console.log('🚀 Turnuva başlatılıyor...');
+      
+      // Önce tüm katılımcıları tekrar al (botlar eklendikten sonra)
+      await fetchParticipants();
+      
+      console.log('📊 Toplam katılımcılar:', participants.length);
 
-    // Turnuva durumunu güncelle
-    console.log('🔄 Turnuva durumu güncelleniyor...');
-    const { error: updateError } = await supabase
-      .from('tournaments')
-      .update({
-        status: 'in_progress',
-        started_at: new Date().toISOString(),
-        current_round: 8, // 8 katılımcı
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', tournamentId);
+      const currentPlayers = participants.length;
+      const neededBots = 8 - currentPlayers;
 
-    if (updateError) {
-      console.error('Turnuva güncelleme hatası:', updateError);
-      return;
-    }
+      console.log('🤖 Gerekli bot sayısı:', neededBots);
 
-    console.log('✅ Turnuva durumu güncellendi!');
-    
-    // Maçları oluştur
-    console.log('⚔️ Maçlar oluşturuluyor...');
-    await createTournamentMatches();
+      // Botları ekle
+      for (let i = 1; i <= neededBots; i++) {
+        const botId = `bot_${tournamentId}_${i}`;
+        console.log('➕ Bot ekleniyor:', botId);
+        
+        const { error: botError } = await supabase
+          .from('tournament_participants')
+          .insert({
+            tournament_id: tournamentId,
+            user_id: botId,
+            is_bot: true,
+            joined_at: new Date().toISOString()
+          } as any);
 
-    // Yönlendirme işlemi artık real-time subscription üzerinden yapılacak
-    
-  } catch (error) {
-    console.error('Turnuva başlatma hatası:', error);
-  }
-};
-
- const createTournamentMatches = async () => {
-  if (!tournamentId) return;
-  
-  try {
-    console.log('🤖 Maçlar oluşturuluyor...');
-    
-    // Katılımcıları al ve karıştır
-    const { data: allParticipants, error } = await supabase
-      .from('tournament_participants')
-      .select('user_id')
-      .eq('tournament_id', tournamentId);
-
-    if (error) {
-      console.error('Katılımcılar alınamadı:', error);
-      return;
-    }
-
-    if (!allParticipants || allParticipants.length === 0) {
-      console.error('Katılımcı bulunamadı!');
-      return;
-    }
-
-    console.log('📊 Katılımcılar:', allParticipants);
-
-    // user_id'leri al ve kontrol et
-    const participantIds = allParticipants
-      .map(p => p.user_id)
-      .filter(id => id !== undefined && id !== null);
-
-    if (participantIds.length === 0) {
-      console.error('Geçerli katılımcı ID bulunamadı!');
-      return;
-    }
-
-    const shuffledParticipants = [...participantIds].sort(() => Math.random() - 0.5);
-    const matchCount = Math.floor(shuffledParticipants.length / 2);
-
-    console.log('🎯 Oluşturulacak maç sayısı:', matchCount);
-
-    // Maçları oluştur
-    for (let i = 0; i < matchCount; i++) {
-      const player1_id = shuffledParticipants[i * 2];
-      const player2_id = shuffledParticipants[i * 2 + 1];
-
-      console.log(`⚔️ Maç ${i + 1}:`, player1_id, 'vs', player2_id);
-
-      const { error: matchError } = await supabase
-        .from('tournament_matches')
-        .insert({
-          tournament_id: tournamentId,
-          round: 1,
-          match_number: i + 1,
-          player1_id: player1_id,
-          player2_id: player2_id,
-          status: 'pending'
-        });
-
-      if (matchError) {
-        console.error('Maç oluşturma hatası:', matchError);
-      } else {
-        console.log('✅ Maç oluşturuldu:', i + 1);
+        if (botError) {
+          console.error('Bot ekleme hatası:', botError);
+        } else {
+          console.log('✅ Bot eklendi:', botId);
+        }
       }
+
+      // Turnuva durumunu güncelle
+      console.log('🔄 Turnuva durumu güncelleniyor...');
+      const { error: updateError } = await supabase
+        .from('tournaments')
+        .update({
+          status: 'in_progress',
+          started_at: new Date().toISOString(),
+          current_round: 8, // 8 katılımcı
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', tournamentId);
+
+      if (updateError) {
+        console.error('Turnuva güncelleme hatası:', updateError);
+        return;
+      }
+
+      console.log('✅ Turnuva durumu güncellendi!');
+      
+      // Maçları oluştur
+      console.log('⚔️ Maçlar oluşturuluyor...');
+      await createTournamentMatches();
+
+      // Yönlendirme işlemi artık real-time subscription üzerinden yapılacak
+      
+    } catch (error) {
+      console.error('Turnuva başlatma hatası:', error);
     }
+  };
 
-    console.log('🎉 Tüm maçlar oluşturuldu!');
+  const createTournamentMatches = async () => {
+    if (!tournamentId) return;
+    
+    try {
+      console.log('🤖 Maçlar oluşturuluyor...');
+      
+      // Katılımcıları al ve karıştır
+      const { data: allParticipants, error } = await supabase
+        .from('tournament_participants')
+        .select('user_id')
+        .eq('tournament_id', tournamentId);
 
-  } catch (error) {
-    console.error('Maç oluşturma hatası:', error);
+      if (error) {
+        console.error('Katılımcılar alınamadı:', error);
+        return;
+      }
+
+      if (!allParticipants || allParticipants.length === 0) {
+        console.error('Katılımcı bulunamadı!');
+        return;
+      }
+
+      console.log('📊 Katılımcılar:', allParticipants);
+
+      // user_id'leri al ve kontrol et
+      const participantIds = allParticipants
+        .map(p => p.user_id)
+        .filter(id => id !== undefined && id !== null);
+
+      if (participantIds.length === 0) {
+        console.error('Geçerli katılımcı ID bulunamadı!');
+        return;
+      }
+
+      const shuffledParticipants = [...participantIds].sort(() => Math.random() - 0.5);
+      const matchCount = Math.floor(shuffledParticipants.length / 2);
+
+      console.log('🎯 Oluşturulacak maç sayısı:', matchCount);
+
+      // Maçları oluştur
+      for (let i = 0; i < matchCount; i++) {
+        const player1_id = shuffledParticipants[i * 2];
+        const player2_id = shuffledParticipants[i * 2 + 1];
+
+        console.log(`⚔️ Maç ${i + 1}:`, player1_id, 'vs', player2_id);
+
+        const { error: matchError } = await supabase
+          .from('tournament_matches')
+          .insert({
+            tournament_id: tournamentId,
+            round: 1,
+            match_number: i + 1,
+            player1_id: player1_id,
+            player2_id: player2_id,
+            status: 'pending'
+          } as any);
+
+        if (matchError) {
+          console.error('Maç oluşturma hatası:', matchError);
+        } else {
+          console.log('✅ Maç oluşturuldu:', i + 1);
+        }
+      }
+
+      console.log('🎉 Tüm maçlar oluşturuldu!');
+
+    } catch (error) {
+      console.error('Maç oluşturma hatası:', error);
+    }
+  };
+
+  if (!tournament) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 to-blue-900 p-4 flex items-center justify-center">
+        <div className="text-white text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p>Turnuva yükleniyor...</p>
+        </div>
+      </div>
+    );
   }
-};
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 to-blue-900 p-4">
       <div className="max-w-2xl mx-auto">
@@ -310,38 +347,37 @@ const startTournament = async () => {
             </h3>
             
             <div className="space-y-2">
-  {participants.map((participant, index) => (
-    <div key={participant.id} className="flex items-center p-3 bg-white/5 rounded-lg">
-      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-        {index + 1}
-      </div>
-      <div className="ml-3 flex-1">
-        <p className="text-white font-medium">
-          {participant.profiles?.username || 
-           (participant.is_bot ? `Bot ${participant.user_id?.split('_').pop()}` : 'Oyuncu')}
-        </p>
-        {participant.user_id === user?.id && (
-          <p className="text-green-400 text-xs">(Siz)</p>
-        )}
-      </div>
-      {participant.is_bot && (
-        <Bot className="w-4 h-4 text-gray-400 ml-2" />
-      )}
-    </div>
-  ))}
+              {participants.map((participant, index) => (
+                <div key={participant.id} className="flex items-center p-3 bg-white/5 rounded-lg">
+                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                    {index + 1}
+                  </div>
+                  <div className="ml-3 flex-1">
+                    <p className="text-white font-medium">
+                      {participant.profiles?.username || 
+                      (participant.is_bot ? `Bot ${participant.user_id?.split('_').pop()}` : 'Oyuncu')}
+                    </p>
+                    {participant.user_id === user?.id && (
+                      <p className="text-green-400 text-xs">(Siz)</p>
+                    )}
+                  </div>
+                  {participant.is_bot && (
+                    <Bot className="w-4 h-4 text-gray-400 ml-2" />
+                  )}
+                </div>
+              ))}
 
               {/* Boş slotlar */}
               {Array.from({ length: 8 - participants.length }, (_, i) => (
-    <div key={i} className="flex items-center p-3 bg-white/5 rounded-lg opacity-50">
-      <div className="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-        {participants.length + i + 1}
-      </div>
-      <div className="ml-3 flex-1">
-        <p className="text-gray-400">Boş Slot</p>
-      </div>
-    </div>
-  ))}
-</div>
+                <div key={i} className="flex items-center p-3 bg-white/5 rounded-lg opacity-50">
+                  <div className="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                    {participants.length + i + 1}
+                  </div>
+                  <div className="ml-3 flex-1">
+                    <p className="text-gray-400">Boş Slot</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
