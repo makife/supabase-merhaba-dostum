@@ -42,6 +42,147 @@ useEffect(() => {
   }
 }, [tournamentId, matches.length]);
 
+const startAllMatches = async () => {
+  if (!tournamentId) return;
+
+  try {
+    console.log('🎮 Tüm maçlar başlatılıyor...');
+    
+    // Tüm maçları "in_progress" yap
+    const { error: updateError } = await supabase
+      .from('tournament_matches')
+      .update({ 
+        status: 'in_progress',
+        updated_at: new Date().toISOString()
+      })
+      .eq('tournament_id', tournamentId)
+      .eq('status', 'pending');
+
+    if (updateError) {
+      console.error('Maçlar başlatılamadı:', updateError);
+      return;
+    }
+
+    console.log('✅ Tüm maçlar başlatıldı!');
+    
+    // Her maç için gerçek oyun başlat
+    startRealMatches();
+
+  } catch (error) {
+    console.error('Maç başlatma hatası:', error);
+  }
+};
+
+// Gerçek kelime oyunu maçları
+const startRealMatches = async () => {
+  const pendingMatches = matches.filter(m => m.status === 'in_progress');
+  
+  for (const match of pendingMatches) {
+    if (match.player1_id?.startsWith('bot_') && match.player2_id?.startsWith('bot_')) {
+      // AI vs AI maçı
+      simulateAIMatch(match.id);
+    } else if (match.player1_id === user?.id || match.player2_id === user?.id) {
+      // Kullanıcının maçı - GamePage'e yönlendir
+      startUserMatch(match.id);
+    } else {
+      // Diğer oyuncuların maçları
+      simulateAIMatch(match.id);
+    }
+  }
+};
+
+// Kullanıcı maçı başlat
+const startUserMatch = (matchId: string) => {
+  console.log('🎮 Kullanıcı maçı başlatılıyor:', matchId);
+  // GamePage'e yönlendir
+  navigate(`/game/tournament?match=${matchId}`);
+};
+
+// AI vs AI maç simülasyonu (KELİME OYUNU MANTIĞIYLA)
+const simulateAIMatch = async (matchId: string) => {
+  try {
+    const match = matches.find(m => m.id === matchId);
+    if (!match) return;
+
+    console.log(`🤖 AI maçı: ${matchId}`);
+    
+    // GamePage'deki kelime oyunu mantığı
+    const player1Score = await simulateAIPlayer(match.player1_id, 'AI Player 1');
+    const player2Score = await simulateAIPlayer(match.player2_id, 'AI Player 2');
+
+    // Kazananı belirle
+    const winnerId = player1Score > player2Score ? match.player1_id : match.player2_id;
+
+    // Maçı tamamla
+    const { error } = await supabase
+      .from('tournament_matches')
+      .update({
+        status: 'completed',
+        player1_score: player1Score,
+        player2_score: player2Score,
+        winner_id: winnerId,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', matchId);
+
+    if (error) {
+      console.error('Maç sonuçlandırma hatası:', error);
+    } else {
+      console.log(`✅ AI maçı tamamlandı: ${player1Score}-${player2Score}`);
+    }
+
+  } catch (error) {
+    console.error('AI maç simülasyonu hatası:', error);
+  }
+};
+
+// AI Oyuncu Simülasyonu (KELİME BULMA MANTIĞI)
+const simulateAIPlayer = async (playerId: string, playerName: string): Promise<number> => {
+  console.log(`🧠 ${playerName} kelime buluyor...`);
+  
+  // GamePage'deki kelime bulma mantığı
+  const possibleWords = [
+    'KEDİ', 'MASA', 'ARABA', 'OKUL', 'KİTAP', 'DENİZ', 'AĞAÇ', 'ÇİÇEK',
+    'DOSTLUK', 'GÜNEŞ', 'YILDIZ', 'BULUT', 'RÜZGAR', 'ATEŞ', 'TOPRAK',
+    'SEVGİ', 'MUTLULUK', 'UMUT', 'HAYAL', 'RENKLER', 'MÜZİK', 'DANS', 'ŞARKI',
+    'OYUN', 'SPOR', 'FUTBOL', 'BASKETBOL', 'TENİS', 'YÜZME', 'KOŞU', 'BİSİKLET',
+    'YEMEK', 'EKMEK', 'PEYNİR', 'DOMATES', 'SALATA', 'ÇORBA', 'MEYVE',
+    'ELMA', 'ARMUT', 'ÇİLEK', 'KIRAZ', 'ÜZÜM', 'PORTAKAL', 'MANGO',
+    'SEBZE', 'HAVUÇ', 'PATLICAN', 'BİBER', 'SOĞAN', 'SARIMSAK', 'PATATES'
+  ];
+
+  // Rastgele kelimeler seç ve puan hesapla
+  let totalScore = 0;
+  const wordCount = Math.floor(Math.random() * 8) + 5; // 5-12 kelime
+
+  for (let i = 0; i < wordCount; i++) {
+    const randomWord = possibleWords[Math.floor(Math.random() * possibleWords.length)];
+    const wordLength = randomWord.length;
+    
+    // GamePage'deki puanlama mantığı
+    const basePoints = wordLength * 2;
+    const rareLetters = ['J', 'Z', 'Ğ', 'Ü', 'Ö', 'Ç', 'Ş'];
+    let rareBonus = 0;
+
+    for (const letter of randomWord) {
+      if (rareLetters.includes(letter)) {
+        rareBonus += 3;
+      }
+    }
+
+    const wordScore = Math.max(basePoints + rareBonus, 5);
+    totalScore += wordScore;
+
+    console.log(`📝 ${playerName}: "${randomWord}" (+${wordScore} puan)`);
+    
+    // Kelime başına 1-2 saniye bekle (gerçekçilik için)
+    await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 1000));
+  }
+
+  console.log(`🏁 ${playerName} toplam: ${totalScore} puan`);
+  return totalScore;
+};
+
   const fetchTournamentData = async () => {
     try {
       const { data: tournamentData } = await supabase
