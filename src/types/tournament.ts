@@ -1,13 +1,20 @@
 export interface Tournament {
   id: string;
-  creator_id: string;
+  creator_id?: string;
+  name: string;
   status: 'waiting' | 'in_progress' | 'completed' | 'cancelled';
-  max_players: number;
-  current_players: number;
-  winner_id?: string;
+  game_type: string;
+  max_participants: number;
+  current_round: number;
+  timeout_duration: number;
   created_at: string;
   started_at?: string;
-  completed_at?: string;
+  updated_at: string;
+  expires_at?: string;
+  finished_at?: string;
+  // Eski isimler için alias
+  max_players?: number;
+  current_players?: number;
 }
 
 export interface TournamentParticipant {
