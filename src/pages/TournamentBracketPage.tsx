@@ -86,6 +86,85 @@ useEffect(() => {
   }
 }, [tournamentId, matches.length, user, navigate]);
 
+const findAndJoinUserMatch = async () => {
+  if (!user || !tournamentId) return;
+
+  try {
+    console.log('🔍 Kullanıcı maçı aranıyor...');
+
+    // 1. Önce turnuvadaki TÜM maçları al
+    const { data: allMatches, error } = await supabase
+      .from('tournament_matches')
+      .select('*')
+      .eq('tournament_id', tournamentId);
+
+    if (error) {
+      console.error('Maçlar alınamadı:', error);
+      return;
+    }
+
+    // 2. User'ın maçını bul
+    const userMatch = allMatches?.find(match => 
+      match.player1_id === user.id || match.player2_id === user.id
+    );
+
+    if (userMatch) {
+      console.log('🎯 Kullanıcı maçı bulundu:', userMatch.id);
+      navigate(`/game/tournament?match=${userMatch.id}`);
+      return;
+    }
+
+    // 3. Eğer maç yoksa, BOŞ maç ara
+    const emptyMatch = allMatches?.find(match => 
+      match.status === 'pending' && 
+      (match.player1_id === null || match.player2_id === null)
+    );
+
+    if (emptyMatch) {
+      console.log('🎯 Boş maç bulundu, katılıyor...');
+      
+      // Boş slotu doldur
+      const updateField = emptyMatch.player1_id === null ? 'player1_id' : 'player2_id';
+      
+      await supabase
+        .from('tournament_matches')
+        .update({
+          [updateField]: user.id,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', emptyMatch.id);
+
+      navigate(`/game/tournament?match=${emptyMatch.id}`);
+      return;
+    }
+
+    // 4. Hiçbiri yoksa YENİ maç oluştur
+    console.log('🆕 Yeni maç oluşturuluyor...');
+    
+    const { data: newMatch } = await supabase
+      .from('tournament_matches')
+      .insert({
+        tournament_id: tournamentId,
+        round: 1,
+        match_number: (allMatches?.length || 0) + 1,
+        player1_id: user.id,
+        player2_id: `bot_${tournamentId}_${Date.now()}`,
+        status: 'in_progress',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (newMatch) {
+      navigate(`/game/tournament?match=${newMatch.id}`);
+    }
+
+  } catch (error) {
+    console.error('Maç bulma hatası:', error);
+  }
+};
+
   const fetchMatches = async () => {
     try {
       console.log('⚔️ Maçlar alınıyor...');
