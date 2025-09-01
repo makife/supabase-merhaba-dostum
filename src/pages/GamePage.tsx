@@ -383,7 +383,10 @@ const checkAndCreateNextRound = async (tournamentId: string) => {
       const nextRound = currentRound[0].round + 1;
       
       if (nextRound <= 3) { // Finale kadar
-        await createTournamentMatches(tournamentId, nextRound);
+        await supabase.rpc('create_tournament_matches', {
+          p_tournament_id: tournamentId,
+          p_round: nextRound
+        });
       } else {
         // Turnuvayı tamamla
         await supabase
@@ -397,6 +400,38 @@ const checkAndCreateNextRound = async (tournamentId: string) => {
     }
   } catch (error) {
     console.error('Sonraki tur kontrol hatası:', error);
+  }
+};
+
+const createTournamentMatches = async (tournamentId: string, round: number) => {
+  try {
+    // Katılımcıları al
+    const { data: participants } = await supabase
+      .from('tournament_participants')
+      .select('user_id')
+      .eq('tournament_id', tournamentId);
+
+    if (!participants) return;
+
+    // Rastgele sırala
+    const shuffled = [...participants].sort(() => Math.random() - 0.5);
+    const matchCount = shuffled.length / 2;
+
+    // Maçları oluştur
+    for (let i = 0; i < matchCount; i++) {
+      await supabase
+        .from('tournament_matches')
+        .insert({
+          tournament_id: tournamentId,
+          round: round,
+          match_number: i + 1,
+          player1_id: shuffled[i * 2].user_id,
+          player2_id: shuffled[i * 2 + 1].user_id,
+          status: 'pending'
+        } as any);
+    }
+  } catch (error) {
+    console.error('Maç oluşturma hatası:', error);
   }
 };
 
