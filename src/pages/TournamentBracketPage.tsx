@@ -47,6 +47,45 @@ const TournamentBracketPage = () => {
     }
   }, [tournamentId, matches.length]);
 
+useEffect(() => {
+  if (tournamentId) {
+    fetchMatches();
+    
+    // Real-time maç takibi
+    const channel = supabase
+      .channel(`tournament-matches-${tournamentId}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'tournament_matches',
+        filter: `tournament_id=eq.${tournamentId}`
+      }, (payload) => {
+        const updatedMatch = payload.new as any;
+        console.log('🔄 Maç güncellendi:', updatedMatch.status);
+        
+        // Eğer bu maç kullanıcıya aitse ve in_progress olduysa
+        if (user && updatedMatch.status === 'in_progress' && 
+            (updatedMatch.player1_id === user.id || updatedMatch.player2_id === user.id)) {
+          console.log('🚀 Kullanıcı maçı başladı, yönlendiriliyor...');
+          navigate(`/game/tournament?match=${updatedMatch.id}`);
+        }
+        
+        fetchMatches(); // Maçları yenile
+      })
+      .subscribe();
+
+    // 10 saniye sonra tüm maçları otomatik başlat
+    const startTimer = setTimeout(() => {
+      startAllMatches();
+    }, 10000);
+
+    return () => {
+      clearTimeout(startTimer);
+      supabase.removeChannel(channel);
+    };
+  }
+}, [tournamentId, matches.length, user, navigate]);
+
   const fetchMatches = async () => {
     try {
       console.log('⚔️ Maçlar alınıyor...');
