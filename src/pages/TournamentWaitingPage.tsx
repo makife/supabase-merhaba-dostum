@@ -31,26 +31,19 @@ useEffect(() => {
       table: 'tournament_participants',
       filter: `tournament_id=eq.${tournamentId}`
     }, (payload) => {
-      console.log('👥 Yeni katılımcı:', payload.new);
-      fetchParticipants();
-      
-      // Katılımcı sayısını da güncelle
-      if (tournament) {
-        setTournament(prev => prev ? {
-          ...prev,
-          current_round: (prev.current_round || 0) + 1
-        } : prev);
-      }
+      console.log('👥 Yeni katılımcı eklendi:', payload.new);
+      fetchParticipants(); // Katılımcı listesini yenile
     })
     .on('postgres_changes', {
       event: 'UPDATE',
       schema: 'public',
       table: 'tournaments',
       filter: `id=eq.${tournamentId}`
-    }, (payload) => {
+    }, async (payload) => {
       const updatedTournament = payload.new as any;
-      console.log('🔄 Turnuva güncellendi:', updatedTournament);
+      console.log('🔄 Turnuva güncellendi - Status:', updatedTournament.status);
       
+      // Turnuva state'ini güncelle
       setTournament({
         ...updatedTournament,
         status: updatedTournament.status as 'waiting' | 'in_progress' | 'completed' | 'cancelled',
@@ -58,9 +51,14 @@ useEffect(() => {
         current_players: updatedTournament.current_round
       } as Tournament);
       
+      // Eğer turnuva başladıysa, bracket sayfasına yönlendir
       if (updatedTournament.status === 'in_progress') {
-        console.log('🚀 Turnuva başlıyor!');
-        navigate(`/tournament-bracket/${tournamentId}`);
+        console.log('🚀 Turnuva başladı! Yönlendiriliyor...');
+        
+        // 2 saniye bekle ve yönlendir (animasyonlar için)
+        setTimeout(() => {
+          navigate(`/tournament-bracket/${tournamentId}`);
+        }, 2000);
       }
     })
     .subscribe();
@@ -69,7 +67,7 @@ useEffect(() => {
     console.log('🔌 Real-time bağlantı kapatılıyor');
     supabase.removeChannel(channel);
   };
-}, [tournamentId]);
+}, [tournamentId, navigate]);
 
   const fetchTournamentData = async () => {
     try {
@@ -95,30 +93,72 @@ useEffect(() => {
     }
   };
 
- const fetchParticipants = async () => {
+const fetchParticipants = async () => {
   try {
-    // Doğru join sorgusu - profiles tablosu user_id ile değil id ile bağlı
-    const { data, error } = await supabase
+    console.log('👥 Katılımcılar alınıyor...');
+    
+    // Önce sadece temel katılımcı bilgilerini al
+    const { data: participantsData, error } = await supabase
       .from('tournament_participants')
-      .select(`
-        *,
-        profiles!inner (
-          username,
-          avatar_url
-        )
-      `)
-      .eq('tournament_id', tournamentId);
+      .select('*')
+      .eq('tournament_id', tournamentId)
+      .order('joined_at', { ascending: true });
 
     if (error) {
       console.error('Katılımcılar alınamadı:', error);
       return;
     }
 
-    setParticipants(data || []);
+    if (!participantsData) {
+      console.log('Katılımcı bulunamadı');
+      setParticipants([]);
+      return;
+    }
+
+    console.log('📊 Katılımcılar alındı:', participantsData.length);
+
+    // Eğer bot değilse, kullanıcı bilgilerini ayrıca al
+    const participantsWithProfiles = await Promise.all(
+      participantsData.map(async (participant) => {
+        if (participant.is_bot) {
+          return {
+            ...participant,
+            profiles: {
+              username: `Bot ${participant.user_id.split('_').pop()}`,
+              avatar_url: null
+            }
+          };
+        }
+
+        try {
+          // Kullanıcı bilgilerini ayrıca al
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('username, avatar_url')
+            .eq('id', participant.user_id)
+            .single();
+
+          return {
+            ...participant,
+            profiles: profileData || { username: 'Oyuncu', avatar_url: null }
+          };
+        } catch (error) {
+          console.error('Profil bilgisi alınamadı:', error);
+          return {
+            ...participant,
+            profiles: { username: 'Oyuncu', avatar_url: null }
+          };
+        }
+      })
+    );
+
+    setParticipants(participantsWithProfiles);
+    
   } catch (error) {
     console.error('Katılımcılar alınamadı:', error);
   }
 };
+  
   const startCountdown = () => {
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
@@ -134,36 +174,14 @@ useEffect(() => {
     return () => clearInterval(timer);
   };
 
- const startTournament = async () => {
+const startTournament = async () => {
   try {
     console.log('🚀 Turnuva başlatılıyor...');
-    console.log('📊 Mevcut katılımcılar:', participants.length);
-
-    const currentPlayers = participants.length;
-    const neededBots = 8 - currentPlayers;
-
-    console.log('🤖 Gerekli bot sayısı:', neededBots);
-
-    // Botları ekle
-    for (let i = 1; i <= neededBots; i++) {
-      const botId = `bot_${tournamentId}_${i}`;
-      console.log('➕ Bot ekleniyor:', botId);
-      
-      const { error: botError } = await supabase
-        .from('tournament_participants')
-        .insert({
-          tournament_id: tournamentId,
-          user_id: botId,
-          is_bot: true,
-          joined_at: new Date().toISOString()
-        });
-
-      if (botError) {
-        console.error('Bot ekleme hatası:', botError);
-      } else {
-        console.log('✅ Bot eklendi:', botId);
-      }
-    }
+    
+    // Önce tüm katılımcıları tekrar al (botlar eklendikten sonra)
+    await fetchParticipants();
+    
+    console.log('📊 Toplam katılımcılar:', participants.length);
 
     // Turnuva durumunu güncelle
     console.log('🔄 Turnuva durumu güncelleniyor...');
@@ -172,7 +190,8 @@ useEffect(() => {
       .update({
         status: 'in_progress',
         started_at: new Date().toISOString(),
-        current_round: 8 // 8 katılımcı olduğunu belirt
+        current_round: 8, // 8 katılımcı
+        updated_at: new Date().toISOString()
       })
       .eq('id', tournamentId);
 
@@ -187,6 +206,8 @@ useEffect(() => {
     console.log('⚔️ Maçlar oluşturuluyor...');
     await createTournamentMatches();
 
+    // Yönlendirme işlemi artık real-time subscription üzerinden yapılacak
+    
   } catch (error) {
     console.error('Turnuva başlatma hatası:', error);
   }
@@ -289,33 +310,38 @@ useEffect(() => {
             </h3>
             
             <div className="space-y-2">
-              {participants.map((participant, index) => (
-                <div key={participant.id} className="flex items-center p-3 bg-white/5 rounded-lg">
-                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                    {index + 1}
-                  </div>
-                  <div className="ml-3 flex-1">
-                    <p className="text-white font-medium">
-                      {participant.profiles?.username || 'Oyuncu'}
-                    </p>
-                  </div>
-                  {participant.is_bot && (
-                    <Bot className="w-4 h-4 text-gray-400 ml-2" />
-                  )}
-                </div>
-              ))}
+  {participants.map((participant, index) => (
+    <div key={participant.id} className="flex items-center p-3 bg-white/5 rounded-lg">
+      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+        {index + 1}
+      </div>
+      <div className="ml-3 flex-1">
+        <p className="text-white font-medium">
+          {participant.profiles?.username || 
+           (participant.is_bot ? `Bot ${participant.user_id?.split('_').pop()}` : 'Oyuncu')}
+        </p>
+        {participant.user_id === user?.id && (
+          <p className="text-green-400 text-xs">(Siz)</p>
+        )}
+      </div>
+      {participant.is_bot && (
+        <Bot className="w-4 h-4 text-gray-400 ml-2" />
+      )}
+    </div>
+  ))}
 
               {/* Boş slotlar */}
               {Array.from({ length: 8 - participants.length }, (_, i) => (
-                <div key={i} className="flex items-center p-3 bg-white/5 rounded-lg opacity-50">
-                  <div className="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                    {participants.length + i + 1}
-                  </div>
-                  <div className="ml-3 flex-1">
-                    <p className="text-gray-400">Boş Slot</p>
-                  </div>
-                </div>
-              ))}
+    <div key={i} className="flex items-center p-3 bg-white/5 rounded-lg opacity-50">
+      <div className="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+        {participants.length + i + 1}
+      </div>
+      <div className="ml-3 flex-1">
+        <p className="text-gray-400">Boş Slot</p>
+      </div>
+    </div>
+  ))}
+</div>
             </div>
           </CardContent>
         </Card>
