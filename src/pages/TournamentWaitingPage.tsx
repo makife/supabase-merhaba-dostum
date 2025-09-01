@@ -82,25 +82,30 @@ const TournamentWaitingPage = () => {
     }
   };
 
-  const fetchParticipants = async () => {
-    try {
-      const { data } = await supabase
-        .from('tournament_participants')
-        .select(`
-          *,
-          profiles:user_id (
-            username,
-            avatar_url
-          )
-        `)
-        .eq('tournament_id', tournamentId);
+ const fetchParticipants = async () => {
+  try {
+    // Doğru join sorgusu - profiles tablosu user_id ile değil id ile bağlı
+    const { data, error } = await supabase
+      .from('tournament_participants')
+      .select(`
+        *,
+        profiles!inner (
+          username,
+          avatar_url
+        )
+      `)
+      .eq('tournament_id', tournamentId);
 
-      setParticipants(data || []);
-    } catch (error) {
+    if (error) {
       console.error('Katılımcılar alınamadı:', error);
+      return;
     }
-  };
 
+    setParticipants(data || []);
+  } catch (error) {
+    console.error('Katılımcılar alınamadı:', error);
+  }
+};
   const startCountdown = () => {
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
@@ -150,38 +155,77 @@ const TournamentWaitingPage = () => {
     }
   };
 
-  const createTournamentMatches = async () => {
-    if (!tournamentId) return;
+ const createTournamentMatches = async () => {
+  if (!tournamentId) return;
+  
+  try {
+    console.log('🤖 Maçlar oluşturuluyor...');
     
-    try {
-      // Katılımcıları al ve karıştır
-      const { data: allParticipants } = await supabase
-        .from('tournament_participants')
-        .select('user_id')
-        .eq('tournament_id', tournamentId);
+    // Katılımcıları al ve karıştır
+    const { data: allParticipants, error } = await supabase
+      .from('tournament_participants')
+      .select('user_id')
+      .eq('tournament_id', tournamentId);
 
-      if (!allParticipants) return;
-
-      const shuffledParticipants = [...allParticipants].sort(() => Math.random() - 0.5);
-      const matchCount = shuffledParticipants.length / 2;
-
-      // Maçları oluştur
-      for (let i = 0; i < matchCount; i++) {
-        await supabase
-          .from('tournament_matches')
-          .insert({
-            tournament_id: tournamentId,
-            round: 1,
-            match_number: i + 1,
-            player1_id: shuffledParticipants[i * 2].user_id,
-            player2_id: shuffledParticipants[i * 2 + 1].user_id,
-            status: 'pending'
-          } as any);
-      }
-    } catch (error) {
-      console.error('Maç oluşturma hatası:', error);
+    if (error) {
+      console.error('Katılımcılar alınamadı:', error);
+      return;
     }
-  };
+
+    if (!allParticipants || allParticipants.length === 0) {
+      console.error('Katılımcı bulunamadı!');
+      return;
+    }
+
+    console.log('📊 Katılımcılar:', allParticipants);
+
+    // user_id'leri al ve kontrol et
+    const participantIds = allParticipants
+      .map(p => p.user_id)
+      .filter(id => id !== undefined && id !== null);
+
+    if (participantIds.length === 0) {
+      console.error('Geçerli katılımcı ID bulunamadı!');
+      return;
+    }
+
+    const shuffledParticipants = [...participantIds].sort(() => Math.random() - 0.5);
+    const matchCount = Math.floor(shuffledParticipants.length / 2);
+
+    console.log('🎯 Oluşturulacak maç sayısı:', matchCount);
+
+    // Maçları oluştur
+    for (let i = 0; i < matchCount; i++) {
+      const player1_id = shuffledParticipants[i * 2];
+      const player2_id = shuffledParticipants[i * 2 + 1];
+
+      console.log(`⚔️ Maç ${i + 1}:`, player1_id, 'vs', player2_id);
+
+      const { error: matchError } = await supabase
+        .from('tournament_matches')
+        .insert({
+          tournament_id: tournamentId,
+          round: 1,
+          match_number: i + 1,
+          player1_id: player1_id,
+          player2_id: player2_id,
+          status: 'pending'
+        });
+
+      if (matchError) {
+        console.error('Maç oluşturma hatası:', matchError);
+      } else {
+        console.log('✅ Maç oluşturuldu:', i + 1);
+      }
+    }
+
+    console.log('🎉 Tüm maçlar oluşturuldu!');
+
+  } catch (error) {
+    console.error('Maç oluşturma hatası:', error);
+  }
+};
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 to-blue-900 p-4">
       <div className="max-w-2xl mx-auto">
