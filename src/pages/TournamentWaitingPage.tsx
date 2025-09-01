@@ -42,9 +42,10 @@ const TournamentWaitingPage = () => {
         const updatedTournament = payload.new as any;
         setTournament({
           ...updatedTournament,
+          status: updatedTournament.status as 'waiting' | 'in_progress' | 'completed' | 'cancelled',
           max_players: updatedTournament.max_participants,
           current_players: updatedTournament.current_round
-        });
+        } as Tournament);
         
         if (updatedTournament.status === 'in_progress') {
           navigate(`/tournament-bracket/${tournamentId}`);
@@ -69,9 +70,10 @@ const TournamentWaitingPage = () => {
       if (tournamentData) {
         setTournament({
           ...tournamentData,
+          status: tournamentData.status as 'waiting' | 'in_progress' | 'completed' | 'cancelled',
           max_players: tournamentData.max_participants,
           current_players: tournamentData.current_round
-        });
+        } as Tournament);
       }
       
       fetchParticipants();
@@ -128,7 +130,7 @@ const TournamentWaitingPage = () => {
             user_id: `bot_${tournamentId}_${i}`,
             is_bot: true,
             joined_at: new Date().toISOString()
-          });
+          } as any);
       }
 
       // Turnuva durumunu güncelle
@@ -148,38 +150,38 @@ const TournamentWaitingPage = () => {
     }
   };
 
- const createTournamentMatches = async (tournamentId: string, round: number) => {
-  try {
-    // Katılımcıları al
-    const { data: participants } = await supabase
-      .from('tournament_participants')
-      .select('user_id')
-      .eq('tournament_id', tournamentId);
+  const createTournamentMatches = async () => {
+    if (!tournamentId) return;
+    
+    try {
+      // Katılımcıları al ve karıştır
+      const { data: allParticipants } = await supabase
+        .from('tournament_participants')
+        .select('user_id')
+        .eq('tournament_id', tournamentId);
 
-    if (!participants) return;
+      if (!allParticipants) return;
 
-    // Rastgele sırala
-    const shuffled = [...participants].sort(() => Math.random() - 0.5);
-    const matchCount = shuffled.length / 2;
+      const shuffledParticipants = [...allParticipants].sort(() => Math.random() - 0.5);
+      const matchCount = shuffledParticipants.length / 2;
 
-    // Maçları oluştur
-    for (let i = 0; i < matchCount; i++) {
-      await supabase
-        .from('tournament_matches')
-        .insert({
-          tournament_id: tournamentId,
-          round: round,
-          match_number: i + 1,
-          player1_id: shuffled[i * 2].user_id,
-          player2_id: shuffled[i * 2 + 1].user_id,
-          status: 'pending'
-        });
+      // Maçları oluştur
+      for (let i = 0; i < matchCount; i++) {
+        await supabase
+          .from('tournament_matches')
+          .insert({
+            tournament_id: tournamentId,
+            round: 1,
+            match_number: i + 1,
+            player1_id: shuffledParticipants[i * 2].user_id,
+            player2_id: shuffledParticipants[i * 2 + 1].user_id,
+            status: 'pending'
+          } as any);
+      }
+    } catch (error) {
+      console.error('Maç oluşturma hatası:', error);
     }
-  } catch (error) {
-    console.error('Maç oluşturma hatası:', error);
-  }
-};
-
+  };
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 to-blue-900 p-4">
       <div className="max-w-2xl mx-auto">
