@@ -18,12 +18,13 @@ import GamePage from "@/pages/GamePage";
 import ProfilePage from "@/pages/ProfilePage";
 import SettingsPage from "@/pages/SettingsPage";
 import MarketPage from "@/pages/MarketPage";
-import TournamentPage from "@/pages/TournamentPage";
 import TestMatchmakingPage from "@/pages/TestMatchmakingPage";
 import NotFound from "./pages/NotFound";
 import LeaderboardPage from "@/pages/LeaderboardPage";
-import TournamentMatchPage from './pages/TournamentMatchPage';
 import ChatPage from './pages/ChatPage';
+import TournamentPage from './pages/TournamentPage';
+import TournamentWaitingPage from './pages/TournamentWaitingPage';
+import TournamentBracketPage from './pages/TournamentBracketPage';
 
 const queryClient = new QueryClient();
 
