@@ -111,10 +111,8 @@ const handleJoinTournament = async (tournamentId: string) => {
       return;
     }
 
-    // Katılımcı sayısını güncelle
-    await supabase.rpc('increment_tournament_participants', {
-      tournament_id: tournamentId
-    });
+    // Katılımcı sayısını güncellemek için turnuva verilerini yenile
+    await fetchActiveTournaments();
 
     navigate(`/tournament-waiting/${tournamentId}`);
 
