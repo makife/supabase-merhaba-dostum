@@ -212,6 +212,6 @@ return (
     </div>
   </div>
 );
-}
+};
 
 export default TournamentPage;
