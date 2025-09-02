@@ -184,47 +184,43 @@ const TournamentBracketPage = () => {
   }
 };
 
-  const startAllMatches = async () => {
-    if (!tournamentId) return;
+ const startAllMatches = async () => {
+  if (!tournamentId) return;
 
-    try {
-      console.log('🎮 Tüm maçlar başlatılıyor...');
-      
-      // Tüm maçları "in_progress" yap
-      const { error: updateError } = await supabase
-        .from('tournament_matches')
-        .update({ 
-          status: 'in_progress',
-          updated_at: new Date().toISOString()
-        })
-        .eq('tournament_id', tournamentId)
-        .eq('status', 'pending');
+  try {
+    console.log('🎮 Tüm maçlar başlatılıyor...');
+    
+    // Maç durumlarını güncelle
+    const { error: updateError } = await supabase
+      .from('tournament_matches')
+      .update({ 
+        status: 'in_progress',
+        updated_at: new Date().toISOString()
+      })
+      .eq('tournament_id', tournamentId)
+      .eq('status', 'pending');
 
-      if (updateError) {
-        console.error('Maçlar başlatılamadı:', updateError);
-        return;
-      }
-
-      console.log('✅ Tüm maçlar başlatıldı!');
-      
-      // Kullanıcı maçını kontrol et
-      if (user && userMatchId) {
-        console.log('🎯 Kullanıcı maçı var, yönlendiriliyor:', userMatchId);
-        
-        // DÜZELTME: 2 saniye bekle ve yönlendir
-        setTimeout(() => {
-          navigate(`/game?match=${userMatchId}&tournament=${tournamentId}`);
-        }, 2000);
-      } else {
-        // Bot maçlarını başlat
-        await startBotMatches();
-      }
-
-    } catch (error) {
-      console.error('Maç başlatma hatası:', error);
+    if (updateError) {
+      console.error('Maçlar başlatılamadı:', updateError);
+      return;
     }
-  };
 
+    console.log('✅ Tüm maçlar başlatıldı!');
+    
+    // DÜZELTME: Kullanıcı maçı varsa ANINDA yönlendir
+    if (user && userMatchId) {
+      console.log('🎯 Anında kullanıcı maçına yönlendiriliyor:', userMatchId);
+      navigate(`/game?match=${userMatchId}&tournament=${tournamentId}`);
+      return; // Hemen çık
+    }
+    
+    // Bot maçlarını başlat
+    await startBotMatches();
+
+  } catch (error) {
+    console.error('Maç başlatma hatası:', error);
+  }
+};
   const startBotMatches = async () => {
     const botMatches = matches.filter(m => 
       m.status === 'in_progress' && 
