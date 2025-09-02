@@ -356,45 +356,41 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
     console.log('✅ Turnuva maçı tamamlandı');
 
     // EKSIK: Sonraki turu kontrol et
-    await checkAndCreateNextRound(tournamentMatch.tournament_id);
+    await checkNextRoundCreation(tournamentMatch.tournament_id);
 
   } catch (error) {
     console.error('Turnuva maç bitiş hatası:', error);
   }
 };
 
-const checkAndCreateNextRound = async (tournamentId: string) => {
+const checkNextRoundCreation = async (tournamentId: string) => {
   try {
-    // Mevcut turdaki tüm maçlar tamamlandı mı?
-    const { data: incompleteMatches } = await supabase
+    // Bu turdaki tüm maçlar bitti mi kontrol et
+    const { data: remainingMatches } = await supabase
       .from('tournament_matches')
       .select('id')
       .eq('tournament_id', tournamentId)
       .eq('status', 'pending')
       .limit(1);
 
-    if (incompleteMatches.length === 0) {
-      // Bir sonraki turu başlat
-      const { data: currentRound } = await supabase
-        .from('tournament_matches')
-        .select('round')
-        .eq('tournament_id', tournamentId)
-        .order('round', { ascending: false })
-        .limit(1);
-
-      const nextRound = currentRound[0].round + 1;
+    if (remainingMatches && remainingMatches.length === 0) {
+      console.log('🏆 Turdaki tüm maçlar bitti, sonraki tur oluşturuluyor...');
       
-      if (nextRound <= 3) { // Finale kadar
-        await createTournamentMatches(tournamentId, nextRound);
-      } else {
-        // Turnuvayı tamamla
-        await supabase
-          .from('tournaments')
-          .update({
-            status: 'completed',
-            completed_at: new Date().toISOString()
-          })
-          .eq('id', tournamentId);
+      // Kazananları al
+      const { data: winners } = await supabase
+        .from('tournament_matches')
+        .select('winner_id, round')
+        .eq('tournament_id', tournamentId)
+        .eq('status', 'completed')
+        .order('round', { ascending: false });
+
+      if (winners && winners.length > 1) {
+        const currentRound = Math.max(...winners.map(w => w.round));
+        const nextRound = currentRound + 1;
+        
+        if (nextRound <= 3) { // Final'e kadar
+          await createNextRoundMatches(tournamentId, nextRound, winners);
+        }
       }
     }
   } catch (error) {
