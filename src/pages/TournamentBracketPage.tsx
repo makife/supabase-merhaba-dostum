@@ -283,49 +283,60 @@ const TournamentBracketPage = () => {
     }
   };
 
-  const startBotMatches = async () => {
-    // Kullanıcının dahil olmadığı maçları bul (pure bot maçları)
-    const botMatches = matches.filter(m => {
-      if (m.status !== 'in_progress') return false;
-      
+ const startBotMatches = async () => {
+  try {
+    console.log('🤖 Bot maçları başlatılıyor...');
+    
+    // Tüm beklemedeki bot maçlarını al
+    const { data: pendingMatches } = await supabase
+      .from('tournament_matches')
+      .select('*')
+      .eq('tournament_id', tournamentId)
+      .eq('status', 'pending');
+    
+    if (!pendingMatches) return;
+    
+    // Kullanıcının maçını hariç tut
+    const botMatches = pendingMatches.filter(match => {
       const userIdString = String(user?.id);
-      const isUserMatch = String(m.player1_id) === userIdString || String(m.player2_id) === userIdString;
-      
-      // Kullanıcının maçı değilse bot maçıdır
-      return !isUserMatch;
+      return String(match.player1_id) !== userIdString && 
+             String(match.player2_id) !== userIdString;
     });
     
-    console.log('🤖 Bot maçları başlatılıyor:', botMatches.length);
-    console.log('🤖 Bot maçları detayı:', botMatches.map(m => ({
-      id: m.id.slice(-8),
-      player1: String(m.player1_id).slice(-8),
-      player2: String(m.player2_id).slice(-8),
-      isP1Bot: String(m.player1_id).startsWith('bot_'),
-      isP2Bot: String(m.player2_id).startsWith('bot_')
-    })));
-
+    console.log(`🤖 ${botMatches.length} bot maçı bulundu`);
+    
     for (const match of botMatches) {
-      // Bot maçlarını 5-15 saniye arasında bitir (hızlı)
+      // Bot maçlarını hemen başlat ve bitir
       setTimeout(async () => {
-        const player1Score = Math.floor(Math.random() * 30) + 15; // 15-45
-        const player2Score = Math.floor(Math.random() * 30) + 15; // 15-45
-        const winnerId = player1Score > player2Score ? match.player1_id : match.player2_id;
-
-        await supabase
-          .from('tournament_matches')
-          .update({
-            status: 'completed',
-            player1_score: player1Score,
-            player2_score: player2Score,
-            winner_id: winnerId,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', match.id);
+        try {
+          const player1Score = Math.floor(Math.random() * 30) + 15;
+          const player2Score = Math.floor(Math.random() * 30) + 15;
+          const winnerId = player1Score > player2Score ? match.player1_id : match.player2_id;
           
-        console.log(`✅ Bot maçı tamamlandı: ${player1Score}-${player2Score} (Match: ${match.id.slice(-8)})`);
-      }, Math.random() * 10000 + 5000); // 5-15 saniye (bot maçları hızlı biter)
+          await supabase
+            .from('tournament_matches')
+            .update({
+              status: 'completed',
+              player1_score: player1Score,
+              player2_score: player2Score,
+              winner_id: winnerId,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', match.id);
+            
+          console.log(`✅ Bot maçı tamamlandı: ${match.id.slice(-8)}`);
+          
+          // Sonraki turu kontrol et
+          checkNextRoundCreation(tournamentId);
+        } catch (error) {
+          console.error('Bot maçı tamamlama hatası:', error);
+        }
+      }, Math.random() * 5000 + 2000); // 2-7 saniye arası
     }
-  };
+  } catch (error) {
+    console.error('Bot maçları başlatma hatası:', error);
+  }
+};
 
   const getRoundName = (round: number) => {
     switch (round) {
