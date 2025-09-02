@@ -373,6 +373,71 @@ const checkNextRoundCreation = async (tournamentId: string) => {
   }
 };
 
+const createNextRoundMatches = async (tournamentId: string, nextRound: number) => {
+  try {
+    console.log(`🏆 ${nextRound}. tur maçları oluşturuluyor...`);
+    
+    // Önceki turun kazananlarını al
+    const { data: winners } = await supabase
+      .from('tournament_matches')
+      .select('winner_id')
+      .eq('tournament_id', tournamentId)
+      .eq('round', nextRound - 1)
+      .eq('status', 'completed')
+      .not('winner_id', 'is', null);
+
+    if (!winners || winners.length === 0) {
+      console.error('Kazanan bulunamadı');
+      return;
+    }
+
+    // Kazananları karıştır
+    const winnerIds = winners.map(w => w.winner_id);
+    const shuffledWinners = [...winnerIds].sort(() => Math.random() - 0.5);
+    
+    // Yeni tur maçlarını oluştur
+    const newMatches = [];
+    for (let i = 0; i < shuffledWinners.length / 2; i++) {
+      const player1Id = shuffledWinners[i * 2];
+      const player2Id = shuffledWinners[i * 2 + 1];
+
+      newMatches.push({
+        tournament_id: tournamentId,
+        round: nextRound,
+        match_number: i + 1,
+        player1_id: player1Id,
+        player2_id: player2Id,
+        status: 'pending',
+        created_at: new Date().toISOString()
+      });
+    }
+
+    // Database'e kaydet
+    const { error } = await supabase
+      .from('tournament_matches')
+      .insert(newMatches);
+
+    if (error) {
+      console.error('Yeni tur maçları kaydedilemedi:', error);
+      return;
+    }
+
+    console.log(`✅ ${nextRound}. tur için ${newMatches.length} maç oluşturuldu`);
+    
+    // Turnuva bilgisini güncelle
+    await supabase
+      .from('tournaments')
+      .update({ 
+        current_round: nextRound,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', tournamentId);
+    
+  } catch (error) {
+    console.error('createNextRoundMatches hatası:', error);
+  }
+};
+  
   const getRoundName = (round: number) => {
     switch (round) {
       case 1: return 'Çeyrek Final';
