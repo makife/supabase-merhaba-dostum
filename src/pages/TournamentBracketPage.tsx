@@ -184,6 +184,95 @@ useEffect(() => {
   }
 };
 
+const checkAndCreateNextRound = async (tournamentId: string) => {
+  try {
+    // Mevcut turdaki tüm maçlar tamamlandı mı?
+    const { data: incompleteMatches } = await supabase
+      .from('tournament_matches')
+      .select('id')
+      .eq('tournament_id', tournamentId)
+      .eq('status', 'pending')
+      .limit(1);
+
+    if (incompleteMatches.length === 0) {
+      // Bir sonraki turu başlat
+      const { data: currentRound } = await supabase
+        .from('tournament_matches')
+        .select('round')
+        .eq('tournament_id', tournamentId)
+        .order('round', { ascending: false })
+        .limit(1);
+
+      const nextRound = currentRound[0].round + 1;
+      
+      if (nextRound <= 3) { // Finale kadar
+        await createTournamentMatches(tournamentId, nextRound);
+        
+        // YENİ: Sonraki tur maçları oluşturulduktan sonra kullanıcıyı bracket sayfasına yönlendir
+        navigate(`/tournament-bracket/${tournamentId}`);
+      } else {
+        // Turnuvayı tamamla
+        await supabase
+          .from('tournaments')
+          .update({
+            status: 'completed',
+            completed_at: new Date().toISOString()
+          })
+          .eq('id', tournamentId);
+          
+        // YENİ: Turnuva tamamlandığında ana sayfaya yönlendir
+        navigate('/');
+      }
+    }
+  } catch (error) {
+    console.error('Sonraki tur kontrol hatası:', error);
+  }
+};
+
+const createTournamentMatches = async (tournamentId: string, round: number) => {
+  try {
+    // Önceki turun kazananlarını al
+    const { data: winners } = await supabase
+      .from('tournament_matches')
+      .select('winner_id')
+      .eq('tournament_id', tournamentId)
+      .eq('round', round - 1)
+      .eq('status', 'completed');
+
+    if (!winners || winners.length === 0) {
+      console.error('Önceki tur kazananları bulunamadı');
+      return;
+    }
+
+    // Kazananları rastgele sırala
+    const winnerIds = winners.map(w => w.winner_id).filter(id => id !== null);
+    const shuffled = [...winnerIds].sort(() => Math.random() - 0.5);
+    const matchCount = Math.ceil(shuffled.length / 2);
+
+    // Yeni tur maçlarını oluştur
+    for (let i = 0; i < matchCount; i++) {
+      const player1Id = shuffled[i * 2];
+      const player2Id = shuffled[i * 2 + 1] || null; // Eğer tek sayıda kazanan varsa
+
+      await supabase
+        .from('tournament_matches')
+        .insert({
+          tournament_id: tournamentId,
+          round: round,
+          match_number: i + 1,
+          player1_id: player1Id,
+          player2_id: player2Id,
+          status: 'pending'
+        });
+    }
+
+    console.log(`✅ Round ${round} maçları oluşturuldu`);
+
+  } catch (error) {
+    console.error('Maç oluşturma hatası:', error);
+  }
+};
+  
  const startAllMatches = async () => {
   if (!tournamentId) return;
 
