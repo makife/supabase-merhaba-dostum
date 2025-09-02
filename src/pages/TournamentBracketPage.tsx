@@ -218,7 +218,6 @@ const TournamentBracketPage = () => {
       } else {
         // Bot maçlarını başlat
         await startBotMatches();
-        startRealMatches(); 
       }
 
     } catch (error) {
