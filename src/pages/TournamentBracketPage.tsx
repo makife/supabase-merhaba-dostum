@@ -338,6 +338,41 @@ const TournamentBracketPage = () => {
   }
 };
 
+const checkNextRoundCreation = async (tournamentId: string) => {
+  try {
+    // Bu turdaki tüm maçlar bitti mi kontrol et
+    const { data: remainingMatches } = await supabase
+      .from('tournament_matches')
+      .select('id')
+      .eq('tournament_id', tournamentId)
+      .eq('status', 'pending')
+      .limit(1);
+
+    if (remainingMatches && remainingMatches.length === 0) {
+      console.log('🏆 Turdaki tüm maçlar bitti, sonraki tur oluşturuluyor...');
+      
+      // Kazananları al
+      const { data: winners } = await supabase
+        .from('tournament_matches')
+        .select('winner_id, round')
+        .eq('tournament_id', tournamentId)
+        .eq('status', 'completed')
+        .order('round', { ascending: false });
+
+      if (winners && winners.length > 1) {
+        const currentRound = Math.max(...winners.map(w => w.round));
+        const nextRound = currentRound + 1;
+        
+        if (nextRound <= 3) { // Final'e kadar
+          await createNextRoundMatches(tournamentId, nextRound, winners);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Sonraki tur kontrol hatası:', error);
+  }
+};
+
   const getRoundName = (round: number) => {
     switch (round) {
       case 1: return 'Çeyrek Final';
