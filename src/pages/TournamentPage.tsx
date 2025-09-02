@@ -133,8 +133,21 @@ const handleJoinTournament = async (tournamentId: string) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 to-blue-900 p-4">
-      <div className="max-w-4xl mx-auto">
+    return (
+  <div className="relative min-h-screen bg-gradient-to-br from-purple-900 to-blue-900 p-4">
+    
+    {/* Sol üstteki buton */}
+    <div className="absolute top-4 left-4 z-50">
+      <Button
+        onClick={() => navigate('/')}
+        className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
+      >
+        <Home className="w-4 h-4 mr-2" />
+        Çıkış
+      </Button>
+    </div>
+
+    <div className="max-w-4xl mx-auto">
         {/* Başlık */}
         <div className="text-center mb-8">
           <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
