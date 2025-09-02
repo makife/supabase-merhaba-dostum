@@ -24,28 +24,24 @@ const TournamentBracketPage = () => {
     const channel = supabase
       .channel(`tournament-matches-${tournamentId}`)
       .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'tournament_matches',
-        filter: `tournament_id=eq.${tournamentId}`
-      }, (payload) => {
-        const updatedMatch = payload.new as any;
-        console.log('🔄 Maç güncellendi:', updatedMatch.status);
-        
-        // TIP DÜZELTMESİ
-        const userIdString = String(user?.id);
-        const isUserMatch = user && (
-          String(updatedMatch.player1_id) === userIdString || 
-          String(updatedMatch.player2_id) === userIdString
-        );
-        
-        if (isUserMatch && updatedMatch.status === 'in_progress') {
-          console.log('🚀 Kullanıcı maçı başladı, yönlendiriliyor...');
-          navigate(`/game?match=${updatedMatch.id}&tournament=${tournamentId}`);
-        }
-        
-        fetchMatches();
-      })
+  // ...
+}, (payload) => {
+  const updatedMatch = payload.new as any;
+  
+  const userIdString = String(user?.id);
+  const isUserMatch = user && (
+    String(updatedMatch.player1_id) === userIdString || 
+    String(updatedMatch.player2_id) === userIdString
+  );
+  
+  if (isUserMatch && updatedMatch.status === 'in_progress') {
+    console.log('🚀 Anında yönlendiriliyor...');
+    navigate(`/game?match=${updatedMatch.id}&tournament=${tournamentId}`);
+    // setTimeout kaldırıldı!
+  }
+  
+  fetchMatches();
+})
       .subscribe();
 
     const startTimer = setTimeout(() => {
