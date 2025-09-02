@@ -83,7 +83,7 @@ useEffect(() => {
     // Güvenli geri sayım - kapanış değişkenlerine takılmadan çalışır
     const cleanup = startCountdown();
     return cleanup;
-  }, [tournamentId]);
+  }, [tournamentId, timeLeft]);
 
   const fetchParticipants = async () => {
     try {
