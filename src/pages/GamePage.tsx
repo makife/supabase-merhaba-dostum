@@ -355,6 +355,9 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
 
     console.log('✅ Turnuva maçı tamamlandı');
 
+    // EKSIK: Sonraki turu kontrol et
+    await checkAndCreateNextRound(tournamentMatch.tournament_id);
+
   } catch (error) {
     console.error('Turnuva maç bitiş hatası:', error);
   }
