@@ -491,15 +491,15 @@ const showTournamentEndCard = async (isWinner: boolean, userScore: number, oppon
 
     if (isWinner) {
       if (tournament.current_round === 1) {
-        message = '🎉 Tebrikler! Yarı finale çıkmaya hak kazandınız. Turnuva sayfasına yönlendiriliyorsunuz...';
+        message = '🎉 Tebrikler! Yarı finale çıkmaya hak kazandınız.';
       } else if (tournament.current_round === 2) {
-        message = '🔥 Muhteşem! Finale hak kazandınız. Turnuva sayfasına yönlendiriliyorsunuz...';
+        message = '🔥 Muhteşem! Finale hak kazandınız.';
       } else if (tournament.current_round === 3) {
         message = '👑 Tebrikler! TURNUVA ŞAMPİYONU OLDUNUZ!';
         buttonText = 'Ana Sayfaya Dön';
       }
     } else {
-      message = '😢 Maalesef elendınız. Turnuva sayfasına yönlendiriliyorsunız...';
+      message = '😢 Maalesef elendiniz.';
     }
 
     // Custom modal/toast göster
@@ -512,64 +512,41 @@ const showTournamentEndCard = async (isWinner: boolean, userScore: number, oppon
         <div class="text-sm text-gray-600 mb-6">
           Skor: ${userScore} - ${opponentScore}
         </div>
-        ${tournament.current_round === 3 && isWinner ? `
-          <div class="space-y-2">
-            <button id="tournament-btn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded font-medium">
-              Turnuva Sayfasına Dön
-            </button>
-            <button id="home-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded font-medium">
-              Ana Sayfaya Dön
-            </button>
-          </div>
-        ` : `
-          <button id="continue-btn" class="w-full bg-primary hover:bg-primary/80 text-white px-4 py-2 rounded font-medium">
-            ${buttonText}
-          </button>
-        `}
+        <button id="tournament-btn" class="w-full bg-primary hover:bg-primary/80 text-white px-4 py-2 rounded font-medium">
+          ${buttonText}
+        </button>
       </div>
     `;
     
     document.body.appendChild(modalDiv);
 
-    // Button event listeners
-    const continueBtn = modalDiv.querySelector('#continue-btn');
+    // Button event listener
     const tournamentBtn = modalDiv.querySelector('#tournament-btn');
-    const homeBtn = modalDiv.querySelector('#home-btn');
-
-    if (continueBtn) {
-      continueBtn.addEventListener('click', () => {
+    
+    if (tournamentBtn) {
+      tournamentBtn.addEventListener('click', () => {
         document.body.removeChild(modalDiv);
         if (tournament.current_round === 3 && isWinner) {
           navigate('/');
         } else {
-          navigate('/tournament');
+          // YENİ: Doğrudan turnuva bracket sayfasına yönlendir
+          navigate(`/tournament-bracket/${tournamentId}`);
         }
       });
     }
 
-    if (tournamentBtn) {
-      tournamentBtn.addEventListener('click', () => {
+    // Otomatik yönlendirme (3 saniye sonra)
+    setTimeout(() => {
+      if (document.body.contains(modalDiv)) {
         document.body.removeChild(modalDiv);
-        navigate('/tournament');
-      });
-    }
-
-    if (homeBtn) {
-      homeBtn.addEventListener('click', () => {
-        document.body.removeChild(modalDiv);
+      }
+      if (tournament.current_round === 3 && isWinner) {
         navigate('/');
-      });
-    }
-
-    // Otomatik yönlendirme (şampiyon değilse)
-    if (!(tournament.current_round === 3 && isWinner)) {
-      setTimeout(() => {
-        if (document.body.contains(modalDiv)) {
-          document.body.removeChild(modalDiv);
-        }
-        navigate('/tournament');
-      }, 5000);
-    }
+      } else {
+        // YENİ: Doğrudan turnuva bracket sayfasına yönlendir
+        navigate(`/tournament-bracket/${tournamentId}`);
+      }
+    }, 3000);
 
   } catch (error) {
     console.error('❌ Turnuva bitiş kartı hatası:', error);
