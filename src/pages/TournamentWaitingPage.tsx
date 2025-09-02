@@ -15,6 +15,8 @@ const TournamentWaitingPage = () => {
   const [participants, setParticipants] = useState<TournamentParticipant[]>([]);
   const [timeLeft, setTimeLeft] = useState(15);
   const [tournament, setTournament] = useState<Tournament | null>(null);
+  const [realPlayerCount, setRealPlayerCount] = useState(1); 
+  const [totalParticipants, setTotalParticipants] = useState(1);
 
 useEffect(() => {
   if (!tournamentId) return;
@@ -85,31 +87,26 @@ useEffect(() => {
     return cleanup;
   }, [tournamentId, timeLeft]);
 
-  const fetchParticipants = async () => {
+ const fetchParticipants = async () => {
     try {
-      console.log('👥 Katılımcılar alınıyor...');
-      
-      // Önce sadece temel katılımcı bilgilerini al
       const { data: participantsData, error } = await supabase
         .from('tournament_participants')
         .select('*')
         .eq('tournament_id', tournamentId)
         .order('joined_at', { ascending: true });
 
-      if (error) {
-        console.error('Katılımcılar alınamadı:', error);
-        return;
-      }
+      if (error || !participantsData) return;
 
-      if (!participantsData) {
-        console.log('Katılımcı bulunamadı');
-        setParticipants([]);
-        return;
-      }
-
-      console.log('📊 Katılımcılar alındı:', participantsData.length);
-
-      // Eğer bot değilse, kullanıcı bilgilerini ayrıca al
+      // Gerçek oyuncu sayısını hesapla
+      const realPlayers = participantsData.filter(p => !p.is_bot);
+      const totalPlayers = participantsData.length;
+      
+      setRealPlayerCount(realPlayers.length);
+      setTotalParticipants(totalPlayers);
+      
+      console.log(`👥 Gerçek oyuncu: ${realPlayers.length}, Toplam: ${totalPlayers}`);
+      
+      // Oyuncu bilgilerini yükle
       const participantsWithProfiles = await Promise.all(
         participantsData.map(async (participant) => {
           if (participant.is_bot) {
@@ -122,32 +119,23 @@ useEffect(() => {
             };
           }
 
-          try {
-            // Kullanıcı bilgilerini ayrıca al
-            const { data: profileData } = await supabase
-              .from('profiles')
-              .select('username, avatar_url')
-              .eq('id', participant.user_id)
-              .single();
+          // Gerçek oyuncu profili yükle
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('username, avatar_url')
+            .eq('id', participant.user_id)
+            .single();
 
-            return {
-              ...participant,
-              profiles: profileData || { username: 'Oyuncu', avatar_url: null }
-            };
-          } catch (error) {
-            console.error('Profil bilgisi alınamadı:', error);
-            return {
-              ...participant,
-              profiles: { username: 'Oyuncu', avatar_url: null }
-            };
-          }
+          return {
+            ...participant,
+            profiles: profileData || { username: 'Oyuncu', avatar_url: null }
+          };
         })
       );
 
       setParticipants(participantsWithProfiles);
-      
     } catch (error) {
-      console.error('Katılımcılar alınamadı:', error);
+      console.error('Katılımcı yükleme hatası:', error);
     }
   };
 
@@ -224,49 +212,102 @@ const createTournamentMatches = async () => {
           <CardContent className="p-6 text-center">
             <Clock className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-white mb-2">Turnuva Başlıyor!</h2>
+            
             <div className="text-4xl font-bold text-yellow-400 mb-4">
               {timeLeft}s
             </div>
-            <p className="text-gray-300">
-              {participants.length}/8 katılımcı bekleniyor...
-            </p>
+            
+            {/* Gerçek oyuncu odaklı mesaj */}
+            <div className="space-y-2">
+              <p className="text-green-300 font-bold">
+                🎯 {realPlayerCount} Gerçek Oyuncu Katıldı
+              </p>
+              
+              {realPlayerCount < 8 && (
+                <p className="text-gray-300 text-sm">
+                  {8 - realPlayerCount} eksik oyuncu botlarla doldurulacak
+                </p>
+              )}
+              
+              {realPlayerCount >= 4 && (
+                <p className="text-green-400 text-sm">
+                  ✅ Yeterli oyuncu var, harika bir turnuva olacak!
+                </p>
+              )}
+              
+              {realPlayerCount === 8 && (
+                <p className="text-yellow-300 text-sm font-bold">
+                  🔥 TAM KADRO! 8 gerçek oyunculu turnuva
+                </p>
+              )}
+            </div>
           </CardContent>
         </Card>
 
         {/* Katılımcı Listesi */}
         <Card className="bg-white/10 backdrop-blur-md border-white/20">
           <CardContent className="p-6">
-            <h3 className="text-lg font-bold text-white mb-4 flex items-center">
-              <Users className="w-5 h-5 mr-2" />
-              Katılımcılar ({participants.length}/8)
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-white flex items-center">
+                <Users className="w-5 h-5 mr-2" />
+                Katılımcılar
+              </h3>
+              <div className="text-sm">
+                <span className="text-green-400 font-bold">{realPlayerCount} Gerçek</span>
+                {totalParticipants - realPlayerCount > 0 && (
+                  <>
+                    <span className="text-gray-400 mx-1">+</span>
+                    <span className="text-gray-400">{totalParticipants - realPlayerCount} Bot</span>
+                  </>
+                )}
+              </div>
+            </div>
             
             <div className="space-y-2">
-              {participants.map((participant, index) => (
-                <div key={participant.id} className="flex items-center p-3 bg-white/5 rounded-lg">
-                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+              {/* Gerçek oyuncuları önce göster */}
+              {participants
+                .filter(p => !p.is_bot)
+                .map((participant, index) => (
+                <div key={participant.id} className="flex items-center p-3 bg-green-500/10 rounded-lg border border-green-500/20">
+                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
                     {index + 1}
                   </div>
                   <div className="ml-3 flex-1">
                     <p className="text-white font-medium">
-                      {participant.profiles?.username || 
-                      (participant.is_bot ? `Bot ${participant.user_id?.split('_').pop()}` : 'Oyuncu')}
+                      {participant.profiles?.username || 'Oyuncu'}
                     </p>
                     {participant.user_id === user?.id && (
-                      <p className="text-green-400 text-xs">(Siz)</p>
+                      <p className="text-green-400 text-xs font-bold">(Siz)</p>
                     )}
                   </div>
-                  {participant.is_bot && (
-                    <Bot className="w-4 h-4 text-gray-400 ml-2" />
-                  )}
+                  <div className="text-green-400 text-xs font-medium">
+                    GERÇEK OYUNCU
+                  </div>
+                </div>
+              ))}
+
+              {/* Botları sonra göster */}
+              {participants
+                .filter(p => p.is_bot)
+                .map((participant, index) => (
+                <div key={participant.id} className="flex items-center p-3 bg-gray-500/10 rounded-lg border border-gray-500/20">
+                  <div className="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                    {realPlayerCount + index + 1}
+                  </div>
+                  <div className="ml-3 flex-1">
+                    <p className="text-gray-300">
+                      {participant.profiles?.username || 'Bot'}
+                    </p>
+                  </div>
+                  <Bot className="w-4 h-4 text-gray-400" />
                 </div>
               ))}
 
               {/* Boş slotlar */}
-              {Array.from({ length: 8 - participants.length }, (_, i) => (
+              {Array.from({ length: 8 - totalParticipants }, (_, i) => (
                 <div key={i} className="flex items-center p-3 bg-white/5 rounded-lg opacity-50">
                   <div className="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                    {participants.length + i + 1}
+                    {totalParticipants + i + 1}
                   </div>
                   <div className="ml-3 flex-1">
                     <p className="text-gray-400">Boş Slot</p>
