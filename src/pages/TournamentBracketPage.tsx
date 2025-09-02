@@ -283,156 +283,49 @@ const TournamentBracketPage = () => {
     }
   };
 
- const startBotMatches = async () => {
-  try {
-    console.log('🤖 Bot maçları başlatılıyor...');
-    
-    // Tüm beklemedeki bot maçlarını al
-    const { data: pendingMatches } = await supabase
-      .from('tournament_matches')
-      .select('*')
-      .eq('tournament_id', tournamentId)
-      .eq('status', 'pending');
-    
-    if (!pendingMatches) return;
-    
-    // Kullanıcının maçını hariç tut
-    const botMatches = pendingMatches.filter(match => {
+  const startBotMatches = async () => {
+    // Kullanıcının dahil olmadığı maçları bul (pure bot maçları)
+    const botMatches = matches.filter(m => {
+      if (m.status !== 'in_progress') return false;
+      
       const userIdString = String(user?.id);
-      return String(match.player1_id) !== userIdString && 
-             String(match.player2_id) !== userIdString;
+      const isUserMatch = String(m.player1_id) === userIdString || String(m.player2_id) === userIdString;
+      
+      // Kullanıcının maçı değilse bot maçıdır
+      return !isUserMatch;
     });
     
-    console.log(`🤖 ${botMatches.length} bot maçı bulundu`);
-    
+    console.log('🤖 Bot maçları başlatılıyor:', botMatches.length);
+    console.log('🤖 Bot maçları detayı:', botMatches.map(m => ({
+      id: m.id.slice(-8),
+      player1: String(m.player1_id).slice(-8),
+      player2: String(m.player2_id).slice(-8),
+      isP1Bot: String(m.player1_id).startsWith('bot_'),
+      isP2Bot: String(m.player2_id).startsWith('bot_')
+    })));
+
     for (const match of botMatches) {
-      // Bot maçlarını hemen başlat ve bitir
+      // Bot maçlarını 5-15 saniye arasında bitir (hızlı)
       setTimeout(async () => {
-        try {
-          const player1Score = Math.floor(Math.random() * 30) + 15;
-          const player2Score = Math.floor(Math.random() * 30) + 15;
-          const winnerId = player1Score > player2Score ? match.player1_id : match.player2_id;
+        const player1Score = Math.floor(Math.random() * 30) + 15; // 15-45
+        const player2Score = Math.floor(Math.random() * 30) + 15; // 15-45
+        const winnerId = player1Score > player2Score ? match.player1_id : match.player2_id;
+
+        await supabase
+          .from('tournament_matches')
+          .update({
+            status: 'completed',
+            player1_score: player1Score,
+            player2_score: player2Score,
+            winner_id: winnerId,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', match.id);
           
-          await supabase
-            .from('tournament_matches')
-            .update({
-              status: 'completed',
-              player1_score: player1Score,
-              player2_score: player2Score,
-              winner_id: winnerId,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', match.id);
-            
-          console.log(`✅ Bot maçı tamamlandı: ${match.id.slice(-8)}`);
-          
-          // Sonraki turu kontrol et
-          checkNextRoundCreation(tournamentId);
-        } catch (error) {
-          console.error('Bot maçı tamamlama hatası:', error);
-        }
-      }, Math.random() * 5000 + 2000); // 2-7 saniye arası
+        console.log(`✅ Bot maçı tamamlandı: ${player1Score}-${player2Score} (Match: ${match.id.slice(-8)})`);
+      }, Math.random() * 10000 + 5000); // 5-15 saniye (bot maçları hızlı biter)
     }
-  } catch (error) {
-    console.error('Bot maçları başlatma hatası:', error);
-  }
-};
-
-const checkNextRoundCreation = async (tournamentId: string) => {
-  try {
-    // Bu turdaki tüm maçlar bitti mi kontrol et
-    const { data: remainingMatches } = await supabase
-      .from('tournament_matches')
-      .select('id')
-      .eq('tournament_id', tournamentId)
-      .eq('status', 'pending')
-      .limit(1);
-
-    if (remainingMatches && remainingMatches.length === 0) {
-      console.log('🏆 Turdaki tüm maçlar bitti, sonraki tur oluşturuluyor...');
-      
-      // Kazananları al
-      const { data: winners } = await supabase
-        .from('tournament_matches')
-        .select('winner_id, round')
-        .eq('tournament_id', tournamentId)
-        .eq('status', 'completed')
-        .order('round', { ascending: false });
-
-      if (winners && winners.length > 1) {
-        const currentRound = Math.max(...winners.map(w => w.round));
-        const nextRound = currentRound + 1;
-        
-        if (nextRound <= 3) { // Final'e kadar
-          await createNextRoundMatches(tournamentId, nextRound, winners);
-        }
-      }
-    }
-  } catch (error) {
-    console.error('Sonraki tur kontrol hatası:', error);
-  }
-};
-
-const createNextRoundMatches = async (tournamentId: string, nextRound: number, winners: any[]) => {
-  try {
-    console.log(`🏆 Round ${nextRound} maçları oluşturuluyor...`);
-    
-    // Mevcut turdaki kazananları al
-    const { data: currentRoundWinners } = await supabase
-      .from('tournament_matches')
-      .select('winner_id')
-      .eq('tournament_id', tournamentId)
-      .eq('round', nextRound - 1)
-      .eq('status', 'completed')
-      .not('winner_id', 'is', null);
-
-    if (!currentRoundWinners || currentRoundWinners.length === 0) {
-      console.error('Kazanan bulunamadı');
-      return;
-    }
-
-    // Kazananları karıştır (random eşleşme)
-    const winnerIds = currentRoundWinners.map(w => w.winner_id);
-    const shuffledWinners = [...winnerIds].sort(() => Math.random() - 0.5);
-    
-    // Maç sayısını hesapla
-    const matchCount = Math.floor(shuffledWinners.length / 2);
-    
-    console.log(`📊 ${shuffledWinners.length} kazanan, ${matchCount} maç oluşturuluyor`);
-
-    // Yeni tur maçlarını oluştur
-    const newMatches = [];
-    for (let i = 0; i < matchCount; i++) {
-      const player1Id = shuffledWinners[i * 2];
-      const player2Id = shuffledWinners[i * 2 + 1] || null; // Tek sayı durumu
-
-      newMatches.push({
-        tournament_id: tournamentId,
-        round: nextRound,
-        match_number: i + 1,
-        player1_id: player1Id,
-        player2_id: player2Id,
-        status: 'pending',
-        created_at: new Date().toISOString()
-      });
-    }
-
-    // Database'e kaydet
-    const { error } = await supabase
-      .from('tournament_matches')
-      .insert(newMatches);
-
-    if (error) {
-      console.error('Yeni tur maçları kaydedilemedi:', error);
-      return;
-    }
-
-    console.log(`✅ Round ${nextRound} için ${matchCount} maç oluşturuldu`);
-    
-  } catch (error) {
-    console.error('createNextRoundMatches hatası:', error);
-  }
-};
+  };
 
   const getRoundName = (round: number) => {
     switch (round) {
