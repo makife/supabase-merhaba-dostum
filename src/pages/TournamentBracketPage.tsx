@@ -17,46 +17,47 @@ const TournamentBracketPage = () => {
   const [globalCountdown, setGlobalCountdown] = useState(10);
   const [userMatchId, setUserMatchId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (tournamentId) {
-      fetchMatches();
-      
-      // Real-time maç takibi
-      const channel = supabase
-        .channel(`tournament-matches-${tournamentId}`)
-        .on('postgres_changes', {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'tournament_matches',
-          filter: `tournament_id=eq.${tournamentId}`
-        }, (payload) => {
-          const updatedMatch = payload.new as any;
-          console.log('🔄 Maç güncellendi:', updatedMatch.status);
-          
-          // Eğer bu maç kullanıcıya aitse ve in_progress olduysa
-          if (user && updatedMatch.status === 'in_progress' && 
-              (updatedMatch.player1_id === user.id || updatedMatch.player2_id === user.id)) {
-            console.log('🚀 Kullanıcı maçı başladı, yönlendiriliyor...');
-            
-            // DÜZELTME: Doğru URL formatı
-            navigate(`/game?match=${updatedMatch.id}&tournament=${tournamentId}`);
-          }
-          
-          fetchMatches(); // Maçları yenile
-        })
-        .subscribe();
+ useEffect(() => {
+  if (tournamentId) {
+    fetchMatches();
+    
+    const channel = supabase
+      .channel(`tournament-matches-${tournamentId}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'tournament_matches',
+        filter: `tournament_id=eq.${tournamentId}`
+      }, (payload) => {
+        const updatedMatch = payload.new as any;
+        console.log('🔄 Maç güncellendi:', updatedMatch.status);
+        
+        // TIP DÜZELTMESİ
+        const userIdString = String(user?.id);
+        const isUserMatch = user && (
+          String(updatedMatch.player1_id) === userIdString || 
+          String(updatedMatch.player2_id) === userIdString
+        );
+        
+        if (isUserMatch && updatedMatch.status === 'in_progress') {
+          console.log('🚀 Kullanıcı maçı başladı, yönlendiriliyor...');
+          navigate(`/game?match=${updatedMatch.id}&tournament=${tournamentId}`);
+        }
+        
+        fetchMatches();
+      })
+      .subscribe();
 
-      // 10 saniye sonra tüm maçları otomatik başlat
-      const startTimer = setTimeout(() => {
-        startAllMatches();
-      }, 10000);
+    const startTimer = setTimeout(() => {
+      startAllMatches();
+    }, 10000);
 
-      return () => {
-        clearTimeout(startTimer);
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [tournamentId, user, navigate]);
+    return () => {
+      clearTimeout(startTimer);
+      supabase.removeChannel(channel);
+    };
+  }
+}, [tournamentId, user, navigate]);
 
   useEffect(() => {
     if (tournamentId && matches.length > 0) {
@@ -75,111 +76,113 @@ const TournamentBracketPage = () => {
     }
   }, [tournamentId, matches.length]);
 
-  const fetchMatches = async () => {
-    try {
-      console.log('⚔️ Maçlar alınıyor...');
-      
-      const { data, error } = await supabase
-        .from('tournament_matches')
-        .select('*')
-        .eq('tournament_id', tournamentId)
-        .order('round', { ascending: true })
-        .order('match_number', { ascending: true });
+ const fetchMatches = async () => {
+  try {
+    console.log('⚔️ Maçlar alınıyor...');
+    
+    const { data, error } = await supabase
+      .from('tournament_matches')
+      .select('*')
+      .eq('tournament_id', tournamentId)
+      .order('round', { ascending: true })
+      .order('match_number', { ascending: true });
 
-      if (error) {
-        console.error('Maçlar alınamadı:', error);
-        return;
-      }
-
-      if (!data) {
-        console.log('Maç bulunamadı');
-        setMatches([]);
-        return;
-      }
-
-      console.log('✅ Maçlar alındı:', data.length);
-
-      // Kullanıcının maçını bul
-      if (user) {
-        const userMatch = data.find(match => 
-          match.player1_id === user.id || match.player2_id === user.id
-        );
-        
-        if (userMatch) {
-          console.log('👤 Kullanıcı maçı bulundu:', userMatch.id);
-          setUserMatchId(userMatch.id);
-        } else {
-          console.log('⚠️ Kullanıcı maçı bulunamadı');
-          setUserMatchId(null);
-        }
-      }
-
-      // Oyuncu bilgilerini al
-      const matchesWithPlayerInfo = await Promise.all(
-        data.map(async (match) => {
-          let player1Info = { username: 'Oyuncu', avatar_url: null, is_bot: false };
-          let player2Info = { username: 'Oyuncu', avatar_url: null, is_bot: false };
-
-          // Player 1 bilgilerini al
-          if (match.player1_id && match.player1_id.startsWith('bot_')) {
-            player1Info = {
-              username: `Bot ${match.player1_id.split('_').pop()}`,
-              avatar_url: null,
-              is_bot: true
-            };
-          } else if (match.player1_id) {
-            try {
-              const { data: profileData } = await supabase
-                .from('profiles')
-                .select('username, avatar_url')
-                .eq('id', match.player1_id)
-                .single();
-
-              if (profileData) {
-                player1Info = { ...profileData, is_bot: false };
-              }
-            } catch (error) {
-              console.error('Player 1 bilgisi alınamadı:', error);
-            }
-          }
-
-          // Player 2 bilgilerini al
-          if (match.player2_id && match.player2_id.startsWith('bot_')) {
-            player2Info = {
-              username: `Bot ${match.player2_id.split('_').pop()}`,
-              avatar_url: null,
-              is_bot: true
-            };
-          } else if (match.player2_id) {
-            try {
-              const { data: profileData } = await supabase
-                .from('profiles')
-                .select('username, avatar_url')
-                .eq('id', match.player2_id)
-                .single();
-
-              if (profileData) {
-                player2Info = { ...profileData, is_bot: false };
-              }
-            } catch (error) {
-              console.error('Player 2 bilgisi alınamadı:', error);
-            }
-          }
-
-          return {
-            ...match,
-            player1: player1Info,
-            player2: player2Info
-          } as TournamentMatch;
-        })
-      );
-
-      setMatches(matchesWithPlayerInfo);
-      
-    } catch (error) {
-      console.error('Maçlar alınama hatası:', error);
+    if (error) {
+      console.error('Maçlar alınamadı:', error);
+      return;
     }
-  };
+
+    if (!data) {
+      setMatches([]);
+      return;
+    }
+
+    console.log('✅ Maçlar alındı:', data.length);
+
+    // TIP DÜZELTMESİ: UUID'yi string'e çevir
+    if (user) {
+      const userIdString = String(user.id); // UUID'yi string'e çevir
+      
+      const userMatch = data.find(match => 
+        String(match.player1_id) === userIdString || 
+        String(match.player2_id) === userIdString
+      );
+      
+      if (userMatch) {
+        console.log('✅ Kullanıcı maçı bulundu:', userMatch.id);
+        setUserMatchId(userMatch.id);
+      } else {
+        console.log('❌ Kullanıcı maçı bulunamadı');
+        setUserMatchId(null);
+      }
+    }
+
+    // Oyuncu bilgilerini yükle
+    const matchesWithPlayerInfo = await Promise.all(
+      data.map(async (match) => {
+        let player1Info = { username: 'Oyuncu', avatar_url: null, is_bot: false };
+        let player2Info = { username: 'Oyuncu', avatar_url: null, is_bot: false };
+
+        // Player 1 bilgilerini al
+        if (match.player1_id && String(match.player1_id).startsWith('bot_')) {
+          player1Info = {
+            username: `Bot ${String(match.player1_id).split('_').pop()}`,
+            avatar_url: null,
+            is_bot: true
+          };
+        } else if (match.player1_id) {
+          try {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('username, avatar_url')
+              .eq('id', match.player1_id) // Burada UUID karşılaştırması olacak
+              .single();
+
+            if (profileData) {
+              player1Info = { ...profileData, is_bot: false };
+            }
+          } catch (error) {
+            console.error('Player 1 bilgisi alınamadı:', error);
+          }
+        }
+
+        // Player 2 bilgilerini al
+        if (match.player2_id && String(match.player2_id).startsWith('bot_')) {
+          player2Info = {
+            username: `Bot ${String(match.player2_id).split('_').pop()}`,
+            avatar_url: null,
+            is_bot: true
+          };
+        } else if (match.player2_id) {
+          try {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('username, avatar_url')
+              .eq('id', match.player2_id)
+              .single();
+
+            if (profileData) {
+              player2Info = { ...profileData, is_bot: false };
+            }
+          } catch (error) {
+            console.error('Player 2 bilgisi alınamadı:', error);
+          }
+        }
+
+        return {
+          ...match,
+          player1: player1Info,
+          player2: player2Info
+        } as TournamentMatch;
+      })
+    );
+
+    setMatches(matchesWithPlayerInfo);
+    
+  } catch (error) {
+    console.error('fetchMatches error:', error);
+  }
+};
 
   const startAllMatches = async () => {
     if (!tournamentId) return;
