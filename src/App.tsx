@@ -67,13 +67,7 @@ const AppRoutes = () => {
         <ProtectedRoute>
           <GamePage gameMode="random-match" />
         </ProtectedRoute>
-      } />
-
-      <Route path="/game/tournament" element={
-        <ProtectedRoute>
-          <GamePage gameMode="tournament" />
-        </ProtectedRoute>
-       } />
+      } />   
       
       <Route path="/game" element={
         <ProtectedRoute>
@@ -81,10 +75,30 @@ const AppRoutes = () => {
         </ProtectedRoute>
       } />
       
-      <Route path="/tournament" element={<TournamentPage />} />
-<Route path="/tournament-waiting/:tournamentId" element={<TournamentWaitingPage />} />
-<Route path="/tournament-bracket/:tournamentId" element={<TournamentBracketPage />} />
-<Route path="/tournament-game/:matchId" element={<GamePage gameMode="tournament" />} />
+      <Route path="/tournament" element={
+        <ProtectedRoute>
+          <TournamentPage />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/tournament-waiting/:tournamentId" element={
+        <ProtectedRoute>
+          <TournamentWaitingPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/tournament-bracket/:tournamentId" element={
+        <ProtectedRoute>
+          <TournamentBracketPage />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/game/tournament" element={
+        <ProtectedRoute>
+          <GamePage gameMode="tournament" />
+       </ProtectedRoute>
+      } />
+      
+      <Route path="/tournament-game/:matchId" element={<GamePage gameMode="tournament" />} />
       
       <Route path="/market" element={
         <ProtectedRoute>
