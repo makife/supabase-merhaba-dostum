@@ -472,7 +472,7 @@ const checkNextRoundCreation = async (tournamentId: string) => {
         const nextRound = currentRound + 1;
         
         if (nextRound <= 3) { // Final'e kadar
-          await createNextRoundMatches(tournamentId, nextRound, winners);
+          await createNextRoundMatches(tournamentId, nextRound);
         }
       }
     }
