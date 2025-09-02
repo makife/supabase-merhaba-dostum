@@ -154,70 +154,39 @@ useEffect(() => {
     return () => clearInterval(timer);
   };
 
-const startTournament = async () => {
-  try {
-    console.log('🚀 Turnuva başlatılıyor...');
-    
-    // Tüm katılımcıları al
-    const { data: participants } = await supabase
-      .from('tournament_participants')
-      .select('*')
-      .eq('tournament_id', tournamentId);
-    
-    if (!participants || participants.length < 2) {
-      console.error('Yeterli katılımcı yok');
-      return;
-    }
-    
-    // İlk tur maçlarını oluştur
-    const shuffled = [...participants].sort(() => Math.random() - 0.5);
-    const matchCount = Math.floor(shuffled.length / 2);
-    
-    const firstRoundMatches = [];
-    for (let i = 0; i < matchCount; i++) {
-      firstRoundMatches.push({
-        tournament_id: tournamentId,
-        round: 1,
-        match_number: i + 1,
-        player1_id: shuffled[i * 2].user_id,
-        player2_id: shuffled[i * 2 + 1]?.user_id || null,
-        status: 'pending',
-        created_at: new Date().toISOString()
-      });
-    }
-    
-    // Maçları database'e kaydet
-    const { error: matchError } = await supabase
-      .from('tournament_matches')
-      .insert(firstRoundMatches);
-    
-    if (matchError) {
-      console.error('Maçlar oluşturulamadı:', matchError);
-      return;
-    }
-    
-    // Turnuva durumunu güncelle
-    const { error: tournamentError } = await supabase
-      .from('tournaments')
-      .update({ 
-        status: 'in_progress',
-        current_round: 1,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', tournamentId);
-    
-    if (tournamentError) {
-      console.error('Turnuva güncellenemedi:', tournamentError);
-      return;
-    }
-    
-    console.log('✅ Turnuva başlatıldı!');
-    navigate(`/tournament-bracket/${tournamentId}`);
-    
-  } catch (error) {
-    console.error('Turnuva başlatma hatası:', error);
-  }
-};
+ const startTournament = async () => {
+   try {
+     console.log('🚀 Turnuva başlatılıyor...');
+     
+     // Yeni database fonksiyonunu kullan
+     const { data, error } = await supabase.rpc('start_tournament_automatically', {
+       p_tournament_id: tournamentId
+     });
+
+     if (error) {
+       console.error('Turnuva başlatma hatası:', error);
+       return;
+     }
+
+     console.log('✅ Turnuva başlatıldı:', data);
+     
+     // Type assertion ile data'nın doğru tipte olduğunu belirt
+     const result = data as { success: boolean; error?: string; real_players?: number; bots_added?: number; matches_created?: number };
+     
+     // Turnuva başarıyla başladıysa bracket sayfasına yönlendir
+     if (result?.success) {
+       setTimeout(() => {
+         console.log('🚀 TournamentBracket sayfasına yönlendiriliyor...');
+         navigate(`/tournament-bracket/${tournamentId}`);
+       }, 2000);
+     } else {
+       console.error('Turnuva başlatma hatası:', result?.error);
+     }
+     
+   } catch (error) {
+     console.error('Turnuva başlatma hatası:', error);
+   }
+ };
 
 const createTournamentMatches = async () => {
   // Bu fonksiyon artık database içinde yapılıyor
