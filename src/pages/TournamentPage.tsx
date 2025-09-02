@@ -134,84 +134,84 @@ const handleJoinTournament = async (tournamentId: string) => {
 
 return (
   <div className="relative min-h-screen bg-gradient-to-br from-purple-900 to-blue-900 p-4">
-    
-    {/* Sol üstteki buton */}
+
+    {/* Sol üstteki Ana Sayfa butonu */}
     <div className="absolute top-4 left-4 z-50">
       <Button
         onClick={() => navigate('/')}
         className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
       >
         <Home className="w-4 h-4 mr-2" />
-        Çıkış
+        Ana Sayfaya Dön
       </Button>
     </div>
 
     <div className="max-w-4xl mx-auto">
-        {/* Başlık */}
-        <div className="text-center mb-8">
-          <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold text-white">Turnuvalar</h1>
-          <p className="text-gray-300">8 kişilik heyecan dolu turnuvalara katıl!</p>
-        </div>
+      {/* Başlık */}
+      <div className="text-center mb-8">
+        <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
+        <h1 className="text-3xl font-bold text-white">Turnuvalar</h1>
+        <p className="text-gray-300">8 kişilik heyecan dolu turnuvalara katıl!</p>
+      </div>
 
-        {/* Turnuva Oluştur Butonu */}
-        <Card className="mb-8 bg-white/10 backdrop-blur-md border-white/20">
-          <CardContent className="p-6 text-center">
-            <Button 
-              onClick={createTournament}
-              className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-4 px-8 text-lg"
-              size="lg"
-            >
-              <Plus className="w-6 h-6 mr-2" />
-              Yeni Turnuva Oluştur
-            </Button>
-          </CardContent>
-        </Card>
+      {/* Turnuva Oluştur Butonu */}
+      <Card className="mb-8 bg-white/10 backdrop-blur-md border-white/20">
+        <CardContent className="p-6 text-center">
+          <Button 
+            onClick={createTournament}
+            className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-4 px-8 text-lg"
+            size="lg"
+          >
+            <Plus className="w-6 h-6 mr-2" />
+            Yeni Turnuva Oluştur
+          </Button>
+        </CardContent>
+      </Card>
 
-        {/* Aktif Turnuvalar */}
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold text-white mb-4">Aktif Turnuvalar</h2>
-          
-          {activeTournaments.length === 0 ? (
-            <Card className="bg-white/10 backdrop-blur-md border-white/20">
-              <CardContent className="p-6 text-center text-gray-300">
-                <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>Şu anda aktif turnuva bulunmuyor</p>
-                <p className="text-sm">İlk turnuvayı sen oluştur!</p>
+      {/* Aktif Turnuvalar */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-bold text-white mb-4">Aktif Turnuvalar</h2>
+        
+        {activeTournaments.length === 0 ? (
+          <Card className="bg-white/10 backdrop-blur-md border-white/20">
+            <CardContent className="p-6 text-center text-gray-300">
+              <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p>Şu anda aktif turnuva bulunmuyor</p>
+              <p className="text-sm">İlk turnuvayı sen oluştur!</p>
+            </CardContent>
+          </Card>
+        ) : (
+          activeTournaments.map((tournament) => (
+            <Card key={tournament.id} className="bg-white/10 backdrop-blur-md border-white/20">
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center">
+                    <Trophy className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white">{tournament.name}</h3>
+                    <p className="text-gray-300 text-sm">
+                      {tournament.current_round || 1}/8 Katılımcı
+                    </p>
+                  </div>
+                </div>
+                
+                <Button 
+                  onClick={() => handleJoinTournament(tournament.id)}
+                  disabled={(tournament.current_round || 1) >= 8}
+                  className="bg-green-500 hover:bg-green-600 text-white"
+                >
+                  <Swords className="w-4 h-4 mr-2" />
+                  Katıl
+                </Button>
               </CardContent>
             </Card>
-          ) : (
-            activeTournaments.map((tournament) => (
-              <Card key={tournament.id} className="bg-white/10 backdrop-blur-md border-white/20">
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center">
-                      <Trophy className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-white">{tournament.name}</h3>
-                      <p className="text-gray-300 text-sm">
-                        {tournament.current_round || 1}/8 Katılımcı
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <Button 
-                    onClick={() => handleJoinTournament(tournament.id)}
-                    disabled={(tournament.current_round || 1) >= 8}
-                    className="bg-green-500 hover:bg-green-600 text-white"
-                  >
-                    <Swords className="w-4 h-4 mr-2" />
-                    Katıl
-                  </Button>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
+          ))
+        )}
       </div>
     </div>
-  );
-};
+  </div>
+);
+
 
 export default TournamentPage;
