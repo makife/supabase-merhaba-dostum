@@ -9,6 +9,21 @@ import { Button } from '@/components/ui/button';
 import { Trophy, Home, User, Bot } from 'lucide-react';
 import { TournamentMatch } from '@/types/tournament';
 
+interface TournamentMatchUpdate {
+  id: string;
+  tournament_id: string;
+  round: number;
+  match_number: number;
+  player1_id: string | null;
+  player2_id: string | null;
+  player1_score?: number;
+  player2_score?: number;
+  winner_id: string | null;
+  status: string;
+  created_at: string;
+  updated_at?: string;
+}
+
 const TournamentBracketPage = () => {
   const { tournamentId } = useParams();
   const navigate = useNavigate();
