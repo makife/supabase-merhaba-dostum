@@ -50,7 +50,7 @@ useEffect(() => {
 
     const startTimer = setTimeout(() => {
       startAllMatches();
-    }, 10000);
+    }, 3000);
 
     return () => {
       clearTimeout(startTimer);
