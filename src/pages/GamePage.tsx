@@ -679,53 +679,36 @@ const handleGameEnd = () => {
 // 🔧 5. GamePage.tsx - Turnuva modu rakip belirleme düzeltmesi
 useEffect(() => {
   if (gameMode === 'tournament' && tournamentMatch) {
-    const opponentId = tournamentMatch.player1_id === user?.id ? 
+    const userIdString = String(user?.id);
+    const opponentId = String(tournamentMatch.player1_id) === userIdString ? 
       tournamentMatch.player2_id : 
       tournamentMatch.player1_id;
   
     console.log('🎯 Turnuva rakip analizi:', {
       matchId: tournamentMatch.id,
-      player1: tournamentMatch.player1_id?.slice(-8),
-      player2: tournamentMatch.player2_id?.slice(-8),
-      currentUser: user?.id?.slice(-8),
-      opponentId: opponentId?.slice(-8)
+      player1: String(tournamentMatch.player1_id).slice(-8),
+      player2: String(tournamentMatch.player2_id).slice(-8),
+      currentUser: userIdString.slice(-8),
+      opponentId: String(opponentId).slice(-8)
     });
 
     if (!opponentId) {
-      console.log('❌ Rakip ID bulunamadı');
       setIsAIOpponent(true);
       setOpponentName('Bekleniyor...');
-    } else if (opponentId.startsWith('bot_')) {
-      console.log('🤖 Bot rakip tespit edildi');
+    } else if (String(opponentId).startsWith('bot_')) {
       setIsAIOpponent(true);
       setOpponentName('Turnuva Botu');
     } else {
-      console.log('👥 Gerçek oyuncu rakip tespit edildi');
       setIsAIOpponent(false);
-      
-      // Gerçek oyuncu ismini participants'tan bul
-      const realOpponent = participants.find(p => p.user_id === opponentId);
+      const realOpponent = participants.find(p => String(p.user_id) === String(opponentId));
       if (realOpponent && (realOpponent as any).profiles?.username) {
         setOpponentName((realOpponent as any).profiles.username);
       } else {
         setOpponentName('Turnuva Oyuncusu');
       }
     }
-
-    // Game type ayarlarını uygula - SADECE ILK SEFER
-    if (propGameType && timeLeftRef.current === 0) {
-      if (propGameType === 'timed') {
-        timeLeftRef.current = 120;
-        setDisplayTime(120);
-        setTargetScore(0);
-      } else {
-        setTargetScore(500);
-        timeLeftRef.current = 0;
-        setDisplayTime(0);
-      }
-    }
   }
-}, [gameMode, tournamentMatch, propGameType, user?.id, participants]);
+}, [gameMode, tournamentMatch, user?.id, participants]);
 
 
   
