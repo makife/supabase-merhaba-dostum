@@ -2780,30 +2780,30 @@ if (gameEnded) {
                   </Button>
                 )}
                 {winner === 'player' && (
-  <Button 
-    variant="outline"
-    onClick={() => {
-      console.log('🚀 Manuel yönlendirme denemesi...');
-      
-      // ✅ URL'den tournament ID al
-      const tournamentId = searchParams.get('tournament');
-      
-      if (!tournamentId) {
-        console.error('❌ tournament ID URL parameter missing');
-        navigate('/tournament');
-        return;
-      }
+  <Button
+  variant="outline"
+  onClick={() => {
+    console.log('🚀 Manuel yönlendirme denemesi...');
+    
+    // ✅ URL'den tournament ID al
+    const tournamentId = searchParams.get('tournament');
+    
+    if (!tournamentId) {
+      console.error('❌ tournament ID URL parameter missing');
+      navigate('/tournament');
+      return;
+    }
 
-      console.log('🏆 Tournament ID from URL:', tournamentId);
-      
-      // ✅ DOĞRUDAN YÖNLENDİRME
-      window.location.href = '/tournament';
-    }} 
-    className="w-full"
-  >
-    <Trophy className="w-4 h-4 mr-2" />
-    Turnuva Sayfasına Git
-  </Button>
+    console.log('🏆 Tournament ID from URL:', tournamentId);
+    
+    // ✅ React Router ile Yönlendirme
+    navigate(`/tournament/${tournamentId}`);
+  }} 
+  className="w-full"
+>
+  <Trophy className="w-4 h-4 mr-2" />
+  Turnuva Sayfasına Git
+</Button>
 )}
               </>
             ) : (
