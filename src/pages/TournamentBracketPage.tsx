@@ -1,3 +1,5 @@
+// TournamentBracketPage.tsx - Tam düzeltme
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,22 +15,48 @@ const TournamentBracketPage = () => {
   const { user } = useAuth();
   const [matches, setMatches] = useState<TournamentMatch[]>([]);
   const [globalCountdown, setGlobalCountdown] = useState(10);
-  const [countdowns, setCountdowns] = useState<{[key: string]: number}>({});
+  const [userMatchId, setUserMatchId] = useState<string | null>(null);
 
   useEffect(() => {
     if (tournamentId) {
       fetchMatches();
       
+      // Real-time maç takibi
+      const channel = supabase
+        .channel(`tournament-matches-${tournamentId}`)
+        .on('postgres_changes', {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'tournament_matches',
+          filter: `tournament_id=eq.${tournamentId}`
+        }, (payload) => {
+          const updatedMatch = payload.new as any;
+          console.log('🔄 Maç güncellendi:', updatedMatch.status);
+          
+          // Eğer bu maç kullanıcıya aitse ve in_progress olduysa
+          if (user && updatedMatch.status === 'in_progress' && 
+              (updatedMatch.player1_id === user.id || updatedMatch.player2_id === user.id)) {
+            console.log('🚀 Kullanıcı maçı başladı, yönlendiriliyor...');
+            
+            // DÜZELTME: Doğru URL formatı
+            navigate(`/game?match=${updatedMatch.id}&tournament=${tournamentId}`);
+          }
+          
+          fetchMatches(); // Maçları yenile
+        })
+        .subscribe();
+
       // 10 saniye sonra tüm maçları otomatik başlat
       const startTimer = setTimeout(() => {
         startAllMatches();
-      }, 10000); // 10 saniye
+      }, 10000);
 
       return () => {
         clearTimeout(startTimer);
+        supabase.removeChannel(channel);
       };
     }
-  }, [tournamentId, matches.length]);
+  }, [tournamentId, user, navigate]);
 
   useEffect(() => {
     if (tournamentId && matches.length > 0) {
@@ -47,129 +75,10 @@ const TournamentBracketPage = () => {
     }
   }, [tournamentId, matches.length]);
 
-useEffect(() => {
-  if (tournamentId) {
-    fetchMatches();
-    
-    // Real-time maç takibi
-    const channel = supabase
-      .channel(`tournament-matches-${tournamentId}`)
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'tournament_matches',
-        filter: `tournament_id=eq.${tournamentId}`
-      }, (payload) => {
-        const updatedMatch = payload.new as any;
-        console.log('🔄 Maç güncellendi:', updatedMatch.status);
-        
-        // Eğer bu maç kullanıcıya aitse ve in_progress olduysa
-        if (user && updatedMatch.status === 'in_progress' && 
-            (updatedMatch.player1_id === user.id || updatedMatch.player2_id === user.id)) {
-          console.log('🚀 Kullanıcı maçı başladı, yönlendiriliyor...');
-          navigate(`/game/tournament?match=${updatedMatch.id}`);
-        }
-        
-        fetchMatches(); // Maçları yenile
-      })
-      .subscribe();
-
-    // 10 saniye sonra tüm maçları otomatik başlat
-    const startTimer = setTimeout(() => {
-      startAllMatches();
-    }, 10000);
-
-    return () => {
-      clearTimeout(startTimer);
-      supabase.removeChannel(channel);
-    };
-  }
-}, [tournamentId, matches.length, user, navigate]);
-
-const findAndJoinUserMatch = async () => {
-  if (!user || !tournamentId) return;
-
-  try {
-    console.log('🔍 Kullanıcı maçı aranıyor...');
-
-    // 1. Önce turnuvadaki TÜM maçları al
-    const { data: allMatches, error } = await supabase
-      .from('tournament_matches')
-      .select('*')
-      .eq('tournament_id', tournamentId);
-
-    if (error) {
-      console.error('Maçlar alınamadı:', error);
-      return;
-    }
-
-    // 2. User'ın maçını bul
-    const userMatch = allMatches?.find(match => 
-      match.player1_id === user.id || match.player2_id === user.id
-    );
-
-    if (userMatch) {
-      console.log('🎯 Kullanıcı maçı bulundu:', userMatch.id);
-      navigate(`/game/tournament?match=${userMatch.id}`);
-      return;
-    }
-
-    // 3. Eğer maç yoksa, BOŞ maç ara
-    const emptyMatch = allMatches?.find(match => 
-      match.status === 'pending' && 
-      (match.player1_id === null || match.player2_id === null)
-    );
-
-    if (emptyMatch) {
-      console.log('🎯 Boş maç bulundu, katılıyor...');
-      
-      // Boş slotu doldur
-      const updateField = emptyMatch.player1_id === null ? 'player1_id' : 'player2_id';
-      
-      await supabase
-        .from('tournament_matches')
-        .update({
-          [updateField]: user.id,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', emptyMatch.id);
-
-      navigate(`/game/tournament?match=${emptyMatch.id}`);
-      return;
-    }
-
-    // 4. Hiçbiri yoksa YENİ maç oluştur
-    console.log('🆕 Yeni maç oluşturuluyor...');
-    
-    const { data: newMatch } = await supabase
-      .from('tournament_matches')
-      .insert({
-        tournament_id: tournamentId,
-        round: 1,
-        match_number: (allMatches?.length || 0) + 1,
-        player1_id: user.id,
-        player2_id: `bot_${tournamentId}_${Date.now()}`,
-        status: 'in_progress',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .select()
-      .single();
-
-    if (newMatch) {
-      navigate(`/game/tournament?match=${newMatch.id}`);
-    }
-
-  } catch (error) {
-    console.error('Maç bulma hatası:', error);
-  }
-};
-
   const fetchMatches = async () => {
     try {
       console.log('⚔️ Maçlar alınıyor...');
       
-      // Önce sadece temel maç bilgilerini al
       const { data, error } = await supabase
         .from('tournament_matches')
         .select('*')
@@ -190,7 +99,22 @@ const findAndJoinUserMatch = async () => {
 
       console.log('✅ Maçlar alındı:', data.length);
 
-      // Eğer bot değilse, oyuncu bilgilerini ayrıca al
+      // Kullanıcının maçını bul
+      if (user) {
+        const userMatch = data.find(match => 
+          match.player1_id === user.id || match.player2_id === user.id
+        );
+        
+        if (userMatch) {
+          console.log('👤 Kullanıcı maçı bulundu:', userMatch.id);
+          setUserMatchId(userMatch.id);
+        } else {
+          console.log('⚠️ Kullanıcı maçı bulunamadı');
+          setUserMatchId(null);
+        }
+      }
+
+      // Oyuncu bilgilerini al
       const matchesWithPlayerInfo = await Promise.all(
         data.map(async (match) => {
           let player1Info = { username: 'Oyuncu', avatar_url: null, is_bot: false };
@@ -253,7 +177,7 @@ const findAndJoinUserMatch = async () => {
       setMatches(matchesWithPlayerInfo);
       
     } catch (error) {
-      console.error('Maçlar alınamadı:', error);
+      console.error('Maçlar alınama hatası:', error);
     }
   };
 
@@ -280,161 +204,53 @@ const findAndJoinUserMatch = async () => {
 
       console.log('✅ Tüm maçlar başlatıldı!');
       
-      // Her maç için gerçek oyun başlat
-      startRealMatches();
+      // Kullanıcı maçını kontrol et
+      if (user && userMatchId) {
+        console.log('🎯 Kullanıcı maçı var, yönlendiriliyor:', userMatchId);
+        
+        // DÜZELTME: 2 saniye bekle ve yönlendir
+        setTimeout(() => {
+          navigate(`/game?match=${userMatchId}&tournament=${tournamentId}`);
+        }, 2000);
+      } else {
+        // Bot maçlarını başlat
+        await startBotMatches();
+      }
 
     } catch (error) {
       console.error('Maç başlatma hatası:', error);
     }
   };
 
-  // Gerçek kelime oyunu maçları
-const startRealMatches = async () => {
-  const pendingMatches = matches.filter(m => m.status === 'in_progress');
-  
-  console.log('🔍 Kullanıcı maçları aranıyor...');
-  console.log('👤 User ID:', user?.id);
-  console.log('👤 User UUID:', user?.id); // UUID formatında
-
-  let userMatchFound = false;
-
-  for (const match of pendingMatches) {
-    console.log('🔍 Maç kontrol:', {
-      matchId: match.id,
-      player1: match.player1_id,
-      player2: match.player2_id,
-      player1Type: typeof match.player1_id,
-      player2Type: typeof match.player2_id
-    });
+  const startBotMatches = async () => {
+    const botMatches = matches.filter(m => 
+      m.status === 'in_progress' && 
+      (!m.player1_id || m.player1_id.startsWith('bot_') || !m.player2_id || m.player2_id.startsWith('bot_'))
+    );
     
-    // User ID karşılaştırmasını düzelt
-    const isUserMatch = user && 
-      (match.player1_id === user.id || match.player2_id === user.id);
+    console.log('🤖 Bot maçları başlatılıyor:', botMatches.length);
 
-    console.log('🎯 Kullanıcı maçı mı?:', isUserMatch);
+    for (const match of botMatches) {
+      // Bot vs bot veya bot vs oyuncu - bot skorlarını simüle et
+      setTimeout(async () => {
+        const player1Score = Math.floor(Math.random() * 30) + 15; // 15-45
+        const player2Score = Math.floor(Math.random() * 30) + 15; // 15-45
+        const winnerId = player1Score > player2Score ? match.player1_id : match.player2_id;
 
-    if (match.player1_id?.startsWith('bot_') && match.player2_id?.startsWith('bot_')) {
-      console.log(`🤖 AI vs AI maçı: ${match.id}`);
-      simulateAIMatch(match.id);
-    } else if (isUserMatch) {
-      console.log(`🎯 KULLANICI MAÇI BULUNDU: ${match.id}`);
-      userMatchFound = true;
-      startUserMatch(match.id);
-      break;
-    } else {
-      console.log(`🤖 AI maçı: ${match.id}`);
-      simulateAIMatch(match.id);
+        await supabase
+          .from('tournament_matches')
+          .update({
+            status: 'completed',
+            player1_score: player1Score,
+            player2_score: player2Score,
+            winner_id: winnerId,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', match.id);
+          
+        console.log(`✅ Bot maçı tamamlandı: ${player1Score}-${player2Score}`);
+      }, Math.random() * 10000 + 5000); // 5-15 saniye
     }
-  }
-
-  if (!userMatchFound && user) {
-    console.log('❌ Kullanıcı maçı bulunamadı!');
-    console.log('Tüm maçlar:', matches.map(m => ({
-      id: m.id.slice(-8),
-      p1: m.player1_id,
-      p2: m.player2_id,
-      p1Type: typeof m.player1_id,
-      p2Type: typeof m.player2_id,
-      status: m.status,
-      isUserP1: m.player1_id === user.id,
-      isUserP2: m.player2_id === user.id
-    })));
-  }
-};
-
-  // Kullanıcı maçı başlat
-const startUserMatch = (matchId: string) => {
-  console.log('🎮 Kullanıcı maçı başlatılıyor:', matchId);
-  
-  // 1 saniye bekle ve yönlendir (animasyon için)
-  setTimeout(() => {
-    navigate(`/game/tournament?match=${matchId}`);
-  }, 1000);
-};
-
-  // AI vs AI maç simülasyonu (KELİME OYUNU MANTIĞIYLA)
-  const simulateAIMatch = async (matchId: string) => {
-    try {
-      const match = matches.find(m => m.id === matchId);
-      if (!match) return;
-
-      console.log(`🤖 AI maçı: ${matchId}`);
-      
-      // GamePage'deki kelime oyunu mantığı
-      const player1Score = await simulateAIPlayer(match.player1_id, 'AI Player 1');
-      const player2Score = await simulateAIPlayer(match.player2_id, 'AI Player 2');
-
-      // Kazananı belirle
-      const winnerId = player1Score > player2Score ? match.player1_id : match.player2_id;
-
-      // Maçı tamamla
-      const { error } = await supabase
-        .from('tournament_matches')
-        .update({
-          status: 'completed',
-          player1_score: player1Score,
-          player2_score: player2Score,
-          winner_id: winnerId,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', matchId);
-
-      if (error) {
-        console.error('Maç sonuçlandırma hatası:', error);
-      } else {
-        console.log(`✅ AI maçı tamamlandı: ${player1Score}-${player2Score}`);
-      }
-
-    } catch (error) {
-      console.error('AI maç simülasyonu hatası:', error);
-    }
-  };
-
-  // AI Oyuncu Simülasyonu (KELİME BULMA MANTIĞI)
-  const simulateAIPlayer = async (playerId: string, playerName: string): Promise<number> => {
-    console.log(`🧠 ${playerName} kelime buluyor...`);
-    
-    // GamePage'deki kelime bulma mantığı
-    const possibleWords = [
-      'KEDİ', 'MASA', 'ARABA', 'OKUL', 'KİTAP', 'DENİZ', 'AĞAÇ', 'ÇİÇEK',
-      'DOSTLUK', 'GÜNEŞ', 'YILDIZ', 'BULUT', 'RÜZGAR', 'ATEŞ', 'TOPRAK',
-      'SEVGİ', 'MUTLULUK', 'UMUT', 'HAYAL', 'RENKLER', 'MÜZİK', 'DANS', 'ŞARKI',
-      'OYUN', 'SPOR', 'FUTBOL', 'BASKETBOL', 'TENİS', 'YÜZME', 'KOŞU', 'BİSİKLET',
-      'YEMEK', 'EKMEK', 'PEYNİR', 'DOMATES', 'SALATA', 'ÇORBA', 'MEYVE',
-      'ELMA', 'ARMUT', 'ÇİLEK', 'KIRAZ', 'ÜZÜM', 'PORTAKAL', 'MANGO',
-      'SEBZE', 'HAVUÇ', 'PATLICAN', 'BİBER', 'SOĞAN', 'SARIMSAK', 'PATATES'
-    ];
-
-    // Rastgele kelimeler seç ve puan hesapla
-    let totalScore = 0;
-    const wordCount = Math.floor(Math.random() * 8) + 5; // 5-12 kelime
-
-    for (let i = 0; i < wordCount; i++) {
-      const randomWord = possibleWords[Math.floor(Math.random() * possibleWords.length)];
-      const wordLength = randomWord.length;
-      
-      // GamePage'deki puanlama mantığı
-      const basePoints = wordLength * 2;
-      const rareLetters = ['J', 'Z', 'Ğ', 'Ü', 'Ö', 'Ç', 'Ş'];
-      let rareBonus = 0;
-
-      for (const letter of randomWord) {
-        if (rareLetters.includes(letter)) {
-          rareBonus += 3;
-        }
-      }
-
-      const wordScore = Math.max(basePoints + rareBonus, 5);
-      totalScore += wordScore;
-
-      console.log(`📝 ${playerName}: "${randomWord}" (+${wordScore} puan)`);
-      
-      // Kelime başına 1-2 saniye bekle (gerçekçilik için)
-      await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 1000));
-    }
-
-    console.log(`🏁 ${playerName} toplam: ${totalScore} puan`);
-    return totalScore;
   };
 
   const getRoundName = (round: number) => {
@@ -453,7 +269,7 @@ const startUserMatch = (matchId: string) => {
       return player.username;
     }
     
-    return player.username || player.user_id?.slice(-8) || 'Oyuncu';
+    return player.username || 'Oyuncu';
   };
 
   return (
@@ -464,6 +280,18 @@ const startUserMatch = (matchId: string) => {
           <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
           <h1 className="text-3xl font-bold text-white">Turnuva Kurgusu</h1>
           <p className="text-gray-300 mb-4">Turnuva #{tournamentId?.slice(-8)}</p>
+          
+          {/* Kullanıcı maçı varsa özel mesaj */}
+          {userMatchId && (
+            <div className="bg-green-500/20 rounded-lg p-4 max-w-md mx-auto mb-4">
+              <div className="text-green-400 text-lg font-bold">
+                🎯 Maçınız Var!
+              </div>
+              <div className="text-green-300 text-sm">
+                Maçlar başladığında otomatik yönlendirileceksiniz
+              </div>
+            </div>
+          )}
           
           {/* Global geri sayım */}
           {globalCountdown > 0 && (
@@ -504,10 +332,20 @@ const startUserMatch = (matchId: string) => {
               {matches
                 .filter(match => match.round === round)
                 .map((match) => (
-                  <Card key={match.id} className="bg-white/10 backdrop-blur-md border-white/20">
+                  <Card 
+                    key={match.id} 
+                    className={`bg-white/10 backdrop-blur-md border-white/20 ${
+                      userMatchId === match.id ? 'ring-2 ring-yellow-400 ring-opacity-75' : ''
+                    }`}
+                  >
                     <CardContent className="p-4">
                       <div className="text-center text-sm text-gray-300 mb-2">
                         Maç {match.match_number}
+                        {userMatchId === match.id && (
+                          <span className="ml-2 text-yellow-400 font-bold">
+                            👤 SİZİN MAÇINIZ
+                          </span>
+                        )}
                       </div>
                       
                       <div className="space-y-2">
@@ -521,14 +359,20 @@ const startUserMatch = (matchId: string) => {
                             ) : (
                               <User className="w-4 h-4 text-blue-400 mr-2" />
                             )}
-                            <span className="text-white text-sm">
+                            <span className={`text-white text-sm ${
+                              match.player1_id === user?.id ? 'font-bold text-yellow-300' : ''
+                            }`}>
                               {getPlayerDisplayName(match.player1)}
+                              {match.player1_id === user?.id && ' (SİZ)'}
                             </span>
                           </div>
                           <span className="font-bold text-white">
                             {match.player1_score || 0}
                           </span>
                         </div>
+
+                        {/* VS */}
+                        <div className="text-center text-gray-400 text-xs">VS</div>
 
                         {/* Player 2 */}
                         <div className={`flex items-center justify-between p-2 rounded ${
@@ -540,8 +384,11 @@ const startUserMatch = (matchId: string) => {
                             ) : (
                               <User className="w-4 h-4 text-blue-400 mr-2" />
                             )}
-                            <span className="text-white text-sm">
+                            <span className={`text-white text-sm ${
+                              match.player2_id === user?.id ? 'font-bold text-yellow-300' : ''
+                            }`}>
                               {getPlayerDisplayName(match.player2)}
+                              {match.player2_id === user?.id && ' (SİZ)'}
                             </span>
                           </div>
                           <span className="font-bold text-white">
@@ -559,6 +406,19 @@ const startUserMatch = (matchId: string) => {
                           <span className="text-gray-400">⏳ Bekleniyor</span>
                         )}
                       </div>
+
+                      {/* Kullanıcı maçıysa ve başlamamışsa manuel başlatma butonu */}
+                      {userMatchId === match.id && match.status === 'in_progress' && globalCountdown === 0 && (
+                        <div className="mt-3">
+                          <Button
+                            onClick={() => navigate(`/game?match=${match.id}&tournament=${tournamentId}`)}
+                            className="w-full bg-green-600 hover:bg-green-700"
+                            size="sm"
+                          >
+                            🎮 Maçı Başlat
+                          </Button>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
