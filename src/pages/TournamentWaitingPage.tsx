@@ -60,6 +60,13 @@ useEffect(() => {
           max_players: tournamentData.max_participants,
           current_players: tournamentData.current_round
         } as Tournament);
+
+        // Geri sayımı kalan süreye göre başlat
+        const timeout = (tournamentData.timeout_duration ?? 15);
+        const createdAtMs = new Date(tournamentData.created_at).getTime();
+        const elapsed = Math.floor((Date.now() - createdAtMs) / 1000);
+        const remaining = Math.max(0, timeout - elapsed);
+        setTimeLeft(remaining);
       }
       
       fetchParticipants();
@@ -70,19 +77,12 @@ useEffect(() => {
 
   useEffect(() => {
     if (!tournamentId) return;
-    
-    fetchTournamentData();
-    
-    const timer = setInterval(() => {
-      if (timeLeft > 0) {
-        setTimeLeft(prev => prev - 1);
-      } else if (timeLeft === 0) {
-        startTournament();
-        clearInterval(timer);
-      }
-    }, 1000);
 
-    return () => clearInterval(timer);
+    fetchTournamentData();
+
+    // Güvenli geri sayım - kapanış değişkenlerine takılmadan çalışır
+    const cleanup = startCountdown();
+    return cleanup;
   }, [tournamentId]);
 
   const fetchParticipants = async () => {

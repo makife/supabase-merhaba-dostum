@@ -19,10 +19,12 @@ const TournamentPage = () => {
 
   const fetchActiveTournaments = async () => {
     try {
+      const cutoff = new Date(Date.now() - 15_000).toISOString();
       const { data, error } = await supabase
         .from('tournaments')
         .select('*')
         .eq('status', 'waiting')
+        .gte('created_at', cutoff)
         .order('created_at', { ascending: true });
 
       if (!error && data) {
@@ -56,7 +58,8 @@ const TournamentPage = () => {
           game_type: 'timed',
           max_participants: 8,
           current_round: 1,
-          timeout_duration: 15
+          timeout_duration: 15,
+          expires_at: new Date(Date.now() + 15_000).toISOString()
         })
         .select()
         .single();
