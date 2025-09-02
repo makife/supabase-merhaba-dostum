@@ -218,6 +218,7 @@ const TournamentBracketPage = () => {
       } else {
         // Bot maçlarını başlat
         await startBotMatches();
+        startRealMatches(); 
       }
 
     } catch (error) {
@@ -225,53 +226,6 @@ const TournamentBracketPage = () => {
     }
   };
 
-const startRealMatches = async () => {
-  const pendingMatches = matches.filter(m => m.status === 'in_progress');
-  
-  console.log('🔍 Kullanıcı maçları aranıyor...');
-  console.log('👤 User ID:', user?.id);
-
-  let userMatchFound = false;
-  const userIdString = String(user?.id);
-
-  for (const match of pendingMatches) {
-    console.log('🔍 Maç kontrol:', {
-      matchId: match.id.slice(-8),
-      player1: String(match.player1_id).slice(-8),
-      player2: String(match.player2_id).slice(-8),
-    });
-    
-    // TIP DÜZELTMESİ
-    const isUserMatch = user && (
-      String(match.player1_id) === userIdString || 
-      String(match.player2_id) === userIdString
-    );
-
-    console.log('🎯 Kullanıcı maçı mı?:', isUserMatch);
-
-    if (isUserMatch) {
-      console.log('🎯 KULLANICI MAÇI BULUNDU:', match.id);
-      userMatchFound = true;
-      
-      setTimeout(() => {
-        navigate(`/game?match=${match.id}&tournament=${tournamentId}`);
-      }, 2000);
-      return;
-    } else if (String(match.player1_id).startsWith('bot_') && String(match.player2_id).startsWith('bot_')) {
-      console.log('🤖 AI vs AI maçı:', match.id);
-      simulateAIMatch(match.id);
-    } else {
-      console.log('🤖 Diğer AI maçı:', match.id);
-      simulateAIMatch(match.id);
-    }
-  }
-
-  if (!userMatchFound && user) {
-    console.log('⚠️ Kullanıcı maçı bulunamadı!');
-  }
-};
-
-  
   const startBotMatches = async () => {
     const botMatches = matches.filter(m => 
       m.status === 'in_progress' && 
