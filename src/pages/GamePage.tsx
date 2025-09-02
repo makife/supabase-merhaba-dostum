@@ -801,10 +801,11 @@ useEffect(() => {
     
     const urlParams = new URLSearchParams(window.location.search);
     const matchId = urlParams.get('match');
+    const tournamentId = urlParams.get('tournament');
+    
+    console.log('🎯 URL parametreleri:', { matchId, tournamentId });
     
     if (matchId) {
-      console.log('🎯 Turnuva maçı:', matchId);
-      
       try {
         // Maç bilgilerini al
         const { data: matchData, error } = await supabase
@@ -819,6 +820,7 @@ useEffect(() => {
         }
 
         if (matchData) {
+          console.log('✅ Turnuva maçı yüklendi:', matchData.id);
           setTournamentMatch(matchData);
           
           // Maç durumunu güncelle
@@ -833,11 +835,34 @@ useEffect(() => {
       } catch (error) {
         console.error('Turnuva maçı başlatma hatası:', error);
       }
+    } else if (tournamentId && user) {
+      // Match ID yoksa, kullanıcının maçını bul
+      console.log('🔍 Kullanıcı maçı aranıyor tournament için...');
+      
+      const { data: userMatch } = await supabase
+        .from('tournament_matches')
+        .select('*')
+        .eq('tournament_id', tournamentId)
+        .or(`player1_id.eq.${user.id},player2_id.eq.${user.id}`)
+        .eq('status', 'in_progress')
+        .single();
+        
+      if (userMatch) {
+        console.log('✅ Kullanıcı maçı bulundu:', userMatch.id);
+        setTournamentMatch(userMatch);
+        
+        // URL'yi güncelle
+        window.history.replaceState(
+          null, 
+          '', 
+          `/game?match=${userMatch.id}&tournament=${tournamentId}`
+        );
+      }
     }
   };
 
   initializeTournamentMatch();
-}, [gameMode]);
+}, [gameMode, user?.id]);
   
   // JOKER FONKSİYONLARI
 
