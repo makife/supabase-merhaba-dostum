@@ -142,7 +142,7 @@ return (
         className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
       >
         <Home className="w-4 h-4 mr-2" />
-        Ana Sayfaya Dön
+        Çıkış
       </Button>
     </div>
 
