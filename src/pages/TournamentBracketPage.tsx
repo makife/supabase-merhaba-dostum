@@ -34,7 +34,7 @@ const TournamentBracketPage = () => {
   const [globalCountdown, setGlobalCountdown] = useState(10);
   const [userMatchId, setUserMatchId] = useState<string | null>(null);
 
-  // Ana useEffect - Real-time subscription ve timer'lar
+  // Ana useEffect - Real-time subscription (timer yok)
   useEffect(() => {
     if (tournamentId) {
       fetchMatches();
@@ -65,40 +65,16 @@ const TournamentBracketPage = () => {
         })
         .subscribe();
 
-      const startTimer = setTimeout(() => {
-        startAllMatches();
-      }, 1000);
-      
-      // Fallback timer - 8 saniye sonra kontrol
-      const fallbackTimer = setTimeout(async () => {
-        console.log('🔧 Fallback kontrol - Maç başladı mı?');
-        
-        const { data: userMatch } = await supabase
-          .from('tournament_matches')
-          .select('*')
-          .eq('tournament_id', tournamentId)
-          .or(`player1_id.eq.${user?.id},player2_id.eq.${user?.id}`)
-          .eq('status', 'in_progress')
-          .single();
-        
-        if (userMatch && window.location.pathname !== '/game') {
-          console.log('🔧 Fallback yönlendirme aktif');
-          navigate(`/game?match=${userMatch.id}&tournament=${tournamentId}`);
-        }
-      }, 8000);
-
       return () => {
-        clearTimeout(startTimer);
-        clearTimeout(fallbackTimer);
         supabase.removeChannel(channel);
       };
     }
   }, [tournamentId, user, navigate]);
 
-  // Visibility API - Tab aktif olduğunda kontrol
+  // Backup kontrol - Tab aktif olduğunda
   useEffect(() => {
     const handleVisibilityChange = async () => {
-      if (document.visibilityState === 'visible' && user && tournamentId) {
+      if (document.visibilityState === 'visible' && user && tournamentId && globalCountdown === 0) {
         console.log('🔍 Sayfa aktif oldu, maç kontrolü yapılıyor...');
         
         const { data: userMatch } = await supabase
@@ -110,7 +86,7 @@ const TournamentBracketPage = () => {
           .single();
         
         if (userMatch && window.location.pathname !== '/game') {
-          console.log('🔧 Visibility yönlendirmesi aktiv');
+          console.log('🔧 Visibility yönlendirmesi aktif');
           navigate(`/game?match=${userMatch.id}&tournament=${tournamentId}`);
         }
       }
@@ -118,51 +94,29 @@ const TournamentBracketPage = () => {
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [user, tournamentId, navigate]);
+  }, [user, tournamentId, navigate, globalCountdown]);
 
-  // Global countdown
+  // Global countdown - SADECE countdown, timer işlevi yok
   useEffect(() => {
     if (tournamentId && matches.length > 0) {
-      let countdownActive = true;
-      
-      const runCountdown = () => {
-        if (!countdownActive) return;
-        
+      const countdownInterval = setInterval(() => {
         setGlobalCountdown(prev => {
           if (prev <= 1) {
-            countdownActive = false;
-            // Countdown bitince kontrol et
-            setTimeout(async () => {
-              if (user && tournamentId) {
-                const { data: userMatch } = await supabase
-                  .from('tournament_matches')
-                  .select('*')
-                  .eq('tournament_id', tournamentId)
-                  .or(`player1_id.eq.${user.id},player2_id.eq.${user.id}`)
-                  .eq('status', 'in_progress')
-                  .single();
-                
-                if (userMatch && window.location.pathname !== '/game') {
-                  navigate(`/game?match=${userMatch.id}&tournament=${tournamentId}`);
-                }
-              }
-            }, 1000);
+            clearInterval(countdownInterval);
+            // 10 saniye bittiğinde maçları başlat
+            console.log('⏰ 10 saniye doldu, maçlar başlatılıyor...');
+            startAllMatches();
             return 0;
           }
-          
-          // Recursive timeout
-          setTimeout(runCountdown, 1000);
           return prev - 1;
         });
-      };
-      
-      setTimeout(runCountdown, 1000);
-      
+      }, 1000);
+
       return () => {
-        countdownActive = false;
+        clearInterval(countdownInterval);
       };
     }
-  }, [tournamentId, matches.length, user, navigate]);
+  }, [tournamentId, matches.length]);
 
   const fetchMatches = async () => {
     try {
