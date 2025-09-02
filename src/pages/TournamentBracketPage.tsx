@@ -284,15 +284,28 @@ const TournamentBracketPage = () => {
   };
 
   const startBotMatches = async () => {
-    const botMatches = matches.filter(m => 
-      m.status === 'in_progress' && 
-      (!m.player1_id || m.player1_id.startsWith('bot_') || !m.player2_id || m.player2_id.startsWith('bot_'))
-    );
+    // Kullanıcının dahil olmadığı maçları bul (pure bot maçları)
+    const botMatches = matches.filter(m => {
+      if (m.status !== 'in_progress') return false;
+      
+      const userIdString = String(user?.id);
+      const isUserMatch = String(m.player1_id) === userIdString || String(m.player2_id) === userIdString;
+      
+      // Kullanıcının maçı değilse bot maçıdır
+      return !isUserMatch;
+    });
     
     console.log('🤖 Bot maçları başlatılıyor:', botMatches.length);
+    console.log('🤖 Bot maçları detayı:', botMatches.map(m => ({
+      id: m.id.slice(-8),
+      player1: String(m.player1_id).slice(-8),
+      player2: String(m.player2_id).slice(-8),
+      isP1Bot: String(m.player1_id).startsWith('bot_'),
+      isP2Bot: String(m.player2_id).startsWith('bot_')
+    })));
 
     for (const match of botMatches) {
-      // Bot vs bot veya bot vs oyuncu - bot skorlarını simüle et
+      // Bot maçlarını 5-15 saniye arasında bitir (hızlı)
       setTimeout(async () => {
         const player1Score = Math.floor(Math.random() * 30) + 15; // 15-45
         const player2Score = Math.floor(Math.random() * 30) + 15; // 15-45
@@ -309,8 +322,8 @@ const TournamentBracketPage = () => {
           })
           .eq('id', match.id);
           
-        console.log(`✅ Bot maçı tamamlandı: ${player1Score}-${player2Score}`);
-      }, Math.random() * 10000 + 5000); // 5-15 saniye
+        console.log(`✅ Bot maçı tamamlandı: ${player1Score}-${player2Score} (Match: ${match.id.slice(-8)})`);
+      }, Math.random() * 10000 + 5000); // 5-15 saniye (bot maçları hızlı biter)
     }
   };
 
