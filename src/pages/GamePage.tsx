@@ -398,6 +398,45 @@ const checkNextRoundCreation = async (tournamentId: string) => {
   }
 };
 
+const checkAndCreateNextRound = async (tournamentId: string) => {
+  try {
+    // Mevcut turdaki tüm maçlar tamamlandı mı?
+    const { data: incompleteMatches } = await supabase
+      .from('tournament_matches')
+      .select('id')
+      .eq('tournament_id', tournamentId)
+      .eq('status', 'pending')
+      .limit(1);
+
+    if (incompleteMatches.length === 0) {
+      // Bir sonraki turu başlat
+      const { data: currentRound } = await supabase
+        .from('tournament_matches')
+        .select('round')
+        .eq('tournament_id', tournamentId)
+        .order('round', { ascending: false })
+        .limit(1);
+
+      const nextRound = currentRound[0].round + 1;
+      
+      if (nextRound <= 3) { // Finale kadar
+        await createTournamentMatches(tournamentId, nextRound);
+      } else {
+        // Turnuvayı tamamla
+        await supabase
+          .from('tournaments')
+          .update({
+            status: 'completed',
+            completed_at: new Date().toISOString()
+          })
+          .eq('id', tournamentId);
+      }
+    }
+  } catch (error) {
+    console.error('Sonraki tur kontrol hatası:', error);
+  }
+};
+
 const createTournamentMatches = async (tournamentId: string, round: number) => {
   try {
     // Katılımcıları al
