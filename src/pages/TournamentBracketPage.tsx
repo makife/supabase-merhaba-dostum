@@ -373,6 +373,67 @@ const checkNextRoundCreation = async (tournamentId: string) => {
   }
 };
 
+const createNextRoundMatches = async (tournamentId: string, nextRound: number, winners: any[]) => {
+  try {
+    console.log(`🏆 Round ${nextRound} maçları oluşturuluyor...`);
+    
+    // Mevcut turdaki kazananları al
+    const { data: currentRoundWinners } = await supabase
+      .from('tournament_matches')
+      .select('winner_id')
+      .eq('tournament_id', tournamentId)
+      .eq('round', nextRound - 1)
+      .eq('status', 'completed')
+      .not('winner_id', 'is', null);
+
+    if (!currentRoundWinners || currentRoundWinners.length === 0) {
+      console.error('Kazanan bulunamadı');
+      return;
+    }
+
+    // Kazananları karıştır (random eşleşme)
+    const winnerIds = currentRoundWinners.map(w => w.winner_id);
+    const shuffledWinners = [...winnerIds].sort(() => Math.random() - 0.5);
+    
+    // Maç sayısını hesapla
+    const matchCount = Math.floor(shuffledWinners.length / 2);
+    
+    console.log(`📊 ${shuffledWinners.length} kazanan, ${matchCount} maç oluşturuluyor`);
+
+    // Yeni tur maçlarını oluştur
+    const newMatches = [];
+    for (let i = 0; i < matchCount; i++) {
+      const player1Id = shuffledWinners[i * 2];
+      const player2Id = shuffledWinners[i * 2 + 1] || null; // Tek sayı durumu
+
+      newMatches.push({
+        tournament_id: tournamentId,
+        round: nextRound,
+        match_number: i + 1,
+        player1_id: player1Id,
+        player2_id: player2Id,
+        status: 'pending',
+        created_at: new Date().toISOString()
+      });
+    }
+
+    // Database'e kaydet
+    const { error } = await supabase
+      .from('tournament_matches')
+      .insert(newMatches);
+
+    if (error) {
+      console.error('Yeni tur maçları kaydedilemedi:', error);
+      return;
+    }
+
+    console.log(`✅ Round ${nextRound} için ${matchCount} maç oluşturuldu`);
+    
+  } catch (error) {
+    console.error('createNextRoundMatches hatası:', error);
+  }
+};
+
   const getRoundName = (round: number) => {
     switch (round) {
       case 1: return 'Çeyrek Final';
