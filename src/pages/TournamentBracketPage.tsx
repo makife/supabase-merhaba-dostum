@@ -64,30 +64,23 @@ useEffect(() => {
     }, 1000); // 3000 -> 1000
 
     // ÇÖZÜM: Ek kontrol - 5 saniye sonra manuel kontrol
-    const fallbackTimer = setTimeout(async () => {
-      console.log('🔧 Fallback kontrol - Maç başladı mı?');
-      
-      const { data: userMatch } = await supabase
-        .from('tournament_matches')
-        .select('*')
-        .eq('tournament_id', tournamentId)
-        .or(`player1_id.eq.${user?.id},player2_id.eq.${user?.id}`)
-        .eq('status', 'in_progress')
-        .single();
-      
-      if (userMatch && window.location.pathname !== '/game') {
-        console.log('🔧 Fallback yönlendirme aktif');
-        window.location.href = `/game?match=${userMatch.id}&tournament=${tournamentId}`;
-      }
-    }, 5000);
-
-    return () => {
-      clearTimeout(startTimer);
-      clearTimeout(fallbackTimer);
-      supabase.removeChannel(channel);
-    };
+const fallbackTimer = setTimeout(async () => {
+  console.log('Fallback kontrol - Maç başladı mı?');
+  
+  const { data: userMatch } = await supabase
+    .from('tournament_matches')
+    .select('*')
+    .eq('tournament_id', tournamentId)
+    .or(`player1_id.eq.${user?.id},player2_id.eq.${user?.id}`)
+    .eq('status', 'in_progress')
+    .single();
+  
+  if (userMatch && window.location.pathname !== '/game') {
+    console.log('Fallback yönlendirme aktif');
+    // window.location.href yerine navigate kullan
+    navigate(`/game?match=${userMatch.id}&tournament=${tournamentId}`);
   }
-}, [tournamentId, user, navigate]);
+}, 8000);
 
   useEffect(() => {
     if (tournamentId && matches.length > 0) {
@@ -108,29 +101,25 @@ useEffect(() => {
 
 useEffect(() => {
   // Page visibility değişikliklerini dinle
-  const handleVisibilityChange = () => {
-    if (document.visibilityState === 'visible') {
-      console.log('🔍 Sayfa aktif oldu, maç kontrolü yapılıyor...');
-      
-      // Sayfaya geri dönüldüğünde kontrol et
-      setTimeout(async () => {
-        if (user && tournamentId) {
-          const { data: userMatch } = await supabase
-            .from('tournament_matches')
-            .select('*')
-            .eq('tournament_id', tournamentId)
-            .or(`player1_id.eq.${user.id},player2_id.eq.${user.id}`)
-            .eq('status', 'in_progress')
-            .single();
-          
-          if (userMatch && window.location.pathname !== '/game') {
-            console.log('🔧 Visibility yönlendirmesi aktif');
-            window.location.href = `/game?match=${userMatch.id}&tournament=${tournamentId}`;
-          }
-        }
-      }, 500);
+  const handleVisibilityChange = async () => {
+  if (document.visibilityState === 'visible' && user && tournamentId) {
+    console.log('Sayfa aktif oldu, maç kontrolü yapılıyor...');
+    
+    const { data: userMatch } = await supabase
+      .from('tournament_matches')
+      .select('*')
+      .eq('tournament_id', tournamentId)
+      .or(`player1_id.eq.${user.id},player2_id.eq.${user.id}`)
+      .eq('status', 'in_progress')
+      .single();
+    
+    if (userMatch && window.location.pathname !== '/game') {
+      console.log('Visibility yönlendirmesi aktif');
+      // window.location.href yerine navigate kullan
+      navigate(`/game?match=${userMatch.id}&tournament=${tournamentId}`);
     }
-  };
+  }
+};
 
   document.addEventListener('visibilitychange', handleVisibilityChange);
   
@@ -368,7 +357,6 @@ const startAllMatches = async () => {
         navigate(`/game?match=${userMatchId}&tournament=${tournamentId}`);
       } catch (navError) {
         console.log('Navigate hatası, window.location kullanılıyor:', navError);
-        window.location.href = `/game?match=${userMatchId}&tournament=${tournamentId}`;
       }
       
       return;
