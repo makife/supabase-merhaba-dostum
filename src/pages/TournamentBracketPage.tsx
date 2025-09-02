@@ -100,32 +100,28 @@ const fallbackTimer = setTimeout(async () => {
   }, [tournamentId, matches.length]);
 
 useEffect(() => {
-  // Page visibility değişikliklerini dinle
+  // Page visibility değişikliklerini dinle  
   const handleVisibilityChange = async () => {
-  if (document.visibilityState === 'visible' && user && tournamentId) {
-    console.log('Sayfa aktif oldu, maç kontrolü yapılıyor...');
-    
-    const { data: userMatch } = await supabase
-      .from('tournament_matches')
-      .select('*')
-      .eq('tournament_id', tournamentId)
-      .or(`player1_id.eq.${user.id},player2_id.eq.${user.id}`)
-      .eq('status', 'in_progress')
-      .single();
-    
-    if (userMatch && window.location.pathname !== '/game') {
-      console.log('Visibility yönlendirmesi aktif');
-      // window.location.href yerine navigate kullan
-      navigate(`/game?match=${userMatch.id}&tournament=${tournamentId}`);
+    if (document.visibilityState === 'visible' && user && tournamentId) {
+      console.log('🔍 Sayfa aktif oldu, maç kontrolü yapılıyor...');
+      
+      const { data: userMatch } = await supabase
+        .from('tournament_matches')
+        .select('*')
+        .eq('tournament_id', tournamentId)
+        .or(`player1_id.eq.${user.id},player2_id.eq.${user.id}`)
+        .eq('status', 'in_progress')
+        .single();
+      
+      if (userMatch && window.location.pathname !== '/game') {
+        console.log('🔧 Visibility yönlendirmesi aktif');
+        navigate(`/game?match=${userMatchId}&tournament=${tournamentId}`);
+      }
     }
-  }
-};
+  };
 
   document.addEventListener('visibilitychange', handleVisibilityChange);
-  
-  return () => {
-    document.removeEventListener('visibilitychange', handleVisibilityChange);
-  };
+  return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
 }, [user, tournamentId]);
 
  const fetchMatches = async () => {
@@ -380,7 +376,7 @@ const startAllMatches = async () => {
         
         if (userMatch) {
           console.log('🎯 Gecikmeli kullanıcı maçı bulundu:', userMatch.id);
-          window.location.href = `/game?match=${userMatch.id}&tournament=${tournamentId}`;
+         navigate(`/game?match=${userMatchId}&tournament=${tournamentId}`);
         }
       }, 2000);
     }
