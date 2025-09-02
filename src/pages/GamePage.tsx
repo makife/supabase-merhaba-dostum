@@ -342,6 +342,7 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
   try {
     const winnerId = userScore > opponentScore ? user.id : tournamentMatch.player2_id;
     
+    // Mevcut maçı tamamla
     await supabase
       .from('tournament_matches')
       .update({
@@ -355,14 +356,16 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
 
     console.log('✅ Turnuva maçı tamamlandı');
 
-    // Tüm maçların bitip bitmediğini kontrol et
-    const { data: remainingMatches } = await supabase
+    // Aynı turdaki TÜM maçları kontrol et
+    const { data: allRoundMatches } = await supabase
       .from('tournament_matches')
       .select('id, status')
       .eq('tournament_id', tournamentMatch.tournament_id)
       .eq('round', tournamentMatch.round);
 
-    const allMatchesCompleted = remainingMatches?.every(match => 
+    console.log(`🔍 ${tournamentMatch.round}. turdaki toplam maç sayısı:`, allRoundMatches?.length);
+
+    const allMatchesCompleted = allRoundMatches?.every(match => 
       match.status === 'completed'
     );
 
@@ -374,13 +377,24 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
         tournamentMatch.tournament_id, 
         tournamentMatch.round + 1
       );
+      
+      // Turnuva sayfasına yönlendir
+      setTimeout(() => {
+        navigate(`/tournament-bracket/${tournamentMatch.tournament_id}`);
+      }, 3000);
+    } else {
+      console.log(`⏳ Diğer maçlar devam ediyor. Tamamlanan: ${allRoundMatches?.filter(m => m.status === 'completed').length}/${allRoundMatches?.length}`);
+      
+      // Sadece turnuva bracket sayfasına yönlendir
+      setTimeout(() => {
+        navigate(`/tournament-bracket/${tournamentMatch.tournament_id}`);
+      }, 2000);
     }
 
   } catch (error) {
     console.error('Turnuva maç bitiş hatası:', error);
   }
 };
-
 const createNextRoundMatches = async (tournamentId: string, nextRound: number) => {
   try {
     console.log(`🏆 ${nextRound}. tur maçları oluşturuluyor...`);
