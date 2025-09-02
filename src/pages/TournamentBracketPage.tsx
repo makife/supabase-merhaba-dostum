@@ -32,7 +32,7 @@ useEffect(() => {
         const updatedMatch = payload.new as any;
         console.log('🔄 Maç güncellendi:', updatedMatch.status);
         
-        // TIP DÜZELTMESİ
+        // TIP DÜZELTMESI
         const userIdString = String(user?.id);
         const isUserMatch = user && (
           String(updatedMatch.player1_id) === userIdString || 
@@ -41,6 +41,7 @@ useEffect(() => {
         
         if (isUserMatch && updatedMatch.status === 'in_progress') {
           console.log('🚀 Kullanıcı maçı başladı, yönlendiriliyor...');
+          // DÜZELTME: Hemen yönlendir, gecikme yok
           navigate(`/game?match=${updatedMatch.id}&tournament=${tournamentId}`);
         }
         
@@ -48,9 +49,10 @@ useEffect(() => {
       })
       .subscribe();
 
+    // DÜZELTME: Timer'ı daha kısa yap ve focus/blur olaylarından etkilenmesin
     const startTimer = setTimeout(() => {
       startAllMatches();
-    }, 3000);
+    }, 1000); // 3000'den 1000'e düşür
 
     return () => {
       clearTimeout(startTimer);
@@ -273,7 +275,7 @@ const createTournamentMatches = async (tournamentId: string, round: number) => {
   }
 };
   
- const startAllMatches = async () => {
+const startAllMatches = async () => {
   if (!tournamentId) return;
 
   try {
@@ -310,6 +312,7 @@ const createTournamentMatches = async (tournamentId: string, round: number) => {
     console.error('Maç başlatma hatası:', error);
   }
 };
+  
   const startBotMatches = async () => {
     const botMatches = matches.filter(m => 
       m.status === 'in_progress' && 
