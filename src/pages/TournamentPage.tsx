@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Trophy, Users, Clock, Plus, Swords } from 'lucide-react';
+import { Home, Trophy, Users, Clock, Plus, Swords } from 'lucide-react';
 import { Tournament } from '@/types/tournament';
 
 const TournamentPage = () => {
