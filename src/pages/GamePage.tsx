@@ -2774,7 +2774,7 @@ if (gameEnded) {
     console.log('🏆 Tournament ID from URL:', tournamentId);
     
     // ✅ React Router ile Yönlendirme
-    navigate(`/tournament/${tournamentId}`);
+    navigate(`/tournament-bracket/${tournamentId}`);
   }} 
   className="w-full"
 >
