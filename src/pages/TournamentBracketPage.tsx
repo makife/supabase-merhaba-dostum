@@ -32,6 +32,7 @@ useEffect(() => {
         const updatedMatch = payload.new as any;
         console.log('🔄 Maç güncellendi:', updatedMatch.status);
         
+        // TIP DÜZELTMESI
         const userIdString = String(user?.id);
         const isUserMatch = user && (
           String(updatedMatch.player1_id) === userIdString || 
@@ -40,47 +41,25 @@ useEffect(() => {
         
         if (isUserMatch && updatedMatch.status === 'in_progress') {
           console.log('🚀 Kullanıcı maçı başladı, yönlendiriliyor...');
-          
-          // ÇÖZÜM: Hem navigate hem de window.location kullan
-          // Navigate çalışmazsa window.location çalışır
+          // DÜZELTME: Hemen yönlendir, gecikme yok
           navigate(`/game?match=${updatedMatch.id}&tournament=${tournamentId}`);
-          
-          // Backup yönlendirme - 1 saniye sonra
-          setTimeout(() => {
-            if (window.location.pathname !== '/game') {
-              console.log('🔧 Backup yönlendirme aktif');
-              window.location.href = `/game?match=${updatedMatch.id}&tournament=${tournamentId}`;
-            }
-          }, 1000);
         }
         
         fetchMatches();
       })
       .subscribe();
 
-    // ÇÖZÜM: Timer'ı daha kısa yap
+    // DÜZELTME: Timer'ı daha kısa yap ve focus/blur olaylarından etkilenmesin
     const startTimer = setTimeout(() => {
       startAllMatches();
-    }, 1000); // 3000 -> 1000
+    }, 1000); // 3000'den 1000'e düşür
 
-    // ÇÖZÜM: Ek kontrol - 5 saniye sonra manuel kontrol
-const fallbackTimer = setTimeout(async () => {
-  console.log('Fallback kontrol - Maç başladı mı?');
-  
-  const { data: userMatch } = await supabase
-    .from('tournament_matches')
-    .select('*')
-    .eq('tournament_id', tournamentId)
-    .or(`player1_id.eq.${user?.id},player2_id.eq.${user?.id}`)
-    .eq('status', 'in_progress')
-    .single();
-  
-  if (userMatch && window.location.pathname !== '/game') {
-    console.log('Fallback yönlendirme aktif');
-    // window.location.href yerine navigate kullan
-    navigate(`/game?match=${userMatch.id}&tournament=${tournamentId}`);
+    return () => {
+      clearTimeout(startTimer);
+      supabase.removeChannel(channel);
+    };
   }
-}, 8000);
+}, [tournamentId, user, navigate]);
 
   useEffect(() => {
     if (tournamentId && matches.length > 0) {
@@ -98,31 +77,6 @@ const fallbackTimer = setTimeout(async () => {
       return () => clearInterval(countdownTimer);
     }
   }, [tournamentId, matches.length]);
-
-useEffect(() => {
-  // Page visibility değişikliklerini dinle  
-  const handleVisibilityChange = async () => {
-    if (document.visibilityState === 'visible' && user && tournamentId) {
-      console.log('🔍 Sayfa aktif oldu, maç kontrolü yapılıyor...');
-      
-      const { data: userMatch } = await supabase
-        .from('tournament_matches')
-        .select('*')
-        .eq('tournament_id', tournamentId)
-        .or(`player1_id.eq.${user.id},player2_id.eq.${user.id}`)
-        .eq('status', 'in_progress')
-        .single();
-      
-      if (userMatch && window.location.pathname !== '/game') {
-        console.log('🔧 Visibility yönlendirmesi aktif');
-        navigate(`/game?match=${userMatchId}&tournament=${tournamentId}`);
-      }
-    }
-  };
-
-  document.addEventListener('visibilitychange', handleVisibilityChange);
-  return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-}, [user, tournamentId]);
 
  const fetchMatches = async () => {
   try {
@@ -344,41 +298,11 @@ const startAllMatches = async () => {
 
     console.log('✅ Tüm maçlar başlatıldı!');
     
-    // ÇÖZÜM: Hemen kontrol et ve yönlendir
+    // DÜZELTME: Kullanıcı maçı varsa ANINDA yönlendir
     if (user && userMatchId) {
       console.log('🎯 Anında kullanıcı maçına yönlendiriliyor:', userMatchId);
-      
-      // Çoklu yönlendirme stratejisi
-      try {
-        navigate(`/game?match=${userMatchId}&tournament=${tournamentId}`);
-      } catch (navError) {
-        console.log('Navigate hatası, window.location kullanılıyor:', navError);
-      }
-      
-      return;
-    }
-    
-    // ÇÖZÜM: Maçı bulamadıysa tekrar kontrol et
-    if (user && !userMatchId) {
-      console.log('🔍 UserMatchId bulunamadı, tekrar kontrol ediliyor...');
-      
-      setTimeout(async () => {
-        const { data: matches } = await supabase
-          .from('tournament_matches')
-          .select('*')
-          .eq('tournament_id', tournamentId)
-          .eq('status', 'in_progress');
-        
-        const userMatch = matches?.find(match => 
-          String(match.player1_id) === String(user.id) || 
-          String(match.player2_id) === String(user.id)
-        );
-        
-        if (userMatch) {
-          console.log('🎯 Gecikmeli kullanıcı maçı bulundu:', userMatch.id);
-         navigate(`/game?match=${userMatchId}&tournament=${tournamentId}`);
-        }
-      }, 2000);
+      navigate(`/game?match=${userMatchId}&tournament=${tournamentId}`);
+      return; // Hemen çık
     }
     
     // Bot maçlarını başlat
@@ -388,7 +312,6 @@ const startAllMatches = async () => {
     console.error('Maç başlatma hatası:', error);
   }
 };
-
   
   const startBotMatches = async () => {
     const botMatches = matches.filter(m => 
