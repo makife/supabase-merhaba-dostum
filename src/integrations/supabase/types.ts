@@ -587,15 +587,7 @@ export type Database = {
           player_id?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "player_activities_match_id_fkey"
-            columns: ["match_id"]
-            isOneToOne: false
-            referencedRelation: "tournament_matches"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       private_chats: {
         Row: {
@@ -827,14 +819,12 @@ export type Database = {
       tournament_matches: {
         Row: {
           created_at: string | null
-          grid_seed: string | null
           id: string
           match_number: number
           player1_id: string | null
           player1_score: number | null
           player2_id: string | null
           player2_score: number | null
-          room_id: string | null
           round: number
           status: string | null
           tournament_id: string | null
@@ -843,14 +833,12 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
-          grid_seed?: string | null
           id?: string
           match_number: number
           player1_id?: string | null
           player1_score?: number | null
           player2_id?: string | null
           player2_score?: number | null
-          room_id?: string | null
           round: number
           status?: string | null
           tournament_id?: string | null
@@ -859,14 +847,12 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
-          grid_seed?: string | null
           id?: string
           match_number?: number
           player1_id?: string | null
           player1_score?: number | null
           player2_id?: string | null
           player2_score?: number | null
-          room_id?: string | null
           round?: number
           status?: string | null
           tournament_id?: string | null
@@ -875,46 +861,16 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "tournament_matches_player1_id_fkey"
-            columns: ["player1_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tournament_matches_player2_id_fkey"
-            columns: ["player2_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tournament_matches_room_id_fkey"
-            columns: ["room_id"]
-            isOneToOne: false
-            referencedRelation: "game_rooms"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "tournament_matches_tournament_id_fkey"
             columns: ["tournament_id"]
             isOneToOne: false
             referencedRelation: "tournaments"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "tournament_matches_winner_id_fkey"
-            columns: ["winner_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       tournament_participants: {
         Row: {
-          created_at: string | null
-          eliminated_at: string | null
           id: string
           is_bot: boolean | null
           joined_at: string | null
@@ -923,8 +879,6 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
-          created_at?: string | null
-          eliminated_at?: string | null
           id?: string
           is_bot?: boolean | null
           joined_at?: string | null
@@ -933,8 +887,6 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
-          created_at?: string | null
-          eliminated_at?: string | null
           id?: string
           is_bot?: boolean | null
           joined_at?: string | null
@@ -950,25 +902,19 @@ export type Database = {
             referencedRelation: "tournaments"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "tournament_participants_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       tournaments: {
         Row: {
           created_at: string | null
+          creator_id: string | null
           current_round: number | null
           expires_at: string | null
           finished_at: string | null
-          game_type: string
+          game_type: string | null
           id: string
           max_participants: number | null
-          name: string
+          name: string | null
           started_at: string | null
           status: string | null
           timeout_duration: number | null
@@ -976,13 +922,14 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          creator_id?: string | null
           current_round?: number | null
           expires_at?: string | null
           finished_at?: string | null
-          game_type?: string
+          game_type?: string | null
           id?: string
           max_participants?: number | null
-          name: string
+          name?: string | null
           started_at?: string | null
           status?: string | null
           timeout_duration?: number | null
@@ -990,13 +937,14 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          creator_id?: string | null
           current_round?: number | null
           expires_at?: string | null
           finished_at?: string | null
-          game_type?: string
+          game_type?: string | null
           id?: string
           max_participants?: number | null
-          name?: string
+          name?: string | null
           started_at?: string | null
           status?: string | null
           timeout_duration?: number | null
@@ -1332,6 +1280,10 @@ export type Database = {
         Args: { p_tournament_id: string }
         Returns: Json
       }
+      create_tournament_matches: {
+        Args: { p_round: number; p_tournament_id: string }
+        Returns: undefined
+      }
       generate_random_grid: {
         Args: Record<PropertyKey, never>
         Returns: Json
@@ -1388,6 +1340,14 @@ export type Database = {
         Args: { p_tournament_id: string; p_user_id: string }
         Returns: Json
       }
+      increment_tournament_participants: {
+        Args: { tournament_id: string }
+        Returns: undefined
+      }
+      increment_tournament_players: {
+        Args: { tournament_id: string }
+        Returns: undefined
+      }
       moderate_and_insert_message: {
         Args: {
           p_avatar_url?: string
@@ -1440,6 +1400,10 @@ export type Database = {
       start_tournament_automatically: {
         Args: { p_tournament_id: string }
         Returns: Json
+      }
+      start_tournament_with_bots: {
+        Args: { p_tournament_id: string }
+        Returns: undefined
       }
       start_tournament_with_bracket: {
         Args: { p_tournament_id: string }

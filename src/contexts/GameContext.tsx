@@ -875,56 +875,23 @@ const generateRoomCode = () => {
         // Turnuva maçında ayrılma cezası
         await applyDisconnectPenalty(user.id, true);
         
-        // Kullanıcının yerine bot ekle (tournament match güncelle)
-        const opponentId = currentRoom.player1_id === user.id ? 
-          currentRoom.player2_id : currentRoom.player1_id;
-        
-        if (opponentId) {
-          // Mevcut turnuva maçını bul
-          const { data: tournamentMatch } = await supabase
-            .from('tournament_matches')
-            .select('*')
-            .eq('room_id', currentRoom.id)
-            .single();
+        // Oyunu sonlandır - rakip kazanır
+        await supabase
+          .from('game_rooms')
+          .update({
+            status: 'finished',
+            winner_id: currentRoom.player1_id === user.id ? currentRoom.player2_id : currentRoom.player1_id,
+            finished_at: new Date().toISOString()
+          })
+          .eq('id', currentRoom.id);
             
-          if (tournamentMatch) {
-            // Çıkan oyuncunun yerine bot koy
-            const updateField = tournamentMatch.player1_id === user.id ? 'player1_id' : 'player2_id';
-            const botId = `bot_replacement_${Date.now()}`;
-            
-            await supabase
-              .from('tournament_matches')
-              .update({ [updateField]: botId })
-              .eq('id', tournamentMatch.id);
-              
-            // Game room'u da güncelle
-            const roomUpdateField = currentRoom.player1_id === user.id ? 'player1_id' : 'player2_id';
-            await supabase
-              .from('game_rooms')
-              .update({ [roomUpdateField]: botId })
-              .eq('id', currentRoom.id);
-      
-      // Participant ekle
-      await supabase
-        .from('game_participants')
-        .insert({
-          room_id: currentRoom.id,
-          user_id: botId,
-          is_bot: true,
-          score: 0
+        toast({
+          title: '🏆 Turnuva Cezası',
+          description: 'Turnuva maçından ayrıldığınız için -50 puan cezası aldınız.',
+          variant: 'destructive',
+          duration: 4000,
         });
-        
-      console.log('🤖 Bot replacement eklendi:', botId);
-    }
-  }
-  
-  toast({
-    title: '🏆 Turnuva Cezası',
-    description: 'Turnuva maçından ayrıldığınız için -50 puan cezası aldınız. Yerinize bot devam edecek.',
-    variant: 'destructive',
-    duration: 4000,
-  });
-}
+      }
       
       // Participant'ı sil
       const { error: deleteError } = await supabase
@@ -1303,26 +1270,28 @@ useEffect(() => {
           oldParticipant.user_id !== user?.id && 
           currentRoom.status === 'active') {
         
-        console.log('🏆 TURNUVA: Rakip ayrıldı, bot replacement kontrol ediliyor...');
+        console.log('🏆 TURNUVA: Rakip ayrıldı, oyunu sonlandır');
         
-        const { data: tournamentMatch } = await supabase
-          .from('tournament_matches')
-          .select('*')
-          .eq('room_id', currentRoom.id)
-          .single();
+        // Turnuva maçında rakip ayrıldı, kullanıcı kazanır
+        await supabase
+          .from('game_rooms')
+          .update({
+            status: 'finished',
+            winner_id: user?.id,
+            finished_at: new Date().toISOString()
+          })
+          .eq('id', currentRoom.id);
           
-        if (tournamentMatch) {
-          const leftPlayerId = oldParticipant.user_id;
-          const isPlayer1Left = tournamentMatch.player1_id === leftPlayerId;
-          const isPlayer2Left = tournamentMatch.player2_id === leftPlayerId;
-          
-          if (isPlayer1Left && tournamentMatch.player1_id?.startsWith('bot_replacement_')) {
-            console.log('🤖 Player 1 yerine bot eklendi, oyun devam ediyor');
-            return;
-          } else if (isPlayer2Left && tournamentMatch.player2_id?.startsWith('bot_replacement_')) {
-            console.log('🤖 Player 2 yerine bot eklendi, oyun devam ediyor');
-            return;
-          }
+        // Turnuva maçını da tamamlanmış olarak işaretle
+        toast({
+          title: '🏆 Turnuva Zaferi!',
+          description: 'Rakip ayrıldı, siz kazandınız! +100 bonus puan.',
+          duration: 4000,
+        });
+        
+        // Bonus puan ver
+        if (user?.id) {
+          await applyWinBonus(user.id, 100);
         }
       }
     } else {

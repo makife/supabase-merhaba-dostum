@@ -55,7 +55,7 @@ const TournamentPage = () => {
           status: 'waiting',
           game_type: 'timed',
           max_participants: 8,
-          current_round: 1, // current_players yerine current_round kullan
+          current_round: 1,
           timeout_duration: 15
         })
         .select()
@@ -68,6 +68,8 @@ const TournamentPage = () => {
           .insert({
             tournament_id: tournament.id,
             user_id: user.id,
+            is_bot: false,
+            seed: 1,
             joined_at: new Date().toISOString()
           });
 
@@ -103,6 +105,8 @@ const handleJoinTournament = async (tournamentId: string) => {
       .insert({
         tournament_id: tournamentId,
         user_id: user.id,
+        is_bot: false,
+        seed: 2, // Sonradan katılanlar
         joined_at: new Date().toISOString()
       });
 
@@ -111,7 +115,7 @@ const handleJoinTournament = async (tournamentId: string) => {
       return;
     }
 
-    // Katılımcı sayısını güncellemek için turnuva verilerini yenile
+    // Turnuva sayfasını güncelle
     await fetchActiveTournaments();
 
     navigate(`/tournament-waiting/${tournamentId}`);

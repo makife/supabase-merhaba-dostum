@@ -68,6 +68,23 @@ useEffect(() => {
     }
   };
 
+  useEffect(() => {
+    if (!tournamentId) return;
+    
+    fetchTournamentData();
+    
+    const timer = setInterval(() => {
+      if (timeLeft > 0) {
+        setTimeLeft(prev => prev - 1);
+      } else if (timeLeft === 0) {
+        startTournament();
+        clearInterval(timer);
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [tournamentId]);
+
   const fetchParticipants = async () => {
     try {
       console.log('👥 Katılımcılar alınıyor...');
@@ -150,118 +167,42 @@ useEffect(() => {
   };
 
  const startTournament = async () => {
-  try {
-    console.log('🚀 Turnuva başlatılıyor...');
-    
-    const currentPlayers = participants.length;
-    const neededBots = 8 - currentPlayers;
+   try {
+     console.log('🚀 Turnuva başlatılıyor...');
+     
+     // Yeni database fonksiyonunu kullan
+     const { data, error } = await supabase.rpc('start_tournament_automatically', {
+       p_tournament_id: tournamentId
+     });
 
-    console.log('🤖 Gerekli bot sayısı:', neededBots);
+     if (error) {
+       console.error('Turnuva başlatma hatası:', error);
+       return;
+     }
 
-    // Botları ekle
-    for (let i = 1; i <= neededBots; i++) {
-      const botId = `bot_${tournamentId}_${i}`;
-      console.log('➕ Bot ekleniyor:', botId);
-      
-      const { error: botError } = await supabase
-        .from('tournament_participants')
-        .insert({
-          tournament_id: tournamentId,
-          user_id: botId,
-          is_bot: true,
-          joined_at: new Date().toISOString()
-        } as any);
-
-      if (botError) {
-        console.error('Bot ekleme hatası:', botError);
-      } else {
-        console.log('✅ Bot eklendi:', botId);
-      }
-    }
-
-    // ÖNEMLİ: Botlar eklendikten sonra katılımcı listesini yenile
-    await fetchParticipants();
-
-    // Turnuva durumunu güncelle - MANUEL olarak state'i de güncelle
-    console.log('🔄 Turnuva durumu güncelleniyor...');
-    const { error: updateError } = await supabase
-      .from('tournaments')
-      .update({
-        status: 'in_progress',
-        started_at: new Date().toISOString(),
-        current_round: 8, // 8 katılımcı
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', tournamentId);
-
-    if (updateError) {
-      console.error('Turnuva güncelleme hatası:', updateError);
-      return;
-    }
-
-    console.log('✅ Turnuva durumu güncellendi!');
-    
-    // State'i manuel güncelle (real-time beklemeden)
-    setTournament(prev => prev ? {
-      ...prev,
-      status: 'in_progress',
-      current_players: 8,
-      current_round: 8
-    } : prev);
-
-    // Maçları oluştur
-    console.log('⚔️ Maçlar oluşturuluyor...');
-    await createTournamentMatches();
-
-    // 2 saniye bekle ve YÖNLENDİR
-    console.log('⏳ Yönlendirme için bekleniyor...');
-    setTimeout(() => {
-      console.log('🚀 TournamentBracket sayfasına yönlendiriliyor...');
-      navigate(`/tournament-bracket/${tournamentId}`);
-    }, 2000);
-    
-  } catch (error) {
-    console.error('Turnuva başlatma hatası:', error);
-  }
-};
+     console.log('✅ Turnuva başlatıldı:', data);
+     
+     // Type assertion ile data'nın doğru tipte olduğunu belirt
+     const result = data as { success: boolean; error?: string; real_players?: number; bots_added?: number; matches_created?: number };
+     
+     // Turnuva başarıyla başladıysa bracket sayfasına yönlendir
+     if (result?.success) {
+       setTimeout(() => {
+         console.log('🚀 TournamentBracket sayfasına yönlendiriliyor...');
+         navigate(`/tournament-bracket/${tournamentId}`);
+       }, 2000);
+     } else {
+       console.error('Turnuva başlatma hatası:', result?.error);
+     }
+     
+   } catch (error) {
+     console.error('Turnuva başlatma hatası:', error);
+   }
+ };
 
 const createTournamentMatches = async () => {
-  if (!tournamentId) return;
-  
-  try {
-    // Tüm katılımcıları al
-    const { data: allParticipants } = await supabase
-      .from('tournament_participants')
-      .select('user_id, is_bot')
-      .eq('tournament_id', tournamentId)
-      .order('joined_at', { ascending: true });
-
-    if (!allParticipants) return;
-
-    // Katılımcıları karıştır
-    const shuffledParticipants = [...allParticipants].sort(() => Math.random() - 0.5);
-    const matchCount = Math.floor(shuffledParticipants.length / 2);
-
-    // Maçları oluştur
-    for (let i = 0; i < matchCount; i++) {
-      const player1 = shuffledParticipants[i * 2];
-      const player2 = shuffledParticipants[i * 2 + 1];
-
-      await supabase
-        .from('tournament_matches')
-        .insert({
-          tournament_id: tournamentId,
-          round: 1,
-          match_number: i + 1,
-          player1_id: player1.user_id,
-          player2_id: player2.user_id,
-          status: 'pending'
-        });
-    }
-
-  } catch (error) {
-    console.error('Maç oluşturma hatası:', error);
-  }
+  // Bu fonksiyon artık database içinde yapılıyor
+  console.log('Maçlar database fonksiyonu tarafından oluşturuluyor...');
 };
 
   if (!tournament) {
