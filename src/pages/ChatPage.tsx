@@ -209,8 +209,6 @@ useEffect(() => {
       if (!user?.id) return;
 
       try {
-        console.log('🔄 ChatPage opened - marking all messages as read');
-        
         const { error } = await supabase
           .from('private_messages')
           .update({ is_read: true })
@@ -218,42 +216,31 @@ useEffect(() => {
           .eq('is_read', false);
 
         if (error) {
-          console.error('❌ Error marking messages as read:', error);
-          return;
+          console.error('Mesajlar okundu olarak işaretlenirken hata:', error);
+        } else {
+          console.log('✅ Özel mesajlar okundu olarak işaretlendi');
+          // Hook'taki count'ları da sıfırla
+          await markAllAsRead();
+          setUnreadCounts({});
         }
-
-        // Hook'taki count'ları da sıfırla
-        await markAllAsRead();
-        
-        setUnreadCounts({});
-        
-        setTimeout(() => {
-          fetchUnreadCounts();
-          forceRefresh();
-        }, 1000);
-        
       } catch (error) {
-        console.error('❌ Error in markAllPrivateMessagesAsRead:', error);
+        console.error('Error marking messages as read:', error);
       }
     };
 
-    if (user?.id) {
-      markAllPrivateMessagesAsRead();
-    }
-  }, [user?.id, markAllAsRead, forceRefresh]);
+    markAllPrivateMessagesAsRead();
+  }, [user?.id, markAllAsRead]);
 
 useEffect(() => {
     const refreshOnUsersView = async () => {
       if (!user?.id) return;
       
-      // Tüm mesajları okundu yap
       await supabase
         .from('private_messages')
         .update({ is_read: true })
         .eq('recipient_id', user.id)
         .eq('is_read', false);
       
-      // Hook'u güncelle
       await markAllAsRead();
       setUnreadCounts({});
       fetchUnreadCounts();
@@ -311,6 +298,11 @@ useEffect(() => {
           .eq('is_read', false);
 
         console.log('✅ Chat mesajları okundu olarak işaretlendi:', activeChatId);
+        
+        setTimeout(() => {
+          fetchUnreadCounts();
+          forceRefresh();
+        }, 500);
       } catch (error) {
         console.error('Chat mesajlarını işaretlerken hata:', error);
       }
@@ -319,7 +311,7 @@ useEffect(() => {
     if (viewMode === 'private-chat' && activeChatId) {
       markChatMessagesAsRead();
     }
-  }, [viewMode, activeChatId, user?.id]);
+  }, [viewMode, activeChatId, user?.id, forceRefresh]);
 
 // 2. viewMode 'users' olduğunda da çalıştır (ek güvenlik)
 useEffect(() => {
