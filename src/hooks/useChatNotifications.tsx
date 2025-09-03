@@ -9,52 +9,81 @@ export function useChatNotifications() {
   const [mentionCount, setMentionCount] = useState(0);
   const [privateMessageCount, setPrivateMessageCount] = useState(0);
 
-  useEffect(() => {
+useEffect(() => {
     if (!user?.id) return;
 
     // Mevcut okunmamış mesajları yükle
     const loadUnreadMessages = async () => {
-      try {
-        // Özel mesajlar - recipient_id kullan
-        const { data: unreadPrivateMessages, error: privateError } = await supabase
-          .from('private_messages')
-          .select('id')
-          .eq('recipient_id', user.id)
-          .eq('is_read', false);
+  if (!user?.id) return;
 
-        if (privateError) {
-          console.error('Private messages fetch error:', privateError);
+  try {
+    // Özel mesajlar - recipient_id kullan
+    const { data: unreadPrivateMessages, error: privateError } = await supabase
+      .from('private_messages')
+      .select('id')
+      .eq('recipient_id', user.id)
+      .eq('is_read', false);
+
+    if (privateError) {
+      console.error('Private messages fetch error:', privateError);
+    }
+    
+    const privateCount = unreadPrivateMessages?.length || 0;
+    setPrivateMessageCount(privateCount);
+
+    // Mention'lar (notifications tablosundan)
+    const { data: unreadMentions, error: mentionError } = await supabase
+      .from('notifications')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('is_read', false)
+      .eq('type', 'mention');
+
+    if (mentionError) {
+      console.warn('Mention notifications fetch error:', mentionError);
+      setMentionCount(0);
+    } else {
+      const mentionCountNum = unreadMentions?.length || 0;
+      setMentionCount(mentionCountNum);
+    }
+
+    const totalCount = privateCount + (unreadMentions?.length || 0);
+    setUnreadCount(totalCount);
+    
+    console.log(`Okunmamış mesaj sayısı: ${totalCount} (Özel: ${privateCount}, Mention: ${unreadMentions?.length || 0})`);
+  } catch (error) {
+    console.error('Okunmamış mesajlar yüklenirken hata:', error);
+  }
+};
+
+useEffect(() => {
+  if (!user?.id) return;
+
+  // Okunmamış mesajları dinle
+  const readMessagesChannel = supabase
+    .channel(`read-messages-${user.id}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'private_messages',
+        filter: `recipient_id=eq.${user.id}`
+      },
+      async (payload) => {
+        const updatedMessage = payload.new as any;
+        if (updatedMessage.is_read) {
+          // Okunmamış mesaj sayısını yeniden hesapla
+          await loadUnreadMessages();
         }
-        
-        const privateCount = unreadPrivateMessages?.length || 0;
-        setPrivateMessageCount(privateCount);
-
-        // Mention'lar (notifications tablosundan)
-        const { data: unreadMentions, error: mentionError } = await supabase
-          .from('notifications')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('is_read', false)
-          .eq('type', 'mention');
-
-        if (mentionError) {
-          console.warn('Mention notifications fetch error:', mentionError);
-          setMentionCount(0);
-        } else {
-          const mentionCountNum = unreadMentions?.length || 0;
-          setMentionCount(mentionCountNum);
-        }
-
-        const totalCount = privateCount + (unreadMentions?.length || 0);
-        setUnreadCount(totalCount);
-        
-        console.log(`Okunmamış mesaj sayısı: ${totalCount} (Özel: ${privateCount}, Mention: ${unreadMentions?.length || 0})`);
-      } catch (error) {
-        console.error('Okunmamış mesajlar yüklenirken hata:', error);
       }
-    };
+    )
+    .subscribe();
 
-    loadUnreadMessages();
+  return () => {
+    supabase.removeChannel(readMessagesChannel);
+  };
+}, [user?.id]);
 
     // Real-time subscription for new private messages
     const privateMessagesChannel = supabase
