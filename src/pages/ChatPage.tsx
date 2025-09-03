@@ -26,7 +26,7 @@ export default function ChatPage() {
   const { user } = useAuth();
   const { profile, onlineUsers, isUserOnline } = useUser();
   const { playSound } = useSounds();
-  const { markAllAsRead, forceRefresh } = useChatNotifications();
+  const { markAllAsRead } = useChatNotifications();
   
   const [viewMode, setViewMode] = useState<ViewMode>('global');
   const [selectedUser, setSelectedUser] = useState<SelectedUser | null>(null);
@@ -146,7 +146,7 @@ export default function ChatPage() {
     }
   }, [viewMode, user]);
 
-  // 3. Private chat'e girdiğinde - basit versiyon
+  // 3. Private chat'e girdiğinde
   useEffect(() => {
     const markChatAsRead = async () => {
       if (!activeChatId || !user?.id || viewMode !== 'private-chat') return;
@@ -159,15 +159,22 @@ export default function ChatPage() {
           .eq('recipient_id', user.id)
           .eq('is_read', false);
 
-        // Real-time update gelecek, manuel refresh gereksiz
-        console.log('✅ Chat messages marked as read');
+        // Count'ları güncelle
+        setTimeout(() => {
+          fetchUnreadCounts();
+          forceRefresh();
+        }, 500);
       } catch (error) {
         console.error('❌ Error marking chat as read:', error);
       }
     };
 
     markChatAsRead();
-  }, [viewMode, activeChatId, user?.id]); // forceRefresh kaldırıldı
+  }, [viewMode, activeChatId, user?.id, forceRefresh]);
+
+useEffect(() => {
+  markAllAsRead(); // Sadece bu satır
+}, []);
 
   const handleBackToMenu = () => {
     playSound('buttonClick');
