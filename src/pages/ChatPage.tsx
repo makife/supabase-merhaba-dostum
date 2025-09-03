@@ -172,10 +172,6 @@ export default function ChatPage() {
     markChatAsRead();
   }, [viewMode, activeChatId, user?.id, forceRefresh]);
 
-useEffect(() => {
-  markAllAsRead(); // Sadece bu satır
-}, []);
-
   const handleBackToMenu = () => {
     playSound('buttonClick');
     navigate('/');
