@@ -91,6 +91,101 @@ useEffect(() => {
   }
 }, [isOpen]);
 
+const setupRealtimeSubscription = () => {
+  console.log('🔄 Setting up GLOBAL real-time subscription');
+
+  const channel = supabase
+    .channel('global-chat-realtime', {
+      config: {
+        broadcast: { self: false },
+        presence: { key: user?.id || 'anonymous' }
+      }
+    })
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'global_chat',
+      },
+      async (payload) => {
+        console.log('📨 REAL-TIME GLOBAL MESSAGE:', payload);
+        const newMessage = payload.new as any;
+        
+        if (newMessage.user_id === user?.id) {
+          console.log('⭐ Skipping own message for real-time');
+          return;
+        }
+
+        let username = newMessage.username || 'Anonim';
+        let avatar_url = newMessage.avatar_url || null;
+
+        if (!newMessage.username || newMessage.username === 'Anonim') {
+          try {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('username, avatar_url')
+              .eq('id', newMessage.user_id)
+              .single();
+            
+            if (profile) {
+              username = profile.username;
+              avatar_url = profile.avatar_url;
+            }
+          } catch (error) {
+            console.warn('Could not fetch user profile:', error);
+          }
+        }
+
+        setMessages(prev => {
+          const alreadyExists = prev.some(msg => msg.id === newMessage.id);
+          if (alreadyExists) {
+            console.log('⚠️ Message already exists, skipping');
+            return prev;
+          }
+
+          console.log('✅ Adding new message to state');
+          const formattedMessage = {
+            id: newMessage.id,
+            user_id: newMessage.user_id,
+            username: username,
+            message: newMessage.message || newMessage.content || '',
+            created_at: newMessage.created_at,
+            avatar_url: avatar_url
+          };
+
+          return [...prev, formattedMessage].sort((a, b) => 
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
+        });
+
+        try {
+          playSound('correctWord');
+        } catch (e) {
+          console.log('🔇 Sound play failed:', e);
+        }
+      }
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'global_chat',
+      },
+      (payload) => {
+        const deletedMessage = payload.old as any;
+        setMessages(prev => prev.filter(m => m.id !== deletedMessage.id));
+        console.log('🗑️ Message deleted:', deletedMessage.id);
+      }
+    )
+    .subscribe((status) => {
+      console.log('📡 Global real-time subscription status:', status);
+    });
+
+  return channel;
+};
+
 // GlobalChat.tsx - fetchReactions fonksiyonu
 const fetchReactions = async () => {
   try {
