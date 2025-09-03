@@ -883,45 +883,53 @@ const renderGlobalChat = () => (
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <UserAvatar
-                  src={userAvatars[message.user_id]}
+                  src={message.user_id ? userAvatars[message.user_id] : '/bot-avatar.png'} // Bot için özel avatar
                   alt={message.username}
                   fallback={message.username.charAt(0).toUpperCase()}
                   size="xs"
-                  className="border-2 border-chat-300"
+                  className={`border-2 ${message.username === 'kelimeciBot' ? 'border-blue-500' : 'border-chat-300'}`}
                 />
                 <span className={`text-sm font-medium ${
-                  message.user_id === user?.id 
+                  message.username === 'kelimeciBot' 
+                    ? 'text-blue-600 font-bold' // Bot için özel stil
+                    : message.user_id === user?.id 
                     ? 'text-chat-600' 
                     : 'text-gray-700'
                 }`}>
                   {message.username}
+                  {message.username === 'kelimeciBot' && ' 🤖'}
                 </span>
-                {isUserOnline(message.user_id) && (
+                
+                {/* Online indicator - sadece gerçek kullanıcılar için */}
+                {message.user_id && message.username !== 'kelimeciBot' && isUserOnline(message.user_id) && (
                   <div className="w-2 h-2 bg-green-500 rounded-full" title="Çevrimiçi"></div>
                 )}
+                
                 <span className="text-xs text-gray-500">
                   {formatTime(message.created_at)}
                 </span>
                 
-                {message.user_id !== user?.id && onStartPrivateChat && (
-  <Button
-    size="sm"
-    variant="ghost"
-    onClick={() => {
-      onStartPrivateChat({
-        id: message.user_id,
-        username: message.username,
-        avatar_url: userAvatars[message.user_id]
-      });
-    }}
-    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-chat-100"
-    title="Özel mesaj gönder"
-  >
-    <Mail className="w-3 h-3 text-chat-600" />
-  </Button>
-)}
+                {/* Private message button - sadece gerçek kullanıcılar için */}
+                {message.user_id && message.user_id !== user?.id && message.username !== 'kelimeciBot' && onStartPrivateChat && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      onStartPrivateChat({
+                        id: message.user_id,
+                        username: message.username,
+                        avatar_url: userAvatars[message.user_id]
+                      });
+                    }}
+                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-chat-100"
+                    title="Özel mesaj gönder"
+                  >
+                    <Mail className="w-3 h-3 text-chat-600" />
+                  </Button>
+                )}
               </div>
               
+              {/* Delete button - sadece kendi mesajları için */}
               {message.user_id === user?.id && (
                 <button
                   onClick={() => deleteMessage(message.id)}
@@ -933,12 +941,14 @@ const renderGlobalChat = () => (
               )}
             </div>
             
-            <div className="text-gray-800 break-words">
+            <div className={`text-gray-800 break-words ${
+              message.username === 'kelimeciBot' ? 'font-medium text-blue-800' : ''
+            }`}>
               {message.message}
             </div>
             
-            {/* Reactions - temp mesajlar için gösterme */}
-            {!message.id.startsWith('temp-') && messageReactions[message.id] && (
+            {/* Reactions - temp mesajlar ve bot mesajları için gösterme */}
+            {!message.id.startsWith('temp-') && message.username !== 'kelimeciBot' && messageReactions[message.id] && (
               <div className="flex items-center space-x-2 mt-2">
                 {Object.entries(groupReactions(messageReactions[message.id])).map(([emoji, reactions]) => (
                   <button
