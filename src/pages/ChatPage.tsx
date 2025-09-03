@@ -228,6 +228,9 @@ useEffect(() => {
       // Unread counts'ı temizle
       setUnreadCounts({});
       
+      // FloatingMenu'deki bildirimleri de temizle
+      await markAllAsRead();
+      
       // fetchUnreadCounts'ı yeniden çağır
       setTimeout(() => {
         fetchUnreadCounts();
@@ -242,7 +245,7 @@ useEffect(() => {
   if (user?.id) {
     markAllPrivateMessagesAsRead();
   }
-}, [user?.id]); 
+}, [user?.id, markAllAsRead]);
 
  useEffect(() => {
     const markChatMessagesAsRead = async () => {
