@@ -10,51 +10,55 @@ export function useChatNotifications() {
   const [privateMessageCount, setPrivateMessageCount] = useState(0);
 
   // Okunmamış mesajları yükleme fonksiyonu
-  const loadUnreadMessages = useCallback(async () => {
-    if (!user?.id) return;
+const loadUnreadMessages = useCallback(async () => {
+  if (!user?.id) return;
 
-    try {
-      console.log('🔄 Loading unread messages for user:', user.id);
-      
-      // Özel mesajlar
-      const { data: unreadPrivateMessages, error: privateError } = await supabase
-        .from('private_messages')
-        .select('id')
-        .eq('recipient_id', user.id)
-        .eq('is_read', false);
+  try {
+    console.log('🔄 Loading unread messages for user:', user.id);
+    
+    // Özel mesajlar - recipient_id kontrolü
+    const { data: unreadPrivateMessages, error: privateError } = await supabase
+      .from('private_messages')
+      .select('id')
+      .eq('recipient_id', user.id)
+      .eq('is_read', false);
 
-      if (privateError) {
-        console.error('Private messages fetch error:', privateError);
-      }
-      
-      const privateCount = unreadPrivateMessages?.length || 0;
-      setPrivateMessageCount(privateCount);
-
-      // Mention'lar
-      const { data: unreadMentions, error: mentionError } = await supabase
-        .from('notifications')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('is_read', false)
-        .eq('type', 'mention');
-
-      if (mentionError) {
-        console.warn('Mention notifications fetch error:', mentionError);
-        setMentionCount(0);
-      } else {
-        const mentionCountNum = unreadMentions?.length || 0;
-        setMentionCount(mentionCountNum);
-      }
-
-      const totalCount = privateCount + (unreadMentions?.length || 0);
-      setUnreadCount(totalCount);
-      
-      console.log(`📊 Unread counts - Total: ${totalCount}, Private: ${privateCount}, Mention: ${unreadMentions?.length || 0}`);
-
-    } catch (error) {
-      console.error('Error loading unread messages:', error);
+    if (privateError) {
+      console.error('Private messages fetch error:', privateError);
+      return;
     }
-  }, [user?.id]);
+    
+    const privateCount = unreadPrivateMessages?.length || 0;
+    console.log('📞 Private messages count:', privateCount);
+
+    // Mention'lar
+    const { data: unreadMentions, error: mentionError } = await supabase
+      .from('notifications')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('is_read', false)
+      .eq('type', 'mention');
+
+    let mentionCountNum = 0;
+    if (mentionError) {
+      console.warn('Mention notifications fetch error:', mentionError);
+    } else {
+      mentionCountNum = unreadMentions?.length || 0;
+    }
+
+    const totalCount = privateCount + mentionCountNum;
+    
+    // State'leri güncelle
+    setPrivateMessageCount(privateCount);
+    setMentionCount(mentionCountNum);
+    setUnreadCount(totalCount);
+    
+    console.log(`📊 Unread counts - Total: ${totalCount}, Private: ${privateCount}, Mention: ${mentionCountNum}`);
+
+  } catch (error) {
+    console.error('Error loading unread messages:', error);
+  }
+}, [user?.id]);
 
   // Real-time subscription için useEffect
   useEffect(() => {
