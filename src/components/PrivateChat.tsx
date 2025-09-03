@@ -351,6 +351,9 @@ const sendMessage = async () => {
   };
 
   return (
+    <div className="w-full h-full flex flex-col bg-background">
+      {/* Messages */}
+      <ScrollArea className="flex-1 p-4 overflow-hidden">
     <div className="space-y-4 overflow-hidden">
   {messages.map((message) => (
     <div
