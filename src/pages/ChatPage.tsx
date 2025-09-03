@@ -146,7 +146,7 @@ export default function ChatPage() {
     }
   }, [viewMode, user]);
 
-  // 3. Private chat'e girdiğinde
+  // 3. Private chat'e girdiğinde - basit versiyon
   useEffect(() => {
     const markChatAsRead = async () => {
       if (!activeChatId || !user?.id || viewMode !== 'private-chat') return;
@@ -159,18 +159,15 @@ export default function ChatPage() {
           .eq('recipient_id', user.id)
           .eq('is_read', false);
 
-        // Count'ları güncelle
-        setTimeout(() => {
-          fetchUnreadCounts();
-          forceRefresh();
-        }, 500);
+        // Real-time update gelecek, manuel refresh gereksiz
+        console.log('✅ Chat messages marked as read');
       } catch (error) {
         console.error('❌ Error marking chat as read:', error);
       }
     };
 
     markChatAsRead();
-  }, [viewMode, activeChatId, user?.id, forceRefresh]);
+  }, [viewMode, activeChatId, user?.id]); // forceRefresh kaldırıldı
 
   const handleBackToMenu = () => {
     playSound('buttonClick');
