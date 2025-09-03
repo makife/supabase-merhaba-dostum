@@ -301,53 +301,54 @@ const TournamentBracketPage = () => {
   // Kullanıcının maçı tamamlandığında çağrılacak
   const handleUserMatchCompleted = async () => {
     try {
-      console.log('👤 Kullanıcı maçı tamamlandı, bot maçları kontrol ediliyor...');
-      
-      // Beklemedeki bot maçlarını al
-      const { data: pendingMatches } = await supabase
+      console.log('👤 Kullanıcı maçı tamamlandı, kalan bot maçları bitiriliyor...');
+
+      // Kullanıcıya ait olmayan ve pending/in_progress durumundaki maçları al
+      const { data: remaining } = await supabase
         .from('tournament_matches')
         .select('*')
         .eq('tournament_id', tournamentId)
-        .eq('status', 'pending');
-      
-      if (!pendingMatches || pendingMatches.length === 0) {
-        console.log('✅ Tüm maçlar tamamlandı, sonraki tur kontrolü yapılıyor...');
-        await checkNextRoundCreation(tournamentId);
+        .in('status', ['pending', 'in_progress']);
+
+      if (!remaining || remaining.length === 0) {
+        await checkNextRoundCreation(String(tournamentId));
         return;
       }
-      
-      // Bot maçlarını hemen tamamla
-      for (const match of pendingMatches) {
+
+      for (const match of remaining) {
         const isUserMatch = user && (
-          String(match.player1_id) === String(user.id) || 
+          String(match.player1_id) === String(user.id) ||
           String(match.player2_id) === String(user.id)
         );
-        
-        if (!isUserMatch) {
-          const player1Score = Math.floor(Math.random() * 30) + 15;
-          const player2Score = Math.floor(Math.random() * 30) + 15;
-          const winnerId = player1Score > player2Score ? match.player1_id : match.player2_id;
-          
-          await supabase
-            .from('tournament_matches')
-            .update({
-              status: 'completed',
-              player1_score: player1Score,
-              player2_score: player2Score,
-              winner_id: winnerId,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', match.id);
-            
-          console.log(`✅ Bot maçı hızlıca tamamlandı: ${match.id.slice(-8)}`);
-        }
+        if (isUserMatch) continue;
+
+        // Bot kimliklerini normalize et (null ise bot_... ver)
+        const p1 = match.player1_id || `bot_${String(match.id).slice(-4)}_1`;
+        const p2 = match.player2_id || `bot_${String(match.id).slice(-4)}_2`;
+
+        const player1Score = Math.floor(Math.random() * 30) + 15;
+        const player2Score = Math.floor(Math.random() * 30) + 15;
+        const winnerId = player1Score >= player2Score ? p1 : p2;
+
+        await supabase
+          .from('tournament_matches')
+          .update({
+            status: 'completed',
+            player1_id: p1,
+            player2_id: p2,
+            player1_score: player1Score,
+            player2_score: player2Score,
+            winner_id: winnerId,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', match.id);
+
+        console.log(`✅ Bot maçı tamamlandı (auto): ${String(match.id).slice(-8)}`);
       }
-      
-      // Tüm bot maçları tamamlandıktan sonra sonraki tur kontrolü
-      await checkNextRoundCreation(tournamentId);
-      
+
+      await checkNextRoundCreation(String(tournamentId));
     } catch (error) {
-      console.error('Kullanıcı maçı tamamlama sonrası hata:', error);
+      console.error('Kullanıcı maçı sonrası otomasyon hatası:', error);
     }
   };
 
@@ -355,36 +356,38 @@ const TournamentBracketPage = () => {
   try {
     console.log('🤖 Bot maçları başlatılıyor...');
     
-    // Tüm beklemedeki bot maçlarını al
-    const { data: pendingMatches } = await supabase
+    // Kullanıcıya ait olmayan ve pending/in_progress durumundaki maçları hedefle
+    const { data: botMatches } = await supabase
       .from('tournament_matches')
       .select('*')
       .eq('tournament_id', tournamentId)
-      .eq('status', 'pending');
+      .in('status', ['pending', 'in_progress']);
     
-    if (!pendingMatches) return;
+    if (!botMatches) return;
     
-    // Kullanıcının maçını hariç tut
-    const botMatches = pendingMatches.filter(match => {
-      const userIdString = String(user?.id);
-      return String(match.player1_id) !== userIdString && 
-             String(match.player2_id) !== userIdString;
-    });
+    const userIdString = String(user?.id);
+    const targets = botMatches.filter(match => (
+      String(match.player1_id) !== userIdString && String(match.player2_id) !== userIdString
+    ));
     
-    console.log(`🤖 ${botMatches.length} bot maçı bulundu`);
+    console.log(`🤖 Tamamlanacak bot maçı: ${targets.length}`);
     
-    for (const match of botMatches) {
-      // Bot maçlarını hemen başlat ve bitir
+    for (const match of targets) {
+      // Bot maçlarını hızlıca bitir
       setTimeout(async () => {
         try {
+          const p1 = match.player1_id || `bot_${String(match.id).slice(-4)}_1`;
+          const p2 = match.player2_id || `bot_${String(match.id).slice(-4)}_2`;
           const player1Score = Math.floor(Math.random() * 30) + 15;
           const player2Score = Math.floor(Math.random() * 30) + 15;
-          const winnerId = player1Score > player2Score ? match.player1_id : match.player2_id;
+          const winnerId = player1Score >= player2Score ? p1 : p2;
           
           await supabase
             .from('tournament_matches')
             .update({
               status: 'completed',
+              player1_id: p1,
+              player2_id: p2,
               player1_score: player1Score,
               player2_score: player2Score,
               winner_id: winnerId,
@@ -392,12 +395,12 @@ const TournamentBracketPage = () => {
             })
             .eq('id', match.id);
             
-          console.log(`✅ Bot maçı tamamlandı: ${match.id.slice(-8)}`);
+          console.log(`✅ Bot maçı tamamlandı: ${String(match.id).slice(-8)}`);
           
         } catch (error) {
           console.error('Bot maçı tamamlama hatası:', error);
         }
-      }, Math.random() * 5000 + 2000); // 2-7 saniye arası
+      }, Math.random() * 1500 + 500);
     }
   } catch (error) {
     console.error('Bot maçları başlatma hatası:', error);
@@ -446,7 +449,7 @@ const checkNextRoundCreation = async (tournamentId: string) => {
           .from('tournaments')
           .update({
             status: 'completed',
-            completed_at: new Date().toISOString()
+            finished_at: new Date().toISOString()
           })
           .eq('id', tournamentId);
       }
