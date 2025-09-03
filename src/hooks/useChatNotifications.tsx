@@ -1,4 +1,4 @@
-// 1. useChatNotifications.tsx - Interval'ı kaldır
+// useChatNotifications.tsx - Syntax hatası düzeltilmiş versiyon
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,41 +9,56 @@ export function useChatNotifications() {
   const [mentionCount, setMentionCount] = useState(0);
   const [privateMessageCount, setPrivateMessageCount] = useState(0);
 
-  // Gerçek zamanlı count kontrol fonksiyonu - INTERVAL KALDIRILDI
-  const refreshUnreadCounts = async () => {
-    if (!user?.id) return;
-
-    try {
-      const { data: unreadMessages } = await supabase
-        .from('private_messages')
-        .select('id')
-        .eq('recipient_id', user.id)
-        .eq('is_read', false);
-
-      const actualCount = unreadMessages?.length || 0;
-      
-      console.log('🔄 Refreshing unread count:', actualCount);
-      
-      setPrivateMessageCount(actualCount);
-      setUnreadCount(actualCount);
-      setMentionCount(0);
-
-    } catch (error) {
-      console.error('Error refreshing unread counts:', error);
-    }
-  };
-
   useEffect(() => {
     if (!user?.id) return;
 
-    // İlk yüklemede count'ları al
-    refreshUnreadCounts();
+    // Mevcut okunmamış mesajları yükle
+    const loadUnreadMessages = async () => {
+      try {
+        // Özel mesajlar - recipient_id kullan
+        const { data: unreadPrivateMessages, error: privateError } = await supabase
+          .from('private_messages')
+          .select('id')
+          .eq('recipient_id', user.id)
+          .eq('is_read', false);
 
-    // INTERVAL KALDIRILDI - sadece real-time events
+        if (privateError) {
+          console.error('Private messages fetch error:', privateError);
+        }
+        
+        const privateCount = unreadPrivateMessages?.length || 0;
+        setPrivateMessageCount(privateCount);
 
-    // Real-time subscription for new messages
-    const insertChannel = supabase
-      .channel(`unread-insert-${user.id}`)
+        // Mention'lar (notifications tablosundan)
+        const { data: unreadMentions, error: mentionError } = await supabase
+          .from('notifications')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('is_read', false)
+          .eq('type', 'mention');
+
+        if (mentionError) {
+          console.warn('Mention notifications fetch error:', mentionError);
+          setMentionCount(0);
+        } else {
+          const mentionCountNum = unreadMentions?.length || 0;
+          setMentionCount(mentionCountNum);
+        }
+
+        const totalCount = privateCount + (unreadMentions?.length || 0);
+        setUnreadCount(totalCount);
+        
+        console.log(`Okunmamış mesaj sayısı: ${totalCount} (Özel: ${privateCount}, Mention: ${unreadMentions?.length || 0})`);
+      } catch (error) {
+        console.error('Okunmamış mesajlar yüklenirken hata:', error);
+      }
+    };
+
+    loadUnreadMessages();
+
+    // Real-time subscription for new private messages
+    const privateMessagesChannel = supabase
+      .channel(`private-messages-${user.id}`)
       .on(
         'postgres_changes',
         {
@@ -53,72 +68,93 @@ export function useChatNotifications() {
           filter: `recipient_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('📨 New message received');
+          console.log('Yeni özel mesaj geldi:', payload);
           const newMessage = payload.new as any;
           
+          // Kendi mesajımızı ignore et
           if (newMessage.sender_id !== user.id) {
             setPrivateMessageCount(prev => prev + 1);
             setUnreadCount(prev => prev + 1);
+            console.log('Özel mesaj bildirim sayısı artırıldı');
           }
         }
       )
       .subscribe();
 
-    // Real-time subscription for message updates (read status)
-    const updateChannel = supabase
-      .channel(`unread-update-${user.id}`)
+    // Real-time subscription for mentions (notifications tablosu)
+    const mentionsChannel = supabase
+      .channel(`mentions-${user.id}`)
       .on(
         'postgres_changes',
         {
-          event: 'UPDATE',
+          event: 'INSERT',
           schema: 'public',
-          table: 'private_messages',
-          filter: `recipient_id=eq.${user.id}`
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('📝 Message updated (read)');
-          const oldMessage = payload.old as any;
-          const newMessage = payload.new as any;
+          console.log('Yeni bildirim geldi:', payload);
+          const notification = payload.new as any;
           
-          if (oldMessage.is_read === false && newMessage.is_read === true) {
-            setPrivateMessageCount(prev => Math.max(0, prev - 1));
-            setUnreadCount(prev => Math.max(0, prev - 1));
+          if (notification.type === 'mention') {
+            setMentionCount(prev => prev + 1);
+            setUnreadCount(prev => prev + 1);
+            console.log('Mention bildirim sayısı artırıldı');
           }
         }
       )
       .subscribe();
 
+    // Clean up function
     return () => {
-      supabase.removeChannel(insertChannel);
-      supabase.removeChannel(updateChannel);
-      console.log('🧹 Notification channels cleaned up');
+      console.log('Chat notifications temizleniyor');
+      supabase.removeChannel(privateMessagesChannel);
+      supabase.removeChannel(mentionsChannel);
     };
   }, [user?.id]);
 
-  // Manuel olarak tüm mesajları okundu işaretle - SADECE DATABASE UPDATE
-  const markAllAsRead = async () => {
-    if (!user?.id) return false;
+  // Belirli türdeki bildirimleri sıfırlama
+  const markPrivateMessagesAsRead = async () => {
+    if (!user?.id) return;
     
     try {
-      const { error } = await supabase
+      await supabase
         .from('private_messages')
         .update({ is_read: true })
         .eq('recipient_id', user.id)
         .eq('is_read', false);
-
-      if (error) throw error;
-
-      // Count'ları direkt sıfırla - real-time update gelene kadar
-      setPrivateMessageCount(0);
-      setUnreadCount(0);
-      setMentionCount(0);
       
-      console.log('✅ All messages marked as read, counts reset');
-      return true;
+      setUnreadCount(prev => prev - privateMessageCount);
+      setPrivateMessageCount(0);
+      console.log('Özel mesajlar okundu olarak işaretlendi');
     } catch (error) {
-      console.error('❌ Error marking all as read:', error);
-      return false;
+      console.error('Özel mesajları işaretlerken hata:', error);
     }
+  };
+
+  const markMentionsAsRead = async () => {
+    if (!user?.id) return;
+    
+    try {
+      await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('user_id', user.id)
+        .eq('is_read', false)
+        .eq('type', 'mention');
+      
+      setUnreadCount(prev => prev - mentionCount);
+      setMentionCount(0);
+      console.log('Mentionlar okundu olarak işaretlendi');
+    } catch (error) {
+      console.error('Mentionları işaretlerken hata:', error);
+    }
+  };
+
+  // Tümünü sıfırlama fonksiyonu
+  const markAllAsRead = async () => {
+    await markPrivateMessagesAsRead();
+    await markMentionsAsRead();
   };
 
   return { 
@@ -126,6 +162,7 @@ export function useChatNotifications() {
     mentionCount,
     privateMessageCount,
     markAllAsRead,
-    forceRefresh: refreshUnreadCounts // Sadece manuel çağrı için
+    markPrivateMessagesAsRead,
+    markMentionsAsRead
   };
 }
