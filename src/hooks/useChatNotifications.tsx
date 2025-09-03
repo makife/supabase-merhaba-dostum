@@ -1,5 +1,5 @@
-// useChatNotifications.tsx - Syntax hatası düzeltilmiş versiyon
-import { useState, useEffect } from 'react';
+// useChatNotifications.tsx - TAMAMEN YENİ VERSİYON
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -9,83 +9,61 @@ export function useChatNotifications() {
   const [mentionCount, setMentionCount] = useState(0);
   const [privateMessageCount, setPrivateMessageCount] = useState(0);
 
-useEffect(() => {
+  // Okunmamış mesajları yükleme fonksiyonu
+  const loadUnreadMessages = useCallback(async () => {
     if (!user?.id) return;
 
-    // Mevcut okunmamış mesajları yükle
-    const loadUnreadMessages = async () => {
-  if (!user?.id) return;
+    try {
+      console.log('🔄 Loading unread messages for user:', user.id);
+      
+      // Özel mesajlar
+      const { data: unreadPrivateMessages, error: privateError } = await supabase
+        .from('private_messages')
+        .select('id')
+        .eq('recipient_id', user.id)
+        .eq('is_read', false);
 
-  try {
-    // Özel mesajlar - recipient_id kullan
-    const { data: unreadPrivateMessages, error: privateError } = await supabase
-      .from('private_messages')
-      .select('id')
-      .eq('recipient_id', user.id)
-      .eq('is_read', false);
-
-    if (privateError) {
-      console.error('Private messages fetch error:', privateError);
-    }
-    
-    const privateCount = unreadPrivateMessages?.length || 0;
-    setPrivateMessageCount(privateCount);
-
-    // Mention'lar (notifications tablosundan)
-    const { data: unreadMentions, error: mentionError } = await supabase
-      .from('notifications')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('is_read', false)
-      .eq('type', 'mention');
-
-    if (mentionError) {
-      console.warn('Mention notifications fetch error:', mentionError);
-      setMentionCount(0);
-    } else {
-      const mentionCountNum = unreadMentions?.length || 0;
-      setMentionCount(mentionCountNum);
-    }
-
-    const totalCount = privateCount + (unreadMentions?.length || 0);
-    setUnreadCount(totalCount);
-    
-    console.log(`Okunmamış mesaj sayısı: ${totalCount} (Özel: ${privateCount}, Mention: ${unreadMentions?.length || 0})`);
-  } catch (error) {
-    console.error('Okunmamış mesajlar yüklenirken hata:', error);
-  }
-};
-
-useEffect(() => {
-  if (!user?.id) return;
-
-  // Okunmamış mesajları dinle
-  const readMessagesChannel = supabase
-    .channel(`read-messages-${user.id}`)
-    .on(
-      'postgres_changes',
-      {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'private_messages',
-        filter: `recipient_id=eq.${user.id}`
-      },
-      async (payload) => {
-        const updatedMessage = payload.new as any;
-        if (updatedMessage.is_read) {
-          // Okunmamış mesaj sayısını yeniden hesapla
-          await loadUnreadMessages();
-        }
+      if (privateError) {
+        console.error('Private messages fetch error:', privateError);
       }
-    )
-    .subscribe();
+      
+      const privateCount = unreadPrivateMessages?.length || 0;
+      setPrivateMessageCount(privateCount);
 
-  return () => {
-    supabase.removeChannel(readMessagesChannel);
-  };
-}, [user?.id]);
+      // Mention'lar
+      const { data: unreadMentions, error: mentionError } = await supabase
+        .from('notifications')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('is_read', false)
+        .eq('type', 'mention');
 
-    // Real-time subscription for new private messages
+      if (mentionError) {
+        console.warn('Mention notifications fetch error:', mentionError);
+        setMentionCount(0);
+      } else {
+        const mentionCountNum = unreadMentions?.length || 0;
+        setMentionCount(mentionCountNum);
+      }
+
+      const totalCount = privateCount + (unreadMentions?.length || 0);
+      setUnreadCount(totalCount);
+      
+      console.log(`📊 Unread counts - Total: ${totalCount}, Private: ${privateCount}, Mention: ${unreadMentions?.length || 0}`);
+
+    } catch (error) {
+      console.error('Error loading unread messages:', error);
+    }
+  }, [user?.id]);
+
+  // Real-time subscription için useEffect
+  useEffect(() => {
+    if (!user?.id) return;
+
+    // İlk yükleme
+    loadUnreadMessages();
+
+    // Private messages real-time subscription
     const privateMessagesChannel = supabase
       .channel(`private-messages-${user.id}`)
       .on(
@@ -97,20 +75,26 @@ useEffect(() => {
           filter: `recipient_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('Yeni özel mesaj geldi:', payload);
-          const newMessage = payload.new as any;
-          
-          // Kendi mesajımızı ignore et
-          if (newMessage.sender_id !== user.id) {
-            setPrivateMessageCount(prev => prev + 1);
-            setUnreadCount(prev => prev + 1);
-            console.log('Özel mesaj bildirim sayısı artırıldı');
-          }
+          console.log('➕ New private message:', payload);
+          loadUnreadMessages(); // Hemen güncelle
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'private_messages',
+          filter: `recipient_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('✏️ Private message updated:', payload);
+          loadUnreadMessages(); // Hemen güncelle
         }
       )
       .subscribe();
 
-    // Real-time subscription for mentions (notifications tablosu)
+    // Notifications real-time subscription
     const mentionsChannel = supabase
       .channel(`mentions-${user.id}`)
       .on(
@@ -122,42 +106,54 @@ useEffect(() => {
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('Yeni bildirim geldi:', payload);
-          const notification = payload.new as any;
-          
-          if (notification.type === 'mention') {
-            setMentionCount(prev => prev + 1);
-            setUnreadCount(prev => prev + 1);
-            console.log('Mention bildirim sayısı artırıldı');
-          }
+          console.log('➕ New notification:', payload);
+          loadUnreadMessages(); // Hemen güncelle
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('✏️ Notification updated:', payload);
+          loadUnreadMessages(); // Hemen güncelle
         }
       )
       .subscribe();
 
-    // Clean up function
+    // Clean up
     return () => {
-      console.log('Chat notifications temizleniyor');
+      console.log('🧹 Cleaning up chat notifications');
       supabase.removeChannel(privateMessagesChannel);
       supabase.removeChannel(mentionsChannel);
     };
-  }, [user?.id]);
+  }, [user?.id, loadUnreadMessages]);
 
   // Belirli türdeki bildirimleri sıfırlama
   const markPrivateMessagesAsRead = async () => {
     if (!user?.id) return;
     
     try {
-      await supabase
+      const { error } = await supabase
         .from('private_messages')
         .update({ is_read: true })
         .eq('recipient_id', user.id)
         .eq('is_read', false);
       
-      setUnreadCount(prev => prev - privateMessageCount);
-      setPrivateMessageCount(0);
-      console.log('Özel mesajlar okundu olarak işaretlendi');
+      if (error) {
+        console.error('Error marking private messages as read:', error);
+        return;
+      }
+      
+      // Hemen güncelle
+      await loadUnreadMessages();
+      console.log('✅ Private messages marked as read');
     } catch (error) {
-      console.error('Özel mesajları işaretlerken hata:', error);
+      console.error('Error marking private messages:', error);
     }
   };
 
@@ -165,18 +161,23 @@ useEffect(() => {
     if (!user?.id) return;
     
     try {
-      await supabase
+      const { error } = await supabase
         .from('notifications')
         .update({ is_read: true })
         .eq('user_id', user.id)
         .eq('is_read', false)
         .eq('type', 'mention');
       
-      setUnreadCount(prev => prev - mentionCount);
-      setMentionCount(0);
-      console.log('Mentionlar okundu olarak işaretlendi');
+      if (error) {
+        console.error('Error marking mentions as read:', error);
+        return;
+      }
+      
+      // Hemen güncelle
+      await loadUnreadMessages();
+      console.log('✅ Mentions marked as read');
     } catch (error) {
-      console.error('Mentionları işaretlerken hata:', error);
+      console.error('Error marking mentions:', error);
     }
   };
 
@@ -192,6 +193,7 @@ useEffect(() => {
     privateMessageCount,
     markAllAsRead,
     markPrivateMessagesAsRead,
-    markMentionsAsRead
+    markMentionsAsRead,
+    refreshUnreadCounts: loadUnreadMessages // Manuel refresh için
   };
 }
