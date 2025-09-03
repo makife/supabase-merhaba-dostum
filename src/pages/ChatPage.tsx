@@ -33,7 +33,6 @@ export default function ChatPage() {
   const [allUsers, setAllUsers] = useState<SelectedUser[]>([]);
   const [unreadCounts, setUnreadCounts] = useState<{[key: string]: number}>({});
   const { markAllAsRead, forceRefresh } = useChatNotifications();
-  const [viewMode, setViewMode] = useState<ViewMode>('global');
 
   // Fetch all users for private chat
 const fetchAllUsers = async () => {
