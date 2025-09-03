@@ -6,7 +6,7 @@ import { useSounds } from '@/hooks/useSounds';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, Users, MessageCircle, Hash, Home, Dot, Mail } from 'lucide-react';
+import { ArrowLeft, Users, MessageCircle, Hash, Home, Mail } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { GlobalChat } from '@/components/GlobalChat';
 import { PrivateChat } from '@/components/PrivateChat';
@@ -25,269 +25,131 @@ export default function ChatPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { profile, onlineUsers, isUserOnline } = useUser();
-  
   const { playSound } = useSounds();
+  const { markAllAsRead, forceRefresh } = useChatNotifications();
+  
   const [viewMode, setViewMode] = useState<ViewMode>('global');
   const [selectedUser, setSelectedUser] = useState<SelectedUser | null>(null);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [allUsers, setAllUsers] = useState<SelectedUser[]>([]);
   const [unreadCounts, setUnreadCounts] = useState<{[key: string]: number}>({});
-  const { markAllAsRead, forceRefresh } = useChatNotifications();
 
   // Fetch all users for private chat
-const fetchAllUsers = async () => {
-  try {
-    console.log('=== DEBUG: fetchAllUsers başladı ===');
-    console.log('User ID:', user?.id);
-    
-    // Önce kaç kullanıcı var kontrol et
-    const { count } = await supabase
-      .from('profiles')
-      .select('*', { count: 'exact', head: true })
-      .neq('id', user?.id);
-    
-    console.log('Toplam kullanıcı sayısı:', count);
+  const fetchAllUsers = async () => {
+    try {
+      const { data: allUsersData, error: usersError } = await supabase
+        .from('profiles')
+        .select('id, username, email, avatar_url')
+        .neq('id', user?.id)
+        .order('username', { ascending: true });
 
-    const { data: allUsersData, error: usersError } = await supabase
-      .from('profiles')
-      .select('id, username, email, avatar_url')
-      .neq('id', user?.id)
-      .order('username', { ascending: true });
-
-    console.log('Kullanıcı verisi:', allUsersData);
-    console.log('Kullanıcı hatası:', usersError);
-
-    if (usersError) {
-      console.error('Users fetch error:', usersError);
-      return;
-    }
-
-    // Mesaj geçmişini kontrol et
-    const { data: chatHistoryData, error: historyError } = await supabase
-      .from('private_messages')
-      .select('sender_id, recipient_id, created_at')
-      .or(`sender_id.eq.${user?.id},recipient_id.eq.${user?.id}`)
-      .order('created_at', { ascending: false });
-
-    console.log('Chat history verisi:', chatHistoryData);
-    console.log('Chat history hatası:', historyError);
-
-    if (historyError) {
-      console.warn('Chat history fetch warning:', historyError);
-    }
-
-    // Mesaj geçmişi olan kullanıcı ID'lerini çıkar
-    const chatUserIds = new Set<string>();
-    chatHistoryData?.forEach(msg => {
-      if (msg.sender_id !== user?.id) chatUserIds.add(msg.sender_id);
-      if (msg.recipient_id !== user?.id) chatUserIds.add(msg.recipient_id);
-    });
-
-    console.log('Chat history olan kullanıcılar:', Array.from(chatUserIds));
-
-    const sortedUsers = allUsersData?.sort((a, b) => {
-      const aHasHistory = chatUserIds.has(a.id);
-      const bHasHistory = chatUserIds.has(b.id);
-      
-      if (aHasHistory && !bHasHistory) return -1;
-      if (!aHasHistory && bHasHistory) return 1;
-      return a.username.localeCompare(b.username, 'tr');
-    }) || [];
-
-    console.log('=== DEBUG: Sıralı kullanıcılar ===');
-    sortedUsers.forEach(user => {
-      console.log(`${user.username} (${user.id}) - History: ${chatUserIds.has(user.id)}`);
-    });
-
-    setAllUsers(sortedUsers);
-  } catch (error) {
-    console.error('Error fetching users:', error);
-  }
-};
-
-
-  // Fetch unread counts
-const fetchUnreadCounts = async () => {
-  if (!user) return;
-  
-  try {
-    console.log('=== fetchUnreadCounts başladı ===');
-    console.log('User ID:', user.id);
-    
-    // Fresh query - cache'i atla
-    const { data: unreadMessages, error } = await supabase
-      .from('private_messages')
-      .select('sender_id, id, message, created_at')
-      .eq('recipient_id', user.id)
-      .eq('is_read', false)
-      .not('sender_id', 'is', null)
-      .order('created_at', { ascending: false });
-
-    console.log('Query sonucu:', { error, count: unreadMessages?.length });
-    
-    if (error) {
-      console.error('Unread count fetch error:', error);
-      setUnreadCounts({});
-      return;
-    }
-
-    // Hiç okunmamış mesaj yoksa
-    if (!unreadMessages || unreadMessages.length === 0) {
-      console.log('✅ Hiç okunmamış mesaj yok');
-      setUnreadCounts({});
-      return;
-    }
-
-    // Sender'lara göre grupla
-    const counts: {[key: string]: number} = {};
-    unreadMessages.forEach((msg) => {
-      if (msg.sender_id) {
-        counts[msg.sender_id] = (counts[msg.sender_id] || 0) + 1;
-      }
-    });
-
-    console.log('=== Hesaplanan unread counts ===');
-    Object.entries(counts).forEach(([senderId, count]) => {
-      console.log(`${senderId}: ${count} okunmamış mesaj`);
-    });
-
-    // Eğer hala count varsa, bir sorun olabilir
-    if (Object.keys(counts).length > 0) {
-      console.warn('⚠️ Hala okunmamış mesajlar var! Bu mesajları tekrar okundu işaretle:');
-      
-      // Acil durumda bu mesajları okundu işaretle
-      const { error: markError } = await supabase
-        .from('private_messages')
-        .update({ is_read: true })
-        .eq('recipient_id', user.id)
-        .eq('is_read', false);
-      
-      if (markError) {
-        console.error('Acil okundu işaretleme hatası:', markError);
-      } else {
-        console.log('✅ Acil okundu işaretleme tamamlandı');
-        setUnreadCounts({}); // Sıfırla
+      if (usersError) {
+        console.error('Users fetch error:', usersError);
         return;
       }
-    }
 
-    setUnreadCounts(counts);
-    
-  } catch (error) {
-    console.error('fetchUnreadCounts genel hatası:', error);
-    setUnreadCounts({});
-  }
-};
-
-
-// Fetch users when viewMode changes to users - mevcut useEffect'i güncelle
-useEffect(() => {
-  if (viewMode === 'users') {
-    fetchAllUsers();
-    fetchUnreadCounts(); // Bu satırı ekle
-  }
-}, [viewMode, user]);
-
-// Ayrıca component mount olduğunda da çağır
-useEffect(() => {
-  if (user?.id) {
-    fetchUnreadCounts();
-  }
-}, [user?.id]);
-
-
-
-    // viewMode 'users' olduğunda da özel mesaj bildirimlerini temizle
-  useEffect(() => {
-    if (viewMode === 'users' && user?.id) {
-      markPrivateMessagesAsRead();
-    }
-  }, [viewMode, user?.id]);
-
-useEffect(() => {
-    const markAllPrivateMessagesAsRead = async () => {
-      if (!user?.id) return;
-
-      try {
-        const { error } = await supabase
-          .from('private_messages')
-          .update({ is_read: true })
-          .eq('recipient_id', user.id)
-          .eq('is_read', false);
-
-        if (error) {
-          console.error('Mesajlar okundu olarak işaretlenirken hata:', error);
-        } else {
-          console.log('✅ Özel mesajlar okundu olarak işaretlendi');
-          // Hook'taki count'ları da sıfırla
-          await markAllAsRead();
-          setUnreadCounts({});
-        }
-      } catch (error) {
-        console.error('Error marking messages as read:', error);
-      }
-    };
-
-    markAllPrivateMessagesAsRead();
-  }, [user?.id, markAllAsRead]);
-
-useEffect(() => {
-    const refreshOnUsersView = async () => {
-      if (!user?.id) return;
-      
-      await supabase
+      // Chat history kontrol et
+      const { data: chatHistoryData } = await supabase
         .from('private_messages')
-        .update({ is_read: true })
+        .select('sender_id, recipient_id, created_at')
+        .or(`sender_id.eq.${user?.id},recipient_id.eq.${user?.id}`)
+        .order('created_at', { ascending: false });
+
+      // Chat history olan kullanıcıları önce sırala
+      const chatUserIds = new Set<string>();
+      chatHistoryData?.forEach(msg => {
+        if (msg.sender_id !== user?.id) chatUserIds.add(msg.sender_id);
+        if (msg.recipient_id !== user?.id) chatUserIds.add(msg.recipient_id);
+      });
+
+      const sortedUsers = allUsersData?.sort((a, b) => {
+        const aHasHistory = chatUserIds.has(a.id);
+        const bHasHistory = chatUserIds.has(b.id);
+        
+        if (aHasHistory && !bHasHistory) return -1;
+        if (!aHasHistory && bHasHistory) return 1;
+        return a.username.localeCompare(b.username, 'tr');
+      }) || [];
+
+      setAllUsers(sortedUsers);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
+
+  // Fetch unread counts - basitleştirilmiş versiyon
+  const fetchUnreadCounts = async () => {
+    if (!user) return;
+    
+    try {
+      const { data: unreadMessages, error } = await supabase
+        .from('private_messages')
+        .select('sender_id')
         .eq('recipient_id', user.id)
         .eq('is_read', false);
-      
-      await markAllAsRead();
+
+      if (error) {
+        console.error('Unread count fetch error:', error);
+        setUnreadCounts({});
+        return;
+      }
+
+      const counts: {[key: string]: number} = {};
+      unreadMessages?.forEach((msg) => {
+        if (msg.sender_id) {
+          counts[msg.sender_id] = (counts[msg.sender_id] || 0) + 1;
+        }
+      });
+
+      setUnreadCounts(counts);
+    } catch (error) {
+      console.error('fetchUnreadCounts error:', error);
       setUnreadCounts({});
-      fetchUnreadCounts();
-      forceRefresh();
-    };
-
-    if (viewMode === 'users' && user?.id) {
-      refreshOnUsersView();
     }
-  }, [viewMode, user?.id, markAllAsRead, forceRefresh]);
+  };
 
-// Private chat'e girdiğinde o chat'in mesajlarını okundu yap
+  // 1. Component mount - tüm mesajları okundu işaretle
   useEffect(() => {
-    const markSpecificChatAsRead = async () => {
-      if (!activeChatId || !user?.id) return;
+    const initializePage = async () => {
+      if (!user?.id) return;
 
       try {
-        const { error } = await supabase
+        console.log('📄 ChatPage initializing...');
+        
+        // Tüm okunmamış mesajları okundu işaretle
+        await supabase
           .from('private_messages')
           .update({ is_read: true })
-          .eq('chat_id', activeChatId)
           .eq('recipient_id', user.id)
           .eq('is_read', false);
 
-        if (error) {
-          console.error('❌ Error marking chat messages as read:', error);
-          return;
-        }
-
-        setTimeout(() => {
-          fetchUnreadCounts();
-          forceRefresh();
-        }, 500);
+        // Hook'taki count'ları sıfırla
+        await markAllAsRead();
         
+        // Local count'ları sıfırla
+        setUnreadCounts({});
+        
+        console.log('✅ ChatPage initialization complete');
       } catch (error) {
-        console.error('❌ Error in markSpecificChatAsRead:', error);
+        console.error('❌ ChatPage initialization error:', error);
       }
     };
 
-    if (viewMode === 'private-chat' && activeChatId) {
-      markSpecificChatAsRead();
-    }
-  }, [viewMode, activeChatId, user?.id, forceRefresh]);
+    initializePage();
+  }, [user?.id, markAllAsRead]);
 
- useEffect(() => {
-    const markChatMessagesAsRead = async () => {
-      if (!activeChatId || !user?.id) return;
+  // 2. ViewMode değiştiğinde
+  useEffect(() => {
+    if (viewMode === 'users') {
+      fetchAllUsers();
+      fetchUnreadCounts();
+    }
+  }, [viewMode, user]);
+
+  // 3. Private chat'e girdiğinde
+  useEffect(() => {
+    const markChatAsRead = async () => {
+      if (!activeChatId || !user?.id || viewMode !== 'private-chat') return;
 
       try {
         await supabase
@@ -297,81 +159,18 @@ useEffect(() => {
           .eq('recipient_id', user.id)
           .eq('is_read', false);
 
-        console.log('✅ Chat mesajları okundu olarak işaretlendi:', activeChatId);
-        
+        // Count'ları güncelle
         setTimeout(() => {
           fetchUnreadCounts();
           forceRefresh();
         }, 500);
       } catch (error) {
-        console.error('Chat mesajlarını işaretlerken hata:', error);
+        console.error('❌ Error marking chat as read:', error);
       }
     };
 
-    if (viewMode === 'private-chat' && activeChatId) {
-      markChatMessagesAsRead();
-    }
+    markChatAsRead();
   }, [viewMode, activeChatId, user?.id, forceRefresh]);
-
-// 2. viewMode 'users' olduğunda da çalıştır (ek güvenlik)
-useEffect(() => {
-  const refreshUnreadCounts = async () => {
-    if (!user?.id) return;
-    
-    // Önce tüm mesajları okundu yap
-    await supabase
-      .from('private_messages')
-      .update({ is_read: true })
-      .eq('recipient_id', user.id)
-      .eq('is_read', false);
-    
-    // Sonra count'ları güncelle
-    setUnreadCounts({});
-    fetchUnreadCounts();
-  };
-
-  if (viewMode === 'users' && user?.id) {
-    refreshUnreadCounts();
-  }
-}, [viewMode, user?.id]);
-
-// 3. Private chat'e girdiğinde o chat'in mesajlarını okundu yap
-useEffect(() => {
-  const markSpecificChatAsRead = async () => {
-    if (!activeChatId || !user?.id) return;
-
-    try {
-      console.log('🔄 Marking specific chat as read:', activeChatId);
-      
-      const { data, error } = await supabase
-        .from('private_messages')
-        .update({ is_read: true })
-        .eq('chat_id', activeChatId)
-        .eq('recipient_id', user.id)
-        .eq('is_read', false)
-        .select('sender_id');
-
-      if (error) {
-        console.error('❌ Error marking chat messages as read:', error);
-        return;
-      }
-
-      console.log('✅ Marked', data?.length, 'chat messages as read');
-      
-      // Count'ları güncelle
-      setTimeout(() => {
-        fetchUnreadCounts();
-      }, 500);
-      
-    } catch (error) {
-      console.error('❌ Error in markSpecificChatAsRead:', error);
-    }
-  };
-
-  if (viewMode === 'private-chat' && activeChatId) {
-    markSpecificChatAsRead();
-  }
-}, [viewMode, activeChatId, user?.id]);
 
   const handleBackToMenu = () => {
     playSound('buttonClick');
@@ -393,11 +192,10 @@ useEffect(() => {
     try {
       playSound('buttonClick');
       
-      // Create or find existing chat
       const participants = [user.id, targetUser.id].sort();
       const chatId = `chat_${participants.join('_')}`;
 
-      // Check if chat already exists
+      // Chat oluştur (varsa skip)
       const { data: existingChat, error: chatError } = await supabase
         .from('private_chats')
         .select('*')
@@ -408,17 +206,14 @@ useEffect(() => {
         throw chatError;
       }
 
-      // Create chat if it doesn't exist
       if (!existingChat) {
-        const { error: createError } = await supabase
+        await supabase
           .from('private_chats')
           .insert({
             id: chatId,
             user1_id: participants[0],
             user2_id: participants[1]
           });
-
-        if (createError) throw createError;
       }
 
       setSelectedUser(targetUser);
@@ -429,27 +224,18 @@ useEffect(() => {
     }
   };
 
-// ChatPage.tsx - renderUsersList fonksiyonunu güncelle
-const renderUsersList = () => {
-  console.log('=== DEBUG: renderUsersList ===');
-  console.log('allUsers length:', allUsers.length);
-  console.log('unreadCounts:', unreadCounts);
-
-  return (
+  // Render users list
+  const renderUsersList = () => (
     <ScrollArea className="flex-1">
       <div className="p-4 space-y-3">
         {allUsers.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
             <p>Kullanıcılar yükleniyor...</p>
-            <p className="text-xs mt-2">DEBUG: allUsers.length = {allUsers.length}</p>
           </div>
         ) : (
           allUsers.map((targetUser) => {
             const unreadCount = unreadCounts[targetUser.id] || 0;
-            const hasHistory = Object.keys(unreadCounts).includes(targetUser.id) || unreadCount > 0;
-            
-            console.log(`Rendering user: ${targetUser.username}, unreadCount: ${unreadCount}, hasHistory: ${hasHistory}`);
             
             return (
               <Card
@@ -457,8 +243,6 @@ const renderUsersList = () => {
                 className={`p-4 hover:shadow-md transition-all cursor-pointer border-2 ${
                   unreadCount > 0 
                     ? 'border-chat-500 bg-chat-50' 
-                    : hasHistory
-                    ? 'border-chat-300 bg-gray-50'
                     : 'border-chat-200'
                 }`}
                 onClick={() => startPrivateChat(targetUser)}
@@ -477,13 +261,10 @@ const renderUsersList = () => {
                     <p className="font-medium text-gray-800 truncate">
                       {targetUser.username}
                     </p>
-                    <p className="text-xs text-blue-500">DEBUG: unread={unreadCount}, history={hasHistory ? 'yes' : 'no'}</p>
                     {unreadCount > 0 ? (
                       <p className="text-sm text-chat-600 font-semibold">
                         {unreadCount} okunmamış mesaj
                       </p>
-                    ) : hasHistory ? (
-                      <p className="text-sm text-gray-600">Mesaj geçmişi var</p>
                     ) : (
                       <p className="text-sm text-gray-500">Özel mesaj gönder</p>
                     )}
@@ -507,15 +288,11 @@ const renderUsersList = () => {
       </div>
     </ScrollArea>
   );
-};
 
   const renderContent = () => {
-    console.log('renderContent called, viewMode:', viewMode);
-    
     if (viewMode === 'private-chat' && selectedUser && activeChatId) {
       return (
         <div className="h-full flex flex-col">
-          {/* Private Chat Header */}
           <div className="flex items-center justify-between p-4 border-b border-border bg-chat-500 text-white">
             <div className="flex items-center space-x-3">
               <Button
@@ -547,7 +324,6 @@ const renderUsersList = () => {
             </Button>
           </div>
           
-          {/* Private Chat Content */}
           <div className="flex-1 min-h-0">
             <PrivateChat
               chatId={activeChatId}
@@ -562,7 +338,6 @@ const renderUsersList = () => {
     if (viewMode === 'users') {
       return (
         <div className="h-full flex flex-col">
-          {/* Users List Header */}
           <div className="flex items-center justify-between p-4 border-b border-border bg-chat-500 text-white">
             <div className="flex items-center space-x-3">
               <Button
@@ -591,13 +366,12 @@ const renderUsersList = () => {
             </Button>
           </div>
           
-          {/* Users List Content */}
           {renderUsersList()}
         </div>
       );
     }
 
-    // Global chat - HEADER OLMADAN sadece content
+    // Global chat
     return (
       <div className="h-full flex flex-col">
         <div className="flex-1 min-h-0">
@@ -611,14 +385,11 @@ const renderUsersList = () => {
     );
   };
 
-  // BURASI ANA RETURN - fonksiyonun dışında olmalı
   return (
     <div className="min-h-screen bg-chat-50">
-      {/* Safe area top */}
       <div className="safe-area-top"></div>
       
       <div className="h-screen flex flex-col max-w-4xl mx-auto bg-white rounded-lg shadow-lg m-4 overflow-hidden border border-chat-200">
-        {/* ANA HEADER - SADCE viewMode 'global' İKEN GÖSTERME */}
         {viewMode === 'global' && (
           <div className="bg-chat-500 text-white p-4 flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -631,14 +402,13 @@ const renderUsersList = () => {
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <div>
-
-                    <h1 className="text-xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent drop-shadow-lg"
-                        style={{
-                          textShadow: '1px 1px 0px hsl(var(--primary)), 2px 2px 0px rgba(0,0,0,0.3), 0 0 15px hsl(var(--primary) / 0.5)',
-                          WebkitTextStroke: '0.5px hsl(var(--border))'
-                        }}>
-                      KELİMECİ sohbet
-                    </h1>
+                <h1 className="text-xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent drop-shadow-lg"
+                    style={{
+                      textShadow: '1px 1px 0px hsl(var(--primary)), 2px 2px 0px rgba(0,0,0,0.3), 0 0 15px hsl(var(--primary) / 0.5)',
+                      WebkitTextStroke: '0.5px hsl(var(--border))'
+                    }}>
+                  KELİMECİ sohbet
+                </h1>
                 <p className="text-chat-100 text-sm">
                   {onlineUsers.length} kişi çevrimiçi
                 </p>
@@ -667,13 +437,11 @@ const renderUsersList = () => {
           </div>
         )}
 
-        {/* Content Area */}
         <div className="flex-1 min-h-0">
           {renderContent()}
         </div>
       </div>
       
-      {/* Safe area bottom */}
       <div className="safe-area-bottom"></div>
     </div>
   );
