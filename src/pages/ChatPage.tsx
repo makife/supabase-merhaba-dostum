@@ -109,40 +109,72 @@ const fetchAllUsers = async () => {
   // Fetch unread counts
 const fetchUnreadCounts = async () => {
   if (!user) return;
+  
   try {
-    console.log('=== DEBUG: fetchUnreadCounts başladı ===');
+    console.log('=== fetchUnreadCounts başladı ===');
     console.log('User ID:', user.id);
     
-    // Artık recipient_id kolonunu direkt kullanabiliriz
+    // Fresh query - cache'i atla
     const { data: unreadMessages, error } = await supabase
       .from('private_messages')
-      .select('sender_id')
-      .eq('recipient_id', user.id) // Direkt recipient_id kullan
-      .eq('is_read', false);
+      .select('sender_id, id, message, created_at')
+      .eq('recipient_id', user.id)
+      .eq('is_read', false)
+      .not('sender_id', 'is', null)
+      .order('created_at', { ascending: false });
 
-    console.log('Okunmamış mesajlar:', unreadMessages);
-    console.log('Okunmamış mesaj hatası:', error);
-
+    console.log('Query sonucu:', { error, count: unreadMessages?.length });
+    
     if (error) {
       console.error('Unread count fetch error:', error);
       setUnreadCounts({});
       return;
     }
 
+    // Hiç okunmamış mesaj yoksa
+    if (!unreadMessages || unreadMessages.length === 0) {
+      console.log('✅ Hiç okunmamış mesaj yok');
+      setUnreadCounts({});
+      return;
+    }
+
+    // Sender'lara göre grupla
     const counts: {[key: string]: number} = {};
-    unreadMessages?.forEach((msg) => {
-      const senderId = msg.sender_id;
-      counts[senderId] = (counts[senderId] || 0) + 1;
+    unreadMessages.forEach((msg) => {
+      if (msg.sender_id) {
+        counts[msg.sender_id] = (counts[msg.sender_id] || 0) + 1;
+      }
     });
 
-    console.log('=== DEBUG: Hesaplanan unread counts ===');
+    console.log('=== Hesaplanan unread counts ===');
     Object.entries(counts).forEach(([senderId, count]) => {
       console.log(`${senderId}: ${count} okunmamış mesaj`);
     });
 
+    // Eğer hala count varsa, bir sorun olabilir
+    if (Object.keys(counts).length > 0) {
+      console.warn('⚠️ Hala okunmamış mesajlar var! Bu mesajları tekrar okundu işaretle:');
+      
+      // Acil durumda bu mesajları okundu işaretle
+      const { error: markError } = await supabase
+        .from('private_messages')
+        .update({ is_read: true })
+        .eq('recipient_id', user.id)
+        .eq('is_read', false);
+      
+      if (markError) {
+        console.error('Acil okundu işaretleme hatası:', markError);
+      } else {
+        console.log('✅ Acil okundu işaretleme tamamlandı');
+        setUnreadCounts({}); // Sıfırla
+        return;
+      }
+    }
+
     setUnreadCounts(counts);
+    
   } catch (error) {
-    console.error('Error with unread counts:', error);
+    console.error('fetchUnreadCounts genel hatası:', error);
     setUnreadCounts({});
   }
 };
