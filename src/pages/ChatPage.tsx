@@ -112,10 +112,11 @@ const fetchUnreadCounts = async () => {
   try {
     console.log('=== DEBUG: fetchUnreadCounts başladı ===');
     
+    // SADECE doğru recipient_id ile
     const { data: unreadMessages, error } = await supabase
       .from('private_messages')
       .select('sender_id')
-      .eq('recipient_id', user.id) // ✅ Artık doğru kullanıcı
+      .eq('recipient_id', user.id) // ✅ SADECE bu kullanıcı
       .eq('is_read', false);
 
     if (error) {
@@ -124,10 +125,16 @@ const fetchUnreadCounts = async () => {
       return;
     }
 
+    // DEBUG: Tüm okunmamış mesajları göster
+    console.log('🔍 All unread messages for counts:', unreadMessages);
+
     const counts: {[key: string]: number} = {};
     unreadMessages?.forEach((msg) => {
       const senderId = msg.sender_id;
-      counts[senderId] = (counts[senderId] || 0) + 1;
+      // Sadece geçerli sender_id'leri say (null/undefined değilse)
+      if (senderId) {
+        counts[senderId] = (counts[senderId] || 0) + 1;
+      }
     });
 
     console.log('=== DEBUG: Unread counts updated ===', counts);
