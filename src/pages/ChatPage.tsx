@@ -113,10 +113,11 @@ const fetchUnreadCounts = async () => {
     console.log('=== DEBUG: fetchUnreadCounts başladı ===');
     console.log('User ID:', user.id);
     
+    // Artık recipient_id kolonunu direkt kullanabiliriz
     const { data: unreadMessages, error } = await supabase
       .from('private_messages')
       .select('sender_id')
-      .eq('recipient_id', user.id)
+      .eq('recipient_id', user.id) // Direkt recipient_id kullan
       .eq('is_read', false);
 
     console.log('Okunmamış mesajlar:', unreadMessages);
