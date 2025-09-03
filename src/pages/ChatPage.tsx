@@ -88,18 +88,17 @@ export default function ChatPage() {
 };
 
   // Fetch unread counts
- const fetchUnreadCounts = async () => {
+const fetchUnreadCounts = async () => {
   if (!user) return;
   try {
     console.log('📊 Fetching unread counts...');
     
-    // Private message'larda recipient_id kullanarak unread count'ları getir
-    const { data: unreadData, error } = await supabase
+    // Önce tüm okunmamış mesajları getir
+    const { data: unreadMessages, error } = await supabase
       .from('private_messages')
-      .select('sender_id, COUNT(*)')
+      .select('sender_id')
       .eq('recipient_id', user.id)
-      .eq('is_read', false)
-      .group('sender_id');
+      .eq('is_read', false);
 
     if (error) {
       console.error('Unread count fetch error:', error);
@@ -107,10 +106,11 @@ export default function ChatPage() {
       return;
     }
 
-    // Unread count mapping'ini oluştur
+    // JavaScript ile count'ları manuel hesapla
     const counts: {[key: string]: number} = {};
-    unreadData?.forEach((item: any) => {
-      counts[item.sender_id] = item.count || 0;
+    unreadMessages?.forEach((msg) => {
+      const senderId = msg.sender_id;
+      counts[senderId] = (counts[senderId] || 0) + 1;
     });
 
     console.log('📊 Unread counts:', counts);
@@ -120,6 +120,21 @@ export default function ChatPage() {
     setUnreadCounts({});
   }
 };
+
+// Fetch users when viewMode changes to users - mevcut useEffect'i güncelle
+useEffect(() => {
+  if (viewMode === 'users') {
+    fetchAllUsers();
+    fetchUnreadCounts(); // Bu satırı ekle
+  }
+}, [viewMode, user]);
+
+// Ayrıca component mount olduğunda da çağır
+useEffect(() => {
+  if (user?.id) {
+    fetchUnreadCounts();
+  }
+}, [user?.id]);
 
 
 
