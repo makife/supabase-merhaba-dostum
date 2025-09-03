@@ -116,37 +116,52 @@ const fetchReactions = async () => {
 };
 
   // Fetch user avatars
-  const fetchUserAvatars = async (userIds: string[]) => {
-    if (userIds.length === 0) return;
+ const fetchUserAvatars = async (userIds: string[]) => {
+  // Null, undefined ve geçersiz UUID'leri filtrele
+  const validUserIds = userIds.filter(id => {
+    if (!id || id === 'null' || id === 'undefined') return false;
+    // UUID formatını kontrol et (36 karakter, tire'ler dahil)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id);
+  });
 
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, avatar_url')
-        .in('id', userIds);
+  if (validUserIds.length === 0) return;
 
-      if (error) throw error;
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, avatar_url')
+      .in('id', validUserIds);
 
-      const avatarMap: {[userId: string]: string} = {};
-      data?.forEach(profile => {
-        if (profile.avatar_url) {
-          avatarMap[profile.id] = profile.avatar_url;
-        }
-      });
+    if (error) throw error;
 
-      setUserAvatars(prev => ({ ...prev, ...avatarMap }));
-    } catch (error) {
-      console.error('Error fetching user avatars:', error);
-    }
-  };
+    const avatarMap: {[userId: string]: string} = {};
+    data?.forEach(profile => {
+      if (profile.avatar_url) {
+        avatarMap[profile.id] = profile.avatar_url;
+      }
+    });
 
-  // Fetch avatars when messages change
-  useEffect(() => {
-    if (messages.length > 0) {
-      const userIds = [...new Set(messages.map(m => m.user_id))];
+    setUserAvatars(prev => ({ ...prev, ...avatarMap }));
+  } catch (error) {
+    console.error('Error fetching user avatars:', error);
+  }
+};
+
+// Fetch avatars when messages change - düzeltilmiş versiyon
+useEffect(() => {
+  if (messages.length > 0) {
+    // User ID'leri toplarken null/undefined kontrolü yap
+    const userIds = messages
+      .map(m => m.user_id)
+      .filter(id => id && id !== 'null' && id !== 'undefined')
+      .filter((id, index, arr) => arr.indexOf(id) === index); // Duplicate'leri kaldır
+
+    if (userIds.length > 0) {
       fetchUserAvatars(userIds);
     }
-  }, [messages]);
+  }
+}, [messages]);
 
   // Fetch all users for private chat
   const fetchAllUsers = async () => {
