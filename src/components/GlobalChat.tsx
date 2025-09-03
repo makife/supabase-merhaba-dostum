@@ -245,12 +245,12 @@ useEffect(() => {
 useEffect(() => {
   if (!isOpen || !user?.id) return;
 
-  console.log('📄 Setting up GLOBAL real-time subscription');
+  console.log('🔄 Setting up GLOBAL real-time subscription');
 
   const channel = supabase
     .channel('global-chat-realtime', {
       config: {
-        broadcast: { self: true }, // DEĞIŞTIR: self: false -> self: true
+        broadcast: { self: false }, // Kendi mesajlarımızı almayalım
         presence: { key: user.id }
       }
     })
@@ -262,54 +262,53 @@ useEffect(() => {
         table: 'global_chat',
       },
       async (payload) => {
-        console.log('🔨 REAL-TIME GLOBAL MESSAGE:', payload);
+        console.log('📨 REAL-TIME GLOBAL MESSAGE:', payload);
         const newMessage = payload.new as any;
         
+        // Kendi mesajımızı ignore et (optimistic update zaten ekledi)
+        if (newMessage.user_id === user.id) {
+          console.log('⭐ Skipping own message for real-time');
+          return;
+        }
+
+        // Kullanıcı bilgilerini al (eğer yoksa)
+        let username = newMessage.username || 'Anonim';
+        let avatar_url = newMessage.avatar_url || null;
+
+        // Eğer username yoksa profilden çek
+        if (!newMessage.username || newMessage.username === 'Anonim') {
+          try {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('username, avatar_url')
+              .eq('id', newMessage.user_id)
+              .single();
+            
+            if (profile) {
+              username = profile.username;
+              avatar_url = profile.avatar_url;
+            }
+          } catch (error) {
+            console.warn('Could not fetch user profile:', error);
+          }
+        }
+
         // Mesajı state'e ekle (duplicate kontrolü ile)
         setMessages(prev => {
-          // Aynı ID'li mesaj zaten var mı kontrol et
           const alreadyExists = prev.some(msg => msg.id === newMessage.id);
           if (alreadyExists) {
             console.log('⚠️ Message already exists, skipping');
             return prev;
           }
 
-          // Eğer kendi mesajımızsa, temp mesajı gerçek mesajla değiştir
-          if (newMessage.user_id === user.id) {
-            console.log('🔄 Updating our own temp message with real ID');
-            const tempMsgIndex = prev.findIndex(msg => 
-              msg.id.startsWith('temp-') && 
-              msg.user_id === user.id && 
-              msg.message === newMessage.message &&
-              Math.abs(new Date(msg.created_at).getTime() - new Date(newMessage.created_at).getTime()) < 10000 // 10 saniye tolerans
-            );
-            
-            if (tempMsgIndex !== -1) {
-              // Temp mesajı gerçek mesajla değiştir
-              const updatedMessages = [...prev];
-              updatedMessages[tempMsgIndex] = {
-                id: newMessage.id,
-                user_id: newMessage.user_id,
-                username: newMessage.username || 'Anonim',
-                message: newMessage.message || '',
-                created_at: newMessage.created_at,
-                avatar_url: newMessage.avatar_url
-              };
-              return updatedMessages.sort((a, b) => 
-                new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-              );
-            }
-          }
-
-          // Başkasının mesajı veya temp mesaj bulunamadı - normal şekilde ekle
           console.log('✅ Adding new message to state');
           const formattedMessage = {
             id: newMessage.id,
             user_id: newMessage.user_id,
-            username: newMessage.username || 'Anonim',
-            message: newMessage.message || '',
+            username: username,
+            message: newMessage.message || newMessage.content || '',
             created_at: newMessage.created_at,
-            avatar_url: newMessage.avatar_url
+            avatar_url: avatar_url
           };
 
           return [...prev, formattedMessage].sort((a, b) => 
@@ -317,18 +316,34 @@ useEffect(() => {
           );
         });
 
-        // Kendi mesajımız değilse ses çal
-        if (newMessage.user_id !== user.id) {
-          try {
-            playSound('correctWord');
-          } catch (e) {
-            console.log('🔇 Sound play failed:', e);
-          }
+        // Ses çal
+        try {
+          playSound('correctWord');
+        } catch (e) {
+          console.log('🔇 Sound play failed:', e);
         }
+      }
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'global_chat',
+      },
+      (payload) => {
+        const deletedMessage = payload.old as any;
+        setMessages(prev => prev.filter(m => m.id !== deletedMessage.id));
+        console.log('🗑️ Message deleted:', deletedMessage.id);
       }
     )
     .subscribe((status) => {
       console.log('📡 Global real-time subscription status:', status);
+      if (status === 'SUBSCRIBED') {
+        console.log('✅ Successfully subscribed to global chat');
+      } else if (status === 'CHANNEL_ERROR') {
+        console.error('❌ Channel subscription error');
+      }
     });
 
   return () => {
@@ -373,6 +388,8 @@ useEffect(() => {
 const sendMessage = async () => {
   if (!newMessage.trim() || !user || !profile) return;
 
+  // Ban kontrolü... (mevcut kod)
+
   const trimmedMessage = newMessage.trim();
   if (trimmedMessage.length > 200) {
     toast.error('Mesaj 200 karakterden uzun olamaz');
@@ -381,8 +398,8 @@ const sendMessage = async () => {
 
   const username = profile.username || user.email?.split('@')[0] || 'Anonim';
   
-  // Optimistic update - daha unique temp ID
-  const tempId = `temp-${user.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  // Optimistic update - geçici ID daha unique olsun
+  const tempId = `temp-${user.id}-${Date.now()}`;
   const tempMessage: ChatMessage = {
     id: tempId,
     user_id: user.id,
@@ -398,6 +415,7 @@ const sendMessage = async () => {
 
   setIsLoading(true);
   try {
+    // Backend'e gönder
     const { data: moderationResult, error } = await supabase
       .rpc('moderate_and_insert_message', {
         p_user_id: user.id,
@@ -407,7 +425,8 @@ const sendMessage = async () => {
       });
 
     if (error) {
-      // RPC yoksa direkt ekle
+      console.error('Moderation RPC hatası:', error);
+      // RPC fonksiyonu yoksa direkt ekle
       const { data: insertData, error: insertError } = await supabase
         .from('global_chat')
         .insert({
@@ -421,10 +440,10 @@ const sendMessage = async () => {
 
       if (insertError) throw insertError;
 
-      // Temp mesajı gerçek ID ile güncelle
+      // Başarılı - temp mesajı gerçek ID ile güncelle
       setMessages(prev => prev.map(msg => 
         msg.id === tempId ? {
-          ...msg,
+          ...tempMessage,
           id: insertData.id
         } : msg
       ));
@@ -446,19 +465,20 @@ const sendMessage = async () => {
       // Başarılı - temp mesajı gerçek ID ile güncelle
       setMessages(prev => prev.map(msg => 
         msg.id === tempId ? {
-          ...msg,
+          ...tempMessage,
           id: result.id
         } : msg
       ));
     }
 
-    // MENTION kontrolü...
+    // MENTION KONTROLÜ
     const mentionRegex = /@(\w+)/g;
     let match;
     
     while ((match = mentionRegex.exec(trimmedMessage)) !== null) {
       const mentionedUsername = match[1];
       
+      // Kullanıcıyı bul
       const { data: mentionedUser } = await supabase
         .from('profiles')
         .select('id, username')
@@ -466,6 +486,7 @@ const sendMessage = async () => {
         .single();
       
       if (mentionedUser && mentionedUser.id !== user.id) {
+        // BİLDİRİM GÖNDER
         await sendMentionNotification(
           mentionedUser.id, 
           username,
