@@ -35,28 +35,42 @@ export default function ChatPage() {
   const { markAllAsRead, markPrivateMessagesAsRead } = useChatNotifications();
 
   // Fetch all users for private chat
- const fetchAllUsers = async () => {
+const fetchAllUsers = async () => {
   try {
-    console.log('👥 Fetching all users...');
+    console.log('=== DEBUG: fetchAllUsers başladı ===');
+    console.log('User ID:', user?.id);
     
-    // Hem tüm kullanıcıları getir hem de mesaj geçmişi olanları öne çıkar
+    // Önce kaç kullanıcı var kontrol et
+    const { count } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .neq('id', user?.id);
+    
+    console.log('Toplam kullanıcı sayısı:', count);
+
     const { data: allUsersData, error: usersError } = await supabase
       .from('profiles')
       .select('id, username, email, avatar_url')
       .neq('id', user?.id)
       .order('username', { ascending: true });
 
+    console.log('Kullanıcı verisi:', allUsersData);
+    console.log('Kullanıcı hatası:', usersError);
+
     if (usersError) {
       console.error('Users fetch error:', usersError);
       return;
     }
 
-    // Mesaj geçmişi olan kullanıcıları bul
+    // Mesaj geçmişini kontrol et
     const { data: chatHistoryData, error: historyError } = await supabase
       .from('private_messages')
       .select('sender_id, recipient_id, created_at')
       .or(`sender_id.eq.${user?.id},recipient_id.eq.${user?.id}`)
       .order('created_at', { ascending: false });
+
+    console.log('Chat history verisi:', chatHistoryData);
+    console.log('Chat history hatası:', historyError);
 
     if (historyError) {
       console.warn('Chat history fetch warning:', historyError);
@@ -69,7 +83,8 @@ export default function ChatPage() {
       if (msg.recipient_id !== user?.id) chatUserIds.add(msg.recipient_id);
     });
 
-    // Kullanıcıları sırala: önce mesaj geçmişi olanlar, sonra diğerleri
+    console.log('Chat history olan kullanıcılar:', Array.from(chatUserIds));
+
     const sortedUsers = allUsersData?.sort((a, b) => {
       const aHasHistory = chatUserIds.has(a.id);
       const bHasHistory = chatUserIds.has(b.id);
@@ -79,26 +94,33 @@ export default function ChatPage() {
       return a.username.localeCompare(b.username, 'tr');
     }) || [];
 
-    console.log('👥 All users fetched:', sortedUsers.length);
-    console.log('💬 Users with chat history:', chatUserIds.size);
+    console.log('=== DEBUG: Sıralı kullanıcılar ===');
+    sortedUsers.forEach(user => {
+      console.log(`${user.username} (${user.id}) - History: ${chatUserIds.has(user.id)}`);
+    });
+
     setAllUsers(sortedUsers);
   } catch (error) {
     console.error('Error fetching users:', error);
   }
 };
 
+
   // Fetch unread counts
 const fetchUnreadCounts = async () => {
   if (!user) return;
   try {
-    console.log('📊 Fetching unread counts...');
+    console.log('=== DEBUG: fetchUnreadCounts başladı ===');
+    console.log('User ID:', user.id);
     
-    // Önce tüm okunmamış mesajları getir
     const { data: unreadMessages, error } = await supabase
       .from('private_messages')
       .select('sender_id')
       .eq('recipient_id', user.id)
       .eq('is_read', false);
+
+    console.log('Okunmamış mesajlar:', unreadMessages);
+    console.log('Okunmamış mesaj hatası:', error);
 
     if (error) {
       console.error('Unread count fetch error:', error);
@@ -106,20 +128,24 @@ const fetchUnreadCounts = async () => {
       return;
     }
 
-    // JavaScript ile count'ları manuel hesapla
     const counts: {[key: string]: number} = {};
     unreadMessages?.forEach((msg) => {
       const senderId = msg.sender_id;
       counts[senderId] = (counts[senderId] || 0) + 1;
     });
 
-    console.log('📊 Unread counts:', counts);
+    console.log('=== DEBUG: Hesaplanan unread counts ===');
+    Object.entries(counts).forEach(([senderId, count]) => {
+      console.log(`${senderId}: ${count} okunmamış mesaj`);
+    });
+
     setUnreadCounts(counts);
   } catch (error) {
     console.error('Error with unread counts:', error);
     setUnreadCounts({});
   }
 };
+
 
 // Fetch users when viewMode changes to users - mevcut useEffect'i güncelle
 useEffect(() => {
@@ -252,6 +278,9 @@ useEffect(() => {
 
 // ChatPage.tsx - renderUsersList fonksiyonunu güncelle
 const renderUsersList = () => {
+  console.log('=== DEBUG: renderUsersList ===');
+  console.log('allUsers length:', allUsers.length);
+  console.log('unreadCounts:', unreadCounts);
 
   return (
     <ScrollArea className="flex-1">
@@ -260,11 +289,14 @@ const renderUsersList = () => {
           <div className="text-center py-8 text-gray-500">
             <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
             <p>Kullanıcılar yükleniyor...</p>
+            <p className="text-xs mt-2">DEBUG: allUsers.length = {allUsers.length}</p>
           </div>
         ) : (
           allUsers.map((targetUser) => {
             const unreadCount = unreadCounts[targetUser.id] || 0;
             const hasHistory = Object.keys(unreadCounts).includes(targetUser.id) || unreadCount > 0;
+            
+            console.log(`Rendering user: ${targetUser.username}, unreadCount: ${unreadCount}, hasHistory: ${hasHistory}`);
             
             return (
               <Card
@@ -292,6 +324,7 @@ const renderUsersList = () => {
                     <p className="font-medium text-gray-800 truncate">
                       {targetUser.username}
                     </p>
+                    <p className="text-xs text-blue-500">DEBUG: unread={unreadCount}, history={hasHistory ? 'yes' : 'no'}</p>
                     {unreadCount > 0 ? (
                       <p className="text-sm text-chat-600 font-semibold">
                         {unreadCount} okunmamış mesaj
