@@ -35,32 +35,91 @@ export default function ChatPage() {
   const { markAllAsRead, markPrivateMessagesAsRead } = useChatNotifications();
 
   // Fetch all users for private chat
-  const fetchAllUsers = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, username, email, avatar_url')
-        .neq('id', user?.id)
-        .order('username', { ascending: true })
-        .limit(50);
+ const fetchAllUsers = async () => {
+  try {
+    console.log('👥 Fetching all users...');
+    
+    // Hem tüm kullanıcıları getir hem de mesaj geçmişi olanları öne çıkar
+    const { data: allUsersData, error: usersError } = await supabase
+      .from('profiles')
+      .select('id, username, email, avatar_url')
+      .neq('id', user?.id)
+      .order('username', { ascending: true });
 
-      if (error) throw error;
-      setAllUsers(data || []);
-    } catch (error) {
-      console.error('Error fetching users:', error);
+    if (usersError) {
+      console.error('Users fetch error:', usersError);
+      return;
     }
-  };
+
+    // Mesaj geçmişi olan kullanıcıları bul
+    const { data: chatHistoryData, error: historyError } = await supabase
+      .from('private_messages')
+      .select('sender_id, recipient_id, created_at')
+      .or(`sender_id.eq.${user?.id},recipient_id.eq.${user?.id}`)
+      .order('created_at', { ascending: false });
+
+    if (historyError) {
+      console.warn('Chat history fetch warning:', historyError);
+    }
+
+    // Mesaj geçmişi olan kullanıcı ID'lerini çıkar
+    const chatUserIds = new Set<string>();
+    chatHistoryData?.forEach(msg => {
+      if (msg.sender_id !== user?.id) chatUserIds.add(msg.sender_id);
+      if (msg.recipient_id !== user?.id) chatUserIds.add(msg.recipient_id);
+    });
+
+    // Kullanıcıları sırala: önce mesaj geçmişi olanlar, sonra diğerleri
+    const sortedUsers = allUsersData?.sort((a, b) => {
+      const aHasHistory = chatUserIds.has(a.id);
+      const bHasHistory = chatUserIds.has(b.id);
+      
+      if (aHasHistory && !bHasHistory) return -1;
+      if (!aHasHistory && bHasHistory) return 1;
+      return a.username.localeCompare(b.username, 'tr');
+    }) || [];
+
+    console.log('👥 All users fetched:', sortedUsers.length);
+    console.log('💬 Users with chat history:', chatUserIds.size);
+    setAllUsers(sortedUsers);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+  }
+};
 
   // Fetch unread counts
-  const fetchUnreadCounts = async () => {
-    if (!user) return;
-    try {
-      // Basit bir yaklaşımla unread counts hesapla
-      setUnreadCounts({}); // Şimdilik boş bırak
-    } catch (error) {
-      console.error('Error with unread counts:', error);
+ const fetchUnreadCounts = async () => {
+  if (!user) return;
+  try {
+    console.log('📊 Fetching unread counts...');
+    
+    // Private message'larda recipient_id kullanarak unread count'ları getir
+    const { data: unreadData, error } = await supabase
+      .from('private_messages')
+      .select('sender_id, COUNT(*)')
+      .eq('recipient_id', user.id)
+      .eq('is_read', false)
+      .group('sender_id');
+
+    if (error) {
+      console.error('Unread count fetch error:', error);
+      setUnreadCounts({});
+      return;
     }
-  };
+
+    // Unread count mapping'ini oluştur
+    const counts: {[key: string]: number} = {};
+    unreadData?.forEach((item: any) => {
+      counts[item.sender_id] = item.count || 0;
+    });
+
+    console.log('📊 Unread counts:', counts);
+    setUnreadCounts(counts);
+  } catch (error) {
+    console.error('Error with unread counts:', error);
+    setUnreadCounts({});
+  }
+};
 
 
 
@@ -182,54 +241,68 @@ const renderUsersList = () => {
   return (
     <ScrollArea className="flex-1">
       <div className="p-4 space-y-3">
-        {allUsers.map((targetUser) => {
-          const unreadCount = unreadCounts[targetUser.id] || 0;
-          
-          return (
-            <Card
-              key={targetUser.id}
-              className={`p-4 hover:shadow-md transition-all cursor-pointer border-2 ${
-                unreadCount > 0 
-                  ? 'border-chat-500 bg-chat-50' 
-                  : 'border-chat-200'
-              }`}
-              onClick={() => startPrivateChat(targetUser)}
-            >
-              <div className="flex items-center space-x-3">
-                <UserAvatar
-                  src={targetUser.avatar_url}
-                  alt={targetUser.username}
-                  fallback={targetUser.username.charAt(0).toUpperCase()}
-                  size="sm"
-                  className={unreadCount > 0 ? 'ring-2 ring-chat-500' : ''}
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-800 truncate">
-                    {targetUser.username}
-                  </p>
-                  {unreadCount > 0 ? (
-                    <p className="text-sm text-chat-600 font-semibold">
-                      {unreadCount} okunmamış mesaj
+        {allUsers.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
+            <p>Kullanıcılar yükleniyor...</p>
+          </div>
+        ) : (
+          allUsers.map((targetUser) => {
+            const unreadCount = unreadCounts[targetUser.id] || 0;
+            const hasHistory = Object.keys(unreadCounts).includes(targetUser.id) || unreadCount > 0;
+            
+            return (
+              <Card
+                key={targetUser.id}
+                className={`p-4 hover:shadow-md transition-all cursor-pointer border-2 ${
+                  unreadCount > 0 
+                    ? 'border-chat-500 bg-chat-50' 
+                    : hasHistory
+                    ? 'border-chat-300 bg-gray-50'
+                    : 'border-chat-200'
+                }`}
+                onClick={() => startPrivateChat(targetUser)}
+              >
+                <div className="flex items-center space-x-3">
+                  <UserAvatar
+                    src={targetUser.avatar_url}
+                    alt={targetUser.username}
+                    fallback={targetUser.username.charAt(0).toUpperCase()}
+                    size="sm"
+                    className={`${unreadCount > 0 ? 'ring-2 ring-chat-500' : ''} border-2 ${
+                      isUserOnline(targetUser.id) ? 'border-green-400' : 'border-gray-300'
+                    }`}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-gray-800 truncate">
+                      {targetUser.username}
                     </p>
-                  ) : (
-                    <p className="text-sm text-gray-500">Özel mesaj gönder</p>
-                  )}
+                    {unreadCount > 0 ? (
+                      <p className="text-sm text-chat-600 font-semibold">
+                        {unreadCount} okunmamış mesaj
+                      </p>
+                    ) : hasHistory ? (
+                      <p className="text-sm text-gray-600">Mesaj geçmişi var</p>
+                    ) : (
+                      <p className="text-sm text-gray-500">Özel mesaj gönder</p>
+                    )}
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    {isUserOnline(targetUser.id) && (
+                      <div className="w-2 h-2 bg-green-500 rounded-full" title="Çevrimiçi" />
+                    )}
+                    {unreadCount > 0 && (
+                      <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-xs text-white font-bold">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </div>
+                    )}
+                    <Mail className="w-5 h-5 text-chat-500" />
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  {isUserOnline(targetUser.id) && (
-                    <div className="w-2 h-2 bg-green-500 rounded-full" title="Çevrimiçi" />
-                  )}
-                  {unreadCount > 0 && (
-                    <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-xs text-white font-bold">
-                      {unreadCount > 9 ? '9+' : unreadCount}
-                    </div>
-                  )}
-                  <Mail className="w-5 h-5 text-chat-500" />
-                </div>
-              </div>
-            </Card>
-          );
-        })}
+              </Card>
+            );
+          })
+        )}
       </div>
     </ScrollArea>
   );
