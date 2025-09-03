@@ -108,45 +108,19 @@ const setupRealtimeSubscription = () => {
           table: 'global_chat',
         },
         async (payload) => {
-          console.log('📨 REAL-TIME GLOBAL MESSAGE:', payload);
-          const newMessage = payload.new as any;
-          
-          if (newMessage.user_id === user?.id) {
-            console.log('⭐ Skipping own message for real-time');
-            return;
-          }
-
-          // Mesajı state'e ekle
-          setMessages(prev => {
-            const alreadyExists = prev.some(msg => msg.id === newMessage.id);
-            if (alreadyExists) return prev;
-
-            const formattedMessage = {
-              id: newMessage.id,
-              user_id: newMessage.user_id,
-              username: newMessage.username || 'Anonim',
-              message: newMessage.message || '',
-              created_at: newMessage.created_at,
-              avatar_url: newMessage.avatar_url || null
-            };
-
-            return [...prev, formattedMessage].sort((a, b) => 
-              new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-            );
-          });
-
-          try {
-            playSound('correctWord');
-          } catch (e) {
-            console.log('🔇 Sound play failed:', e);
-          }
+          // ... mevcut kod
         }
       )
       .subscribe((status) => {
         console.log('📡 Global real-time subscription status:', status);
         if (status === 'CHANNEL_ERROR') {
-          console.error('❌ Channel error, retrying in 3 seconds...');
-          setTimeout(() => setupRealtimeSubscription(), 3000);
+          console.error('❌ Channel error, retrying in 5 seconds...');
+          // Daha uzun bekleme süresi
+          setTimeout(() => {
+            if (isOpen) {
+              setupRealtimeSubscription();
+            }
+          }, 5000);
         }
       });
 
