@@ -130,12 +130,9 @@ const fetchUnreadCounts = async () => {
       counts[senderId] = (counts[senderId] || 0) + 1;
     });
 
+    console.log('=== DEBUG: Unread counts updated ===', counts);
     setUnreadCounts(counts);
     
-    // useChatNotifications'taki sayıları da güncelle
-    if (refreshUnreadCounts) {
-      refreshUnreadCounts();
-    }
   } catch (error) {
     console.error('Error with unread counts:', error);
     setUnreadCounts({});
@@ -198,6 +195,8 @@ useEffect(() => {
     if (!activeChatId || !user?.id) return;
 
     try {
+      console.log('📖 Marking chat messages as read:', activeChatId);
+      
       const { error } = await supabase
         .from('private_messages')
         .update({ is_read: true })
@@ -209,13 +208,14 @@ useEffect(() => {
         console.error('Error marking chat messages as read:', error);
       } else {
         console.log('✅ Chat messages marked as read:', activeChatId);
-        // Bildirim sayılarını manuel olarak güncelle
+        
+        // useChatNotifications'taki sayıları güncelle
         if (refreshUnreadCounts) {
           refreshUnreadCounts();
-        } else {
-          // Fallback: fetchUnreadCounts çağır
-          fetchUnreadCounts();
         }
+        
+        // Yerel unreadCounts state'ini de güncelle
+        fetchUnreadCounts();
       }
     } catch (error) {
       console.error('Error marking chat messages:', error);
