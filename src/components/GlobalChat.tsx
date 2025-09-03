@@ -79,17 +79,20 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
 
   // Fetch initial messages
 useEffect(() => {
-  if (isOpen) {
+  let channel: any = null;
+
+  if (isOpen && user?.id) {
     fetchMessages();
-    // Real-time subscription'ı da burada başlat
-    setupRealtimeSubscription();
-  } else {
-    // Cleanup real-time subscription
-    if (currentChannel) {
-      supabase.removeChannel(currentChannel);
-    }
+    channel = setupRealtimeSubscription();
   }
-}, [isOpen]);
+
+  return () => {
+    if (channel) {
+      console.log('🧹 Cleaning up global real-time channel');
+      supabase.removeChannel(channel);
+    }
+  };
+}, [isOpen, user?.id]);
 
 const setupRealtimeSubscription = () => {
   console.log('🔄 Setting up GLOBAL real-time subscription');
