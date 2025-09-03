@@ -32,7 +32,7 @@ export default function ChatPage() {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [allUsers, setAllUsers] = useState<SelectedUser[]>([]);
   const [unreadCounts, setUnreadCounts] = useState<{[key: string]: number}>({});
-  const { markAllAsRead, markPrivateMessagesAsRead } = useChatNotifications();
+  const { markAllAsRead, markPrivateMessagesAsRead, refreshUnreadCounts } = useChatNotifications();
 
   // Fetch all users for private chat
 const fetchAllUsers = async () => {
@@ -214,8 +214,11 @@ useEffect(() => {
       } else {
         console.log('✅ Chat messages marked as read:', activeChatId);
         // Bildirim sayılarını manuel olarak güncelle
-        if (typeof refreshUnreadCounts === 'function') {
+        if (refreshUnreadCounts) {
           refreshUnreadCounts();
+        } else {
+          // Fallback: fetchUnreadCounts çağır
+          fetchUnreadCounts();
         }
       }
     } catch (error) {
