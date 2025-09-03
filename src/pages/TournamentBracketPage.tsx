@@ -33,6 +33,8 @@ const TournamentBracketPage = () => {
   const [matches, setMatches] = useState<TournamentMatch[]>([]);
   const [globalCountdown, setGlobalCountdown] = useState(10);
   const [userMatchId, setUserMatchId] = useState<string | null>(null);
+  // Bu tur için otomasyonun tetiklenip tetiklenmediğini takip eder
+  const [handledRound, setHandledRound] = useState<number | null>(null);
 
   // Ana useEffect - Real-time subscription (timer yok)
   useEffect(() => {
@@ -170,6 +172,20 @@ const TournamentBracketPage = () => {
         } else {
           console.log('❌ Kullanıcı beklemedeki maçı bulunamadı');
           setUserMatchId(null);
+        }
+      }
+
+      // Aktif turu bul ve kullanıcının o turdaki maçı tamamlanmışsa bot maçlarını bitir
+      const activeRounds = data.filter(m => m.status !== 'completed').map(m => m.round);
+      const activeRound = activeRounds.length ? Math.min(...activeRounds) : null;
+
+      if (user && activeRound !== null) {
+        const uid = String(user.id);
+        const userMatchInActive = data.find(m => m.round === activeRound && (String(m.player1_id) === uid || String(m.player2_id) === uid));
+        if (userMatchInActive && userMatchInActive.status === 'completed' && handledRound !== activeRound) {
+          console.log(`✅ Kullanıcının ${activeRound}. tur maçı bitmiş; kalan maçlar otomatik tamamlanacak.`);
+          setHandledRound(activeRound);
+          await handleUserMatchCompleted();
         }
       }
 
