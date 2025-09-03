@@ -111,16 +111,12 @@ const fetchUnreadCounts = async () => {
   if (!user) return;
   try {
     console.log('=== DEBUG: fetchUnreadCounts başladı ===');
-    console.log('User ID:', user.id);
     
     const { data: unreadMessages, error } = await supabase
       .from('private_messages')
       .select('sender_id')
       .eq('recipient_id', user.id)
       .eq('is_read', false);
-
-    console.log('Okunmamış mesajlar:', unreadMessages);
-    console.log('Okunmamış mesaj hatası:', error);
 
     if (error) {
       console.error('Unread count fetch error:', error);
@@ -134,12 +130,12 @@ const fetchUnreadCounts = async () => {
       counts[senderId] = (counts[senderId] || 0) + 1;
     });
 
-    console.log('=== DEBUG: Hesaplanan unread counts ===');
-    Object.entries(counts).forEach(([senderId, count]) => {
-      console.log(`${senderId}: ${count} okunmamış mesaj`);
-    });
-
     setUnreadCounts(counts);
+    
+    // useChatNotifications'taki sayıları da güncelle
+    if (refreshUnreadCounts) {
+      refreshUnreadCounts();
+    }
   } catch (error) {
     console.error('Error with unread counts:', error);
     setUnreadCounts({});
