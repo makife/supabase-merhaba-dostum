@@ -11,6 +11,7 @@ import { Send, ArrowLeft } from 'lucide-react';
 import { UserAvatar } from '@/components/UserAvatar';
 import { toast } from 'sonner';
 import { sendMessageNotification } from '@/utils/notifications';
+import { Trash2 } from 'lucide-react';
 
 interface PrivateMessage {
   id: string;
