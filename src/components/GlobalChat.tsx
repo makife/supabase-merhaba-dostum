@@ -78,11 +78,18 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   }, [messages]);
 
   // Fetch initial messages
-  useEffect(() => {
-    if (isOpen) {
-      fetchMessages();
+useEffect(() => {
+  if (isOpen) {
+    fetchMessages();
+    // Real-time subscription'ı da burada başlat
+    setupRealtimeSubscription();
+  } else {
+    // Cleanup real-time subscription
+    if (currentChannel) {
+      supabase.removeChannel(currentChannel);
     }
-  }, [isOpen]);
+  }
+}, [isOpen]);
 
 // GlobalChat.tsx - fetchReactions fonksiyonu
 const fetchReactions = async () => {
@@ -197,27 +204,27 @@ useEffect(() => {
 // Bot hoşgeldin mesajı için ayrı useEffect
 useEffect(() => {
   const sendBotWelcome = async () => {
-    if (!user?.id || !isOpen) return;
+    if (!user?.id || !isOpen || messages.length > 0) return;
     
     try {
-      // Son 1 saatte bot mesajı var mı kontrol et
-      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      // Son 24 saatte bot mesajı var mı kontrol et
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
       
       const { data: recentBotMessages } = await supabase
         .from('global_chat')
         .select('id')
         .eq('username', 'kelimeciBot')
-        .gte('created_at', oneHourAgo.toISOString())
+        .gte('created_at', oneDayAgo.toISOString())
         .limit(1);
 
-      // Eğer son 1 saatte bot mesajı yoksa hoşgeldin mesajı gönder
+      // Eğer son 24 saatte bot mesajı yoksa hoşgeldin mesajı gönder
       if (!recentBotMessages || recentBotMessages.length === 0) {
         console.log('🤖 Bot hoşgeldin mesajı gönderiliyor...');
         
         const { error } = await supabase
           .from('global_chat')
           .insert({
-            user_id: null, // Bot mesajı için null
+            user_id: null,
             username: 'kelimeciBot',
             message: 'Hoşgeldiniz! 🎉 Lütfen kurallar çerçevesinde sohbet ediniz. Küfür, argo ve hakaret içeren mesajlar otomatik olarak tespit edilir ve 2 gün sohbet yasağı uygulanır.',
             avatar_url: '/bot-avatar.png'
@@ -227,6 +234,8 @@ useEffect(() => {
           console.error('❌ Bot mesajı gönderilemedi:', error);
         } else {
           console.log('✅ Bot hoşgeldin mesajı gönderildi!');
+          // Mesajları yeniden yükle
+          fetchMessages();
         }
       }
     } catch (error) {
@@ -234,8 +243,7 @@ useEffect(() => {
     }
   };
 
-  // Sadece ilk açılışta ve mesaj yoksa çalıştır
-  if (isOpen && messages.length === 0) {
+  if (isOpen) {
     sendBotWelcome();
   }
 }, [isOpen, user?.id]);
