@@ -302,7 +302,7 @@ const sendMessage = async () => {
     message: trimmedMessage,
     created_at: new Date().toISOString(),
     is_read: false,
-    username: 'Sen',
+    username: 'Sen', // Geçici değer
     avatar_url: null
   };
 
@@ -312,13 +312,11 @@ const sendMessage = async () => {
 
   setIsLoading(true);
   try {
-    // recipient_id'yi hesapla - otherUser.id kullan
     const { data, error } = await supabase
       .from('private_messages')
       .insert({
         chat_id: chatId,
         sender_id: user.id,
-        recipient_id: otherUser.id, // Bu satırı ekle
         message: trimmedMessage
       })
       .select()
@@ -329,7 +327,7 @@ const sendMessage = async () => {
     // BİLDİRİM GÖNDER - user bilgilerini kullan
     await sendMessageNotification(
       otherUser.id, 
-      username,
+      username,  // user.user_metadata'den alıyoruz
       chatId
     );
 
