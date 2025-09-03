@@ -2,52 +2,58 @@
 import { supabase } from '@/integrations/supabase/client';
 
 // Özel mesaj bildirimi - DÜZELTİLDİ
-export const sendMessageNotification = async (receiverId: string, senderUsername: string, chatId?: string) => {
+export const sendMentionNotification = async (
+  userId: string,
+  senderUsername: string, 
+  message: string
+) => {
   try {
-    const { error } = await supabase.rpc(
-      'send_private_message_notification' as any,
-      {
-        p_recipient_id: receiverId,  // ✅ Doğru parametre ismi
+    const { data, error } = await supabase
+      .rpc('send_mention_notification', {
+        p_user_id: userId,
+        p_sender_username: senderUsername,
+        p_message: message
+      });
+
+    if (error) {
+      console.error('Mention notification error:', error);
+      return false;
+    }
+
+    console.log('✅ Mention bildirimi gönderildi:', senderUsername, '->', userId);
+    return data;
+  } catch (error) {
+    console.error('Error sending mention notification:', error);
+    return false;
+  }
+};
+
+// Özel mesaj bildirimi gönder
+export const sendMessageNotification = async (
+  userId: string,
+  senderUsername: string,
+  chatId: string
+) => {
+  try {
+    const { data, error } = await supabase
+      .rpc('send_private_message_notification', {
+        p_user_id: userId,
         p_sender_username: senderUsername,
         p_chat_id: chatId
-      } as any
-    );
+      });
 
     if (error) {
-      console.warn('Notification error (non-critical):', error.message);
+      console.error('Private message notification error:', error);
       return false;
     }
-    return true;
+
+    console.log('✅ Özel mesaj bildirimi gönderildi:', senderUsername, '->', userId);
+    return data;
   } catch (error) {
-    console.warn('Error in sendMessageNotification (non-critical):', error);
+    console.error('Error sending private message notification:', error);
     return false;
   }
 };
-
-// Mention bildirimi - DÜZELTİLDİ
-export const sendMentionNotification = async (receiverId: string, senderUsername: string, message: string, messageId?: string) => {
-  try {
-    const { error } = await supabase.rpc(
-      'send_mention_notification' as any,
-      {
-        p_receiver_id: receiverId,  // ✅ Doğru parametre ismi
-        p_sender_username: senderUsername,
-        p_message: message,
-        p_message_id: messageId
-      } as any
-    );
-
-    if (error) {
-      console.warn('Error sending mention notification:', error);
-      return false;
-    }
-    return true;
-  } catch (error) {
-    console.warn('Error in sendMentionNotification:', error);
-    return false;
-  }
-};
-
 // Oyun daveti bildirimi - DÜZELTİLDİ
 export const sendGameInviteNotification = async (receiverId: string, senderUsername: string, roomCode: string) => {
   try {
