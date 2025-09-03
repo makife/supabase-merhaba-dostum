@@ -61,6 +61,12 @@ const TournamentBracketPage = () => {
             navigate(`/game?match=${updatedMatch.id}&tournament=${tournamentId}`);
           }
           
+          // Kullanıcının maçı tamamlandığında bot maçlarını da tamamla
+          if (isUserMatch && updatedMatch.status === 'completed') {
+            console.log('🏁 Kullanıcı maçı tamamlandı!');
+            handleUserMatchCompleted();
+          }
+          
           fetchMatches();
         })
         .subscribe();
@@ -292,6 +298,59 @@ const TournamentBracketPage = () => {
     }
   };
 
+  // Kullanıcının maçı tamamlandığında çağrılacak
+  const handleUserMatchCompleted = async () => {
+    try {
+      console.log('👤 Kullanıcı maçı tamamlandı, bot maçları kontrol ediliyor...');
+      
+      // Beklemedeki bot maçlarını al
+      const { data: pendingMatches } = await supabase
+        .from('tournament_matches')
+        .select('*')
+        .eq('tournament_id', tournamentId)
+        .eq('status', 'pending');
+      
+      if (!pendingMatches || pendingMatches.length === 0) {
+        console.log('✅ Tüm maçlar tamamlandı, sonraki tur kontrolü yapılıyor...');
+        await checkNextRoundCreation(tournamentId);
+        return;
+      }
+      
+      // Bot maçlarını hemen tamamla
+      for (const match of pendingMatches) {
+        const isUserMatch = user && (
+          String(match.player1_id) === String(user.id) || 
+          String(match.player2_id) === String(user.id)
+        );
+        
+        if (!isUserMatch) {
+          const player1Score = Math.floor(Math.random() * 30) + 15;
+          const player2Score = Math.floor(Math.random() * 30) + 15;
+          const winnerId = player1Score > player2Score ? match.player1_id : match.player2_id;
+          
+          await supabase
+            .from('tournament_matches')
+            .update({
+              status: 'completed',
+              player1_score: player1Score,
+              player2_score: player2Score,
+              winner_id: winnerId,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', match.id);
+            
+          console.log(`✅ Bot maçı hızlıca tamamlandı: ${match.id.slice(-8)}`);
+        }
+      }
+      
+      // Tüm bot maçları tamamlandıktan sonra sonraki tur kontrolü
+      await checkNextRoundCreation(tournamentId);
+      
+    } catch (error) {
+      console.error('Kullanıcı maçı tamamlama sonrası hata:', error);
+    }
+  };
+
  const startBotMatches = async () => {
   try {
     console.log('🤖 Bot maçları başlatılıyor...');
@@ -335,8 +394,6 @@ const TournamentBracketPage = () => {
             
           console.log(`✅ Bot maçı tamamlandı: ${match.id.slice(-8)}`);
           
-          // Sonraki turu kontrol et
-          checkNextRoundCreation(tournamentId);
         } catch (error) {
           console.error('Bot maçı tamamlama hatası:', error);
         }
