@@ -172,31 +172,45 @@ useEffect(() => {
     }
   }, [viewMode, user?.id]);
 
- useEffect(() => {
-    // Chat sayfası açıldığında özel mesaj bildirimlerini temizle
-    const markPrivateMessagesAsRead = async () => {
-      if (!user?.id) return;
+useEffect(() => {
+  const markAllPrivateMessagesAsRead = async () => {
+    if (!user?.id) return;
 
-      try {
-        // Okunmamış özel mesajları okundu olarak işaretle
-        const { error } = await supabase
-          .from('private_messages')
-          .update({ is_read: true })
-          .eq('recipient_id', user.id) // recipient_id kullan
-          .eq('is_read', false);
+    try {
+      console.log('🔄 Marking ALL private messages as read for user:', user.id);
+      
+      const { data: updatedMessages, error } = await supabase
+        .from('private_messages')
+        .update({ is_read: true })
+        .eq('recipient_id', user.id)
+        .eq('is_read', false)
+        .select('id, sender_id');
 
-        if (error) {
-          console.error('Mesajlar okundu olarak işaretlenirken hata:', error);
-        } else {
-          console.log('✅ Özel mesajlar okundu olarak işaretlendi');
-        }
-      } catch (error) {
-        console.error('Error marking messages as read:', error);
+      if (error) {
+        console.error('❌ Error marking all messages as read:', error);
+        return;
       }
-    };
 
-    markPrivateMessagesAsRead();
-  }, [user?.id]);
+      console.log('✅ Marked', updatedMessages?.length, 'messages as read');
+      
+      // Unread counts'ı temizle
+      setUnreadCounts({});
+      
+      // fetchUnreadCounts'ı yeniden çağır
+      setTimeout(() => {
+        fetchUnreadCounts();
+      }, 500);
+      
+    } catch (error) {
+      console.error('❌ Error in markAllPrivateMessagesAsRead:', error);
+    }
+  };
+
+  // Sadece users view'ına geçtiğinde değil, component mount olduğunda da çalıştır
+  if (user?.id) {
+    markAllPrivateMessagesAsRead();
+  }
+}, [user?.id]); 
 
  useEffect(() => {
     const markChatMessagesAsRead = async () => {
@@ -220,6 +234,66 @@ useEffect(() => {
       markChatMessagesAsRead();
     }
   }, [viewMode, activeChatId, user?.id]);
+
+// 2. viewMode 'users' olduğunda da çalıştır (ek güvenlik)
+useEffect(() => {
+  const refreshUnreadCounts = async () => {
+    if (!user?.id) return;
+    
+    // Önce tüm mesajları okundu yap
+    await supabase
+      .from('private_messages')
+      .update({ is_read: true })
+      .eq('recipient_id', user.id)
+      .eq('is_read', false);
+    
+    // Sonra count'ları güncelle
+    setUnreadCounts({});
+    fetchUnreadCounts();
+  };
+
+  if (viewMode === 'users' && user?.id) {
+    refreshUnreadCounts();
+  }
+}, [viewMode, user?.id]);
+
+// 3. Private chat'e girdiğinde o chat'in mesajlarını okundu yap
+useEffect(() => {
+  const markSpecificChatAsRead = async () => {
+    if (!activeChatId || !user?.id) return;
+
+    try {
+      console.log('🔄 Marking specific chat as read:', activeChatId);
+      
+      const { data, error } = await supabase
+        .from('private_messages')
+        .update({ is_read: true })
+        .eq('chat_id', activeChatId)
+        .eq('recipient_id', user.id)
+        .eq('is_read', false)
+        .select('sender_id');
+
+      if (error) {
+        console.error('❌ Error marking chat messages as read:', error);
+        return;
+      }
+
+      console.log('✅ Marked', data?.length, 'chat messages as read');
+      
+      // Count'ları güncelle
+      setTimeout(() => {
+        fetchUnreadCounts();
+      }, 500);
+      
+    } catch (error) {
+      console.error('❌ Error in markSpecificChatAsRead:', error);
+    }
+  };
+
+  if (viewMode === 'private-chat' && activeChatId) {
+    markSpecificChatAsRead();
+  }
+}, [viewMode, activeChatId, user?.id]);
 
   const handleBackToMenu = () => {
     playSound('buttonClick');
