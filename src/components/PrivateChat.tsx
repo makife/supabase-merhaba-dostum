@@ -136,6 +136,22 @@ useEffect(() => {
         playSound('correctWord');
       }
     )
+    
+    .on(
+      'postgres_changes',
+      {
+        event: 'DELETE',
+        schema: 'public', 
+        table: 'private_messages',
+        filter: `chat_id=eq.${chatId}`
+      },
+      (payload) => {
+        const deletedMessage = payload.old as any;
+        setMessages(prev => prev.filter(m => m.id !== deletedMessage.id));
+        console.log('🗑️ Private message deleted:', deletedMessage.id);
+      }
+    )
+    
     .subscribe((status) => {
       console.log('📡 Private chat real-time status:', status);
       if (status === 'SUBSCRIBED') {
