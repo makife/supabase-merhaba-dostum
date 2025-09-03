@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { GlobalChat } from '@/components/GlobalChat';
 import { PrivateChat } from '@/components/PrivateChat';
 import { UserAvatar } from '@/components/UserAvatar';
+import { useChatNotifications } from '@/hooks/useChatNotifications';
 
 type ViewMode = 'global' | 'users' | 'private-chat';
 
@@ -31,6 +32,7 @@ export default function ChatPage() {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [allUsers, setAllUsers] = useState<SelectedUser[]>([]);
   const [unreadCounts, setUnreadCounts] = useState<{[key: string]: number}>({});
+  const { markAllAsRead, markPrivateMessagesAsRead } = useChatNotifications();
 
   // Fetch all users for private chat
   const fetchAllUsers = async () => {
@@ -60,15 +62,16 @@ export default function ChatPage() {
     }
   };
 
-  // Fetch users when viewMode changes to users
-  useEffect(() => {
-    if (viewMode === 'users') {
-      fetchAllUsers();
-      fetchUnreadCounts();
-    }
-  }, [viewMode, user]);
 
+
+    // viewMode 'users' olduğunda da özel mesaj bildirimlerini temizle
   useEffect(() => {
+    if (viewMode === 'users' && user?.id) {
+      markPrivateMessagesAsRead();
+    }
+  }, [viewMode, user?.id]);
+
+ useEffect(() => {
     // Chat sayfası açıldığında özel mesaj bildirimlerini temizle
     const markPrivateMessagesAsRead = async () => {
       if (!user?.id) return;
@@ -78,7 +81,7 @@ export default function ChatPage() {
         const { error } = await supabase
           .from('private_messages')
           .update({ is_read: true })
-          .eq('recipient_id', user.id)
+          .eq('recipient_id', user.id) // recipient_id kullan
           .eq('is_read', false);
 
         if (error) {
@@ -93,6 +96,29 @@ export default function ChatPage() {
 
     markPrivateMessagesAsRead();
   }, [user?.id]);
+
+ useEffect(() => {
+    const markChatMessagesAsRead = async () => {
+      if (!activeChatId || !user?.id) return;
+
+      try {
+        await supabase
+          .from('private_messages')
+          .update({ is_read: true })
+          .eq('chat_id', activeChatId)
+          .eq('recipient_id', user.id)
+          .eq('is_read', false);
+
+        console.log('✅ Chat mesajları okundu olarak işaretlendi:', activeChatId);
+      } catch (error) {
+        console.error('Chat mesajlarını işaretlerken hata:', error);
+      }
+    };
+
+    if (viewMode === 'private-chat' && activeChatId) {
+      markChatMessagesAsRead();
+    }
+  }, [viewMode, activeChatId, user?.id]);
 
   const handleBackToMenu = () => {
     playSound('buttonClick');
