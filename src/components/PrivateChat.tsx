@@ -174,6 +174,32 @@ useEffect(() => {
   markMessagesAsRead();
 }, [chatId, user]);
 
+const deleteMessage = async (messageId: string, senderId: string) => {
+  if (!user || senderId !== user.id) {
+    toast.error('Sadece kendi mesajlarınızı silebilirsiniz');
+    return;
+  }
+
+  const confirmed = window.confirm('Bu mesajı silmek istediğinizden emin misiniz?');
+  if (!confirmed) return;
+
+  try {
+    const { error } = await supabase
+      .from('private_messages')
+      .delete()
+      .eq('id', messageId)
+      .eq('sender_id', user.id); // Güvenlik için tekrar kontrol
+
+    if (error) throw error;
+    
+    playSound('buttonClick');
+    toast.success('Mesaj silindi');
+  } catch (error) {
+    console.error('Error deleting private message:', error);
+    toast.error('Mesaj silinirken hata oluştu');
+  }
+};
+
   const fetchMessages = async () => {
   try {
     console.log('Fetching private messages for chat:', chatId);
@@ -325,39 +351,47 @@ const sendMessage = async () => {
   };
 
   return (
-    <div className="w-full h-full flex flex-col bg-background">
-      {/* Messages */}
-      <ScrollArea className="flex-1 p-4 overflow-hidden">
-        <div className="space-y-4 overflow-hidden">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${
-                message.sender_id === user?.id ? 'justify-end' : 'justify-start'
-              }`}
-            >
-              <div
-                className={`max-w-[70%] p-3 rounded-lg ${
-                  message.sender_id === user?.id
-                    ? 'bg-primary text-primary-foreground ml-auto'
-                    : 'bg-muted'
-                }`}
-              >
-                <div className="break-words text-sm">
-                  {message.message}
-                </div>
-                <div className={`text-xs mt-1 ${
-                  message.sender_id === user?.id
-                    ? 'text-primary-foreground/70'
-                    : 'text-muted-foreground'
-                }`}>
-                  {formatTime(message.created_at)}
-                </div>
-              </div>
-            </div>
-          ))}
-          <div ref={messagesEndRef} />
+    <div className="space-y-4 overflow-hidden">
+  {messages.map((message) => (
+    <div
+      key={message.id}
+      className={`group flex ${
+        message.sender_id === user?.id ? 'justify-end' : 'justify-start'
+      }`}
+    >
+      <div
+        className={`max-w-[70%] p-3 rounded-lg relative ${
+          message.sender_id === user?.id
+            ? 'bg-primary text-primary-foreground ml-auto'
+            : 'bg-muted'
+        }`}
+      >
+        {/* Silme butonu - sadece kendi mesajlarında göster */}
+        {message.sender_id === user?.id && !message.id.startsWith('temp-') && (
+          <button
+            onClick={() => deleteMessage(message.id, message.sender_id)}
+            className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow-lg z-10"
+            title="Mesajı sil"
+          >
+            <Trash2 className="w-3 h-3" />
+          </button>
+        )}
+        
+        <div className="break-words text-sm">
+          {message.message}
         </div>
+        <div className={`text-xs mt-1 ${
+          message.sender_id === user?.id
+            ? 'text-primary-foreground/70'
+            : 'text-muted-foreground'
+        }`}>
+          {formatTime(message.created_at)}
+        </div>
+      </div>
+    </div>
+  ))}
+  <div ref={messagesEndRef} />
+</div>
       </ScrollArea>
 
       <Separator />
