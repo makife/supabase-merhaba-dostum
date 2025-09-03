@@ -96,14 +96,21 @@ const TournamentBracketPage = () => {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [user, tournamentId, navigate, globalCountdown]);
 
-  // Global countdown - SADECE countdown, timer işlevi yok
+  // Global countdown - sadece beklemedeki maçlar varsa çalışsın
   useEffect(() => {
     if (tournamentId && matches.length > 0) {
+      // Beklemedeki maçlar var mı kontrol et
+      const hasPendingMatches = matches.some(match => match.status === 'pending');
+      
+      if (!hasPendingMatches) {
+        setGlobalCountdown(0);
+        return;
+      }
+      
       const countdownInterval = setInterval(() => {
         setGlobalCountdown(prev => {
           if (prev <= 1) {
             clearInterval(countdownInterval);
-            // 10 saniye bittiğinde maçları başlat
             console.log('⏰ 10 saniye doldu, maçlar başlatılıyor...');
             startAllMatches();
             return 0;
@@ -144,16 +151,18 @@ const TournamentBracketPage = () => {
       if (user) {
         const userIdString = String(user.id);
         
-        const userMatch = data.find(match => 
-          String(match.player1_id) === userIdString || 
-          String(match.player2_id) === userIdString
+        // Kullanıcının BEKLEMEDEKI maçını bul
+        const userPendingMatch = data.find(match => 
+          (String(match.player1_id) === userIdString || 
+           String(match.player2_id) === userIdString) &&
+          match.status === 'pending'
         );
         
-        if (userMatch) {
-          console.log('✅ Kullanıcı maçı bulundu:', userMatch.id);
-          setUserMatchId(userMatch.id);
+        if (userPendingMatch) {
+          console.log('✅ Kullanıcı beklemedeki maçı bulundu:', userPendingMatch.id);
+          setUserMatchId(userPendingMatch.id);
         } else {
-          console.log('❌ Kullanıcı maçı bulunamadı');
+          console.log('❌ Kullanıcı beklemedeki maçı bulunamadı');
           setUserMatchId(null);
         }
       }
@@ -343,36 +352,39 @@ const checkNextRoundCreation = async (tournamentId: string) => {
     console.log('🔍 Sonraki tur kontrol ediliyor...');
     
     // Mevcut turdaki tüm maçlar
-    const { data: currentMatches } = await supabase
+    const { data: allMatches } = await supabase
       .from('tournament_matches')
-      .select('round, status')
+      .select('*')
       .eq('tournament_id', tournamentId)
-      .order('round', { ascending: false })
-      .limit(1);
+      .order('round', { ascending: true });
     
-    if (!currentMatches || currentMatches.length === 0) return;
+    if (!allMatches || allMatches.length === 0) return;
     
-    const currentRound = currentMatches[0].round;
+    // Her turun durumunu kontrol et
+    const rounds = [1, 2, 3];
     
-    // Mevcut turdaki tüm maçlar tamamlandı mı?
-    const { data: incompleteMatches } = await supabase
-      .from('tournament_matches')
-      .select('id')
-      .eq('tournament_id', tournamentId)
-      .eq('round', currentRound)
-      .neq('status', 'completed')
-      .limit(1);
-    
-    if (incompleteMatches && incompleteMatches.length === 0) {
-      console.log(`🏆 ${currentRound}. tur tamamlandı!`);
+    for (const round of rounds) {
+      const roundMatches = allMatches.filter(m => m.round === round);
       
-      // Sonraki tur var mı?
-      if (currentRound < 3) {
-        console.log(`🔄 ${currentRound + 1}. tur oluşturuluyor...`);
-        await createNextRound(tournamentId, currentRound + 1);
-      } else {
+      if (roundMatches.length === 0) continue;
+      
+      const completedMatches = roundMatches.filter(m => m.status === 'completed');
+      const allRoundComplete = completedMatches.length === roundMatches.length;
+      
+      console.log(`📊 ${round}. tur: ${completedMatches.length}/${roundMatches.length} tamamlandı`);
+      
+      if (allRoundComplete && round < 3) {
+        // Sonraki tur var mı kontrol et
+        const nextRound = round + 1;
+        const nextRoundMatches = allMatches.filter(m => m.round === nextRound);
+        
+        if (nextRoundMatches.length === 0) {
+          console.log(`🔄 ${nextRound}. tur oluşturuluyor...`);
+          await createNextRound(tournamentId, nextRound);
+          return; // Bir tur oluşturduktan sonra çık
+        }
+      } else if (allRoundComplete && round === 3) {
         console.log('🎉 Turnuva tamamlandı!');
-        // Turnuvayı tamamla
         await supabase
           .from('tournaments')
           .update({
