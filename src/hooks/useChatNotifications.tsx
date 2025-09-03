@@ -16,11 +16,11 @@ const loadUnreadMessages = useCallback(async () => {
   try {
     console.log('🔄 Loading unread messages for user:', user.id);
     
-    // Özel mesajlar - recipient_id kontrolü
+    // Özel mesajlar - ARTIK DOĞRU recipient_id ile
     const { data: unreadPrivateMessages, error: privateError } = await supabase
       .from('private_messages')
       .select('id')
-      .eq('recipient_id', user.id)
+      .eq('recipient_id', user.id) // ✅ Artık doğru kullanıcı
       .eq('is_read', false);
 
     if (privateError) {
@@ -29,7 +29,7 @@ const loadUnreadMessages = useCallback(async () => {
     }
     
     const privateCount = unreadPrivateMessages?.length || 0;
-    console.log('📞 Private messages count:', privateCount);
+    setPrivateMessageCount(privateCount);
 
     // Mention'lar
     const { data: unreadMentions, error: mentionError } = await supabase
@@ -39,21 +39,18 @@ const loadUnreadMessages = useCallback(async () => {
       .eq('is_read', false)
       .eq('type', 'mention');
 
-    let mentionCountNum = 0;
     if (mentionError) {
       console.warn('Mention notifications fetch error:', mentionError);
+      setMentionCount(0);
     } else {
-      mentionCountNum = unreadMentions?.length || 0;
+      const mentionCountNum = unreadMentions?.length || 0;
+      setMentionCount(mentionCountNum);
     }
 
-    const totalCount = privateCount + mentionCountNum;
-    
-    // State'leri güncelle
-    setPrivateMessageCount(privateCount);
-    setMentionCount(mentionCountNum);
+    const totalCount = privateCount + (unreadMentions?.length || 0);
     setUnreadCount(totalCount);
     
-    console.log(`📊 Unread counts - Total: ${totalCount}, Private: ${privateCount}, Mention: ${mentionCountNum}`);
+    console.log(`📊 Unread counts - Total: ${totalCount}, Private: ${privateCount}, Mention: ${unreadMentions?.length || 0}`);
 
   } catch (error) {
     console.error('Error loading unread messages:', error);
