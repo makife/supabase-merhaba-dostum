@@ -1,4 +1,4 @@
-// utils/notifications.ts - Düzeltilmiş parametre isimleri
+// utils/notifications.ts - Mevcut tablo yapısına uygun versiyon
 import { supabase } from '@/integrations/supabase/client';
 
 // Mention bildirimi gönder
@@ -8,18 +8,13 @@ export const sendMentionNotification = async (
   message: string
 ) => {
   try {
-    // Önce notifications tablosuna direkt ekle (RPC fonksiyonu yoksa)
     const { error } = await supabase
       .from('notifications')
       .insert({
         user_id: userId,
         type: 'mention',
-        title: 'Sohbette Etiketlendiniz',
-        message: `${senderUsername} sizi sohbette etiketledi`,
-        data: {
-          sender: senderUsername,
-          message_preview: message.substring(0, 100)
-        },
+        message: `${senderUsername} sizi sohbette etiketledi: "${message.substring(0, 50)}..."`,
+        related_id: null, // Chat message id olabilir
         is_read: false
       });
 
@@ -43,18 +38,13 @@ export const sendMessageNotification = async (
   chatId: string
 ) => {
   try {
-    // Önce notifications tablosuna direkt ekle (RPC fonksiyonu yoksa)
     const { error } = await supabase
       .from('notifications')
       .insert({
         user_id: userId,
         type: 'private_message',
-        title: 'Yeni Özel Mesaj',
         message: `${senderUsername} size özel mesaj gönderdi`,
-        data: {
-          sender: senderUsername,
-          chat_id: chatId
-        },
+        related_id: chatId, // Chat ID'yi related_id'de saklıyoruz
         is_read: false
       });
 
@@ -83,12 +73,8 @@ export const sendGameInviteNotification = async (
       .insert({
         user_id: receiverId,
         type: 'game_invite',
-        title: 'Oyun Daveti',
-        message: `${senderUsername} sizi oyuna davet etti`,
-        data: {
-          sender: senderUsername,
-          room_code: roomCode
-        },
+        message: `${senderUsername} sizi oyuna davet etti (Kod: ${roomCode})`,
+        related_id: roomCode, // Room code'u related_id'de saklıyoruz
         is_read: false
       });
 
@@ -124,6 +110,28 @@ export const markNotificationsAsRead = async (notificationIds: string[]) => {
   }
 };
 
+// Belirli türdeki bildirimleri okundu yap
+export const markNotificationsByType = async (userId: string, type: string) => {
+  try {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('user_id', userId)
+      .eq('type', type)
+      .eq('is_read', false);
+
+    if (error) {
+      console.error('Error marking notifications by type:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error in markNotificationsByType:', error);
+    return false;
+  }
+};
+
 // Kullanıcı bildirimlerini getir
 export const getUserNotifications = async (userId: string, limit = 20) => {
   try {
@@ -146,28 +154,29 @@ export const getUserNotifications = async (userId: string, limit = 20) => {
   }
 };
 
-// Browser notification göster (opsiyonel)
-export const showBrowserNotification = (title: string, message: string, icon?: string) => {
-  if (!('Notification' in window)) {
-    console.log('Bu tarayıcı bildirimleri desteklemiyor');
-    return;
-  }
+// Okunmamış bildirim sayısını getir
+export const getUnreadNotificationCount = async (userId: string, type?: string) => {
+  try {
+    let query = supabase
+      .from('notifications')
+      .select('id', { count: 'exact' })
+      .eq('user_id', userId)
+      .eq('is_read', false);
 
-  if (Notification.permission === 'granted') {
-    new Notification(title, {
-      body: message,
-      icon: icon || '/favicon.ico',
-      tag: 'kelimeci-chat'
-    });
-  } else if (Notification.permission !== 'denied') {
-    Notification.requestPermission().then(permission => {
-      if (permission === 'granted') {
-        new Notification(title, {
-          body: message,
-          icon: icon || '/favicon.ico',
-          tag: 'kelimeci-chat'
-        });
-      }
-    });
+    if (type) {
+      query = query.eq('type', type);
+    }
+
+    const { count, error } = await query;
+
+    if (error) {
+      console.error('Error getting unread notification count:', error);
+      return 0;
+    }
+
+    return count || 0;
+  } catch (error) {
+    console.error('Error in getUnreadNotificationCount:', error);
+    return 0;
   }
 };
