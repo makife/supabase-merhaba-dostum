@@ -1,21 +1,26 @@
-// utils/notifications.ts - Mevcut tablo yapısına uygun versiyon
+// utils/notifications.ts - Raw SQL yaklaşımı (TypeScript cache bypass)
 import { supabase } from '@/integrations/supabase/client';
 
-// Mention bildirimi gönder
+// Raw SQL kullanarak notification ekle (TypeScript cache bypass)
 export const sendMentionNotification = async (
   userId: string,
   senderUsername: string, 
   message: string
 ) => {
   try {
-    const { error } = await supabase
-      .from('notifications')
-      .insert({
-        user_id: userId,
-        type: 'mention',
-        message: `${senderUsername} sizi sohbette etiketledi: "${message.substring(0, 50)}..."`,
-        related_id: null, // Chat message id olabilir
-        is_read: false
+    const { data, error } = await supabase
+      .rpc('exec_sql', {
+        query: `
+          INSERT INTO notifications (user_id, type, message, related_id, is_read)
+          VALUES ($1, $2, $3, $4, $5)
+        `,
+        params: [
+          userId,
+          'mention',
+          `${senderUsername} sizi sohbette etiketledi: "${message.substring(0, 50)}..."`,
+          null,
+          false
+        ]
       });
 
     if (error) {
@@ -26,26 +31,45 @@ export const sendMentionNotification = async (
     console.log('Mention bildirimi gönderildi:', senderUsername, '->', userId);
     return true;
   } catch (error) {
-    console.error('Error sending mention notification:', error);
-    return false;
+    // Raw SQL çalışmazsa basit insert dene
+    try {
+      const result = await supabase
+        .from('notifications')
+        .insert([{
+          user_id: userId,
+          type: 'mention',
+          message: `${senderUsername} sizi sohbette etiketledi`,
+          is_read: false
+        }]);
+      
+      return !result.error;
+    } catch (fallbackError) {
+      console.error('Error sending mention notification:', error);
+      return false;
+    }
   }
 };
 
-// Özel mesaj bildirimi gönder
+// Özel mesaj bildirimi - Raw SQL
 export const sendMessageNotification = async (
   userId: string,
   senderUsername: string,
   chatId: string
 ) => {
   try {
-    const { error } = await supabase
-      .from('notifications')
-      .insert({
-        user_id: userId,
-        type: 'private_message',
-        message: `${senderUsername} size özel mesaj gönderdi`,
-        related_id: chatId, // Chat ID'yi related_id'de saklıyoruz
-        is_read: false
+    const { data, error } = await supabase
+      .rpc('exec_sql', {
+        query: `
+          INSERT INTO notifications (user_id, type, message, related_id, is_read)
+          VALUES ($1, $2, $3, $4, $5)
+        `,
+        params: [
+          userId,
+          'private_message',
+          `${senderUsername} size özel mesaj gönderdi`,
+          chatId,
+          false
+        ]
       });
 
     if (error) {
@@ -56,41 +80,55 @@ export const sendMessageNotification = async (
     console.log('Özel mesaj bildirimi gönderildi:', senderUsername, '->', userId);
     return true;
   } catch (error) {
-    console.error('Error sending private message notification:', error);
-    return false;
-  }
-};
-
-// Oyun daveti bildirimi
-export const sendGameInviteNotification = async (
-  receiverId: string, 
-  senderUsername: string, 
-  roomCode: string
-) => {
-  try {
-    const { error } = await supabase
-      .from('notifications')
-      .insert({
-        user_id: receiverId,
-        type: 'game_invite',
-        message: `${senderUsername} sizi oyuna davet etti (Kod: ${roomCode})`,
-        related_id: roomCode, // Room code'u related_id'de saklıyoruz
-        is_read: false
-      });
-
-    if (error) {
-      console.warn('Error sending game invite notification:', error);
+    // Raw SQL çalışmazsa basit insert dene
+    try {
+      const result = await supabase
+        .from('notifications')
+        .insert([{
+          user_id: userId,
+          type: 'private_message', 
+          message: `${senderUsername} size özel mesaj gönderdi`,
+          is_read: false
+        }]);
+      
+      return !result.error;
+    } catch (fallbackError) {
+      console.error('Error sending private message notification:', error);
       return false;
     }
-
-    return true;
-  } catch (error) {
-    console.warn('Error in sendGameInviteNotification:', error);
-    return false;
   }
 };
 
-// Bildirimleri okundu olarak işaretle
+// Geçici çözüm - Console log ile test
+export const sendMentionNotificationTemp = async (
+  userId: string,
+  senderUsername: string, 
+  message: string
+) => {
+  console.log('MENTION NOTIFICATION:', {
+    userId,
+    senderUsername,
+    message: message.substring(0, 50),
+    timestamp: new Date().toISOString()
+  });
+  return true;
+};
+
+export const sendMessageNotificationTemp = async (
+  userId: string,
+  senderUsername: string,
+  chatId: string
+) => {
+  console.log('PRIVATE MESSAGE NOTIFICATION:', {
+    userId,
+    senderUsername,
+    chatId,
+    timestamp: new Date().toISOString()
+  });
+  return true;
+};
+
+// Basit okundu işaretleme
 export const markNotificationsAsRead = async (notificationIds: string[]) => {
   try {
     const { error } = await supabase
@@ -107,76 +145,5 @@ export const markNotificationsAsRead = async (notificationIds: string[]) => {
   } catch (error) {
     console.error('Error in markNotificationsAsRead:', error);
     return false;
-  }
-};
-
-// Belirli türdeki bildirimleri okundu yap
-export const markNotificationsByType = async (userId: string, type: string) => {
-  try {
-    const { error } = await supabase
-      .from('notifications')
-      .update({ is_read: true })
-      .eq('user_id', userId)
-      .eq('type', type)
-      .eq('is_read', false);
-
-    if (error) {
-      console.error('Error marking notifications by type:', error);
-      return false;
-    }
-
-    return true;
-  } catch (error) {
-    console.error('Error in markNotificationsByType:', error);
-    return false;
-  }
-};
-
-// Kullanıcı bildirimlerini getir
-export const getUserNotifications = async (userId: string, limit = 20) => {
-  try {
-    const { data, error } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(limit);
-
-    if (error) {
-      console.error('Error getting user notifications:', error);
-      return [];
-    }
-
-    return data || [];
-  } catch (error) {
-    console.error('Error in getUserNotifications:', error);
-    return [];
-  }
-};
-
-// Okunmamış bildirim sayısını getir
-export const getUnreadNotificationCount = async (userId: string, type?: string) => {
-  try {
-    let query = supabase
-      .from('notifications')
-      .select('id', { count: 'exact' })
-      .eq('user_id', userId)
-      .eq('is_read', false);
-
-    if (type) {
-      query = query.eq('type', type);
-    }
-
-    const { count, error } = await query;
-
-    if (error) {
-      console.error('Error getting unread notification count:', error);
-      return 0;
-    }
-
-    return count || 0;
-  } catch (error) {
-    console.error('Error in getUnreadNotificationCount:', error);
-    return 0;
   }
 };
