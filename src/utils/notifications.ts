@@ -1,18 +1,26 @@
-// src/utils/notifications.ts
+// utils/notifications.ts - Düzeltilmiş parametre isimleri
 import { supabase } from '@/integrations/supabase/client';
 
-// Özel mesaj bildirimi - DÜZELTİLDİ
+// Mention bildirimi gönder
 export const sendMentionNotification = async (
   userId: string,
   senderUsername: string, 
   message: string
 ) => {
   try {
-    const { data, error } = await supabase
-      .rpc('send_mention_notification', {
-        p_user_id: userId,
-        p_sender_username: senderUsername,
-        p_message: message
+    // Önce notifications tablosuna direkt ekle (RPC fonksiyonu yoksa)
+    const { error } = await supabase
+      .from('notifications')
+      .insert({
+        user_id: userId,
+        type: 'mention',
+        title: 'Sohbette Etiketlendiniz',
+        message: `${senderUsername} sizi sohbette etiketledi`,
+        data: {
+          sender: senderUsername,
+          message_preview: message.substring(0, 100)
+        },
+        is_read: false
       });
 
     if (error) {
@@ -20,8 +28,8 @@ export const sendMentionNotification = async (
       return false;
     }
 
-    console.log('✅ Mention bildirimi gönderildi:', senderUsername, '->', userId);
-    return data;
+    console.log('Mention bildirimi gönderildi:', senderUsername, '->', userId);
+    return true;
   } catch (error) {
     console.error('Error sending mention notification:', error);
     return false;
@@ -35,11 +43,19 @@ export const sendMessageNotification = async (
   chatId: string
 ) => {
   try {
-    const { data, error } = await supabase
-      .rpc('send_private_message_notification', {
-        p_user_id: userId,
-        p_sender_username: senderUsername,
-        p_chat_id: chatId
+    // Önce notifications tablosuna direkt ekle (RPC fonksiyonu yoksa)
+    const { error } = await supabase
+      .from('notifications')
+      .insert({
+        user_id: userId,
+        type: 'private_message',
+        title: 'Yeni Özel Mesaj',
+        message: `${senderUsername} size özel mesaj gönderdi`,
+        data: {
+          sender: senderUsername,
+          chat_id: chatId
+        },
+        is_read: false
       });
 
     if (error) {
@@ -47,29 +63,40 @@ export const sendMessageNotification = async (
       return false;
     }
 
-    console.log('✅ Özel mesaj bildirimi gönderildi:', senderUsername, '->', userId);
-    return data;
+    console.log('Özel mesaj bildirimi gönderildi:', senderUsername, '->', userId);
+    return true;
   } catch (error) {
     console.error('Error sending private message notification:', error);
     return false;
   }
 };
-// Oyun daveti bildirimi - DÜZELTİLDİ
-export const sendGameInviteNotification = async (receiverId: string, senderUsername: string, roomCode: string) => {
+
+// Oyun daveti bildirimi
+export const sendGameInviteNotification = async (
+  receiverId: string, 
+  senderUsername: string, 
+  roomCode: string
+) => {
   try {
-    const { error } = await supabase.rpc(
-      'send_game_invite_notification' as any,
-      {
-        p_receiver_id: receiverId,  // ✅ Doğru parametre ismi
-        p_sender_username: senderUsername,
-        p_room_code: roomCode
-      } as any
-    );
+    const { error } = await supabase
+      .from('notifications')
+      .insert({
+        user_id: receiverId,
+        type: 'game_invite',
+        title: 'Oyun Daveti',
+        message: `${senderUsername} sizi oyuna davet etti`,
+        data: {
+          sender: senderUsername,
+          room_code: roomCode
+        },
+        is_read: false
+      });
 
     if (error) {
       console.warn('Error sending game invite notification:', error);
       return false;
     }
+
     return true;
   } catch (error) {
     console.warn('Error in sendGameInviteNotification:', error);
@@ -77,7 +104,7 @@ export const sendGameInviteNotification = async (receiverId: string, senderUsern
   }
 };
 
-// Diğer fonksiyonlar aynı kalabilir
+// Bildirimleri okundu olarak işaretle
 export const markNotificationsAsRead = async (notificationIds: string[]) => {
   try {
     const { error } = await supabase
@@ -89,6 +116,7 @@ export const markNotificationsAsRead = async (notificationIds: string[]) => {
       console.error('Error marking notifications as read:', error);
       return false;
     }
+
     return true;
   } catch (error) {
     console.error('Error in markNotificationsAsRead:', error);
@@ -96,6 +124,7 @@ export const markNotificationsAsRead = async (notificationIds: string[]) => {
   }
 };
 
+// Kullanıcı bildirimlerini getir
 export const getUserNotifications = async (userId: string, limit = 20) => {
   try {
     const { data, error } = await supabase
@@ -109,9 +138,36 @@ export const getUserNotifications = async (userId: string, limit = 20) => {
       console.error('Error getting user notifications:', error);
       return [];
     }
-    return data;
+
+    return data || [];
   } catch (error) {
     console.error('Error in getUserNotifications:', error);
     return [];
+  }
+};
+
+// Browser notification göster (opsiyonel)
+export const showBrowserNotification = (title: string, message: string, icon?: string) => {
+  if (!('Notification' in window)) {
+    console.log('Bu tarayıcı bildirimleri desteklemiyor');
+    return;
+  }
+
+  if (Notification.permission === 'granted') {
+    new Notification(title, {
+      body: message,
+      icon: icon || '/favicon.ico',
+      tag: 'kelimeci-chat'
+    });
+  } else if (Notification.permission !== 'denied') {
+    Notification.requestPermission().then(permission => {
+      if (permission === 'granted') {
+        new Notification(title, {
+          body: message,
+          icon: icon || '/favicon.ico',
+          tag: 'kelimeci-chat'
+        });
+      }
+    });
   }
 };
