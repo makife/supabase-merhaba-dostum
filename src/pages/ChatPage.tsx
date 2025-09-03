@@ -198,27 +198,35 @@ useEffect(() => {
   }, [user?.id]);
 
  useEffect(() => {
-    const markChatMessagesAsRead = async () => {
-      if (!activeChatId || !user?.id) return;
+  const markChatMessagesAsRead = async () => {
+    if (!activeChatId || !user?.id) return;
 
-      try {
-        await supabase
-          .from('private_messages')
-          .update({ is_read: true })
-          .eq('chat_id', activeChatId)
-          .eq('recipient_id', user.id)
-          .eq('is_read', false);
+    try {
+      const { error } = await supabase
+        .from('private_messages')
+        .update({ is_read: true })
+        .eq('chat_id', activeChatId)
+        .eq('recipient_id', user.id)
+        .eq('is_read', false);
 
-        console.log('✅ Chat mesajları okundu olarak işaretlendi:', activeChatId);
-      } catch (error) {
-        console.error('Chat mesajlarını işaretlerken hata:', error);
+      if (error) {
+        console.error('Error marking chat messages as read:', error);
+      } else {
+        console.log('✅ Chat messages marked as read:', activeChatId);
+        // Bildirim sayılarını manuel olarak güncelle
+        if (typeof refreshUnreadCounts === 'function') {
+          refreshUnreadCounts();
+        }
       }
-    };
-
-    if (viewMode === 'private-chat' && activeChatId) {
-      markChatMessagesAsRead();
+    } catch (error) {
+      console.error('Error marking chat messages:', error);
     }
-  }, [viewMode, activeChatId, user?.id]);
+  };
+
+  if (viewMode === 'private-chat' && activeChatId) {
+    markChatMessagesAsRead();
+  }
+}, [viewMode, activeChatId, user?.id, refreshUnreadCounts]);
 
   const handleBackToMenu = () => {
     playSound('buttonClick');
