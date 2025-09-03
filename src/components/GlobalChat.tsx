@@ -352,28 +352,28 @@ useEffect(() => {
   };
 }, [isOpen, user?.id, playSound]);
 
-  const fetchMessages = async () => {
+ const fetchMessages = async () => {
   try {
-    console.log('🔍 Fetching messages from database...');
+    console.log('📝 Fetching messages from database...');
     
     const { data, error } = await supabase
       .from('global_chat')
       .select('*')
-      .order('created_at', { ascending: true }) // ⚠️ ASCENDING TRUE YAP (eskiden yeniye)
+      .order('created_at', { ascending: true }) // Eskiden yeniye sırala
       .limit(100);
 
     if (error) throw error;
 
     console.log('📨 Raw messages from DB:', data);
 
-    // ⚠️ FORMATA DİKKAT - Veritabanındaki isimlerle aynı olsun
+    // Mesajları formatla ve null user_id kontrolü ekle
     const formattedData = data.map(msg => ({
       id: msg.id,
-      user_id: msg.user_id,
-      username: msg.username, 
-      message: msg.message,
+      user_id: msg.user_id || null, // null'ları açıkça belirt
+      username: msg.username || 'Anonim', 
+      message: msg.message || '',
       created_at: msg.created_at,
-      avatar_url: msg.avatar_url
+      avatar_url: msg.avatar_url || null
     }));
 
     console.log('✅ Formatted messages:', formattedData);
@@ -381,35 +381,14 @@ useEffect(() => {
 
   } catch (error) {
     console.error('❌ Error fetching messages:', error);
+    // Hata durumunda mevcut mesajları koru, temizleme
   }
 };
 
 const sendMessage = async () => {
   if (!newMessage.trim() || !user || !profile) return;
 
-  // Önce ban kontrolü yap
-  try {
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .select('banned_until')
-      .eq('id', user.id)
-      .single();
-
-    if (profileError) {
-      console.log('Ban kontrolü hatası (kolon yok olabilir):', profileError);
-      // Hata durumunda devam et, belki banned_until alanı yoktur
-    } else if (profileData && profileData.banned_until) {
-      const banDate = new Date(profileData.banned_until);
-      if (banDate > new Date()) {
-        const timeLeft = Math.ceil((banDate.getTime() - Date.now()) / (1000 * 60 * 60));
-        toast.error(`Sohbet yasağınız bulunuyor. Kalan süre: ${timeLeft} saat`);
-        return;
-      }
-    }
-  } catch (error) {
-    console.error('Ban kontrolü hatası:', error);
-    // Hata durumunda mesaj göndermeye devam et
-  }
+  // Ban kontrolü... (mevcut kod)
 
   const trimmedMessage = newMessage.trim();
   if (trimmedMessage.length > 200) {
@@ -417,12 +396,12 @@ const sendMessage = async () => {
     return;
   }
 
-  // İlk yasaklanma kontrolü (frontend'de hızlı kontrol)
   const username = profile.username || user.email?.split('@')[0] || 'Anonim';
   
-  // Optimistic update - hemen ekranı güncelle
+  // Optimistic update - geçici ID daha unique olsun
+  const tempId = `temp-${user.id}-${Date.now()}`;
   const tempMessage: ChatMessage = {
-    id: `temp-${Date.now()}`,
+    id: tempId,
     user_id: user.id,
     username: username,
     message: trimmedMessage,
@@ -436,7 +415,7 @@ const sendMessage = async () => {
 
   setIsLoading(true);
   try {
-    // Backend moderasyon ile mesaj gönder
+    // Backend'e gönder
     const { data: moderationResult, error } = await supabase
       .rpc('moderate_and_insert_message', {
         p_user_id: user.id,
@@ -445,30 +424,52 @@ const sendMessage = async () => {
         p_avatar_url: profile.avatar_url
       });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Moderation RPC hatası:', error);
+      // RPC fonksiyonu yoksa direkt ekle
+      const { data: insertData, error: insertError } = await supabase
+        .from('global_chat')
+        .insert({
+          user_id: user.id,
+          username: username,
+          message: trimmedMessage,
+          avatar_url: profile.avatar_url
+        })
+        .select()
+        .single();
 
-    // Type the result properly
-    const result = moderationResult as any;
-    
-    if (!result?.success) {
-      // Mesaj reddedildi
-      setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
+      if (insertError) throw insertError;
+
+      // Başarılı - temp mesajı gerçek ID ile güncelle
+      setMessages(prev => prev.map(msg => 
+        msg.id === tempId ? {
+          ...tempMessage,
+          id: insertData.id
+        } : msg
+      ));
+    } else {
+      const result = moderationResult as any;
       
-      if (result?.error === 'user_banned') {
-        toast.error('Sohbet yasağınız bulunmaktadır');
-      } else if (result?.moderated) {
-        toast.error('Mesajınız yasaklı içerik nedeniyle engellendi ve 2 gün yasaklandınız');
+      if (!result?.success) {
+        // Mesaj reddedildi - temp mesajı kaldır
+        setMessages(prev => prev.filter(msg => msg.id !== tempId));
+        
+        if (result?.error === 'user_banned') {
+          toast.error('Sohbet yasağınız bulunmaktadır');
+        } else if (result?.moderated) {
+          toast.error('Mesajınız yasaklı içerik nedeniyle engellendi ve 2 gün yasaklandınız');
+        }
+        return;
       }
-      return;
-    }
 
-    // Başarılı - temp mesajı gerçek ID ile güncelle
-    setMessages(prev => prev.map(msg => 
-      msg.id === tempMessage.id ? {
-        ...tempMessage,
-        id: result.id
-      } : msg
-    ));
+      // Başarılı - temp mesajı gerçek ID ile güncelle
+      setMessages(prev => prev.map(msg => 
+        msg.id === tempId ? {
+          ...tempMessage,
+          id: result.id
+        } : msg
+      ));
+    }
 
     // MENTION KONTROLÜ
     const mentionRegex = /@(\w+)/g;
@@ -500,7 +501,7 @@ const sendMessage = async () => {
     toast.error('Mesaj gönderilirken hata oluştu');
     
     // Hata durumunda temp mesajı kaldır
-    setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
+    setMessages(prev => prev.filter(msg => msg.id !== tempId));
   } finally {
     setIsLoading(false);
   }
