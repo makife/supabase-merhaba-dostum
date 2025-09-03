@@ -184,23 +184,25 @@ useEffect(() => {
   const sendBotWelcome = async () => {
     if (!user?.id || !isOpen) return;
     
-    // Son 24 saatte bot mesajı var mı kontrol et
     try {
+      // Son 1 saatte bot mesajı var mı kontrol et
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      
       const { data: recentBotMessages } = await supabase
         .from('global_chat')
         .select('id')
         .eq('username', 'kelimeciBot')
-        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+        .gte('created_at', oneHourAgo.toISOString())
         .limit(1);
 
-      // Eğer son 24 saatte bot mesajı yoksa hoşgeldin mesajı gönder
+      // Eğer son 1 saatte bot mesajı yoksa hoşgeldin mesajı gönder
       if (!recentBotMessages || recentBotMessages.length === 0) {
         console.log('🤖 Bot hoşgeldin mesajı gönderiliyor...');
         
         const { error } = await supabase
           .from('global_chat')
           .insert({
-            user_id: null,
+            user_id: null, // Bot mesajı için null
             username: 'kelimeciBot',
             message: 'Hoşgeldiniz! 🎉 Lütfen kurallar çerçevesinde sohbet ediniz. Küfür, argo ve hakaret içeren mesajlar otomatik olarak tespit edilir ve 2 gün sohbet yasağı uygulanır.',
             avatar_url: '/bot-avatar.png'
@@ -211,15 +213,16 @@ useEffect(() => {
         } else {
           console.log('✅ Bot hoşgeldin mesajı gönderildi!');
         }
-      } else {
-        console.log('ℹ️ Bot bugün zaten mesaj göndermiş, yeniden göndermiyor');
       }
     } catch (error) {
       console.error('❌ Bot kontrolü hatası:', error);
     }
   };
 
-  sendBotWelcome();
+  // Sadece ilk açılışta ve mesaj yoksa çalıştır
+  if (isOpen && messages.length === 0) {
+    sendBotWelcome();
+  }
 }, [isOpen, user?.id]);
 
 
@@ -230,7 +233,12 @@ useEffect(() => {
   console.log('🔄 Setting up GLOBAL real-time subscription');
 
   const channel = supabase
-    .channel('global-chat-realtime')
+    .channel('global-chat-realtime', {
+      config: {
+        broadcast: { self: false }, // Kendi mesajlarımızı almayalım
+        presence: { key: user.id }
+      }
+    })
     .on(
       'postgres_changes',
       {
@@ -243,16 +251,16 @@ useEffect(() => {
         const newMessage = payload.new as any;
         
         // Kendi mesajımızı ignore et (optimistic update zaten ekledi)
-        if (newMessage.user_id === user.id && newMessage.id.startsWith('temp-')) {
-          console.log('⏭️ Skipping own temp message');
+        if (newMessage.user_id === user.id) {
+          console.log('⭐ Skipping own message for real-time');
           return;
         }
 
-        // Kullanıcı bilgilerini al
+        // Kullanıcı bilgilerini al (eğer yoksa)
         let username = newMessage.username || 'Anonim';
         let avatar_url = newMessage.avatar_url || null;
 
-        // Eğer username yoksa, profilden çek
+        // Eğer username yoksa profilden çek
         if (!newMessage.username || newMessage.username === 'Anonim') {
           try {
             const { data: profile } = await supabase
@@ -279,14 +287,18 @@ useEffect(() => {
           }
 
           console.log('✅ Adding new message to state');
-          return [...prev, {
+          const formattedMessage = {
             id: newMessage.id,
             user_id: newMessage.user_id,
             username: username,
             message: newMessage.message || newMessage.content || '',
             created_at: newMessage.created_at,
             avatar_url: avatar_url
-          }];
+          };
+
+          return [...prev, formattedMessage].sort((a, b) => 
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
         });
 
         // Ses çal
@@ -312,13 +324,18 @@ useEffect(() => {
     )
     .subscribe((status) => {
       console.log('📡 Global real-time subscription status:', status);
+      if (status === 'SUBSCRIBED') {
+        console.log('✅ Successfully subscribed to global chat');
+      } else if (status === 'CHANNEL_ERROR') {
+        console.error('❌ Channel subscription error');
+      }
     });
 
   return () => {
     console.log('🧹 Cleaning up global real-time channel');
     supabase.removeChannel(channel);
   };
-}, [isOpen, user?.id]);
+}, [isOpen, user?.id, playSound]);
 
   const fetchMessages = async () => {
   try {
