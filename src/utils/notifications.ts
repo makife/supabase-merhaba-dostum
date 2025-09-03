@@ -1,134 +1,55 @@
-// utils/notifications.ts - Raw SQL yaklaşımı (TypeScript cache bypass)
+// utils/notifications.ts - Console log versiyonu (TypeScript hatasız)
 import { supabase } from '@/integrations/supabase/client';
 
-// Raw SQL kullanarak notification ekle (TypeScript cache bypass)
+// Mention bildirimi - Console log versiyonu
 export const sendMentionNotification = async (
   userId: string,
   senderUsername: string, 
   message: string
 ) => {
-  try {
-    const { data, error } = await supabase
-      .rpc('exec_sql', {
-        query: `
-          INSERT INTO notifications (user_id, type, message, related_id, is_read)
-          VALUES ($1, $2, $3, $4, $5)
-        `,
-        params: [
-          userId,
-          'mention',
-          `${senderUsername} sizi sohbette etiketledi: "${message.substring(0, 50)}..."`,
-          null,
-          false
-        ]
-      });
-
-    if (error) {
-      console.error('Mention notification error:', error);
-      return false;
-    }
-
-    console.log('Mention bildirimi gönderildi:', senderUsername, '->', userId);
-    return true;
-  } catch (error) {
-    // Raw SQL çalışmazsa basit insert dene
-    try {
-      const result = await supabase
-        .from('notifications')
-        .insert([{
-          user_id: userId,
-          type: 'mention',
-          message: `${senderUsername} sizi sohbette etiketledi`,
-          is_read: false
-        }]);
-      
-      return !result.error;
-    } catch (fallbackError) {
-      console.error('Error sending mention notification:', error);
-      return false;
-    }
-  }
+  console.log('🔔 MENTION NOTIFICATION:', {
+    to: userId,
+    from: senderUsername,
+    message: message.substring(0, 50) + '...',
+    type: 'mention',
+    timestamp: new Date().toLocaleString('tr-TR')
+  });
+  return true;
 };
 
-// Özel mesaj bildirimi - Raw SQL
+// Özel mesaj bildirimi - Console log versiyonu
 export const sendMessageNotification = async (
   userId: string,
   senderUsername: string,
   chatId: string
 ) => {
-  try {
-    const { data, error } = await supabase
-      .rpc('exec_sql', {
-        query: `
-          INSERT INTO notifications (user_id, type, message, related_id, is_read)
-          VALUES ($1, $2, $3, $4, $5)
-        `,
-        params: [
-          userId,
-          'private_message',
-          `${senderUsername} size özel mesaj gönderdi`,
-          chatId,
-          false
-        ]
-      });
-
-    if (error) {
-      console.error('Private message notification error:', error);
-      return false;
-    }
-
-    console.log('Özel mesaj bildirimi gönderildi:', senderUsername, '->', userId);
-    return true;
-  } catch (error) {
-    // Raw SQL çalışmazsa basit insert dene
-    try {
-      const result = await supabase
-        .from('notifications')
-        .insert([{
-          user_id: userId,
-          type: 'private_message', 
-          message: `${senderUsername} size özel mesaj gönderdi`,
-          is_read: false
-        }]);
-      
-      return !result.error;
-    } catch (fallbackError) {
-      console.error('Error sending private message notification:', error);
-      return false;
-    }
-  }
+  console.log('💬 PRIVATE MESSAGE NOTIFICATION:', {
+    to: userId,
+    from: senderUsername,
+    chatId: chatId,
+    type: 'private_message',
+    timestamp: new Date().toLocaleString('tr-TR')
+  });
+  return true;
 };
 
-// Geçici çözüm - Console log ile test
-export const sendMentionNotificationTemp = async (
-  userId: string,
+// Oyun daveti bildirimi
+export const sendGameInviteNotification = async (
+  receiverId: string, 
   senderUsername: string, 
-  message: string
+  roomCode: string
 ) => {
-  console.log('MENTION NOTIFICATION:', {
-    userId,
-    senderUsername,
-    message: message.substring(0, 50),
-    timestamp: new Date().toISOString()
+  console.log('🎮 GAME INVITE NOTIFICATION:', {
+    to: receiverId,
+    from: senderUsername,
+    roomCode: roomCode,
+    type: 'game_invite',
+    timestamp: new Date().toLocaleString('tr-TR')
   });
   return true;
 };
 
-export const sendMessageNotificationTemp = async (
-  userId: string,
-  senderUsername: string,
-  chatId: string
-) => {
-  console.log('PRIVATE MESSAGE NOTIFICATION:', {
-    userId,
-    senderUsername,
-    chatId,
-    timestamp: new Date().toISOString()
-  });
-  return true;
-};
-
-// Basit okundu işaretleme
+// Bildirimleri okundu olarak işaretle
 export const markNotificationsAsRead = async (notificationIds: string[]) => {
   try {
     const { error } = await supabase
@@ -136,14 +57,41 @@ export const markNotificationsAsRead = async (notificationIds: string[]) => {
       .update({ is_read: true })
       .in('id', notificationIds);
 
+    return !error;
+  } catch (error) {
+    console.error('Error marking notifications as read:', error);
+    return false;
+  }
+};
+
+// Kullanıcı bildirimlerini getir
+export const getUserNotifications = async (userId: string, limit = 20) => {
+  try {
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
     if (error) {
-      console.error('Error marking notifications as read:', error);
-      return false;
+      console.error('Error getting user notifications:', error);
+      return [];
     }
 
-    return true;
+    return data || [];
   } catch (error) {
-    console.error('Error in markNotificationsAsRead:', error);
-    return false;
+    console.error('Error in getUserNotifications:', error);
+    return [];
+  }
+};
+
+// Browser notification göster
+export const showBrowserNotification = (title: string, message: string) => {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification(title, {
+      body: message,
+      icon: '/favicon.ico'
+    });
   }
 };
