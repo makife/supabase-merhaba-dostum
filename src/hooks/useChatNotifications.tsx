@@ -1,4 +1,4 @@
-// useChatNotifications.tsx - Geliştirilmiş versiyon (mevcut dosyanın yerine)
+// useChatNotifications.tsx - Syntax hatası düzeltilmiş versiyon
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,7 +19,7 @@ export function useChatNotifications() {
         const { data: unreadPrivateMessages, error: privateError } = await supabase
           .from('private_messages')
           .select('id')
-          .eq('recipient_id', user.id) // recipient_id kullanıyoruz artık
+          .eq('recipient_id', user.id)
           .eq('is_read', false);
 
         if (privateError) {
@@ -48,7 +48,7 @@ export function useChatNotifications() {
         const totalCount = privateCount + (unreadMentions?.length || 0);
         setUnreadCount(totalCount);
         
-        console.log(`📬 Okunmamış mesaj sayısı: ${totalCount} (Özel: ${privateCount}, Mention: ${unreadMentions?.length || 0})`);
+        console.log(`Okunmamış mesaj sayısı: ${totalCount} (Özel: ${privateCount}, Mention: ${unreadMentions?.length || 0})`);
       } catch (error) {
         console.error('Okunmamış mesajlar yüklenirken hata:', error);
       }
@@ -65,17 +65,17 @@ export function useChatNotifications() {
           event: 'INSERT',
           schema: 'public',
           table: 'private_messages',
-          filter: `recipient_id=eq.${user.id}` // recipient_id kullanıyoruz
+          filter: `recipient_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('📨 Yeni özel mesaj geldi:', payload);
+          console.log('Yeni özel mesaj geldi:', payload);
           const newMessage = payload.new as any;
           
           // Kendi mesajımızı ignore et
           if (newMessage.sender_id !== user.id) {
             setPrivateMessageCount(prev => prev + 1);
             setUnreadCount(prev => prev + 1);
-            console.log('🔔 Özel mesaj bildirim sayısı artırıldı');
+            console.log('Özel mesaj bildirim sayısı artırıldı');
           }
         }
       )
@@ -93,13 +93,13 @@ export function useChatNotifications() {
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('📨 Yeni bildirim geldi:', payload);
+          console.log('Yeni bildirim geldi:', payload);
           const notification = payload.new as any;
           
           if (notification.type === 'mention') {
             setMentionCount(prev => prev + 1);
             setUnreadCount(prev => prev + 1);
-            console.log('🔔 Mention bildirim sayısı artırıldı');
+            console.log('Mention bildirim sayısı artırıldı');
           }
         }
       )
@@ -107,7 +107,7 @@ export function useChatNotifications() {
 
     // Clean up function
     return () => {
-      console.log('🧹 Chat notifications temizleniyor');
+      console.log('Chat notifications temizleniyor');
       supabase.removeChannel(privateMessagesChannel);
       supabase.removeChannel(mentionsChannel);
     };
@@ -121,12 +121,12 @@ export function useChatNotifications() {
       await supabase
         .from('private_messages')
         .update({ is_read: true })
-        .eq('recipient_id', user.id) // recipient_id kullan
+        .eq('recipient_id', user.id)
         .eq('is_read', false);
       
       setUnreadCount(prev => prev - privateMessageCount);
       setPrivateMessageCount(0);
-      console.log('✅ Özel mesajlar okundu olarak işaretlendi');
+      console.log('Özel mesajlar okundu olarak işaretlendi');
     } catch (error) {
       console.error('Özel mesajları işaretlerken hata:', error);
     }
@@ -145,9 +145,9 @@ export function useChatNotifications() {
       
       setUnreadCount(prev => prev - mentionCount);
       setMentionCount(0);
-      console.log('✅ Mention'lar okundu olarak işaretlendi');
+      console.log('Mentionlar okundu olarak işaretlendi');
     } catch (error) {
-      console.error('Mention'ları işaretlerken hata:', error);
+      console.error('Mentionları işaretlerken hata:', error);
     }
   };
 
