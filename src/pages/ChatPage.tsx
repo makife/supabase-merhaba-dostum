@@ -115,7 +115,7 @@ const fetchUnreadCounts = async () => {
     const { data: unreadMessages, error } = await supabase
       .from('private_messages')
       .select('sender_id')
-      .eq('recipient_id', user.id)
+      .eq('recipient_id', user.id) // ✅ Artık doğru kullanıcı
       .eq('is_read', false);
 
     if (error) {
@@ -190,7 +190,7 @@ useEffect(() => {
     markPrivateMessagesAsRead();
   }, [user?.id]);
 
- useEffect(() => {
+useEffect(() => {
   const markChatMessagesAsRead = async () => {
     if (!activeChatId || !user?.id) return;
 
@@ -201,7 +201,7 @@ useEffect(() => {
         .from('private_messages')
         .update({ is_read: true })
         .eq('chat_id', activeChatId)
-        .eq('recipient_id', user.id)
+        .eq('recipient_id', user.id) // ✅ Artık doğru kullanıcı
         .eq('is_read', false);
 
       if (error) {
@@ -209,12 +209,10 @@ useEffect(() => {
       } else {
         console.log('✅ Chat messages marked as read:', activeChatId);
         
-        // useChatNotifications'taki sayıları güncelle
+        // Hemen güncelle
         if (refreshUnreadCounts) {
           refreshUnreadCounts();
         }
-        
-        // Yerel unreadCounts state'ini de güncelle
         fetchUnreadCounts();
       }
     } catch (error) {
