@@ -388,8 +388,6 @@ useEffect(() => {
 const sendMessage = async () => {
   if (!newMessage.trim() || !user || !profile) return;
 
-  // Ban kontrolü... (mevcut kod)
-
   const trimmedMessage = newMessage.trim();
   if (trimmedMessage.length > 200) {
     toast.error('Mesaj 200 karakterden uzun olamaz');
@@ -398,8 +396,8 @@ const sendMessage = async () => {
 
   const username = profile.username || user.email?.split('@')[0] || 'Anonim';
   
-  // Optimistic update - geçici ID daha unique olsun
-  const tempId = `temp-${user.id}-${Date.now()}`;
+  // Optimistic update - daha unique temp ID
+  const tempId = `temp-${user.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   const tempMessage: ChatMessage = {
     id: tempId,
     user_id: user.id,
@@ -415,7 +413,6 @@ const sendMessage = async () => {
 
   setIsLoading(true);
   try {
-    // Backend'e gönder
     const { data: moderationResult, error } = await supabase
       .rpc('moderate_and_insert_message', {
         p_user_id: user.id,
@@ -425,8 +422,7 @@ const sendMessage = async () => {
       });
 
     if (error) {
-      console.error('Moderation RPC hatası:', error);
-      // RPC fonksiyonu yoksa direkt ekle
+      // RPC yoksa direkt ekle
       const { data: insertData, error: insertError } = await supabase
         .from('global_chat')
         .insert({
@@ -440,10 +436,10 @@ const sendMessage = async () => {
 
       if (insertError) throw insertError;
 
-      // Başarılı - temp mesajı gerçek ID ile güncelle
+      // Temp mesajı gerçek ID ile güncelle
       setMessages(prev => prev.map(msg => 
         msg.id === tempId ? {
-          ...tempMessage,
+          ...msg,
           id: insertData.id
         } : msg
       ));
@@ -465,20 +461,19 @@ const sendMessage = async () => {
       // Başarılı - temp mesajı gerçek ID ile güncelle
       setMessages(prev => prev.map(msg => 
         msg.id === tempId ? {
-          ...tempMessage,
+          ...msg,
           id: result.id
         } : msg
       ));
     }
 
-    // MENTION KONTROLÜ
+    // MENTION kontrolü...
     const mentionRegex = /@(\w+)/g;
     let match;
     
     while ((match = mentionRegex.exec(trimmedMessage)) !== null) {
       const mentionedUsername = match[1];
       
-      // Kullanıcıyı bul
       const { data: mentionedUser } = await supabase
         .from('profiles')
         .select('id, username')
@@ -486,7 +481,6 @@ const sendMessage = async () => {
         .single();
       
       if (mentionedUser && mentionedUser.id !== user.id) {
-        // BİLDİRİM GÖNDER
         await sendMentionNotification(
           mentionedUser.id, 
           username,
