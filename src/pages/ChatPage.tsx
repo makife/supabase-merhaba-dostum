@@ -294,37 +294,24 @@ useEffect(() => {
   if (!user) return;
   
   try {
-    const participants = [user.id, otherUserId].sort();
-    const chatId = `chat_${participants.join('_')}`;
+    // Tüm olası chat_id formatlarını dene
+    const participants1 = [user.id, otherUserId].sort();
+    const participants2 = [otherUserId, user.id].sort();
+    const chatId1 = `chat_${participants1.join('_')}`;
+    const chatId2 = `chat_${participants2.join('_')}`;
     
-    console.log('🗑️ Silmeye çalışılan chat ID:', chatId);
-    console.log('🗑️ Participants:', participants);
-    
-    // Önce bu chat ID ile kaç mesaj var kontrol et
-    const { data: existingMessages, error: checkError } = await supabase
-      .from('private_messages')
-      .select('id, chat_id')
-      .eq('chat_id', chatId);
-    
-    console.log('🗑️ Silinecek mesajlar:', existingMessages);
-    
-    // Mesajları sil
-    const { error: deleteMessagesError } = await supabase
+    // Hem chat_id hem de sender/recipient kombinasyonu ile sil
+    const { error: deleteError } = await supabase
       .from('private_messages')
       .delete()
-      .eq('chat_id', chatId);
-      
-    console.log('🗑️ Mesaj silme hatası:', deleteMessagesError);
+      .or(`chat_id.eq.${chatId1},chat_id.eq.${chatId2},and(sender_id.eq.${user.id},recipient_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},recipient_id.eq.${user.id})`);
     
-    // Chat'i sil
-    const { error: deleteChatError } = await supabase
-      .from('private_chats')
-      .delete()
-      .eq('id', chatId);
-      
-    console.log('🗑️ Chat silme hatası:', deleteChatError);
+    if (deleteError) throw deleteError;
     
-    // Local state'den kullanıcıyı kaldır
+    // Chat'leri de sil
+    await supabase.from('private_chats').delete().in('id', [chatId1, chatId2]);
+    
+    // Local state güncelle
     setAllUsers(prev => prev.filter(u => u.id !== otherUserId));
     setUnreadCounts(prev => {
       const updated = { ...prev };
