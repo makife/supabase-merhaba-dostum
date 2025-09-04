@@ -21,6 +21,7 @@ export function SwipeToDeleteCard({
   const [startX, setStartX] = useState(0);
   const cardRef = useRef<HTMLDivElement>(null);
 
+  // Touch Events
   const handleTouchStart = (e: React.TouchEvent) => {
     setIsDragging(true);
     setStartX(e.touches[0].clientX);
@@ -34,51 +35,72 @@ export function SwipeToDeleteCard({
     
     // Sadece sola kaydırmaya izin ver (pozitif değerler)
     if (diffX > 0) {
-      setDragX(Math.min(diffX, 80)); // Maksimum 80px
+      setDragX(Math.min(diffX, 120)); // Maksimum 120px
+    } else {
+      setDragX(0); // Sağa kaydırmayı engelle
     }
   };
 
   const handleTouchEnd = () => {
     setIsDragging(false);
     
-    // Eğer 50px'den fazla kaydırıldıysa silme işlemini tetikle
-    if (dragX > 50) {
+    // Eğer 60px'den fazla kaydırıldıysa silme işlemini tetikle
+    if (dragX > 60) {
       onDelete();
+      return;
     }
     
-    // Animation ile geri döndür
-    setDragX(0);
+    // Yeterince kaydırılmadıysa smooth geri dönüş
+    const resetAnimation = () => {
+      setDragX(0);
+    };
+    
+    // Kısa bir gecikme ile geri döndür
+    setTimeout(resetAnimation, 10);
   };
 
+  // Mouse Events - Düzeltilmiş versiyon
   const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
     setIsDragging(true);
     setStartX(e.clientX);
+
+    // Global mouse event'leri ekle
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      
+      const currentX = e.clientX;
+      const diffX = startX - currentX;
+      
+      if (diffX > 0) {
+        setDragX(Math.min(diffX, 120));
+      } else {
+        setDragX(0);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      
+      if (dragX > 60) {
+        onDelete();
+      } else {
+        setTimeout(() => setDragX(0), 10);
+      }
+
+      // Event listener'ları kaldır
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    // Global event'leri ekle
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    
-    const currentX = e.clientX;
-    const diffX = startX - currentX;
-    
-    if (diffX > 0) {
-      setDragX(Math.min(diffX, 80));
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-    
-    if (dragX > 50) {
-      onDelete();
-    }
-    
-    setDragX(0);
-  };
-
-  const handleCardClick = () => {
-    // Sadece kaydırma yoksa click event'ini tetikle
-    if (dragX === 0 && onClick) {
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Eğer dragging yoksa ve onClick varsa çalıştır
+    if (!isDragging && dragX === 0 && onClick) {
       onClick();
     }
   };
@@ -88,20 +110,20 @@ export function SwipeToDeleteCard({
       <Card
         ref={cardRef}
         className={cn(
-          'relative transition-transform duration-200 ease-out',
+          'relative transition-transform duration-200 ease-out select-none',
+          isDragging ? 'transition-none' : '',
           className
         )}
         style={{
           transform: `translateX(-${dragX}px)`,
+          cursor: isDragging ? 'grabbing' : 'grab'
         }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
         onClick={handleCardClick}
+        onDragStart={(e) => e.preventDefault()} // Varsayılan drag'i engelle
       >
         {children}
       </Card>
@@ -113,17 +135,27 @@ export function SwipeToDeleteCard({
           dragX > 0 ? 'w-20' : 'w-0'
         )}
         style={{
-          transform: `translateX(${Math.max(0, 80 - dragX)}px)`,
+          transform: `translateX(${Math.max(0, 120 - dragX)}px)`,
         }}
       >
         <Trash2 
           className={cn(
             'text-white transition-opacity duration-200',
-            dragX > 20 ? 'opacity-100' : 'opacity-0'
+            dragX > 30 ? 'opacity-100' : 'opacity-0'
           )}
           size={20}
         />
       </div>
+
+      {/* Progress indicator */}
+      {dragX > 0 && (
+        <div 
+          className="absolute bottom-0 left-0 h-1 bg-red-400 transition-all duration-100"
+          style={{
+            width: `${Math.min((dragX / 60) * 100, 100)}%`
+          }}
+        />
+      )}
     </div>
   );
 }
