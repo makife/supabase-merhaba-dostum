@@ -15,8 +15,7 @@ import { PrivateChat } from '@/components/PrivateChat';
 import { toast } from 'sonner';
 import { sendMentionNotification } from '@/utils/notifications';
 import { isUserBanned, containsBannedWords, banUser, getBanTimeLeft } from '@/utils/chatBot';
-import { useUserBlocking } from '@/hooks/useUserBlocking';
-import { BlockUserButton } from '@/components/BlockUserButton';
+
 
 interface ChatMessage {
   id: string;
@@ -54,7 +53,6 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   const { user } = useAuth();
   const { profile, onlineUsers, isUserOnline } = useUser();
   const { playSound } = useSounds();
-  const { isUserBlocked, isBlockedByUser } = useUserBlocking();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
