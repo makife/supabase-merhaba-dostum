@@ -190,19 +190,24 @@ const deletePrivateChat = async (otherUserId: string) => {
   try {
     const chatId = `chat_${[user.id, otherUserId].sort().join('_')}`;
     
-    // 1. ÖNCE MESAJLARI SİL
-    const { error: messageError } = await supabase
+    // 1. MESAJLARI SİL
+    await supabase
       .from('private_messages')
       .delete()
       .eq('chat_id', chatId);
 
-    // 2. SONRA CHAT'İ SİL  
-    const { error: chatError } = await supabase
+    // 2. CHAT'İ SİL  
+    await supabase
       .from('private_chats')
       .delete()
       .eq('id', chatId);
 
-    // 3. LOCAL STATE'DEN DE SİL
+    // 3. LOCAL STORAGE'A SİLİNDİ OLARAK KAYDET
+    const deletedChats = JSON.parse(localStorage.getItem('deletedChats') || '{}');
+    deletedChats[otherUserId] = true;
+    localStorage.setItem('deletedChats', JSON.stringify(deletedChats));
+
+    // 4. LOCAL STATE'DEN SİL
     setAllUsers(prev => prev.filter(u => u.id !== otherUserId));
     setUnreadCounts(prev => {
       const updated = { ...prev };
@@ -210,19 +215,13 @@ const deletePrivateChat = async (otherUserId: string) => {
       return updated;
     });
 
-    console.log('✅ Database ve localden silindi');
-
   } catch (error) {
-    console.error('Silinemedi:', error);
+    console.error('Error:', error);
   }
 };
 
 // ChatPage.tsx - renderUsersList fonksiyonunu güncelle
 const renderUsersList = () => {
-  console.log('=== DEBUG: renderUsersList ===');
-  console.log('allUsers length:', allUsers.length);
-  console.log('unreadCounts:', unreadCounts);
-
   return (
     <ScrollArea className="flex-1">
       <div className="p-4 space-y-3">
@@ -230,15 +229,12 @@ const renderUsersList = () => {
           <div className="text-center py-8 text-gray-500">
             <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
             <p>Kullanıcılar yükleniyor...</p>
-            <p className="text-xs mt-2">DEBUG: allUsers.length = {allUsers.length}</p>
           </div>
         ) : (
           allUsers.map((targetUser) => {
             const unreadCount = unreadCounts[targetUser.id] || 0;
             const hasHistory = Object.keys(unreadCounts).includes(targetUser.id) || unreadCount > 0;
-            
-            console.log(`Rendering user: ${targetUser.username}, unreadCount: ${unreadCount}, hasHistory: ${hasHistory}`);
-            
+
             return (
               <SwipeToDeleteCard
                 key={targetUser.id}
