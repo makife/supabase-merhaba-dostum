@@ -1,4 +1,3 @@
-// useChatNotifications.tsx - TAM ÇALIŞAN VERSİYON
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,7 +10,6 @@ export function useChatNotifications() {
     if (!user?.id) return;
 
     try {
-      // KESİN ÇÖZÜM: recipient_id ve is_read kontrolü
       const { count, error } = await supabase
         .from('private_messages')
         .select('*', { count: 'exact' })
@@ -23,19 +21,38 @@ export function useChatNotifications() {
         return;
       }
 
-      console.log('📊 Unread messages count:', count);
       setUnreadCount(count || 0);
     } catch (error) {
       console.error('Error loading unread messages:', error);
     }
   }, [user?.id]);
 
+  const markPrivateMessagesAsRead = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const { error } = await supabase
+        .from('private_messages')
+        .update({ is_read: true })
+        .eq('recipient_id', user.id)
+        .eq('is_read', false);
+      
+      if (error) throw error;
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    await markPrivateMessagesAsRead();
+  };
+
   useEffect(() => {
     if (!user?.id) return;
 
     loadUnreadMessages();
 
-    // ✅ DOĞRU REAL-TIME FIX: chat_id filter yerine recipient_id
     const channel = supabase
       .channel(`private-messages-notifications-${user.id}`)
       .on(
@@ -47,7 +64,6 @@ export function useChatNotifications() {
           filter: `recipient_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('🔔 New message notification:', payload);
           if (payload.new.is_read === false) {
             setUnreadCount(prev => prev + 1);
           }
@@ -67,14 +83,17 @@ export function useChatNotifications() {
           }
         }
       )
-      .subscribe((status) => {
-        console.log('🔔 Notification channel status:', status);
-      });
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
   }, [user?.id, loadUnreadMessages]);
 
-  return { unreadCount, refreshUnreadCounts: loadUnreadMessages };
+  return { 
+    unreadCount, 
+    refreshUnreadCounts: loadUnreadMessages,
+    markAllAsRead,
+    markPrivateMessagesAsRead
+  };
 }
