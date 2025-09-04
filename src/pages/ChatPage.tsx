@@ -280,26 +280,19 @@ const deletePrivateChat = async (otherUserId: string) => {
 
 // ChatPage.tsx - renderUsersList fonksiyonunu güncelle
 const renderUsersList = () => {
-  console.log('=== DEBUG: renderUsersList ===');
-  console.log('allUsers length:', allUsers.length);
-  console.log('unreadCounts:', unreadCounts);
-
   return (
     <ScrollArea className="flex-1">
       <div className="p-4 space-y-3">
         {allUsers.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>Kullanıcılar yükleniyor...</p>
-            <p className="text-xs mt-2">DEBUG: allUsers.length = {allUsers.length}</p>
+            <p>Henüz özel sohbetiniz bulunmuyor</p>
           </div>
         ) : (
           allUsers.map((targetUser) => {
             const unreadCount = unreadCounts[targetUser.id] || 0;
             const hasHistory = Object.keys(unreadCounts).includes(targetUser.id) || unreadCount > 0;
-            
-            console.log(`Rendering user: ${targetUser.username}, unreadCount: ${unreadCount}, hasHistory: ${hasHistory}`);
-            
+   
             return (
               <SwipeToDeleteCard
                 key={targetUser.id}
