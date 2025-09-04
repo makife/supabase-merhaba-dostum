@@ -122,17 +122,6 @@ useEffect(() => {
           }];
         });
 
-        // Okundu olarak işaretle
-        try {
-          await supabase
-            .from('private_messages')
-            .update({ is_read: true })
-            .eq('id', newMsg.id)
-            .eq('chat_id', chatId);
-        } catch (error) {
-          console.warn('Could not mark message as read:', error);
-        }
-
         playSound('correctWord');
       }
     )
@@ -165,30 +154,7 @@ useEffect(() => {
   };
 }, [chatId, user?.id, playSound]);
 
-  // PrivateChat.tsx - Mesajları okundu olarak işaretle
-useEffect(() => {
-  if (!chatId || !user) return;
 
-  // Bu sohbetteki okunmamış mesajları okundu yap
-  const markMessagesAsRead = async () => {
-    try {
-      await supabase
-        .from('private_messages')
-        .update({ is_read: true })
-        .eq('chat_id', chatId)
-        .neq('sender_id', user.id)
-        .eq('is_read', false);
-
-      // Bildirimleri de okundu yap - şimdilik pas geç
-      console.log('Marking notifications as read for chat:', chatId);
-
-    } catch (error) {
-      console.error('Error marking messages as read:', error);
-    }
-  };
-
-  markMessagesAsRead();
-}, [chatId, user]);
 
 const deleteMessage = async (messageId: string, senderId: string) => {
   if (!user || senderId !== user.id) {
