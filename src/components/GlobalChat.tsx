@@ -805,187 +805,205 @@ const startPrivateChat = async (targetUser: SelectedUser) => {
 );
   // GlobalChat.tsx - Yeni tasarım
 const renderGlobalChat = () => (
-    <>
-      {/* Messages */}
-      <ScrollArea className="flex-1 p-4 bg-chat-50">
-        <div className="space-y-3">
-          {messages
-            .filter(message => {
-              // Engellenmiş kullanıcıların mesajlarını filtrele
-              if (message.user_id && message.username !== 'kelimeciBot') {
-                if (isUserBlocked(message.user_id) || isBlockedByUser(message.user_id)) {
-                  return false;
-                }
+  <>
+    {/* Messages */}
+    <ScrollArea className="flex-1 p-4 bg-chat-50">
+      <div className="space-y-3">
+        {messages
+          .filter(message => {
+            // Engellenmiş kullanıcıların mesajlarını filtrele
+            if (message.user_id && message.username !== 'kelimeciBot') {
+              if (isUserBlocked(message.user_id) || isBlockedByUser(message.user_id)) {
+                return false;
               }
-              return true;
-            })
-            .map((message) => (
-            <div key={message.id} className="group flex flex-col space-y-1 p-3 rounded-lg bg-white shadow-sm border border-chat-100 hover:border-chat-300 transition-all">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <UserAvatar
-                    src={message.user_id ? userAvatars[message.user_id] : '/bot-avatar.png'} // Bot için özel avatar
-                    alt={message.username}
-                    fallback={message.username.charAt(0).toUpperCase()}
-                    size="xs"
-                    className={`border-2 ${message.username === 'kelimeciBot' ? 'border-blue-500' : 'border-chat-300'}`}
-                  />
-                  <span className={`text-sm font-medium ${
-                    message.username === 'kelimeciBot' 
-                      ? 'text-blue-600 font-bold' // Bot için özel stil
-                      : message.user_id === user?.id 
-                      ? 'text-chat-600' 
-                      : 'text-gray-700'
-                  }`}>
-                    {message.username}
-                    {message.username === 'kelimeciBot' && ' 🤖'}
-                  </span>
-                  
-                  {/* Online indicator - sadece gerçek kullanıcılar için */}
-                  {message.user_id && message.username !== 'kelimeciBot' && isUserOnline(message.user_id) && (
-                    <div className="w-2 h-2 bg-green-500 rounded-full" title="Çevrimiçi"></div>
-                  )}
-                  
-                  <span className="text-xs text-gray-500">
-                    {formatTime(message.created_at)}
-                  </span>
-                  
-                  {/* Butonlar grubu - sadece gerçek kullanıcılar için */}
-                  {message.user_id && message.user_id !== user?.id && message.username !== 'kelimeciBot' && (
-                    <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {/* Private message button */}
-                      {onStartPrivateChat && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            onStartPrivateChat({
-                              id: message.user_id,
-                              username: message.username,
-                              avatar_url: userAvatars[message.user_id]
-                            });
-                          }}
-                          className="h-6 w-6 p-0 hover:bg-chat-100"
-                          title="Özel mesaj gönder"
-                        >
-                          <Mail className="w-3 h-3 text-chat-600" />
-                        </Button>
-                      )}
-                      
-                      {/* Block/Unblock button */}
-                      <BlockUserButton
-                        targetUserId={message.user_id}
-                        username={message.username}
+            }
+            return true;
+          })
+          .map((message) => (
+          <div key={message.id} className="group flex flex-col space-y-1 p-3 rounded-lg bg-white shadow-sm border border-chat-100 hover:border-chat-300 transition-all">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <UserAvatar
+                  src={message.user_id ? userAvatars[message.user_id] : '/bot-avatar.png'} // Bot için özel avatar
+                  alt={message.username}
+                  fallback={message.username.charAt(0).toUpperCase()}
+                  size="xs"
+                  className={`border-2 ${message.username === 'kelimeciBot' ? 'border-blue-500' : 'border-chat-300'}`}
+                />
+                <span className={`text-sm font-medium ${
+                  message.username === 'kelimeciBot' 
+                    ? 'text-blue-600 font-bold' // Bot için özel stil
+                    : message.user_id === user?.id 
+                    ? 'text-chat-600' 
+                    : 'text-gray-700'
+                }`}>
+                  {message.username}
+                  {message.username === 'kelimeciBot' && ' 🤖'}
+                </span>
+                
+                {/* Online indicator - sadece gerçek kullanıcılar için */}
+                {message.user_id && message.username !== 'kelimeciBot' && isUserOnline(message.user_id) && (
+                  <div className="w-2 h-2 bg-green-500 rounded-full" title="Çevrimiçi"></div>
+                )}
+                
+                <span className="text-xs text-gray-500">
+                  {formatTime(message.created_at)}
+                </span>
+                
+                {/* Butonlar grubu - sadece gerçek kullanıcılar için */}
+                {message.user_id && message.user_id !== user?.id && message.username !== 'kelimeciBot' && (
+                  <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* Private message button */}
+                    {onStartPrivateChat && (
+                      <Button
                         size="sm"
                         variant="ghost"
-                      />
-                    </div>
-                  )}
-                </div>
-                
-                {/* Delete button - sadece kendi mesajları için */}
-                {message.user_id === user?.id && (
-                  <button
-                    onClick={() => deleteMessage(message.id)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-100 rounded"
-                    title="Mesajı sil"
-                  >
-                    <Trash2 className="w-3 h-3 text-red-500" />
-                  </button>
+                        onClick={() => {
+                          onStartPrivateChat({
+                            id: message.user_id,
+                            username: message.username,
+                            avatar_url: userAvatars[message.user_id]
+                          });
+                        }}
+                        className="h-6 w-6 p-0 hover:bg-chat-100"
+                        title="Özel mesaj gönder"
+                      >
+                        <Mail className="w-3 h-3 text-chat-600" />
+                      </Button>
+                    )}
+                    
+                    {/* Block/Unblock button */}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        const isBlocked = isUserBlocked(message.user_id);
+                        if (isBlocked) {
+                          // Engeli kaldır
+                          if (confirm(`${message.username} kullanıcısının engelini kaldırmak istediğinizden emin misiniz?`)) {
+                            // unblockUser fonksiyonunu çağır (hook'tan gelecek)
+                          }
+                        } else {
+                          // Engelle
+                          if (confirm(`${message.username} kullanıcısını engellemek istediğinizden emin misiniz?`)) {
+                            // blockUser fonksiyonunu çağır (hook'tan gelecek)
+                          }
+                        }
+                      }}
+                      className={`h-6 w-6 p-0 hover:bg-chat-100 ${
+                        isUserBlocked(message.user_id) 
+                          ? 'text-green-600 hover:text-green-700' 
+                          : 'text-red-600 hover:text-red-700'
+                      }`}
+                      title={isUserBlocked(message.user_id) ? 'Engeli kaldır' : 'Kullanıcıyı engelle'}
+                    >
+                      <Shield className="w-3 h-3" />
+                    </Button>
+                  </div>
                 )}
               </div>
               
-              <div className={`text-gray-800 break-words ${
-                message.username === 'kelimeciBot' ? 'font-medium text-blue-800' : ''
-              }`}>
-                {message.message}
-              </div>
-              
-              {/* Reactions - temp mesajlar ve bot mesajları için gösterme */}
-              {!message.id.startsWith('temp-') && message.username !== 'kelimeciBot' && messageReactions[message.id] && (
-                <div className="flex items-center space-x-2 mt-2">
-                  {Object.entries(groupReactions(messageReactions[message.id])).map(([emoji, reactions]) => (
-                    <button
-                      key={emoji}
-                      onClick={() => toggleReaction(message.id, emoji)}
-                      className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs transition-colors ${
-                        reactions.some(r => r.user_id === user?.id)
-                          ? 'bg-chat-100 text-chat-700 border border-chat-300'
-                          : 'bg-gray-100 hover:bg-gray-200'
-                      }`}
-                    >
-                      <span>{emoji}</span>
-                      <span>{reactions.length}</span>
-                    </button>
-                  ))}
-                </div>
+              {/* Delete button - sadece kendi mesajları için */}
+              {message.user_id === user?.id && (
+                <button
+                  onClick={() => deleteMessage(message.id)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-100 rounded"
+                  title="Mesajı sil"
+                >
+                  <Trash2 className="w-3 h-3 text-red-500" />
+                </button>
               )}
             </div>
-          ))}
-          
-          {/* Typing indicator */}
-          {typingUsers.size > 0 && (
-            <div className="flex items-center space-x-2 text-chat-600 text-sm italic p-2 bg-chat-100 rounded-lg">
-              <div className="flex space-x-1">
-                <div className="w-2 h-2 bg-chat-600 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-chat-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                <div className="w-2 h-2 bg-chat-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-              </div>
-              <span>
-                {Array.from(typingUsers).slice(0, 2).join(', ')} yazıyor...
-              </span>
+            
+            <div className={`text-gray-800 break-words ${
+              message.username === 'kelimeciBot' ? 'font-medium text-blue-800' : ''
+            }`}>
+              {message.message}
             </div>
-          )}
-          
-          <div ref={messagesEndRef} />
-        </div>
-      </ScrollArea>
-
-      {/* Message Input */}
-      <div className="p-4 bg-white border-t border-chat-200">
-        <div className="flex space-x-2">
-          <Input
-            value={newMessage}
-            onChange={handleInputChange}
-            onKeyPress={handleKeyPress}
-            placeholder="Mesajınızı yazın..."
-            maxLength={200}
-            disabled={isLoading}
-            className="flex-1 border-chat-300 focus:border-chat-500 focus:ring-chat-500"
-          />
-          <Button
-            onClick={sendMessage}
-            disabled={!newMessage.trim() || isLoading}
-            size="sm"
-            className="px-4 bg-chat-500 hover:bg-chat-600 text-white"
-          >
-            <Send className="w-4 h-4" />
-          </Button>
-        </div>
-        <div className="text-xs text-gray-500 mt-1 text-right">
-          {newMessage.length}/200
-        </div>
+            
+            {/* Reactions - temp mesajlar ve bot mesajları için gösterme */}
+            {!message.id.startsWith('temp-') && message.username !== 'kelimeciBot' && messageReactions[message.id] && (
+              <div className="flex items-center space-x-2 mt-2">
+                {Object.entries(groupReactions(messageReactions[message.id])).map(([emoji, reactions]) => (
+                  <button
+                    key={emoji}
+                    onClick={() => toggleReaction(message.id, emoji)}
+                    className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs transition-colors ${
+                      reactions.some(r => r.user_id === user?.id)
+                        ? 'bg-chat-100 text-chat-700 border border-chat-300'
+                        : 'bg-gray-100 hover:bg-gray-200'
+                    }`}
+                  >
+                    <span>{emoji}</span>
+                    <span>{reactions.length}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+        
+        {/* Typing indicator */}
+        {typingUsers.size > 0 && (
+          <div className="flex items-center space-x-2 text-chat-600 text-sm italic p-2 bg-chat-100 rounded-lg">
+            <div className="flex space-x-1">
+              <div className="w-2 h-2 bg-chat-600 rounded-full animate-bounce"></div>
+              <div className="w-2 h-2 bg-chat-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+              <div className="w-2 h-2 bg-chat-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            </div>
+            <span>
+              {Array.from(typingUsers).slice(0, 2).join(', ')} yazıyor...
+            </span>
+          </div>
+        )}
+        
+        <div ref={messagesEndRef} />
       </div>
-    </>
-  );
+    </ScrollArea>
 
-
-  if (!isOpen) return null;
-
-  // If it's full page mode, don't wrap in modal
-  if (isFullPage) {
-    return (
-      <div className="h-full w-full flex flex-col">
-        {renderGlobalChat()}
+    {/* Message Input */}
+    <div className="p-4 bg-white border-t border-chat-200">
+      <div className="flex space-x-2">
+        <Input
+          value={newMessage}
+          onChange={handleInputChange}
+          onKeyPress={handleKeyPress}
+          placeholder="Mesajınızı yazın..."
+          maxLength={200}
+          disabled={isLoading}
+          className="flex-1 border-chat-300 focus:border-chat-500 focus:ring-chat-500"
+        />
+        <Button
+          onClick={sendMessage}
+          disabled={!newMessage.trim() || isLoading}
+          size="sm"
+          className="px-4 bg-chat-500 hover:bg-chat-600 text-white"
+        >
+          <Send className="w-4 h-4" />
+        </Button>
       </div>
-    );
-  
+      <div className="text-xs text-gray-500 mt-1 text-right">
+        {newMessage.length}/200
+      </div>
+    </div>
+  </>
+);
 
+if (!isOpen) return null;
+
+// If it's full page mode, don't wrap in modal
+if (isFullPage) {
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md h-[600px] flex flex-col bg-background border-2 border-primary/20">
-        {renderContent()}
-      </Card>
+    <div className="h-full w-full flex flex-col">
+      {renderGlobalChat()}
     </div>
   );
 }
+
+return (
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <Card className="w-full max-w-md h-[600px] flex flex-col bg-background border-2 border-primary/20">
+      {renderContent()}
+    </Card>
+  </div>
+);
