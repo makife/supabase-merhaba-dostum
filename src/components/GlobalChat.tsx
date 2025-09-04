@@ -446,8 +446,6 @@ const sendMessage = async () => {
   // Yasaklı kelime kontrolü
   if (containsBannedWords(trimmedMessage)) {
     toast.error('Mesajınız yasaklı kelime içeriyor ve sohbet yasağı aldınız!');
-    
-    // Kullanıcıyı yasakla
     await banUser(user.id, 'Yasaklı kelime kullanımı', 48);
     setNewMessage('');
     return;
@@ -455,22 +453,9 @@ const sendMessage = async () => {
 
   const username = profile.username || user.email?.split('@')[0] || 'Anonim';
   
-  // Optimistic update - geçici ID daha unique olsun
-  const tempId = `temp-${user.id}-${Date.now()}`;
-  const tempMessage: ChatMessage = {
-    id: tempId,
-    user_id: user.id,
-    username: username,
-    message: trimmedMessage,
-    created_at: new Date().toISOString(),
-    avatar_url: profile.avatar_url
-  };
-
-  setMessages(prev => [...prev, tempMessage]);
   setNewMessage('');
-  scrollToBottom();
-
   setIsLoading(true);
+  
   try {
     const { data: insertData, error: insertError } = await supabase
       .from('global_chat')
@@ -485,22 +470,27 @@ const sendMessage = async () => {
 
     if (insertError) throw insertError;
 
-    // Başarılı - temp mesajı gerçek ID ile güncelle
-    setMessages(prev => prev.map(msg => 
-      msg.id === tempId ? {
-        ...tempMessage,
-        id: insertData.id
-      } : msg
+    // Manuel olarak mesajı state'e ekle
+    const newMsg = {
+      id: insertData.id,
+      user_id: user.id,
+      username: username,
+      message: trimmedMessage,
+      created_at: insertData.created_at,
+      avatar_url: profile.avatar_url
+    };
+    
+    setMessages(prev => [...prev, newMsg].sort((a, b) => 
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     ));
 
-    // MENTION KONTROLÜ
+    // Mention kontrolü
     const mentionRegex = /@(\w+)/g;
     let match;
     
     while ((match = mentionRegex.exec(trimmedMessage)) !== null) {
       const mentionedUsername = match[1];
       
-      // Kullanıcıyı bul
       const { data: mentionedUser } = await supabase
         .from('profiles')
         .select('id, username')
@@ -508,12 +498,7 @@ const sendMessage = async () => {
         .single();
       
       if (mentionedUser && mentionedUser.id !== user.id) {
-        // BİLDİRİM GÖNDER
-        await sendMentionNotification(
-          mentionedUser.id, 
-          username,
-          trimmedMessage
-        );
+        await sendMentionNotification(mentionedUser.id, username, trimmedMessage);
       }
     }
 
@@ -521,9 +506,6 @@ const sendMessage = async () => {
   } catch (error) {
     console.error('Error sending message:', error);
     toast.error('Mesaj gönderilirken hata oluştu');
-    
-    // Hata durumunda temp mesajı kaldır
-    setMessages(prev => prev.filter(msg => msg.id !== tempId));
   } finally {
     setIsLoading(false);
   }
