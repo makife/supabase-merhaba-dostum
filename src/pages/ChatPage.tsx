@@ -50,7 +50,9 @@ const fetchAllUsers = async () => {
     const { data: messages, error: messagesError } = await supabase
       .from('private_messages')
       .select('sender_id, recipient_id')
-      .or(`sender_id.eq.${user?.id},recipient_id.eq.${user?.id}`);
+      .or(`sender_id.eq.${user?.id},recipient_id.eq.${user?.id}`)
+      .not('sender_id', 'is', null)      // ✅ NULL sender_id'leri filtrele
+      .not('recipient_id', 'is', null);   // ✅ NULL recipient_id'leri filtrele
 
     console.log('🔍 DEBUG: Private messages query result:', { messages, messagesError });
 
@@ -62,8 +64,14 @@ const fetchAllUsers = async () => {
     const userIDs = new Set<string>();
     messages?.forEach(msg => {
       console.log('🔍 DEBUG: Processing message:', msg);
-      if (msg.sender_id !== user?.id) userIDs.add(msg.sender_id);
-      if (msg.recipient_id !== user?.id) userIDs.add(msg.recipient_id);
+      
+      // ✅ Ekstra null kontrolü
+      if (msg.sender_id && msg.sender_id !== user?.id) {
+        userIDs.add(msg.sender_id);
+      }
+      if (msg.recipient_id && msg.recipient_id !== user?.id) {
+        userIDs.add(msg.recipient_id);
+      }
     });
 
     console.log('🔍 DEBUG: Unique user IDs found:', Array.from(userIDs));
@@ -74,13 +82,33 @@ const fetchAllUsers = async () => {
       return;
     }
 
+    // ✅ Valid UUID'leri filtrele
+    const validUserIDs = Array.from(userIDs).filter(id => {
+      // UUID format kontrolü
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      return id && uuidRegex.test(id);
+    });
+
+    console.log('🔍 DEBUG: Valid user IDs after filtering:', validUserIDs);
+
+    if (validUserIDs.length === 0) {
+      console.log('🔍 DEBUG: No valid user IDs found');
+      setAllUsers([]);
+      return;
+    }
+
     // BU KULLANICILARIN PROFİLLERİNİ GETİR
     const { data: users, error: usersError } = await supabase
       .from('profiles')
       .select('id, username, avatar_url')
-      .in('id', Array.from(userIDs));
+      .in('id', validUserIDs);
 
     console.log('🔍 DEBUG: Users query result:', { users, usersError });
+
+    if (usersError) {
+      console.error('🔍 DEBUG: Users query error:', usersError);
+      return;
+    }
 
     setAllUsers(users || []);
 
