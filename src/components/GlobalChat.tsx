@@ -396,7 +396,7 @@ useEffect(() => {
     const { data, error } = await supabase
       .from('global_chat')
       .select('*')
-      .order('created_at', { ascending: true }) // Eskiden yeniye sırala
+      .order('created_at', { ascending: false }) // En yeni 100 mesajı al
       .limit(100);
 
     if (error) throw error;
@@ -414,7 +414,11 @@ useEffect(() => {
     }));
 
     console.log('✅ Formatted messages:', formattedData);
-    setMessages(formattedData);
+    // Görüntülemede kronolojik sıra için tekrar sırala (eski -> yeni)
+    const sorted = [...formattedData].sort((a, b) =>
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+    setMessages(sorted);
 
   } catch (error) {
     console.error('❌ Error fetching messages:', error);
