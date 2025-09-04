@@ -301,12 +301,6 @@ useEffect(() => {
         console.log('📨 REAL-TIME GLOBAL MESSAGE:', payload);
         const newMessage = payload.new as any;
         
-        // Kendi mesajımızı ignore et SADECE optimistic update durumunda
-        // Bot mesajı her zaman gösterilmeli
-        if (newMessage.user_id === user.id && newMessage.username !== 'kelimeciBot') {
-          console.log('⭐ Skipping own message for real-time');
-          return;
-        }
 
         // Kullanıcı bilgilerini al (eğer yoksa)
         let username = newMessage.username || 'Anonim';
