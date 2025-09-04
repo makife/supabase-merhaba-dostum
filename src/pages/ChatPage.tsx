@@ -290,26 +290,32 @@ useEffect(() => {
   };
 
   // Özel sohbeti sil
- const deletePrivateChat = async (otherUserId: string) => {
+const deletePrivateChat = async (otherUserId: string) => {
   if (!user) return;
   
   try {
-    // Tüm olası chat_id formatlarını dene
-    const participants1 = [user.id, otherUserId].sort();
-    const participants2 = [otherUserId, user.id].sort();
-    const chatId1 = `chat_${participants1.join('_')}`;
-    const chatId2 = `chat_${participants2.join('_')}`;
-    
-    // Hem chat_id hem de sender/recipient kombinasyonu ile sil
-    const { error: deleteError } = await supabase
+    // Önce bu iki kullanıcı arasındaki TÜM mesajları bul
+    const { data: messagesToDelete } = await supabase
       .from('private_messages')
+      .select('id')
+      .or(`and(sender_id.eq.${user.id},recipient_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},recipient_id.eq.${user.id}),and(sender_id.eq.${user.id},recipient_id.is.null),and(sender_id.eq.${otherUserId},recipient_id.is.null)`);
+    
+    // ID'leri al
+    const messageIds = messagesToDelete?.map(msg => msg.id) || [];
+    
+    if (messageIds.length > 0) {
+      // ID'ler ile sil
+      await supabase
+        .from('private_messages')
+        .delete()
+        .in('id', messageIds);
+    }
+    
+    // Chat'leri de sil (her ihtimale karşı)
+    await supabase
+      .from('private_chats')
       .delete()
-      .or(`chat_id.eq.${chatId1},chat_id.eq.${chatId2},and(sender_id.eq.${user.id},recipient_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},recipient_id.eq.${user.id})`);
-    
-    if (deleteError) throw deleteError;
-    
-    // Chat'leri de sil
-    await supabase.from('private_chats').delete().in('id', [chatId1, chatId2]);
+      .or(`and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`);
     
     // Local state güncelle
     setAllUsers(prev => prev.filter(u => u.id !== otherUserId));
