@@ -968,6 +968,7 @@ const renderGlobalChat = () => (
       </div>
     </>
   );
+}
 
   if (!isOpen) return null;
 
