@@ -44,74 +44,39 @@ export default function ChatPage() {
   // Fetch all users for private chat
 const fetchAllUsers = async () => {
   try {
-    console.log('=== DEBUG: fetchAllUsers başladı ===');
-    console.log('User ID:', user?.id);
-    
-    // Önce kaç kullanıcı var kontrol et
-    const { count } = await supabase
-      .from('profiles')
-      .select('*', { count: 'exact', head: true })
-      .neq('id', user?.id);
-    
-    console.log('Toplam kullanıcı sayısı:', count);
-
     const { data: allUsersData, error: usersError } = await supabase
       .from('profiles')
       .select('id, username, email, avatar_url')
       .neq('id', user?.id)
       .order('username', { ascending: true });
 
-    console.log('Kullanıcı verisi:', allUsersData);
-    console.log('Kullanıcı hatası:', usersError);
-
     if (usersError) {
       console.error('Users fetch error:', usersError);
       return;
     }
 
-    // Mesaj geçmişini kontrol et
-    const { data: chatHistoryData, error: historyError } = await supabase
+    // SADECE MESAJ GEÇMİŞİ OLAN KULLANICILARI GÖSTER
+    const { data: chatHistoryData } = await supabase
       .from('private_messages')
-      .select('sender_id, recipient_id, created_at')
-      .or(`sender_id.eq.${user?.id},recipient_id.eq.${user?.id}`)
-      .order('created_at', { ascending: false });
+      .select('sender_id, recipient_id')
+      .or(`sender_id.eq.${user?.id},recipient_id.eq.${user?.id}`);
 
-    console.log('Chat history verisi:', chatHistoryData);
-    console.log('Chat history hatası:', historyError);
-
-    if (historyError) {
-      console.warn('Chat history fetch warning:', historyError);
-    }
-
-    // Mesaj geçmişi olan kullanıcı ID'lerini çıkar
     const chatUserIds = new Set<string>();
     chatHistoryData?.forEach(msg => {
       if (msg.sender_id !== user?.id) chatUserIds.add(msg.sender_id);
       if (msg.recipient_id !== user?.id) chatUserIds.add(msg.recipient_id);
     });
 
-    console.log('Chat history olan kullanıcılar:', Array.from(chatUserIds));
+    // SADECE MESAJLAŞTIĞIN KULLANICILARI GÖSTER
+    const usersWithChatHistory = allUsersData?.filter(user => 
+      chatUserIds.has(user.id)
+    ) || [];
 
-    const sortedUsers = allUsersData?.sort((a, b) => {
-      const aHasHistory = chatUserIds.has(a.id);
-      const bHasHistory = chatUserIds.has(b.id);
-      
-      if (aHasHistory && !bHasHistory) return -1;
-      if (!aHasHistory && bHasHistory) return 1;
-      return a.username.localeCompare(b.username, 'tr');
-    }) || [];
-
-    console.log('=== DEBUG: Sıralı kullanıcılar ===');
-    sortedUsers.forEach(user => {
-      console.log(`${user.username} (${user.id}) - History: ${chatUserIds.has(user.id)}`);
-    });
-
-    setAllUsers(sortedUsers);
+    setAllUsers(usersWithChatHistory);
   } catch (error) {
     console.error('Error fetching users:', error);
   }
 };
-
 
   // Fetch unread counts
 const fetchUnreadCounts = async () => {
@@ -232,50 +197,32 @@ const deletePrivateChat = async (otherUserId: string) => {
   if (!user) return;
   
   try {
-    // Chat ID'yi oluştur
-    const participants = [user.id, otherUserId].sort();
-    const chatId = `chat_${participants.join('_')}`;
+    const chatId = `chat_${[user.id, otherUserId].sort().join('_')}`;
     
-    console.log('🗑️ Deleting chat:', chatId);
-    
-    // 1. ÖNCE TÜM MESAJLARI SİL
-    const { error: deleteMessagesError } = await supabase
+    // 1. SADECE MESAJLARI SİL (CHAT'I SİLME)
+    const { error: deleteError } = await supabase
       .from('private_messages')
       .delete()
       .eq('chat_id', chatId);
 
-    if (deleteMessagesError) {
-      console.error('Message delete error:', deleteMessagesError);
-      // Hata olsa bile devam et, belki mesaj yoktur
+    if (deleteError) {
+      console.error('Message delete error:', deleteError);
     }
 
-    // 2. SONRA CHAT'İ SİL
-    const { error: deleteChatError } = await supabase
-      .from('private_chats')
-      .delete()
-      .eq('id', chatId);
-
-    if (deleteChatError) {
-      console.error('Chat delete error:', deleteChatError);
-      // Hata olsa bile devam et, belki chat yoktur
-    }
-
-    // 3. LOCAL STATE'İ GÜNCELLE
+    // 2. KULLANICIYI LOCAL STATE'DEN KALDIR
     setAllUsers(prev => prev.filter(u => u.id !== otherUserId));
     
-    // 4. UNREAD COUNT'U GÜNCELLE
+    // 3. UNREAD COUNT'U SIFIRLA
     setUnreadCounts(prev => {
       const updated = { ...prev };
       delete updated[otherUserId];
       return updated;
     });
     
-    console.log('✅ Chat successfully deleted:', chatId);
-    toast.success('Sohbet silindi');
+    console.log('✅ Mesajlar silindi, kullanıcı listeden kaldırıldı');
     
   } catch (error) {
     console.error('Error deleting chat:', error);
-    toast.error('Sohbet silinirken hata oluştu');
   }
 };
 
