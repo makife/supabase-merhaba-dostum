@@ -290,33 +290,65 @@ const deletePrivateChat = async (otherUserId: string) => {
     const chatId = `chat_${[user.id, otherUserId].sort().join('_')}`;
     console.log('🗑️ Chat ID to delete:', chatId);
     
-    // 1. ÖNCELİKLE MESAJLARI SİL
-    const { error: messagesError } = await supabase
+    // ÖNCE CONSTRAINT'LERİ KONTROL ET
+    const { data: existingMessages } = await supabase
+      .from('private_messages')
+      .select('id')
+      .eq('chat_id', chatId);
+    
+    console.log('🔍 Messages to delete:', existingMessages?.length || 0);
+    
+    // 1. CASCADE SİLME - ÖNCE REACTIONS VARSA SİL
+    const { error: reactionsError } = await supabase
+      .from('message_reactions')
+      .delete()
+      .in('message_id', existingMessages?.map(m => m.id) || []);
+    
+    if (reactionsError) {
+      console.log('⚠️ Reactions delete warning:', reactionsError);
+    }
+    
+    // 2. MESAJLARI SİL
+    const { data: deletedMessages, error: messagesError } = await supabase
       .from('private_messages')
       .delete()
-      .eq('chat_id', chatId);
+      .eq('chat_id', chatId)
+      .select();
 
+    console.log('🗑️ Deleted messages result:', { deletedMessages, messagesError });
+    
     if (messagesError) {
-      console.error('🗑️ Error deleting messages:', messagesError);
+      console.error('❌ Messages delete error:', messagesError);
       throw messagesError;
     }
 
-    console.log('✅ Messages deleted successfully');
+    console.log(`✅ ${deletedMessages?.length || 0} messages deleted successfully`);
 
-    // 2. CHAT KAYDINI SİL  
-    const { error: chatError } = await supabase
+    // 3. CHAT KAYDINI SİL  
+    const { data: deletedChat, error: chatError } = await supabase
       .from('private_chats')
       .delete()
-      .eq('id', chatId);
+      .eq('id', chatId)
+      .select();
+
+    console.log('🗑️ Deleted chat result:', { deletedChat, chatError });
 
     if (chatError) {
-      console.error('🗑️ Error deleting chat:', chatError);
-      throw chatError;
+      console.error('❌ Chat delete error:', chatError);
+      // Chat silme hatası olsa da devam et
     }
 
     console.log('✅ Chat deleted successfully');
 
-    // 3. LOCAL STATE'İ GÜNCELLE
+    // 4. DOĞRULAMA - SİLİNDİ Mİ KONTROL ET
+    const { data: remainingMessages } = await supabase
+      .from('private_messages')
+      .select('id')
+      .eq('chat_id', chatId);
+    
+    console.log('🔍 Remaining messages after delete:', remainingMessages?.length || 0);
+
+    // 5. LOCAL STATE'İ GÜNCELLE
     setAllUsers(prev => {
       const updated = prev.filter(u => u.id !== otherUserId);
       console.log('🔄 Updated allUsers, remaining count:', updated.length);
@@ -326,23 +358,14 @@ const deletePrivateChat = async (otherUserId: string) => {
     setUnreadCounts(prev => {
       const updated = { ...prev };
       delete updated[otherUserId];
-      console.log('🔄 Updated unreadCounts:', updated);
       return updated;
     });
 
-    // 4. BAŞARILI OLDU MESAJI
     toast.success('Özel sohbet silindi');
     
-    // 5. GLOBAL REFRESH (isteğe bağlı - emin olmak için)
-    setTimeout(() => {
-      console.log('🔄 Refreshing data after delete');
-      fetchAllUsers();
-      fetchUnreadCounts();
-    }, 500);
-
   } catch (error) {
     console.error('❌ Error deleting private chat:', error);
-    toast.error('Sohbet silinirken hata oluştu');
+    toast.error('Sohbet silinirken hata oluştu: ' + error.message);
   }
 };
   
