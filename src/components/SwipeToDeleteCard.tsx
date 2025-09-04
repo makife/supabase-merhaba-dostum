@@ -148,15 +148,6 @@ export function SwipeToDeleteCard({
         />
       </div>
 
-      {/* Progress indicator */}
-      {dragX > 0 && (
-        <div 
-          className="absolute bottom-0 left-0 h-1 bg-red-400 transition-all duration-100"
-          style={{
-            width: `${Math.min((dragX / 60) * 100, 100)}%`
-          }}
-        />
-      )}
     </div>
   );
 }
