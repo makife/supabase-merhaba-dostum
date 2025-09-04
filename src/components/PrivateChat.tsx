@@ -62,32 +62,27 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
 useEffect(() => {
   if (!chatId || !user?.id) return;
 
-  console.log('🔄 Setting up PRIVATE real-time for chat:', chatId);
-
   const channel = supabase
-    .channel(`private-chat-${chatId}-${Date.now()}`) // Unique channel name
+    .channel(`private-chat-${chatId}`)
     .on(
       'postgres_changes',
       {
         event: 'INSERT',
         schema: 'public',
         table: 'private_messages',
-        filter: `chat_id=eq.${chatId}` // ✅ BU ÇOK ÖNEMLİ
+        filter: `chat_id=eq.${chatId}`
       },
       async (payload) => {
-        console.log('📨 New private message:', payload.new);
+        const newMsg = payload.new as any;
         
-        const newMsg = payload.new;
-        // Hemen state'e ekle (duplicate kontrolü ile)
         setMessages(prev => {
           const exists = prev.some(msg => msg.id === newMsg.id);
           if (exists) return prev;
           return [...prev, newMsg];
         });
-        
+
         playSound('correctWord');
         
-        // Eğer mesaj bana gelmişse, hemen okundu olarak işaretle
         if (newMsg.recipient_id === user.id) {
           await supabase
             .from('private_messages')
@@ -96,12 +91,9 @@ useEffect(() => {
         }
       }
     )
-    .subscribe((status) => {
-      console.log(`📡 Private chat ${chatId} status:`, status);
-    });
+    .subscribe();
 
   return () => {
-    console.log('🧹 Cleaning up private chat channel');
     supabase.removeChannel(channel);
   };
 }, [chatId, user?.id]);
