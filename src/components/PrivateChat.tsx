@@ -10,8 +10,6 @@ import { Separator } from '@/components/ui/separator';
 import { Send, ArrowLeft } from 'lucide-react';
 import { UserAvatar } from '@/components/UserAvatar';
 import { toast } from 'sonner';
-import { sendMessageNotification } from '@/utils/notifications';
-import { Trash2 } from 'lucide-react';
 import { useChatNotifications } from '@/hooks/useChatNotifications';
 
 interface PrivateMessage {
@@ -21,6 +19,7 @@ interface PrivateMessage {
   message: string;
   created_at: string;
   is_read: boolean;
+  recipient_id?: string;
 }
 
 interface PrivateChatProps {
@@ -42,58 +41,39 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { refreshUnreadCounts } = useChatNotifications();
 
-  // Scroll to bottom when new messages arrive
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  // Fetch messages
-  useEffect(() => {
-    if (chatId) {
-      fetchMessages();
-    }
-  }, [chatId]);
-
-// PrivateChat.tsx'e real-time subscription ekle
-useEffect(() => {
-  if (!chatId) return;
-
-  // MESAJLARI ÇEK
   const fetchMessages = async () => {
     const { data } = await supabase
       .from('private_messages')
       .select('*')
       .eq('chat_id', chatId)
-      .order('created_at', true);
+      .order('created_at', { ascending: true });
     
     setMessages(data || []);
   };
 
-  fetchMessages();
+  useEffect(() => {
+    if (!chatId) return;
 
-  // REAL-TIME: Basitçe yeniden çek
-  const channel = supabase
-    .channel(`chat-${chatId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'private_messages',
-        filter: `chat_id=eq.${chatId}`
-      },
-      fetchMessages // Direkt yeniden çek
-    )
-    .subscribe();
+    fetchMessages();
 
-  return () => {
-    supabase.removeChannel(channel);
-  };
-}, [chatId]);
+    const channel = supabase
+      .channel(`chat-${chatId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'private_messages',
+          filter: `chat_id=eq.${chatId}`
+        },
+        fetchMessages
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [chatId]);
 
   // PrivateChat.tsx - Mesajları okundu olarak işaretle
 useEffect(() => {
