@@ -21,7 +21,6 @@ export function SwipeToDeleteCard({
   const [startX, setStartX] = useState(0);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // Touch Events
   const handleTouchStart = (e: React.TouchEvent) => {
     setIsDragging(true);
     setStartX(e.touches[0].clientX);
@@ -35,73 +34,51 @@ export function SwipeToDeleteCard({
     
     // Sadece sola kaydırmaya izin ver (pozitif değerler)
     if (diffX > 0) {
-      setDragX(Math.min(diffX, 120)); // Maksimum 120px
-    } else {
-      setDragX(0); // Sağa kaydırmayı engelle
+      setDragX(Math.min(diffX, 80)); // Maksimum 80px
     }
   };
 
   const handleTouchEnd = () => {
     setIsDragging(false);
     
-    // Eğer 60px'den fazla kaydırıldıysa silme işlemini tetikle
-    if (dragX > 60) {
+    // Eğer 50px'den fazla kaydırıldıysa silme işlemini tetikle
+    if (dragX > 50) {
       onDelete();
-      return;
     }
     
-    // Yeterince kaydırılmadıysa smooth geri dönüş
-    const resetAnimation = () => {
-      setDragX(0);
-    };
-    
-    // Kısa bir gecikme ile geri döndür
-    setTimeout(resetAnimation, 10);
+    // Animation ile geri döndür
+    setDragX(0);
   };
 
-  // Mouse Events - State dependency olmadan
   const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
     setIsDragging(true);
-    
-    const mouseStartX = e.clientX;
-    let currentDragX = 0;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      const currentX = e.clientX;
-      const diffX = mouseStartX - currentX;
-      
-      if (diffX > 0) {
-        currentDragX = Math.min(diffX, 120);
-        setDragX(currentDragX);
-      } else {
-        currentDragX = 0;
-        setDragX(0);
-      }
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-      
-      if (currentDragX > 60) {
-        onDelete();
-      } else {
-        setTimeout(() => setDragX(0), 10);
-      }
-
-      // Event listener'ları kaldır
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-
-    // Global event'leri ekle
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    setStartX(e.clientX);
   };
 
-  const handleCardClick = (e: React.MouseEvent) => {
-    // Eğer dragging yoksa ve onClick varsa çalıştır
-    if (!isDragging && dragX === 0 && onClick) {
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    
+    const currentX = e.clientX;
+    const diffX = startX - currentX;
+    
+    if (diffX > 0) {
+      setDragX(Math.min(diffX, 80));
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    
+    if (dragX > 50) {
+      onDelete();
+    }
+    
+    setDragX(0);
+  };
+
+  const handleCardClick = () => {
+    // Sadece kaydırma yoksa click event'ini tetikle
+    if (dragX === 0 && onClick) {
       onClick();
     }
   };
@@ -111,20 +88,20 @@ export function SwipeToDeleteCard({
       <Card
         ref={cardRef}
         className={cn(
-          'relative transition-transform duration-200 ease-out select-none',
-          isDragging ? 'transition-none' : '',
+          'relative transition-transform duration-200 ease-out',
           className
         )}
         style={{
           transform: `translateX(-${dragX}px)`,
-          cursor: isDragging ? 'grabbing' : 'grab'
         }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
         onClick={handleCardClick}
-        onDragStart={(e) => e.preventDefault()} // Varsayılan drag'i engelle
       >
         {children}
       </Card>
@@ -147,7 +124,6 @@ export function SwipeToDeleteCard({
           size={20}
         />
       </div>
-
     </div>
   );
 }
