@@ -279,10 +279,24 @@ useEffect(() => {
 
 // Real-time subscription için ayrı bir useEffect
 useEffect(() => {
-  if (!isOpen || !user?.id) return;
+  if (!isOpen) return;
 
+  // MESAJLARI ÇEK
+  const fetchMessages = async () => {
+    const { data } = await supabase
+      .from('global_chat')
+      .select('*')
+      .order('created_at', true)
+      .limit(100);
+    
+    setMessages(data || []);
+  };
+
+  fetchMessages();
+
+  // REAL-TIME: Basitçe yeniden çek
   const channel = supabase
-    .channel('global-chat-realtime')
+    .channel('global-chat')
     .on(
       'postgres_changes',
       {
@@ -290,24 +304,14 @@ useEffect(() => {
         schema: 'public',
         table: 'global_chat'
       },
-      (payload) => {
-        const newMessage = payload.new as any;
-        
-        setMessages(prev => {
-          const exists = prev.some(msg => msg.id === newMessage.id);
-          if (exists) return prev;
-          return [...prev, newMessage];
-        });
-        
-        playSound('correctWord');
-      }
+      fetchMessages // Direkt yeniden çek
     )
     .subscribe();
 
   return () => {
     supabase.removeChannel(channel);
   };
-}, [isOpen, user?.id]);
+}, [isOpen]);
 
  const fetchMessages = async () => {
   try {
