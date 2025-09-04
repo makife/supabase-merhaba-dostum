@@ -111,39 +111,31 @@ const fetchAllUsers = async () => {
 const fetchUnreadCounts = async () => {
   if (!user) return;
   try {
-    console.log('=== DEBUG: fetchUnreadCounts başladı ===');
-    
-    // SADECE doğru recipient_id ile
+    // DÜZELTME: Doğru sorgu
     const { data: unreadMessages, error } = await supabase
       .from('private_messages')
-      .select('sender_id')
-      .eq('recipient_id', user.id) // ✅ SADECE bu kullanıcı
+      .select('sender_id, chat_id')
+      .neq('sender_id', user.id) // Kendi mesajlarını sayma
       .eq('is_read', false);
 
     if (error) {
       console.error('Unread count fetch error:', error);
-      setUnreadCounts({});
       return;
     }
 
-    // DEBUG: Tüm okunmamış mesajları göster
-    console.log('🔍 All unread messages for counts:', unreadMessages);
-
     const counts: {[key: string]: number} = {};
     unreadMessages?.forEach((msg) => {
-      const senderId = msg.sender_id;
-      // Sadece geçerli sender_id'leri say (null/undefined değilse)
-      if (senderId) {
-        counts[senderId] = (counts[senderId] || 0) + 1;
+      // Chat ID'den diğer kullanıcıyı bul
+      const chatParts = msg.chat_id.split('_');
+      const otherUserId = chatParts.find(part => part !== user.id && part !== 'chat');
+      if (otherUserId) {
+        counts[otherUserId] = (counts[otherUserId] || 0) + 1;
       }
     });
 
-    console.log('=== DEBUG: Unread counts updated ===', counts);
     setUnreadCounts(counts);
-    
   } catch (error) {
     console.error('Error with unread counts:', error);
-    setUnreadCounts({});
   }
 };
 
@@ -226,36 +218,39 @@ const deletePrivateChat = async (otherUserId: string) => {
   if (!user) return;
   
   try {
-    // Önce bu iki kullanıcı arasındaki TÜM mesajları bul
-    const { data: messagesToDelete } = await supabase
+    // Önce chat ID'sini oluştur
+    const participants = [user.id, otherUserId].sort();
+    const chatId = `chat_${participants.join('_')}`;
+    
+    // 1. Tüm mesajları sil
+    const { error: deleteMessagesError } = await supabase
       .from('private_messages')
-      .select('id')
-      .or(`and(sender_id.eq.${user.id},recipient_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},recipient_id.eq.${user.id}),and(sender_id.eq.${user.id},recipient_id.is.null),and(sender_id.eq.${otherUserId},recipient_id.is.null)`);
+      .delete()
+      .eq('chat_id', chatId);
     
-    // ID'leri al
-    const messageIds = messagesToDelete?.map(msg => msg.id) || [];
-    
-    if (messageIds.length > 0) {
-      // ID'ler ile sil
-      await supabase
-        .from('private_messages')
-        .delete()
-        .in('id', messageIds);
+    if (deleteMessagesError) {
+      console.error('Mesaj silme hatası:', deleteMessagesError);
     }
     
-    // Chat'leri de sil (her ihtimale karşı)
-    await supabase
+    // 2. Chat'i sil
+    const { error: deleteChatError } = await supabase
       .from('private_chats')
       .delete()
-      .or(`and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`);
+      .eq('id', chatId);
     
-    // Local state güncelle
+    if (deleteChatError) {
+      console.error('Chat silme hatası:', deleteChatError);
+    }
+    
+    // 3. Local state'i güncelle
     setAllUsers(prev => prev.filter(u => u.id !== otherUserId));
     setUnreadCounts(prev => {
       const updated = { ...prev };
       delete updated[otherUserId];
       return updated;
     });
+    
+    console.log('✅ Chat başarıyla silindi:', chatId);
     
   } catch (error) {
     console.error('Error deleting chat:', error);
