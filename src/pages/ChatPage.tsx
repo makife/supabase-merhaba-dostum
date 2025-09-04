@@ -165,41 +165,6 @@ useEffect(() => {
 
 
 
-useEffect(() => {
-  const markChatMessagesAsRead = async () => {
-    if (!activeChatId || !user?.id) return;
-
-    try {
-      console.log('📖 Marking chat messages as read:', activeChatId);
-      
-      const { error } = await supabase
-        .from('private_messages')
-        .update({ is_read: true })
-        .eq('chat_id', activeChatId)
-        .eq('recipient_id', user.id) // ✅ Artık doğru kullanıcı
-        .eq('is_read', false);
-
-      if (error) {
-        console.error('Error marking chat messages as read:', error);
-      } else {
-        console.log('✅ Chat messages marked as read:', activeChatId);
-        
-        // Hemen güncelle
-        if (refreshUnreadCounts) {
-          refreshUnreadCounts();
-        }
-        fetchUnreadCounts();
-      }
-    } catch (error) {
-      console.error('Error marking chat messages:', error);
-    }
-  };
-
-  if (viewMode === 'private-chat' && activeChatId) {
-    markChatMessagesAsRead();
-  }
-}, [viewMode, activeChatId, user?.id, refreshUnreadCounts]);
-
   const handleBackToMenu = () => {
     playSound('buttonClick');
     navigate('/');
