@@ -141,47 +141,86 @@ useEffect(() => {
     }
   };
 
-  const startPrivateChat = async (targetUser: SelectedUser) => {
-    if (!user) return;
+useEffect(() => {
+  if (viewMode === 'users') {
+    fetchAllUsers();
+    fetchUnreadCounts();
+  }
+}, [viewMode, user, unreadCount]);
 
-    try {
-      playSound('buttonClick');
-      
-      // Create or find existing chat
-      const participants = [user.id, targetUser.id].sort();
-      const chatId = `chat_${participants.join('_')}`;
+ const startPrivateChat = async (targetUser: SelectedUser) => {
+  if (!user) return;
 
-      // Check if chat already exists
-      const { data: existingChat, error: chatError } = await supabase
-        .from('private_chats')
-        .select('*')
-        .eq('id', chatId)
-        .single();
+  try {
+    playSound('buttonClick');
+    
+    const participants = [user.id, targetUser.id].sort();
+    const chatId = `chat_${participants.join('_')}`;
 
-      if (chatError && chatError.code !== 'PGRST116') {
-        throw chatError;
-      }
+    const { data: existingChat, error: chatError } = await supabase
+      .from('private_chats')
+      .select('*')
+      .eq('id', chatId)
+      .single();
 
-      // Create chat if it doesn't exist
-      if (!existingChat) {
-        const { error: createError } = await supabase
-          .from('private_chats')
-          .insert({
-            id: chatId,
-            user1_id: participants[0],
-            user2_id: participants[1]
-          });
-
-        if (createError) throw createError;
-      }
-
-      setSelectedUser(targetUser);
-      setActiveChatId(chatId);
-      setViewMode('private-chat');
-    } catch (error) {
-      console.error('Error starting private chat:', error);
+    if (chatError && chatError.code !== 'PGRST116') {
+      throw chatError;
     }
+
+    if (!existingChat) {
+      const { error: createError } = await supabase
+        .from('private_chats')
+        .insert({
+          id: chatId,
+          user1_id: participants[0],
+          user2_id: participants[1]
+        });
+
+      if (createError) throw createError;
+    }
+
+    setSelectedUser(targetUser);
+    setActiveChatId(chatId);
+    setViewMode('private-chat');
+    
+    // YENİ MESAJ SONRASI KULLANICI LİSTESİNİ GÜNCELLE
+    setTimeout(() => {
+      fetchAllUsers();
+      fetchUnreadCounts();
+    }, 1000);
+    
+  } catch (error) {
+    console.error('Error starting private chat:', error);
+  }
+};
+
+useEffect(() => {
+  if (!user?.id) return;
+
+  const channel = supabase
+    .channel('private-messages-updates')
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'private_messages',
+        filter: `or(sender_id.eq.${user.id},recipient_id.eq.${user.id})`
+      },
+      () => {
+        // Yeni mesaj geldiğinde kullanıcı listesini güncelle
+        if (viewMode === 'users') {
+          fetchAllUsers();
+          fetchUnreadCounts();
+        }
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
   };
+}, [user?.id, viewMode]);
 
   // Özel sohbeti sil
 const deletePrivateChat = async (otherUserId: string) => {
