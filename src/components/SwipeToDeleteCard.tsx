@@ -59,22 +59,23 @@ export function SwipeToDeleteCard({
     setTimeout(resetAnimation, 10);
   };
 
-  // Mouse Events - Düzeltilmiş versiyon
+  // Mouse Events - State dependency olmadan
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     setIsDragging(true);
-    setStartX(e.clientX);
+    
+    const mouseStartX = e.clientX;
+    let currentDragX = 0;
 
-    // Global mouse event'leri ekle
     const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging) return;
-      
       const currentX = e.clientX;
-      const diffX = startX - currentX;
+      const diffX = mouseStartX - currentX;
       
       if (diffX > 0) {
-        setDragX(Math.min(diffX, 120));
+        currentDragX = Math.min(diffX, 120);
+        setDragX(currentDragX);
       } else {
+        currentDragX = 0;
         setDragX(0);
       }
     };
@@ -82,7 +83,7 @@ export function SwipeToDeleteCard({
     const handleMouseUp = () => {
       setIsDragging(false);
       
-      if (dragX > 60) {
+      if (currentDragX > 60) {
         onDelete();
       } else {
         setTimeout(() => setDragX(0), 10);
