@@ -97,42 +97,38 @@ useEffect(() => {
 const setupRealtimeSubscription = () => {
   console.log('🔄 Setting up GLOBAL real-time subscription');
 
-  const channel = supabase
-    .channel('global-chat-realtime')
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'global_chat',
-      },
-      async (payload) => {
-        console.log('📨 Yeni global mesaj:', payload);
-        const newMessage = payload.new as any;
-        
-        // Mesajı hemen state'e ekle
-        setMessages(prev => {
-          const alreadyExists = prev.some(msg => msg.id === newMessage.id);
-          if (alreadyExists) return prev;
-          
-          return [...prev, {
-            id: newMessage.id,
-            user_id: newMessage.user_id,
-            username: newMessage.username,
-            message: newMessage.message,
-            created_at: newMessage.created_at,
-            avatar_url: newMessage.avatar_url
-          }].sort((a, b) => 
-            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-          );
-        });
-        
-        playSound('correctWord');
-      }
-    )
-    .subscribe();
+  try {
+    const channel = supabase
+      .channel('global-chat-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'global_chat',
+        },
+        async (payload) => {
+          // ... mevcut kod
+        }
+      )
+      .subscribe((status) => {
+        console.log('📡 Global real-time subscription status:', status);
+        if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Channel error, retrying in 5 seconds...');
+          // Daha uzun bekleme süresi
+          setTimeout(() => {
+            if (isOpen) {
+              setupRealtimeSubscription();
+            }
+          }, 5000);
+        }
+      });
 
-  return channel;
+    return channel;
+  } catch (error) {
+    console.error('Error setting up real-time subscription:', error);
+    return null;
+  }
 };
 
 // GlobalChat.tsx - fetchReactions fonksiyonu
@@ -285,107 +281,37 @@ useEffect(() => {
 useEffect(() => {
   if (!isOpen || !user?.id) return;
 
-  console.log('🔄 Setting up GLOBAL real-time subscription');
-
   const channel = supabase
-    .channel('global-chat-realtime', {
-      config: {
-        broadcast: { self: false }, // Kendi mesajlarımızı almayalım
-        presence: { key: user.id }
-      }
-    })
+    .channel('global-chat-realtime')
     .on(
       'postgres_changes',
       {
         event: 'INSERT',
         schema: 'public',
-        table: 'global_chat',
-      },
-      async (payload) => {
-        console.log('📨 REAL-TIME GLOBAL MESSAGE:', payload);
-        const newMessage = payload.new as any;
-        
-
-        // Kullanıcı bilgilerini al (eğer yoksa)
-        let username = newMessage.username || 'Anonim';
-        let avatar_url = newMessage.avatar_url || null;
-
-        // Eğer username yoksa profilden çek
-        if (!newMessage.username || newMessage.username === 'Anonim') {
-          try {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('username, avatar_url')
-              .eq('id', newMessage.user_id)
-              .single();
-            
-            if (profile) {
-              username = profile.username;
-              avatar_url = profile.avatar_url;
-            }
-          } catch (error) {
-            console.warn('Could not fetch user profile:', error);
-          }
-        }
-
-        // Mesajı state'e ekle (duplicate kontrolü ile)
-        setMessages(prev => {
-          const alreadyExists = prev.some(msg => msg.id === newMessage.id);
-          if (alreadyExists) {
-            console.log('⚠️ Message already exists, skipping');
-            return prev;
-          }
-
-          console.log('✅ Adding new message to state');
-          const formattedMessage = {
-            id: newMessage.id,
-            user_id: newMessage.user_id,
-            username: username,
-            message: newMessage.message || newMessage.content || '',
-            created_at: newMessage.created_at,
-            avatar_url: avatar_url
-          };
-
-          return [...prev, formattedMessage].sort((a, b) => 
-            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-          );
-        });
-
-        // Ses çal
-        try {
-          playSound('correctWord');
-        } catch (e) {
-          console.log('🔇 Sound play failed:', e);
-        }
-      }
-    )
-    .on(
-      'postgres_changes',
-      {
-        event: 'DELETE',
-        schema: 'public',
-        table: 'global_chat',
+        table: 'global_chat'
       },
       (payload) => {
-        const deletedMessage = payload.old as any;
-        setMessages(prev => prev.filter(m => m.id !== deletedMessage.id));
-        console.log('🗑️ Message deleted:', deletedMessage.id);
+        const newMessage = payload.new;
+        console.log('🌍 New global message:', newMessage);
+        
+        // Optimistic update - hemen ekle
+        setMessages(prev => {
+          const exists = prev.some(msg => msg.id === newMessage.id);
+          if (exists) return prev;
+          return [...prev, newMessage];
+        });
+        
+        playSound('correctWord');
       }
     )
     .subscribe((status) => {
-      console.log('📡 Global real-time subscription status:', status);
-      if (status === 'SUBSCRIBED') {
-        console.log('✅ Successfully subscribed to global chat');
-      } else if (status === 'CHANNEL_ERROR') {
-        console.error('❌ Channel subscription error');
-      }
+      console.log('📡 Global chat status:', status);
     });
 
   return () => {
-    console.log('🧹 Cleaning up global real-time channel');
     supabase.removeChannel(channel);
   };
-}, [isOpen, user?.id, playSound]);
+}, [isOpen, user?.id]);
 
  const fetchMessages = async () => {
   try {
