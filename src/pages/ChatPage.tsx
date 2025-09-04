@@ -291,32 +291,38 @@ useEffect(() => {
 
   // Özel sohbeti sil
   const deletePrivateChat = async (otherUserId: string) => {
-    if (!user) return;
+  if (!user) return;
+  
+  try {
+    const participants = [user.id, otherUserId].sort();
+    const chatId = `chat_${participants.join('_')}`;
     
-    try {
-      const participants = [user.id, otherUserId].sort();
-      const chatId = `chat_${participants.join('_')}`;
-      
-      // Mesajları sil
-      await supabase
-        .from('private_messages')
-        .delete()
-        .eq('chat_id', chatId);
-      
-      // Chat'i sil
-      await supabase
-        .from('private_chats')
-        .delete()
-        .eq('id', chatId);
-      
-      // Listeyi güncelle
-      fetchAllUsers();
-      fetchUnreadCounts();
-      
-    } catch (error) {
-      console.error('Error deleting chat:', error);
-    }
-  };
+    // Mesajları sil
+    await supabase
+      .from('private_messages')
+      .delete()
+      .eq('chat_id', chatId);
+    
+    // Chat'i sil
+    await supabase
+      .from('private_chats')
+      .delete()
+      .eq('id', chatId);
+    
+    // Local state'den kullanıcıyı kaldır (tekrar fetch etme)
+    setAllUsers(prev => prev.filter(u => u.id !== otherUserId));
+    
+    // Unread count'ları güncelle
+    setUnreadCounts(prev => {
+      const updated = { ...prev };
+      delete updated[otherUserId];
+      return updated;
+    });
+    
+  } catch (error) {
+    console.error('Error deleting chat:', error);
+  }
+};
 
 // ChatPage.tsx - renderUsersList fonksiyonunu güncelle
 const renderUsersList = () => {
