@@ -44,37 +44,28 @@ export default function ChatPage() {
   // Fetch all users for private chat
 const fetchAllUsers = async () => {
   try {
-    const { data: allUsersData, error: usersError } = await supabase
-      .from('profiles')
-      .select('id, username, email, avatar_url')
-      .neq('id', user?.id)
-      .order('username', { ascending: true });
-
-    if (usersError) {
-      console.error('Users fetch error:', usersError);
-      return;
-    }
-
-    // SADECE MESAJ GEÇMİŞİ OLAN KULLANICILARI GÖSTER
-    const { data: chatHistoryData } = await supabase
+    // SADECE MESAJLAŞILAN KULLANICILARI GETİR
+    const { data: messages } = await supabase
       .from('private_messages')
       .select('sender_id, recipient_id')
       .or(`sender_id.eq.${user?.id},recipient_id.eq.${user?.id}`);
 
-    const chatUserIds = new Set<string>();
-    chatHistoryData?.forEach(msg => {
-      if (msg.sender_id !== user?.id) chatUserIds.add(msg.sender_id);
-      if (msg.recipient_id !== user?.id) chatUserIds.add(msg.recipient_id);
+    const userIDs = new Set<string>();
+    messages?.forEach(msg => {
+      if (msg.sender_id !== user?.id) userIDs.add(msg.sender_id);
+      if (msg.recipient_id !== user?.id) userIDs.add(msg.recipient_id);
     });
 
-    // SADECE MESAJLAŞTIĞIN KULLANICILARI GÖSTER
-    const usersWithChatHistory = allUsersData?.filter(user => 
-      chatUserIds.has(user.id)
-    ) || [];
+    // BU KULLANICILARIN PROFİLLERİNİ GETİR
+    const { data: users } = await supabase
+      .from('profiles')
+      .select('id, username, avatar_url')
+      .in('id', Array.from(userIDs));
 
-    setAllUsers(usersWithChatHistory);
+    setAllUsers(users || []);
+
   } catch (error) {
-    console.error('Error fetching users:', error);
+    console.error('Kullanıcılar getirilemedi:', error);
   }
 };
 
@@ -199,30 +190,30 @@ const deletePrivateChat = async (otherUserId: string) => {
   try {
     const chatId = `chat_${[user.id, otherUserId].sort().join('_')}`;
     
-    // 1. SADECE MESAJLARI SİL (CHAT'I SİLME)
-    const { error: deleteError } = await supabase
+    // 1. ÖNCE MESAJLARI SİL
+    const { error: messageError } = await supabase
       .from('private_messages')
       .delete()
       .eq('chat_id', chatId);
 
-    if (deleteError) {
-      console.error('Message delete error:', deleteError);
-    }
+    // 2. SONRA CHAT'İ SİL  
+    const { error: chatError } = await supabase
+      .from('private_chats')
+      .delete()
+      .eq('id', chatId);
 
-    // 2. KULLANICIYI LOCAL STATE'DEN KALDIR
+    // 3. LOCAL STATE'DEN DE SİL
     setAllUsers(prev => prev.filter(u => u.id !== otherUserId));
-    
-    // 3. UNREAD COUNT'U SIFIRLA
     setUnreadCounts(prev => {
       const updated = { ...prev };
       delete updated[otherUserId];
       return updated;
     });
-    
-    console.log('✅ Mesajlar silindi, kullanıcı listeden kaldırıldı');
-    
+
+    console.log('✅ Database ve localden silindi');
+
   } catch (error) {
-    console.error('Error deleting chat:', error);
+    console.error('Silinemedi:', error);
   }
 };
 
