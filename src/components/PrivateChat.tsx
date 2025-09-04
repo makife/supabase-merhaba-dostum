@@ -4,7 +4,35 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useSounds } from '@/hooks/useSounds';
-// ... diğer importlar
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Send, ArrowLeft } from 'lucide-react';
+import { UserAvatar } from '@/components/UserAvatar';
+import { toast } from 'sonner';
+import { useChatNotifications } from '@/hooks/useChatNotifications';
+
+interface PrivateMessage {
+  id: string;
+  chat_id: string;
+  sender_id: string;
+  message: string;
+  created_at: string;
+  is_read: boolean;
+  recipient_id?: string;
+}
+
+interface PrivateChatProps {
+  chatId: string;
+  otherUser: {
+    id: string;
+    username: string;
+    avatar_url?: string;
+  };
+  onBack: () => void;
+}
 
 export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
   const { user } = useAuth();
