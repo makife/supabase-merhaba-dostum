@@ -194,6 +194,22 @@ useEffect(() => {
     if (!user?.id || !isOpen) return;
     
     try {
+      // Son bot mesajı zamanını kontrol et
+      const lastBotMessageKey = `lastBotMessage_${user.id}`;
+      const lastBotTime = localStorage.getItem(lastBotMessageKey);
+      const now = Date.now();
+      const thirtyMinutes = 30 * 60 * 1000; // 30 dakika milisaniye cinsinden
+      
+      // Eğer 30 dakika geçmemişse bot mesajı gönderme
+      if (lastBotTime) {
+        const timeDiff = now - parseInt(lastBotTime);
+        if (timeDiff < thirtyMinutes) {
+          const remainingMinutes = Math.ceil((thirtyMinutes - timeDiff) / 60000);
+          console.log(`🤖 Bot mesajı için ${remainingMinutes} dakika daha beklenmeli`);
+          return;
+        }
+      }
+      
       console.log('🤖 Bot hoşgeldin mesajı gönderiliyor...');
       
       const { error } = await supabase
@@ -209,14 +225,16 @@ useEffect(() => {
         console.error('❌ Bot mesajı gönderilemedi:', error);
       } else {
         console.log('✅ Bot hoşgeldin mesajı gönderildi!');
+        // Son bot mesajı zamanını kaydet
+        localStorage.setItem(lastBotMessageKey, now.toString());
       }
     } catch (error) {
       console.error('❌ Bot kontrolü hatası:', error);
     }
   };
 
-  // Her chat sayfası açılışında bot mesajı gönder
-  if (isOpen) {
+  // Chat açıldığında bot mesajı kontrolü yap
+  if (isOpen && user?.id) {
     setTimeout(() => {
       sendBotWelcome();
     }, 1000); // 1 saniye gecikme ile
