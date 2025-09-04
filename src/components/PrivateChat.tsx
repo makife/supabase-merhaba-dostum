@@ -77,12 +77,7 @@ useEffect(() => {
       async (payload) => {
         console.log('📨 REAL-TIME PRIVATE MESSAGE:', payload);
         const newMsg = payload.new as any;
-        
-        // Kendi mesajımızı ignore et
-        if (newMsg.sender_id === user.id) {
-          console.log('⏭️ Skipping own private message');
-          return;
-        }
+      
 
         // Kullanıcı bilgilerini al
         let username = 'Bilinmeyen';
