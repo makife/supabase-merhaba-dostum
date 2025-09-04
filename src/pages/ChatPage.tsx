@@ -154,13 +154,6 @@ useEffect(() => {
     }
   };
 
-useEffect(() => {
-  if (viewMode === 'users') {
-    fetchAllUsers();
-    fetchUnreadCounts();
-  }
-}, [viewMode, user, unreadCount]);
-
 const startPrivateChat = async (targetUser: SelectedUser) => {
   if (!user) return;
 
@@ -207,10 +200,10 @@ const startPrivateChat = async (targetUser: SelectedUser) => {
 useEffect(() => {
   if (!user?.id) return;
 
-  console.log('🔄 Setting up private messages real-time subscription');
+  console.log('🔄 Setting up ChatPage private messages real-time subscription');
 
   const channel = supabase
-    .channel('private-messages-updates', {
+    .channel('chatpage-private-messages', {  // Farklı channel adı
       config: {
         broadcast: { self: true },
       }
@@ -223,34 +216,32 @@ useEffect(() => {
         table: 'private_messages'
       },
       (payload) => {
-        console.log('📨 New private message detected:', payload.new);
+        console.log('📨 ChatPage: New private message detected:', payload.new);
         
         const newMessage = payload.new as any;
         
         // Bu kullanıcı ile ilgili mesaj mı kontrol et
         if (newMessage.sender_id === user.id || newMessage.recipient_id === user.id) {
-          console.log('✅ Message belongs to current user, updating lists');
+          console.log('✅ ChatPage: Message belongs to current user, updating lists');
           
-          // Sadece users view'dayken güncelle
-          if (viewMode === 'users') {
-            setTimeout(() => {
-              console.log('🔄 Refreshing user list after new message');
-              fetchAllUsers();
-              fetchUnreadCounts();
-            }, 500);
-          }
+          // Her zaman güncelle (viewMode'a bakmadan)
+          setTimeout(() => {
+            console.log('🔄 ChatPage: Refreshing user list after new message');
+            fetchAllUsers();
+            fetchUnreadCounts();
+          }, 1000); // 1 saniye bekle
         }
       }
     )
     .subscribe((status) => {
-      console.log('📡 Private messages subscription status:', status);
+      console.log('📡 ChatPage: Private messages subscription status:', status);
     });
 
   return () => {
-    console.log('🧹 Cleaning up private messages subscription');
+    console.log('🧹 ChatPage: Cleaning up private messages subscription');
     supabase.removeChannel(channel);
   };
-}, [user?.id, viewMode]);
+}, [user?.id]);
 
   // Özel sohbeti sil
 const deletePrivateChat = async (otherUserId: string) => {
