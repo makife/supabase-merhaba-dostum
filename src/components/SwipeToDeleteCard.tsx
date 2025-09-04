@@ -132,16 +132,22 @@ export function SwipeToDeleteCard({
       {/* Silme butonu - sağda gizli */}
       <div 
         className={cn(
-          'absolute right-0 top-0 h-full bg-red-500 flex items-center justify-center transition-all duration-200',
+          'absolute right-0 top-0 h-full bg-red-500 flex items-center justify-center transition-all duration-200 cursor-pointer',
           dragX > 0 ? 'w-20' : 'w-0'
         )}
         style={{
-          transform: `translateX(${Math.max(0, 120 - dragX)}px)`,
+          transform: `translateX(${dragX > 0 ? 0 : '100%'})`,
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (dragX > 30) {
+            onDelete();
+          }
         }}
       >
         <Trash2 
           className={cn(
-            'text-white transition-opacity duration-200',
+            'text-white transition-opacity duration-200 pointer-events-none',
             dragX > 30 ? 'opacity-100' : 'opacity-0'
           )}
           size={20}
