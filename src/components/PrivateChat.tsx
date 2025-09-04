@@ -1,36 +1,10 @@
+// PrivateChat.tsx - Real-time düzeltmeleri
+
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useSounds } from '@/hooks/useSounds';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Card } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Send, ArrowLeft } from 'lucide-react';
-import { UserAvatar } from '@/components/UserAvatar';
-import { toast } from 'sonner';
-import { useChatNotifications } from '@/hooks/useChatNotifications';
-
-interface PrivateMessage {
-  id: string;
-  chat_id: string;
-  sender_id: string;
-  message: string;
-  created_at: string;
-  is_read: boolean;
-  recipient_id?: string;
-}
-
-interface PrivateChatProps {
-  chatId: string;
-  otherUser: {
-    id: string;
-    username: string;
-    avatar_url?: string;
-  };
-  onBack: () => void;
-}
+// ... diğer importlar
 
 export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
   const { user } = useAuth();
@@ -51,6 +25,8 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
 
   const fetchMessages = async () => {
     try {
+      console.log('📥 Fetching private messages for chatId:', chatId);
+      
       const { data, error } = await supabase
         .from('private_messages')
         .select('*')
@@ -58,19 +34,56 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
+      
       setMessages(data || []);
+      console.log(`✅ Loaded ${data?.length || 0} private messages`);
+      
+      // Mesajları okundu olarak işaretle
+      await markMessagesAsRead();
     } catch (error) {
-      console.error('Error fetching messages:', error);
+      console.error('❌ Error fetching private messages:', error);
     }
   };
 
-  useEffect(() => {
-    if (!chatId) return;
+  const markMessagesAsRead = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const { error } = await supabase
+        .from('private_messages')
+        .update({ is_read: true })
+        .eq('chat_id', chatId)
+        .eq('recipient_id', user.id)
+        .eq('is_read', false);
 
+      if (error) {
+        console.error('Error marking messages as read:', error);
+      } else {
+        refreshUnreadCounts();
+      }
+    } catch (error) {
+      console.error('Error in markMessagesAsRead:', error);
+    }
+  };
+
+  // TEK BİR REAL-TIME SUBSCRIPTION
+  useEffect(() => {
+    if (!chatId || !user?.id) return;
+
+    console.log('🔄 Setting up Private Chat real-time subscription for:', chatId);
+
+    // İlk mesajları yükle
     fetchMessages();
 
+    // Real-time subscription kur - DAHA KISA CHANNEL ADI
+    const channelName = `private-${chatId.replace('chat_', '').substring(0, 20)}`; // Kısalt
+    
     const channel = supabase
-      .channel(`private-chat-${chatId}`)
+      .channel(channelName, {
+        config: {
+          broadcast: { self: false },
+        }
+      })
       .on(
         'postgres_changes',
         {
@@ -79,42 +92,130 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
           table: 'private_messages',
           filter: `chat_id=eq.${chatId}`
         },
-        fetchMessages
+        (payload) => {
+          console.log('📨 New private message received:', payload.new);
+          
+          const newMessage = payload.new as PrivateMessage;
+          
+          setMessages(prev => {
+            // Duplicate kontrolü
+            const exists = prev.some(msg => msg.id === newMessage.id);
+            if (exists) {
+              console.log('⚠️ Private message already exists, skipping');
+              return prev;
+            }
+            
+            console.log('✅ Adding new private message to state');
+            return [...prev, newMessage].sort((a, b) => 
+              new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+            );
+          });
+          
+          // Sadece başkalarından gelen mesajlar için ses çal
+          if (newMessage.sender_id !== user?.id) {
+            playSound('correctWord');
+            // Mesajı okundu olarak işaretle
+            setTimeout(markMessagesAsRead, 1000);
+          }
+          
+          // Unread count'u güncelle
+          refreshUnreadCounts();
+        }
       )
-      .subscribe();
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'private_messages',
+          filter: `chat_id=eq.${chatId}`
+        },
+        (payload) => {
+          console.log('📝 Private message updated:', payload.new);
+          
+          setMessages(prev => prev.map(msg => 
+            msg.id === payload.new.id 
+              ? { ...msg, ...payload.new } 
+              : msg
+          ));
+        }
+      )
+      .subscribe((status) => {
+        console.log('📡 Private subscription status:', status);
+        
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Private chat subscription active');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Private channel error detected');
+        }
+      });
 
     return () => {
+      console.log('🧹 Cleaning up private real-time channel');
       supabase.removeChannel(channel);
     };
-  }, [chatId]);
+  }, [chatId, user?.id]);
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !user || !chatId) return;
 
     const trimmedMessage = newMessage.trim();
+    
+    // Chat ID'den other user ID'yi çıkar
+    const otherUserId = chatId.replace('chat_', '')
+      .split('_')
+      .find(id => id !== user.id) || otherUser.id;
+
+    // OPTIMISTIC UPDATE - Mesajı hemen göster
+    const tempMessage: PrivateMessage = {
+      id: `temp-${Date.now()}`,
+      chat_id: chatId,
+      sender_id: user.id,
+      recipient_id: otherUserId,
+      message: trimmedMessage,
+      created_at: new Date().toISOString(),
+      is_read: false
+    };
+
+    setMessages(prev => [...prev, tempMessage]);
     setNewMessage('');
     setIsLoading(true);
     
     try {
-      const otherUserId = chatId.includes(user.id) 
-        ? chatId.replace(`chat_${user.id}_`, '').replace(`${user.id}_chat_`, '')
-        : otherUser.id;
-
-      const { error } = await supabase
+      console.log('📤 Sending private message...');
+      
+      const { data: insertData, error } = await supabase
         .from('private_messages')
         .insert({
           chat_id: chatId,
           sender_id: user.id,
           recipient_id: otherUserId,
           message: trimmedMessage
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
       
+      console.log('✅ Private message sent successfully');
+
+      // Temp mesajı gerçek mesajla değiştir
+      setMessages(prev => prev.map(msg => 
+        msg.id === tempMessage.id 
+          ? { ...insertData }
+          : msg
+      ));
+      
       playSound('buttonClick');
       refreshUnreadCounts();
+      
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('❌ Error sending private message:', error);
+      
+      // Hata durumunda temp mesajı kaldır
+      setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
+      setNewMessage(trimmedMessage); // Mesajı geri koy
+      
       toast.error('Mesaj gönderilirken hata oluştu');
     } finally {
       setIsLoading(false);
