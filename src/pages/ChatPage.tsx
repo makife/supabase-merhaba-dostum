@@ -44,28 +44,48 @@ export default function ChatPage() {
   // Fetch all users for private chat
 const fetchAllUsers = async () => {
   try {
+    console.log('🔍 DEBUG: fetchAllUsers başladı, user.id:', user?.id);
+    
     // SADECE MESAJLAŞILAN KULLANICILARI GETİR
-    const { data: messages } = await supabase
+    const { data: messages, error: messagesError } = await supabase
       .from('private_messages')
       .select('sender_id, recipient_id')
       .or(`sender_id.eq.${user?.id},recipient_id.eq.${user?.id}`);
 
+    console.log('🔍 DEBUG: Private messages query result:', { messages, messagesError });
+
+    if (messagesError) {
+      console.error('🔍 DEBUG: Messages query error:', messagesError);
+      return;
+    }
+
     const userIDs = new Set<string>();
     messages?.forEach(msg => {
+      console.log('🔍 DEBUG: Processing message:', msg);
       if (msg.sender_id !== user?.id) userIDs.add(msg.sender_id);
       if (msg.recipient_id !== user?.id) userIDs.add(msg.recipient_id);
     });
 
+    console.log('🔍 DEBUG: Unique user IDs found:', Array.from(userIDs));
+
+    if (userIDs.size === 0) {
+      console.log('🔍 DEBUG: No user IDs found, setting empty array');
+      setAllUsers([]);
+      return;
+    }
+
     // BU KULLANICILARIN PROFİLLERİNİ GETİR
-    const { data: users } = await supabase
+    const { data: users, error: usersError } = await supabase
       .from('profiles')
       .select('id, username, avatar_url')
       .in('id', Array.from(userIDs));
 
+    console.log('🔍 DEBUG: Users query result:', { users, usersError });
+
     setAllUsers(users || []);
 
   } catch (error) {
-    console.error('Kullanıcılar getirilemedi:', error);
+    console.error('🔍 DEBUG: fetchAllUsers error:', error);
   }
 };
 
@@ -112,19 +132,12 @@ const fetchUnreadCounts = async () => {
 
 // Fetch users when viewMode changes to users - mevcut useEffect'i güncelle
 useEffect(() => {
-  if (viewMode === 'users') {
+  if (viewMode === 'users' && user?.id) {
+    console.log('🔄 Users view activated, fetching data...');
     fetchAllUsers();
-    fetchUnreadCounts(); // Bu satırı ekle
-  }
-}, [viewMode, user]);
-
-// Ayrıca component mount olduğunda da çağır
-useEffect(() => {
-  if (user?.id) {
     fetchUnreadCounts();
   }
-}, [user?.id]);
-
+}, [viewMode, user?.id]);
 
 
   const handleBackToMenu = () => {
@@ -148,7 +161,7 @@ useEffect(() => {
   }
 }, [viewMode, user, unreadCount]);
 
- const startPrivateChat = async (targetUser: SelectedUser) => {
+const startPrivateChat = async (targetUser: SelectedUser) => {
   if (!user) return;
 
   try {
@@ -156,6 +169,8 @@ useEffect(() => {
     
     const participants = [user.id, targetUser.id].sort();
     const chatId = `chat_${participants.join('_')}`;
+
+    console.log('🚀 Starting private chat with:', targetUser.username, 'chatId:', chatId);
 
     const { data: existingChat, error: chatError } = await supabase
       .from('private_chats')
@@ -168,6 +183,7 @@ useEffect(() => {
     }
 
     if (!existingChat) {
+      console.log('📝 Creating new private chat record');
       const { error: createError } = await supabase
         .from('private_chats')
         .insert({
@@ -183,12 +199,6 @@ useEffect(() => {
     setActiveChatId(chatId);
     setViewMode('private-chat');
     
-    // YENİ MESAJ SONRASI KULLANICI LİSTESİNİ GÜNCELLE
-    setTimeout(() => {
-      fetchAllUsers();
-      fetchUnreadCounts();
-    }, 1000);
-    
   } catch (error) {
     console.error('Error starting private chat:', error);
   }
@@ -197,27 +207,47 @@ useEffect(() => {
 useEffect(() => {
   if (!user?.id) return;
 
+  console.log('🔄 Setting up private messages real-time subscription');
+
   const channel = supabase
-    .channel('private-messages-updates')
+    .channel('private-messages-updates', {
+      config: {
+        broadcast: { self: true },
+      }
+    })
     .on(
       'postgres_changes',
       {
         event: 'INSERT',
         schema: 'public',
-        table: 'private_messages',
-        filter: `or(sender_id.eq.${user.id},recipient_id.eq.${user.id})`
+        table: 'private_messages'
       },
-      () => {
-        // Yeni mesaj geldiğinde kullanıcı listesini güncelle
-        if (viewMode === 'users') {
-          fetchAllUsers();
-          fetchUnreadCounts();
+      (payload) => {
+        console.log('📨 New private message detected:', payload.new);
+        
+        const newMessage = payload.new as any;
+        
+        // Bu kullanıcı ile ilgili mesaj mı kontrol et
+        if (newMessage.sender_id === user.id || newMessage.recipient_id === user.id) {
+          console.log('✅ Message belongs to current user, updating lists');
+          
+          // Sadece users view'dayken güncelle
+          if (viewMode === 'users') {
+            setTimeout(() => {
+              console.log('🔄 Refreshing user list after new message');
+              fetchAllUsers();
+              fetchUnreadCounts();
+            }, 500);
+          }
         }
       }
     )
-    .subscribe();
+    .subscribe((status) => {
+      console.log('📡 Private messages subscription status:', status);
+    });
 
   return () => {
+    console.log('🧹 Cleaning up private messages subscription');
     supabase.removeChannel(channel);
   };
 }, [user?.id, viewMode]);
