@@ -128,9 +128,6 @@ const handleJoinTournament = async (tournamentId: string) => {
   }
 };
 
-  if (loading) {
-    return <div>Yükleniyor...</div>;
-  }
 
 return (
   <div className="relative min-h-screen bg-gradient-to-br from-purple-900 to-blue-900 p-4">
