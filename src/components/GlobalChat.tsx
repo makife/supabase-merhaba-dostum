@@ -54,6 +54,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   const { user } = useAuth();
   const { profile, onlineUsers, isUserOnline } = useUser();
   const { playSound } = useSounds();
+  const { isUserBlocked, isBlockedByUser } = useUserBlocking();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -69,7 +70,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [allUsers, setAllUsers] = useState<SelectedUser[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { isUserBlocked, isBlockedByUser } = useUserBlocking();
+  
 
   // Scroll to bottom when new messages arrive
   const scrollToBottom = () => {
@@ -1007,3 +1008,4 @@ return (
     </Card>
   </div>
 );
+}
