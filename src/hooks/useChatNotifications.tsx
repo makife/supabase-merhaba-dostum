@@ -21,17 +21,14 @@ export function useChatNotifications() {
   const markPrivateMessagesAsRead = async () => {
     if (!user?.id) return;
     
-    try {
-      const { error } = await supabase
-        .from('private_messages')
-        .update({ is_read: true })
-        .eq('recipient_id', user.id)
-        .eq('is_read', false);
-      
-      if (error) throw error;
+    const { error } = await supabase
+      .from('private_messages')
+      .update({ is_read: true })
+      .eq('recipient_id', user.id)
+      .eq('is_read', false);
+    
+    if (!error) {
       setUnreadCount(0);
-    } catch (error) {
-      console.error('Error marking messages as read:', error);
     }
   };
 
@@ -39,13 +36,16 @@ export function useChatNotifications() {
     await markPrivateMessagesAsRead();
   };
 
+  const refreshUnreadCounts = async () => {
+    const count = await loadUnreadMessages();
+    setUnreadCount(count);
+  };
+
   useEffect(() => {
     if (!user?.id) return;
 
-    // İlk yükleme
-    loadUnreadMessages().then(count => setUnreadCount(count));
+    refreshUnreadCounts();
 
-    // REAL-TIME: Sadece INSERT'leri dinle
     const channel = supabase
       .channel('notifications-channel')
       .on(
@@ -56,17 +56,19 @@ export function useChatNotifications() {
           table: 'private_messages',
           filter: `recipient_id=eq.${user.id}`
         },
-        async () => {
-          const newCount = await loadUnreadMessages();
-          setUnreadCount(newCount);
-        }
+        refreshUnreadCounts
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id, loadUnreadMessages]);
+  }, [user?.id]);
 
-  return { unreadCount };
+  return { 
+    unreadCount, 
+    markAllAsRead,
+    markPrivateMessagesAsRead,
+    refreshUnreadCounts
+  };
 }
