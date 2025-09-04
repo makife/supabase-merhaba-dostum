@@ -165,39 +165,6 @@ useEffect(() => {
 
 
 
-    // viewMode 'users' olduğunda da özel mesaj bildirimlerini temizle
-  useEffect(() => {
-    if (viewMode === 'users' && user?.id) {
-      markPrivateMessagesAsRead();
-    }
-  }, [viewMode, user?.id]);
-
- useEffect(() => {
-    // Chat sayfası açıldığında özel mesaj bildirimlerini temizle
-    const markPrivateMessagesAsRead = async () => {
-      if (!user?.id) return;
-
-      try {
-        // Okunmamış özel mesajları okundu olarak işaretle
-        const { error } = await supabase
-          .from('private_messages')
-          .update({ is_read: true })
-          .eq('recipient_id', user.id) // recipient_id kullan
-          .eq('is_read', false);
-
-        if (error) {
-          console.error('Mesajlar okundu olarak işaretlenirken hata:', error);
-        } else {
-          console.log('✅ Özel mesajlar okundu olarak işaretlendi');
-        }
-      } catch (error) {
-        console.error('Error marking messages as read:', error);
-      }
-    };
-
-    markPrivateMessagesAsRead();
-  }, [user?.id]);
-
 useEffect(() => {
   const markChatMessagesAsRead = async () => {
     if (!activeChatId || !user?.id) return;
