@@ -62,10 +62,8 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
 useEffect(() => {
   if (!chatId || !user?.id) return;
 
-  console.log('🔄 Setting up PRIVATE real-time for chat:', chatId);
-
   const channel = supabase
-    .channel(`private-chat-${chatId}-realtime`)
+    .channel(`private-chat-${chatId}`)
     .on(
       'postgres_changes',
       {
@@ -74,93 +72,33 @@ useEffect(() => {
         table: 'private_messages',
         filter: `chat_id=eq.${chatId}`
       },
-      async (payload) => {
-        console.log('📨 REAL-TIME PRIVATE MESSAGE:', payload);
+      (payload) => {
         const newMsg = payload.new as any;
-      
-
-        // Kullanıcı bilgilerini al
-        let username = 'Bilinmeyen';
-        let avatar_url = null;
-
-        try {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('username, avatar_url')
-            .eq('id', newMsg.sender_id)
-            .single();
-
-          if (profile) {
-            username = profile.username;
-            avatar_url = profile.avatar_url;
-          }
-        } catch (error) {
-          console.warn('Could not fetch user profile for real-time message:', error);
-        }
-
-        // Mesajı state'e ekle
+        
+        // Hemen state'e ekle
         setMessages(prev => {
-          const alreadyExists = prev.some(msg => msg.id === newMsg.id);
-          if (alreadyExists) {
-            console.log('⚠️ Private message already exists, skipping');
-            return prev;
-          }
-
-          console.log('✅ Adding new private message to state');
+          const exists = prev.some(msg => msg.id === newMsg.id);
+          if (exists) return prev;
+          
           return [...prev, {
             id: newMsg.id,
             chat_id: newMsg.chat_id,
             sender_id: newMsg.sender_id,
             message: newMsg.message,
             created_at: newMsg.created_at,
-            is_read: newMsg.is_read,
-            username: username,
-            avatar_url: avatar_url
+            is_read: newMsg.is_read
           }];
         });
-
-        // Okundu olarak işaretle
-        try {
-          await supabase
-            .from('private_messages')
-            .update({ is_read: true })
-            .eq('id', newMsg.id)
-            .eq('chat_id', chatId);
-        } catch (error) {
-          console.warn('Could not mark message as read:', error);
-        }
-
+        
         playSound('correctWord');
       }
     )
-    
-    .on(
-      'postgres_changes',
-      {
-        event: 'DELETE',
-        schema: 'public', 
-        table: 'private_messages',
-        filter: `chat_id=eq.${chatId}`
-      },
-      (payload) => {
-        const deletedMessage = payload.old as any;
-        setMessages(prev => prev.filter(m => m.id !== deletedMessage.id));
-        console.log('🗑️ Private message deleted:', deletedMessage.id);
-      }
-    )
-    
-    .subscribe((status) => {
-      console.log('📡 Private chat real-time status:', status);
-      if (status === 'SUBSCRIBED') {
-        console.log('✅ Private chat real-time subscribed successfully');
-      }
-    });
+    .subscribe();
 
   return () => {
-    console.log('🧹 Cleaning up private chat real-time channel');
     supabase.removeChannel(channel);
   };
-}, [chatId, user?.id, playSound]);
+}, [chatId, user?.id]);
 
   // PrivateChat.tsx - Mesajları okundu olarak işaretle
 useEffect(() => {
