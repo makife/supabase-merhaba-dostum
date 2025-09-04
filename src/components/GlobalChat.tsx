@@ -810,17 +810,7 @@ const renderGlobalChat = () => (
     {/* Messages */}
     <ScrollArea className="flex-1 p-4 bg-chat-50">
       <div className="space-y-3">
-        {messages
-          .filter(message => {
-            // Engellenmiş kullanıcıların mesajlarını filtrele
-            if (message.user_id && message.username !== 'kelimeciBot') {
-              if (isUserBlocked(message.user_id) || isBlockedByUser(message.user_id)) {
-                return false;
-              }
-            }
-            return true;
-          })
-          .map((message) => (
+        {messages.map((message) => (
           <div key={message.id} className="group flex flex-col space-y-1 p-3 rounded-lg bg-white shadow-sm border border-chat-100 hover:border-chat-300 transition-all">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
@@ -851,56 +841,23 @@ const renderGlobalChat = () => (
                   {formatTime(message.created_at)}
                 </span>
                 
-                {/* Butonlar grubu - sadece gerçek kullanıcılar için */}
-                {message.user_id && message.user_id !== user?.id && message.username !== 'kelimeciBot' && (
-                  <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {/* Private message button */}
-                    {onStartPrivateChat && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          onStartPrivateChat({
-                            id: message.user_id,
-                            username: message.username,
-                            avatar_url: userAvatars[message.user_id]
-                          });
-                        }}
-                        className="h-6 w-6 p-0 hover:bg-chat-100"
-                        title="Özel mesaj gönder"
-                      >
-                        <Mail className="w-3 h-3 text-chat-600" />
-                      </Button>
-                    )}
-                    
-                    {/* Block/Unblock button */}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        const isBlocked = isUserBlocked(message.user_id);
-                        if (isBlocked) {
-                          // Engeli kaldır
-                          if (confirm(`${message.username} kullanıcısının engelini kaldırmak istediğinizden emin misiniz?`)) {
-                            // unblockUser fonksiyonunu çağır (hook'tan gelecek)
-                          }
-                        } else {
-                          // Engelle
-                          if (confirm(`${message.username} kullanıcısını engellemek istediğinizden emin misiniz?`)) {
-                            // blockUser fonksiyonunu çağır (hook'tan gelecek)
-                          }
-                        }
-                      }}
-                      className={`h-6 w-6 p-0 hover:bg-chat-100 ${
-                        isUserBlocked(message.user_id) 
-                          ? 'text-green-600 hover:text-green-700' 
-                          : 'text-red-600 hover:text-red-700'
-                      }`}
-                      title={isUserBlocked(message.user_id) ? 'Engeli kaldır' : 'Kullanıcıyı engelle'}
-                    >
-                      <Shield className="w-3 h-3" />
-                    </Button>
-                  </div>
+                {/* Private message button - sadece gerçek kullanıcılar için */}
+                {message.user_id && message.user_id !== user?.id && message.username !== 'kelimeciBot' && onStartPrivateChat && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      onStartPrivateChat({
+                        id: message.user_id,
+                        username: message.username,
+                        avatar_url: userAvatars[message.user_id]
+                      });
+                    }}
+                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-chat-100"
+                    title="Özel mesaj gönder"
+                  >
+                    <Mail className="w-3 h-3 text-chat-600" />
+                  </Button>
                 )}
               </div>
               
@@ -990,22 +947,22 @@ const renderGlobalChat = () => (
   </>
 );
 
-if (!isOpen) return null;
+  if (!isOpen) return null;
 
-// If it's full page mode, don't wrap in modal
-if (isFullPage) {
+  // If it's full page mode, don't wrap in modal
+  if (isFullPage) {
+    return (
+      <div className="h-full w-full flex flex-col">
+        {renderGlobalChat()}
+      </div>
+    );
+  }
+
   return (
-    <div className="h-full w-full flex flex-col">
-      {renderGlobalChat()}
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md h-[600px] flex flex-col bg-background border-2 border-primary/20">
+        {renderContent()}
+      </Card>
     </div>
   );
-}
-
-return (
-  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <Card className="w-full max-w-md h-[600px] flex flex-col bg-background border-2 border-primary/20">
-      {renderContent()}
-    </Card>
-  </div>
-);
 }
