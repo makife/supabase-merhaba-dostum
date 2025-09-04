@@ -281,22 +281,10 @@ useEffect(() => {
 useEffect(() => {
   if (!isOpen) return;
 
-  // MESAJLARI ÇEK
-  const fetchMessages = async () => {
-    const { data } = await supabase
-      .from('global_chat')
-      .select('*')
-      .order('created_at', true)
-      .limit(100);
-    
-    setMessages(data || []);
-  };
-
   fetchMessages();
 
-  // REAL-TIME: Basitçe yeniden çek
   const channel = supabase
-    .channel('global-chat')
+    .channel('global-chat-realtime')
     .on(
       'postgres_changes',
       {
@@ -304,7 +292,7 @@ useEffect(() => {
         schema: 'public',
         table: 'global_chat'
       },
-      fetchMessages // Direkt yeniden çek
+      fetchMessages
     )
     .subscribe();
 
@@ -313,41 +301,14 @@ useEffect(() => {
   };
 }, [isOpen]);
 
- const fetchMessages = async () => {
-  try {
-    console.log('📝 Fetching messages from database...');
-    
-    const { data, error } = await supabase
-      .from('global_chat')
-      .select('*')
-      .order('created_at', { ascending: false }) // En yeni 100 mesajı al
-      .limit(100);
-
-    if (error) throw error;
-
-    console.log('📨 Raw messages from DB:', data);
-
-    // Mesajları formatla ve null user_id kontrolü ekle
-    const formattedData = data.map(msg => ({
-      id: msg.id,
-      user_id: msg.user_id || null, // null'ları açıkça belirt
-      username: msg.username || 'Anonim', 
-      message: msg.message || '',
-      created_at: msg.created_at,
-      avatar_url: msg.avatar_url || null
-    }));
-
-    console.log('✅ Formatted messages:', formattedData);
-    // Görüntülemede kronolojik sıra için tekrar sırala (eski -> yeni)
-    const sorted = [...formattedData].sort((a, b) =>
-      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-    );
-    setMessages(sorted);
-
-  } catch (error) {
-    console.error('❌ Error fetching messages:', error);
-    // Hata durumunda mevcut mesajları koru, temizleme
-  }
+const fetchMessages = async () => {
+  const { data } = await supabase
+    .from('global_chat')
+    .select('*')
+    .order('created_at', { ascending: true })
+    .limit(100);
+  
+  setMessages(data || []);
 };
 
 const sendMessage = async () => {
