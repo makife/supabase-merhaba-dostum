@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { GlobalChat } from '@/components/GlobalChat';
 import { PrivateChat } from '@/components/PrivateChat';
 import { UserAvatar } from '@/components/UserAvatar';
+import { SwipeToDeleteCard } from '@/components/SwipeToDeleteCard';
 import { useChatNotifications } from '@/hooks/useChatNotifications';
 
 type ViewMode = 'global' | 'users' | 'private-chat';
@@ -288,6 +289,35 @@ useEffect(() => {
     }
   };
 
+  // Özel sohbeti sil
+  const deletePrivateChat = async (otherUserId: string) => {
+    if (!user) return;
+    
+    try {
+      const participants = [user.id, otherUserId].sort();
+      const chatId = `chat_${participants.join('_')}`;
+      
+      // Mesajları sil
+      await supabase
+        .from('private_messages')
+        .delete()
+        .eq('chat_id', chatId);
+      
+      // Chat'i sil
+      await supabase
+        .from('private_chats')
+        .delete()
+        .eq('id', chatId);
+      
+      // Listeyi güncelle
+      fetchAllUsers();
+      fetchUnreadCounts();
+      
+    } catch (error) {
+      console.error('Error deleting chat:', error);
+    }
+  };
+
 // ChatPage.tsx - renderUsersList fonksiyonunu güncelle
 const renderUsersList = () => {
   console.log('=== DEBUG: renderUsersList ===');
@@ -311,8 +341,9 @@ const renderUsersList = () => {
             console.log(`Rendering user: ${targetUser.username}, unreadCount: ${unreadCount}, hasHistory: ${hasHistory}`);
             
             return (
-              <Card
+              <SwipeToDeleteCard
                 key={targetUser.id}
+                onDelete={() => deletePrivateChat(targetUser.id)}
                 className={`p-4 hover:shadow-md transition-all cursor-pointer border-2 ${
                   unreadCount > 0 
                     ? 'border-chat-500 bg-chat-50' 
@@ -336,7 +367,6 @@ const renderUsersList = () => {
                     <p className="font-medium text-gray-800 truncate">
                       {targetUser.username}
                     </p>
-                    <p className="text-xs text-blue-500">DEBUG: unread={unreadCount}, history={hasHistory ? 'yes' : 'no'}</p>
                     {unreadCount > 0 ? (
                       <p className="text-sm text-chat-600 font-semibold">
                         {unreadCount} okunmamış mesaj
@@ -359,7 +389,7 @@ const renderUsersList = () => {
                     <Mail className="w-5 h-5 text-chat-500" />
                   </div>
                 </div>
-              </Card>
+              </SwipeToDeleteCard>
             );
           })
         )}

@@ -13,13 +13,14 @@ export const BANNED_WORDS = [
   'sikti*r', 'sikti-r', 's i k t i r',
 ];
 
-// Kullanıcı yasaklı mı kontrol et
+// Kullanıcı yasaklı mı kontrol et - user_bans tablosunu kullan
 export const isUserBanned = async (userId: string): Promise<boolean> => {
   try {
     const { data, error } = await supabase
-      .from('banned_users')
+      .from('user_bans')
       .select('banned_until')
       .eq('user_id', userId)
+      .eq('is_active', true)
       .gt('banned_until', new Date().toISOString())
       .single();
 
@@ -29,7 +30,7 @@ export const isUserBanned = async (userId: string): Promise<boolean> => {
   }
 };
 
-// Kullanıcıyı yasakla
+// Kullanıcıyı yasakla - user_bans tablosunu kullan  
 export const banUser = async (
   userId: string, 
   reason: string, 
@@ -40,13 +41,22 @@ export const banUser = async (
     const bannedUntil = new Date();
     bannedUntil.setHours(bannedUntil.getHours() + durationHours);
 
+    // Önce eski aktif banları deaktive et
+    await supabase
+      .from('user_bans')
+      .update({ is_active: false })
+      .eq('user_id', userId)
+      .eq('is_active', true);
+
+    // Yeni ban ekle
     const { error } = await supabase
-      .from('banned_users')
+      .from('user_bans')
       .insert({
         user_id: userId,
         reason: reason,
         banned_until: bannedUntil.toISOString(),
-        banned_by: bannedBy
+        banned_by: userId, // Sistem banı
+        is_active: true
       });
 
     return !error;
@@ -84,9 +94,10 @@ export const containsBannedWords = (message: string): boolean => {
 export const getBanTimeLeft = async (userId: string): Promise<string> => {
   try {
     const { data, error } = await supabase
-      .from('banned_users')
+      .from('user_bans')
       .select('banned_until')
       .eq('user_id', userId)
+      .eq('is_active', true)
       .gt('banned_until', new Date().toISOString())
       .single();
 

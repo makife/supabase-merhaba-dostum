@@ -14,7 +14,7 @@ import { UserAvatar } from '@/components/UserAvatar';
 import { PrivateChat } from '@/components/PrivateChat';
 import { toast } from 'sonner';
 import { sendMentionNotification } from '@/utils/notifications';
-import { sendWelcomeMessage, containsBannedWords, banUser } from '@/utils/chatBot';
+import { isUserBanned, containsBannedWords, banUser, getBanTimeLeft } from '@/utils/chatBot';
 
 interface ChatMessage {
   id: string;
@@ -429,11 +429,27 @@ useEffect(() => {
 const sendMessage = async () => {
   if (!newMessage.trim() || !user || !profile) return;
 
-  // Ban kontrolü... (mevcut kod)
+  // Ban kontrolü
+  const isBanned = await isUserBanned(user.id);
+  if (isBanned) {
+    const timeLeft = await getBanTimeLeft(user.id);
+    toast.error(`Sohbet yasağınız var! Kalan süre: ${timeLeft}`);
+    return;
+  }
 
   const trimmedMessage = newMessage.trim();
   if (trimmedMessage.length > 200) {
     toast.error('Mesaj 200 karakterden uzun olamaz');
+    return;
+  }
+
+  // Yasaklı kelime kontrolü
+  if (containsBannedWords(trimmedMessage)) {
+    toast.error('Mesajınız yasaklı kelime içeriyor ve sohbet yasağı aldınız!');
+    
+    // Kullanıcıyı yasakla
+    await banUser(user.id, 'Yasaklı kelime kullanımı', 48);
+    setNewMessage('');
     return;
   }
 
@@ -456,61 +472,26 @@ const sendMessage = async () => {
 
   setIsLoading(true);
   try {
-    // Backend'e gönder
-    const { data: moderationResult, error } = await supabase
-      .rpc('moderate_and_insert_message', {
-        p_user_id: user.id,
-        p_username: username,
-        p_message: trimmedMessage,
-        p_avatar_url: profile.avatar_url
-      });
+    const { data: insertData, error: insertError } = await supabase
+      .from('global_chat')
+      .insert({
+        user_id: user.id,
+        username: username,
+        message: trimmedMessage,
+        avatar_url: profile.avatar_url
+      })
+      .select()
+      .single();
 
-    if (error) {
-      console.error('Moderation RPC hatası:', error);
-      // RPC fonksiyonu yoksa direkt ekle
-      const { data: insertData, error: insertError } = await supabase
-        .from('global_chat')
-        .insert({
-          user_id: user.id,
-          username: username,
-          message: trimmedMessage,
-          avatar_url: profile.avatar_url
-        })
-        .select()
-        .single();
+    if (insertError) throw insertError;
 
-      if (insertError) throw insertError;
-
-      // Başarılı - temp mesajı gerçek ID ile güncelle
-      setMessages(prev => prev.map(msg => 
-        msg.id === tempId ? {
-          ...tempMessage,
-          id: insertData.id
-        } : msg
-      ));
-    } else {
-      const result = moderationResult as any;
-      
-      if (!result?.success) {
-        // Mesaj reddedildi - temp mesajı kaldır
-        setMessages(prev => prev.filter(msg => msg.id !== tempId));
-        
-        if (result?.error === 'user_banned') {
-          toast.error('Sohbet yasağınız bulunmaktadır');
-        } else if (result?.moderated) {
-          toast.error('Mesajınız yasaklı içerik nedeniyle engellendi ve 2 gün yasaklandınız');
-        }
-        return;
-      }
-
-      // Başarılı - temp mesajı gerçek ID ile güncelle
-      setMessages(prev => prev.map(msg => 
-        msg.id === tempId ? {
-          ...tempMessage,
-          id: result.id
-        } : msg
-      ));
-    }
+    // Başarılı - temp mesajı gerçek ID ile güncelle
+    setMessages(prev => prev.map(msg => 
+      msg.id === tempId ? {
+        ...tempMessage,
+        id: insertData.id
+      } : msg
+    ));
 
     // MENTION KONTROLÜ
     const mentionRegex = /@(\w+)/g;
