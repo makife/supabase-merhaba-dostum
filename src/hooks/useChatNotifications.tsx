@@ -7,24 +7,15 @@ export function useChatNotifications() {
   const [unreadCount, setUnreadCount] = useState(0);
 
   const loadUnreadMessages = useCallback(async () => {
-    if (!user?.id) return;
+    if (!user?.id) return 0;
+    
+    const { count, error } = await supabase
+      .from('private_messages')
+      .select('*', { count: 'exact' })
+      .eq('recipient_id', user.id)
+      .eq('is_read', false);
 
-    try {
-      const { count, error } = await supabase
-        .from('private_messages')
-        .select('*', { count: 'exact' })
-        .eq('recipient_id', user.id)
-        .eq('is_read', false);
-
-      if (error) {
-        console.error('Unread count error:', error);
-        return;
-      }
-
-      setUnreadCount(count || 0);
-    } catch (error) {
-      console.error('Error loading unread messages:', error);
-    }
+    return count || 0;
   }, [user?.id]);
 
   const markPrivateMessagesAsRead = async () => {
@@ -51,10 +42,12 @@ export function useChatNotifications() {
   useEffect(() => {
     if (!user?.id) return;
 
-    loadUnreadMessages();
+    // İlk yükleme
+    loadUnreadMessages().then(count => setUnreadCount(count));
 
+    // REAL-TIME: Sadece INSERT'leri dinle
     const channel = supabase
-      .channel(`private-messages-notifications-${user.id}`)
+      .channel('notifications-channel')
       .on(
         'postgres_changes',
         {
@@ -63,24 +56,9 @@ export function useChatNotifications() {
           table: 'private_messages',
           filter: `recipient_id=eq.${user.id}`
         },
-        (payload) => {
-          if (payload.new.is_read === false) {
-            setUnreadCount(prev => prev + 1);
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public', 
-          table: 'private_messages',
-          filter: `recipient_id=eq.${user.id}`
-        },
-        (payload) => {
-          if (payload.new.is_read === true) {
-            setUnreadCount(prev => Math.max(0, prev - 1));
-          }
+        async () => {
+          const newCount = await loadUnreadMessages();
+          setUnreadCount(newCount);
         }
       )
       .subscribe();
@@ -90,10 +68,5 @@ export function useChatNotifications() {
     };
   }, [user?.id, loadUnreadMessages]);
 
-  return { 
-    unreadCount, 
-    refreshUnreadCounts: loadUnreadMessages,
-    markAllAsRead,
-    markPrivateMessagesAsRead
-  };
+  return { unreadCount };
 }
