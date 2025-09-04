@@ -291,10 +291,8 @@ useEffect(() => {
         table: 'global_chat'
       },
       (payload) => {
-        const newMessage = payload.new;
-        console.log('🌍 New global message:', newMessage);
+        const newMessage = payload.new as any;
         
-        // Optimistic update - hemen ekle
         setMessages(prev => {
           const exists = prev.some(msg => msg.id === newMessage.id);
           if (exists) return prev;
@@ -304,9 +302,7 @@ useEffect(() => {
         playSound('correctWord');
       }
     )
-    .subscribe((status) => {
-      console.log('📡 Global chat status:', status);
-    });
+    .subscribe();
 
   return () => {
     supabase.removeChannel(channel);
