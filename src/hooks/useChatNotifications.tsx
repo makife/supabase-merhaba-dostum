@@ -96,7 +96,10 @@ const loadUnreadMessages = useCallback(async () => {
         },
         (payload) => {
           console.log('✏️ Private message updated:', payload);
-          loadUnreadMessages(); // Hemen güncelle
+          // Sadece is_read değişikliklerinde güncelle
+          if (payload.new && payload.old && payload.new.is_read !== payload.old.is_read) {
+            loadUnreadMessages(); // Hemen güncelle
+          }
         }
       )
       .subscribe();

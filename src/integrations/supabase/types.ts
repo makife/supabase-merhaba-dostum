@@ -643,6 +643,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_private_messages_recipient"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_private_messages_sender"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "private_messages_chat_id_fkey"
             columns: ["chat_id"]
             isOneToOne: false
@@ -1381,20 +1395,24 @@ export type Database = {
         Returns: boolean
       }
       send_mention_notification: {
-        Args: {
-          p_message: string
-          p_message_id?: string
-          p_receiver_id: string
-          p_sender_username: string
-        }
+        Args:
+          | {
+              p_message: string
+              p_message_id?: string
+              p_receiver_id: string
+              p_sender_username: string
+            }
+          | { p_message: string; p_sender_username: string; p_user_id: string }
         Returns: boolean
       }
       send_private_message_notification: {
-        Args: {
-          p_chat_id: string
-          p_recipient_id: string
-          p_sender_username: string
-        }
+        Args:
+          | {
+              p_chat_id: string
+              p_recipient_id: string
+              p_sender_username: string
+            }
+          | { p_chat_id: string; p_sender_username: string; p_user_id: string }
         Returns: boolean
       }
       start_tournament_automatically: {
