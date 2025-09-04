@@ -101,7 +101,7 @@ export function FloatingMenu() {
   const { playSound } = useSounds();
   const { unreadCount } = useChatNotifications();
 
-  console.log('🔔 FloatingMenu unreadCount:', unreadCount);
+  console.log('🔔 FloatingMenu - unreadCount:', unreadCount, 'type:', typeof unreadCount);
 
   const handleToggle = () => {
     playSound('buttonClick');
