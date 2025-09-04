@@ -97,38 +97,42 @@ useEffect(() => {
 const setupRealtimeSubscription = () => {
   console.log('🔄 Setting up GLOBAL real-time subscription');
 
-  try {
-    const channel = supabase
-      .channel('global-chat-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'global_chat',
-        },
-        async (payload) => {
-          // ... mevcut kod
-        }
-      )
-      .subscribe((status) => {
-        console.log('📡 Global real-time subscription status:', status);
-        if (status === 'CHANNEL_ERROR') {
-          console.error('❌ Channel error, retrying in 5 seconds...');
-          // Daha uzun bekleme süresi
-          setTimeout(() => {
-            if (isOpen) {
-              setupRealtimeSubscription();
-            }
-          }, 5000);
-        }
-      });
+  const channel = supabase
+    .channel('global-chat-realtime')
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'global_chat',
+      },
+      async (payload) => {
+        console.log('📨 Yeni global mesaj:', payload);
+        const newMessage = payload.new as any;
+        
+        // Mesajı hemen state'e ekle
+        setMessages(prev => {
+          const alreadyExists = prev.some(msg => msg.id === newMessage.id);
+          if (alreadyExists) return prev;
+          
+          return [...prev, {
+            id: newMessage.id,
+            user_id: newMessage.user_id,
+            username: newMessage.username,
+            message: newMessage.message,
+            created_at: newMessage.created_at,
+            avatar_url: newMessage.avatar_url
+          }].sort((a, b) => 
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
+        });
+        
+        playSound('correctWord');
+      }
+    )
+    .subscribe();
 
-    return channel;
-  } catch (error) {
-    console.error('Error setting up real-time subscription:', error);
-    return null;
-  }
+  return channel;
 };
 
 // GlobalChat.tsx - fetchReactions fonksiyonu
