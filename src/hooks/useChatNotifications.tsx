@@ -15,26 +15,19 @@ const loadUnreadMessages = useCallback(async () => {
 
   try {
     console.log('🔄 Loading unread messages for user:', user.id);
-    console.log('🔍 Query: recipient_id =', user.id, 'AND is_read = false');
     
-    // SADECE doğru recipient_id ile sorgula
+    // DÜZELTME: sender_id yerine chat tablosundan kontrol et
     const { data: unreadPrivateMessages, error: privateError } = await supabase
       .from('private_messages')
-      .select('id, sender_id, recipient_id, is_read')
-      .eq('recipient_id', user.id) // ✅ SADECE bu kullanıcı
+      .select('id, sender_id, is_read')
+      .neq('sender_id', user.id) // Kendi mesajlarını sayma
       .eq('is_read', false);
-
-    console.log('🔍 Raw unread query result:', unreadPrivateMessages);
-    console.log('🔍 Query error:', privateError);
 
     if (privateError) {
       console.error('Private messages fetch error:', privateError);
       return;
     }
 
-    // DEBUG: Tüm okunmamış mesajları göster
-    console.log('🔍 All unread messages:', unreadPrivateMessages);
-    
     const privateCount = unreadPrivateMessages?.length || 0;
     setPrivateMessageCount(privateCount);
 
