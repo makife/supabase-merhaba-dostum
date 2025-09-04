@@ -231,42 +231,50 @@ const deletePrivateChat = async (otherUserId: string) => {
   if (!user) return;
   
   try {
-    const chatId = `chat_${[user.id, otherUserId].sort().join('_')}`;
+    // Chat ID'yi oluştur
+    const participants = [user.id, otherUserId].sort();
+    const chatId = `chat_${participants.join('_')}`;
     
     console.log('🗑️ Deleting chat:', chatId);
     
-    // 1. Önce mesajları sil
-    const { error: deleteError } = await supabase
+    // 1. ÖNCE TÜM MESAJLARI SİL
+    const { error: deleteMessagesError } = await supabase
       .from('private_messages')
       .delete()
       .eq('chat_id', chatId);
 
-    if (deleteError) {
-      console.error('Message delete error:', deleteError);
+    if (deleteMessagesError) {
+      console.error('Message delete error:', deleteMessagesError);
+      // Hata olsa bile devam et, belki mesaj yoktur
     }
 
-    // 2. Sonra chat'i sil  
-    const { error: chatError } = await supabase
+    // 2. SONRA CHAT'İ SİL
+    const { error: deleteChatError } = await supabase
       .from('private_chats')
       .delete()
       .eq('id', chatId);
 
-    if (chatError) {
-      console.error('Chat delete error:', chatError);
+    if (deleteChatError) {
+      console.error('Chat delete error:', deleteChatError);
+      // Hata olsa bile devam et, belki chat yoktur
     }
 
-    // 3. Local state'i güncelle
+    // 3. LOCAL STATE'İ GÜNCELLE
     setAllUsers(prev => prev.filter(u => u.id !== otherUserId));
+    
+    // 4. UNREAD COUNT'U GÜNCELLE
     setUnreadCounts(prev => {
       const updated = { ...prev };
       delete updated[otherUserId];
       return updated;
     });
     
-    console.log('✅ Chat successfully deleted');
+    console.log('✅ Chat successfully deleted:', chatId);
+    toast.success('Sohbet silindi');
     
   } catch (error) {
     console.error('Error deleting chat:', error);
+    toast.error('Sohbet silinirken hata oluştu');
   }
 };
 
