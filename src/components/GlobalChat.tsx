@@ -77,59 +77,6 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     scrollToBottom();
   }, [messages]);
 
-  // Fetch initial messages
-useEffect(() => {
-  let channel: any = null;
-
-  if (isOpen && user?.id) {
-    fetchMessages();
-    channel = setupRealtimeSubscription();
-  }
-
-  return () => {
-    if (channel) {
-      console.log('🧹 Cleaning up global real-time channel');
-      supabase.removeChannel(channel);
-    }
-  };
-}, [isOpen, user?.id]);
-
-const setupRealtimeSubscription = () => {
-  console.log('🔄 Setting up GLOBAL real-time subscription');
-
-  try {
-    const channel = supabase
-      .channel('global-chat-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'global_chat',
-        },
-        async (payload) => {
-          // ... mevcut kod
-        }
-      )
-      .subscribe((status) => {
-        console.log('📡 Global real-time subscription status:', status);
-        if (status === 'CHANNEL_ERROR') {
-          console.error('❌ Channel error, retrying in 5 seconds...');
-          // Daha uzun bekleme süresi
-          setTimeout(() => {
-            if (isOpen) {
-              setupRealtimeSubscription();
-            }
-          }, 5000);
-        }
-      });
-
-    return channel;
-  } catch (error) {
-    console.error('Error setting up real-time subscription:', error);
-    return null;
-  }
-};
 
 // GlobalChat.tsx - fetchReactions fonksiyonu
 const fetchReactions = async () => {
@@ -279,142 +226,196 @@ useEffect(() => {
 
 // Real-time subscription için ayrı bir useEffect
 useEffect(() => {
-  if (!isOpen) return;
+    if (!isOpen || !user?.id) return;
 
-  fetchMessages();
+    console.log('🔄 Setting up Global Chat real-time subscription');
+    
+    // İlk mesajları yükle
+    fetchMessages();
 
-  const channel = supabase
-    .channel('global-chat-realtime')
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'global_chat'
-      },
-      (payload) => {
-        // Yeni mesajı hemen ekle (optimistic update)
-        const newMessage = payload.new as any;
-        setMessages(prev => {
-          const exists = prev.some(msg => msg.id === newMessage.id);
-          if (exists) return prev;
-          return [...prev, newMessage];
-        });
-        playSound('correctWord');
-      }
-    )
-    .subscribe();
+    // Real-time subscription kur
+    const channel = supabase
+      .channel('global-chat-realtime', {
+        config: {
+          broadcast: { self: false }, // Kendi mesajlarını tekrar alma
+        }
+      })
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'global_chat'
+        },
+        (payload) => {
+          console.log('📨 New global message received:', payload.new);
+          
+          const newMessage = payload.new as ChatMessage;
+          
+          setMessages(prev => {
+            // Duplicate kontrolü
+            const exists = prev.some(msg => msg.id === newMessage.id);
+            if (exists) {
+              console.log('⚠️ Message already exists, skipping');
+              return prev;
+            }
+            
+            console.log('✅ Adding new message to state');
+            return [...prev, newMessage].sort((a, b) => 
+              new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+            );
+          });
+          
+          // Sadece başkalarının mesajları için ses çal
+          if (newMessage.user_id !== user?.id) {
+            playSound('correctWord');
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'global_chat'
+        },
+        (payload) => {
+          console.log('🗑️ Message deleted:', payload.old);
+          setMessages(prev => prev.filter(msg => msg.id !== payload.old.id));
+        }
+      )
+      .subscribe((status) => {
+        console.log('📡 Global subscription status:', status);
+        
+        if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Channel error detected');
+        }
+      });
 
-  return () => {
-    supabase.removeChannel(channel);
-  };
-}, [isOpen]);
+    return () => {
+      console.log('🧹 Cleaning up global real-time channel');
+      supabase.removeChannel(channel);
+    };
+  }, [isOpen, user?.id]);
 
 const fetchMessages = async () => {
-  try {
-    // SON 100 MESAJI ÇEK (en yeniler en altta)
-    const { data, error } = await supabase
-      .from('global_chat')
-      .select('*')
-      .order('created_at', { ascending: false }) // En yeniler en üstte
-      .limit(100);
+    try {
+      console.log('📥 Fetching global messages...');
+      
+      const { data, error } = await supabase
+        .from('global_chat')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
 
-    if (error) throw error;
-    
-    // Mesajları ters çevir (en yeniler en altta olsun)
-    const reversedData = data ? [...data].reverse() : [];
-    setMessages(reversedData);
-    
-  } catch (error) {
-    console.error('Error fetching messages:', error);
-  }
-};
+      if (error) throw error;
+      
+      const reversedData = data ? [...data].reverse() : [];
+      setMessages(reversedData);
+      
+      console.log(`✅ Loaded ${reversedData.length} global messages`);
+    } catch (error) {
+      console.error('❌ Error fetching global messages:', error);
+    }
+  };
 
 const sendMessage = async () => {
-  if (!newMessage.trim() || !user || !profile) return;
+    if (!newMessage.trim() || !user || !profile) return;
 
-  // Ban kontrolü
-  const isBanned = await isUserBanned(user.id);
-  if (isBanned) {
-    const timeLeft = await getBanTimeLeft(user.id);
-    toast.error(`Sohbet yasağınız var! Kalan süre: ${timeLeft}`);
-    return;
-  }
-
-  const trimmedMessage = newMessage.trim();
-  if (trimmedMessage.length > 200) {
-    toast.error('Mesaj 200 karakterden uzun olamaz');
-    return;
-  }
-
-  // Yasaklı kelime kontrolü
-  if (containsBannedWords(trimmedMessage)) {
-    toast.error('Mesajınız yasaklı kelime içeriyor ve sohbet yasağı aldınız!');
-    await banUser(user.id, 'Yasaklı kelime kullanımı', 48);
-    setNewMessage('');
-    return;
-  }
-
-  const username = profile.username || user.email?.split('@')[0] || 'Anonim';
-  
-  setNewMessage('');
-  setIsLoading(true);
-  
-  try {
-    const { data: insertData, error: insertError } = await supabase
-      .from('global_chat')
-      .insert({
-        user_id: user.id,
-        username: username,
-        message: trimmedMessage,
-        avatar_url: profile.avatar_url
-      })
-      .select()
-      .single();
-
-    if (insertError) throw insertError;
-
-    // Manuel olarak mesajı state'e ekle
-    const newMsg = {
-      id: insertData.id,
-      user_id: user.id,
-      username: username,
-      message: trimmedMessage,
-      created_at: insertData.created_at,
-      avatar_url: profile.avatar_url
-    };
-    
-    setMessages(prev => [...prev, newMsg].sort((a, b) => 
-      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-    ));
-
-    // Mention kontrolü
-    const mentionRegex = /@(\w+)/g;
-    let match;
-    
-    while ((match = mentionRegex.exec(trimmedMessage)) !== null) {
-      const mentionedUsername = match[1];
-      
-      const { data: mentionedUser } = await supabase
-        .from('profiles')
-        .select('id, username')
-        .eq('username', mentionedUsername)
-        .single();
-      
-      if (mentionedUser && mentionedUser.id !== user.id) {
-        await sendMentionNotification(mentionedUser.id, username, trimmedMessage);
-      }
+    // Ban kontrolü (mevcut kodunuz)
+    const isBanned = await isUserBanned(user.id);
+    if (isBanned) {
+      const timeLeft = await getBanTimeLeft(user.id);
+      toast.error(`Sohbet yasağınız var! Kalan süre: ${timeLeft}`);
+      return;
     }
 
-    playSound('buttonClick');
-  } catch (error) {
-    console.error('Error sending message:', error);
-    toast.error('Mesaj gönderilirken hata oluştu');
-  } finally {
-    setIsLoading(false);
-  }
-};
+    const trimmedMessage = newMessage.trim();
+    if (trimmedMessage.length > 200) {
+      toast.error('Mesaj 200 karakterden uzun olamaz');
+      return;
+    }
 
+    // Yasaklı kelime kontrolü (mevcut kodunuz)
+    if (containsBannedWords(trimmedMessage)) {
+      toast.error('Mesajınız yasaklı kelime içeriyor ve sohbet yasağı aldınız!');
+      await banUser(user.id, 'Yasaklı kelime kullanımı', 48);
+      setNewMessage('');
+      return;
+    }
+
+    const username = profile.username || user.email?.split('@')[0] || 'Anonim';
+    
+    // OPTIMISTIC UPDATE - Mesajı hemen göster
+    const tempMessage: ChatMessage = {
+      id: `temp-${Date.now()}`,
+      user_id: user.id,
+      username,
+      message: trimmedMessage,
+      created_at: new Date().toISOString(),
+      avatar_url: profile.avatar_url
+    };
+
+    setMessages(prev => [...prev, tempMessage]);
+    setNewMessage('');
+    setIsLoading(true);
+    
+    try {
+      console.log('📤 Sending global message...');
+      
+      const { data: insertData, error: insertError } = await supabase
+        .from('global_chat')
+        .insert({
+          user_id: user.id,
+          username: username,
+          message: trimmedMessage,
+          avatar_url: profile.avatar_url
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      console.log('✅ Global message sent successfully');
+
+      // Temp mesajı gerçek mesajla değiştir
+      setMessages(prev => prev.map(msg => 
+        msg.id === tempMessage.id 
+          ? { ...insertData, id: insertData.id }
+          : msg
+      ));
+
+      // Mention kontrolü (mevcut kodunuz)
+      const mentionRegex = /@(\w+)/g;
+      let match;
+      
+      while ((match = mentionRegex.exec(trimmedMessage)) !== null) {
+        const mentionedUsername = match[1];
+        
+        const { data: mentionedUser } = await supabase
+          .from('profiles')
+          .select('id, username')
+          .eq('username', mentionedUsername)
+          .single();
+        
+        if (mentionedUser && mentionedUser.id !== user.id) {
+          await sendMentionNotification(mentionedUser.id, username, trimmedMessage);
+        }
+      }
+
+      playSound('buttonClick');
+    } catch (error) {
+      console.error('❌ Error sending global message:', error);
+      
+      // Hata durumunda temp mesajı kaldır
+      setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
+      setNewMessage(trimmedMessage); // Mesajı geri koy
+      
+      toast.error('Mesaj gönderilirken hata oluştu');
+    } finally {
+      setIsLoading(false);
+    }
+  };
   const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
   setNewMessage(e.target.value);
   
