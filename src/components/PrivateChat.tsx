@@ -293,26 +293,11 @@ const sendMessage = async () => {
     return;
   }
 
-  // Kullanıcı adını user bilgilerinden al
   const username = user.user_metadata?.username || user.email?.split('@')[0] || 'Anonim';
 
-  // Optimistic update
-  const tempMessage: any = {
-    id: `temp-${Date.now()}`,
-    chat_id: chatId,
-    sender_id: user.id,
-    message: trimmedMessage,
-    created_at: new Date().toISOString(),
-    is_read: false,
-    username: 'Sen', // Geçici değer
-    avatar_url: null
-  };
-
-  setMessages(prev => [...prev, tempMessage]);
   setNewMessage('');
-  scrollToBottom();
-
   setIsLoading(true);
+  
   try {
     const { data, error } = await supabase
       .from('private_messages')
@@ -326,29 +311,23 @@ const sendMessage = async () => {
 
     if (error) throw error;
 
-    // BİLDİRİM GÖNDER - user bilgilerini kullan
-    await sendMessageNotification(
-      otherUser.id, 
-      username,  // user.user_metadata'den alıyoruz
-      chatId
-    );
+    // Manuel olarak mesajı state'e ekle (optimistic update kaldırıldı)
+    const newMsg = {
+      ...data,
+      username: 'Sen',
+      avatar_url: null
+    };
+    
+    setMessages(prev => [...prev, newMsg]);
+    scrollToBottom();
 
-    // Temp mesajı gerçek mesajla değiştir
-    setMessages(prev => prev.map(msg => 
-      msg.id === tempMessage.id ? {
-        ...data,
-        username: 'Sen',
-        avatar_url: null
-      } : msg
-    ));
-
+    // Bildirim gönder
+    await sendMessageNotification(otherUser.id, username, chatId);
     playSound('buttonClick');
+    
   } catch (error) {
     console.error('Error sending private message:', error);
     toast.error('Mesaj gönderilirken hata oluştu');
-    
-    // Hata durumunda temp mesajı kaldır
-    setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
   } finally {
     setIsLoading(false);
   }
