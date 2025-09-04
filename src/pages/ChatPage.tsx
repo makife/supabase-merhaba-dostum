@@ -110,6 +110,15 @@ const fetchAllUsers = async () => {
       return;
     }
 
+    const usersWithMessages = users?.filter(user => {
+      const hasMessages = validUserIDs.includes(user.id);
+      console.log(`🔍 User ${user.username} has messages:`, hasMessages);
+      return hasMessages;
+    }) || [];
+
+    console.log('🔍 DEBUG: Final filtered users:', usersWithMessages);
+    setAllUsers(usersWithMessages);
+
     setAllUsers(users || []);
 
   } catch (error) {
@@ -276,38 +285,67 @@ const deletePrivateChat = async (otherUserId: string) => {
   if (!user) return;
   
   try {
-    const chatId = `chat_${[user.id, otherUserId].sort().join('_')}`;
+    console.log('🗑️ Deleting private chat with user:', otherUserId);
     
-    // 1. MESAJLARI SİL
-    await supabase
+    const chatId = `chat_${[user.id, otherUserId].sort().join('_')}`;
+    console.log('🗑️ Chat ID to delete:', chatId);
+    
+    // 1. ÖNCELİKLE MESAJLARI SİL
+    const { error: messagesError } = await supabase
       .from('private_messages')
       .delete()
       .eq('chat_id', chatId);
 
-    // 2. CHAT'İ SİL  
-    await supabase
+    if (messagesError) {
+      console.error('🗑️ Error deleting messages:', messagesError);
+      throw messagesError;
+    }
+
+    console.log('✅ Messages deleted successfully');
+
+    // 2. CHAT KAYDINI SİL  
+    const { error: chatError } = await supabase
       .from('private_chats')
       .delete()
       .eq('id', chatId);
 
-    // 3. LOCAL STORAGE'A SİLİNDİ OLARAK KAYDET
-    const deletedChats = JSON.parse(localStorage.getItem('deletedChats') || '{}');
-    deletedChats[otherUserId] = true;
-    localStorage.setItem('deletedChats', JSON.stringify(deletedChats));
+    if (chatError) {
+      console.error('🗑️ Error deleting chat:', chatError);
+      throw chatError;
+    }
 
-    // 4. LOCAL STATE'DEN SİL
-    setAllUsers(prev => prev.filter(u => u.id !== otherUserId));
+    console.log('✅ Chat deleted successfully');
+
+    // 3. LOCAL STATE'İ GÜNCELLE
+    setAllUsers(prev => {
+      const updated = prev.filter(u => u.id !== otherUserId);
+      console.log('🔄 Updated allUsers, remaining count:', updated.length);
+      return updated;
+    });
+    
     setUnreadCounts(prev => {
       const updated = { ...prev };
       delete updated[otherUserId];
+      console.log('🔄 Updated unreadCounts:', updated);
       return updated;
     });
 
+    // 4. BAŞARILI OLDU MESAJI
+    toast.success('Özel sohbet silindi');
+    
+    // 5. GLOBAL REFRESH (isteğe bağlı - emin olmak için)
+    setTimeout(() => {
+      console.log('🔄 Refreshing data after delete');
+      fetchAllUsers();
+      fetchUnreadCounts();
+    }, 500);
+
   } catch (error) {
-    console.error('Error:', error);
+    console.error('❌ Error deleting private chat:', error);
+    toast.error('Sohbet silinirken hata oluştu');
   }
 };
-
+  
 // ChatPage.tsx - renderUsersList fonksiyonunu güncelle
 const renderUsersList = () => {
   return (
