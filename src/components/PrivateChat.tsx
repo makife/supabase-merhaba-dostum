@@ -12,6 +12,7 @@ import { UserAvatar } from '@/components/UserAvatar';
 import { toast } from 'sonner';
 import { sendMessageNotification } from '@/utils/notifications';
 import { Trash2 } from 'lucide-react';
+import { useChatNotifications } from '@/hooks/useChatNotifications';
 
 interface PrivateMessage {
   id: string;
@@ -39,6 +40,7 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { refreshUnreadCounts } = useChatNotifications();
 
   // Scroll to bottom when new messages arrive
   const scrollToBottom = () => {
@@ -190,32 +192,6 @@ useEffect(() => {
   markMessagesAsRead();
 }, [chatId, user]);
 
-// PrivateChat.tsx'e ekle
-useEffect(() => {
-  const markAllChatMessagesAsRead = async () => {
-    if (!chatId || !user?.id) return;
-    
-    try {
-      await supabase
-        .from('private_messages')
-        .update({ is_read: true })
-        .eq('chat_id', chatId)
-        .eq('recipient_id', user.id)
-        .eq('is_read', false);
-      
-      if (refreshUnreadCounts) {
-        refreshUnreadCounts();
-      }
-    } catch (error) {
-      console.error('Error marking messages as read:', error);
-    }
-  };
-
-  // 2 saniye sonra okundu işaretle (kullanıcı mesajları gördüğünü varsay)
-  const timer = setTimeout(markAllChatMessagesAsRead, 2000);
-  return () => clearTimeout(timer);
-}, [chatId, user?.id, refreshUnreadCounts]);
-  
 const deleteMessage = async (messageId: string, senderId: string) => {
   if (!user || senderId !== user.id) {
     toast.error('Sadece kendi mesajlarınızı silebilirsiniz');
