@@ -104,7 +104,7 @@ const TournamentBracketPage = () => {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [user, tournamentId, navigate, globalCountdown]);
 
-  // Global countdown - sadece beklemedeki maçlar varsa çalışsın
+  // Global countdown - her tur için 10 saniye sayıcı
   useEffect(() => {
     if (tournamentId && matches.length > 0) {
       // Beklemedeki maçlar var mı kontrol et
@@ -114,6 +114,9 @@ const TournamentBracketPage = () => {
         setGlobalCountdown(0);
         return;
       }
+      
+      // Her yeni tur için sayıcıyı 10'a reset et
+      setGlobalCountdown(10);
       
       const countdownInterval = setInterval(() => {
         setGlobalCountdown(prev => {
