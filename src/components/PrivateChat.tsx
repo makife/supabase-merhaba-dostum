@@ -60,10 +60,24 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
 
 // PrivateChat.tsx'e real-time subscription ekle
 useEffect(() => {
-  if (!chatId || !user?.id) return;
+  if (!chatId) return;
 
+  // MESAJLARI ÇEK
+  const fetchMessages = async () => {
+    const { data } = await supabase
+      .from('private_messages')
+      .select('*')
+      .eq('chat_id', chatId)
+      .order('created_at', true);
+    
+    setMessages(data || []);
+  };
+
+  fetchMessages();
+
+  // REAL-TIME: Basitçe yeniden çek
   const channel = supabase
-    .channel(`private-chat-${chatId}`)
+    .channel(`chat-${chatId}`)
     .on(
       'postgres_changes',
       {
@@ -72,31 +86,14 @@ useEffect(() => {
         table: 'private_messages',
         filter: `chat_id=eq.${chatId}`
       },
-      async (payload) => {
-        const newMsg = payload.new as any;
-        
-        setMessages(prev => {
-          const exists = prev.some(msg => msg.id === newMsg.id);
-          if (exists) return prev;
-          return [...prev, newMsg];
-        });
-
-        playSound('correctWord');
-        
-        if (newMsg.recipient_id === user.id) {
-          await supabase
-            .from('private_messages')
-            .update({ is_read: true })
-            .eq('id', newMsg.id);
-        }
-      }
+      fetchMessages // Direkt yeniden çek
     )
     .subscribe();
 
   return () => {
     supabase.removeChannel(channel);
   };
-}, [chatId, user?.id]);
+}, [chatId]);
 
   // PrivateChat.tsx - Mesajları okundu olarak işaretle
 useEffect(() => {
