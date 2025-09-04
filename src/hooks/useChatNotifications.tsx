@@ -15,6 +15,7 @@ const loadUnreadMessages = useCallback(async () => {
 
   try {
     console.log('🔄 Loading unread messages for user:', user.id);
+    console.log('🔍 Query: recipient_id =', user.id, 'AND is_read = false');
     
     // SADECE doğru recipient_id ile sorgula
     const { data: unreadPrivateMessages, error: privateError } = await supabase
@@ -22,6 +23,9 @@ const loadUnreadMessages = useCallback(async () => {
       .select('id, sender_id, recipient_id, is_read')
       .eq('recipient_id', user.id) // ✅ SADECE bu kullanıcı
       .eq('is_read', false);
+
+    console.log('🔍 Raw unread query result:', unreadPrivateMessages);
+    console.log('🔍 Query error:', privateError);
 
     if (privateError) {
       console.error('Private messages fetch error:', privateError);
