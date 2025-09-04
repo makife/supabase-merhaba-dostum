@@ -292,7 +292,16 @@ useEffect(() => {
         schema: 'public',
         table: 'global_chat'
       },
-      fetchMessages
+      (payload) => {
+        // Yeni mesajı hemen ekle (optimistic update)
+        const newMessage = payload.new as any;
+        setMessages(prev => {
+          const exists = prev.some(msg => msg.id === newMessage.id);
+          if (exists) return prev;
+          return [...prev, newMessage];
+        });
+        playSound('correctWord');
+      }
     )
     .subscribe();
 
@@ -302,13 +311,23 @@ useEffect(() => {
 }, [isOpen]);
 
 const fetchMessages = async () => {
-  const { data } = await supabase
-    .from('global_chat')
-    .select('*')
-    .order('created_at', { ascending: true })
-    .limit(100);
-  
-  setMessages(data || []);
+  try {
+    // SON 100 MESAJI ÇEK (en yeniler en altta)
+    const { data, error } = await supabase
+      .from('global_chat')
+      .select('*')
+      .order('created_at', { ascending: false }) // En yeniler en üstte
+      .limit(100);
+
+    if (error) throw error;
+    
+    // Mesajları ters çevir (en yeniler en altta olsun)
+    const reversedData = data ? [...data].reverse() : [];
+    setMessages(reversedData);
+    
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+  }
 };
 
 const sendMessage = async () => {
