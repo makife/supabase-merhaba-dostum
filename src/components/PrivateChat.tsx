@@ -122,6 +122,17 @@ useEffect(() => {
           }];
         });
 
+        // Okundu olarak işaretle
+        try {
+          await supabase
+            .from('private_messages')
+            .update({ is_read: true })
+            .eq('id', newMsg.id)
+            .eq('chat_id', chatId);
+        } catch (error) {
+          console.warn('Could not mark message as read:', error);
+        }
+
         playSound('correctWord');
       }
     )
@@ -154,8 +165,57 @@ useEffect(() => {
   };
 }, [chatId, user?.id, playSound]);
 
+  // PrivateChat.tsx - Mesajları okundu olarak işaretle
+useEffect(() => {
+  if (!chatId || !user) return;
 
+  // Bu sohbetteki okunmamış mesajları okundu yap
+  const markMessagesAsRead = async () => {
+    try {
+      await supabase
+        .from('private_messages')
+        .update({ is_read: true })
+        .eq('chat_id', chatId)
+        .neq('sender_id', user.id)
+        .eq('is_read', false);
 
+      // Bildirimleri de okundu yap - şimdilik pas geç
+      console.log('Marking notifications as read for chat:', chatId);
+
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+    }
+  };
+
+  markMessagesAsRead();
+}, [chatId, user]);
+
+// PrivateChat.tsx'e ekle
+useEffect(() => {
+  const markAllChatMessagesAsRead = async () => {
+    if (!chatId || !user?.id) return;
+    
+    try {
+      await supabase
+        .from('private_messages')
+        .update({ is_read: true })
+        .eq('chat_id', chatId)
+        .eq('recipient_id', user.id)
+        .eq('is_read', false);
+      
+      if (refreshUnreadCounts) {
+        refreshUnreadCounts();
+      }
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+    }
+  };
+
+  // 2 saniye sonra okundu işaretle (kullanıcı mesajları gördüğünü varsay)
+  const timer = setTimeout(markAllChatMessagesAsRead, 2000);
+  return () => clearTimeout(timer);
+}, [chatId, user?.id, refreshUnreadCounts]);
+  
 const deleteMessage = async (messageId: string, senderId: string) => {
   if (!user || senderId !== user.id) {
     toast.error('Sadece kendi mesajlarınızı silebilirsiniz');
