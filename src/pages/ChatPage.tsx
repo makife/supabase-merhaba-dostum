@@ -290,29 +290,42 @@ useEffect(() => {
   };
 
   // Özel sohbeti sil
-  const deletePrivateChat = async (otherUserId: string) => {
+ const deletePrivateChat = async (otherUserId: string) => {
   if (!user) return;
   
   try {
     const participants = [user.id, otherUserId].sort();
     const chatId = `chat_${participants.join('_')}`;
     
+    console.log('🗑️ Silmeye çalışılan chat ID:', chatId);
+    console.log('🗑️ Participants:', participants);
+    
+    // Önce bu chat ID ile kaç mesaj var kontrol et
+    const { data: existingMessages, error: checkError } = await supabase
+      .from('private_messages')
+      .select('id, chat_id')
+      .eq('chat_id', chatId);
+    
+    console.log('🗑️ Silinecek mesajlar:', existingMessages);
+    
     // Mesajları sil
-    await supabase
+    const { error: deleteMessagesError } = await supabase
       .from('private_messages')
       .delete()
       .eq('chat_id', chatId);
+      
+    console.log('🗑️ Mesaj silme hatası:', deleteMessagesError);
     
     // Chat'i sil
-    await supabase
+    const { error: deleteChatError } = await supabase
       .from('private_chats')
       .delete()
       .eq('id', chatId);
+      
+    console.log('🗑️ Chat silme hatası:', deleteChatError);
     
-    // Local state'den kullanıcıyı kaldır (tekrar fetch etme)
+    // Local state'den kullanıcıyı kaldır
     setAllUsers(prev => prev.filter(u => u.id !== otherUserId));
-    
-    // Unread count'ları güncelle
     setUnreadCounts(prev => {
       const updated = { ...prev };
       delete updated[otherUserId];
