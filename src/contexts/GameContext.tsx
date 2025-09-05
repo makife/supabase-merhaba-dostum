@@ -1463,24 +1463,9 @@ useEffect(() => {
 useEffect(() => {
   if (!currentRoom || !currentRoom.game_mode.includes('private-room')) return;
   
-  const interval = setInterval(async () => {
-    // Sadece skorları fetch et, tüm participants'ı değil
-    try {
-      const { data } = await supabase
-        .from('game_participants')
-        .select('user_id, score')
-        .eq('room_id', currentRoom.id);
-      
-      if (data) {
-        setParticipants(prev => prev.map(p => {
-          const updated = data.find(d => d.user_id === p.user_id);
-          return updated ? { ...p, score: updated.score } : p;
-        }));
-      }
-    } catch (error) {
-      console.log('Score sync error:', error);
-    }
-  }, 300); // 300ms'de bir skor kontrolü
+  const interval = setInterval(() => {
+    fetchParticipants(currentRoom.id);
+  }, 1000);
   
   return () => clearInterval(interval);
 }, [currentRoom?.id, currentRoom?.game_mode]);
