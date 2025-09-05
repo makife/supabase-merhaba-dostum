@@ -335,6 +335,16 @@ const generateTournamentGrid = useCallback((seed: string): string[][] => {
   const [opponentName, setOpponentName] = useState('');
   const [targetScore, setTargetScore] = useState(gameType === 'score' ? 500 : 0);
   const [gameStartTime, setGameStartTime] = useState<number>(Date.now());
+
+useEffect(() => {
+  console.log('🔍 STATE DEBUG:', {
+    gameStarted,
+    waitingForPlayer,
+    gameEnded,
+    participantsLength: participants.length,
+    gameMode
+  });
+}, [gameStarted, waitingForPlayer, gameEnded, participants.length, gameMode]);
   
 const handleTournamentGameEnd = async (userScore: number, opponentScore: number) => {
   if (!user || !tournamentMatch) return;
