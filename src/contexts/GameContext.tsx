@@ -1456,18 +1456,14 @@ useEffect(() => {
 }, [user?.id, currentRoom?.id, toast, joinRoom, navigate]);
 
 useEffect(() => {
-  if (!currentRoom) return;
-  
-  const gameMode = getGameModeFromRoom(currentRoom); // Bu fonksiyon zaten var
-  
-  if (gameMode !== 'private-room') return;
+  if (!currentRoom || !currentRoom.game_mode.includes('private-room')) return;
   
   const interval = setInterval(() => {
     fetchParticipants(currentRoom.id);
   }, 1000);
   
   return () => clearInterval(interval);
-}, [currentRoom?.id, getGameModeFromRoom]);
+}, [currentRoom?.id, currentRoom?.game_mode]);
 
   // Handle page close/refresh cleanup
   useEffect(() => {
