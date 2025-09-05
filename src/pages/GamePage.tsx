@@ -1341,6 +1341,8 @@ const useSenYazJoker = async () => {
           if (currentRoom) {
             await updateScore(newScore);
           }
+
+          
           
           jokerSuccess = true; // İşlem başarılı
           console.log('✅ Sen Yaz Jokeri başarılı:', selectedWord, 'Puan:', result.points);
@@ -2528,6 +2530,10 @@ const submitWord = async () => {
     if (currentRoom) {
       await updateScore(newScore);
     }
+
+    setParticipants(prev => prev.map(p => 
+  p.user_id === user?.id ? { ...p, score: newScore } : p
+));
 
     // 🔥 YENİ: Turnuva modunda gerçek rakip puanını güncelle
     if (gameMode === 'tournament' && tournamentMatch && user) {
