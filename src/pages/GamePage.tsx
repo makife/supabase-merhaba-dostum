@@ -325,8 +325,8 @@ const generateTournamentGrid = useCallback((seed: string): string[][] => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const timeLeftRef = useRef<number>(gameType === 'timed' ? 120 : 0);
   const [displayTime, setDisplayTime] = useState<number>(timeLeftRef.current);
-  const [gameStarted, setGameStarted] = useState(true);
-  const [waitingForPlayer, setWaitingForPlayer] = useState(false);
+  const [gameStarted, setGameStarted] = useState(false);
+  const [waitingForPlayer, setWaitingForPlayer] = useState(true);
   const [gameEnded, setGameEnded] = useState(false);
   const [winner, setWinner] = useState<'player' | 'opponent' | 'tie' | null>(null);
   const [disconnectWin, setDisconnectWin] = useState(false);
