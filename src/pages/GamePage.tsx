@@ -2285,9 +2285,20 @@ useEffect(() => {
 }, [gameStarted, gameEnded]);
 
   // Private room logic
-  useEffect(() => {
+ useEffect(() => {
   if (gameMode === 'private-room') {
     const realPlayers = participants.filter(p => !p.is_bot && p.user_id !== null);
+    
+    console.log('🏠 Private room check:', {
+      totalParticipants: participants.length,
+      realPlayers: realPlayers.length,
+      roomStatus: currentRoom?.status,
+      participants: participants.map(p => ({
+        id: p.user_id?.slice(-8),
+        isBot: p.is_bot,
+        isMe: p.user_id === user?.id
+      }))
+    });
   
     if (realPlayers.length >= 2) {
       console.log('✅ 2 gerçek oyuncu hazır - OYUN BAŞLIYOR!');
@@ -2303,12 +2314,13 @@ useEffect(() => {
         });
       }
     } else {
+      console.log('⏳ Bekliyor - Real players:', realPlayers.length);
       setWaitingForPlayer(true);
       setGameStarted(false);
       setHasShownStartMessage(false);
     }
   }
-}, [participants, gameMode, hasShownStartMessage, gameType, toast]);
+}, [participants, gameMode, hasShownStartMessage, gameType, toast, currentRoom?.status]);
 
   // Touch olayları için optimize edilmiş handler
   const handleLetterTouch = (letter: string, row: number, col: number, event: React.TouchEvent) => {
