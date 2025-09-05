@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Trophy, Home, User, Bot } from 'lucide-react';
 import { TournamentMatch } from '@/types/tournament';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 // TypeScript tip tanımları
 interface TournamentMatchUpdate {
@@ -29,12 +30,18 @@ interface TournamentMatchUpdate {
 const TournamentBracketPage = () => {
   const { tournamentId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+const { user } = useAuth();
   const [matches, setMatches] = useState<TournamentMatch[]>([]);
   const [globalCountdown, setGlobalCountdown] = useState(10);
   const [userMatchId, setUserMatchId] = useState<string | null>(null);
   // Bu tur için otomasyonun tetiklenip tetiklenmediğini takip eder
   const [handledRound, setHandledRound] = useState<number | null>(null);
+  // Turnuva bitiş ve şampiyon kartı
+  const [isTournamentCompleted, setIsTournamentCompleted] = useState(false);
+  const [championShown, setChampionShown] = useState(false);
+  const [championVisible, setChampionVisible] = useState(false);
+  const [championName, setChampionName] = useState<string>('Şampiyon');
+
 
   // Ana useEffect - Real-time subscription (timer yok)
   useEffect(() => {
@@ -104,37 +111,51 @@ const TournamentBracketPage = () => {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [user, tournamentId, navigate, globalCountdown]);
 
-  // Global countdown - her tur için 10 saniye sayıcı
+  // Şampiyon kartı gösterildiğinde otomatik yönlendirme
   useEffect(() => {
-    if (tournamentId && matches.length > 0) {
-      // Beklemedeki maçlar var mı kontrol et
-      const hasPendingMatches = matches.some(match => match.status === 'pending');
-      
-      if (!hasPendingMatches) {
-        setGlobalCountdown(0);
-        return;
-      }
-      
-      // Her yeni tur için sayıcıyı 10'a reset et
-      setGlobalCountdown(10);
-      
-      const countdownInterval = setInterval(() => {
-        setGlobalCountdown(prev => {
-          if (prev <= 1) {
-            clearInterval(countdownInterval);
-            console.log('⏰ 10 saniye doldu, maçlar başlatılıyor...');
-            startAllMatches();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+    if (!championVisible) return;
+    const t = setTimeout(() => {
+      navigate('/tournament');
+    }, 3500);
+    return () => clearTimeout(t);
+  }, [championVisible, navigate]);
 
-      return () => {
-        clearInterval(countdownInterval);
-      };
+// Global countdown - her tur için 10 saniye sayıcı
+  useEffect(() => {
+    if (!tournamentId || matches.length === 0) return;
+
+    if (isTournamentCompleted) {
+      setGlobalCountdown(0);
+      return;
     }
-  }, [tournamentId, matches.length]);
+
+    // Beklemedeki maçlar var mı kontrol et
+    const hasPendingMatches = matches.some(match => match.status === 'pending');
+    
+    if (!hasPendingMatches) {
+      setGlobalCountdown(0);
+      return;
+    }
+    
+    // Her yeni tur için sayıcıyı 10'a reset et
+    setGlobalCountdown(10);
+    
+    const countdownInterval = setInterval(() => {
+      setGlobalCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(countdownInterval);
+          console.log('⏰ 10 saniye doldu, maçlar başlatılıyor...');
+          startAllMatches();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      clearInterval(countdownInterval);
+    };
+  }, [tournamentId, matches, isTournamentCompleted]);
 
   const fetchMatches = async () => {
     try {
@@ -252,7 +273,24 @@ const TournamentBracketPage = () => {
         })
       );
 
-      setMatches(matchesWithPlayerInfo);
+setMatches(matchesWithPlayerInfo);
+      
+      // Final tamamlandıysa şampiyon kartını göster
+      const finals = matchesWithPlayerInfo.filter(m => m.round === 3);
+      if (finals.length > 0) {
+        const finalCompleted = finals.every(m => m.status === 'completed');
+        setIsTournamentCompleted(finalCompleted);
+        if (finalCompleted && !championShown) {
+          const finalMatch = finals[0];
+          const winnerId = finalMatch.winner_id;
+          if (winnerId && String(winnerId) === String(user?.id)) {
+            const name = finalMatch.player1_id === winnerId ? finalMatch.player1?.username : finalMatch.player2?.username;
+            setChampionName(name || 'Şampiyon');
+            setChampionShown(true);
+            setChampionVisible(true);
+          }
+        }
+      }
       
     } catch (error) {
       console.error('fetchMatches error:', error);
@@ -747,6 +785,28 @@ const createNextRound = async (tournamentId: string, nextRound: number) => {
             Ana Sayfaya Dön
           </Button>
         </div>
+      
+        {/* Şampiyonluk Kartı */}
+        <Dialog open={championVisible} onOpenChange={(open) => {
+          setChampionVisible(open);
+          if (!open) navigate('/tournament');
+        }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="text-center">
+                🏆 Şampiyonsun!
+              </DialogTitle>
+              <DialogDescription className="text-center">
+                Tebrikler {championName}! Turnuvanın kazananısın.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-center mt-2">
+              <Button onClick={() => navigate('/tournament')}>
+                Turnuvaya Dön
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
