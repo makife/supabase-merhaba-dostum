@@ -1225,7 +1225,7 @@ useEffect(() => {
   console.log('🔡 Event Type:', payload.eventType);
   
   // ✅ SADECE INSERT VE DELETE'TE FETCH ET, UPDATE'TE ETMEYİN
-  if (payload.eventType === 'INSERT' || payload.eventType === 'DELETE') {
+  if (payload.eventType === 'INSERT' || payload.eventType === 'DELETE' || payload.eventType === 'UPDATE') {
     console.log('🔄 Fetching participants after INSERT/DELETE...');
     await fetchParticipants(currentRoom.id);
   }
