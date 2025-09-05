@@ -325,8 +325,13 @@ const generateTournamentGrid = useCallback((seed: string): string[][] => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const timeLeftRef = useRef<number>(gameType === 'timed' ? 120 : 0);
   const [displayTime, setDisplayTime] = useState<number>(timeLeftRef.current);
-  const [gameStarted, setGameStarted] = useState(false);
-  const [waitingForPlayer, setWaitingForPlayer] = useState(true);
+  const [gameStarted, setGameStarted] = useState(
+  gameMode === 'vs-computer' ? true : false // Sadece vs-computer başlasın
+);
+
+  const [waitingForPlayer, setWaitingForPlayer] = useState(
+  gameMode === 'private-room' ? true : false // Private-room bekleme modunda başlasın
+);
   const [gameEnded, setGameEnded] = useState(false);
   const [winner, setWinner] = useState<'player' | 'opponent' | 'tie' | null>(null);
   const [disconnectWin, setDisconnectWin] = useState(false);
