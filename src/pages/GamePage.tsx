@@ -342,6 +342,15 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
   try {
     const winnerId = userScore > opponentScore ? user.id : tournamentMatch.player2_id;
     
+    // İSTATİSTİKLERİ GÜNCELLE (Önemli: Bu önce yapılmalı!)
+    console.log('📊 Turnuva maçı istatistikleri güncelleniyor...');
+    await updatePlayerStatistics(
+      user.id,
+      userScore,
+      playerWordsWithScores,
+      userScore > opponentScore
+    );
+    
     // Mevcut maçı tamamla
     await supabase
       .from('tournament_matches')
