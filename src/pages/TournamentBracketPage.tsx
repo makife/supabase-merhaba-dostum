@@ -499,9 +499,28 @@ const createNextRound = async (tournamentId: string, nextRound: number) => {
     const winnerIds = winners.map(w => w.winner_id);
     const shuffledWinners = [...winnerIds].sort(() => Math.random() - 0.5);
     
+    // Gerçek oyuncu sayısına göre sabit maç sayıları belirle
+    let maxMatches: number;
+    switch (nextRound) {
+      case 2: // Yarı Final
+        maxMatches = 2;
+        break;
+      case 3: // Final
+        maxMatches = 1;
+        break;
+      default: // Çeyrek Final (1. tur)
+        maxMatches = 4;
+        break;
+    }
+    
+    // Maç sayısını belirlenen maksimum ile sınırla
+    const actualMatches = Math.min(maxMatches, Math.floor(shuffledWinners.length / 2));
+    
+    console.log(`📊 ${nextRound}. tur için: ${shuffledWinners.length} kazanan, ${actualMatches} maç oluşturuluyor (max: ${maxMatches})`);
+    
     // Yeni tur maçlarını oluştur
     const newMatches = [];
-    for (let i = 0; i < shuffledWinners.length / 2; i++) {
+    for (let i = 0; i < actualMatches; i++) {
       const player1Id = shuffledWinners[i * 2];
       const player2Id = shuffledWinners[i * 2 + 1];
       
