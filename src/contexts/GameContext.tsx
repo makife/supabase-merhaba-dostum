@@ -934,19 +934,24 @@ const fetchParticipants = useCallback(
   }, [currentRoom, user, applyDisconnectPenalty, toast, getGameModeFromRoom]);
 
   // Update score
-  const updateScore = useCallback(async (score: number): Promise<void> => {
-    if (!user || !currentRoom) return;
+ const updateScore = useCallback(async (score: number): Promise<void> => {
+  if (!user || !currentRoom) return;
 
-    try {
-      await supabase
-        .from('game_participants')
-        .update({ score })
-        .eq('room_id', currentRoom.id)
-        .eq('user_id', user.id);
-    } catch (error) {
-      console.error('Error updating score:', error);
-    }
-  }, [user, currentRoom]);
+  try {
+    await supabase
+      .from('game_participants')
+      .update({ score })
+      .eq('room_id', currentRoom.id)
+      .eq('user_id', user.id);
+    
+    // Local state'i de güncelle
+    setParticipants(prev => prev.map(p => 
+      p.user_id === user.id ? { ...p, score } : p
+    ));
+  } catch (error) {
+    console.error('Error updating score:', error);
+  }
+}, [user, currentRoom]);
 
   // Start game
   const startGame = useCallback(async (): Promise<void> => {
