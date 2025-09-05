@@ -1208,25 +1208,32 @@ useEffect(() => {
   table: 'game_participants',
   filter: `room_id=eq.${currentRoom.id}`
 }, async (payload: any) => {
-  console.log('🔡 ===== REAL-TIME EVENT =====');
+  console.log('🔡 ===== PRIVATE ROOM REAL-TIME =====');
   console.log('🔡 Event Type:', payload.eventType);
+  console.log('🔡 Room ID:', currentRoom.id.slice(-8));
   console.log('🔡 Current User:', user?.id?.slice(-8));
   
   // ✅ HER EVENT'TE PARTICIPANTS'I YENİDEN FETCH ET
+  console.log('🔄 Force fetching participants after real-time event...');
   await fetchParticipants(currentRoom.id);
   
-  // INSERT event - tip güvenli erişim
+  // INSERT event - yeni katılımcı
   if (payload.eventType === 'INSERT' && isValidParticipantPayload(payload.new)) {
     const newParticipant = payload.new as GameParticipantPayload;
-    console.log('👤 Yeni katılımcı tespit edildi:', newParticipant.user_id?.slice(-8));
+    console.log('👤 Yeni katılımcı eklendi:', {
+      userId: newParticipant.user_id?.slice(-8),
+      isBot: newParticipant.is_bot,
+      isMe: newParticipant.user_id === user?.id
+    });
     
+    // Eğer gerçek oyuncu ve ben değilsem
     if (!newParticipant.is_bot && 
         newParticipant.user_id && 
         newParticipant.user_id !== user?.id) {
       
-      console.log('✅ GERÇEK OYUNCU KATILDI! Private room eşleşmesi');
+      console.log('✅ GERÇEK RAKIP KATILDI! Oyun başlatılacak...');
       
-      // ✅ ROOM STATUS'U ACTIVE YAP
+      // Room'u active yap
       await supabase
         .from('game_rooms')
         .update({ 
@@ -1236,7 +1243,7 @@ useEffect(() => {
         .eq('id', currentRoom.id);
       
       toast({
-        title: '🎉 Oyuncu Katıldı!',
+        title: '🎉 Rakip Katıldı!',
         description: 'İkinci oyuncu odaya katıldı, oyun başlıyor...',
         duration: 2000,
       });
