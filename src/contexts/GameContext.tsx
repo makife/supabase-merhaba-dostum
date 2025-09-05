@@ -1214,7 +1214,7 @@ useEffect(() => {
   const currentGameMode = getGameModeFromRoom(currentRoom);
 
   const channel = supabase
-    .channel(`private-room-${currentRoom.id}-${user?.id}`)
+    .channel(`room-${currentRoom.id}`)
     .on('postgres_changes', {
   event: '*',
   schema: 'public',
