@@ -427,8 +427,10 @@ const generateRoomCode = () => {
   }, []);
 
   // Fetch participants
-  const fetchParticipants = useCallback(async (roomId: string) => {
+ const fetchParticipants = useCallback(async (roomId: string) => {
   try {
+    console.log('📥 Fetching participants for room:', roomId.slice(-8));
+    
     const { data, error } = await supabase
       .from('game_participants')
       .select(`
@@ -443,8 +445,16 @@ const generateRoomCode = () => {
     }
 
     if (data) {
+      console.log('✅ Participants güncellenecek:', {
+        count: data.length,
+        details: data.map(p => ({
+          id: p.user_id?.slice(-8) || 'null',
+          isBot: p.is_bot,
+          username: (p as any).profiles?.username || 'No name'
+        }))
+      });
+      
       setParticipants(data as GameParticipant[]);
-      console.log('✅ Participants güncellendi:', data.length);
     }
   } catch (error) {
     console.error('❌ fetchParticipants error:', error);
@@ -1230,9 +1240,12 @@ useEffect(() => {
   table: 'game_participants',
   filter: `room_id=eq.${currentRoom.id}`
 }, async (payload: any) => {
-  console.log('📡 ===== REAL-TIME EVENT =====');
-  console.log('📡 Event Type:', payload.eventType);
-  console.log('📡 Current User:', user?.id?.slice(-8));
+  console.log('🔡 ===== REAL-TIME EVENT =====');
+  console.log('🔡 Event Type:', payload.eventType);
+  console.log('🔡 Current User:', user?.id?.slice(-8));
+  
+  // ✅ HER EVENT'TE PARTICIPANTS'I YENİDEN FETCH ET
+  await fetchParticipants(currentRoom.id);
   
   // INSERT event - tip güvenli erişim
   if (payload.eventType === 'INSERT' && isValidParticipantPayload(payload.new)) {
@@ -1244,6 +1257,15 @@ useEffect(() => {
         newParticipant.user_id !== user?.id) {
       
       console.log('✅ GERÇEK OYUNCU KATILDI! Private room eşleşmesi');
+      
+      // ✅ ROOM STATUS'U ACTIVE YAP
+      await supabase
+        .from('game_rooms')
+        .update({ 
+          status: 'active', 
+          started_at: new Date().toISOString() 
+        })
+        .eq('id', currentRoom.id);
       
       toast({
         title: '🎉 Oyuncu Katıldı!',
