@@ -561,105 +561,97 @@ const generateRoomCode = () => {
 
   // Join room
   const joinRoom = useCallback(async (roomCode: string): Promise<boolean> => {
-    if (!user) return false;
+  if (!user) return false;
 
-    try {
-      console.log('🔍 Özel oda aranıyor:', roomCode);
-    
-      // Önce oda var mı kontrol et
-      const { data: room, error: roomError } = await supabase
-        .from('game_rooms')
-        .select('*')
-        .eq('room_code', roomCode)
-        .eq('status', 'waiting')
-        .single();
+  try {
+    console.log('🔍 Özel oda aranıyor:', roomCode);
+  
+    // Önce oda var mı kontrol et
+    const { data: room, error: roomError } = await supabase
+      .from('game_rooms')
+      .select('*')
+      .eq('room_code', roomCode)
+      .eq('status', 'waiting')
+      .single();
 
-      if (roomError || !room) {
-        console.error('❌ Oda bulunamadı:', roomError);
-        toast({
-          title: 'Hata',
-          description: 'Oda bulunamadı veya dolu',
-          variant: 'destructive',
-        });
-        return false;
-      }
-
-      console.log('✅ Oda bulundu:', room.id.slice(-8));
-
-      // Mevcut katılımcıları kontrol et - Normal sorgu kullan (RPC tip sorunu)
-      const { data: participants, error: participantsError } = await supabase
-        .from('game_participants')
-        .select('user_id, is_bot')
-        .eq('room_id', room.id);
-
-      if (participantsError) {
-        console.error('❌ Katılımcı kontrolü hatası:', participantsError);
-        toast({
-          title: 'Hata',
-          description: 'Katılımcı kontrolü başarısız',
-          variant: 'destructive',
-        });
-        return false;
-      }
-
-      const realPlayerCount = participants?.filter(p => !p.is_bot).length || 0;
-      if (realPlayerCount >= 2) {
-        toast({
-          title: 'Hata',
-          description: 'Oda dolu',
-          variant: 'destructive', // destructive " -> destructive (boşluk kaldır)
-        });
-        return false;
-      }
-
-      // Kullanıcı zaten katılmış mı kontrol et
-      const isAlreadyJoined = participants?.some(p => p.user_id === user.id);
-      if (isAlreadyJoined) {
-        console.log('✅ Kullanıcı zaten katılmış, room state güncelleniyor');
-        setCurrentRoom(room);
-        await fetchParticipants(room.id);
-        return true;
-      }
-
-      // Odaya katıl
-      const { error: joinError } = await supabase
-        .from('game_participants')
-        .insert({
-          room_id: room.id,
-          user_id: user.id,
-          score: 0,
-          is_bot: false
-        });
-
-      if (joinError) {
-        console.error('❌ Odaya katılma hatası:', joinError);
-        toast({
-          title: 'Hata',
-          description: 'Odaya katılamadı',
-          variant: 'destructive',
-        });
-        return false;
-      }
-
-      console.log('✅ Odaya katılım başarılı');
-      setCurrentRoom(room);
-    
-      toast({
-        title: 'Odaya Katıldınız',
-        description: 'Diğer oyuncuyu bekleniyor...',
-      });
-
-      return true;
-    } catch (error: any) {
-      console.error('❌ Özel oda katılım hatası:', error);
+    if (roomError || !room) {
+      console.error('❌ Oda bulunamadı:', roomError);
       toast({
         title: 'Hata',
-        description: 'Odaya katılamadı',
+        description: 'Oda bulunamadı veya dolu',
         variant: 'destructive',
       });
       return false;
     }
-  }, [user, toast, fetchParticipants]);
+
+    console.log('✅ Oda bulundu:', room.id.slice(-8));
+
+    // ✅ DÜZELTME: Mevcut katılımcıları kontrol et
+    const { data: participants, error: participantsError } = await supabase
+      .from('game_participants')
+      .select('user_id, is_bot')
+      .eq('room_id', room.id);
+
+    if (participantsError) {
+      console.error('❌ Katılımcı kontrolü hatası:', participantsError);
+      return false;
+    }
+
+    const realPlayerCount = participants?.filter(p => !p.is_bot).length || 0;
+    console.log('👥 Mevcut gerçek oyuncu sayısı:', realPlayerCount);
+    
+    if (realPlayerCount >= 2) {
+      toast({
+        title: 'Hata',
+        description: 'Oda dolu',
+        variant: 'destructive',
+      });
+      return false;
+    }
+
+    // Kullanıcı zaten katılmış mı kontrol et
+    const isAlreadyJoined = participants?.some(p => p.user_id === user.id);
+    if (isAlreadyJoined) {
+      console.log('✅ Kullanıcı zaten katılmış, room state güncelleniyor');
+      setCurrentRoom(room);
+      await fetchParticipants(room.id);
+      return true;
+    }
+
+    // ✅ DÜZELTME: Odaya katıl ve HEMEN ardından fetch et
+    const { error: joinError } = await supabase
+      .from('game_participants')
+      .insert({
+        room_id: room.id,
+        user_id: user.id,
+        score: 0,
+        is_bot: false
+      });
+
+    if (joinError) {
+      console.error('❌ Odaya katılma hatası:', joinError);
+      return false;
+    }
+
+    console.log('✅ Odaya katılım başarılı');
+    setCurrentRoom(room);
+    
+    // ✅ ÖNEMLI: Hemen participants'ı fetch et
+    setTimeout(() => {
+      fetchParticipants(room.id);
+    }, 500);
+  
+    toast({
+      title: 'Odaya Katıldınız',
+      description: 'Diğer oyuncuyu bekleniyor...',
+    });
+
+    return true;
+  } catch (error: any) {
+    console.error('❌ Özel oda katılım hatası:', error);
+    return false;
+  }
+}, [user, toast, fetchParticipants]);
 
   // Find random match - race condition prevention
   const findRandomMatch = useCallback(async (gameType: 'timed' | 'score'): Promise<boolean> => {
