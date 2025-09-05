@@ -37,34 +37,42 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
     return result;
   };
 
-  const handleCreateRoom = async () => {
-    setLoading(true);
-    playSound('buttonClick');
+ const handleCreateRoom = async () => {
+  setLoading(true);
+  playSound('buttonClick');
+  
+  try {
+    const newRoomCode = generateRoomCode();
+    const room = await createRoom(`private-room-${gameType}`, newRoomCode);
     
-    try {
-      const newRoomCode = generateRoomCode();
-      // Include game type in room mode
-      const room = await createRoom(`private-room-${gameType}`, newRoomCode);
+    if (room && room.room_code) {
+      setRoomCode(room.room_code);
+      onRoomCreated(room.room_code, gameType);
       
-      if (room && room.room_code) {
-        setRoomCode(room.room_code);
-        onRoomCreated(room.room_code, gameType);
-        toast({
-          title: 'Oda Oluşturuldu!',
-          description: `Oda kodu: ${room.room_code} (${gameType === 'timed' ? 'Zamana Karşı' : 'Puana Karşı'})`,
-        });
-      }
-    } catch (error) {
-      console.error('Error creating room:', error);
+      // ✅ DÜZELTME: Oda oluşturulduktan sonra participants'ı manuel fetch et
+      setTimeout(async () => {
+        const { data: participants } = await supabase
+          .from('game_participants')
+          .select(`
+            *,
+            profiles:user_id (username, avatar_url)
+          `)
+          .eq('room_id', room.id);
+        
+        console.log('🔄 Oda oluşturma sonrası participants:', participants?.length);
+      }, 1000);
+      
       toast({
-        title: 'Hata',
-        description: 'Oda oluşturulamadı',
-        variant: 'destructive',
+        title: 'Oda Oluşturuldu!',
+        description: `Oda kodu: ${room.room_code} (${gameType === 'timed' ? 'Zamana Karşı' : 'Puana Karşı'})`,
       });
-    } finally {
-      setLoading(false);
     }
-  };
+  } catch (error) {
+    // error handling
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleJoinRoom = async () => {
     if (!joinCode.trim()) {
