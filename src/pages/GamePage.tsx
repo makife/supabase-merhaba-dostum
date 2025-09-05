@@ -2531,9 +2531,6 @@ const submitWord = async () => {
       await updateScore(newScore);
     }
 
-    setParticipants(prev => prev.map(p => 
-  p.user_id === user?.id ? { ...p, score: newScore } : p
-));
 
     // 🔥 YENİ: Turnuva modunda gerçek rakip puanını güncelle
     if (gameMode === 'tournament' && tournamentMatch && user) {
