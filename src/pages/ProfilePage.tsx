@@ -18,7 +18,9 @@ import {
   Edit,
   TrendingUp,
   Calendar,
-  Clock
+  Clock,
+  Award,
+  Users
 } from 'lucide-react';
 
 const ProfilePage = () => {
@@ -39,8 +41,13 @@ const ProfilePage = () => {
     level: 1,
     experience: 0,
     nextLevelExp: 1000,
-    averageScore: 0,        // Ortalama puan
+    averageScore: 0,
     premiumUntil: null as string | null,
+    // Yeni turnuva istatistikleri
+    tournamentsWon: 0,
+    tournamentsLost: 0,
+    tournamentsPlayed: 0,
+    tournamentWinRate: 0,
   });
 
   const [badges, setBadges] = useState<Array<{
@@ -55,7 +62,7 @@ const ProfilePage = () => {
   // Calculate level from total score (same as LevelProgress component)
   const calculateLevel = (totalScore: number) => {
     const baseExp = 1000;
-    const expIncreasePerLevel = 100; // Her seviyede +100 EXP daha fazla gerekecek
+    const expIncreasePerLevel = 100;
     
     let level = 1;
     let totalExpNeeded = 0;
@@ -117,15 +124,60 @@ const ProfilePage = () => {
     }
   };
 
+  // Fetch tournament statistics
+  const fetchTournamentStats = async () => {
+    if (!user) return { won: 0, lost: 0, played: 0, winRate: 0 };
+
+    try {
+      // Kullanıcının turnuva maçlarını al
+      const { data: tournamentMatches, error } = await supabase
+        .from('tournament_matches')
+        .select('winner_id, player1_id, player2_id, status')
+        .or(`player1_id.eq.${user.id},player2_id.eq.${user.id}`)
+        .eq('status', 'completed');
+
+      if (error) {
+        console.error('Turnuva istatistikleri hatası:', error);
+        return { won: 0, lost: 0, played: 0, winRate: 0 };
+      }
+
+      if (!tournamentMatches || tournamentMatches.length === 0) {
+        return { won: 0, lost: 0, played: 0, winRate: 0 };
+      }
+
+      let won = 0;
+      let lost = 0;
+
+      tournamentMatches.forEach(match => {
+        if (match.winner_id === user.id) {
+          won++;
+        } else {
+          lost++;
+        }
+      });
+
+      const played = won + lost;
+      const winRate = played > 0 ? Math.round((won / played) * 100) : 0;
+
+      return { won, lost, played, winRate };
+    } catch (error) {
+      console.error('Turnuva istatistikleri fetch hatası:', error);
+      return { won: 0, lost: 0, played: 0, winRate: 0 };
+    }
+  };
+
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user) return;
       
       const { data } = await supabase
         .from('profiles')
-        .select('*')  // Sadece yıldız, başka bir şey belirtme
+        .select('*')
         .eq('id', user.id)
         .maybeSingle();
+      
+      // Turnuva istatistiklerini al
+      const tournamentStats = await fetchTournamentStats();
       
       if (data) {
         const levelData = calculateLevel(data.total_score || 0);
@@ -147,6 +199,11 @@ const ProfilePage = () => {
           nextLevelExp: levelData.nextLevelExp,
           premiumUntil: data.premium_until,
           averageScore: data.average_score || 0,
+          // Turnuva istatistikleri
+          tournamentsWon: tournamentStats.won,
+          tournamentsLost: tournamentStats.lost,
+          tournamentsPlayed: tournamentStats.played,
+          tournamentWinRate: tournamentStats.winRate,
         }));
       }
     };
@@ -175,14 +232,12 @@ const ProfilePage = () => {
           if (newData.total_score !== undefined) {
             const levelData = calculateLevel(newData.total_score);
             setProfileData(prev => {
-              // Level kontrolünü ekle
               if (levelData.level > prev.level) {
                 toast.success(`🎉 Seviye ${levelData.level}'e ulaştınız!`, {
                   duration: 5000,
                 });
               }
 
-              // Return ekle
               return {
                 ...prev,
                 totalScore: newData.total_score,
@@ -201,7 +256,6 @@ const ProfilePage = () => {
           }
         }
       )
-      // 🏆 YENİ: Rozet güncellemeleri için listener ekle
       .on(
         'postgres_changes',
         {
@@ -213,7 +267,6 @@ const ProfilePage = () => {
         async (payload) => {
           console.log('🏆 New badge earned:', payload.new);
         
-          // Yeni rozet bilgisini al
           const { data: badgeData } = await supabase
             .from('badges')
             .select('name, icon')
@@ -226,8 +279,52 @@ const ProfilePage = () => {
             });
           }
         
-          // Rozet listesini yeniden yükle
           fetchBadges();
+        }
+      )
+      // Turnuva maçları değişikliklerini dinle
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'tournament_matches',
+          filter: `player1_id=eq.${user.id}`
+        },
+        async (payload) => {
+          console.log('🏆 Tournament match updated (as player1):', payload.new);
+          if (payload.new.status === 'completed') {
+            const tournamentStats = await fetchTournamentStats();
+            setProfileData(prev => ({
+              ...prev,
+              tournamentsWon: tournamentStats.won,
+              tournamentsLost: tournamentStats.lost,
+              tournamentsPlayed: tournamentStats.played,
+              tournamentWinRate: tournamentStats.winRate,
+            }));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'tournament_matches',
+          filter: `player2_id=eq.${user.id}`
+        },
+        async (payload) => {
+          console.log('🏆 Tournament match updated (as player2):', payload.new);
+          if (payload.new.status === 'completed') {
+            const tournamentStats = await fetchTournamentStats();
+            setProfileData(prev => ({
+              ...prev,
+              tournamentsWon: tournamentStats.won,
+              tournamentsLost: tournamentStats.lost,
+              tournamentsPlayed: tournamentStats.played,
+              tournamentWinRate: tournamentStats.winRate,
+            }));
+          }
         }
       )
       .subscribe();
@@ -237,7 +334,6 @@ const ProfilePage = () => {
     };
   }, [user]);
 
-  // Rozet useEffect'ini güncelle:
   useEffect(() => {
     fetchBadges();
   }, [user]);
@@ -281,8 +377,7 @@ const ProfilePage = () => {
     const diffTime = premiumDate.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    // Determine subscription type based on remaining days
-    const isYearly = diffDays > 40; // If more than 40 days, likely yearly
+    const isYearly = diffDays > 40;
     const subscriptionType = isYearly ? 'Yıllık' : 'Aylık';
     
     let timeLeft = '';
@@ -303,7 +398,6 @@ const ProfilePage = () => {
 
   const subscriptionInfo = getSubscriptionInfo();
 
-  // 🎯 Manuel refresh butonu ekle (test için):
   const refreshStats = async () => {
     if (!user) return;
   
@@ -313,6 +407,8 @@ const ProfilePage = () => {
         .select('*')
         .eq('id', user.id)
         .single();
+    
+      const tournamentStats = await fetchTournamentStats();
     
       if (data) {
         const levelData = calculateLevel(data.total_score || 0);
@@ -334,6 +430,10 @@ const ProfilePage = () => {
           nextLevelExp: levelData.nextLevelExp,
           premiumUntil: data.premium_until,
           averageScore: data.average_score || 0,
+          tournamentsWon: tournamentStats.won,
+          tournamentsLost: tournamentStats.lost,
+          tournamentsPlayed: tournamentStats.played,
+          tournamentWinRate: tournamentStats.winRate,
         }));
       }
     
@@ -355,7 +455,6 @@ const ProfilePage = () => {
           </Button>
           <h1 className="text-2xl font-bold">Profil</h1>
           <div className="flex space-x-2">
-            {/* 🔄 YENİ: Refresh butonu */}
             {isEditing ? (
               <Button variant="outline" size="sm" onClick={handleSaveProfile}>
                 Kaydet
@@ -393,9 +492,15 @@ const ProfilePage = () => {
                   <h2 className="text-2xl font-bold">{profileData.username}</h2>
                 )}
                 <p className="text-xs text-muted-foreground truncate max-w-xs">{user?.email}</p>
-                <div className="flex items-center space-x-2 mt-2">
+                <div className="flex items-center space-x-2 mt-2 flex-wrap gap-1">
                   <Badge variant="secondary">Seviye {profileData.level}</Badge>
                   <Badge variant="outline">{profileData.winRate}% Kazanma</Badge>
+                  {profileData.tournamentWinRate > 0 && (
+                    <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
+                      <Trophy className="w-3 h-3 mr-1" />
+                      {profileData.tournamentWinRate}% Turnuva
+                    </Badge>
+                  )}
                   {subscriptionInfo && (
                     <Badge variant="default" className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
                       <Crown className="w-3 h-3 mr-1" />
@@ -487,7 +592,6 @@ const ProfilePage = () => {
               <p className="text-sm text-muted-foreground">Seri</p>
             </CardContent>
           </Card>
-          
           <Card>
             <CardContent className="p-4 text-center">
               <TrendingUp className="w-8 h-8 mx-auto mb-2 text-cyan-500" />
@@ -496,6 +600,53 @@ const ProfilePage = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Tournament Statistics */}
+        {profileData.tournamentsPlayed > 0 && (
+          <Card className="border-yellow-200 bg-gradient-to-r from-yellow-50 to-amber-50">
+            <CardHeader>
+              <CardTitle className="flex items-center text-yellow-700">
+                <Trophy className="w-5 h-5 mr-2" />
+                Turnuva İstatistikleri
+              </CardTitle>
+              <CardDescription>
+                Turnuva performansınız
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <Users className="w-6 h-6 text-amber-600" />
+                  </div>
+                  <p className="text-xl font-bold text-amber-800">{profileData.tournamentsPlayed}</p>
+                  <p className="text-sm text-amber-600">Katılım</p>
+                </div>
+                <div className="text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <Award className="w-6 h-6 text-green-600" />
+                  </div>
+                  <p className="text-xl font-bold text-green-800">{profileData.tournamentsWon}</p>
+                  <p className="text-sm text-green-600">Kazanma</p>
+                </div>
+                <div className="text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <Target className="w-6 h-6 text-red-500" />
+                  </div>
+                  <p className="text-xl font-bold text-red-700">{profileData.tournamentsLost}</p>
+                  <p className="text-sm text-red-500">Kaybetme</p>
+                </div>
+                <div className="text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <TrendingUp className="w-6 h-6 text-purple-600" />
+                  </div>
+                  <p className="text-xl font-bold text-purple-800">{profileData.tournamentWinRate}%</p>
+                  <p className="text-sm text-purple-600">Başarı</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Achievements / Badges */}
         <Card>
@@ -566,6 +717,28 @@ const ProfilePage = () => {
               <span>Ortalama Puan:</span>
               <span className="font-bold">{Math.round(profileData.averageScore)}</span>
             </div>
+            {profileData.tournamentsPlayed > 0 && (
+              <>
+                <hr className="my-4" />
+                <div className="text-sm font-semibold text-muted-foreground mb-2">Turnuva Performansı</div>
+                <div className="flex justify-between">
+                  <span>Kazanılan Turnuva:</span>
+                  <span className="font-bold text-green-600">{profileData.tournamentsWon}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Kaybedilen Turnuva:</span>
+                  <span className="font-bold text-red-600">{profileData.tournamentsLost}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Toplam Turnuva:</span>
+                  <span className="font-bold">{profileData.tournamentsPlayed}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Turnuva Başarı Oranı:</span>
+                  <span className="font-bold text-yellow-600">{profileData.tournamentWinRate}%</span>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
