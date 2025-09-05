@@ -1455,6 +1455,16 @@ useEffect(() => {
   };
 }, [user?.id, currentRoom?.id, toast, joinRoom, navigate]);
 
+useEffect(() => {
+  if (!currentRoom || gameMode !== 'private-room') return;
+  
+  const interval = setInterval(() => {
+    fetchParticipants(currentRoom.id);
+  }, 1000);
+  
+  return () => clearInterval(interval);
+}, [currentRoom?.id, gameMode]);
+
   // Handle page close/refresh cleanup
   useEffect(() => {
     const handleBeforeUnload = async () => {
