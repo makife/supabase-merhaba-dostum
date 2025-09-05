@@ -2310,41 +2310,23 @@ useEffect(() => {
   if (gameMode === 'private-room') {
     const realPlayers = participants.filter(p => !p.is_bot && p.user_id !== null);
     
-    console.log('🏠 PRIVATE ROOM CHECK:', {
-      gameMode,
-      totalParticipants: participants.length,
-      realPlayers: realPlayers.length,
-      roomStatus: currentRoom?.status
+    console.log('🔧 PRIVATE ROOM EFFECT TRIGGERED:', {
+      realPlayersLength: realPlayers.length,
+      currentWaitingState: waitingForPlayer,
+      willSetWaiting: realPlayers.length < 2
     });
   
     if (realPlayers.length >= 2) {
-      console.log('✅ 2 gerçek oyuncu hazır - OYUN BAŞLIYOR!');
+      console.log('🔧 SETTING waitingForPlayer = FALSE');
       setWaitingForPlayer(false);
       setGameStarted(true);
-      
-      if (!hasShownStartMessage) {
-        setHasShownStartMessage(true);
-        toast({
-          title: '🎮 Özel Oda Oyunu Başladı!',
-          description: `${gameType === 'score' ? 'Puanlı' : 'Süreli'} özel oda oyunu başladı!`,
-          duration: 2000,
-        });
-      }
     } else {
-      console.log('⏳ Bekliyor - Real players:', realPlayers.length, '/ 2');
+      console.log('🔧 SETTING waitingForPlayer = TRUE'); 
       setWaitingForPlayer(true);
       setGameStarted(false);
-      setHasShownStartMessage(false);
     }
   }
-}, [
-  gameMode, 
-  participants.length, // ✅ SADECE LENGTH
-  currentRoom?.status, 
-  hasShownStartMessage, 
-  gameType
-  // ✅ participants array'ini dependency'den çıkar
-]);
+}, [participants, gameMode]); 
 
   // Touch olayları için optimize edilmiş handler
   const handleLetterTouch = (letter: string, row: number, col: number, event: React.TouchEvent) => {
@@ -3052,6 +3034,12 @@ if (gameEnded) {
 }
 
 if (waitingForPlayer) {
+  console.log('🔴 RENDERING WAITING SCREEN:', {
+    waitingForPlayer,
+    gameStarted, 
+    participants: participants.length,
+    gameMode
+  });
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background to-muted">
       <Card className="w-full max-w-md text-center">
@@ -3134,6 +3122,12 @@ if (waitingForPlayer) {
     </div>
   );
 }
+
+console.log('🎮 RENDERING GAME SCREEN:', {
+  waitingForPlayer,
+  gameStarted,
+  participants: participants.length
+});
 
 const opponent = getOpponentInfo();
 return (
