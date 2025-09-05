@@ -398,6 +398,31 @@ const ProfilePage = () => {
 
   const subscriptionInfo = getSubscriptionInfo();
 
+  // checkBadges fonksiyonunu ekle
+  const checkBadges = async (userId: string) => {
+    try {
+      console.log('Rozet kontrolu yapiliyor:', userId);
+
+      const { data: badges, error } = await supabase.rpc('check_and_award_badges', {
+        p_user_id: userId
+      });
+
+      if (error) {
+        console.error('Rozet kontrolu hatasi:', error);
+      } else if (badges && Array.isArray(badges) && badges.length > 0) {
+        badges.forEach((badge: any) => {
+          toast.success(`Yeni Rozet: ${badge.new_badge_name} ${badge.new_badge_icon}`, {
+            duration: 4000,
+          });
+        });
+      }
+
+      console.log('Rozet kontrolu tamamlandi');
+    } catch (error) {
+      console.error('Rozet kontrolu hatasi:', error);
+    }
+  };
+
   const refreshStats = async () => {
     if (!user) return;
   
