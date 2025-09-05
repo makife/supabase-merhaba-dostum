@@ -745,32 +745,32 @@ const showTournamentEndCard = async (isWinner: boolean, userScore: number, oppon
     }
   };
 
-  const checkBadges = async (userId: string, wordsCount?: number) => {
-    try {
-      console.log('🏆 Rozet kontrolü yapılıyor:', userId);
-  
-      // ESKİ fonksiyon adını kullan (TypeScript'te tanımlı)
-      const { data: badges, error } = await supabase.rpc('check_and_award_badges', {
-        p_user_id: userId
-      });
-  
-      if (error) {
-        console.error('❌ Rozet kontrolü hatası:', error);
-      } else if (badges && Array.isArray(badges) && badges.length > 0) {
-        badges.forEach((badge: any) => {
-          toast({
-            title: '🏆 Yeni Rozet!',
-            description: `"${badge.new_badge_name}" rozetini kazandınız! ${badge.new_badge_icon}`,
-            duration: 4000,
-          });
-        });
-      }
-  
-      console.log('✅ Rozet kontrolü tamamlandı');
-    } catch (error) {
+ const checkBadges = async (userId: string, tournamentStats?: {won: number, lost: number, played: number}) => {
+  try {
+    console.log('🏆 Rozet kontrolü yapılıyor:', userId);
+
+    const { data: badges, error } = await supabase.rpc('check_and_award_badges', {
+      p_user_id: userId,
+      p_tournaments_won: tournamentStats?.won || 0
+    });
+
+    if (error) {
       console.error('❌ Rozet kontrolü hatası:', error);
+    } else if (badges && Array.isArray(badges) && badges.length > 0) {
+      badges.forEach((badge: any) => {
+        toast({
+          title: '🏆 Yeni Rozet!',
+          description: `"${badge.new_badge_name}" rozetini kazandınız! ${badge.new_badge_icon}`,
+          duration: 4000,
+        });
+      });
     }
-  };
+
+    console.log('✅ Rozet kontrolü tamamlandı');
+  } catch (error) {
+    console.error('❌ Rozet kontrolü hatası:', error);
+  }
+};
 
 
   // Oyun biti fonksiyonunu güncelle
