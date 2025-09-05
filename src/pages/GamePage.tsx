@@ -69,7 +69,7 @@ const GamePage = ({
   participants: propsParticipants = []
 }: GamePageProps) => {
   const { user } = useAuth();
-  const { consumeCredit, isPremium } = useUser();
+  const { consumeCredit, isPremium, forceRefreshProfile } = useUser();
   const { hasPurchased, settings } = useUserPurchases();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -734,6 +734,11 @@ const showTournamentEndCard = async (isWinner: boolean, userScore: number, oppon
         console.error('❌ RPC hatası:', error);
       } else {
         console.log('✅ Oyun istatistikleri güncellendi');
+        
+        // HEADER BİLGİLERİNİ ANINDA GÜNCELLE
+        console.log('🔄 Profil bilgileri anında güncelleniyor...');
+        await forceRefreshProfile();
+        console.log('✅ Header bilgileri güncellendi!');
       }
     } catch (error) {
       console.error('❌ İstatistik güncelleme hatası:', error);
@@ -1696,6 +1701,11 @@ const checkWinnerWithScores = useCallback(async (currentPlayerScore: number, cur
         console.error('❌ İstatistik güncelleme hatası:', error);
       } else {
         console.log('✅ İstatistikler başarıyla güncellendi!');
+        
+        // HEADER BİLGİLERİNİ ANINDA GÜNCELLE
+        console.log('🔄 Profil bilgileri anında güncelleniyor...');
+        await forceRefreshProfile();
+        console.log('✅ Header bilgileri güncellendi!');
       
         // Rozet kontrolü
         setTimeout(() => {
