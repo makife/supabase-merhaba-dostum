@@ -188,17 +188,25 @@ const LeaderboardPage = () => {
       monthStart.setDate(1);
       monthStart.setHours(0, 0, 0, 0);
 
-      const { data: gameStats, error } = await supabase.rpc('get_monthly_leaderboard', {
-        month_start: monthStart.toISOString()
-      });
+      let gameStats = null;
+      try {
+        const { data, error } = await supabase.rpc('get_monthly_leaderboard' as any, {
+          month_start: monthStart.toISOString()
+        });
+        
+        if (!error && data) {
+          gameStats = data;
+        }
+      } catch (rpcError) {
+        console.log('Monthly RPC not available, using fallback');
+      }
 
-      if (error) {
-        console.log('Monthly stored procedure not found, using fallback');
+      if (!gameStats) {
         await fetchMonthlyLeadersFallback();
         return;
       }
 
-      const monthlyData = gameStats?.map((entry: any, index: number) => ({
+      const monthlyData = Array.isArray(gameStats) ? gameStats.map((entry: any, index: number) => ({
         user_id: entry.user_id,
         username: entry.username || 'Anonim',
         avatar_url: entry.avatar_url,
@@ -209,7 +217,7 @@ const LeaderboardPage = () => {
         best_word_score: entry.best_word_score || 0,
         rank: index + 1,
         change: entry.rank_change || 0
-      })) || [];
+      })) : [];
 
       setMonthlyLeaders(monthlyData);
 
