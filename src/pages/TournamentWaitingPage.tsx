@@ -85,6 +85,50 @@ useEffect(() => {
     return cleanup;
   }, [tournamentId, timeLeft]);
 
+// Mevcut useEffect'lerin yanına bunu ekleyin
+useEffect(() => {
+  if (!tournamentId || !user) return;
+
+  console.log('🔄 Tournament status listener başlatılıyor...');
+  
+  const tournamentChannel = supabase
+    .channel(`tournament-status-${tournamentId}`)
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'tournaments',
+      filter: `id=eq.${tournamentId}`
+    }, async (payload) => {
+      console.log('🏆 Tournament status güncellendi:', payload.new);
+      
+      if (payload.new.status === 'in_progress') {
+        console.log('🚀 Turnuva başladı, kullanıcı maçı aranıyor...');
+        
+        // Kullanıcının maçını bul
+        const { data: userMatch } = await supabase
+          .from('tournament_matches')
+          .select('id')
+          .eq('tournament_id', tournamentId)
+          .or(`player1_id.eq.${user.id},player2_id.eq.${user.id}`)
+          .single();
+        
+        if (userMatch) {
+          console.log('✅ Kullanıcı maçı bulundu, oyun sayfasına yönlendiriliyor...');
+          navigate(`/game?match=${userMatch.id}&tournament=${tournamentId}`);
+        } else {
+          console.log('❌ Kullanıcı maçı bulunamadı, bracket sayfasına yönlendiriliyor...');
+          navigate(`/tournament-bracket/${tournamentId}`);
+        }
+      }
+    })
+    .subscribe();
+
+  return () => {
+    console.log('🧹 Tournament status listener temizleniyor...');
+    supabase.removeChannel(tournamentChannel);
+  };
+}, [tournamentId, user?.id, navigate]);
+
  const fetchParticipants = async () => {
     try {
       const { data: participantsData, error } = await supabase
