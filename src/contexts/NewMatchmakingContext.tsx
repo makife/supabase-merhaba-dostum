@@ -217,12 +217,24 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
 
   // Arama iptal et
   const cancelSearch = async () => {
-    if (currentRoom && currentRoom.current_players === 1) {
-      // Oda boşsa sil
-      await supabase
-        .from('matchmaking_rooms')
-        .delete()
-        .eq('id', currentRoom.id);
+    if (currentRoom) {
+      // Arama iptal edildiğinde odayı hemen sil veya pasif hale getir
+      if (currentRoom.current_players === 1) {
+        // Tek oyuncu varsa odayı sil
+        await supabase
+          .from('matchmaking_rooms')
+          .delete()
+          .eq('id', currentRoom.id);
+      } else {
+        // Birden fazla oyuncu varsa odayı expired yaparak pasif hale getir
+        await supabase
+          .from('matchmaking_rooms')
+          .update({ 
+            status: 'cancelled',
+            expires_at: new Date().toISOString() // Hemen süresi dolmuş yap
+          })
+          .eq('id', currentRoom.id);
+      }
     }
     cleanup();
   };
