@@ -152,26 +152,21 @@ useEffect(() => {
   };
 
 const startTournament = async () => {
+  // Çoklu çağrıyı önle
+  if (tournamentStarted) {
+    console.log('Turnuva zaten başlatılıyor, tekrar çağrı engellendi');
+    return;
+  }
+  
+  setTournamentStarted(true);
+  
   try {
     console.log('Turnuva başlatılıyor...');
     
-    // Önce zaten başlatılmış mı kontrol et
-    const { data: tournamentCheck } = await supabase
-      .from('tournaments')
-      .select('status')
-      .eq('id', tournamentId)
-      .single();
-    
-    if (tournamentCheck?.status !== 'waiting') {
-      console.log('Turnuva zaten başlatılmış');
-      navigate(`/tournament-bracket/${tournamentId}`);
-      return;
-    }
-    
-    // Database fonksiyonunu çağır
     const { data, error } = await supabase.rpc('start_tournament_automatically', {
       p_tournament_id: tournamentId
     });
+
 
     if (error) {
       console.error('Turnuva başlatma hatası:', error);
