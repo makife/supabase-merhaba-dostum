@@ -25,20 +25,17 @@ useEffect(() => {
   const channel = supabase
     .channel(`tournament-${tournamentId}`)
     .on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'tournament_participants',
-      filter: `tournament_id=eq.${tournamentId}`
-    }, (payload) => {
-      // Yeni katılımcı geldi, listeyi güncelle
-      setParticipants(prev => [...prev, payload.new as TournamentParticipant]);
-      
-      // Katılımcı sayısını güncelle
-      setTournament(prev => prev ? {
-        ...prev,
-        current_round: prev.current_round + 1
-      } : prev);
-    })
+  event: 'INSERT',
+  schema: 'public',
+  table: 'tournament_participants',
+  filter: `tournament_id=eq.${tournamentId}`
+}, (payload) => {
+  // Sadece participants listesini güncelleyin
+  setParticipants(prev => [...prev, payload.new as TournamentParticipant]);
+  
+  // Tournament bilgisini database'den tekrar çekin
+  fetchTournamentData();
+})
     .subscribe();
 
   return () => {
