@@ -437,18 +437,21 @@ const LeaderboardPage = () => {
           </CardHeader>
           <CardContent>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="all-time" className="flex items-center space-x-1">
-                  <Trophy className="w-4 h-4" />
-                  <span>Genel</span>
+              <TabsList className="grid w-full grid-cols-3 h-9">
+                <TabsTrigger value="all-time" className="text-xs px-2">
+                  <Trophy className="w-3 h-3 mr-1" />
+                  <span className="hidden xs:inline">Genel</span>
+                  <span className="xs:hidden">Tümü</span>
                 </TabsTrigger>
-                <TabsTrigger value="weekly" className="flex items-center space-x-1">
-                  <Calendar className="w-4 h-4" />
-                  <span>Haftalık</span>
+                <TabsTrigger value="weekly" className="text-xs px-2">
+                  <Calendar className="w-3 h-3 mr-1" />
+                  <span className="hidden xs:inline">Haftalık</span>
+                  <span className="xs:hidden">Hafta</span>
                 </TabsTrigger>
-                <TabsTrigger value="monthly" className="flex items-center space-x-1">
-                  <CalendarRange className="w-4 h-4" />
-                  <span>Aylık</span>
+                <TabsTrigger value="monthly" className="text-xs px-2">
+                  <CalendarRange className="w-3 h-3 mr-1" />
+                  <span className="hidden xs:inline">Aylık</span>
+                  <span className="xs:hidden">Ay</span>
                 </TabsTrigger>
               </TabsList>
               
