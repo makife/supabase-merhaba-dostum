@@ -2939,7 +2939,43 @@ if (gameEnded) {
 </Button>
 )}
               </>
-            ) : (
+            ) : gameMode === 'private-room' ? (
+    // ✅ ÖZEL ODA BUTONLARI - YENİ
+    <div className="space-y-2">
+      {!rematchRequested && !waitingForRematchResponse && (
+        <Button 
+          onClick={() => {
+            playSound('buttonClick');
+            requestRematch();
+          }}
+          className="w-full bg-green-500 hover:bg-green-600"
+        >
+          🔄 Tekrar Oyna İste
+        </Button>
+      )}
+      
+      {waitingForRematchResponse && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-center space-x-2">
+            <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+            <span className="text-blue-800 font-medium">
+              Rakibinizin yanıtı bekleniyor...
+            </span>
+          </div>
+          <p className="text-blue-600 text-xs text-center mt-2">
+            30 saniye içinde yanıt vermezse istek iptal olacak
+          </p>
+        </div>
+      )}
+      
+      <Button onClick={() => {
+        playSound('buttonClick');
+        navigate('/');
+      }} variant="outline" className="w-full">
+        Ana Menüye Dön
+      </Button>
+    </div>
+  ) : (
               // Normal mod butonları
               <>
                 <Button onClick={() => {
@@ -2952,7 +2988,7 @@ if (gameEnded) {
                   variant="outline" 
                   onClick={() => {
                     playSound('buttonClick');
-                    // Oyunu resetle
+                    resetGameForRematch();
                     setGameGrid(generateRandomGrid());
                     setSelectedLetters([]);
                     setCurrentWord('');
