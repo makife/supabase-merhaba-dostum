@@ -43,19 +43,38 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
     if (!isSearching) return { icon: Search, title: 'Hazırlanıyor...', description: 'Eşleşme sistemi başlatılıyor' };
     
     if (currentRoom) {
-      if (searchProgress < 60) {
+      // Gerçek oyuncu bulundu
+      if (currentRoom.status === 'matched' && currentRoom.current_players >= 2) {
         return {
           icon: Users,
-          title: 'Oyuncu Aranıyor',
-          description: `Oda ID: ${currentRoom.id.slice(0, 8)}... | ${currentRoom.current_players}/${currentRoom.max_players} oyuncu`
-        };
-      } else {
-        return {
-          icon: Bot,
-          title: 'AI Rakip Hazırlanıyor',
-          description: 'Gerçek oyuncu bulunamadı, AI rakip ekleniyor...'
+          title: '🎉 Eşleşme Bulundu!',
+          description: 'Gerçek oyuncu bulundu! Oyun başlıyor...'
         };
       }
+      
+      // Oda bekliyor
+      if (currentRoom.current_players === 1) {
+        if (searchProgress < 60) {
+          return {
+            icon: Users,
+            title: 'Oyuncu Aranıyor',
+            description: `Gerçek oyuncu aranıyor... (${currentRoom.current_players}/${currentRoom.max_players})`
+          };
+        } else {
+          return {
+            icon: Bot,
+            title: 'AI Rakip Hazırlanıyor',
+            description: 'Gerçek oyuncu bulunamadı, AI rakip ekleniyor...'
+          };
+        }
+      }
+      
+      // Birden fazla oyuncu var
+      return {
+        icon: Users,
+        title: 'Oyuncular Hazır!',
+        description: `${currentRoom.current_players}/${currentRoom.max_players} oyuncu - Eşleşme tamamlanıyor...`
+      };
     }
 
     return { icon: Search, title: 'Arama Başlıyor...', description: 'Lütfen bekleyin' };
@@ -93,15 +112,21 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
           </div>
 
           <div className="text-xs text-center text-muted-foreground space-y-1">
-            {searchProgress < 60 ? (
+            {currentRoom?.status === 'matched' ? (
               <>
-                <p>• Gerçek oyuncular aranıyor</p>
-                <p>• 30 saniye sonra AI rakip eklenecek</p>
+                <p>• ✅ Gerçek oyuncu bulundu!</p>
+                <p>• 🚀 Oyun başlatılıyor...</p>
+              </>
+            ) : searchProgress < 60 ? (
+              <>
+                <p>• 🔍 Gerçek oyuncular aranıyor</p>
+                <p>• ⏱️ 30 saniye sonra AI rakip eklenecek</p>
+                <p>• 👤 {currentRoom?.current_players || 0}/2 oyuncu</p>
               </>
             ) : (
               <>
-                <p>• AI rakip hazırlanıyor</p>
-                <p>• Oyun yakında başlayacak</p>
+                <p>• 🤖 AI rakip hazırlanıyor</p>
+                <p>• ⚡ Oyun yakında başlayacak</p>
               </>
             )}
           </div>

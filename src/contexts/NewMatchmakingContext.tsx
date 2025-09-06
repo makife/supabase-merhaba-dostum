@@ -72,54 +72,134 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
       setIsSearching(true);
       setSearchProgress(0);
 
-      // Önce mevcut odaları temizle - Geçici olarak kapatıldı
-      // await supabase.rpc('cleanup_expired_matchmaking_rooms');
+      console.log('🔍 Matchmaking başlatıldı:', gameType);
 
-      // Uygun oda ara - Geçici olarak kapatıldı
-      const availableRooms: any[] = [];
-      const searchError = null;
+      // Önce süresi dolmuş odaları temizle
+      await supabase
+        .from('matchmaking_rooms')
+        .delete()
+        .lt('expires_at', new Date().toISOString());
+
+      // Mevcut uygun oda ara
+      const { data: availableRooms, error: searchError } = await supabase
+        .from('matchmaking_rooms')
+        .select('*')
+        .eq('game_type', gameType)
+        .eq('status', 'waiting')
+        .lt('current_players', 2)
+        .order('created_at', { ascending: true })
+        .limit(1);
 
       if (searchError) {
         console.error('Error searching for rooms:', searchError);
         throw searchError;
       }
 
-      // Geçici olarak basit room ID oluştur
-      const roomId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      
-      // Geçici oda bilgisi
-      setCurrentRoom({
-        id: roomId,
-        game_type: gameType,
-        status: 'waiting',
-        current_players: 1,
-        max_players: 2,
-        created_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 60000).toISOString()
-      });
+      let roomToJoin = null;
 
-      // Real-time dinleme geçici olarak kapatıldı
-      // Şimdilik sadece timeout ile çalışacak
+      if (availableRooms && availableRooms.length > 0) {
+        // Mevcut odaya katıl
+        roomToJoin = availableRooms[0];
+        console.log('🎯 Mevcut oda bulundu:', roomToJoin.id);
 
-      // setSearchChannel(channel); // Geçici olarak kapatıldı
+        // Oda dolu mu kontrol et
+        if (roomToJoin.current_players >= 2) {
+          console.log('⚠️ Oda dolu, yeni oda oluşturuluyor...');
+          roomToJoin = null;
+        } else {
+          // Odaya katıl
+          const { error: updateError } = await supabase
+            .from('matchmaking_rooms')
+            .update({ 
+              current_players: roomToJoin.current_players + 1,
+              status: roomToJoin.current_players + 1 >= 2 ? 'matched' : 'waiting'
+            })
+            .eq('id', roomToJoin.id);
+
+          if (updateError) {
+            console.error('Error joining room:', updateError);
+            roomToJoin = null;
+          }
+        }
+      }
+
+      // Oda bulunamadıysa yeni oda oluştur
+      if (!roomToJoin) {
+        console.log('🆕 Yeni oda oluşturuluyor...');
+        const { data: newRoom, error: createError } = await supabase
+          .from('matchmaking_rooms')
+          .insert({
+            game_type: gameType,
+            status: 'waiting',
+            current_players: 1,
+            max_players: 2,
+            expires_at: new Date(Date.now() + 60000).toISOString() // 1 dakika
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('Error creating room:', createError);
+          throw createError;
+        }
+
+        roomToJoin = newRoom;
+        console.log('✅ Yeni oda oluşturuldu:', roomToJoin.id);
+      }
+
+      setCurrentRoom(roomToJoin);
+
+      // Real-time subscription başlat
+      const channel = supabase
+        .channel(`matchmaking-${roomToJoin.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'matchmaking_rooms',
+            filter: `id=eq.${roomToJoin.id}`
+          },
+          (payload) => {
+            console.log('🔄 Oda güncellendi:', payload);
+            const updatedRoom = payload.new as MatchmakingRoom;
+            
+            if (updatedRoom.status === 'matched' && updatedRoom.current_players >= 2) {
+              console.log('🎉 Eşleşme bulundu!');
+              setIsSearching(false);
+              toast({
+                title: "Eşleşme Bulundu!",
+                description: "Oyun başlıyor...",
+              });
+              onMatchFound?.(updatedRoom.id);
+              cleanup();
+            } else {
+              setCurrentRoom(updatedRoom);
+            }
+          }
+        )
+        .subscribe();
+
+      setSearchChannel(channel);
 
       // Progress animasyonu
       let progress = 0;
       const interval = setInterval(() => {
-        progress += 1;
+        progress += 2;
         setSearchProgress(Math.min(progress, 100));
       }, 200);
       setProgressInterval(interval);
 
-      // 30 saniye sonra AI ile eşleştir
+      // 30 saniye sonra eşleşme bulunamazsa AI ile eşleştir
       setTimeout(() => {
-        if (isSearching) {
+        if (isSearching && currentRoom && currentRoom.current_players < 2) {
+          console.log('⏰ Timeout: AI rakip ekleniyor...');
           setIsSearching(false);
           toast({
             title: "AI Rakip Bulundu!",
             description: "AI ile oyun başlıyor...",
           });
-          onMatchFound?.(roomId);
+          onMatchFound?.(roomToJoin.id);
           cleanup();
         }
       }, 30000);
@@ -137,7 +217,13 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
 
   // Arama iptal et
   const cancelSearch = async () => {
-    // Geçici olarak sadece cleanup
+    if (currentRoom && currentRoom.current_players === 1) {
+      // Oda boşsa sil
+      await supabase
+        .from('matchmaking_rooms')
+        .delete()
+        .eq('id', currentRoom.id);
+    }
     cleanup();
   };
 
