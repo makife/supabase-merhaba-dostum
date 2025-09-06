@@ -19,34 +19,9 @@ const TournamentWaitingPage = () => {
   const [totalParticipants, setTotalParticipants] = useState(1);
   const [tournamentStarted, setTournamentStarted] = useState(false);
 
-useEffect(() => {
-  if (!tournamentId) return;
-
-  // Real-time katılımcı takibi
-  const channel = supabase
-    .channel(`tournament-${tournamentId}`)
-    .on('postgres_changes', {
-  event: 'INSERT',
-  schema: 'public',
-  table: 'tournament_participants',
-  filter: `tournament_id=eq.${tournamentId}`
-}, (payload) => {
-  // Sadece participants listesini güncelleyin
-  setParticipants(prev => [...prev, payload.new as TournamentParticipant]);
-  
-  // Tournament bilgisini database'den tekrar çekin
-  fetchTournamentData();
-})
-    .subscribe();
-
-  return () => {
-    supabase.removeChannel(channel);
-  };
-}, [tournamentId]);
-
+  // Tournament bilgilerini ve katılımcıları getir
   const fetchTournamentData = async () => {
     try {
-      // Turnuva bilgilerini al
       const { data: tournamentData } = await supabase
         .from('tournaments')
         .select('*')
@@ -61,54 +36,21 @@ useEffect(() => {
           current_players: tournamentData.current_round
         } as Tournament);
 
-        // Geri sayımı kalan süreye göre başlat
-        const timeout = (tournamentData.timeout_duration ?? 15);
+        // Geçen süreyi hesapla
+        const timeout = tournamentData.timeout_duration ?? 15;
         const createdAtMs = new Date(tournamentData.created_at).getTime();
         const elapsed = Math.floor((Date.now() - createdAtMs) / 1000);
         const remaining = Math.max(0, timeout - elapsed);
         setTimeLeft(remaining);
       }
       
-      fetchParticipants();
+      await fetchParticipants();
     } catch (error) {
       console.error('Turnuva verisi alınamadı:', error);
     }
   };
 
-useEffect(() => {
-  if (!tournamentId) return;
-
-  fetchTournamentData();
-
-  // startCountdown'u direkt çağır ve cleanup'ı al
-  const cleanup = startCountdown();
-  return cleanup;
-}, [tournamentId, timeLeft]);
-
-
-  //sonradan katılanlar için
-useEffect(() => {
-  if (!tournamentId || !user || tournament?.creator_id === user?.id) return;
-
-  const channel = supabase
-    .channel(`tournament-redirect-${tournamentId}`)
-    .on('postgres_changes', {
-      event: 'UPDATE',
-      schema: 'public',
-      table: 'tournaments',
-      filter: `id=eq.${tournamentId}`
-    }, (payload) => {
-      if (payload.new.status === 'in_progress') {
-        console.log('Turnuva başladı, bracket sayfasına yönlendiriliyor...');
-        navigate(`/tournament-bracket/${tournamentId}`);
-      }
-    })
-    .subscribe();
-
-  return () => supabase.removeChannel(channel);
-}, [tournamentId, user?.id, tournament?.creator_id]);
-
- const fetchParticipants = async () => {
+  const fetchParticipants = async () => {
     try {
       const { data: participantsData, error } = await supabase
         .from('tournament_participants')
@@ -118,7 +60,6 @@ useEffect(() => {
 
       if (error || !participantsData) return;
 
-      // Gerçek oyuncu sayısını hesapla
       const realPlayers = participantsData.filter(p => !p.is_bot);
       const totalPlayers = participantsData.length;
       
@@ -127,7 +68,6 @@ useEffect(() => {
       
       console.log(`👥 Gerçek oyuncu: ${realPlayers.length}, Toplam: ${totalPlayers}`);
       
-      // Oyuncu bilgilerini yükle
       const participantsWithProfiles = await Promise.all(
         participantsData.map(async (participant) => {
           if (participant.is_bot) {
@@ -140,7 +80,6 @@ useEffect(() => {
             };
           }
 
-          // Gerçek oyuncu profili yükle
           const { data: profileData } = await supabase
             .from('profiles')
             .select('username, avatar_url')
@@ -160,67 +99,114 @@ useEffect(() => {
     }
   };
 
-const startCountdown = () => {
-  const timer = setInterval(() => {
-    setTimeLeft((prev) => {
-      if (prev <= 1) {
-        clearInterval(timer);
-        
-        if (tournament?.creator_id === user?.id) {
-          startTournament();
-        } else {
-          console.log('Turnuva başlatma bekleniyor...');
-        }
-        
-        return 0;
-      }
-      return prev - 1;
-    });
-  }, 1000);
-
-  return () => clearInterval(timer);
-};
-
-const startTournament = async () => {
-  if (tournamentStarted) {
-    console.log('Turnuva zaten başlatılıyor, tekrar çağrı engellendi');
-    return;
-  }
-  
-  console.log('Turnuva başlatılıyor...');
-  setTournamentStarted(true);
-  
-  try {
-    const { data, error } = await supabase.rpc('start_tournament_automatically', {
-      p_tournament_id: tournamentId
-    });
-
-    if (error) {
-      console.error('Turnuva başlatma hatası:', error);
-      setTournamentStarted(false);
+  const startTournament = async () => {
+    if (tournamentStarted) {
+      console.log('Turnuva zaten başlatılıyor, tekrar çağrı engellendi');
       return;
     }
-
-    const result = data as any;
     
-    if (result?.success || result === null) {
-      console.log('Turnuva başlatıldı, bracket sayfasına yönlendiriliyor...');
-      navigate(`/tournament-bracket/${tournamentId}`);
-    } else {
-      console.error('Turnuva başlatma hatası:', result?.error);
+    console.log('Turnuva başlatılıyor...');
+    setTournamentStarted(true);
+    
+    try {
+      const { data, error } = await supabase.rpc('start_tournament_automatically', {
+        p_tournament_id: tournamentId
+      });
+
+      if (error) {
+        console.error('Turnuva başlatma hatası:', error);
+        setTournamentStarted(false);
+        return;
+      }
+
+      const result = data as any;
+      
+      if (result?.success) {
+        console.log('Turnuva başlatıldı, bracket sayfasına yönlendiriliyor...');
+        navigate(`/tournament-bracket/${tournamentId}`);
+      } else {
+        console.error('Turnuva başlatma hatası:', result?.error);
+        setTournamentStarted(false);
+      }
+      
+    } catch (error) {
+      console.error('Turnuva başlatma hatası:', error);
       setTournamentStarted(false);
     }
-    
-  } catch (error) {
-    console.error('Turnuva başlatma hatası:', error);
-    setTournamentStarted(false);
-  }
-};
-  
-const createTournamentMatches = async () => {
-  // Bu fonksiyon artık database içinde yapılıyor
-  console.log('Maçlar database fonksiyonu tarafından oluşturuluyor...');
-};
+  };
+
+  // İlk yükleme
+  useEffect(() => {
+    if (!tournamentId) return;
+    fetchTournamentData();
+  }, [tournamentId]);
+
+  // Timer - sadece turnuva oluşturan için
+  useEffect(() => {
+    if (!tournament || tournament.creator_id !== user?.id || timeLeft <= 0) return;
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          startTournament();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [tournament?.creator_id, user?.id, timeLeft]);
+
+  // Sonradan katılanlar için real-time listener
+  useEffect(() => {
+    if (!tournamentId || !user || !tournament || tournament.creator_id === user.id) return;
+
+    console.log('Real-time tournament listener başlatılıyor...');
+
+    const channel = supabase
+      .channel(`tournament-status-${tournamentId}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'tournaments',
+        filter: `id=eq.${tournamentId}`
+      }, (payload) => {
+        console.log('Turnuva durumu güncellendi:', payload.new);
+        if (payload.new.status === 'in_progress') {
+          console.log('Turnuva başladı, bracket sayfasına yönlendiriliyor...');
+          navigate(`/tournament-bracket/${tournamentId}`);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      console.log('Real-time tournament listener temizleniyor...');
+      supabase.removeChannel(channel);
+    };
+  }, [tournamentId, user?.id, tournament?.creator_id, navigate]);
+
+  // Katılımcı real-time güncellemeleri
+  useEffect(() => {
+    if (!tournamentId) return;
+
+    const participantsChannel = supabase
+      .channel(`tournament-participants-${tournamentId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'tournament_participants',
+        filter: `tournament_id=eq.${tournamentId}`
+      }, () => {
+        fetchParticipants();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(participantsChannel);
+    };
+  }, [tournamentId]);
 
   if (!tournament) {
     return (
@@ -246,7 +232,6 @@ const createTournamentMatches = async () => {
               {timeLeft}s
             </div>
             
-            {/* Gerçek oyuncu odaklı mesaj */}
             <div className="space-y-2">
               <p className="text-green-300 font-bold">
                 🎯 {realPlayerCount} Gerçek Oyuncu Katıldı
@@ -267,6 +252,12 @@ const createTournamentMatches = async () => {
               {realPlayerCount === 8 && (
                 <p className="text-yellow-300 text-sm font-bold">
                   🔥 TAM KADRO! 8 gerçek oyunculu turnuva
+                </p>
+              )}
+
+              {tournament.creator_id !== user?.id && (
+                <p className="text-blue-300 text-sm">
+                  Turnuva başlatılması bekleniyor...
                 </p>
               )}
             </div>
@@ -293,7 +284,7 @@ const createTournamentMatches = async () => {
             </div>
             
             <div className="space-y-2">
-              {/* Gerçek oyuncuları önce göster */}
+              {/* Gerçek oyuncular */}
               {participants
                 .filter(p => !p.is_bot)
                 .map((participant, index) => (
@@ -315,7 +306,7 @@ const createTournamentMatches = async () => {
                 </div>
               ))}
 
-              {/* Botları sonra göster */}
+              {/* Botlar */}
               {participants
                 .filter(p => p.is_bot)
                 .map((participant, index) => (
