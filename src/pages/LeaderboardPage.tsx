@@ -94,32 +94,12 @@ const LeaderboardPage = () => {
     }
   };
 
-  // Haftalık sıralama - gerçek veriler
+  // Haftalık sıralama
   const fetchWeeklyLeaders = async () => {
     try {
-      // DÜZELTME: Doğru hafta başlangıcını hesapla
-      const today = new Date();
-      const currentDay = today.getDay(); // 0=Pazar, 1=Pazartesi, 2=Salı...
-      
-      // Pazartesi'ye gitmek için gereken gün sayısı
-      let daysFromMonday;
-      if (currentDay === 0) { // Pazar ise
-        daysFromMonday = 6; // 6 gün geriye git
-      } else { // Diğer günler
-        daysFromMonday = currentDay - 1; // Pazartesi'ye git
-      }
-      
-      const mondayDate = new Date(today);
-      mondayDate.setDate(today.getDate() - daysFromMonday);
-      mondayDate.setHours(0, 0, 0, 0);
-      
-      const weekStartStr = mondayDate.toISOString().split('T')[0];
-      
-      console.log('Bugün:', today.toISOString().split('T')[0]);
-      console.log('Pazartesi hesaplanıyor - currentDay:', currentDay, 'daysFromMonday:', daysFromMonday);
+      const weekStartStr = '2025-09-02'; // SABIT TARİH
       console.log('Haftalık sorgu tarihi:', weekStartStr);
 
-      // Type-safe RPC çağrısı
       const { data, error } = await supabase.rpc('get_weekly_leaderboard' as any, {
         target_week_start: weekStartStr
       });
@@ -127,15 +107,11 @@ const LeaderboardPage = () => {
       if (error) {
         console.error('Weekly leaderboard RPC error:', error);
         setWeeklyLeaders([]);
-        if (user) {
-          setUserStats(prev => ({ ...prev, weekly: null }));
-        }
         return;
       }
 
       console.log('Haftalık veri geldi:', data);
 
-      // Type guard ile array kontrolü
       const weeklyData = Array.isArray(data) ? data.map((entry: any, index: number) => ({
         user_id: entry.user_id,
         username: entry.username || 'Anonim',
@@ -161,21 +137,12 @@ const LeaderboardPage = () => {
     }
   };
 
-  // Aylık sıralama - gerçek veriler
+  // Aylık sıralama
   const fetchMonthlyLeaders = async () => {
     try {
-      // DÜZELTME: Bu ayın 1'ini doğru hesapla
-      const today = new Date();
-      const year = today.getFullYear();
-      const month = today.getMonth(); // 0-11 arası
-      
-      const firstDayOfMonth = new Date(year, month, 1);
-      const monthStartStr = firstDayOfMonth.toISOString().split('T')[0];
-      
-      console.log('Bugün:', today.toISOString().split('T')[0]);
-      console.log('Bu ayın 1\'i:', monthStartStr);
+      const monthStartStr = '2025-09-01'; // SABIT TARİH
+      console.log('Aylık sorgu tarihi:', monthStartStr);
 
-      // Type-safe RPC çağrısı
       const { data, error } = await supabase.rpc('get_monthly_leaderboard' as any, {
         target_month_start: monthStartStr
       });
@@ -183,15 +150,11 @@ const LeaderboardPage = () => {
       if (error) {
         console.error('Monthly leaderboard RPC error:', error);
         setMonthlyLeaders([]);
-        if (user) {
-          setUserStats(prev => ({ ...prev, monthly: null }));
-        }
         return;
       }
 
       console.log('Aylık veri geldi:', data);
 
-      // Type guard ile array kontrolü
       const monthlyData = Array.isArray(data) ? data.map((entry: any, index: number) => ({
         user_id: entry.user_id,
         username: entry.username || 'Anonim',
@@ -280,22 +243,16 @@ const LeaderboardPage = () => {
           <Card key={leader.user_id} className={`transition-all hover:shadow-md ${getRankColor(leader.rank)}`}>
             <CardContent className="p-3">
               <div className="flex items-center space-x-3">
-                {/* Rank Icon */}
                 <div className="flex-shrink-0">
                   {getRankIcon(leader.rank)}
                 </div>
-                
-                {/* Avatar */}
                 <Avatar className="w-10 h-10 flex-shrink-0">
                   <AvatarImage src={leader.avatar_url || undefined} alt={leader.username} />
                   <AvatarFallback>
                     {leader.username.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                
-                {/* User Info - Ana alan */}
                 <div className="flex-1 min-w-0">
-                  {/* İsim ve rozetler satırı */}
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center space-x-2 min-w-0 flex-1">
                       <h3 className={`font-semibold truncate text-sm ${leader.rank <= 3 ? 'text-white' : 'text-foreground'}`}>
@@ -307,15 +264,12 @@ const LeaderboardPage = () => {
                         </Badge>
                       )}
                     </div>
-                    {/* Değişim göstergesi sağ tarafa */}
                     {showChange && (
                       <div className="flex-shrink-0 ml-2">
                         {getRankChangeIcon(leader.change)}
                       </div>
                     )}
                   </div>
-                  
-                  {/* İstatistikler satırı */}
                   <div className="flex items-center space-x-3 text-xs">
                     <span className={`flex items-center ${leader.rank <= 3 ? 'text-white/80' : 'text-muted-foreground'}`}>
                       <Target className="w-3 h-3 mr-1" />
@@ -380,7 +334,6 @@ const LeaderboardPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-3">
       <div className="max-w-2xl mx-auto space-y-4">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <Button variant="outline" size="sm" onClick={() => navigate('/')} className="text-xs">
             <ArrowLeft className="w-4 h-4 mr-1" />
@@ -393,7 +346,6 @@ const LeaderboardPage = () => {
           <div className="w-12" />
         </div>
 
-        {/* Kullanıcının kendi durumu */}
         {currentStats && (
           <Card className="border-primary">
             <CardHeader className="pb-3">
@@ -434,7 +386,6 @@ const LeaderboardPage = () => {
           </Card>
         )}
 
-        {/* Liderlik Tabloları */}
         <Card>
           <CardHeader>
             <CardTitle>Liderlik Sıralaması</CardTitle>
@@ -477,7 +428,6 @@ const LeaderboardPage = () => {
           </CardContent>
         </Card>
 
-        {/* Bilgi Kutusu */}
         <Card className="border-blue-200 bg-blue-50">
           <CardContent className="p-4">
             <div className="flex items-start space-x-3">
