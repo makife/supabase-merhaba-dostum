@@ -2508,17 +2508,6 @@ const submitWord = async () => {
     const newScore = playerScore + result.points;
     setPlayerScore(newScore);
 
-    // localStorage'a yaz
-localStorage.setItem(`room-${currentRoom.id}-${user?.id}`, newScore.toString());
-
-// Rakibin skorunu kontrol et
-const opponentKey = Object.keys(localStorage).find(key => 
-  key.startsWith(`room-${currentRoom.id}-`) && !key.includes(user?.id)
-);
-if (opponentKey) {
-  const opponentScore = parseInt(localStorage.getItem(opponentKey) || '0');
-  setOpponentScore(opponentScore);
-}
     
     setPlayerWords(prev => [...prev, currentWord]);
     setPlayerWordsWithScores(prev => [...prev, { word: currentWord, score: result.points }]);
