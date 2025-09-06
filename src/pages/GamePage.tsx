@@ -2508,20 +2508,17 @@ const submitWord = async () => {
     const newScore = playerScore + result.points;
     setPlayerScore(newScore);
 
-    setTimeout(async () => {
-  if (currentRoom) {
-    const { data } = await supabase
-      .from('game_participants')
-      .select('score, user_id')
-      .eq('room_id', currentRoom.id)
-      .neq('user_id', user?.id)
-      .single();
-    
-    if (data) {
-      setOpponentScore(data.score);
-    }
-  }
-}, 1000);
+    // localStorage'a yaz
+localStorage.setItem(`room-${currentRoom.id}-${user?.id}`, newScore.toString());
+
+// Rakibin skorunu kontrol et
+const opponentKey = Object.keys(localStorage).find(key => 
+  key.startsWith(`room-${currentRoom.id}-`) && !key.includes(user?.id)
+);
+if (opponentKey) {
+  const opponentScore = parseInt(localStorage.getItem(opponentKey) || '0');
+  setOpponentScore(opponentScore);
+}
     
     setPlayerWords(prev => [...prev, currentWord]);
     setPlayerWordsWithScores(prev => [...prev, { word: currentWord, score: result.points }]);
