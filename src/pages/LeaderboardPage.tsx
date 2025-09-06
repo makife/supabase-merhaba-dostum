@@ -107,7 +107,8 @@ const LeaderboardPage = () => {
       
       const weekStartStr = mondayDate.toISOString().split('T')[0]; // YYYY-MM-DD format
 
-      const { data, error } = await supabase.rpc('get_weekly_leaderboard', {
+      // Type-safe RPC çağrısı
+      const { data, error } = await supabase.rpc('get_weekly_leaderboard' as any, {
         target_week_start: weekStartStr
       });
 
@@ -121,7 +122,8 @@ const LeaderboardPage = () => {
         return;
       }
 
-      const weeklyData = data?.map((entry: any, index: number) => ({
+      // Type guard ile array kontrolü
+      const weeklyData = Array.isArray(data) ? data.map((entry: any, index: number) => ({
         user_id: entry.user_id,
         username: entry.username || 'Anonim',
         avatar_url: entry.avatar_url,
@@ -132,7 +134,7 @@ const LeaderboardPage = () => {
         best_word_score: 0,
         rank: entry.rank_position || index + 1,
         change: entry.rank_change || 0
-      })) || [];
+      })) : [];
 
       setWeeklyLeaders(weeklyData);
 
@@ -154,7 +156,8 @@ const LeaderboardPage = () => {
       const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
       const monthStartStr = firstDayOfMonth.toISOString().split('T')[0]; // YYYY-MM-DD format
 
-      const { data, error } = await supabase.rpc('get_monthly_leaderboard', {
+      // Type-safe RPC çağrısı
+      const { data, error } = await supabase.rpc('get_monthly_leaderboard' as any, {
         target_month_start: monthStartStr
       });
 
@@ -168,7 +171,8 @@ const LeaderboardPage = () => {
         return;
       }
 
-      const monthlyData = data?.map((entry: any, index: number) => ({
+      // Type guard ile array kontrolü
+      const monthlyData = Array.isArray(data) ? data.map((entry: any, index: number) => ({
         user_id: entry.user_id,
         username: entry.username || 'Anonim',
         avatar_url: entry.avatar_url,
@@ -179,7 +183,7 @@ const LeaderboardPage = () => {
         best_word_score: 0,
         rank: entry.rank_position || index + 1,
         change: entry.rank_change || 0
-      })) || [];
+      })) : [];
 
       setMonthlyLeaders(monthlyData);
 
