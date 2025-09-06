@@ -27,7 +27,8 @@ import {
   Bot,
   Shuffle,
   Lightbulb,
-  PenTool
+  PenTool,
+  Loader2
 } from 'lucide-react';
 
 interface TournamentMatch {
@@ -335,6 +336,9 @@ const generateTournamentGrid = useCallback((seed: string): string[][] => {
   const [opponentName, setOpponentName] = useState('');
   const [targetScore, setTargetScore] = useState(gameType === 'score' ? 500 : 0);
   const [gameStartTime, setGameStartTime] = useState<number>(Date.now());
+  const [showRematchDialog, setShowRematchDialog] = useState(false);
+  const [rematchRequested, setRematchRequested] = useState(false);
+  const [waitingForRematchResponse, setWaitingForRematchResponse] = useState(false);
   
 const handleTournamentGameEnd = async (userScore: number, opponentScore: number) => {
   if (!user || !tournamentMatch) return;
@@ -395,6 +399,78 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
     console.error('Turnuva maç bitiş hatası:', error);
   }
 };
+
+const requestRematch = async () => {
+  if (!currentRoom || !user) return;
+  
+  try {
+    setRematchRequested(true);
+    setWaitingForRematchResponse(true);
+    
+    // Rematch request gönder
+    await sendRematchRequest(currentRoom.room_code || generateRoomCode(), gameType);
+    
+    // 30 saniye timeout
+    setTimeout(() => {
+      if (waitingForRematchResponse) {
+        setWaitingForRematchResponse(false);
+        setRematchRequested(false);
+        toast({
+          title: '⏰ Süre Doldu',
+          description: 'Rakibiniz yanıt vermedi.',
+          variant: 'destructive',
+        });
+      }
+    }, 30000);
+    
+  } catch (error) {
+    console.error('Rematch request error:', error);
+    setRematchRequested(false);
+    setWaitingForRematchResponse(false);
+    toast({
+      title: 'Hata',
+      description: 'Tekrar oyun isteği gönderilemedi.',
+      variant: 'destructive',
+    });
+  }
+};
+
+const resetGameForRematch = () => {
+  // Oyunu sıfırla
+  setGameGrid(generateRandomGrid());
+  setSelectedLetters([]);
+  setCurrentWord('');
+  setUsedWords(new Set());
+  setGlobalUsedWords(new Set());
+  setPlayerWords([]);
+  setOpponentWords([]);
+  setPlayerWordsWithScores([]);
+  setOpponentWordsWithScores([]);
+  setPlayerScore(0);
+  setOpponentScore(0);
+  timeLeftRef.current = gameType === 'timed' ? 120 : 0;
+  setDisplayTime(timeLeftRef.current);
+  setGameStarted(true);
+  setGameEnded(false);
+  setWinner(null);
+  setTimeWarningPlayed(false);
+  setJokers({ degistir: 3, fisilida: 3, senYaz: 3 });
+  setSelectedJoker(null);
+  setHighlightedLetters([]);
+  setIsJokerActive(false);
+  setRematchRequested(false);
+  setWaitingForRematchResponse(false);
+  setShowRematchDialog(false);
+  
+  // Room'daki used words'ü temizle
+  if (currentRoom) {
+    supabase
+      .from('game_words')
+      .delete()
+      .eq('room_id', currentRoom.id);
+  }
+};
+  
 const createNextRoundMatches = async (tournamentId: string, nextRound: number) => {
   try {
     console.log(`🏆 ${nextRound}. tur maçları oluşturuluyor...`);
@@ -1396,6 +1472,45 @@ const useSenYazJoker = async () => {
 
   fetchAvatars();
 }, [user?.id, participants, gameMode, gameEnded]);
+
+useEffect(() => {
+  if (!currentRoom || gameMode !== 'private-room') return;
+  
+  const handleRematchAccepted = () => {
+    setWaitingForRematchResponse(false);
+    setRematchRequested(false);
+    
+    toast({
+      title: '🎉 Tekrar Oyun Kabul Edildi!',
+      description: 'Yeni oyun başlıyor...',
+      duration: 2000,
+    });
+    
+    setTimeout(() => {
+      resetGameForRematch();
+    }, 1000);
+  };
+  
+  const handleRematchRejected = () => {
+    setWaitingForRematchResponse(false);
+    setRematchRequested(false);
+    
+    toast({
+      title: '❌ Tekrar Oyun Reddedildi',
+      description: 'Rakibiniz tekrar oynamak istemiyor.',
+      variant: 'destructive',
+    });
+  };
+  
+  // Global event listener'lar (opsiyonel - real-time yerine)
+  window.addEventListener('rematchAccepted', handleRematchAccepted);
+  window.addEventListener('rematchRejected', handleRematchRejected);
+  
+  return () => {
+    window.removeEventListener('rematchAccepted', handleRematchAccepted);
+    window.removeEventListener('rematchRejected', handleRematchRejected);
+  };
+}, [currentRoom, gameMode, waitingForRematchResponse]);
 
   // Load wordlist from public/wordlist.txt
   useEffect(() => {
