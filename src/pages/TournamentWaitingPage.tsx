@@ -197,40 +197,28 @@ useEffect(() => {
   };
 
 const startTournament = async () => {
-  // Çoklu çağrıyı önle - EN BAŞTA KONTROL ET
   if (tournamentStarted) {
     console.log('Turnuva zaten başlatılıyor, tekrar çağrı engellendi');
     return;
   }
   
   console.log('Turnuva başlatılıyor...');
-  setTournamentStarted(true); // HİÇ BİR ŞEY YAPMADAN ÖNCE SET ET
+  setTournamentStarted(true);
   
   try {
     const { data, error } = await supabase.rpc('start_tournament_automatically', {
       p_tournament_id: tournamentId
     });
 
-    if (error) {
-      // Debug için eklenen loglar
-      console.log('🔍 Error object:', error);
-      console.log('🔍 Error type:', typeof error);
-      console.log('🔍 Error keys:', Object.keys(error));
-      console.log('🔍 Error message:', error.message);
-      console.log('🔍 Error toString:', error.toString());
-      console.log('🔍 Error string conversion:', String(error));
+    console.log('🔍 RPC Response - Data:', data, 'Error:', error);
+
+    // Önce data içindeki hata kontrolü
+    if (data && typeof data === 'object' && data.success === false) {
+      console.log('🔍 Data error detected:', data.error);
       
-      const errorMessage = error.message || error.toString() || String(error) || '';
-      
-      console.log('🔍 Final error message:', errorMessage);
-      
-      // Eğer maçlar zaten varsa, kullanıcının maçını bul ve oyun sayfasına yönlendir
-      if (errorMessage.includes('Matches already exist') || 
-          errorMessage.includes('already exist') ||
-          String(error).includes('Matches already exist')) {
-        console.log('✅ Maçlar zaten mevcut, kullanıcı maçı aranıyor...');
+      if (data.error && data.error.includes('Matches already exist')) {
+        console.log('✅ Data hatası - Maçlar zaten mevcut, kullanıcı maçı aranıyor...');
         
-        // Kullanıcının maçını bul
         const { data: userMatch } = await supabase
           .from('tournament_matches')
           .select('id')
@@ -239,26 +227,25 @@ const startTournament = async () => {
           .single();
         
         if (userMatch) {
-          console.log('✅ Kullanıcı maçı bulundu, oyun sayfasına yönlendiriliyor...');
           navigate(`/game?match=${userMatch.id}&tournament=${tournamentId}`);
         } else {
-          console.log('✅ Kullanıcı maçı bulunamadı, bracket sayfasına yönlendiriliyor...');
           navigate(`/tournament-bracket/${tournamentId}`);
         }
         return;
       }
-      
-      console.error('Turnuva başlatma hatası:', error);
-      setTournamentStarted(false);
-      return;
+    }
+
+    // Sonra error objesi kontrolü
+    if (error) {
+      console.log('🔍 Error object detected:', error);
+      // ... mevcut error kontrolü
     }
 
     const result = data as { success: boolean; error?: string };
     
     if (result?.success) {
-      console.log('✅ Turnuva başarıyla başlatıldı, kullanıcı maçı aranıyor...');
+      console.log('✅ Turnuva başarıyla başlatıldı...');
       
-      // Kullanıcının maçını bul
       const { data: userMatch } = await supabase
         .from('tournament_matches')
         .select('id')
@@ -267,10 +254,8 @@ const startTournament = async () => {
         .single();
       
       if (userMatch) {
-        console.log('✅ Kullanıcı maçı bulundu, oyun sayfasına yönlendiriliyor...');
         navigate(`/game?match=${userMatch.id}&tournament=${tournamentId}`);
       } else {
-        console.log('✅ Kullanıcı maçı bulunamadı, bracket sayfasına yönlendiriliyor...');
         navigate(`/tournament-bracket/${tournamentId}`);
       }
     } else {
