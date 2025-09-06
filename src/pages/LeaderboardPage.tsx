@@ -97,19 +97,27 @@ const LeaderboardPage = () => {
   // Haftalık sıralama - gerçek veriler
   const fetchWeeklyLeaders = async () => {
     try {
-      // DÜZELTME: Bu haftanın başlangıcını PostgreSQL mantığıyla hesapla
+      // DÜZELTME: Doğru hafta başlangıcını hesapla
       const today = new Date();
-      // PostgreSQL'de DATE_TRUNC('week', NOW()) + 1 day = Pazartesi
-      const dayOfWeek = today.getDay(); // 0=Pazar, 1=Pazartesi, ...
-      const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Pazartesi'ye kadar geri git
+      const currentDay = today.getDay(); // 0=Pazar, 1=Pazartesi, 2=Salı...
+      
+      // Pazartesi'ye gitmek için gereken gün sayısı
+      let daysFromMonday;
+      if (currentDay === 0) { // Pazar ise
+        daysFromMonday = 6; // 6 gün geriye git
+      } else { // Diğer günler
+        daysFromMonday = currentDay - 1; // Pazartesi'ye git
+      }
       
       const mondayDate = new Date(today);
-      mondayDate.setDate(today.getDate() - daysToSubtract);
+      mondayDate.setDate(today.getDate() - daysFromMonday);
       mondayDate.setHours(0, 0, 0, 0);
       
-      const weekStartStr = mondayDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+      const weekStartStr = mondayDate.toISOString().split('T')[0];
       
-      console.log('Haftalık sorgu tarihi:', weekStartStr); // Debug için
+      console.log('Bugün:', today.toISOString().split('T')[0]);
+      console.log('Pazartesi hesaplanıyor - currentDay:', currentDay, 'daysFromMonday:', daysFromMonday);
+      console.log('Haftalık sorgu tarihi:', weekStartStr);
 
       // Type-safe RPC çağrısı
       const { data, error } = await supabase.rpc('get_weekly_leaderboard' as any, {
@@ -118,7 +126,6 @@ const LeaderboardPage = () => {
 
       if (error) {
         console.error('Weekly leaderboard RPC error:', error);
-        // Fallback: Bu hafta veri yoksa boş array
         setWeeklyLeaders([]);
         if (user) {
           setUserStats(prev => ({ ...prev, weekly: null }));
@@ -126,7 +133,7 @@ const LeaderboardPage = () => {
         return;
       }
 
-      console.log('Haftalık veri geldi:', data); // Debug için
+      console.log('Haftalık veri geldi:', data);
 
       // Type guard ile array kontrolü
       const weeklyData = Array.isArray(data) ? data.map((entry: any, index: number) => ({
@@ -157,12 +164,16 @@ const LeaderboardPage = () => {
   // Aylık sıralama - gerçek veriler
   const fetchMonthlyLeaders = async () => {
     try {
-      // DÜZELTME: Bu ayın başlangıcını doğru hesapla
+      // DÜZELTME: Bu ayın 1'ini doğru hesapla
       const today = new Date();
-      const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-      const monthStartStr = firstDayOfMonth.toISOString().split('T')[0]; // YYYY-MM-DD format
+      const year = today.getFullYear();
+      const month = today.getMonth(); // 0-11 arası
       
-      console.log('Aylık sorgu tarihi:', monthStartStr); // Debug için
+      const firstDayOfMonth = new Date(year, month, 1);
+      const monthStartStr = firstDayOfMonth.toISOString().split('T')[0];
+      
+      console.log('Bugün:', today.toISOString().split('T')[0]);
+      console.log('Bu ayın 1\'i:', monthStartStr);
 
       // Type-safe RPC çağrısı
       const { data, error } = await supabase.rpc('get_monthly_leaderboard' as any, {
@@ -171,7 +182,6 @@ const LeaderboardPage = () => {
 
       if (error) {
         console.error('Monthly leaderboard RPC error:', error);
-        // Fallback: Bu ay veri yoksa boş array
         setMonthlyLeaders([]);
         if (user) {
           setUserStats(prev => ({ ...prev, monthly: null }));
@@ -179,7 +189,7 @@ const LeaderboardPage = () => {
         return;
       }
 
-      console.log('Aylık veri geldi:', data); // Debug için
+      console.log('Aylık veri geldi:', data);
 
       // Type guard ile array kontrolü
       const monthlyData = Array.isArray(data) ? data.map((entry: any, index: number) => ({
