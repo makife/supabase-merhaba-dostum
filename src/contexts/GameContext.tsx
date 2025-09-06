@@ -938,16 +938,31 @@ const fetchParticipants = useCallback(
   if (!user || !currentRoom) return;
 
   try {
+    // Game participants tablosunu güncelle
     await supabase
       .from('game_participants')
       .update({ score })
       .eq('room_id', currentRoom.id)
       .eq('user_id', user.id);
     
+    // 🔥 YENİ: Game rooms tablosundaki skorları da güncelle (gerçek zamanlı skor güncellemesi için)
+    const isPlayer1 = currentRoom.player1_id === user.id;
+    const scoreField = isPlayer1 ? 'player1_score' : 'player2_score';
+    
+    await supabase
+      .from('game_rooms')
+      .update({ 
+        [scoreField]: score,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', currentRoom.id);
+    
     // Local state'i de güncelle
     setParticipants(prev => prev.map(p => 
       p.user_id === user.id ? { ...p, score } : p
     ));
+    
+    console.log('🔄 Skor güncellendi:', score, 'Field:', scoreField);
   } catch (error) {
     console.error('Error updating score:', error);
   }

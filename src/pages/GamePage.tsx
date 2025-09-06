@@ -1825,6 +1825,44 @@ const checkWinnerWithScores = useCallback(async (currentPlayerScore: number, cur
     };
   }, [gameMode, tournamentMatch, user, gameEnded]);
 
+  // 🎮 ÖZEL ODA OYUNLARI İÇİN REAL-TIME SCORE SYNC
+  useEffect(() => {
+    if (gameMode !== 'private-room' || !currentRoom || !user) return;
+
+    console.log('🔄 Özel oda real-time skor subscription başlatılıyor:', currentRoom.id);
+    
+    const channel = supabase
+      .channel(`game-room-${currentRoom.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'game_rooms',
+          filter: `id=eq.${currentRoom.id}`
+        },
+        (payload) => {
+          console.log('🎮 Özel oda güncellendi:', payload);
+          const newData = payload.new as any;
+          
+          // Karşı oyuncunun skorunu güncelle
+          const isPlayer1 = newData.player1_id === user.id;
+          const opponentScore = isPlayer1 ? newData.player2_score : newData.player1_score;
+          
+          if (opponentScore !== undefined && !gameEnded) {
+            console.log('🔄 Rakip skoru real-time güncellemesi:', opponentScore);
+            setOpponentScore(opponentScore);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('🔌 Özel oda subscription temizleniyor');
+      supabase.removeChannel(channel);
+    };
+  }, [gameMode, currentRoom, user, gameEnded]);
+
 const handleTournamentExit = async () => {
   if (!user || !tournamentMatch) return;
 
