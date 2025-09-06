@@ -153,42 +153,43 @@ useEffect(() => {
   };
 
 const startTournament = async () => {
-  // Çoklu çağrıyı önle
+  // Çoklu çağrıyı önle - EN BAŞTA KONTROL ET
   if (tournamentStarted) {
     console.log('Turnuva zaten başlatılıyor, tekrar çağrı engellendi');
     return;
   }
   
-  setTournamentStarted(true);
+  console.log('Turnuva başlatılıyor...');
+  setTournamentStarted(true); // HİÇ BİR ŞEY YAPMADAN ÖNCE SET ET
   
   try {
-    console.log('Turnuva başlatılıyor...');
-    
     const { data, error } = await supabase.rpc('start_tournament_automatically', {
       p_tournament_id: tournamentId
     });
 
-
     if (error) {
       console.error('Turnuva başlatma hatası:', error);
+      setTournamentStarted(false); // Hata durumunda reset et
       return;
     }
 
-    console.log('Turnuva başlatıldı:', data);
-    
-    const result = data as { success: boolean; matches_created?: number };
+    const result = data as { success: boolean; error?: string };
     
     if (result?.success) {
-      console.log(`${result.matches_created} maç oluşturuldu`);
-      // Turnuva durumu UPDATE trigger'ı ile otomatik yönlendirilecek
+      setTimeout(() => {
+        navigate(`/tournament-bracket/${tournamentId}`);
+      }, 2000);
     } else {
-      console.error('Turnuva başlatma hatası:', result);
+      console.error('Turnuva başlatma hatası:', result?.error);
+      setTournamentStarted(false); // Başarısızlık durumunda reset et
     }
     
   } catch (error) {
     console.error('Turnuva başlatma hatası:', error);
+    setTournamentStarted(false); // Exception durumunda reset et
   }
 };
+  
 const createTournamentMatches = async () => {
   // Bu fonksiyon artık database içinde yapılıyor
   console.log('Maçlar database fonksiyonu tarafından oluşturuluyor...');
