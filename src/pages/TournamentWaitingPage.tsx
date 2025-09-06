@@ -210,41 +210,16 @@ const startTournament = async () => {
       p_tournament_id: tournamentId
     });
 
-    console.log('🔍 RPC Response - Data:', data, 'Error:', error);
-
-    // Önce data içindeki hata kontrolü
-    if (data && typeof data === 'object' && data.success === false) {
-      console.log('🔍 Data error detected:', data.error);
-      
-      if (data.error && data.error.includes('Matches already exist')) {
-        console.log('✅ Data hatası - Maçlar zaten mevcut, kullanıcı maçı aranıyor...');
-        
-        const { data: userMatch } = await supabase
-          .from('tournament_matches')
-          .select('id')
-          .eq('tournament_id', tournamentId)
-          .or(`player1_id.eq.${user.id},player2_id.eq.${user.id}`)
-          .single();
-        
-        if (userMatch) {
-          navigate(`/game?match=${userMatch.id}&tournament=${tournamentId}`);
-        } else {
-          navigate(`/tournament-bracket/${tournamentId}`);
-        }
-        return;
-      }
-    }
-
-    // Sonra error objesi kontrolü
     if (error) {
-      console.log('🔍 Error object detected:', error);
-      // ... mevcut error kontrolü
+      console.error('Turnuva başlatma hatası:', error);
+      setTournamentStarted(false);
+      return;
     }
 
-    const result = data as { success: boolean; error?: string };
+    const result = data as any; // Type casting ile çöz
     
     if (result?.success) {
-      console.log('✅ Turnuva başarıyla başlatıldı...');
+      console.log('Turnuva başarıyla başlatıldı');
       
       const { data: userMatch } = await supabase
         .from('tournament_matches')
@@ -259,8 +234,19 @@ const startTournament = async () => {
         navigate(`/tournament-bracket/${tournamentId}`);
       }
     } else {
-      console.error('Turnuva başlatma hatası:', result?.error);
-      setTournamentStarted(false);
+      // Matches already exist durumu
+      const { data: userMatch } = await supabase
+        .from('tournament_matches')
+        .select('id')
+        .eq('tournament_id', tournamentId)
+        .or(`player1_id.eq.${user.id},player2_id.eq.${user.id}`)
+        .single();
+      
+      if (userMatch) {
+        navigate(`/game?match=${userMatch.id}&tournament=${tournamentId}`);
+      } else {
+        navigate(`/tournament-bracket/${tournamentId}`);
+      }
     }
     
   } catch (error) {
