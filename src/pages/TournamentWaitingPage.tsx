@@ -168,24 +168,31 @@ const startTournament = async () => {
     });
 
     if (error) {
-      // Birden fazla yolla hata mesajını kontrol et
-      const errorMessage = error.message || error.toString() || String(error) || '';
-      
-      console.log('Hata detayı:', error, 'Error message:', errorMessage);
-      
-      // Eğer maçlar zaten varsa, direkt bracket sayfasına git
-      if (errorMessage.includes('Matches already exist') || 
-          errorMessage.includes('already exist') ||
-          String(error).includes('Matches already exist')) {
-        console.log('✅ Maçlar zaten mevcut, bracket sayfasına yönlendiriliyor...');
-        navigate(`/tournament-bracket/${tournamentId}`);
-        return;
-      }
-      
-      console.error('Turnuva başlatma hatası:', error);
-      setTournamentStarted(false); // Hata durumunda reset et
-      return;
-    }
+  // Debug için eklenen loglar
+  console.log('🔍 Error object:', error);
+  console.log('🔍 Error type:', typeof error);
+  console.log('🔍 Error keys:', Object.keys(error));
+  console.log('🔍 Error message:', error.message);
+  console.log('🔍 Error toString:', error.toString());
+  console.log('🔍 Error string conversion:', String(error));
+  
+  const errorMessage = error.message || error.toString() || String(error) || '';
+  
+  console.log('🔍 Final error message:', errorMessage);
+  
+  // Eğer maçlar zaten varsa, direkt bracket sayfasına git
+  if (errorMessage.includes('Matches already exist') || 
+      errorMessage.includes('already exist') ||
+      String(error).includes('Matches already exist')) {
+    console.log('✅ Maçlar zaten mevcut, bracket sayfasına yönlendiriliyor...');
+    navigate(`/tournament-bracket/${tournamentId}`);
+    return;
+  }
+  
+  console.error('Turnuva başlatma hatası:', error);
+  setTournamentStarted(false);
+  return;
+}
 
     const result = data as { success: boolean; error?: string };
     
