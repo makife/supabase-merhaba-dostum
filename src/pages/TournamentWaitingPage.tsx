@@ -151,40 +151,48 @@ useEffect(() => {
     return () => clearInterval(timer);
   };
 
- const startTournament = async () => {
-   try {
-     console.log('🚀 Turnuva başlatılıyor...');
-     
-     // Yeni database fonksiyonunu kullan
-     const { data, error } = await supabase.rpc('start_tournament_automatically', {
-       p_tournament_id: tournamentId
-     });
+const startTournament = async () => {
+  try {
+    console.log('Turnuva başlatılıyor...');
+    
+    // Önce zaten başlatılmış mı kontrol et
+    const { data: tournamentCheck } = await supabase
+      .from('tournaments')
+      .select('status')
+      .eq('id', tournamentId)
+      .single();
+    
+    if (tournamentCheck?.status !== 'waiting') {
+      console.log('Turnuva zaten başlatılmış');
+      navigate(`/tournament-bracket/${tournamentId}`);
+      return;
+    }
+    
+    // Database fonksiyonunu çağır
+    const { data, error } = await supabase.rpc('start_tournament_automatically', {
+      p_tournament_id: tournamentId
+    });
 
-     if (error) {
-       console.error('Turnuva başlatma hatası:', error);
-       return;
-     }
+    if (error) {
+      console.error('Turnuva başlatma hatası:', error);
+      return;
+    }
 
-     console.log('✅ Turnuva başlatıldı:', data);
-     
-     // Type assertion ile data'nın doğru tipte olduğunu belirt
-     const result = data as { success: boolean; error?: string; real_players?: number; bots_added?: number; matches_created?: number };
-     
-     // Turnuva başarıyla başladıysa bracket sayfasına yönlendir
-     if (result?.success) {
-       setTimeout(() => {
-         console.log('🚀 TournamentBracket sayfasına yönlendiriliyor...');
-         navigate(`/tournament-bracket/${tournamentId}`);
-       }, 2000);
-     } else {
-       console.error('Turnuva başlatma hatası:', result?.error);
-     }
-     
-   } catch (error) {
-     console.error('Turnuva başlatma hatası:', error);
-   }
- };
-
+    console.log('Turnuva başlatıldı:', data);
+    
+    const result = data as { success: boolean; matches_created?: number };
+    
+    if (result?.success) {
+      console.log(`${result.matches_created} maç oluşturuldu`);
+      // Turnuva durumu UPDATE trigger'ı ile otomatik yönlendirilecek
+    } else {
+      console.error('Turnuva başlatma hatası:', result);
+    }
+    
+  } catch (error) {
+    console.error('Turnuva başlatma hatası:', error);
+  }
+};
 const createTournamentMatches = async () => {
   // Bu fonksiyon artık database içinde yapılıyor
   console.log('Maçlar database fonksiyonu tarafından oluşturuluyor...');
