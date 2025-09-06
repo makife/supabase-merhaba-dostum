@@ -168,45 +168,75 @@ const startTournament = async () => {
     });
 
     if (error) {
-  // Debug için eklenen loglar
-  console.log('🔍 Error object:', error);
-  console.log('🔍 Error type:', typeof error);
-  console.log('🔍 Error keys:', Object.keys(error));
-  console.log('🔍 Error message:', error.message);
-  console.log('🔍 Error toString:', error.toString());
-  console.log('🔍 Error string conversion:', String(error));
-  
-  const errorMessage = error.message || error.toString() || String(error) || '';
-  
-  console.log('🔍 Final error message:', errorMessage);
-  
-  // Eğer maçlar zaten varsa, direkt bracket sayfasına git
-  if (errorMessage.includes('Matches already exist') || 
-      errorMessage.includes('already exist') ||
-      String(error).includes('Matches already exist')) {
-    console.log('✅ Maçlar zaten mevcut, bracket sayfasına yönlendiriliyor...');
-    navigate(`/tournament-bracket/${tournamentId}`);
-    return;
-  }
-  
-  console.error('Turnuva başlatma hatası:', error);
-  setTournamentStarted(false);
-  return;
-}
+      // Debug için eklenen loglar
+      console.log('🔍 Error object:', error);
+      console.log('🔍 Error type:', typeof error);
+      console.log('🔍 Error keys:', Object.keys(error));
+      console.log('🔍 Error message:', error.message);
+      console.log('🔍 Error toString:', error.toString());
+      console.log('🔍 Error string conversion:', String(error));
+      
+      const errorMessage = error.message || error.toString() || String(error) || '';
+      
+      console.log('🔍 Final error message:', errorMessage);
+      
+      // Eğer maçlar zaten varsa, kullanıcının maçını bul ve oyun sayfasına yönlendir
+      if (errorMessage.includes('Matches already exist') || 
+          errorMessage.includes('already exist') ||
+          String(error).includes('Matches already exist')) {
+        console.log('✅ Maçlar zaten mevcut, kullanıcı maçı aranıyor...');
+        
+        // Kullanıcının maçını bul
+        const { data: userMatch } = await supabase
+          .from('tournament_matches')
+          .select('id')
+          .eq('tournament_id', tournamentId)
+          .or(`player1_id.eq.${user.id},player2_id.eq.${user.id}`)
+          .single();
+        
+        if (userMatch) {
+          console.log('✅ Kullanıcı maçı bulundu, oyun sayfasına yönlendiriliyor...');
+          navigate(`/game?match=${userMatch.id}&tournament=${tournamentId}`);
+        } else {
+          console.log('✅ Kullanıcı maçı bulunamadı, bracket sayfasına yönlendiriliyor...');
+          navigate(`/tournament-bracket/${tournamentId}`);
+        }
+        return;
+      }
+      
+      console.error('Turnuva başlatma hatası:', error);
+      setTournamentStarted(false);
+      return;
+    }
 
     const result = data as { success: boolean; error?: string };
     
     if (result?.success) {
-      console.log('✅ Turnuva başarıyla başlatıldı, yönlendiriliyor...');
-      navigate(`/tournament-bracket/${tournamentId}`);
+      console.log('✅ Turnuva başarıyla başlatıldı, kullanıcı maçı aranıyor...');
+      
+      // Kullanıcının maçını bul
+      const { data: userMatch } = await supabase
+        .from('tournament_matches')
+        .select('id')
+        .eq('tournament_id', tournamentId)
+        .or(`player1_id.eq.${user.id},player2_id.eq.${user.id}`)
+        .single();
+      
+      if (userMatch) {
+        console.log('✅ Kullanıcı maçı bulundu, oyun sayfasına yönlendiriliyor...');
+        navigate(`/game?match=${userMatch.id}&tournament=${tournamentId}`);
+      } else {
+        console.log('✅ Kullanıcı maçı bulunamadı, bracket sayfasına yönlendiriliyor...');
+        navigate(`/tournament-bracket/${tournamentId}`);
+      }
     } else {
       console.error('Turnuva başlatma hatası:', result?.error);
-      setTournamentStarted(false); // Başarısızlık durumunda reset et
+      setTournamentStarted(false);
     }
     
   } catch (error) {
     console.error('Turnuva başlatma hatası:', error);
-    setTournamentStarted(false); // Exception durumunda reset et
+    setTournamentStarted(false);
   }
 };
   
