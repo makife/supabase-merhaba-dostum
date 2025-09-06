@@ -153,26 +153,32 @@ useEffect(() => {
   };
 
 const startTournament = async () => {
-  // Çoklu çağrıyı önle - EN BAŞTA KONTROL ET
   if (tournamentStarted) {
     console.log('Turnuva zaten başlatılıyor, tekrar çağrı engellendi');
     return;
   }
   
   console.log('Turnuva başlatılıyor...');
-  setTournamentStarted(true); // HİÇ BİR ŞEY YAPMADAN ÖNCE SET ET
+  setTournamentStarted(true);
   
   try {
     const { data, error } = await supabase.rpc('start_tournament_automatically', {
       p_tournament_id: tournamentId
     });
-    
+
     if (error) {
+      // Eğer maçlar zaten varsa, direkt bracket sayfasına git
+      if (error.includes('Matches already exist')) {
+        console.log('✅ Maçlar zaten mevcut, bracket sayfasına yönlendiriliyor...');
+        navigate(`/tournament-bracket/${tournamentId}`);
+        return;
+      }
+      
       console.error('Turnuva başlatma hatası:', error);
-      setTournamentStarted(false); // Hata durumunda reset et
+      setTournamentStarted(false);
       return;
     }
-    
+
     const result = data as { success: boolean; error?: string };
     
     if (result?.success) {
@@ -180,12 +186,12 @@ const startTournament = async () => {
       navigate(`/tournament-bracket/${tournamentId}`);
     } else {
       console.error('Turnuva başlatma hatası:', result?.error);
-      setTournamentStarted(false); // Başarısızlık durumunda reset et
+      setTournamentStarted(false);
     }
     
   } catch (error) {
     console.error('Turnuva başlatma hatası:', error);
-    setTournamentStarted(false); // Exception durumunda reset et
+    setTournamentStarted(false);
   }
 };
   
