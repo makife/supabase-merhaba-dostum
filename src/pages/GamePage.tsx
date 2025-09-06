@@ -777,14 +777,23 @@ const handleGameEnd = () => {
   }
 
   // vs-computer modunda istatistik güncelle
-  if (gameMode === 'vs-computer' && user) {
-    updatePlayerStatistics(
-      user.id,
-      finalUserScore,
-      playerWordsWithScores,
-      finalUserScore > finalOpponentScore
-    );
+  if (user) {
+  const gameDuration = gameType === 'timed' ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
+  
+  const { data, error } = await (supabase.rpc as any)('update_game_stats', {
+    p_user_id: user.id,
+    p_score: finalUserScore,
+    p_words: playerWordsWithScores,
+    p_is_winner: finalUserScore > finalOpponentScore,
+    p_game_duration: gameDuration
+  });
+  
+  if (error) {
+    console.error('İstatistik güncelleme hatası:', error);
+  } else {
+    console.log('İstatistikler güncellendi - gameMode:', gameMode);
   }
+}
 
   // Normal oyun sonu
   setGameEnded(true);
