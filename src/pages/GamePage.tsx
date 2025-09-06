@@ -1899,7 +1899,7 @@ const handleTournamentExit = async () => {
   // Timer effect - TEK SEFER başlatılır ve sürekli çalışır
 useEffect(() => {
   if (gameType === 'timed' && gameStarted && !gameEnded && !timerRef.current) {
-    console.log('⏱️ Timer BAŞLATILIYOR - Tek sefer, time:', timeLeftRef.current);
+    console.log('⏰ Timer BAŞLATILIYOR - Tek sefer, time:', timeLeftRef.current);
     
     timerRef.current = setInterval(() => {
       timeLeftRef.current -= 1;
@@ -1910,25 +1910,19 @@ useEffect(() => {
         timerRef.current = null;
         
         console.log('⏰ Süre bitti! Final skorlar');
-        
         handleGameEnd();
-        setTimeout(() => {
-          // Skorları buradan alın, dependency'den değil
-          setGameEnded(true);
-          checkWinnerWithScores(playerScore, opponentScore);
-        }, 100);
+        setGameEnded(true);
       }
     }, 1000);
   }
   
   return () => {
-    // Sadece component unmount olduğunda temizle
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
   };
-}, [gameStarted, gameEnded, gameType, playerScore, opponentScore]);
+}, [gameStarted, gameEnded, gameType]); 
   
   // Focus/blur event handler
   useEffect(() => {
