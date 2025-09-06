@@ -16,11 +16,8 @@ import {
   Target,
   Calendar,
   Users,
-  Zap,
   Star,
   TrendingUp,
-  Clock,
-  CalendarDays,
   CalendarRange
 } from 'lucide-react';
 
@@ -34,7 +31,7 @@ interface LeaderboardEntry {
   best_word: string | null;
   best_word_score: number;
   rank: number;
-  change?: number; // Önceki haftaya/aya göre değişim
+  change?: number;
 }
 
 interface UserStats {
@@ -73,7 +70,7 @@ const LeaderboardPage = () => {
         user_id: entry.id,
         username: entry.username || 'Anonim',
         avatar_url: entry.avatar_url,
-        score: entry.total_score,
+        score: entry.total_score || 0,
         games_played: 0,
         wins: 0,
         best_word: null,
@@ -83,7 +80,6 @@ const LeaderboardPage = () => {
 
       setAllTimeLeaders(allTimeData);
 
-      // Kullanıcının kendi durumunu bul
       if (user) {
         const userEntry = allTimeData.find(entry => entry.user_id === user.id);
         setUserStats(prev => ({ ...prev, allTime: userEntry || null }));
@@ -101,64 +97,20 @@ const LeaderboardPage = () => {
   // Haftalık sıralama
   const fetchWeeklyLeaders = async () => {
     try {
-      // Son 7 günün başlangıcını hesapla
-      const weekStart = new Date();
-      weekStart.setDate(weekStart.getDate() - 7);
-      weekStart.setHours(0, 0, 0, 0);
-
-      // Son 7 gündeki oyun verilerini topla
-      const { data: gameStats, error } = await supabase.rpc('get_weekly_leaderboard', {
-        week_start: weekStart.toISOString()
-      });
-
-      if (error) {
-        console.log('Stored procedure not found, using fallback method');
-        // Fallback: Manuel hesaplama
-        await fetchWeeklyLeadersFallback();
-        return;
-      }
-
-      const weeklyData = gameStats?.map((entry: any, index: number) => ({
-        user_id: entry.user_id,
-        username: entry.username || 'Anonim',
-        avatar_url: entry.avatar_url,
-        score: entry.weekly_score || 0,
-        games_played: entry.games_played || 0,
-        wins: entry.wins || 0,
-        best_word: entry.best_word,
-        best_word_score: entry.best_word_score || 0,
-        rank: index + 1,
-        change: entry.rank_change || 0
-      })) || [];
-
-      setWeeklyLeaders(weeklyData);
-
-      if (user) {
-        const userEntry = weeklyData.find((entry: LeaderboardEntry) => entry.user_id === user.id);
-        setUserStats(prev => ({ ...prev, weekly: userEntry || null }));
-      }
-    } catch (error) {
-      console.error('Error fetching weekly leaders:', error);
-      await fetchWeeklyLeadersFallback();
-    }
-  };
-
-  // Haftalık sıralama fallback
-  const fetchWeeklyLeadersFallback = async () => {
-    try {
-      const weekStart = new Date();
-      weekStart.setDate(weekStart.getDate() - 7);
-
-      const { data: profiles } = await supabase
+      const { data: profiles, error } = await supabase
         .from('profiles')
-        .select('id, username, avatar_url, total_score');
+        .select('id, username, avatar_url, total_score')
+        .order('total_score', { ascending: false })
+        .limit(50);
 
-      // Basit haftalık sıralama (demo için total_score kullanıyoruz)
+      if (error) throw error;
+
+      // Haftalık demo verisi oluştur
       const weeklyData = profiles?.map((entry, index) => ({
         user_id: entry.id,
         username: entry.username || 'Anonim',
         avatar_url: entry.avatar_url,
-        score: Math.floor((entry.total_score || 0) * 0.1), // Demo veri
+        score: Math.floor((entry.total_score || 0) * 0.15) + Math.floor(Math.random() * 50),
         games_played: Math.floor(Math.random() * 10) + 1,
         wins: Math.floor(Math.random() * 5),
         best_word: null,
@@ -177,35 +129,28 @@ const LeaderboardPage = () => {
         setUserStats(prev => ({ ...prev, weekly: userEntry || null }));
       }
     } catch (error) {
-      console.error('Error in weekly fallback:', error);
+      console.error('Error fetching weekly leaders:', error);
+      setWeeklyLeaders([]);
     }
   };
 
   // Aylık sıralama
   const fetchMonthlyLeaders = async () => {
     try {
-      // Şimdilik fallback metodunu direkt kullan
-      // Gelecekte stored procedure eklendiğinde bu bölüm güncellenebilir
-      await fetchMonthlyLeadersFallback();
-    } catch (error) {
-      console.error('Error fetching monthly leaders:', error);
-      await fetchMonthlyLeadersFallback();
-    }
-  };
-
-  // Aylık sıralama fallback
-  const fetchMonthlyLeadersFallback = async () => {
-    try {
-      const { data: profiles } = await supabase
+      const { data: profiles, error } = await supabase
         .from('profiles')
-        .select('id, username, avatar_url, total_score');
+        .select('id, username, avatar_url, total_score')
+        .order('total_score', { ascending: false })
+        .limit(50);
 
-      // Basit aylık sıralama (demo için total_score kullanıyoruz)
+      if (error) throw error;
+
+      // Aylık demo verisi oluştur
       const monthlyData = profiles?.map((entry, index) => ({
         user_id: entry.id,
         username: entry.username || 'Anonim',
         avatar_url: entry.avatar_url,
-        score: Math.floor((entry.total_score || 0) * 0.3), // Demo veri
+        score: Math.floor((entry.total_score || 0) * 0.4) + Math.floor(Math.random() * 100),
         games_played: Math.floor(Math.random() * 30) + 1,
         wins: Math.floor(Math.random() * 15),
         best_word: null,
@@ -224,7 +169,8 @@ const LeaderboardPage = () => {
         setUserStats(prev => ({ ...prev, monthly: userEntry || null }));
       }
     } catch (error) {
-      console.error('Error in monthly fallback:', error);
+      console.error('Error fetching monthly leaders:', error);
+      setMonthlyLeaders([]);
     }
   };
 
@@ -289,46 +235,59 @@ const LeaderboardPage = () => {
       ) : (
         leaders.map((leader) => (
           <Card key={leader.user_id} className={`transition-all hover:shadow-md ${getRankColor(leader.rank)}`}>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="flex-shrink-0">
-                    {getRankIcon(leader.rank)}
-                  </div>
-                  <Avatar className="w-12 h-12">
-                    <AvatarImage src={leader.avatar_url || undefined} alt={leader.username} />
-                    <AvatarFallback>
-                      {leader.username.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center space-x-2">
-                      <h3 className={`font-semibold truncate flex-1 ${leader.rank <= 3 ? 'text-white' : 'text-foreground'}`}>
+            <CardContent className="p-3">
+              <div className="flex items-center space-x-3">
+                {/* Rank Icon */}
+                <div className="flex-shrink-0">
+                  {getRankIcon(leader.rank)}
+                </div>
+                
+                {/* Avatar */}
+                <Avatar className="w-10 h-10 flex-shrink-0">
+                  <AvatarImage src={leader.avatar_url || undefined} alt={leader.username} />
+                  <AvatarFallback>
+                    {leader.username.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                
+                {/* User Info - Ana alan */}
+                <div className="flex-1 min-w-0">
+                  {/* İsim ve rozetler satırı */}
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center space-x-2 min-w-0 flex-1">
+                      <h3 className={`font-semibold truncate text-sm ${leader.rank <= 3 ? 'text-white' : 'text-foreground'}`}>
                         {leader.username}
                       </h3>
                       {leader.user_id === user?.id && (
-                        <Badge className="text-xs px-2 py-0 h-5 bg-white/20 text-white border-white/50 flex-shrink-0">
+                        <Badge className="text-xs px-1.5 py-0 h-4 bg-white/20 text-white border-white/50 flex-shrink-0">
                           Sen
                         </Badge>
                       )}
-                      {showChange && getRankChangeIcon(leader.change)}
                     </div>
-                    <div className="flex items-center space-x-3 text-sm">
+                    {/* Değişim göstergesi sağ tarafa */}
+                    {showChange && (
+                      <div className="flex-shrink-0 ml-2">
+                        {getRankChangeIcon(leader.change)}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* İstatistikler satırı */}
+                  <div className="flex items-center space-x-3 text-xs">
+                    <span className={`flex items-center ${leader.rank <= 3 ? 'text-white/80' : 'text-muted-foreground'}`}>
+                      <Target className="w-3 h-3 mr-1" />
+                      {leader.score}
+                    </span>
+                    <span className={`flex items-center ${leader.rank <= 3 ? 'text-white/80' : 'text-muted-foreground'}`}>
+                      <Users className="w-3 h-3 mr-1" />
+                      {leader.games_played}
+                    </span>
+                    {leader.wins > 0 && (
                       <span className={`flex items-center ${leader.rank <= 3 ? 'text-white/80' : 'text-muted-foreground'}`}>
-                        <Target className="w-3 h-3 mr-1" />
-                        {leader.score} puan
+                        <Star className="w-3 h-3 mr-1" />
+                        {leader.wins}
                       </span>
-                      <span className={`flex items-center ${leader.rank <= 3 ? 'text-white/80' : 'text-muted-foreground'}`}>
-                        <Users className="w-3 h-3 mr-1" />
-                        {leader.games_played} oyun
-                      </span>
-                      {leader.wins > 0 && (
-                        <span className={`flex items-center ${leader.rank <= 3 ? 'text-white/80' : 'text-muted-foreground'}`}>
-                          <Star className="w-3 h-3 mr-1" />
-                          {leader.wins} galibiyet
-                        </span>
-                      )}
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -376,54 +335,56 @@ const LeaderboardPage = () => {
   const currentStats = getCurrentUserStats();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
-      <div className="max-w-2xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-3">
+      <div className="max-w-2xl mx-auto space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <Button variant="outline" size="sm" onClick={() => navigate('/')}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
+          <Button variant="outline" size="sm" onClick={() => navigate('/')} className="text-xs">
+            <ArrowLeft className="w-4 h-4 mr-1" />
             Geri
           </Button>
-          <h1 className="text-2xl font-bold flex items-center">
-            <Trophy className="w-6 h-6 mr-2 text-yellow-500" />
+          <h1 className="text-xl font-bold flex items-center">
+            <Trophy className="w-5 h-5 mr-2 text-yellow-500" />
             Liderlik
           </h1>
-          <div className="w-16" />
+          <div className="w-12" />
         </div>
 
         {/* Kullanıcının kendi durumu */}
         {currentStats && (
           <Card className="border-primary">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <TrendingUp className="w-5 h-5 mr-2" />
-                Senin Performansın
-                <Badge variant="outline" className="ml-2 text-xs">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center justify-between text-base">
+                <div className="flex items-center">
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                  Senin Performansın
+                </div>
+                <Badge variant="outline" className="text-xs">
                   {activeTab === 'weekly' ? 'Bu Hafta' : 
                    activeTab === 'monthly' ? 'Bu Ay' : 'Genel'}
                 </Badge>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                <div>
-                  <div className="text-2xl font-bold text-primary">{currentStats.rank || '—'}</div>
-                  <div className="text-sm text-muted-foreground">Sıralama</div>
+            <CardContent className="pt-0">
+              <div className="grid grid-cols-2 gap-3 text-center">
+                <div className="bg-muted/50 rounded-lg p-3">
+                  <div className="text-xl font-bold text-primary">{currentStats.rank || '—'}</div>
+                  <div className="text-xs text-muted-foreground">Sıralama</div>
                   {activeTab !== 'all-time' && currentStats.change && (
                     <div className="mt-1">{getRankChangeIcon(currentStats.change)}</div>
                   )}
                 </div>
-                <div>
-                  <div className="text-2xl font-bold text-primary">{currentStats.score}</div>
-                  <div className="text-sm text-muted-foreground">Puan</div>
+                <div className="bg-muted/50 rounded-lg p-3">
+                  <div className="text-xl font-bold text-primary">{currentStats.score}</div>
+                  <div className="text-xs text-muted-foreground">Puan</div>
                 </div>
-                <div>
-                  <div className="text-2xl font-bold text-primary">{currentStats.games_played}</div>
-                  <div className="text-sm text-muted-foreground">Oyun</div>
+                <div className="bg-muted/50 rounded-lg p-3">
+                  <div className="text-xl font-bold text-primary">{currentStats.games_played}</div>
+                  <div className="text-xs text-muted-foreground">Oyun</div>
                 </div>
-                <div>
-                  <div className="text-2xl font-bold text-primary">{currentStats.wins}</div>
-                  <div className="text-sm text-muted-foreground">Galibiyet</div>
+                <div className="bg-muted/50 rounded-lg p-3">
+                  <div className="text-xl font-bold text-primary">{currentStats.wins}</div>
+                  <div className="text-xs text-muted-foreground">Galibiyet</div>
                 </div>
               </div>
             </CardContent>
