@@ -216,37 +216,14 @@ const startTournament = async () => {
       return;
     }
 
-    const result = data as any; // Type casting ile çöz
+    const result = data as any;
     
-    if (result?.success) {
-      console.log('Turnuva başarıyla başlatıldı');
-      
-      const { data: userMatch } = await supabase
-        .from('tournament_matches')
-        .select('id')
-        .eq('tournament_id', tournamentId)
-        .or(`player1_id.eq.${user.id},player2_id.eq.${user.id}`)
-        .single();
-      
-      if (userMatch) {
-        navigate(`/game?match=${userMatch.id}&tournament=${tournamentId}`);
-      } else {
-        navigate(`/tournament-bracket/${tournamentId}`);
-      }
+    if (result?.success || result === null) {
+      console.log('Turnuva başlatıldı, bracket sayfasına yönlendiriliyor...');
+      navigate(`/tournament-bracket/${tournamentId}`);
     } else {
-      // Matches already exist durumu
-      const { data: userMatch } = await supabase
-        .from('tournament_matches')
-        .select('id')
-        .eq('tournament_id', tournamentId)
-        .or(`player1_id.eq.${user.id},player2_id.eq.${user.id}`)
-        .single();
-      
-      if (userMatch) {
-        navigate(`/game?match=${userMatch.id}&tournament=${tournamentId}`);
-      } else {
-        navigate(`/tournament-bracket/${tournamentId}`);
-      }
+      console.error('Turnuva başlatma hatası:', result?.error);
+      setTournamentStarted(false);
     }
     
   } catch (error) {
