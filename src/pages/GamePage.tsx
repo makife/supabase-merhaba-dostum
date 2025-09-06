@@ -69,7 +69,7 @@ const GamePage = ({
   participants: propsParticipants = []
 }: GamePageProps) => {
   const { user } = useAuth();
-  const { consumeCredit, isPremium, forceRefreshProfile } = useUser();
+  const { consumeCredit, isPremium } = useUser();
   const { hasPurchased, settings } = useUserPurchases();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -81,24 +81,18 @@ const GamePage = ({
   // Tournament participant state
   const [tournamentParticipants, setTournamentParticipants] = useState<any[]>([]);
   
- const participants = useMemo(() => {
-  console.log('🔍 Participants memo - Mode:', gameMode, 'Props:', propsParticipants?.length || 0, 'Game:', gameParticipants?.length || 0, 'Tournament:', tournamentParticipants?.length || 0);
-  
-  if (gameMode === 'tournament') {
-    const tournamentParts = propsParticipants?.length > 0 ? propsParticipants : tournamentParticipants;
-    console.log('🏆 Tournament mode - Using participants:', tournamentParts?.length || 0);
-    return tournamentParts || [];
-  }
-  
-  console.log('🎮 Other mode - Using gameParticipants:', gameParticipants?.length || 0);
-  return gameParticipants || [];
-}, [
-  gameMode, 
-  // ✅ SADECE LENGTH'LERİ KARŞILAŞTIR, ARRAY'LERİ DEĞİL
-  propsParticipants?.length, 
-  gameParticipants?.length, 
-  tournamentParticipants?.length
-]); // ✅ Participants array'lerini dependency'den çıkar
+  const participants = useMemo(() => {
+    console.log('🔍 Participants memo - Mode:', gameMode, 'Props:', propsParticipants?.length || 0, 'Game:', gameParticipants?.length || 0, 'Tournament:', tournamentParticipants?.length || 0);
+    
+    if (gameMode === 'tournament') {
+      const tournamentParts = propsParticipants?.length > 0 ? propsParticipants : tournamentParticipants;
+      console.log('🏆 Tournament mode - Using participants:', tournamentParts?.length || 0);
+      return tournamentParts || [];
+    }
+    
+    console.log('🎮 Other mode - Using gameParticipants:', gameParticipants?.length || 0);
+    return gameParticipants || [];
+  }, [gameMode, propsParticipants, gameParticipants, tournamentParticipants]);
   
   const { validateWord, isValidating } = useWordValidation();
   const { playSound, playTimeWarningSequence, playCelebrationSound, playGameLoseSound } = useSounds();
@@ -325,13 +319,8 @@ const generateTournamentGrid = useCallback((seed: string): string[][] => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const timeLeftRef = useRef<number>(gameType === 'timed' ? 120 : 0);
   const [displayTime, setDisplayTime] = useState<number>(timeLeftRef.current);
-  const [gameStarted, setGameStarted] = useState(
-  gameMode === 'vs-computer' ? true : false // Sadece vs-computer başlasın
-);
-
-  const [waitingForPlayer, setWaitingForPlayer] = useState(
-  gameMode === 'private-room' ? true : false // Private-room bekleme modunda başlasın
-);
+  const [gameStarted, setGameStarted] = useState(true);
+  const [waitingForPlayer, setWaitingForPlayer] = useState(false);
   const [gameEnded, setGameEnded] = useState(false);
   const [winner, setWinner] = useState<'player' | 'opponent' | 'tie' | null>(null);
   const [disconnectWin, setDisconnectWin] = useState(false);
@@ -346,31 +335,12 @@ const generateTournamentGrid = useCallback((seed: string): string[][] => {
   const [opponentName, setOpponentName] = useState('');
   const [targetScore, setTargetScore] = useState(gameType === 'score' ? 500 : 0);
   const [gameStartTime, setGameStartTime] = useState<number>(Date.now());
-
-useEffect(() => {
-  console.log('🔍 STATE DEBUG:', {
-    gameStarted,
-    waitingForPlayer,
-    gameEnded,
-    participantsLength: participants.length,
-    gameMode
-  });
-}, [gameStarted, waitingForPlayer, gameEnded, participants.length, gameMode]);
   
 const handleTournamentGameEnd = async (userScore: number, opponentScore: number) => {
   if (!user || !tournamentMatch) return;
 
   try {
     const winnerId = userScore > opponentScore ? user.id : tournamentMatch.player2_id;
-    
-    // İSTATİSTİKLERİ GÜNCELLE (Önemli: Bu önce yapılmalı!)
-    console.log('📊 Turnuva maçı istatistikleri güncelleniyor...');
-    await updatePlayerStatistics(
-      user.id,
-      userScore,
-      playerWordsWithScores,
-      userScore > opponentScore
-    );
     
     // Mevcut maçı tamamla
     await supabase
@@ -755,43 +725,38 @@ const showTournamentEndCard = async (isWinner: boolean, userScore: number, oppon
         console.error('❌ RPC hatası:', error);
       } else {
         console.log('✅ Oyun istatistikleri güncellendi');
-        
-        // HEADER BİLGİLERİNİ ANINDA GÜNCELLE
-        console.log('🔄 Profil bilgileri anında güncelleniyor...');
-        await forceRefreshProfile();
-        console.log('✅ Header bilgileri güncellendi!');
       }
     } catch (error) {
       console.error('❌ İstatistik güncelleme hatası:', error);
     }
   };
 
-const checkBadges = async (userId: string, wordsCount?: number) => {
-  try {
-    console.log('Rozet kontrolü yapılıyor:', userId);
-
-    // ESKİ fonksiyon adını kullan (TypeScript'te tanımlı)
-    const { data: badges, error } = await supabase.rpc('check_and_award_badges', {
-      p_user_id: userId
-    });
-
-    if (error) {
-      console.error('Rozet kontrolü hatası:', error);
-    } else if (badges && Array.isArray(badges) && badges.length > 0) {
-      badges.forEach((badge: any) => {
-        toast({
-          title: 'Yeni Rozet!',
-          description: `"${badge.new_badge_name}" rozetini kazandınız! ${badge.new_badge_icon}`,
-          duration: 4000,
-        });
+  const checkBadges = async (userId: string, wordsCount?: number) => {
+    try {
+      console.log('🏆 Rozet kontrolü yapılıyor:', userId);
+  
+      // ESKİ fonksiyon adını kullan (TypeScript'te tanımlı)
+      const { data: badges, error } = await supabase.rpc('check_and_award_badges', {
+        p_user_id: userId
       });
+  
+      if (error) {
+        console.error('❌ Rozet kontrolü hatası:', error);
+      } else if (badges && Array.isArray(badges) && badges.length > 0) {
+        badges.forEach((badge: any) => {
+          toast({
+            title: '🏆 Yeni Rozet!',
+            description: `"${badge.new_badge_name}" rozetini kazandınız! ${badge.new_badge_icon}`,
+            duration: 4000,
+          });
+        });
+      }
+  
+      console.log('✅ Rozet kontrolü tamamlandı');
+    } catch (error) {
+      console.error('❌ Rozet kontrolü hatası:', error);
     }
-
-    console.log('Rozet kontrolü tamamlandı');
-  } catch (error) {
-    console.error('Rozet kontrolü hatası:', error);
-  }
-};
+  };
 
 
   // Oyun biti fonksiyonunu güncelle
@@ -1341,8 +1306,6 @@ const useSenYazJoker = async () => {
           if (currentRoom) {
             await updateScore(newScore);
           }
-
-          
           
           jokerSuccess = true; // İşlem başarılı
           console.log('✅ Sen Yaz Jokeri başarılı:', selectedWord, 'Puan:', result.points);
@@ -1724,15 +1687,10 @@ const checkWinnerWithScores = useCallback(async (currentPlayerScore: number, cur
         console.error('❌ İstatistik güncelleme hatası:', error);
       } else {
         console.log('✅ İstatistikler başarıyla güncellendi!');
-        
-        // HEADER BİLGİLERİNİ ANINDA GÜNCELLE
-        console.log('🔄 Profil bilgileri anında güncelleniyor...');
-        await forceRefreshProfile();
-        console.log('✅ Header bilgileri güncellendi!');
       
         // Rozet kontrolü
         setTimeout(() => {
-          checkBadges(user.id);
+          checkBadges(user.id, playerWordsWithScores.length);
         }, 500);
       }
     } catch (error) {
@@ -1825,44 +1783,6 @@ const checkWinnerWithScores = useCallback(async (currentPlayerScore: number, cur
     };
   }, [gameMode, tournamentMatch, user, gameEnded]);
 
-  // 🎮 ÖZEL ODA OYUNLARI İÇİN REAL-TIME SCORE SYNC
-  useEffect(() => {
-    if (gameMode !== 'private-room' || !currentRoom || !user) return;
-
-    console.log('🔄 Özel oda real-time skor subscription başlatılıyor:', currentRoom.id);
-    
-    const channel = supabase
-      .channel(`game-room-${currentRoom.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'game_rooms',
-          filter: `id=eq.${currentRoom.id}`
-        },
-        (payload) => {
-          console.log('🎮 Özel oda güncellendi:', payload);
-          const newData = payload.new as any;
-          
-          // Karşı oyuncunun skorunu güncelle
-          const isPlayer1 = newData.player1_id === user.id;
-          const opponentScore = isPlayer1 ? newData.player2_score : newData.player1_score;
-          
-          if (opponentScore !== undefined && !gameEnded) {
-            console.log('🔄 Rakip skoru real-time güncellemesi:', opponentScore);
-            setOpponentScore(opponentScore);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      console.log('🔌 Özel oda subscription temizleniyor');
-      supabase.removeChannel(channel);
-    };
-  }, [gameMode, currentRoom, user, gameEnded]);
-
 const handleTournamentExit = async () => {
   if (!user || !tournamentMatch) return;
 
@@ -1899,7 +1819,7 @@ const handleTournamentExit = async () => {
   // Timer effect - TEK SEFER başlatılır ve sürekli çalışır
 useEffect(() => {
   if (gameType === 'timed' && gameStarted && !gameEnded && !timerRef.current) {
-    console.log('⏰ Timer BAŞLATILIYOR - Tek sefer, time:', timeLeftRef.current);
+    console.log('⏱️ Timer BAŞLATILIYOR - Tek sefer, time:', timeLeftRef.current);
     
     timerRef.current = setInterval(() => {
       timeLeftRef.current -= 1;
@@ -1910,19 +1830,25 @@ useEffect(() => {
         timerRef.current = null;
         
         console.log('⏰ Süre bitti! Final skorlar');
+        
         handleGameEnd();
-        setGameEnded(true);
+        setTimeout(() => {
+          // Skorları buradan alın, dependency'den değil
+          setGameEnded(true);
+          checkWinnerWithScores(playerScore, opponentScore);
+        }, 100);
       }
     }, 1000);
   }
   
   return () => {
+    // Sadece component unmount olduğunda temizle
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
   };
-}, [gameStarted, gameEnded, gameType]); 
+}, [gameStarted, gameEnded, gameType, playerScore, opponentScore]);
   
   // Focus/blur event handler
   useEffect(() => {
@@ -2340,27 +2266,30 @@ useEffect(() => {
 }, [gameStarted, gameEnded]);
 
   // Private room logic
-useEffect(() => {
+  useEffect(() => {
   if (gameMode === 'private-room') {
     const realPlayers = participants.filter(p => !p.is_bot && p.user_id !== null);
-    
-    console.log('🔧 PRIVATE ROOM EFFECT TRIGGERED:', {
-      realPlayersLength: realPlayers.length,
-      currentWaitingState: waitingForPlayer,
-      willSetWaiting: realPlayers.length < 2
-    });
   
     if (realPlayers.length >= 2) {
-      console.log('🔧 SETTING waitingForPlayer = FALSE');
+      console.log('✅ 2 gerçek oyuncu hazır - OYUN BAŞLIYOR!');
       setWaitingForPlayer(false);
       setGameStarted(true);
+      
+      if (!hasShownStartMessage) {
+        setHasShownStartMessage(true);
+        toast({
+          title: '🎮 Özel Oda Oyunu Başladı!',
+          description: `${gameType === 'score' ? 'Puanlı' : 'Süreli'} özel oda oyunu başladı!`,
+          duration: 2000,
+        });
+      }
     } else {
-      console.log('🔧 SETTING waitingForPlayer = TRUE'); 
       setWaitingForPlayer(true);
       setGameStarted(false);
+      setHasShownStartMessage(false);
     }
   }
-}, [participants, gameMode]); 
+}, [participants, gameMode, hasShownStartMessage, gameType, toast]);
 
   // Touch olayları için optimize edilmiş handler
   const handleLetterTouch = (letter: string, row: number, col: number, event: React.TouchEvent) => {
@@ -2539,7 +2468,6 @@ const submitWord = async () => {
     playSound('correctWord');
     const newScore = playerScore + result.points;
     setPlayerScore(newScore);
-
     
     setPlayerWords(prev => [...prev, currentWord]);
     setPlayerWordsWithScores(prev => [...prev, { word: currentWord, score: result.points }]);
@@ -2563,7 +2491,6 @@ const submitWord = async () => {
     if (currentRoom) {
       await updateScore(newScore);
     }
-
 
     // 🔥 YENİ: Turnuva modunda gerçek rakip puanını güncelle
     if (gameMode === 'tournament' && tournamentMatch && user) {
@@ -3070,12 +2997,6 @@ if (gameEnded) {
 }
 
 if (waitingForPlayer) {
-  console.log('🔴 RENDERING WAITING SCREEN:', {
-    waitingForPlayer,
-    gameStarted, 
-    participants: participants.length,
-    gameMode
-  });
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background to-muted">
       <Card className="w-full max-w-md text-center">
@@ -3158,12 +3079,6 @@ if (waitingForPlayer) {
     </div>
   );
 }
-
-console.log('🎮 RENDERING GAME SCREEN:', {
-  waitingForPlayer,
-  gameStarted,
-  participants: participants.length
-});
 
 const opponent = getOpponentInfo();
 return (
