@@ -35,147 +35,106 @@ export default function ChatPage() {
   const [allUsers, setAllUsers] = useState<SelectedUser[]>([]);
   const [unreadCounts, setUnreadCounts] = useState<{[key: string]: number}>({});
   const { 
-  unreadCount, 
-  markAllAsRead, 
-  markPrivateMessagesAsRead, 
-  refreshUnreadCounts 
-} = useChatNotifications();
+    unreadCount, 
+    markAllAsRead, 
+    markPrivateMessagesAsRead, 
+    refreshUnreadCounts 
+  } = useChatNotifications();
 
-  // Fetch all users for private chat
-const fetchAllUsers = async () => {
-  try {
-    console.log('🔍 DEBUG: fetchAllUsers başladı, user.id:', user?.id);
-    
-    // SADECE MESAJLAŞILAN KULLANICILARI GETİR
-    const { data: messages, error: messagesError } = await supabase
-      .from('private_messages')
-      .select('sender_id, recipient_id')
-      .or(`sender_id.eq.${user?.id},recipient_id.eq.${user?.id}`)
-      .not('sender_id', 'is', null)      // ✅ NULL sender_id'leri filtrele
-      .not('recipient_id', 'is', null);   // ✅ NULL recipient_id'leri filtrele
-
-    console.log('🔍 DEBUG: Private messages query result:', { messages, messagesError });
-
-    if (messagesError) {
-      console.error('🔍 DEBUG: Messages query error:', messagesError);
-      return;
-    }
-
-    const userIDs = new Set<string>();
-    messages?.forEach(msg => {
-      console.log('🔍 DEBUG: Processing message:', msg);
+  // Tüm fonksiyonlar aynı kalacak (kısaltıyorum)
+  const fetchAllUsers = async () => {
+    try {
+      console.log('🔍 DEBUG: fetchAllUsers başladı, user.id:', user?.id);
       
-      // ✅ Ekstra null kontrolü
-      if (msg.sender_id && msg.sender_id !== user?.id) {
-        userIDs.add(msg.sender_id);
+      const { data: messages, error: messagesError } = await supabase
+        .from('private_messages')
+        .select('sender_id, recipient_id')
+        .or(`sender_id.eq.${user?.id},recipient_id.eq.${user?.id}`)
+        .not('sender_id', 'is', null)
+        .not('recipient_id', 'is', null);
+
+      if (messagesError) {
+        console.error('🔍 DEBUG: Messages query error:', messagesError);
+        return;
       }
-      if (msg.recipient_id && msg.recipient_id !== user?.id) {
-        userIDs.add(msg.recipient_id);
+
+      const userIDs = new Set<string>();
+      messages?.forEach(msg => {
+        if (msg.sender_id && msg.sender_id !== user?.id) {
+          userIDs.add(msg.sender_id);
+        }
+        if (msg.recipient_id && msg.recipient_id !== user?.id) {
+          userIDs.add(msg.recipient_id);
+        }
+      });
+
+      if (userIDs.size === 0) {
+        setAllUsers([]);
+        return;
       }
-    });
 
-    console.log('🔍 DEBUG: Unique user IDs found:', Array.from(userIDs));
+      const validUserIDs = Array.from(userIDs).filter(id => {
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        return id && uuidRegex.test(id);
+      });
 
-    if (userIDs.size === 0) {
-      console.log('🔍 DEBUG: No user IDs found, setting empty array');
-      setAllUsers([]);
-      return;
+      if (validUserIDs.length === 0) {
+        setAllUsers([]);
+        return;
+      }
+
+      const { data: users, error: usersError } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', validUserIDs);
+
+      if (usersError) {
+        console.error('🔍 DEBUG: Users query error:', usersError);
+        return;
+      }
+
+      setAllUsers(users || []);
+    } catch (error) {
+      console.error('🔍 DEBUG: fetchAllUsers error:', error);
     }
+  };
 
-    // ✅ Valid UUID'leri filtrele
-    const validUserIDs = Array.from(userIDs).filter(id => {
-      // UUID format kontrolü
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      return id && uuidRegex.test(id);
-    });
+  const fetchUnreadCounts = async () => {
+    if (!user) return;
+    try {
+      const { data: unreadMessages, error } = await supabase
+        .from('private_messages')
+        .select('sender_id')
+        .eq('recipient_id', user.id)
+        .eq('is_read', false);
 
-    console.log('🔍 DEBUG: Valid user IDs after filtering:', validUserIDs);
+      if (error) {
+        console.error('Unread count fetch error:', error);
+        setUnreadCounts({});
+        return;
+      }
 
-    if (validUserIDs.length === 0) {
-      console.log('🔍 DEBUG: No valid user IDs found');
-      setAllUsers([]);
-      return;
-    }
+      const counts: {[key: string]: number} = {};
+      unreadMessages?.forEach((msg) => {
+        const senderId = msg.sender_id;
+        if (senderId) {
+          counts[senderId] = (counts[senderId] || 0) + 1;
+        }
+      });
 
-    // BU KULLANICILARIN PROFİLLERİNİ GETİR
-    const { data: users, error: usersError } = await supabase
-      .from('profiles')
-      .select('id, username, avatar_url')
-      .in('id', validUserIDs);
-
-    console.log('🔍 DEBUG: Users query result:', { users, usersError });
-
-    if (usersError) {
-      console.error('🔍 DEBUG: Users query error:', usersError);
-      return;
-    }
-
-    const usersWithMessages = users?.filter(user => {
-      const hasMessages = validUserIDs.includes(user.id);
-      console.log(`🔍 User ${user.username} has messages:`, hasMessages);
-      return hasMessages;
-    }) || [];
-
-    console.log('🔍 DEBUG: Final filtered users:', usersWithMessages);
-    setAllUsers(usersWithMessages);
-
-    setAllUsers(users || []);
-
-  } catch (error) {
-    console.error('🔍 DEBUG: fetchAllUsers error:', error);
-  }
-};
-
-  // Fetch unread counts
-const fetchUnreadCounts = async () => {
-  if (!user) return;
-  try {
-    console.log('=== DEBUG: fetchUnreadCounts başladı ===');
-    
-    // SADECE doğru recipient_id ile
-    const { data: unreadMessages, error } = await supabase
-      .from('private_messages')
-      .select('sender_id')
-      .eq('recipient_id', user.id) // ✅ SADECE bu kullanıcı
-      .eq('is_read', false);
-
-    if (error) {
-      console.error('Unread count fetch error:', error);
+      setUnreadCounts(counts);
+    } catch (error) {
+      console.error('Error with unread counts:', error);
       setUnreadCounts({});
-      return;
     }
+  };
 
-    // DEBUG: Tüm okunmamış mesajları göster
-    console.log('🔍 All unread messages for counts:', unreadMessages);
-
-    const counts: {[key: string]: number} = {};
-    unreadMessages?.forEach((msg) => {
-      const senderId = msg.sender_id;
-      // Sadece geçerli sender_id'leri say (null/undefined değilse)
-      if (senderId) {
-        counts[senderId] = (counts[senderId] || 0) + 1;
-      }
-    });
-
-    console.log('=== DEBUG: Unread counts updated ===', counts);
-    setUnreadCounts(counts);
-    
-  } catch (error) {
-    console.error('Error with unread counts:', error);
-    setUnreadCounts({});
-  }
-};
-
-
-// Fetch users when viewMode changes to users - mevcut useEffect'i güncelle
-useEffect(() => {
-  if (viewMode === 'users' && user?.id) {
-    console.log('🔄 Users view activated, fetching data...');
-    fetchAllUsers();
-    fetchUnreadCounts();
-  }
-}, [viewMode, user?.id]);
-
+  useEffect(() => {
+    if (viewMode === 'users' && user?.id) {
+      fetchAllUsers();
+      fetchUnreadCounts();
+    }
+  }, [viewMode, user?.id]);
 
   const handleBackToMenu = () => {
     playSound('buttonClick');
@@ -191,296 +150,240 @@ useEffect(() => {
     }
   };
 
-const startPrivateChat = async (targetUser: SelectedUser) => {
-  if (!user) return;
+  const startPrivateChat = async (targetUser: SelectedUser) => {
+    if (!user) return;
 
-  try {
-    playSound('buttonClick');
-    
-    const participants = [user.id, targetUser.id].sort();
-    const chatId = `chat_${participants.join('_')}`;
+    try {
+      playSound('buttonClick');
+      
+      const participants = [user.id, targetUser.id].sort();
+      const chatId = `chat_${participants.join('_')}`;
 
-    console.log('🚀 Starting private chat with:', targetUser.username, 'chatId:', chatId);
-
-    const { data: existingChat, error: chatError } = await supabase
-      .from('private_chats')
-      .select('*')
-      .eq('id', chatId)
-      .single();
-
-    if (chatError && chatError.code !== 'PGRST116') {
-      throw chatError;
-    }
-
-    if (!existingChat) {
-      console.log('📝 Creating new private chat record');
-      const { error: createError } = await supabase
+      const { data: existingChat, error: chatError } = await supabase
         .from('private_chats')
-        .insert({
-          id: chatId,
-          user1_id: participants[0],
-          user2_id: participants[1]
-        });
+        .select('*')
+        .eq('id', chatId)
+        .single();
 
-      if (createError) throw createError;
+      if (chatError && chatError.code !== 'PGRST116') {
+        throw chatError;
+      }
+
+      if (!existingChat) {
+        const { error: createError } = await supabase
+          .from('private_chats')
+          .insert({
+            id: chatId,
+            user1_id: participants[0],
+            user2_id: participants[1]
+          });
+
+        if (createError) throw createError;
+      }
+
+      setSelectedUser(targetUser);
+      setActiveChatId(chatId);
+      setViewMode('private-chat');
+      
+    } catch (error) {
+      console.error('Error starting private chat:', error);
     }
-
-    setSelectedUser(targetUser);
-    setActiveChatId(chatId);
-    setViewMode('private-chat');
-    
-  } catch (error) {
-    console.error('Error starting private chat:', error);
-  }
-};
-
-useEffect(() => {
-  if (!user?.id) return;
-
-  console.log('🔄 Setting up ChatPage private messages real-time subscription');
-
-  const channel = supabase
-    .channel('chatpage-private-messages', {  // Farklı channel adı
-      config: {
-        broadcast: { self: true },
-      }
-    })
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'private_messages'
-      },
-      (payload) => {
-        console.log('📨 ChatPage: New private message detected:', payload.new);
-        
-        const newMessage = payload.new as any;
-        
-        // Bu kullanıcı ile ilgili mesaj mı kontrol et
-        if (newMessage.sender_id === user.id || newMessage.recipient_id === user.id) {
-          console.log('✅ ChatPage: Message belongs to current user, updating lists');
-          
-          // Her zaman güncelle (viewMode'a bakmadan)
-          setTimeout(() => {
-            console.log('🔄 ChatPage: Refreshing user list after new message');
-            fetchAllUsers();
-            fetchUnreadCounts();
-          }, 1000); // 1 saniye bekle
-        }
-      }
-    )
-    .subscribe((status) => {
-      console.log('📡 ChatPage: Private messages subscription status:', status);
-    });
-
-  return () => {
-    console.log('🧹 ChatPage: Cleaning up private messages subscription');
-    supabase.removeChannel(channel);
   };
-}, [user?.id]);
 
-  // Özel sohbeti sil
-const deletePrivateChat = async (otherUserId: string) => {
-  if (!user) return;
-  
-  try {
-    console.log('🗑️ Deleting private chat with user:', otherUserId);
+  const deletePrivateChat = async (otherUserId: string) => {
+    if (!user) return;
     
-    const chatId = `chat_${[user.id, otherUserId].sort().join('_')}`;
-    console.log('🗑️ Chat ID to delete:', chatId);
-    
-    // ÖNCE CONSTRAINT'LERİ KONTROL ET
-    const { data: existingMessages } = await supabase
-      .from('private_messages')
-      .select('id')
-      .eq('chat_id', chatId);
-    
-    console.log('🔍 Messages to delete:', existingMessages?.length || 0);
-    
-    // 1. CASCADE SİLME - ÖNCE REACTIONS VARSA SİL
-    const { error: reactionsError } = await supabase
-      .from('message_reactions')
-      .delete()
-      .in('message_id', existingMessages?.map(m => m.id) || []);
-    
-    if (reactionsError) {
-      console.log('⚠️ Reactions delete warning:', reactionsError);
+    try {
+      const chatId = `chat_${[user.id, otherUserId].sort().join('_')}`;
+      
+      const { data: existingMessages } = await supabase
+        .from('private_messages')
+        .select('id')
+        .eq('chat_id', chatId);
+      
+      const { error: reactionsError } = await supabase
+        .from('message_reactions')
+        .delete()
+        .in('message_id', existingMessages?.map(m => m.id) || []);
+      
+      const { error: messagesError } = await supabase
+        .from('private_messages')
+        .delete()
+        .eq('chat_id', chatId);
+
+      if (messagesError) throw messagesError;
+
+      const { error: chatError } = await supabase
+        .from('private_chats')
+        .delete()
+        .eq('id', chatId);
+
+      setAllUsers(prev => prev.filter(u => u.id !== otherUserId));
+      setUnreadCounts(prev => {
+        const updated = { ...prev };
+        delete updated[otherUserId];
+        return updated;
+      });
+
+      toast.success('Özel sohbet silindi');
+      
+    } catch (error) {
+      console.error('Error deleting private chat:', error);
+      toast.error('Sohbet silinirken hata oluştu');
     }
-    
-    // 2. MESAJLARI SİL
-    const { data: deletedMessages, error: messagesError } = await supabase
-      .from('private_messages')
-      .delete()
-      .eq('chat_id', chatId)
-      .select();
+  };
 
-    console.log('🗑️ Deleted messages result:', { deletedMessages, messagesError });
-    
-    if (messagesError) {
-      console.error('❌ Messages delete error:', messagesError);
-      throw messagesError;
-    }
-
-    console.log(`✅ ${deletedMessages?.length || 0} messages deleted successfully`);
-
-    // 3. CHAT KAYDINI SİL  
-    const { data: deletedChat, error: chatError } = await supabase
-      .from('private_chats')
-      .delete()
-      .eq('id', chatId)
-      .select();
-
-    console.log('🗑️ Deleted chat result:', { deletedChat, chatError });
-
-    if (chatError) {
-      console.error('❌ Chat delete error:', chatError);
-      // Chat silme hatası olsa da devam et
-    }
-
-    console.log('✅ Chat deleted successfully');
-
-    // 4. DOĞRULAMA - SİLİNDİ Mİ KONTROL ET
-    const { data: remainingMessages } = await supabase
-      .from('private_messages')
-      .select('id')
-      .eq('chat_id', chatId);
-    
-    console.log('🔍 Remaining messages after delete:', remainingMessages?.length || 0);
-
-    // 5. LOCAL STATE'İ GÜNCELLE
-    setAllUsers(prev => {
-      const updated = prev.filter(u => u.id !== otherUserId);
-      console.log('🔄 Updated allUsers, remaining count:', updated.length);
-      return updated;
-    });
-    
-    setUnreadCounts(prev => {
-      const updated = { ...prev };
-      delete updated[otherUserId];
-      return updated;
-    });
-
-    toast.success('Özel sohbet silindi');
-    
-  } catch (error) {
-    console.error('❌ Error deleting private chat:', error);
-    toast.error('Sohbet silinirken hata oluştu: ' + error.message);
-  }
-};
-  
-// ChatPage.tsx - renderUsersList fonksiyonunu güncelle
-const renderUsersList = () => {
-  return (
-    <ScrollArea className="flex-1">
-      <div className="p-4 space-y-3">
-        {allUsers.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>Kullanıcılar yükleniyor...</p>
+  // Ortak header bileşeni
+  const renderHeader = (title: string, subtitle: string, showBackButton: boolean = false) => (
+    <div className="bg-gradient-to-r from-chat-500 via-chat-600 to-chat-500 text-white p-4 border-b-2 border-chat-300 shadow-lg">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          {showBackButton && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                if (viewMode === 'private-chat') {
+                  handleViewChange('users');
+                } else {
+                  handleViewChange('global');
+                }
+              }}
+              className="p-2 hover:bg-white/20 rounded-full text-white transition-all duration-200 hover:scale-110"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+          )}
+          
+          <div className="flex flex-col">
+            <h1 className="text-xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-yellow-300 via-white to-yellow-300 bg-clip-text text-transparent drop-shadow-lg">
+              {title}
+            </h1>
+            <p className="text-chat-100 text-sm font-medium">{subtitle}</p>
           </div>
-        ) : (
-          allUsers.map((targetUser) => {
-            const unreadCount = unreadCounts[targetUser.id] || 0;
-            const hasHistory = Object.keys(unreadCounts).includes(targetUser.id) || unreadCount > 0;
-
-            return (
-              <SwipeToDeleteCard
-                key={targetUser.id}
-                onDelete={() => deletePrivateChat(targetUser.id)}
-                className={`p-4 hover:shadow-md transition-all cursor-pointer border-2 ${
-                  unreadCount > 0 
-                    ? 'border-chat-500 bg-chat-50' 
-                    : hasHistory
-                    ? 'border-chat-300 bg-gray-50'
-                    : 'border-chat-200'
-                }`}
-                onClick={() => startPrivateChat(targetUser)}
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          {viewMode === 'global' && (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleViewChange('global')}
+                className="p-2 rounded-full bg-white/20 text-white border border-white/30 hover:bg-white/30 transition-all duration-200"
               >
-                <div className="flex items-center space-x-3">
-                  <UserAvatar
-                    src={targetUser.avatar_url}
-                    alt={targetUser.username}
-                    fallback={targetUser.username.charAt(0).toUpperCase()}
-                    size="sm"
-                    className={`${unreadCount > 0 ? 'ring-2 ring-chat-500' : ''} border-2 ${
-                      isUserOnline(targetUser.id) ? 'border-green-400' : 'border-gray-300'
-                    }`}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-800 truncate">
-                      {targetUser.username}
-                    </p>
-                    {unreadCount > 0 ? (
-                      <p className="text-sm text-chat-600 font-semibold">
-                        {unreadCount} okunmamış mesaj
-                      </p>
-                    ) : hasHistory ? (
-                      <p className="text-sm text-gray-600">Mesaj geçmişi var</p>
-                    ) : (
-                      <p className="text-sm text-gray-500">Özel mesaj gönder</p>
-                    )}
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    {isUserOnline(targetUser.id) && (
-                      <div className="w-2 h-2 bg-green-500 rounded-full" title="Çevrimiçi" />
-                    )}
-                    {unreadCount > 0 && (
-                      <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-xs text-white font-bold">
-                        {unreadCount > 9 ? '9+' : unreadCount}
-                      </div>
-                    )}
-                    <Mail className="w-5 h-5 text-chat-500" />
-                  </div>
-                </div>
-              </SwipeToDeleteCard>
-            );
-          })
-        )}
-      </div>
-    </ScrollArea>
-  );
-};
-
-  const renderContent = () => {
-    console.log('renderContent called, viewMode:', viewMode);
-    
-    if (viewMode === 'private-chat' && selectedUser && activeChatId) {
-      return (
-        <div className="h-full flex flex-col">
-          {/* Private Chat Header */}
-          <div className="flex items-center justify-between p-4 border-b border-border bg-chat-500 text-white">
-            <div className="flex items-center space-x-3">
+                <Hash className="w-5 h-5" />
+              </Button>
+              
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => handleViewChange('users')}
-                className="p-2 hover:bg-chat-600 rounded-full text-white"
+                className="p-2 rounded-full text-white hover:bg-white/20 border border-transparent hover:border-white/30 transition-all duration-200"
               >
-                <ArrowLeft className="w-5 h-5" />
+                <Users className="w-5 h-5" />
               </Button>
-              <UserAvatar
-                src={selectedUser.avatar_url}
-                alt={selectedUser.username}
-                fallback={selectedUser.username?.charAt(0).toUpperCase()}
-                size="sm"
-              />
-              <div className="flex-1 min-w-0">
-                <h2 className="text-lg font-semibold truncate text-white">{selectedUser.username}</h2>
-                <p className="text-sm text-chat-100">Özel Sohbet</p>
-              </div>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleBackToMenu}
-              className="p-2 hover:bg-chat-600 rounded-full flex-shrink-0 text-white"
-            >
-              <Home className="w-5 h-5" />
-            </Button>
-          </div>
+            </>
+          )}
           
-          {/* Private Chat Content */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleBackToMenu}
+            className="p-2 hover:bg-red-500/80 rounded-full text-white border border-transparent hover:border-red-300 transition-all duration-200 hover:scale-110"
+          >
+            <Home className="w-5 h-5" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderUsersList = () => {
+    return (
+      <ScrollArea className="flex-1 bg-gradient-to-b from-gray-50 to-white">
+        <div className="p-4 space-y-3">
+          {allUsers.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <div className="bg-gradient-to-br from-chat-100 to-chat-200 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Users className="w-10 h-10 text-chat-500" />
+              </div>
+              <p className="text-lg font-medium">Henüz özel mesajınız yok</p>
+              <p className="text-sm">Global sohbetten birine özel mesaj gönderin</p>
+            </div>
+          ) : (
+            allUsers.map((targetUser) => {
+              const unreadCount = unreadCounts[targetUser.id] || 0;
+              const hasHistory = Object.keys(unreadCounts).includes(targetUser.id) || unreadCount > 0;
+
+              return (
+                <SwipeToDeleteCard
+                  key={targetUser.id}
+                  onDelete={() => deletePrivateChat(targetUser.id)}
+                  className={`p-4 hover:shadow-lg transition-all duration-300 cursor-pointer border-2 rounded-xl ${
+                    unreadCount > 0 
+                      ? 'border-chat-500 bg-gradient-to-r from-chat-50 to-chat-100 shadow-md' 
+                      : hasHistory
+                      ? 'border-chat-300 bg-gradient-to-r from-gray-50 to-white hover:from-chat-50 hover:to-chat-100'
+                      : 'border-chat-200 bg-white hover:bg-gradient-to-r hover:from-chat-50 hover:to-white'
+                  } hover:border-chat-400 hover:scale-[1.02]`}
+                  onClick={() => startPrivateChat(targetUser)}
+                >
+                  <div className="flex items-center space-x-3">
+                    <UserAvatar
+                      src={targetUser.avatar_url}
+                      alt={targetUser.username}
+                      fallback={targetUser.username.charAt(0).toUpperCase()}
+                      size="sm"
+                      className={`${unreadCount > 0 ? 'ring-2 ring-chat-500 ring-offset-2' : ''} border-2 transition-all duration-200 ${
+                        isUserOnline(targetUser.id) ? 'border-green-400 shadow-green-200 shadow-md' : 'border-gray-300'
+                      }`}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-800 truncate text-lg">
+                        {targetUser.username}
+                      </p>
+                      {unreadCount > 0 ? (
+                        <p className="text-sm text-chat-600 font-bold">
+                          {unreadCount} okunmamış mesaj
+                        </p>
+                      ) : hasHistory ? (
+                        <p className="text-sm text-gray-600 font-medium">Mesaj geçmişi var</p>
+                      ) : (
+                        <p className="text-sm text-gray-500">Özel mesaj gönder</p>
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {isUserOnline(targetUser.id) && (
+                        <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse border border-white shadow-sm" title="Çevrimiçi" />
+                      )}
+                      {unreadCount > 0 && (
+                        <div className="w-7 h-7 bg-gradient-to-r from-red-500 to-red-600 rounded-full flex items-center justify-center text-xs text-white font-bold shadow-lg animate-pulse">
+                          {unreadCount > 9 ? '9+' : unreadCount}
+                        </div>
+                      )}
+                      <Mail className="w-5 h-5 text-chat-500" />
+                    </div>
+                  </div>
+                </SwipeToDeleteCard>
+              );
+            })
+          )}
+        </div>
+      </ScrollArea>
+    );
+  };
+
+  const renderContent = () => {
+    if (viewMode === 'private-chat' && selectedUser && activeChatId) {
+      return (
+        <div className="h-full flex flex-col">
+          {renderHeader(
+            `KELİMECİ - ${selectedUser.username}`,
+            'Özel Sohbet',
+            true
+          )}
+          
           <div className="flex-1 min-h-0">
             <PrivateChat
               chatId={activeChatId}
@@ -495,111 +398,78 @@ const renderUsersList = () => {
     if (viewMode === 'users') {
       return (
         <div className="h-full flex flex-col">
-          {/* Users List Header */}
-          <div className="flex items-center justify-between p-4 border-b border-border bg-chat-500 text-white">
-            <div className="flex items-center space-x-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleViewChange('global')}
-                className="p-2 hover:bg-chat-600 rounded-full text-white"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <Users className="w-5 h-5" />
-              <div>
-                <h2 className="text-lg font-semibold">Özel Sohbet</h2>
-                <p className="text-sm text-chat-100">
-                  {onlineUsers.length} kişi çevrimiçi
-                </p>
-              </div>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleBackToMenu}
-              className="p-2 hover:bg-chat-600 rounded-full text-white"
-            >
-              <Home className="w-5 h-5" />
-            </Button>
-          </div>
+          {renderHeader(
+            'KELİMECİ - Özel Mesajlar',
+            `${onlineUsers.length} kişi çevrimiçi`,
+            true
+          )}
           
-          {/* Users List Content */}
           {renderUsersList()}
         </div>
       );
     }
 
-    // Global chat - HEADER OLMADAN sadece content
+    // Global chat
     return (
       <div className="h-full flex flex-col">
+        {renderHeader(
+          'KELİMECİ SOHBET',
+          `${onlineUsers.length} kişi çevrimiçi`
+        )}
+        
         <div className="flex-1 min-h-0">
           <GlobalChat 
-             isOpen={true} 
-             onClose={() => {}} 
-             isFullPage={true}
-             onStartPrivateChat={startPrivateChat} />
+            isOpen={true} 
+            onClose={() => {}} 
+            isFullPage={true}
+            onStartPrivateChat={startPrivateChat} 
+          />
         </div>
       </div>
     );
   };
 
-  // BURASI ANA RETURN - fonksiyonun dışında olmalı
+  // Real-time subscription (aynı kalacak)
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel('chatpage-private-messages', {
+        config: {
+          broadcast: { self: true },
+        }
+      })
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'private_messages'
+        },
+        (payload) => {
+          const newMessage = payload.new as any;
+          
+          if (newMessage.sender_id === user.id || newMessage.recipient_id === user.id) {
+            setTimeout(() => {
+              fetchAllUsers();
+              fetchUnreadCounts();
+            }, 1000);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
+
   return (
-    <div className="min-h-screen bg-chat-50">
+    <div className="min-h-screen bg-gradient-to-br from-chat-50 via-gray-50 to-chat-100">
       {/* Safe area top */}
       <div className="safe-area-top"></div>
       
-      <div className="h-screen flex flex-col max-w-4xl mx-auto bg-white rounded-lg shadow-lg m-4 overflow-hidden border border-chat-200">
-        {/* ANA HEADER - SADCE viewMode 'global' İKEN GÖSTERME */}
-        {viewMode === 'global' && (
-          <div className="bg-chat-500 text-white p-4 flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleBackToMenu}
-                className="p-2 hover:bg-chat-600 rounded-full text-white"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <div>
-
-                    <h1 className="text-xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent drop-shadow-lg"
-                        style={{
-                          textShadow: '1px 1px 0px hsl(var(--primary)), 2px 2px 0px rgba(0,0,0,0.3), 0 0 15px hsl(var(--primary) / 0.5)',
-                          WebkitTextStroke: '0.5px hsl(var(--border))'
-                        }}>
-                      KELİMECİ sohbet
-                    </h1>
-                <p className="text-chat-100 text-sm">
-                  {onlineUsers.length} kişi çevrimiçi
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleViewChange('global')}
-                className="p-2 rounded-full bg-chat-600 text-white"
-              >
-                <Hash className="w-5 h-5" />
-              </Button>
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleViewChange('users')}
-                className="p-2 rounded-full text-chat-100 hover:bg-chat-600"
-              >
-                <Users className="w-5 h-5" />
-              </Button>
-            </div>
-          </div>
-        )}
-
+      <div className="h-screen flex flex-col max-w-4xl mx-auto bg-white rounded-lg shadow-2xl m-4 overflow-hidden border-2 border-chat-200">
         {/* Content Area */}
         <div className="flex-1 min-h-0">
           {renderContent()}
