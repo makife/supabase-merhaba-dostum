@@ -85,49 +85,27 @@ useEffect(() => {
     return cleanup;
   }, [tournamentId, timeLeft]);
 
-// Mevcut useEffect'lerin yanına bunu ekleyin
+  //sonradan katılanlar için
 useEffect(() => {
-  if (!tournamentId || !user) return;
+  if (!tournamentId || !user || tournament?.creator_id === user?.id) return;
 
-  console.log('🔄 Tournament status listener başlatılıyor...');
-  
-  const tournamentChannel = supabase
-    .channel(`tournament-status-${tournamentId}`)
+  const channel = supabase
+    .channel(`tournament-redirect-${tournamentId}`)
     .on('postgres_changes', {
       event: 'UPDATE',
       schema: 'public',
       table: 'tournaments',
       filter: `id=eq.${tournamentId}`
-    }, async (payload) => {
-      console.log('🏆 Tournament status güncellendi:', payload.new);
-      
+    }, (payload) => {
       if (payload.new.status === 'in_progress') {
-        console.log('🚀 Turnuva başladı, kullanıcı maçı aranıyor...');
-        
-        // Kullanıcının maçını bul
-        const { data: userMatch } = await supabase
-          .from('tournament_matches')
-          .select('id')
-          .eq('tournament_id', tournamentId)
-          .or(`player1_id.eq.${user.id},player2_id.eq.${user.id}`)
-          .single();
-        
-        if (userMatch) {
-          console.log('✅ Kullanıcı maçı bulundu, oyun sayfasına yönlendiriliyor...');
-          navigate(`/game?match=${userMatch.id}&tournament=${tournamentId}`);
-        } else {
-          console.log('❌ Kullanıcı maçı bulunamadı, bracket sayfasına yönlendiriliyor...');
-          navigate(`/tournament-bracket/${tournamentId}`);
-        }
+        console.log('Turnuva başladı, bracket sayfasına yönlendiriliyor...');
+        navigate(`/tournament-bracket/${tournamentId}`);
       }
     })
     .subscribe();
 
-  return () => {
-    console.log('🧹 Tournament status listener temizleniyor...');
-    supabase.removeChannel(tournamentChannel);
-  };
-}, [tournamentId, user?.id, navigate]);
+  return () => supabase.removeChannel(channel);
+}, [tournamentId, user?.id, tournament?.creator_id]);
 
  const fetchParticipants = async () => {
     try {
@@ -181,20 +159,28 @@ useEffect(() => {
     }
   };
 
-  const startCountdown = () => {
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
+ const startCountdown = () => {
+  const timer = setInterval(() => {
+    setTimeLeft((prev) => {
+      if (prev <= 1) {
+        clearInterval(timer);
+        
+        // SADECE turnuva oluşturan başlatsın
+        if (tournament?.creator_id === user?.id) {
           startTournament();
-          return 0;
+        } else {
+          // Sonradan katılanlar sadece beklesin, real-time listener yönlendirecek
+          console.log('Turnuva başlatma bekleniyor...');
         }
-        return prev - 1;
-      });
-    }, 1000);
+        
+        return 0;
+      }
+      return prev - 1;
+    });
+  }, 1000);
 
-    return () => clearInterval(timer);
-  };
+  return () => clearInterval(timer);
+};
 
 const startTournament = async () => {
   if (tournamentStarted) {
