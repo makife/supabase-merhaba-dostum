@@ -75,15 +75,15 @@ useEffect(() => {
     }
   };
 
-  useEffect(() => {
-    if (!tournamentId) return;
+useEffect(() => {
+  if (!tournamentId) return;
 
-    fetchTournamentData();
+  fetchTournamentData();
 
-    // Güvenli geri sayım - kapanış değişkenlerine takılmadan çalışır
-    const cleanup = startCountdown();
-    return cleanup;
-  }, [tournamentId, timeLeft]);
+  const cleanup = startCountdown(); // async değil
+  return cleanup;
+}, [tournamentId]);
+
 
   //sonradan katılanlar için
 useEffect(() => {
@@ -169,7 +169,7 @@ useEffect(() => {
         if (tournament?.creator_id === user?.id) {
           startTournament();
         } else {
-          // Sonradan katılanlar sadece beklesin, real-time listener yönlendirecek
+          // Sonradan katılanlar sadece beklesin
           console.log('Turnuva başlatma bekleniyor...');
         }
         
@@ -179,7 +179,7 @@ useEffect(() => {
     });
   }, 1000);
 
-  return () => clearInterval(timer);
+  return () => clearInterval(timer); // Bu satır sync olmalı
 };
 
 const startTournament = async () => {
