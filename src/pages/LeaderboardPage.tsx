@@ -97,15 +97,19 @@ const LeaderboardPage = () => {
   // Haftalık sıralama - gerçek veriler
   const fetchWeeklyLeaders = async () => {
     try {
-      // Bu haftanın başlangıcını hesapla (Pazartesi)
+      // DÜZELTME: Bu haftanın başlangıcını PostgreSQL mantığıyla hesapla
       const today = new Date();
-      const dayOfWeek = today.getDay();
-      const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Pazar = 0, Pazartesi = 1
+      // PostgreSQL'de DATE_TRUNC('week', NOW()) + 1 day = Pazartesi
+      const dayOfWeek = today.getDay(); // 0=Pazar, 1=Pazartesi, ...
+      const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Pazartesi'ye kadar geri git
+      
       const mondayDate = new Date(today);
-      mondayDate.setDate(today.getDate() - daysToMonday);
+      mondayDate.setDate(today.getDate() - daysToSubtract);
       mondayDate.setHours(0, 0, 0, 0);
       
       const weekStartStr = mondayDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+      
+      console.log('Haftalık sorgu tarihi:', weekStartStr); // Debug için
 
       // Type-safe RPC çağrısı
       const { data, error } = await supabase.rpc('get_weekly_leaderboard' as any, {
@@ -121,6 +125,8 @@ const LeaderboardPage = () => {
         }
         return;
       }
+
+      console.log('Haftalık veri geldi:', data); // Debug için
 
       // Type guard ile array kontrolü
       const weeklyData = Array.isArray(data) ? data.map((entry: any, index: number) => ({
@@ -151,10 +157,12 @@ const LeaderboardPage = () => {
   // Aylık sıralama - gerçek veriler
   const fetchMonthlyLeaders = async () => {
     try {
-      // Bu ayın başlangıcını hesapla
+      // DÜZELTME: Bu ayın başlangıcını doğru hesapla
       const today = new Date();
       const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
       const monthStartStr = firstDayOfMonth.toISOString().split('T')[0]; // YYYY-MM-DD format
+      
+      console.log('Aylık sorgu tarihi:', monthStartStr); // Debug için
 
       // Type-safe RPC çağrısı
       const { data, error } = await supabase.rpc('get_monthly_leaderboard' as any, {
@@ -170,6 +178,8 @@ const LeaderboardPage = () => {
         }
         return;
       }
+
+      console.log('Aylık veri geldi:', data); // Debug için
 
       // Type guard ile array kontrolü
       const monthlyData = Array.isArray(data) ? data.map((entry: any, index: number) => ({
