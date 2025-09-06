@@ -168,10 +168,15 @@ const startTournament = async () => {
     });
 
     if (error) {
-      const errorMessage = error.message || error.toString() || '';
+      // Birden fazla yolla hata mesajını kontrol et
+      const errorMessage = error.message || error.toString() || String(error) || '';
+      
+      console.log('Hata detayı:', error, 'Error message:', errorMessage);
       
       // Eğer maçlar zaten varsa, direkt bracket sayfasına git
-      if (errorMessage.includes('Matches already exist')) {
+      if (errorMessage.includes('Matches already exist') || 
+          errorMessage.includes('already exist') ||
+          String(error).includes('Matches already exist')) {
         console.log('✅ Maçlar zaten mevcut, bracket sayfasına yönlendiriliyor...');
         navigate(`/tournament-bracket/${tournamentId}`);
         return;
