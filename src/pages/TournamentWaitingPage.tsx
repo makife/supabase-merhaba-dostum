@@ -80,9 +80,10 @@ useEffect(() => {
 
   fetchTournamentData();
 
-  const cleanup = startCountdown(); // async değil
+  // startCountdown'u direkt çağır ve cleanup'ı al
+  const cleanup = startCountdown();
   return cleanup;
-}, [tournamentId]);
+}, [tournamentId, timeLeft]);
 
 
   //sonradan katılanlar için
@@ -159,17 +160,15 @@ useEffect(() => {
     }
   };
 
- const startCountdown = () => {
+const startCountdown = () => {
   const timer = setInterval(() => {
     setTimeLeft((prev) => {
       if (prev <= 1) {
         clearInterval(timer);
         
-        // SADECE turnuva oluşturan başlatsın
         if (tournament?.creator_id === user?.id) {
           startTournament();
         } else {
-          // Sonradan katılanlar sadece beklesin
           console.log('Turnuva başlatma bekleniyor...');
         }
         
@@ -179,7 +178,7 @@ useEffect(() => {
     });
   }, 1000);
 
-  return () => clearInterval(timer); // Bu satır sync olmalı
+  return () => clearInterval(timer);
 };
 
 const startTournament = async () => {
