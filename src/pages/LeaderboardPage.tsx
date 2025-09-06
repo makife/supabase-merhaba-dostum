@@ -386,24 +386,34 @@ const LeaderboardPage = () => {
           </Card>
         )}
 
+        {/* Liderlik Tabloları */}
         <Card>
           <CardHeader>
             <CardTitle>Liderlik Sıralaması</CardTitle>
           </CardHeader>
           <CardContent>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3 h-9">
-                <TabsTrigger value="all-time" className="text-xs px-2">
+              <TabsList className="grid w-full grid-cols-3 h-9 bg-gray-100">
+                <TabsTrigger 
+                  value="all-time" 
+                  className="text-xs px-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white hover:bg-blue-100"
+                >
                   <Trophy className="w-3 h-3 mr-1" />
                   <span className="hidden xs:inline">Genel</span>
                   <span className="xs:hidden">Tümü</span>
                 </TabsTrigger>
-                <TabsTrigger value="weekly" className="text-xs px-2">
+                <TabsTrigger 
+                  value="weekly" 
+                  className="text-xs px-2 data-[state=active]:bg-green-500 data-[state=active]:text-white hover:bg-green-100"
+                >
                   <Calendar className="w-3 h-3 mr-1" />
                   <span className="hidden xs:inline">Haftalık</span>
                   <span className="xs:hidden">Hafta</span>
                 </TabsTrigger>
-                <TabsTrigger value="monthly" className="text-xs px-2">
+                <TabsTrigger 
+                  value="monthly" 
+                  className="text-xs px-2 data-[state=active]:bg-purple-500 data-[state=active]:text-white hover:bg-purple-100"
+                >
                   <CalendarRange className="w-3 h-3 mr-1" />
                   <span className="hidden xs:inline">Aylık</span>
                   <span className="xs:hidden">Ay</span>
