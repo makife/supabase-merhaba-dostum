@@ -88,28 +88,14 @@ const handleJoinTournament = async (tournamentId: string) => {
   if (!user) return;
 
   try {
-    // Önce user'ın zaten katılıp katılmadığını kontrol et
-    const { data: existingParticipation } = await supabase
-      .from('tournament_participants')
-      .select('id')
-      .eq('tournament_id', tournamentId)
-      .eq('user_id', user.id)
-      .single();
-
-    if (existingParticipation) {
-      // Zaten katılmış, beklemeye yönlendir
-      navigate(`/tournament-waiting/${tournamentId}`);
-      return;
-    }
-
-    // Yeni katılımcı olarak ekle
+    // Sadece mevcut turnuvaya katıl
     const { error: joinError } = await supabase
       .from('tournament_participants')
       .insert({
-        tournament_id: tournamentId,
+        tournament_id: tournamentId, // Yeni oluşturma, mevcut ID'yi kullan
         user_id: user.id,
         is_bot: false,
-        seed: 2, // Sonradan katılanlar
+        seed: 2,
         joined_at: new Date().toISOString()
       });
 
@@ -118,9 +104,7 @@ const handleJoinTournament = async (tournamentId: string) => {
       return;
     }
 
-    // Turnuva sayfasını güncelle
-    await fetchActiveTournaments();
-
+    // Aynı turnuva ID'sine yönlendir
     navigate(`/tournament-waiting/${tournamentId}`);
 
   } catch (error) {
