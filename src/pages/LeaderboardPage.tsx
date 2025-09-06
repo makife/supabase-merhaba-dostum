@@ -94,38 +94,50 @@ const LeaderboardPage = () => {
     }
   };
 
-  // Haftalık sıralama
+  // Haftalık sıralama - gerçek veriler
   const fetchWeeklyLeaders = async () => {
     try {
-      const { data: profiles, error } = await supabase
-        .from('profiles')
-        .select('id, username, avatar_url, total_score')
-        .order('total_score', { ascending: false })
-        .limit(50);
+      // Bu haftanın başlangıcını hesapla (Pazartesi)
+      const today = new Date();
+      const dayOfWeek = today.getDay();
+      const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Pazar = 0, Pazartesi = 1
+      const mondayDate = new Date(today);
+      mondayDate.setDate(today.getDate() - daysToMonday);
+      mondayDate.setHours(0, 0, 0, 0);
+      
+      const weekStartStr = mondayDate.toISOString().split('T')[0]; // YYYY-MM-DD format
 
-      if (error) throw error;
+      const { data, error } = await supabase.rpc('get_weekly_leaderboard', {
+        target_week_start: weekStartStr
+      });
 
-      // Haftalık demo verisi oluştur
-      const weeklyData = profiles?.map((entry, index) => ({
-        user_id: entry.id,
+      if (error) {
+        console.error('Weekly leaderboard RPC error:', error);
+        // Fallback: Bu hafta veri yoksa boş array
+        setWeeklyLeaders([]);
+        if (user) {
+          setUserStats(prev => ({ ...prev, weekly: null }));
+        }
+        return;
+      }
+
+      const weeklyData = data?.map((entry: any, index: number) => ({
+        user_id: entry.user_id,
         username: entry.username || 'Anonim',
         avatar_url: entry.avatar_url,
-        score: Math.floor((entry.total_score || 0) * 0.15) + Math.floor(Math.random() * 50),
-        games_played: Math.floor(Math.random() * 10) + 1,
-        wins: Math.floor(Math.random() * 5),
+        score: entry.weekly_score || 0,
+        games_played: entry.games_played || 0,
+        wins: entry.games_won || 0,
         best_word: null,
         best_word_score: 0,
-        rank: index + 1,
-        change: Math.floor(Math.random() * 10) - 5
-      }))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 50)
-      .map((entry, index) => ({ ...entry, rank: index + 1 })) || [];
+        rank: entry.rank_position || index + 1,
+        change: entry.rank_change || 0
+      })) || [];
 
       setWeeklyLeaders(weeklyData);
 
       if (user) {
-        const userEntry = weeklyData.find(entry => entry.user_id === user.id);
+        const userEntry = weeklyData.find((entry: LeaderboardEntry) => entry.user_id === user.id);
         setUserStats(prev => ({ ...prev, weekly: userEntry || null }));
       }
     } catch (error) {
@@ -134,38 +146,45 @@ const LeaderboardPage = () => {
     }
   };
 
-  // Aylık sıralama
+  // Aylık sıralama - gerçek veriler
   const fetchMonthlyLeaders = async () => {
     try {
-      const { data: profiles, error } = await supabase
-        .from('profiles')
-        .select('id, username, avatar_url, total_score')
-        .order('total_score', { ascending: false })
-        .limit(50);
+      // Bu ayın başlangıcını hesapla
+      const today = new Date();
+      const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      const monthStartStr = firstDayOfMonth.toISOString().split('T')[0]; // YYYY-MM-DD format
 
-      if (error) throw error;
+      const { data, error } = await supabase.rpc('get_monthly_leaderboard', {
+        target_month_start: monthStartStr
+      });
 
-      // Aylık demo verisi oluştur
-      const monthlyData = profiles?.map((entry, index) => ({
-        user_id: entry.id,
+      if (error) {
+        console.error('Monthly leaderboard RPC error:', error);
+        // Fallback: Bu ay veri yoksa boş array
+        setMonthlyLeaders([]);
+        if (user) {
+          setUserStats(prev => ({ ...prev, monthly: null }));
+        }
+        return;
+      }
+
+      const monthlyData = data?.map((entry: any, index: number) => ({
+        user_id: entry.user_id,
         username: entry.username || 'Anonim',
         avatar_url: entry.avatar_url,
-        score: Math.floor((entry.total_score || 0) * 0.4) + Math.floor(Math.random() * 100),
-        games_played: Math.floor(Math.random() * 30) + 1,
-        wins: Math.floor(Math.random() * 15),
+        score: entry.monthly_score || 0,
+        games_played: entry.games_played || 0,
+        wins: entry.games_won || 0,
         best_word: null,
         best_word_score: 0,
-        rank: index + 1,
-        change: Math.floor(Math.random() * 20) - 10
-      }))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 50)
-      .map((entry, index) => ({ ...entry, rank: index + 1 })) || [];
+        rank: entry.rank_position || index + 1,
+        change: entry.rank_change || 0
+      })) || [];
 
       setMonthlyLeaders(monthlyData);
 
       if (user) {
-        const userEntry = monthlyData.find(entry => entry.user_id === user.id);
+        const userEntry = monthlyData.find((entry: LeaderboardEntry) => entry.user_id === user.id);
         setUserStats(prev => ({ ...prev, monthly: userEntry || null }));
       }
     } catch (error) {
