@@ -235,60 +235,25 @@ const respondRematchRequest = useCallback(async (requestId: string, accepted: bo
   if (!user) return;
   
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('rematch_requests')
       .update({
         status: accepted ? 'accepted' : 'rejected',
         responded_at: new Date().toISOString()
       })
       .eq('id', requestId)
-      .eq('to_user_id', user.id) // Güvenlik: sadece hedef kullanıcı yanıtlayabilir
-      .select()
-      .single();
+      .eq('to_user_id', user.id);
       
     if (error) throw error;
     
-    console.log('✅ Tekrar oyun isteğine yanıt verildi:', accepted);
-    
-    // Lokal state temizle
+    console.log('Tekrar oyun isteğine yanıt verildi:', accepted);
     setCurrentRematchRequest(null);
     
-    if (accepted) {
-      toast({
-        title: '🎉 Tekrar Oyun Kabul Edildi',
-        description: 'Yeni oyun başlıyor...',
-        duration: 2000,
-      });
-      
-      // Yeni oda oluştur ve oyunu başlat
-      const newRoomCode = generateRoomCode();
-      const gameMode = `private-room-${data.game_type}`;
-      
-      setTimeout(async () => {
-        const newRoom = await createRoom(gameMode, newRoomCode);
-        if (newRoom) {
-          // Rakibi de otomatik olarak yeni odaya davet et (bu kısım opsiyonel)
-          console.log('🆕 Yeni oda oluşturuldu:', newRoom.room_code);
-        }
-      }, 1000);
-      
-    } else {
-      toast({
-        title: '❌ Tekrar Oyun Reddedildi',
-        description: 'Ana menüye dönüyorsunuz...',
-        variant: 'destructive',
-      });
-      
-      setTimeout(() => {
-        navigate('/');
-      }, 2000);
-    }
-    
   } catch (error) {
-    console.error('❌ Tekrar oyun yanıt hatası:', error);
+    console.error('Tekrar oyun yanıt hatası:', error);
     throw error;
   }
-}, [user, navigate, toast, createRoom, setCurrentRematchRequest]);
+}, [user, setCurrentRematchRequest]);
 
   // Helper function to determine game mode
   const getGameModeFromRoom = useCallback((room: GameRoom | null): string => {
