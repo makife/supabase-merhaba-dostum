@@ -184,47 +184,9 @@ const LeaderboardPage = () => {
   // Aylık sıralama
   const fetchMonthlyLeaders = async () => {
     try {
-      const monthStart = new Date();
-      monthStart.setDate(1);
-      monthStart.setHours(0, 0, 0, 0);
-
-      let gameStats = null;
-      try {
-        const { data, error } = await supabase.rpc('get_monthly_leaderboard' as any, {
-          month_start: monthStart.toISOString()
-        });
-        
-        if (!error && data) {
-          gameStats = data;
-        }
-      } catch (rpcError) {
-        console.log('Monthly RPC not available, using fallback');
-      }
-
-      if (!gameStats) {
-        await fetchMonthlyLeadersFallback();
-        return;
-      }
-
-      const monthlyData = Array.isArray(gameStats) ? gameStats.map((entry: any, index: number) => ({
-        user_id: entry.user_id,
-        username: entry.username || 'Anonim',
-        avatar_url: entry.avatar_url,
-        score: entry.monthly_score || 0,
-        games_played: entry.games_played || 0,
-        wins: entry.wins || 0,
-        best_word: entry.best_word,
-        best_word_score: entry.best_word_score || 0,
-        rank: index + 1,
-        change: entry.rank_change || 0
-      })) : [];
-
-      setMonthlyLeaders(monthlyData);
-
-      if (user) {
-        const userEntry = monthlyData.find((entry: LeaderboardEntry) => entry.user_id === user.id);
-        setUserStats(prev => ({ ...prev, monthly: userEntry || null }));
-      }
+      // Şimdilik fallback metodunu direkt kullan
+      // Gelecekte stored procedure eklendiğinde bu bölüm güncellenebilir
+      await fetchMonthlyLeadersFallback();
     } catch (error) {
       console.error('Error fetching monthly leaders:', error);
       await fetchMonthlyLeadersFallback();
