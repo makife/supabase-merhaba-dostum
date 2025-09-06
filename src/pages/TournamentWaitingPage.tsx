@@ -17,6 +17,7 @@ const TournamentWaitingPage = () => {
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [realPlayerCount, setRealPlayerCount] = useState(1); 
   const [totalParticipants, setTotalParticipants] = useState(1);
+  const [tournamentStarted, setTournamentStarted] = useState(false);
 
 useEffect(() => {
   if (!tournamentId) return;
