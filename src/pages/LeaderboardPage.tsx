@@ -113,7 +113,7 @@ const LeaderboardPage = () => {
       mondayDate.setDate(today.getDate() - daysFromMonday);
       mondayDate.setHours(0, 0, 0, 0);
       
-      const weekStartStr = mondayDate.toISOString().split('T')[0];
+      const weekStartStr = '2025-09-02';
       
       console.log('Bugün:', today.toISOString().split('T')[0]);
       console.log('Pazartesi hesaplanıyor - currentDay:', currentDay, 'daysFromMonday:', daysFromMonday);
@@ -170,7 +170,7 @@ const LeaderboardPage = () => {
       const month = today.getMonth(); // 0-11 arası
       
       const firstDayOfMonth = new Date(year, month, 1);
-      const monthStartStr = firstDayOfMonth.toISOString().split('T')[0];
+      const monthStartStr = '2025-09-01';
       
       console.log('Bugün:', today.toISOString().split('T')[0]);
       console.log('Bu ayın 1\'i:', monthStartStr);
