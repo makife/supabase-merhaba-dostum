@@ -176,9 +176,10 @@ const startTournament = async () => {
     const result = data as { success: boolean; error?: string };
     
     if (result?.success) {
-      setTimeout(() => {
-        navigate(`/tournament-bracket/${tournamentId}`);
-      }, 2000);
+  console.log('✅ Turnuva başarıyla başlatıldı, yönlendiriliyor...');
+  // setTimeout kaldırıldı, direkt yönlendir
+  navigate(`/tournament-bracket/${tournamentId}`);
+}, 2000);
     } else {
       console.error('Turnuva başlatma hatası:', result?.error);
       setTournamentStarted(false); // Başarısızlık durumunda reset et
