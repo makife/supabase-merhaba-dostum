@@ -760,7 +760,7 @@ const showTournamentEndCard = async (isWinner: boolean, userScore: number, oppon
 
 
   // Oyun biti fonksiyonunu güncelle
-const handleGameEnd = () => {
+const handleGameEnd = async () => {
   console.log('🏁 handleGameEnd çağrıldı!');
   console.log('🎮 gameMode:', gameMode, 'tournamentMatch:', !!tournamentMatch);
   
