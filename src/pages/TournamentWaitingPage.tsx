@@ -166,20 +166,18 @@ const startTournament = async () => {
     const { data, error } = await supabase.rpc('start_tournament_automatically', {
       p_tournament_id: tournamentId
     });
-
+    
     if (error) {
       console.error('Turnuva başlatma hatası:', error);
       setTournamentStarted(false); // Hata durumunda reset et
       return;
     }
-
+    
     const result = data as { success: boolean; error?: string };
     
     if (result?.success) {
-  console.log('✅ Turnuva başarıyla başlatıldı, yönlendiriliyor...');
-  // setTimeout kaldırıldı, direkt yönlendir
-  navigate(`/tournament-bracket/${tournamentId}`);
-}, 2000);
+      console.log('✅ Turnuva başarıyla başlatıldı, yönlendiriliyor...');
+      navigate(`/tournament-bracket/${tournamentId}`);
     } else {
       console.error('Turnuva başlatma hatası:', result?.error);
       setTournamentStarted(false); // Başarısızlık durumunda reset et
