@@ -504,7 +504,7 @@ const checkNextRoundCreation = async (tournamentId: string) => {
           const previousRoundMatches = roundMatches.filter(m => m.status === 'completed');
           if (previousRoundMatches.length > 0) {
             console.log(`🔄 ${nextRound}. tur maçlarına kazananlar yerleştiriliyor...`);
-            await fillNextRoundMatches(tournamentId, nextRound, previousRoundMatches as TournamentMatch[]);
+            await fillExistingRoundMatches(tournamentId, nextRound, previousRoundMatches);
           }
         }
       } else if (allRoundComplete && round === 3) {
@@ -522,6 +522,49 @@ const checkNextRoundCreation = async (tournamentId: string) => {
     console.error('Sonraki tur kontrol hatası:', error);
   }
 };
+const fillExistingRoundMatches = async (tournamentId: string, nextRound: number, completedMatches: any[]) => {
+  try {
+    console.log(`📝 ${nextRound}. turdaki mevcut maçlara kazananlar yerleştiriliyor...`);
+    
+    // Kazananları al
+    const winnerIds = completedMatches.map(m => m.winner_id).filter(Boolean);
+    const shuffledWinners = [...winnerIds].sort(() => Math.random() - 0.5);
+    
+    // Mevcut maçları al
+    const { data: existingMatches } = await supabase
+      .from('tournament_matches')
+      .select('*')
+      .eq('tournament_id', tournamentId)
+      .eq('round', nextRound)
+      .order('match_number', { ascending: true });
+    
+    if (!existingMatches) return;
+    
+    // Her maça kazananları yerleştir
+    for (let i = 0; i < existingMatches.length && i * 2 + 1 < shuffledWinners.length; i++) {
+      const match = existingMatches[i];
+      const player1Id = shuffledWinners[i * 2];
+      const player2Id = shuffledWinners[i * 2 + 1];
+      
+      await supabase
+        .from('tournament_matches')
+        .update({
+          player1_id: player1Id,
+          player2_id: player2Id,
+          status: 'pending',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', match.id);
+    }
+    
+    console.log(`✅ ${nextRound}. turdaki maçlar güncellendi`);
+    fetchMatches();
+    
+  } catch (error) {
+    console.error('Mevcut tur doldurma hatası:', error);
+  }
+};
+
 const createNextRound = async (tournamentId: string, nextRound: number) => {
   try {
     console.log(`🔄 ${nextRound}. tur maçları oluşturuluyor...`);
