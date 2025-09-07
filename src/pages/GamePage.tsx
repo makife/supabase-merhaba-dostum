@@ -1951,10 +1951,46 @@ const handleTournamentExit = async () => {
   }
 };
   
-  // Timer effect - TEK SEFER başlatılır ve sürekli çalışır
+  // Timer effect - Real-time synchronized timer for tournament matches
 useEffect(() => {
   if (gameType === 'timed' && gameStarted && !gameEnded && !timerRef.current) {
     console.log('⏱️ Timer BAŞLATILIYOR - Tek sefer, time:', timeLeftRef.current);
+    
+    let syncInterval: NodeJS.Timeout | null = null;
+    
+    // For tournament matches, sync timer with database
+    if (gameMode === 'tournament' && tournamentMatch) {
+      const syncTimer = async () => {
+        try {
+          const { data: matchData } = await supabase
+            .from('tournament_matches')
+            .select('updated_at, status')
+            .eq('id', tournamentMatch.id)
+            .single();
+            
+          if (matchData && matchData.status === 'in_progress') {
+            const matchStartTime = new Date(matchData.updated_at).getTime();
+            const currentTime = Date.now();
+            const elapsedSeconds = Math.floor((currentTime - matchStartTime) / 1000);
+            const remainingTime = Math.max(0, 120 - elapsedSeconds);
+            
+            if (Math.abs(timeLeftRef.current - remainingTime) > 2) {
+              timeLeftRef.current = remainingTime;
+              setDisplayTime(remainingTime);
+              console.log('🔄 Timer synced to:', remainingTime, 'seconds');
+            }
+          }
+        } catch (error) {
+          console.error('Timer sync error:', error);
+        }
+      };
+      
+      // Initial sync
+      syncTimer();
+      
+      // Sync every 5 seconds for tournament matches
+      syncInterval = setInterval(syncTimer, 5000);
+    }
     
     timerRef.current = setInterval(() => {
       timeLeftRef.current -= 1;
@@ -1962,28 +1998,30 @@ useEffect(() => {
       
       if (timeLeftRef.current <= 0) {
         clearInterval(timerRef.current!);
+        if (syncInterval) clearInterval(syncInterval);
         timerRef.current = null;
         
         console.log('⏰ Süre bitti! Final skorlar');
-        
         handleGameEnd();
         setTimeout(() => {
-          // Skorları buradan alın, dependency'den değil
           setGameEnded(true);
           checkWinnerWithScores(playerScore, opponentScore);
         }, 100);
       }
     }, 1000);
+    
+    return () => {
+      // Cleanup intervals
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      if (syncInterval) {
+        clearInterval(syncInterval);
+      }
+    };
   }
-  
-  return () => {
-    // Sadece component unmount olduğunda temizle
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-  };
-}, [gameStarted, gameEnded, gameType, playerScore, opponentScore]);
+}, [gameStarted, gameEnded, gameType, gameMode, tournamentMatch]);
   
   // Focus/blur event handler
   useEffect(() => {
