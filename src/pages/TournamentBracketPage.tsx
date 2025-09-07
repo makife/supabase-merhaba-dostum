@@ -95,6 +95,8 @@ const TournamentBracketPage = () => {
 
   const checkAndAdvanceRound = async (round: number) => {
     try {
+      console.log(`🔍 Checking round ${round} completion...`);
+      
       const { data: roundMatches } = await supabase
         .from('tournament_matches')
         .select('*')
@@ -103,23 +105,33 @@ const TournamentBracketPage = () => {
 
       if (!roundMatches) return;
 
+      console.log(`📊 Round ${round}: ${roundMatches.length} total matches, ${roundMatches.filter(m => m.status === 'completed').length} completed`);
+      
       const allCompleted = roundMatches.every(m => m.status === 'completed');
       
       if (allCompleted && round < 3) {
-        // Tüm maçlar tamamlandıysa her durumda kazananları yerleştir (idempotent)
-        const { data: result } = await supabase.rpc('advance_tournament_round', {
+        console.log(`✅ Round ${round} completed, advancing to round ${round + 1}`);
+        
+        // Tüm maçlar tamamlandıysa advance fonksiyonunu çağır
+        const { data: result, error } = await supabase.rpc('advance_tournament_round', {
           p_tournament_id: tournamentId
         });
         
-        if (result && typeof result === 'object' && 'success' in result) {
-          // Kısa bir gecikmeden sonra ayrıntıları yenile ve yeni turu başlat
+        console.log('🔄 Advance result:', result, 'Error:', error);
+        
+        if (result && typeof result === 'object' && 'success' in result && result.success) {
+          console.log(`🎯 Successfully advanced to round ${round + 1}`);
+          
+          // Tournuva bilgilerini yenile ve yeni turu başlat
           setTimeout(() => {
             fetchTournamentDetails(tournamentId!);
             startAllMatches(round + 1);
-          }, 1500);
+          }, 2000);
+        } else {
+          console.error('❌ Failed to advance tournament round:', result);
         }
       } else if (allCompleted && round === 3) {
-        // Tournament completed
+        console.log('🏆 Tournament completed!');
         setShowChampion(true);
       }
     } catch (error) {
