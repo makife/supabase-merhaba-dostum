@@ -126,11 +126,28 @@ const TournamentWaitingPage = () => {
         navigate(`/tournament-bracket/${tournamentId}`);
       } else {
         console.error('Turnuva başlatma hatası:', result?.error);
+        
+        // Yeterli oyuncu yok mesajı
+        if (result?.error?.includes('At least 2 real players required')) {
+          alert('Turnuva iptal edildi: Yeterli gerçek oyuncu katılmadı (en az 2 kişi gerekli)');
+          
+          // Turnuvayı iptal et
+          await supabase
+            .from('tournaments')
+            .update({ status: 'cancelled' })
+            .eq('id', tournamentId);
+          
+          // Ana sayfaya yönlendir
+          navigate('/tournament');
+        }
+        
         setTournamentStarted(false);
       }
       
     } catch (error) {
       console.error('Turnuva başlatma hatası:', error);
+      alert('Turnuva başlatılırken bir hata oluştu. Ana sayfaya yönlendiriliyorsunuz.');
+      navigate('/tournament');
       setTournamentStarted(false);
     }
   };
