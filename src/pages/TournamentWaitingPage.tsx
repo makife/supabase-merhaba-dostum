@@ -187,7 +187,7 @@ const TournamentWaitingPage = () => {
 
   // Sonradan katılanlar için real-time listener
   useEffect(() => {
-    if (!tournamentId || !user || !tournament || tournament.creator_id === user.id) return;
+    if (!tournamentId || !user || !tournament) return;
 
     console.log('Real-time tournament listener başlatılıyor...');
 
@@ -200,9 +200,17 @@ const TournamentWaitingPage = () => {
         filter: `id=eq.${tournamentId}`
       }, (payload) => {
         console.log('Turnuva durumu güncellendi:', payload.new);
-        if (payload.new.status === 'in_progress') {
+        const newStatus = payload.new.status;
+        
+        if (newStatus === 'in_progress') {
           console.log('Turnuva başladı, bracket sayfasına yönlendiriliyor...');
           navigate(`/tournament-bracket/${tournamentId}`);
+        } else if (newStatus === 'cancelled') {
+          console.log('Turnuva iptal edildi');
+          setCancelInfo({
+            title: 'Turnuva iptal edildi',
+            message: 'Turnuva yeterli oyuncu olmadığı için iptal edildi.'
+          });
         }
       })
       .subscribe();
@@ -211,7 +219,7 @@ const TournamentWaitingPage = () => {
       console.log('Real-time tournament listener temizleniyor...');
       supabase.removeChannel(channel);
     };
-  }, [tournamentId, user?.id, tournament?.creator_id, navigate]);
+  }, [tournamentId, user?.id, tournament, navigate]);
 
   // Katılımcı real-time güncellemeleri - TÜM EVENTLER
   useEffect(() => {
