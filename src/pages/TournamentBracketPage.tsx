@@ -2,18 +2,21 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Trophy, Home, Clock, Play, Crown } from 'lucide-react';
+import { Trophy, Home, Clock, Crown } from 'lucide-react';
 import { useTournament } from '@/hooks/useTournament';
 import { organizeMatchesByRound, getRoundName, getMatchStatus } from '@/utils/tournamentHelpers';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 const TournamentBracketPage = () => {
   const { tournamentId } = useParams();
   const navigate = useNavigate();
   const { currentTournament, matches, loading, fetchTournamentDetails } = useTournament(tournamentId);
+  const { user } = useAuth();
   
   const [countdown, setCountdown] = useState(10);
   const [showChampion, setShowChampion] = useState(false);
+  const [navigatedToGame, setNavigatedToGame] = useState(false);
 
   useEffect(() => {
     if (tournamentId) {
@@ -61,8 +64,8 @@ const TournamentBracketPage = () => {
         const player1IsBot = match.player1_id?.startsWith('bot_');
         const player2IsBot = match.player2_id?.startsWith('bot_');
         
-        // If both are bots or at least one is bot, simulate immediately
-        if (player1IsBot || player2IsBot) {
+        // Sadece her iki oyuncu da bot ise otomatik tamamla
+        if (player1IsBot && player2IsBot) {
           const player1Score = Math.floor(Math.random() * 50) + 20;
           const player2Score = Math.floor(Math.random() * 50) + 20;
           const winnerId = player1Score > player2Score ? match.player1_id : match.player2_id;
@@ -145,16 +148,16 @@ const TournamentBracketPage = () => {
     return () => clearInterval(countdownInterval);
   }, [matches]);
 
-  // Check for tournament completion
+  // Otomatik oyuncu yönlendirme: Kullanıcı maçı başladıysa oyuna gir
   useEffect(() => {
-    const finalMatches = matches.filter(m => m.round === 3);
-    if (finalMatches.length > 0 && finalMatches.every(m => m.status === 'completed')) {
-      setShowChampion(true);
-      setTimeout(() => {
-        navigate('/tournament');
-      }, 5000);
+    if (!user || navigatedToGame || !tournamentId) return;
+
+    const myInProgressMatch = matches.find(m => m.status === 'in_progress' && (m.player1_id === user.id || m.player2_id === user.id));
+    if (myInProgressMatch) {
+      setNavigatedToGame(true);
+      navigate(`/game?match=${myInProgressMatch.id}&tournament=${tournamentId}`);
     }
-  }, [matches, navigate]);
+  }, [matches, user, navigatedToGame, tournamentId, navigate]);
 
   if (!currentTournament) {
     return (
