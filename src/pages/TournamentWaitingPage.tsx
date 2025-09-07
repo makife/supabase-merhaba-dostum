@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Users, Clock, Bot, Trophy } from 'lucide-react';
+import { Users, Clock, Bot, Trophy, AlertTriangle } from 'lucide-react';
 import { Tournament, TournamentParticipant } from '@/types/tournament';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 const TournamentWaitingPage = () => {
   const { tournamentId } = useParams();
@@ -18,6 +19,7 @@ const TournamentWaitingPage = () => {
   const [realPlayerCount, setRealPlayerCount] = useState(1); 
   const [totalParticipants, setTotalParticipants] = useState(1);
   const [tournamentStarted, setTournamentStarted] = useState(false);
+  const [cancelInfo, setCancelInfo] = useState<{ title: string; message: string } | null>(null);
 
   // Tournament bilgilerini ve katılımcıları getir
   const fetchTournamentData = async () => {
@@ -129,16 +131,21 @@ const TournamentWaitingPage = () => {
         
         // Yeterli oyuncu yok mesajı
         if (result?.error?.includes('At least 2 real players required')) {
-          alert('Turnuva iptal edildi: Yeterli gerçek oyuncu katılmadı (en az 2 kişi gerekli)');
-          
           // Turnuvayı iptal et
           await supabase
             .from('tournaments')
             .update({ status: 'cancelled' })
             .eq('id', tournamentId);
-          
-          // Ana sayfaya yönlendir
-          navigate('/tournament');
+
+          setCancelInfo({
+            title: 'Turnuva iptal edildi',
+            message: 'Yeterli gerçek oyuncu katılmadı (en az 2 kişi gerekli).'
+          });
+        } else {
+          setCancelInfo({
+            title: 'Turnuva başlatılamadı',
+            message: String(result?.error || 'Bilinmeyen bir hata oluştu.')
+          });
         }
         
         setTournamentStarted(false);
@@ -146,8 +153,10 @@ const TournamentWaitingPage = () => {
       
     } catch (error) {
       console.error('Turnuva başlatma hatası:', error);
-      alert('Turnuva başlatılırken bir hata oluştu. Ana sayfaya yönlendiriliyorsunuz.');
-      navigate('/tournament');
+      setCancelInfo({
+        title: 'Turnuva başlatılamadı',
+        message: 'Bir hata oluştu. Lütfen tekrar deneyin veya daha sonra tekrar deneyin.'
+      });
       setTournamentStarted(false);
     }
   };
@@ -376,6 +385,25 @@ const TournamentWaitingPage = () => {
             </div>
           </CardContent>
         </Card>
+
+        <Dialog open={!!cancelInfo} onOpenChange={(open) => { if (!open) { setCancelInfo(null); navigate('/tournament'); } }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-yellow-500" />
+                {cancelInfo?.title}
+              </DialogTitle>
+              <DialogDescription>
+                {cancelInfo?.message}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-end">
+              <Button onClick={() => { setCancelInfo(null); navigate('/tournament'); }}>
+                Tamam
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
