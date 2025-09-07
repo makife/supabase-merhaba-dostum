@@ -489,7 +489,8 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
         schema: 'public', 
         table: 'tournament_matches',
         filter: `tournament_id=eq.${tournamentId}`
-      }, () => {
+       }, (payload) => {
+        console.log('Match updated:', payload);
         fetchTournamentDetails(tournamentId);
       })
       .subscribe();
@@ -518,6 +519,42 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
       supabase.removeChannel(statusChannel);
     };
   }, [currentTournament?.id]);
+
+  // Auto-check tournament progress
+  const checkTournamentProgress = async (tournamentId: string) => {
+    try {
+      const { data: matches } = await supabase
+        .from('tournament_matches')
+        .select('*')
+        .eq('tournament_id', tournamentId)
+        .eq('status', 'completed');
+
+      const { data: tournament } = await supabase
+        .from('tournaments')
+        .select('current_round')
+        .eq('id', tournamentId)
+        .single();
+
+      if (!matches || !tournament) return;
+
+      const currentRound = tournament.current_round;
+      const roundMatches = matches.filter(m => m.round === currentRound);
+      
+      // Count expected matches for current round
+      const expectedMatches = currentRound === 1 ? 4 : currentRound === 2 ? 2 : 1;
+      
+      if (roundMatches.length === expectedMatches && currentRound < 3) {
+        // Auto-advance to next round
+        console.log(`Round ${currentRound} complete, advancing...`);
+        
+        await supabase.rpc('advance_tournament_round', {
+          p_tournament_id: tournamentId
+        });
+      }
+    } catch (error) {
+      console.error('Error checking tournament progress:', error);
+    }
+  };
 
   const value: TournamentContextType = {
     tournaments,

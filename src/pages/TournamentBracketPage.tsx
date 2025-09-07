@@ -22,19 +22,105 @@ const TournamentBracketPage = () => {
   }, [tournamentId]);
 
 
-  const startPendingMatches = async () => {
+  const startAllMatches = async () => {
     if (!tournamentId) return;
+    
     try {
+      // Start all pending matches in current round
+      const currentRound = currentTournament?.current_round || 1;
+      
+      // Update all pending matches to in_progress
       await supabase
         .from('tournament_matches')
         .update({ status: 'in_progress', updated_at: new Date().toISOString() })
         .eq('tournament_id', tournamentId)
-        .eq('round', 1)
-        .eq('status', 'pending')
-        .not('player1_id', 'is', null)
-        .not('player2_id', 'is', null);
+        .eq('round', currentRound)
+        .eq('status', 'pending');
+        
+      // Simulate bot matches completion
+      await simulateBotMatches(currentRound);
+      
     } catch (e) {
-      console.error('Pending matches could not be started:', e);
+      console.error('Error starting matches:', e);
+    }
+  };
+
+  const simulateBotMatches = async (round: number) => {
+    try {
+      const { data: botMatches } = await supabase
+        .from('tournament_matches')
+        .select('*')
+        .eq('tournament_id', tournamentId)
+        .eq('round', round)
+        .eq('status', 'in_progress');
+
+      if (!botMatches) return;
+
+      // Process each match
+      for (const match of botMatches) {
+        const player1IsBot = match.player1_id?.startsWith('bot_');
+        const player2IsBot = match.player2_id?.startsWith('bot_');
+        
+        // If both are bots or at least one is bot, simulate immediately
+        if (player1IsBot || player2IsBot) {
+          const player1Score = Math.floor(Math.random() * 50) + 20;
+          const player2Score = Math.floor(Math.random() * 50) + 20;
+          const winnerId = player1Score > player2Score ? match.player1_id : match.player2_id;
+          
+          await supabase
+            .from('tournament_matches')
+            .update({
+              status: 'completed',
+              player1_score: player1Score,
+              player2_score: player2Score,
+              winner_id: winnerId,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', match.id);
+        }
+      }
+      
+      // Check if round is complete and advance
+      setTimeout(() => {
+        checkAndAdvanceRound(round);
+      }, 2000);
+      
+    } catch (error) {
+      console.error('Error simulating bot matches:', error);
+    }
+  };
+
+  const checkAndAdvanceRound = async (round: number) => {
+    try {
+      const { data: roundMatches } = await supabase
+        .from('tournament_matches')
+        .select('*')
+        .eq('tournament_id', tournamentId)
+        .eq('round', round);
+
+      if (!roundMatches) return;
+
+      const allCompleted = roundMatches.every(m => m.status === 'completed');
+      
+      if (allCompleted && round < 3) {
+        // Advance to next round
+        const { data: result } = await supabase.rpc('advance_tournament_round', {
+          p_tournament_id: tournamentId
+        });
+        
+        if (result && typeof result === 'object' && 'success' in result) {
+          // Auto-start next round after a short delay
+          setTimeout(() => {
+            fetchTournamentDetails(tournamentId!);
+            startAllMatches();
+          }, 3000);
+        }
+      } else if (allCompleted && round === 3) {
+        // Tournament completed
+        setShowChampion(true);
+      }
+    } catch (error) {
+      console.error('Error checking round completion:', error);
     }
   };
 
@@ -49,7 +135,7 @@ const TournamentBracketPage = () => {
       setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(countdownInterval);
-          startPendingMatches();
+          startAllMatches();
           return 0;
         }
         return prev - 1;
@@ -139,14 +225,22 @@ const TournamentBracketPage = () => {
               {isCompleted && <span className="text-white font-bold">{match.player2_score}</span>}
             </div>
             
-            {match.status === 'in_progress' && (
-              <Button 
-                onClick={() => navigate(`/game?match=${match.id}&tournament=${tournamentId}`)}
-                className="w-full bg-green-500 hover:bg-green-600"
-              >
-                <Play className="w-4 h-4 mr-2" />
-                Maça Katıl
-              </Button>
+            {match.status === 'in_progress' && !player1.isBot && !player2.isBot && (
+              <div className="text-center">
+                <Button 
+                  onClick={() => navigate(`/game?match=${match.id}&tournament=${tournamentId}`)}
+                  className="w-full bg-green-500 hover:bg-green-600"
+                >
+                  <Play className="w-4 h-4 mr-2" />
+                  Maça Katıl
+                </Button>
+              </div>
+            )}
+            
+            {match.status === 'in_progress' && (player1.isBot || player2.isBot) && (
+              <div className="text-center text-yellow-300 text-sm">
+                🤖 Otomatik maç devam ediyor...
+              </div>
             )}
           </div>
         </CardContent>
