@@ -19,7 +19,8 @@ const TournamentWaitingPage = () => {
     hasJoined,
     realPlayerCount,
     fetchTournamentDetails,
-    leaveTournament
+    leaveTournament,
+    joinTournament
   } = useTournament(tournamentId);
 
   useEffect(() => {
@@ -28,12 +29,12 @@ const TournamentWaitingPage = () => {
     }
   }, [tournamentId]);
 
-  // Redirect if not joined
+  // Otomatik katıl (henüz katılmadıysa)
   useEffect(() => {
-    if (currentTournament && !loading && !hasJoined) {
-      navigate('/tournament');
+    if (currentTournament && !loading && !hasJoined && tournamentId) {
+      joinTournament();
     }
-  }, [currentTournament, hasJoined, loading, navigate]);
+  }, [currentTournament, hasJoined, loading, joinTournament, tournamentId]);
 
   const handleLeave = async () => {
     await leaveTournament();
