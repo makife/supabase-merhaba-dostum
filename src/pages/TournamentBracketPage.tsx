@@ -107,16 +107,27 @@ const TournamentBracketPage = () => {
       
       if (allCompleted && round < 3) {
         // Advance to next round
-        const { data: result } = await supabase.rpc('advance_tournament_round', {
-          p_tournament_id: tournamentId
-        });
+        // Önce zaten oluşturulmuş mu kontrol et (idempotency)
+        const { data: existingNext } = await supabase
+          .from('tournament_matches')
+          .select('id')
+          .eq('tournament_id', tournamentId)
+          .eq('round', round + 1);
         
-        if (result && typeof result === 'object' && 'success' in result) {
-          // Auto-start next round after a short delay
-          setTimeout(() => {
-            fetchTournamentDetails(tournamentId!);
-            startAllMatches();
-          }, 3000);
+        if (existingNext && existingNext.length > 0) {
+          console.log(`⏭️ ${round + 1}. tur maçları zaten var, advance atlandı.`);
+        } else {
+          const { data: result } = await supabase.rpc('advance_tournament_round', {
+            p_tournament_id: tournamentId
+          });
+          
+          if (result && typeof result === 'object' && 'success' in result) {
+            // Auto-start next round after a short delay
+            setTimeout(() => {
+              fetchTournamentDetails(tournamentId!);
+              startAllMatches();
+            }, 3000);
+          }
         }
       } else if (allCompleted && round === 3) {
         // Tournament completed

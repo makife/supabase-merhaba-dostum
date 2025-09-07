@@ -494,6 +494,18 @@ const resetGameForRematch = () => {
 const createNextRoundMatches = async (tournamentId: string, nextRound: number) => {
   try {
     console.log(`🏆 ${nextRound}. tur maçları oluşturuluyor...`);
+
+    // Eğer bu tur için maçlar zaten oluşturulduysa tekrar oluşturma
+    const { data: existing } = await supabase
+      .from('tournament_matches')
+      .select('id')
+      .eq('tournament_id', tournamentId)
+      .eq('round', nextRound);
+
+    if (existing && existing.length > 0) {
+      console.log(`⏭️ ${nextRound}. tur için ${existing.length} maç zaten var, oluşturma atlandı.`);
+      return;
+    }
     
     // Önceki turun kazananlarını al
     const { data: winners } = await supabase
@@ -1646,23 +1658,36 @@ useEffect(() => {
         setTournamentMatch(matchData);
       }
       
-      // Load tournament participants
+      // Load tournament participants (profiles ayrı sorgu ile eklenecek)
       const { data: participantsData } = await supabase
         .from('tournament_participants')
-        .select(`
-          *,
-          profiles:user_id (
-            username,
-            avatar_url
-          )
-        `)
+        .select('*')
         .eq('tournament_id', tournamentId);
         
       if (participantsData) {
         console.log('👥 Tournament participants loaded:', participantsData.length);
+
+        // Profil bilgilerini ayrı çek (user_id text olduğu için FK yok)
+        const userIds = participantsData
+          .filter(p => !p.is_bot && p.user_id && /^[0-9a-fA-F-]{8}-[0-9a-fA-F-]{4}-[0-9a-fA-F-]{4}-[0-9a-fA-F-]{4}-[0-9a-fA-F-]{12}$/.test(String(p.user_id)))
+          .map(p => String(p.user_id));
+
+        let profileMap: Record<string, { username: string | null; avatar_url: string | null }> = {};
+        if (userIds.length > 0) {
+          const { data: profilesData } = await supabase
+            .from('profiles')
+            .select('id, username, avatar_url')
+            .in('id', userIds);
+
+          if (profilesData) {
+            profilesData.forEach(pr => {
+              profileMap[pr.id as string] = { username: pr.username, avatar_url: pr.avatar_url };
+            });
+          }
+        }
         
         if (matchData) {
-          // Filter participants for this match
+          // Filter participants for this match ve profilleri ekle
           const matchParticipants = participantsData
             .filter(p => p.user_id === matchData.player1_id || p.user_id === matchData.player2_id)
             .map(p => ({
@@ -1672,7 +1697,7 @@ useEffect(() => {
               score: 0,
               joined_at: p.joined_at,
               is_bot: p.is_bot,
-              profiles: p.profiles
+              profiles: p.user_id ? profileMap[String(p.user_id)] : undefined
             }));
           
           console.log('🔄 Setting tournament participants:', matchParticipants.length);
