@@ -542,34 +542,63 @@ const createNextRound = async (tournamentId: string, nextRound: number) => {
     
     console.log(`📊 ${nextRound}. tur için: ${shuffledWinners.length} kazanan, ${actualMatches} maç oluşturuluyor`);
     
-    // Yeni tur maçlarını oluştur
-    const newMatches = [];
-    for (let i = 0; i < actualMatches; i++) {
-      const player1Id = shuffledWinners[i * 2];
-      const player2Id = shuffledWinners[i * 2 + 1];
-      
-      newMatches.push({
-        tournament_id: tournamentId,
-        round: nextRound,
-        match_number: i + 1,
-        player1_id: player1Id,
-        player2_id: player2Id,
-        status: 'pending',
-        created_at: new Date().toISOString()
-      });
-    }
-    
-    // Database'e kaydet
-    const { error } = await supabase
+    // Önce mevcut maçları kontrol et
+    const { data: existingMatches } = await supabase
       .from('tournament_matches')
-      .insert(newMatches);
+      .select('*')
+      .eq('tournament_id', tournamentId)
+      .eq('round', nextRound);
     
-    if (error) {
-      console.error('Yeni tur maçları kaydedilemedi:', error);
-      return;
+    if (existingMatches && existingMatches.length > 0) {
+      // Mevcut maçları kazananlarla güncelle
+      console.log(`🔄 ${nextRound}. tur için mevcut maçlar güncelleniyor...`);
+      
+      for (let i = 0; i < Math.min(actualMatches, existingMatches.length); i++) {
+        const player1Id = shuffledWinners[i * 2];
+        const player2Id = shuffledWinners[i * 2 + 1];
+        
+        await supabase
+          .from('tournament_matches')
+          .update({
+            player1_id: player1Id,
+            player2_id: player2Id,
+            status: 'pending',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingMatches[i].id);
+      }
+      
+      console.log(`✅ ${nextRound}. tur için ${actualMatches} maç güncellendi`);
+    } else {
+      // Yeni tur maçlarını oluştur
+      const newMatches = [];
+      for (let i = 0; i < actualMatches; i++) {
+        const player1Id = shuffledWinners[i * 2];
+        const player2Id = shuffledWinners[i * 2 + 1];
+        
+        newMatches.push({
+          tournament_id: tournamentId,
+          round: nextRound,
+          match_number: i + 1,
+          player1_id: player1Id,
+          player2_id: player2Id,
+          status: 'pending',
+          created_at: new Date().toISOString()
+        });
+      }
+      
+      // Database'e kaydet
+      const { error } = await supabase
+        .from('tournament_matches')
+        .insert(newMatches);
+      
+      if (error) {
+        console.error('Yeni tur maçları kaydedilemedi:', error);
+        return;
+      }
+      
+      console.log(`✅ ${nextRound}. tur için ${newMatches.length} maç oluşturuldu`);
     }
-    
-    console.log(`✅ ${nextRound}. tur için ${newMatches.length} maç oluşturuldu`);
     
     // Turnuva bilgisini güncelle
     await supabase
