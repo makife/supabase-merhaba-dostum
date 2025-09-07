@@ -27,7 +27,8 @@ import {
   Bot,
   Shuffle,
   Lightbulb,
-  PenTool
+  PenTool,
+  Loader2
 } from 'lucide-react';
 
 interface TournamentMatch {
@@ -345,6 +346,8 @@ const generateTournamentGrid = useCallback((seed: string): string[][] => {
   const [opponentName, setOpponentName] = useState('');
   const [targetScore, setTargetScore] = useState(gameType === 'score' ? 500 : 0);
   const [gameStartTime, setGameStartTime] = useState<number>(Date.now());
+  const [rematchRequested, setRematchRequested] = useState(false);
+  const [waitingForRematchResponse, setWaitingForRematchResponse] = useState(false);
   
 const handleTournamentGameEnd = async (userScore: number, opponentScore: number) => {
   if (!user || !tournamentMatch) return;
