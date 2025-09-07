@@ -187,9 +187,11 @@ const TournamentWaitingPage = () => {
     };
   }, [tournamentId, user?.id, tournament?.creator_id, navigate]);
 
-  // Katılımcı real-time güncellemeleri
+  // Katılımcı real-time güncellemeleri - TÜM EVENTLER
   useEffect(() => {
     if (!tournamentId) return;
+
+    console.log(`Katılımcı real-time listener başlatılıyor: ${tournamentId}`);
 
     const participantsChannel = supabase
       .channel(`tournament-participants-${tournamentId}`)
@@ -198,12 +200,32 @@ const TournamentWaitingPage = () => {
         schema: 'public',
         table: 'tournament_participants',
         filter: `tournament_id=eq.${tournamentId}`
-      }, () => {
+      }, (payload) => {
+        console.log('Yeni katılımcı eklendi:', payload.new);
+        fetchParticipants();
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'tournament_participants',
+        filter: `tournament_id=eq.${tournamentId}`
+      }, (payload) => {
+        console.log('Katılımcı güncellendi:', payload.new);
+        fetchParticipants();
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'tournament_participants',
+        filter: `tournament_id=eq.${tournamentId}`
+      }, (payload) => {
+        console.log('Katılımcı silindi:', payload.old);
         fetchParticipants();
       })
       .subscribe();
 
     return () => {
+      console.log('Katılımcı real-time listener temizleniyor...');
       supabase.removeChannel(participantsChannel);
     };
   }, [tournamentId]);
