@@ -225,21 +225,9 @@ const TournamentBracketPage = () => {
               {isCompleted && <span className="text-white font-bold">{match.player2_score}</span>}
             </div>
             
-            {match.status === 'in_progress' && !player1.isBot && !player2.isBot && (
-              <div className="text-center">
-                <Button 
-                  onClick={() => navigate(`/game?match=${match.id}&tournament=${tournamentId}`)}
-                  className="w-full bg-green-500 hover:bg-green-600"
-                >
-                  <Play className="w-4 h-4 mr-2" />
-                  Maça Katıl
-                </Button>
-              </div>
-            )}
-            
-            {match.status === 'in_progress' && (player1.isBot || player2.isBot) && (
+            {match.status === 'in_progress' && (
               <div className="text-center text-yellow-300 text-sm">
-                🤖 Otomatik maç devam ediyor...
+                ⚡ Maç devam ediyor...
               </div>
             )}
           </div>

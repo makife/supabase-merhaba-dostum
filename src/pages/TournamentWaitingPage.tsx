@@ -29,12 +29,12 @@ const TournamentWaitingPage = () => {
     }
   }, [tournamentId]);
 
-  // Otomatik katıl (henüz katılmadıysa)
+  // Turnuva başladıysa bracket sayfasına yönlendir
   useEffect(() => {
-    if (currentTournament && !loading && !hasJoined && tournamentId) {
-      joinTournament();
+    if (currentTournament?.status === 'in_progress' && tournamentId) {
+      navigate(`/tournament-bracket/${tournamentId}`);
     }
-  }, [currentTournament, hasJoined, loading, joinTournament, tournamentId]);
+  }, [currentTournament?.status, tournamentId, navigate]);
 
   const handleLeave = async () => {
     await leaveTournament();

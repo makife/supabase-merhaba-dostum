@@ -143,11 +143,6 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
         return null;
       }
 
-      toast({
-        title: "Başarılı",
-        description: "Turnuva oluşturuldu!"
-      });
-
       await fetchTournaments();
       return tournament.id;
       
@@ -195,10 +190,6 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
         .maybeSingle();
 
       if (existing) {
-        toast({
-          title: 'Bilgi',
-          description: 'Zaten bu turnuvaya katıldınız'
-        });
         return true;
       }
 
@@ -236,10 +227,6 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
         return false;
       }
 
-      toast({
-        title: 'Başarılı',
-        description: 'Turnuvaya katıldınız!'
-      });
 
       await fetchTournaments();
       return true;
