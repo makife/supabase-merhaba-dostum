@@ -68,7 +68,7 @@ export const useTournament = (tournamentId?: string) => {
 
   // Calculate countdown
   useEffect(() => {
-    if (!context.currentTournament?.expires_at) return;
+    if (!context.currentTournament?.expires_at || context.currentTournament?.status !== 'waiting') return;
 
     const interval = setInterval(() => {
       const expiresAt = new Date(context.currentTournament.expires_at!).getTime();
@@ -77,20 +77,22 @@ export const useTournament = (tournamentId?: string) => {
       
       setTimeLeft(remaining);
 
-      // Auto-start if creator and time is up
-      if (remaining === 0 && isCreator && realPlayerCount >= 2) {
-        startTournament();
-      } else if (remaining === 0 && isCreator && realPlayerCount < 2) {
-        // Cancel tournament instead of causing infinite loop
-        supabase
-          .from('tournaments')
-          .update({ status: 'cancelled' })
-          .eq('id', tournamentId);
+      // Auto-start if creator and time is up AND tournament is still waiting
+      if (remaining === 0 && isCreator && context.currentTournament?.status === 'waiting') {
+        if (realPlayerCount >= 2) {
+          startTournament();
+        } else {
+          // Cancel tournament instead of causing infinite loop
+          supabase
+            .from('tournaments')
+            .update({ status: 'cancelled' })
+            .eq('id', tournamentId);
+        }
       }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [context.currentTournament?.expires_at, isCreator, realPlayerCount, tournamentId]);
+  }, [context.currentTournament?.expires_at, context.currentTournament?.status, isCreator, realPlayerCount, tournamentId]);
 
   // Update derived state
   useEffect(() => {
@@ -106,7 +108,13 @@ export const useTournament = (tournamentId?: string) => {
   }, [context.currentTournament, context.participants, user]);
 
   const startTournament = async () => {
-    if (!tournamentId || !isCreator) return;
+    if (!tournamentId || !isCreator || !context.currentTournament) return;
+    
+    // Check if tournament is already started or in progress
+    if (context.currentTournament.status !== 'waiting') {
+      console.log('Tournament already started or not waiting:', context.currentTournament.status);
+      return;
+    }
 
     // Check minimum participants
     if (realPlayerCount < 2) {
