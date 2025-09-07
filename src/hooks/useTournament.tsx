@@ -64,7 +64,7 @@ export const useTournament = (tournamentId?: string) => {
       supabase.removeChannel(tournamentChannel);
       supabase.removeChannel(participantsChannel);
     };
-  }, [tournamentId, navigate, context]);
+  }, [tournamentId, navigate]);
 
   // Calculate countdown
   useEffect(() => {
@@ -78,13 +78,19 @@ export const useTournament = (tournamentId?: string) => {
       setTimeLeft(remaining);
 
       // Auto-start if creator and time is up
-      if (remaining === 0 && isCreator) {
+      if (remaining === 0 && isCreator && realPlayerCount >= 2) {
         startTournament();
+      } else if (remaining === 0 && isCreator && realPlayerCount < 2) {
+        // Cancel tournament instead of causing infinite loop
+        supabase
+          .from('tournaments')
+          .update({ status: 'cancelled' })
+          .eq('id', tournamentId);
       }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [context.currentTournament?.expires_at, isCreator]);
+  }, [context.currentTournament?.expires_at, isCreator, realPlayerCount, tournamentId]);
 
   // Update derived state
   useEffect(() => {
