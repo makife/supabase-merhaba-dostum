@@ -14,57 +14,6 @@ export const useTournament = (tournamentId?: string) => {
   const [hasJoined, setHasJoined] = useState(false);
   const [realPlayerCount, setRealPlayerCount] = useState(0);
 
-  // Real-time subscriptions
-  useEffect(() => {
-    if (!tournamentId) return;
-
-    const tournamentChannel = supabase
-      .channel(`tournament-${tournamentId}`)
-      .on(
-        'postgres_changes',
-        { 
-          event: 'UPDATE', 
-          schema: 'public', 
-          table: 'tournaments',
-          filter: `id=eq.${tournamentId}`
-        },
-        (payload) => {
-          console.log('Tournament updated:', payload.new);
-          
-          if (payload.new.status === 'in_progress') {
-            navigate(`/tournament-bracket/${tournamentId}`);
-          } else if (payload.new.status === 'cancelled') {
-            navigate('/tournament');
-          }
-          
-          // Update current tournament
-          context.fetchTournamentDetails(tournamentId);
-        }
-      )
-      .subscribe();
-
-    const participantsChannel = supabase
-      .channel(`participants-${tournamentId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'tournament_participants',
-          filter: `tournament_id=eq.${tournamentId}`
-        },
-        () => {
-          console.log('Participants updated');
-          context.fetchTournamentDetails(tournamentId);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(tournamentChannel);
-      supabase.removeChannel(participantsChannel);
-    };
-  }, [tournamentId, navigate]);
 
   // Calculate countdown
   useEffect(() => {

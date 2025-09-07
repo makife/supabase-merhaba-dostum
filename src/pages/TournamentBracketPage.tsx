@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Trophy, Home, Clock, Play, Crown } from 'lucide-react';
 import { useTournament } from '@/hooks/useTournament';
 import { organizeMatchesByRound, getRoundName, getMatchStatus } from '@/utils/tournamentHelpers';
+import { supabase } from '@/integrations/supabase/client';
 
 const TournamentBracketPage = () => {
   const { tournamentId } = useParams();
@@ -20,16 +21,22 @@ const TournamentBracketPage = () => {
     }
   }, [tournamentId]);
 
-  // Real-time match updates
-  useEffect(() => {
+
+  const startPendingMatches = async () => {
     if (!tournamentId) return;
-
-    const interval = setInterval(() => {
-      fetchTournamentDetails(tournamentId);
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [tournamentId]);
+    try {
+      await supabase
+        .from('tournament_matches')
+        .update({ status: 'in_progress', updated_at: new Date().toISOString() })
+        .eq('tournament_id', tournamentId)
+        .eq('round', 1)
+        .eq('status', 'pending')
+        .not('player1_id', 'is', null)
+        .not('player2_id', 'is', null);
+    } catch (e) {
+      console.error('Pending matches could not be started:', e);
+    }
+  };
 
   // Countdown for match start
   useEffect(() => {
@@ -42,7 +49,7 @@ const TournamentBracketPage = () => {
       setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(countdownInterval);
-          // Start matches here
+          startPendingMatches();
           return 0;
         }
         return prev - 1;
@@ -63,17 +70,12 @@ const TournamentBracketPage = () => {
     }
   }, [matches, navigate]);
 
-  if (loading || !currentTournament) {
+  if (!currentTournament) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-900 to-blue-900 p-4 flex items-center justify-center">
         <div className="text-white text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
           <p>Turnuva bracket yükleniyor...</p>
-          <p className="text-sm text-gray-300 mt-2">
-            Turnuva: {currentTournament?.name || 'Bilinmiyor'} | 
-            Durum: {currentTournament?.status || 'Bilinmiyor'} | 
-            Maç Sayısı: {matches.length}
-          </p>
         </div>
       </div>
     );

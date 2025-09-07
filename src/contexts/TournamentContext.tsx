@@ -424,8 +424,8 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
               })
             );
 
-            console.log('Setting matches:', enrichedMatches);
-            setMatches(enrichedMatches);
+            setMatches(enrichedMatches as any);
+
           } else {
             console.error('Match fetch error:', matchError);
           }
