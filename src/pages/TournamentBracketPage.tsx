@@ -132,6 +132,13 @@ const TournamentBracketPage = () => {
         }
       } else if (allCompleted && round === 3) {
         console.log('🏆 Tournament completed!');
+        
+        // Turnuvayı hemen completed olarak işaretle
+        await supabase
+          .from('tournaments')
+          .update({ status: 'completed', finished_at: new Date().toISOString() })
+          .eq('id', tournamentId);
+          
         setShowChampion(true);
       }
     } catch (error) {
@@ -279,13 +286,30 @@ const TournamentBracketPage = () => {
       ? finalMatch?.player1?.username 
       : finalMatch?.player2?.username;
 
+    // 5 saniye sonra otomatik yönlendirme
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        navigate('/tournament');
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }, [navigate]);
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-yellow-600 to-orange-600 p-4 flex items-center justify-center">
         <div className="text-center">
           <Crown className="w-24 h-24 text-yellow-200 mx-auto mb-6 animate-bounce" />
           <h1 className="text-6xl font-bold text-white mb-4">Şampiyon!</h1>
           <h2 className="text-3xl text-yellow-200 mb-8">{championName || 'Bilinmeyen'}</h2>
-          <p className="text-white text-lg">5 saniye sonra turnuva listesine döneceksiniz...</p>
+          <p className="text-white text-lg mb-6">5 saniye sonra turnuva listesine döneceksiniz...</p>
+          
+          <Button
+            onClick={() => navigate('/tournament')}
+            className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-bold py-3 px-6 rounded-full"
+          >
+            <Trophy className="w-5 h-5 mr-2" />
+            Turnuva Listesi
+          </Button>
         </div>
       </div>
     );

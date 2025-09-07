@@ -906,6 +906,13 @@ const handleGameEnd = async () => {
 
   // Normal oyun sonu
   setGameEnded(true);
+  
+  // Turnuvada kaybeden oyuncu turnuva sayfasına dönsün
+  if (gameMode === 'tournament' && finalUserScore < finalOpponentScore) {
+    setTimeout(() => {
+      navigate('/tournament');
+    }, 3000);
+  }
 };
 
 // 🔧 5. GamePage.tsx - Turnuva modu rakip belirleme düzeltmesi
