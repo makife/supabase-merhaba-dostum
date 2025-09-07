@@ -38,11 +38,11 @@ const TournamentWaitingPage = () => {
           current_players: tournamentData.current_round
         } as Tournament);
 
-        // Geçen süreyi hesapla
-        const timeout = tournamentData.timeout_duration ?? 15;
-        const createdAtMs = new Date(tournamentData.created_at).getTime();
-        const elapsed = Math.floor((Date.now() - createdAtMs) / 1000);
-        const remaining = Math.max(0, timeout - elapsed);
+        // Geri sayım sunucu saatine göre (expires_at varsa onu kullan)
+        const expiresAtMs = tournamentData.expires_at 
+          ? new Date(tournamentData.expires_at).getTime() 
+          : new Date(tournamentData.created_at).getTime() + ((tournamentData.timeout_duration ?? 15) * 1000);
+        const remaining = Math.max(0, Math.floor((expiresAtMs - Date.now()) / 1000));
         setTimeLeft(remaining);
       }
       
@@ -172,9 +172,10 @@ const TournamentWaitingPage = () => {
   useEffect(() => {
     if (!tournament) return;
 
-    const timeout = (tournament as any).timeout_duration ?? 15;
-    const createdAtMs = new Date((tournament as any).created_at).getTime();
-    const endAt = createdAtMs + timeout * 1000;
+    const expiresAt = (tournament as any).expires_at;
+    const endAt = expiresAt 
+      ? new Date(expiresAt).getTime() 
+      : new Date((tournament as any).created_at).getTime() + (((tournament as any).timeout_duration ?? 15) * 1000);
 
     const interval = setInterval(() => {
       const remaining = Math.max(0, Math.floor((endAt - Date.now()) / 1000));
@@ -208,6 +209,14 @@ const TournamentWaitingPage = () => {
       }, (payload) => {
         console.log('Turnuva durumu güncellendi:', payload.new);
         const newStatus = payload.new.status;
+        // Yerel turnuva durumunu güncelle (expires_at dahil)
+        setTournament((prev) => ({
+          ...(prev || {}),
+          ...payload.new,
+          status: payload.new.status as 'waiting' | 'in_progress' | 'completed' | 'cancelled',
+          max_players: payload.new.max_participants,
+          current_players: payload.new.current_round,
+        } as Tournament));
         
         if (newStatus === 'in_progress') {
           console.log('Turnuva başladı, bracket sayfasına yönlendiriliyor...');
