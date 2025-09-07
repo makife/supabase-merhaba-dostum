@@ -286,9 +286,22 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
       
       if (error || !result || typeof result !== 'object' || !result.success) {
         console.error('Turnuva başlatma hatası:', error || result?.error || 'Bilinmeyen hata');
+        toast({
+          title: "Hata",
+          description: "Turnuva başlatılamadı"
+        });
         return false;
       }
 
+      toast({
+        title: "Başarılı",
+        description: "Turnuva başlatıldı!"
+      });
+
+      // Refresh data to get latest state
+      await fetchTournaments();
+      await fetchTournamentDetails(tournamentId);
+      
       return true;
     } catch (error) {
       console.error('Turnuva başlatma hatası:', error);
@@ -373,10 +386,83 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
     }
   };
 
-  // Auto-fetch tournaments on mount
+  // Auto-fetch tournaments on mount and setup realtime subscriptions
   useEffect(() => {
     fetchTournaments();
+
+    // Realtime subscription for tournaments
+    const tournamentsChannel = supabase
+      .channel('tournaments-changes')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'tournaments' 
+      }, () => {
+        fetchTournaments();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(tournamentsChannel);
+    };
   }, []);
+
+  // Setup realtime subscription for current tournament details
+  useEffect(() => {
+    if (!currentTournament?.id) return;
+
+    const tournamentId = currentTournament.id;
+    
+    // Participants subscription
+    const participantsChannel = supabase
+      .channel(`tournament-participants-${tournamentId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'tournament_participants',
+        filter: `tournament_id=eq.${tournamentId}`
+      }, () => {
+        fetchTournamentDetails(tournamentId);
+      })
+      .subscribe();
+
+    // Matches subscription  
+    const matchesChannel = supabase
+      .channel(`tournament-matches-${tournamentId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public', 
+        table: 'tournament_matches',
+        filter: `tournament_id=eq.${tournamentId}`
+      }, () => {
+        fetchTournamentDetails(tournamentId);
+      })
+      .subscribe();
+
+    // Tournament status subscription
+    const statusChannel = supabase
+      .channel(`tournament-status-${tournamentId}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'tournaments',
+        filter: `id=eq.${tournamentId}`
+      }, (payload) => {
+        const newTournament = payload.new as any;
+        setCurrentTournament(prev => prev ? {
+          ...prev,
+          ...newTournament,
+          status: newTournament.status as 'waiting' | 'in_progress' | 'completed' | 'cancelled'
+        } : null);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(participantsChannel);
+      supabase.removeChannel(matchesChannel);
+      supabase.removeChannel(statusChannel);
+    };
+  }, [currentTournament?.id]);
 
   const value: TournamentContextType = {
     tournaments,
