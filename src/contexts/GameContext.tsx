@@ -1065,6 +1065,11 @@ const fetchParticipants = useCallback(
   try {
     console.log('🏁 Oyun bitiyor - room güncelleniyor:', currentRoom.id.slice(-8));
     
+    // Calculate game duration
+    const gameDuration = currentRoom.started_at 
+      ? Math.floor((Date.now() - new Date(currentRoom.started_at).getTime()) / 1000)
+      : 0;
+    
     // Determine winner and add words to game_words table
     let winnerId: string | null = null;
     let player1Id: string | null = null;
@@ -1116,7 +1121,8 @@ const fetchParticipants = useCallback(
         p_user_id: playerStats.userId,
         p_score: playerStats.score,
         p_words: playerStats.words,
-        p_is_winner: playerStats.isWinner
+        p_is_winner: playerStats.isWinner,
+        p_game_duration: gameDuration
       });
     }
     
@@ -1125,7 +1131,8 @@ const fetchParticipants = useCallback(
         p_user_id: opponentStats.userId,
         p_score: opponentStats.score,
         p_words: opponentStats.words,
-        p_is_winner: opponentStats.isWinner
+        p_is_winner: opponentStats.isWinner,
+        p_game_duration: gameDuration
       });
     }
     
