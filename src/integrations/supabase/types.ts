@@ -353,6 +353,39 @@ export type Database = {
           },
         ]
       }
+      game_sessions: {
+        Row: {
+          created_at: string
+          game_duration: number
+          game_mode: string
+          id: string
+          is_winner: boolean
+          score: number
+          user_id: string
+          words_count: number
+        }
+        Insert: {
+          created_at?: string
+          game_duration?: number
+          game_mode?: string
+          id?: string
+          is_winner?: boolean
+          score?: number
+          user_id: string
+          words_count?: number
+        }
+        Update: {
+          created_at?: string
+          game_duration?: number
+          game_mode?: string
+          id?: string
+          is_winner?: boolean
+          score?: number
+          user_id?: string
+          words_count?: number
+        }
+        Relationships: []
+      }
       game_words: {
         Row: {
           created_at: string | null
@@ -532,6 +565,48 @@ export type Database = {
         }
         Relationships: []
       }
+      monthly_stats: {
+        Row: {
+          avg_score: number | null
+          best_game_score: number | null
+          created_at: string
+          games_played: number
+          games_won: number
+          id: string
+          month_start: string
+          total_score: number
+          total_words: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avg_score?: number | null
+          best_game_score?: number | null
+          created_at?: string
+          games_played?: number
+          games_won?: number
+          id?: string
+          month_start: string
+          total_score?: number
+          total_words?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avg_score?: number | null
+          best_game_score?: number | null
+          created_at?: string
+          games_played?: number
+          games_won?: number
+          id?: string
+          month_start?: string
+          total_score?: number
+          total_words?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string | null
@@ -643,24 +718,24 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_private_messages_recipient"
+            foreignKeyName: "private_messages_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "private_chats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "private_messages_recipient_id_fkey"
             columns: ["recipient_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_private_messages_sender"
+            foreignKeyName: "private_messages_sender_id_fkey"
             columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "private_messages_chat_id_fkey"
-            columns: ["chat_id"]
-            isOneToOne: false
-            referencedRelation: "private_chats"
             referencedColumns: ["id"]
           },
         ]
@@ -1035,6 +1110,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_blocks: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string | null
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string | null
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string | null
+          id?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_blocks_blocked_id_fkey"
+            columns: ["blocked_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_blocks_blocker_id_fkey"
+            columns: ["blocker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_inventory: {
         Row: {
           id: string
@@ -1157,6 +1271,48 @@ export type Database = {
         }
         Relationships: []
       }
+      weekly_stats: {
+        Row: {
+          avg_score: number | null
+          best_game_score: number | null
+          created_at: string
+          games_played: number
+          games_won: number
+          id: string
+          total_score: number
+          total_words: number
+          updated_at: string
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          avg_score?: number | null
+          best_game_score?: number | null
+          created_at?: string
+          games_played?: number
+          games_won?: number
+          id?: string
+          total_score?: number
+          total_words?: number
+          updated_at?: string
+          user_id: string
+          week_start: string
+        }
+        Update: {
+          avg_score?: number | null
+          best_game_score?: number | null
+          created_at?: string
+          games_played?: number
+          games_won?: number
+          id?: string
+          total_score?: number
+          total_words?: number
+          updated_at?: string
+          user_id?: string
+          week_start?: string
+        }
+        Relationships: []
+      }
       words: {
         Row: {
           created_at: string | null
@@ -1213,11 +1369,7 @@ export type Database = {
       }
       check_and_award_badges: {
         Args: { p_user_id: string }
-        Returns: {
-          new_badge_icon: string
-          new_badge_id: string
-          new_badge_name: string
-        }[]
+        Returns: Json[]
       }
       check_and_award_badges_simple: {
         Args: { p_user_id: string }
@@ -1261,6 +1413,10 @@ export type Database = {
         Returns: undefined
       }
       cleanup_expired_matchmaking_rooms: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      cleanup_expired_rematch_requests: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
@@ -1329,6 +1485,19 @@ export type Database = {
           win_count: number
         }[]
       }
+      get_monthly_leaderboard: {
+        Args: { target_month_start?: string }
+        Returns: {
+          avatar_url: string
+          games_played: number
+          games_won: number
+          monthly_score: number
+          rank_change: number
+          rank_position: number
+          user_id: string
+          username: string
+        }[]
+      }
       get_or_create_private_chat: {
         Args: { other_user_id: string }
         Returns: string
@@ -1353,6 +1522,19 @@ export type Database = {
       get_user_tournament_status: {
         Args: { p_tournament_id: string; p_user_id: string }
         Returns: Json
+      }
+      get_weekly_leaderboard: {
+        Args: { target_week_start?: string }
+        Returns: {
+          avatar_url: string
+          games_played: number
+          games_won: number
+          rank_change: number
+          rank_position: number
+          user_id: string
+          username: string
+          weekly_score: number
+        }[]
       }
       increment_tournament_participants: {
         Args: { tournament_id: string }
@@ -1463,8 +1645,8 @@ export type Database = {
       }
       update_game_stats: {
         Args: {
-          p_game_duration?: number
-          p_is_winner?: boolean
+          p_game_duration: number
+          p_is_winner: boolean
           p_score: number
           p_user_id: string
           p_words: Json
