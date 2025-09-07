@@ -70,17 +70,18 @@ const TournamentWaitingPage = () => {
       
       console.log(`👥 Gerçek oyuncu: ${realPlayers.length}, Toplam: ${totalPlayers}`);
       
-      const participantsWithProfiles = await Promise.all(
-        participantsData.map(async (participant) => {
-          if (participant.is_bot) {
-            return {
-              ...participant,
-              profiles: {
-                username: `Bot ${participant.user_id.split('_').pop()}`,
-                avatar_url: null
-              }
-            };
-          }
+       const participantsWithProfiles = await Promise.all(
+         participantsData.map(async (participant) => {
+           if (participant.is_bot) {
+             const botSuffix = participant.user_id ? String(participant.user_id).split('_').pop() : '';
+             return {
+               ...participant,
+               profiles: {
+                 username: botSuffix ? `Bot ${botSuffix}` : 'Bot',
+                 avatar_url: null
+               }
+             };
+           }
 
           const { data: profileData } = await supabase
             .from('profiles')
@@ -167,22 +168,28 @@ const TournamentWaitingPage = () => {
     fetchTournamentData();
   }, [tournamentId]);
 
-  // Timer - sadece turnuva oluşturan için
+  // Evrensel geri sayım (herkeste işler)
   useEffect(() => {
-    if (!tournament || tournament.creator_id !== user?.id || timeLeft <= 0) return;
+    if (!tournament) return;
 
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          startTournament();
-          return 0;
-        }
-        return prev - 1;
-      });
+    const timeout = (tournament as any).timeout_duration ?? 15;
+    const createdAtMs = new Date((tournament as any).created_at).getTime();
+    const endAt = createdAtMs + timeout * 1000;
+
+    const interval = setInterval(() => {
+      const remaining = Math.max(0, Math.floor((endAt - Date.now()) / 1000));
+      setTimeLeft(remaining);
     }, 1000);
 
-    return () => clearInterval(timer);
+    return () => clearInterval(interval);
+  }, [tournament?.id, (tournament as any)?.timeout_duration, (tournament as any)?.created_at]);
+
+  // Sadece kurucu için: süre bittiğinde otomatik başlat
+  useEffect(() => {
+    if (!tournament || tournament.creator_id !== user?.id) return;
+    if (timeLeft === 0) {
+      startTournament();
+    }
   }, [tournament?.creator_id, user?.id, timeLeft]);
 
   // Sonradan katılanlar için real-time listener
