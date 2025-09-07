@@ -50,6 +50,12 @@ export const useTournament = (tournamentId?: string) => {
     setIsCreator(context.currentTournament.creator_id === user.id);
     
     const userParticipant = context.participants.find(p => p.user_id === user.id);
+    console.log('🔍 User participant check:', {
+      userId: user.id.slice(-8),
+      participantsCount: context.participants.length,
+      participants: context.participants.map(p => ({ id: p.user_id?.slice(-8), isBot: p.is_bot })),
+      found: !!userParticipant
+    });
     setHasJoined(!!userParticipant);
     
     const realPlayers = context.participants.filter(p => !p.is_bot);

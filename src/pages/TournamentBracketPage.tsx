@@ -152,8 +152,29 @@ const TournamentBracketPage = () => {
   useEffect(() => {
     if (!user || navigatedToGame || !tournamentId) return;
 
-    const myInProgressMatch = matches.find(m => m.status === 'in_progress' && (m.player1_id === user.id || m.player2_id === user.id));
+    const userId = user.id;
+    console.log('🔍 Checking for user match:', { userId: userId.slice(-8), matchesCount: matches.length });
+    
+    const myInProgressMatch = matches.find(m => {
+      const isPlayer1 = m.player1_id === userId;
+      const isPlayer2 = m.player2_id === userId;
+      const isInProgress = m.status === 'in_progress';
+      
+      console.log('🔍 Match check:', {
+        matchId: m.id.slice(-8),
+        player1: m.player1_id?.slice(-8),
+        player2: m.player2_id?.slice(-8),
+        status: m.status,
+        isPlayer1,
+        isPlayer2,
+        isInProgress
+      });
+      
+      return isInProgress && (isPlayer1 || isPlayer2);
+    });
+    
     if (myInProgressMatch) {
+      console.log('✅ Found user match, navigating:', myInProgressMatch.id.slice(-8));
       setNavigatedToGame(true);
       navigate(`/game?match=${myInProgressMatch.id}&tournament=${tournamentId}`);
     }
