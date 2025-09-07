@@ -1,198 +1,149 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { Home, Trophy, Users, Clock, Plus, Swords } from 'lucide-react';
-import { Tournament } from '@/types/tournament';
+import { Home, Trophy, Users, Plus } from 'lucide-react';
+import { TournamentCard } from '@/components/TournamentCard';
+import { useTournament } from '@/hooks/useTournament';
+import { getRealPlayerCount } from '@/utils/tournamentHelpers';
 
 const TournamentPage = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
-  const [activeTournaments, setActiveTournaments] = useState<Tournament[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { 
+    tournaments, 
+    loading, 
+    createTournament, 
+    joinTournament,
+    fetchTournaments 
+  } = useTournament();
 
   useEffect(() => {
-    fetchActiveTournaments();
+    fetchTournaments();
   }, []);
 
-  const fetchActiveTournaments = async () => {
-    try {
-      const cutoff = new Date(Date.now() - 15_000).toISOString();
-      const { data, error } = await supabase
-        .from('tournaments')
-        .select('*')
-        .eq('status', 'waiting')
-        .gte('created_at', cutoff)
-        .order('created_at', { ascending: true });
-
-      if (!error && data) {
-        // Eski isimleri yeni isimlere map et
-        const mappedData = data.map(tournament => ({
-          ...tournament,
-          max_players: tournament.max_participants,
-          current_players: tournament.current_round // Geçici çözüm
-        })) as Tournament[];
-        
-        setActiveTournaments(mappedData);
-      }
-    } catch (error) {
-      console.error('Turnuva listeleme hatası:', error);
-    } finally {
-      setLoading(false);
+  const handleCreateTournament = async () => {
+    const tournamentId = await createTournament();
+    if (tournamentId) {
+      navigate(`/tournament-waiting/${tournamentId}`);
     }
   };
 
-  const createTournament = async () => {
-    if (!user) return;
-
-    try {
-      // Yeni turnuva oluştur
-      const { data: tournament, error } = await supabase
-        .from('tournaments')
-        .insert({
-          creator_id: user.id,
-          name: `Turnuva ${new Date().toLocaleTimeString()}`,
-          status: 'waiting',
-          game_type: 'timed',
-          max_participants: 8,
-          current_round: 1,
-          timeout_duration: 15,
-          expires_at: new Date(Date.now() + 15_000).toISOString()
-        })
-        .select()
-        .single();
-
-      if (!error && tournament) {
-        // Kendimizi katılımcı olarak ekle
-        await supabase
-          .from('tournament_participants')
-          .insert({
-            tournament_id: tournament.id,
-            user_id: user.id,
-            is_bot: false,
-            seed: 1,
-            joined_at: new Date().toISOString()
-          });
-
-        // 15 saniye beklemeye başla
-        navigate(`/tournament-waiting/${tournament.id}`);
-      }
-    } catch (error) {
-      console.error('Turnuva oluşturma hatası:', error);
+  const handleJoinTournament = async (tournamentId: string) => {
+    const success = await joinTournament();
+    if (success) {
+      navigate(`/tournament-waiting/${tournamentId}`);
     }
   };
 
-const handleJoinTournament = async (tournamentId: string) => {
-  if (!user) return;
-
-  try {
-    // Sadece mevcut turnuvaya katıl
-    const { error: joinError } = await supabase
-      .from('tournament_participants')
-      .insert({
-        tournament_id: tournamentId, // Yeni oluşturma, mevcut ID'yi kullan
-        user_id: user.id,
-        is_bot: false,
-        seed: 2,
-        joined_at: new Date().toISOString()
-      });
-
-    if (joinError) {
-      console.error('Katılma hatası:', joinError);
-      return;
-    }
-
-    // Aynı turnuva ID'sine yönlendir
-    navigate(`/tournament-waiting/${tournamentId}`);
-
-  } catch (error) {
-    console.error('Turnuvaya katılma hatası:', error);
-  }
-};
-
-
-return (
-  <div className="relative min-h-screen bg-gradient-to-br from-purple-900 to-blue-900 p-4">
-
-    {/* Sol üstteki Ana Sayfa butonu */}
-    <div className="absolute top-4 left-4 z-50">
-      <Button
-        onClick={() => navigate('/')}
-        className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
-      >
-        <Home className="w-4 h-4 mr-2" />
-        Çıkış
-      </Button>
-    </div>
-
-    <div className="max-w-4xl mx-auto">
-      {/* Başlık */}
-      <div className="text-center mb-8">
-        <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
-        <h1 className="text-3xl font-bold text-white">Turnuvalar</h1>
-        <p className="text-gray-300">8 kişilik heyecan dolu turnuvalara katıl!</p>
+  return (
+    <div className="relative min-h-screen bg-gradient-to-br from-purple-900 to-blue-900 p-4">
+      {/* Çıkış butonu */}
+      <div className="absolute top-4 left-4 z-50">
+        <Button
+          onClick={() => navigate('/')}
+          className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
+        >
+          <Home className="w-4 h-4 mr-2" />
+          Ana Sayfa
+        </Button>
       </div>
 
-      {/* Turnuva Oluştur Butonu */}
-      <Card className="mb-8 bg-white/10 backdrop-blur-md border-white/20">
-        <CardContent className="p-6 text-center">
-          <Button 
-            onClick={createTournament}
-            className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-4 px-8 text-lg"
-            size="lg"
-          >
-            <Plus className="w-6 h-6 mr-2" />
-            Yeni Turnuva Oluştur
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="max-w-4xl mx-auto pt-16">
+        {/* Başlık */}
+        <div className="text-center mb-8">
+          <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
+          <h1 className="text-4xl font-bold text-white mb-2">Turnuvalar</h1>
+          <p className="text-gray-300 text-lg">8 oyunculu heyecan dolu turnuvalara katıl!</p>
+        </div>
 
-      {/* Aktif Turnuvalar */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-bold text-white mb-4">Aktif Turnuvalar</h2>
-        
-        {activeTournaments.length === 0 ? (
-          <Card className="bg-white/10 backdrop-blur-md border-white/20">
-            <CardContent className="p-6 text-center text-gray-300">
-              <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>Şu anda aktif turnuva bulunmuyor</p>
-              <p className="text-sm">İlk turnuvayı sen oluştur!</p>
-            </CardContent>
-          </Card>
-        ) : (
-          activeTournaments.map((tournament) => (
-            <Card key={tournament.id} className="bg-white/10 backdrop-blur-md border-white/20">
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center">
-                    <Trophy className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-white">{tournament.name}</h3>
-                    <p className="text-gray-300 text-sm">
-                      {tournament.current_round || 1}/8 Katılımcı
-                    </p>
-                  </div>
-                </div>
-                
-                <Button 
-                  onClick={() => handleJoinTournament(tournament.id)}
-                  disabled={(tournament.current_round || 1) >= 8}
-                  className="bg-green-500 hover:bg-green-600 text-white"
-                >
-                  <Swords className="w-4 h-4 mr-2" />
-                  Katıl
-                </Button>
+        {/* Turnuva Oluştur */}
+        <Card className="mb-8 bg-white/10 backdrop-blur-md border-white/20">
+          <CardContent className="p-6 text-center">
+            <Button 
+              onClick={handleCreateTournament}
+              disabled={loading}
+              className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-4 px-8 text-lg"
+              size="lg"
+            >
+              <Plus className="w-6 h-6 mr-2" />
+              {loading ? 'Oluşturuluyor...' : 'Yeni Turnuva Oluştur'}
+            </Button>
+            <p className="text-gray-300 text-sm mt-2">
+              Kendi turnuvanı oluştur ve arkadaşlarını davet et!
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Aktif Turnuvalar */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-white">Aktif Turnuvalar</h2>
+            <Button
+              onClick={fetchTournaments}
+              variant="outline"
+              size="sm"
+              className="text-white border-white/30 hover:bg-white/10"
+            >
+              Yenile
+            </Button>
+          </div>
+          
+          {loading ? (
+            <Card className="bg-white/10 backdrop-blur-md border-white/20">
+              <CardContent className="p-6 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+                <p className="text-gray-300">Turnuvalar yükleniyor...</p>
               </CardContent>
             </Card>
-          ))
-        )}
+          ) : tournaments.length === 0 ? (
+            <Card className="bg-white/10 backdrop-blur-md border-white/20">
+              <CardContent className="p-8 text-center">
+                <Users className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                <h3 className="text-xl font-bold text-white mb-2">Aktif Turnuva Yok</h3>
+                <p className="text-gray-300 mb-4">
+                  Şu anda beklemedeki turnuva bulunmuyor.
+                </p>
+                <p className="text-gray-400 text-sm">
+                  İlk turnuvayı sen oluştur ve eğlence başlasın!
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {tournaments.map((tournament) => {
+                // Katılımcı sayısını hesapla (simulated - gerçekte API'den gelecek)
+                const participantCount = Math.floor(Math.random() * 6) + 1; 
+                
+                return (
+                  <TournamentCard
+                    key={tournament.id}
+                    tournament={tournament}
+                    participantCount={participantCount}
+                    onJoin={handleJoinTournament}
+                    disabled={loading}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Bilgi */}
+        <Card className="mt-8 bg-white/5 backdrop-blur-md border-white/10">
+          <CardContent className="p-4">
+            <h3 className="text-lg font-bold text-white mb-2">Turnuva Kuralları</h3>
+            <ul className="text-gray-300 text-sm space-y-1">
+              <li>• Her turnuvada maksimum 8 oyuncu katılabilir</li>
+              <li>• Yetersiz oyuncu durumunda botlar otomatik eklenir</li>
+              <li>• Turnuva 3 aşamada tamamlanır: Çeyrek Final → Yarı Final → Final</li>
+              <li>• Her maç zamana karşı oynanır (2 dakika)</li>
+              <li>• Turnuva başladıktan sonra katılım mümkün değildir</li>
+            </ul>
+          </CardContent>
+        </Card>
       </div>
     </div>
-  </div>
-);
+  );
 };
 
 export default TournamentPage;
