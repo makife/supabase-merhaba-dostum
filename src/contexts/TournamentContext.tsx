@@ -375,7 +375,51 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
           .order('match_number');
 
         if (!matchError && matchData) {
-          setMatches(matchData as any);
+          // Enrich matches with player info
+          const enrichedMatches = await Promise.all(
+            matchData.map(async (match: any) => {
+              let player1Info = null;
+              let player2Info = null;
+
+              // Get player1 info if not a bot
+              if (match.player1_id && !match.player1_id.startsWith('bot_')) {
+                const { data: p1 } = await supabase
+                  .from('profiles')
+                  .select('username, avatar_url')
+                  .eq('id', match.player1_id)
+                  .single();
+                if (p1) {
+                  player1Info = { username: p1.username, avatar_url: p1.avatar_url, is_bot: false };
+                }
+              } else if (match.player1_id?.startsWith('bot_')) {
+                const botNumber = match.player1_id.split('_').pop();
+                player1Info = { username: `Bot ${botNumber}`, avatar_url: null, is_bot: true };
+              }
+
+              // Get player2 info if not a bot
+              if (match.player2_id && !match.player2_id.startsWith('bot_')) {
+                const { data: p2 } = await supabase
+                  .from('profiles')
+                  .select('username, avatar_url')
+                  .eq('id', match.player2_id)
+                  .single();
+                if (p2) {
+                  player2Info = { username: p2.username, avatar_url: p2.avatar_url, is_bot: false };
+                }
+              } else if (match.player2_id?.startsWith('bot_')) {
+                const botNumber = match.player2_id.split('_').pop();
+                player2Info = { username: `Bot ${botNumber}`, avatar_url: null, is_bot: true };
+              }
+
+              return {
+                ...match,
+                player1: player1Info,
+                player2: player2Info
+              };
+            })
+          );
+
+          setMatches(enrichedMatches);
         }
       }
 

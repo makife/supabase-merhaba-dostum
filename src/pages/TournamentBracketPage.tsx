@@ -69,6 +69,11 @@ const TournamentBracketPage = () => {
         <div className="text-white text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
           <p>Turnuva bracket yükleniyor...</p>
+          <p className="text-sm text-gray-300 mt-2">
+            Turnuva: {currentTournament?.name || 'Bilinmiyor'} | 
+            Durum: {currentTournament?.status || 'Bilinmiyor'} | 
+            Maç Sayısı: {matches.length}
+          </p>
         </div>
       </div>
     );
@@ -213,7 +218,10 @@ const TournamentBracketPage = () => {
               )) || (
                 <Card className="bg-white/5 backdrop-blur-md border-white/10">
                   <CardContent className="p-4 text-center text-gray-400">
-                    Maçlar henüz oluşturulmadı
+                    {matches.length === 0 ? 'Maçlar henüz oluşturulmadı' : `Round ${round} maçları mevcut değil`}
+                    <div className="text-xs mt-2">
+                      Toplam maç: {matches.length} | Bu round: {matchesByRound[round]?.length || 0}
+                    </div>
                   </CardContent>
                 </Card>
               )}
