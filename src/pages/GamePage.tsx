@@ -408,6 +408,78 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
     console.error('Turnuva maç bitiş hatası:', error);
   }
 };
+
+const requestRematch = async () => {
+  if (!currentRoom || !user) return;
+  
+  try {
+    setRematchRequested(true);
+    setWaitingForRematchResponse(true);
+    
+    // Rematch request gönder
+    await sendRematchRequest(currentRoom.room_code || generateRoomCode(), gameType);
+    
+    // 30 saniye timeout
+    setTimeout(() => {
+      if (waitingForRematchResponse) {
+        setWaitingForRematchResponse(false);
+        setRematchRequested(false);
+        toast({
+          title: 'Süre Doldu',
+          description: 'Rakibiniz yanıt vermedi.',
+          variant: 'destructive',
+        });
+      }
+    }, 30000);
+    
+  } catch (error) {
+    console.error('Rematch request error:', error);
+    setRematchRequested(false);
+    setWaitingForRematchResponse(false);
+    toast({
+      title: 'Hata',
+      description: 'Tekrar oyun isteği gönderilemedi.',
+      variant: 'destructive',
+    });
+  }
+};
+
+// 4. resetGameForRematch fonksiyonunu ekleyin:
+const resetGameForRematch = () => {
+  // Oyunu sıfırla
+  setGameGrid(generateRandomGrid());
+  setSelectedLetters([]);
+  setCurrentWord('');
+  setUsedWords(new Set());
+  setGlobalUsedWords(new Set());
+  setPlayerWords([]);
+  setOpponentWords([]);
+  setPlayerWordsWithScores([]);
+  setOpponentWordsWithScores([]);
+  setPlayerScore(0);
+  setOpponentScore(0);
+  timeLeftRef.current = gameType === 'timed' ? 120 : 0;
+  setDisplayTime(timeLeftRef.current);
+  setGameStarted(true);
+  setGameEnded(false);
+  setWinner(null);
+  setTimeWarningPlayed(false);
+  setJokers({ degistir: 3, fisilida: 3, senYaz: 3 });
+  setSelectedJoker(null);
+  setHighlightedLetters([]);
+  setIsJokerActive(false);
+  setRematchRequested(false);
+  setWaitingForRematchResponse(false);
+  
+  // Room'daki used words'ü temizle
+  if (currentRoom) {
+    supabase
+      .from('game_words')
+      .delete()
+      .eq('room_id', currentRoom.id);
+  }
+};
+  
 const createNextRoundMatches = async (tournamentId: string, nextRound: number) => {
   try {
     console.log(`🏆 ${nextRound}. tur maçları oluşturuluyor...`);
@@ -2312,6 +2384,46 @@ useEffect(() => {
     }
   }
 }, [participants, gameMode, hasShownStartMessage, gameType, toast]);
+
+useEffect(() => {
+  if (!currentRoom || gameMode !== 'private-room') return;
+  
+  const handleRematchAccepted = () => {
+    setWaitingForRematchResponse(false);
+    setRematchRequested(false);
+    
+    toast({
+      title: 'Tekrar Oyun Kabul Edildi!',
+      description: 'Yeni oyun başlıyor...',
+      duration: 2000,
+    });
+    
+    setTimeout(() => {
+      resetGameForRematch();
+    }, 1000);
+  };
+  
+  const handleRematchRejected = () => {
+    setWaitingForRematchResponse(false);
+    setRematchRequested(false);
+    
+    toast({
+      title: 'Tekrar Oyun Reddedildi',
+      description: 'Rakibiniz tekrar oynamak istemiyor.',
+      variant: 'destructive',
+    });
+  };
+  
+  // currentRematchRequest değişikliklerini izle
+  if (currentRematchRequest === null && waitingForRematchResponse) {
+    // Eğer request null oldu ama bekliyorduk, demek ki kabul edildi veya reddedildi
+    // Bu durumu real-time listener'dan gelen değişikliklerle handle edeceğiz
+  }
+  
+  return () => {
+    // Cleanup if needed
+  };
+}, [currentRoom, gameMode, waitingForRematchResponse, currentRematchRequest, toast]);
 
   // Touch olayları için optimize edilmiş handler
   const handleLetterTouch = (letter: string, row: number, col: number, event: React.TouchEvent) => {
