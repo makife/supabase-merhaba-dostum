@@ -288,21 +288,38 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
         status: tournamentData.status as 'waiting' | 'in_progress' | 'completed' | 'cancelled'
       });
 
-      // Fetch participants
+      // Fetch participants (without join due to user_id text vs uuid)
       const { data: participantData, error: participantError } = await supabase
         .from('tournament_participants')
-        .select(`
-          *,
-          profiles:user_id (
-            username,
-            avatar_url
-          )
-        `)
+        .select('*')
         .eq('tournament_id', tournamentId)
         .order('seed');
 
       if (!participantError && participantData) {
-        setParticipants(participantData as any);
+        // Collect valid UUID user ids (exclude bots and non-uuid strings)
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        const userIds = (participantData as any[])
+          .filter(p => !p.is_bot && typeof p.user_id === 'string' && uuidRegex.test(p.user_id))
+          .map(p => p.user_id);
+
+        let profilesMap: Record<string, { username: string; avatar_url: string | null }> = {};
+        if (userIds.length > 0) {
+          const { data: profilesData } = await supabase
+            .from('profiles')
+            .select('id, username, avatar_url')
+            .in('id', userIds as any);
+
+          (profilesData || []).forEach((prof: any) => {
+            profilesMap[prof.id] = { username: prof.username, avatar_url: prof.avatar_url };
+          });
+        }
+
+        const enriched = (participantData as any[]).map(p => ({
+          ...p,
+          profiles: p.user_id && profilesMap[p.user_id] ? profilesMap[p.user_id] : null
+        }));
+
+        setParticipants(enriched as any);
       }
 
       // Fetch matches if tournament is in progress
