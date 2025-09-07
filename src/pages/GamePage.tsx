@@ -950,18 +950,23 @@ const getOpponentDisplayName = () => {
       tournamentMatch.player2_id : 
       tournamentMatch.player1_id;
   
-    if (!opponentId || opponentId.startsWith('bot_')) {
+    if (!opponentId || String(opponentId).startsWith('bot_')) {
       return 'Turnuva Botu';
     }
     
+    // Eğer state'te belirlenmiş bir rakip adı varsa onu kullan
+    if (opponentName && opponentName.trim().length > 0) {
+      return opponentName;
+    }
+    
     const realOpponent = participants.find(p => 
-      p.user_id === opponentId && 
+      String(p.user_id) === String(opponentId) && 
       !p.is_bot && 
       p.user_id !== null
     );
     
-    if (realOpponent && realOpponent.profiles?.username) {
-      return realOpponent.profiles.username;
+    if (realOpponent && (realOpponent as any).profiles?.username) {
+      return (realOpponent as any).profiles.username;
     }
     
     return 'Turnuva Rakibi';

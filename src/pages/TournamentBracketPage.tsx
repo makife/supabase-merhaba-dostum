@@ -25,12 +25,12 @@ const TournamentBracketPage = () => {
   }, [tournamentId]);
 
 
-  const startAllMatches = async () => {
+  const startAllMatches = async (forceRound?: number) => {
     if (!tournamentId) return;
     
     try {
-      // Start all pending matches in current round
-      const currentRound = currentTournament?.current_round || 1;
+      // Start all pending matches in specified or current round
+      const currentRound = forceRound ?? (currentTournament?.current_round || 1);
       
       // Update all pending matches to in_progress
       await supabase
@@ -106,28 +106,17 @@ const TournamentBracketPage = () => {
       const allCompleted = roundMatches.every(m => m.status === 'completed');
       
       if (allCompleted && round < 3) {
-        // Advance to next round
-        // Önce zaten oluşturulmuş mu kontrol et (idempotency)
-        const { data: existingNext } = await supabase
-          .from('tournament_matches')
-          .select('id')
-          .eq('tournament_id', tournamentId)
-          .eq('round', round + 1);
+        // Tüm maçlar tamamlandıysa her durumda kazananları yerleştir (idempotent)
+        const { data: result } = await supabase.rpc('advance_tournament_round', {
+          p_tournament_id: tournamentId
+        });
         
-        if (existingNext && existingNext.length > 0) {
-          console.log(`⏭️ ${round + 1}. tur maçları zaten var, advance atlandı.`);
-        } else {
-          const { data: result } = await supabase.rpc('advance_tournament_round', {
-            p_tournament_id: tournamentId
-          });
-          
-          if (result && typeof result === 'object' && 'success' in result) {
-            // Auto-start next round after a short delay
-            setTimeout(() => {
-              fetchTournamentDetails(tournamentId!);
-              startAllMatches();
-            }, 3000);
-          }
+        if (result && typeof result === 'object' && 'success' in result) {
+          // Kısa bir gecikmeden sonra ayrıntıları yenile ve yeni turu başlat
+          setTimeout(() => {
+            fetchTournamentDetails(tournamentId!);
+            startAllMatches(round + 1);
+          }, 1500);
         }
       } else if (allCompleted && round === 3) {
         // Tournament completed
