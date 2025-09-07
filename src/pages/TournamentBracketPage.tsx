@@ -499,6 +499,13 @@ const checkNextRoundCreation = async (tournamentId: string) => {
           console.log(`🔄 ${nextRound}. tur oluşturuluyor...`);
           await createNextRound(tournamentId, nextRound);
           return; // Bir tur oluşturduktan sonra çık
+        } else {
+          // Sonraki tur maçları varsa kazananları yerleştir
+          const previousRoundMatches = roundMatches.filter(m => m.status === 'completed');
+          if (previousRoundMatches.length > 0) {
+            console.log(`🔄 ${nextRound}. tur maçlarına kazananlar yerleştiriliyor...`);
+            await fillNextRoundMatches(tournamentId, nextRound, previousRoundMatches as TournamentMatch[]);
+          }
         }
       } else if (allRoundComplete && round === 3) {
         console.log('🎉 Turnuva tamamlandı!');
@@ -614,6 +621,62 @@ const createNextRound = async (tournamentId: string, nextRound: number) => {
     
   } catch (error) {
     console.error('Yeni tur oluşturma hatası:', error);
+  }
+};
+
+const fillNextRoundMatches = async (tournamentId: string, nextRound: number, completedMatches: TournamentMatch[]) => {
+  try {
+    console.log(`🔄 ${nextRound}. tur için mevcut maçlara kazananlar yerleştiriliyor...`);
+    
+    // Kazanan ID'leri al
+    const winnerIds = completedMatches
+      .map(match => match.winner_id)
+      .filter(winnerId => winnerId !== null);
+    
+    if (winnerIds.length === 0) {
+      console.error('Yerleştirilecek kazanan bulunamadı');
+      return;
+    }
+    
+    // Mevcut sonraki tur maçlarını al
+    const { data: nextRoundMatches } = await supabase
+      .from('tournament_matches')
+      .select('*')
+      .eq('tournament_id', tournamentId)
+      .eq('round', nextRound)
+      .order('match_number', { ascending: true });
+    
+    if (!nextRoundMatches || nextRoundMatches.length === 0) {
+      console.error('Sonraki tur maçları bulunamadı');
+      return;
+    }
+    
+    // Kazananları karıştır ve yerleştir
+    const shuffledWinners = [...winnerIds].sort(() => Math.random() - 0.5);
+    
+    for (let i = 0; i < nextRoundMatches.length && i * 2 + 1 < shuffledWinners.length; i++) {
+      const match = nextRoundMatches[i];
+      const player1Id = shuffledWinners[i * 2];
+      const player2Id = shuffledWinners[i * 2 + 1];
+      
+      await supabase
+        .from('tournament_matches')
+        .update({
+          player1_id: player1Id,
+          player2_id: player2Id,
+          status: 'pending',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', match.id);
+        
+      console.log(`✅ ${nextRound}. tur Maç ${match.match_number}: ${player1Id} vs ${player2Id}`);
+    }
+    
+    // Maçları yeniden yükle
+    fetchMatches();
+    
+  } catch (error) {
+    console.error('Sonraki tur maçlarına kazanan yerleştirme hatası:', error);
   }
 };
   
