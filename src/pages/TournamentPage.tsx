@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Home, Trophy, Users, Plus } from 'lucide-react';
 import { TournamentCard } from '@/components/TournamentCard';
-import { useTournament } from '@/hooks/useTournament';
+import { useTournamentContext } from '@/contexts/TournamentContext';
 import { getRealPlayerCount } from '@/utils/tournamentHelpers';
 
 const TournamentPage = () => {
@@ -15,7 +15,7 @@ const TournamentPage = () => {
     createTournament, 
     joinTournament,
     fetchTournaments 
-  } = useTournament();
+  } = useTournamentContext();
 
   useEffect(() => {
     fetchTournaments();
@@ -29,7 +29,7 @@ const TournamentPage = () => {
   };
 
   const handleJoinTournament = async (tournamentId: string) => {
-    const success = await joinTournament();
+    const success = await joinTournament(tournamentId);
     if (success) {
       navigate(`/tournament-waiting/${tournamentId}`);
     }
