@@ -2866,6 +2866,33 @@ const createFireworksEffect = () => {
   
   // Get opponent info based on game mode with avatar
   const getOpponentInfo = () => {
+    
+    // Tournament mode için özel opponent isim mantığı
+    if (gameMode === 'tournament' && tournamentMatch) {
+      const opponentId = tournamentMatch.player1_id === user?.id 
+        ? tournamentMatch.player2_id 
+        : tournamentMatch.player1_id;
+      
+      if (!opponentId || opponentId.startsWith('bot_')) {
+        return { name: 'Turnuva Botu', icon: Trophy, avatar: null };
+      }
+      
+      const realOpponent = participants.find(p => 
+        p.user_id === opponentId && 
+        !p.is_bot && 
+        p.user_id !== null
+      );
+      
+      if (realOpponent && realOpponent.profiles?.username) {
+        return { 
+          name: realOpponent.profiles.username, 
+          icon: Trophy, 
+          avatar: realOpponent.profiles.avatar_url || null 
+        };
+      }
+      
+      return { name: 'Turnuva Rakibi', icon: Trophy, avatar: null };
+    }
 
     const realOpponent = participants.find(p => 
     !p.is_bot && 
@@ -2916,8 +2943,6 @@ const createFireworksEffect = () => {
           }
         }
         return { name: 'Rakip Aranıyor...', icon: User, avatar: null };
-      case 'tournament':
-        return { name: 'Turnuva Rakibi', icon: Trophy, avatar: null };
       default:
         return { name: 'Rakip', icon: User, avatar: null };
     }
