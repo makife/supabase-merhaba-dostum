@@ -61,11 +61,19 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
   const fetchTournaments = async () => {
     try {
       setLoading(true);
+
+      // Clean up expired tournaments server-side before fetching
+      const { error: cleanupError } = await supabase.rpc('cleanup_expired_tournaments');
+      if (cleanupError) {
+        console.warn('Expired tournament cleanup failed:', cleanupError);
+      }
       
+      const nowIso = new Date().toISOString();
       const { data, error } = await supabase
         .from('tournaments')
         .select('*')
         .eq('status', 'waiting')
+        .gt('expires_at', nowIso)
         .order('created_at', { ascending: false })
         .limit(20);
 
@@ -158,18 +166,38 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
     try {
       setLoading(true);
 
+      // Validate tournament status and expiry
+      const { data: t, error: tErr } = await supabase
+        .from('tournaments')
+        .select('id, status, expires_at, max_participants')
+        .eq('id', tournamentId)
+        .maybeSingle();
+
+      if (tErr || !t) {
+        console.error('Turnuva bulunamadı:', tErr);
+        toast({ title: 'Hata', description: 'Turnuva bulunamadı', variant: 'destructive' });
+        return false;
+      }
+
+      const now = new Date();
+      if (t.status !== 'waiting' || (t.expires_at && new Date(t.expires_at) <= now)) {
+        toast({ title: 'Süresi Doldu', description: 'Turnuva artık katılıma kapalı' });
+        await fetchTournaments();
+        return false;
+      }
+
       // Check if already joined
       const { data: existing } = await supabase
         .from('tournament_participants')
         .select('id')
         .eq('tournament_id', tournamentId)
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (existing) {
         toast({
-          title: "Bilgi",
-          description: "Zaten bu turnuvaya katıldınız"
+          title: 'Bilgi',
+          description: 'Zaten bu turnuvaya katıldınız'
         });
         return true;
       }
@@ -180,10 +208,11 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
         .select('*', { count: 'exact', head: true })
         .eq('tournament_id', tournamentId);
 
-      if (count && count >= 8) {
+      const capacity = t.max_participants ?? 8;
+      if ((count ?? 0) >= capacity) {
         toast({
-          title: "Turnuva Dolu",
-          description: "Bu turnuva dolu"
+          title: 'Turnuva Dolu',
+          description: 'Bu turnuva dolu'
         });
         return false;
       }
@@ -195,23 +224,24 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
           tournament_id: tournamentId,
           user_id: user.id,
           is_bot: false,
-          seed: (count || 0) + 1
+          seed: (count ?? 0) + 1
         });
 
       if (error) {
         console.error('Katılma hatası:', error);
         toast({
-          title: "Hata",
-          description: "Turnuvaya katılamadınız"
+          title: 'Hata',
+          description: 'Turnuvaya katılamadınız'
         });
         return false;
       }
 
       toast({
-        title: "Başarılı",
-        description: "Turnuvaya katıldınız!"
+        title: 'Başarılı',
+        description: 'Turnuvaya katıldınız!'
       });
 
+      await fetchTournaments();
       return true;
       
     } catch (error) {
