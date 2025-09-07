@@ -116,6 +116,7 @@ const GamePage = ({
   const submissionLockRef = useRef(false);
   const timerStartedRef = useRef(false);
   const recentSubmissionsRef = useRef<Set<string>>(new Set());
+  const serverMatchStartRef = useRef<number | null>(null);
   const [audioYes] = useState(() => {
     const audio = new Audio('/yes.mp3');
     audio.volume = 0.7;
@@ -1969,7 +1970,11 @@ useEffect(() => {
             .single();
             
           if (matchData && matchData.status === 'in_progress') {
-            const matchStartTime = new Date(matchData.updated_at).getTime();
+            if (!serverMatchStartRef.current) {
+              serverMatchStartRef.current = new Date(matchData.updated_at).getTime();
+              console.log('📌 Server match start captured:', new Date(serverMatchStartRef.current).toISOString());
+            }
+            const matchStartTime = serverMatchStartRef.current!;
             const currentTime = Date.now();
             const elapsedSeconds = Math.floor((currentTime - matchStartTime) / 1000);
             const remainingTime = Math.max(0, 120 - elapsedSeconds);
