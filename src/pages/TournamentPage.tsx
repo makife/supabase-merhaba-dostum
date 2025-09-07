@@ -110,20 +110,14 @@ const TournamentPage = () => {
             </Card>
           ) : (
             <div className="space-y-3">
-              {tournaments.map((tournament) => {
-                // Katılımcı sayısını hesapla (simulated - gerçekte API'den gelecek)
-                const participantCount = Math.floor(Math.random() * 6) + 1; 
-                
-                return (
-                  <TournamentCard
-                    key={tournament.id}
-                    tournament={tournament}
-                    participantCount={participantCount}
-                    onJoin={handleJoinTournament}
-                    disabled={loading}
-                  />
-                );
-              })}
+          {tournaments.map((tournament) => (
+                <TournamentCard
+                  key={tournament.id}
+                  tournament={tournament}
+                  onJoin={handleJoinTournament}
+                  disabled={loading}
+                />
+              ))}
             </div>
           )}
         </div>

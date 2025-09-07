@@ -1,21 +1,36 @@
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Trophy, Users, Clock, Swords } from 'lucide-react';
 import { Tournament } from '@/types/tournament';
+import { supabase } from '@/integrations/supabase/client';
 
 interface TournamentCardProps {
   tournament: Tournament;
-  participantCount: number;
   onJoin: (tournamentId: string) => void;
   disabled?: boolean;
 }
 
 export const TournamentCard: React.FC<TournamentCardProps> = ({
   tournament,
-  participantCount,
   onJoin,
   disabled = false
 }) => {
+  const [participantCount, setParticipantCount] = useState(0);
+
+  // Fetch real participant count
+  useEffect(() => {
+    const fetchParticipants = async () => {
+      const { count } = await supabase
+        .from('tournament_participants')
+        .select('*', { count: 'exact', head: true })
+        .eq('tournament_id', tournament.id);
+      
+      setParticipantCount(count || 0);
+    };
+
+    fetchParticipants();
+  }, [tournament.id]);
   const timeRemaining = tournament.expires_at 
     ? Math.max(0, Math.floor((new Date(tournament.expires_at).getTime() - Date.now()) / 1000))
     : 0;
