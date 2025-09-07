@@ -299,10 +299,14 @@ const generateTournamentGrid = useCallback((seed: string): string[][] => {
 }, []);
 
   const [gameGrid, setGameGrid] = useState<string[][]>(() => {
-  // Turnuva modunda match ID'yi seed olarak kullan
-  if (gameMode === 'tournament' && tournamentMatch?.id) {
-    console.log('🎯 Turnuva grid - match ID seed kullanılıyor:', tournamentMatch.id);
-    return generateTournamentGrid(tournamentMatch.id);
+  // Turnuva modunda grid sadece ortak seed ile oluşturulur
+  if (gameMode === 'tournament') {
+    if (tournamentMatch?.id) {
+      console.log('🎯 Turnuva grid - match ID seed kullanılıyor:', tournamentMatch.id);
+      return generateTournamentGrid(tournamentMatch.id);
+    }
+    // Match bilgisi gelene kadar placeholder grid (farklı grid oluşmasını engeller)
+    return Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => ''));
   }
   
   // Normal room grid kontrolü
@@ -317,6 +321,13 @@ const generateTournamentGrid = useCallback((seed: string): string[][] => {
   
   return generateRandomGrid();
 });
+
+// Turnuva maçı yüklendiğinde grid'i senkronize et
+useEffect(() => {
+  if (gameMode === 'tournament' && tournamentMatch?.id) {
+    setGameGrid(generateTournamentGrid(tournamentMatch.id));
+  }
+}, [gameMode, tournamentMatch?.id, generateTournamentGrid]);
   
   const [selectedLetters, setSelectedLetters] = useState<{letter: string, row: number, col: number}[]>([]);
   const [currentWord, setCurrentWord] = useState('');
