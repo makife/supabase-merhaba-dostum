@@ -29,12 +29,16 @@ import TournamentPage from './pages/TournamentPage';
 import TournamentWaitingPage from './pages/TournamentWaitingPage';
 import TournamentBracketPage from './pages/TournamentBracketPage';
 import WheelPage from './pages/WheelPage';
+import { useLocalStorageClear } from "@/hooks/useLocalStorageClear";
 
 const queryClient = new QueryClient();
 
 const AppRoutes = () => {
   const { user, loading } = useAuth();
   const [customLoading, setCustomLoading] = useState(true);
+  
+  // LocalStorage temizleme hook'unu kullan
+  useLocalStorageClear();
 
   if (loading || customLoading) {
     return (

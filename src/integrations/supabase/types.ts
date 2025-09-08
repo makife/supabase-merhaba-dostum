@@ -908,6 +908,33 @@ export type Database = {
           },
         ]
       }
+      system_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: number
+          key: string
+          updated_at: string
+          value: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: number
+          key: string
+          updated_at?: string
+          value?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: number
+          key?: string
+          updated_at?: string
+          value?: string | null
+        }
+        Relationships: []
+      }
       tournament_matches: {
         Row: {
           created_at: string | null
@@ -1652,6 +1679,10 @@ export type Database = {
       }
       test_game_completion: {
         Args: { p_user_id: string }
+        Returns: undefined
+      }
+      trigger_global_storage_clear: {
+        Args: Record<PropertyKey, never>
         Returns: undefined
       }
       update_daily_leaderboard: {

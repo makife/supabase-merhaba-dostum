@@ -26,8 +26,10 @@ import {
   Smartphone,
   PlayCircle,
   Sparkles,
-  Gift
+  Gift,
+  ShieldCheck
 } from 'lucide-react';
+import { triggerGlobalStorageClear } from '@/hooks/useLocalStorageClear';
 
 const SettingsPage = () => {
   const navigate = useNavigate();
@@ -504,6 +506,46 @@ const SettingsPage = () => {
             </Button>
           </CardContent>
         </Card>
+
+        {/* Admin Panel - Only show for admin emails */}
+        {user?.email === 'makifergan@gmail.com' && (
+          <Card className="border-destructive/50 bg-destructive/5">
+            <CardHeader>
+              <CardTitle className="flex items-center text-destructive">
+                <ShieldCheck className="w-5 h-5 mr-2" />
+                Admin Panel
+              </CardTitle>
+              <CardDescription>
+                Sistem yönetimi araçları
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button
+                variant="destructive"
+                className="w-full"
+                onClick={async () => {
+                  const result = await triggerGlobalStorageClear();
+                  if (result.success) {
+                    toast({
+                      title: 'Başarılı',
+                      description: 'Tüm kullanıcıların localStorage\'ı temizlenecek.',
+                      variant: 'default',
+                    });
+                  } else {
+                    toast({
+                      title: 'Hata',
+                      description: 'İşlem başarısız oldu.',
+                      variant: 'destructive',
+                    });
+                  }
+                }}
+              >
+                <ShieldCheck className="w-4 h-4 mr-2" />
+                Tüm Kullanıcı Ayarlarını Sıfırla
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* App Version */}
         <Card>
