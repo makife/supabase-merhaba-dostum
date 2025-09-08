@@ -15,6 +15,7 @@ import { PrivateChat } from '@/components/PrivateChat';
 import { toast } from 'sonner';
 import { sendMentionNotification } from '@/utils/notifications';
 import { isUserBanned, containsBannedWords, banUser, getBanTimeLeft } from '@/utils/chatBot';
+import { useUserBlocking } from '@/hooks/useUserBlocking';
 
 
 interface ChatMessage {
@@ -53,6 +54,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   const { user } = useAuth();
   const { profile, onlineUsers, isUserOnline } = useUser();
   const { playSound } = useSounds();
+  const { isUserBlocked } = useUserBlocking();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -356,12 +358,45 @@ const sendMessage = async () => {
       return;
     }
 
-    // Yasaklı kelime kontrolü (mevcut kodunuz)
-    if (containsBannedWords(trimmedMessage)) {
-      toast.error('Mesajınız yasaklı kelime içeriyor ve sohbet yasağı aldınız!');
-      await banUser(user.id, 'Yasaklı kelime kullanımı', 48);
-      setNewMessage('');
-      return;
+    // Gelişmiş moderasyon kontrolü
+    try {
+      const { data: moderationResult, error: moderationError } = await supabase
+        .rpc('moderate_message_advanced', {
+          p_user_id: user.id,
+          p_message: trimmedMessage
+        });
+
+      if (moderationError) {
+        console.error('Moderasyon hatası:', moderationError);
+        // Hata durumunda eski sistemi kullan
+        if (containsBannedWords(trimmedMessage)) {
+          toast.error('Mesajınız yasaklı kelime içeriyor ve sohbet yasağı aldınız!');
+          await banUser(user.id, 'Yasaklı kelime kullanımı', 48);
+          setNewMessage('');
+          return;
+        }
+      } else if (moderationResult && moderationResult.length > 0) {
+        const result = moderationResult[0];
+        if (!result.is_appropriate) {
+          if (result.should_ban) {
+            toast.error(`${result.reason} - 2 gün sohbet yasağı aldınız!`);
+            await banUser(user.id, result.reason, 48);
+          } else {
+            toast.warning(`${result.reason} - Lütfen daha dikkatli olun.`);
+          }
+          setNewMessage('');
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Moderasyon sistem hatası:', error);
+      // Fallback eski sistem
+      if (containsBannedWords(trimmedMessage)) {
+        toast.error('Mesajınız yasaklı kelime içeriyor ve sohbet yasağı aldınız!');
+        await banUser(user.id, 'Yasaklı kelime kullanımı', 48);
+        setNewMessage('');
+        return;
+      }
     }
 
     const username = profile.username || user.email?.split('@')[0] || 'Anonim';
@@ -727,7 +762,7 @@ const startPrivateChat = async (targetUser: SelectedUser) => {
           <span className="text-sm font-medium text-green-700">Çevrimiçi</span>
         </div>
         <div className="space-y-2">
-          {onlineUsers.map((targetUser) => (
+          {onlineUsers.filter(targetUser => !isUserBlocked(targetUser.id)).map((targetUser) => (
             <Card 
               key={targetUser.id} 
               className="p-3 hover:shadow-md transition-all cursor-pointer border-chat-200"
@@ -808,7 +843,7 @@ const renderGlobalChat = () => (
     {/* Messages */}
     <ScrollArea className="flex-1 p-4 bg-chat-50">
       <div className="space-y-3">
-        {messages.map((message) => (
+        {messages.filter(message => !message.user_id || !isUserBlocked(message.user_id)).map((message) => (
           <div key={message.id} className="group flex flex-col space-y-1 p-3 rounded-lg bg-white shadow-sm border border-chat-100 hover:border-chat-300 transition-all">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
