@@ -303,18 +303,9 @@ export default function ChatPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setViewMode('global')}
-                className="p-2 rounded-full text-white hover:bg-red-500/20 border border-transparent hover:border-red-300/30 transition-all duration-200"
-                title="Engelli Kullanıcılar"
-              >
-                <UserX className="w-5 h-5" />
-              </Button>
-              
-              <Button
-                variant="ghost"
-                size="sm"
                 onClick={() => handleViewChange('blocked-users')}
                 className="p-2 rounded-full text-white hover:bg-red-500/20 border border-transparent hover:border-red-300/30 transition-all duration-200"
+                title="Engelli Kullanıcılar"
               >
                 <UserX className="w-5 h-5" />
               </Button>
