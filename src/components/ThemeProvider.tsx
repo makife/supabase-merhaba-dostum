@@ -66,7 +66,12 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     
     // Yeni temayı uygula
     if (themeName !== 'default') {
-      root.classList.add(`theme-${themeName.replace('theme_', '').replace('_', '-')}`);
+      // theme_ önekini kaldır ve _ karakterlerini - ile değiştir
+      const themeClass = themeName.replace(/^theme_/, '').replace(/_/g, '-');
+      root.classList.add(`theme-${themeClass}`);
+      console.log(`Tema uygulandı: theme-${themeClass}`);
+    } else {
+      console.log('Varsayılan tema uygulandı');
     }
   };
 
