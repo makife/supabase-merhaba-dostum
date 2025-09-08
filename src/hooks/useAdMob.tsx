@@ -18,7 +18,7 @@ export const useAdMob = () => {
     }
     try {
       // Dynamic import with proper error handling
-      const admobModule = await import('@capacitor-community/admob').catch(() => null);
+      const admobModule = await import(/* @vite-ignore */ '@capacitor-community/admob').catch(() => null);
       if (!admobModule) {
         console.log('AdMob module not available');
         return;
@@ -43,7 +43,7 @@ export const useAdMob = () => {
     }
     setIsAdLoading(true);
     try {
-      const admobModule = await import('@capacitor-community/admob').catch(() => null);
+      const admobModule = await import(/* @vite-ignore */ '@capacitor-community/admob').catch(() => null);
       if (!admobModule) {
         console.log('AdMob module not available');
         return;
@@ -121,7 +121,7 @@ export const useAdMob = () => {
       return;
     }
     try {
-      const admobModule = await import('@capacitor-community/admob').catch(() => null);
+      const admobModule = await import(/* @vite-ignore */ '@capacitor-community/admob').catch(() => null);
       if (!admobModule) {
         console.log('AdMob module not available');
         return;
