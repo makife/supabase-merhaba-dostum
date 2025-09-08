@@ -913,20 +913,28 @@ const renderGlobalChat = () => (
           <div key={message.id} className="group flex flex-col space-y-1 p-3 rounded-lg bg-white shadow-sm border border-chat-100 hover:border-chat-300 transition-all">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <UserAvatar
-                  src={message.user_id ? userAvatars[message.user_id] : '/bot-avatar.png'} // Bot için özel avatar
-                  alt={message.username}
-                  fallback={message.username.charAt(0).toUpperCase()}
-                  size="xs"
-                  className={`border-2 ${message.username === 'kelimeciBot' ? 'border-blue-500' : 'border-chat-300'}`}
-                />
-                <span className={`text-sm font-medium ${
-                  message.username === 'kelimeciBot' 
-                    ? 'text-blue-600 font-bold' // Bot için özel stil
-                    : message.user_id === user?.id 
-                    ? 'text-chat-600' 
-                    : 'text-gray-700'
-                }`}>
+                <div 
+                  className="cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => message.user_id && navigate(`/profile/${message.user_id}`)}
+                >
+                  <UserAvatar
+                    src={message.user_id ? userAvatars[message.user_id] : '/bot-avatar.png'} // Bot için özel avatar
+                    alt={message.username}
+                    fallback={message.username.charAt(0).toUpperCase()}
+                    size="xs"
+                    className={`border-2 ${message.username === 'kelimeciBot' ? 'border-blue-500' : 'border-chat-300'}`}
+                  />
+                </div>
+                <span 
+                  className={`text-sm font-medium cursor-pointer hover:text-blue-600 transition-colors ${
+                    message.username === 'kelimeciBot' 
+                      ? 'text-blue-600 font-bold' // Bot için özel stil
+                      : message.user_id === user?.id 
+                      ? 'text-chat-600' 
+                      : 'text-gray-700'
+                  }`}
+                  onClick={() => message.user_id && navigate(`/profile/${message.user_id}`)}
+                >
                   {message.username}
                   {message.username === 'kelimeciBot' && ' 🤖'}
                 </span>
