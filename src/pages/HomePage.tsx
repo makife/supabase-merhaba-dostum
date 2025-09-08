@@ -144,6 +144,7 @@ const HomePage = () => {
       const interval = setInterval(() => {
         calculateTimeUntilNextCredit();
         
+        // Kredi yenileme kontrolü
         if (profile?.last_credit_refresh && !isPremium && profile.game_credits < 5) {
           const now = new Date();
           const lastRefresh = new Date(profile.last_credit_refresh);
