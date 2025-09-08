@@ -14,6 +14,7 @@ import { TournamentProvider } from '@/contexts/TournamentContext';
 import ProtectedRoute from "@/components/ProtectedRoute";
 import LoadingScreen from "@/components/LoadingScreen";
 import AuthPage from "@/pages/AuthPage";
+import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import HomePage from "@/pages/HomePage";
 import GamePage from "@/pages/GamePage";
 import ProfilePage from "@/pages/ProfilePage";
@@ -45,6 +46,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/auth" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
+      <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
       <Route path="/" element={
         <ProtectedRoute>
           <HomePage />

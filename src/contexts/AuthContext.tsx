@@ -115,7 +115,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
 const resetPassword = async (email: string) => {
-  const redirectUrl = `${window.location.origin}/auth/reset-password`;
+  const redirectUrl = `https://kelimeci.com.tr/auth/reset-password`;
   
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: redirectUrl,
