@@ -17,8 +17,14 @@ export const useAdMob = () => {
       return;
     }
     try {
-      const { AdMob } = await import(/* @vite-ignore */ '@capacitor-community/admob');
-      await AdMob.initialize({
+      // Dynamic import with proper error handling
+      const admobModule = await import('@capacitor-community/admob').catch(() => null);
+      if (!admobModule) {
+        console.log('AdMob module not available');
+        return;
+      }
+      
+      await admobModule.AdMob.initialize({
         testingDevices: [],
         initializeForTesting: false,
       });
@@ -37,12 +43,17 @@ export const useAdMob = () => {
     }
     setIsAdLoading(true);
     try {
-      const { AdMob } = await import(/* @vite-ignore */ '@capacitor-community/admob');
+      const admobModule = await import('@capacitor-community/admob').catch(() => null);
+      if (!admobModule) {
+        console.log('AdMob module not available');
+        return;
+      }
+      
       const isIOS = Capacitor.getPlatform() === 'ios';
       const adId = isIOS
         ? 'ca-app-pub-4768026665961339/6383991586'
         : 'ca-app-pub-4768026665961339/3449888248';
-      await AdMob.prepareRewardVideoAd({ adId, isTesting: false });
+      await admobModule.AdMob.prepareRewardVideoAd({ adId, isTesting: false });
       setIsAdReady(true);
       console.log('Rewarded ad loaded successfully');
     } catch (error) {
@@ -110,7 +121,13 @@ export const useAdMob = () => {
       return;
     }
     try {
-      const { AdMob, RewardAdPluginEvents } = await import(/* @vite-ignore */ '@capacitor-community/admob');
+      const admobModule = await import('@capacitor-community/admob').catch(() => null);
+      if (!admobModule) {
+        console.log('AdMob module not available');
+        return;
+      }
+      
+      const { AdMob, RewardAdPluginEvents } = admobModule;
       const adDismissedListener = await AdMob.addListener(RewardAdPluginEvents.Dismissed, () => {
         console.log('Rewarded ad dismissed');
         setIsAdReady(false);
