@@ -246,7 +246,10 @@ const LeaderboardPage = () => {
                 <div className="flex-shrink-0">
                   {getRankIcon(leader.rank)}
                 </div>
-                <Avatar className="w-10 h-10 flex-shrink-0">
+                <Avatar 
+                  className="w-10 h-10 flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all"
+                  onClick={() => navigate(`/profile/${leader.user_id}`)}
+                >
                   <AvatarImage src={leader.avatar_url || undefined} alt={leader.username} />
                   <AvatarFallback>
                     {leader.username.charAt(0).toUpperCase()}
@@ -255,7 +258,14 @@ const LeaderboardPage = () => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center space-x-2 min-w-0 flex-1">
-                      <h3 className={`font-semibold truncate text-sm ${leader.rank <= 3 ? 'text-white' : 'text-foreground'}`}>
+                      <h3 
+                        className={`font-semibold truncate text-sm cursor-pointer transition-colors ${
+                          leader.rank <= 3 
+                            ? 'text-white hover:text-blue-200' 
+                            : 'text-foreground hover:text-blue-600'
+                        }`}
+                        onClick={() => navigate(`/profile/${leader.user_id}`)}
+                      >
                         {leader.username}
                       </h3>
                       {leader.user_id === user?.id && (

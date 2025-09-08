@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { sendMentionNotification } from '@/utils/notifications';
 import { isUserBanned, containsBannedWords, banUser, getBanTimeLeft } from '@/utils/chatBot';
 import { useUserBlocking } from '@/hooks/useUserBlocking';
+import { useNavigate } from 'react-router-dom';
 
 
 interface ChatMessage {
@@ -54,7 +55,8 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   const { user } = useAuth();
   const { profile, onlineUsers, isUserOnline } = useUser();
   const { playSound } = useSounds();
-  const { isUserBlocked } = useUserBlocking();
+  const { isUserBlocked, blockUser, unblockUser, blockedUsers } = useUserBlocking();
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -779,11 +781,44 @@ const startPrivateChat = async (targetUser: SelectedUser) => {
                   />
                   <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
                 </div>
-                <div className="flex-1">
-                  <div className="font-medium text-gray-800">{targetUser.username}</div>
+                <div 
+                  className="flex-1 cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/profile/${targetUser.id}`);
+                  }}
+                >
+                  <div className="font-medium text-gray-800 hover:text-blue-600 transition-colors">{targetUser.username}</div>
                   <div className="text-xs text-green-600">Çevrimiçi</div>
                 </div>
-                <MessageCircle className="w-5 h-5 text-chat-500" />
+                <div className="flex items-center space-x-2">
+                  {isUserBlocked(targetUser.id) ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        unblockUser(targetUser.id);
+                      }}
+                      className="text-xs px-2 py-1 h-6 text-green-600 border-green-600 hover:bg-green-50"
+                    >
+                      Engeli Kaldır
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        blockUser(targetUser.id);
+                      }}
+                      className="text-xs px-2 py-1 h-6 text-red-600 border-red-600 hover:bg-red-50"
+                    >
+                      Engelle
+                    </Button>
+                  )}
+                  <MessageCircle className="w-5 h-5 text-chat-500" />
+                </div>
               </div>
             </Card>
           ))}
@@ -813,13 +848,44 @@ const startPrivateChat = async (targetUser: SelectedUser) => {
                 size="sm"
                 className="border-2 border-chat-300"
               />
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-800 truncate">{targetUser.username}</p>
+              <div 
+                className="flex-1 min-w-0 cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/profile/${targetUser.id}`);
+                }}
+              >
+                <p className="font-medium text-gray-800 truncate hover:text-blue-600 transition-colors">{targetUser.username}</p>
                 <p className="text-sm text-gray-500">Özel mesaj gönder</p>
               </div>
               <div className="flex items-center space-x-2">
                 {isUserOnline(targetUser.id) && (
                   <div className="w-2 h-2 bg-green-500 rounded-full" title="Çevrimiçi"></div>
+                )}
+                {isUserBlocked(targetUser.id) ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      unblockUser(targetUser.id);
+                    }}
+                    className="text-xs px-2 py-1 h-6 text-green-600 border-green-600 hover:bg-green-50"
+                  >
+                    Engeli Kaldır
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      blockUser(targetUser.id);
+                    }}
+                    className="text-xs px-2 py-1 h-6 text-red-600 border-red-600 hover:bg-red-50"
+                  >
+                    Engelle
+                  </Button>
                 )}
                 <Mail className="w-5 h-5 text-chat-500" />
               </div>
