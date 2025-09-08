@@ -488,7 +488,6 @@ export default function ChatPage() {
       </div>
     </ScrollArea>
   );
-  };
 
   const renderContent = () => {
     if (viewMode === 'private-chat' && selectedUser && activeChatId) {
