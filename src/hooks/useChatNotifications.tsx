@@ -12,7 +12,7 @@ export function useChatNotifications() {
   const loadUnreadMessages = async () => {
     if (!user?.id) return 0;
     
-    const { count, error } = await supabase
+    const { count, error } = await (supabase as any)
       .from('private_messages')
       .select('*', { count: 'exact' })
       .eq('recipient_id', user.id)
@@ -24,7 +24,7 @@ export function useChatNotifications() {
   const loadGlobalMentions = async () => {
     if (!user?.id || !profile?.username) return 0;
     
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('global_messages')
       .select('id')
       .ilike('message', `%@${profile.username}%`)

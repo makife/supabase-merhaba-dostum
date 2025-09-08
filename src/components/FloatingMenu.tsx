@@ -99,7 +99,7 @@ export function FloatingMenu() {
   const navigate = useNavigate();
   const { signOut, user } = useAuth(); // user context'ten alınmalı
   const { playSound } = useSounds();
-  const { unreadCount } = useChatNotifications();
+  const { totalNotifications } = useChatNotifications();
 
 
   const handleToggle = () => {
