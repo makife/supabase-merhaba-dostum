@@ -445,6 +445,7 @@ export type Database = {
           id: string
           is_deleted: boolean | null
           is_moderated: boolean | null
+          is_read: boolean | null
           message: string
           moderated_at: string | null
           moderated_reason: string | null
@@ -458,6 +459,7 @@ export type Database = {
           id?: string
           is_deleted?: boolean | null
           is_moderated?: boolean | null
+          is_read?: boolean | null
           message: string
           moderated_at?: string | null
           moderated_reason?: string | null
@@ -471,6 +473,7 @@ export type Database = {
           id?: string
           is_deleted?: boolean | null
           is_moderated?: boolean | null
+          is_read?: boolean | null
           message?: string
           moderated_at?: string | null
           moderated_reason?: string | null
@@ -1582,6 +1585,14 @@ export type Database = {
           p_username: string
         }
         Returns: Json
+      }
+      moderate_message_advanced: {
+        Args: { p_message: string; p_user_id: string }
+        Returns: {
+          is_appropriate: boolean
+          reason: string
+          should_ban: boolean
+        }[]
       }
       moderate_message_simple: {
         Args: { p_message: string; p_user_id: string }

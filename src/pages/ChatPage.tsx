@@ -6,13 +6,14 @@ import { useSounds } from '@/hooks/useSounds';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, Users, MessageCircle, Hash, Home, Dot, Mail } from 'lucide-react';
+import { ArrowLeft, Users, MessageCircle, Hash, Home, Dot, Mail, UserX, UserCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { GlobalChat } from '@/components/GlobalChat';
 import { PrivateChat } from '@/components/PrivateChat';
 import { UserAvatar } from '@/components/UserAvatar';
 import { SwipeToDeleteCard } from '@/components/SwipeToDeleteCard';
 import { useChatNotifications } from '@/hooks/useChatNotifications';
+import { useUserBlocking } from '@/hooks/useUserBlocking';
 import { toast } from 'sonner';
 
 type ViewMode = 'global' | 'users' | 'private-chat';
@@ -38,8 +39,10 @@ export default function ChatPage() {
     unreadCount, 
     markAllAsRead, 
     markPrivateMessagesAsRead, 
+    markGlobalMessagesAsRead,
     refreshUnreadCounts 
   } = useChatNotifications();
+  const { blockedUsers, blockUser, unblockUser, isUserBlocked } = useUserBlocking();
 
   // Tüm fonksiyonlar aynı kalacak (kısaltıyorum)
   const fetchAllUsers = async () => {
@@ -148,9 +151,19 @@ export default function ChatPage() {
       setSelectedUser(null);
       setActiveChatId(null);
     }
+    
+    // Badge temizleme
+    if (mode === 'global') {
+      markGlobalMessagesAsRead();
+    }
   };
 
   const startPrivateChat = async (targetUser: SelectedUser) => {
+    // Engellenen kullanıcı kontrolü
+    if (isUserBlocked(targetUser.id)) {
+      toast.error('Bu kullanıcıyı engellemişsiniz');
+      return;
+    }
     if (!user) return;
 
     try {
@@ -183,6 +196,9 @@ export default function ChatPage() {
 
       setSelectedUser(targetUser);
       setActiveChatId(chatId);
+      
+      // Özel sohbete girildiğinde badge'leri temizle
+      markPrivateMessagesAsRead();
       setViewMode('private-chat');
       
     } catch (error) {
@@ -312,7 +328,7 @@ export default function ChatPage() {
               <p className="text-sm">Global sohbetten birine özel mesaj gönderin</p>
             </div>
           ) : (
-            allUsers.map((targetUser) => {
+            allUsers.filter(user => !isUserBlocked(user.id)).map((targetUser) => {
               const unreadCount = unreadCounts[targetUser.id] || 0;
               const hasHistory = Object.keys(unreadCounts).includes(targetUser.id) || unreadCount > 0;
 
@@ -362,6 +378,24 @@ export default function ChatPage() {
                           {unreadCount > 9 ? '9+' : unreadCount}
                         </div>
                       )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isUserBlocked(targetUser.id)) {
+                            unblockUser(targetUser.id);
+                            toast.success('Kullanıcı engeli kaldırıldı');
+                          } else {
+                            blockUser(targetUser.id);
+                            toast.success('Kullanıcı engellendi');
+                          }
+                        }}
+                        className={`p-1 h-7 w-7 ${isUserBlocked(targetUser.id) ? 'text-green-500 hover:text-green-600' : 'text-red-500 hover:text-red-600'}`}
+                        title={isUserBlocked(targetUser.id) ? 'Engeli Kaldır' : 'Kullanıcıyı Engelle'}
+                      >
+                        {isUserBlocked(targetUser.id) ? <UserCheck className="w-4 h-4" /> : <UserX className="w-4 h-4" />}
+                      </Button>
                       <Mail className="w-5 h-5 text-chat-500" />
                     </div>
                   </div>

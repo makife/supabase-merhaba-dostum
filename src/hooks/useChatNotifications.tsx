@@ -59,7 +59,18 @@ export function useChatNotifications() {
 
   const markAllAsRead = async () => {
     await markPrivateMessagesAsRead();
+    await markGlobalMessagesAsRead();
     setGlobalMentionCount(0);
+  };
+
+  const markGlobalMessagesAsRead = async () => {
+    if (!user?.id) return;
+    
+    // Global chat'teki okunmamış mention'ları işaretle
+    await supabase
+      .from('global_chat')
+      .update({ is_read: true })
+      .eq('is_read', false);
   };
 
   const refreshUnreadCounts = async () => {
@@ -119,6 +130,7 @@ export function useChatNotifications() {
     totalNotifications,
     markAllAsRead,
     markPrivateMessagesAsRead,
+    markGlobalMessagesAsRead,
     refreshUnreadCounts
   };
 }
