@@ -382,16 +382,7 @@ const HomePage = () => {
               {!isPremium && (
                   <div className="space-y-1">
                     <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">Oyun Hakları</span>
-                        <button 
-                          onClick={() => navigate('/wheel')}
-                          className="w-5 h-5 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center shadow-lg animate-spin hover:animate-pulse transition-all duration-300"
-                          title="Günlük Çark Çevirme"
-                        >
-                          <Sparkles className="w-3 h-3 text-white" />
-                        </button>
-                      </div>
+                      <span className="text-xs text-muted-foreground">Oyun Hakları</span>
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-medium text-foreground">{profile?.game_credits || 0}/5</span>
                       {timeUntilNextCredit && (profile?.game_credits < 5) && (
@@ -511,9 +502,68 @@ const HomePage = () => {
 
         {/* Game Modes */}
         <div>
-          <div className="bg-gradient-to-r from-yellow-400 to-white rounded-lg px-4 py-2 mb-4 inline-flex items-center shadow-md">
-            <Target className="w-5 h-5 mr-2 text-gray-700" />
-            <h2 className="text-xl font-semibold text-gray-700 font-painter">Oyun Modları</h2>
+          <div className="flex justify-between items-center mb-4">
+            <div className="bg-gradient-to-r from-yellow-400 to-white rounded-lg px-4 py-2 inline-flex items-center shadow-md">
+              <Target className="w-5 h-5 mr-2 text-gray-700" />
+              <h2 className="text-xl font-semibold text-gray-700 font-painter">Oyun Modları</h2>
+            </div>
+            
+            {/* Günlük Çark */}
+            <div 
+              className="bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300"
+              onClick={() => navigate('/wheel')}
+            >
+              <h2 className="text-xl font-semibold text-white font-painter mr-3">Günlük Çark</h2>
+              {/* Mini Çark SVG */}
+              <div className="relative w-12 h-12">
+                <svg
+                  width="48"
+                  height="48"
+                  viewBox="0 0 48 48"
+                  className="animate-spin"
+                  style={{ animationDuration: '3s' }}
+                >
+                  <g transform="translate(24,24)">
+                    {/* 8 segment çark */}
+                    {[0, 1, 2, 3, 4, 5, 6, 7].map((index) => {
+                      const angle = (360 / 8) * index;
+                      const nextAngle = (360 / 8) * (index + 1);
+                      const startAngle = (angle - 90) * (Math.PI / 180);
+                      const endAngle = (nextAngle - 90) * (Math.PI / 180);
+                      
+                      const radius = 20;
+                      const x1 = radius * Math.cos(startAngle);
+                      const y1 = radius * Math.sin(startAngle);
+                      const x2 = radius * Math.cos(endAngle);
+                      const y2 = radius * Math.sin(endAngle);
+                      
+                      const largeArcFlag = (nextAngle - angle) > 180 ? 1 : 0;
+                      
+                      const colors = [
+                        '#ef4444', '#f97316', '#eab308', '#22c55e',
+                        '#3b82f6', '#8b5cf6', '#ec4899', '#6b7280'
+                      ];
+                      
+                      return (
+                        <path
+                          key={index}
+                          d={`M 0 0 L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
+                          fill={colors[index]}
+                          stroke="white"
+                          strokeWidth="1"
+                        />
+                      );
+                    })}
+                  </g>
+                  {/* Merkez daire */}
+                  <circle cx="24" cy="24" r="4" fill="white" stroke="#333" strokeWidth="1"/>
+                </svg>
+                {/* Ok */}
+                <div className="absolute -top-1 left-1/2 transform -translate-x-1/2">
+                  <div className="w-0 h-0 border-l-2 border-r-2 border-b-4 border-l-transparent border-r-transparent border-b-white"></div>
+                </div>
+              </div>
+            </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {gameModesConfig.map((mode) => (
