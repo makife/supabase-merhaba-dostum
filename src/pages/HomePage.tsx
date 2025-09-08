@@ -513,7 +513,7 @@ const HomePage = () => {
               className="bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300"
               onClick={() => navigate('/wheel')}
             >
-              <h2 className="text-xl font-semibold text-white font-painter mr-3">Günlük Çark</h2>
+              <h2 className="text-xl font-semibold text-green font-painter mr-3">Günlük Çark</h2>
               {/* Mini Çark SVG */}
               <div className="relative w-12 h-12">
                 <svg
