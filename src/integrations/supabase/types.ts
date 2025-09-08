@@ -771,6 +771,7 @@ export type Database = {
           longest_word_length: number | null
           losses: number | null
           premium_until: string | null
+          push_token: string | null
           total_games: number | null
           total_play_time: number | null
           total_score: number | null
@@ -809,6 +810,7 @@ export type Database = {
           longest_word_length?: number | null
           losses?: number | null
           premium_until?: string | null
+          push_token?: string | null
           total_games?: number | null
           total_play_time?: number | null
           total_score?: number | null
@@ -847,6 +849,7 @@ export type Database = {
           longest_word_length?: number | null
           losses?: number | null
           premium_until?: string | null
+          push_token?: string | null
           total_games?: number | null
           total_play_time?: number | null
           total_score?: number | null

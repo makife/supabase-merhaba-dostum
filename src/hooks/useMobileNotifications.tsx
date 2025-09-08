@@ -115,16 +115,26 @@ export const useMobileNotifications = () => {
   // Save push token to database
   const savePushToken = async (userId: string, token: string) => {
     try {
-      // For now, we'll store tokens in localStorage until the types are updated
-      const savedTokens = localStorage.getItem('push_tokens') || '{}';
-      const tokens = JSON.parse(savedTokens);
-      tokens[userId] = {
-        token,
-        platform: Capacitor.getPlatform(),
-        updated_at: new Date().toISOString()
-      };
-      localStorage.setItem('push_tokens', JSON.stringify(tokens));
-      console.log('Push token saved locally:', token);
+      // Save to Supabase profiles table
+      const { error } = await supabase
+        .from('profiles')
+        .update({ push_token: token })
+        .eq('id', userId);
+
+      if (error) {
+        console.error('Error saving push token to database:', error);
+        // Fallback to localStorage
+        const savedTokens = localStorage.getItem('push_tokens') || '{}';
+        const tokens = JSON.parse(savedTokens);
+        tokens[userId] = {
+          token,
+          platform: Capacitor.getPlatform(),
+          updated_at: new Date().toISOString()
+        };
+        localStorage.setItem('push_tokens', JSON.stringify(tokens));
+      } else {
+        console.log('Push token saved to database:', token);
+      }
     } catch (error) {
       console.error('Error saving push token:', error);
     }
@@ -267,11 +277,30 @@ export const useMobileNotifications = () => {
     data?: any
   ) => {
     try {
-      // In a real app, you would call your backend API to send push notifications
-      // For now, we'll use local notifications for testing
-      await showLocalNotification(title, body, data);
+      // Send via Supabase edge function
+      const { data: result, error } = await supabase.functions.invoke('send-push-notification', {
+        body: {
+          receiverId,
+          title,
+          body,
+          data
+        }
+      });
+
+      if (error) {
+        console.error('Error sending push notification:', error);
+        // Fallback to local notification
+        await showLocalNotification(title, body, data);
+        return false;
+      }
+
+      console.log('Push notification sent successfully:', result);
+      return true;
     } catch (error) {
       console.error('Error sending push notification:', error);
+      // Fallback to local notification
+      await showLocalNotification(title, body, data);
+      return false;
     }
   };
 
