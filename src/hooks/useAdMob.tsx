@@ -147,43 +147,6 @@ export const useAdMob = () => {
     }
   }, [isAdReady, toast, loadRewardedAd, giveReward]);
 
-  // Give reward to user
-  const giveReward = useCallback(async () => {
-    if (!user) return;
-
-    try {
-      // Get current credits first
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('game_credits')
-        .eq('id', user.id)
-        .single();
-
-      const newCredits = (profile?.game_credits || 0) + 1; // 1 kredi ekle
-
-      // Update user credits in database
-      const { error } = await supabase
-        .from('profiles')
-        .update({ 
-          game_credits: newCredits,
-          last_credit_refresh: new Date().toISOString()
-        })
-        .eq('id', user.id);
-
-      if (error) {
-        throw error;
-      }
-
-      console.log('Reward given successfully');
-    } catch (error) {
-      console.error('Failed to give reward:', error);
-      toast({
-        title: 'Ödül Hatası',
-        description: 'Ödül verilirken bir hata oluştu.',
-        variant: 'destructive',
-      });
-    }
-  }, [user, toast]);
 
   return {
     isAdLoading,
