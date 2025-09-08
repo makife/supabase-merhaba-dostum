@@ -98,7 +98,7 @@ const MarketPage = () => {
       value: 50
     },
 
-    // Sınırsız Zaman
+    // Sınırsız Zaman (Premium dönem verir)
     {
       id: 'unlimited_1h',
       title: '1 Saat Sınırsız',
@@ -106,7 +106,7 @@ const MarketPage = () => {
       price: 12.99,
       currency: 'premium',
       icon: Clock,
-      type: 'unlimited_time',
+      type: 'premium',
       value: 1,
       duration: '1 saat'
     },
@@ -117,7 +117,7 @@ const MarketPage = () => {
       price: 23.99,
       currency: 'premium',
       icon: Infinity,
-      type: 'unlimited_time',
+      type: 'premium',
       value: 24,
       duration: '24 saat'
     },
@@ -281,7 +281,7 @@ const MarketPage = () => {
   const getItemsByCategory = (category: string) => {
     switch (category) {
       case 'credits':
-        return marketItems.filter(item => item.type === 'credits' || item.type === 'unlimited_time');
+        return marketItems.filter(item => item.type === 'credits');
       case 'premium':
         return marketItems.filter(item => item.type === 'premium');
       case 'themes':
