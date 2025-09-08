@@ -19,4 +19,10 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      // Prevent bundling native-only AdMob plugin in web builds
+      external: ['@capacitor-community/admob'],
+    },
+  },
 }));
