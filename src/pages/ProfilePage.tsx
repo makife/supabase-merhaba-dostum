@@ -482,17 +482,21 @@ const ProfilePage = () => {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Geri
           </Button>
-          <h1 className="text-2xl font-bold">Profil</h1>
+          <h1 className="text-2xl font-bold">
+            {isOwnProfile ? 'Profil' : `${profileData.username} Profili`}
+          </h1>
           <div className="flex space-x-2">
-            {isEditing ? (
-              <Button variant="outline" size="sm" onClick={handleSaveProfile}>
-                Kaydet
-              </Button>
-            ) : (
-              <Button variant="outline" size="sm" onClick={handleEditToggle}>
-                <Edit className="w-4 h-4 mr-2" />
-                Düzenle
-              </Button>
+            {isOwnProfile && (
+              isEditing ? (
+                <Button variant="outline" size="sm" onClick={handleSaveProfile}>
+                  Kaydet
+                </Button>
+              ) : (
+                <Button variant="outline" size="sm" onClick={handleEditToggle}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Düzenle
+                </Button>
+              )
             )}
           </div>
         </div>
