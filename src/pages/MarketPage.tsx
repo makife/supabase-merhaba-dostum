@@ -267,7 +267,7 @@ const MarketPage = () => {
         variant: 'default',
       });
 
-      refreshProfile();
+      await refreshProfile();
     } catch (error) {
       console.error('Purchase error:', error);
       toast({

@@ -194,19 +194,28 @@ export const useUserPurchases = () => {
         // Direkt olarak mevcut haklara ekle
         const { data: profile } = await supabase
           .from('profiles')
-          .select('game_credits')
+          .select('game_credits, bonus_credits')
           .eq('id', user.id)
           .single();
 
         const currentCredits = profile?.game_credits || 0;
-        const newCredits = currentCredits + item.value;
+        const currentBonus = profile?.bonus_credits || 0;
+        
+        // Krediler 5'i aşarsa bonus krediye ekle
+        const totalCurrentCredits = currentCredits + item.value;
+        const newGameCredits = Math.min(5, totalCurrentCredits);
+        const newBonusCredits = currentBonus + Math.max(0, totalCurrentCredits - 5);
 
-        await supabase
+        const { error } = await supabase
           .from('profiles')
           .update({ 
-            game_credits: newCredits
+            game_credits: newGameCredits,
+            bonus_credits: newBonusCredits,
+            updated_at: new Date().toISOString()
           })
           .eq('id', user.id);
+          
+        if (error) throw error;
 
       } else if (item.type === 'joker') {
         // Joker satın alımı - envantere ekle
@@ -299,6 +308,9 @@ export const useUserPurchases = () => {
 
       // Verileri yenile
       await Promise.all([loadPurchases(), loadInventory()]);
+
+      // Profile yenilenmesini zorunlu kıl
+      window.dispatchEvent(new CustomEvent('refreshProfile'));
 
       toast({
         title: 'Satın Alma Başarılı! 🎉',
