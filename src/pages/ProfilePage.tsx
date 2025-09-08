@@ -506,11 +506,12 @@ const ProfilePage = () => {
                 alt={profileData.username}
                 fallback={profileData.username.charAt(0).toUpperCase()}
                 size="xl"
-                editable={true}
-                onAvatarChange={(newUrl) => setProfileData(prev => ({ ...prev, avatar_url: newUrl || '' }))}
+                editable={isOwnProfile}
+                onAvatarChange={isOwnProfile ? (newUrl) => setProfileData(prev => ({ ...prev, avatar_url: newUrl || '' })) : undefined}
+                className="ring-2 ring-primary/20"
               />
               <div className="flex-1">
-                {isEditing ? (
+                {isEditing && isOwnProfile ? (
                   <Input
                     value={editedUsername}
                     onChange={(e) => setEditedUsername(e.target.value)}
@@ -518,9 +519,16 @@ const ProfilePage = () => {
                     placeholder="Kullanıcı adınız"
                   />
                 ) : (
-                  <h2 className="text-2xl font-bold">{profileData.username}</h2>
+                  <div>
+                    <h2 className="text-2xl font-bold">{profileData.username}</h2>
+                    {!isOwnProfile && (
+                      <p className="text-sm text-muted-foreground">Oyuncu Profili</p>
+                    )}
+                  </div>
                 )}
-                <p className="text-xs text-muted-foreground truncate max-w-xs">{user?.email}</p>
+                {isOwnProfile && (
+                  <p className="text-xs text-muted-foreground truncate max-w-xs">{user?.email}</p>
+                )}
                 <div className="flex items-center space-x-2 mt-2 flex-wrap gap-1">
                   <Badge variant="secondary">Seviye {profileData.level}</Badge>
                   <Badge variant="outline">{profileData.winRate}% Kazanma</Badge>
