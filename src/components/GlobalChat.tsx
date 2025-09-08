@@ -894,84 +894,84 @@ const startPrivateChat = async (targetUser: SelectedUser) => {
   </>
 );
 
-const renderBlockedUsersList = () => (
-  <>
-    {/* Header */}
-    <div className="bg-red-500 text-white p-4 flex items-center justify-between">
-      <div className="flex items-center space-x-2">
-        <UserX className="w-6 h-6" />
-        <div>
-          <h3 className="font-semibold text-lg">Engelli Kullanıcılar</h3>
-          <p className="text-red-100 text-sm">
-            {blockedUsers.length} kişi engellendi
-          </p>
-        </div>
-      </div>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setViewMode('global')}
-        className="text-white hover:bg-red-600 p-2 rounded-full"
-      >
-        <X className="w-5 h-5" />
-      </Button>
-    </div>
-
-    {/* Blocked Users List */}
-    <ScrollArea className="flex-1">
-      <div className="p-4 space-y-3">
-        {blockedUsers.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <UserX className="w-12 h-12 mx-auto mb-3 opacity-50 text-red-300" />
-            <p>Engellenen kullanıcı yok</p>
-            <p className="text-sm">Kullanıcıları engellemek için kullanıcılar listesini kullanın</p>
+  const renderBlockedUsersList = () => (
+    <>
+      {/* Header */}
+      <div className="bg-red-500 text-white p-4 flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <UserX className="w-6 h-6" />
+          <div>
+            <h3 className="font-semibold text-lg">Engelli Kullanıcılar</h3>
+            <p className="text-red-100 text-sm">
+              {blockedUsers.length} kişi engellendi
+            </p>
           </div>
-        ) : (
-          allUsers
-            .filter(user => blockedUsers.includes(user.id))
-            .map((blockedUser) => (
-              <Card
-                key={blockedUser.id}
-                className="p-4 border-red-200 bg-red-50"
-              >
-                <div className="flex items-center space-x-3">
-                  <div 
-                    className="cursor-pointer"
-                    onClick={() => navigate(`/profile/${blockedUser.id}`)}
-                  >
-                    <UserAvatar
-                      src={blockedUser.avatar_url}
-                      alt={blockedUser.username}
-                      fallback={blockedUser.username.charAt(0).toUpperCase()}
-                      size="sm"
-                      className="border-2 border-red-300 opacity-60"
-                    />
-                  </div>
-                  <div 
-                    className="flex-1 min-w-0 cursor-pointer"
-                    onClick={() => navigate(`/profile/${blockedUser.id}`)}
-                  >
-                    <p className="font-medium text-red-800 truncate hover:text-red-600 transition-colors">
-                      {blockedUser.username}
-                    </p>
-                    <p className="text-sm text-red-600">Engellendi</p>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => unblockUser(blockedUser.id)}
-                    className="text-xs px-3 py-1 h-7 text-green-600 border-green-600 hover:bg-green-50"
-                  >
-                    Engeli Kaldır
-                  </Button>
-                </div>
-              </Card>
-            ))
-        )}
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setViewMode('global')}
+          className="text-white hover:bg-red-600 p-2 rounded-full"
+        >
+          <X className="w-5 h-5" />
+        </Button>
       </div>
-    </ScrollArea>
-  </>
-);
+
+      {/* Blocked Users List */}
+      <ScrollArea className="flex-1">
+        <div className="p-4 space-y-3">
+          {blockedUsers.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <UserX className="w-12 h-12 mx-auto mb-3 opacity-50 text-red-300" />
+              <p>Engellenen kullanıcı yok</p>
+              <p className="text-sm">Kullanıcıları engellemek için kullanıcılar listesini kullanın</p>
+            </div>
+          ) : (
+            allUsers
+              .filter(user => blockedUsers.includes(user.id))
+              .map((blockedUser) => (
+                <Card
+                  key={blockedUser.id}
+                  className="p-4 border-red-200 bg-red-50"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div 
+                      className="cursor-pointer"
+                      onClick={() => navigate(`/profile/${blockedUser.id}`)}
+                    >
+                      <UserAvatar
+                        src={blockedUser.avatar_url}
+                        alt={blockedUser.username}
+                        fallback={blockedUser.username.charAt(0).toUpperCase()}
+                        size="sm"
+                        className="border-2 border-red-300 opacity-60"
+                      />
+                    </div>
+                    <div 
+                      className="flex-1 min-w-0 cursor-pointer"
+                      onClick={() => navigate(`/profile/${blockedUser.id}`)}
+                    >
+                      <p className="font-medium text-red-800 truncate hover:text-red-600 transition-colors">
+                        {blockedUser.username}
+                      </p>
+                      <p className="text-sm text-red-600">Engellendi</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => unblockUser(blockedUser.id)}
+                      className="text-xs px-3 py-1 h-7 text-green-600 border-green-600 hover:bg-green-50"
+                    >
+                      Engeli Kaldır
+                    </Button>
+                  </div>
+                </Card>
+              ))
+          )}
+        </div>
+      </ScrollArea>
+    </>
+  );
   // GlobalChat.tsx - Yeni tasarım
 const renderGlobalChat = () => (
   <>
