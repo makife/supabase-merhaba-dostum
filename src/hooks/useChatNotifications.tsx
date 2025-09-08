@@ -1,12 +1,15 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useChatNotifications() {
   const { user } = useAuth();
+  const { profile } = useUser();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [globalMentionCount, setGlobalMentionCount] = useState(0);
 
-  const loadUnreadMessages = useCallback(async () => {
+  const loadUnreadMessages = async () => {
     if (!user?.id) return 0;
     
     const { count, error } = await supabase
@@ -16,7 +19,19 @@ export function useChatNotifications() {
       .eq('is_read', false);
 
     return count || 0;
-  }, [user?.id]);
+  };
+
+  const loadGlobalMentions = async () => {
+    if (!user?.id || !profile?.username) return 0;
+    
+    const { data, error } = await supabase
+      .from('global_messages')
+      .select('id')
+      .ilike('message', `%@${profile.username}%`)
+      .eq('is_read', false);
+
+    return data?.length || 0;
+  };
 
   const markPrivateMessagesAsRead = async () => {
     if (!user?.id) return;
@@ -37,8 +52,10 @@ export function useChatNotifications() {
   };
 
   const refreshUnreadCounts = async () => {
-    const count = await loadUnreadMessages();
-    setUnreadCount(count);
+    const privateCount = await loadUnreadMessages();
+    const mentionCount = await loadGlobalMentions();
+    setUnreadCount(privateCount);
+    setGlobalMentionCount(mentionCount);
   };
 
   useEffect(() => {
@@ -58,15 +75,28 @@ export function useChatNotifications() {
         },
         refreshUnreadCounts
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'global_messages'
+        },
+        refreshUnreadCounts
+      )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id]);
+  }, [user?.id, profile?.username]);
+
+  const totalNotifications = unreadCount + globalMentionCount;
 
   return { 
     unreadCount, 
+    globalMentionCount,
+    totalNotifications,
     markAllAsRead,
     markPrivateMessagesAsRead,
     refreshUnreadCounts
