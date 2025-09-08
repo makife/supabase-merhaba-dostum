@@ -107,7 +107,7 @@ const GamePage = ({
   }, [gameMode, propsParticipants, gameParticipants, tournamentParticipants]);
   
   const { validateWord, isValidating } = useWordValidation();
-  const { playSound, playTimeWarningSequence, playCelebrationSound, playGameLoseSound } = useSounds();
+  const { playSound, playTimeWarningSequence, playCelebrationSound, playGameLoseSound, playSpecialSound } = useSounds();
   const { jokers: jokerInventory, useJoker, loadJokers } = useJokerInventory();
   const { fadeOutBackgroundMusic, fadeInBackgroundMusic } = useMusic();
   const [searchParams] = useSearchParams();
@@ -119,36 +119,6 @@ const GamePage = ({
   const timerStartedRef = useRef(false);
   const recentSubmissionsRef = useRef<Set<string>>(new Set());
   const serverMatchStartRef = useRef<number | null>(null);
-  const [audioYes] = useState(() => {
-    const audio = new Audio('/yes.mp3');
-    audio.volume = 0.7;
-    return audio;
-  });
-  const [audioWow2] = useState(() => {
-    const audio = new Audio('/wow2.mp3');
-    audio.volume = 0.7;
-    return audio;
-  });
-  const [audioYahoo] = useState(() => {
-    const audio = new Audio('/yahoo.mp3');
-    audio.volume = 0.7;
-    return audio;
-  });
-  const [audioDegistir] = useState(() => {
-    const audio = new Audio('/degistir.mp3');
-    audio.volume = 0.7;
-    return audio;
-  });
-  const [audioFisilda] = useState(() => {
-    const audio = new Audio('/fisilda.mp3');
-    audio.volume = 0.7;
-    return audio;
-  });
-  const [audioSenyaz] = useState(() => {
-    const audio = new Audio('/senyaz.mp3');
-    audio.volume = 0.7;
-    return audio;
-  });
   
   const [globalUsedWords, setGlobalUsedWords] = useState<Set<string>>(new Set());
 
@@ -1143,8 +1113,7 @@ useEffect(() => {
   const useDegisTirJoker = () => {
   if (jokers.degistir <= 0 || isJokerActive) return;
 
-  audioDegistir.currentTime = 0;
-  audioDegistir.play().catch(e => console.log('Joker sesi çalınamadı:', e));
+  playSpecialSound('/degistir.mp3');
   
   // ✅ Diğer jokerler gibi kendini koru
   setIsJokerActive(true);
@@ -1197,8 +1166,7 @@ useEffect(() => {
 const useFisildaJoker = async () => {
   if (jokers.fisilida <= 0 || isJokerActive) return;
 
-  audioFisilda.currentTime = 0;
-  audioFisilda.play().catch(e => console.log('Joker sesi çalınamadı:', e));
+  playSpecialSound('/fisilda.mp3');
   
   setIsJokerActive(true);
   
@@ -1321,8 +1289,7 @@ const useFisildaJoker = async () => {
 const useSenYazJoker = async () => {
   if (jokers.senYaz <= 0 || isJokerActive) return;
 
-  audioSenyaz.currentTime = 0;
-  audioSenyaz.play().catch(e => console.log('Joker sesi çalınamadı:', e));
+  playSpecialSound('/senyaz.mp3');
   
   setIsJokerActive(true);
   
@@ -2784,14 +2751,11 @@ const submitWord = async () => {
 
     // Ses efektlerini direkt çal
     if (wordLength === 4) {
-      audioYes.currentTime = 0;
-      audioYes.play().catch(e => console.log('Audio failed:', e));
+      playSpecialSound('/yes.mp3');
     } else if (wordLength === 5) {
-      audioWow2.currentTime = 0;
-      audioWow2.play().catch(e => console.log('Audio failed:', e));
+      playSpecialSound('/wow2.mp3');
     } else if (wordLength >= 6) {
-      audioYahoo.currentTime = 0;
-      audioYahoo.play().catch(e => console.log('Audio failed:', e));
+      playSpecialSound('/yahoo.mp3');
     }
     
     triggerWordEffects();
@@ -2872,14 +2836,11 @@ const triggerWordEffects = () => {
   
   // Kelime uzunluğuna göre ses çal
   if (currentWord.length === 4) {
-    audioYes.currentTime = 0; // Baştan başlat
-    audioYes.play().catch(e => console.log('Audio play failed:', e));
+    playSpecialSound('/yes.mp3');
   } else if (currentWord.length === 5) {
-    audioWow2.currentTime = 0; // Baştan başlat
-    audioWow2.play().catch(e => console.log('Audio play failed:', e));
+    playSpecialSound('/wow2.mp3');
   } else if (currentWord.length >= 6) {
-    audioYahoo.currentTime = 0; // Baştan başlat
-    audioYahoo.play().catch(e => console.log('Audio play failed:', e));
+    playSpecialSound('/yahoo.mp3');
   }
   
   if (hasConfetti && hasFireworks) {

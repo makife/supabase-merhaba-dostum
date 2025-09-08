@@ -362,6 +362,22 @@ export const useSounds = () => {
     }
   }, [soundsEnabled, getActiveSoundPack]);
 
+  // Special game sounds that need to respect sound settings
+  const playSpecialSound = useCallback((soundFile: string, volume: number = 0.7) => {
+    if (!soundsEnabled) return;
+    
+    try {
+      const audio = new Audio(soundFile);
+      audio.volume = volume;
+      audio.currentTime = 0;
+      audio.play().catch(error => {
+        console.warn(`Could not play special sound ${soundFile}:`, error);
+      });
+    } catch (error) {
+      console.warn(`Could not load special sound ${soundFile}:`, error);
+    }
+  }, [soundsEnabled]);
+
   // DÜZELTME: setSoundsEnabled fonksiyonunu stabilize et
   const updateSoundsEnabled = useCallback((enabled: boolean) => {
     setSoundsEnabled(enabled);
@@ -376,6 +392,7 @@ export const useSounds = () => {
     playTimeWarningSequence,
     playCelebrationSound,
     playGameLoseSound,
+    playSpecialSound,
     soundsEnabled,
     setSoundsEnabled: updateSoundsEnabled
   };
