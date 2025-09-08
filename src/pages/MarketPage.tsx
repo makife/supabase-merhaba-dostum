@@ -180,32 +180,32 @@ const MarketPage = () => {
     {
       id: 'joker_degistir',
       title: 'Değiştir Jokeri',
-      description: 'Harfleri yeniden karıştırmanızı sağlar',
+      description: 'Her satın alım 1 adet joker verir',
       price: 2.99,
       currency: 'premium',
       icon: Star,
       type: 'joker',
-      value: 5
+      value: 1
     },
     {
       id: 'joker_fisildi',
       title: 'Fısılda Jokeri',
-      description: 'Kelimenin ipucunu gösterir',
+      description: 'Her satın alım 1 adet joker verir',
       price: 3.99,
       currency: 'premium',
       icon: Star,
       type: 'joker',
-      value: 3
+      value: 1
     },
     {
       id: 'joker_senyaz',
       title: 'Sen Yaz Jokeri',
-      description: 'Oyuncunun seçtiği kelimeyi yazmayı sağlar',
+      description: 'Her satın alım 1 adet joker verir',
       price: 5.99,
       currency: 'premium',
       icon: Star,
       type: 'joker',
-      value: 2
+      value: 1
     }
   ];
 
@@ -310,24 +310,27 @@ const MarketPage = () => {
             <div className="absolute bottom-4 left-4 w-1.5 h-1.5 bg-primary/70 rounded-full animate-pulse delay-200" />
           </div>
 
-          <CardContent className="relative z-10 p-4">
-            <div className="flex items-start justify-between mb-3">
-              <div className="p-2 bg-gradient-to-br from-primary/20 to-accent/20 rounded-lg backdrop-blur-sm group-hover:scale-110 transition-transform duration-300">
-                <item.icon className="w-5 h-5 text-primary" />
+            <CardContent className="relative z-10 p-4">
+              <div className="flex items-start justify-between mb-3">
+                <div className="p-2 bg-gradient-to-br from-primary/20 to-accent/20 rounded-lg backdrop-blur-sm group-hover:scale-110 transition-transform duration-300">
+                  <item.icon className="w-5 h-5 text-primary" />
+                </div>
+                <div className="text-right space-y-1">
+                  {item.type !== 'credits' && item.type !== 'joker' && hasPurchased(item.id) && (
+                    <Badge variant="secondary" className="mb-1 bg-green-500/20 text-green-700 border-green-500/30">
+                      Satın Alındı
+                    </Badge>
+                  )}
+                  {item.type === 'joker' && (
+                    <Badge variant="outline" className="text-xs">1 adet</Badge>
+                  )}
+                  {item.duration && (
+                    <Badge variant="outline" className="text-xs">
+                      {item.duration}
+                    </Badge>
+                  )}
+                </div>
               </div>
-              <div className="text-right">
-                {item.type !== 'credits' && item.type !== 'joker' && hasPurchased(item.id) && (
-                  <Badge variant="secondary" className="mb-1 bg-green-500/20 text-green-700 border-green-500/30">
-                    Satın Alındı
-                  </Badge>
-                )}
-                {item.duration && (
-                  <Badge variant="outline" className="text-xs">
-                    {item.duration}
-                  </Badge>
-                )}
-              </div>
-            </div>
             
             <h3 className="font-semibold text-sm mb-2 text-foreground">{item.title}</h3>
             <p className="text-xs text-muted-foreground mb-4 line-clamp-2">{item.description}</p>

@@ -472,19 +472,22 @@ const HomePage = () => {
                     {jokers.degistir > 0 && (
                       <div className="bg-white/10 rounded-lg p-2 flex items-center gap-1">
                         <span>🔄</span>
-                        <span className="font-semibold">{jokers.degistir}</span>
+                        <span className="font-medium">Değiştir</span>
+                        <span className="font-semibold">×{jokers.degistir}</span>
                       </div>
                     )}
                     {jokers.fisilida > 0 && (
                       <div className="bg-white/10 rounded-lg p-2 flex items-center gap-1">
                         <span>💬</span>
-                        <span className="font-semibold">{jokers.fisilida}</span>
+                        <span className="font-medium">Fısılda</span>
+                        <span className="font-semibold">×{jokers.fisilida}</span>
                       </div>
                     )}
                     {jokers.senYaz > 0 && (
                       <div className="bg-white/10 rounded-lg p-2 flex items-center gap-1">
                         <span>✍️</span>
-                        <span className="font-semibold">{jokers.senYaz}</span>
+                        <span className="font-medium">Sen Yaz</span>
+                        <span className="font-semibold">×{jokers.senYaz}</span>
                       </div>
                     )}
                   </div>

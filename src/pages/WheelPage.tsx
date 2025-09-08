@@ -27,6 +27,9 @@ const WheelPage = () => {
   const [canSpin, setCanSpin] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [lastReward, setLastReward] = useState<WheelReward | null>(null);
+  // Animasyon kontrolü (3sn lineer + 5sn yavaşlama)
+  const [transitionMs, setTransitionMs] = useState(0);
+  const [timingFn, setTimingFn] = useState<'linear' | 'ease-out'>('ease-out');
 
   // Çark bölümleri - 15 bölmeli
   const wheelSegments: WheelReward[] = [
@@ -77,31 +80,38 @@ const WheelPage = () => {
     // Rastgele ödül seç
     const rewardIndex = Math.floor(Math.random() * wheelSegments.length);
     const reward = wheelSegments[rewardIndex];
-    
-    // Çarkı döndür (en az 3 tam tur + ödül pozisyonu)
-    const baseRotation = 360 * 5;
-    const segmentAngle = 360 / wheelSegments.length;
-    const targetRotation = baseRotation + (rewardIndex * segmentAngle);
-    const newRotation = rotation + targetRotation;
-    
-    setRotation(newRotation);
 
-    // Animasyon bittikten sonra
-    setTimeout(async () => {
-      setLastReward(reward);
-      
-      // Ödülü veritabanına kaydet
-      await saveWheelSpin(reward);
-      
-      // Ödülü kullanıcıya ver
-      await giveReward(reward);
-      
-      setIsSpinning(false);
-      setCanSpin(false);
-      
-      // Başarı mesajı
-      showRewardToast(reward);
-    }, 8000);
+    const segmentAngle = 360 / wheelSegments.length;
+    const offsetToCenter = segmentAngle / 2; // segment merkezine hizalama
+
+    // 1. Aşama: 3 saniye lineer dönüş (mod 360 = 0 olacak şekilde normalize)
+    const currentMod = ((rotation % 360) + 360) % 360;
+    const firstTarget = rotation + (360 * 3 - currentMod);
+    setTransitionMs(3000);
+    setTimingFn('linear');
+    setRotation(firstTarget);
+
+    // 2. Aşama: 5 saniye yavaşlama + ödül hizalama
+    setTimeout(() => {
+      const extraSpins = 2; // yavaşlarken 2 tur daha dönsün
+      // İbre üstte (0°) olduğunda seçili segmentin merkezi 0° altında kalmalı
+      const landing = 360 - (rewardIndex * segmentAngle) - offsetToCenter;
+      const finalTarget = firstTarget + extraSpins * 360 + landing;
+
+      setTransitionMs(5000);
+      setTimingFn('ease-out');
+      setRotation(finalTarget);
+
+      // Tamamlandıktan sonra ödülü ver
+      setTimeout(async () => {
+        setLastReward(reward);
+        await saveWheelSpin(reward);
+        await giveReward(reward);
+        setIsSpinning(false);
+        setCanSpin(false);
+        showRewardToast(reward);
+      }, 5000);
+    }, 3000);
   };
 
   const saveWheelSpin = async (reward: WheelReward) => {
@@ -195,8 +205,7 @@ const WheelPage = () => {
                     width="320"
                     height="320"
                     viewBox="0 0 320 320"
-                    className="transition-transform duration-[8000ms] ease-out"
-                    style={{ transform: `rotate(${rotation}deg)` }}
+                    style={{ transform: `rotate(${rotation}deg)`, transition: `transform ${transitionMs}ms ${timingFn}` }}
                   >
                     {wheelSegments.map((segment, index) => {
                       const angle = (360 / wheelSegments.length) * index;
@@ -222,11 +231,13 @@ const WheelPage = () => {
                         'Z'
                       ].join(' ');
 
-                      // Text pozisyonu
+                      // Metin pozisyonu (yatay ve bölüme sığacak şekilde)
                       const textAngle = angle + (360 / wheelSegments.length) / 2;
                       const textRadius = radius * 0.7;
                       const textX = centerX + textRadius * Math.cos((textAngle - 90) * Math.PI / 180);
                       const textY = centerY + textRadius * Math.sin((textAngle - 90) * Math.PI / 180);
+                      const theta = (Math.PI * 2) / wheelSegments.length;
+                      const availableWidth = Math.max(30, 2 * textRadius * Math.sin(theta / 2) - 12);
                       
                       return (
                         <g key={index}>
@@ -244,7 +255,8 @@ const WheelPage = () => {
                             fontWeight="bold"
                             textAnchor="middle"
                             dominantBaseline="middle"
-                            transform={`rotate(${textAngle}, ${textX}, ${textY})`}
+                            lengthAdjust="spacingAndGlyphs"
+                            textLength={availableWidth}
                           >
                             {segment.text}
                           </text>
