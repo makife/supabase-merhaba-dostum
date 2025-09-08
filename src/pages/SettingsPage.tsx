@@ -30,6 +30,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { triggerGlobalStorageClear } from '@/hooks/useLocalStorageClear';
+import { useMobileNotifications } from '@/hooks/useMobileNotifications';
 
 const SettingsPage = () => {
   const navigate = useNavigate();
@@ -39,6 +40,12 @@ const SettingsPage = () => {
   const { soundsEnabled, setSoundsEnabled, playSound } = useSounds();
   const { musicEnabled, setMusicEnabled } = useMusic();
   const { hasPurchased, settings, updateSettings } = useUserPurchases();
+  const { 
+    isPermissionGranted, 
+    isMobile, 
+    requestPermissions,
+    showLocalNotification 
+  } = useMobileNotifications();
 
   // Settings state
   const [notifications, setNotifications] = useState(true);
@@ -114,10 +121,30 @@ const SettingsPage = () => {
   }, [notifications, soundsEnabled, musicEnabled, theme, language, playSound, toast]);
 
 
-  const handleNotificationChange = (checked: boolean) => {
+  const handleNotificationChange = async (checked: boolean) => {
     setNotifications(checked);
-    if (checked && 'Notification' in window) {
-      Notification.requestPermission();
+    
+    if (checked) {
+      // Mobile veya web bildirim izinlerini iste
+      if (isMobile) {
+        await requestPermissions();
+      } else if ('Notification' in window) {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          toast({
+            title: 'Bildirimler Aktif',
+            description: 'Oyun bildirimleri başarıyla aktif edildi'
+          });
+        }
+      }
+      
+      // Test bildirimi göster
+      setTimeout(() => {
+        showLocalNotification(
+          'Bildirimler Aktif',
+          'Kelimeci bildirimleriniz aktif edildi!'
+        );
+      }, 2000);
     }
   };
 

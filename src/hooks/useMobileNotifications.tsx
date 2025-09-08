@@ -115,22 +115,18 @@ export const useMobileNotifications = () => {
   // Save push token to database
   const savePushToken = async (userId: string, token: string) => {
     try {
-      const { error } = await supabase
-        .from('push_tokens')
-        .upsert({
-          user_id: userId,
-          token: token,
-          platform: Capacitor.getPlatform(),
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id'
-        });
-
-      if (error) {
-        console.error('Error saving push token:', error);
-      }
+      // For now, we'll store tokens in localStorage until the types are updated
+      const savedTokens = localStorage.getItem('push_tokens') || '{}';
+      const tokens = JSON.parse(savedTokens);
+      tokens[userId] = {
+        token,
+        platform: Capacitor.getPlatform(),
+        updated_at: new Date().toISOString()
+      };
+      localStorage.setItem('push_tokens', JSON.stringify(tokens));
+      console.log('Push token saved locally:', token);
     } catch (error) {
-      console.error('Error in savePushToken:', error);
+      console.error('Error saving push token:', error);
     }
   };
 
