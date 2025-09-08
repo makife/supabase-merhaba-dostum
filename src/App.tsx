@@ -26,6 +26,7 @@ import ChatPage from './pages/ChatPage';
 import TournamentPage from './pages/TournamentPage';
 import TournamentWaitingPage from './pages/TournamentWaitingPage';
 import TournamentBracketPage from './pages/TournamentBracketPage';
+import WheelPage from './pages/WheelPage';
 
 const queryClient = new QueryClient();
 
@@ -124,6 +125,11 @@ const AppRoutes = () => {
       <Route path="/test-matchmaking" element={
         <ProtectedRoute>
           <TestMatchmakingPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/wheel" element={
+        <ProtectedRoute>
+          <WheelPage />
         </ProtectedRoute>
       } />
       <Route path="*" element={<NotFound />} />

@@ -14,6 +14,7 @@ import { useGame } from '@/contexts/GameContext';
 import { useMusic } from '@/contexts/MusicContext';
 import { useWordValidation } from '@/hooks/useWordValidation';
 import { useSounds } from '@/hooks/useSounds';
+import { useJokerInventory } from '@/hooks/useJokerInventory';
 import { useUserPurchases } from '@/hooks/useUserPurchases';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -107,6 +108,7 @@ const GamePage = ({
   
   const { validateWord, isValidating } = useWordValidation();
   const { playSound, playTimeWarningSequence, playCelebrationSound, playGameLoseSound } = useSounds();
+  const { jokers: jokerInventory, useJoker, loadJokers } = useJokerInventory();
   const { fadeOutBackgroundMusic, fadeInBackgroundMusic } = useMusic();
   const [searchParams] = useSearchParams();
   const [lastClickTime, setLastClickTime] = useState(0);
@@ -154,12 +156,8 @@ const GamePage = ({
   cleanupRef.current.push(cleanupFn);
 }, []);
   
-  // Joker state'leri
-  const [jokers, setJokers] = useState<JokerState>({
-    degistir: 3,
-    fisilida: 3,
-    senYaz: 3
-  });
+  // Joker state'leri artık envanter hook'undan geliyor
+  const jokers = jokerInventory;
   const [selectedJoker, setSelectedJoker] = useState<string | null>(null);
   const [highlightedLetters, setHighlightedLetters] = useState<{row: number, col: number}[]>([]);
   const [isJokerActive, setIsJokerActive] = useState(false);
@@ -531,7 +529,7 @@ const resetGameForRematch = () => {
   setGameEnded(false);
   setWinner(null);
   setTimeWarningPlayed(false);
-  setJokers({ degistir: 3, fisilida: 3, senYaz: 3 });
+  // Joker state'leri artık hook'tan geldiği için sıfırlama yok
   setSelectedJoker(null);
   setHighlightedLetters([]);
   setIsJokerActive(false);
@@ -1187,7 +1185,7 @@ useEffect(() => {
   }, 1000);
   
   setGameGrid(newGrid);
-  setJokers(prev => ({ ...prev, degistir: prev.degistir - 1 }));
+  useJoker('degistir');
   setSelectedLetters([]);
   setCurrentWord('');
   
@@ -1305,7 +1303,7 @@ const useFisildaJoker = async () => {
     }, wordPositions.length * 500 + 800);
     
     // SADECE BAŞARILI DURUMDA JOKER SAYISINI AZALT
-    setJokers(prev => ({ ...prev, fisilida: prev.fisilida - 1 }));
+    useJoker('fisilida');
     
   } else {
     // Kelime bulunamadı
@@ -1503,7 +1501,7 @@ const useSenYazJoker = async () => {
     
     // SADECE GERÇEKTEN BAŞARILI OLDUĞUNDA JOKER SAYISINI AZALT
     if (jokerSuccess) {
-      setJokers(prev => ({ ...prev, senYaz: prev.senYaz - 1 }));
+      useJoker('senYaz');
       console.log('🎯 Sen Yaz Jokeri harcanı!');
     } else {
       console.log('💾 Sen Yaz Jokeri korundu (işlem başarısız)!');
@@ -3305,7 +3303,7 @@ if (gameEnded) {
                     setGameEnded(false);
                     setWinner(null);
                     setTimeWarningPlayed(false);
-                    setJokers({ degistir: 3, fisilida: 3, senYaz: 3 });
+                    // Jokerler artık envanter sisteminden geliyor
                     setSelectedJoker(null);
                     setHighlightedLetters([]);
                     setIsJokerActive(false);

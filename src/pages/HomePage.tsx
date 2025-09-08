@@ -31,7 +31,8 @@ import {
   Camera,
   Volume2,
   VolumeX,
-  Gift
+  Gift,
+  Sparkles
 } from 'lucide-react';
 
 // Check if user is in their first week (gift premium period)
@@ -238,6 +239,27 @@ const HomePage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
       <div className="max-w-4xl mx-auto space-y-6">
+        {/* Çark Çevirme Banner */}
+        <Card className="border-0 bg-gradient-to-r from-yellow-500/10 via-orange-500/10 to-red-500/10 shadow-xl relative overflow-hidden cursor-pointer hover:shadow-2xl transition-all duration-300"
+              onClick={() => navigate('/wheel')}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                  <Sparkles className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-foreground">🎯 Günlük Şans Çarkı</h3>
+                  <p className="text-sm text-muted-foreground">Ücretsiz ödüller kazan! Her gün bir çevirme hakkın var.</p>
+                </div>
+              </div>
+              <Button className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold">
+                Çarkı Çevir!
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Birleştirilmiş Header ve Level Progress */}
         <Card className="border-0 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/10 shadow-2xl relative overflow-hidden">
           <HeaderAnimation />

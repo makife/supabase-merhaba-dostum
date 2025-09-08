@@ -1313,6 +1313,36 @@ export type Database = {
         }
         Relationships: []
       }
+      wheel_spins: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          reward_item: string | null
+          reward_type: string
+          reward_value: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          id?: string
+          reward_item?: string | null
+          reward_type: string
+          reward_value?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          reward_item?: string | null
+          reward_type?: string
+          reward_value?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       words: {
         Row: {
           created_at: string | null

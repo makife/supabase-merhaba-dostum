@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface UserPurchase {
   id: string;
@@ -210,6 +211,8 @@ export const useUserPurchases = () => {
       } else if (item.type === 'joker') {
         // Joker satın alımı - envantere ekle
         await updateInventory(item.id, item.value);
+        
+        // Başarı mesajı silindi - zaten market sayfasında gösteriliyor
 
       } else if (item.type === 'unlimited_time') {
         // Sınırsız zaman için özel kredi ekle
@@ -364,6 +367,7 @@ export const useUserPurchases = () => {
     getInventoryQuantity,
     loadPurchases,
     loadSettings,
-    loadInventory
+    loadInventory,
+    updateInventory
   };
 };
