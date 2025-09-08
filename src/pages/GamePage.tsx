@@ -391,17 +391,26 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
     setOpponentScore(opponentScore);
     setGameEnded(true);
     
-    // Kazanan belirle ve göster
+    // ✅ Frontend kazanan belirleme - DOĞRU MANTIK
+    console.log('🎯 Tournament winner determination:', {
+      userScore,
+      opponentScore,
+      comparison: userScore > opponentScore ? 'user wins' : userScore < opponentScore ? 'opponent wins' : 'tie'
+    });
+    
     if (userScore > opponentScore) {
       setWinner('player');
       playSound('gameWin');
       setTimeout(() => playCelebrationSound(), 500);
+      console.log('✅ User WINS - Setting winner to player');
     } else if (userScore < opponentScore) {
       setWinner('opponent');  
       playSound('gameLose');
       setTimeout(() => playGameLoseSound(), 500);
+      console.log('❌ User LOSES - Setting winner to opponent');
     } else {
       setWinner('tie');
+      console.log('⚖️ TIE - This should not happen in tournament');
     }
     
     // Mevcut maçı tamamla
@@ -1774,6 +1783,7 @@ const checkWinnerWithScores = useCallback(async (currentPlayerScore: number, cur
 
   // TURNUVA MODUNDA BERABERLIK ENGELLEMESİ - GÜÇLENDİRİLMİŞ
   if (gameMode === 'tournament') {
+    console.log('🏆 Tournament mode - strict winner determination:', { currentPlayerScore, currentOpponentScore });
     if (currentPlayerScore === currentOpponentScore) {
       console.log('⚖️ Turnuva beraberlik durumu - güçlü tiebreaker uygulanıyor');
       
@@ -2005,26 +2015,31 @@ useEffect(() => {
     if (gameMode === 'tournament' && tournamentMatch) {
       const syncTimer = async () => {
         try {
+          // Maç statüsünü kontrol et
           const { data: matchData } = await supabase
             .from('tournament_matches')
-            .select('updated_at, status')
+            .select('created_at, status')
             .eq('id', tournamentMatch.id)
             .single();
             
           if (matchData && matchData.status === 'in_progress') {
+            // ✅ created_at kullan - bu hiç değişmez ve tüm oyuncular için aynı
             if (!serverMatchStartRef.current) {
-              serverMatchStartRef.current = new Date(matchData.updated_at).getTime();
-              console.log('📌 Server match start captured:', new Date(serverMatchStartRef.current).toISOString());
+              // Maç started_at yoksa, başlatma zamanını ayarla (5 saniye ekle başlatma için)
+              serverMatchStartRef.current = new Date(matchData.created_at).getTime() + 5000;
+              console.log('📌 Tournament match start time fixed:', new Date(serverMatchStartRef.current).toISOString());
             }
+            
             const matchStartTime = serverMatchStartRef.current!;
             const currentTime = Date.now();
             const elapsedSeconds = Math.floor((currentTime - matchStartTime) / 1000);
             const remainingTime = Math.max(0, 120 - elapsedSeconds);
             
-            if (Math.abs(timeLeftRef.current - remainingTime) > 2) {
+            // Sadece 3+ saniye fark varsa senkronize et
+            if (Math.abs(timeLeftRef.current - remainingTime) > 3) {
               timeLeftRef.current = remainingTime;
               setDisplayTime(remainingTime);
-              console.log('🔄 Timer synced to:', remainingTime, 'seconds');
+              console.log('🔄 Timer synced to:', remainingTime, 'seconds - Both players now synced!');
             }
           }
         } catch (error) {
@@ -2254,15 +2269,30 @@ useEffect(() => {
     }, (payload) => {
       console.log('🔄 Tournament match güncellendi:', payload.new);
       
-      // Rakip skorunu real-time güncelle
+      // Rakip skorunu real-time güncelle - DÜZELTME
       const newMatch = payload.new as any;
       if (user) {
-        const isPlayer1 = newMatch.player1_id === user.id;
+        const isPlayer1 = String(newMatch.player1_id) === String(user.id);
         const newOpponentScore = isPlayer1 ? newMatch.player2_score : newMatch.player1_score;
+        const newPlayerScore = isPlayer1 ? newMatch.player1_score : newMatch.player2_score;
+        
+        console.log('🔄 Real-time tournament sync:', {
+          isPlayer1,
+          newPlayerScore,
+          newOpponentScore,
+          currentPlayerScore: playerScore,
+          currentOpponentScore: opponentScore
+        });
         
         if (newOpponentScore !== undefined && newOpponentScore !== opponentScore) {
-          console.log('🔄 Rakip skoru güncellendi:', newOpponentScore);
+          console.log('🔄 Rakip skoru güncellendi:', opponentScore, '->', newOpponentScore);
           setOpponentScore(newOpponentScore);
+        }
+        
+        // Kendi skorumuzu da güncelle (eğer başka yerden geliyorsa)
+        if (newPlayerScore !== undefined && newPlayerScore !== playerScore) {
+          console.log('🔄 Kendi skorumuz güncellendi:', playerScore, '->', newPlayerScore);
+          setPlayerScore(newPlayerScore);
         }
       }
     })
