@@ -17,6 +17,10 @@ export const useLocalStorageClear = () => {
           .single();
 
         if (error) {
+          // system_settings tablosu yoksa veya veri yoksa sessizce devam et
+          if (error.code === 'PGRST116' || error.code === '42P01') {
+            return;
+          }
           console.error('Error checking storage clear setting:', error);
           return;
         }
