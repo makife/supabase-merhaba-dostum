@@ -18,6 +18,7 @@ import PrivateRoomModal from '@/components/PrivateRoomModal';
 import MatchmakingModal from '@/components/MatchmakingModal';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from 'sonner';
+import { useJokerInventory } from '@/hooks/useJokerInventory';
 
 import {
   Bot,
@@ -52,6 +53,7 @@ const HomePage = () => {
   const navigate = useNavigate();
   const { playSound } = useSounds();
   const { startBackgroundMusic, musicEnabled, setMusicEnabled } = useMusic();
+  const { jokers } = useJokerInventory();
   const { uploadProfilePicture, uploading } = useProfilePicture();
   const [selectedMode, setSelectedMode] = useState<string | null>(null);
   const [showMatchmaking, setShowMatchmaking] = useState(false);
@@ -459,6 +461,35 @@ const HomePage = () => {
                   Seri: {profile?.win_streak || 0}
                 </Badge>
               </div>
+              
+              {/* Joker Envanteri */}
+              {(jokers.degistir > 0 || jokers.fisilida > 0 || jokers.senYaz > 0) && (
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 mt-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-bold text-foreground">🃏 Jokerlerim</h4>
+                  </div>
+                  <div className="flex gap-2 text-xs">
+                    {jokers.degistir > 0 && (
+                      <div className="bg-white/10 rounded-lg p-2 flex items-center gap-1">
+                        <span>🔄</span>
+                        <span className="font-semibold">{jokers.degistir}</span>
+                      </div>
+                    )}
+                    {jokers.fisilida > 0 && (
+                      <div className="bg-white/10 rounded-lg p-2 flex items-center gap-1">
+                        <span>💬</span>
+                        <span className="font-semibold">{jokers.fisilida}</span>
+                      </div>
+                    )}
+                    {jokers.senYaz > 0 && (
+                      <div className="bg-white/10 rounded-lg p-2 flex items-center gap-1">
+                        <span>✍️</span>
+                        <span className="font-semibold">{jokers.senYaz}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
+import { useJokerInventory } from '@/hooks/useJokerInventory';
 import {
   ArrowLeft,
   Trophy,
@@ -26,6 +27,7 @@ import {
 const ProfilePage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { jokers } = useJokerInventory();
   const [isEditing, setIsEditing] = useState(false);
   const [editedUsername, setEditedUsername] = useState('');
   const [profileData, setProfileData] = useState({
@@ -715,6 +717,34 @@ const ProfilePage = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Joker Envanteri */}
+        {(jokers.degistir > 0 || jokers.fisilida > 0 || jokers.senYaz > 0) && (
+          <Card>
+            <CardHeader>
+              <CardTitle>🃏 Joker Envanteri</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
+                  <div className="text-2xl mb-2">🔄</div>
+                  <div className="text-sm text-muted-foreground">Değiştir</div>
+                  <div className="text-lg font-bold">{jokers.degistir}</div>
+                </div>
+                <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg">
+                  <div className="text-2xl mb-2">💬</div>
+                  <div className="text-sm text-muted-foreground">Fısılda</div>
+                  <div className="text-lg font-bold">{jokers.fisilida}</div>
+                </div>
+                <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
+                  <div className="text-2xl mb-2">✍️</div>
+                  <div className="text-sm text-muted-foreground">Sen Yaz</div>
+                  <div className="text-lg font-bold">{jokers.senYaz}</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Detailed Stats */}
         <Card>

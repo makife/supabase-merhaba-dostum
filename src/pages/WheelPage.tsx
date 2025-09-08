@@ -64,7 +64,7 @@ const WheelPage = () => {
       .select('*')
       .eq('user_id', user.id)
       .eq('date', today)
-      .single();
+      .maybeSingle();
 
     setCanSpin(!data);
   };
