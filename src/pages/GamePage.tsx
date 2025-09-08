@@ -1591,13 +1591,27 @@ const useSenYazJoker = async () => {
     loadWordlist();
   }, []);
 
+  // Turkish character normalization function
+  const normalizeTurkishWord = (word: string): string => {
+    return word.toUpperCase()
+      .replace(/İ/g, 'I')  // İ -> I normalization for Turkish
+      .replace(/Ğ/g, 'G')
+      .replace(/Ü/g, 'U')
+      .replace(/Ş/g, 'S')
+      .replace(/Ö/g, 'O')
+      .replace(/Ç/g, 'C')
+      .trim();
+  };
+
   // Local word validation - Sözlükteki kelimeleri Türkçe'ye çevir
 const validateWordLocal = useCallback((word: string): { isValid: boolean; points: number; message: string } => {
   const normalizedWord = word.toUpperCase().trim();
+  const turkishNormalizedWord = normalizeTurkishWord(word);
   
   console.log('🔍 Word validation:', {
     originalWord: word,
     normalizedWord,
+    turkishNormalizedWord,
     globalUsedCount: globalUsedWords.size,
     isUsed: globalUsedWords.has(normalizedWord)
   });
@@ -1621,14 +1635,16 @@ const validateWordLocal = useCallback((word: string): { isValid: boolean; points
     };
   }
 
-
-  
-
-  // Wordlist check - sadece orijinal
+  // Wordlist check - both original and normalized versions
   if (wordlistLoaded) {
-    const wordExists = Array.from(wordlist).some(dictWord => 
-      dictWord.toUpperCase() === normalizedWord
-    );
+    const wordExists = Array.from(wordlist).some(dictWord => {
+      const dictWordUpper = dictWord.toUpperCase();
+      const dictWordNormalized = normalizeTurkishWord(dictWord);
+      return dictWordUpper === normalizedWord || 
+             dictWordNormalized === turkishNormalizedWord ||
+             dictWordUpper === turkishNormalizedWord ||
+             dictWordNormalized === normalizedWord;
+    });
     
     if (!wordExists) {
       return {

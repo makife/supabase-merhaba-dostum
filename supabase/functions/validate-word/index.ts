@@ -9,6 +9,18 @@ const corsHeaders = {
 // Cache for wordlist to avoid repeated processing
 let wordlistCache: Set<string> | null = null;
 
+// Turkish character normalization function
+function normalizeTurkishWord(word: string): string {
+  return word.toUpperCase()
+    .replace(/İ/g, 'I')  // İ -> I normalization for Turkish
+    .replace(/Ğ/g, 'G')
+    .replace(/Ü/g, 'U')
+    .replace(/Ş/g, 'S')
+    .replace(/Ö/g, 'O')
+    .replace(/Ç/g, 'C')
+    .trim();
+}
+
 async function loadWordlist(): Promise<Set<string>> {
   if (wordlistCache) {
     return wordlistCache;
@@ -64,13 +76,18 @@ serve(async (req) => {
     }
 
     const upperWord = word.trim().toUpperCase();
-    console.log(`Validating word: ${upperWord}`);
+    const normalizedWord = normalizeTurkishWord(word);
+    console.log(`Validating word: ${upperWord}, normalized: ${normalizedWord}`);
 
     // Load wordlist
     const wordlist = await loadWordlist();
     
-    // Check if word exists in our wordlist
-    const isValid = wordlist.has(upperWord);
+    // Check if word exists in our wordlist - try both original and normalized versions
+    const isValid = wordlist.has(upperWord) || wordlist.has(normalizedWord) ||
+      Array.from(wordlist).some(dictWord => {
+        const dictNormalized = normalizeTurkishWord(dictWord);
+        return dictNormalized === normalizedWord || dictNormalized === upperWord;
+      });
     
     let result;
     if (isValid) {
