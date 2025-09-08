@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { Purchases, CustomerInfo, PurchasesOffering } from '@revenuecat/purchases-capacitor';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
 import { useUserPurchases } from '@/hooks/useUserPurchases';
@@ -13,11 +12,14 @@ interface Product {
   currency: string;
 }
 
+// Dinamik import helper'ı (sadece native platformda kullanılacak)
+const getPurchases = async () => (await import(/* @vite-ignore */ '@revenuecat/purchases-capacitor')).Purchases;
+
 export const useInAppPurchases = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
-  const [offerings, setOfferings] = useState<PurchasesOffering | null>(null);
+  const [offerings, setOfferings] = useState<any | null>(null);
   const { toast } = useToast();
   const { refreshProfile } = useUser();
   const { processPurchase } = useUserPurchases();
@@ -36,6 +38,7 @@ export const useInAppPurchases = () => {
         ? 'appl_your_ios_api_key_here'  // iOS için
         : 'goog_your_android_api_key_here';  // Android için
 
+      const Purchases = await getPurchases();
       await Purchases.configure({
         apiKey: REVENUECAT_API_KEY,
       });
@@ -65,12 +68,13 @@ export const useInAppPurchases = () => {
   // Load offerings (products)
   const loadOfferings = useCallback(async () => {
     try {
+      const Purchases = await getPurchases();
       const offerings = await Purchases.getOfferings();
       if (offerings.current) {
         setOfferings(offerings.current);
         
         // Convert to our Product format
-        const productList = offerings.current.availablePackages.map(pkg => ({
+        const productList = offerings.current.availablePackages.map((pkg: any) => ({
           id: pkg.product.identifier,
           title: pkg.product.title,
           description: pkg.product.description,
@@ -119,6 +123,7 @@ export const useInAppPurchases = () => {
       }
 
       console.log('Attempting to purchase:', productId);
+      const Purchases = await getPurchases();
       const purchaserInfo = await Purchases.purchasePackage({
         aPackage: packageToPurchase
       });
@@ -179,6 +184,7 @@ export const useInAppPurchases = () => {
 
     try {
       setIsLoading(true);
+      const Purchases = await getPurchases();
       await Purchases.restorePurchases();
       
       toast({
