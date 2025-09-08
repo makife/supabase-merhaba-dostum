@@ -82,7 +82,7 @@ const TournamentPage = () => {
               onClick={fetchTournaments}
               variant="outline"
               size="sm"
-              className="text-white border-white/30 hover:bg-amber/10"
+              className="text-white border-amber/30 hover:bg-white/10"
             >
               Yenile
             </Button>
