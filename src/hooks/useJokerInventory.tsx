@@ -96,6 +96,31 @@ export const useJokerInventory = () => {
     loadJokers();
   }, [user]);
 
+  // Realtime subscription for joker inventory changes
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel('user-inventory-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_inventory',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          loadJokers();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
+
   return {
     jokers,
     loading,
