@@ -213,9 +213,9 @@ const ProfilePage = () => {
     fetchProfile();
   }, [viewedUserId]);
 
-  // Listen for real-time updates to total_score (only for own profile)
+  // Listen for real-time updates only for own profile
   useEffect(() => {
-    if (!viewedUserId || !isOwnProfile) return;
+    if (!user || !isOwnProfile) return;
 
     const channel = supabase
       .channel('profile-updates')
@@ -225,7 +225,7 @@ const ProfilePage = () => {
           event: 'UPDATE',
           schema: 'public',
           table: 'profiles',
-          filter: `id=eq.${viewedUserId}`
+          filter: `id=eq.${user.id}`
         },
         (payload) => {
           console.log('📊 Profile updated:', payload.new);
@@ -264,7 +264,7 @@ const ProfilePage = () => {
           event: 'INSERT',
           schema: 'public',
           table: 'user_badges',
-          filter: `user_id=eq.${viewedUserId}`
+          filter: `user_id=eq.${user.id}`
         },
         async (payload) => {
           console.log('🏆 New badge earned:', payload.new);
@@ -291,7 +291,7 @@ const ProfilePage = () => {
           event: 'UPDATE',
           schema: 'public',
           table: 'tournament_matches',
-          filter: `player1_id=eq.${viewedUserId}`
+          filter: `player1_id=eq.${user.id}`
         },
         async (payload) => {
           console.log('🏆 Tournament match updated (as player1):', payload.new);
@@ -313,7 +313,7 @@ const ProfilePage = () => {
           event: 'UPDATE',
           schema: 'public',
           table: 'tournament_matches',
-          filter: `player2_id=eq.${viewedUserId}`
+          filter: `player2_id=eq.${user.id}`
         },
         async (payload) => {
           console.log('🏆 Tournament match updated (as player2):', payload.new);
@@ -334,7 +334,7 @@ const ProfilePage = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [viewedUserId, isOwnProfile]);
+  }, [user, isOwnProfile]);
 
   useEffect(() => {
     if (isOwnProfile) {
@@ -507,11 +507,6 @@ const ProfilePage = () => {
                 fallback={profileData.username.charAt(0).toUpperCase()}
                 size="xl"
                 editable={isOwnProfile}
-                onAvatarChange={(newUrl) => {
-                  if (isOwnProfile) {
-                    setProfileData(prev => ({ ...prev, avatar_url: newUrl || '' }));
-                  }
-                }}
                 className="ring-2 ring-primary/20"
               />
               <div className="flex-1">
@@ -523,15 +518,13 @@ const ProfilePage = () => {
                     placeholder="Kullanıcı adınız"
                   />
                 ) : (
-                  <div>
-                    <h2 className="text-2xl font-bold">{profileData.username}</h2>
-                    {!isOwnProfile && (
-                      <p className="text-sm text-muted-foreground">Oyuncu Profili</p>
-                    )}
-                  </div>
+                  <h2 className="text-2xl font-bold">{profileData.username}</h2>
                 )}
-                {isOwnProfile && (
-                  <p className="text-xs text-muted-foreground truncate max-w-xs">{user?.email}</p>
+                {!isOwnProfile && (
+                  <p className="text-sm text-muted-foreground">Oyuncu Profili</p>
+                )}
+                {isOwnProfile && user?.email && (
+                  <p className="text-xs text-muted-foreground truncate max-w-xs">{user.email}</p>
                 )}
                 <div className="flex items-center space-x-2 mt-2 flex-wrap gap-1">
                   <Badge variant="secondary">Seviye {profileData.level}</Badge>
