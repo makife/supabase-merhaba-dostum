@@ -30,26 +30,28 @@ const WheelPage = () => {
 
   // Çark bölümleri - 15 bölmeli
   const wheelSegments: WheelReward[] = [
-    { type: 'credits', value: 1, text: '1 Oyun Hakkı', color: 'bg-blue-500' },
-    { type: 'joker', value: 1, item: 'degistir', text: '1 Değiştir Jokeri', color: 'bg-green-500' },
-    { type: 'empty', value: 0, text: 'Boş', color: 'bg-gray-400' },
-    { type: 'credits', value: 2, text: '2 Oyun Hakkı', color: 'bg-blue-600' },
-    { type: 'joker', value: 1, item: 'fisilida', text: '1 Fısılda Jokeri', color: 'bg-yellow-500' },
-    { type: 'empty', value: 0, text: 'Boş', color: 'bg-gray-400' },
-    { type: 'credits', value: 3, text: '3 Oyun Hakkı', color: 'bg-blue-700' },
-    { type: 'joker', value: 2, item: 'degistir', text: '2 Değiştir Jokeri', color: 'bg-green-600' },
-    { type: 'empty', value: 0, text: 'Boş', color: 'bg-gray-400' },
-    { type: 'credits', value: 5, text: '5 Oyun Hakkı', color: 'bg-blue-800' },
-    { type: 'joker', value: 1, item: 'senyaz', text: '1 Sen Yaz Jokeri', color: 'bg-purple-500' },
-    { type: 'empty', value: 0, text: 'Boş', color: 'bg-gray-400' },
-    { type: 'joker', value: 2, item: 'fisilida', text: '2 Fısılda Jokeri', color: 'bg-yellow-600' },
-    { type: 'joker', value: 2, item: 'senyaz', text: '2 Sen Yaz Jokeri', color: 'bg-purple-600' },
-    { type: 'empty', value: 0, text: 'Boş', color: 'bg-gray-400' }
+    { type: 'credits', value: 1, text: '1 Oyun', color: '#3B82F6' },
+    { type: 'joker', value: 1, item: 'degistir', text: '1 Değiştir', color: '#10B981' },
+    { type: 'empty', value: 0, text: 'Boş', color: '#9CA3AF' },
+    { type: 'credits', value: 2, text: '2 Oyun', color: '#2563EB' },
+    { type: 'joker', value: 1, item: 'fisilida', text: '1 Fısılda', color: '#EAB308' },
+    { type: 'empty', value: 0, text: 'Boş', color: '#9CA3AF' },
+    { type: 'credits', value: 3, text: '3 Oyun', color: '#1D4ED8' },
+    { type: 'joker', value: 2, item: 'degistir', text: '2 Değiştir', color: '#059669' },
+    { type: 'empty', value: 0, text: 'Boş', color: '#9CA3AF' },
+    { type: 'credits', value: 5, text: '5 Oyun', color: '#1E40AF' },
+    { type: 'joker', value: 1, item: 'senyaz', text: '1 Sen Yaz', color: '#7C3AED' },
+    { type: 'empty', value: 0, text: 'Boş', color: '#9CA3AF' },
+    { type: 'joker', value: 2, item: 'fisilida', text: '2 Fısılda', color: '#D97706' },
+    { type: 'joker', value: 2, item: 'senyaz', text: '2 Sen Yaz', color: '#6D28D9' },
+    { type: 'empty', value: 0, text: 'Boş', color: '#9CA3AF' }
   ];
 
   // Günlük çark kontrolü
   useEffect(() => {
-    checkDailySpinAvailability();
+    if (user) {
+      checkDailySpinAvailability();
+    }
   }, [user]);
 
   const checkDailySpinAvailability = async () => {
@@ -77,9 +79,9 @@ const WheelPage = () => {
     const reward = wheelSegments[rewardIndex];
     
     // Çarkı döndür (en az 3 tam tur + ödül pozisyonu)
-    const baseRotation = 360 * 3;
+    const baseRotation = 360 * 5;
     const segmentAngle = 360 / wheelSegments.length;
-    const targetRotation = baseRotation + (rewardIndex * segmentAngle) + (segmentAngle / 2);
+    const targetRotation = baseRotation + (rewardIndex * segmentAngle);
     const newRotation = rotation + targetRotation;
     
     setRotation(newRotation);
@@ -140,13 +142,9 @@ const WheelPage = () => {
 
   const showRewardToast = (reward: WheelReward) => {
     if (reward.type === 'empty') {
-      toast.info('😔 Maalesef bu sefer boş geldi!', {
-        description: 'Yarın tekrar dene!'
-      });
+      toast('😔 Maalesef bu sefer boş geldi! Yarın tekrar dene!');
     } else {
-      toast.success(`🎉 Tebrikler! ${reward.text} kazandın!`, {
-        description: reward.type === 'credits' ? 'Oyun haklarına eklendi' : 'Envanterine eklendi'
-      });
+      toast(`🎉 Tebrikler! ${reward.text} kazandın!`);
     }
   };
 
@@ -192,52 +190,76 @@ const WheelPage = () => {
               <div className="relative">
                 {/* Çark Container */}
                 <div className="relative w-80 h-80">
-                  {/* Çark */}
-                  <div 
-                    className={`w-full h-full rounded-full border-8 border-yellow-400 shadow-2xl transition-transform duration-[8000ms] ease-out overflow-hidden`}
-                    style={{ 
-                      transform: `rotate(${rotation}deg)`,
-                    }}
+                  {/* Çark SVG */}
+                  <svg
+                    width="320"
+                    height="320"
+                    viewBox="0 0 320 320"
+                    className="transition-transform duration-[8000ms] ease-out"
+                    style={{ transform: `rotate(${rotation}deg)` }}
                   >
-                    {/* Çark Bölümleri */}
                     {wheelSegments.map((segment, index) => {
                       const angle = (360 / wheelSegments.length) * index;
                       const nextAngle = (360 / wheelSegments.length) * (index + 1);
+                      const startAngle = (angle - 90) * (Math.PI / 180);
+                      const endAngle = (nextAngle - 90) * (Math.PI / 180);
+                      
+                      const radius = 150;
+                      const centerX = 160;
+                      const centerY = 160;
+                      
+                      const x1 = centerX + radius * Math.cos(startAngle);
+                      const y1 = centerY + radius * Math.sin(startAngle);
+                      const x2 = centerX + radius * Math.cos(endAngle);
+                      const y2 = centerY + radius * Math.sin(endAngle);
+                      
+                      const largeArcFlag = (nextAngle - angle) > 180 ? 1 : 0;
+                      
+                      const pathData = [
+                        `M ${centerX} ${centerY}`,
+                        `L ${x1} ${y1}`,
+                        `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`,
+                        'Z'
+                      ].join(' ');
+
+                      // Text pozisyonu
+                      const textAngle = angle + (360 / wheelSegments.length) / 2;
+                      const textRadius = radius * 0.7;
+                      const textX = centerX + textRadius * Math.cos((textAngle - 90) * Math.PI / 180);
+                      const textY = centerY + textRadius * Math.sin((textAngle - 90) * Math.PI / 180);
                       
                       return (
-                        <div
-                          key={index}
-                          className="absolute inset-0"
-                          style={{
-                            clipPath: `polygon(50% 50%, ${50 + 45 * Math.cos((angle - 90) * Math.PI / 180)}% ${50 + 45 * Math.sin((angle - 90) * Math.PI / 180)}%, ${50 + 45 * Math.cos((nextAngle - 90) * Math.PI / 180)}% ${50 + 45 * Math.sin((nextAngle - 90) * Math.PI / 180)}%)`
-                          }}
-                        >
-                          <div className={`w-full h-full ${segment.color}`}></div>
-                          
-                          {/* Text */}
-                          <div
-                            className="absolute text-white text-xs font-bold whitespace-nowrap"
-                            style={{
-                              top: '50%',
-                              left: '50%',
-                              transform: `translate(-50%, -50%) translate(${25 * Math.cos((angle + 12) * Math.PI / 180)}px, ${25 * Math.sin((angle + 12) * Math.PI / 180)}px) rotate(${angle + 12}deg)`,
-                              transformOrigin: 'center'
-                            }}
+                        <g key={index}>
+                          <path
+                            d={pathData}
+                            fill={segment.color}
+                            stroke="#ffffff"
+                            strokeWidth="2"
+                          />
+                          <text
+                            x={textX}
+                            y={textY}
+                            fill="white"
+                            fontSize="12"
+                            fontWeight="bold"
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                            transform={`rotate(${textAngle}, ${textX}, ${textY})`}
                           >
                             {segment.text}
-                          </div>
-                        </div>
+                          </text>
+                        </g>
                       );
                     })}
-                  </div>
+                  </svg>
 
                   {/* Çark Merkezi */}
-                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-yellow-500 rounded-full border-4 border-yellow-600 shadow-lg flex items-center justify-center">
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-yellow-500 rounded-full border-4 border-yellow-600 shadow-lg flex items-center justify-center z-10">
                     <Sparkles className="w-8 h-8 text-white" />
                   </div>
 
                   {/* Okçu (Pointer) */}
-                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-2">
+                  <div className="absolute top-2 left-1/2 transform -translate-x-1/2 z-20">
                     <div className="w-0 h-0 border-l-4 border-r-4 border-b-8 border-l-transparent border-r-transparent border-b-red-500"></div>
                   </div>
                 </div>
@@ -272,7 +294,7 @@ const WheelPage = () => {
                   <CardTitle className="text-lg">🎉 Son Kazancın</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Badge className={`${lastReward.color} text-white`}>
+                  <Badge style={{ backgroundColor: lastReward.color, color: 'white' }}>
                     {lastReward.text}
                   </Badge>
                 </CardContent>
