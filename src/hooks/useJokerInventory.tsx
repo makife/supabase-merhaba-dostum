@@ -25,7 +25,7 @@ export const useJokerInventory = () => {
         .from('user_inventory')
         .select('item_type, quantity')
         .eq('user_id', user.id)
-        .in('item_type', ['degistir', 'fisilida', 'senYaz']);
+        .in('item_type', ['degistir','joker_degistir','fisilida','joker_fisildi','senYaz','senyaz','joker_senyaz']);
 
       const jokerInventory: JokerInventory = {
         degistir: 0,
@@ -33,9 +33,20 @@ export const useJokerInventory = () => {
         senYaz: 0
       };
 
+      const keyMap: Record<string, keyof JokerInventory> = {
+        degistir: 'degistir',
+        joker_degistir: 'degistir',
+        fisilida: 'fisilida',
+        joker_fisildi: 'fisilida',
+        senYaz: 'senYaz',
+        senyaz: 'senYaz',
+        joker_senyaz: 'senYaz',
+      };
+
       data?.forEach(item => {
-        if (item.item_type in jokerInventory) {
-          jokerInventory[item.item_type as keyof JokerInventory] = item.quantity;
+        const mapped = keyMap[item.item_type];
+        if (mapped) {
+          jokerInventory[mapped] = item.quantity + (jokerInventory[mapped] || 0);
         }
       });
 
