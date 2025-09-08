@@ -42,6 +42,7 @@ const ProfilePage = () => {
     totalScore: 0,
     winRate: 0,
     longestWord: '',
+    longestWordLength: 0,
     currentStreak: 0,
     level: 1,
     experience: 0,
@@ -195,6 +196,7 @@ const ProfilePage = () => {
           totalScore: data.total_score || 0,
           winRate: data.total_games > 0 ? Math.round(((data.wins || 0) / data.total_games) * 100) : 0,
           longestWord: data.longest_word || '',
+          longestWordLength: data.longest_word_length || 0,
           currentStreak: data.win_streak || 0,
           level: levelData.level,
           experience: levelData.experience,
@@ -247,6 +249,7 @@ const ProfilePage = () => {
                 wins: newData.wins || prev.wins,
                 losses: newData.losses || prev.losses,
                 longestWord: newData.longest_word || prev.longestWord,
+                longestWordLength: newData.longest_word_length || prev.longestWordLength,
                 currentStreak: newData.win_streak || prev.currentStreak,
                 winRate: newData.total_games > 0 ? Math.round(((newData.wins || 0) / newData.total_games) * 100) : 0,
                 level: levelData.level,
@@ -453,6 +456,7 @@ const ProfilePage = () => {
           totalScore: data.total_score || 0,
           winRate: data.total_games > 0 ? Math.round(((data.wins || 0) / data.total_games) * 100) : 0,
           longestWord: data.longest_word || '',
+          longestWordLength: data.longest_word_length || 0,
           currentStreak: data.win_streak || 0,
           level: levelData.level,
           experience: levelData.experience,
@@ -769,7 +773,14 @@ const ProfilePage = () => {
             </div>
             <div className="flex justify-between">
               <span>En Uzun Kelime:</span>
-              <span className="font-bold">{profileData.longestWord}</span>
+              <span className="font-bold">
+                {profileData.longestWord ? 
+                  `${profileData.longestWord} (${profileData.longestWordLength} harf)` : 
+                  profileData.longestWordLength > 0 ? 
+                    `${profileData.longestWordLength} harfli kelime` : 
+                    'Henüz yok'
+                }
+              </span>
             </div>
             <div className="flex justify-between">
               <span>Kaybetme:</span>
