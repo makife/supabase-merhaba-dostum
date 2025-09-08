@@ -110,34 +110,34 @@ export const ThemeSelector = () => {
             >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                  <div className="flex items-center space-x-3 min-w-0 flex-1">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
                       isActive ? 'bg-primary text-primary-foreground' : 'bg-secondary'
                     }`}>
                       <themeOption.icon className="w-5 h-5" />
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2">
-                        <h4 className="font-semibold">{themeOption.name}</h4>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2 flex-wrap">
+                        <h4 className="font-semibold truncate">{themeOption.name}</h4>
                         {isActive && (
-                          <Badge variant="default" className="text-xs">
+                          <Badge variant="default" className="text-xs flex-shrink-0">
                             Aktif
                           </Badge>
                         )}
                         {themeOption.isPremium && (
-                          <Badge variant="secondary" className="text-xs">
+                          <Badge variant="secondary" className="text-xs flex-shrink-0">
                             Premium
                           </Badge>
                         )}
                         {!isAvailable && (
-                          <Badge variant="secondary" className="text-xs">
+                          <Badge variant="secondary" className="text-xs flex-shrink-0">
                             <Lock className="w-3 h-3 mr-1" />
                             Kilitli
                           </Badge>
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground">{themeOption.description}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{themeOption.preview}</p>
+                      <p className="text-sm text-muted-foreground truncate">{themeOption.description}</p>
+                      <p className="text-xs text-muted-foreground mt-1 truncate">{themeOption.preview}</p>
                     </div>
                   </div>
                   
@@ -146,6 +146,7 @@ export const ThemeSelector = () => {
                       variant={isActive ? "default" : "outline"}
                       size="sm"
                       disabled={isActive}
+                      className="flex-shrink-0"
                     >
                       {isActive ? 'Seçili' : 'Seç'}
                     </Button>

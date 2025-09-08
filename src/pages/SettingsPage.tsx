@@ -303,8 +303,8 @@ const SettingsPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
-      <div className="max-w-2xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4 overflow-x-hidden">
+      <div className="max-w-2xl mx-auto space-y-6 pb-8">
         {/* Header */}
         <div className="flex items-center justify-between">
           <Button variant="outline" size="sm" onClick={() => navigate('/')}>
