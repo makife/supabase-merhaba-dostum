@@ -151,7 +151,7 @@ const ProfilePage = () => {
       let lost = 0;
 
       tournamentMatches.forEach(match => {
-        if (match.winner_id === user.id) {
+        if (match.winner_id === viewedUserId) {
           won++;
         } else {
           lost++;
@@ -213,9 +213,9 @@ const ProfilePage = () => {
     fetchProfile();
   }, [viewedUserId]);
 
-  // Listen for real-time updates to total_score
+  // Listen for real-time updates to total_score (only for own profile)
   useEffect(() => {
-    if (!viewedUserId) return;
+    if (!viewedUserId || !isOwnProfile) return;
 
     const channel = supabase
       .channel('profile-updates')
@@ -291,7 +291,7 @@ const ProfilePage = () => {
           event: 'UPDATE',
           schema: 'public',
           table: 'tournament_matches',
-          filter: `player1_id=eq.${user.id}`
+          filter: `player1_id=eq.${viewedUserId}`
         },
         async (payload) => {
           console.log('🏆 Tournament match updated (as player1):', payload.new);
@@ -313,7 +313,7 @@ const ProfilePage = () => {
           event: 'UPDATE',
           schema: 'public',
           table: 'tournament_matches',
-          filter: `player2_id=eq.${user.id}`
+          filter: `player2_id=eq.${viewedUserId}`
         },
         async (payload) => {
           console.log('🏆 Tournament match updated (as player2):', payload.new);
@@ -334,7 +334,7 @@ const ProfilePage = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [viewedUserId]);
+  }, [viewedUserId, isOwnProfile]);
 
   useEffect(() => {
     if (isOwnProfile) {
@@ -507,7 +507,11 @@ const ProfilePage = () => {
                 fallback={profileData.username.charAt(0).toUpperCase()}
                 size="xl"
                 editable={isOwnProfile}
-                onAvatarChange={isOwnProfile ? (newUrl) => setProfileData(prev => ({ ...prev, avatar_url: newUrl || '' })) : undefined}
+                onAvatarChange={(newUrl) => {
+                  if (isOwnProfile) {
+                    setProfileData(prev => ({ ...prev, avatar_url: newUrl || '' }));
+                  }
+                }}
                 className="ring-2 ring-primary/20"
               />
               <div className="flex-1">
