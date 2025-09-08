@@ -16,7 +16,7 @@ import { useChatNotifications } from '@/hooks/useChatNotifications';
 import { useUserBlocking } from '@/hooks/useUserBlocking';
 import { toast } from 'sonner';
 
-type ViewMode = 'global' | 'users' | 'private-chat';
+type ViewMode = 'global' | 'users' | 'private-chat' | 'blocked-users';
 
 interface SelectedUser {
   id: string;
@@ -299,6 +299,25 @@ export default function ChatPage() {
               >
                 <Users className="w-5 h-5" />
               </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setViewMode('global')}
+                className="p-2 rounded-full text-white hover:bg-red-500/20 border border-transparent hover:border-red-300/30 transition-all duration-200"
+                title="Engelli Kullanıcılar"
+              >
+                <UserX className="w-5 h-5" />
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleViewChange('blocked-users')}
+                className="p-2 rounded-full text-white hover:bg-red-500/20 border border-transparent hover:border-red-300/30 transition-all duration-200"
+              >
+                <UserX className="w-5 h-5" />
+              </Button>
             </>
           )}
           
@@ -408,6 +427,69 @@ export default function ChatPage() {
     );
   };
 
+  const renderBlockedUsersList = () => (
+    <ScrollArea className="flex-1 p-4">
+      <div className="space-y-3">
+        {blockedUsers.length === 0 ? (
+          <div className="text-center py-12 text-gray-500">
+            <UserX className="w-16 h-16 mx-auto mb-4 opacity-30" />
+            <h3 className="text-lg font-medium mb-2">Engellenen kullanıcı yok</h3>
+            <p className="text-sm">Kullanıcıları engellemek için kullanıcılar listesini kullanın</p>
+          </div>
+        ) : (
+          allUsers
+            .filter(user => blockedUsers.includes(user.id))
+            .map((blockedUser) => (
+              <Card
+                key={blockedUser.id}
+                className="p-4 border-red-200 bg-red-50/50 hover:bg-red-50 transition-colors"
+              >
+                <div className="flex items-center space-x-3">
+                  <div 
+                    className="cursor-pointer"
+                    onClick={() => navigate(`/profile/${blockedUser.id}`)}
+                  >
+                    <UserAvatar
+                      src={blockedUser.avatar_url}
+                      alt={blockedUser.username}
+                      fallback={blockedUser.username.charAt(0).toUpperCase()}
+                      size="md"
+                      className="border-2 border-red-300 opacity-60"
+                    />
+                  </div>
+                  <div 
+                    className="flex-1 min-w-0 cursor-pointer"
+                    onClick={() => navigate(`/profile/${blockedUser.id}`)}
+                  >
+                    <p className="font-medium text-red-800 truncate hover:text-red-600 transition-colors">
+                      {blockedUser.username}
+                    </p>
+                    <p className="text-sm text-red-600 flex items-center">
+                      <UserX className="w-3 h-3 mr-1" />
+                      Engellendi
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      unblockUser(blockedUser.id);
+                      toast.success(`${blockedUser.username} engellemeden kaldırıldı`);
+                    }}
+                    className="text-xs px-3 py-1 h-8 text-green-600 border-green-600 hover:bg-green-50"
+                  >
+                    <UserCheck className="w-3 h-3 mr-1" />
+                    Engeli Kaldır
+                  </Button>
+                </div>
+              </Card>
+            ))
+        )}
+      </div>
+    </ScrollArea>
+  );
+  };
+
   const renderContent = () => {
     if (viewMode === 'private-chat' && selectedUser && activeChatId) {
       return (
@@ -443,7 +525,21 @@ export default function ChatPage() {
       );
     }
 
-    // Global chat
+    if (viewMode === 'blocked-users') {
+      return (
+        <div className="h-full flex flex-col">
+          {renderHeader(
+            'KELİMECİ - Engelli Kullanıcılar',
+            `${blockedUsers.length} kişi engellendi`,
+            true
+          )}
+          
+          {renderBlockedUsersList()}
+        </div>
+      );
+    }
+
+    // Global chat (default)
     return (
       <div className="h-full flex flex-col">
         {renderHeader(
@@ -456,7 +552,6 @@ export default function ChatPage() {
             isOpen={true} 
             onClose={() => {}} 
             isFullPage={true}
-            onStartPrivateChat={startPrivateChat} 
           />
         </div>
       </div>
