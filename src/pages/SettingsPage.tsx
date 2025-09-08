@@ -1,7 +1,6 @@
 import { SoundPackSelector } from '@/components/SoundPackSelector';
 import { MusicPackSelector } from '@/components/MusicPackSelector';
 import { ThemeSelector } from '@/components/ThemeSelector';
-import { AvatarFrameSelector } from '@/components/AvatarFrameSelector';
 import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -394,64 +393,6 @@ const SettingsPage = () => {
               </>
             )}
 
-            {/* Effect Settings */}
-            {(hasPurchased('effect_confetti') || hasPurchased('effect_fireworks')) && (
-              <>
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-3">
-                    <Sparkles className="w-5 h-5 text-purple-500" />
-                    <div>
-                      <p className="font-medium">Oyun Efektleri</p>
-                      <p className="text-sm text-muted-foreground">Kelime bulma efektlerini yönet</p>
-                    </div>
-                  </div>
-                  
-                  {/* Overall Effects Toggle */}
-                  <div className="flex items-center justify-between pl-8">
-                    <div>
-                      <p className="font-medium">Tüm Efektler</p>
-                      <p className="text-sm text-muted-foreground">Tüm efektleri açın/kapatın</p>
-                    </div>
-                    <Switch
-                      checked={settings?.effects_enabled ?? true}
-                      onCheckedChange={(checked) => updateSettings({ effects_enabled: checked })}
-                    />
-                  </div>
-                  
-                  {/* Individual Effect Controls */}
-                  {(settings?.effects_enabled ?? true) && (
-                    <div className="space-y-3 pl-8">
-                      {hasPurchased('effect_confetti') && (
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <Gift className="w-4 h-4 text-green-500" />
-                            <p className="text-sm font-medium">Konfeti Efekti</p>
-                          </div>
-                          <Switch
-                            checked={settings?.confetti_effect_enabled ?? true}
-                            onCheckedChange={(checked) => updateSettings({ confetti_effect_enabled: checked })}
-                          />
-                        </div>
-                      )}
-                      
-                      {hasPurchased('effect_fireworks') && (
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <Sparkles className="w-4 h-4 text-yellow-500" />
-                            <p className="text-sm font-medium">Havai Fişek Efekti</p>
-                          </div>
-                          <Switch
-                            checked={settings?.fireworks_effect_enabled ?? true}
-                            onCheckedChange={(checked) => updateSettings({ fireworks_effect_enabled: checked })}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <Separator />
-              </>
-            )}
 
             {/* Sound Pack Selector */}
             {soundsEnabled && (
@@ -463,12 +404,6 @@ const SettingsPage = () => {
 
             {/* Theme Selector */}
             <ThemeSelector />
-            
-            <Separator />
-
-            {/* Avatar Frame Selector */}
-            <AvatarFrameSelector />
-            
             
             <Separator />
             
