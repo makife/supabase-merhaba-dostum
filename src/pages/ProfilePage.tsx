@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { UserAvatar } from '@/components/UserAvatar';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -28,6 +28,9 @@ const ProfilePage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { jokers } = useJokerInventory();
+  const { id: routeId } = useParams();
+  const viewedUserId = routeId || user?.id || null;
+  const isOwnProfile = !routeId || routeId === user?.id;
   const [isEditing, setIsEditing] = useState(false);
   const [editedUsername, setEditedUsername] = useState('');
   const [profileData, setProfileData] = useState({
@@ -82,9 +85,8 @@ const ProfilePage = () => {
     return { level, experience, nextLevelExp };
   };
 
-  // Fetch badges from database
   const fetchBadges = async () => {
-    if (!user) return;
+    if (!user || !isOwnProfile) return;
   
     try {
       // Get all badges with user's earned status
@@ -126,16 +128,14 @@ const ProfilePage = () => {
     }
   };
 
-  // Fetch tournament statistics
   const fetchTournamentStats = async () => {
-    if (!user) return { won: 0, lost: 0, played: 0, winRate: 0 };
+    if (!viewedUserId) return { won: 0, lost: 0, played: 0, winRate: 0 };
 
     try {
-      // Kullanıcının turnuva maçlarını al
       const { data: tournamentMatches, error } = await supabase
         .from('tournament_matches')
         .select('winner_id, player1_id, player2_id, status')
-        .or(`player1_id.eq.${user.id},player2_id.eq.${user.id}`)
+        .or(`player1_id.eq.${viewedUserId},player2_id.eq.${viewedUserId}`)
         .eq('status', 'completed');
 
       if (error) {
@@ -170,12 +170,12 @@ const ProfilePage = () => {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      if (!user) return;
+      if (!viewedUserId) return;
       
       const { data } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', user.id)
+        .eq('id', viewedUserId)
         .maybeSingle();
       
       // Turnuva istatistiklerini al
@@ -211,11 +211,11 @@ const ProfilePage = () => {
     };
 
     fetchProfile();
-  }, [user]);
+  }, [viewedUserId]);
 
   // Listen for real-time updates to total_score
   useEffect(() => {
-    if (!user) return;
+    if (!viewedUserId) return;
 
     const channel = supabase
       .channel('profile-updates')
@@ -225,7 +225,7 @@ const ProfilePage = () => {
           event: 'UPDATE',
           schema: 'public',
           table: 'profiles',
-          filter: `id=eq.${user.id}`
+          filter: `id=eq.${viewedUserId}`
         },
         (payload) => {
           console.log('📊 Profile updated:', payload.new);
@@ -264,7 +264,7 @@ const ProfilePage = () => {
           event: 'INSERT',
           schema: 'public',
           table: 'user_badges',
-          filter: `user_id=eq.${user.id}`
+          filter: `user_id=eq.${viewedUserId}`
         },
         async (payload) => {
           console.log('🏆 New badge earned:', payload.new);
@@ -334,11 +334,13 @@ const ProfilePage = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [viewedUserId]);
 
   useEffect(() => {
-    fetchBadges();
-  }, [user]);
+    if (isOwnProfile) {
+      fetchBadges();
+    }
+  }, [viewedUserId, isOwnProfile]);
 
   const handleEditToggle = () => {
     if (isEditing) {
@@ -348,7 +350,7 @@ const ProfilePage = () => {
   };
 
   const handleSaveProfile = async () => {
-    if (!user) return;
+    if (!user || !isOwnProfile) return;
 
     try {
       const { error } = await supabase
@@ -426,13 +428,13 @@ const ProfilePage = () => {
   };
 
   const refreshStats = async () => {
-    if (!user) return;
+    if (!viewedUserId) return;
   
     try {
       const { data } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', user.id)
+        .eq('id', viewedUserId)
         .single();
     
       const tournamentStats = await fetchTournamentStats();

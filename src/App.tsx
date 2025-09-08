@@ -55,6 +55,11 @@ const AppRoutes = () => {
           <ProfilePage />
         </ProtectedRoute>
       } />
+      <Route path="/profile/:id" element={
+        <ProtectedRoute>
+          <ProfilePage />
+        </ProtectedRoute>
+      } />
       <Route path="/game/vs-computer" element={
         <ProtectedRoute>
           <GamePage gameMode="vs-computer" />

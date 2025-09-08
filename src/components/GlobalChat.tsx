@@ -764,7 +764,7 @@ const startPrivateChat = async (targetUser: SelectedUser) => {
           <span className="text-sm font-medium text-green-700">Çevrimiçi</span>
         </div>
         <div className="space-y-2">
-          {onlineUsers.filter(targetUser => !isUserBlocked(targetUser.id)).map((targetUser) => (
+          {onlineUsers.map((targetUser) => (
             <Card 
               key={targetUser.id} 
               className="p-3 hover:shadow-md transition-all cursor-pointer border-chat-200"
@@ -777,9 +777,9 @@ const startPrivateChat = async (targetUser: SelectedUser) => {
                     alt={targetUser.username}
                     fallback={targetUser.username?.charAt(0).toUpperCase()}
                     size="sm"
-                    className="border-2 border-green-400"
+                    className={`border-2 ${isUserBlocked(targetUser.id) ? 'border-red-300 opacity-60' : 'border-green-400'}`}
                   />
-                  <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                  <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${isUserBlocked(targetUser.id) ? 'bg-red-500' : 'bg-green-500'}`}></div>
                 </div>
                 <div 
                   className="flex-1 cursor-pointer"
@@ -788,35 +788,21 @@ const startPrivateChat = async (targetUser: SelectedUser) => {
                     navigate(`/profile/${targetUser.id}`);
                   }}
                 >
-                  <div className="font-medium text-gray-800 hover:text-blue-600 transition-colors">{targetUser.username}</div>
-                  <div className="text-xs text-green-600">Çevrimiçi</div>
+                  <div className={`font-medium ${isUserBlocked(targetUser.id) ? 'text-red-600 line-through' : 'text-gray-800'} hover:text-blue-600 transition-colors`}>{targetUser.username}</div>
+                  <div className={`text-xs ${isUserBlocked(targetUser.id) ? 'text-red-600' : 'text-green-600'}`}>{isUserBlocked(targetUser.id) ? 'Engellendi' : 'Çevrimiçi'}</div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  {isUserBlocked(targetUser.id) ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        unblockUser(targetUser.id);
-                      }}
-                      className="text-xs px-2 py-1 h-6 text-green-600 border-green-600 hover:bg-green-50"
-                    >
-                      Engeli Kaldır
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        blockUser(targetUser.id);
-                      }}
-                      className="text-xs px-2 py-1 h-6 text-red-600 border-red-600 hover:bg-red-50"
-                    >
-                      Engelle
-                    </Button>
-                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      isUserBlocked(targetUser.id) ? unblockUser(targetUser.id) : blockUser(targetUser.id);
+                    }}
+                    className={`text-xs px-2 py-1 h-6 ${isUserBlocked(targetUser.id) ? 'text-green-600 border-green-600 hover:bg-green-50' : 'text-red-600 border-red-600 hover:bg-red-50'}`}
+                  >
+                    {isUserBlocked(targetUser.id) ? 'Engeli Kaldır' : 'Engelle'}
+                  </Button>
                   <MessageCircle className="w-5 h-5 text-chat-500" />
                 </div>
               </div>
