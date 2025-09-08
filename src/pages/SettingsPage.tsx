@@ -1,4 +1,3 @@
-import { SoundPackSelector } from '@/components/SoundPackSelector';
 import { MusicPackSelector } from '@/components/MusicPackSelector';
 import { ThemeSelector } from '@/components/ThemeSelector';
 import { useState, useEffect, useRef } from 'react';
@@ -385,22 +384,6 @@ const SettingsPage = () => {
 
             <Separator />
 
-            {/* Music Pack Selector - appears when music is enabled */}
-            {musicEnabled && (
-              <>
-                <MusicPackSelector />
-                <Separator />
-              </>
-            )}
-
-
-            {/* Sound Pack Selector */}
-            {soundsEnabled && (
-              <>
-                <SoundPackSelector />
-                <Separator />
-              </>
-            )}
 
             {/* Theme Selector */}
             <ThemeSelector />

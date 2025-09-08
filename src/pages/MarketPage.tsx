@@ -498,6 +498,8 @@ const MarketPage = () => {
               <p className="text-muted-foreground">Daha fazla oyun oynayın, yeteneklerinizi geliştirin</p>
             </div>
             
+            {renderMarketItems(getItemsByCategory('credits'))}
+
             {/* Oyun Açıklaması */}
             <Card className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border-blue-500/30">
               <CardHeader>
@@ -527,8 +529,6 @@ const MarketPage = () => {
                 </ul>
               </CardContent>
             </Card>
-
-            {renderMarketItems(getItemsByCategory('credits'))}
           </TabsContent>
 
           <TabsContent value="premium" className="space-y-4">
@@ -536,6 +536,7 @@ const MarketPage = () => {
               <h3 className="text-xl font-bold mb-2">Premium Üyelik</h3>
               <p className="text-muted-foreground">Tüm özelliklere sınırsız erişim</p>
             </div>
+            
             {renderMarketItems(getItemsByCategory('premium'))}
             
             {/* Premium Avantajları */}
@@ -579,6 +580,8 @@ const MarketPage = () => {
               <p className="text-muted-foreground">Oyunu kendi tarzınızla oynayın</p>
             </div>
             
+            {renderMarketItems(getItemsByCategory('themes'))}
+
             {/* Tema Açıklaması */}
             <Card className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/30">
               <CardHeader>
@@ -608,8 +611,6 @@ const MarketPage = () => {
                 </ul>
               </CardContent>
             </Card>
-
-            {renderMarketItems(getItemsByCategory('themes'))}
           </TabsContent>
 
           <TabsContent value="jokers" className="space-y-4">
@@ -618,6 +619,8 @@ const MarketPage = () => {
               <p className="text-muted-foreground">Zor durumlarda kullanabileceğiniz jokerler</p>
             </div>
             
+            {renderMarketItems(getItemsByCategory('jokers'))}
+
             {/* Joker Açıklaması */}
             <Card className="mb-6 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/30">
               <CardHeader>
@@ -643,8 +646,6 @@ const MarketPage = () => {
                 </div>
               </CardContent>
             </Card>
-
-            {renderMarketItems(getItemsByCategory('jokers'))}
           </TabsContent>
         </Tabs>
       </div>
