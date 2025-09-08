@@ -71,7 +71,7 @@ const MarketPage = () => {
       id: 'credits_10',
       title: '10 Oyun Hakkı',
       description: 'Ekstra 10 oyun hakkı kazanın',
-      price: 4.99,
+      price: 49.99,
       currency: 'premium',
       icon: Zap,
       type: 'credits',
@@ -81,7 +81,7 @@ const MarketPage = () => {
       id: 'credits_25',
       title: '25 Oyun Hakkı',
       description: 'Ekstra 25 oyun hakkı kazanın',
-      price: 9.99,
+      price: 99.99,
       currency: 'premium',
       icon: Zap,
       type: 'credits',
@@ -91,7 +91,7 @@ const MarketPage = () => {
       id: 'credits_50',
       title: '50 Oyun Hakkı',
       description: 'Büyük oyun hakkı paketi',
-      price: 17.99,
+      price: 179.99,
       currency: 'premium',
       icon: Zap,
       type: 'credits',
@@ -103,7 +103,7 @@ const MarketPage = () => {
       id: 'unlimited_1h',
       title: '1 Saat Sınırsız',
       description: '1 saat boyunca sınırsız oyun oynayın',
-      price: 7.99,
+      price: 79.99,
       currency: 'premium',
       icon: Clock,
       type: 'unlimited_time',
@@ -114,7 +114,7 @@ const MarketPage = () => {
       id: 'unlimited_24h',
       title: '24 Saat Sınırsız',
       description: '24 saat boyunca sınırsız oyun oynayın',
-      price: 24.99,
+      price: 249.99,
       currency: 'premium',
       icon: Infinity,
       type: 'unlimited_time',
@@ -127,7 +127,7 @@ const MarketPage = () => {
       id: 'premium_month',
       title: 'Premium Aylık',
       description: 'Sınırsız oyun, tüm temalar ve özel özellikler',
-      price: 29.99,
+      price: 299.99,
       currency: 'premium',
       icon: Crown,
       type: 'premium',
@@ -137,7 +137,7 @@ const MarketPage = () => {
       id: 'premium_year',
       title: 'Premium Yıllık',
       description: '12 aylık premium üyelik - %40 tasarruf! Tüm özellikler dahil',
-      price: 199.99,
+      price: 1999.99,
       currency: 'premium',
       icon: Crown,
       type: 'premium',
@@ -149,7 +149,7 @@ const MarketPage = () => {
       id: 'theme_dark_ocean',
       title: 'Koyu Okyanus Teması',
       description: 'Sakin mavi tonlarında koyu tema',
-      price: 1.99,
+      price: 19.99,
       currency: 'premium',
       icon: Moon,
       type: 'theme',
@@ -159,7 +159,7 @@ const MarketPage = () => {
       id: 'theme_sunset',
       title: 'Gün Batımı Teması',
       description: 'Sıcak turuncu ve pembe tonları',
-      price: 1.99,
+      price: 19.99,
       currency: 'premium',
       icon: Sun,
       type: 'theme',
@@ -169,7 +169,7 @@ const MarketPage = () => {
       id: 'theme_forest',
       title: 'Orman Teması',
       description: 'Doğal yeşil tonları',
-      price: 1.99,
+      price: 19.99,
       currency: 'premium',
       icon: Palette,
       type: 'theme',
@@ -181,7 +181,7 @@ const MarketPage = () => {
       id: 'joker_degistir',
       title: 'Değiştir Jokeri',
       description: 'Her satın alım 1 adet joker verir',
-      price: 2.99,
+      price: 29.99,
       currency: 'premium',
       icon: Star,
       type: 'joker',
@@ -191,7 +191,7 @@ const MarketPage = () => {
       id: 'joker_fisildi',
       title: 'Fısılda Jokeri',
       description: 'Her satın alım 1 adet joker verir',
-      price: 3.99,
+      price: 39.99,
       currency: 'premium',
       icon: Star,
       type: 'joker',
@@ -201,7 +201,7 @@ const MarketPage = () => {
       id: 'joker_senyaz',
       title: 'Sen Yaz Jokeri',
       description: 'Her satın alım 1 adet joker verir',
-      price: 5.99,
+      price: 59.99,
       currency: 'premium',
       icon: Star,
       type: 'joker',
@@ -338,11 +338,11 @@ const MarketPage = () => {
             <div className="flex items-center justify-between">
               <div className="flex flex-col">
                 <span className="text-lg font-bold text-primary">
-                  {item.currency === 'premium' ? `$${item.price}` : `${item.price} Kredi`}
+                  {item.currency === 'premium' ? `₺${item.price}` : `${item.price} Kredi`}
                 </span>
-                {item.currency === 'premium' && item.price > 5 && (
+                {item.currency === 'premium' && item.price > 50 && (
                   <span className="text-xs text-muted-foreground line-through">
-                    ${(item.price * 1.4).toFixed(2)}
+                    ₺{(item.price * 1.4).toFixed(2)}
                   </span>
                 )}
               </div>
