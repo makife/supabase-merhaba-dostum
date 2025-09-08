@@ -99,7 +99,7 @@ const WheelPage = () => {
       
       // Başarı mesajı
       showRewardToast(reward);
-    }, 3000);
+    }, 8000);
   };
 
   const saveWheelSpin = async (reward: WheelReward) => {
@@ -194,30 +194,36 @@ const WheelPage = () => {
                 <div className="relative w-80 h-80">
                   {/* Çark */}
                   <div 
-                    className={`w-full h-full rounded-full border-8 border-yellow-400 shadow-2xl transition-transform duration-3000 ease-out`}
+                    className={`w-full h-full rounded-full border-8 border-yellow-400 shadow-2xl transition-transform duration-[8000ms] ease-out overflow-hidden`}
                     style={{ 
                       transform: `rotate(${rotation}deg)`,
-                      background: `conic-gradient(${wheelSegments.map((segment, index) => {
-                        const startAngle = (index * 360) / wheelSegments.length;
-                        const endAngle = ((index + 1) * 360) / wheelSegments.length;
-                        return `${segment.color.replace('bg-', '')} ${startAngle}deg ${endAngle}deg`;
-                      }).join(', ')})`
                     }}
                   >
                     {/* Çark Bölümleri */}
                     {wheelSegments.map((segment, index) => {
                       const angle = (360 / wheelSegments.length) * index;
+                      const nextAngle = (360 / wheelSegments.length) * (index + 1);
+                      
                       return (
                         <div
                           key={index}
-                          className="absolute top-1/2 left-1/2 origin-bottom text-white text-xs font-bold"
+                          className="absolute inset-0"
                           style={{
-                            transform: `translate(-50%, -100%) rotate(${angle + 12}deg)`,
-                            height: '120px',
-                            width: '2px'
+                            clipPath: `polygon(50% 50%, ${50 + 45 * Math.cos((angle - 90) * Math.PI / 180)}% ${50 + 45 * Math.sin((angle - 90) * Math.PI / 180)}%, ${50 + 45 * Math.cos((nextAngle - 90) * Math.PI / 180)}% ${50 + 45 * Math.sin((nextAngle - 90) * Math.PI / 180)}%)`
                           }}
                         >
-                          <div className="transform -rotate-90 whitespace-nowrap text-center mt-8">
+                          <div className={`w-full h-full ${segment.color}`}></div>
+                          
+                          {/* Text */}
+                          <div
+                            className="absolute text-white text-xs font-bold whitespace-nowrap"
+                            style={{
+                              top: '50%',
+                              left: '50%',
+                              transform: `translate(-50%, -50%) translate(${25 * Math.cos((angle + 12) * Math.PI / 180)}px, ${25 * Math.sin((angle + 12) * Math.PI / 180)}px) rotate(${angle + 12}deg)`,
+                              transformOrigin: 'center'
+                            }}
+                          >
                             {segment.text}
                           </div>
                         </div>
@@ -272,31 +278,6 @@ const WheelPage = () => {
                 </CardContent>
               </Card>
             )}
-
-            {/* Ödül Listesi */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">🎁 Çarktan Çıkabilecek Ödüller</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="grid grid-cols-1 gap-2">
-                  {[...new Set(wheelSegments.filter(s => s.type !== 'empty').map(s => s.text))].map((text, index) => (
-                    <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
-                      <span className="text-sm">{text}</span>
-                      <Badge variant="outline" className="text-xs">
-                        {wheelSegments.filter(s => s.text === text).length} bölüm
-                      </Badge>
-                    </div>
-                  ))}
-                  <div className="flex items-center justify-between p-2 bg-muted rounded">
-                    <span className="text-sm">Boş</span>
-                    <Badge variant="outline" className="text-xs">
-                      {wheelSegments.filter(s => s.type === 'empty').length} bölüm
-                    </Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
 
             {/* Çark Kuralları */}
             <Card>
