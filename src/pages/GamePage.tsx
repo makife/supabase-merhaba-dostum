@@ -339,6 +339,10 @@ useEffect(() => {
   const [opponentWordsWithScores, setOpponentWordsWithScores] = useState<Array<{word: string, score: number}>>([]);
   const [playerScore, setPlayerScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
+  const playerScoreRef = useRef(0);
+  const opponentScoreRef = useRef(0);
+  useEffect(() => { playerScoreRef.current = playerScore; }, [playerScore]);
+  useEffect(() => { opponentScoreRef.current = opponentScore; }, [opponentScore]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const timeLeftRef = useRef<number>(gameType === 'timed' ? 120 : 0);
   const [displayTime, setDisplayTime] = useState<number>(timeLeftRef.current);
@@ -924,8 +928,8 @@ const handleGameEnd = async () => {
   console.log('🏁 handleGameEnd çağrıldı!');
   console.log('🎮 gameMode:', gameMode, 'tournamentMatch:', !!tournamentMatch);
   
-  const finalUserScore = playerScore;
-  const finalOpponentScore = opponentScore;
+  const finalUserScore = playerScoreRef.current;
+  const finalOpponentScore = opponentScoreRef.current;
 
   // ✅ TURNUVA KONTROLÜ - tournamentMatch var mı?
   if (gameMode === 'tournament' && tournamentMatch && user) {
@@ -2067,8 +2071,8 @@ useEffect(() => {
         handleGameEnd();
         setTimeout(() => {
           setGameEnded(true);
-          checkWinnerWithScores(playerScore, opponentScore);
-        }, 100);
+          checkWinnerWithScores(playerScoreRef.current, opponentScoreRef.current);
+        }, 50);
       }
     }, 1000);
     
