@@ -33,7 +33,8 @@ import {
   Volume2,
   VolumeX,
   Gift,
-  Sparkles
+  Sparkles,
+  RotateCcw
 } from 'lucide-react';
 
 // Check if user is in their first week (gift premium period)
@@ -400,18 +401,27 @@ const HomePage = () => {
             <div className="space-y-2 mt-2 pt-2 border-t border-white/20">
               {/* Hak barı - Real-time güncellemeler */}
               {!isPremium && (
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-muted-foreground">Oyun Hakları</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-foreground">{profile?.game_credits || 0}/5</span>
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">Oyun Hakları</span>
+                        <button 
+                          onClick={() => navigate('/wheel')}
+                          className="w-5 h-5 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center shadow-lg animate-spin hover:animate-pulse transition-all duration-300"
+                          title="Günlük Çark Çevirme"
+                        >
+                          <Sparkles className="w-3 h-3 text-white" />
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-foreground">{profile?.game_credits || 0}/5</span>
                       {timeUntilNextCredit && (profile?.game_credits < 5) && (
                         <span className="text-xs text-orange-500 bg-orange-100 px-2 py-1 rounded-full">
                           +1 {timeUntilNextCredit}
                         </span>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
                   <div className="flex gap-1 h-2 w-full">
                     {Array.from({ length: 5 }, (_, i) => {
                       const isActive = i < (profile?.game_credits || 0);

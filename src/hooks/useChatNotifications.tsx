@@ -12,25 +12,35 @@ export function useChatNotifications() {
   const loadUnreadMessages = async () => {
     if (!user?.id) return 0;
     
-    const { count, error } = await (supabase as any)
-      .from('private_messages')
-      .select('*', { count: 'exact' })
-      .eq('recipient_id', user.id)
-      .eq('is_read', false);
+    try {
+      const { count } = await supabase
+        .from('private_messages')
+        .select('*', { count: 'exact' })
+        .eq('recipient_id', user.id)
+        .eq('is_read', false);
 
-    return count || 0;
+      return count || 0;
+    } catch (error) {
+      console.error('Error loading unread messages:', error);
+      return 0;
+    }
   };
 
   const loadGlobalMentions = async () => {
     if (!user?.id || !profile?.username) return 0;
     
-    const { data, error } = await (supabase as any)
-      .from('global_messages')
-      .select('id')
-      .ilike('message', `%@${profile.username}%`)
-      .eq('is_read', false);
+    try {
+      const { data } = await supabase
+        .from('global_chat')
+        .select('id')
+        .ilike('message', `%@${profile.username}%`)
+        .neq('user_id', user.id);
 
-    return data?.length || 0;
+      return data?.length || 0;
+    } catch (error) {
+      console.error('Error loading global mentions:', error);
+      return 0;
+    }
   };
 
   const markPrivateMessagesAsRead = async () => {
@@ -49,6 +59,7 @@ export function useChatNotifications() {
 
   const markAllAsRead = async () => {
     await markPrivateMessagesAsRead();
+    setGlobalMentionCount(0);
   };
 
   const refreshUnreadCounts = async () => {
@@ -80,9 +91,18 @@ export function useChatNotifications() {
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'global_messages'
+          table: 'global_chat'
         },
-        refreshUnreadCounts
+        (payload) => {
+          // Check if this is a mention for current user
+          if (payload.new && typeof payload.new.message === 'string' && profile?.username) {
+            const message = payload.new.message.toLowerCase();
+            const username = profile.username.toLowerCase();
+            if (message.includes(`@${username}`) && payload.new.user_id !== user.id) {
+              refreshUnreadCounts();
+            }
+          }
+        }
       )
       .subscribe();
 
