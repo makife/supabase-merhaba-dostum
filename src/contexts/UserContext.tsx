@@ -397,6 +397,11 @@ export const UserProvider = ({ children }: UserProviderProps) => {
               });
               return newProfile;
             });
+            
+            // Force a fresh fetch to ensure all data is synced
+            setTimeout(() => {
+              refreshProfile();
+            }, 100);
           }
         }
       )

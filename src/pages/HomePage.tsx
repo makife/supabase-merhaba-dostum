@@ -152,6 +152,8 @@ const HomePage = () => {
           
           if (now >= nextRefresh) {
             refreshCredits();
+            // Profili de yenile
+            setTimeout(() => refreshProfile(), 500);
           }
         }
       }, 1000);

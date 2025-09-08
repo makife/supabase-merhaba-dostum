@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode, useCallback 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from './AuthContext';
+import { useUser } from './UserContext';
 import { useToast } from '@/hooks/use-toast';
 import { useNakamaMatchmaking } from '@/hooks/useNakamaMatchmaking';
 import { useNavigate } from 'react-router-dom';
@@ -133,6 +134,7 @@ function debounce<T extends (...args: any[]) => any>(
 
 export const GameProvider = ({ children }: GameProviderProps) => {
   const { user } = useAuth();
+  const { refreshProfile } = useUser();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [currentRoom, setCurrentRoom] = useState<GameRoom | null>(null);
@@ -1158,9 +1160,17 @@ const fetchParticipants = useCallback(
     // Check for new badges after database triggers complete
     if (playerStats) {
       await checkBadges(playerStats.userId, playerStats.words.length);
+      // Refresh user profile to update stats in UI
+      if (playerStats.userId === user?.id) {
+        setTimeout(() => refreshProfile(), 500);
+      }
     }
     if (opponentStats && !participants.find(p => p.user_id === opponentStats.userId && p.is_bot)) {
       await checkBadges(opponentStats.userId, opponentStats.words.length);
+      // Refresh user profile to update stats in UI  
+      if (opponentStats.userId === user?.id) {
+        setTimeout(() => refreshProfile(), 500);
+      }
     }
     
     // Clean up room after a delay to allow triggers to complete
