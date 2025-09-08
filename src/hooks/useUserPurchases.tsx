@@ -190,29 +190,26 @@ export const useUserPurchases = () => {
     try {
       // Öğe tipine göre işlem yap
       if (item.type === 'credits') {
-        // Yeni hak sistemi: bonus krediler olarak ekle
+        // Direkt olarak mevcut haklara ekle
         const { data: profile } = await supabase
           .from('profiles')
-          .select('game_credits, bonus_credits')
+          .select('game_credits')
           .eq('id', user.id)
           .single();
 
-        const currentBase = profile?.game_credits || 0;
-        const currentBonus = profile?.bonus_credits || 0;
-        
-        // Ana hakları 5'e tamamla, kalanı bonus'a ekle
-        const neededForFull = Math.max(0, 5 - currentBase);
-        const newBase = Math.min(5, currentBase + item.value);
-        const remainingBonus = Math.max(0, item.value - neededForFull);
-        const newTotalBonus = currentBonus + remainingBonus;
+        const currentCredits = profile?.game_credits || 0;
+        const newCredits = currentCredits + item.value;
 
         await supabase
           .from('profiles')
           .update({ 
-            game_credits: newBase,
-            bonus_credits: newTotalBonus
+            game_credits: newCredits
           })
           .eq('id', user.id);
+
+      } else if (item.type === 'joker') {
+        // Joker satın alımı - envantere ekle
+        await updateInventory(item.id, item.value);
 
       } else if (item.type === 'unlimited_time') {
         // Sınırsız zaman için özel kredi ekle

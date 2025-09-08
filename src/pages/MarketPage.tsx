@@ -178,34 +178,34 @@ const MarketPage = () => {
 
     // Jokerler
     {
-      id: 'joker_pack_5',
-      title: '5 Joker',
-      description: 'Oyunda kullanabileceğiniz 5 joker hakkı',
-      price: 1.99,
+      id: 'joker_degistir',
+      title: 'Değiştir Jokeri',
+      description: 'Harfleri yeniden karıştırmanızı sağlar',
+      price: 2.99,
       currency: 'premium',
       icon: Star,
       type: 'joker',
       value: 5
     },
     {
-      id: 'joker_pack_10',
-      title: '10 Joker',
-      description: 'Oyunda kullanabileceğiniz 10 joker hakkı',
-      price: 3.49,
+      id: 'joker_fisildi',
+      title: 'Fısılda Jokeri',
+      description: 'Kelimenin ipucunu gösterir',
+      price: 3.99,
       currency: 'premium',
       icon: Star,
       type: 'joker',
-      value: 10
+      value: 3
     },
     {
-      id: 'joker_pack_25',
-      title: '25 Joker',
-      description: 'Büyük joker paketi - 25 adet',
-      price: 7.99,
+      id: 'joker_senyaz',
+      title: 'Sen Yaz Jokeri',
+      description: 'Oyuncunun seçtiği kelimeyi yazmayı sağlar',
+      price: 5.99,
       currency: 'premium',
       icon: Star,
       type: 'joker',
-      value: 25
+      value: 2
     }
   ];
 
@@ -497,6 +497,37 @@ const MarketPage = () => {
               <h3 className="text-xl font-bold mb-2">Oyun Hakları ve Sınırsız Zaman</h3>
               <p className="text-muted-foreground">Daha fazla oyun oynayın, yeteneklerinizi geliştirin</p>
             </div>
+            
+            {/* Oyun Açıklaması */}
+            <Card className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border-blue-500/30">
+              <CardHeader>
+                <CardTitle className="flex items-center text-blue-600">
+                  <Zap className="w-5 h-5 mr-2" />
+                  Oyun Hakkı Nasıl Çalışır?
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2 text-sm">
+                  <li className="flex items-center">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-3" />
+                    Her oyun için 1 hak harcanır
+                  </li>
+                  <li className="flex items-center">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-3" />
+                    Satın aldığınız haklar mevcut haklarınıza eklenir
+                  </li>
+                  <li className="flex items-center">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-3" />
+                    Premium üyeler sınırsız hak sahibidir
+                  </li>
+                  <li className="flex items-center">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-3" />
+                    Her 15 dakikada 1 ücretsiz hak kazanırsınız (max 5)
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+
             {renderMarketItems(getItemsByCategory('credits'))}
           </TabsContent>
 
@@ -547,6 +578,37 @@ const MarketPage = () => {
               <h3 className="text-xl font-bold mb-2">Özel Temalar</h3>
               <p className="text-muted-foreground">Oyunu kendi tarzınızla oynayın</p>
             </div>
+            
+            {/* Tema Açıklaması */}
+            <Card className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/30">
+              <CardHeader>
+                <CardTitle className="flex items-center text-purple-600">
+                  <Palette className="w-5 h-5 mr-2" />
+                  Tema Sistemi
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2 text-sm">
+                  <li className="flex items-center">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full mr-3" />
+                    Oyun arayüzünün görsel temasını değiştirir
+                  </li>
+                  <li className="flex items-center">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full mr-3" />
+                    Farklı renk paleti ve tasarım stilleri
+                  </li>
+                  <li className="flex items-center">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full mr-3" />
+                    Kişisel zevkinize göre özelleştirin
+                  </li>
+                  <li className="flex items-center">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full mr-3" />
+                    Premium üyeler tüm temalara erişebilir
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+
             {renderMarketItems(getItemsByCategory('themes'))}
           </TabsContent>
 
@@ -555,37 +617,34 @@ const MarketPage = () => {
               <h3 className="text-xl font-bold mb-2">Joker Paketleri</h3>
               <p className="text-muted-foreground">Zor durumlarda kullanabileceğiniz jokerler</p>
             </div>
-            {renderMarketItems(getItemsByCategory('jokers'))}
             
-            {/* Joker Bilgilendirmesi */}
-            <Card className="mt-6 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/30">
+            {/* Joker Açıklaması */}
+            <Card className="mb-6 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/30">
               <CardHeader>
                 <CardTitle className="flex items-center text-green-600">
                   <Star className="w-5 h-5 mr-2" />
-                  Joker Nasıl Kullanılır?
+                  Joker Türleri ve Kullanımları
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ul className="space-y-2 text-sm">
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mr-3" />
-                    Oyun sırasında joker butonuna tıklayın
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mr-3" />
-                    Zorlu kelimeler için ipucu alın
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mr-3" />
-                    Harfleri yeniden karıştırın
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mr-3" />
-                    Ekstra süre kazanın
-                  </li>
-                </ul>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div className="bg-white/50 p-3 rounded-lg">
+                    <h4 className="font-semibold text-green-700 mb-2">🔄 Değiştir Jokeri</h4>
+                    <p>Oyun tahtasındaki harfleri yeniden karıştırır. Yeni kombinasyonlar için ideal.</p>
+                  </div>
+                  <div className="bg-white/50 p-3 rounded-lg">
+                    <h4 className="font-semibold text-green-700 mb-2">💡 Fısılda Jokeri</h4>
+                    <p>Bulunabilecek kelimelerden birinin ipucunu verir. Takıldığınızda kullanın.</p>
+                  </div>
+                  <div className="bg-white/50 p-3 rounded-lg">
+                    <h4 className="font-semibold text-green-700 mb-2">✏️ Sen Yaz Jokeri</h4>
+                    <p>Kendi belirlediğiniz kelimeyi oyuna yazmanızı sağlar. En güçlü joker!</p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
+
+            {renderMarketItems(getItemsByCategory('jokers'))}
           </TabsContent>
         </Tabs>
       </div>
