@@ -365,15 +365,52 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
   if (!user || !tournamentMatch) return;
 
   try {
-    const winnerId = userScore > opponentScore ? user.id : tournamentMatch.player2_id;
+    // Kullanıcının hangi oyuncu olduğunu belirle
+    const isPlayer1 = String(tournamentMatch.player1_id) === String(user.id);
+    const opponentId = isPlayer1 ? tournamentMatch.player2_id : tournamentMatch.player1_id;
+    
+    // Kazananı belirle
+    const winnerId = userScore > opponentScore ? user.id : opponentId;
+    
+    // Skorları doğru oyunculara ata
+    const player1Score = isPlayer1 ? userScore : opponentScore;
+    const player2Score = isPlayer1 ? opponentScore : userScore;
+    
+    console.log('🏆 Tournament match completion:', {
+      user: user.id,
+      isPlayer1,
+      player1Score,
+      player2Score,
+      winnerId,
+      userScore,
+      opponentScore
+    });
+    
+    // ✅ Frontend state'ini doğru güncelle
+    setPlayerScore(userScore);
+    setOpponentScore(opponentScore);
+    setGameEnded(true);
+    
+    // Kazanan belirle ve göster
+    if (userScore > opponentScore) {
+      setWinner('player');
+      playSound('gameWin');
+      setTimeout(() => playCelebrationSound(), 500);
+    } else if (userScore < opponentScore) {
+      setWinner('opponent');  
+      playSound('gameLose');
+      setTimeout(() => playGameLoseSound(), 500);
+    } else {
+      setWinner('tie');
+    }
     
     // Mevcut maçı tamamla
     await supabase
       .from('tournament_matches')
       .update({
         status: 'completed',
-        player1_score: userScore,
-        player2_score: opponentScore,
+        player1_score: player1Score,
+        player2_score: player2Score,
         winner_id: winnerId,
         updated_at: new Date().toISOString()
       })
@@ -410,10 +447,15 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
     } else {
       console.log(`⏳ Diğer maçlar devam ediyor. Tamamlanan: ${allRoundMatches?.filter(m => m.status === 'completed').length}/${allRoundMatches?.length}`);
       
-      // Sadece turnuva bracket sayfasına yönlendir
+      // Kaybeden oyuncu ana turnuva sayfasına, kazanan bracket sayfasına yönlendir
+      const redirectDelay = userScore > opponentScore ? 3000 : 2000;
+      const redirectPath = userScore > opponentScore 
+        ? `/tournament-bracket/${tournamentMatch.tournament_id}`
+        : '/tournament';
+      
       setTimeout(() => {
-        navigate(`/tournament-bracket/${tournamentMatch.tournament_id}`);
-      }, 2000);
+        navigate(redirectPath);
+      }, redirectDelay);
     }
 
   } catch (error) {
@@ -906,13 +948,6 @@ const handleGameEnd = async () => {
 
   // Normal oyun sonu
   setGameEnded(true);
-  
-  // Turnuvada kaybeden oyuncu turnuva sayfasına dönsün
-  if (gameMode === 'tournament' && finalUserScore < finalOpponentScore) {
-    setTimeout(() => {
-      navigate('/tournament');
-    }, 3000);
-  }
 };
 
 // 🔧 5. GamePage.tsx - Turnuva modu rakip belirleme düzeltmesi
