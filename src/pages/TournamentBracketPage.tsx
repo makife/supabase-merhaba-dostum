@@ -197,8 +197,17 @@ const TournamentBracketPage = () => {
       setNavigatedToGame(true);
       navigate(`/game?match=${myInProgressMatch.id}&tournament=${tournamentId}`);
     }
-  }, [matches, user, navigatedToGame, tournamentId, navigate]);
+   }, [matches, user, navigatedToGame, tournamentId, navigate]);
 
+  // Şampiyon ekranında 5 saniye sonra otomatik listeye dön
+  useEffect(() => {
+    if (!showChampion) return;
+    const timer = setTimeout(() => {
+      navigate('/tournament');
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [showChampion, navigate]);
+ 
   if (!currentTournament) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-900 to-blue-900 p-4 flex items-center justify-center">
@@ -286,14 +295,6 @@ const TournamentBracketPage = () => {
       ? finalMatch?.player1?.username 
       : finalMatch?.player2?.username;
 
-    // 5 saniye sonra otomatik yönlendirme
-    useEffect(() => {
-      const timer = setTimeout(() => {
-        navigate('/tournament');
-      }, 5000);
-      
-      return () => clearTimeout(timer);
-    }, [navigate]);
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-yellow-600 to-orange-600 p-4 flex items-center justify-center">
