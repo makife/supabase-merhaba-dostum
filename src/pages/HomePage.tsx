@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import PrivateRoomModal from '@/components/PrivateRoomModal';
-import MatchmakingModal from '@/components/MatchmakingModal';
+import NewMatchmakingModal from '@/components/NewMatchmakingModal';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { useJokerInventory } from '@/hooks/useJokerInventory';
@@ -709,15 +709,17 @@ const HomePage = () => {
 
         {/* Matchmaking Modal for Random Match */}
         {showMatchmaking && (
-          <MatchmakingModal
+          <NewMatchmakingModal
+            isOpen={showMatchmaking}
             onClose={() => setShowMatchmaking(false)}
-            onMatchFound={(isAI) => {
+            onMatchFound={(roomId) => {
               setShowMatchmaking(false);
-              if (isAI) {
-                navigate(`/game/vs-computer?type=${matchmakingGameType}`);
-              } else {
-                navigate(`/game/random-match?type=${matchmakingGameType}`);
-              }
+              navigate(`/game/random-match`, { 
+                state: { 
+                  gameType: matchmakingGameType,
+                  roomId: roomId
+                } 
+              });
             }}
             gameType={matchmakingGameType}
           />

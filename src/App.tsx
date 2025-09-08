@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { GameProvider } from "@/contexts/GameContext";
 import { MusicProvider } from "@/contexts/MusicContext";
 import { UserProvider } from "@/contexts/UserContext";
+import { MatchmakingProvider } from "@/contexts/NewMatchmakingContext";
 import { NotificationProvider } from '@/contexts/NotificationContext';
 import { TournamentProvider } from '@/contexts/TournamentContext';
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -158,13 +159,15 @@ const App = () => {
             <UserProvider>
               <ThemeProvider>
                 <MusicProvider>
-                  <GameProvider>
-                    <TournamentProvider>
-                      <NotificationProvider>
-                        <AppRoutes />
-                      </NotificationProvider>
-                    </TournamentProvider>
-                  </GameProvider>
+                  <MatchmakingProvider>
+                    <GameProvider>
+                      <TournamentProvider>
+                        <NotificationProvider>
+                          <AppRoutes />
+                        </NotificationProvider>
+                      </TournamentProvider>
+                    </GameProvider>
+                  </MatchmakingProvider>
                 </MusicProvider>
               </ThemeProvider>
             </UserProvider>
