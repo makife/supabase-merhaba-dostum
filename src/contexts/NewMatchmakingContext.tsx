@@ -185,14 +185,12 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
       // Progress animasyonu
       let progress = 0;
       const interval = setInterval(() => {
-        progress += 2;
+        progress += 1.5;
         setSearchProgress(Math.min(progress, 100));
-      }, 200);
-      setProgressInterval(interval);
-
-      // 30 saniye sonra eşleşme bulunamazsa AI ile eşleştir
-      setTimeout(() => {
-        if (isSearching && currentRoom && currentRoom.current_players < 2) {
+        
+        // 60 saniye sonra timeout
+        if (progress >= 100) {
+          clearInterval(interval);
           console.log('⏰ Timeout: AI rakip ekleniyor...');
           setIsSearching(false);
           toast({
@@ -202,7 +200,8 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
           onMatchFound?.(roomToJoin.id);
           cleanup();
         }
-      }, 30000);
+      }, 600); // 60 saniye için 600ms intervals
+      setProgressInterval(interval);
 
     } catch (error) {
       console.error('Error starting search:', error);

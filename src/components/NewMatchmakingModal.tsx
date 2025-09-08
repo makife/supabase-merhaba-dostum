@@ -54,7 +54,7 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
       
       // Oda bekliyor
       if (currentRoom.current_players === 1) {
-        if (searchProgress < 60) {
+        if (searchProgress < 100) {
           return {
             icon: Users,
             title: 'Oyuncu Aranıyor',
@@ -117,10 +117,10 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
                 <p>• ✅ Gerçek oyuncu bulundu!</p>
                 <p>• 🚀 Oyun başlatılıyor...</p>
               </>
-            ) : searchProgress < 60 ? (
+            ) : searchProgress < 100 ? (
               <>
                 <p>• 🔍 Gerçek oyuncular aranıyor</p>
-                <p>• ⏱️ 30 saniye sonra AI rakip eklenecek</p>
+                <p>• ⏱️ 60 saniye sonra AI rakip eklenecek</p>
                 <p>• 👤 {currentRoom?.current_players || 0}/2 oyuncu</p>
               </>
             ) : (
