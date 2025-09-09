@@ -1490,31 +1490,56 @@ const useSenYazJoker = async () => {
       setPlayerAvatar(playerData.avatar_url);
     }
 
-    if (gameMode === 'private-room') {
-      console.log('👥 Private room - participants kontrol ediliyor:', participants.length);
-    
-      if (participants.length >= 2) {
-        const opponent = participants.find(p => p.user_id !== user.id && !p.is_bot);
+    // Private room ve tournament modlarında rakip bilgilerini al
+    if ((gameMode === 'private-room' || gameMode === 'tournament') && participants.length >= 2) {
+      console.log('👥 Multi-player mode - participants kontrol ediliyor:', participants.length);
       
-        if (opponent) {
-          console.log('👤 Gerçek rakip bulundu:', {
-            userId: opponent.user_id?.slice(-8),
-            username: (opponent as any).profiles?.username,
-            avatar: (opponent as any).profiles?.avatar_url
-          });
+      const opponent = participants.find(p => {
+        // Tournament modunda string ID'ler kullanılıyor
+        if (gameMode === 'tournament') {
+          return p.user_id !== user.id && !p.is_bot;
+        }
+        // Private room modunda UUID'ler kullanılıyor
+        return p.user_id !== user.id && !p.is_bot;
+      });
+      
+      if (opponent) {
+        console.log('👤 Gerçek rakip bulundu:', {
+          userId: typeof opponent.user_id === 'string' ? opponent.user_id.slice(-8) : opponent.user_id,
+          username: (opponent as any).profiles?.username,
+          avatar: (opponent as any).profiles?.avatar_url
+        });
         
+        // Tournament modunda profil bilgilerini fetch et
+        if (gameMode === 'tournament' && opponent.user_id) {
+          const { data: opponentProfile } = await supabase
+            .from('profiles')
+            .select('avatar_url, username')
+            .eq('id', opponent.user_id)
+            .maybeSingle();
+          
+          if (opponentProfile) {
+            if (opponentProfile.avatar_url) {
+              setOpponentAvatar(opponentProfile.avatar_url);
+            }
+            if (opponentProfile.username) {
+              setOpponentName(opponentProfile.username);
+            }
+          }
+        } else {
+          // Private room modunda mevcut mantığı kullan
           if ((opponent as any).profiles?.avatar_url) {
             setOpponentAvatar((opponent as any).profiles.avatar_url);
           }
-        
+          
           if ((opponent as any).profiles?.username) {
             setOpponentName((opponent as any).profiles.username);
           }
+        }
         
-          if (opponent.score !== undefined && !gameEnded) {
-            console.log('🔄 Updating opponent score from participants:', opponent.score);
-            setOpponentScore(opponent.score);
-          }
+        if (opponent.score !== undefined && !gameEnded) {
+          console.log('🔄 Updating opponent score from participants:', opponent.score);
+          setOpponentScore(opponent.score);
         }
       }
     }
