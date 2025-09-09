@@ -64,20 +64,31 @@ export const useJokerInventory = () => {
     try {
       const newQuantity = jokers[jokerType] - 1;
       
+      // Database'deki item_type'a dönüştür
+      const dbItemType = jokerType === 'degistir' ? 'joker_degistir' :
+                        jokerType === 'fisilida' ? 'joker_fisildi' :
+                        jokerType === 'senYaz' ? 'joker_senyaz' : jokerType;
+      
+      console.log(`🎯 Joker kullanımı: ${jokerType} -> ${dbItemType}, yeni miktar: ${newQuantity}`);
+      
       if (newQuantity === 0) {
         // Eğer 0 olacaksa kaydı sil
-        await supabase
+        const { error } = await supabase
           .from('user_inventory')
           .delete()
           .eq('user_id', user.id)
-          .eq('item_type', jokerType);
+          .eq('item_type', dbItemType);
+          
+        if (error) throw error;
       } else {
         // Miktarı güncelle
-        await supabase
+        const { error } = await supabase
           .from('user_inventory')
           .update({ quantity: newQuantity })
           .eq('user_id', user.id)
-          .eq('item_type', jokerType);
+          .eq('item_type', dbItemType);
+          
+        if (error) throw error;
       }
 
       setJokers(prev => ({
@@ -85,6 +96,7 @@ export const useJokerInventory = () => {
         [jokerType]: newQuantity
       }));
 
+      console.log(`✅ Joker başarıyla güncellendi: ${jokerType} = ${newQuantity}`);
       return true;
     } catch (error) {
       console.error('Joker kullanılırken hata:', error);
