@@ -669,6 +669,9 @@ const fetchParticipants = useCallback(
     const realPlayerCount = participants?.filter(p => !p.is_bot).length || 0;
     console.log('👥 Mevcut gerçek oyuncu sayısı:', realPlayerCount);
     
+    // Rematch odaları için özel kontrol - private-room modunda max 2 kişi olabilir
+    const isRematchRoom = room.game_mode.includes('private-room');
+    
     if (realPlayerCount >= 2) {
       toast({
         title: 'Hata',
@@ -676,6 +679,12 @@ const fetchParticipants = useCallback(
         variant: 'destructive',
       });
       return false;
+    }
+    
+    // Rematch odalarında bile 1 kişi varsa ikinci kişi katılabilmeli
+    if (!isRematchRoom && realPlayerCount >= 1) {
+      // Normal odalar için 1 kişi varsa dolu sayılır
+      // Ama rematch odaları için bu kontrol yapılmaz
     }
 
     // Kullanıcı zaten katılmış mı kontrol et
