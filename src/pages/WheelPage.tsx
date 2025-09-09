@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/contexts/UserContext';
 import { useUserPurchases } from '@/hooks/useUserPurchases';
+import { useSounds } from '@/hooks/useSounds';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +23,7 @@ const WheelPage = () => {
   const { user } = useAuth();
   const { profile, refreshProfile } = useUser();
   const { updateInventory } = useUserPurchases();
+  const { playSpecialSound } = useSounds();
   const navigate = useNavigate();
   const [isSpinning, setIsSpinning] = useState(false);
   const [canSpin, setCanSpin] = useState(false);
@@ -75,6 +77,9 @@ const WheelPage = () => {
   const spinWheel = async () => {
     if (!user || !canSpin || isSpinning) return;
 
+    // Çark sesi çal
+    playSpecialSound('/carkSesi.mp3', 0.7);
+    
     setIsSpinning(true);
 
     // Rastgele ödül seç
