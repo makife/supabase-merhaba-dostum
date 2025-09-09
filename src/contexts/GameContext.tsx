@@ -60,6 +60,7 @@ interface RematchRequest {
 interface GameContextType {
   currentRoom: GameRoom | null;
   participants: GameParticipant[];
+  lastOpponent: GameParticipant | null;
   createRoom: (gameMode: string, roomCode?: string) => Promise<GameRoom | null>;
   sendRematchRequest: (roomCode: string, gameType: 'timed' | 'score') => Promise<void>;
   respondRematchRequest: (requestId: string, accepted: boolean) => Promise<void>;
@@ -139,6 +140,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   const navigate = useNavigate();
   const [currentRoom, setCurrentRoom] = useState<GameRoom | null>(null);
   const [participants, setParticipants] = useState<GameParticipant[]>([]);
+  const [lastOpponent, setLastOpponent] = useState<GameParticipant | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [useNakama, setUseNakama] = useState(false);
   const [currentRematchRequest, setCurrentRematchRequest] = useState<RematchRequest | null>(null);
@@ -198,8 +200,12 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 const sendRematchRequest = useCallback(async (_roomCode: string, gameType: 'timed' | 'score') => {
   if (!user) return;
   
-  // Rakibi bul
-  const opponent = participants.find(p => !p.is_bot && p.user_id !== user.id);
+  // Önce aktif participants'tan rakip bul, yoksa lastOpponent'ı kullan
+  let opponent = participants.find(p => !p.is_bot && p.user_id !== user.id);
+  if (!opponent && lastOpponent) {
+    opponent = lastOpponent;
+  }
+  
   if (!opponent || !opponent.user_id) {
     throw new Error('Rakip bulunamadı');
   }
@@ -1278,6 +1284,12 @@ const fetchParticipants = useCallback(
       }
     }, 2000);
     
+    // Son rakip bilgisini sakla (rematch için)
+    const opponent = participants.find(p => !p.is_bot && p.user_id !== user?.id);
+    if (opponent) {
+      setLastOpponent(opponent);
+    }
+    
     setCurrentRoom(null);
     setParticipants([]);
     console.log('✅ Oyun bitti, istatistikler database trigger ile güncellendi');
@@ -1649,6 +1661,7 @@ useEffect(() => {
     <GameContext.Provider value={{
       currentRoom,
       participants,
+      lastOpponent,
       createRoom,
       sendRematchRequest, 
       respondRematchRequest, 
