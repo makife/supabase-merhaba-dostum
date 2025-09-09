@@ -1887,7 +1887,46 @@ const checkWinnerWithScores = useCallback(async (currentPlayerScore: number, cur
         console.error('❌ İstatistik güncelleme hatası:', error);
       } else {
         console.log('✅ İstatistikler başarıyla güncellendi!');
-      
+
+        // ➕ En uzun kelime ve en yüksek puanlı kelime istatistiklerini (vs-computer) güncelle
+        try {
+          const longest = playerWordsWithScores.reduce<{ word: string; score: number } | null>((acc, w) => {
+            return !acc || w.word.length > acc.word.length ? w : acc;
+          }, null);
+          const bestScore = playerWordsWithScores.reduce<{ word: string; score: number } | null>((acc, w) => {
+            return !acc || w.score > acc.score ? w : acc;
+          }, null);
+
+          if (user && (longest || bestScore)) {
+            const { data: cur } = await supabase
+              .from('profiles')
+              .select('longest_word_length, highest_word_score')
+              .eq('id', user.id)
+              .maybeSingle();
+
+            const updates: Record<string, any> = {};
+            if (longest) {
+              const len = longest.word.length;
+              if (!cur || (cur.longest_word_length ?? 0) < len) {
+                updates.longest_word = longest.word;
+                updates.longest_word_length = len;
+              }
+            }
+            if (bestScore) {
+              if (!cur || (cur.highest_word_score ?? 0) < bestScore.score) {
+                updates.highest_word = bestScore.word;
+                updates.highest_word_score = bestScore.score;
+              }
+            }
+
+            if (Object.keys(updates).length > 0) {
+              await supabase.from('profiles').update(updates).eq('id', user.id);
+            }
+          }
+        } catch (e) {
+          console.warn('⚠️ Profil kelime istatistikleri güncellenemedi:', e);
+        }
+
         // Rozet kontrolü
         setTimeout(() => {
           checkBadges(user.id, playerWordsWithScores.length);
