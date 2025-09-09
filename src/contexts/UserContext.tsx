@@ -388,21 +388,17 @@ export const UserProvider = ({ children }: UserProviderProps) => {
           console.log('🎯 Profile updated via real-time:', payload.new);
           if (payload.new) {
             // Immediately update the profile state
-            setProfile(prevProfile => {
-              const newProfile = payload.new as UserProfile;
-              console.log('📊 Profile stats updated:', {
-                total_score: newProfile.total_score,
-                wins: newProfile.wins,
-                losses: newProfile.losses,
-                game_credits: newProfile.game_credits
-              });
-              return newProfile;
+            const newProfile = payload.new as UserProfile;
+            console.log('📊 Profile stats updated:', {
+              total_score: newProfile.total_score,
+              wins: newProfile.wins,
+              losses: newProfile.losses,
+              game_credits: newProfile.game_credits,
+              bonus_credits: newProfile.bonus_credits
             });
             
-            // Force a fresh fetch to ensure all data is synced
-            setTimeout(() => {
-              refreshProfile();
-            }, 100);
+            setProfile(newProfile);
+            setLoading(false);
           }
         }
       )

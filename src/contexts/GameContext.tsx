@@ -1162,14 +1162,16 @@ const fetchParticipants = useCallback(
       await checkBadges(playerStats.userId, playerStats.words.length);
       // Refresh user profile to update stats in UI
       if (playerStats.userId === user?.id) {
-        setTimeout(() => refreshProfile(), 500);
+        // Trigger immediate profile refresh for real-time updates
+        refreshProfile();
       }
     }
     if (opponentStats && !participants.find(p => p.user_id === opponentStats.userId && p.is_bot)) {
       await checkBadges(opponentStats.userId, opponentStats.words.length);
       // Refresh user profile to update stats in UI  
       if (opponentStats.userId === user?.id) {
-        setTimeout(() => refreshProfile(), 500);
+        // Trigger immediate profile refresh for real-time updates
+        refreshProfile();
       }
     }
     
