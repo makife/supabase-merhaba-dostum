@@ -387,7 +387,7 @@ const HomePage = () => {
         <div className="flex justify-between items-center">
           <span className="text-xs text-muted-foreground">Oyun Hakları</span>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-foreground">{profile?.game_credits || 0}/5</span>
+            <span className="text-xs font-medium text-foreground">{(profile?.game_credits || 0) + (profile?.bonus_credits || 0)}/5</span>
             {profile?.bonus_credits > 0 && (
               <Badge variant="secondary" className="text-[10px]">+{profile.bonus_credits}</Badge>
             )}

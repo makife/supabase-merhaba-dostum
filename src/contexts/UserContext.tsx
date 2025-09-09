@@ -205,10 +205,11 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       let newGameCredits = profile.game_credits;
       let newBonusCredits = profile.bonus_credits;
       
-      if (profile.game_credits > 0) {
-        newGameCredits = profile.game_credits - 1;
-      } else if (profile.bonus_credits > 0) {
+      // Önce bonus kredilerden düş, sonra normal kredilerden
+      if (profile.bonus_credits > 0) {
         newBonusCredits = profile.bonus_credits - 1;
+      } else if (profile.game_credits > 0) {
+        newGameCredits = profile.game_credits - 1;
       }
       
       const { error } = await supabase

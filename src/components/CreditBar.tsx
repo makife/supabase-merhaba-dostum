@@ -86,7 +86,7 @@ export const CreditBar = ({ showRefresh = false }: CreditBarProps) => {
           ))}
         </div>
         <div className="flex justify-between text-xs text-muted-foreground">
-          <span>{base}/5 hak</span>
+          <span>{base + bonus}/5 hak</span>
           <span>15dk'da 1 hak yenilenir</span>
         </div>
       </div>
