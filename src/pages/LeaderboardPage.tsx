@@ -97,16 +97,11 @@ const LeaderboardPage = () => {
   // Haftalık sıralama
   const fetchWeeklyLeaders = async () => {
     try {
-      // Bu haftanın başlangıcını hesapla (Pazartesi)
-      const today = new Date();
-      const startOfWeek = new Date(today);
-      startOfWeek.setDate(today.getDate() - today.getDay() + 1); // Pazartesi
-      const weekStartStr = startOfWeek.toISOString().split('T')[0];
-      console.log('Haftalık sorgu tarihi:', weekStartStr);
+      // Tarih argümanı göndermeden (sunucu tarafı geçerli haftayı kullanır)
+      console.log('Haftalık sorgu tarihi: (server default)');
 
-      const { data, error } = await supabase.rpc('get_weekly_leaderboard' as any, {
-        target_week_start: weekStartStr
-      });
+      const { data, error } = await supabase.rpc('get_weekly_leaderboard' as any, {});
+
 
       if (error) {
         console.error('Weekly leaderboard RPC error:', error);
@@ -144,15 +139,11 @@ const LeaderboardPage = () => {
   // Aylık sıralama
   const fetchMonthlyLeaders = async () => {
     try {
-      // Bu ayın başlangıcını hesapla
-      const today = new Date();
-      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-      const monthStartStr = startOfMonth.toISOString().split('T')[0];
-      console.log('Aylık sorgu tarihi:', monthStartStr);
+      // Tarih argümanı göndermeden (sunucu tarafı geçerli ayı kullanır)
+      console.log('Aylık sorgu tarihi: (server default)');
 
-      const { data, error } = await supabase.rpc('get_monthly_leaderboard' as any, {
-        target_month_start: monthStartStr
-      });
+      const { data, error } = await supabase.rpc('get_monthly_leaderboard' as any, {});
+
 
       if (error) {
         console.error('Monthly leaderboard RPC error:', error);
