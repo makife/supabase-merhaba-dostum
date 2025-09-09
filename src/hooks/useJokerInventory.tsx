@@ -110,7 +110,8 @@ export const useJokerInventory = () => {
           table: 'user_inventory',
           filter: `user_id=eq.${user.id}`,
         },
-        () => {
+        (payload) => {
+          console.log('🔄 Joker inventory real-time update:', payload);
           loadJokers();
         }
       )
@@ -119,7 +120,7 @@ export const useJokerInventory = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id]);
+  }, [user?.id, loadJokers]);
 
   return {
     jokers,
