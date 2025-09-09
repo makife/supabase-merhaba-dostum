@@ -362,6 +362,7 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
     setPlayerScore(userScore);
     setOpponentScore(opponentScore);
     setGameEnded(true);
+    setShowResults(true);
     
     // ✅ Frontend kazanan belirleme - DOĞRU MANTIK
     console.log('🎯 Tournament winner determination:', {
@@ -929,6 +930,7 @@ const handleGameEnd = async () => {
 
   // Normal oyun sonu
   setGameEnded(true);
+  setShowResults(true);
 };
 
 // 🔧 5. GamePage.tsx - Turnuva modu rakip belirleme düzeltmesi
@@ -1941,6 +1943,10 @@ const checkWinnerWithScores = useCallback(async (currentPlayerScore: number, cur
       await endGame(playerStats, opponentStats);
     }, 3000);
   }
+
+  // Sonuç ekranını göster
+  console.log('🎯 Setting showResults to true - rematch UI should appear');
+  setShowResults(true);
 }, [gameEnded, winner, user, currentRoom, gameMode, endGame, playSound, playCelebrationSound, playGameLoseSound, toast, participants, playerWordsWithScores, opponentWordsWithScores, gameStartTime, gameType]);
 
   // 🏆 TURNUVA MAÇLARI İÇİN REAL-TIME SCORE SYNC
