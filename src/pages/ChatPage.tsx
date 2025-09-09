@@ -542,6 +542,7 @@ export default function ChatPage() {
             isOpen={true} 
             onClose={() => {}} 
             isFullPage={true}
+            onStartPrivateChat={startPrivateChat}
           />
         </div>
       </div>
