@@ -407,7 +407,7 @@ const MarketPage = () => {
                       {isPremium ? 'Premium Üye' : 'Ücretsiz Üye'}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      Oyun Hakkı: {profile?.game_credits || 0}
+                      Oyun Hakkı: {((profile?.game_credits || 0) + (profile?.bonus_credits || 0))}/5
                     </p>
                   </div>
                 </div>
