@@ -260,6 +260,9 @@ const ProfilePage = () => {
               };
             });
           }
+
+          // Profilde bir güncelleme olduğunda rozetleri de tazele
+          fetchBadges();
         }
       )
       .on(
