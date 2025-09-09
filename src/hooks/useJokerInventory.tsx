@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -17,7 +17,7 @@ export const useJokerInventory = () => {
   });
   const [loading, setLoading] = useState(true);
 
-  const loadJokers = async () => {
+  const loadJokers = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -56,7 +56,7 @@ export const useJokerInventory = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   const useJoker = async (jokerType: keyof JokerInventory) => {
     if (!user || jokers[jokerType] <= 0) return false;
