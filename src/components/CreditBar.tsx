@@ -59,11 +59,6 @@ export const CreditBar = ({ showRefresh = false }: CreditBarProps) => {
         <div className="flex items-center gap-2">
           <Heart className="h-4 w-4 text-destructive fill-current" />
           <span className="text-sm font-medium">Oyun Hakları</span>
-          {bonus > 0 && (
-            <Badge variant="secondary" className="text-xs">
-              +{bonus}
-            </Badge>
-          )}
         </div>
         {showRefresh && (
           <button
