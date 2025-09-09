@@ -278,6 +278,21 @@ const sendRematchRequest = useCallback(async (_roomCode: string, gameType: 'time
     
     console.log('🔄 Tekrar oyun isteği gönderildi:', data.id, 'room:', code);
     
+    // Push notification gönder (opsiyonel)
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('push_token')
+        .eq('id', opponent.user_id)
+        .single();
+        
+      if (profile?.push_token) {
+        // Push notification gönder (varsa)
+      }
+    } catch (e) {
+      console.log('Push notification error (ignored):', e);
+    }
+    
     toast({
       title: '🔄 Tekrar Oyun İsteği Gönderildi',
       description: 'Rakibinizin yanıtını bekliyoruz...',
@@ -1500,15 +1515,17 @@ useEffect(() => {
 useEffect(() => {
   if (!user) return;
   
+  console.log('🔄 Rematch dinleyici kuruldu - User ID:', user.id);
+  
   const rematchChannel = supabase
-    .channel(`rematch-${user.id}`)
+    .channel(`rematch-listener-${user.id}`)
     .on('postgres_changes', {
       event: 'INSERT',
       schema: 'public',
       table: 'rematch_requests',
       filter: `to_user_id=eq.${user.id}`
     }, (payload) => {
-      console.log('🔄 Tekrar oyun isteği alındı:', payload.new);
+      console.log('🔄 YENİ tekrar oyun isteği alındı:', payload.new);
       const request = payload.new as RematchRequest;
       
       // Sadece pending durumundaki istekleri göster
