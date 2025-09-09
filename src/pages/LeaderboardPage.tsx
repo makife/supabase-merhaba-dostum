@@ -97,7 +97,11 @@ const LeaderboardPage = () => {
   // Haftalık sıralama
   const fetchWeeklyLeaders = async () => {
     try {
-      const weekStartStr = '2025-09-02'; // SABIT TARİH
+      // Bu haftanın başlangıcını hesapla (Pazartesi)
+      const today = new Date();
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - today.getDay() + 1); // Pazartesi
+      const weekStartStr = startOfWeek.toISOString().split('T')[0];
       console.log('Haftalık sorgu tarihi:', weekStartStr);
 
       const { data, error } = await supabase.rpc('get_weekly_leaderboard' as any, {
@@ -140,7 +144,10 @@ const LeaderboardPage = () => {
   // Aylık sıralama
   const fetchMonthlyLeaders = async () => {
     try {
-      const monthStartStr = '2025-09-01'; // SABIT TARİH
+      // Bu ayın başlangıcını hesapla
+      const today = new Date();
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      const monthStartStr = startOfMonth.toISOString().split('T')[0];
       console.log('Aylık sorgu tarihi:', monthStartStr);
 
       const { data, error } = await supabase.rpc('get_monthly_leaderboard' as any, {
