@@ -2749,14 +2749,7 @@ const submitWord = async () => {
 
     const wordLength = currentWord.length;
 
-    // Ses efektlerini direkt çal
-    if (wordLength === 4) {
-      playSpecialSound('/yes.mp3');
-    } else if (wordLength === 5) {
-      playSpecialSound('/wow2.mp3');
-    } else if (wordLength >= 6) {
-      playSpecialSound('/yahoo.mp3');
-    }
+    // Ses efektleri triggerWordEffects içinde çalınacak - dublicate removed
     
     triggerWordEffects();
     
