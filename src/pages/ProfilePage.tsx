@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { UserAvatar } from '@/components/UserAvatar';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -28,6 +28,7 @@ import {
 const ProfilePage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { jokers } = useJokerInventory();
   const { id: routeId } = useParams();
   const viewedUserId = routeId || user?.id || null;
@@ -486,7 +487,14 @@ const ProfilePage = () => {
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <Button variant="outline" onClick={() => navigate('/')}>
+          <Button variant="outline" onClick={() => {
+            const fromPage = location.state?.from;
+            if (fromPage === '/chat') {
+              navigate('/chat');
+            } else {
+              navigate('/');
+            }
+          }}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Geri
           </Button>

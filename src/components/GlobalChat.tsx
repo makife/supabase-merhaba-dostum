@@ -937,7 +937,7 @@ const startPrivateChat = async (targetUser: SelectedUser) => {
                   <div className="flex items-center space-x-3">
                     <div 
                       className="cursor-pointer"
-                      onClick={() => navigate(`/profile/${blockedUser.id}`)}
+                      onClick={() => navigate(`/profile/${blockedUser.id}`, { state: { from: '/chat' } })}
                     >
                       <UserAvatar
                         src={blockedUser.avatar_url}
@@ -949,7 +949,7 @@ const startPrivateChat = async (targetUser: SelectedUser) => {
                     </div>
                     <div 
                       className="flex-1 min-w-0 cursor-pointer"
-                      onClick={() => navigate(`/profile/${blockedUser.id}`)}
+                      onClick={() => navigate(`/profile/${blockedUser.id}`, { state: { from: '/chat' } })}
                     >
                       <p className="font-medium text-red-800 truncate hover:text-red-600 transition-colors">
                         {blockedUser.username}
@@ -984,7 +984,7 @@ const renderGlobalChat = () => (
               <div className="flex items-center space-x-2">
                 <div 
                   className="cursor-pointer hover:opacity-80 transition-opacity"
-                  onClick={() => message.user_id && navigate(`/profile/${message.user_id}`)}
+                  onClick={() => message.user_id && navigate(`/profile/${message.user_id}`, { state: { from: '/chat' } })}
                 >
                   <UserAvatar
                     src={message.user_id ? userAvatars[message.user_id] : '/bot-avatar.png'} // Bot için özel avatar
@@ -1002,7 +1002,7 @@ const renderGlobalChat = () => (
                       ? 'text-chat-600' 
                       : 'text-gray-700'
                   }`}
-                  onClick={() => message.user_id && navigate(`/profile/${message.user_id}`)}
+                  onClick={() => message.user_id && navigate(`/profile/${message.user_id}`, { state: { from: '/chat' } })}
                 >
                   {message.username}
                   {message.username === 'kelimeciBot' && ' 🤖'}

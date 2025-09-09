@@ -436,9 +436,9 @@ export default function ChatPage() {
                 className="p-4 border-red-200 bg-red-50/50 hover:bg-red-50 transition-colors"
               >
                 <div className="flex items-center space-x-3">
-                  <div 
+                   <div 
                     className="cursor-pointer"
-                    onClick={() => navigate(`/profile/${blockedUser.id}`)}
+                    onClick={() => navigate(`/profile/${blockedUser.id}`, { state: { from: '/chat' } })}
                   >
                     <UserAvatar
                       src={blockedUser.avatar_url}
@@ -450,7 +450,7 @@ export default function ChatPage() {
                   </div>
                   <div 
                     className="flex-1 min-w-0 cursor-pointer"
-                    onClick={() => navigate(`/profile/${blockedUser.id}`)}
+                    onClick={() => navigate(`/profile/${blockedUser.id}`, { state: { from: '/chat' } })}
                   >
                     <p className="font-medium text-red-800 truncate hover:text-red-600 transition-colors">
                       {blockedUser.username}
