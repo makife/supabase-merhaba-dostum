@@ -2101,6 +2101,31 @@ useEffect(() => {
   }
 }, [gameStarted, gameEnded, gameType, gameMode, tournamentMatch]);
   
+  // Timer sync for private-room games using server started_at
+  useEffect(() => {
+    if (gameType !== 'timed' || gameMode !== 'private-room' || !gameStarted || gameEnded) return;
+    if (!currentRoom?.started_at) return;
+
+    let syncInterval: NodeJS.Timeout | null = null;
+    const syncTimer = () => {
+      const startTs = new Date(currentRoom.started_at!).getTime();
+      const elapsed = Math.floor((Date.now() - startTs) / 1000);
+      const remaining = Math.max(0, 120 - elapsed);
+      if (Math.abs(timeLeftRef.current - remaining) > 2) {
+        timeLeftRef.current = remaining;
+        setDisplayTime(remaining);
+        console.log('🔄 Private-room timer synced:', remaining);
+      }
+    };
+
+    syncTimer();
+    syncInterval = setInterval(syncTimer, 3000);
+
+    return () => {
+      if (syncInterval) clearInterval(syncInterval);
+    };
+  }, [gameType, gameMode, gameStarted, gameEnded, currentRoom?.started_at]);
+
   // Focus/blur event handler
   useEffect(() => {
     if (gameType !== 'timed' || !gameStarted || gameEnded) return;

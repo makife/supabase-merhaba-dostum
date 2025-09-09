@@ -507,7 +507,8 @@ const generateRoomCode = () => {
           status: 'active',
           started_at: new Date().toISOString()
         })
-        .eq('id', roomId);
+        .eq('id', roomId)
+        .is('started_at', null);
         
       console.log('✅ Oda kapatıldı');
     } catch (error) {
@@ -639,8 +640,8 @@ const fetchParticipants = useCallback(
       .from('game_rooms')
       .select('*')
       .eq('room_code', roomCode)
-      .eq('status', 'waiting')
-      .single();
+      .in('status', ['waiting', 'active'])
+      .maybeSingle();
 
     if (roomError || !room) {
       console.error('❌ Oda bulunamadı:', roomError);
