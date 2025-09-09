@@ -446,14 +446,14 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
 };
 
 const requestRematch = async () => {
-  if (!currentRoom || !user) return;
+  if (!user) return;
   
   try {
     setRematchRequested(true);
     setWaitingForRematchResponse(true);
     
     // Rematch request gönder
-    await sendRematchRequest(currentRoom.room_code || generateRoomCode(), gameType);
+    await sendRematchRequest(currentRoom?.room_code || generateRoomCode(), gameType);
     
     // 30 saniye timeout
     setTimeout(() => {
