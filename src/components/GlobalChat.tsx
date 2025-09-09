@@ -456,7 +456,7 @@ const sendMessage = async () => {
           .single();
         
         if (mentionedUser && mentionedUser.id !== user.id) {
-          await sendMentionNotification(mentionedUser.id, username, trimmedMessage);
+          await sendMentionNotification(mentionedUser.id, username, trimmedMessage, insertData.id);
         }
       }
 

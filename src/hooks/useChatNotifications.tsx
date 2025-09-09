@@ -30,11 +30,13 @@ export function useChatNotifications() {
     if (!user?.id || !profile?.username) return 0;
     
     try {
+      // notifications tablosundan mention bildirimlerini kontrol et
       const { data } = await supabase
-        .from('global_chat')
+        .from('notifications')
         .select('id')
-        .ilike('message', `%@${profile.username}%`)
-        .neq('user_id', user.id);
+        .eq('user_id', user.id)
+        .eq('type', 'mention')
+        .eq('is_read', false);
 
       return data?.length || 0;
     } catch (error) {
@@ -66,11 +68,16 @@ export function useChatNotifications() {
   const markGlobalMessagesAsRead = async () => {
     if (!user?.id) return;
     
-    // Global chat'teki okunmamış mention'ları işaretle
+    // Mention notification'larını read olarak işaretle
     await supabase
-      .from('global_chat')
+      .from('notifications')
       .update({ is_read: true })
+      .eq('user_id', user.id)
+      .eq('type', 'mention')
       .eq('is_read', false);
+      
+    // Global chat mention sayacını sıfırla
+    setGlobalMentionCount(0);
   };
 
   const refreshUnreadCounts = async () => {
@@ -102,18 +109,25 @@ export function useChatNotifications() {
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'global_chat'
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          // Check if this is a mention for current user
-          if (payload.new && typeof payload.new.message === 'string' && profile?.username) {
-            const message = payload.new.message.toLowerCase();
-            const username = profile.username.toLowerCase();
-            if (message.includes(`@${username}`) && payload.new.user_id !== user.id) {
-              refreshUnreadCounts();
-            }
+          // Mention notification'ı geldiğinde badge'leri güncelle
+          if (payload.new && payload.new.type === 'mention') {
+            refreshUnreadCounts();
           }
         }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`
+        },
+        refreshUnreadCounts
       )
       .subscribe();
 

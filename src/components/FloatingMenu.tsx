@@ -131,6 +131,18 @@ export function FloatingMenu() {
       return;
     }
 
+    // Chat'e gidince notification'ları temizle
+    try {
+      await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('user_id', user.id)
+        .eq('type', 'mention')
+        .eq('is_read', false);
+    } catch (error) {
+      console.error('Error marking notifications as read:', error);
+    }
+
     navigate('/chat');
     setIsOpen(false);
   };

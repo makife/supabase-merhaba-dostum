@@ -1,20 +1,42 @@
 // utils/notifications.ts - Console log versiyonu (TypeScript hatasız)
 import { supabase } from '@/integrations/supabase/client';
 
-// Mention bildirimi - Console log versiyonu
+// Mention bildirimi - Veritabanı kaydı ile
 export const sendMentionNotification = async (
   userId: string,
   senderUsername: string, 
-  message: string
+  message: string,
+  messageId?: string
 ) => {
-  console.log('🔔 MENTION NOTIFICATION:', {
-    to: userId,
-    from: senderUsername,
-    message: message.substring(0, 50) + '...',
-    type: 'mention',
-    timestamp: new Date().toLocaleString('tr-TR')
-  });
-  return true;
+  try {
+    const { error } = await supabase
+      .from('notifications')
+      .insert({
+        user_id: userId,
+        type: 'mention',
+        message: `${senderUsername} seni bir mesajda etiketledi: "${message.substring(0, 50)}${message.length > 50 ? '...' : ''}"`,
+        related_id: messageId,
+        is_read: false
+      });
+
+    if (error) {
+      console.error('Mention notification error:', error);
+      return false;
+    }
+
+    console.log('🔔 MENTION NOTIFICATION SAVED:', {
+      to: userId,
+      from: senderUsername,
+      message: message.substring(0, 50) + '...',
+      type: 'mention',
+      timestamp: new Date().toLocaleString('tr-TR')
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Error sending mention notification:', error);
+    return false;
+  }
 };
 
 // Özel mesaj bildirimi - Console log versiyonu
