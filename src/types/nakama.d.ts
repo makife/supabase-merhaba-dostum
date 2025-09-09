@@ -10,6 +10,7 @@ declare module '@heroiclabs/nakama-js' {
     disconnect(): void;
     send(message: any): void;
     onmatchmakingmatched?: (matched: any) => void;
+    onmatchmakermatched?: (matched: any) => void; // alias used in app
     onmatchmakerticket?: (ticket: any) => void;
   }
 

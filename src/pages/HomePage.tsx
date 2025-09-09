@@ -384,17 +384,20 @@ const HomePage = () => {
               {/* Hak barı - Real-time güncellemeler */}
               {!isPremium && (
                   <div className="space-y-1">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-muted-foreground">Oyun Hakları</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-foreground">{profile?.game_credits || 0}/5</span>
-                      {timeUntilNextCredit && (profile?.game_credits < 5) && (
-                        <span className="text-xs text-orange-500 bg-orange-100 px-2 py-1 rounded-full">
-                          +1 {timeUntilNextCredit}
-                        </span>
-                        )}
-                      </div>
-                    </div>
+        <div className="flex justify-between items-center">
+          <span className="text-xs text-muted-foreground">Oyun Hakları</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-foreground">{profile?.game_credits || 0}/5</span>
+            {profile?.bonus_credits > 0 && (
+              <Badge variant="secondary" className="text-[10px]">+{profile.bonus_credits}</Badge>
+            )}
+            {timeUntilNextCredit && (profile?.game_credits < 5) && (
+              <span className="text-xs text-orange-500 bg-orange-100 px-2 py-1 rounded-full">
+                +1 {timeUntilNextCredit}
+              </span>
+            )}
+          </div>
+        </div>
                   <div className="flex gap-1 h-2 w-full">
                     {Array.from({ length: 5 }, (_, i) => {
                       const isActive = i < (profile?.game_credits || 0);
