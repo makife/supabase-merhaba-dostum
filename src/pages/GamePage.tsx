@@ -85,7 +85,7 @@ const GamePage = ({
   const { hasPurchased, settings } = useUserPurchases();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { currentRoom, updateScore, participants: gameParticipants, endGame, leaveRoom,sendRematchRequest,respondRematchRequest,currentRematchRequest,setCurrentRematchRequest } = useGame();
+  const { currentRoom, updateScore, participants: gameParticipants, endGame, leaveRoom, sendRematchRequest, respondRematchRequest, currentRematchRequest, setCurrentRematchRequest, joinRoom } = useGame();
   
   // Tournament match bilgisini URL'den al
   const [tournamentMatch, setTournamentMatch] = useState(propTournamentMatch || null);
@@ -3339,6 +3339,9 @@ if (gameEnded) {
             <AlertDialogAction onClick={async () => {
               if (currentRematchRequest) {
                 await respondRematchRequest(currentRematchRequest.id, true);
+                if (currentRematchRequest.room_code) {
+                  await joinRoom(currentRematchRequest.room_code);
+                }
               }
             }}>
               Evet, Tekrar Oyna
@@ -3885,6 +3888,9 @@ return (
           <AlertDialogAction onClick={async () => {
             if (currentRematchRequest) {
               await respondRematchRequest(currentRematchRequest.id, true);
+              if (currentRematchRequest.room_code) {
+                await joinRoom(currentRematchRequest.room_code);
+              }
             }
           }}>
             Evet, Tekrar Oyna

@@ -195,8 +195,8 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     return grid;
   };
 
-const sendRematchRequest = useCallback(async (roomCode: string, gameType: 'timed' | 'score') => {
-  if (!user || !currentRoom) return;
+const sendRematchRequest = useCallback(async (_roomCode: string, gameType: 'timed' | 'score') => {
+  if (!user) return;
   
   // Rakibi bul
   const opponent = participants.find(p => !p.is_bot && p.user_id !== user.id);
@@ -205,10 +205,67 @@ const sendRematchRequest = useCallback(async (roomCode: string, gameType: 'timed
   }
   
   try {
+    // Her rematch için yeni ve boş bir oda oluştur (createRoom'a bağlı kalmadan)
+    const code = generateRoomCode();
+    const mode = `private-room-${gameType}`;
+
+    // Rastgele grid üret (küçük kopya)
+    const letterPool = ['A','A','A','A','A','A','A','A','E','E','E','E','E','E','E','İ','İ','İ','İ','İ','İ','I','I','I','I','I','O','O','O','O','O','U','U','U','U','Ü','Ü','Ü','Ö','Ö','Ö','L','L','L','L','L','N','N','N','N','N','R','R','R','R','R','K','K','K','K','M','M','M','M','T','T','T','T','S','S','S','S','D','D','D','Y','Y','Y','B','B','B','C','C','Ç','Ç','F','F','G','G','Ğ','Ğ','H','H','J','P','P','Ş','Ş','V','V','Z'];
+    const grid: string[][] = [];
+    for (let i = 0; i < 4; i++) {
+      const row: string[] = [];
+      for (let j = 0; j < 4; j++) {
+        const randomIndex = Math.floor(Math.random() * letterPool.length);
+        row.push(letterPool[randomIndex]);
+      }
+      grid.push(row);
+    }
+
+    const { data: room, error: roomError } = await supabase
+      .from('game_rooms')
+      .insert({
+        game_mode: mode,
+        host_id: user.id,
+        room_code: code,
+        current_grid: grid.flat(),
+        status: 'waiting',
+        max_score: gameType === 'score' ? 500 : 100,
+        time_limit: gameType === 'timed' ? 120 : 0
+      })
+      .select()
+      .single();
+
+    if (roomError || !room) throw roomError;
+
+    // Kendini participant olarak ekle
+    const { error: participantError } = await supabase
+      .from('game_participants')
+      .insert({
+        room_id: room.id,
+        user_id: user.id,
+        score: 0,
+        is_bot: false
+      });
+
+    if (participantError) throw participantError;
+
+    // State güncelle
+    setCurrentRoom(room);
+
+    // Participants'ı hemen çek
+    try {
+      const { data: parts } = await supabase
+        .from('game_participants')
+        .select(`*, profiles:user_id (username, avatar_url)`) 
+        .eq('room_id', room.id);
+      if (parts) setParticipants(parts as any);
+    } catch {}
+
+    // Rematch request kaydı
     const { data, error } = await supabase
       .from('rematch_requests')
       .insert({
-        room_code: roomCode,
+        room_code: code,
         from_user_id: user.id,
         to_user_id: opponent.user_id,
         status: 'pending',
@@ -219,7 +276,7 @@ const sendRematchRequest = useCallback(async (roomCode: string, gameType: 'timed
       
     if (error) throw error;
     
-    console.log('🔄 Tekrar oyun isteği gönderildi:', data.id);
+    console.log('🔄 Tekrar oyun isteği gönderildi:', data.id, 'room:', code);
     
     toast({
       title: '🔄 Tekrar Oyun İsteği Gönderildi',
@@ -231,7 +288,7 @@ const sendRematchRequest = useCallback(async (roomCode: string, gameType: 'timed
     console.error('❌ Tekrar oyun isteği hatası:', error);
     throw error;
   }
-}, [user, currentRoom, participants, toast]);
+}, [user, participants, toast, setCurrentRoom]);
   
 const respondRematchRequest = useCallback(async (requestId: string, accepted: boolean) => {
   if (!user) return;
