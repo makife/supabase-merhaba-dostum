@@ -278,6 +278,14 @@ const sendRematchRequest = useCallback(async (_roomCode: string, gameType: 'time
     
     console.log('🔄 Tekrar oyun isteği gönderildi:', data.id, 'room:', code);
     
+    // Test için hemen dinleyici kurma durumunu kontrol et
+    console.log('🔍 Real-time dinleyici durumu kontrol ediliyor...');
+    
+    // Kısa bir süre sonra test isteği gönder
+    setTimeout(() => {
+      console.log('🧪 Test için manuel istek gönderiliyor...');
+    }, 1000);
+    
     // Push notification gönder (opsiyonel)
     try {
       const { data: profile } = await supabase
