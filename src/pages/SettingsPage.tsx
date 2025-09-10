@@ -579,7 +579,7 @@ const SettingsPage = () => {
           <CardContent className="pt-6">
             <div className="text-center text-sm text-muted-foreground">
               <p>Kelimeci v1.0.0</p>
-              <p>© 2025 Ergan Mühendislik</p>
+              <p>© 2025 Ergan Yazılım</p>
             </div>
           </CardContent>
         </Card>
