@@ -20,6 +20,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { useJokerInventory } from '@/hooks/useJokerInventory';
+import { MatchmakingProvider } from '@/contexts/NewMatchmakingContext';
 
 import {
   Bot,
@@ -204,6 +205,19 @@ const HomePage = () => {
     }
   };
 
+  const handleMatchFound = (roomId: string) => {
+    console.log('🎯 Match found! Room ID:', roomId);
+    setShowMatchmaking(false);
+    
+    // Oyun sayfasına yönlendir
+    navigate(`/game/random-match`, { 
+      state: { 
+        gameType: matchmakingGameType,
+        roomId: roomId
+      } 
+    });
+  };
+
   const gameModesConfig = [
     {
       id: 'vs-computer',
@@ -244,8 +258,9 @@ const HomePage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <MatchmakingProvider onMatchFound={handleMatchFound}>
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
+        <div className="max-w-4xl mx-auto space-y-6">
         {/* Birleştirilmiş Header ve Level Progress */}
         <Card className="border-0 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/10 shadow-2xl relative overflow-hidden">
           <HeaderAnimation />
@@ -710,15 +725,7 @@ const HomePage = () => {
           <NewMatchmakingModal
             isOpen={showMatchmaking}
             onClose={() => setShowMatchmaking(false)}
-            onMatchFound={(roomId) => {
-              setShowMatchmaking(false);
-              navigate(`/game/random-match`, { 
-                state: { 
-                  gameType: matchmakingGameType,
-                  roomId: roomId
-                } 
-              });
-            }}
+            onMatchFound={handleMatchFound}
             gameType={matchmakingGameType}
           />
         )}
@@ -727,6 +734,7 @@ const HomePage = () => {
         <FloatingMenu />
       </div>
     </div>
+    </MatchmakingProvider>
   );
 };
 
