@@ -1112,7 +1112,7 @@ useEffect(() => {
   // JOKER FONKSİYONLARI
 
   // 1. Değiştir Jokeri - 5 harf değiştir (3 sesli, 2 sessiz)
-  const useDegisTirJoker = () => {
+  const useDegisTirJoker = async () => {
   if (jokers.degistir <= 0 || isJokerActive) return;
 
   playSpecialSound('/degistir.mp3');
@@ -1156,7 +1156,12 @@ useEffect(() => {
   }, 1000);
   
   setGameGrid(newGrid);
-  useJoker('degistir');
+  const jokerUsed = await useJoker('degistir');
+  if (!jokerUsed) {
+    console.error('❌ Değiştir joker kullanılamadı!');
+    setIsJokerActive(false);
+    return;
+  }
   setSelectedLetters([]);
   setCurrentWord('');
   
@@ -1273,7 +1278,12 @@ const useFisildaJoker = async () => {
     }, wordPositions.length * 500 + 800);
     
     // SADECE BAŞARILI DURUMDA JOKER SAYISINI AZALT
-    useJoker('fisilida');
+    const jokerUsed = await useJoker('fisilida');
+    if (!jokerUsed) {
+      console.error('❌ Fısılda joker kullanılamadı!');
+      setIsJokerActive(false);
+      return;
+    }
     
   } else {
     // Kelime bulunamadı
@@ -1470,7 +1480,12 @@ const useSenYazJoker = async () => {
     
     // SADECE GERÇEKTEN BAŞARILI OLDUĞUNDA JOKER SAYISINI AZALT
     if (jokerSuccess) {
-      useJoker('senYaz');
+      const jokerUsed = await useJoker('senYaz');
+      if (jokerUsed) {
+        console.log('🎯 Sen Yaz Jokeri harcanı!');
+      } else {
+        console.error('❌ Sen Yaz joker kullanılamadı!');
+      }
       console.log('🎯 Sen Yaz Jokeri harcanı!');
     } else {
       console.log('💾 Sen Yaz Jokeri korundu (işlem başarısız)!');
