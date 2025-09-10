@@ -108,34 +108,8 @@ export const useJokerInventory = () => {
     loadJokers();
   }, [user]);
 
-  // Realtime subscription for joker inventory changes (ignore useJoker updates)
-  useEffect(() => {
-    if (!user?.id) return;
-
-    const channel = supabase
-      .channel('user-inventory-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_inventory',
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          console.log('🔄 Joker inventory real-time update:', payload);
-          // Kısa bir gecikme ile reload et (useJoker çağrısının bitmesini bekle)
-          setTimeout(() => {
-            loadJokers();
-          }, 100);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user?.id, loadJokers]);
+  // Manual reload when needed - no realtime subscription interference
+  // Removed realtime subscription to prevent interference with manual joker usage
 
   return {
     jokers,
