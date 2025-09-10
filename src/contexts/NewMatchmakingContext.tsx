@@ -285,7 +285,10 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
     console.log('🔄 Tekrar arama başlatılıyor...');
     cleanup(); // Önce tamamen temizle
     setSearchTimeout(false);
-    await startSearch(gameType);
+    // Kısa bir delay ekleyelim ki cleanup tam olsun
+    setTimeout(() => {
+      startSearch(gameType);
+    }, 100);
   };
 
   // AI ile oyna

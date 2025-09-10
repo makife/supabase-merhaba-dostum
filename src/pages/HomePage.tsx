@@ -209,7 +209,13 @@ const HomePage = () => {
     console.log('🎯 Match found! Room ID:', roomId);
     setShowMatchmaking(false);
     
-    // Oyun sayfasına yönlendir - URL parametresi olarak room ID'yi ekle
+    // AI ile oyun için özel yönlendirme
+    if (roomId === 'ai-game') {
+      navigate(`/game/vs-computer?type=${matchmakingGameType}`);
+      return;
+    }
+    
+    // Gerçek oda için normal yönlendirme
     navigate(`/game/random-match?room=${roomId}&type=${matchmakingGameType}`);
   };
 
