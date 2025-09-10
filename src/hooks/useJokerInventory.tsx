@@ -108,7 +108,7 @@ export const useJokerInventory = () => {
     loadJokers();
   }, [user]);
 
-  // Realtime subscription for joker inventory changes
+  // Realtime subscription for joker inventory changes (ignore useJoker updates)
   useEffect(() => {
     if (!user?.id) return;
 
@@ -124,7 +124,10 @@ export const useJokerInventory = () => {
         },
         (payload) => {
           console.log('🔄 Joker inventory real-time update:', payload);
-          loadJokers();
+          // Kısa bir gecikme ile reload et (useJoker çağrısının bitmesini bekle)
+          setTimeout(() => {
+            loadJokers();
+          }, 100);
         }
       )
       .subscribe();
