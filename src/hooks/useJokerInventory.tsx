@@ -62,38 +62,54 @@ export const useJokerInventory = () => {
     if (!user || jokers[jokerType] <= 0) return false;
 
     try {
-      const newQuantity = jokers[jokerType] - 1;
-      
-      // Database'deki item_type'a dönüştür
-      const dbItemType = jokerType === 'degistir' ? 'joker_degistir' :
-                        jokerType === 'fisilida' ? 'joker_fisildi' :
-                        jokerType === 'senYaz' ? 'joker_senyaz' : jokerType;
-      
-      console.log(`🎯 Joker kullanımı: ${jokerType} -> ${dbItemType}, yeni miktar: ${newQuantity}`);
-      
+      // Veritabanındaki olası item_type eşleşmeleri (geçmiş uyumluluğu için)
+      const aliasMap: Record<keyof JokerInventory, string[]> = {
+        degistir: ['joker_degistir', 'degistir'],
+        fisilida: ['joker_fisildi', 'fisilida'],
+        senYaz: ['joker_senyaz', 'senYaz', 'senyaz'],
+      };
+      const aliases = aliasMap[jokerType];
+
+      // Mevcut kaydı bul (hangi anahtar varsa onu güncelle)
+      const { data: rows, error: selectError } = await supabase
+        .from('user_inventory')
+        .select('id, item_type, quantity')
+        .eq('user_id', user.id)
+        .in('item_type', aliases)
+        .limit(1);
+
+      if (selectError) throw selectError;
+
+      const row = rows?.[0];
+      if (!row) {
+        console.warn('⚠️ Joker kaydı bulunamadı, iptal ediliyor:', jokerType);
+        return false;
+      }
+
+      const currentQty = row.quantity ?? 0;
+      const newQuantity = Math.max(0, currentQty - 1);
+
+      console.log(`🎯 Joker kullanımı: ${jokerType} -> ${row.item_type}, ${currentQty} → ${newQuantity}`);
+
       if (newQuantity === 0) {
-        // Eğer 0 olacaksa kaydı sil
+        // 0 olursa ilgili kaydı sil
         const { error } = await supabase
           .from('user_inventory')
           .delete()
-          .eq('user_id', user.id)
-          .eq('item_type', dbItemType);
-          
+          .eq('id', row.id);
         if (error) throw error;
       } else {
         // Miktarı güncelle
         const { error } = await supabase
           .from('user_inventory')
           .update({ quantity: newQuantity })
-          .eq('user_id', user.id)
-          .eq('item_type', dbItemType);
-          
+          .eq('id', row.id);
         if (error) throw error;
       }
 
       setJokers(prev => ({
         ...prev,
-        [jokerType]: newQuantity
+        [jokerType]: newQuantity,
       }));
 
       console.log(`✅ Joker başarıyla güncellendi: ${jokerType} = ${newQuantity}`);
