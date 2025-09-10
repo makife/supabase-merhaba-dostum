@@ -129,7 +129,7 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
               </Button>
               <Button
                 variant="outline"
-                onClick={onClose}
+                onClick={handleClose}
                 className="flex-1"
               >
                 <X className="h-4 w-4 mr-2" />
