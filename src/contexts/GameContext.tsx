@@ -1590,11 +1590,22 @@ useEffect(() => {
           duration: 3000,
         });
         
-        // Yeni odaya katıl (room_code ile)
+        // Yeni odaya katıl (room_code ile) - Daha uzun süre bekle
         if (updatedRequest.room_code) {
-          setTimeout(() => {
-            joinRoom(updatedRequest.room_code);
-          }, 1500);
+          console.log('🎯 Odaya katılmak için bekleniyor, room_code:', updatedRequest.room_code);
+          
+          // Oda oluşturulmasını beklemek için daha uzun süre
+          setTimeout(async () => {
+            console.log('🔄 Odaya katılım deneniyor...');
+            const success = await joinRoom(updatedRequest.room_code);
+            
+            if (!success) {
+              console.log('❌ İlk deneme başarısız, 2. deneme...');
+              setTimeout(() => {
+                joinRoom(updatedRequest.room_code);
+              }, 2000);
+            }
+          }, 3000); // 3 saniye bekle
         }
         
       } else if (updatedRequest.status === 'rejected') {
