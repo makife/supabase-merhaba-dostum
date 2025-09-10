@@ -209,13 +209,8 @@ const HomePage = () => {
     console.log('🎯 Match found! Room ID:', roomId);
     setShowMatchmaking(false);
     
-    // Oyun sayfasına yönlendir
-    navigate(`/game/random-match`, { 
-      state: { 
-        gameType: matchmakingGameType,
-        roomId: roomId
-      } 
-    });
+    // Oyun sayfasına yönlendir - URL parametresi olarak room ID'yi ekle
+    navigate(`/game/random-match?room=${roomId}&type=${matchmakingGameType}`);
   };
 
   const gameModesConfig = [
