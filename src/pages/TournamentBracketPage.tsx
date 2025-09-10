@@ -63,6 +63,13 @@ const TournamentBracketPage = () => {
       for (const match of botMatches) {
         const player1IsBot = match.player1_id?.startsWith('bot_');
         const player2IsBot = match.player2_id?.startsWith('bot_');
+        const hasNullPlayer = !match.player1_id || !match.player2_id;
+        
+        // Eğer player eksikse maçı iptal et (4. round sorunu)
+        if (hasNullPlayer) {
+          console.log('⚠️ Match has null player, skipping:', match.id);
+          continue;
+        }
         
         // Sadece her iki oyuncu da bot ise otomatik tamamla
         if (player1IsBot && player2IsBot) {
@@ -133,13 +140,16 @@ const TournamentBracketPage = () => {
       } else if (allCompleted && round === 3) {
         console.log('🏆 Tournament completed!');
         
-        // Turnuvayı hemen completed olarak işaretle
+        // Turnuvayı completed olarak işaretle ve şampiyonu göster
         await supabase
           .from('tournaments')
           .update({ status: 'completed', finished_at: new Date().toISOString() })
           .eq('id', tournamentId);
-          
-        setShowChampion(true);
+        
+        // Şampiyon ekranını göster
+        setTimeout(() => {
+          setShowChampion(true);
+        }, 2000);
       }
     } catch (error) {
       console.error('Error checking round completion:', error);
