@@ -113,13 +113,6 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
 
             <div className="flex flex-col gap-2">
               <Button
-                onClick={() => restartSearch(gameType)}
-                className="flex-1"
-              >
-                <Search className="h-4 w-4 mr-2" />
-                Tekrar Arama Yap
-              </Button>
-              <Button
                 variant="secondary"
                 onClick={playWithAI}
                 className="flex-1"
