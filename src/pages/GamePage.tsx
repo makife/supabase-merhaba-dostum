@@ -1807,53 +1807,67 @@ useEffect(() => {
     console.log('🎯 Loading random match room data:', roomId);
     
     try {
-      // Fetch the room data first
-      const { data: roomData } = await supabase
+      // Fetch the matchmaking room data first
+      const { data: matchmakingRoom } = await supabase
         .from('matchmaking_rooms')
         .select('*')
         .eq('id', roomId)
         .single();
       
-      if (roomData) {
-        console.log('🏠 Room found, joining/creating game room...');
+      if (!matchmakingRoom) {
+        console.error('❌ Matchmaking room not found:', roomId);
+        navigate('/');
+        return;
+      }
+      
+      console.log('🏠 Matchmaking room found:', matchmakingRoom);
+      
+      // Check if game room already exists for this matchmaking room
+      const { data: existingRoom } = await supabase
+        .from('game_rooms')
+        .select('*')
+        .eq('room_code', roomId)
+        .eq('status', 'waiting')
+        .maybeSingle();
+      
+      if (existingRoom) {
+        console.log('🏠 Existing game room found, joining:', existingRoom.id);
         
-        // Create or join the actual game room
-        const gameRoom = await createRoom(`random-match-${gameType}`, roomId);
-        
-        if (gameRoom) {
-          console.log('✅ Game room created/joined:', gameRoom.id);
-          
-          // Add current user as participant
-          const { error: participantError } = await supabase
-            .from('game_participants')
-            .insert({
-              room_id: gameRoom.id,
-              user_id: user.id,
-              is_bot: false,
-              score: 0
-            });
-          
-          if (participantError) {
-            console.error('❌ Error adding participant:', participantError);
-          } else {
-            console.log('✅ User added as participant');
-          }
-          
-          // Check if we need to add AI opponent
-          const { data: existingParticipants } = await supabase
-            .from('game_participants')
-            .select('*')
-            .eq('room_id', gameRoom.id);
-          
-          if (existingParticipants && existingParticipants.length === 1) {
-            console.log('🤖 Adding AI opponent...');
-            await addAIOpponent();
-          }
+        // Join existing room using GameContext function
+        const joined = await joinRoom(roomId);
+        if (!joined) {
+          console.error('❌ Failed to join existing room');
+          navigate('/');
+          return;
         }
       } else {
-        console.error('❌ Room not found:', roomId);
-        navigate('/');
+        console.log('🏗️ Creating new game room...');
+        const gameRoom = await createRoom(`random-match-${gameType}`, roomId);
+        
+        if (!gameRoom) {
+          console.error('❌ Failed to create game room');
+          navigate('/');
+          return;
+        }
+        
+        console.log('✅ Game room created:', gameRoom.id);
       }
+      
+      // Add AI opponent if needed (context will handle participant checking)
+      setTimeout(async () => {
+        const { data: participants } = await supabase
+          .from('game_participants')
+          .select('*')
+          .eq('room_id', currentRoom?.id);
+        
+        console.log('👥 Current participants after room setup:', participants?.length || 0);
+        
+        // If only one participant, add AI opponent
+        if (participants && participants.length === 1) {
+          console.log('🤖 Adding AI opponent...');
+          await addAIOpponent();
+        }
+      }, 1000);
       
     } catch (error) {
       console.error('❌ Error loading random match data:', error);
