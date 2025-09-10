@@ -87,6 +87,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
         .eq('game_type', gameType)
         .eq('status', 'waiting')
         .lt('current_players', 2)
+        .gt('expires_at', new Date().toISOString()) // Süresi dolmamış olanlar
         .order('created_at', { ascending: true })
         .limit(1);
 
@@ -107,18 +108,40 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
           console.log('⚠️ Oda dolu, yeni oda oluşturuluyor...');
           roomToJoin = null;
         } else {
-          // Odaya katıl
-          const { error: updateError } = await supabase
+          // Race condition önlemek için atomic update
+          const { data: updatedRoom, error: updateError } = await supabase
             .from('matchmaking_rooms')
             .update({ 
               current_players: roomToJoin.current_players + 1,
               status: roomToJoin.current_players + 1 >= 2 ? 'matched' : 'waiting'
             })
-            .eq('id', roomToJoin.id);
+            .eq('id', roomToJoin.id)
+            .eq('current_players', roomToJoin.current_players) // Optimistic locking
+            .select()
+            .single();
 
-          if (updateError) {
-            console.error('Error joining room:', updateError);
+          if (updateError || !updatedRoom) {
+            console.error('Error joining room (possibly full):', updateError);
             roomToJoin = null;
+          } else {
+            roomToJoin = updatedRoom;
+            console.log('✅ Odaya katıldı - yeni durum:', {
+              players: updatedRoom.current_players,
+              status: updatedRoom.status
+            });
+            
+            // Eğer oda dolduysa hemen eşleşme bildir
+            if (updatedRoom.status === 'matched' && updatedRoom.current_players >= 2) {
+              console.log('🎉 Oda doldu - anında eşleşme!');
+              setIsSearching(false);
+              toast({
+                title: "Eşleşme Bulundu!",
+                description: "Mevcut odaya katıldınız!",
+              });
+              onMatchFound?.(updatedRoom.id);
+              cleanup();
+              return;
+            }
           }
         }
       }
@@ -182,25 +205,25 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
 
       setSearchChannel(channel);
 
-      // Progress animasyonu
+      // Progress animasyonu - 30 saniye
       let progress = 0;
       const interval = setInterval(() => {
-        progress += 1.5;
+        progress += 3.33; // 30 saniye için her 1 saniyede %3.33
         setSearchProgress(Math.min(progress, 100));
         
-        // 60 saniye sonra timeout
+        // 30 saniye sonra timeout
         if (progress >= 100) {
           clearInterval(interval);
           console.log('⏰ Timeout: AI rakip ekleniyor...');
           setIsSearching(false);
           toast({
             title: "AI Rakip Bulundu!",
-            description: "AI ile oyun başlıyor...",
+            description: "Gerçek oyuncu bulunamadı, AI ile oyun başlıyor...",
           });
           onMatchFound?.(roomToJoin.id);
           cleanup();
         }
-      }, 600); // 60 saniye için 600ms intervals
+      }, 1000); // Her 1 saniye
       setProgressInterval(interval);
 
     } catch (error) {

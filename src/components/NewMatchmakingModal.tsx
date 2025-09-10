@@ -120,13 +120,14 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
             ) : searchProgress < 100 ? (
               <>
                 <p>• 🔍 Gerçek oyuncular aranıyor</p>
-                <p>• ⏱️ 60 saniye sonra AI rakip eklenecek</p>
+                <p>• ⏱️ 30 saniye sonra AI rakip eklenecek</p>
                 <p>• 👤 {currentRoom?.current_players || 0}/2 oyuncu</p>
+                <p>• 🏠 Oda ID: {currentRoom?.id.slice(-8) || 'N/A'}</p>
               </>
             ) : (
               <>
                 <p>• 🤖 AI rakip hazırlanıyor</p>
-                <p>• ⚡ Oyun yakında başlayacak</p>
+                <p>• ⚡ Oyun yakında başlayacek</p>
               </>
             )}
           </div>
