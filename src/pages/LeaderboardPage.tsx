@@ -344,7 +344,7 @@ const LeaderboardPage = () => {
       <div className="max-w-2xl mx-auto space-y-4">
         <div className="flex items-center justify-between">
           <Button variant="outline" size="sm" onClick={() => navigate('/')} className="text-xs">
-            <ArrowLeft className="w-4 h-4 mr-1" />
+            <ArrowLeft className="w-4 h-4 mr-2" />
             Geri
           </Button>
           <h1 className="text-xl font-bold flex items-center">
