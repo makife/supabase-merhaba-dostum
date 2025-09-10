@@ -572,7 +572,7 @@ const HomePage = () => {
           <ScrollArea className="h-80">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pr-4">
               {gameModesConfig.map((mode) => (
-                <Card key={mode.id} className={`hover:shadow-xl transition-all duration-300 cursor-pointer border-0 overflow-hidden ${mode.gradient} hover:scale-105`}>
+                <Card key={mode.id} className={`cursor-pointer border-0 overflow-hidden ${mode.gradient}`}>
                   <CardHeader className="pb-2 pt-3 relative">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
