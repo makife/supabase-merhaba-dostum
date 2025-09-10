@@ -63,7 +63,13 @@ const TournamentBracketPage = () => {
         if (p.user_id) {
           botMap.set(p.user_id, p.is_bot);
         }
+        // Bot ID'leri için de mapping ekle
+        if (p.is_bot && p.user_id && p.user_id.startsWith('bot_')) {
+          botMap.set(p.user_id, true);
+        }
       });
+      
+      console.log('🗺️ Bot mapping:', Array.from(botMap.entries()));
 
       const { data: botMatches } = await supabase
         .from('tournament_matches')
@@ -76,9 +82,19 @@ const TournamentBracketPage = () => {
 
       // Process each match
       for (const match of botMatches) {
-        const player1IsBot = botMap.get(match.player1_id) || false;
-        const player2IsBot = botMap.get(match.player2_id) || false;
+        // Bot kontrolü: hem botMap'ten kontrol et hem de ID formatını kontrol et
+        const player1IsBot = botMap.get(match.player1_id) || match.player1_id?.startsWith('bot_') || false;
+        const player2IsBot = botMap.get(match.player2_id) || match.player2_id?.startsWith('bot_') || false;
         const hasNullPlayer = !match.player1_id || !match.player2_id;
+        
+        console.log('🔍 Processing match:', {
+          matchId: match.id.slice(-8),
+          player1: match.player1_id?.slice(-8),
+          player2: match.player2_id?.slice(-8),
+          player1IsBot,
+          player2IsBot,
+          status: match.status
+        });
         
         // Eğer player eksikse maçı iptal et (4. round sorunu)
         if (hasNullPlayer) {
@@ -105,8 +121,9 @@ const TournamentBracketPage = () => {
             })
             .eq('id', match.id);
         } else {
-          console.log('👤 Real player detected, waiting for actual gameplay');
+          console.log('👤 Real player detected, NOT auto-completing match - leaving as in_progress');
           // Gerçek oyuncu varsa maçı olduğu gibi bırak (in_progress)
+          // Bu maç gerçek oyuncu tarafından oynanmalı
         }
       }
       
@@ -149,8 +166,8 @@ const TournamentBracketPage = () => {
       
       const allCompleted = roundMatches.every(m => m.status === 'completed');
       const hasRealPlayerMatches = roundMatches.some(m => {
-        const player1IsBot = botMap.get(m.player1_id) || false;
-        const player2IsBot = botMap.get(m.player2_id) || false;
+        const player1IsBot = botMap.get(m.player1_id) || m.player1_id?.startsWith('bot_') || false;
+        const player2IsBot = botMap.get(m.player2_id) || m.player2_id?.startsWith('bot_') || false;
         return !player1IsBot || !player2IsBot; // En az bir gerçek oyuncu varsa
       });
       
@@ -158,8 +175,8 @@ const TournamentBracketPage = () => {
       if (hasRealPlayerMatches) {
         const realPlayerMatchesCompleted = roundMatches
           .filter(m => {
-            const player1IsBot = botMap.get(m.player1_id) || false;
-            const player2IsBot = botMap.get(m.player2_id) || false;
+            const player1IsBot = botMap.get(m.player1_id) || m.player1_id?.startsWith('bot_') || false;
+            const player2IsBot = botMap.get(m.player2_id) || m.player2_id?.startsWith('bot_') || false;
             return !player1IsBot || !player2IsBot;
           })
           .every(m => m.status === 'completed');
