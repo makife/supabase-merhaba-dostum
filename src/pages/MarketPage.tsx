@@ -364,34 +364,42 @@ const MarketPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/50 p-4">
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <Button variant="outline" size="sm" onClick={() => navigate('/')}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Geri
-          </Button>
-          <h1 className="text-2xl font-bold flex items-center">
-            <ShoppingCart className="w-6 h-6 mr-2" />
-            Market
-          </h1>
-          <div className="w-16" />
-        </div>
-
-        {/* Hero Section */}
-        <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary to-accent p-6 text-primary-foreground">
-          <div className="relative z-10">
-            <h2 className="text-3xl font-bold mb-2">Oyun Deneyimini Geliştir!</h2>
-            <p className="text-lg opacity-90">Özel paketler ve premium özelliklerle daha keyifli oyna</p>
+    <div className="flex flex-col h-screen bg-gradient-to-br from-background to-muted/50">
+      {/* Fixed Header */}
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b p-4 space-y-4">
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <Button variant="outline" size="sm" onClick={() => navigate('/')}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Geri
+            </Button>
+            <h1 className="text-2xl font-bold flex items-center">
+              <ShoppingCart className="w-6 h-6 mr-2" />
+              Market
+            </h1>
+            <div className="w-16" />
           </div>
-          <div className="absolute inset-0 bg-black/10" />
-          <img 
-            src="/marketimaj.png" 
-            alt="Market" 
-            className="absolute right-0 top-0 h-full w-auto opacity-20"
-          />
+
+          {/* Hero Section */}
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary to-accent p-6 text-primary-foreground">
+            <div className="relative z-10">
+              <h2 className="text-3xl font-bold mb-2">Oyun Deneyimini Geliştir!</h2>
+              <p className="text-lg opacity-90">Özel paketler ve premium özelliklerle daha keyifli oyna</p>
+            </div>
+            <div className="absolute inset-0 bg-black/10" />
+            <img 
+              src="/marketimaj.png" 
+              alt="Market" 
+              className="absolute right-0 top-0 h-full w-auto opacity-20"
+            />
+          </div>
         </div>
+      </div>
+
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-6xl mx-auto p-4 space-y-6">
 
         {/* User Status */}
         {user && (
@@ -651,6 +659,7 @@ const MarketPage = () => {
             </Card>
           </TabsContent>
         </Tabs>
+        </div>
       </div>
     </div>
   );
