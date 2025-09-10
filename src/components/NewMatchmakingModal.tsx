@@ -43,6 +43,15 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
   };
 
   const getSearchStatus = () => {
+    // Timeout durumu kontrolü
+    if (searchTimeout) {
+      return {
+        icon: Search,
+        title: 'Oyuncu Bulunamadı',
+        description: 'Şuan için oyuncu bulunamadı. Lütfen bir seçenek seçin.'
+      };
+    }
+
     if (!isSearching) return { icon: Search, title: 'Hazırlanıyor...', description: 'Eşleşme sistemi başlatılıyor' };
     
     if (currentRoom) {
@@ -62,12 +71,6 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
             icon: Users,
             title: 'Oyuncu Aranıyor',
             description: `Gerçek oyuncu aranıyor... (${currentRoom.current_players}/${currentRoom.max_players})`
-          };
-        } else {
-          return {
-            icon: Bot,
-            title: 'AI Rakip Hazırlanıyor',
-            description: 'Gerçek oyuncu bulunamadı, AI rakip ekleniyor...'
           };
         }
       }
