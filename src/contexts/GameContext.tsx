@@ -819,10 +819,14 @@ const fetchParticipants = useCallback(
           }
         } else {
           // Successful join!
-          setCurrentRoom(targetRoom);
           console.log('✅ BAŞARILI EŞLEŞME!');
           
-          // DÜZELTME: Oyunu hemen başlat
+          // ✅ ÖNEMLI: Oda zaten bir ızgara var, onu kullan
+          setCurrentRoom(targetRoom);
+          
+          // Katılımcıları fetch et
+          await fetchParticipants(targetRoom.id);
+          
           toast({
             title: '🎯 Eşleşme Bulundu!',
             description: 'Rakip bulundu, oyun başlıyor...',
