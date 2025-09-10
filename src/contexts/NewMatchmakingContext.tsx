@@ -291,12 +291,8 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
     }, 100);
   };
 
-  // AI ile oyna (yalnızca timeout ekranında ve aktif arama yokken)
+  // AI ile oyna
   const playWithAI = () => {
-    if (isSearching || !searchTimeout) {
-      console.log('⏸️ AI başlatma yoksayıldı (arama aktif veya timeout değil)');
-      return;
-    }
     console.log('🤖 AI ile oyun başlatılıyor...');
     cleanup();
     onMatchFound?.('ai-game');
