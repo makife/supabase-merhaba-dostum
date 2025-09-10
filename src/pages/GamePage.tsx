@@ -3506,7 +3506,7 @@ return (
   <>
     <div className="min-h-screen bg-gradient-to-br from-background to-muted relative overflow-hidden"
          style={{ 
-           paddingTop: 'env(safe-area-inset-top, 8px)', 
+           paddingTop: 'calc(env(safe-area-inset-top, 8px) + 1rem)', 
            paddingBottom: 'env(safe-area-inset-bottom, 8px)',
            paddingLeft: 'env(safe-area-inset-left, 4px)',
            paddingRight: 'env(safe-area-inset-right, 4px)'
