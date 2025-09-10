@@ -52,6 +52,19 @@ const TournamentBracketPage = () => {
 
   const simulateBotMatches = async (round: number) => {
     try {
+      // Önce tüm katılımcıları al ve bot durumlarını kontrol et
+      const { data: participants } = await supabase
+        .from('tournament_participants')
+        .select('user_id, is_bot')
+        .eq('tournament_id', tournamentId);
+
+      const botMap = new Map();
+      participants?.forEach(p => {
+        if (p.user_id) {
+          botMap.set(p.user_id, p.is_bot);
+        }
+      });
+
       const { data: botMatches } = await supabase
         .from('tournament_matches')
         .select('*')
@@ -63,8 +76,8 @@ const TournamentBracketPage = () => {
 
       // Process each match
       for (const match of botMatches) {
-        const player1IsBot = match.player1_id?.startsWith('bot_');
-        const player2IsBot = match.player2_id?.startsWith('bot_');
+        const player1IsBot = botMap.get(match.player1_id) || false;
+        const player2IsBot = botMap.get(match.player2_id) || false;
         const hasNullPlayer = !match.player1_id || !match.player2_id;
         
         // Eğer player eksikse maçı iptal et (4. round sorunu)
