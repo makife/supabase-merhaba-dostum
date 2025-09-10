@@ -71,8 +71,10 @@ const TournamentBracketPage = () => {
           continue;
         }
         
-        // Sadece her iki oyuncu da bot ise otomatik tamamla
+        // SADECE her iki oyuncu da bot ise otomatik tamamla
+        // Gerçek oyuncular varsa maçı otomatik tamamlama
         if (player1IsBot && player2IsBot) {
+          console.log('🤖 Both players are bots, auto-completing match');
           const player1Score = Math.floor(Math.random() * 50) + 20;
           const player2Score = Math.floor(Math.random() * 50) + 20;
           const winnerId = player1Score > player2Score ? match.player1_id : match.player2_id;
@@ -87,10 +89,13 @@ const TournamentBracketPage = () => {
               updated_at: new Date().toISOString()
             })
             .eq('id', match.id);
+        } else {
+          console.log('👤 Real player detected, waiting for actual gameplay');
+          // Gerçek oyuncu varsa maçı olduğu gibi bırak (in_progress)
         }
       }
       
-      // Check if round is complete and advance
+      // Round completion kontrolünü geciktir (gerçek oyuncu maçları bitmesini bekle)
       setTimeout(() => {
         checkAndAdvanceRound(round);
       }, 2000);
@@ -115,6 +120,27 @@ const TournamentBracketPage = () => {
       console.log(`📊 Round ${round}: ${roundMatches.length} total matches, ${roundMatches.filter(m => m.status === 'completed').length} completed`);
       
       const allCompleted = roundMatches.every(m => m.status === 'completed');
+      const hasRealPlayerMatches = roundMatches.some(m => {
+        const player1IsBot = m.player1_id?.startsWith('bot_');
+        const player2IsBot = m.player2_id?.startsWith('bot_');
+        return !player1IsBot || !player2IsBot; // En az bir gerçek oyuncu varsa
+      });
+      
+      // Eğer gerçek oyuncu maçları varsa ve tamamlanmadıysa bekle
+      if (hasRealPlayerMatches) {
+        const realPlayerMatchesCompleted = roundMatches
+          .filter(m => {
+            const player1IsBot = m.player1_id?.startsWith('bot_');
+            const player2IsBot = m.player2_id?.startsWith('bot_');
+            return !player1IsBot || !player2IsBot;
+          })
+          .every(m => m.status === 'completed');
+          
+        if (!realPlayerMatchesCompleted) {
+          console.log('⏳ Waiting for real player matches to complete...');
+          return;
+        }
+      }
       
       if (allCompleted && round < 3) {
         console.log(`✅ Round ${round} completed, advancing to round ${round + 1}`);
