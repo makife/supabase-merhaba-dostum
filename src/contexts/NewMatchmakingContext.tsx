@@ -251,39 +251,49 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
 
   // Arama iptal et
   const cancelSearch = async () => {
-    if (currentRoom) {
-      // Arama iptal edildiğinde odayı hemen sil veya pasif hale getir
-      if (currentRoom.current_players === 1) {
-        // Tek oyuncu varsa odayı sil
-        await supabase
-          .from('matchmaking_rooms')
-          .delete()
-          .eq('id', currentRoom.id);
-      } else {
-        // Birden fazla oyuncu varsa odayı expired yaparak pasif hale getir
-        await supabase
-          .from('matchmaking_rooms')
-          .update({ 
-            status: 'cancelled',
-            expires_at: new Date().toISOString() // Hemen süresi dolmuş yap
-          })
-          .eq('id', currentRoom.id);
+    console.log('❌ Arama iptal ediliyor...');
+    try {
+      if (currentRoom) {
+        // Arama iptal edildiğinde odayı hemen sil veya pasif hale getir
+        if (currentRoom.current_players === 1) {
+          // Tek oyuncu varsa odayı sil
+          await supabase
+            .from('matchmaking_rooms')
+            .delete()
+            .eq('id', currentRoom.id);
+          console.log('🗑️ Oda silindi');
+        } else {
+          // Birden fazla oyuncu varsa odayı expired yaparak pasif hale getir
+          await supabase
+            .from('matchmaking_rooms')
+            .update({ 
+              status: 'cancelled',
+              expires_at: new Date().toISOString() // Hemen süresi dolmuş yap
+            })
+            .eq('id', currentRoom.id);
+          console.log('🚫 Oda iptal edildi');
+        }
       }
+    } catch (error) {
+      console.error('Oda temizlik hatası:', error);
     }
     cleanup();
   };
 
   // Tekrar arama yap
   const restartSearch = async (gameType: 'timed' | 'score') => {
+    console.log('🔄 Tekrar arama başlatılıyor...');
+    cleanup(); // Önce tamamen temizle
     setSearchTimeout(false);
     await startSearch(gameType);
   };
 
   // AI ile oyna
   const playWithAI = () => {
+    console.log('🤖 AI ile oyun başlatılıyor...');
     cleanup();
-    // GameModeSelector modalına yönlendir
-    window.location.href = '/';
+    // React Router ile navigate et, sayfa yenileme yapmadan
+    onMatchFound?.('ai-game');
   };
 
   // Component unmount'da temizlik
