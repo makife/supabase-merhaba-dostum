@@ -2253,30 +2253,35 @@ useEffect(() => {
   }
 }, [gameStarted, gameEnded, gameType, gameMode, tournamentMatch]);
   
-  // Timer sync for private-room games using server started_at
+  // Timer sync for private-room and random-match games using server started_at
   useEffect(() => {
-    if (gameType !== 'timed' || gameMode !== 'private-room' || !gameStarted || gameEnded) return;
+    if (gameType !== 'timed' || !gameStarted || gameEnded) return;
+    if (gameMode !== 'private-room' && gameMode !== 'random-match') return;
     if (!currentRoom?.started_at) return;
 
     let syncInterval: NodeJS.Timeout | null = null;
     const syncTimer = () => {
       const startTs = new Date(currentRoom.started_at!).getTime();
       const elapsed = Math.floor((Date.now() - startTs) / 1000);
-      const remaining = Math.max(0, 120 - elapsed);
+      const remaining = Math.max(0, (currentRoom.time_limit || 120) - elapsed);
+      
+      // 2 saniye toleransla senkronize et
       if (Math.abs(timeLeftRef.current - remaining) > 2) {
         timeLeftRef.current = remaining;
         setDisplayTime(remaining);
-        console.log('🔄 Private-room timer synced:', remaining);
+        console.log(`🔄 ${gameMode} timer synced:`, remaining, 'seconds');
       }
     };
 
+    console.log('⏱️ Timer sync başlatılıyor - mode:', gameMode, 'started_at:', currentRoom.started_at);
+    
     syncTimer();
-    syncInterval = setInterval(syncTimer, 3000);
+    syncInterval = setInterval(syncTimer, 2000); // Daha sık sync
 
     return () => {
       if (syncInterval) clearInterval(syncInterval);
     };
-  }, [gameType, gameMode, gameStarted, gameEnded, currentRoom?.started_at]);
+  }, [gameType, gameMode, gameStarted, gameEnded, currentRoom?.started_at, currentRoom?.time_limit]);
 
   // Focus/blur event handler
   useEffect(() => {

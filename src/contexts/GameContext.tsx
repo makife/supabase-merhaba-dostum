@@ -1072,13 +1072,28 @@ const fetchParticipants = useCallback(
     if (!currentRoom) return;
 
     try {
-      await supabase
+      const startTime = new Date().toISOString();
+      
+      const { data, error } = await supabase
         .from('game_rooms')
         .update({ 
           status: 'active', 
-          started_at: new Date().toISOString() 
+          started_at: startTime 
         })
-        .eq('id', currentRoom.id);
+        .eq('id', currentRoom.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ Oyun başlatma hatası:', error);
+        return;
+      }
+
+      console.log('✅ Oyun başlatıldı, server time:', startTime);
+      
+      // Current room'u güncelle ki started_at client'da da olsun
+      setCurrentRoom(data);
+      
     } catch (error) {
       console.error('Error starting game:', error);
     }
