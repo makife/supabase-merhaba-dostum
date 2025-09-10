@@ -585,13 +585,13 @@ export default function ChatPage() {
   }, [user?.id]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-chat-50 via-gray-50 to-chat-100">
+    <div className="h-screen bg-gradient-to-br from-chat-50 via-gray-50 to-chat-100 overflow-hidden">
       {/* Safe area top */}
       <div className="safe-area-top"></div>
       
-      <div className="h-screen flex flex-col max-w-4xl mx-auto bg-white rounded-lg shadow-2xl m-4 overflow-hidden border-2 border-chat-200">
+      <div className="h-full flex flex-col max-w-4xl mx-auto bg-white rounded-lg shadow-2xl m-4 border-2 border-chat-200 overflow-hidden">
         {/* Content Area */}
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0 overflow-hidden">
           {renderContent()}
         </div>
       </div>
