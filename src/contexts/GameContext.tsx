@@ -661,7 +661,7 @@ const fetchParticipants = useCallback(
 
     console.log('✅ Oda bulundu:', room.id.slice(-8));
 
-    // ✅ DÜZELTME: Mevcut katılımcıları kontrol et
+    // ✅ Katılımcıları kontrol et
     const { data: participants, error: participantsError } = await supabase
       .from('game_participants')
       .select('user_id, is_bot')
@@ -670,6 +670,15 @@ const fetchParticipants = useCallback(
     if (participantsError) {
       console.error('❌ Katılımcı kontrolü hatası:', participantsError);
       return false;
+    }
+
+    // Kullanıcı zaten katılmış mı? BUNU ÖNCE KONTROL ET
+    const isAlreadyJoined = participants?.some(p => p.user_id === user.id);
+    if (isAlreadyJoined) {
+      console.log('✅ Kullanıcı zaten katılmış, room state güncelleniyor');
+      setCurrentRoom(room);
+      await fetchParticipants(room.id);
+      return true;
     }
 
     const realPlayerCount = participants?.filter(p => !p.is_bot).length || 0;
@@ -691,15 +700,6 @@ const fetchParticipants = useCallback(
     if (!isRematchRoom && realPlayerCount >= 1) {
       // Normal odalar için 1 kişi varsa dolu sayılır
       // Ama rematch odaları için bu kontrol yapılmaz
-    }
-
-    // Kullanıcı zaten katılmış mı kontrol et
-    const isAlreadyJoined = participants?.some(p => p.user_id === user.id);
-    if (isAlreadyJoined) {
-      console.log('✅ Kullanıcı zaten katılmış, room state güncelleniyor');
-      setCurrentRoom(room);
-      await fetchParticipants(room.id);
-      return true;
     }
 
     // ✅ DÜZELTME: Odaya katıl ve HEMEN ardından fetch et

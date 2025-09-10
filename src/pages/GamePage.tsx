@@ -1827,7 +1827,7 @@ useEffect(() => {
         .from('game_rooms')
         .select('*')
         .eq('room_code', roomId)
-        .eq('status', 'waiting')
+        .in('status', ['waiting','active'])
         .maybeSingle();
       
       if (existingRoom) {
