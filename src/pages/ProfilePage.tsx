@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { UserAvatar } from '@/components/UserAvatar';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
@@ -483,98 +484,104 @@ const ProfilePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
-      <div className="max-w-2xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <Button variant="outline" onClick={() => {
-            const fromPage = location.state?.from;
-            if (fromPage === '/chat') {
-              navigate('/chat');
-            } else {
-              navigate('/');
-            }
-          }}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Geri
-          </Button>
-          <h1 className="text-2xl font-bold">
-            {isOwnProfile ? 'Profil' : `${profileData.username} Profili`}
-          </h1>
-          <div className="flex space-x-2">
-            {isOwnProfile && (
-              isEditing ? (
-                <Button variant="outline" size="sm" onClick={handleSaveProfile}>
-                  Kaydet
-                </Button>
-              ) : (
-                <Button variant="outline" size="sm" onClick={handleEditToggle}>
-                  <Edit className="w-4 h-4 mr-2" />
-                  Düzenle
-                </Button>
-              )
-            )}
-          </div>
-        </div>
-
-        {/* Profile Header */}
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <UserAvatar
-                src={profileData.avatar_url}
-                alt={profileData.username}
-                fallback={profileData.username.charAt(0).toUpperCase()}
-                size="xl"
-                editable={isOwnProfile}
-                className="ring-2 ring-primary/20"
-              />
-              <div className="flex-1">
-                {isEditing && isOwnProfile ? (
-                  <Input
-                    value={editedUsername}
-                    onChange={(e) => setEditedUsername(e.target.value)}
-                    className="text-2xl font-bold mb-2"
-                    placeholder="Kullanıcı adınız"
-                  />
+    <div className="h-screen bg-gradient-to-br from-background to-muted flex flex-col">
+      <div className="max-w-2xl mx-auto w-full flex flex-col h-full">
+        {/* Fixed Header */}
+        <div className="p-4 bg-background/80 backdrop-blur-sm border-b sticky top-0 z-10">
+          <div className="flex items-center justify-between mb-4">
+            <Button variant="outline" onClick={() => {
+              const fromPage = location.state?.from;
+              if (fromPage === '/chat') {
+                navigate('/chat');
+              } else {
+                navigate('/');
+              }
+            }}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Geri
+            </Button>
+            <h1 className="text-2xl font-bold">
+              {isOwnProfile ? 'Profil' : `${profileData.username} Profili`}
+            </h1>
+            <div className="flex space-x-2">
+              {isOwnProfile && (
+                isEditing ? (
+                  <Button variant="outline" size="sm" onClick={handleSaveProfile}>
+                    Kaydet
+                  </Button>
                 ) : (
-                  <h2 className="text-2xl font-bold">{profileData.username}</h2>
-                )}
-                {!isOwnProfile && (
-                  <p className="text-sm text-muted-foreground">Oyuncu Profili</p>
-                )}
-                {isOwnProfile && user?.email && (
-                  <p className="text-xs text-muted-foreground truncate max-w-xs">{user.email}</p>
-                )}
-                <div className="flex items-center space-x-2 mt-2 flex-wrap gap-1">
-                  <Badge variant="secondary">Seviye {profileData.level}</Badge>
-                  <Badge variant="outline">{profileData.winRate}% Kazanma</Badge>
-                  {profileData.tournamentWinRate > 0 && (
-                    <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
-                      <Trophy className="w-3 h-3 mr-1" />
-                      {profileData.tournamentWinRate}% Turnuva
-                    </Badge>
+                  <Button variant="outline" size="sm" onClick={handleEditToggle}>
+                    <Edit className="w-4 h-4 mr-2" />
+                    Düzenle
+                  </Button>
+                )
+              )}
+            </div>
+          </div>
+
+          {/* Profile Header in Fixed Area */}
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-4">
+                <UserAvatar
+                  src={profileData.avatar_url}
+                  alt={profileData.username}
+                  fallback={profileData.username.charAt(0).toUpperCase()}
+                  size="xl"
+                  editable={isOwnProfile}
+                  className="ring-2 ring-primary/20"
+                />
+                <div className="flex-1">
+                  {isEditing && isOwnProfile ? (
+                    <Input
+                      value={editedUsername}
+                      onChange={(e) => setEditedUsername(e.target.value)}
+                      className="text-2xl font-bold mb-2"
+                      placeholder="Kullanıcı adınız"
+                    />
+                  ) : (
+                    <h2 className="text-2xl font-bold">{profileData.username}</h2>
                   )}
-                  {subscriptionInfo && (
-                    <Badge variant="default" className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
-                      <Crown className="w-3 h-3 mr-1" />
-                      Premium
-                    </Badge>
+                  {!isOwnProfile && (
+                    <p className="text-sm text-muted-foreground">Oyuncu Profili</p>
                   )}
+                  {isOwnProfile && user?.email && (
+                    <p className="text-xs text-muted-foreground truncate max-w-xs">{user.email}</p>
+                  )}
+                  <div className="flex items-center space-x-2 mt-2 flex-wrap gap-1">
+                    <Badge variant="secondary">Seviye {profileData.level}</Badge>
+                    <Badge variant="outline">{profileData.winRate}% Kazanma</Badge>
+                    {profileData.tournamentWinRate > 0 && (
+                      <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
+                        <Trophy className="w-3 h-3 mr-1" />
+                        {profileData.tournamentWinRate}% Turnuva
+                      </Badge>
+                    )}
+                    {subscriptionInfo && (
+                      <Badge variant="default" className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
+                        <Crown className="w-3 h-3 mr-1" />
+                        Premium
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-            
-            {/* Level Progress */}
-            <div className="mt-4">
-              <div className="flex justify-between text-sm mb-2">
-                <span>Seviye İlerlemesi</span>
-                <span>{profileData.experience}/{profileData.nextLevelExp} EXP</span>
+              
+              {/* Level Progress */}
+              <div className="mt-4">
+                <div className="flex justify-between text-sm mb-2">
+                  <span>Seviye İlerlemesi</span>
+                  <span>{profileData.experience}/{profileData.nextLevelExp} EXP</span>
+                </div>
+                <Progress value={(profileData.experience / profileData.nextLevelExp) * 100} />
               </div>
-              <Progress value={(profileData.experience / profileData.nextLevelExp) * 100} />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Scrollable Content */}
+        <ScrollArea className="flex-1 px-4">
+          <div className="space-y-6 pb-6">
 
         {/* Premium Subscription Info */}
         {subscriptionInfo && (
@@ -830,6 +837,8 @@ const ProfilePage = () => {
             )}
           </CardContent>
         </Card>
+          </div>
+        </ScrollArea>
       </div>
     </div>
   );
