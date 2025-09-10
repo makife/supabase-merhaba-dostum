@@ -290,7 +290,7 @@ const SettingsPage = () => {
         </div>
         
         <div class="text-center text-xs text-muted-foreground border-t pt-3">
-          <p>© 2025 Ergan Mühendislik</p>
+          <p>© 2025 Ergan Yazılım</p>
           <p>Tüm hakları saklıdır</p>
         </div>
       </div>
