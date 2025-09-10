@@ -343,6 +343,24 @@ useEffect(() => {
   const [matchmakingTimeout, setMatchmakingTimeout] = useState<NodeJS.Timeout | null>(null);
   const [timeoutCountdown, setTimeoutCountdown] = useState(30);
   const [showResults, setShowResults] = useState(false);
+  
+  // Rakip ayrıldığında sonuç kartını göster
+  useEffect(() => {
+    const handler = (e: any) => {
+      setDisconnectWin(true);
+      setWinner('player');
+      setGameEnded(true);
+      setShowResults(true);
+      toast({
+        title: 'Rakip oyundan ayrıldı',
+        description: 'Maçı kazandınız! 🎉',
+        duration: 3000,
+      });
+    };
+    window.addEventListener('playerDisconnected', handler as EventListener);
+    return () => window.removeEventListener('playerDisconnected', handler as EventListener);
+  }, []);
+  
   const [isAIOpponent, setIsAIOpponent] = useState(false);
   const [opponentName, setOpponentName] = useState('');
   const [targetScore, setTargetScore] = useState(gameType === 'score' ? 500 : 0);

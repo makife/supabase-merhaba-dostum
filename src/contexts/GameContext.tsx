@@ -725,10 +725,12 @@ const fetchParticipants = useCallback(
       fetchParticipants(room.id);
     }, 500);
   
-    toast({
-      title: 'Odaya Katıldınız',
-      description: 'Diğer oyuncuyu bekleniyor...',
-    });
+    if (room.game_mode.includes('private-room')) {
+      toast({
+        title: 'Odaya Katıldınız',
+        description: 'Diğer oyuncu bekleniyor...',
+      });
+    }
 
     return true;
   } catch (error: any) {
@@ -1469,6 +1471,12 @@ useEffect(() => {
         }
         
         console.log('🗑️ ODA SİLİNİYOR');
+        
+        // Notify UI to show win card
+        window.dispatchEvent(new CustomEvent('playerDisconnected', {
+          detail: { winner: 'player', reason: 'opponent_left' }
+        }));
+        
         await supabase
           .from('game_rooms')
           .delete()

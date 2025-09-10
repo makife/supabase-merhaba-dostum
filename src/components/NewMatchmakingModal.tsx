@@ -44,7 +44,7 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
 
   const getSearchStatus = () => {
     // Timeout durumu kontrolü
-    if (searchTimeout) {
+    if (searchTimeout || (searchProgress >= 100 && (!currentRoom || currentRoom.current_players < 2))) {
       return {
         icon: Search,
         title: 'Oyuncu Bulunamadı',
@@ -90,7 +90,7 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
   const StatusIcon = status.icon;
 
   // Timeout durumu - seçenek kartı göster
-  if (searchTimeout) {
+  if (searchTimeout || (searchProgress >= 100 && (!currentRoom || currentRoom.current_players < 2))) {
     return (
       <Dialog open={isOpen} onOpenChange={() => {}}>
         <DialogContent className="sm:max-w-md">
