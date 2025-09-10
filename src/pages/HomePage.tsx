@@ -17,6 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import PrivateRoomModal from '@/components/PrivateRoomModal';
 import NewMatchmakingModal from '@/components/NewMatchmakingModal';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { useJokerInventory } from '@/hooks/useJokerInventory';
 
@@ -504,7 +505,7 @@ const HomePage = () => {
         )}
 
         {/* Game Modes */}
-        <div>
+        <div className="h-96">
           <div className="flex justify-between items-center mb-4">
             <div className="bg-gradient-to-r from-yellow-400 to-white rounded-lg px-4 py-2 inline-flex items-center shadow-md">
               <Target className="w-5 h-5 mr-2 text-gray-700" />
@@ -568,79 +569,81 @@ const HomePage = () => {
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {gameModesConfig.map((mode) => (
-              <Card key={mode.id} className={`hover:shadow-xl transition-all duration-300 cursor-pointer border-0 overflow-hidden ${mode.gradient} hover:scale-105`}>
-                <CardHeader className="pb-2 pt-3 relative">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center border border-white/30">
-                        <mode.icon className="w-4 h-4 text-white" />
+          <ScrollArea className="h-80">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pr-4">
+              {gameModesConfig.map((mode) => (
+                <Card key={mode.id} className={`hover:shadow-xl transition-all duration-300 cursor-pointer border-0 overflow-hidden ${mode.gradient} hover:scale-105`}>
+                  <CardHeader className="pb-2 pt-3 relative">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center border border-white/30">
+                          <mode.icon className="w-4 h-4 text-white" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-base text-white drop-shadow-lg">{mode.title}</CardTitle>
+                          <CardDescription className="text-white/80 font-medium text-sm">{mode.description}</CardDescription>
+                        </div>
                       </div>
-                      <div>
-                        <CardTitle className="text-base text-white drop-shadow-lg">{mode.title}</CardTitle>
-                        <CardDescription className="text-white/80 font-medium text-sm">{mode.description}</CardDescription>
-                      </div>
+                      {mode.id === 'vs-computer' && (
+                        <img 
+                          src="/lovable-uploads/8008dff7-7ead-48e2-b47e-fde31770af08.png" 
+                          alt="Computer player"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 w-48 h-36 object-contain opacity-60"
+                        />
+                      )}
+                      {mode.id === 'private-room' && (
+                        <img 
+                          src="/lovable-uploads/e5d22948-34db-460d-adff-dc6284efcf50.png" 
+                          alt="Private room"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 w-48 h-36 object-contain opacity-60"
+                        />
+                      )}
+                      {mode.id === 'random-match' && (
+                        <img 
+                          src="/lovable-uploads/a91ec87e-aaac-47fa-93fa-22e1f0270999.png" 
+                          alt="Random match"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 w-48 h-36 object-contain opacity-60"
+                        />
+                      )}
+                      {mode.id === 'tournament' && (
+                        <img 
+                          src="/lovable-uploads/70bff2fc-4ab0-4705-b1f1-d3cf41bbc7b5.png" 
+                          alt="Tournament"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 w-48 h-36 object-contain opacity-60"
+                        />
+                      )}
                     </div>
-                    {mode.id === 'vs-computer' && (
-                      <img 
-                        src="/lovable-uploads/8008dff7-7ead-48e2-b47e-fde31770af08.png" 
-                        alt="Computer player"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 w-48 h-36 object-contain opacity-60"
-                      />
-                    )}
-                    {mode.id === 'private-room' && (
-                      <img 
-                        src="/lovable-uploads/e5d22948-34db-460d-adff-dc6284efcf50.png" 
-                        alt="Private room"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 w-48 h-36 object-contain opacity-60"
-                      />
-                    )}
-                    {mode.id === 'random-match' && (
-                      <img 
-                        src="/lovable-uploads/a91ec87e-aaac-47fa-93fa-22e1f0270999.png" 
-                        alt="Random match"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 w-48 h-36 object-contain opacity-60"
-                      />
-                    )}
-                    {mode.id === 'tournament' && (
-                      <img 
-                        src="/lovable-uploads/70bff2fc-4ab0-4705-b1f1-d3cf41bbc7b5.png" 
-                        alt="Tournament"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 w-48 h-36 object-contain opacity-60"
-                      />
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0 pb-3">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <Badge variant="secondary" className="text-xs bg-white/20 text-white border-white/30 hover:bg-white/30">
-                      <Clock className="w-3 h-3 mr-1" />
-                      2 Dakika
-                    </Badge>
-                    <Badge variant="secondary" className="text-xs bg-white/20 text-white border-white/30 hover:bg-white/30">
-                      <Target className="w-3 h-3 mr-1" />
-                      500 Puan
-                    </Badge>
-                  </div>
-                  <Button 
-                    className="w-full bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50 backdrop-blur-sm font-semibold" 
-                    variant="outline"
-                    onClick={() => {
-                      playSound('buttonClick');
-                      if (mode.id === 'tournament') {
-                        navigate('/tournament');
-                      } else {
-                        setSelectedMode(mode.id);
-                      }
-                    }}
-                  >
-                    {mode.id === 'tournament' ? 'Giriş Yap' : 'Oyuna Başla'}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardHeader>
+                  <CardContent className="pt-0 pb-3">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Badge variant="secondary" className="text-xs bg-white/20 text-white border-white/30 hover:bg-white/30">
+                        <Clock className="w-3 h-3 mr-1" />
+                        2 Dakika
+                      </Badge>
+                      <Badge variant="secondary" className="text-xs bg-white/20 text-white border-white/30 hover:bg-white/30">
+                        <Target className="w-3 h-3 mr-1" />
+                        500 Puan
+                      </Badge>
+                    </div>
+                    <Button 
+                      className="w-full bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50 backdrop-blur-sm font-semibold" 
+                      variant="outline"
+                      onClick={() => {
+                        playSound('buttonClick');
+                        if (mode.id === 'tournament') {
+                          navigate('/tournament');
+                        } else {
+                          setSelectedMode(mode.id);
+                        }
+                      }}
+                    >
+                      {mode.id === 'tournament' ? 'Giriş Yap' : 'Oyuna Başla'}
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </ScrollArea>
         </div>
 
         {/* Game Mode Selector Modal */}
