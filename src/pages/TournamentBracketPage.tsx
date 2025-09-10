@@ -7,12 +7,14 @@ import { useTournament } from '@/hooks/useTournament';
 import { organizeMatchesByRound, getRoundName, getMatchStatus } from '@/utils/tournamentHelpers';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSounds } from '@/hooks/useSounds';
 
 const TournamentBracketPage = () => {
   const { tournamentId } = useParams();
   const navigate = useNavigate();
   const { currentTournament, matches, loading, fetchTournamentDetails } = useTournament(tournamentId);
   const { user } = useAuth();
+  const { playSpecialSound } = useSounds();
   
   const [countdown, setCountdown] = useState(10);
   const [showChampion, setShowChampion] = useState(false);
@@ -175,6 +177,7 @@ const TournamentBracketPage = () => {
         // Şampiyon ekranını göster
         setTimeout(() => {
           setShowChampion(true);
+          playSpecialSound('/sampiyon.mp3', 0.8);
         }, 2000);
       }
     } catch (error) {
