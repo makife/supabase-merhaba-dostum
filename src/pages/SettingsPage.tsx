@@ -332,30 +332,41 @@ const SettingsPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4 overflow-x-hidden">
-      <div className="max-w-2xl mx-auto space-y-6 pb-8">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <Button variant="outline" size="sm" onClick={() => navigate('/')}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Geri
-          </Button>
-          <h1 className="text-2xl font-bold">Ayarlar</h1>
-          <div className="w-16" /> {/* Spacer */}
-        </div>
+    <div className="flex flex-col h-screen bg-gradient-to-br from-background to-muted overflow-x-hidden">
+      {/* Fixed Header */}
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b p-4 space-y-4">
+        <div className="max-w-2xl mx-auto">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <Button variant="outline" size="sm" onClick={() => navigate('/')}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Geri
+            </Button>
+            <h1 className="text-2xl font-bold">Ayarlar</h1>
+            <div className="w-16" /> {/* Spacer */}
+          </div>
 
-        {/* Game Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Smartphone className="w-5 h-5 mr-2" />
-              Oyun Ayarları
-            </CardTitle>
-            <CardDescription>
-              Oyun deneyiminizi kişiselleştirin
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
+          {/* Game Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Smartphone className="w-5 h-5 mr-2" />
+                Oyun Ayarları
+              </CardTitle>
+              <CardDescription>
+                Oyun deneyiminizi kişiselleştirin
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+      </div>
+
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-2xl mx-auto p-4 space-y-6 pb-8">
+          {/* Game Settings Content */}
+          <Card>
+            <CardContent className="pt-6 space-y-6">
             {/* Notifications */}
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
@@ -583,7 +594,7 @@ const SettingsPage = () => {
             </div>
           </CardContent>
         </Card>
-
+        </div>
       </div>
 
       {/* Modal Dialog */}
