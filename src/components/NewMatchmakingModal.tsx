@@ -22,8 +22,11 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
     isSearching, 
     currentRoom, 
     searchProgress, 
+    searchTimeout,
     startSearch, 
-    cancelSearch 
+    cancelSearch,
+    restartSearch,
+    playWithAI
   } = useMatchmaking();
 
   useEffect(() => {
@@ -83,6 +86,59 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
   const status = getSearchStatus();
   const StatusIcon = status.icon;
 
+  // Timeout durumu - seçenek kartı göster
+  if (searchTimeout) {
+    return (
+      <Dialog open={isOpen} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Search className="h-5 w-5 text-orange-500" />
+              Oyuncu Bulunamadı
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="text-center space-y-2">
+              <div className="h-16 w-16 mx-auto bg-orange-100 rounded-full flex items-center justify-center">
+                <Search className="h-8 w-8 text-orange-500" />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Şuan için oyuncu bulunamadı. İsterseniz tekrar arama yapabilir ya da AI ile oynayabilirsiniz.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Button
+                onClick={() => restartSearch(gameType)}
+                className="flex-1"
+              >
+                <Search className="h-4 w-4 mr-2" />
+                Tekrar Arama Yap
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={playWithAI}
+                className="flex-1"
+              >
+                <Bot className="h-4 w-4 mr-2" />
+                AI ile Oyna
+              </Button>
+              <Button
+                variant="outline"
+                onClick={onClose}
+                className="flex-1"
+              >
+                <X className="h-4 w-4 mr-2" />
+                İptal Et
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={() => {}}>
       <DialogContent className="sm:max-w-md">
@@ -120,14 +176,14 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
             ) : searchProgress < 100 ? (
               <>
                 <p>• 🔍 Gerçek oyuncular aranıyor</p>
-                <p>• ⏱️ 30 saniye sonra AI rakip eklenecek</p>
+                <p>• ⏱️ 30 saniye sonra seçenekler gösterilecek</p>
                 <p>• 👤 {currentRoom?.current_players || 0}/2 oyuncu</p>
                 <p>• 🏠 Oda ID: {currentRoom?.id.slice(-8) || 'N/A'}</p>
               </>
             ) : (
               <>
-                <p>• 🤖 AI rakip hazırlanıyor</p>
-                <p>• ⚡ Oyun yakında başlayacek</p>
+                <p>• 🤖 Oyuncu aranıyor...</p>
+                <p>• ⚡ Lütfen bekleyin</p>
               </>
             )}
           </div>

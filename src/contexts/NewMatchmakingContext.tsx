@@ -17,8 +17,11 @@ interface MatchmakingContextType {
   isSearching: boolean;
   currentRoom: MatchmakingRoom | null;
   searchProgress: number;
+  searchTimeout: boolean;
   startSearch: (gameType: 'timed' | 'score') => Promise<void>;
   cancelSearch: () => void;
+  restartSearch: (gameType: 'timed' | 'score') => Promise<void>;
+  playWithAI: () => void;
   onMatchFound?: (roomId: string) => void;
 }
 
@@ -46,6 +49,8 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
   const [isSearching, setIsSearching] = useState(false);
   const [currentRoom, setCurrentRoom] = useState<MatchmakingRoom | null>(null);
   const [searchProgress, setSearchProgress] = useState(0);
+  const [searchTimeout, setSearchTimeout] = useState(false);
+  const [currentGameType, setCurrentGameType] = useState<'timed' | 'score'>('timed');
   const [searchChannel, setSearchChannel] = useState<any>(null);
   const [progressInterval, setProgressInterval] = useState<NodeJS.Timeout | null>(null);
 
@@ -65,6 +70,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
     setIsSearching(false);
     setCurrentRoom(null);
     setSearchProgress(0);
+    setSearchTimeout(false);
     console.log('✅ Matchmaking state temizlendi');
   };
 
@@ -75,6 +81,8 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
     try {
       setIsSearching(true);
       setSearchProgress(0);
+      setSearchTimeout(false);
+      setCurrentGameType(gameType);
 
       console.log('🔍 Matchmaking başlatıldı:', gameType);
 
@@ -222,14 +230,10 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
         // 30 saniye sonra timeout - ama sadece eşleşme sırasında
         if (progress >= 100 && isSearching) {
           clearInterval(interval);
-          console.log('⏰ Timeout: AI rakip ekleniyor...');
+          console.log('⏰ Timeout: Arama tamamlandı ama oyuncu bulunamadı');
           setIsSearching(false);
-          toast({
-            title: "AI Rakip Bulundu!",
-            description: "Gerçek oyuncu bulunamadı, AI ile oyun başlıyor...",
-          });
-          onMatchFound?.(roomToJoin.id);
-          cleanup();
+          setSearchTimeout(true);
+          // cleanup();'i çağırmıyoruz çünkü timeout modalini göstereceğiz
         }
       }, 1000); // Her 1 saniye
       setProgressInterval(interval);
@@ -269,6 +273,19 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
     cleanup();
   };
 
+  // Tekrar arama yap
+  const restartSearch = async (gameType: 'timed' | 'score') => {
+    setSearchTimeout(false);
+    await startSearch(gameType);
+  };
+
+  // AI ile oyna
+  const playWithAI = () => {
+    cleanup();
+    // GameModeSelector modalına yönlendir
+    window.location.href = '/';
+  };
+
   // Component unmount'da temizlik
   useEffect(() => {
     return () => {
@@ -280,8 +297,11 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
     isSearching,
     currentRoom,
     searchProgress,
+    searchTimeout,
     startSearch,
     cancelSearch,
+    restartSearch,
+    playWithAI,
     onMatchFound
   };
 
