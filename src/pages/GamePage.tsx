@@ -288,6 +288,11 @@ const generateTournamentGrid = useCallback((seed: string): string[][] => {
     return grid;
   }
   
+  if (gameMode === 'random-match' || gameMode === 'private-room') {
+    // Oda verisi gelene kadar placeholder grid kullan (farklı grid oluşmasını engeller)
+    return Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => ''));
+  }
+  
   return generateRandomGrid();
 });
 
@@ -297,6 +302,18 @@ useEffect(() => {
     setGameGrid(generateTournamentGrid(tournamentMatch.id));
   }
 }, [gameMode, tournamentMatch?.id, generateTournamentGrid]);
+
+// Random/private odalarda sunucu grid'ini senkronize et
+useEffect(() => {
+  if (gameMode === 'tournament') return;
+  if (!currentRoom?.current_grid) return;
+  const flat = currentRoom.current_grid as string[];
+  const grid: string[][] = [];
+  for (let i = 0; i < 4; i++) {
+    grid.push(flat.slice(i * 4, (i + 1) * 4));
+  }
+  setGameGrid(grid);
+}, [gameMode, currentRoom?.id, currentRoom?.current_grid]);
   
   const [selectedLetters, setSelectedLetters] = useState<{letter: string, row: number, col: number}[]>([]);
   const [currentWord, setCurrentWord] = useState('');
