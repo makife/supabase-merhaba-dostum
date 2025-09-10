@@ -340,129 +340,137 @@ const LeaderboardPage = () => {
   const currentStats = getCurrentUserStats();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-3">
-      <div className="max-w-2xl mx-auto space-y-4">
-        <div className="flex items-center justify-between">
-          <Button variant="outline" size="sm" onClick={() => navigate('/')} className="text-xs">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Geri
-          </Button>
-          <h1 className="text-xl font-bold flex items-center">
-            <Trophy className="w-5 h-5 mr-2 text-yellow-500" />
-            Liderlik
-          </h1>
-          <div className="w-12" />
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted flex flex-col">
+      <div className="max-w-2xl mx-auto w-full">
+        {/* Sabit Header */}
+        <div className="sticky top-0 z-10 bg-gradient-to-br from-background to-muted p-3 border-b border-border/20">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Button variant="outline" size="sm" onClick={() => navigate('/')} className="text-xs">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Geri
+              </Button>
+              <h1 className="text-xl font-bold flex items-center">
+                <Trophy className="w-5 h-5 mr-2 text-yellow-500" />
+                Liderlik
+              </h1>
+              <div className="w-12" />
+            </div>
+
+            {currentStats && (
+              <Card className="border-primary">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center justify-between text-base">
+                    <div className="flex items-center">
+                      <TrendingUp className="w-4 h-4 mr-2" />
+                      Senin Performansın
+                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      {activeTab === 'weekly' ? 'Bu Hafta' : 
+                       activeTab === 'monthly' ? 'Bu Ay' : 'Genel'}
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="grid grid-cols-2 gap-3 text-center">
+                    <div className="bg-muted/50 rounded-lg p-3">
+                      <div className="text-xl font-bold text-primary">{currentStats.rank || '—'}</div>
+                      <div className="text-xs text-muted-foreground">Sıralama</div>
+                      {activeTab !== 'all-time' && currentStats.change && (
+                        <div className="mt-1">{getRankChangeIcon(currentStats.change)}</div>
+                      )}
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-3">
+                      <div className="text-xl font-bold text-primary">{currentStats.score}</div>
+                      <div className="text-xs text-muted-foreground">Puan</div>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-3">
+                      <div className="text-xl font-bold text-primary">{currentStats.games_played}</div>
+                      <div className="text-xs text-muted-foreground">Oyun</div>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-3">
+                      <div className="text-xl font-bold text-primary">{currentStats.wins}</div>
+                      <div className="text-xs text-muted-foreground">Galibiyet</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
 
-        {currentStats && (
-          <Card className="border-primary">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center justify-between text-base">
-                <div className="flex items-center">
-                  <TrendingUp className="w-4 h-4 mr-2" />
-                  Senin Performansın
-                </div>
-                <Badge variant="outline" className="text-xs">
-                  {activeTab === 'weekly' ? 'Bu Hafta' : 
-                   activeTab === 'monthly' ? 'Bu Ay' : 'Genel'}
-                </Badge>
-              </CardTitle>
+        {/* Scroll edilebilir İçerik */}
+        <div className="flex-1 overflow-y-auto p-3 space-y-4">
+          {/* Liderlik Tabloları */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Liderlik Sıralaması</CardTitle>
             </CardHeader>
-            <CardContent className="pt-0">
-              <div className="grid grid-cols-2 gap-3 text-center">
-                <div className="bg-muted/50 rounded-lg p-3">
-                  <div className="text-xl font-bold text-primary">{currentStats.rank || '—'}</div>
-                  <div className="text-xs text-muted-foreground">Sıralama</div>
-                  {activeTab !== 'all-time' && currentStats.change && (
-                    <div className="mt-1">{getRankChangeIcon(currentStats.change)}</div>
-                  )}
-                </div>
-                <div className="bg-muted/50 rounded-lg p-3">
-                  <div className="text-xl font-bold text-primary">{currentStats.score}</div>
-                  <div className="text-xs text-muted-foreground">Puan</div>
-                </div>
-                <div className="bg-muted/50 rounded-lg p-3">
-                  <div className="text-xl font-bold text-primary">{currentStats.games_played}</div>
-                  <div className="text-xs text-muted-foreground">Oyun</div>
-                </div>
-                <div className="bg-muted/50 rounded-lg p-3">
-                  <div className="text-xl font-bold text-primary">{currentStats.wins}</div>
-                  <div className="text-xs text-muted-foreground">Galibiyet</div>
+            <CardContent>
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-3 h-9 bg-gray-100">
+                  <TabsTrigger 
+                    value="all-time" 
+                    className="text-xs px-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white hover:bg-blue-100"
+                  >
+                    <Trophy className="w-3 h-3 mr-1" />
+                    <span className="hidden xs:inline">Genel</span>
+                    <span className="xs:hidden">Tümü</span>
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="weekly" 
+                    className="text-xs px-2 data-[state=active]:bg-green-500 data-[state=active]:text-white hover:bg-green-100"
+                  >
+                    <Calendar className="w-3 h-3 mr-1" />
+                    <span className="hidden xs:inline">Haftalık</span>
+                    <span className="xs:hidden">Hafta</span>
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="monthly" 
+                    className="text-xs px-2 data-[state=active]:bg-purple-500 data-[state=active]:text-white hover:bg-purple-100"
+                  >
+                    <CalendarRange className="w-3 h-3 mr-1" />
+                    <span className="hidden xs:inline">Aylık</span>
+                    <span className="xs:hidden">Ay</span>
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="all-time" className="space-y-4">
+                  <CardDescription>{getTabDescription('all-time')}</CardDescription>
+                  {renderLeaderboard(allTimeLeaders, false)}
+                </TabsContent>
+                
+                <TabsContent value="weekly" className="space-y-4">
+                  <CardDescription>{getTabDescription('weekly')}</CardDescription>
+                  {renderLeaderboard(weeklyLeaders, true)}
+                </TabsContent>
+                
+                <TabsContent value="monthly" className="space-y-4">
+                  <CardDescription>{getTabDescription('monthly')}</CardDescription>
+                  {renderLeaderboard(monthlyLeaders, true)}
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+
+          <Card className="border-blue-200 bg-blue-50">
+            <CardContent className="p-4">
+              <div className="flex items-start space-x-3">
+                <Trophy className="w-5 h-5 text-blue-600 mt-0.5" />
+                <div className="text-sm text-blue-800">
+                  <p className="font-medium mb-1">Sıralama Sistemi</p>
+                  <ul className="list-disc list-inside space-y-1 text-blue-700">
+                    <li><strong>Genel:</strong> Tüm zamanların toplam puanı</li>
+                    <li><strong>Haftalık:</strong> Son 7 gündeki performans</li>
+                    <li><strong>Aylık:</strong> Bu ayki toplam puan</li>
+                    <li>Oklar önceki döneme göre sıralama değişimini gösterir</li>
+                    <li>Her oyun kazancınız ilgili dönemin puanına eklenir</li>
+                  </ul>
                 </div>
               </div>
             </CardContent>
           </Card>
-        )}
-
-        {/* Liderlik Tabloları */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Liderlik Sıralaması</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3 h-9 bg-gray-100">
-                <TabsTrigger 
-                  value="all-time" 
-                  className="text-xs px-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white hover:bg-blue-100"
-                >
-                  <Trophy className="w-3 h-3 mr-1" />
-                  <span className="hidden xs:inline">Genel</span>
-                  <span className="xs:hidden">Tümü</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="weekly" 
-                  className="text-xs px-2 data-[state=active]:bg-green-500 data-[state=active]:text-white hover:bg-green-100"
-                >
-                  <Calendar className="w-3 h-3 mr-1" />
-                  <span className="hidden xs:inline">Haftalık</span>
-                  <span className="xs:hidden">Hafta</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="monthly" 
-                  className="text-xs px-2 data-[state=active]:bg-purple-500 data-[state=active]:text-white hover:bg-purple-100"
-                >
-                  <CalendarRange className="w-3 h-3 mr-1" />
-                  <span className="hidden xs:inline">Aylık</span>
-                  <span className="xs:hidden">Ay</span>
-                </TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="all-time" className="space-y-4">
-                <CardDescription>{getTabDescription('all-time')}</CardDescription>
-                {renderLeaderboard(allTimeLeaders, false)}
-              </TabsContent>
-              
-              <TabsContent value="weekly" className="space-y-4">
-                <CardDescription>{getTabDescription('weekly')}</CardDescription>
-                {renderLeaderboard(weeklyLeaders, true)}
-              </TabsContent>
-              
-              <TabsContent value="monthly" className="space-y-4">
-                <CardDescription>{getTabDescription('monthly')}</CardDescription>
-                {renderLeaderboard(monthlyLeaders, true)}
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-
-        <Card className="border-blue-200 bg-blue-50">
-          <CardContent className="p-4">
-            <div className="flex items-start space-x-3">
-              <Trophy className="w-5 h-5 text-blue-600 mt-0.5" />
-              <div className="text-sm text-blue-800">
-                <p className="font-medium mb-1">Sıralama Sistemi</p>
-                <ul className="list-disc list-inside space-y-1 text-blue-700">
-                  <li><strong>Genel:</strong> Tüm zamanların toplam puanı</li>
-                  <li><strong>Haftalık:</strong> Son 7 gündeki performans</li>
-                  <li><strong>Aylık:</strong> Bu ayki toplam puan</li>
-                  <li>Oklar önceki döneme göre sıralama değişimini gösterir</li>
-                  <li>Her oyun kazancınız ilgili dönemin puanına eklenir</li>
-                </ul>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        </div>
       </div>
     </div>
   );
