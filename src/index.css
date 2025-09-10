@@ -128,7 +128,10 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground font-sans;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-    /* Mobile safe area support - moved to utility classes */
+    /* Mobile optimizations */
+    overscroll-behavior: none;
+    overscroll-behavior-y: none;
+    -webkit-overflow-scrolling: touch;
   }
 
   /* Safe area utilities for mobile */
@@ -159,6 +162,22 @@ All colors MUST be HSL.
   .mobile-container {
     min-height: 100vh;
     min-height: 100dvh; /* Dynamic viewport height for mobile */
+    overscroll-behavior: none;
+  }
+  
+  /* Prevent elastic scroll behavior */
+  html, body {
+    overscroll-behavior: none;
+    overscroll-behavior-y: none;
+  }
+  
+  /* Mobile navigation bar auto-hide */
+  @media (max-width: 768px) {
+    .mobile-fullscreen {
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+    }
   }
 
   /* Override for mobile devices with notch */

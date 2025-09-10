@@ -23,7 +23,8 @@ const config: CapacitorConfig = {
     },
     StatusBar: {
       style: 'DARK',
-      backgroundColor: '#F7FAFC'
+      backgroundColor: '#F7FAFC',
+      overlay: false
     },
     SafeArea: {
       enabled: true,
@@ -32,6 +33,9 @@ const config: CapacitorConfig = {
       statusBarStyle: 'DARK',
       navigationBarColor: '#F7FAFC',
       navigationBarStyle: 'DARK'
+    },
+    Keyboard: {
+      resize: 'ionic'
     },
     AdMob: {
       appId: 'ca-app-pub-4768026665961339~9319477813', // Android App ID
