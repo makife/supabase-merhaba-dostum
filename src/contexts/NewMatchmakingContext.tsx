@@ -51,17 +51,21 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
 
   // Temizlik fonksiyonu
   const cleanup = () => {
+    console.log('🧹 Matchmaking cleanup çalışıyor...');
     if (searchChannel) {
       supabase.removeChannel(searchChannel);
       setSearchChannel(null);
+      console.log('📡 Real-time channel kapatıldı');
     }
     if (progressInterval) {
       clearInterval(progressInterval);
       setProgressInterval(null);
+      console.log('⏰ Progress timer temizlendi');
     }
     setIsSearching(false);
     setCurrentRoom(null);
     setSearchProgress(0);
+    console.log('✅ Matchmaking state temizlendi');
   };
 
   // Arama başlat
@@ -132,14 +136,16 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
             
             // Eğer oda dolduysa hemen eşleşme bildir
             if (updatedRoom.status === 'matched' && updatedRoom.current_players >= 2) {
-              console.log('🎉 Oda doldu - anında eşleşme!');
-              setIsSearching(false);
+              console.log('🎉 Oda doldu - anında eşleşme! Hemen temizlik yapılıyor...');
+              
+              // Önce cleanup yap, sonra navigate et
+              cleanup();
+              
               toast({
                 title: "Eşleşme Bulundu!",
                 description: "Mevcut odaya katıldınız!",
               });
               onMatchFound?.(updatedRoom.id);
-              cleanup();
               return;
             }
           }
@@ -188,14 +194,16 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
             const updatedRoom = payload.new as MatchmakingRoom;
             
             if (updatedRoom.status === 'matched' && updatedRoom.current_players >= 2) {
-              console.log('🎉 Eşleşme bulundu!');
-              setIsSearching(false);
+              console.log('🎉 Eşleşme bulundu! Hemen temizlik yapılıyor...');
+              
+              // Önce cleanup yap, sonra navigate et
+              cleanup();
+              
               toast({
                 title: "Eşleşme Bulundu!",
                 description: "Oyun başlıyor...",
               });
               onMatchFound?.(updatedRoom.id);
-              cleanup();
             } else {
               setCurrentRoom(updatedRoom);
             }
@@ -211,8 +219,8 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
         progress += 3.33; // 30 saniye için her 1 saniyede %3.33
         setSearchProgress(Math.min(progress, 100));
         
-        // 30 saniye sonra timeout
-        if (progress >= 100) {
+        // 30 saniye sonra timeout - ama sadece eşleşme sırasında
+        if (progress >= 100 && isSearching) {
           clearInterval(interval);
           console.log('⏰ Timeout: AI rakip ekleniyor...');
           setIsSearching(false);
