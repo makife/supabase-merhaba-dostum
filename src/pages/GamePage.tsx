@@ -1983,10 +1983,22 @@ useEffect(() => {
       
       // Add AI opponent if needed (context will handle participant checking)
       setTimeout(async () => {
+        // Resolve game room id reliably using room_code -> game_rooms lookup
+        const { data: gameRoomRow } = await supabase
+          .from('game_rooms')
+          .select('id')
+          .eq('room_code', roomId)
+          .in('status', ['waiting','active'])
+          .maybeSingle();
+        const resolvedRoomId = gameRoomRow?.id || currentRoom?.id || null;
+        if (!resolvedRoomId) {
+          console.warn('⚠️ Could not resolve game room id for participants check');
+          return;
+        }
         const { data: participants } = await supabase
           .from('game_participants')
           .select('*')
-          .eq('room_id', currentRoom?.id);
+          .eq('room_id', resolvedRoomId);
         
         console.log('👥 Current participants after room setup:', participants?.length || 0);
         

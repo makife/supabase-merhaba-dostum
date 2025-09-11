@@ -728,8 +728,13 @@ const fetchParticipants = useCallback(
       });
 
     if (joinError) {
-      console.error('❌ Odaya katılma hatası:', joinError);
-      return false;
+      // Eğer kullanıcı zaten katılmışsa (unique constraint), başarı olarak kabul et
+      if ((joinError as any).code === '23505') {
+        console.warn('⚠️ Zaten katılmış - duplicate insert göz ardı edildi');
+      } else {
+        console.error('❌ Odaya katılma hatası:', joinError);
+        return false;
+      }
     }
 
     console.log('✅ Odaya katılım başarılı');
@@ -1405,7 +1410,7 @@ useEffect(() => {
   const currentGameMode = getGameModeFromRoom(currentRoom);
 
   const channel = supabase
-    .channel(`room-${currentRoom.id}`)
+    .channel(`room-${currentRoom.id}`, { config: { presence: { key: `user-${user.id}` } } })
     .on('postgres_changes', {
   event: '*',
   schema: 'public',
@@ -1613,7 +1618,16 @@ useEffect(() => {
         }, 10000);
       }
     })
-    .subscribe();
+    .subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        try {
+          await channel.track({ user_id: user.id, room_id: currentRoom.id });
+          console.log('✅ Presence tracked for room:', currentRoom.id.slice(-8));
+        } catch (e) {
+          console.error('❌ Presence track error:', e);
+        }
+      }
+    });
 
   return () => {
     console.log('🔌 Real-time bağlantı kesiliyor');
