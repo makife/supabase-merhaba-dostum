@@ -1623,16 +1623,19 @@ useEffect(() => {
     })
     .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
       console.log('🚪 Player left:', key, leftPresences);
-      // Oyuncu çıktığında oyunu bitir
-      leftPresences.forEach((presence: any) => {
-        if (presence.user_id && presence.user_id !== user.id) {
-          console.log('⚠️ Opponent disconnected via presence:', presence.user_id);
-          // Mevcut disconnect handling mantığını kullan
-          window.dispatchEvent(new CustomEvent('playerDisconnected', {
-            detail: { winner: 'player', reason: 'opponent_left' }
-          }));
-        }
-      });
+      // Sadece oyun başladıktan sonra disconnect olayını tetikle
+      if (currentRoom?.status === 'active') {
+        leftPresences.forEach((presence: any) => {
+          if (presence.user_id && presence.user_id !== user.id) {
+            console.log('⚠️ Opponent disconnected during active game:', presence.user_id);
+            window.dispatchEvent(new CustomEvent('playerDisconnected', {
+              detail: { winner: 'player', reason: 'opponent_left' }
+            }));
+          }
+        });
+      } else {
+        console.log('🔄 Player left during waiting/setup phase, ignoring');
+      }
     })
     .on('presence', { event: 'sync' }, () => {
       const state = channel.presenceState();
