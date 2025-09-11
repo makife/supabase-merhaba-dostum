@@ -294,21 +294,25 @@ const TournamentBracketPage = () => {
       });
   }, [matches, currentTournament?.current_round, tournamentId, user, playSpecialSound]);
 
-  // Countdown for match start (her yeni pending durumunda 10 sn'den başlat)
+  // Countdown for match start (sadece mevcut tur ve in_progress durumunda)
   useEffect(() => {
+    if (!currentTournament || currentTournament.status !== 'in_progress') return;
     if (matches.length === 0) return;
 
-    const hasPendingMatches = matches.some(m => m.status === 'pending');
-    if (!hasPendingMatches) return;
+    const currentRound = currentTournament.current_round || 1;
+    const hasPendingMatchesInCurrent = matches.some(
+      (m) => m.status === 'pending' && m.round === currentRound
+    );
+    if (!hasPendingMatchesInCurrent) return;
 
     // Yeni tur/pending maçlar görünür olduğunda geri sayımı sıfırla
     setCountdown(10);
 
     const countdownInterval = setInterval(() => {
-      setCountdown(prev => {
+      setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(countdownInterval);
-          startAllMatches();
+          startAllMatches(currentRound);
           return 0;
         }
         return prev - 1;
@@ -316,7 +320,7 @@ const TournamentBracketPage = () => {
     }, 1000);
 
     return () => clearInterval(countdownInterval);
-  }, [matches]);
+  }, [matches, currentTournament?.status, currentTournament?.current_round]);
 
   // Otomatik oyuncu yönlendirme: Kullanıcı maçı başladıysa oyuna gir
   useEffect(() => {

@@ -525,11 +525,19 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
     if (allMatchesCompleted) {
       console.log(`🏆 Tüm ${tournamentMatch.round}. tur maçları tamamlandı!`);
       
-      // Sonraki turu oluştur
-      await createNextRoundMatches(
-        tournamentMatch.tournament_id, 
-        tournamentMatch.round + 1
-      );
+      // Sonraki turu oluştur YALNIZCA final değilse
+      if (tournamentMatch.round < 3) {
+        await createNextRoundMatches(
+          tournamentMatch.tournament_id, 
+          tournamentMatch.round + 1
+        );
+      } else {
+        // Final tamamlandı -> turnuvayı bitir
+        await supabase
+          .from('tournaments')
+          .update({ status: 'completed', finished_at: new Date().toISOString() })
+          .eq('id', tournamentMatch.tournament_id);
+      }
       
       // Turnuva sayfasına yönlendir
       setTimeout(() => {
