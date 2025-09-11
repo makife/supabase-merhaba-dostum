@@ -1618,6 +1618,26 @@ useEffect(() => {
         }, 10000);
       }
     })
+    .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+      console.log('👋 Player joined:', key, newPresences);
+    })
+    .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+      console.log('🚪 Player left:', key, leftPresences);
+      // Oyuncu çıktığında oyunu bitir
+      leftPresences.forEach((presence: any) => {
+        if (presence.user_id && presence.user_id !== user.id) {
+          console.log('⚠️ Opponent disconnected via presence:', presence.user_id);
+          // Mevcut disconnect handling mantığını kullan
+          window.dispatchEvent(new CustomEvent('playerDisconnected', {
+            detail: { winner: 'player', reason: 'opponent_left' }
+          }));
+        }
+      });
+    })
+    .on('presence', { event: 'sync' }, () => {
+      const state = channel.presenceState();
+      console.log('🔄 Presence sync:', state);
+    })
     .subscribe(async (status) => {
       if (status === 'SUBSCRIBED') {
         try {
