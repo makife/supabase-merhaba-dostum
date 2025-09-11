@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,6 +20,7 @@ const TournamentBracketPage = () => {
   const [showChampion, setShowChampion] = useState(false);
   const [showEliminated, setShowEliminated] = useState(false);
   const [navigatedToGame, setNavigatedToGame] = useState(false);
+  const countdownGuard = useRef<{ round: number | null; active: boolean }>({ round: null, active: false });
 
   useEffect(() => {
     if (tournamentId) {
@@ -201,10 +202,9 @@ const TournamentBracketPage = () => {
         if (result && typeof result === 'object' && 'success' in result && result.success) {
           console.log(`🎯 Successfully advanced to round ${round + 1}`);
           
-          // Tournuva bilgilerini yenile ve yeni turu başlat
+          // Yeni tur oluşturuldu; verileri yenile (maçlar 10 sn sonra başlayacak)
           setTimeout(() => {
             fetchTournamentDetails(tournamentId!);
-            startAllMatches(round + 1);
           }, 2000);
         } else {
           console.error('❌ Failed to advance tournament round:', result);
@@ -303,24 +303,52 @@ const TournamentBracketPage = () => {
     const hasPendingMatchesInCurrent = matches.some(
       (m) => m.status === 'pending' && m.round === currentRound
     );
-    if (!hasPendingMatchesInCurrent) return;
 
-    // Yeni tur/pending maçlar görünür olduğunda geri sayımı sıfırla
-    setCountdown(10);
+    if (!hasPendingMatchesInCurrent) {
+      // Pending yoksa aktif geri sayımı durdur
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
+      return;
+    }
 
-    const countdownInterval = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(countdownInterval);
-          startAllMatches(currentRound);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    // Aynı tur için geri sayımı bir kez başlat
+    if (!countdownGuard.current.active || countdownGuard.current.round !== currentRound) {
+      countdownGuard.current = { active: true, round: currentRound };
+      setCountdown(10);
 
-    return () => clearInterval(countdownInterval);
+      // Eski interval varsa iptal et
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+      }
+      countdownIntervalRef.current = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            if (countdownIntervalRef.current) {
+              clearInterval(countdownIntervalRef.current);
+              countdownIntervalRef.current = null;
+            }
+            // Geri sayım tamamlandı -> maçı başlat
+            startAllMatches(currentRound);
+            countdownGuard.current = { active: false, round: null };
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
   }, [matches, currentTournament?.status, currentTournament?.current_round]);
+
+  // Bileşen unmount olduğunda interval'ı temizle
+  useEffect(() => {
+    return () => {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+      }
+    };
+  }, []);
+
 
   // Otomatik oyuncu yönlendirme: Kullanıcı maçı başladıysa oyuna gir
   useEffect(() => {
