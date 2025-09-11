@@ -759,7 +759,7 @@ const fetchParticipants = useCallback(
   if (!user) return false;
 
   try {
-    console.log('🔍 ===== BASİT MATCHMAKING BAŞLADI =====');
+    console.log('🔍 ===== RASTGELE MATCHMAKING BAŞLADI =====');
     console.log('👤 User:', user.id.slice(-8));
     console.log('🎮 Type:', gameType);
     
@@ -811,6 +811,13 @@ const fetchParticipants = useCallback(
         if (existingParticipant) {
           console.log('⚠️ Zaten bu odada katılımcısınız, oda güncelleniyor');
           setCurrentRoom(targetRoom);
+          
+          // ✅ RASTGELE OYUN FIX: HEMEN participants'ı fetch et
+          setTimeout(() => {
+            console.log('🔄 RASTGELE OYUN: Participants fetch ediliyor...');
+            fetchParticipants(targetRoom.id);
+          }, 200);
+          
           return true;
         }
 
@@ -841,8 +848,11 @@ const fetchParticipants = useCallback(
           // ✅ ÖNEMLI: Oda zaten bir ızgara var, onu kullan
           setCurrentRoom(targetRoom);
           
-          // Katılımcıları fetch et
-          await fetchParticipants(targetRoom.id);
+          // ✅ RASTGELE OYUN FIX: HEMEN participants'ı fetch et
+          setTimeout(() => {
+            console.log('🔄 RASTGELE OYUN: Katılım sonrası participants fetch ediliyor...');
+            fetchParticipants(targetRoom.id);
+          }, 300);
           
           toast({
             title: '🎯 Eşleşme Bulundu!',
@@ -892,6 +902,13 @@ const fetchParticipants = useCallback(
     }
 
     setCurrentRoom(newRoom);
+    
+    // ✅ RASTGELE OYUN FIX: Host olarak oda oluşturduktan sonra participants'ı fetch et
+    setTimeout(() => {
+      console.log('🔄 RASTGELE OYUN: Host oda oluşturma sonrası participants fetch ediliyor...');
+      fetchParticipants(newRoom.id);
+    }, 500);
+    
     console.log('🆕 Yeni oda oluşturuldu:', newRoom.id.slice(-8));
     console.log('👤 Host kendini katılımcı olarak ekledi:', user.id.slice(-8));
     console.log('🔍 ===== MATCHMAKING BİTTİ (BEKLEMEDE) =====');
@@ -1413,13 +1430,24 @@ useEffect(() => {
         newParticipant.user_id && 
         newParticipant.user_id !== user?.id) {
       
-      console.log('✅ GERÇEK OYUNCU KATILDI! Private room eşleşmesi');
+      const gameMode = getGameModeFromRoom(currentRoom);
+      console.log('🎮 Game mode for participant join:', gameMode);
       
-      toast({
-        title: '🎉 Oyuncu Katıldı!',
-        description: 'İkinci oyuncu odaya katıldı, oyun başlıyor...',
-        duration: 2000,
-      });
+      if (gameMode === 'random-match') {
+        console.log('✅ RASTGELE OYUN EŞLEŞME BAŞARILI!');
+        toast({
+          title: '🎯 Eşleşme Tamamlandı!',
+          description: 'Rakip bulundu, oyun başlıyor...',
+          duration: 2000,
+        });
+      } else {
+        console.log('✅ GERÇEK OYUNCU KATILDI! Private room eşleşmesi');
+        toast({
+          title: '🎉 Oyuncu Katıldı!',
+          description: 'İkinci oyuncu odaya katıldı, oyun başlıyor...',
+          duration: 2000,
+        });
+      }
     }
   }
   
