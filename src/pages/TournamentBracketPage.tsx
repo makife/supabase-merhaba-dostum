@@ -300,26 +300,22 @@ const TournamentBracketPage = () => {
     if (!currentTournament || currentTournament.status !== 'in_progress') return;
     if (matches.length === 0) return;
 
-    const currentRound = currentTournament.current_round || 1;
-    const hasPendingMatchesInCurrent = matches.some(
-      (m) => m.status === 'pending' && m.round === currentRound
-    );
-
-    if (!hasPendingMatchesInCurrent) {
-      // Pending yoksa aktif geri sayımı durdur
+    // Hedef turu belirle: PENDING olan en küçük round
+    const pendingMatches = matches.filter(m => m.status === 'pending');
+    if (pendingMatches.length === 0) {
       if (countdownIntervalRef.current) {
         clearInterval(countdownIntervalRef.current);
         countdownIntervalRef.current = null;
       }
       return;
     }
+    const targetRound = Math.min(...pendingMatches.map(m => m.round));
 
     // Aynı tur için geri sayımı bir kez başlat
-    if (!countdownGuard.current.active || countdownGuard.current.round !== currentRound) {
-      countdownGuard.current = { active: true, round: currentRound };
+    if (!countdownGuard.current.active || countdownGuard.current.round !== targetRound) {
+      countdownGuard.current = { active: true, round: targetRound };
       setCountdown(10);
 
-      // Eski interval varsa iptal et
       if (countdownIntervalRef.current) {
         clearInterval(countdownIntervalRef.current);
       }
@@ -330,8 +326,8 @@ const TournamentBracketPage = () => {
               clearInterval(countdownIntervalRef.current);
               countdownIntervalRef.current = null;
             }
-            // Geri sayım tamamlandı -> maçı başlat
-            startAllMatches(currentRound);
+            // Geri sayım tamamlandı -> hedef turdaki tüm pending maçları başlat
+            startAllMatches(targetRound);
             countdownGuard.current = { active: false, round: null };
             return 0;
           }
@@ -339,7 +335,7 @@ const TournamentBracketPage = () => {
         });
       }, 1000);
     }
-  }, [matches, currentTournament?.status, currentTournament?.current_round]);
+  }, [matches, currentTournament?.status]);
 
   // Bileşen unmount olduğunda interval'ı temizle
   useEffect(() => {
@@ -413,7 +409,8 @@ const TournamentBracketPage = () => {
   }
 
   const matchesByRound = organizeMatchesByRound(matches);
-  const hasPendingMatches = matches.some(m => m.status === 'pending');
+  const pendingRounds = matches.filter(m => m.status === 'pending').map(m => m.round);
+  const nextPendingRound = pendingRounds.length ? Math.min(...pendingRounds) : null;
 
   const MatchCard = ({ match, roundNumber }: { match: any, roundNumber: number }) => {
     const getPlayerInfo = (playerId: string, isPlayer1: boolean) => {
@@ -551,7 +548,7 @@ const TournamentBracketPage = () => {
         </div>
 
         {/* Countdown */}
-        {hasPendingMatches && countdown > 0 && (
+        {nextPendingRound !== null && countdown > 0 && (
           <Card className="mb-6 bg-white/10 backdrop-blur-md border-white/20">
             <CardContent className="p-4 text-center">
               <Clock className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
