@@ -18,6 +18,7 @@ const TournamentBracketPage = () => {
   
   const [countdown, setCountdown] = useState(10);
   const [showChampion, setShowChampion] = useState(false);
+  const [showEliminated, setShowEliminated] = useState(false);
   const [navigatedToGame, setNavigatedToGame] = useState(false);
 
   useEffect(() => {
@@ -211,16 +212,27 @@ const TournamentBracketPage = () => {
       } else if (allCompleted && round === 3) {
         console.log('🏆 Tournament completed!');
         
-        // Turnuvayı completed olarak işaretle ve şampiyonu göster
+        // Turnuvayı completed olarak işaretle
         await supabase
           .from('tournaments')
           .update({ status: 'completed', finished_at: new Date().toISOString() })
           .eq('id', tournamentId);
         
-        // Şampiyon ekranını göster
+        // Final maçının kazananını belirle
+        const finalMatch = roundMatches.find(m => m.round === 3);
+        const championId = finalMatch?.winner_id;
+        
+        // Sadece gerçek oyuncular için sonuç ekranları göster
         setTimeout(() => {
-          setShowChampion(true);
-          playSpecialSound('/sampiyon.mp3', 0.8);
+          if (championId === user?.id) {
+            // Kullanıcı şampiyonsa şampiyonluk ekranını göster
+            setShowChampion(true);
+            playSpecialSound('/sampiyon.mp3', 0.8);
+          } else if (finalMatch && (finalMatch.player1_id === user?.id || finalMatch.player2_id === user?.id)) {
+            // Kullanıcı finalde kaybettiyse elenme ekranını göster
+            setShowEliminated(true);
+          }
+          // Bot ise hiçbir şey gösterme
         }, 2000);
       }
     } catch (error) {
@@ -326,14 +338,23 @@ const TournamentBracketPage = () => {
     }
    }, [matches, user, navigatedToGame, tournamentId, navigate]);
 
-  // Şampiyon ekranında 5 saniye sonra otomatik listeye dön
+  // Şampiyon ekranında 10 saniye sonra otomatik listeye dön
   useEffect(() => {
     if (!showChampion) return;
     const timer = setTimeout(() => {
       navigate('/tournament');
-    }, 5000);
+    }, 10000);
     return () => clearTimeout(timer);
   }, [showChampion, navigate]);
+
+  // Elenme ekranında 10 saniye sonra otomatik listeye dön
+  useEffect(() => {
+    if (!showEliminated) return;
+    const timer = setTimeout(() => {
+      navigate('/tournament');
+    }, 10000);
+    return () => clearTimeout(timer);
+  }, [showEliminated, navigate]);
  
   if (!currentTournament) {
     return (
@@ -422,14 +443,34 @@ const TournamentBracketPage = () => {
       ? finalMatch?.player1?.username 
       : finalMatch?.player2?.username;
 
-
     return (
       <div className="min-h-screen bg-gradient-to-br from-yellow-600 to-orange-600 p-4 flex items-center justify-center">
         <div className="text-center">
           <Crown className="w-24 h-24 text-yellow-200 mx-auto mb-6 animate-bounce" />
           <h1 className="text-6xl font-bold text-white mb-4">Şampiyon!</h1>
           <h2 className="text-3xl text-yellow-200 mb-8">{championName || 'Bilinmeyen'}</h2>
-          <p className="text-white text-lg mb-6">5 saniye sonra turnuva listesine döneceksiniz...</p>
+          <p className="text-white text-lg mb-6">10 saniye sonra turnuva listesine döneceksiniz...</p>
+          
+          <Button
+            onClick={() => navigate('/tournament')}
+            className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-bold py-3 px-6 rounded-full"
+          >
+            <Trophy className="w-5 h-5 mr-2" />
+            Turnuva Listesi
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (showEliminated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-600 to-purple-600 p-4 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-24 h-24 text-red-200 mx-auto mb-6 text-6xl">😢</div>
+          <h1 className="text-6xl font-bold text-white mb-4">Elendiniz!</h1>
+          <h2 className="text-3xl text-red-200 mb-8">Final maçında kaybettiniz</h2>
+          <p className="text-white text-lg mb-6">10 saniye sonra turnuva listesine döneceksiniz...</p>
           
           <Button
             onClick={() => navigate('/tournament')}
