@@ -21,6 +21,7 @@ const TournamentBracketPage = () => {
   const [showEliminated, setShowEliminated] = useState(false);
   const [navigatedToGame, setNavigatedToGame] = useState(false);
   const countdownGuard = useRef<{ round: number | null; active: boolean }>({ round: null, active: false });
+  const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (tournamentId) {
