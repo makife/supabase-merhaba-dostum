@@ -22,6 +22,123 @@ const TournamentBracketPage = () => {
   const [navigatedToGame, setNavigatedToGame] = useState(false);
   const countdownGuard = useRef<{ round: number | null; active: boolean }>({ round: null, active: false });
   const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const placeholdersEnsuredRef = useRef(false);
+
+  // Bracket iskeletini garanti et: Yarı final (2 maç) ve final (1 maç) placeholder'ları yoksa oluştur
+  const ensureNextRoundPlaceholders = async () => {
+    if (!tournamentId) return;
+    try {
+      const r2Exists = matches.some(m => m.round === 2);
+      const r3Exists = matches.some(m => m.round === 3);
+      const inserts: any[] = [];
+
+      if (!r2Exists) {
+        inserts.push(
+          { tournament_id: tournamentId, round: 2, match_number: 1, status: 'pending' },
+          { tournament_id: tournamentId, round: 2, match_number: 2, status: 'pending' }
+        );
+      }
+      if (!r3Exists) {
+        inserts.push({ tournament_id: tournamentId, round: 3, match_number: 1, status: 'pending' });
+      }
+
+      if (inserts.length) {
+        await supabase.from('tournament_matches').insert(inserts);
+      }
+
+      placeholdersEnsuredRef.current = true;
+    } catch (e) {
+      console.error('Placeholder creation failed:', e);
+    }
+  };
+
+  // Turnuva ilerlemede ise placeholder'ları bir defa oluştur
+  useEffect(() => {
+    if (!tournamentId || !currentTournament || currentTournament.status !== 'in_progress') return;
+    if (placeholdersEnsuredRef.current) return;
+
+    const r2Exists = matches.some(m => m.round === 2);
+    const r3Exists = matches.some(m => m.round === 3);
+    if (r2Exists && r3Exists) {
+      placeholdersEnsuredRef.current = true;
+      return;
+    }
+    ensureNextRoundPlaceholders();
+  }, [tournamentId, currentTournament?.status, matches]);
+
+  // Çeyrek finallerin kazananları oluşur oluşmaz yarı final slotlarını doldur; 
+  // Yarı finaller tamamlanınca final slotlarını doldur (hemen)
+  useEffect(() => {
+    if (!tournamentId) return;
+
+    const populate = async () => {
+      try {
+        // QF -> SF
+        const qf = matches.filter(m => m.round === 1);
+        if (qf.length >= 4) {
+          const w1 = qf.find(m => m.match_number === 1)?.winner_id;
+          const w2 = qf.find(m => m.match_number === 2)?.winner_id;
+          const w3 = qf.find(m => m.match_number === 3)?.winner_id;
+          const w4 = qf.find(m => m.match_number === 4)?.winner_id;
+
+          const sf1 = matches.find(m => m.round === 2 && m.match_number === 1);
+          const sf2 = matches.find(m => m.round === 2 && m.match_number === 2);
+
+          if (w1 && w2 && sf1 && (sf1.player1_id !== w1 || sf1.player2_id !== w2)) {
+            await supabase
+              .from('tournament_matches')
+              .update({
+                player1_id: w1,
+                player2_id: w2,
+                status: sf1.status === 'in_progress' || sf1.status === 'completed' ? sf1.status : 'pending',
+                updated_at: new Date().toISOString()
+              })
+              .eq('tournament_id', tournamentId)
+              .eq('round', 2)
+              .eq('match_number', 1);
+          }
+          if (w3 && w4 && sf2 && (sf2.player1_id !== w3 || sf2.player2_id !== w4)) {
+            await supabase
+              .from('tournament_matches')
+              .update({
+                player1_id: w3,
+                player2_id: w4,
+                status: sf2.status === 'in_progress' || sf2.status === 'completed' ? sf2.status : 'pending',
+                updated_at: new Date().toISOString()
+              })
+              .eq('tournament_id', tournamentId)
+              .eq('round', 2)
+              .eq('match_number', 2);
+          }
+        }
+
+        // SF -> Final
+        const sf = matches.filter(m => m.round === 2);
+        const f = matches.find(m => m.round === 3 && m.match_number === 1);
+        if (sf.length >= 2 && f) {
+          const sfw1 = sf.find(m => m.match_number === 1)?.winner_id;
+          const sfw2 = sf.find(m => m.match_number === 2)?.winner_id;
+          if (sfw1 && sfw2 && (f.player1_id !== sfw1 || f.player2_id !== sfw2)) {
+            await supabase
+              .from('tournament_matches')
+              .update({
+                player1_id: sfw1,
+                player2_id: sfw2,
+                status: f.status === 'in_progress' || f.status === 'completed' ? f.status : 'pending',
+                updated_at: new Date().toISOString()
+              })
+              .eq('tournament_id', tournamentId)
+              .eq('round', 3)
+              .eq('match_number', 1);
+          }
+        }
+      } catch (err) {
+        console.error('Populate next round slots failed:', err);
+      }
+    };
+
+    populate();
+  }, [matches, tournamentId]);
 
   useEffect(() => {
     if (tournamentId) {
