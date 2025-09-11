@@ -564,74 +564,89 @@ const fetchParticipants = useCallback(
  const createRoom = useCallback(async (gameMode: string, roomCode?: string): Promise<GameRoom | null> => {
   if (!user) return null;
 
-  try {
-    console.log('🏠 === ROOM CREATE DEBUG BAŞLADI ===');
-    console.log('🏠 Game Mode:', gameMode);
-    console.log('🏠 Room Code:', roomCode);
-    console.log('🏠 User ID:', user.id.slice(-8));
+  const roomCodeToUse = roomCode || generateRoomCode();
+  console.log('🏠 === ROOM CREATE DEBUG BAŞLADI ===');
+  console.log('🏠 Game Mode:', gameMode);
+  console.log('🏠 Room Code:', roomCodeToUse);
+  console.log('🏠 User ID:', user.id.slice(-8));
   
-    const grid = generateRandomGrid();
-    const { data: room, error } = await supabase
-      .from('game_rooms')
-      .insert({
-        game_mode: gameMode,
-        host_id: user.id,
-        room_code: roomCode,
-        current_grid: grid.flat(),
-        status: 'waiting',
-        max_score: gameMode.includes('score') ? 500 : 100,
-        time_limit: gameMode.includes('timed') ? 120 : 0
-      })
-      .select()
-      .single();
+  const grid = generateRandomGrid();
+  const maxAttempts = 5;
+  
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const currentRoomCode = attempt === 1 ? roomCodeToUse : generateRoomCode();
+    
+    try {
+      const { data: room, error } = await supabase
+        .from('game_rooms')
+        .insert({
+          game_mode: gameMode,
+          host_id: user.id,
+          room_code: currentRoomCode,
+          current_grid: grid.flat(),
+          status: 'waiting',
+          max_score: gameMode.includes('score') ? 500 : 100,
+          time_limit: gameMode.includes('timed') ? 120 : 0
+        })
+        .select()
+        .single();
 
-    if (error) {
-      console.error('❌ Room creation error:', error);
-      throw error;
+      if (error) {
+        if (error.code === '23505' && attempt < maxAttempts) {
+          console.log(`🔄 Room code çakışması (deneme ${attempt}/${maxAttempts}), yeni kod denenecek`);
+          continue;
+        }
+        throw error;
+      }
+
+      if (!room) throw new Error('Room creation failed');
+
+      console.log('✅ Room created:', room.id.slice(-8));
+      
+      // Participant ekle
+      const { data: participantData, error: participantError } = await supabase
+        .from('game_participants')
+        .insert({
+          room_id: room.id,
+          user_id: user.id,
+          score: 0,
+          is_bot: false
+        })
+        .select()
+        .single();
+
+      if (participantError) {
+        console.error('❌ Participant creation error:', participantError);
+        throw participantError;
+      }
+    
+      console.log('✅ Participant created:', participantData.id);
+      setCurrentRoom(room);
+    
+      // Hemen participants fetch et
+      setTimeout(() => {
+        fetchParticipants(room.id);
+      }, 300);
+    
+      toast({
+        title: 'Oda Oluşturuldu',
+        description: currentRoomCode ? `Oda kodu: ${currentRoomCode}` : 'Oyuna hazırsınız',
+        duration: 1000,
+      });
+
+      console.log('🏠 === ROOM CREATE DEBUG BİTTİ ===');
+      return room;
+      
+    } catch (error: any) {
+      console.error(`❌ Room creation error (attempt ${attempt}):`, error);
+      if (attempt === maxAttempts) {
+        console.error('❌ Final error creating room:', error);
+        return null;
+      }
     }
-  
-    console.log('✅ Room created:', room.id.slice(-8));
-
-    // ✅ DÜZELTME: Participant ekleme ve hemen fetch
-    console.log('👤 Adding self as participant...');
-    const { data: participantData, error: participantError } = await supabase
-      .from('game_participants')
-      .insert({
-        room_id: room.id,
-        user_id: user.id,
-        score: 0,
-        is_bot: false
-      })
-      .select()
-      .single();
-
-    if (participantError) {
-      console.error('❌ Participant creation error:', participantError);
-      throw participantError;
-    }
-  
-    console.log('✅ Participant created:', participantData.id);
-
-    setCurrentRoom(room);
-  
-    // ✅ HEMEN PARTICIPANTS FETCH ET
-    console.log('🔄 Immediate participants fetch...');
-    setTimeout(() => {
-      fetchParticipants(room.id);
-    }, 300);
-  
-    toast({
-      title: 'Oda Oluşturuldu',
-      description: roomCode ? `Oda kodu: ${roomCode}` : 'Oyuna hazırsınız',
-      duration: 1000,
-    });
-
-    console.log('🏠 === ROOM CREATE DEBUG BİTTİ ===');
-    return room;
-  } catch (error) {
-    console.error('❌ Error creating room:', error);
-    return null;
   }
+  
+  return null;
 }, [user, toast, fetchParticipants]);
 
   // Join room
