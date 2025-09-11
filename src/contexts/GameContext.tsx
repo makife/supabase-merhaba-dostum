@@ -1479,13 +1479,14 @@ useEffect(() => {
         
         await supabase
           .from('game_rooms')
-          .delete()
+          .update({
+            status: 'finished',
+            winner_id: user?.id || null,
+            finished_at: new Date().toISOString()
+          })
           .eq('id', currentRoom.id);
         
-        setTimeout(() => {
-          setCurrentRoom(null);
-          setParticipants([]);
-        }, 2000);
+        // Oda durumunu temizlemiyoruz; UI sonuç ekranı açık kalmalı
       }
     }
   }
@@ -1535,7 +1536,11 @@ useEffect(() => {
             console.log('🗑️ ODA SİLİNİYOR - BAĞLANTI KOPMASI');
             await supabase
               .from('game_rooms')
-              .delete()
+              .update({
+                status: 'finished',
+                winner_id: user?.id || null,
+                finished_at: new Date().toISOString()
+              })
               .eq('id', currentRoom.id);
             
             console.log('📢 Dispatching playerDisconnected event (connection lost)');
@@ -1543,10 +1548,7 @@ useEffect(() => {
               detail: { winner: 'player', reason: 'connection_lost' }
             }));
             
-            setTimeout(() => {
-              setCurrentRoom(null);
-              setParticipants([]);
-            }, 2000);
+            // Oda durumunu temizlemiyoruz; UI sonuç ekranı açık kalmalı
           }
         }, 10000);
       }

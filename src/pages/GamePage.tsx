@@ -394,6 +394,25 @@ useEffect(() => {
     window.addEventListener('playerDisconnected', handler as EventListener);
     return () => window.removeEventListener('playerDisconnected', handler as EventListener);
   }, [playSound, playCelebrationSound, toast]);
+
+  // Fallback: Katılımcı azalınca disconnect'i yakala ve oyunu bitir
+  const disconnectHandledRef = useRef(false);
+  useEffect(() => {
+    if ((gameMode === 'private-room' || gameMode === 'random-match') && gameStarted && !gameEnded) {
+      const realPlayers = participants.filter(p => !p.is_bot);
+      if (realPlayers.length < 2 && !disconnectHandledRef.current) {
+        disconnectHandledRef.current = true;
+        window.dispatchEvent(new CustomEvent('playerDisconnected', {
+          detail: { winner: 'player', reason: 'opponent_left_fallback' }
+        }));
+      }
+    }
+  }, [participants.length, gameMode, gameStarted, gameEnded]);
+
+  useEffect(() => {
+    // Oda değiştiğinde fallback bayrağını sıfırla
+    disconnectHandledRef.current = false;
+  }, [currentRoom?.id]);
   
   const [isAIOpponent, setIsAIOpponent] = useState(false);
   const [opponentName, setOpponentName] = useState('');
