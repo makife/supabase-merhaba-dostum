@@ -1454,8 +1454,7 @@ useEffect(() => {
       if (!oldParticipant.is_bot && 
           oldParticipant.user_id && 
           oldParticipant.user_id !== user?.id && 
-          currentRoom.status === 'active' &&
-          participants.length >= 2) {
+          currentRoom.status === 'active') {
         
         console.log('🏆 RAKIP AYRILDI - SEN KAZANDIN!');
         
@@ -1506,8 +1505,7 @@ useEffect(() => {
       console.log('🚪 Presence leave event:', key);
       
       if (currentRoom.status === 'active' && 
-          key !== `user-${user?.id}` && 
-          participants.length >= 2) {
+          key !== `user-${user?.id}`) {
         
         console.log('⏱️ Bağlantı kopması kontrolü başlıyor, 10 saniye bekleniyor...');
         
