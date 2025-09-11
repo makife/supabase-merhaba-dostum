@@ -905,12 +905,8 @@ const showTournamentEndCard = async (isWinner: boolean, userScore: number, oppon
     if (tournamentBtn) {
       tournamentBtn.addEventListener('click', () => {
         document.body.removeChild(modalDiv);
-        if (tournament.current_round === 3 && isWinner) {
-          navigate('/');
-        } else {
-          // YENİ: Doğrudan turnuva bracket sayfasına yönlendir
-          navigate(`/tournament-bracket/${tournamentId}`);
-        }
+        // Her durumda bracket sayfasına yönlendir - şampiyonluk kartı burada gösterilecek
+        navigate(`/tournament-bracket/${tournamentId}`);
       });
     }
 
@@ -919,12 +915,8 @@ const showTournamentEndCard = async (isWinner: boolean, userScore: number, oppon
       if (document.body.contains(modalDiv)) {
         document.body.removeChild(modalDiv);
       }
-      if (tournament.current_round === 3 && isWinner) {
-        navigate('/');
-      } else {
-        // YENİ: Doğrudan turnuva bracket sayfasına yönlendir
-        navigate(`/tournament-bracket/${tournamentId}`);
-      }
+      // Her durumda bracket sayfasına yönlendir - şampiyonluk kartı burada gösterilecek
+      navigate(`/tournament-bracket/${tournamentId}`);
     }, 3000);
 
   } catch (error) {

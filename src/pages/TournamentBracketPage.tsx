@@ -240,7 +240,7 @@ const TournamentBracketPage = () => {
     }
   };
  
-  // Yeni: Maçlar güncellenince tur ilerletme ve sonraki turu başlatma
+  // Yeni: Maçlar güncellenince tur ilerletme (başlatmayı sayaca bırak) ve final sonrası sonuç ekranı
   useEffect(() => {
     if (!tournamentId || !currentTournament) return;
     const round = currentTournament.current_round || 1;
@@ -252,6 +252,21 @@ const TournamentBracketPage = () => {
     const allCompleted = roundMatches.every(m => m.status === 'completed');
     if (!allCompleted) return;
 
+    // Final turu tamamlandıysa sonucu göster
+    if (round === 3) {
+      const finalMatch = matches.find(m => m.round === 3);
+      const championId = finalMatch?.winner_id;
+      setTimeout(() => {
+        if (championId === user?.id) {
+          setShowChampion(true);
+          playSpecialSound('/sampiyon.mp3', 0.8);
+        } else if (finalMatch && (finalMatch.player1_id === user?.id || finalMatch.player2_id === user?.id)) {
+          setShowEliminated(true);
+        }
+      }, 500);
+      return;
+    }
+
     // Çift çağrıyı önlemek için: bir sonraki tur zaten oluşturulmuş mu?
     supabase
       .from('tournament_matches')
@@ -262,35 +277,32 @@ const TournamentBracketPage = () => {
       .then(async ({ data }) => {
         try {
           if (!data || data.length === 0) {
-            // Tur ilerlet ve yeni turu başlat
+            // Sadece turu ilerlet; maçların başlamasını 10 sn sayaca bırak
             const { data: result } = await supabase.rpc('advance_tournament_round', {
               p_tournament_id: tournamentId
             });
             if (result && (result as any).success) {
-              setTimeout(() => {
-                fetchTournamentDetails(tournamentId);
-                startAllMatches(round + 1);
-              }, 800);
+              fetchTournamentDetails(tournamentId);
             }
           } else {
-            // Bir sonraki tur var ama beklemede olabilir, doğrudan başlat
-            const hasPendingNext = matches.some(m => m.round === round + 1 && m.status === 'pending');
-            if (hasPendingNext) {
-              startAllMatches(round + 1);
-            }
+            // Sonraki tur zaten var; maçlar pending ise geri sayım onları başlatacak
+            // Burada herhangi bir işlem yapmıyoruz
           }
         } catch (e) {
           console.error('Auto-advance error:', e);
         }
       });
-  }, [matches, currentTournament?.current_round, tournamentId]);
+  }, [matches, currentTournament?.current_round, tournamentId, user, playSpecialSound]);
 
-  // Countdown for match start
+  // Countdown for match start (her yeni pending durumunda 10 sn'den başlat)
   useEffect(() => {
     if (matches.length === 0) return;
 
     const hasPendingMatches = matches.some(m => m.status === 'pending');
     if (!hasPendingMatches) return;
+
+    // Yeni tur/pending maçlar görünür olduğunda geri sayımı sıfırla
+    setCountdown(10);
 
     const countdownInterval = setInterval(() => {
       setCountdown(prev => {
