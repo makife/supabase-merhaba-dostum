@@ -3546,7 +3546,7 @@ if (gameEnded) {
             ) : gameMode === 'private-room' ? (
     // ✅ ÖZEL ODA BUTONLARI - YENİ
     <div className="space-y-2">
-      {!rematchRequested && !waitingForRematchResponse && (
+      {!disconnectWin && !rematchRequested && !waitingForRematchResponse && (
         <Button 
           onClick={() => {
             playSound('buttonClick');
