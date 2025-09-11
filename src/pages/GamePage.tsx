@@ -397,10 +397,18 @@ useEffect(() => {
 
   // Fallback: Katılımcı azalınca disconnect'i yakala ve oyunu bitir
   const disconnectHandledRef = useRef(false);
+  const gameHasStartedRef = useRef(false);
+  
   useEffect(() => {
-    if ((gameMode === 'private-room' || gameMode === 'random-match') && gameStarted && !gameEnded) {
+    // Oyun gerçekten başladıktan sonra disconnect kontrolü yap
+    if ((gameMode === 'private-room' || gameMode === 'random-match') && 
+        gameStarted && !gameEnded && 
+        gameHasStartedRef.current && // Oyun gerçekten başlamış olmalı
+        participants.length > 0) { // En az bir kez participants yüklenmiş olmalı
+      
       const realPlayers = participants.filter(p => !p.is_bot);
       if (realPlayers.length < 2 && !disconnectHandledRef.current) {
+        console.log('🚪 Fallback disconnect detected - ending game');
         disconnectHandledRef.current = true;
         window.dispatchEvent(new CustomEvent('playerDisconnected', {
           detail: { winner: 'player', reason: 'opponent_left_fallback' }
@@ -409,9 +417,19 @@ useEffect(() => {
     }
   }, [participants.length, gameMode, gameStarted, gameEnded]);
 
+  // Oyunun gerçekten başladığını işaretle (participants yüklendikten sonra)
+  useEffect(() => {
+    if ((gameMode === 'private-room' || gameMode === 'random-match') && 
+        participants.length >= 2 && gameStarted && !gameEnded) {
+      console.log('🎮 Game truly started with participants:', participants.length);
+      gameHasStartedRef.current = true;
+    }
+  }, [participants.length, gameMode, gameStarted, gameEnded]);
+
   useEffect(() => {
     // Oda değiştiğinde fallback bayrağını sıfırla
     disconnectHandledRef.current = false;
+    gameHasStartedRef.current = false;
   }, [currentRoom?.id]);
   
   const [isAIOpponent, setIsAIOpponent] = useState(false);
@@ -1937,6 +1955,28 @@ useEffect(() => {
           navigate('/');
           return;
         }
+        
+        console.log('✅ Game room created successfully');
+        
+        // Participants'ın yüklenmesini bekle
+        let retries = 0;
+        const maxRetries = 10;
+        const checkParticipants = () => {
+          if (participants.length >= 2) {
+            console.log('✅ Participants loaded, game ready to start');
+            return;
+          }
+          
+          retries++;
+          if (retries < maxRetries) {
+            console.log(`⏳ Waiting for participants... (${retries}/${maxRetries})`);
+            setTimeout(checkParticipants, 500);
+          } else {
+            console.log('⚠️ Timeout waiting for participants');
+          }
+        };
+        
+        checkParticipants();
         
         console.log('✅ Game room created:', gameRoom.id);
       }
