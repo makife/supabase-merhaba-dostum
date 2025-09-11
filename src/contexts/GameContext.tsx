@@ -772,7 +772,7 @@ const fetchParticipants = useCallback(
       const realPlayers = room.game_participants?.filter(p => !p.is_bot) || [];
       const gameTypeMatch = gameType === 'timed' ? room.time_limit > 0 : room.max_score > 0;
       
-      console.log(`🏠 Oda ${room.id.slice(-8)}: ${realPlayers.length} oyuncu, type: ${gameTypeMatch ? 'uygun' : 'uyumsuz'}`);
+      console.log(`🏠 Oda ${room.id.slice(-8)}: ${realPlayers.length} oyuncu, type: ${gameTypeMatch ? 'uygun' : 'uyumsuz'}, time_limit: ${room.time_limit}, max_score: ${room.max_score}`);
       
       return realPlayers.length === 1 && gameTypeMatch;
     }) || [];
@@ -831,7 +831,7 @@ const fetchParticipants = useCallback(
           
           toast({
             title: '🎯 Eşleşme Bulundu!',
-            description: 'Rakip bulundu, oyun başlıyor...',
+            description: `${gameType === 'timed' ? 'Zamana karşı' : 'Puanlı'} rakip bulundu!`,
             duration: 2000,
           });
           
@@ -1472,7 +1472,8 @@ useEffect(() => {
         
         console.log('🗑️ ODA SİLİNİYOR');
         
-        // Notify UI to show win card
+        // Notify UI to show win card - disconnect handling
+        console.log('📢 Dispatching playerDisconnected event');
         window.dispatchEvent(new CustomEvent('playerDisconnected', {
           detail: { winner: 'player', reason: 'opponent_left' }
         }));
@@ -1539,6 +1540,7 @@ useEffect(() => {
               .delete()
               .eq('id', currentRoom.id);
             
+            console.log('📢 Dispatching playerDisconnected event (connection lost)');
             window.dispatchEvent(new CustomEvent('playerDisconnected', {
               detail: { winner: 'player', reason: 'connection_lost' }
             }));

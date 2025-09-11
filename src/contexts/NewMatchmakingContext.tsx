@@ -92,16 +92,18 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
         .delete()
         .lt('expires_at', new Date().toISOString());
 
-      // Mevcut uygun oda ara
-      const { data: availableRooms, error: searchError } = await supabase
-        .from('matchmaking_rooms')
-        .select('*')
-        .eq('game_type', gameType)
-        .eq('status', 'waiting')
-        .lt('current_players', 2)
-        .gt('expires_at', new Date().toISOString()) // Süresi dolmamış olanlar
-        .order('created_at', { ascending: true })
-        .limit(1);
+  // Mevcut uygun oda ara
+  const { data: availableRooms, error: searchError } = await supabase
+    .from('matchmaking_rooms')
+    .select('*')
+    .eq('game_type', gameType)
+    .eq('status', 'waiting')
+    .lt('current_players', 2)
+    .gt('expires_at', new Date().toISOString()) // Süresi dolmamış olanlar
+    .order('created_at', { ascending: true })
+    .limit(1);
+
+  console.log('🔍 Arama parametreleri:', { gameType, roomsFound: availableRooms?.length || 0 });
 
       if (searchError) {
         console.error('Error searching for rooms:', searchError);
@@ -142,20 +144,21 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
               status: updatedRoom.status
             });
             
-            // Eğer oda dolduysa hemen eşleşme bildir
-            if (updatedRoom.status === 'matched' && updatedRoom.current_players >= 2) {
-              console.log('🎉 Oda doldu - anında eşleşme! Hemen temizlik yapılıyor...');
-              
-              // Önce cleanup yap, sonra navigate et
-              cleanup();
-              
-              toast({
-                title: "Eşleşme Bulundu!",
-                description: "Mevcut odaya katıldınız!",
-              });
-              onMatchFound?.(updatedRoom.id);
-              return;
-            }
+      // Eğer oda dolduysa hemen eşleşme bildir
+      if (updatedRoom.status === 'matched' && updatedRoom.current_players >= 2) {
+        console.log('🎉 Oda doldu - anında eşleşme! Hemen temizlik yapılıyor...');
+        console.log('🎮 Eşleşen oda game_type:', updatedRoom.game_type);
+        
+        // Önce cleanup yap, sonra navigate et
+        cleanup();
+        
+        toast({
+          title: "Eşleşme Bulundu!",
+          description: `${updatedRoom.game_type === 'timed' ? 'Zamana karşı' : 'Puanlı'} oyun başlıyor!`,
+        });
+        onMatchFound?.(updatedRoom.id);
+        return;
+      }
           }
         }
       }
@@ -201,20 +204,21 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
             console.log('🔄 Oda güncellendi:', payload);
             const updatedRoom = payload.new as MatchmakingRoom;
             
-            if (updatedRoom.status === 'matched' && updatedRoom.current_players >= 2) {
-              console.log('🎉 Eşleşme bulundu! Hemen temizlik yapılıyor...');
-              
-              // Önce cleanup yap, sonra navigate et
-              cleanup();
-              
-              toast({
-                title: "Eşleşme Bulundu!",
-                description: "Oyun başlıyor...",
-              });
-              onMatchFound?.(updatedRoom.id);
-            } else {
-              setCurrentRoom(updatedRoom);
-            }
+      if (updatedRoom.status === 'matched' && updatedRoom.current_players >= 2) {
+        console.log('🎉 Eşleşme bulundu! Hemen temizlik yapılıyor...');
+        console.log('🎮 Real-time güncellenmiş oda game_type:', updatedRoom.game_type);
+        
+        // Önce cleanup yap, sonra navigate et
+        cleanup();
+        
+        toast({
+          title: "Eşleşme Bulundu!",
+          description: `${updatedRoom.game_type === 'timed' ? 'Zamana karşı' : 'Puanlı'} oyun başlıyor!`,
+        });
+        onMatchFound?.(updatedRoom.id);
+      } else {
+        setCurrentRoom(updatedRoom);
+      }
           }
         )
         .subscribe();

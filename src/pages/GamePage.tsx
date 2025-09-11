@@ -136,7 +136,7 @@ const GamePage = ({
   const [wordlist, setWordlist] = useState<Set<string>>(new Set());
   const [wordlistLoaded, setWordlistLoaded] = useState(false);
   
-  // Get game type from room or URL params
+  // Get game type from room or URL params - DÜZELTME
 const getGameType = useCallback((): 'timed' | 'score' => {
   // TURNUVA MODU HER ZAMAN SÜRELİ!
   if (gameMode === 'tournament') {
@@ -146,7 +146,28 @@ const getGameType = useCallback((): 'timed' | 'score' => {
   
   if (gameMode === 'vs-computer') {
     const urlType = (searchParams.get('type') as 'timed' | 'score') || 'timed';
+    console.log('🤖 vs-computer mode type:', urlType);
     return urlType;
+  }
+  
+  // RANDOM MATCH için öncelikle matchmaking room datasını kontrol et
+  if (gameMode === 'random-match') {
+    // URL'den gelen type parametresini kontrol et (matchmaking'den gelir)
+    const urlType = searchParams.get('type') as 'timed' | 'score';
+    if (urlType) {
+      console.log('🎯 Random match URL type:', urlType);
+      return urlType;
+    }
+    
+    // Fallback: Room datasından çıkar
+    if (currentRoom?.time_limit && currentRoom.time_limit > 0) {
+      console.log('⏱️ Room timed mode detected');
+      return 'timed';
+    }
+    if (currentRoom?.max_score && currentRoom.max_score > 0) {
+      console.log('🎯 Room score mode detected');
+      return 'score';
+    }
   }
   
   // Diğer modlar için mevcut mantık
@@ -156,8 +177,9 @@ const getGameType = useCallback((): 'timed' | 'score' => {
   }
   
   const urlType = (searchParams.get('type') as 'timed' | 'score') || 'timed';
+  console.log('🔧 Fallback type:', urlType);
   return urlType;
-}, [gameMode, currentRoom?.game_mode, searchParams]);
+}, [gameMode, currentRoom?.game_mode, currentRoom?.time_limit, currentRoom?.max_score, searchParams]);
   
   const gameType = getGameType();
   const [timeWarningPlayed, setTimeWarningPlayed] = useState(false);
@@ -347,19 +369,31 @@ useEffect(() => {
   // Rakip ayrıldığında sonuç kartını göster
   useEffect(() => {
     const handler = (e: any) => {
+      console.log('🚪 Rakip oyundan ayrıldı eventi alındı');
       setDisconnectWin(true);
       setWinner('player');
       setGameEnded(true);
       setShowResults(true);
+      
+      // Oyunu durduran işlemleri
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      
       toast({
         title: 'Rakip oyundan ayrıldı',
         description: 'Maçı kazandınız! 🎉',
         duration: 3000,
       });
+      
+      // Ses efekti çal
+      playSound('gameWin');
+      setTimeout(() => playCelebrationSound(), 500);
     };
     window.addEventListener('playerDisconnected', handler as EventListener);
     return () => window.removeEventListener('playerDisconnected', handler as EventListener);
-  }, []);
+  }, [playSound, playCelebrationSound, toast]);
   
   const [isAIOpponent, setIsAIOpponent] = useState(false);
   const [opponentName, setOpponentName] = useState('');

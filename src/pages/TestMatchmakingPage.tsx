@@ -1,17 +1,25 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MatchmakingProvider } from '@/contexts/NewMatchmakingContext';
 import NewMatchmakingModal from '@/components/NewMatchmakingModal';
 
 const TestMatchmakingPage = () => {
+  const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [gameType, setGameType] = useState<'timed' | 'score'>('timed');
 
   const handleMatchFound = (roomId: string) => {
-    console.log('Match found! Room ID:', roomId);
+    console.log('🎯 Match found, navigating to game:', roomId, 'gameType:', gameType);
     setIsModalOpen(false);
-    // Buraya oyun başlatma kodunu ekleyebilirsiniz
+    
+    // Navigate to game with proper game type
+    if (roomId === 'ai-game') {
+      navigate(`/game?mode=vs-computer&type=${gameType}`);
+    } else {
+      navigate(`/game?mode=random-match&roomId=${roomId}&type=${gameType}`);
+    }
   };
 
   return (
