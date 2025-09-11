@@ -3470,7 +3470,7 @@ if (gameEnded) {
           }`}>
             {gameMode === 'tournament' ? (
               winner === 'player' ? 'Maçı Kazandınız!' : 
-              winner === 'opponent' ? 'Maçı Kaybettiniz!' : 'Beraberlik!'
+              winner === 'opponent' ? 'Elendiniz!' : 'Beraberlik!'
             ) : (
               winner === 'player' ? 'Kazandınız!' :
               winner === 'opponent' ? 'Kaybettiniz!' : 'Beraberlik!'

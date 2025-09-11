@@ -20,7 +20,7 @@ const TournamentBracketPage = () => {
   const [showChampion, setShowChampion] = useState(false);
   const [showEliminated, setShowEliminated] = useState(false);
   const [navigatedToGame, setNavigatedToGame] = useState(false);
-  const countdownGuard = useRef<{ round: number | null; active: boolean }>({ round: null, active: false });
+  const countdownGuard = useRef<{ round: number | null; active: boolean; anchorTs: number | null }>({ round: null, active: false, anchorTs: null });
   const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const placeholdersEnsuredRef = useRef(false);
 
@@ -384,7 +384,7 @@ const TournamentBracketPage = () => {
         clearInterval(countdownIntervalRef.current);
         countdownIntervalRef.current = null;
       }
-      countdownGuard.current = { active: false, round: null };
+      countdownGuard.current = { active: false, round: null, anchorTs: null };
       setCountdown(0);
       return;
     }
@@ -397,22 +397,27 @@ const TournamentBracketPage = () => {
 
     if (targetRoundPending.length === 0) return;
 
-    // Senkron başlangıç zamanı: o round'daki pending maçların en erken updated_at/created_at zamanı
-    const anchorIso = targetRoundPending
-      .map(m => (m.updated_at || m.created_at) as string)
-      .filter(Boolean)
-      .sort()[0];
-    const anchorTs = anchorIso ? new Date(anchorIso).getTime() : Date.now();
+    // Senkron başlangıç zamanı: o round'daki pending maçların EN SON updated_at/created_at zamanı
+    const latestTs = targetRoundPending
+      .map(m => new Date((m.updated_at || m.created_at) as string).getTime())
+      .filter(ts => !Number.isNaN(ts))
+      .reduce((max, ts) => Math.max(max, ts), 0) || Date.now();
 
-    // Aynı tur için geri sayımı bir kez başlat; değeri DB anchor'una göre hesapla
-    if (!countdownGuard.current.active || countdownGuard.current.round !== targetRound) {
-      countdownGuard.current = { active: true, round: targetRound };
+    // Eğer anchor ileriye taşındıysa geri sayımı yeniden başlat (çift eşleşme gecikmeleri için)
+    const shouldRestart =
+      !countdownGuard.current.active ||
+      countdownGuard.current.round !== targetRound ||
+      (countdownGuard.current.anchorTs ?? 0) < latestTs - 250;
+
+    if (shouldRestart) {
+      countdownGuard.current = { active: true, round: targetRound, anchorTs: latestTs };
 
       if (countdownIntervalRef.current) {
         clearInterval(countdownIntervalRef.current);
       }
       const tick = () => {
-        const elapsed = Math.floor((Date.now() - anchorTs) / 1000);
+        const anchor = countdownGuard.current.anchorTs ?? latestTs;
+        const elapsed = Math.floor((Date.now() - anchor) / 1000);
         const remaining = Math.max(0, 10 - elapsed);
         setCountdown(remaining);
 
@@ -423,7 +428,7 @@ const TournamentBracketPage = () => {
           }
           // Geri sayım tamamlandı -> hedef turdaki tüm pending maçları başlat (yalnızca bir kez)
           startAllMatches(targetRound);
-          countdownGuard.current = { active: false, round: null };
+          countdownGuard.current = { active: false, round: null, anchorTs: null };
         }
       };
 
@@ -626,7 +631,7 @@ const TournamentBracketPage = () => {
         <div className="text-center">
           <div className="w-24 h-24 text-red-200 mx-auto mb-6 text-6xl">😢</div>
           <h1 className="text-6xl font-bold text-white mb-4">Elendiniz!</h1>
-          <h2 className="text-3xl text-red-200 mb-8">Final maçında kaybettiniz</h2>
+          <h2 className="text-3xl text-red-200 mb-8">Final maçında elendiniz</h2>
           <p className="text-white text-lg mb-6">10 saniye sonra turnuva listesine döneceksiniz...</p>
           
           <Button
