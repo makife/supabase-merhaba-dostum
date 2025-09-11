@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -24,47 +24,7 @@ const TournamentBracketPage = () => {
   const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const placeholdersEnsuredRef = useRef(false);
 
-  // Bracket iskeletini garanti et: Yarı final (2 maç) ve final (1 maç) placeholder'ları yoksa oluştur
-  const ensureNextRoundPlaceholders = async () => {
-    if (!tournamentId) return;
-    try {
-      const r2Exists = matches.some(m => m.round === 2);
-      const r3Exists = matches.some(m => m.round === 3);
-      const inserts: any[] = [];
-
-      if (!r2Exists) {
-        inserts.push(
-          { tournament_id: tournamentId, round: 2, match_number: 1, status: 'pending' },
-          { tournament_id: tournamentId, round: 2, match_number: 2, status: 'pending' }
-        );
-      }
-      if (!r3Exists) {
-        inserts.push({ tournament_id: tournamentId, round: 3, match_number: 1, status: 'pending' });
-      }
-
-      if (inserts.length) {
-        await supabase.from('tournament_matches').insert(inserts);
-      }
-
-      placeholdersEnsuredRef.current = true;
-    } catch (e) {
-      console.error('Placeholder creation failed:', e);
-    }
-  };
-
-  // Turnuva ilerlemede ise placeholder'ları bir defa oluştur
-  useEffect(() => {
-    if (!tournamentId || !currentTournament || currentTournament.status !== 'in_progress') return;
-    if (placeholdersEnsuredRef.current) return;
-
-    const r2Exists = matches.some(m => m.round === 2);
-    const r3Exists = matches.some(m => m.round === 3);
-    if (r2Exists && r3Exists) {
-      placeholdersEnsuredRef.current = true;
-      return;
-    }
-    ensureNextRoundPlaceholders();
-  }, [tournamentId, currentTournament?.status, matches]);
+// Removed client-side placeholder creation to prevent duplicate matches
 
   // Çeyrek finallerin kazananları oluşur oluşmaz yarı final slotlarını doldur; 
   // Yarı finaller tamamlanınca final slotlarını doldur (hemen)
@@ -525,8 +485,26 @@ const TournamentBracketPage = () => {
     );
   }
 
-  const matchesByRound = organizeMatchesByRound(matches);
-  const pendingRounds = matches.filter(m => m.status === 'pending').map(m => m.round);
+  const uniqueMatches = useMemo(() => {
+    const map = new Map<string, any>();
+    for (const m of matches) {
+      const key = `${m.round}-${m.match_number}`;
+      const ex = map.get(key);
+      if (!ex) { map.set(key, m); continue; }
+      const rank = (s: string) => s === 'in_progress' ? 2 : s === 'completed' ? 1 : 0;
+      if (rank(m.status) > rank(ex.status)) {
+        map.set(key, m);
+      } else if (rank(m.status) === rank(ex.status)) {
+        const exTime = (ex.updated_at || ex.created_at || '') as string;
+        const mTime = (m.updated_at || m.created_at || '') as string;
+        if (mTime > exTime) map.set(key, m);
+      }
+    }
+    return Array.from(map.values());
+  }, [matches]);
+
+  const matchesByRound = organizeMatchesByRound(uniqueMatches);
+  const pendingRounds = uniqueMatches.filter(m => m.status === 'pending').map(m => m.round);
   const nextPendingRound = pendingRounds.length ? Math.min(...pendingRounds) : null;
 
   const MatchCard = ({ match, roundNumber }: { match: any, roundNumber: number }) => {
