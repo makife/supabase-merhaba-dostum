@@ -2312,16 +2312,17 @@ useEffect(() => {
           // Maç statüsünü kontrol et
           const { data: matchData } = await supabase
             .from('tournament_matches')
-            .select('created_at, status')
+            .select('updated_at, created_at, status')
             .eq('id', tournamentMatch.id)
             .single();
             
           if (matchData && matchData.status === 'in_progress') {
-            // ✅ created_at kullan - bu hiç değişmez ve tüm oyuncular için aynı
+            // ✅ updated_at kullan - maç başlatıldığı anı temsil eder
             if (!serverMatchStartRef.current) {
-              // Maç started_at yoksa, başlatma zamanını ayarla (5 saniye ekle başlatma için)
-              serverMatchStartRef.current = new Date(matchData.created_at).getTime() + 5000;
-              console.log('📌 Tournament match start time fixed:', new Date(serverMatchStartRef.current).toISOString());
+              // Maç başlatma zamanını ayarla (küçük bir tampon ekle)
+              const startSource = matchData.updated_at || matchData.created_at;
+              serverMatchStartRef.current = new Date(startSource).getTime() + 2000;
+              console.log('📌 Tournament match start time fixed (updated_at):', new Date(serverMatchStartRef.current).toISOString());
             }
             
             const matchStartTime = serverMatchStartRef.current!;
