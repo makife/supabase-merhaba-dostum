@@ -2376,18 +2376,18 @@ useEffect(() => {
       const elapsed = Math.floor((Date.now() - startTs) / 1000);
       const remaining = Math.max(0, (currentRoom.time_limit || 120) - elapsed);
       
-      // 2 saniye toleransla senkronize et
-      if (Math.abs(timeLeftRef.current - remaining) > 2) {
+      // 1 saniye toleransla senkronize et (daha hassas)
+      if (Math.abs(timeLeftRef.current - remaining) > 1) {
         timeLeftRef.current = remaining;
         setDisplayTime(remaining);
-        console.log(`🔄 ${gameMode} timer synced:`, remaining, 'seconds');
+        console.log(`🔄 ${gameMode} timer synced:`, remaining, 'seconds (prev:', timeLeftRef.current, ')');
       }
     };
 
     console.log('⏱️ Timer sync başlatılıyor - mode:', gameMode, 'started_at:', currentRoom.started_at);
     
     syncTimer();
-    syncInterval = setInterval(syncTimer, 2000); // Daha sık sync
+    syncInterval = setInterval(syncTimer, 1000); // Her saniye sync
 
     return () => {
       if (syncInterval) clearInterval(syncInterval);
