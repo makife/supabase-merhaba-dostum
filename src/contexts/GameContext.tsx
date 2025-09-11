@@ -1414,6 +1414,11 @@ useEffect(() => {
 }, async (payload: any) => {
   console.log('🔡 ===== REAL-TIME EVENT =====');
   console.log('🔡 Event Type:', payload.eventType);
+  console.log('🔡 Payload:', payload);
+  console.log('🔡 Old data:', payload.old);
+  console.log('🔡 New data:', payload.new);
+  console.log('🔡 Room ID:', currentRoom.id);
+  console.log('🔡 Current user:', user?.id?.slice(-8));
   
   // ✅ SADECE INSERT VE DELETE'TE FETCH ET, UPDATE'TE ETMEYİN
   if (payload.eventType === 'INSERT' || payload.eventType === 'DELETE' || payload.eventType === 'UPDATE') {
@@ -1454,10 +1459,13 @@ useEffect(() => {
   // DELETE event - tip güvenli erişim  
   if (payload.eventType === 'DELETE' && isValidParticipantPayload(payload.old)) {
     const oldParticipant = payload.old as GameParticipantPayload;
-    console.log('🚪 OYUNCU AYRILDI!');
+    console.log('🚪 ====== OYUNCU AYRILDI EVENT ======');
     console.log('🚪 Ayrılan oyuncu:', oldParticipant.user_id?.slice(-8));
     console.log('🚪 Mevcut oyuncu:', user?.id?.slice(-8));
     console.log('🚪 Room status:', currentRoom.status);
+    console.log('🚪 Is bot?:', oldParticipant.is_bot);
+    console.log('🚪 Game mode:', getGameModeFromRoom(currentRoom));
+    console.log('🚪 Self exit check:', oldParticipant.user_id === user?.id);
     
     const gameMode = getGameModeFromRoom(currentRoom);
     
@@ -1494,14 +1502,20 @@ useEffect(() => {
         }
       }
     } else {
-      // Normal game logic
+      // Normal game logic (private-room & random-match)
+      console.log('🔍 Normal game disconnect check - Is bot?:', oldParticipant.is_bot);
+      console.log('🔍 User ID exists?:', !!oldParticipant.user_id);
+      console.log('🔍 Not self?:', oldParticipant.user_id !== user?.id);
+      console.log('🔍 Room active?:', currentRoom.status === 'active');
+      
       if (!oldParticipant.is_bot && 
           oldParticipant.user_id && 
           oldParticipant.user_id !== user?.id && 
           currentRoom.status === 'active') {
         
-        console.log('🏆 RAKIP AYRILDI - SEN KAZANDIN!');
+        console.log('🏆 ======= RAKIP AYRILDI - SEN KAZANDIN! =======');
         console.log('🏆 Ayrılan:', oldParticipant.user_id?.slice(-8), 'Kazanan:', user?.id?.slice(-8));
+        console.log('🏆 Game mode:', getGameModeFromRoom(currentRoom));
         
         await applyDisconnectPenalty(oldParticipant.user_id, false);
         
