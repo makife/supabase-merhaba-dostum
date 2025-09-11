@@ -300,25 +300,34 @@ const TournamentBracketPage = () => {
         const finalMatch = roundMatches.find(m => m.round === 3);
         const championId = finalMatch?.winner_id;
         
-        // Sadece gerçek oyuncular için sonuç ekranları göster
-        setTimeout(() => {
-          if (championId === user?.id) {
-            // Kullanıcı şampiyonsa şampiyonluk ekranını göster
-            setShowChampion(true);
-            playSpecialSound('/sampiyon.mp3', 0.8);
-          } else if (finalMatch && (finalMatch.player1_id === user?.id || finalMatch.player2_id === user?.id)) {
-            // Kullanıcı finalde kaybettiyse elenme ekranını göster
-            setShowEliminated(true);
-          }
-          // Bot ise hiçbir şey gösterme
-        }, 2000);
+        // Turnuva tamamlandı; kartlar final maçı bitince gösterildi
+        console.log('🏆 Tournament completed!');
       }
     } catch (error) {
       console.error('Error checking round completion:', error);
     }
   };
  
-  // Yeni: Maçlar güncellenince tur ilerletme (başlatmayı sayaca bırak) ve final sonrası sonuç ekranı
+  // Final maçı bitince hemen şampiyon/elenen kartlarını göster
+  useEffect(() => {
+    if (!tournamentId || !currentTournament || !user) return;
+    
+    // Final maçı tamamlandı mı kontrol et
+    const finalMatch = matches.find(m => m.round === 3 && m.status === 'completed');
+    if (!finalMatch || !finalMatch.winner_id) return;
+    
+    const championId = finalMatch.winner_id;
+    
+    // Sadece maç bitince bir kez göster (turnuva status'ü için beklemeyiz)
+    if (championId === user.id && !showChampion) {
+      setShowChampion(true);
+      playSpecialSound('/sampiyon.mp3', 0.8);
+    } else if ((finalMatch.player1_id === user.id || finalMatch.player2_id === user.id) && championId !== user.id && !showEliminated) {
+      setShowEliminated(true);
+    }
+  }, [matches, tournamentId, currentTournament, user, playSpecialSound, showChampion, showEliminated]);
+
+  // Tur ilerletme mantığı (şampiyon kartlarından ayrı)
   useEffect(() => {
     if (!tournamentId || !currentTournament) return;
     const round = currentTournament.current_round || 1;
@@ -330,18 +339,12 @@ const TournamentBracketPage = () => {
     const allCompleted = roundMatches.every(m => m.status === 'completed');
     if (!allCompleted) return;
 
-    // Final turu tamamlandıysa sonucu göster
+    // Final turu tamamlandıysa turnuvayı bitir
     if (round === 3) {
-      const finalMatch = matches.find(m => m.round === 3);
-      const championId = finalMatch?.winner_id;
-      setTimeout(() => {
-        if (championId === user?.id) {
-          setShowChampion(true);
-          playSpecialSound('/sampiyon.mp3', 0.8);
-        } else if (finalMatch && (finalMatch.player1_id === user?.id || finalMatch.player2_id === user?.id)) {
-          setShowEliminated(true);
-        }
-      }, 500);
+      supabase
+        .from('tournaments')
+        .update({ status: 'completed', finished_at: new Date().toISOString() })
+        .eq('id', tournamentId);
       return;
     }
 
@@ -362,15 +365,12 @@ const TournamentBracketPage = () => {
             if (result && (result as any).success) {
               fetchTournamentDetails(tournamentId);
             }
-          } else {
-            // Sonraki tur zaten var; maçlar pending ise geri sayım onları başlatacak
-            // Burada herhangi bir işlem yapmıyoruz
           }
         } catch (e) {
           console.error('Auto-advance error:', e);
         }
       });
-  }, [matches, currentTournament?.current_round, tournamentId, user, playSpecialSound]);
+  }, [matches, currentTournament?.current_round, tournamentId]);
 
   // Countdown for match start (senkronize, DB zamanına göre)
   useEffect(() => {
@@ -475,39 +475,6 @@ const TournamentBracketPage = () => {
     }
    }, [matches, user, navigatedToGame, tournamentId, navigate]);
 
-  // Turnuva tamamlandıysa (geç katılanlar için) final sonucuna göre ekranı göster
-  useEffect(() => {
-    if (!tournamentId || !currentTournament) return;
-    if (currentTournament.status !== 'completed') return;
-
-    const fetchFinal = async () => {
-      try {
-        const { data: final } = await supabase
-          .from('tournament_matches')
-          .select('*')
-          .eq('tournament_id', tournamentId)
-          .eq('round', 3)
-          .eq('match_number', 1)
-          .order('updated_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (!final) return;
-        const championId = final.winner_id;
-        if (!championId) return;
-
-        if (user?.id && championId === user.id) {
-          setShowChampion(true);
-        } else if (user?.id && (final.player1_id === user.id || final.player2_id === user.id)) {
-          setShowEliminated(true);
-        }
-      } catch (e) {
-        console.error('Final match fetch failed:', e);
-      }
-    };
-
-    fetchFinal();
-  }, [currentTournament?.status, tournamentId, user]);
 
   // Şampiyon ekranında 10 saniye sonra otomatik listeye dön
   useEffect(() => {
