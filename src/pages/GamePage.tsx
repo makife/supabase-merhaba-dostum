@@ -366,8 +366,10 @@ useEffect(() => {
   const [timeoutCountdown, setTimeoutCountdown] = useState(30);
   const [showResults, setShowResults] = useState(false);
   
-  // Rakip ayrıldığında sonuç kartını göster
+  // Rakip ayrıldığında sonuç kartını göster (turnuvada devre dışı)
   useEffect(() => {
+    if (gameMode === 'tournament') return; // Turnuva modunda disconnect ile kazanım gösterme!
+
     const handler = (e: any) => {
       console.log('🚪 Rakip oyundan ayrıldı eventi alındı');
       setDisconnectWin(true);
@@ -391,9 +393,10 @@ useEffect(() => {
       playSound('gameWin');
       setTimeout(() => playCelebrationSound(), 500);
     };
+
     window.addEventListener('playerDisconnected', handler as EventListener);
     return () => window.removeEventListener('playerDisconnected', handler as EventListener);
-  }, [playSound, playCelebrationSound, toast]);
+  }, [gameMode, playSound, playCelebrationSound, toast]);
 
   // Fallback: Katılımcı azalınca disconnect'i yakala ve oyunu bitir
   const disconnectHandledRef = useRef(false);
