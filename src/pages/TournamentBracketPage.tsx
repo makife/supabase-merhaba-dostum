@@ -227,6 +227,51 @@ const TournamentBracketPage = () => {
       console.error('Error checking round completion:', error);
     }
   };
+ 
+  // Yeni: Maçlar güncellenince tur ilerletme ve sonraki turu başlatma
+  useEffect(() => {
+    if (!tournamentId || !currentTournament) return;
+    const round = currentTournament.current_round || 1;
+
+    // Bu turdaki tüm maçlar tamamlandı mı?
+    const roundMatches = matches.filter(m => m.round === round);
+    if (roundMatches.length === 0) return;
+
+    const allCompleted = roundMatches.every(m => m.status === 'completed');
+    if (!allCompleted) return;
+
+    // Çift çağrıyı önlemek için: bir sonraki tur zaten oluşturulmuş mu?
+    supabase
+      .from('tournament_matches')
+      .select('id')
+      .eq('tournament_id', tournamentId)
+      .eq('round', round + 1)
+      .limit(1)
+      .then(async ({ data }) => {
+        try {
+          if (!data || data.length === 0) {
+            // Tur ilerlet ve yeni turu başlat
+            const { data: result } = await supabase.rpc('advance_tournament_round', {
+              p_tournament_id: tournamentId
+            });
+            if (result && (result as any).success) {
+              setTimeout(() => {
+                fetchTournamentDetails(tournamentId);
+                startAllMatches(round + 1);
+              }, 800);
+            }
+          } else {
+            // Bir sonraki tur var ama beklemede olabilir, doğrudan başlat
+            const hasPendingNext = matches.some(m => m.round === round + 1 && m.status === 'pending');
+            if (hasPendingNext) {
+              startAllMatches(round + 1);
+            }
+          }
+        } catch (e) {
+          console.error('Auto-advance error:', e);
+        }
+      });
+  }, [matches, currentTournament?.current_round, tournamentId]);
 
   // Countdown for match start
   useEffect(() => {
