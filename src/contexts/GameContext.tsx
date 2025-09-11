@@ -1434,13 +1434,14 @@ useEffect(() => {
     const gameMode = getGameModeFromRoom(currentRoom);
     
     if (gameMode === 'tournament') {
-      // Tournament logic
+      // Tournament logic - sadece ayrılmayan kişi win mesajı alır
       if (!oldParticipant.is_bot && 
           oldParticipant.user_id && 
           oldParticipant.user_id !== user?.id && 
           currentRoom.status === 'active') {
         
         console.log('🏆 TURNUVA: Rakip ayrıldı, oyunu sonlandır');
+        console.log('🏆 Ayrılan:', oldParticipant.user_id?.slice(-8), 'Kazanan:', user?.id?.slice(-8));
         
         // Turnuva maçında rakip ayrıldı, kullanıcı kazanır
         await supabase
@@ -1472,6 +1473,7 @@ useEffect(() => {
           currentRoom.status === 'active') {
         
         console.log('🏆 RAKIP AYRILDI - SEN KAZANDIN!');
+        console.log('🏆 Ayrılan:', oldParticipant.user_id?.slice(-8), 'Kazanan:', user?.id?.slice(-8));
         
         await applyDisconnectPenalty(oldParticipant.user_id, false);
         
@@ -1486,8 +1488,9 @@ useEffect(() => {
         
         console.log('🗑️ ODA SİLİNİYOR');
         
-        // Notify UI to show win card - disconnect handling
-        console.log('📢 Dispatching playerDisconnected event');
+        // Notify UI to show win card - disconnect handling ONLY for the winner (not the leaver)
+        console.log('📢 Dispatching playerDisconnected event to winner only');
+        // Event'i sadece kazanan kişi (ayrılmayan) alır
         window.dispatchEvent(new CustomEvent('playerDisconnected', {
           detail: { winner: 'player', reason: 'opponent_left' }
         }));
