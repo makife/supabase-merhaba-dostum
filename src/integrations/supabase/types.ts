@@ -777,6 +777,7 @@ export type Database = {
           total_score: number | null
           total_words: number | null
           total_words_created: number | null
+          tournament_wins: number | null
           updated_at: string | null
           username: string | null
           win_count: number | null
@@ -816,6 +817,7 @@ export type Database = {
           total_score?: number | null
           total_words?: number | null
           total_words_created?: number | null
+          tournament_wins?: number | null
           updated_at?: string | null
           username?: string | null
           win_count?: number | null
@@ -855,6 +857,7 @@ export type Database = {
           total_score?: number | null
           total_words?: number | null
           total_words_created?: number | null
+          tournament_wins?: number | null
           updated_at?: string | null
           username?: string | null
           win_count?: number | null
