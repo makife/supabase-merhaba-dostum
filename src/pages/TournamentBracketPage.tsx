@@ -372,45 +372,64 @@ const TournamentBracketPage = () => {
       });
   }, [matches, currentTournament?.current_round, tournamentId, user, playSpecialSound]);
 
-  // Countdown for match start (sadece mevcut tur ve in_progress durumunda)
+  // Countdown for match start (senkronize, DB zamanına göre)
   useEffect(() => {
     if (!currentTournament || currentTournament.status !== 'in_progress') return;
     if (matches.length === 0) return;
 
-    // Hedef turu belirle: PENDING olan en küçük round
+    // PENDING olan en küçük round'u hedef al
     const pendingMatches = matches.filter(m => m.status === 'pending');
     if (pendingMatches.length === 0) {
       if (countdownIntervalRef.current) {
         clearInterval(countdownIntervalRef.current);
         countdownIntervalRef.current = null;
       }
+      countdownGuard.current = { active: false, round: null };
+      setCountdown(0);
       return;
     }
-    const targetRound = Math.min(...pendingMatches.map(m => m.round));
 
-    // Aynı tur için geri sayımı bir kez başlat
+    const targetRound = Math.min(...pendingMatches.map(m => m.round));
+    const targetRoundPending = pendingMatches
+      .filter(m => m.round === targetRound)
+      // Oyuncular belirlenmiş maçları baz al (boş slotlar sahte başlangıç yaratmasın)
+      .filter(m => !!m.player1_id && !!m.player2_id);
+
+    if (targetRoundPending.length === 0) return;
+
+    // Senkron başlangıç zamanı: o round'daki pending maçların en erken updated_at/created_at zamanı
+    const anchorIso = targetRoundPending
+      .map(m => (m.updated_at || m.created_at) as string)
+      .filter(Boolean)
+      .sort()[0];
+    const anchorTs = anchorIso ? new Date(anchorIso).getTime() : Date.now();
+
+    // Aynı tur için geri sayımı bir kez başlat; değeri DB anchor'una göre hesapla
     if (!countdownGuard.current.active || countdownGuard.current.round !== targetRound) {
       countdownGuard.current = { active: true, round: targetRound };
-      setCountdown(10);
 
       if (countdownIntervalRef.current) {
         clearInterval(countdownIntervalRef.current);
       }
-      countdownIntervalRef.current = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            if (countdownIntervalRef.current) {
-              clearInterval(countdownIntervalRef.current);
-              countdownIntervalRef.current = null;
-            }
-            // Geri sayım tamamlandı -> hedef turdaki tüm pending maçları başlat
-            startAllMatches(targetRound);
-            countdownGuard.current = { active: false, round: null };
-            return 0;
+      const tick = () => {
+        const elapsed = Math.floor((Date.now() - anchorTs) / 1000);
+        const remaining = Math.max(0, 10 - elapsed);
+        setCountdown(remaining);
+
+        if (remaining === 0) {
+          if (countdownIntervalRef.current) {
+            clearInterval(countdownIntervalRef.current);
+            countdownIntervalRef.current = null;
           }
-          return prev - 1;
-        });
-      }, 1000);
+          // Geri sayım tamamlandı -> hedef turdaki tüm pending maçları başlat (yalnızca bir kez)
+          startAllMatches(targetRound);
+          countdownGuard.current = { active: false, round: null };
+        }
+      };
+
+      // Hemen bir kez çalıştır, sonra her saniye güncelle
+      tick();
+      countdownIntervalRef.current = setInterval(tick, 1000);
     }
   }, [matches, currentTournament?.status]);
 
@@ -455,6 +474,40 @@ const TournamentBracketPage = () => {
       navigate(`/game?match=${myInProgressMatch.id}&tournament=${tournamentId}`);
     }
    }, [matches, user, navigatedToGame, tournamentId, navigate]);
+
+  // Turnuva tamamlandıysa (geç katılanlar için) final sonucuna göre ekranı göster
+  useEffect(() => {
+    if (!tournamentId || !currentTournament) return;
+    if (currentTournament.status !== 'completed') return;
+
+    const fetchFinal = async () => {
+      try {
+        const { data: final } = await supabase
+          .from('tournament_matches')
+          .select('*')
+          .eq('tournament_id', tournamentId)
+          .eq('round', 3)
+          .eq('match_number', 1)
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!final) return;
+        const championId = final.winner_id;
+        if (!championId) return;
+
+        if (user?.id && championId === user.id) {
+          setShowChampion(true);
+        } else if (user?.id && (final.player1_id === user.id || final.player2_id === user.id)) {
+          setShowEliminated(true);
+        }
+      } catch (e) {
+        console.error('Final match fetch failed:', e);
+      }
+    };
+
+    fetchFinal();
+  }, [currentTournament?.status, tournamentId, user]);
 
   // Şampiyon ekranında 10 saniye sonra otomatik listeye dön
   useEffect(() => {
