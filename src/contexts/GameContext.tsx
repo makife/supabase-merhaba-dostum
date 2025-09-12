@@ -120,7 +120,7 @@ const dedupeParticipants = (list: GameParticipant[], gameMode?: string): GamePar
   for (const p of list) {
     if (p.is_bot) {
       // Random-match'te bot'a izin verme
-      if (gameMode === 'random-match') continue;
+      if (gameMode?.startsWith('random-match')) continue;
       // Diğer modlarda sadece tek bot'a izin ver
       if (!botEntry) botEntry = p as GameParticipant;
       continue;
@@ -134,7 +134,7 @@ const dedupeParticipants = (list: GameParticipant[], gameMode?: string): GamePar
   const realUsers = Array.from(usersMap.values());
   
   // Random-match: Sadece gerçek oyuncular (max 2)
-  if (gameMode === 'random-match') return realUsers.slice(0, 2);
+  if (gameMode?.startsWith('random-match')) return realUsers.slice(0, 2);
   
   // Diğer modlar: Gerçek oyuncular + opsiyonel bot
   if (realUsers.length >= 2) return realUsers.slice(0, 2);
@@ -1460,7 +1460,7 @@ useEffect(() => {
   fetchParticipants(currentRoom.id);
 
   const currentGameMode = getGameModeFromRoom(currentRoom);
-  const presenceGraceUntil = Date.now() + 3000; // 3s grace to avoid false disconnects at start
+  const presenceGraceUntil = Date.now() + 7000; // 7s grace to avoid false disconnects at start (mobile friendly)
 
   const channel = supabase
     .channel(`room-${currentRoom.id}`, { config: { presence: { key: `user-${user.id}` } } })
@@ -1496,7 +1496,7 @@ useEffect(() => {
       const gameMode = getGameModeFromRoom(currentRoom);
       console.log('🎮 Game mode for participant join:', gameMode);
       
-      if (gameMode === 'random-match') {
+      if (gameMode?.startsWith('random-match')) {
         console.log('✅ RASTGELE OYUN EŞLEŞME BAŞARILI!');
         toast({
           title: '🎯 Eşleşme Tamamlandı!',
@@ -1666,8 +1666,15 @@ useEffect(() => {
             .flat()
             .filter((p: any) => p.user_id && p.user_id !== user?.id);
           
-          if (otherPlayers.length === 0 && currentRoom.status === 'active') {
-            console.log('🏆 Gerçek rakip yok - kazandın!');
+          // Ek DB doğrulaması: odadaki gerçek oyuncu sayısı
+          const { count: realCount } = await supabase
+            .from('game_participants')
+            .select('user_id', { count: 'exact', head: true } as any)
+            .eq('room_id', currentRoom.id)
+            .eq('is_bot', false);
+          
+          if (currentRoom.status === 'active' && ((otherPlayers.length === 0) || ((realCount ?? 0) <= 1))) {
+            console.log('🏆 Gerçek rakip yok - kazandın! (presence+DB doğrulandı)');
             
             if (applyWinBonus && user?.id) {
               await applyWinBonus(user?.id, 50);
@@ -1697,6 +1704,8 @@ useEffect(() => {
             }));
             
             // Oda durumunu temizlemiyoruz; UI sonuç ekranı açık kalmalı
+          } else {
+            console.log('✅ Leave event false positive - rakip hala mevcut (presence or DB)');
           }
         }, 10000);
       }

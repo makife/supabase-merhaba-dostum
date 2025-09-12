@@ -81,7 +81,7 @@ const GamePage = ({
   };
   
   const { user } = useAuth();
-  const { consumeCredit, isPremium } = useUser();
+  const { consumeCredit, isPremium, addBonusCredits } = useUser();
   const { hasPurchased, settings } = useUserPurchases();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -370,7 +370,7 @@ useEffect(() => {
   useEffect(() => {
     if (gameMode === 'tournament') return; // Turnuva modunda disconnect ile kazanım gösterme!
 
-    const handler = (e: any) => {
+    const handler = async (e: any) => {
       const evtRoomId = e?.detail?.roomId;
       if (!evtRoomId || evtRoomId !== currentRoom?.id) {
         console.log('🚫 Farklı odaya ait disconnect eventi yok sayıldı', { evtRoomId, current: currentRoom?.id });
@@ -394,6 +394,24 @@ useEffect(() => {
         duration: 3000,
       });
       
+      // Çok erken kopan eşleşmelerde hak iadesi (premium değilse)
+      try {
+        if (!isPremium) {
+          const earlyDc = Date.now() - gameStartTime < 15000; // 15s altında
+          const noPlay = playerWordsWithScores.length === 0 && opponentWordsWithScores.length === 0;
+          if (earlyDc || noPlay) {
+            await addBonusCredits(1);
+            toast({
+              title: '🎟 Hak iade edildi',
+              description: 'Eşleşme hemen koptuğu için oyun hakkınız iade edildi.',
+              duration: 2500,
+            });
+          }
+        }
+      } catch (err) {
+        console.log('Credit refund skipped/failed:', err);
+      }
+      
       // Ses efekti çal
       playSound('gameWin');
       setTimeout(() => playCelebrationSound(), 500);
@@ -401,7 +419,7 @@ useEffect(() => {
 
     window.addEventListener('playerDisconnected', handler as EventListener);
     return () => window.removeEventListener('playerDisconnected', handler as EventListener);
-  }, [gameMode, playSound, playCelebrationSound, toast, currentRoom?.id]);
+  }, [gameMode, playSound, playCelebrationSound, toast, currentRoom?.id, isPremium, playerWordsWithScores.length, opponentWordsWithScores.length, addBonusCredits]);
 
   // Fallback: Katılımcı azalınca disconnect'i yakala ve oyunu bitir
   const disconnectHandledRef = useRef(false);
