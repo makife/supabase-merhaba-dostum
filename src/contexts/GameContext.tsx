@@ -110,8 +110,8 @@ const isValidParticipantPayload = (payload: any): payload is GameParticipantPayl
   return payload && typeof payload === 'object';
 };
 
-// Katılımcıları tekilleştir (aynı kullanıcıya ait birden fazla satırı ve birden fazla botu engelle)
-const dedupeParticipants = (list: GameParticipant[]): GameParticipant[] => {
+// Katılımcıları tekilleştir - Random-match'te sadece gerçek oyuncular, diğer modlarda bot+oyuncu
+const dedupeParticipants = (list: GameParticipant[], gameMode?: string): GameParticipant[] => {
   if (!Array.isArray(list)) return [];
 
   const usersMap = new Map<string, GameParticipant>();
@@ -119,7 +119,9 @@ const dedupeParticipants = (list: GameParticipant[]): GameParticipant[] => {
 
   for (const p of list) {
     if (p.is_bot) {
-      // Sadece tek bir bot'a izin ver
+      // Random-match'te bot'a izin verme
+      if (gameMode === 'random-match') continue;
+      // Diğer modlarda sadece tek bot'a izin ver
       if (!botEntry) botEntry = p as GameParticipant;
       continue;
     }
@@ -130,7 +132,11 @@ const dedupeParticipants = (list: GameParticipant[]): GameParticipant[] => {
   }
 
   const realUsers = Array.from(usersMap.values());
-  // Öncelik: gerçek oyuncular -> sonra varsa tek bot
+  
+  // Random-match: Sadece gerçek oyuncular (max 2)
+  if (gameMode === 'random-match') return realUsers.slice(0, 2);
+  
+  // Diğer modlar: Gerçek oyuncular + opsiyonel bot
   if (realUsers.length >= 2) return realUsers.slice(0, 2);
   if (realUsers.length === 1) return botEntry ? [realUsers[0], botEntry] : realUsers;
   return botEntry ? [botEntry] : [];
@@ -569,16 +575,27 @@ const fetchParticipants = useCallback(
       }
 
       if (data) {
+        // RoomId'den game mode'u al ve buna göre dedupe et
+        const { data: roomData } = await supabase
+          .from('game_rooms')
+          .select('game_mode')
+          .eq('id', roomId)
+          .single();
+          
+        const gameMode = roomData?.game_mode || 'unknown';
+        const dedupedData = dedupeParticipants(data as GameParticipant[], gameMode);
+        
         console.log('✅ Participants güncellenecek:', {
-          count: data.length,
-          details: data.map(p => ({
+          count: dedupedData.length,
+          gameMode: gameMode,
+          details: dedupedData.map(p => ({
             id: p.user_id?.slice(-8) || 'null',
             isBot: p.is_bot,
             username: (p as any).profiles?.username || 'No name'
           }))
         });
         
-        setParticipants(data as GameParticipant[]);
+        setParticipants(dedupedData);
       }
     } catch (error) {
       console.error('❌ fetchParticipants error:', error);

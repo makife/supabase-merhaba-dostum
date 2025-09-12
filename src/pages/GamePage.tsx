@@ -2011,11 +2011,11 @@ useEffect(() => {
         
         console.log('👥 Current participants after room setup:', participants?.length || 0);
         
-        // If only one participant, add AI opponent
-        if (participants && participants.length === 1) {
-          console.log('🤖 Adding AI opponent...');
-          await addAIOpponent();
-        }
+        // Random-match'te bot ekleme - KALDIRILDI! Sadece gerçek oyuncular
+        // if (participants && participants.length === 1) {
+        //   console.log('🤖 Adding AI opponent...');
+        //   await addAIOpponent();
+        // }
       }, 1000);
       
     } catch (error) {
