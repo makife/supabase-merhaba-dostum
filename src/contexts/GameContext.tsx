@@ -565,6 +565,11 @@ const fetchParticipants = useCallback(
  const createRoom = useCallback(async (gameMode: string, roomCode?: string): Promise<GameRoom | null> => {
   if (!user) return null;
 
+  // ✅ Önce önceki oda state'ini temizle
+  console.log('🔄 Önceki oda state\'i temizleniyor...');
+  setCurrentRoom(null);
+  setParticipants([]);
+
   const roomCodeToUse = roomCode || generateRoomCode();
   console.log('🏠 === ROOM CREATE DEBUG BAŞLADI ===');
   console.log('🏠 Game Mode:', gameMode);
