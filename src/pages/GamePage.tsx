@@ -415,15 +415,16 @@ useEffect(() => {
         participants.length > 0) { // En az bir kez participants yüklenmiş olmalı
       
       const realPlayers = participants.filter(p => !p.is_bot);
-      if (realPlayers.length < 2 && !disconnectHandledRef.current) {
-        console.log('🚪 Fallback disconnect detected - ending game');
+      const amIStillParticipant = participants.some(p => p.user_id === user?.id);
+      if (realPlayers.length < 2 && amIStillParticipant && !disconnectHandledRef.current) {
+        console.log('🚪 Fallback disconnect detected - ending game (current user still in room)');
         disconnectHandledRef.current = true;
         window.dispatchEvent(new CustomEvent('playerDisconnected', {
           detail: { winner: 'player', reason: 'opponent_left_fallback', roomId: currentRoom?.id }
         }));
       }
     }
-  }, [participants.length, gameMode, gameStarted, gameEnded]);
+  }, [participants.length, gameMode, gameStarted, gameEnded, user?.id]);
 
   // Oyunun gerçekten başladığını işaretle (participants yüklendikten sonra)
   useEffect(() => {
