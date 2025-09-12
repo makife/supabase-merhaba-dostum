@@ -1387,6 +1387,7 @@ useEffect(() => {
 
   console.log('🔗 Real-time bağlantı kuruluyor:', currentRoom.id.slice(-8));
   setIsConnected(true);
+  const pendingTimers: NodeJS.Timeout[] = [];
   
   // Participants'ı fetch et
   const fetchParticipants = async (roomId: string) => {
@@ -1495,7 +1496,7 @@ useEffect(() => {
 
       // ❗ Doğrudan bildirim/ödül verme. Mobilde sekme değişimi ve kısa kopmalarda
       // sahte DELETE gelebilir. 8sn sonra hem DB hem presence ile tekrar doğrula.
-      setTimeout(async () => {
+      const tId = setTimeout(async () => {
         try {
           // Oyun odası hâlâ aktif mi?
           const { data: roomState } = await supabase
@@ -1532,7 +1533,7 @@ useEffect(() => {
 
           // Anlık UI bildirimini tetikle
           window.dispatchEvent(new CustomEvent('playerDisconnected', {
-            detail: { winner: 'player', reason: 'opponent_left' }
+            detail: { winner: 'player', reason: 'opponent_left', roomId: currentRoom.id }
           }));
 
           if (gameMode === 'tournament') {
@@ -1584,6 +1585,7 @@ useEffect(() => {
           console.error('❌ DELETE doğrulama hatası:', err);
         }
       }, 8000);
+      pendingTimers.push(tId);
     }
   }
   
@@ -1646,7 +1648,7 @@ useEffect(() => {
             
             console.log('📢 Dispatching playerDisconnected event (connection lost)');
             window.dispatchEvent(new CustomEvent('playerDisconnected', {
-              detail: { winner: 'player', reason: 'connection_lost' }
+              detail: { winner: 'player', reason: 'connection_lost', roomId: currentRoom.id }
             }));
             
             // Oda durumunu temizlemiyoruz; UI sonuç ekranı açık kalmalı
@@ -1674,6 +1676,8 @@ useEffect(() => {
 
   return () => {
     console.log('🔌 Real-time bağlantı kesiliyor');
+    // Bekleyen doğrulama zamanlayıcılarını temizle
+    pendingTimers.forEach((t) => clearTimeout(t));
     supabase.removeChannel(channel);
   };
 }, [

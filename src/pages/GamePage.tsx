@@ -371,6 +371,11 @@ useEffect(() => {
     if (gameMode === 'tournament') return; // Turnuva modunda disconnect ile kazanım gösterme!
 
     const handler = (e: any) => {
+      const evtRoomId = e?.detail?.roomId;
+      if (!evtRoomId || evtRoomId !== currentRoom?.id) {
+        console.log('🚫 Farklı odaya ait disconnect eventi yok sayıldı', { evtRoomId, current: currentRoom?.id });
+        return;
+      }
       console.log('🚪 Rakip oyundan ayrıldı eventi alındı');
       setDisconnectWin(true);
       setWinner('player');
@@ -396,7 +401,7 @@ useEffect(() => {
 
     window.addEventListener('playerDisconnected', handler as EventListener);
     return () => window.removeEventListener('playerDisconnected', handler as EventListener);
-  }, [gameMode, playSound, playCelebrationSound, toast]);
+  }, [gameMode, playSound, playCelebrationSound, toast, currentRoom?.id]);
 
   // Fallback: Katılımcı azalınca disconnect'i yakala ve oyunu bitir
   const disconnectHandledRef = useRef(false);
@@ -414,7 +419,7 @@ useEffect(() => {
         console.log('🚪 Fallback disconnect detected - ending game');
         disconnectHandledRef.current = true;
         window.dispatchEvent(new CustomEvent('playerDisconnected', {
-          detail: { winner: 'player', reason: 'opponent_left_fallback' }
+          detail: { winner: 'player', reason: 'opponent_left_fallback', roomId: currentRoom?.id }
         }));
       }
     }
