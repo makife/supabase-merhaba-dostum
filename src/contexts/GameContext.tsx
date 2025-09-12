@@ -408,7 +408,7 @@ const generateRoomCode = () => {
       const { data: penaltyResult, error: rpcError } = await supabase
         .rpc('apply_disconnect_penalty', {
           p_offender_id: userId,
-          p_room_id: currentRoom.id
+          p_room_id: roomId
         });
       
       if (rpcError) {
@@ -951,6 +951,7 @@ const fetchParticipants = useCallback(
       .select('id')
       .eq('room_id', currentRoom.id)
       .eq('is_bot', true)
+      .limit(1)
       .single();
     
     if (existingAI) {
