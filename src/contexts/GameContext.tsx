@@ -1416,6 +1416,7 @@ useEffect(() => {
   fetchParticipants(currentRoom.id);
 
   const currentGameMode = getGameModeFromRoom(currentRoom);
+  const presenceGraceUntil = Date.now() + 3000; // 3s grace to avoid false disconnects at start
 
   const channel = supabase
     .channel(`room-${currentRoom.id}`, { config: { presence: { key: `user-${user.id}` } } })
@@ -1560,6 +1561,12 @@ useEffect(() => {
     .on('presence', { event: 'leave' }, async ({ key }) => {
       console.log('🚪 Presence leave event:', key);
       
+      // Ignore early false leaves during initial subscription grace period
+      if (Date.now() < presenceGraceUntil) {
+        console.log('⏳ Grace period - ignoring presence leave');
+        return;
+      }
+      
       if (currentRoom.status === 'active' && 
           key !== `user-${user?.id}`) {
         
@@ -1610,19 +1617,6 @@ useEffect(() => {
     .on('presence', { event: 'join' }, ({ key, newPresences }) => {
       console.log('👋 Player joined:', key, newPresences);
     })
-    .on('presence', { event: 'leave' }, async ({ key, leftPresences }) => {
-      console.log('🚪 Player left:', key, leftPresences);
-      const offenderId = (leftPresences?.[0] as any)?.user_id as string | undefined;
-      if (offenderId && offenderId !== user?.id && currentRoom.status === 'active') {
-        console.log('⚖️ Presence -> apply disconnect penalty for', offenderId?.slice(-8));
-        try {
-          await applyDisconnectPenalty(offenderId, currentRoom.id);
-        } catch (e) {
-          console.error('❌ Presence penalty error:', e);
-        }
-      }
-      // Önlem: Anında kazandınız tetiklenmesin. Doğrulama için yukarıdaki 10sn gecikmeli kontrol kullanılacak.
-    })
     .on('presence', { event: 'sync' }, () => {
       const state = channel.presenceState();
       console.log('🔄 Presence sync:', state);
@@ -1649,8 +1643,7 @@ useEffect(() => {
   toast,
   applyDisconnectPenalty, 
   applyWinBonus, 
-  getGameModeFromRoom,
-  participants.length // ✅ DÜZELTİLDİ: Tüm gerekli bağımlılıklar eklendi
+  getGameModeFromRoom
 ]);
 
 // Real-time rematch listener  
