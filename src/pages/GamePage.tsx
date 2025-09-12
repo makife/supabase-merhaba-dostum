@@ -118,6 +118,7 @@ const GamePage = ({
   const submissionLockRef = useRef(false);
   const timerStartedRef = useRef(false);
   const recentSubmissionsRef = useRef<Set<string>>(new Set());
+  const randomMatchInitRef = useRef(false);
   const serverMatchStartRef = useRef<number | null>(null);
   
   const [globalUsedWords, setGlobalUsedWords] = useState<Set<string>>(new Set());
@@ -1932,6 +1933,8 @@ useEffect(() => {
 
 // Load random match room data from URL parameters
 useEffect(() => {
+  if (randomMatchInitRef.current) return;
+  randomMatchInitRef.current = true;
   const loadRandomMatchData = async () => {
     const roomId = searchParams.get('room');
     

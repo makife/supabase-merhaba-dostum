@@ -677,8 +677,8 @@ const fetchParticipants = useCallback(
         fetchParticipants(room.id);
       }, 300);
     
-      // Only show room created notification when actually creating a room
-      if (currentRoomCode) {
+      // Only show room created notification for private rooms (avoid random-match spam)
+      if (gameMode.startsWith('private-room')) {
         toast({
           title: 'Oda Oluşturuldu',
           description: `Oda kodu: ${currentRoomCode}`,
