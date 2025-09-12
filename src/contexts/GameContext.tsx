@@ -380,10 +380,10 @@ const generateRoomCode = () => {
   }
 }, []);
 
-  // Apply disconnect penalty with notifications
+  // Apply disconnect penalty with notifications using secure RPC
   const applyDisconnectPenalty = useCallback(async (userId: string, isCurrentUser: boolean = false) => {
-    if (!userId) {
-      console.log('⚠️ applyDisconnectPenalty: userId boş');
+    if (!userId || !currentRoom?.id) {
+      console.log('⚠️ applyDisconnectPenalty: userId veya room_id boş');
       return;
     }
     
@@ -391,81 +391,52 @@ const generateRoomCode = () => {
       console.log('⚖️ ===== DISCONNECT PENALTY BAŞLADI =====');
       console.log('⚖️ Ceza uygulanacak oyuncu:', userId.slice(-8));
       console.log('⚖️ Current user mi?', isCurrentUser);
-      console.log('⚖️ Actual current user:', user?.id?.slice(-8));
+      console.log('⚖️ Room ID:', currentRoom.id.slice(-8));
     
       // Double check: Kendine ceza verme!
       if (userId === user?.id && !isCurrentUser) {
         console.log('🛡️ KORUNMA: Kendine ceza vermeyi engellendi!');
         return;
       }
-    
-      const { data: profile, error } = await supabase
+
+      // Önce kullanıcı adını alalım
+      const { data: profile } = await supabase
         .from('profiles')
-        .select('total_score, disconnect_count, username')
+        .select('username')
         .eq('id', userId)
         .single();
     
-      if (error) {
-        console.error('❌ Profile fetch error:', error);
-        console.error('❌ Error details:', {
-          code: error.code,
-          message: error.message,
-          details: error.details
+      // Güvenli RPC fonksiyonunu kullan
+      const { data: penaltyResult, error: rpcError } = await supabase
+        .rpc('apply_disconnect_penalty', {
+          p_offender_id: userId,
+          p_room_id: currentRoom.id
         });
-        return;
-      }
-    
-      if (!profile) {
-        console.error('❌ Profile bulunamadı:', userId.slice(-8));
-        return;
-      }
       
-      console.log('📊 Current profile data:', {
-        username: profile.username,
-        currentScore: profile.total_score,
-        disconnectCount: profile.disconnect_count
-      });
-    
-      const currentScore = profile.total_score || 0;
-      const disconnectCount = (profile.disconnect_count || 0) + 1;
-      const penaltyAmount = Math.min(50 + (disconnectCount * 10), 200);
-      const newScore = Math.max(0, currentScore - penaltyAmount);
-      
-      console.log('⚖️ Penalty calculation:', {
-        penaltyAmount,
-        oldScore: currentScore,
-        newScore,
-        newDisconnectCount: disconnectCount
-      });
-      
-      const { data: updateData, error: updateError } = await supabase
-        .from('profiles')
-        .update({ 
-          total_score: newScore,
-          disconnect_count: disconnectCount,
-          last_disconnect: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', userId)
-        .select();
-      
-      if (updateError) {
-        console.error('❌ Profile update error:', updateError);
-        console.error('❌ Update error details:', {
-          code: updateError.code,
-          message: updateError.message,
-          details: updateError.details
-        });
+      if (rpcError) {
+        console.error('❌ RPC penalty error:', rpcError);
         return;
       }
       
-      console.log('✅ Profile successfully updated:', updateData);
-      console.log('⚖️ ===== PENALTY APPLIED SUCCESSFULLY =====');
+      if (!penaltyResult || penaltyResult.length === 0) {
+        console.error('❌ RPC returned no results');
+        return;
+      }
+      
+      const result = penaltyResult[0];
+      
+      if (!result.applied) {
+        console.log('⚠️ Penalty not applied - user not authorized or not found');
+        return;
+      }
+      
+      console.log('✅ ===== PENALTY APPLIED SUCCESSFULLY =====');
       console.log('⚖️ Ceza uygulandı:', {
         userId: userId.slice(-8),
-        penaltyAmount,
-        newScore,
-        username: profile.username
+        penaltyAmount: result.penalty,
+        newScore: result.new_score,
+        disconnectCount: result.disconnect_count,
+        username: profile?.username
       });
     
       // Notifications
@@ -473,21 +444,21 @@ const generateRoomCode = () => {
         // Kendine ceza mesajı
         toast({
           title: '⚖️ Ayrılma Cezası',
-          description: `Oyundan ayrıldığınız için ${penaltyAmount} puan kaybettiniz`,
+          description: `Oyundan ayrıldığınız için ${result.penalty} puan kaybettiniz`,
           variant: 'destructive',
         });
       } else {
         // Rakip ayrıldı mesajı (kazanan için)
         toast({
           title: '🚪 Rakip Ayrıldı',
-          description: `${profile.username} oyundan ayrıldı ve ${penaltyAmount} puan cezası aldı.`,
+          description: `${profile?.username || 'Rakip'} oyundan ayrıldı ve ${result.penalty} puan cezası aldı.`,
         });
       }
     } catch (error) {
       console.error('❌ ===== PENALTY APPLICATION FAILED =====');
       console.error('❌ Ceza uygulama hatası:', error);
     }
-  }, [toast, user?.id]);
+  }, [toast, user?.id, currentRoom?.id]);
 
 
   // Apply win bonus
