@@ -1475,15 +1475,22 @@ useEffect(() => {
     
     const gameMode = getGameModeFromRoom(currentRoom);
     
-    if (gameMode === 'tournament') {
-      // Tournament logic - sadece ayrılmayan kişi win mesajı alır
-      if (!oldParticipant.is_bot && 
-          oldParticipant.user_id && 
-          oldParticipant.user_id !== user?.id && 
-          currentRoom.status === 'active') {
-        
+    // ✅ ANLIK BILDIRIM - Database event ile tetiklenen güvenilir bildirim
+    if (!oldParticipant.is_bot && 
+        oldParticipant.user_id && 
+        oldParticipant.user_id !== user?.id && 
+        currentRoom.status === 'active') {
+      
+      console.log('🏆 ===== ANLIK DISCONNECT DETECTED =====');
+      console.log('🏆 Ayrılan:', oldParticipant.user_id?.slice(-8), 'Kazanan:', user?.id?.slice(-8));
+      
+      // Anlık UI bildirimini tetikle
+      window.dispatchEvent(new CustomEvent('playerDisconnected', {
+        detail: { winner: 'player', reason: 'opponent_left' }
+      }));
+      
+      if (gameMode === 'tournament') {
         console.log('🏆 TURNUVA: Rakip ayrıldı, oyunu sonlandır');
-        console.log('🏆 Ayrılan:', oldParticipant.user_id?.slice(-8), 'Kazanan:', user?.id?.slice(-8));
         
         // Turnuva maçında rakip ayrıldı, kullanıcı kazanır
         await supabase
@@ -1495,33 +1502,17 @@ useEffect(() => {
           })
           .eq('id', currentRoom.id);
           
-        // Turnuva maçını da tamamlanmış olarak işaretle
         toast({
           title: '🏆 Turnuva Zaferi!',
           description: 'Rakip ayrıldı, siz kazandınız! +100 bonus puan.',
           duration: 4000,
         });
         
-        // Bonus puan ver
         if (user?.id) {
           await applyWinBonus(user.id, 100);
         }
-      }
-    } else {
-      // Normal game logic (private-room & random-match)
-      console.log('🔍 Normal game disconnect check - Is bot?:', oldParticipant.is_bot);
-      console.log('🔍 User ID exists?:', !!oldParticipant.user_id);
-      console.log('🔍 Not self?:', oldParticipant.user_id !== user?.id);
-      console.log('🔍 Room active?:', currentRoom.status === 'active');
-      
-      if (!oldParticipant.is_bot && 
-          oldParticipant.user_id && 
-          oldParticipant.user_id !== user?.id && 
-          currentRoom.status === 'active') {
-        
-        console.log('🏆 ======= RAKIP AYRILDI - SEN KAZANDIN! =======');
-        console.log('🏆 Ayrılan:', oldParticipant.user_id?.slice(-8), 'Kazanan:', user?.id?.slice(-8));
-        console.log('🏆 Game mode:', getGameModeFromRoom(currentRoom));
+      } else {
+        console.log('🏆 NORMAL OYUN: Rakip ayrıldı, kazandınız!');
         
         await applyDisconnectPenalty(oldParticipant.user_id, false);
         
@@ -1534,15 +1525,6 @@ useEffect(() => {
           });
         }
         
-        console.log('🗑️ ODA SİLİNİYOR');
-        
-        // Notify UI to show win card - disconnect handling ONLY for the winner (not the leaver)
-        console.log('📢 Dispatching playerDisconnected event to winner only');
-        // Event'i sadece kazanan kişi (ayrılmayan) alır
-        window.dispatchEvent(new CustomEvent('playerDisconnected', {
-          detail: { winner: 'player', reason: 'opponent_left' }
-        }));
-        
         await supabase
           .from('game_rooms')
           .update({
@@ -1551,8 +1533,6 @@ useEffect(() => {
             finished_at: new Date().toISOString()
           })
           .eq('id', currentRoom.id);
-        
-        // Oda durumunu temizlemiyoruz; UI sonuç ekranı açık kalmalı
       }
     }
   }

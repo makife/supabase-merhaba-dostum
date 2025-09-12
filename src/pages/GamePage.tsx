@@ -3550,6 +3550,7 @@ if (gameEnded) {
             ) : gameMode === 'private-room' ? (
     // ✅ ÖZEL ODA BUTONLARI - YENİ
     <div className="space-y-2">
+      {/* Disconnect durumunda rematch butonu gösterme */}
       {!disconnectWin && !rematchRequested && !waitingForRematchResponse && (
         <Button 
           onClick={() => {
