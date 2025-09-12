@@ -1496,13 +1496,15 @@ useEffect(() => {
 
       // ❗ Doğrudan bildirim/ödül verme. Mobilde sekme değişimi ve kısa kopmalarda
       // sahte DELETE gelebilir. 8sn sonra hem DB hem presence ile tekrar doğrula.
+      const eventRoomId = currentRoom.id; // capture room id at schedule time
+      const winnerUserId = user?.id || null; // capture winner id at schedule time
       const tId = setTimeout(async () => {
         try {
-          // Oyun odası hâlâ aktif mi?
+          // Oyun odası hâlâ aktif mi? (eventRoomId ile kontrol et)
           const { data: roomState } = await supabase
             .from('game_rooms')
             .select('status')
-            .eq('id', currentRoom.id)
+            .eq('id', eventRoomId)
             .single();
           if (roomState?.status !== 'active') {
             console.log('⛔ Oda aktif değil, DELETE işlenmeyecek');
@@ -1513,7 +1515,7 @@ useEffect(() => {
           const { data: participantRow } = await supabase
             .from('game_participants')
             .select('id')
-            .eq('room_id', currentRoom.id)
+            .eq('room_id', eventRoomId)
             .eq('user_id', oldParticipant.user_id)
             .maybeSingle();
 
@@ -1529,11 +1531,11 @@ useEffect(() => {
           }
 
           console.log('🏆 ===== DOĞRULANMIŞ DISCONNECT (DELETE) =====');
-          console.log('🏆 Ayrılan:', oldParticipant.user_id?.slice(-8), 'Kazanan:', user?.id?.slice(-8));
+          console.log('🏆 Ayrılan:', oldParticipant.user_id?.slice(-8), 'Kazanan:', winnerUserId?.slice(-8));
 
-          // Anlık UI bildirimini tetikle
+          // Anlık UI bildirimini tetikle (eventRoomId ile sabitle)
           window.dispatchEvent(new CustomEvent('playerDisconnected', {
-            detail: { winner: 'player', reason: 'opponent_left', roomId: currentRoom.id }
+            detail: { winner: 'player', reason: 'opponent_left', roomId: eventRoomId }
           }));
 
           if (gameMode === 'tournament') {
@@ -1544,10 +1546,10 @@ useEffect(() => {
               .from('game_rooms')
               .update({
                 status: 'finished',
-                winner_id: user?.id,
+                winner_id: winnerUserId,
                 finished_at: new Date().toISOString()
               })
-              .eq('id', currentRoom.id);
+              .eq('id', eventRoomId);
               
             toast({
               title: '🏆 Turnuva Zaferi!',
@@ -1555,16 +1557,16 @@ useEffect(() => {
               duration: 4000,
             });
             
-            if (user?.id) {
-              await applyWinBonus(user.id, 100);
+            if (winnerUserId) {
+              await applyWinBonus(winnerUserId, 100);
             }
           } else {
             console.log('🏆 NORMAL OYUN: Rakip ayrıldı, kazandınız!');
 
-            await applyDisconnectPenalty(oldParticipant.user_id, currentRoom.id);
+            await applyDisconnectPenalty(oldParticipant.user_id, eventRoomId);
             
-            if (user?.id) {
-              await applyWinBonus(user.id);
+            if (winnerUserId) {
+              await applyWinBonus(winnerUserId);
               toast({
                 title: '🏆 Kazandınız!',
                 description: 'Rakip oyundan ayrıldı. +100 bonus puan!',
@@ -1576,10 +1578,10 @@ useEffect(() => {
               .from('game_rooms')
               .update({
                 status: 'finished',
-                winner_id: user?.id || null,
+                winner_id: winnerUserId,
                 finished_at: new Date().toISOString()
               })
-              .eq('id', currentRoom.id);
+              .eq('id', eventRoomId);
           }
         } catch (err) {
           console.error('❌ DELETE doğrulama hatası:', err);
