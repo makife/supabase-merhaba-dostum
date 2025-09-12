@@ -85,26 +85,20 @@ const LoadingScreen = ({ onLoadingComplete }) => {
     <div className="loading-screen">
       {showErganImage ? (
         <div className="ergan-image-container" style={{
-          position: 'absolute',
+          position: 'fixed',
           top: 0,
           left: 0,
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: 'rgba(0, 0, 0, 0.9)',
+          width: '100vw',
+          height: '100vh',
           zIndex: 1000
         }}>
           <img 
             src="/ergan.jpg" 
             alt="Ergan" 
             style={{
-              maxWidth: '80%',
-              maxHeight: '80%',
-              objectFit: 'contain',
-              borderRadius: '15px',
-              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)'
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover'
             }}
           />
         </div>
