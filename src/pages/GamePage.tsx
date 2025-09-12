@@ -3593,36 +3593,38 @@ if (gameEnded) {
                 }} className="w-full">
                   Ana Menüye Dön
                 </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    playSound('buttonClick');
-                    resetGameForRematch();
-                    setGameGrid(generateRandomGrid());
-                    setSelectedLetters([]);
-                    setCurrentWord('');
-                    setUsedWords(new Set());
-                    setPlayerWords([]);
-                    setOpponentWords([]);
-                    setPlayerWordsWithScores([]);
-                    setOpponentWordsWithScores([]);
-                    setPlayerScore(0);
-                    setOpponentScore(0);
-                    timeLeftRef.current = gameType === 'timed' ? 120 : 0;
-                    setDisplayTime(timeLeftRef.current);
-                    setGameStarted(true);
-                    setGameEnded(false);
-                    setWinner(null);
-                    setTimeWarningPlayed(false);
-                    // Jokerler artık envanter sisteminden geliyor
-                    setSelectedJoker(null);
-                    setHighlightedLetters([]);
-                    setIsJokerActive(false);
-                  }} 
-                  className="w-full"
-                >
-                  Tekrar Oyna
-                </Button>
+                {!disconnectWin && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      playSound('buttonClick');
+                      resetGameForRematch();
+                      setGameGrid(generateRandomGrid());
+                      setSelectedLetters([]);
+                      setCurrentWord('');
+                      setUsedWords(new Set());
+                      setPlayerWords([]);
+                      setOpponentWords([]);
+                      setPlayerWordsWithScores([]);
+                      setOpponentWordsWithScores([]);
+                      setPlayerScore(0);
+                      setOpponentScore(0);
+                      timeLeftRef.current = gameType === 'timed' ? 120 : 0;
+                      setDisplayTime(timeLeftRef.current);
+                      setGameStarted(true);
+                      setGameEnded(false);
+                      setWinner(null);
+                      setTimeWarningPlayed(false);
+                      // Jokerler artık envanter sisteminden geliyor
+                      setSelectedJoker(null);
+                      setHighlightedLetters([]);
+                      setIsJokerActive(false);
+                    }} 
+                    className="w-full"
+                  >
+                    Tekrar Oyna
+                  </Button>
+                )}
               </>
             )}
           </div>
