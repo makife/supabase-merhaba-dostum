@@ -1417,6 +1417,15 @@ export type Database = {
           | { p_tournament_id: string }
         Returns: Json
       }
+      apply_disconnect_penalty: {
+        Args: { p_offender_id: string; p_room_id: string }
+        Returns: {
+          applied: boolean
+          disconnect_count: number
+          new_score: number
+          penalty: number
+        }[]
+      }
       ban_user_for_inappropriate_content: {
         Args: {
           p_ban_duration_hours?: number
