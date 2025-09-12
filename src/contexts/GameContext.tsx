@@ -1687,7 +1687,9 @@ useEffect(() => {
     })
     .subscribe();
   
-  return () => supabase.removeChannel(rematchChannel);
+  return () => {
+    supabase.removeChannel(rematchChannel);
+  };
 }, [user?.id, setCurrentRematchRequest]);
 
 useEffect(() => {
