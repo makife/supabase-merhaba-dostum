@@ -1604,8 +1604,17 @@ useEffect(() => {
     .on('presence', { event: 'join' }, ({ key, newPresences }) => {
       console.log('👋 Player joined:', key, newPresences);
     })
-    .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+    .on('presence', { event: 'leave' }, async ({ key, leftPresences }) => {
       console.log('🚪 Player left:', key, leftPresences);
+      const offenderId = (leftPresences?.[0] as any)?.user_id as string | undefined;
+      if (offenderId && offenderId !== user?.id && currentRoom.status === 'active') {
+        console.log('⚖️ Presence -> apply disconnect penalty for', offenderId?.slice(-8));
+        try {
+          await applyDisconnectPenalty(offenderId, false);
+        } catch (e) {
+          console.error('❌ Presence penalty error:', e);
+        }
+      }
       // Önlem: Anında kazandınız tetiklenmesin. Doğrulama için yukarıdaki 10sn gecikmeli kontrol kullanılacak.
     })
     .on('presence', { event: 'sync' }, () => {
