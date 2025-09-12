@@ -381,8 +381,8 @@ const generateRoomCode = () => {
 }, []);
 
   // Apply disconnect penalty with notifications using secure RPC
-  const applyDisconnectPenalty = useCallback(async (userId: string, isCurrentUser: boolean = false) => {
-    if (!userId || !currentRoom?.id) {
+  const applyDisconnectPenalty = useCallback(async (userId: string, roomId: string) => {
+    if (!userId || !roomId) {
       console.log('⚠️ applyDisconnectPenalty: userId veya room_id boş');
       return;
     }
@@ -390,14 +390,12 @@ const generateRoomCode = () => {
     try {
       console.log('⚖️ ===== DISCONNECT PENALTY BAŞLADI =====');
       console.log('⚖️ Ceza uygulanacak oyuncu:', userId.slice(-8));
-      console.log('⚖️ Current user mi?', isCurrentUser);
-      console.log('⚖️ Room ID:', currentRoom.id.slice(-8));
+      console.log('⚖️ Room ID:', roomId.slice(-8));
+      
     
-      // Double check: Kendine ceza verme!
-      if (userId === user?.id && !isCurrentUser) {
-        console.log('🛡️ KORUNMA: Kendine ceza vermeyi engellendi!');
-        return;
-      }
+      // Double check: Self-disconnect için uygulanabilir
+      const isCurrentUser = userId === user?.id;
+      console.log('⚖️ Current user\'a ceza mi?', isCurrentUser);
 
       // Önce kullanıcı adını alalım
       const { data: profile } = await supabase
@@ -992,7 +990,7 @@ const fetchParticipants = useCallback(
       if (isActiveGame && gameMode === 'private') {
         // Aktif özel oyundan ayrılma - ceza uygula
         console.log('💀 Aktif özel oyundan ayrılma - ceza uygulanıyor');
-        await applyDisconnectPenalty(user.id, true);
+        await applyDisconnectPenalty(user.id, currentRoom.id);
         
         toast({
           title: '⚠️ Oyun Cezası',
@@ -1005,7 +1003,7 @@ const fetchParticipants = useCallback(
         console.log('🏆 Turnuva oyunundan ayrılma - bot ekleniyor');
         
         // Turnuva maçında ayrılma cezası
-        await applyDisconnectPenalty(user.id, true);
+        await applyDisconnectPenalty(user.id, currentRoom.id);
         
         // Oyunu sonlandır - rakip kazanır
         await supabase
@@ -1517,7 +1515,7 @@ useEffect(() => {
       } else {
         console.log('🏆 NORMAL OYUN: Rakip ayrıldı, kazandınız!');
         
-        await applyDisconnectPenalty(oldParticipant.user_id, false);
+        await applyDisconnectPenalty(oldParticipant.user_id, currentRoom.id);
         
         if (user?.id) {
           await applyWinBonus(user.id);
@@ -1610,7 +1608,7 @@ useEffect(() => {
       if (offenderId && offenderId !== user?.id && currentRoom.status === 'active') {
         console.log('⚖️ Presence -> apply disconnect penalty for', offenderId?.slice(-8));
         try {
-          await applyDisconnectPenalty(offenderId, false);
+          await applyDisconnectPenalty(offenderId, currentRoom.id);
         } catch (e) {
           console.error('❌ Presence penalty error:', e);
         }
