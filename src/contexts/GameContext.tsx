@@ -1577,14 +1577,13 @@ useEffect(() => {
         console.log('⏱️ Bağlantı kopması kontrolü başlıyor, 10 saniye bekleniyor...');
         
         setTimeout(async () => {
-          const { data: currentParticipants } = await supabase
-            .from('game_participants')
-            .select('user_id, is_bot')
-            .eq('room_id', currentRoom.id);
+          // Presence tabanlı doğrulama (RLS görünürlük sorunlarını aşmak için)
+          const state = channel.presenceState() as Record<string, Array<{ user_id?: string }>>;
+          const otherPlayers = Object.values(state)
+            .flat()
+            .filter((p: any) => p.user_id && p.user_id !== user?.id);
           
-          const realPlayers = currentParticipants?.filter(p => !p.is_bot && p.user_id !== user?.id) || [];
-          
-          if (realPlayers.length === 0 && currentRoom.status === 'active') {
+          if (otherPlayers.length === 0 && currentRoom.status === 'active') {
             console.log('🏆 Gerçek rakip yok - kazandın!');
             
             if (applyWinBonus && user?.id) {
@@ -1624,19 +1623,7 @@ useEffect(() => {
     })
     .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
       console.log('🚪 Player left:', key, leftPresences);
-      // Sadece oyun başladıktan sonra disconnect olayını tetikle
-      if (currentRoom?.status === 'active') {
-        leftPresences.forEach((presence: any) => {
-          if (presence.user_id && presence.user_id !== user.id) {
-            console.log('⚠️ Opponent disconnected during active game:', presence.user_id);
-            window.dispatchEvent(new CustomEvent('playerDisconnected', {
-              detail: { winner: 'player', reason: 'opponent_left' }
-            }));
-          }
-        });
-      } else {
-        console.log('🔄 Player left during waiting/setup phase, ignoring');
-      }
+      // Önlem: Anında kazandınız tetiklenmesin. Doğrulama için yukarıdaki 10sn gecikmeli kontrol kullanılacak.
     })
     .on('presence', { event: 'sync' }, () => {
       const state = channel.presenceState();
