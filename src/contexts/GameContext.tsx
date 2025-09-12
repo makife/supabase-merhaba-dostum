@@ -388,6 +388,7 @@ const generateRoomCode = () => {
     }
     
     try {
+      console.log('⚖️ ===== DISCONNECT PENALTY BAŞLADI =====');
       console.log('⚖️ Ceza uygulanacak oyuncu:', userId.slice(-8));
       console.log('⚖️ Current user mi?', isCurrentUser);
       console.log('⚖️ Actual current user:', user?.id?.slice(-8));
@@ -406,53 +407,84 @@ const generateRoomCode = () => {
     
       if (error) {
         console.error('❌ Profile fetch error:', error);
+        console.error('❌ Error details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details
+        });
         return;
       }
     
-      if (profile) {
-        const currentScore = profile.total_score || 0;
-        const disconnectCount = (profile.disconnect_count || 0) + 1;
-        const penaltyAmount = Math.min(50 + (disconnectCount * 10), 200);
-        const newScore = Math.max(0, currentScore - penaltyAmount);
+      if (!profile) {
+        console.error('❌ Profile bulunamadı:', userId.slice(-8));
+        return;
+      }
       
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ 
-            total_score: newScore,
-            disconnect_count: disconnectCount,
-            last_disconnect: new Date().toISOString()
-          })
-          .eq('id', userId);
+      console.log('📊 Current profile data:', {
+        username: profile.username,
+        currentScore: profile.total_score,
+        disconnectCount: profile.disconnect_count
+      });
+    
+      const currentScore = profile.total_score || 0;
+      const disconnectCount = (profile.disconnect_count || 0) + 1;
+      const penaltyAmount = Math.min(50 + (disconnectCount * 10), 200);
+      const newScore = Math.max(0, currentScore - penaltyAmount);
       
-        if (updateError) {
-          console.error('❌ Profile update error:', updateError);
-          return;
-        }
+      console.log('⚖️ Penalty calculation:', {
+        penaltyAmount,
+        oldScore: currentScore,
+        newScore,
+        newDisconnectCount: disconnectCount
+      });
       
-        console.log('⚖️ Ceza uygulandı:', {
-          userId: userId.slice(-8),
-          penaltyAmount,
-          newScore,
-          username: profile.username
+      const { data: updateData, error: updateError } = await supabase
+        .from('profiles')
+        .update({ 
+          total_score: newScore,
+          disconnect_count: disconnectCount,
+          last_disconnect: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId)
+        .select();
+      
+      if (updateError) {
+        console.error('❌ Profile update error:', updateError);
+        console.error('❌ Update error details:', {
+          code: updateError.code,
+          message: updateError.message,
+          details: updateError.details
         });
+        return;
+      }
       
-        // Notifications
-        if (isCurrentUser) {
-          // Kendine ceza mesajı
-          toast({
-            title: '⚖️ Ayrılma Cezası',
-            description: `Oyundan ayrıldığınız için ${penaltyAmount} puan kaybettiniz`,
-            variant: 'destructive',
-          });
-        } else {
-          // Rakip ayrıldı mesajı (kazanan için)
-          toast({
-            title: '🚪 Rakip Ayrıldı',
-            description: `${profile.username} oyundan ayrıldı ve ceza aldı.`,
-          });
-        }
+      console.log('✅ Profile successfully updated:', updateData);
+      console.log('⚖️ ===== PENALTY APPLIED SUCCESSFULLY =====');
+      console.log('⚖️ Ceza uygulandı:', {
+        userId: userId.slice(-8),
+        penaltyAmount,
+        newScore,
+        username: profile.username
+      });
+    
+      // Notifications
+      if (isCurrentUser) {
+        // Kendine ceza mesajı
+        toast({
+          title: '⚖️ Ayrılma Cezası',
+          description: `Oyundan ayrıldığınız için ${penaltyAmount} puan kaybettiniz`,
+          variant: 'destructive',
+        });
+      } else {
+        // Rakip ayrıldı mesajı (kazanan için)
+        toast({
+          title: '🚪 Rakip Ayrıldı',
+          description: `${profile.username} oyundan ayrıldı ve ${penaltyAmount} puan cezası aldı.`,
+        });
       }
     } catch (error) {
+      console.error('❌ ===== PENALTY APPLICATION FAILED =====');
       console.error('❌ Ceza uygulama hatası:', error);
     }
   }, [toast, user?.id]);
