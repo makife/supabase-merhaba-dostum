@@ -110,6 +110,32 @@ const isValidParticipantPayload = (payload: any): payload is GameParticipantPayl
   return payload && typeof payload === 'object';
 };
 
+// Katılımcıları tekilleştir (aynı kullanıcıya ait birden fazla satırı ve birden fazla botu engelle)
+const dedupeParticipants = (list: GameParticipant[]): GameParticipant[] => {
+  if (!Array.isArray(list)) return [];
+
+  const usersMap = new Map<string, GameParticipant>();
+  let botEntry: GameParticipant | null = null;
+
+  for (const p of list) {
+    if (p.is_bot) {
+      // Sadece tek bir bot'a izin ver
+      if (!botEntry) botEntry = p as GameParticipant;
+      continue;
+    }
+    const key = p.user_id || '';
+    if (key && !usersMap.has(key)) {
+      usersMap.set(key, p as GameParticipant);
+    }
+  }
+
+  const realUsers = Array.from(usersMap.values());
+  // Öncelik: gerçek oyuncular -> sonra varsa tek bot
+  if (realUsers.length >= 2) return realUsers.slice(0, 2);
+  if (realUsers.length === 1) return botEntry ? [realUsers[0], botEntry] : realUsers;
+  return botEntry ? [botEntry] : [];
+};
+
 export const useGame = () => {
   const context = useContext(GameContext);
   if (!context) {
