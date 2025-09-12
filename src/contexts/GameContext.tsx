@@ -677,11 +677,14 @@ const fetchParticipants = useCallback(
         fetchParticipants(room.id);
       }, 300);
     
-      toast({
-        title: 'Oda Oluşturuldu',
-        description: currentRoomCode ? `Oda kodu: ${currentRoomCode}` : 'Oyuna hazırsınız',
-        duration: 1000,
-      });
+      // Only show room created notification when actually creating a room
+      if (currentRoomCode) {
+        toast({
+          title: 'Oda Oluşturuldu',
+          description: `Oda kodu: ${currentRoomCode}`,
+          duration: 1000,
+        });
+      }
 
       console.log('🏠 === ROOM CREATE DEBUG BİTTİ ===');
       return room;

@@ -6,6 +6,7 @@ const LoadingScreen = ({ onLoadingComplete }) => {
   const [progress, setProgress] = useState(0);
   const [loadingText, setLoadingText] = useState('Oyun hazırlanıyor...');
   const [isComplete, setIsComplete] = useState(false);
+  const [showErganImage, setShowErganImage] = useState(true);
 
   const loadingSteps = [
     { text: 'Oyun hazırlanıyor...', progress: 0 },
@@ -40,6 +41,11 @@ const LoadingScreen = ({ onLoadingComplete }) => {
   }, []);
 
   useEffect(() => {
+    // Ergan görselini 3 saniye göster
+    setTimeout(() => {
+      setShowErganImage(false);
+    }, 3000);
+
     // Loading süreci - Minimum 5-6 saniye
     let currentStep = 0;
     
@@ -71,31 +77,61 @@ const LoadingScreen = ({ onLoadingComplete }) => {
       }
     };
 
-    setTimeout(updateStep, 500);
+    // 3 saniye ergan görseli sonrasında loading başlasın
+    setTimeout(updateStep, 3500);
   }, [onLoadingComplete]);
 
   return (
     <div className="loading-screen">
-      <div className="tip-container">
-        <div className="tip-text">{currentTip}</div>
-      </div>
-      
-      <div className="loading-container">
-        <div className="progress-bar-container">
-          <div 
-            className="progress-bar" 
-            style={{ 
-              width: `${progress}%`,
-              background: isComplete ? 
-                'linear-gradient(90deg, #4ade80, #22c55e, #16a34a)' : 
-                'linear-gradient(90deg, #FF6B6B, #4ECDC4, #45B7D1, #96CEB4)'
+      {showErganImage ? (
+        <div className="ergan-image-container" style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: 'rgba(0, 0, 0, 0.9)',
+          zIndex: 1000
+        }}>
+          <img 
+            src="/ergan.jpg" 
+            alt="Ergan" 
+            style={{
+              maxWidth: '80%',
+              maxHeight: '80%',
+              objectFit: 'contain',
+              borderRadius: '15px',
+              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)'
             }}
-          ></div>
+          />
         </div>
-        <div className="loading-text" style={{
-          color: isComplete ? '#4ade80' : 'white'
-        }}>{loadingText}</div>
-      </div>
+      ) : (
+        <>
+          <div className="tip-container">
+            <div className="tip-text">{currentTip}</div>
+          </div>
+          
+          <div className="loading-container">
+            <div className="progress-bar-container">
+              <div 
+                className="progress-bar" 
+                style={{ 
+                  width: `${progress}%`,
+                  background: isComplete ? 
+                    'linear-gradient(90deg, #4ade80, #22c55e, #16a34a)' : 
+                    'linear-gradient(90deg, #FF6B6B, #4ECDC4, #45B7D1, #96CEB4)'
+                }}
+              ></div>
+            </div>
+            <div className="loading-text" style={{
+              color: isComplete ? '#4ade80' : 'white'
+            }}>{loadingText}</div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
