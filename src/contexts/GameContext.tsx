@@ -1483,10 +1483,12 @@ useEffect(() => {
     const gameMode = getGameModeFromRoom(currentRoom);
     
     // ✅ ANLIK BILDIRIM - Database event ile tetiklenen güvenilir bildirim
+    // AI rakip için disconnect bildirimi YAPMA
     if (!oldParticipant.is_bot && 
         oldParticipant.user_id && 
         oldParticipant.user_id !== user?.id && 
-        currentRoom.status === 'active') {
+        currentRoom.status === 'active' &&
+        getGameModeFromRoom(currentRoom) !== 'vs-computer') { // AI modu değilse
       
       console.log('🏆 ===== ANLIK DISCONNECT DETECTED =====');
       console.log('🏆 Ayrılan:', oldParticipant.user_id?.slice(-8), 'Kazanan:', user?.id?.slice(-8));
