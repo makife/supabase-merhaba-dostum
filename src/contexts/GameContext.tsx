@@ -1642,8 +1642,20 @@ useEffect(() => {
       table: 'game_rooms',
       filter: `id=eq.${currentRoom.id}`
     }, (payload) => {
-      console.log('🏠 Room güncelleme:', payload.new);
-      setCurrentRoom(payload.new as GameRoom);
+      const newRoom = payload.new as GameRoom;
+      console.log('🏠 Room güncelleme:', newRoom);
+
+      // Oda DB tarafından bitirildiyse (ör. rakip ayrıldı tetikleyicisi)
+      if (newRoom.status === 'finished') {
+        const winner = newRoom.winner_id
+          ? (newRoom.winner_id === user?.id ? 'player' : 'opponent')
+          : 'none';
+        window.dispatchEvent(new CustomEvent('playerDisconnected', {
+          detail: { winner, reason: 'room_finished', roomId: newRoom.id }
+        }));
+      }
+
+      setCurrentRoom(newRoom);
     })
     .on('presence', { event: 'leave' }, async ({ key }) => {
       console.log('🚪 Presence leave event:', key);
