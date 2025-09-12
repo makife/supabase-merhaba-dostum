@@ -44,7 +44,7 @@ const LoadingScreen = ({ onLoadingComplete }) => {
     // Ergan görselini 3 saniye göster
     setTimeout(() => {
       setShowErganImage(false);
-    }, 3000);
+    }, 5000);
 
     // Loading süreci - Minimum 5-6 saniye
     let currentStep = 0;
