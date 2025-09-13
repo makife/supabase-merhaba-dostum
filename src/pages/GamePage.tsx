@@ -94,15 +94,11 @@ const GamePage = ({
   const [tournamentParticipants, setTournamentParticipants] = useState<any[]>([]);
   
   const participants = useMemo(() => {
-    console.log('🔍 Participants memo - Mode:', gameMode, 'Props:', propsParticipants?.length || 0, 'Game:', gameParticipants?.length || 0, 'Tournament:', tournamentParticipants?.length || 0);
-    
     if (gameMode === 'tournament') {
       const tournamentParts = propsParticipants?.length > 0 ? propsParticipants : tournamentParticipants;
-      console.log('🏆 Tournament mode - Using participants:', tournamentParts?.length || 0);
       return tournamentParts || [];
     }
     
-    console.log('🎮 Other mode - Using gameParticipants:', gameParticipants?.length || 0);
     return gameParticipants || [];
   }, [gameMode, propsParticipants, gameParticipants, tournamentParticipants]);
   
