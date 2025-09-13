@@ -1496,8 +1496,23 @@ useEffect(() => {
   console.log('🔡 Room ID:', currentRoom.id);
   console.log('🔡 Current user:', user?.id?.slice(-8));
   
-  // ✅ SADECE INSERT VE DELETE'TE FETCH ET, UPDATE'TE ETMEYİN
-  if (payload.eventType === 'INSERT' || payload.eventType === 'DELETE' || payload.eventType === 'UPDATE') {
+  // ✅ UPDATE olayında anında skor güncellemesi yap
+  if (payload.eventType === 'UPDATE' && isValidParticipantPayload(payload.new)) {
+    const updatedParticipant = payload.new as GameParticipantPayload;
+    console.log('📊 Participant skor güncellemesi:', updatedParticipant.user_id?.slice(-8), 'Skor:', updatedParticipant.score);
+    
+    // Anında local state'i güncelle
+    setParticipants(prevParticipants => 
+      prevParticipants.map(p => 
+        p.user_id === updatedParticipant.user_id 
+          ? { ...p, score: updatedParticipant.score }
+          : p
+      )
+    );
+  }
+  
+  // INSERT VE DELETE'TE participants fetch et
+  if (payload.eventType === 'INSERT' || payload.eventType === 'DELETE') {
     console.log('🔄 Fetching participants after INSERT/DELETE...');
     await fetchParticipants(currentRoom.id);
   }
@@ -1748,13 +1763,17 @@ useEffect(() => {
       console.log('🔄 Presence sync:', state);
     })
     .subscribe(async (status) => {
+      console.log('📡 Real-time subscription status:', status, 'Room:', currentRoom.id.slice(-8));
       if (status === 'SUBSCRIBED') {
         try {
           await channel.track({ user_id: user.id, room_id: currentRoom.id });
           console.log('✅ Presence tracked for room:', currentRoom.id.slice(-8));
+          console.log('🔧 Real-time subscriptions active for participants and room updates');
         } catch (e) {
           console.error('❌ Presence track error:', e);
         }
+      } else if (status === 'CHANNEL_ERROR') {
+        console.error('❌ Real-time channel error for room:', currentRoom.id.slice(-8));
       }
     });
 
