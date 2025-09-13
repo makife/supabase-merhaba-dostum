@@ -1492,7 +1492,7 @@ useEffect(() => {
   fetchParticipants(currentRoom.id);
 
   const currentGameMode = getGameModeFromRoom(currentRoom);
-  const presenceGraceUntil = Date.now() + 7000; // 7s grace to avoid false disconnects at start (mobile friendly)
+  const presenceGraceUntil = Date.now() + 2000; // 2s grace to avoid false disconnects at start
 
   const channel = supabase
     .channel(`room-${currentRoom.id}`, { config: { presence: { key: `user-${user.id}` } } })
@@ -1582,10 +1582,9 @@ useEffect(() => {
         currentRoom.status === 'active' &&
         getGameModeFromRoom(currentRoom) !== 'vs-computer') { // AI modu değilse
       
-      console.log('⏳ DELETE event alındı, 8sn sonra doğrulanacak...');
+      console.log('⏳ DELETE event alındı, 2sn sonra doğrulanacak...');
 
-      // ❗ Doğrudan bildirim/ödül verme. Mobilde sekme değişimi ve kısa kopmalarda
-      // sahte DELETE gelebilir. 8sn sonra hem DB hem presence ile tekrar doğrula.
+      // Kısa bekleme: sahte DELETE olasılıklarına karşı DB+presence doğrulaması
       const eventRoomId = currentRoom.id; // capture room id at schedule time
       const winnerUserId = user?.id || null; // capture winner id at schedule time
       const tId = setTimeout(async () => {
@@ -1628,6 +1627,7 @@ useEffect(() => {
             detail: { winner: 'player', reason: 'opponent_left', roomId: eventRoomId }
           }));
 
+          const gameMode = getGameModeFromRoom(currentRoom);
           if (gameMode === 'tournament') {
             console.log('🏆 TURNUVA: Rakip ayrıldı, oyunu sonlandır');
 
@@ -1676,7 +1676,7 @@ useEffect(() => {
         } catch (err) {
           console.error('❌ DELETE doğrulama hatası:', err);
         }
-      }, 8000);
+      }, 2000);
       pendingTimers.push(tId);
     }
   }
@@ -1716,7 +1716,7 @@ useEffect(() => {
       if (currentRoom.status === 'active' && 
           key !== `user-${user?.id}`) {
         
-        console.log('⏱️ Bağlantı kopması kontrolü başlıyor, 10 saniye bekleniyor...');
+        console.log('⏱️ Bağlantı kopması kontrolü başlıyor, 3 saniye bekleniyor...');
         
         setTimeout(async () => {
           // Presence tabanlı doğrulama (RLS görünürlük sorunlarını aşmak için)
