@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from './AuthContext';
@@ -177,6 +177,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   const [useNakama, setUseNakama] = useState(false);
   const [currentRematchRequest, setCurrentRematchRequest] = useState<RematchRequest | null>(null);
   
+  const isClosingRoomRef = useRef(false);
 
   const toggleNakama = () => {
     setUseNakama(!useNakama);
@@ -538,20 +539,34 @@ const generateRoomCode = () => {
   // Close full room
   const closeFullRoom = useCallback(async (roomId: string) => {
     try {
+      if (isClosingRoomRef.current) {
+        return;
+      }
+      isClosingRoomRef.current = true;
+
       console.log('🔒 Oda kapatılıyor (dolu):', roomId.slice(-8));
       
+      const startedAt = new Date().toISOString();
       await supabase
         .from('game_rooms')
         .update({ 
           status: 'active',
-          started_at: new Date().toISOString()
+          started_at: startedAt
         })
         .eq('id', roomId)
         .is('started_at', null);
         
+      // Lokal state'i anında güncelle ki tekrar kapanma döngüsü oluşmasın
+      setCurrentRoom(prev => {
+        if (!prev || prev.id !== roomId) return prev;
+        return { ...prev, status: 'active', started_at: startedAt } as GameRoom;
+      });
+
       console.log('✅ Oda kapatıldı');
     } catch (error) {
       console.error('❌ Oda kapatma hatası:', error);
+    } finally {
+      isClosingRoomRef.current = false;
     }
   }, []);
 
