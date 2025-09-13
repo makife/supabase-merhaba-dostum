@@ -547,11 +547,25 @@ const generateRoomCode = () => {
       console.log('🔒 Oda kapatılıyor (dolu):', roomId.slice(-8));
       
       const startedAt = new Date().toISOString();
+      
+      // Odaya katılan gerçek oyuncuları sırayla al (ilk giren player1)
+      const { data: realPlayers } = await supabase
+        .from('game_participants')
+        .select('user_id, joined_at')
+        .eq('room_id', roomId)
+        .eq('is_bot', false)
+        .order('joined_at', { ascending: true } as any);
+      
+      const player1Id = realPlayers?.[0]?.user_id || null;
+      const player2Id = realPlayers?.[1]?.user_id || null;
+      
       await supabase
         .from('game_rooms')
         .update({ 
           status: 'active',
-          started_at: startedAt
+          started_at: startedAt,
+          player1_id: player1Id,
+          player2_id: player2Id,
         })
         .eq('id', roomId)
         .is('started_at', null);
@@ -559,7 +573,7 @@ const generateRoomCode = () => {
       // Lokal state'i anında güncelle ki tekrar kapanma döngüsü oluşmasın
       setCurrentRoom(prev => {
         if (!prev || prev.id !== roomId) return prev;
-        return { ...prev, status: 'active', started_at: startedAt } as GameRoom;
+        return { ...prev, status: 'active', started_at: startedAt, player1_id: player1Id, player2_id: player2Id } as GameRoom;
       });
 
       console.log('✅ Oda kapatıldı');
@@ -1720,6 +1734,21 @@ useEffect(() => {
           
           if (currentRoom.status === 'active' && ((otherPlayers.length === 0) || ((realCount ?? 0) <= 1))) {
             console.log('🏆 Gerçek rakip yok - kazandın! (presence+DB doğrulandı)');
+            
+            // 🔻 Ayrılan oyuncuya ceza uygula (presence key'den çıkar)
+            try {
+              const offenderId = typeof key === 'string' && key.startsWith('user-')
+                ? key.substring('user-'.length)
+                : null;
+              if (offenderId) {
+                console.log('⚖️ Presence tabanlı ceza uygulanıyor. Offender:', offenderId.slice(-8));
+                await applyDisconnectPenalty(offenderId, currentRoom.id);
+              } else {
+                console.warn('⚠️ Offender ID tespit edilemedi, ceza atlandı');
+              }
+            } catch (e) {
+              console.error('❌ Presence ceza uygulama hatası:', e);
+            }
             
             if (applyWinBonus && user?.id) {
               await applyWinBonus(user?.id, 50);
