@@ -3749,9 +3749,13 @@ if (waitingForPlayer) {
             <div className="w-16 h-16 bg-green-500 rounded-full mx-auto flex items-center justify-center">
               <User className="w-8 h-8 text-white" />
             </div>
-            <h2 className="text-2xl font-bold">Özel Oda</h2>
+            <h2 className="text-2xl font-bold">
+              {gameMode === 'private-room' ? 'Özel Oda' : 'Rastgele Eşleşme'}
+            </h2>
             <p className="text-muted-foreground">
-              İkinci oyuncuyu bekliyoruz...
+              {gameMode === 'private-room' 
+                ? 'İkinci oyuncuyu bekliyoruz...' 
+                : 'Rakip aranıyor...'}
             </p>
           
             {/* Mevcut katılımcıları göster - SADECE GERÇEK OYUNCULAR */}
