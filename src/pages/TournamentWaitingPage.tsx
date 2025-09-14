@@ -63,7 +63,7 @@ const TournamentWaitingPage = () => {
           <Button
             onClick={() => navigate('/tournament')}
             variant="outline"
-            className="text-black border-white/30 hover:bg-white/10"
+            className="text-white border-purple/30 hover:bg-white/10"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Geri
