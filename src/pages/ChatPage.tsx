@@ -265,7 +265,7 @@ export default function ChatPage() {
                   handleViewChange('global');
                 }
               }}
-              className="p-2 hover:bg-white/20 rounded-full text-white transition-all duration-200 hover:scale-110"
+              className="px-2 py-2 rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 text-white border-2 border-orange-300 hover:from-orange-600 hover:to-orange-700 hover:border-orange-200 transition-all duration-200 shadow-lg hover:shadow-orange-500/30 font-semibold hover:scale-105"
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
@@ -287,31 +287,31 @@ export default function ChatPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => handleViewChange('global')}
-                className="px-3 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 text-white border-2 border-blue-300 hover:from-blue-600 hover:to-blue-700 hover:border-blue-200 transition-all duration-200 shadow-lg hover:shadow-blue-500/30 font-semibold"
+                className="px-2 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 text-white border-2 border-blue-300 hover:from-blue-600 hover:to-blue-700 hover:border-blue-200 transition-all duration-200 shadow-lg hover:shadow-blue-500/30 font-semibold sm:px-3"
               >
-                <Hash className="w-5 h-5 mr-1" />
-                <span className="text-xs">Global</span>
+                <Hash className="w-4 h-4 sm:w-5 sm:h-5 sm:mr-1" />
+                <span className="text-xs hidden sm:inline">Global</span>
               </Button>
               
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => handleViewChange('users')}
-                className="px-3 py-2 rounded-lg bg-gradient-to-r from-green-500 to-green-600 text-white border-2 border-green-300 hover:from-green-600 hover:to-green-700 hover:border-green-200 transition-all duration-200 shadow-lg hover:shadow-green-500/30 font-semibold"
+                className="px-2 py-2 rounded-lg bg-gradient-to-r from-green-500 to-green-600 text-white border-2 border-green-300 hover:from-green-600 hover:to-green-700 hover:border-green-200 transition-all duration-200 shadow-lg hover:shadow-green-500/30 font-semibold sm:px-3"
               >
-                <Users className="w-5 h-5 mr-1" />
-                <span className="text-xs">Özel</span>
+                <Users className="w-4 h-4 sm:w-5 sm:h-5 sm:mr-1" />
+                <span className="text-xs hidden sm:inline">Özel</span>
               </Button>
               
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => handleViewChange('blocked-users')}
-                className="px-3 py-2 rounded-lg bg-gradient-to-r from-red-500 to-red-600 text-white border-2 border-red-300 hover:from-red-600 hover:to-red-700 hover:border-red-200 transition-all duration-200 shadow-lg hover:shadow-red-500/30 font-semibold"
+                className="px-2 py-2 rounded-lg bg-gradient-to-r from-red-500 to-red-600 text-white border-2 border-red-300 hover:from-red-600 hover:to-red-700 hover:border-red-200 transition-all duration-200 shadow-lg hover:shadow-red-500/30 font-semibold sm:px-3"
                 title="Engelli Kullanıcılar"
               >
-                <UserX className="w-5 h-5 mr-1" />
-                <span className="text-xs">Engelli</span>
+                <UserX className="w-4 h-4 sm:w-5 sm:h-5 sm:mr-1" />
+                <span className="text-xs hidden sm:inline">Engelli</span>
               </Button>
             </>
           )}
@@ -320,10 +320,10 @@ export default function ChatPage() {
             variant="ghost"
             size="sm"
             onClick={handleBackToMenu}
-            className="px-3 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-purple-600 text-white border-2 border-purple-300 hover:from-purple-600 hover:to-purple-700 hover:border-purple-200 transition-all duration-200 shadow-lg hover:shadow-purple-500/30 font-semibold hover:scale-105"
+            className="px-2 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-purple-600 text-white border-2 border-purple-300 hover:from-purple-600 hover:to-purple-700 hover:border-purple-200 transition-all duration-200 shadow-lg hover:shadow-purple-500/30 font-semibold hover:scale-105 sm:px-3"
           >
-            <Home className="w-5 h-5 mr-1" />
-            <span className="text-xs">Ana Sayfa</span>
+            <Home className="w-4 h-4 sm:w-5 sm:h-5 sm:mr-1" />
+            <span className="text-xs hidden sm:inline">Ana Sayfa</span>
           </Button>
         </div>
       </div>
