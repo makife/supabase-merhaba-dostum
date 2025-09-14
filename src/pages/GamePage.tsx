@@ -2403,6 +2403,30 @@ useEffect(() => {
   }
 }, [gameStarted, gameEnded, gameType, gameMode, tournamentMatch]);
   
+  // Real-time score sync for private-room/random-match via game_rooms
+  useEffect(() => {
+    if (!currentRoom || !user) return;
+    if (gameMode !== 'private-room' && gameMode !== 'random-match') return;
+
+    const isP1 = currentRoom.player1_id === user.id;
+    const myScore = isP1 ? currentRoom.player1_score : currentRoom.player2_score;
+    const oppScore = isP1 ? currentRoom.player2_score : currentRoom.player1_score;
+
+    if (typeof myScore === 'number' && myScore !== playerScore) {
+      setPlayerScore(myScore);
+    }
+    if (typeof oppScore === 'number' && oppScore !== opponentScore) {
+      setOpponentScore(oppScore);
+    }
+  }, [
+    currentRoom?.player1_score,
+    currentRoom?.player2_score,
+    currentRoom?.player1_id,
+    currentRoom?.player2_id,
+    gameMode,
+    user?.id
+  ]);
+
   // Timer sync for private-room and random-match games using server started_at
   useEffect(() => {
     if (gameType !== 'timed' || !gameStarted || gameEnded) return;

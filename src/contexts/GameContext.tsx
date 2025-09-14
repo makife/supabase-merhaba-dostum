@@ -1165,17 +1165,21 @@ const fetchParticipants = useCallback(
       .eq('room_id', currentRoom.id)
       .eq('user_id', user.id);
     
-    // 🔥 YENİ: Game rooms tablosundaki skorları da güncelle (gerçek zamanlı skor güncellemesi için)
-    const isPlayer1 = currentRoom.player1_id === user.id;
-    const scoreField = isPlayer1 ? 'player1_score' : 'player2_score';
-    
-    await supabase
-      .from('game_rooms')
-      .update({ 
-        [scoreField]: score,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', currentRoom.id);
+    // 🔥 YENİ: Game rooms skorlarını DA güncelle (yalnızca eşleşme atandıysa)
+    const isP1 = currentRoom.player1_id === user.id;
+    const isP2 = currentRoom.player2_id === user.id;
+    if (isP1 || isP2) {
+      const scoreField = isP1 ? 'player1_score' : 'player2_score';
+      await supabase
+        .from('game_rooms')
+        .update({ 
+          [scoreField]: score,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', currentRoom.id);
+    } else {
+      console.log('ℹ️ Skor sadece participants tablosunda güncellendi (player1/2 eşleşmesi daha atanmadı).');
+    }
     
     // Local state'i de güncelle
     const updatedParticipants = participants.map(p => 
@@ -1183,7 +1187,8 @@ const fetchParticipants = useCallback(
     );
     setParticipants(updatedParticipants);
     
-    console.log('🔄 Skor güncellendi:', score, 'Field:', scoreField);
+    const fieldLabel = isP1 ? 'player1_score' : isP2 ? 'player2_score' : 'participants_only';
+    console.log('🔄 Skor güncellendi:', score, 'Field:', fieldLabel);
   } catch (error) {
     console.error('Error updating score:', error);
   }
