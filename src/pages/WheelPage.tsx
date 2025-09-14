@@ -169,11 +169,11 @@ const WheelPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <Button
-            variant="outline"
             onClick={() => navigate('/')}
-            className="flex items-center gap-2"
+            size="lg"
+            className="px-8 py-3 text-lg font-bold bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 flex items-center gap-2"
           >
-            <ArrowLeft className="px-8 py-3 text-lg font-bold bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600" />
+            <ArrowLeft className="w-4 h-4" />
             Geri
           </Button>
           
