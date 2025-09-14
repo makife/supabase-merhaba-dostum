@@ -93,10 +93,14 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       backgroundMusicRef.current.onpause = () => setIsPlaying(false);
       backgroundMusicRef.current.onended = () => {
         setIsPlaying(false);
-        // For default pack, move to next track in playlist
+        // For default pack, move to next track in playlist and autoplay the next one
         if (musicPack === 'default' && musicEnabled) {
           const nextIndex = (currentTrackIndex + 1) % defaultPlaylist.length;
           setCurrentTrackIndex(nextIndex);
+          // Allow the effect to create the new Audio element, then start it
+          setTimeout(() => {
+            startBackgroundMusic();
+          }, 120);
         }
       };
     };
