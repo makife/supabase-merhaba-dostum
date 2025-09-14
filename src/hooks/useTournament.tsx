@@ -26,16 +26,18 @@ export const useTournament = (tournamentId?: string) => {
       
       setTimeLeft(remaining);
 
-      // Auto-start if creator and time is up AND tournament is still waiting
-      if (remaining === 0 && isCreator && context.currentTournament?.status === 'waiting') {
-        if (realPlayerCount >= 2) {
-          startTournament();
-        } else {
-          // Cancel tournament instead of causing infinite loop
-          supabase
-            .from('tournaments')
-            .update({ status: 'cancelled' })
-            .eq('id', tournamentId);
+      // Auto-start or cancel when time is up AND tournament is still waiting
+      if (remaining === 0 && context.currentTournament?.status === 'waiting') {
+        if (isCreator) {
+          if (realPlayerCount >= 2) {
+            startTournament();
+          } else {
+            // Cancel tournament if not enough players
+            supabase
+              .from('tournaments')
+              .update({ status: 'cancelled' })
+              .eq('id', tournamentId);
+          }
         }
       }
     }, 1000);
