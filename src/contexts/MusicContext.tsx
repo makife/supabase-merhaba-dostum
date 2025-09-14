@@ -24,6 +24,8 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const isStartingRef = useRef(false);
   const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const originalVolumeRef = useRef(0.3);
+  const shuffledPlaylistRef = useRef<number[]>([]);
+  const shuffleIndexRef = useRef(0);
   
   // Default pack playlist
   const defaultPlaylist = [
@@ -32,6 +34,23 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     '/sounds/default/backround-music2.mp3',
     '/sounds/default/backround-music3.mp3'
   ];
+
+  // Shuffle function
+  const shuffleArray = (array: number[]): number[] => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
+  // Initialize shuffled playlist
+  useEffect(() => {
+    if (shuffledPlaylistRef.current.length === 0) {
+      shuffledPlaylistRef.current = shuffleArray(Array.from({ length: defaultPlaylist.length }, (_, i) => i));
+    }
+  }, []);
 
   // Load settings on mount
   useEffect(() => {
@@ -78,7 +97,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           case 'space2':
             return '/sounds/default/uzay2.mp3';
           default:
-            return defaultPlaylist[currentTrackIndex];
+            return defaultPlaylist[shuffledPlaylistRef.current[shuffleIndexRef.current] || 0];
         }
       };
       
@@ -93,10 +112,17 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       backgroundMusicRef.current.onpause = () => setIsPlaying(false);
       backgroundMusicRef.current.onended = () => {
         setIsPlaying(false);
-        // For default pack, move to next track in playlist and autoplay the next one
+        // For default pack, move to next track in shuffled playlist and autoplay the next one
         if (musicPack === 'default' && musicEnabled) {
-          const nextIndex = (currentTrackIndex + 1) % defaultPlaylist.length;
-          setCurrentTrackIndex(nextIndex);
+          shuffleIndexRef.current = (shuffleIndexRef.current + 1) % shuffledPlaylistRef.current.length;
+          
+          // If we've played all tracks in the shuffled playlist, create a new shuffle
+          if (shuffleIndexRef.current === 0) {
+            shuffledPlaylistRef.current = shuffleArray(Array.from({ length: defaultPlaylist.length }, (_, i) => i));
+          }
+          
+          const nextTrackIndex = shuffledPlaylistRef.current[shuffleIndexRef.current];
+          setCurrentTrackIndex(nextTrackIndex);
           // Allow the effect to create the new Audio element, then start it
           setTimeout(() => {
             startBackgroundMusic();
