@@ -2427,6 +2427,40 @@ useEffect(() => {
     user?.id
   ]);
 
+  // Realtime participant score sync fallback (ensures opponent score updates instantly)
+  useEffect(() => {
+    if (!currentRoom || !user) return;
+    if (gameMode !== 'private-room' && gameMode !== 'random-match') return;
+
+    const channel = supabase
+      .channel(`room-scores-${currentRoom.id}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'game_participants',
+        filter: `room_id=eq.${currentRoom.id}`
+      }, (payload) => {
+        const row = payload.new as any;
+        if (!row) return;
+        if (row.is_bot) return;
+
+        if (row.user_id === user.id) {
+          if (typeof row.score === 'number') {
+            setPlayerScore(row.score);
+          }
+        } else {
+          if (typeof row.score === 'number') {
+            setOpponentScore(row.score);
+          }
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentRoom?.id, gameMode, user?.id]);
+
   // Timer sync for private-room and random-match games using server started_at
   useEffect(() => {
     if (gameType !== 'timed' || !gameStarted || gameEnded) return;

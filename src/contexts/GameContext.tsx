@@ -1786,7 +1786,7 @@ useEffect(() => {
           } else {
             console.log('✅ Leave event false positive - rakip hala mevcut (presence or DB)');
           }
-        }, 10000);
+        }, 3000);
       }
     })
     .on('presence', { event: 'join' }, ({ key, newPresences }) => {
