@@ -60,7 +60,7 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
         return {
           icon: Users,
           title: '🎉 Eşleşme Bulundu!',
-          description: 'Gerçek oyuncu bulundu! Oyun başlıyor...'
+          description: 'Oyuncu bulundu! Oyun başlıyor...'
         };
       }
       
@@ -70,7 +70,7 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
           return {
             icon: Users,
             title: 'Oyuncu Aranıyor',
-            description: `Gerçek oyuncu aranıyor... (${currentRoom.current_players}/${currentRoom.max_players})`
+            description: `Oyuncu aranıyor... (${currentRoom.current_players}/${currentRoom.max_players})`
           };
         }
       }
@@ -166,12 +166,12 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
           <div className="text-xs text-center text-muted-foreground space-y-1">
             {currentRoom?.status === 'matched' ? (
               <>
-                <p>• ✅ Gerçek oyuncu bulundu!</p>
+                <p>• ✅ Oyuncu bulundu!</p>
                 <p>• 🚀 Oyun başlatılıyor...</p>
               </>
             ) : searchProgress < 100 ? (
               <>
-                <p>• 🔍 Gerçek oyuncular aranıyor</p>
+                <p>• 🔍 Oyuncular aranıyor</p>
                 <p>• ⏱️ 30 saniye sonra seçenekler gösterilecek</p>
                 <p>• 👤 {currentRoom?.current_players || 0}/2 oyuncu</p>
                 <p>• 🏠 Oda ID: {currentRoom?.id.slice(-8) || 'N/A'}</p>
