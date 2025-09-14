@@ -81,7 +81,7 @@ const GamePage = ({
   };
   
   const { user } = useAuth();
-  const { consumeCredit, isPremium, addBonusCredits, forceRefreshProfile } = useUser();
+  const { consumeCredit, isPremium, addBonusCredits, forceRefreshProfile, profile } = useUser();
   const { hasPurchased, settings } = useUserPurchases();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -3150,6 +3150,23 @@ const submitWord = async () => {
         showCustomToast('Kelime kaydedilemedi','');
         clearWord();
         return;
+      }
+    }
+
+    // Profilde en uzun kelimeyi anında güncelle (tüm modlar)
+    if (user) {
+      try {
+        const newLen = normalizedWord.length;
+        const currentLen = (profile?.longest_word_length ?? 0);
+        if (newLen > currentLen) {
+          await supabase
+            .from('profiles')
+            .update({ longest_word: normalizedWord, longest_word_length: newLen })
+            .eq('id', user.id);
+          await forceRefreshProfile?.();
+        }
+      } catch (e) {
+        console.warn('⚠️ Profil en uzun kelime güncellemesi başarısız:', e);
       }
     }
 
