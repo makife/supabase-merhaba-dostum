@@ -50,17 +50,11 @@ export const useWordValidation = () => {
         return isValid;
       });
     
-    // 🎯 WORDLIST'E HEM ORIJINAL HEM NORMALIZE EDILMIŞ VERSIYONLARI EKLE
+    // Sadece Türkçe büyük harfli halini ekle (birebir eşleşme)
     const allWords = new Set<string>();
     
     rawWords.forEach(word => {
-      // Orijinal halini ekle
-      allWords.add(word);
-      
-      // Farklı case varyantlarını da ekle (tutarlılık için)
-      allWords.add(word.toUpperCase());
-      allWords.add(word.toLowerCase());
-      allWords.add(word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
+      allWords.add(word.toLocaleUpperCase('tr-TR'));
     });
     
     wordSetRef.current = allWords;
@@ -94,7 +88,7 @@ export const useWordValidation = () => {
     if (length >= 12) points += 50;
     
     const rareLetters = ['Ç', 'Ğ', 'Ş', 'J', 'X', 'Z'];
-    const rareBonus = word.toUpperCase().split('').reduce((bonus, letter) => {
+    const rareBonus = word.toLocaleUpperCase('tr-TR').split('').reduce((bonus, letter) => {
       return rareLetters.includes(letter) ? bonus + 5 : bonus;
     }, 0);
     
@@ -155,33 +149,24 @@ export const useWordValidation = () => {
       };
     }
 
-    // 🎯 ESNEKLİK: Hem UPPERCASE hem lowercase hem de ilk harfi büyük kontrol et
-    const wordVariants = [
-      word.toUpperCase(),           // "MASA"
-      word.toLowerCase(),           // "masa" 
-      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(), // "Masa"
-      word // Orijinal hali
-    ];
-    
-    console.log('🔍 Checking word variants:', wordVariants);
+    const upperWord = word.toLocaleUpperCase('tr-TR');
+    console.log('🔍 Checking exact TR word:', upperWord);
     
     let isValid = false;
     let foundVariant = '';
     
-    // Tüm varyantları dene
-    for (const variant of wordVariants) {
-      if (wordSetRef.current.has(variant)) {
-        isValid = true;
-        foundVariant = variant;
-        console.log('✅ Found word variant:', variant);
-        break;
-      }
+    if (wordSetRef.current.has(upperWord)) {
+      isValid = true;
+      foundVariant = upperWord;
+      console.log('✅ Exact match found:', upperWord);
+    } else {
+      console.log('❌ No exact match for:', upperWord);
     }
     
     const points = isValid ? calculatePoints(word) : 0;
 
-    console.log('🔍 Word found in wordlist:', isValid);
-    console.log('🔍 Found as variant:', foundVariant);
+    console.log('🔍 Word found in wordlist (exact):', isValid);
+    console.log('🔍 Found as:', foundVariant);
     console.log('🔍 Points calculated:', points);
     
     // Debug: Sample wordlist check

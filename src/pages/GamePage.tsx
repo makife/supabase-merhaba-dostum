@@ -1331,7 +1331,7 @@ const useFisildaJoker = async () => {
   
   if (wordlistLoaded) {
     // Wordlist'ten kelimeleri ORİJİNAL HALİYLE al (çevirme yapma!)
-    const wordArray = Array.from(wordlist).map(word => word.toUpperCase().trim());
+    const wordArray = Array.from(wordlist).map(word => word.toLocaleUpperCase('tr-TR').trim());
     validWords = wordArray.filter(word => {
       if (usedWords.has(word)) return false;
       
@@ -1350,7 +1350,7 @@ const useFisildaJoker = async () => {
   } else {
     // Fallback: önceden tanımlı kelimeler
     validWords = possibleWords.filter(word => {
-      if (usedWords.has(word.toUpperCase())) return false;
+      if (usedWords.has(word.toLocaleUpperCase('tr-TR'))) return false;
       
       const wordLetterCount: { [key: string]: number } = {};
       for (const letter of word) {
@@ -1475,7 +1475,7 @@ const useSenYazJoker = async () => {
   } else {
     // Fallback: önceden tanımlı kelimeler
     validWords = possibleWords.filter(word => {
-      if (usedWords.has(word.toUpperCase())) return false;
+      if (usedWords.has(word.toLocaleUpperCase('tr-TR'))) return false;
       
       const wordLetterCount: { [key: string]: number } = {};
       for (const letter of word) {
@@ -1507,7 +1507,7 @@ const useSenYazJoker = async () => {
   
   // Kelime var, şimdi işlemi dene
   const selectedWord = validWords[Math.floor(Math.random() * validWords.length)];
-  const normalizedSelectedWord = selectedWord.toUpperCase();
+  const normalizedSelectedWord = selectedWord.toLocaleUpperCase('tr-TR');
   
   // ÇİFTE KONTROL: Bu kelime gerçekten kullanılmamış mı?
   if (usedWords.has(normalizedSelectedWord)) {
@@ -1571,7 +1571,7 @@ const useSenYazJoker = async () => {
     let jokerSuccess = false;
     
     try {
-      const normalizedWord = selectedWord.toUpperCase();
+      const normalizedWord = selectedWord.toLocaleUpperCase('tr-TR');
       
       // Son kontrol: Kelime hala kullanılmamış mı?
       if (!usedWords.has(normalizedWord)) {
@@ -1716,13 +1716,13 @@ const useSenYazJoker = async () => {
         }
         const text = await response.text();
         const words = text.split('\n')
-          .map(word => word.trim().toUpperCase())
+          .map(word => word.trim().toLocaleUpperCase('tr-TR'))
           .filter(word => word.length >= 3); // Minimum 3 harf
         
         const wordSet = new Set(words);
         setWordlist(wordSet);
         setWordlistLoaded(true);
-        console.log(`✅ Wordlist loaded: ${wordSet.size} words`);
+        console.log(`✅ Wordlist loaded (TR): ${wordSet.size} words`);
       } catch (error) {
         console.error('❌ Failed to load wordlist:', error);
         setWordlistLoaded(false);
@@ -1732,92 +1732,51 @@ const useSenYazJoker = async () => {
     loadWordlist();
   }, []);
 
-  // Turkish character normalization function
-  const normalizeTurkishWord = (word: string): string => {
-    return word.toUpperCase()
-      .replace(/İ/g, 'I')  // İ -> I normalization for Turkish
-      .replace(/Ğ/g, 'G')
-      .replace(/Ü/g, 'U')
-      .replace(/Ş/g, 'S')
-      .replace(/Ö/g, 'O')
-      .replace(/Ç/g, 'C')
-      .trim();
-  };
+  // Turkish locale uppercase helper
+  const toTRUpper = (s: string): string => s.toLocaleUpperCase('tr-TR').trim();
 
   // Local word validation - Sözlükteki kelimeleri Türkçe'ye çevir
 const validateWordLocal = useCallback((word: string): { isValid: boolean; points: number; message: string } => {
-  const normalizedWord = word.toUpperCase().trim();
-  const turkishNormalizedWord = normalizeTurkishWord(word);
+  const upperWord = toTRUpper(word);
   
-  console.log('🔍 Word validation:', {
+  console.log('🔍 Word validation (exact TR match):', {
     originalWord: word,
-    normalizedWord,
-    turkishNormalizedWord,
+    upperWord,
     globalUsedCount: globalUsedWords.size,
-    isUsed: globalUsedWords.has(normalizedWord)
+    isUsed: globalUsedWords.has(upperWord)
   });
   
-  // Basic checks
-  if (normalizedWord.length < 3) {
-    return {
-      isValid: false,
-      points: 0,
-      message: 'Kelime en az 3 harf olmalıdır'
-    };
+  if (upperWord.length < 3) {
+    return { isValid: false, points: 0, message: 'Kelime en az 3 harf olmalıdır' };
   }
 
-  // Turkish letter pattern check
   const turkishPattern = /^[A-ZÇĞIİÖŞÜ]+$/;
-  if (!turkishPattern.test(normalizedWord)) {
-    return {
-      isValid: false,
-      points: 0,
-      message: 'Sadece Türkçe harfler kullanabilirsiniz'
-    };
+  if (!turkishPattern.test(upperWord)) {
+    return { isValid: false, points: 0, message: 'Sadece Türkçe harfler kullanabilirsiniz' };
   }
 
-  // Wordlist check - both original and normalized versions
   if (wordlistLoaded) {
-    const wordExists = Array.from(wordlist).some(dictWord => {
-      const dictWordUpper = dictWord.toUpperCase();
-      const dictWordNormalized = normalizeTurkishWord(dictWord);
-      return dictWordUpper === normalizedWord || 
-             dictWordNormalized === turkishNormalizedWord ||
-             dictWordUpper === turkishNormalizedWord ||
-             dictWordNormalized === normalizedWord;
-    });
-    
+    const wordExists = wordlist.has(upperWord);
     if (!wordExists) {
-      return {
-        isValid: false,
-        points: 0,
-        message: 'Bu kelime sözlükte bulunamadı'
-      };
+      return { isValid: false, points: 0, message: 'Bu kelime sözlükte bulunamadı' };
     }
+  } else {
+    return { isValid: false, points: 0, message: 'Sözlük yüklenemedi.' };
   }
 
-  // Calculate points
-  const calculatePoints = (word: string): number => {
-    const basePoints = word.length * 2;
+  const calculatePoints = (w: string): number => {
+    const basePoints = w.length * 2;
     let rareLetterBonus = 0;
-    
     const rareLetters = ['J', 'Z', 'Ğ', 'Ü', 'Ö', 'Ç', 'Ş'];
-    for (const letter of word) {
-      if (rareLetters.includes(letter)) {
-        rareLetterBonus += 3;
-      }
+    for (const letter of w) {
+      if (rareLetters.includes(letter)) rareLetterBonus += 3;
     }
-    
     return Math.max(basePoints + rareLetterBonus, 5);
   };
 
-  const points = calculatePoints(normalizedWord);
+  const points = calculatePoints(upperWord);
   
-  return {
-    isValid: true,
-    points,
-    message: 'Geçerli kelime'
-  };
+  return { isValid: true, points, message: 'Geçerli kelime' };
 }, [wordlist, wordlistLoaded, globalUsedWords]);
   
   useEffect(() => {
@@ -2618,11 +2577,11 @@ useEffect(() => {
         .eq('room_id', currentRoom.id);
 
       if (roomWords) {
-        const allWordsSet = new Set(roomWords.map(w => w.word.toUpperCase()));
+        const allWordsSet = new Set(roomWords.map(w => w.word.toLocaleUpperCase('tr-TR')));
         const myWordsSet = new Set(
           roomWords
             .filter(w => w.player_id === user.id)
-            .map(w => w.word.toUpperCase())
+            .map(w => w.word.toLocaleUpperCase('tr-TR'))
         );
         
         console.log('🔄 Syncing - All words:', allWordsSet.size, 'My words:', myWordsSet.size);
@@ -2649,7 +2608,7 @@ useEffect(() => {
       console.log('📱 Mobile real-time word:', payload.new?.word, 'from player:', payload.new?.player_id);
       
       if (payload.new?.word && !syncingRef.current && payload.new?.player_id !== user.id) {
-        const newWord = payload.new.word.toUpperCase();
+        const newWord = payload.new.word.toLocaleUpperCase('tr-TR');
         
         setTimeout(() => {
           setGlobalUsedWords(prev => new Set([...prev, newWord]));
@@ -2736,7 +2695,7 @@ useEffect(() => {
       
       // Don't process words from the current user to prevent duplicate validation
       if (payload.new?.word && !syncingRef.current && payload.new?.player_id !== user?.id) {
-        const newWord = payload.new.word.toUpperCase();
+        const newWord = payload.new.word.toLocaleUpperCase('tr-TR');
         
         // Debounced update - only for other players' words
         setTimeout(() => {
@@ -2772,11 +2731,11 @@ const syncUsedWords = async () => {
       .eq('room_id', currentRoom.id);
 
     if (roomWords) {
-      const allWordsSet = new Set(roomWords.map(w => w.word.toUpperCase()));
+      const allWordsSet = new Set(roomWords.map(w => w.word.toLocaleUpperCase('tr-TR')));
       const myWordsSet = new Set(
         roomWords
           .filter(w => w.player_id === user?.id)
-          .map(w => w.word.toUpperCase())
+          .map(w => w.word.toLocaleUpperCase('tr-TR'))
       );
       
       setGlobalUsedWords(allWordsSet);
@@ -2831,7 +2790,7 @@ useEffect(() => {
         let wordUsed = false;
         
         for (const word of shuffledWords) {
-          const normalizedWord = word.toUpperCase();
+          const normalizedWord = word.toLocaleUpperCase('tr-TR');
           
           // Global kullanılmış kelimeler kontrolü - tüm oyuncuların kelimelerini kontrol et
           if (!globalUsedWords.has(normalizedWord)) {
@@ -3094,7 +3053,7 @@ const submitWord = async () => {
       return;
     }
   
-    const normalizedWord = currentWord.toUpperCase();
+    const normalizedWord = currentWord.toLocaleUpperCase('tr-TR');
   
     // Ignore rapid duplicate submission of the same word (e.g., double tap)
     if (recentSubmissionsRef.current.has(normalizedWord)) {
