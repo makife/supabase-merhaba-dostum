@@ -128,7 +128,7 @@ const TournamentWaitingPage = () => {
                     </div>
                   </div>
                   <div className="text-green-400 text-xs font-medium">
-                    GERÇEK OYUNCU
+                    OYUNCU
                   </div>
                 </div>
               ))}
