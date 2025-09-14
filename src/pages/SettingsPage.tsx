@@ -338,11 +338,11 @@ const SettingsPage = () => {
         <div className="max-w-2xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between">
-            <Button variant="outline" size="sm" onClick={() => navigate('/')}>
+            <Button variant="outline" size="sm" onClick={() => navigate('/')} className="text-purple-600 border-purple-500/30 hover:bg-purple-500/20 bg-purple-500/10">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Geri
             </Button>
-            <h1 className="text-2xl font-bold">Ayarlar</h1>
+            <h1 className="text-2xl font-bold text-purple-600">Ayarlar</h1>
             <div className="w-16" /> {/* Spacer */}
           </div>
 

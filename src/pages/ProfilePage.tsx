@@ -496,11 +496,11 @@ const ProfilePage = () => {
               } else {
                 navigate('/');
               }
-            }}>
+            }} className="text-blue-600 border-blue-500/30 hover:bg-blue-500/20 bg-blue-500/10">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Geri
             </Button>
-            <h1 className="text-2xl font-bold">
+            <h1 className="text-2xl font-bold text-blue-600">
               {isOwnProfile ? 'Profil' : `${profileData.username} Profili`}
             </h1>
             <div className="flex space-x-2">

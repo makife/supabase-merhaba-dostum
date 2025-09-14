@@ -370,11 +370,11 @@ const MarketPage = () => {
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between">
-            <Button variant="outline" size="sm" onClick={() => navigate('/')}>
+            <Button variant="outline" size="sm" onClick={() => navigate('/')} className="text-green-600 border-green-500/30 hover:bg-green-500/20 bg-green-500/10">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Geri
             </Button>
-            <h1 className="text-2xl font-bold flex items-center">
+            <h1 className="text-2xl font-bold flex items-center text-green-600">
               <ShoppingCart className="w-6 h-6 mr-2" />
               Market
             </h1>
