@@ -376,9 +376,6 @@ const LeaderboardPage = () => {
                     <div className="bg-muted/50 rounded-lg p-3">
                       <div className="text-xl font-bold text-primary">{currentStats.rank || '—'}</div>
                       <div className="text-xs text-muted-foreground">Sıralama</div>
-                      {activeTab !== 'all-time' && currentStats.change && (
-                        <div className="mt-1">{getRankChangeIcon(currentStats.change)}</div>
-                      )}
                     </div>
                     <div className="bg-muted/50 rounded-lg p-3">
                       <div className="text-xl font-bold text-primary">{currentStats.score}</div>
