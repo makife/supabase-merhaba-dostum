@@ -116,6 +116,8 @@ const GamePage = ({
   const recentSubmissionsRef = useRef<Set<string>>(new Set());
   const randomMatchInitRef = useRef(false);
   const serverMatchStartRef = useRef<number | null>(null);
+  // Touch/click double-fire koruması: Gönder butonu için son touch zaman damgası
+  const submitTouchTsRef = useRef(0);
   
   const [globalUsedWords, setGlobalUsedWords] = useState<Set<string>>(new Set());
 
@@ -4181,11 +4183,14 @@ return (
           <Button 
             onTouchStart={(e) => {
               e.preventDefault();
+              submitTouchTsRef.current = Date.now();
               playSound('buttonClick');
               submitWord();
             }}
             onClick={(e) => {
               e.preventDefault();
+              // Dokunmatik cihazlarda çift tetiklemeyi önle
+              if (Date.now() - submitTouchTsRef.current < 500) return;
               playSound('buttonClick');
               submitWord();
             }}
