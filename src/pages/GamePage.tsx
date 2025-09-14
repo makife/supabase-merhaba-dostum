@@ -17,6 +17,7 @@ import { useSounds } from '@/hooks/useSounds';
 import { useJokerInventory } from '@/hooks/useJokerInventory';
 import { useUserPurchases } from '@/hooks/useUserPurchases';
 import { supabase } from '@/integrations/supabase/client';
+import GameCountdown from '@/components/GameCountdown';
 import { 
   ArrowLeft, 
   Clock, 
@@ -352,7 +353,8 @@ useEffect(() => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const timeLeftRef = useRef<number>(gameType === 'timed' ? 120 : 0);
   const [displayTime, setDisplayTime] = useState<number>(timeLeftRef.current);
-  const [gameStarted, setGameStarted] = useState(true);
+  const [showCountdown, setShowCountdown] = useState(true);
+  const [gameStarted, setGameStarted] = useState(false);
   const [waitingForPlayer, setWaitingForPlayer] = useState(false);
   const [gameEnded, setGameEnded] = useState(false);
   const [winner, setWinner] = useState<'player' | 'opponent' | 'tie' | null>(null);
@@ -636,7 +638,8 @@ const resetGameForRematch = () => {
   setOpponentScore(0);
   timeLeftRef.current = gameType === 'timed' ? 120 : 0;
   setDisplayTime(timeLeftRef.current);
-  setGameStarted(true);
+  setShowCountdown(true);
+  setGameStarted(false);
   setGameEnded(false);
   setWinner(null);
   setTimeWarningPlayed(false);
@@ -2924,7 +2927,8 @@ useEffect(() => {
       if (roomActive && realPlayers.length >= 2) {
         console.log('✅ 2 gerçek oyuncu hazır - OYUN BAŞLIYOR!');
         setWaitingForPlayer(false);
-        setGameStarted(true);
+        setShowCountdown(true);
+        setGameStarted(false);
         
         if (!hasShownStartMessage) {
           setHasShownStartMessage(true);
@@ -3706,7 +3710,8 @@ if (gameEnded) {
                       setOpponentScore(0);
                       timeLeftRef.current = gameType === 'timed' ? 120 : 0;
                       setDisplayTime(timeLeftRef.current);
-                      setGameStarted(true);
+                      setShowCountdown(true);
+                      setGameStarted(false);
                       setGameEnded(false);
                       setWinner(null);
                       setTimeWarningPlayed(false);
@@ -3853,8 +3858,19 @@ if (waitingForPlayer) {
 }
 
 const opponent = getOpponentInfo();
+
+const handleCountdownComplete = () => {
+  setShowCountdown(false);
+  setGameStarted(true);
+};
+
 return (
   <>
+    {showCountdown && (
+      <GameCountdown 
+        onComplete={handleCountdownComplete}
+      />
+    )}
     <div className="min-h-screen bg-gradient-to-br from-background to-muted relative overflow-hidden"
          style={{ 
            paddingTop: 'calc(env(safe-area-inset-top, 8px) + 1rem)', 
