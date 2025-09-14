@@ -7,6 +7,7 @@ const LoadingScreen = ({ onLoadingComplete }) => {
   const [loadingText, setLoadingText] = useState('Oyun hazırlanıyor...');
   const [isComplete, setIsComplete] = useState(false);
   const [showErganImage, setShowErganImage] = useState(true);
+  const [showLoading, setShowLoading] = useState(false);
 
   const loadingSteps = [
     { text: 'Oyun hazırlanıyor...', progress: 0 },
@@ -44,9 +45,10 @@ const LoadingScreen = ({ onLoadingComplete }) => {
     // Ergan görselini 3 saniye göster
     setTimeout(() => {
       setShowErganImage(false);
-    }, 5000);
+      setShowLoading(true);
+    }, 3000);
 
-    // Loading süreci - Minimum 5-6 saniye
+    // Loading süreci - Ergan bitince başla
     let currentStep = 0;
     
     const updateStep = () => {
@@ -102,7 +104,7 @@ const LoadingScreen = ({ onLoadingComplete }) => {
             }}
           />
         </div>
-      ) : (
+      ) : showLoading ? (
         <>
           <div className="tip-container">
             <div className="tip-text">{currentTip}</div>
@@ -125,7 +127,7 @@ const LoadingScreen = ({ onLoadingComplete }) => {
             }}>{loadingText}</div>
           </div>
         </>
-      )}
+      ) : null}
     </div>
   );
 };
