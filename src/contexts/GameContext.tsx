@@ -1518,16 +1518,26 @@ useEffect(() => {
   // ✅ UPDATE olayında anında skor güncellemesi yap
   if (payload.eventType === 'UPDATE' && isValidParticipantPayload(payload.new)) {
     const updatedParticipant = payload.new as GameParticipantPayload;
-    console.log('📊 Participant skor güncellemesi:', updatedParticipant.user_id?.slice(-8), 'Skor:', updatedParticipant.score);
-    
-    // Anında local state'i güncelle
-    setParticipants(prevParticipants => 
-      prevParticipants.map(p => 
-        p.user_id === updatedParticipant.user_id 
-          ? { ...p, score: updatedParticipant.score }
-          : p
-      )
-    );
+    const gotUserId = !!updatedParticipant.user_id;
+    console.log('📊 Participant skor UPDATE:', {
+      hasUserId: gotUserId,
+      user: updatedParticipant.user_id?.slice?.(-8),
+      score: (updatedParticipant as any).score
+    });
+
+    if (gotUserId) {
+      // Anında local state'i güncelle
+      setParticipants(prevParticipants => 
+        prevParticipants.map(p => 
+          p.user_id === updatedParticipant.user_id 
+            ? { ...p, score: (updatedParticipant as any).score as number }
+            : p
+        )
+      );
+    }
+
+    // Bazı durumlarda Realtime 'new' içinde user_id gelmeyebilir -> güvenli fetch
+    await fetchParticipants(currentRoom.id);
   }
   
   // INSERT VE DELETE'TE participants fetch et

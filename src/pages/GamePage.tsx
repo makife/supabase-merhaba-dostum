@@ -2440,19 +2440,24 @@ useEffect(() => {
         table: 'game_participants',
         filter: `room_id=eq.${currentRoom.id}`
       }, (payload) => {
-        const row = payload.new as any;
-        if (!row) return;
-        if (row.is_bot) return;
+        // Realtime UPDATE'lerde bazı kolonlar gelmeyebilir -> güvenli fetch
+        (async () => {
+          try {
+            const { data } = await supabase
+              .from('game_participants')
+              .select('user_id, is_bot, score')
+              .eq('room_id', currentRoom.id);
+            if (!data) return;
 
-        if (row.user_id === user.id) {
-          if (typeof row.score === 'number') {
-            setPlayerScore(row.score);
+            const me = data.find((p: any) => p.user_id === user.id && !p.is_bot);
+            const opp = data.find((p: any) => p.user_id !== user.id && !p.is_bot);
+
+            if (me && typeof me.score === 'number') setPlayerScore(me.score);
+            if (opp && typeof opp.score === 'number') setOpponentScore(opp.score);
+          } catch (e) {
+            console.error('Participant fetch error on UPDATE:', e);
           }
-        } else {
-          if (typeof row.score === 'number') {
-            setOpponentScore(row.score);
-          }
-        }
+        })();
       })
       .subscribe();
 
