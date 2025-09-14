@@ -28,16 +28,20 @@ export const useTournament = (tournamentId?: string) => {
 
       // Auto-start or cancel when time is up AND tournament is still waiting
       if (remaining === 0 && context.currentTournament?.status === 'waiting') {
-        if (isCreator) {
-          if (realPlayerCount >= 2) {
+        if (realPlayerCount >= 2) {
+          if (isCreator) {
             startTournament();
-          } else {
-            // Cancel tournament if not enough players
-            supabase
-              .from('tournaments')
-              .update({ status: 'cancelled' })
-              .eq('id', tournamentId);
           }
+        } else {
+          // Cancel tournament if not enough players - any participant can trigger this
+          supabase
+            .from('tournaments')
+            .update({ status: 'cancelled' })
+            .eq('id', tournamentId)
+            .then(() => {
+              // Force refetch tournament details to get updated status
+              context.fetchTournamentDetails(tournamentId);
+            });
         }
       }
     }, 1000);
