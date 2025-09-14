@@ -102,32 +102,21 @@ export const ThemeSelector = () => {
           return (
             <Card 
               key={themeOption.id} 
-              className={`transition-all duration-500 cursor-pointer overflow-hidden group relative ${
+              className={`transition-all duration-300 cursor-pointer overflow-hidden group relative ${
                 isActive 
-                  ? 'ring-2 ring-primary shadow-lg scale-[1.02] bg-gradient-to-br from-primary/5 to-accent/5 animate-premium-glow' 
+                  ? 'ring-2 ring-primary shadow-lg scale-[1.02] bg-gradient-to-br from-primary/5 to-accent/5' 
                   : isAvailable 
-                    ? 'hover:shadow-md hover:scale-[1.02] hover:bg-gradient-to-br hover:from-muted/30 hover:to-muted/10 hover:animate-mystical-float' 
+                    ? 'hover:shadow-md hover:scale-[1.02] hover:bg-gradient-to-br hover:from-muted/30 hover:to-muted/10' 
                     : 'opacity-60 grayscale'
               } ${themeOption.isPremium 
-                ? 'border-2 bg-gradient-to-r from-amber-400/20 via-purple-500/20 to-pink-500/20 border-gradient-to-r from-amber-400 to-purple-500 hover:animate-royal-pulse' 
+                ? 'border-2 bg-gradient-to-r from-amber-400/20 via-purple-500/20 to-pink-500/20 border-amber-400/50' 
                 : 'border border-border'
               }`}
               onClick={() => isAvailable && handleThemeSelect(themeOption.id)}
             >
-              {/* Premium shimmer effect */}
-              {themeOption.isPremium && (
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-400/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
-              )}
-              
-              {/* Premium background pattern */}
-              {themeOption.isPremium && (
-                <div className="absolute inset-0 opacity-5 bg-gradient-to-br from-amber-400/30 via-purple-500/30 to-pink-500/30 animate-luxury-shimmer" 
-                     style={{ backgroundSize: '200% 200%' }} />
-              )}
-              
               {/* Active theme indicator */}
               {isActive && (
-                <div className="absolute top-2 right-2 w-3 h-3 bg-primary rounded-full animate-pulse shadow-lg" />
+                <div className="absolute top-2 right-2 w-3 h-3 bg-primary rounded-full shadow-lg" />
               )}
               
               <CardContent className="p-5 relative">
@@ -147,7 +136,7 @@ export const ThemeSelector = () => {
                       <div className="flex items-center gap-2 flex-wrap mb-2">
                         <h4 className="font-bold text-lg leading-tight">{themeOption.name}</h4>
                         {isActive && (
-                          <Badge variant="default" className="text-xs animate-pulse bg-gradient-to-r from-primary to-accent">
+                          <Badge variant="default" className="text-xs bg-gradient-to-r from-primary to-accent">
                             ✨ Aktif
                           </Badge>
                         )}
