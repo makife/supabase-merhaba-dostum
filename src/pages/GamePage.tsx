@@ -81,7 +81,7 @@ const GamePage = ({
   };
   
   const { user } = useAuth();
-  const { consumeCredit, isPremium, addBonusCredits } = useUser();
+  const { consumeCredit, isPremium, addBonusCredits, forceRefreshProfile } = useUser();
   const { hasPurchased, settings } = useUserPurchases();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -1057,6 +1057,7 @@ const handleGameEnd = async () => {
     console.error('İstatistik güncelleme hatası:', error);
   } else {
     console.log('İstatistikler güncellendi - gameMode:', gameMode);
+    await forceRefreshProfile?.();
   }
 }
 
@@ -2110,6 +2111,7 @@ const checkWinnerWithScores = useCallback(async (currentPlayerScore: number, cur
         console.error('❌ İstatistik güncelleme hatası:', error);
       } else {
         console.log('✅ İstatistikler başarıyla güncellendi!');
+        await forceRefreshProfile?.();
       }
 
       // ➕ En uzun kelime ve en yüksek puanlı kelime istatistiklerini (vs-computer) güncelle - RPC sonucu ne olursa olsun çalıştır
@@ -3142,6 +3144,7 @@ const submitWord = async () => {
           });
         
         console.log('✅ Mobile: Word saved to database:', normalizedWord);
+        await forceRefreshProfile?.();
       } catch (error) {
         console.error('❌ Mobile: Database word save error:', error);
         showCustomToast('Kelime kaydedilemedi','');
