@@ -27,7 +27,8 @@ import {
   PlayCircle,
   Sparkles,
   Gift,
-  ShieldCheck
+  ShieldCheck,
+  Settings
 } from 'lucide-react';
 import { triggerGlobalStorageClear } from '@/hooks/useLocalStorageClear';
 import { useMobileNotifications } from '@/hooks/useMobileNotifications';
@@ -342,7 +343,10 @@ const SettingsPage = () => {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Geri
             </Button>
-            <h1 className="text-2xl font-bold text-purple-600">Ayarlar</h1>
+            <h1 className="text-2xl font-bold flex items-center text-purple-600">
+              <Settings className="w-5 h-5 mr-2 text-purple-500" />
+              Ayarlar
+            </h1>
             <div className="w-16" />
           </div>
 

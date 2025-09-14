@@ -23,7 +23,8 @@ import {
   Calendar,
   Clock,
   Award,
-  Users
+  Users,
+  User
 } from 'lucide-react';
 
 const ProfilePage = () => {
@@ -488,7 +489,7 @@ const ProfilePage = () => {
       <div className="max-w-2xl mx-auto w-full flex flex-col h-full">
         {/* Fixed Header */}
         <div className="p-4 bg-blue-50/95 backdrop-blur-sm border-b border-blue-200 sticky top-0 z-10">
-            <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4">
             <Button variant="outline" size="sm" onClick={() => {
               const fromPage = location.state?.from;
               if (fromPage === '/chat') {
@@ -500,7 +501,8 @@ const ProfilePage = () => {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Geri
             </Button>
-            <h1 className="text-2xl font-bold text-blue-600">
+            <h1 className="text-2xl font-bold flex items-center text-blue-600">
+              <User className="w-5 h-5 mr-2 text-blue-500" />
               {isOwnProfile ? 'Profil' : `${profileData.username} Profili`}
             </h1>
             <div className="w-16 flex justify-end">

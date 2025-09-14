@@ -375,7 +375,7 @@ const MarketPage = () => {
               Geri
             </Button>
             <h1 className="text-2xl font-bold flex items-center text-green-600">
-              <ShoppingCart className="w-6 h-6 mr-2" />
+              <ShoppingCart className="w-5 h-5 mr-2 text-green-500" />
               Market
             </h1>
             <div className="w-16" />
