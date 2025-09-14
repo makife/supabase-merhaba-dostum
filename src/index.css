@@ -1730,3 +1730,10 @@ All colors MUST be HSL.
 .letter-fire-highlight {
   animation: letter-fire-highlight 1.0s ease-in-out;
 }
+
+@layer utilities {
+  /* Hide both native and Radix scrollbars within any .no-scrollbar container */
+  .no-scrollbar [data-radix-scroll-area-viewport] { -ms-overflow-style: none; scrollbar-width: none; }
+  .no-scrollbar [data-radix-scroll-area-viewport]::-webkit-scrollbar { display: none; }
+  .no-scrollbar [data-radix-scroll-area-scrollbar] { display: none !important; }
+}
