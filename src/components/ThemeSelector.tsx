@@ -27,43 +27,43 @@ export const ThemeSelector = () => {
   const themes: ThemeOption[] = [
     {
       id: 'default',
-      name: 'Varsayılan',
-      description: 'Klasik aydınlık tema',
+      name: 'Klasik Aydınlık',
+      description: '🌟 Temiz ve profesyonel tasarım',
       icon: Sun,
-      preview: 'Temiz ve modern arayüz'
+      preview: 'Modern minimalist arayüz • Yüksek kontrast • Göz dostu'
     },
     {
       id: 'dark',
-      name: 'Koyu',
-      description: 'Gece modu için ideal',
+      name: 'Gece Modu',
+      description: '🌙 Premium karanlık deneyim',
       icon: Moon,
-      preview: 'Göz dostu koyu renkler'
+      preview: 'Zarif koyu tonlar • Göz yorgunluğu önleyici • Şık tasarım'
     },
     {
       id: 'dark_ocean',
-      name: 'Koyu Okyanus',
-      description: 'Sakin mavi tonlarında koyu tema',
+      name: 'Mistik Okyanus',
+      description: '🌊 Büyülü deniz teması - Premium',
       requiredPurchase: 'theme_dark_ocean',
       icon: Waves,
-      preview: 'Derin mavi ve turkuaz tonları',
+      preview: '✨ Turkuaz ışıltı • Dalga efektleri • Okyanusun derinliği',
       isPremium: true
     },
     {
       id: 'sunset',
-      name: 'Gün Batımı',
-      description: 'Sıcak turuncu ve pembe tonları',
+      name: 'Altın Günbatımı',
+      description: '🌅 Lüks sıcaklık koleksiyonu - Premium',
       requiredPurchase: 'theme_sunset',
       icon: Sunset,
-      preview: 'Romantik günbatımı renkleri',
+      preview: '🔥 Işıltılı gradyanlar • Romantik tonlar • Altın efektler',
       isPremium: true
     },
     {
       id: 'forest',
-      name: 'Orman',
-      description: 'Doğal yeşil tonları',
+      name: 'Zümrüt Orman',
+      description: '🌲 Doğanın premium sığınağı',
       requiredPurchase: 'theme_forest',
       icon: TreePine,
-      preview: 'Doğanın huzur verici yeşillikleri',
+      preview: '🍃 Mistik yeşillikler • Doğal armoni • Huzur verici tonlar',
       isPremium: true
     },
   ];
@@ -102,31 +102,58 @@ export const ThemeSelector = () => {
           return (
             <Card 
               key={themeOption.id} 
-              className={`transition-all cursor-pointer ${
-                isActive ? 'ring-2 ring-primary bg-primary/5' : 
-                isAvailable ? 'hover:bg-muted/50' : 'opacity-60'
+              className={`transition-all duration-500 cursor-pointer overflow-hidden group relative ${
+                isActive 
+                  ? 'ring-2 ring-primary shadow-lg scale-[1.02] bg-gradient-to-br from-primary/5 to-accent/5 animate-premium-glow' 
+                  : isAvailable 
+                    ? 'hover:shadow-md hover:scale-[1.02] hover:bg-gradient-to-br hover:from-muted/30 hover:to-muted/10 hover:animate-mystical-float' 
+                    : 'opacity-60 grayscale'
+              } ${themeOption.isPremium 
+                ? 'border-2 bg-gradient-to-r from-amber-400/20 via-purple-500/20 to-pink-500/20 border-gradient-to-r from-amber-400 to-purple-500 hover:animate-royal-pulse' 
+                : 'border border-border'
               }`}
               onClick={() => isAvailable && handleThemeSelect(themeOption.id)}
             >
-              <CardContent className="p-4">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                  <div className="flex items-center space-x-3 min-w-0 flex-1">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      isActive ? 'bg-primary text-primary-foreground' : 'bg-secondary'
+              {/* Premium shimmer effect */}
+              {themeOption.isPremium && (
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-400/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
+              )}
+              
+              {/* Premium background pattern */}
+              {themeOption.isPremium && (
+                <div className="absolute inset-0 opacity-5 bg-gradient-to-br from-amber-400/30 via-purple-500/30 to-pink-500/30 animate-luxury-shimmer" 
+                     style={{ backgroundSize: '200% 200%' }} />
+              )}
+              
+              {/* Active theme indicator */}
+              {isActive && (
+                <div className="absolute top-2 right-2 w-3 h-3 bg-primary rounded-full animate-pulse shadow-lg" />
+              )}
+              
+              <CardContent className="p-5 relative">
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-start space-x-4">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-300 ${
+                      isActive 
+                        ? 'bg-gradient-to-br from-primary to-accent text-white shadow-lg' 
+                        : themeOption.isPremium
+                          ? 'bg-gradient-to-br from-amber-400/20 to-purple-500/20 text-primary'
+                          : 'bg-secondary hover:bg-secondary/80'
                     }`}>
-                      <themeOption.icon className="w-5 h-5" />
+                      <themeOption.icon className="w-6 h-6" />
                     </div>
+                    
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <h4 className="font-semibold text-base">{themeOption.name}</h4>
+                      <div className="flex items-center gap-2 flex-wrap mb-2">
+                        <h4 className="font-bold text-lg leading-tight">{themeOption.name}</h4>
                         {isActive && (
-                          <Badge variant="default" className="text-xs">
-                            Aktif
+                          <Badge variant="default" className="text-xs animate-pulse bg-gradient-to-r from-primary to-accent">
+                            ✨ Aktif
                           </Badge>
                         )}
-                        {themeOption.isPremium && (
-                          <Badge variant="secondary" className="text-xs">
-                            Premium
+                        {themeOption.isPremium && !isActive && (
+                          <Badge className="text-xs bg-gradient-to-r from-amber-400 to-purple-500 text-white border-0">
+                            👑 Premium
                           </Badge>
                         )}
                         {!isAvailable && (
@@ -136,19 +163,43 @@ export const ThemeSelector = () => {
                           </Badge>
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground line-clamp-2">{themeOption.description}</p>
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{themeOption.preview}</p>
+                      
+                      <p className="text-sm font-medium text-foreground mb-2 leading-relaxed">
+                        {themeOption.description}
+                      </p>
+                      
+                      <div className="text-xs text-muted-foreground leading-relaxed bg-muted/30 rounded-lg p-2 border-l-2 border-primary/30">
+                        {themeOption.preview}
+                      </div>
                     </div>
                   </div>
                   
                   {isAvailable && (
                     <Button
                       variant={isActive ? "default" : "outline"}
-                      size="sm"
+                      size="default"
                       disabled={isActive}
-                      className="w-full sm:w-auto sm:flex-shrink-0"
+                      className={`w-full transition-all duration-300 font-semibold ${
+                        isActive 
+                          ? 'bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-lg' 
+                          : themeOption.isPremium
+                            ? 'border-2 hover:bg-gradient-to-r hover:from-amber-400/10 hover:to-purple-500/10 hover:border-primary'
+                            : 'hover:bg-primary hover:text-primary-foreground'
+                      }`}
                     >
-                      {isActive ? 'Seçili' : 'Seç'}
+                      {isActive ? '✨ Aktif Tema' : themeOption.isPremium ? '👑 Premium Seç' : '🎨 Temayı Seç'}
+                    </Button>
+                  )}
+                  
+                  {!isAvailable && (
+                    <Button
+                      variant="secondary"
+                      size="default"
+                      disabled
+                      className="w-full opacity-60"
+                    >
+                      <Lock className="w-4 h-4 mr-2" />
+                      Marketten Satın Al
                     </Button>
                   )}
                 </div>
@@ -159,8 +210,18 @@ export const ThemeSelector = () => {
       </div>
       
       {user && (
-        <div className="text-sm text-muted-foreground">
-          💡 Yeni temaları marketten satın alabilirsiniz
+        <div className="mt-6 p-4 bg-gradient-to-r from-primary/5 to-accent/5 rounded-xl border border-primary/20">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center">
+              <Gamepad2 className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <p className="font-semibold text-sm">Premium Tema Koleksiyonu</p>
+              <p className="text-xs text-muted-foreground">
+                🎨 Özel tasarım temaları • ✨ Benzersiz efektler • 👑 VIP deneyim
+              </p>
+            </div>
+          </div>
         </div>
       )}
     </div>

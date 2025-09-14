@@ -190,7 +190,7 @@ All colors MUST be HSL.
     }
   }
   
-  /* Özel animasyonlar */
+  /* 🎬 PREMIUM ANIMATIONS COLLECTION 🎬 */
   .bounce-in {
     animation: bounceIn 0.3s ease-out;
   }
@@ -202,136 +202,305 @@ All colors MUST be HSL.
   .letter-pop {
     animation: letterPop 0.2s ease-out;
   }
+
+  /* Premium theme animations */
+  @keyframes golden-glow {
+    0%, 100% { 
+      filter: drop-shadow(0 0 10px hsl(45 100% 60% / 0.5)); 
+    }
+    50% { 
+      filter: drop-shadow(0 0 20px hsl(45 100% 60% / 0.8)) drop-shadow(0 0 30px hsl(45 100% 50% / 0.4)); 
+    }
+  }
+
+  @keyframes ocean-waves {
+    0%, 100% { 
+      box-shadow: 0 0 20px hsl(190 95% 65% / 0.3), 0 0 40px hsl(180 100% 70% / 0.2);
+    }
+    50% { 
+      box-shadow: 0 0 30px hsl(190 95% 65% / 0.5), 0 0 60px hsl(180 100% 70% / 0.3);
+    }
+  }
+
+  @keyframes sunset-shimmer {
+    0%, 100% { 
+      background-position: 0% 50%;
+    }
+    50% { 
+      background-position: 100% 50%;
+    }
+  }
+
+  @keyframes forest-breath {
+    0%, 100% { 
+      filter: brightness(1) saturate(1);
+    }
+    50% { 
+      filter: brightness(1.1) saturate(1.2);
+    }
+  }
+
+  @keyframes retro-pulse {
+    0%, 100% { 
+      transform: scale(1);
+      box-shadow: 0 0 20px hsl(270 85% 55% / 0.3);
+    }
+    50% { 
+      transform: scale(1.02);
+      box-shadow: 0 0 30px hsl(270 85% 55% / 0.5), 0 0 40px hsl(300 75% 65% / 0.3);
+    }
+  }
+
+  /* Apply animations to premium themes */
+  .theme-dark-ocean .card {
+    animation: ocean-waves 4s ease-in-out infinite;
+  }
+
+  .theme-sunset .card {
+    background: var(--gradient-card);
+    background-size: 200% 200%;
+    animation: sunset-shimmer 6s ease-in-out infinite;
+  }
+
+  .theme-forest .card {
+    animation: forest-breath 5s ease-in-out infinite;
+  }
+
+  .theme-classic .card {
+    animation: retro-pulse 3s ease-in-out infinite;
+  }
 }
 
-/* Custom Theme Styles */
+/* ✨ PREMIUM THEME COLLECTION ✨ */
 
-/* Dark Ocean Theme */
+/* 🌊 MYSTIC OCEAN - Premium Aquatic Experience */
 .theme-dark-ocean {
-  --background: 220 25% 8%;
-  --foreground: 210 20% 98%;
-  --card: 220 25% 10%;
-  --card-foreground: 210 20% 98%;
-  --popover: 220 25% 10%;
-  --popover-foreground: 210 20% 98%;
-  --primary: 200 90% 60%;
-  --primary-foreground: 220 25% 8%;
-  --secondary: 220 20% 15%;
-  --secondary-foreground: 210 20% 98%;
-  --muted: 220 20% 12%;
-  --muted-foreground: 210 20% 70%;
-  --accent: 190 85% 55%;
-  --accent-foreground: 220 25% 8%;
+  --background: 220 35% 6%;
+  --foreground: 190 25% 98%;
+  --card: 220 40% 8%;
+  --card-foreground: 190 25% 98%;
+  --popover: 220 40% 8%;
+  --popover-foreground: 190 25% 98%;
+  --primary: 190 95% 65%;
+  --primary-foreground: 220 35% 6%;
+  --secondary: 200 30% 15%;
+  --secondary-foreground: 190 25% 98%;
+  --muted: 210 25% 12%;
+  --muted-foreground: 190 20% 75%;
+  --accent: 180 100% 70%;
+  --accent-foreground: 220 35% 6%;
   --destructive: 0 84% 60%;
-  --destructive-foreground: 210 20% 98%;
-  --border: 220 20% 18%;
-  --input: 220 20% 18%;
-  --ring: 200 90% 60%;
-  --radius: 0.5rem;
+  --destructive-foreground: 190 25% 98%;
+  --border: 200 25% 20%;
+  --input: 200 25% 18%;
+  --ring: 190 95% 65%;
+  --radius: 1rem;
   
-  /* Dark Ocean oyun renkleri */
-  --game-primary: 200 90% 60%;
-  --game-secondary: 190 85% 55%;
-  --game-success: 120 60% 50%;
-  --game-warning: 45 100% 60%;
-  --game-grid: 220 25% 12%;
-  --game-letter: 220 25% 20%;
+  /* Ocean premium effects */
+  --gradient-primary: linear-gradient(135deg, hsl(190 95% 65%), hsl(210 85% 55%), hsl(180 100% 70%));
+  --gradient-secondary: linear-gradient(45deg, hsl(200 70% 45%), hsl(190 80% 60%));
+  --gradient-card: linear-gradient(145deg, hsl(220 40% 8%) 0%, hsl(210 35% 10%) 100%);
+  --shadow-ocean: 0 20px 40px -15px hsl(190 95% 65% / 0.4), 0 0 20px hsl(180 100% 70% / 0.2);
+  --glow-primary: 0 0 30px hsl(190 95% 65% / 0.6);
+  
+  /* Ocean game colors */
+  --game-primary: 190 95% 65%;
+  --game-secondary: 180 100% 70%;
+  --game-success: 160 70% 55%;
+  --game-warning: 45 100% 65%;
+  --game-grid: 220 40% 10%;
+  --game-letter: 200 30% 18%;
 }
 
-/* Sunset Theme */
+/* 🌅 GOLDEN SUNSET - Luxury Warmth Collection */
 .theme-sunset {
-  --background: 25 40% 12%;
-  --foreground: 35 20% 98%;
-  --card: 25 40% 14%;
-  --card-foreground: 35 20% 98%;
-  --popover: 25 40% 14%;
-  --popover-foreground: 35 20% 98%;
-  --primary: 20 95% 65%;
-  --primary-foreground: 25 40% 12%;
-  --secondary: 25 30% 18%;
-  --secondary-foreground: 35 20% 98%;
-  --muted: 25 30% 16%;
-  --muted-foreground: 35 20% 70%;
-  --accent: 340 85% 70%;
-  --accent-foreground: 25 40% 12%;
+  --background: 15 35% 8%;
+  --foreground: 35 25% 98%;
+  --card: 20 45% 10%;
+  --card-foreground: 35 25% 98%;
+  --popover: 20 45% 10%;
+  --popover-foreground: 35 25% 98%;
+  --primary: 25 100% 70%;
+  --primary-foreground: 15 35% 8%;
+  --secondary: 30 40% 18%;
+  --secondary-foreground: 35 25% 98%;
+  --muted: 25 35% 15%;
+  --muted-foreground: 35 20% 75%;
+  --accent: 340 90% 75%;
+  --accent-foreground: 15 35% 8%;
   --destructive: 0 84% 60%;
-  --destructive-foreground: 35 20% 98%;
-  --border: 25 30% 22%;
+  --destructive-foreground: 35 25% 98%;
+  --border: 25 30% 25%;
   --input: 25 30% 22%;
-  --ring: 20 95% 65%;
-  --radius: 0.5rem;
+  --ring: 25 100% 70%;
+  --radius: 1rem;
   
-  /* Sunset oyun renkleri */
-  --game-primary: 20 95% 65%;
-  --game-secondary: 340 85% 70%;
-  --game-success: 120 60% 50%;
-  --game-warning: 45 100% 60%;
-  --game-grid: 25 40% 16%;
-  --game-letter: 25 40% 22%;
+  /* Sunset luxury effects */
+  --gradient-primary: linear-gradient(135deg, hsl(25 100% 70%), hsl(340 90% 75%), hsl(20 95% 65%));
+  --gradient-secondary: linear-gradient(45deg, hsl(30 80% 50%), hsl(340 85% 70%));
+  --gradient-card: linear-gradient(145deg, hsl(20 45% 10%) 0%, hsl(25 40% 12%) 100%);
+  --shadow-sunset: 0 20px 40px -15px hsl(25 100% 70% / 0.4), 0 0 25px hsl(340 90% 75% / 0.3);
+  --glow-primary: 0 0 35px hsl(25 100% 70% / 0.7);
+  
+  /* Sunset game colors */
+  --game-primary: 25 100% 70%;
+  --game-secondary: 340 90% 75%;
+  --game-success: 120 65% 55%;
+  --game-warning: 45 100% 70%;
+  --game-grid: 20 45% 12%;
+  --game-letter: 25 40% 20%;
 }
 
-/* Forest Theme */
+/* 🌲 EMERALD FOREST - Nature's Premium Sanctuary */
 .theme-forest {
-  --background: 140 25% 10%;
-  --foreground: 140 15% 98%;
-  --card: 140 25% 12%;
-  --card-foreground: 140 15% 98%;
-  --popover: 140 25% 12%;
-  --popover-foreground: 140 15% 98%;
-  --primary: 120 70% 55%;
-  --primary-foreground: 140 25% 10%;
-  --secondary: 140 20% 16%;
-  --secondary-foreground: 140 15% 98%;
-  --muted: 140 20% 14%;
-  --muted-foreground: 140 15% 70%;
-  --accent: 80 60% 60%;
-  --accent-foreground: 140 25% 10%;
+  --background: 145 30% 6%;
+  --foreground: 140 20% 98%;
+  --card: 140 35% 8%;
+  --card-foreground: 140 20% 98%;
+  --popover: 140 35% 8%;
+  --popover-foreground: 140 20% 98%;
+  --primary: 130 75% 60%;
+  --primary-foreground: 145 30% 6%;
+  --secondary: 140 25% 16%;
+  --secondary-foreground: 140 20% 98%;
+  --muted: 140 25% 12%;
+  --muted-foreground: 140 15% 75%;
+  --accent: 80 70% 65%;
+  --accent-foreground: 145 30% 6%;
   --destructive: 0 84% 60%;
-  --destructive-foreground: 140 15% 98%;
-  --border: 140 20% 20%;
-  --input: 140 20% 20%;
-  --ring: 120 70% 55%;
-  --radius: 0.5rem;
+  --destructive-foreground: 140 20% 98%;
+  --border: 140 25% 22%;
+  --input: 140 25% 20%;
+  --ring: 130 75% 60%;
+  --radius: 1rem;
   
-  /* Forest oyun renkleri */
-  --game-primary: 120 70% 55%;
-  --game-secondary: 80 60% 60%;
-  --game-success: 120 60% 50%;
-  --game-warning: 45 100% 60%;
-  --game-grid: 140 25% 14%;
-  --game-letter: 140 25% 20%;
+  /* Forest mystical effects */
+  --gradient-primary: linear-gradient(135deg, hsl(130 75% 60%), hsl(80 70% 65%), hsl(120 80% 55%));
+  --gradient-secondary: linear-gradient(45deg, hsl(140 60% 40%), hsl(80 65% 60%));
+  --gradient-card: linear-gradient(145deg, hsl(140 35% 8%) 0%, hsl(135 30% 10%) 100%);
+  --shadow-forest: 0 20px 40px -15px hsl(130 75% 60% / 0.4), 0 0 20px hsl(80 70% 65% / 0.3);
+  --glow-primary: 0 0 30px hsl(130 75% 60% / 0.6);
+  
+  /* Forest game colors */
+  --game-primary: 130 75% 60%;
+  --game-secondary: 80 70% 65%;
+  --game-success: 120 70% 55%;
+  --game-warning: 45 100% 65%;
+  --game-grid: 140 35% 10%;
+  --game-letter: 140 30% 18%;
 }
 
-/* Classic Retro Theme */
+/* 🎮 RETRO ARCADE - Nostalgic Gaming Vibes */
 .theme-classic {
-  --background: 60 30% 95%;
-  --foreground: 240 10% 4%;
-  --card: 60 30% 98%;
-  --card-foreground: 240 10% 4%;
-  --popover: 60 30% 98%;
-  --popover-foreground: 240 10% 4%;
-  --primary: 270 80% 50%;
-  --primary-foreground: 60 30% 95%;
-  --secondary: 60 20% 85%;
-  --secondary-foreground: 240 10% 4%;
-  --muted: 60 20% 90%;
-  --muted-foreground: 240 5% 35%;
-  --accent: 300 70% 60%;
-  --accent-foreground: 60 30% 95%;
+  --background: 280 25% 96%;
+  --foreground: 260 15% 8%;
+  --card: 280 30% 98%;
+  --card-foreground: 260 15% 8%;
+  --popover: 280 30% 98%;
+  --popover-foreground: 260 15% 8%;
+  --primary: 270 85% 55%;
+  --primary-foreground: 280 25% 96%;
+  --secondary: 280 20% 88%;
+  --secondary-foreground: 260 15% 8%;
+  --muted: 280 20% 92%;
+  --muted-foreground: 260 10% 40%;
+  --accent: 300 75% 65%;
+  --accent-foreground: 280 25% 96%;
   --destructive: 0 84% 60%;
-  --destructive-foreground: 60 30% 95%;
-  --border: 60 20% 80%;
-  --input: 60 20% 80%;
-  --ring: 270 80% 50%;
-  --radius: 0.75rem;
+  --destructive-foreground: 280 25% 96%;
+  --border: 280 20% 82%;
+  --input: 280 20% 85%;
+  --ring: 270 85% 55%;
+  --radius: 1.2rem;
   
-  /* Classic oyun renkleri */
-  --game-primary: 270 80% 50%;
-  --game-secondary: 300 70% 60%;
-  --game-success: 120 60% 50%;
+  /* Retro gaming effects */
+  --gradient-primary: linear-gradient(135deg, hsl(270 85% 55%), hsl(300 75% 65%), hsl(280 80% 60%));
+  --gradient-secondary: linear-gradient(45deg, hsl(280 60% 70%), hsl(300 70% 75%));
+  --gradient-card: linear-gradient(145deg, hsl(280 30% 98%) 0%, hsl(275 25% 95%) 100%);
+  --shadow-retro: 0 15px 35px -10px hsl(270 85% 55% / 0.3), 0 0 20px hsl(300 75% 65% / 0.2);
+  --glow-primary: 0 0 25px hsl(270 85% 55% / 0.5);
+  
+  /* Retro game colors */
+  --game-primary: 270 85% 55%;
+  --game-secondary: 300 75% 65%;
+  --game-success: 120 65% 50%;
   --game-warning: 45 100% 60%;
-  --game-grid: 60 30% 90%;
+  --game-grid: 280 25% 92%;
   --game-letter: 0 0% 100%;
+}
+
+/* ✨ PREMIUM THEME ANIMATIONS ✨ */
+
+/* Ocean wave animation */
+.theme-dark-ocean .card {
+  background: var(--gradient-card);
+  box-shadow: var(--shadow-ocean);
+  border: 1px solid hsl(var(--border));
+  transition: all 0.3s ease;
+}
+
+.theme-dark-ocean .card:hover {
+  box-shadow: var(--glow-primary), var(--shadow-ocean);
+  transform: translateY(-2px);
+}
+
+/* Sunset glow animation */
+.theme-sunset .card {
+  background: var(--gradient-card);
+  box-shadow: var(--shadow-sunset);
+  border: 1px solid hsl(var(--border));
+  transition: all 0.3s ease;
+}
+
+.theme-sunset .card:hover {
+  box-shadow: var(--glow-primary), var(--shadow-sunset);
+  transform: translateY(-2px);
+}
+
+/* Forest mystical animation */
+.theme-forest .card {
+  background: var(--gradient-card);
+  box-shadow: var(--shadow-forest);
+  border: 1px solid hsl(var(--border));
+  transition: all 0.3s ease;
+}
+
+.theme-forest .card:hover {
+  box-shadow: var(--glow-primary), var(--shadow-forest);
+  transform: translateY(-2px);
+}
+
+/* Retro arcade animation */
+.theme-classic .card {
+  background: var(--gradient-card);
+  box-shadow: var(--shadow-retro);
+  border: 1px solid hsl(var(--border));
+  transition: all 0.3s ease;
+}
+
+.theme-classic .card:hover {
+  box-shadow: var(--glow-primary), var(--shadow-retro);
+  transform: translateY(-2px);
+}
+
+/* Premium button effects for all themes */
+.theme-dark-ocean .btn-primary,
+.theme-sunset .btn-primary,
+.theme-forest .btn-primary,
+.theme-classic .btn-primary {
+  background: var(--gradient-primary);
+  border: none;
+  color: hsl(var(--primary-foreground));
+  box-shadow: var(--glow-primary);
+  transition: all 0.3s ease;
+}
+
+.theme-dark-ocean .btn-primary:hover,
+.theme-sunset .btn-primary:hover,
+.theme-forest .btn-primary:hover,
+.theme-classic .btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--glow-primary), 0 10px 20px -5px hsl(var(--primary) / 0.4);
 }
 
 .avatar-frame-avatar_floral_roses,

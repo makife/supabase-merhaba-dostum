@@ -116,7 +116,7 @@ export default {
             height: '0'
           }
         },
-        // YENİ: Chat animasyonları ekle
+        // Chat animasyonları
         'pulse-slow': {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.7' }
@@ -130,14 +130,60 @@ export default {
             transform: 'translateY(-25%)',
             animationTimingFunction: 'cubic-bezier(0, 0, 0.2, 1)'
           }
+        },
+        // 🎬 PREMIUM THEME ANIMATIONS 🎬
+        'premium-glow': {
+          '0%, 100%': { 
+            boxShadow: '0 0 20px hsl(var(--primary) / 0.3)',
+            transform: 'scale(1)'
+          },
+          '50%': { 
+            boxShadow: '0 0 40px hsl(var(--primary) / 0.6), 0 0 60px hsl(var(--accent) / 0.3)',
+            transform: 'scale(1.02)'
+          }
+        },
+        'luxury-shimmer': {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' }
+        },
+        'mystical-float': {
+          '0%, 100%': { 
+            transform: 'translateY(0px) rotate(0deg)',
+            filter: 'brightness(1)'
+          },
+          '33%': { 
+            transform: 'translateY(-2px) rotate(0.5deg)',
+            filter: 'brightness(1.1)'
+          },
+          '66%': { 
+            transform: 'translateY(2px) rotate(-0.5deg)',
+            filter: 'brightness(0.9)'
+          }
+        },
+        'royal-pulse': {
+          '0%, 100%': { 
+            opacity: '1',
+            transform: 'scale(1)',
+            filter: 'hue-rotate(0deg)'
+          },
+          '50%': { 
+            opacity: '0.8',
+            transform: 'scale(1.05)',
+            filter: 'hue-rotate(10deg)'
+          }
         }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
-        // YENİ: Chat animasyonları
+        // Chat animasyonları
         'pulse-slow': 'pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'bounce-slow': 'bounce-slow 2s infinite'
+        'bounce-slow': 'bounce-slow 2s infinite',
+        // 🎬 PREMIUM ANIMATIONS 🎬
+        'premium-glow': 'premium-glow 4s ease-in-out infinite',
+        'luxury-shimmer': 'luxury-shimmer 3s ease-in-out infinite',
+        'mystical-float': 'mystical-float 6s ease-in-out infinite',
+        'royal-pulse': 'royal-pulse 2s ease-in-out infinite'
       }
     }
   },
