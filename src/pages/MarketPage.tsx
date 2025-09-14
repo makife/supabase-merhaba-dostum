@@ -147,8 +147,8 @@ const MarketPage = () => {
     // Temalar
     {
       id: 'theme_dark_ocean',
-      title: 'Koyu Okyanus Teması',
-      description: 'Sakin mavi tonlarında koyu tema',
+      title: 'Mistik Okyanus',
+      description: '🌊 Büyülü deniz teması - Premium',
       price: 19.99,
       currency: 'premium',
       icon: Moon,
@@ -157,8 +157,8 @@ const MarketPage = () => {
     },
     {
       id: 'theme_sunset',
-      title: 'Gün Batımı Teması',
-      description: 'Sıcak turuncu ve pembe tonları',
+      title: 'Altın Günbatımı',
+      description: '🌅 Lüks sıcaklık koleksiyonu - Premium',
       price: 19.99,
       currency: 'premium',
       icon: Sun,
@@ -167,8 +167,8 @@ const MarketPage = () => {
     },
     {
       id: 'theme_forest',
-      title: 'Orman Teması',
-      description: 'Doğal yeşil tonları',
+      title: 'Zümrüt Orman',
+      description: '🌲 Doğanın premium sığınağı',
       price: 19.99,
       currency: 'premium',
       icon: Palette,

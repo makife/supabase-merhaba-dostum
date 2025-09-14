@@ -62,14 +62,17 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     const root = document.documentElement;
     
     // Mevcut tema sınıflarını temizle
-    root.classList.remove('theme-dark-ocean', 'theme-sunset', 'theme-forest', 'theme-classic');
+    root.classList.remove('theme-dark-ocean', 'theme-sunset', 'theme-forest', 'theme-classic', 'dark');
     
     // Yeni temayı uygula
-    if (themeName !== 'default') {
-      // theme_ önekini kaldır ve _ karakterlerini - ile değiştir
-      const themeClass = themeName.replace(/^theme_/, '').replace(/_/g, '-');
-      root.classList.add(`theme-${themeClass}`);
-      console.log(`Tema uygulandı: theme-${themeClass}`);
+    if (themeName === 'dark') {
+      root.classList.add('dark');
+      console.log('Karanlık tema uygulandı');
+    } else if (themeName !== 'default') {
+      // Tema ID'sini direkt kullan (dark_ocean -> theme-dark-ocean)
+      const themeClass = `theme-${themeName.replace(/_/g, '-')}`;
+      root.classList.add(themeClass);
+      console.log(`Tema uygulandı: ${themeClass}`);
     } else {
       console.log('Varsayılan tema uygulandı');
     }
