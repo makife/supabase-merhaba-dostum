@@ -61,14 +61,14 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
           
           playSound('correctWord');
           toast({
-            title: '🎉 Gerçek Oyuncu Bulundu!',
+            title: '🎉 Oyuncu Bulundu!',
             description: 'Başka bir oyuncu ile eşleştiniz!',
             duration: 2000,
           });
           
           // 1.5 saniye sonra oyunu başlat
           setTimeout(() => {
-            console.log('🎮 Gerçek oyuncu ile oyun başlatılıyor...');
+            console.log('🎮 Oyun başlatılıyor...');
             onMatchFound(false); // false = gerçek oyuncu
           }, 1500);
         } else if (payload.new.is_bot && searchStatus === 'searching') {
@@ -131,7 +131,7 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
       
       playSound('correctWord');
       toast({
-        title: '🎉 Gerçek Oyuncu Bulundu!',
+        title: '🎉Oyuncu Bulundu!',
         description: `${(opponent as any).profiles?.username || 'Oyuncu'} ile eşleştiniz!`,
         duration: 2000,
       });
@@ -316,7 +316,7 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
         return {
           icon: User,
           title: 'Oyuncu Bulundu!',
-          description: 'Gerçek rakip ile eşleştiniz, oyun başlıyor...',
+          description: 'Rakip ile eşleştiniz, oyun başlıyor...',
           color: 'text-green-500',
           bgColor: 'bg-green-500'
         };
@@ -431,7 +431,7 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
             <div className="space-y-3">
               <div className="flex items-center justify-center space-x-2 text-sm text-green-600">
                 <Users className="w-4 h-4" />
-                <span className="font-medium">Gerçek oyuncu bulundu!</span>
+                <span className="font-medium">Oyuncu bulundu!</span>
               </div>
               <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                 <p className="text-sm text-green-700">
