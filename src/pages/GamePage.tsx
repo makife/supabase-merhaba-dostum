@@ -2282,87 +2282,108 @@ const handleTournamentExit = async () => {
   }
 };
   
-  // Timer effect - Real-time synchronized timer for tournament matches
+  // Timer effect - start only when match truly starts and guard early-finish
 useEffect(() => {
-  if (gameType === 'timed' && gameStarted && !gameEnded && !timerRef.current) {
-    console.log('⏱️ Timer BAŞLATILIYOR - Tek sefer, time:', timeLeftRef.current);
-    
-    let syncInterval: NodeJS.Timeout | null = null;
-    
-    // For tournament matches, sync timer with database
-    if (gameMode === 'tournament' && tournamentMatch) {
-      const syncTimer = async () => {
-        try {
-          // Maç statüsünü kontrol et
-          const { data: matchData } = await supabase
-            .from('tournament_matches')
-            .select('updated_at, created_at, status')
-            .eq('id', tournamentMatch.id)
-            .single();
-            
-          if (matchData && matchData.status === 'in_progress') {
-            // ✅ updated_at kullan - maç başlatıldığı anı temsil eder
-            if (!serverMatchStartRef.current) {
-              // Maç başlatma zamanını ayarla (küçük bir tampon ekle)
-              const startSource = matchData.updated_at || matchData.created_at;
-              serverMatchStartRef.current = new Date(startSource).getTime() + 2000;
-              console.log('📌 Tournament match start time fixed (updated_at):', new Date(serverMatchStartRef.current).toISOString());
-            }
-            
-            const matchStartTime = serverMatchStartRef.current!;
-            const currentTime = Date.now();
-            const elapsedSeconds = Math.floor((currentTime - matchStartTime) / 1000);
-            const remainingTime = Math.max(0, 120 - elapsedSeconds);
-            
-            // Sadece 3+ saniye fark varsa senkronize et
-            if (Math.abs(timeLeftRef.current - remainingTime) > 3) {
-              timeLeftRef.current = remainingTime;
-              setDisplayTime(remainingTime);
-              console.log('🔄 Timer synced to:', remainingTime, 'seconds - Both players now synced!');
-            }
+  const isMp = gameMode === 'random-match' || gameMode === 'private-room';
+  const haveTwoRealPlayers = participants.filter(p => !p.is_bot).length >= 2;
+  const roomActive = currentRoom?.status === 'active';
+  const canStart = (
+    gameType === 'timed' &&
+    gameStarted &&
+    !gameEnded &&
+    !timerRef.current &&
+    (!isMp || (roomActive && haveTwoRealPlayers))
+  );
+
+  if (!canStart) return;
+
+  console.log('⏱️ Timer BAŞLATILIYOR - Tek sefer, time:', timeLeftRef.current);
+  
+  let syncInterval: NodeJS.Timeout | null = null;
+  
+  // For tournament matches, sync timer with database
+  if (gameMode === 'tournament' && tournamentMatch) {
+    const syncTimer = async () => {
+      try {
+        // Maç statüsünü kontrol et
+        const { data: matchData } = await supabase
+          .from('tournament_matches')
+          .select('updated_at, created_at, status')
+          .eq('id', tournamentMatch.id)
+          .single();
+          
+        if (matchData && matchData.status === 'in_progress') {
+          // ✅ updated_at kullan - maç başlatıldığı anı temsil eder
+          if (!serverMatchStartRef.current) {
+            // Maç başlatma zamanını ayarla (küçük bir tampon ekle)
+            const startSource = matchData.updated_at || matchData.created_at;
+            serverMatchStartRef.current = new Date(startSource).getTime() + 2000;
+            console.log('📌 Tournament match start time fixed (updated_at):', new Date(serverMatchStartRef.current).toISOString());
           }
-        } catch (error) {
-          console.error('Timer sync error:', error);
+          
+          const matchStartTime = serverMatchStartRef.current!;
+          const currentTime = Date.now();
+          const elapsedSeconds = Math.floor((currentTime - matchStartTime) / 1000);
+          const remainingTime = Math.max(0, 120 - elapsedSeconds);
+          
+          // Sadece 3+ saniye fark varsa senkronize et
+          if (Math.abs(timeLeftRef.current - remainingTime) > 3) {
+            timeLeftRef.current = remainingTime;
+            setDisplayTime(remainingTime);
+            console.log('🔄 Timer synced to:', remainingTime, 'seconds - Both players now synced!');
+          }
         }
-      };
-      
-      // Initial sync
-      syncTimer();
-      
-      // Sync every 5 seconds for tournament matches
-      syncInterval = setInterval(syncTimer, 5000);
-    }
-    
-    timerRef.current = setInterval(() => {
-      timeLeftRef.current -= 1;
-      setDisplayTime(timeLeftRef.current);
-      
-      if (timeLeftRef.current <= 0) {
-        clearInterval(timerRef.current!);
-        if (syncInterval) clearInterval(syncInterval);
-        timerRef.current = null;
-        
-        console.log('⏰ Süre bitti! Final skorlar');
-        handleGameEnd();
-        setTimeout(() => {
-          setGameEnded(true);
-          checkWinnerWithScores(playerScoreRef.current, opponentScoreRef.current);
-        }, 50);
-      }
-    }, 1000);
-    
-    return () => {
-      // Cleanup intervals
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-      if (syncInterval) {
-        clearInterval(syncInterval);
+      } catch (error) {
+        console.error('Timer sync error:', error);
       }
     };
+    
+    // Initial sync
+    syncTimer();
+    
+    // Sync every 5 seconds for tournament matches
+    syncInterval = setInterval(syncTimer, 5000);
   }
-}, [gameStarted, gameEnded, gameType, gameMode, tournamentMatch]);
+  
+  timerRef.current = setInterval(() => {
+    timeLeftRef.current -= 1;
+    setDisplayTime(timeLeftRef.current);
+    
+    if (timeLeftRef.current <= 0) {
+      // 🛡️ Early-finish guard for fresh matches
+      const startedAtTs = currentRoom?.started_at ? new Date(currentRoom.started_at).getTime() : null;
+      if (isMp && startedAtTs && Date.now() - startedAtTs < 3000) {
+        const bump = 5;
+        timeLeftRef.current = bump;
+        setDisplayTime(bump);
+        console.log('🛡️ Early-finish guard: bumped time to', bump);
+        return;
+      }
+
+      clearInterval(timerRef.current!);
+      if (syncInterval) clearInterval(syncInterval);
+      timerRef.current = null;
+      
+      console.log('⏰ Süre bitti! Final skorlar');
+      handleGameEnd();
+      setTimeout(() => {
+        setGameEnded(true);
+        checkWinnerWithScores(playerScoreRef.current, opponentScoreRef.current);
+      }, 50);
+    }
+  }, 1000);
+  
+  return () => {
+    // Cleanup intervals
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    if (syncInterval) {
+      clearInterval(syncInterval);
+    }
+  };
+}, [gameStarted, gameEnded, gameType, gameMode, tournamentMatch, participants.length, currentRoom?.status, currentRoom?.started_at]);
   
   // Real-time score sync for private-room/random-match via game_rooms
   useEffect(() => {
@@ -2437,13 +2458,18 @@ useEffect(() => {
     const syncTimer = () => {
       const startTs = new Date(currentRoom.started_at!).getTime();
       const elapsed = Math.floor((Date.now() - startTs) / 1000);
-      const remaining = Math.max(0, (currentRoom.time_limit || 120) - elapsed);
+      let remaining = Math.max(0, (currentRoom.time_limit || 120) - elapsed);
+
+      // 🛡️ Early-finish guard: first 3s after start should never be <= 0
+      if (Date.now() - startTs < 3000 && remaining <= 0) {
+        remaining = 5;
+      }
       
       // 1 saniye toleransla senkronize et (daha hassas)
       if (Math.abs(timeLeftRef.current - remaining) > 1) {
         timeLeftRef.current = remaining;
         setDisplayTime(remaining);
-        console.log(`🔄 ${gameMode} timer synced:`, remaining, 'seconds (prev:', timeLeftRef.current, ')');
+        console.log(`🔄 ${gameMode} timer synced:`, remaining, 'seconds');
       }
     };
 
@@ -2887,31 +2913,33 @@ useEffect(() => {
   }
 }, [gameStarted, gameEnded]);
 
-  // Private room logic
+  // Multiplayer (private-room & random-match) waiting/start logic
   useEffect(() => {
-  if (gameMode === 'private-room') {
-    const realPlayers = participants.filter(p => !p.is_bot && p.user_id !== null);
-  
-    if (realPlayers.length >= 2) {
-      console.log('✅ 2 gerçek oyuncu hazır - OYUN BAŞLIYOR!');
-      setWaitingForPlayer(false);
-      setGameStarted(true);
-      
-      if (!hasShownStartMessage) {
-        setHasShownStartMessage(true);
-        toast({
-          title: '🎮 Özel Oda Oyunu Başladı!',
-          description: `${gameType === 'score' ? 'Puanlı' : 'Süreli'} özel oda oyunu başladı!`,
-          duration: 2000,
-        });
+    if (gameMode === 'private-room' || gameMode === 'random-match') {
+      const realPlayers = participants.filter(p => !p.is_bot && p.user_id !== null);
+      const roomActive = currentRoom?.status === 'active';
+    
+      if (roomActive && realPlayers.length >= 2) {
+        console.log('✅ 2 gerçek oyuncu hazır - OYUN BAŞLIYOR!');
+        setWaitingForPlayer(false);
+        setGameStarted(true);
+        
+        if (!hasShownStartMessage) {
+          setHasShownStartMessage(true);
+          const modeLabel = gameMode === 'private-room' ? 'Özel Oda' : 'Rastgele Eşleşme';
+          toast({
+            title: `🎮 ${modeLabel} Başladı!`,
+            description: `${gameType === 'score' ? 'Puanlı' : 'Süreli'} oyun başladı!`,
+            duration: 2000,
+          });
+        }
+      } else {
+        setWaitingForPlayer(true);
+        setGameStarted(false);
+        setHasShownStartMessage(false);
       }
-    } else {
-      setWaitingForPlayer(true);
-      setGameStarted(false);
-      setHasShownStartMessage(false);
     }
-  }
-}, [participants, gameMode, hasShownStartMessage, gameType, toast]);
+  }, [participants, gameMode, hasShownStartMessage, gameType, toast, currentRoom?.status]);
 
 useEffect(() => {
   if (!currentRoom || gameMode !== 'private-room') return;
