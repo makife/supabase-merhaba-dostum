@@ -31,6 +31,7 @@ import TournamentBracketPage from './pages/TournamentBracketPage';
 import WheelPage from './pages/WheelPage';
 import { useLocalStorageClear } from "@/hooks/useLocalStorageClear";
 import { useScreenOrientation } from "@/hooks/useScreenOrientation";
+import { useImmersiveMode } from "@/hooks/useImmersiveMode";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +44,9 @@ const AppRoutes = () => {
   
   // Ekran yönlendirmesini kilitle
   useScreenOrientation();
+  
+  // Immersive mode'u aktif et (navigasyon tuşlarını gizle)
+  useImmersiveMode();
 
   if (loading || customLoading) {
     return (

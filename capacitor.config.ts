@@ -8,6 +8,15 @@ const config: CapacitorConfig = {
     url: 'https://3b5b6132-76aa-4286-88ad-82b8da5a6692.lovableproject.com?forceHideBadge=true',
     cleartext: true
   },
+  android: {
+    allowMixedContent: true,
+    captureInput: true,
+    webContentsDebuggingEnabled: true
+  },
+  ios: {
+    contentInset: 'automatic',
+    scrollEnabled: true
+  },
   plugins: {
     SplashScreen: {
       launchShowDuration: 3000,
@@ -24,15 +33,13 @@ const config: CapacitorConfig = {
     StatusBar: {
       style: 'DARK',
       backgroundColor: '#F7FAFC',
-      overlay: false
+      overlay: true,
+      androidStatusBarColor: '#F7FAFC'
     },
     SafeArea: {
-      enabled: true,
-      customColorsForSystemBars: true,
-      statusBarColor: '#F7FAFC',
-      statusBarStyle: 'DARK',
-      navigationBarColor: '#F7FAFC',
-      navigationBarStyle: 'DARK'
+      enabled: false,
+      customColorsForSystemBars: false,
+      offset: false
     },
     Keyboard: {
       resize: 'ionic'
