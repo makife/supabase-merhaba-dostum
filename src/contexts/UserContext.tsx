@@ -33,6 +33,7 @@ interface UserProfile {
   wins?: number;
   losses?: number;
   longest_word?: string;
+  longest_word_length?: number;
   fastest_word_time?: number;
   username?: string;
   avatar_url?: string;
