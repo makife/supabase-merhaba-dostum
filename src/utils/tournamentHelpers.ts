@@ -27,7 +27,7 @@ export const isUserInTournament = (participants: TournamentParticipant[], userId
 export const getTournamentStatusMessage = (realPlayerCount: number) => {
   if (realPlayerCount < 2) {
     return {
-      text: "En az 2 gerçek oyuncu gerekli",
+      text: "En az 2 oyuncu gerekli",
       color: "text-red-400",
       emoji: "⚠️"
     };
@@ -35,7 +35,7 @@ export const getTournamentStatusMessage = (realPlayerCount: number) => {
   
   if (realPlayerCount >= 8) {
     return {
-      text: "TAM KADRO! 8 gerçek oyunculu turnuva",
+      text: "TAM KADRO! 8 oyunculu turnuva",
       color: "text-yellow-400", 
       emoji: "🔥"
     };
