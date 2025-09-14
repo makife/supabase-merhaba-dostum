@@ -172,7 +172,7 @@ const TournamentWaitingPage = () => {
             <DialogHeader>
               <DialogTitle>Turnuva İptal Edildi</DialogTitle>
               <DialogDescription>
-                Turnuva yeterli oyuncu olmadığı için iptal edildi. Ana sayfaya yönlendiriliyorsunuz.
+                Turnuva yeterli oyuncu olmadığı için iptal edildi.
               </DialogDescription>
             </DialogHeader>
             <div className="flex justify-end">
