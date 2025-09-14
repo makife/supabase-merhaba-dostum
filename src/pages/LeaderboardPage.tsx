@@ -343,7 +343,7 @@ const LeaderboardPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-background to-muted flex flex-col">
       <div className="max-w-2xl mx-auto w-full">
         {/* Sabit Header */}
-        <div className="sticky top-0 z-10 bg-gradient-to-br from-background to-muted p-3 border-b border-border/20">
+        <div className="sticky top-0 z-10 bg-yellow-50/95 backdrop-blur-sm border-b border-yellow-200 p-3">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <Button variant="outline" size="sm" onClick={() => navigate('/')} className="text-xs text-yellow-600 border-yellow-500/30 hover:bg-yellow-500/20 bg-yellow-500/10">

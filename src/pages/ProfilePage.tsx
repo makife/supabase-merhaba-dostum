@@ -487,7 +487,7 @@ const ProfilePage = () => {
     <div className="h-screen bg-gradient-to-br from-background to-muted flex flex-col">
       <div className="max-w-2xl mx-auto w-full flex flex-col h-full">
         {/* Fixed Header */}
-        <div className="p-4 bg-background/80 backdrop-blur-sm border-b sticky top-0 z-10">
+        <div className="p-4 bg-blue-50/95 backdrop-blur-sm border-b border-blue-200 sticky top-0 z-10">
           <div className="flex items-center justify-between mb-4">
             <Button variant="outline" onClick={() => {
               const fromPage = location.state?.from;

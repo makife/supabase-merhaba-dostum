@@ -334,7 +334,7 @@ const SettingsPage = () => {
   return (
     <div className="flex flex-col h-screen bg-gradient-to-br from-background to-muted overflow-x-hidden">
       {/* Fixed Header */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b p-4 space-y-4">
+      <div className="sticky top-0 z-10 bg-purple-50/95 backdrop-blur-sm border-b border-purple-200 p-4 space-y-4">
         <div className="max-w-2xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between">
