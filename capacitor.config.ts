@@ -41,6 +41,9 @@ const config: CapacitorConfig = {
       appId: 'ca-app-pub-4768026665961339~9319477813', // Android App ID
       androidAppId: 'ca-app-pub-4768026665961339~9319477813',
       iosAppId: 'ca-app-pub-4768026665961339~6286120368' // iOS App ID
+    },
+    ScreenOrientation: {
+      orientation: 'portrait'
     }
   }
 };

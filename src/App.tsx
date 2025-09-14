@@ -30,6 +30,7 @@ import TournamentWaitingPage from './pages/TournamentWaitingPage';
 import TournamentBracketPage from './pages/TournamentBracketPage';
 import WheelPage from './pages/WheelPage';
 import { useLocalStorageClear } from "@/hooks/useLocalStorageClear";
+import { useScreenOrientation } from "@/hooks/useScreenOrientation";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,9 @@ const AppRoutes = () => {
   
   // LocalStorage temizleme hook'unu kullan
   useLocalStorageClear();
+  
+  // Ekran yönlendirmesini kilitle
+  useScreenOrientation();
 
   if (loading || customLoading) {
     return (
