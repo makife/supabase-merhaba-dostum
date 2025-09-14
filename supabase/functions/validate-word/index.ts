@@ -9,16 +9,9 @@ const corsHeaders = {
 // Cache for wordlist to avoid repeated processing
 let wordlistCache: Set<string> | null = null;
 
-// Turkish character normalization function
-function normalizeTurkishWord(word: string): string {
-  return word.toUpperCase()
-    .replace(/İ/g, 'I')  // İ -> I normalization for Turkish
-    .replace(/Ğ/g, 'G')
-    .replace(/Ü/g, 'U')
-    .replace(/Ş/g, 'S')
-    .replace(/Ö/g, 'O')
-    .replace(/Ç/g, 'C')
-    .trim();
+// No normalization - preserve exact Turkish characters
+function preserveTurkishWord(word: string): string {
+  return word.toUpperCase().trim();
 }
 
 async function loadWordlist(): Promise<Set<string>> {
@@ -75,19 +68,14 @@ serve(async (req) => {
       );
     }
 
-    const upperWord = word.trim().toUpperCase();
-    const normalizedWord = normalizeTurkishWord(word);
-    console.log(`Validating word: ${upperWord}, normalized: ${normalizedWord}`);
+    const upperWord = preserveTurkishWord(word);
+    console.log(`Validating word: ${upperWord} (exact match required)`);
 
     // Load wordlist
     const wordlist = await loadWordlist();
     
-    // Check if word exists in our wordlist - try both original and normalized versions
-    const isValid = wordlist.has(upperWord) || wordlist.has(normalizedWord) ||
-      Array.from(wordlist).some(dictWord => {
-        const dictNormalized = normalizeTurkishWord(dictWord);
-        return dictNormalized === normalizedWord || dictNormalized === upperWord;
-      });
+    // Check if word exists in our wordlist - exact Turkish character match required
+    const isValid = wordlist.has(upperWord);
     
     let result;
     if (isValid) {
