@@ -1736,4 +1736,12 @@ All colors MUST be HSL.
   .no-scrollbar [data-radix-scroll-area-viewport] { -ms-overflow-style: none; scrollbar-width: none; }
   .no-scrollbar [data-radix-scroll-area-viewport]::-webkit-scrollbar { display: none; }
   .no-scrollbar [data-radix-scroll-area-scrollbar] { display: none !important; }
+  
+  /* Globally hide scrollbars on native builds (Capacitor iOS/Android) */
+  .is-native, .is-native body { -ms-overflow-style: none; scrollbar-width: none; }
+  .is-native::-webkit-scrollbar, .is-native body::-webkit-scrollbar { display: none; }
+  .is-native *::-webkit-scrollbar { display: none !important; }
+  .is-native [data-radix-scroll-area-scrollbar] { display: none !important; }
+  .is-native [data-radix-scroll-area-viewport] { -ms-overflow-style: none; scrollbar-width: none; }
+  .is-native [data-radix-scroll-area-viewport]::-webkit-scrollbar { display: none; }
 }
