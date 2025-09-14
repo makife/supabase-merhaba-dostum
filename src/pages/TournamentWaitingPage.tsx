@@ -97,7 +97,7 @@ const TournamentWaitingPage = () => {
                 Katılımcılar
               </h3>
               <div className="text-sm">
-                <span className="text-green-400 font-bold">{realPlayerCount} Gerçek</span>
+                <span className="text-green-400 font-bold">{realPlayerCount} Oyuncu</span>
                 {bots.length > 0 && (
                   <>
                     <span className="text-gray-400 mx-1">+</span>
