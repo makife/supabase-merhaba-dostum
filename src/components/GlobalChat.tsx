@@ -745,9 +745,10 @@ const startPrivateChat = async (targetUser: SelectedUser) => {
         <Users className="w-6 h-6" />
         <div>
           <h3 className="font-semibold text-lg">Kullanıcılar</h3>
-          <p className="text-chat-100 text-sm">
+          {/* Çevrimiçi kişi sayısı gösterimi kapatıldı */}
+          {/* <p className="text-chat-100 text-sm">
             {onlineUsers.length} kişi çevrimiçi
-          </p>
+          </p> */}
         </div>
       </div>
       <Button

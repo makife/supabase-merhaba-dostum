@@ -275,7 +275,8 @@ export default function ChatPage() {
             <h1 className="text-xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-yellow-300 via-white to-yellow-300 bg-clip-text text-transparent drop-shadow-lg">
               {title}
             </h1>
-            <p className="text-chat-100 text-sm font-medium">{subtitle}</p>
+            {/* Çevrimiçi kişi sayısı gösterimi kapatıldı */}
+            {/* <p className="text-chat-100 text-sm font-medium">{subtitle}</p> */}
           </div>
         </div>
         
@@ -286,28 +287,31 @@ export default function ChatPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => handleViewChange('global')}
-                className="p-2 rounded-full bg-white/20 text-white border border-white/30 hover:bg-white/30 transition-all duration-200"
+                className="px-3 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 text-white border-2 border-blue-300 hover:from-blue-600 hover:to-blue-700 hover:border-blue-200 transition-all duration-200 shadow-lg hover:shadow-blue-500/30 font-semibold"
               >
-                <Hash className="w-5 h-5" />
+                <Hash className="w-5 h-5 mr-1" />
+                <span className="text-xs">Global</span>
               </Button>
               
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => handleViewChange('users')}
-                className="p-2 rounded-full text-white hover:bg-white/20 border border-transparent hover:border-white/30 transition-all duration-200"
+                className="px-3 py-2 rounded-lg bg-gradient-to-r from-green-500 to-green-600 text-white border-2 border-green-300 hover:from-green-600 hover:to-green-700 hover:border-green-200 transition-all duration-200 shadow-lg hover:shadow-green-500/30 font-semibold"
               >
-                <Users className="w-5 h-5" />
+                <Users className="w-5 h-5 mr-1" />
+                <span className="text-xs">Özel</span>
               </Button>
               
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => handleViewChange('blocked-users')}
-                className="p-2 rounded-full text-white hover:bg-red-500/20 border border-transparent hover:border-red-300/30 transition-all duration-200"
+                className="px-3 py-2 rounded-lg bg-gradient-to-r from-red-500 to-red-600 text-white border-2 border-red-300 hover:from-red-600 hover:to-red-700 hover:border-red-200 transition-all duration-200 shadow-lg hover:shadow-red-500/30 font-semibold"
                 title="Engelli Kullanıcılar"
               >
-                <UserX className="w-5 h-5" />
+                <UserX className="w-5 h-5 mr-1" />
+                <span className="text-xs">Engelli</span>
               </Button>
             </>
           )}
@@ -316,9 +320,10 @@ export default function ChatPage() {
             variant="ghost"
             size="sm"
             onClick={handleBackToMenu}
-            className="p-2 hover:bg-red-500/80 rounded-full text-white border border-transparent hover:border-red-300 transition-all duration-200 hover:scale-110"
+            className="px-3 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-purple-600 text-white border-2 border-purple-300 hover:from-purple-600 hover:to-purple-700 hover:border-purple-200 transition-all duration-200 shadow-lg hover:shadow-purple-500/30 font-semibold hover:scale-105"
           >
-            <Home className="w-5 h-5" />
+            <Home className="w-5 h-5 mr-1" />
+            <span className="text-xs">Ana Sayfa</span>
           </Button>
         </div>
       </div>
