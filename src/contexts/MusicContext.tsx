@@ -4,6 +4,7 @@ interface MusicContextType {
   isPlaying: boolean;
   musicEnabled: boolean;
   musicPack: string;
+  currentTrackIndex: number;
   setMusicEnabled: (enabled: boolean) => void;
   setMusicPack: (pack: string) => void;
   startBackgroundMusic: () => void;
@@ -18,10 +19,19 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isPlaying, setIsPlaying] = useState(false);
   const [musicEnabled, setMusicEnabledState] = useState(true);
   const [musicPack, setMusicPackState] = useState('default');
+  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const backgroundMusicRef = useRef<HTMLAudioElement | null>(null);
   const isStartingRef = useRef(false);
   const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const originalVolumeRef = useRef(0.3);
+  
+  // Default pack playlist
+  const defaultPlaylist = [
+    '/sounds/default/backround-music.mp3',
+    '/sounds/default/backround-music1.mp3',
+    '/sounds/default/backround-music2.mp3',
+    '/sounds/default/backround-music3.mp3'
+  ];
 
   // Load settings on mount
   useEffect(() => {
@@ -68,19 +78,27 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           case 'space2':
             return '/sounds/default/uzay2.mp3';
           default:
-            return '/sounds/default/backround-music.mp3';
+            return defaultPlaylist[currentTrackIndex];
         }
       };
       
       backgroundMusicRef.current = new Audio(getMusicFile());
-      backgroundMusicRef.current.loop = true;
+      // Don't loop individual tracks for default pack, we'll handle playlist rotation
+      backgroundMusicRef.current.loop = musicPack !== 'default';
       backgroundMusicRef.current.volume = 0.3;
       backgroundMusicRef.current.preload = 'auto';
       
       // Event listeners for state tracking
       backgroundMusicRef.current.onplay = () => setIsPlaying(true);
       backgroundMusicRef.current.onpause = () => setIsPlaying(false);
-      backgroundMusicRef.current.onended = () => setIsPlaying(false);
+      backgroundMusicRef.current.onended = () => {
+        setIsPlaying(false);
+        // For default pack, move to next track in playlist
+        if (musicPack === 'default' && musicEnabled) {
+          const nextIndex = (currentTrackIndex + 1) % defaultPlaylist.length;
+          setCurrentTrackIndex(nextIndex);
+        }
+      };
     };
 
     initMusic();
@@ -92,7 +110,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         backgroundMusicRef.current.currentTime = 0;
       }
     };
-  }, [musicPack]);
+  }, [musicPack, currentTrackIndex]);
 
   const startBackgroundMusic = () => {
     if (!musicEnabled || !backgroundMusicRef.current || isStartingRef.current) return;
@@ -268,6 +286,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       isPlaying,
       musicEnabled,
       musicPack,
+      currentTrackIndex,
       setMusicEnabled,
       setMusicPack,
       startBackgroundMusic,
