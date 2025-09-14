@@ -343,7 +343,7 @@ const SettingsPage = () => {
               Geri
             </Button>
             <h1 className="text-2xl font-bold text-purple-600">Ayarlar</h1>
-            <div className="w-16" /> {/* Spacer */}
+            <div className="w-16" />
           </div>
 
           {/* Game Settings */}

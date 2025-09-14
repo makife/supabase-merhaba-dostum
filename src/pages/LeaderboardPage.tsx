@@ -346,15 +346,15 @@ const LeaderboardPage = () => {
         <div className="sticky top-0 z-10 bg-yellow-50/95 backdrop-blur-sm border-b border-yellow-200 p-3">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Button variant="outline" size="sm" onClick={() => navigate('/')} className="text-xs text-yellow-600 border-yellow-500/30 hover:bg-yellow-500/20 bg-yellow-500/10">
+              <Button variant="outline" size="sm" onClick={() => navigate('/')} className="text-yellow-600 border-yellow-500/30 hover:bg-yellow-500/20 bg-yellow-500/10">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Geri
               </Button>
-              <h1 className="text-xl font-bold flex items-center text-yellow-600">
+              <h1 className="text-2xl font-bold flex items-center text-yellow-600">
                 <Trophy className="w-5 h-5 mr-2 text-yellow-500" />
                 Liderlik
               </h1>
-              <div className="w-12" />
+              <div className="w-16" />
             </div>
 
             {currentStats && (

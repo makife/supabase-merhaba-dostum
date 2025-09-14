@@ -488,8 +488,8 @@ const ProfilePage = () => {
       <div className="max-w-2xl mx-auto w-full flex flex-col h-full">
         {/* Fixed Header */}
         <div className="p-4 bg-blue-50/95 backdrop-blur-sm border-b border-blue-200 sticky top-0 z-10">
-          <div className="flex items-center justify-between mb-4">
-            <Button variant="outline" onClick={() => {
+            <div className="flex items-center justify-between mb-4">
+            <Button variant="outline" size="sm" onClick={() => {
               const fromPage = location.state?.from;
               if (fromPage === '/chat') {
                 navigate('/chat');
@@ -503,7 +503,7 @@ const ProfilePage = () => {
             <h1 className="text-2xl font-bold text-blue-600">
               {isOwnProfile ? 'Profil' : `${profileData.username} Profili`}
             </h1>
-            <div className="flex space-x-2">
+            <div className="w-16 flex justify-end">
               {isOwnProfile && (
                 isEditing ? (
                   <Button variant="outline" size="sm" onClick={handleSaveProfile}>
