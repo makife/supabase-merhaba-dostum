@@ -577,7 +577,7 @@ const HomePage = () => {
               </div>
             </div>
           </div>
-          <ScrollArea className="h-80">
+          <ScrollArea className="h-80 [&>[data-radix-scroll-area-viewport]]:scrollbar-none [&>[data-radix-scroll-area-viewport]]:[-webkit-scrollbar]:hidden">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pr-4">
               {gameModesConfig.map((mode) => (
                 <Card key={mode.id} className={`cursor-pointer border-0 overflow-hidden ${mode.gradient}`}>
