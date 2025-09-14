@@ -25,7 +25,7 @@ export const TournamentCountdown: React.FC<TournamentCountdownProps> = ({
   const getStatusMessage = () => {
     if (realPlayerCount < 2) {
       return {
-        text: "En az 2 gerçek oyuncu gerekli",
+        text: "En az 2 oyuncu gerekli",
         color: "text-red-400",
         emoji: "⚠️"
       };
@@ -33,7 +33,7 @@ export const TournamentCountdown: React.FC<TournamentCountdownProps> = ({
     
     if (realPlayerCount >= 8) {
       return {
-        text: "TAM KADRO! 8 gerçek oyunculu turnuva",
+        text: "TAM KADRO! 8 oyunculu turnuva",
         color: "text-yellow-400",
         emoji: "🔥"
       };
