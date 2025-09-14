@@ -173,8 +173,8 @@ const WheelPage = () => {
             onClick={() => navigate('/')}
             className="flex items-center gap-2"
           >
-            <ArrowLeft className="w-4 h-4" />
-            Ana Sayfa
+            <ArrowLeft className="px-8 py-3 text-lg font-bold bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600" />
+            Geri
           </Button>
           
           <h1 className="text-2xl font-bold text-center flex items-center gap-2">
