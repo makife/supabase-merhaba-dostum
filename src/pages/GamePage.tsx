@@ -4130,6 +4130,8 @@ return (
                         handleLetterClick(letter, rowIndex, colIndex);
                       }}
                       onClick={(e) => {
+                        // Sadece touch event olmadığında çalışsın (çift tetiklemeyi engeller)
+                        if (e.nativeEvent && 'touches' in e.nativeEvent) return;
                         e.preventDefault();
                         e.stopPropagation();
                         handleLetterClick(letter, rowIndex, colIndex);
