@@ -236,13 +236,13 @@ const WheelPage = () => {
                         'Z'
                       ].join(' ');
 
-                      // Metin pozisyonu - merkezden başlayarak dışa doğru
+                      // Metin pozisyonu - merkezden başlayarak radyal olarak dışa doğru
                       const textAngle = angle + (360 / wheelSegments.length) / 2;
-                      const textStartRadius = radius * 0.4; // Merkezden başlangıç mesafesi
+                      const textStartRadius = radius * 0.3; // Merkezden başlangıç mesafesi
                       const textX = centerX + textStartRadius * Math.cos((textAngle - 90) * Math.PI / 180);
                       const textY = centerY + textStartRadius * Math.sin((textAngle - 90) * Math.PI / 180);
 
-                      // Yazının rotasyonu - merkezden dışa doğru yatay
+                      // Yazının rotasyonu - segment açısına paralel (radyal yön)
                       const textRotation = textAngle;
                       
                       return (
