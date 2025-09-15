@@ -37,7 +37,7 @@ export const useImmersiveMode = () => {
     const startAutoHide = () => {
       if (autoHideInterval) clearInterval(autoHideInterval);
       // Re-apply hide periodically in case OS reveals bars
-      autoHideInterval = setInterval(hideSystemUI, 2500);
+      autoHideInterval = setInterval(hideSystemUI, 1500);
     };
 
     const handleUserInteraction = () => {
