@@ -16,6 +16,7 @@ import { useWordValidation } from '@/hooks/useWordValidation';
 import { useSounds } from '@/hooks/useSounds';
 import { useJokerInventory } from '@/hooks/useJokerInventory';
 import { useUserPurchases } from '@/hooks/useUserPurchases';
+import { useNativeGameplay } from '@/hooks/useNativeGameplay';
 import { supabase } from '@/integrations/supabase/client';
 import GameCountdown from '@/components/GameCountdown';
 import { 
@@ -87,6 +88,7 @@ const GamePage = ({
   const navigate = useNavigate();
   const { toast } = useToast();
   const { currentRoom, updateScore, participants: gameParticipants, endGame, leaveRoom, sendRematchRequest, respondRematchRequest, currentRematchRequest, setCurrentRematchRequest, joinRoom, createRoom, addAIOpponent } = useGame();
+  const { triggerHapticFeedback, optimizeTouchEvent, isNative } = useNativeGameplay();
   
   // Tournament match bilgisini URL'den al
   const [tournamentMatch, setTournamentMatch] = useState(propTournamentMatch || null);

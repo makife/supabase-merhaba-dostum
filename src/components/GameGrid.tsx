@@ -37,20 +37,25 @@ const GameGrid = memo<GameGridProps>(({
     const highlighted = isLetterHighlighted(row, col);
     
     return cn(
-      "w-12 h-12 sm:w-16 sm:h-16 text-lg sm:text-xl font-bold rounded-lg transition-all duration-200 border-2",
-      "hover:scale-105 active:scale-95",
+      // NATIVE MOBILE: Daha büyük dokunma alanları ve touch-friendly tasarım
+      "w-16 h-16 md:w-20 md:h-20 text-xl md:text-2xl font-bold rounded-xl transition-all duration-200 border-2",
+      // Native mobile touch optimizations
+      "touch-manipulation select-none",
+      "active:scale-95 hover:scale-105",
+      // Mobile-first shadow and effects
+      "shadow-lg hover:shadow-xl",
       selected
-        ? "bg-primary text-primary-foreground border-primary shadow-lg scale-105"
+        ? "bg-primary text-primary-foreground border-primary shadow-xl scale-105 shadow-primary/30"
         : highlighted && isJokerActive
-        ? "bg-yellow-200 border-yellow-400 text-yellow-800 animate-pulse"
-        : "bg-background border-border hover:border-primary/50 hover:bg-accent"
+        ? "bg-yellow-200 border-yellow-400 text-yellow-800 animate-pulse shadow-yellow-400/50"
+        : "bg-card border-border hover:border-primary/50 hover:bg-accent shadow-md hover:shadow-lg"
     );
   }, [isLetterSelected, isLetterHighlighted, isJokerActive]);
 
-  // Memoized grid rendering
+  // Native mobile optimized grid rendering
   const renderedGrid = useMemo(() => {
     return gameGrid.map((row, rowIndex) => (
-      <div key={rowIndex} className="flex gap-2 justify-center">
+      <div key={rowIndex} className="flex gap-3 md:gap-4 justify-center">
         {row.map((letter, colIndex) => {
           const buttonClass = getLetterButtonClass(rowIndex, colIndex, letter);
           
@@ -58,9 +63,23 @@ const GameGrid = memo<GameGridProps>(({
             <Button
               key={`${rowIndex}-${colIndex}`}
               variant="outline"
+              onTouchStart={(e) => {
+                // Native mobile: Haptic feedback simulation
+                e.preventDefault();
+                if (letter && 'vibrate' in navigator) {
+                  navigator.vibrate(50);
+                }
+              }}
               onClick={() => onLetterClick(rowIndex, colIndex, letter)}
               className={buttonClass}
               disabled={!letter} // Empty letters are disabled
+              style={{
+                // Native optimization: Prevent text selection and zoom
+                WebkitUserSelect: 'none',
+                userSelect: 'none',
+                WebkitTouchCallout: 'none',
+                WebkitTapHighlightColor: 'transparent'
+              }}
             >
               {letter}
             </Button>
@@ -87,9 +106,9 @@ const GameGrid = memo<GameGridProps>(({
   }, [currentWord]);
 
   return (
-    <div className={cn("flex flex-col items-center space-y-4", className)}>
+    <div className={cn("flex flex-col items-center space-y-6 p-4", className)}>
       {wordPreview}
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3 md:gap-4 mobile-safe">
         {renderedGrid}
       </div>
     </div>
