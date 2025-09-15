@@ -253,17 +253,21 @@ const WheelPage = () => {
                             strokeWidth="2"
                           />
                           <text
-  x={textX}
-  y={textY}
-  fill="white"
-  fontSize="14"
-  fontWeight="bold"
-  textAnchor="middle"
-  dominantBaseline="middle"
-  style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}
->
-  {segment.text}
-</text>
+      x={textX}
+      y={textY}
+      fill="white"
+      fontSize="14"
+      fontWeight="bold"
+      textAnchor="middle"
+      dominantBaseline="middle"
+      fontFamily="system-ui, -apple-system, sans-serif"
+      style={{
+        textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
+        filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.5))'
+      }}
+    >
+      {segment.text}
+    </text>
                         </g>
                       );
                     })}
