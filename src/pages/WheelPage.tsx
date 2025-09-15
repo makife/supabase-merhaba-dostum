@@ -236,21 +236,14 @@ const WheelPage = () => {
                         'Z'
                       ].join(' ');
 
-                      // Metin pozisyonu ve rotasyonu
+                      // Metin pozisyonu - merkezden başlayarak dışa doğru
                       const textAngle = angle + (360 / wheelSegments.length) / 2;
-                      const textRadius = radius * 0.7;
-                      const textX = centerX + textRadius * Math.cos((textAngle - 90) * Math.PI / 180);
-                      const textY = centerY + textRadius * Math.sin((textAngle - 90) * Math.PI / 180);
+                      const textStartRadius = radius * 0.4; // Merkezden başlangıç mesafesi
+                      const textX = centerX + textStartRadius * Math.cos((textAngle - 90) * Math.PI / 180);
+                      const textY = centerY + textStartRadius * Math.sin((textAngle - 90) * Math.PI / 180);
 
-                      // Yazının rotasyonu - her zaman yatay kalacak şekilde
-                      let textRotation = 0;
-                      if (textAngle > 90 && textAngle < 270) {
-                        // Alt yarıda olan yazıları 180° çevir ki ters görünmesin
-                        textRotation = textAngle + 180;
-                      } else {
-                        // Üst yarıda olan yazılar normal kalacak
-                        textRotation = textAngle;
-                      }
+                      // Yazının rotasyonu - merkezden dışa doğru yatay
+                      const textRotation = textAngle;
                       
                       return (
                         <g key={index}>
@@ -266,7 +259,7 @@ const WheelPage = () => {
                             fill="white"
                             fontSize="12"
                             fontWeight="bold"
-                            textAnchor="middle"
+                            textAnchor="start"
                             dominantBaseline="middle"
                             transform={`rotate(${textRotation}, ${textX}, ${textY})`}
                             style={{ 
