@@ -73,11 +73,32 @@ export const useNativeGameplay = () => {
       // Add native class to body for CSS optimizations
       document.body.classList.add('native-platform');
       
-      // Disable pull-to-refresh
+      // Disable pull-to-refresh and scrolling behaviors
       document.body.style.overscrollBehavior = 'none';
+      document.body.style.overflow = 'hidden';
+      document.body.style.height = '100vh';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      
+      // Force hardware acceleration for better performance
+      document.body.style.transform = 'translate3d(0, 0, 0)';
+      document.body.style.webkitTransform = 'translate3d(0, 0, 0)';
+      
+      // Disable text selection globally
+      document.body.style.webkitUserSelect = 'none';
+      document.body.style.userSelect = 'none';
       
       return () => {
         document.body.classList.remove('native-platform');
+        document.body.style.overscrollBehavior = '';
+        document.body.style.overflow = '';
+        document.body.style.height = '';
+        document.body.style.position = '';
+        document.body.style.width = '';
+        document.body.style.transform = '';
+        document.body.style.webkitTransform = '';
+        document.body.style.webkitUserSelect = '';
+        document.body.style.userSelect = '';
       };
     }
   }, []);

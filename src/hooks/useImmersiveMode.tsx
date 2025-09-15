@@ -5,6 +5,8 @@ import { NavigationBar } from '@ethion/capacitor-navigation-bar';
 
 export const useImmersiveMode = () => {
   useEffect(() => {
+    let autoHideTimeout: NodeJS.Timeout;
+    
     const setupImmersiveMode = async () => {
       // Only work on native mobile platforms
       if (Capacitor.isNativePlatform()) {
@@ -23,6 +25,31 @@ export const useImmersiveMode = () => {
               await NavigationBar.setTransparency({ isTransparent: true });
               await NavigationBar.hide();
               console.log('📱 Immersive mode enabled for Android (nav bar hidden)');
+              
+              // Setup auto-hide functionality
+              const autoHideNavigation = async () => {
+                try {
+                  await NavigationBar.hide();
+                } catch (e) {
+                  console.warn('⚠️ Auto-hide navigation failed:', e);
+                }
+              };
+
+              // Auto-hide navigation bar every 3 seconds
+              const setupAutoHide = () => {
+                autoHideTimeout = setInterval(autoHideNavigation, 3000);
+              };
+
+              setupAutoHide();
+              
+              // Re-hide navigation on any touch/interaction
+              const handleUserInteraction = () => {
+                autoHideNavigation();
+              };
+
+              document.addEventListener('touchstart', handleUserInteraction, { passive: true });
+              document.addEventListener('click', handleUserInteraction, { passive: true });
+              
             } catch (e) {
               console.warn('⚠️ NavigationBar plugin not available or failed:', e);
             }
@@ -42,6 +69,10 @@ export const useImmersiveMode = () => {
 
     // Cleanup function
     return () => {
+      if (autoHideTimeout) {
+        clearInterval(autoHideTimeout);
+      }
+      
       if (Capacitor.isNativePlatform()) {
         StatusBar.show().catch((error) => {
           console.warn('⚠️ Could not show status bar:', error);
@@ -52,6 +83,10 @@ export const useImmersiveMode = () => {
             NavigationBar.show().catch(() => {});
           }).catch(() => {});
         }
+        
+        // Remove event listeners
+        document.removeEventListener('touchstart', () => {});
+        document.removeEventListener('click', () => {});
       }
     };
   }, []);
