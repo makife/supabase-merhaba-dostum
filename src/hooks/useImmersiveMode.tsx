@@ -2,66 +2,86 @@ import { useEffect } from 'react';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { Capacitor } from '@capacitor/core';
 import { NavigationBar } from '@ethion/capacitor-navigation-bar';
+import { App } from '@capacitor/app';
 
 export const useImmersiveMode = () => {
   useEffect(() => {
-    let autoHideTimeout: NodeJS.Timeout;
-    
-    const setupImmersiveMode = async () => {
-      // Only work on native mobile platforms
-      if (Capacitor.isNativePlatform()) {
-        try {
-          // Hide the status bar
-          await StatusBar.hide();
-          
-          // For Android, enable immersive mode to hide navigation bar
-          if (Capacitor.getPlatform() === 'android') {
-            // Enable immersive mode: hide status and navigation bars
-            await StatusBar.setOverlaysWebView({ overlay: true });
+    let autoHideInterval: ReturnType<typeof setInterval> | undefined;
+    let appListener: { remove: () => void } | undefined;
+
+    const hideSystemUI = async () => {
+      if (!Capacitor.isNativePlatform()) return;
+      try {
+        // Always hide status bar and overlay content
+        await StatusBar.setOverlaysWebView({ overlay: true });
+        await StatusBar.hide();
+
+        if (Capacitor.getPlatform() === 'android') {
+          try {
             await StatusBar.setStyle({ style: Style.Dark });
             await StatusBar.setBackgroundColor({ color: '#00000000' });
+          } catch {}
 
-            try {
-              await NavigationBar.setTransparency({ isTransparent: true });
-              await NavigationBar.hide();
-              console.log('📱 Immersive mode enabled for Android (nav bar hidden)');
-              
-              // Setup auto-hide functionality
-              const autoHideNavigation = async () => {
-                try {
-                  await NavigationBar.hide();
-                } catch (e) {
-                  console.warn('⚠️ Auto-hide navigation failed:', e);
-                }
-              };
-
-              // Auto-hide navigation bar every 3 seconds
-              const setupAutoHide = () => {
-                autoHideTimeout = setInterval(autoHideNavigation, 3000);
-              };
-
-              setupAutoHide();
-              
-              // Re-hide navigation on any touch/interaction
-              const handleUserInteraction = () => {
-                autoHideNavigation();
-              };
-
-              document.addEventListener('touchstart', handleUserInteraction, { passive: true });
-              document.addEventListener('click', handleUserInteraction, { passive: true });
-              
-            } catch (e) {
-              console.warn('⚠️ NavigationBar plugin not available or failed:', e);
-            }
-          } else if (Capacitor.getPlatform() === 'ios') {
-            // For iOS, just hide status bar and use safe area
-            await StatusBar.setOverlaysWebView({ overlay: true });
-            console.log('📱 Status bar overlay enabled for iOS');
+          try {
+            await NavigationBar.setTransparency({ isTransparent: true });
+            await NavigationBar.hide();
+          } catch (e) {
+            console.warn('⚠️ NavigationBar hide failed:', e);
           }
-          
-        } catch (error) {
-          console.warn('⚠️ Could not enable immersive mode:', error);
         }
+      } catch (error) {
+        console.warn('⚠️ Could not hide system UI:', error);
+      }
+    };
+
+    const startAutoHide = () => {
+      if (autoHideInterval) clearInterval(autoHideInterval);
+      // Re-apply hide periodically in case OS reveals bars
+      autoHideInterval = setInterval(hideSystemUI, 2500);
+    };
+
+    const handleUserInteraction = () => {
+      hideSystemUI();
+      startAutoHide();
+    };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        hideSystemUI();
+        startAutoHide();
+      }
+    };
+
+    const handleFocus = () => {
+      hideSystemUI();
+      startAutoHide();
+    };
+
+    const setupImmersiveMode = async () => {
+      // Only work on native mobile platforms
+      if (!Capacitor.isNativePlatform()) return;
+
+      await hideSystemUI();
+      startAutoHide();
+
+      // Interaction listeners to force-hide bars again
+      document.addEventListener('touchstart', handleUserInteraction, { passive: true });
+      document.addEventListener('click', handleUserInteraction, { passive: true });
+      window.addEventListener('focus', handleFocus);
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      window.addEventListener('resize', handleUserInteraction);
+      window.addEventListener('scroll', handleUserInteraction, { passive: true });
+
+      // App lifecycle (resume)
+      try {
+        appListener = await App.addListener('appStateChange', ({ isActive }) => {
+          if (isActive) {
+            hideSystemUI();
+            startAutoHide();
+          }
+        });
+      } catch (e) {
+        console.warn('⚠️ App plugin not available:', e);
       }
     };
 
@@ -69,25 +89,27 @@ export const useImmersiveMode = () => {
 
     // Cleanup function
     return () => {
-      if (autoHideTimeout) {
-        clearInterval(autoHideTimeout);
-      }
-      
+      if (autoHideInterval) clearInterval(autoHideInterval);
+
       if (Capacitor.isNativePlatform()) {
         StatusBar.show().catch((error) => {
           console.warn('⚠️ Could not show status bar:', error);
         });
         if (Capacitor.getPlatform() === 'android') {
-          // Try to restore navigation bar
-          import('@ethion/capacitor-navigation-bar').then(({ NavigationBar }) => {
-            NavigationBar.show().catch(() => {});
-          }).catch(() => {});
+          try {
+            NavigationBar.show();
+          } catch {}
         }
-        
-        // Remove event listeners
-        document.removeEventListener('touchstart', () => {});
-        document.removeEventListener('click', () => {});
       }
+
+      // Remove event listeners
+      document.removeEventListener('touchstart', handleUserInteraction as any);
+      document.removeEventListener('click', handleUserInteraction as any);
+      window.removeEventListener('focus', handleFocus as any);
+      document.removeEventListener('visibilitychange', handleVisibilityChange as any);
+      window.removeEventListener('resize', handleUserInteraction as any);
+      window.removeEventListener('scroll', handleUserInteraction as any);
+      appListener?.remove?.();
     };
   }, []);
 };
