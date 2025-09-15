@@ -310,7 +310,7 @@ const renderHeader = (title: string, subtitle: string, showBackButton: boolean =
                 size="sm"
                 onClick={() => handleViewChange('blocked-users')}
                 className="px-2 py-2 rounded-lg bg-gradient-to-r from-red-500 to-red-600 text-white border-2 border-red-300 hover:from-red-600 hover:to-red-700 hover:border-red-200 transition-all duration-200 shadow-lg hover:shadow-red-500/30 font-semibold sm:px-3"
-                title="Engelli Kullanıcılar"
+                title="Engelliler"
               >
                 <UserX className="w-4 h-4 sm:w-5 sm:h-5 sm:mr-1" />
                 <span className="text-xs hidden sm:inline">Engelli</span>
@@ -513,7 +513,7 @@ const renderHeader = (title: string, subtitle: string, showBackButton: boolean =
       return (
         <div className="h-full flex flex-col">
           {renderHeader(
-            'KELİMECİ - Özel Mesajlar',
+            'Özel Mesajlar',
             `${onlineUsers.length} kişi çevrimiçi`,
             true
           )}
@@ -527,7 +527,7 @@ const renderHeader = (title: string, subtitle: string, showBackButton: boolean =
       return (
         <div className="h-full flex flex-col">
           {renderHeader(
-            'KELİMECİ - Engelli Kullanıcılar',
+            'Engellediklerim',
             `${blockedUsers.length} kişi engellendi`,
             true
           )}
