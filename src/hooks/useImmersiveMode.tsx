@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { Capacitor } from '@capacitor/core';
+import { NavigationBar } from '@ethion/capacitor-navigation-bar';
 
 export const useImmersiveMode = () => {
   useEffect(() => {
@@ -13,14 +14,18 @@ export const useImmersiveMode = () => {
           
           // For Android, enable immersive mode to hide navigation bar
           if (Capacitor.getPlatform() === 'android') {
-            // Enable immersive mode by overlaying web view
+            // Enable immersive mode: hide status and navigation bars
             await StatusBar.setOverlaysWebView({ overlay: true });
-            
-            // Set style to be transparent
             await StatusBar.setStyle({ style: Style.Dark });
             await StatusBar.setBackgroundColor({ color: '#00000000' });
-            
-            console.log('📱 Immersive mode enabled for Android');
+
+            try {
+              await NavigationBar.setTransparency({ isTransparent: true });
+              await NavigationBar.hide();
+              console.log('📱 Immersive mode enabled for Android (nav bar hidden)');
+            } catch (e) {
+              console.warn('⚠️ NavigationBar plugin not available or failed:', e);
+            }
           } else if (Capacitor.getPlatform() === 'ios') {
             // For iOS, just hide status bar and use safe area
             await StatusBar.setOverlaysWebView({ overlay: true });
@@ -41,6 +46,12 @@ export const useImmersiveMode = () => {
         StatusBar.show().catch((error) => {
           console.warn('⚠️ Could not show status bar:', error);
         });
+        if (Capacitor.getPlatform() === 'android') {
+          // Try to restore navigation bar
+          import('@ethion/capacitor-navigation-bar').then(({ NavigationBar }) => {
+            NavigationBar.show().catch(() => {});
+          }).catch(() => {});
+        }
       }
     };
   }, []);

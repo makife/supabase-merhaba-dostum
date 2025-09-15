@@ -204,7 +204,30 @@ All colors MUST be HSL.
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Override for mobile devices with notch */
+  /* Hide scrollbars and lock layout on native */
+  .is-native *,
+  html.is-native *,
+  body.is-native * {
+    -ms-overflow-style: none; /* IE 10+ */
+    scrollbar-width: none; /* Firefox */
+  }
+  .is-native *::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+    background: transparent;
+  }
+  html.is-native, body.is-native, html.is-native body, html.is-native #root {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden !important;
+    overscroll-behavior: none;
+  }
+  html.is-native #root {
+    -webkit-overflow-scrolling: touch;
+    touch-action: manipulation;
+  }
+
   @supports (padding: max(0px)) {
     .mobile-safe {
       padding-top: max(1rem, env(safe-area-inset-top));
