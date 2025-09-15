@@ -238,12 +238,19 @@ const WheelPage = () => {
 
                       // Metin pozisyonu - merkezden başlayarak radyal olarak dışa doğru
                       const textAngle = angle + (360 / wheelSegments.length) / 2;
-                      const textStartRadius = radius * 0.3; // Merkezden başlangıç mesafesi
+                      const textStartRadius = radius * 0.3;
                       const textX = centerX + textStartRadius * Math.cos((textAngle - 90) * Math.PI / 180);
                       const textY = centerY + textStartRadius * Math.sin((textAngle - 90) * Math.PI / 180);
 
-                      // Yazının rotasyonu - segment açısına paralel (radyal yön)
-                      const textRotation = textAngle;
+                      // Yazının rotasyonu - okunabilir olması için ayarla
+                      let textRotation = textAngle;
+                      let textAnchor = "start";
+                      
+                      // Alt yarımdaki yazıları 180° çevir ki ters görünmesin
+                      if (textAngle > 90 && textAngle < 270) {
+                        textRotation = textAngle + 180;
+                        textAnchor = "end"; // Ters çevrildiğinde end kullan
+                      }
                       
                       return (
                         <g key={index}>
@@ -259,7 +266,7 @@ const WheelPage = () => {
                             fill="white"
                             fontSize="12"
                             fontWeight="bold"
-                            textAnchor="start"
+                            textAnchor={textAnchor}
                             dominantBaseline="middle"
                             transform={`rotate(${textRotation}, ${textX}, ${textY})`}
                             style={{ 
