@@ -902,7 +902,7 @@ const startPrivateChat = async (targetUser: SelectedUser) => {
         <div className="flex items-center space-x-2">
           <UserX className="w-6 h-6" />
           <div>
-            <h3 className="font-semibold text-lg">Engelli Kullanıcılar</h3>
+            <h3 className="font-semibold text-lg">Engellediklerim</h3>
             <p className="text-red-100 text-sm">
               {blockedUsers.length} kişi engellendi
             </p>
