@@ -35,21 +35,21 @@ const WheelPage = () => {
 
   // Çark bölümleri - 15 bölmeli
   const wheelSegments: WheelReward[] = [
-    { type: 'credits', value: 1, text: '1 Oyun 🎮', color: '#3B82F6' },
-    { type: 'joker', value: 1, item: 'degistir', text: '1 Değiştir 🔄', color: '#10B981' },
-    { type: 'empty', value: 0, text: 'Boş 💨', color: '#9CA3AF' },
-    { type: 'credits', value: 2, text: '2 Oyun 🎮', color: '#2563EB' },
-    { type: 'joker', value: 1, item: 'fisilida', text: '1 Fısılda 🤫', color: '#EAB308' },
-    { type: 'empty', value: 0, text: 'Boş 💨', color: '#9CA3AF' },
-    { type: 'credits', value: 3, text: '3 Oyun 🎮', color: '#1D4ED8' },
-    { type: 'joker', value: 2, item: 'degistir', text: '2 Değiştir 🔄', color: '#059669' },
-    { type: 'empty', value: 0, text: 'Boş 💨', color: '#9CA3AF' },
-    { type: 'credits', value: 5, text: '5 Oyun 🎮', color: '#1E40AF' },
-    { type: 'joker', value: 1, item: 'senyaz', text: '1 Sen Yaz ✍️', color: '#7C3AED' },
-    { type: 'empty', value: 0, text: 'Boş 💨', color: '#9CA3AF' },
-    { type: 'joker', value: 2, item: 'fisilida', text: '2 Fısılda 🤫', color: '#D97706' },
-    { type: 'joker', value: 2, item: 'senyaz', text: '2 Sen Yaz ✍️', color: '#6D28D9' },
-    { type: 'empty', value: 0, text: 'Boş 💨', color: '#9CA3AF' }
+    { type: 'credits', value: 1, text: '1 Oyun', color: '#3B82F6' },
+    { type: 'joker', value: 1, item: 'degistir', text: '1 Değiştir', color: '#10B981' },
+    { type: 'empty', value: 0, text: 'Boş', color: '#9CA3AF' },
+    { type: 'credits', value: 2, text: '2 Oyun', color: '#2563EB' },
+    { type: 'joker', value: 1, item: 'fisilida', text: '1 Fısılda', color: '#EAB308' },
+    { type: 'empty', value: 0, text: 'Boş', color: '#9CA3AF' },
+    { type: 'credits', value: 3, text: '3 Oyun', color: '#1D4ED8' },
+    { type: 'joker', value: 2, item: 'degistir', text: '2 Değiştir', color: '#059669' },
+    { type: 'empty', value: 0, text: 'Boş', color: '#9CA3AF' },
+    { type: 'credits', value: 5, text: '5 Oyun', color: '#1E40AF' },
+    { type: 'joker', value: 1, item: 'senyaz', text: '1 Sen Yaz', color: '#7C3AED' },
+    { type: 'empty', value: 0, text: 'Boş', color: '#9CA3AF' },
+    { type: 'joker', value: 2, item: 'fisilida', text: '2 Fısılda', color: '#D97706' },
+    { type: 'joker', value: 2, item: 'senyaz', text: '2 Sen Yaz', color: '#6D28D9' },
+    { type: 'empty', value: 0, text: 'Boş', color: '#9CA3AF' }
   ];
 
   // Günlük çark kontrolü
@@ -236,21 +236,13 @@ const WheelPage = () => {
                         'Z'
                       ].join(' ');
 
-                      // Metin pozisyonu - merkezden başlayarak radyal olarak dışa doğru
+                      // Metin pozisyonu (yatay ve bölüme sığacak şekilde)
                       const textAngle = angle + (360 / wheelSegments.length) / 2;
-                      const textStartRadius = radius * 0.3;
-                      const textX = centerX + textStartRadius * Math.cos((textAngle - 90) * Math.PI / 180);
-                      const textY = centerY + textStartRadius * Math.sin((textAngle - 90) * Math.PI / 180);
-
-                      // Yazının rotasyonu - okunabilir olması için ayarla
-                      let textRotation = textAngle;
-                      let textAnchor = "start";
-                      
-                      // Alt yarımdaki yazıları 180° çevir ki ters görünmesin
-                      if (textAngle > 90 && textAngle < 270) {
-                        textRotation = textAngle + 180;
-                        textAnchor = "end"; // Ters çevrildiğinde end kullan
-                      }
+                      const textRadius = radius * 0.7;
+                      const textX = centerX + textRadius * Math.cos((textAngle - 90) * Math.PI / 180);
+                      const textY = centerY + textRadius * Math.sin((textAngle - 90) * Math.PI / 180);
+                      const theta = (Math.PI * 2) / wheelSegments.length;
+                      const availableWidth = Math.max(30, 2 * textRadius * Math.sin(theta / 2) - 12);
                       
                       return (
                         <g key={index}>
@@ -266,13 +258,10 @@ const WheelPage = () => {
                             fill="white"
                             fontSize="12"
                             fontWeight="bold"
-                            textAnchor={textAnchor}
+                            textAnchor="middle"
                             dominantBaseline="middle"
-                            transform={`rotate(${textRotation}, ${textX}, ${textY})`}
-                            style={{ 
-                              textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
-                              fontFamily: 'system-ui, -apple-system, sans-serif'
-                            }}
+                            lengthAdjust="spacingAndGlyphs"
+                            textLength={availableWidth}
                           >
                             {segment.text}
                           </text>
