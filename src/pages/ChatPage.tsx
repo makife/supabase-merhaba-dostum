@@ -249,12 +249,12 @@ export default function ChatPage() {
     }
   };
 
- // Ortak header bileşeni - güncellenmiş versiyon
+// Ortak header bileşeni - güncellenmiş versiyon
 const renderHeader = (title: string, subtitle: string, showBackButton: boolean = false) => (
-  <div className="bg-gradient-to-r from-chat-500 via-chat-600 to-chat-500 text-white p-6 border-b-2 border-chat-300 shadow-lg min-h-[100px]">
-    <div className="flex flex-col h-full justify-between">
-      {/* Üst kısım - Başlık */}
-      <div className="flex items-start justify-between">
+  <div className="bg-gradient-to-r from-chat-500 via-chat-600 to-chat-500 text-white p-6 border-b-2 border-chat-300 shadow-lg h-[120px]">
+    <div className="flex flex-col h-full justify-end">
+      {/* Alt kısım - Başlık ve Butonlar aynı hizada */}
+      <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           {showBackButton && (
             <Button
@@ -281,10 +281,57 @@ const renderHeader = (title: string, subtitle: string, showBackButton: boolean =
             {/* <p className="text-chat-100 text-sm font-medium">{subtitle}</p> */}
           </div>
         </div>
+        
+        <div className="flex items-center space-x-2">
+          {viewMode === 'global' && (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleViewChange('global')}
+                className="px-2 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 text-white border-2 border-blue-300 hover:from-blue-600 hover:to-blue-700 hover:border-blue-200 transition-all duration-200 shadow-lg hover:shadow-blue-500/30 font-semibold sm:px-3"
+              >
+                <Hash className="w-4 h-4 sm:w-5 sm:h-5 sm:mr-1" />
+                <span className="text-xs hidden sm:inline">Global</span>
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleViewChange('users')}
+                className="px-2 py-2 rounded-lg bg-gradient-to-r from-green-500 to-green-600 text-white border-2 border-green-300 hover:from-green-600 hover:to-green-700 hover:border-green-200 transition-all duration-200 shadow-lg hover:shadow-green-500/30 font-semibold sm:px-3"
+              >
+                <Users className="w-4 h-4 sm:w-5 sm:h-5 sm:mr-1" />
+                <span className="text-xs hidden sm:inline">Özel</span>
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleViewChange('blocked-users')}
+                className="px-2 py-2 rounded-lg bg-gradient-to-r from-red-500 to-red-600 text-white border-2 border-red-300 hover:from-red-600 hover:to-red-700 hover:border-red-200 transition-all duration-200 shadow-lg hover:shadow-red-500/30 font-semibold sm:px-3"
+                title="Engelli Kullanıcılar"
+              >
+                <UserX className="w-4 h-4 sm:w-5 sm:h-5 sm:mr-1" />
+                <span className="text-xs hidden sm:inline">Engelli</span>
+              </Button>
+            </>
+          )}
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleBackToMenu}
+            className="px-2 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-purple-600 text-white border-2 border-purple-300 hover:from-purple-600 hover:to-purple-700 hover:border-purple-200 transition-all duration-200 shadow-lg hover:shadow-purple-500/30 font-semibold hover:scale-105 sm:px-3"
+          >
+            <Home className="w-4 h-4 sm:w-5 sm:h-5 sm:mr-1" />
+            <span className="text-xs hidden sm:inline">Ana Sayfa</span>
+          </Button>
+        </div>
       </div>
-      
-      {/* Alt kısım - Butonlar */}
-      <div className="flex items-center justify-end space-x-2 mt-4">
+    </div>
+  </div>
+);
         {viewMode === 'global' && (
           <>
             <Button
