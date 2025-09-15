@@ -117,6 +117,8 @@ const GamePage = ({
   const recentSubmissionsRef = useRef<Set<string>>(new Set());
   const randomMatchInitRef = useRef(false);
   const serverMatchStartRef = useRef<number | null>(null);
+  const syncSuppressUntilRef = useRef<number>(0);
+  const countdownCompletedAtRef = useRef<number | null>(null);
   // Touch/click double-fire koruması: Gönder butonu için son touch zaman damgası
   const submitTouchTsRef = useRef(0);
   
@@ -2461,6 +2463,10 @@ useEffect(() => {
 
     let syncInterval: NodeJS.Timeout | null = null;
     const syncTimer = () => {
+      // Başlangıçta (geri sayımdan hemen sonra) 2:00'dan başlamayı koru
+      if (Date.now() < syncSuppressUntilRef.current) {
+        return;
+      }
       const startTs = new Date(currentRoom.started_at!).getTime();
       const elapsed = Math.floor((Date.now() - startTs) / 1000);
       let remaining = Math.max(0, (currentRoom.time_limit || 120) - elapsed);
@@ -2918,34 +2924,41 @@ useEffect(() => {
   }
 }, [gameStarted, gameEnded]);
 
-  // Multiplayer (private-room & random-match) waiting/start logic
-  useEffect(() => {
-    if (gameMode === 'private-room' || gameMode === 'random-match') {
-      const realPlayers = participants.filter(p => !p.is_bot && p.user_id !== null);
-      const roomActive = currentRoom?.status === 'active';
-    
-      if (roomActive && realPlayers.length >= 2) {
-        console.log('✅ 2 gerçek oyuncu hazır - OYUN BAŞLIYOR!');
-        setWaitingForPlayer(false);
+// Multiplayer (private-room & random-match) waiting/start logic
+useEffect(() => {
+  if (gameMode === 'private-room' || gameMode === 'random-match') {
+    const realPlayers = participants.filter(p => !p.is_bot && p.user_id !== null);
+    const roomActive = currentRoom?.status === 'active';
+  
+    if (roomActive && realPlayers.length >= 2) {
+      console.log('✅ 2 gerçek oyuncu hazır - OYUN BAŞLIYOR!');
+      setWaitingForPlayer(false);
+
+      // Oyun başlamadıysa ve geri sayım gösterilmiyorsa yalnızca bir kez geri sayımı başlat
+      if (!gameStarted && !showCountdown && !gameHasStartedRef.current) {
         setShowCountdown(true);
         setGameStarted(false);
-        
-        if (!hasShownStartMessage) {
-          setHasShownStartMessage(true);
-          const modeLabel = gameMode === 'private-room' ? 'Özel Oda' : 'Rastgele Eşleşme';
-          toast({
-            title: `🎮 ${modeLabel} Başladı!`,
-            description: `${gameType === 'score' ? 'Puanlı' : 'Süreli'} oyun başladı!`,
-            duration: 2000,
-          });
-        }
-      } else {
-        setWaitingForPlayer(true);
-        setGameStarted(false);
-        setHasShownStartMessage(false);
       }
+      
+      if (!hasShownStartMessage) {
+        setHasShownStartMessage(true);
+        const modeLabel = gameMode === 'private-room' ? 'Özel Oda' : 'Rastgele Eşleşme';
+        toast({
+          title: `🎮 ${modeLabel} Başladı!`,
+          description: `${gameType === 'score' ? 'Puanlı' : 'Süreli'} oyun başladı!`,
+          duration: 2000,
+        });
+      }
+    } else {
+      setWaitingForPlayer(true);
+      // Oyun başlamadan önce beklemeye dönerse tekrar geri sayım hakkı tanı
+      if (!gameStarted) {
+        gameHasStartedRef.current = false;
+      }
+      setHasShownStartMessage(false);
     }
-  }, [participants, gameMode, hasShownStartMessage, gameType, toast, currentRoom?.status]);
+  }
+}, [participants, gameMode, hasShownStartMessage, gameType, toast, currentRoom?.status, gameStarted, showCountdown]);
 
 useEffect(() => {
   if (!currentRoom || gameMode !== 'private-room') return;
@@ -3861,7 +3874,18 @@ const opponent = getOpponentInfo();
 
 const handleCountdownComplete = () => {
   setShowCountdown(false);
+  // Süreli modda geri sayım biter bitmez süreyi tamdan başlat
+  if (gameType === 'timed') {
+    const initial = currentRoom?.time_limit || 120;
+    timeLeftRef.current = initial;
+    setDisplayTime(initial);
+  }
   setGameStarted(true);
+  gameHasStartedRef.current = true;
+  // Özel oda ve rastgele eşleşmede sunucu senkronunu kısa süre bastır (2:00'ı kesmemesi için)
+  if (gameMode === 'private-room' || gameMode === 'random-match') {
+    syncSuppressUntilRef.current = Date.now() + 6000; // 6sn
+  }
 };
 
 return (
