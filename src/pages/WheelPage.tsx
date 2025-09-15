@@ -34,23 +34,23 @@ const WheelPage = () => {
   const [timingFn, setTimingFn] = useState<'linear' | 'ease-out'>('ease-out');
 
   // Çark bölümleri - 15 bölmeli
- const wheelSegments: WheelReward[] = [
-  { type: 'credits', value: 1, text: '1 🎮', color: '#3B82F6' },
-  { type: 'joker', value: 1, item: 'degistir', text: '1 🔄', color: '#10B981' },
-  { type: 'empty', value: 0, text: '💨', color: '#9CA3AF' },
-  { type: 'credits', value: 2, text: '2 🎮', color: '#2563EB' },
-  { type: 'joker', value: 1, item: 'fisilida', text: '1 🤫', color: '#EAB308' },
-  { type: 'empty', value: 0, text: '💨', color: '#9CA3AF' },
-  { type: 'credits', value: 3, text: '3 🎮', color: '#1D4ED8' },
-  { type: 'joker', value: 2, item: 'degistir', text: '2 🔄', color: '#059669' },
-  { type: 'empty', value: 0, text: '💨', color: '#9CA3AF' },
-  { type: 'credits', value: 5, text: '5 🎮', color: '#1E40AF' },
-  { type: 'joker', value: 1, item: 'senyaz', text: '1 ✍️', color: '#7C3AED' },
-  { type: 'empty', value: 0, text: '💨', color: '#9CA3AF' },
-  { type: 'joker', value: 2, item: 'fisilida', text: '2 🤫', color: '#D97706' },
-  { type: 'joker', value: 2, item: 'senyaz', text: '2 ✍️', color: '#6D28D9' },
-  { type: 'empty', value: 0, text: '💨', color: '#9CA3AF' }
-];
+  const wheelSegments: WheelReward[] = [
+    { type: 'credits', value: 1, text: '1 Oyun 🎮', color: '#3B82F6' },
+    { type: 'joker', value: 1, item: 'degistir', text: '1 Değiştir 🔄', color: '#10B981' },
+    { type: 'empty', value: 0, text: 'Boş 💨', color: '#9CA3AF' },
+    { type: 'credits', value: 2, text: '2 Oyun 🎮', color: '#2563EB' },
+    { type: 'joker', value: 1, item: 'fisilida', text: '1 Fısılda 🤫', color: '#EAB308' },
+    { type: 'empty', value: 0, text: 'Boş 💨', color: '#9CA3AF' },
+    { type: 'credits', value: 3, text: '3 Oyun 🎮', color: '#1D4ED8' },
+    { type: 'joker', value: 2, item: 'degistir', text: '2 Değiştir 🔄', color: '#059669' },
+    { type: 'empty', value: 0, text: 'Boş 💨', color: '#9CA3AF' },
+    { type: 'credits', value: 5, text: '5 Oyun 🎮', color: '#1E40AF' },
+    { type: 'joker', value: 1, item: 'senyaz', text: '1 Sen Yaz ✍️', color: '#7C3AED' },
+    { type: 'empty', value: 0, text: 'Boş 💨', color: '#9CA3AF' },
+    { type: 'joker', value: 2, item: 'fisilida', text: '2 Fısılda 🤫', color: '#D97706' },
+    { type: 'joker', value: 2, item: 'senyaz', text: '2 Sen Yaz ✍️', color: '#6D28D9' },
+    { type: 'empty', value: 0, text: 'Boş 💨', color: '#9CA3AF' }
+  ];
 
   // Günlük çark kontrolü
   useEffect(() => {
@@ -236,13 +236,21 @@ const WheelPage = () => {
                         'Z'
                       ].join(' ');
 
-                      // Metin pozisyonu (yatay ve bölüme sığacak şekilde)
+                      // Metin pozisyonu ve rotasyonu
                       const textAngle = angle + (360 / wheelSegments.length) / 2;
                       const textRadius = radius * 0.7;
                       const textX = centerX + textRadius * Math.cos((textAngle - 90) * Math.PI / 180);
                       const textY = centerY + textRadius * Math.sin((textAngle - 90) * Math.PI / 180);
-                      const theta = (Math.PI * 2) / wheelSegments.length;
-                      const availableWidth = Math.max(30, 2 * textRadius * Math.sin(theta / 2) - 12);
+
+                      // Yazının rotasyonu - her zaman yatay kalacak şekilde
+                      let textRotation = 0;
+                      if (textAngle > 90 && textAngle < 270) {
+                        // Alt yarıda olan yazıları 180° çevir ki ters görünmesin
+                        textRotation = textAngle + 180;
+                      } else {
+                        // Üst yarıda olan yazılar normal kalacak
+                        textRotation = textAngle;
+                      }
                       
                       return (
                         <g key={index}>
@@ -253,17 +261,21 @@ const WheelPage = () => {
                             strokeWidth="2"
                           />
                           <text
-  x={textX}
-  y={textY}
-  fill="white"
-  fontSize="14"
-  fontWeight="bold"
-  textAnchor="middle"
-  dominantBaseline="middle"
-  style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}
->
-  {segment.text}
-</text>
+                            x={textX}
+                            y={textY}
+                            fill="white"
+                            fontSize="12"
+                            fontWeight="bold"
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                            transform={`rotate(${textRotation}, ${textX}, ${textY})`}
+                            style={{ 
+                              textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
+                              fontFamily: 'system-ui, -apple-system, sans-serif'
+                            }}
+                          >
+                            {segment.text}
+                          </text>
                         </g>
                       );
                     })}
