@@ -628,7 +628,9 @@ const requestRematch = async () => {
 
 // 4. resetGameForRematch fonksiyonunu ekleyin:
 const resetGameForRematch = () => {
-  // Oyunu sıfırla
+  console.log('🔄 Rematch için oyun sıfırlanıyor...');
+  
+  // Grid ve kelime state'leri
   setGameGrid(generateRandomGrid());
   setSelectedLetters([]);
   setCurrentWord('');
@@ -638,21 +640,36 @@ const resetGameForRematch = () => {
   setOpponentWords([]);
   setPlayerWordsWithScores([]);
   setOpponentWordsWithScores([]);
+  
+  // Skorlar
   setPlayerScore(0);
   setOpponentScore(0);
+  
+  // Timer
   timeLeftRef.current = gameType === 'timed' ? 120 : 0;
   setDisplayTime(timeLeftRef.current);
+  
+  // ⭐ KRİTİK: Bu state'ler eksikti!
   setShowCountdown(true);
   setGameStarted(false);
   setGameEnded(false);
   setWinner(null);
+  setShowResults(false);  // ❗ ÖNEMLİ
+  setWaitingForPlayer(false);
+  setHasShownStartMessage(false);
+  
+  // Joker ve diğer state'ler
   setTimeWarningPlayed(false);
-  // Joker state'leri artık hook'tan geldiği için sıfırlama yok
   setSelectedJoker(null);
   setHighlightedLetters([]);
   setIsJokerActive(false);
   setRematchRequested(false);
   setWaitingForRematchResponse(false);
+  
+  // Ref'leri sıfırla
+  timerStartedRef.current = false;
+  gameHasStartedRef.current = false;
+  submissionLockRef.current = false;
   
   // Room'daki used words'ü temizle
   if (currentRoom) {
@@ -661,6 +678,8 @@ const resetGameForRematch = () => {
       .delete()
       .eq('room_id', currentRoom.id);
   }
+  
+  console.log('✅ Rematch sıfırlama tamamlandı');
 };
   
 const createNextRoundMatches = async (tournamentId: string, nextRound: number) => {
@@ -2968,16 +2987,15 @@ useEffect(() => {
   const handleRematchAccepted = () => {
     setWaitingForRematchResponse(false);
     setRematchRequested(false);
-    
+  
     toast({
       title: 'Tekrar Oyun Kabul Edildi!',
       description: 'Yeni oyun başlıyor...',
       duration: 2000,
     });
-    
-    setTimeout(() => {
-      resetGameForRematch();
-    }, 1000);
+  
+    // ⭐ Hemen sıfırla, timeout'u kaldır
+    resetGameForRematch();
   };
   
   const handleRematchRejected = () => {
