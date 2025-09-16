@@ -2974,8 +2974,9 @@ useEffect(() => {
       console.log('✅ 2 gerçek oyuncu hazır - OYUN BAŞLIYOR!');
       setWaitingForPlayer(false);
 
-      // Oyun başlamadıysa ve geri sayım gösterilmiyorsa yalnızca bir kez geri sayımı başlat
-      if (!gameStarted && !showCountdown && !gameHasStartedRef.current) {
+      // 🚨 ÖNEMLİ: Sadece oyun bitmemişse countdown başlat
+      if (!gameStarted && !gameEnded && !showCountdown && !gameHasStartedRef.current) {
+        console.log('🎯 Countdown tetikleniyor...');
         setShowCountdown(true);
         setGameStarted(false);
       }
@@ -2991,14 +2992,13 @@ useEffect(() => {
       }
     } else {
       setWaitingForPlayer(true);
-      // Oyun başlamadan önce beklemeye dönerse tekrar geri sayım hakkı tanı
       if (!gameStarted) {
         gameHasStartedRef.current = false;
       }
       setHasShownStartMessage(false);
     }
   }
-}, [participants, gameMode, hasShownStartMessage, gameType, toast, currentRoom?.status, gameStarted, showCountdown]);
+}, [participants, gameMode, hasShownStartMessage, gameType, toast, currentRoom?.status, gameStarted, showCountdown, gameEnded]);
 
 useEffect(() => {
   if (!currentRoom || gameMode !== 'private-room') return;
