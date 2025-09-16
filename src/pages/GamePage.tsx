@@ -2327,6 +2327,14 @@ const handleTournamentExit = async () => {
     navigate('/tournament');
   }
 };
+
+useEffect(() => {
+  if (!currentRematchRequest && waitingForRematchResponse) {
+    // Request null oldu ama bekliyorduk - muhtemelen kabul edildi
+    console.log('🔄 Rematch request null oldu - kabul edilmiş olabilir');
+    handleRematchAccepted();
+  }
+}, [currentRematchRequest, waitingForRematchResponse]);
   
   // Timer effect - start only when match truly starts and guard early-finish
 useEffect(() => {
