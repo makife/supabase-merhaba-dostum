@@ -237,32 +237,32 @@ const ProfilePage = () => {
           console.log('📊 Profile updated:', payload.new);
           const newData = payload.new;
         
-          if (newData.total_score !== undefined) {
-            const levelData = calculateLevel(newData.total_score);
-            setProfileData(prev => {
-              if (levelData.level > prev.level) {
-                toast.success(`🎉 Seviye ${levelData.level}'e ulaştınız!`, {
-                  duration: 5000,
-                });
-              }
+          setProfileData(prev => {
+            const baseTotalScore = newData.total_score ?? prev.totalScore ?? 0;
+            const levelData = calculateLevel(baseTotalScore);
 
-              return {
-                ...prev,
-                totalScore: newData.total_score,
-                totalGames: newData.total_games || prev.totalGames,
-                wins: newData.wins || prev.wins,
-                losses: newData.losses || prev.losses,
-                longestWord: newData.longest_word || prev.longestWord,
-                longestWordLength: newData.longest_word_length || prev.longestWordLength,
-                currentStreak: newData.win_streak || prev.currentStreak,
-                winRate: newData.total_games > 0 ? Math.round(((newData.wins || 0) / newData.total_games) * 100) : 0,
-                level: levelData.level,
-                experience: levelData.experience,
-                nextLevelExp: levelData.nextLevelExp,
-                averageScore: newData.average_score || prev.averageScore,
-              };
-            });
-          }
+            if (levelData.level > prev.level) {
+              toast.success(`🎉 Seviye ${levelData.level}'e ulaştınız!`, { duration: 5000 });
+            }
+
+            return {
+              ...prev,
+              totalScore: baseTotalScore,
+              totalGames: newData.total_games ?? prev.totalGames,
+              wins: newData.wins ?? prev.wins,
+              losses: newData.losses ?? prev.losses,
+              longestWord: newData.longest_word ?? prev.longestWord,
+              longestWordLength: newData.longest_word_length ?? prev.longestWordLength,
+              currentStreak: newData.win_streak ?? prev.currentStreak,
+              winRate: (newData.total_games ?? prev.totalGames) > 0
+                ? Math.round(((newData.wins ?? prev.wins ?? 0) / (newData.total_games ?? prev.totalGames ?? 1)) * 100)
+                : 0,
+              level: levelData.level,
+              experience: levelData.experience,
+              nextLevelExp: levelData.nextLevelExp,
+              averageScore: newData.average_score ?? prev.averageScore,
+            };
+          });
 
           // Profilde bir güncelleme olduğunda rozetleri de tazele
           fetchBadges();
