@@ -2328,13 +2328,6 @@ const handleTournamentExit = async () => {
   }
 };
 
-useEffect(() => {
-  if (!currentRematchRequest && waitingForRematchResponse) {
-    // Request null oldu ama bekliyorduk - muhtemelen kabul edildi
-    console.log('🔄 Rematch request null oldu - kabul edilmiş olabilir');
-    handleRematchAccepted();
-  }
-}, [currentRematchRequest, waitingForRematchResponse]);
   
   // Timer effect - start only when match truly starts and guard early-finish
 useEffect(() => {
@@ -3046,9 +3039,11 @@ useEffect(() => {
   };
   
   // currentRematchRequest değişikliklerini izle
-  if (currentRematchRequest === null && waitingForRematchResponse) {
+  if (!currentRematchRequest && waitingForRematchResponse) {
     // Eğer request null oldu ama bekliyorduk, demek ki kabul edildi veya reddedildi
     // Bu durumu real-time listener'dan gelen değişikliklerle handle edeceğiz
+    console.log('🔄 Rematch request null oldu - kabul edilmiş olabilir');
+    handleRematchAccepted();
   }
   
   return () => {
