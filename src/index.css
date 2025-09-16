@@ -230,13 +230,11 @@ All colors MUST be HSL.
     touch-action: manipulation !important;
   }
   
-  /* Performance optimizations for native */
-  body.native-platform * {
+  /* Performance optimizations for native - scoped to opted-in elements only */
+  body.native-platform .gpu-accelerated {
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
-    -webkit-transform: translate3d(0, 0, 0);
-    transform: translate3d(0, 0, 0);
-    will-change: auto;
+    transform: translateZ(0);
   }
 
   @supports (padding: max(0px)) {

@@ -8,14 +8,16 @@ export const useImmersiveMode = () => {
   useEffect(() => {
     let autoHideInterval: ReturnType<typeof setInterval> | undefined;
     let appListener: { remove: () => void } | undefined;
-
+    let overlayApplied = false;
     const hideSystemUI = async () => {
       if (!Capacitor.isNativePlatform()) return;
       try {
-        // Always hide status bar and overlay content
-        await StatusBar.setOverlaysWebView({ overlay: true });
+        // Hide status bar (overlay is applied only once to avoid re-layout on Android)
+        if (!overlayApplied) {
+          try { await StatusBar.setOverlaysWebView({ overlay: true }); } catch {}
+          overlayApplied = true;
+        }
         await StatusBar.hide();
-
         if (Capacitor.getPlatform() === 'android') {
           try {
             await StatusBar.setStyle({ style: Style.Dark });
