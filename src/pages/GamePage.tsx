@@ -628,7 +628,25 @@ const requestRematch = async () => {
 
 // 4. resetGameForRematch fonksiyonunu ekleyin:
 const resetGameForRematch = () => {
-  console.log('🔄 Rematch için oyun sıfırlanıyor...');
+  console.log('🔄 Rematch için oyun TAMAMEN sıfırlanıyor...');
+  
+  // 🚨 KRİTİK: Önce tüm timer'ları temizle
+  if (timerRef.current) {
+    clearInterval(timerRef.current);
+    timerRef.current = null;
+  }
+  
+  // 🚨 KRİTİK: Ana oyun state'lerini sıfırla
+  setGameStarted(false);      // ⭐ En önemli
+  setGameEnded(false);        // ⭐ En önemli  
+  setShowResults(false);      // ⭐ En önemli
+  setWinner(null);
+  setShowCountdown(true);     // Geri sayımı tekrar göster
+  
+  // Diğer state'ler
+  setWaitingForPlayer(false);
+  setHasShownStartMessage(false);
+  setTimeWarningPlayed(false);
   
   // Grid ve kelime state'leri
   setGameGrid(generateRandomGrid());
@@ -644,42 +662,42 @@ const resetGameForRematch = () => {
   // Skorlar
   setPlayerScore(0);
   setOpponentScore(0);
+  playerScoreRef.current = 0;
+  opponentScoreRef.current = 0;
   
   // Timer
   timeLeftRef.current = gameType === 'timed' ? 120 : 0;
   setDisplayTime(timeLeftRef.current);
   
-  // ⭐ KRİTİK: Bu state'ler eksikti!
-  setShowCountdown(true);
-  setGameStarted(false);
-  setGameEnded(false);
-  setWinner(null);
-  setShowResults(false);  // ❗ ÖNEMLİ
-  setWaitingForPlayer(false);
-  setHasShownStartMessage(false);
-  
-  // Joker ve diğer state'ler
-  setTimeWarningPlayed(false);
+  // Joker state'leri
   setSelectedJoker(null);
   setHighlightedLetters([]);
   setIsJokerActive(false);
+  
+  // Rematch state'leri
   setRematchRequested(false);
   setWaitingForRematchResponse(false);
+  setCurrentRematchRequest(null);
   
-  // Ref'leri sıfırla
+  // 🚨 KRİTİK: Ref'leri sıfırla
   timerStartedRef.current = false;
   gameHasStartedRef.current = false;
   submissionLockRef.current = false;
+  syncingRef.current = false;
+  disconnectHandledRef.current = false;
   
   // Room'daki used words'ü temizle
   if (currentRoom) {
     supabase
       .from('game_words')
       .delete()
-      .eq('room_id', currentRoom.id);
+      .eq('room_id', currentRoom.id)
+      .then(() => {
+        console.log('🧹 Room words temizlendi');
+      });
   }
   
-  console.log('✅ Rematch sıfırlama tamamlandı');
+  console.log('✅ Rematch sıfırlama TAMAMEN tamamlandı');
 };
   
 const createNextRoundMatches = async (tournamentId: string, nextRound: number) => {
@@ -2984,19 +3002,29 @@ useEffect(() => {
 useEffect(() => {
   if (!currentRoom || gameMode !== 'private-room') return;
   
-  const handleRematchAccepted = () => {
-    setWaitingForRematchResponse(false);
-    setRematchRequested(false);
+ const handleRematchAccepted = () => {
+  console.log('🎮 Rematch kabul edildi - sıfırlama başlıyor...');
   
-    toast({
-      title: 'Tekrar Oyun Kabul Edildi!',
-      description: 'Yeni oyun başlıyor...',
-      duration: 2000,
-    });
+  setWaitingForRematchResponse(false);
+  setRematchRequested(false);
   
-    // ⭐ Hemen sıfırla, timeout'u kaldır
-    resetGameForRematch();
-  };
+  toast({
+    title: 'Tekrar Oyun Kabul Edildi!',
+    description: 'Yeni oyun başlıyor...',
+    duration: 2000,
+  });
+  
+  // 🚨 HEMEN sıfırla - timeout yok!
+  resetGameForRematch();
+  
+  // Kısa bir gecikmeyle countdown'u zorla tetikle
+  setTimeout(() => {
+    if (!gameStarted && !gameEnded) {
+      console.log('🎯 Countdown zorla tetikleniyor...');
+      setShowCountdown(true);
+    }
+  }, 100);
+};
   
   const handleRematchRejected = () => {
     setWaitingForRematchResponse(false);
@@ -4366,15 +4394,21 @@ return (
             Hayır
           </AlertDialogCancel>
           <AlertDialogAction onClick={async () => {
-            if (currentRematchRequest) {
-              await respondRematchRequest(currentRematchRequest.id, true);
-              if (currentRematchRequest.room_code) {
-                await joinRoom(currentRematchRequest.room_code);
-              }
-            }
-          }}>
-            Evet, Tekrar Oyna
-          </AlertDialogAction>
+  if (currentRematchRequest) {
+    await respondRematchRequest(currentRematchRequest.id, true);
+    
+    // 🚨 KRİTİK: Response'tan sonra hemen sıfırla
+    setTimeout(() => {
+      resetGameForRematch();
+    }, 500);
+    
+    if (currentRematchRequest.room_code) {
+      await joinRoom(currentRematchRequest.room_code);
+    }
+  }
+}}>
+  Evet, Tekrar Oyna
+</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
