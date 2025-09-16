@@ -21,11 +21,9 @@ export const useImmersiveMode = () => {
         if (Capacitor.getPlatform() === 'android') {
           try {
             await StatusBar.setStyle({ style: Style.Dark });
-            await StatusBar.setBackgroundColor({ color: '#00000000' });
           } catch {}
 
           try {
-            await NavigationBar.setTransparency({ isTransparent: true });
             await NavigationBar.hide();
           } catch (e) {
             console.warn('⚠️ NavigationBar hide failed:', e);
@@ -38,8 +36,8 @@ export const useImmersiveMode = () => {
 
     const startAutoHide = () => {
       if (autoHideInterval) clearInterval(autoHideInterval);
-      // Re-apply hide periodically in case OS reveals bars
-      autoHideInterval = setInterval(hideSystemUI, 1500);
+      // Disabled periodic auto-hide to avoid Android WebView white-screen bug
+      autoHideInterval = undefined;
     };
 
     const handleUserInteraction = () => {
