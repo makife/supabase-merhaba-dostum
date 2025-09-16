@@ -628,27 +628,7 @@ const requestRematch = async () => {
 
 // 4. resetGameForRematch fonksiyonunu ekleyin:
 const resetGameForRematch = () => {
-  console.log('🔄 Rematch için oyun TAMAMEN sıfırlanıyor...');
-  
-  // 🚨 KRİTİK: Önce tüm timer'ları temizle
-  if (timerRef.current) {
-    clearInterval(timerRef.current);
-    timerRef.current = null;
-  }
-  
-  // 🚨 KRİTİK: Ana oyun state'lerini sıfırla
-  setGameStarted(false);      // ⭐ En önemli
-  setGameEnded(false);        // ⭐ En önemli  
-  setShowResults(false);      // ⭐ En önemli
-  setWinner(null);
-  setShowCountdown(true);     // Geri sayımı tekrar göster
-  
-  // Diğer state'ler
-  setWaitingForPlayer(false);
-  setHasShownStartMessage(false);
-  setTimeWarningPlayed(false);
-  
-  // Grid ve kelime state'leri
+  // Oyunu sıfırla
   setGameGrid(generateRandomGrid());
   setSelectedLetters([]);
   setCurrentWord('');
@@ -658,46 +638,29 @@ const resetGameForRematch = () => {
   setOpponentWords([]);
   setPlayerWordsWithScores([]);
   setOpponentWordsWithScores([]);
-  
-  // Skorlar
   setPlayerScore(0);
   setOpponentScore(0);
-  playerScoreRef.current = 0;
-  opponentScoreRef.current = 0;
-  
-  // Timer
   timeLeftRef.current = gameType === 'timed' ? 120 : 0;
   setDisplayTime(timeLeftRef.current);
-  
-  // Joker state'leri
+  setShowCountdown(true);
+  setGameStarted(false);
+  setGameEnded(false);
+  setWinner(null);
+  setTimeWarningPlayed(false);
+  // Joker state'leri artık hook'tan geldiği için sıfırlama yok
   setSelectedJoker(null);
   setHighlightedLetters([]);
   setIsJokerActive(false);
-  
-  // Rematch state'leri
   setRematchRequested(false);
   setWaitingForRematchResponse(false);
-  setCurrentRematchRequest(null);
-  
-  // 🚨 KRİTİK: Ref'leri sıfırla
-  timerStartedRef.current = false;
-  gameHasStartedRef.current = false;
-  submissionLockRef.current = false;
-  syncingRef.current = false;
-  disconnectHandledRef.current = false;
   
   // Room'daki used words'ü temizle
   if (currentRoom) {
     supabase
       .from('game_words')
       .delete()
-      .eq('room_id', currentRoom.id)
-      .then(() => {
-        console.log('🧹 Room words temizlendi');
-      });
+      .eq('room_id', currentRoom.id);
   }
-  
-  console.log('✅ Rematch sıfırlama TAMAMEN tamamlandı');
 };
   
 const createNextRoundMatches = async (tournamentId: string, nextRound: number) => {
@@ -2327,7 +2290,6 @@ const handleTournamentExit = async () => {
     navigate('/tournament');
   }
 };
-
   
   // Timer effect - start only when match truly starts and guard early-finish
 useEffect(() => {
@@ -2974,9 +2936,8 @@ useEffect(() => {
       console.log('✅ 2 gerçek oyuncu hazır - OYUN BAŞLIYOR!');
       setWaitingForPlayer(false);
 
-      // 🚨 ÖNEMLİ: Sadece oyun bitmemişse countdown başlat
-      if (!gameStarted && !gameEnded && !showCountdown && !gameHasStartedRef.current) {
-        console.log('🎯 Countdown tetikleniyor...');
+      // Oyun başlamadıysa ve geri sayım gösterilmiyorsa yalnızca bir kez geri sayımı başlat
+      if (!gameStarted && !showCountdown && !gameHasStartedRef.current) {
         setShowCountdown(true);
         setGameStarted(false);
       }
@@ -2992,40 +2953,32 @@ useEffect(() => {
       }
     } else {
       setWaitingForPlayer(true);
+      // Oyun başlamadan önce beklemeye dönerse tekrar geri sayım hakkı tanı
       if (!gameStarted) {
         gameHasStartedRef.current = false;
       }
       setHasShownStartMessage(false);
     }
   }
-}, [participants, gameMode, hasShownStartMessage, gameType, toast, currentRoom?.status, gameStarted, showCountdown, gameEnded]);
+}, [participants, gameMode, hasShownStartMessage, gameType, toast, currentRoom?.status, gameStarted, showCountdown]);
 
 useEffect(() => {
   if (!currentRoom || gameMode !== 'private-room') return;
   
- const handleRematchAccepted = () => {
-  console.log('🎮 Rematch kabul edildi - sıfırlama başlıyor...');
-  
-  setWaitingForRematchResponse(false);
-  setRematchRequested(false);
-  
-  toast({
-    title: 'Tekrar Oyun Kabul Edildi!',
-    description: 'Yeni oyun başlıyor...',
-    duration: 2000,
-  });
-  
-  // 🚨 HEMEN sıfırla - timeout yok!
-  resetGameForRematch();
-  
-  // Kısa bir gecikmeyle countdown'u zorla tetikle
-  setTimeout(() => {
-    if (!gameStarted && !gameEnded) {
-      console.log('🎯 Countdown zorla tetikleniyor...');
-      setShowCountdown(true);
-    }
-  }, 100);
-};
+  const handleRematchAccepted = () => {
+    setWaitingForRematchResponse(false);
+    setRematchRequested(false);
+    
+    toast({
+      title: 'Tekrar Oyun Kabul Edildi!',
+      description: 'Yeni oyun başlıyor...',
+      duration: 2000,
+    });
+    
+    setTimeout(() => {
+      resetGameForRematch();
+    }, 1000);
+  };
   
   const handleRematchRejected = () => {
     setWaitingForRematchResponse(false);
@@ -3039,11 +2992,9 @@ useEffect(() => {
   };
   
   // currentRematchRequest değişikliklerini izle
-  if (!currentRematchRequest && waitingForRematchResponse) {
+  if (currentRematchRequest === null && waitingForRematchResponse) {
     // Eğer request null oldu ama bekliyorduk, demek ki kabul edildi veya reddedildi
     // Bu durumu real-time listener'dan gelen değişikliklerle handle edeceğiz
-    console.log('🔄 Rematch request null oldu - kabul edilmiş olabilir');
-    handleRematchAccepted();
   }
   
   return () => {
@@ -4397,21 +4348,15 @@ return (
             Hayır
           </AlertDialogCancel>
           <AlertDialogAction onClick={async () => {
-  if (currentRematchRequest) {
-    await respondRematchRequest(currentRematchRequest.id, true);
-    
-    // 🚨 KRİTİK: Response'tan sonra hemen sıfırla
-    setTimeout(() => {
-      resetGameForRematch();
-    }, 500);
-    
-    if (currentRematchRequest.room_code) {
-      await joinRoom(currentRematchRequest.room_code);
-    }
-  }
-}}>
-  Evet, Tekrar Oyna
-</AlertDialogAction>
+            if (currentRematchRequest) {
+              await respondRematchRequest(currentRematchRequest.id, true);
+              if (currentRematchRequest.room_code) {
+                await joinRoom(currentRematchRequest.room_code);
+              }
+            }
+          }}>
+            Evet, Tekrar Oyna
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
