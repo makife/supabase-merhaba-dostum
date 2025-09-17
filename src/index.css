@@ -1813,3 +1813,377 @@ All colors MUST be HSL.
   .is-native [data-radix-scroll-area-viewport] { -ms-overflow-style: none; scrollbar-width: none; }
   .is-native [data-radix-scroll-area-viewport]::-webkit-scrollbar { display: none; }
 }
+
+/* ===== PUZZLE GAME STYLES ===== */
+
+/* Puzzle Game Modal Overlay */
+.puzzle-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+/* Puzzle Game Container */
+.puzzle-game-container {
+  width: 100%;
+  max-width: 400px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20px;
+  padding: 1.5rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.puzzle-game-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  animation: shimmer 3s infinite;
+  pointer-events: none;
+}
+
+/* Puzzle Board Styles */
+.puzzle-board {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 16px;
+  padding: 1rem;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 1rem 0;
+}
+
+/* Puzzle Tile Styles */
+.puzzle-tile {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  font-weight: bold;
+  font-size: 1.25rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.puzzle-tile:not(.empty) {
+  background: linear-gradient(135deg, #00d4ff 0%, #090979 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.puzzle-tile:not(.empty):hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(0, 212, 255, 0.5);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.puzzle-tile:not(.empty):active {
+  transform: translateY(0) scale(0.98);
+  transition: transform 0.1s ease-out;
+}
+
+.puzzle-tile.empty {
+  background: transparent;
+  cursor: default;
+}
+
+.puzzle-tile.valid-move {
+  cursor: pointer;
+  animation: pulse-hint 2s infinite;
+}
+
+@keyframes pulse-hint {
+  0%, 100% {
+    box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 15px rgba(0, 212, 255, 0.6), 0 0 20px rgba(255, 255, 255, 0.3);
+  }
+}
+
+/* Puzzle Timer Bar */
+.puzzle-timer-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 0.5rem 0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.puzzle-timer-progress {
+  height: 100%;
+  border-radius: 10px;
+  transition: all 1s ease-out;
+  background: linear-gradient(90deg, #4ade80, #22c55e, #16a34a);
+  box-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
+}
+
+.puzzle-timer-progress.warning {
+  background: linear-gradient(90deg, #f59e0b, #d97706, #b45309);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+}
+
+.puzzle-timer-progress.danger {
+  background: linear-gradient(90deg, #ef4444, #dc2626, #b91c1c);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+  animation: pulse-danger 0.5s infinite alternate;
+}
+
+@keyframes pulse-danger {
+  from { opacity: 1; }
+  to { opacity: 0.7; }
+}
+
+/* Puzzle Status Messages */
+.puzzle-status {
+  padding: 1rem;
+  border-radius: 12px;
+  text-align: center;
+  margin: 1rem 0;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.puzzle-status.success {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.4);
+  color: #22c55e;
+}
+
+.puzzle-status.failure {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+}
+
+/* Puzzle Control Buttons */
+.puzzle-controls {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.puzzle-btn {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.puzzle-btn.primary {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: white;
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+}
+
+.puzzle-btn.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+}
+
+.puzzle-btn.secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.puzzle-btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  transform: translateY(-1px);
+}
+
+.puzzle-btn.danger {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+}
+
+.puzzle-btn.danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+}
+
+.puzzle-btn:active {
+  transform: translateY(0);
+}
+
+/* Puzzle Stats */
+.puzzle-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 1rem 0;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.puzzle-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.puzzle-stat-icon {
+  width: 16px;
+  height: 16px;
+  opacity: 0.8;
+}
+
+/* Puzzle Difficulty Selector */
+.puzzle-difficulty {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.puzzle-difficulty-btn {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: 2px solid transparent;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.puzzle-difficulty-btn.active {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+}
+
+.puzzle-difficulty-btn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Puzzle Close Button */
+.puzzle-close-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  z-index: 10;
+}
+
+.puzzle-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+/* Responsive Design for Puzzle */
+@media (max-width: 480px) {
+  .puzzle-game-container {
+    padding: 1rem;
+    margin: 0.5rem;
+  }
+  
+  .puzzle-board {
+    padding: 0.75rem;
+  }
+  
+  .puzzle-tile {
+    font-size: 1.1rem;
+    border-radius: 8px;
+  }
+  
+  .puzzle-controls {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .puzzle-difficulty {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .puzzle-stats {
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
+  }
+}
+
+/* Puzzle Success Animation */
+@keyframes puzzle-success {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.puzzle-success-animation {
+  animation: puzzle-success 0.6s ease-in-out;
+}
+
+/* Puzzle Tile Slide Animation */
+@keyframes tile-slide {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.puzzle-tile-slide {
+  animation: tile-slide 0.3s ease-out;
+}
+
+/* ===== PUZZLE GAME STYLES END ===== */
