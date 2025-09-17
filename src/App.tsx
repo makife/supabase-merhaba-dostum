@@ -33,6 +33,7 @@ import { useLocalStorageClear } from "@/hooks/useLocalStorageClear";
 import { useScreenOrientation } from "@/hooks/useScreenOrientation";
 import { useImmersiveMode } from "@/hooks/useImmersiveMode";
 import MemoryGamePage from "@/pages/MemoryGamePage";
+import PuzzleGamePage from "@/components/PuzzleGame";
 
 
 const queryClient = new QueryClient();
@@ -120,6 +121,11 @@ const AppRoutes = () => {
         <ProtectedRoute>
           <GamePage gameMode="tournament" />
        </ProtectedRoute>
+      } />
+      <Route path="/puzzle-game" element={
+        <ProtectedRoute>
+          <PuzzleGamePage />
+        </ProtectedRoute>
       } />
       
       <Route path="/tournament-game/:matchId" element={<GamePage gameMode="tournament" />} />
