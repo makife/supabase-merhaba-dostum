@@ -152,6 +152,11 @@ const AppRoutes = () => {
           <WheelPage />
         </ProtectedRoute>
       } />
+      <Route path="/memory-game" element={
+        <ProtectedRoute>
+          <MemoryGamePage />
+        </ProtectedRoute>
+      } />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
