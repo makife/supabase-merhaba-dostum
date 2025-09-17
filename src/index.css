@@ -2175,6 +2175,15 @@ All colors MUST be HSL.
   animation: puzzle-success 0.6s ease-in-out;
 }
 
+/* Scrollbar gizleme */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Safari and Chrome */
+}
+
 /* Puzzle Tile Slide Animation */
 @keyframes tile-slide {
   0% { transform: scale(1); }
