@@ -1,13 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserPurchases } from '@/hooks/useUserPurchases';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-
-// Supabase client'ı direkt oluştur
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 export const useMemoryGame = () => {
   const { user } = useAuth();
@@ -24,10 +19,6 @@ export const useMemoryGame = () => {
     }
 
     try {
-      const twentyFourHoursAgo = new Date();
-      twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
-
-      // Raw SQL query kullan
       const { data, error } = await supabase.rpc('check_memory_game_cooldown', {
         p_user_id: user.id,
         p_hours_ago: 24
@@ -43,9 +34,21 @@ export const useMemoryGame = () => {
       if (data && data > 0) {
         // Son oyun 24 saat içinde oynandı
         setCanPlay(false);
-        // Basit bir 24 saat sonrası hesapla
-        const nextPlay = new Date(Date.now() + (24 * 60 * 60 * 1000));
-        calculateTimeUntilNextPlay(nextPlay);
+        
+        // Son oyun zamanını al ve kalan süreyi hesapla
+        const { data: lastPlay } = await supabase
+          .from('memory_game_plays')
+          .select('played_at')
+          .eq('user_id', user.id)
+          .order('played_at', { ascending: false })
+          .limit(1)
+          .single();
+          
+        if (lastPlay) {
+          const lastPlayTime = new Date(lastPlay.played_at);
+          const nextPlayTime = new Date(lastPlayTime.getTime() + (24 * 60 * 60 * 1000));
+          calculateTimeUntilNextPlay(nextPlayTime);
+        }
       } else {
         // 24 saat geçmiş, oynayabilir
         setCanPlay(true);
@@ -89,10 +92,9 @@ export const useMemoryGame = () => {
       const jokerNames = {
         degistir: 'Değiştir',
         fisilida: 'Fısılda', 
-        sen_yaz: 'Sen Yaz'
+        senYaz: 'Sen Yaz'
       };
 
-      // Raw SQL ile kaydet
       const { error } = await supabase.rpc('save_memory_game_play', {
         p_user_id: user.id,
         p_moves: moves,
@@ -112,7 +114,7 @@ export const useMemoryGame = () => {
       
       // Toast göster
       toast.success(`🎉 Tebrikler! ${jokerNames[randomJoker as keyof typeof jokerNames]} jokeri kazandın!`, {
-        description: `${moves} hamlede tamamladın. 24 saat sonra tekrar oynayabilirsin.`,
+        description: `${moves} hamlede tamamladın. 24 saat sonra tekrar oynayabilirsin!`,
         duration: 5000
       });
 
