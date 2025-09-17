@@ -165,6 +165,11 @@ const AppRoutes = () => {
           <MemoryGamePage />
         </ProtectedRoute>
       } />
+      <Route path="/puzzle-game" element={
+        <ProtectedRoute>
+          <PuzzleGamePage />
+        </ProtectedRoute>
+      } />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
