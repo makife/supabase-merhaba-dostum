@@ -33,7 +33,7 @@ import { useLocalStorageClear } from "@/hooks/useLocalStorageClear";
 import { useScreenOrientation } from "@/hooks/useScreenOrientation";
 import { useImmersiveMode } from "@/hooks/useImmersiveMode";
 import MemoryGamePage from "@/pages/MemoryGamePage";
-import PuzzleGamePage from "@/components/PuzzleGame";
+import PuzzleGamePage from "@/pages/PuzzleGame";
 
 
 const queryClient = new QueryClient();
