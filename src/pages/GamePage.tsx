@@ -329,16 +329,22 @@ useEffect(() => {
   }
 }, [gameMode, tournamentMatch?.id, generateTournamentGrid]);
 
-// Random/private odalarda sunucu grid'ini senkronize et
+// Random/private odalarda sunucu grid'ini senkronize et (SADECE BAŞLANGICTA)
+const initialGridSyncRef = useRef(false);
 useEffect(() => {
   if (gameMode === 'tournament') return;
   if (!currentRoom?.current_grid) return;
+  
+  // Sadece ilk kez grid senkronize et - joker kullanımından sonra tekrar senkronize etme
+  if (initialGridSyncRef.current) return;
+  
   const flat = currentRoom.current_grid as string[];
   const grid: string[][] = [];
   for (let i = 0; i < 4; i++) {
     grid.push(flat.slice(i * 4, (i + 1) * 4));
   }
   setGameGrid(grid);
+  initialGridSyncRef.current = true;
 }, [gameMode, currentRoom?.id, currentRoom?.current_grid]);
   
   const [selectedLetters, setSelectedLetters] = useState<{letter: string, row: number, col: number}[]>([]);
@@ -432,6 +438,11 @@ useEffect(() => {
   
   useEffect(() => {
     // Oyun gerçekten başladıktan sonra disconnect kontrolü yap
+    // REMATCH SIRASINDA DISCONNECT KONTROL ETMEYİN!
+    if (disconnectHandledRef.current || waitingForRematchResponse || rematchRequested) {
+      return;
+    }
+    
     if ((gameMode === 'private-room' || gameMode === 'random-match') && 
         gameStarted && !gameEnded && 
         gameHasStartedRef.current && // Oyun gerçekten başlamış olmalı
@@ -595,6 +606,9 @@ const requestRematch = async () => {
   if (!user) return;
   
   try {
+    // Disconnect logic'i geçici olarak devre dışı bırak
+    disconnectHandledRef.current = true;
+    
     setRematchRequested(true);
     setWaitingForRematchResponse(true);
     
@@ -606,6 +620,7 @@ const requestRematch = async () => {
       if (waitingForRematchResponse) {
         setWaitingForRematchResponse(false);
         setRematchRequested(false);
+        disconnectHandledRef.current = false; // Timeout'ta tekrar aktif et
         toast({
           title: 'Süre Doldu',
           description: 'Rakibiniz yanıt vermedi.',
@@ -618,6 +633,7 @@ const requestRematch = async () => {
     console.error('Rematch request error:', error);
     setRematchRequested(false);
     setWaitingForRematchResponse(false);
+    disconnectHandledRef.current = false; // Hata durumunda da tekrar aktif et
     toast({
       title: 'Hata',
       description: 'Tekrar oyun isteği gönderilemedi.',
@@ -628,6 +644,10 @@ const requestRematch = async () => {
 
 // 4. resetGameForRematch fonksiyonunu ekleyin:
 const resetGameForRematch = () => {
+  // Grid sync'i yeniden aktifleştir yeni oyun için
+  initialGridSyncRef.current = false;
+  disconnectHandledRef.current = false; // Disconnect kontrolü de yeniden aktif et
+  
   // Oyunu sıfırla
   setGameGrid(generateRandomGrid());
   setSelectedLetters([]);
@@ -647,6 +667,8 @@ const resetGameForRematch = () => {
   setGameEnded(false);
   setWinner(null);
   setTimeWarningPlayed(false);
+  setRematchRequested(false);
+  setWaitingForRematchResponse(false);
   // Joker state'leri artık hook'tan geldiği için sıfırlama yok
   setSelectedJoker(null);
   setHighlightedLetters([]);
@@ -2968,6 +2990,7 @@ useEffect(() => {
   const handleRematchAccepted = () => {
     setWaitingForRematchResponse(false);
     setRematchRequested(false);
+    disconnectHandledRef.current = false; // Rematch kabul edildikten sonra disconnect kontrolü aktif et
     
     toast({
       title: 'Tekrar Oyun Kabul Edildi!',
@@ -2983,6 +3006,7 @@ useEffect(() => {
   const handleRematchRejected = () => {
     setWaitingForRematchResponse(false);
     setRematchRequested(false);
+    disconnectHandledRef.current = false; // Rematch reddedildikten sonra da disconnect kontrolü aktif et
     
     toast({
       title: 'Tekrar Oyun Reddedildi',
