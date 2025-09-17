@@ -23,7 +23,7 @@ import { useJokerInventory } from '@/hooks/useJokerInventory';
 import { MatchmakingProvider } from '@/contexts/NewMatchmakingContext';
 import { Brain } from 'lucide-react';
 import { useMemoryGame } from '@/hooks/useMemoryGame';
-import PuzzleGame from '@/components/PuzzleGame';
+import PuzzleGame from '@/pages/PuzzleGame';
 
 import {
   Bot,
