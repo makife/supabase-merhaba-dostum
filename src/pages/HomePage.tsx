@@ -22,6 +22,7 @@ import { toast } from 'sonner';
 import { useJokerInventory } from '@/hooks/useJokerInventory';
 import { MatchmakingProvider } from '@/contexts/NewMatchmakingContext';
 import { Brain } from 'lucide-react';
+import { useMemoryGame } from '@/hooks/useMemoryGame';
 
 import {
   Bot,
@@ -65,6 +66,8 @@ const HomePage = () => {
   const [userAvatar, setUserAvatar] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [timeUntilNextCredit, setTimeUntilNextCredit] = useState<string>('');
+  const { canPlay: canPlayMemory, timeUntilNextPlay } = useMemoryGame();
+
 
   // Level hesaplama fonksiyonu
   const calculateLevel = (totalScore: number) => {
