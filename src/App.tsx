@@ -32,6 +32,7 @@ import WheelPage from './pages/WheelPage';
 import { useLocalStorageClear } from "@/hooks/useLocalStorageClear";
 import { useScreenOrientation } from "@/hooks/useScreenOrientation";
 import { useImmersiveMode } from "@/hooks/useImmersiveMode";
+import MemoryGamePage from "@/pages/MemoryGamePage";
 
 const queryClient = new QueryClient();
 
