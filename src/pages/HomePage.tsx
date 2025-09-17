@@ -555,7 +555,6 @@ const HomePage = () => {
             >
               <div className="flex-1">
                 <h2 className="text-lg font-semibold text-white font-painter">Puzzle Oyunu</h2>
-                <p className="text-xs text-white/80">Zamana karşı çöz</p>
               </div>
               {/* Mini Puzzle İkonu */}
               <div className="relative w-12 h-12 flex items-center justify-center">
