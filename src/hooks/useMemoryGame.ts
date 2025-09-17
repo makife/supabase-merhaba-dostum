@@ -23,8 +23,7 @@ export const useMemoryGame = () => {
       const twentyFourHoursAgo = new Date();
       twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
 
-      // @ts-ignore - TypeScript bypass
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('memory_game_plays')
         .select('played_at')
         .eq('user_id', user.id)
@@ -44,8 +43,7 @@ export const useMemoryGame = () => {
         // Son oyun 24 saat içinde oynandı
         setCanPlay(false);
         
-        // @ts-ignore - TypeScript bypass
-        const lastPlayTime = new Date(data[0].played_at);
+        const lastPlayTime = new Date((data[0] as any).played_at);
         const nextPlayTime = new Date(lastPlayTime.getTime() + (24 * 60 * 60 * 1000));
         calculateTimeUntilNextPlay(nextPlayTime);
       } else {
@@ -96,8 +94,7 @@ export const useMemoryGame = () => {
       };
 
       // Oyun kaydını manuel olarak ekle - TypeScript bypass
-      // @ts-ignore - TypeScript bypass
-      const { error: insertError } = await supabase
+      const { error: insertError } = await (supabase as any)
         .from('memory_game_plays')
         .insert({
           user_id: user.id,
