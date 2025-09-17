@@ -23,7 +23,6 @@ import { useJokerInventory } from '@/hooks/useJokerInventory';
 import { MatchmakingProvider } from '@/contexts/NewMatchmakingContext';
 import { Brain } from 'lucide-react';
 import { useMemoryGame } from '@/hooks/useMemoryGame';
-import PuzzleGame from '@/pages/PuzzleGame';
 
 import {
   Bot,
@@ -68,7 +67,6 @@ const HomePage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [timeUntilNextCredit, setTimeUntilNextCredit] = useState<string>('');
   const { canPlay: canPlayMemory, timeUntilNextPlay } = useMemoryGame();
-  const [showPuzzleGame, setShowPuzzleGame] = useState(false);
 
 
   // Level hesaplama fonksiyonu
@@ -551,10 +549,11 @@ const HomePage = () => {
             {/* Puzzle Oyunu */}
             <div 
               className="bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg px-3 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 flex-1 min-w-0"
-              onClick={() => setShowPuzzleGame(true)}
+              onClick={() => navigate('/puzzle-game')}
             >
               <div className="flex-1">
                 <h2 className="text-lg font-semibold text-white font-painter">Puzzle Oyunu</h2>
+                <p className="text-xs text-white/80">Zamana karşı çöz</p>
               </div>
               {/* Mini Puzzle İkonu */}
               <div className="relative w-12 h-12 flex items-center justify-center">
@@ -794,11 +793,6 @@ const HomePage = () => {
 
         {/* Floating Menu */}
         <FloatingMenu />
-        
-        {/* Puzzle Game Modal */}
-        {showPuzzleGame && (
-          <PuzzleGame onClose={() => setShowPuzzleGame(false)} />
-        )}
       </div>
     </div>
     </MatchmakingProvider>
