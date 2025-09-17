@@ -481,6 +481,8 @@ useEffect(() => {
   const [gameStartTime, setGameStartTime] = useState<number>(Date.now());
   const [rematchRequested, setRematchRequested] = useState(false);
   const [waitingForRematchResponse, setWaitingForRematchResponse] = useState(false);
+  const [finalPlayerScore, setFinalPlayerScore] = useState(0);
+  const [finalOpponentScore, setFinalOpponentScore] = useState(0);
   
 const handleTournamentGameEnd = async (userScore: number, opponentScore: number) => {
   if (!user || !tournamentMatch) return;
@@ -669,12 +671,12 @@ const resetGameForRematch = () => {
   setTimeWarningPlayed(false);
   setRematchRequested(false);
   setWaitingForRematchResponse(false);
+  setFinalPlayerScore(0);
+  setFinalOpponentScore(0);
   // Joker state'leri artık hook'tan geldiği için sıfırlama yok
   setSelectedJoker(null);
   setHighlightedLetters([]);
   setIsJokerActive(false);
-  setRematchRequested(false);
-  setWaitingForRematchResponse(false);
   
   // Room'daki used words'ü temizle
   if (currentRoom) {
@@ -2237,6 +2239,10 @@ const checkWinnerWithScores = useCallback(async (currentPlayerScore: number, cur
     }, 3000);
   }
 
+  // Final skorları kaydet (reset'ten etkilenmemesi için)
+  setFinalPlayerScore(currentPlayerScore);
+  setFinalOpponentScore(currentOpponentScore);
+
   // Sonuç ekranını göster
   console.log('🎯 Setting showResults to true - rematch UI should appear');
   setShowResults(true);
@@ -2984,47 +2990,61 @@ useEffect(() => {
   }
 }, [participants, gameMode, hasShownStartMessage, gameType, toast, currentRoom?.status, gameStarted, showCountdown]);
 
+// Real-time rematch response listener (istek gönderen taraf için)
 useEffect(() => {
-  if (!currentRoom || gameMode !== 'private-room') return;
+  if (!currentRoom || gameMode !== 'private-room' || !user || !waitingForRematchResponse) return;
   
-  const handleRematchAccepted = () => {
-    setWaitingForRematchResponse(false);
-    setRematchRequested(false);
-    disconnectHandledRef.current = false; // Rematch kabul edildikten sonra disconnect kontrolü aktif et
-    
-    toast({
-      title: 'Tekrar Oyun Kabul Edildi!',
-      description: 'Yeni oyun başlıyor...',
-      duration: 2000,
-    });
-    
-    setTimeout(() => {
-      resetGameForRematch();
-    }, 1000);
-  };
+  console.log('🔄 Rematch response listener aktif:', { user: user.id, waiting: waitingForRematchResponse });
   
-  const handleRematchRejected = () => {
-    setWaitingForRematchResponse(false);
-    setRematchRequested(false);
-    disconnectHandledRef.current = false; // Rematch reddedildikten sonra da disconnect kontrolü aktif et
-    
-    toast({
-      title: 'Tekrar Oyun Reddedildi',
-      description: 'Rakibiniz tekrar oynamak istemiyor.',
-      variant: 'destructive',
-    });
-  };
-  
-  // currentRematchRequest değişikliklerini izle
-  if (currentRematchRequest === null && waitingForRematchResponse) {
-    // Eğer request null oldu ama bekliyorduk, demek ki kabul edildi veya reddedildi
-    // Bu durumu real-time listener'dan gelen değişikliklerle handle edeceğiz
-  }
+  const rematchResponseChannel = supabase
+    .channel(`rematch-response-${user.id}`)
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'rematch_requests',
+      filter: `from_user_id=eq.${user.id}`
+    }, (payload) => {
+      console.log('🔄 Rematch response alındı:', payload.new);
+      const request = payload.new as any;
+      
+      if (request.status === 'accepted') {
+        console.log('✅ Rematch kabul edildi!');
+        setWaitingForRematchResponse(false);
+        setRematchRequested(false);
+        disconnectHandledRef.current = false;
+        
+        toast({
+          title: 'Tekrar Oyun Kabul Edildi!',
+          description: 'Yeni odaya katılıyorsunuz...',
+          duration: 2000,
+        });
+        
+        // Odaya katıl
+        if (request.room_code) {
+          setTimeout(() => {
+            joinRoom(request.room_code);
+          }, 1000);
+        }
+      } else if (request.status === 'rejected') {
+        console.log('❌ Rematch reddedildi');
+        setWaitingForRematchResponse(false);
+        setRematchRequested(false);
+        disconnectHandledRef.current = false;
+        
+        toast({
+          title: 'Tekrar Oyun Reddedildi',
+          description: 'Rakibiniz tekrar oynamak istemiyor.',
+          variant: 'destructive',
+        });
+      }
+    })
+    .subscribe();
   
   return () => {
-    // Cleanup if needed
+    console.log('🔄 Rematch response listener temizleniyor');
+    supabase.removeChannel(rematchResponseChannel);
   };
-}, [currentRoom, gameMode, waitingForRematchResponse, currentRematchRequest, toast]);
+}, [currentRoom, gameMode, waitingForRematchResponse, user, toast, joinRoom]);
 
   // Touch olayları için optimize edilmiş handler
   const handleLetterTouch = (letter: string, row: number, col: number, event: React.TouchEvent) => {
@@ -3619,11 +3639,11 @@ if (gameEnded) {
           <div className="space-y-2 mb-6">
             <div className="flex justify-between">
               <span>Sizin Puanınız:</span>
-              <span className="font-bold">{playerScore}</span>
+              <span className="font-bold">{finalPlayerScore || playerScore}</span>
             </div>
             <div className="flex justify-between">
               <span>Rakip:</span>
-              <span className="font-bold">{opponentScore}</span>
+              <span className="font-bold">{finalOpponentScore || opponentScore}</span>
             </div>
           </div>
           
