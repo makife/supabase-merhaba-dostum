@@ -11,7 +11,7 @@ export const useMemoryGame = () => {
   const [timeUntilNextPlay, setTimeUntilNextPlay] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
-  // 24 saat kontrolü
+  // 24 saat kontrolü - Basit yaklaşım
   const checkCanPlay = async () => {
     if (!user) {
       setLoading(false);
@@ -19,36 +19,34 @@ export const useMemoryGame = () => {
     }
 
     try {
-      const { data, error } = await supabase.rpc('check_memory_game_cooldown', {
-        p_user_id: user.id,
-        p_hours_ago: 24
-      });
+      // Son 24 saat içinde oyun oynandı mı kontrol et
+      const twentyFourHoursAgo = new Date();
+      twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+
+      // Raw SQL query ile kontrol et
+      const { data, error } = await supabase
+        .from('memory_game_plays')
+        .select('played_at')
+        .eq('user_id', user.id)
+        .gte('played_at', twentyFourHoursAgo.toISOString())
+        .order('played_at', { ascending: false })
+        .limit(1);
 
       if (error) {
         console.error('Memory game check error:', error);
+        // Hata durumunda oynayabilir varsayalım
         setCanPlay(true);
         setLoading(false);
         return;
       }
 
-      if (data && data > 0) {
+      if (data && data.length > 0) {
         // Son oyun 24 saat içinde oynandı
         setCanPlay(false);
         
-        // Son oyun zamanını al ve kalan süreyi hesapla
-        const { data: lastPlay } = await supabase
-          .from('memory_game_plays')
-          .select('played_at')
-          .eq('user_id', user.id)
-          .order('played_at', { ascending: false })
-          .limit(1)
-          .single();
-          
-        if (lastPlay) {
-          const lastPlayTime = new Date(lastPlay.played_at);
-          const nextPlayTime = new Date(lastPlayTime.getTime() + (24 * 60 * 60 * 1000));
-          calculateTimeUntilNextPlay(nextPlayTime);
-        }
+        const lastPlayTime = new Date(data[0].played_at);
+        const nextPlayTime = new Date(lastPlayTime.getTime() + (24 * 60 * 60 * 1000));
+        calculateTimeUntilNextPlay(nextPlayTime);
       } else {
         // 24 saat geçmiş, oynayabilir
         setCanPlay(true);
@@ -56,6 +54,7 @@ export const useMemoryGame = () => {
       }
     } catch (error) {
       console.error('Memory game check error:', error);
+      // Hata durumunda oynayabilir varsayalım
       setCanPlay(true);
     }
     
@@ -85,7 +84,7 @@ export const useMemoryGame = () => {
 
     try {
       // Random joker seç
-      const jokerTypes = ['degistir', 'fisilida', 'senyaz'];
+      const jokerTypes = ['degistir', 'fisilida', 'senYaz'];
       const randomJoker = jokerTypes[Math.floor(Math.random() * jokerTypes.length)];
       
       // Joker isimlerini Türkçe'ye çevir
@@ -95,14 +94,18 @@ export const useMemoryGame = () => {
         senYaz: 'Sen Yaz'
       };
 
-      const { error } = await supabase.rpc('save_memory_game_play', {
-        p_user_id: user.id,
-        p_moves: moves,
-        p_joker_given: randomJoker
-      });
+      // Oyun kaydını manuel olarak ekle
+      const { error: insertError } = await supabase
+        .from('memory_game_plays')
+        .insert({
+          user_id: user.id,
+          moves: moves,
+          joker_given: randomJoker,
+          played_at: new Date().toISOString()
+        });
 
-      if (error) {
-        console.error('Memory game save error:', error);
+      if (insertError) {
+        console.error('Memory game save error:', insertError);
         return null;
       }
 
@@ -117,6 +120,11 @@ export const useMemoryGame = () => {
         description: `${moves} hamlede tamamladın. 24 saat sonra tekrar oynayabilirsin!`,
         duration: 5000
       });
+
+      // Kalan süreyi hesapla
+      const nextPlayTime = new Date();
+      nextPlayTime.setHours(nextPlayTime.getHours() + 24);
+      calculateTimeUntilNextPlay(nextPlayTime);
 
       return randomJoker;
     } catch (error) {
