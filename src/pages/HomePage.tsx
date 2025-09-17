@@ -780,11 +780,6 @@ const HomePage = () => {
             }}
           />
         ) : null}
-
-        {/* Matchmaking Modal for Random Match */}
-        {showMatchmaking && (
-          <NewMatchmakingModal
-            isOpen={showMatchmaking}
             onClose={() => setShowMatchmaking(false)}
             onMatchFound={handleMatchFound}
             gameType={matchmakingGameType}
