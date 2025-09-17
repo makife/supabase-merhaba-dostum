@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, Trophy, Star, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useMemoryGame } from '@/hooks/useMemoryGame';
 
 interface Kart {
   id: number;
@@ -12,11 +13,12 @@ interface Kart {
 
 const MemoryGamePage: React.FC = () => {
   const navigate = useNavigate();
+  const { canPlay, timeUntilNextPlay, loading, completeGame } = useMemoryGame();
   const [kartlar, setKartlar] = useState<Kart[]>([]);
   const [secilenKartlar, setSecilenKartlar] = useState<number[]>([]);
   const [hamle, setHamle] = useState(0);
   const [oyunBitti, setOyunBitti] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [gameLoading, setGameLoading] = useState(false);
 
   // Kart sembolleri ve renkleri
   const semboller = ['🎮', '🎯', '🎨', '🎪', '🎭', '🎸', '🎲', '🎊'];
@@ -33,7 +35,9 @@ const MemoryGamePage: React.FC = () => {
 
   // Oyunu başlat
   const oyunuBaslat = () => {
-    setLoading(true);
+    if (!canPlay) return;
+    
+    setGameLoading(true);
     
     // Kartları oluştur (her sembolden 2 tane)
     const yeniKartlar: Kart[] = [];
@@ -57,7 +61,7 @@ const MemoryGamePage: React.FC = () => {
       setSecilenKartlar([]);
       setHamle(0);
       setOyunBitti(false);
-      setLoading(false);
+      setGameLoading(false);
     }, 500);
   };
 
@@ -90,6 +94,8 @@ const MemoryGamePage: React.FC = () => {
           // Tüm kartlar eşleşti mi kontrol et
           if (eslesmisKartlar.every(kart => kart.eslesti)) {
             setOyunBitti(true);
+            // Joker ver
+            completeGame(hamle + 1);
           }
         }, 600);
       } else {
@@ -107,8 +113,10 @@ const MemoryGamePage: React.FC = () => {
 
   // Oyun başladığında kartları oluştur
   useEffect(() => {
-    oyunuBaslat();
-  }, []);
+    if (canPlay && !loading) {
+      oyunuBaslat();
+    }
+  }, [canPlay, loading]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-4">
@@ -132,24 +140,56 @@ const MemoryGamePage: React.FC = () => {
             Hafıza Oyunu
             <Star className="text-yellow-400" />
           </h1>
-          <p className="text-purple-200">Aynı kartları bulup eşleştir!</p>
+          <p className="text-purple-200">
+            {canPlay ? 'Aynı kartları bulup eşleştir!' : '24 saatte bir oynayabilirsin!'}
+          </p>
+          {!canPlay && timeUntilNextPlay && (
+            <p className="text-yellow-300 text-sm mt-1">
+              Sonraki oyun: {timeUntilNextPlay}
+            </p>
+          )}
         </div>
 
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center mb-6">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+            <p className="text-white mt-2">Kontrol ediliyor...</p>
+          </div>
+        )}
+
+        {/* Can't Play State */}
+        {!loading && !canPlay && (
+          <div className="text-center mb-6 bg-white/10 backdrop-blur-sm rounded-lg p-6">
+            <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-white mb-2">Oyunu Tamamladın! 🎉</h2>
+            <p className="text-purple-200 mb-2">
+              24 saat sonra tekrar oynayabilirsin
+            </p>
+            {timeUntilNextPlay && (
+              <p className="text-yellow-300 font-semibold">
+                Kalan süre: {timeUntilNextPlay}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Skorlar */}
-        <div className="flex justify-between items-center mb-6 bg-white/10 backdrop-blur-sm rounded-lg p-4">
+        {canPlay && !loading && (
+          <div className="flex justify-between items-center mb-6 bg-white/10 backdrop-blur-sm rounded-lg p-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-white">{hamle}</div>
             <div className="text-sm text-purple-200">Hamle</div>
           </div>
           <button
             onClick={oyunuBaslat}
-            disabled={loading}
+            disabled={gameLoading || !canPlay}
             className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 
                      disabled:opacity-50 text-white px-4 py-2 rounded-lg flex items-center gap-2 
                      transform transition-all duration-200 hover:scale-105 active:scale-95"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            {loading ? 'Hazırlanıyor...' : 'Yeni Oyun'}
+            <RefreshCw className={`w-4 h-4 ${gameLoading ? 'animate-spin' : ''}`} />
+            {gameLoading ? 'Hazırlanıyor...' : 'Yeni Oyun'}
           </button>
           <div className="text-center">
             <div className="text-2xl font-bold text-white">
@@ -157,19 +197,21 @@ const MemoryGamePage: React.FC = () => {
             </div>
             <div className="text-sm text-purple-200">Çift</div>
           </div>
-        </div>
+          </div>
+        )}
 
         {/* Oyun Tamamlandı Mesajı */}
-        {oyunBitti && (
+        {oyunBitti && canPlay && (
           <div className="text-center mb-6 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg p-4 transform animate-bounce">
             <Trophy className="w-12 h-12 text-white mx-auto mb-2" />
             <h2 className="text-2xl font-bold text-white">Tebrikler! 🎉</h2>
-            <p className="text-white">Oyunu {hamle} hamlede tamamladın!</p>
+            <p className="text-white">Oyunu {hamle} hamlede tamamladın ve joker kazandın!</p>
           </div>
         )}
 
         {/* Kart İzgarası */}
-        <div className="grid grid-cols-4 gap-3 mb-6">
+        {canPlay && !loading && (
+          <div className="grid grid-cols-4 gap-3 mb-6">
           {kartlar.map((kart, index) => (
             <div
               key={`${kart.symbol}-${kart.id}`}
@@ -207,12 +249,19 @@ const MemoryGamePage: React.FC = () => {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
 
         {/* Alt Bilgi */}
         <div className="text-center text-purple-200 text-sm">
-          <p>Aynı sembolleri bularak kartları eşleştir</p>
-          <p className="mt-1">Tüm kartları temizleyerek oyunu kazan! 🏆</p>
+          {canPlay ? (
+            <>
+              <p>Aynı sembolleri bularak kartları eşleştir</p>
+              <p className="mt-1">Tüm kartları temizleyerek joker kazan! 🏆</p>
+            </>
+          ) : (
+            <p>Her gün bir kez oynayarak joker kazanabilirsin! 🎁</p>
+          )}
         </div>
 
       </div>
