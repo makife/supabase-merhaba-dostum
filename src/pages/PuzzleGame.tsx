@@ -289,7 +289,6 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({ onClose }) => {
         </div>
       </div>
     </div>
-    </div>
   );
 };
 
