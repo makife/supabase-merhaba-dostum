@@ -21,7 +21,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { useJokerInventory } from '@/hooks/useJokerInventory';
 import { MatchmakingProvider } from '@/contexts/NewMatchmakingContext';
-import { Brain } from 'lucide-react';
 
 import {
   Bot,
@@ -513,7 +512,15 @@ const HomePage = () => {
           </Card>
         )}
 
-        {/* Günlük Çark */}
+        {/* Game Modes */}
+        <div className="h-96">
+          <div className="flex justify-between items-center mb-4">
+            <div className="bg-gradient-to-r from-yellow-400 to-white rounded-lg px-4 py-2 inline-flex items-center shadow-md">
+              <Target className="w-5 h-5 mr-2 text-gray-700" />
+              <h2 className="text-xl font-semibold text-gray-700 font-painter">Oyun Modları</h2>
+            </div>
+            
+            {/* Günlük Çark */}
             <div 
               className="bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300"
               onClick={() => navigate('/wheel')}
@@ -564,27 +571,12 @@ const HomePage = () => {
                   <circle cx="24" cy="24" r="4" fill="white" stroke="#333" strokeWidth="1"/>
                 </svg>
                 {/* Ok */}
-          <div className="flex justify-between items-center mb-4 gap-3">
-            {/* Hafıza Oyunu */}
-            <div 
-              className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 flex-1"
-              onClick={() => navigate('/memory-game')}
-            >
-              <h2 className="text-xl font-semibold text-white font-painter mr-3">Hafıza Oyunu</h2>
-              {/* Mini Kart İkonu */}
-              <div className="relative w-12 h-12 flex items-center justify-center">
-                <div className="grid grid-cols-2 gap-1">
-                  <div className="w-4 h-4 bg-white/30 rounded-sm animate-pulse"></div>
-                  <div className="w-4 h-4 bg-white/50 rounded-sm animate-pulse" style={{ animationDelay: '0.5s' }}></div>
-                  <div className="w-4 h-4 bg-white/50 rounded-sm animate-pulse" style={{ animationDelay: '1s' }}></div>
-                  <div className="w-4 h-4 bg-white/30 rounded-sm animate-pulse" style={{ animationDelay: '1.5s' }}></div>
+                <div className="absolute -top-1 left-1/2 transform -translate-x-1/2">
+                  <div className="w-0 h-0 border-l-2 border-r-2 border-b-4 border-l-transparent border-r-transparent border-b-white"></div>
                 </div>
-                <Brain className="absolute w-6 h-6 text-white/80" />
               </div>
             </div>
-
-
-          
+          </div>
           <ScrollArea className="h-80 no-scrollbar">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {gameModesConfig.map((mode) => (
