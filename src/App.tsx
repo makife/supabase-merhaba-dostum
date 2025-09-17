@@ -33,6 +33,7 @@ import { useLocalStorageClear } from "@/hooks/useLocalStorageClear";
 import { useScreenOrientation } from "@/hooks/useScreenOrientation";
 import { useImmersiveMode } from "@/hooks/useImmersiveMode";
 import MemoryGamePage from "@/pages/MemoryGamePage";
+import { Brain } from 'lucide-react';
 
 const queryClient = new QueryClient();
 
