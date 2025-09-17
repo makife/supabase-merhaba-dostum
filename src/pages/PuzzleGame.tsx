@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Timer, RotateCcw, Trophy, Settings } from 'lucide-react';
 
+interface PuzzleGameProps {
+  onClose: () => void;
+}
+
 interface GameState {
   board: number[];
   emptyIndex: number;
@@ -11,7 +15,7 @@ interface GameState {
   difficulty: 3 | 4;
 }
 
-const PuzzleGame: React.FC = () => {
+const PuzzleGame: React.FC<PuzzleGameProps> = ({ onClose }) => {
   const [gameState, setGameState] = useState<GameState>({
     board: [],
     emptyIndex: 8,
@@ -155,8 +159,16 @@ const PuzzleGame: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-4">
-      <div className="max-w-md mx-auto">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto relative">
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-white transition-colors z-10"
+        >
+          ✕
+        </button>
+        
         {/* Header */}
         <div className="text-center mb-6">
           <h1 className="text-4xl font-bold text-white mb-2 bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
@@ -276,6 +288,7 @@ const PuzzleGame: React.FC = () => {
           </button>
         </div>
       </div>
+    </div>
     </div>
   );
 };
