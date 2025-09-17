@@ -520,8 +520,8 @@ const HomePage = () => {
         <div className="h-96">
           {/* Üst Oyunlar - Scroll edilebilir */}
           <div className="mb-4">
-            <ScrollArea className="w-full">
-              <div className="flex gap-3 pb-2" style={{ minWidth: 'fit-content' }}>
+            <div className="w-full overflow-x-auto scrollbar-hide">
+              <div className="flex gap-3 pb-2" style={{ minWidth: 'max-content' }}>
                 {/* Hafıza Oyunu */}
                 <div 
                   className={`rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px] ${
@@ -633,7 +633,7 @@ const HomePage = () => {
                   </div>
                 </div>
               </div>
-            </ScrollArea>
+            </div>
           </div>
           
           <ScrollArea className="h-80 no-scrollbar">
