@@ -639,7 +639,15 @@ const HomePage = () => {
           <div className="h-80 overflow-y-auto scrollbar-hide">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {gameModesConfig.map((mode) => (
-                <Card key={mode.id} className={`cursor-pointer border-0 overflow-hidden ${mode.gradient}`}>
+                <Card key={mode.id} className={`cursor-pointer border-0 overflow-hidden ${mode.gradient}`}
+                  onClick={() => {
+                    playSound('buttonClick');
+                    if (mode.id === 'tournament') {
+                      navigate('/tournament');
+                    } else {
+                      setSelectedMode(mode.id);
+                    }
+                  }}>
                   <CardHeader className="pb-2 pt-3 relative">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
@@ -695,7 +703,8 @@ const HomePage = () => {
                     <Button 
                       className="w-full bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50 backdrop-blur-sm font-semibold" 
                       variant="outline"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         playSound('buttonClick');
                         if (mode.id === 'tournament') {
                           navigate('/tournament');
