@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Timer, RotateCcw, Trophy, Settings } from 'lucide-react';
-
-interface PuzzleGameProps {
-  onClose: () => void;
-}
+import { Timer, RotateCcw, Trophy, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface GameState {
   board: number[];
@@ -15,7 +12,8 @@ interface GameState {
   difficulty: 3 | 4;
 }
 
-const PuzzleGame: React.FC<PuzzleGameProps> = ({ onClose }) => {
+const PuzzleGamePage: React.FC = () => {
+  const navigate = useNavigate();
   const [gameState, setGameState] = useState<GameState>({
     board: [],
     emptyIndex: 8,
@@ -43,7 +41,7 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({ onClose }) => {
     }
     
     const emptyIndex = board.indexOf(0);
-    const timeLimit = difficulty === 3 ? 60 : 120;
+    const timeLimit = difficulty === 3 ? 120 : 180; // 2dk ve 3dk
     
     setGameState({
       board,
@@ -90,7 +88,7 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({ onClose }) => {
     });
     
     if (isSolved) {
-      const finalTime = gameState.difficulty === 3 ? 60 - gameState.timeLeft : 120 - gameState.timeLeft;
+      const finalTime = (gameState.difficulty === 3 ? 120 : 180) - gameState.timeLeft;
       const currentBest = bestTimes[gameState.difficulty];
       
       if (!currentBest || finalTime < currentBest) {
@@ -154,35 +152,39 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({ onClose }) => {
   };
 
   const getTimeProgress = () => {
-    const totalTime = gameState.difficulty === 3 ? 60 : 120;
+    const totalTime = gameState.difficulty === 3 ? 120 : 180;
     return (gameState.timeLeft / totalTime) * 100;
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto relative">
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-white transition-colors z-10"
-        >
-          ✕
-        </button>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-4">
+      <div className="max-w-md mx-auto">
         
-        {/* Header */}
+        {/* Geri Dön Butonu */}
+        <div className="mb-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            Geri Dön
+          </button>
+        </div>
+
+        {/* Başlık */}
         <div className="text-center mb-6">
-          <h1 className="text-4xl font-bold text-white mb-2 bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold text-white mb-2 bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
             Sliding Puzzle
           </h1>
           <div className="flex justify-center items-center gap-4 text-white/80">
             <div className="flex items-center gap-1">
               <Timer size={16} />
-              <span className="text-sm">Moves: {gameState.moves}</span>
+              <span className="text-sm">Hamle: {gameState.moves}</span>
             </div>
             {bestTimes[gameState.difficulty] && (
               <div className="flex items-center gap-1">
                 <Trophy size={16} className="text-yellow-400" />
-                <span className="text-sm">{bestTimes[gameState.difficulty]}s</span>
+                <span className="text-sm">Rekor: {bestTimes[gameState.difficulty]}s</span>
               </div>
             )}
           </div>
@@ -191,7 +193,7 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({ onClose }) => {
         {/* Timer Bar */}
         <div className="mb-6">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-white/80 text-sm">Time</span>
+            <span className="text-white/80 text-sm">Süre</span>
             <span className={`text-sm font-mono ${gameState.timeLeft <= 10 ? 'text-red-400' : 'text-white'}`}>
               {formatTime(gameState.timeLeft)}
             </span>
@@ -209,7 +211,7 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({ onClose }) => {
         {/* Game Board */}
         <div className="mb-6">
           <div
-            className={`grid gap-2 p-4 bg-black/20 rounded-2xl backdrop-blur-sm`}
+            className="grid gap-2 p-4 bg-black/20 rounded-2xl backdrop-blur-sm"
             style={{
               gridTemplateColumns: `repeat(${gameState.difficulty}, 1fr)`,
             }}
@@ -242,7 +244,7 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({ onClose }) => {
           <div className="mb-6 p-4 bg-green-500/20 border border-green-400/30 rounded-xl text-center">
             <div className="text-green-400 font-bold text-lg mb-1">🎉 Tebrikler!</div>
             <div className="text-white/80 text-sm">
-              {gameState.moves} hamle ile {gameState.difficulty === 3 ? 60 - gameState.timeLeft : 120 - gameState.timeLeft} saniyede tamamladın!
+              {gameState.moves} hamle ile {(gameState.difficulty === 3 ? 120 : 180) - gameState.timeLeft} saniyede tamamladın!
             </div>
           </div>
         )}
@@ -287,9 +289,16 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({ onClose }) => {
             Yeniden Başla
           </button>
         </div>
+
+        {/* Alt Bilgi */}
+        <div className="text-center text-purple-200 text-sm mt-6">
+          <p>Sayıları sıralayarak puzzle'ı çöz!</p>
+          <p className="mt-1">Zamana karşı yarış ve rekorunu kır! 🏆</p>
+        </div>
+
       </div>
     </div>
   );
 };
 
-export default PuzzleGame;
+export default PuzzleGamePage;
