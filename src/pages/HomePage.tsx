@@ -21,6 +21,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { useJokerInventory } from '@/hooks/useJokerInventory';
 import { MatchmakingProvider } from '@/contexts/NewMatchmakingContext';
+import { Brain } from 'lucide-react';
 
 import {
   Bot,
@@ -577,6 +578,26 @@ const HomePage = () => {
               </div>
             </div>
           </div>
+
+          {/* Hafıza Oyunu */}
+<div 
+  className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300"
+  onClick={() => navigate('/memory-game')}
+>
+  <h2 className="text-xl font-semibold text-white font-painter mr-3">Hafıza Oyunu</h2>
+  {/* Mini Kart İkonu */}
+  <div className="relative w-12 h-12 flex items-center justify-center">
+    <div className="grid grid-cols-2 gap-1">
+      <div className="w-4 h-4 bg-white/30 rounded-sm animate-pulse"></div>
+      <div className="w-4 h-4 bg-white/50 rounded-sm animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+      <div className="w-4 h-4 bg-white/50 rounded-sm animate-pulse" style={{ animationDelay: '1s' }}></div>
+      <div className="w-4 h-4 bg-white/30 rounded-sm animate-pulse" style={{ animationDelay: '1.5s' }}></div>
+    </div>
+    <Brain className="absolute w-6 h-6 text-white/80" />
+  </div>
+</div>
+
+          
           <ScrollArea className="h-80 no-scrollbar">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {gameModesConfig.map((mode) => (
