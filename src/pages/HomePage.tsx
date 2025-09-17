@@ -607,7 +607,7 @@ const HomePage = () => {
                     </div>
                   </div>
                 </div>
-
+                
                 {/* Puzzle Oyunu */}
                 <div 
                   className="bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px]"
@@ -636,7 +636,7 @@ const HomePage = () => {
             </div>
           </div>
           
-          <ScrollArea className="h-80 no-scrollbar">
+          <div className="h-80 overflow-y-auto scrollbar-hide">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {gameModesConfig.map((mode) => (
                 <Card key={mode.id} className={`cursor-pointer border-0 overflow-hidden ${mode.gradient}`}>
@@ -710,7 +710,7 @@ const HomePage = () => {
                 </Card>
               ))}
             </div>
-          </ScrollArea>
+          </div>
         </div>
 
         {/* Game Mode Selector Modal */}
