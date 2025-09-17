@@ -3603,7 +3603,7 @@ if (gameEnded) {
               <img 
                 src="/sevinc.gif" 
                 alt="Sevinç" 
-                className="w-16 h-16 object-contain animate-bounce"
+                className="w-16 h-16 object-contain"
               />
             )}
             {winner === 'opponent' && (
