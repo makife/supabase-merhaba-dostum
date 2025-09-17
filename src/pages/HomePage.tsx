@@ -21,6 +21,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { useJokerInventory } from '@/hooks/useJokerInventory';
 import { MatchmakingProvider } from '@/contexts/NewMatchmakingContext';
+import { Brain } from 'lucide-react';
 
 import {
   Bot,
