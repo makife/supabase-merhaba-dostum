@@ -19,7 +19,7 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
     const initialTimer = setTimeout(() => {
       setHasStarted(true);
       setIsVisible(true);
-    }, 2000); // 1 saniye bekle
+    }, 1000); // 1 saniye bekle
 
     return () => clearTimeout(initialTimer);
   }, []);
