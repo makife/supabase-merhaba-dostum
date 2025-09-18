@@ -540,10 +540,10 @@ const HomePage = () => {
                   {/* Mini Kart İkonu */}
                   <div className="relative w-12 h-12 flex items-center justify-center">
                     <div className="grid grid-cols-2 gap-1">
-                      <div className={`w-4 h-4 bg-white/30 rounded-sm ${canPlayMemory ? 'animate-pulse' : ''}`}></div>
-                      <div className={`w-4 h-4 bg-white/90 rounded-sm ${canPlayMemory ? 'animate-pulse' : ''}`} style={{ animationDelay: '0.5s' }}></div>
-                      <div className={`w-4 h-4 bg-white/90 rounded-sm ${canPlayMemory ? 'animate-pulse' : ''}`} style={{ animationDelay: '1s' }}></div>
-                      <div className={`w-4 h-4 bg-white/30 rounded-sm ${canPlayMemory ? 'animate-pulse' : ''}`} style={{ animationDelay: '1.5s' }}></div>
+                      <div className={`w-4 h-4 bg-white/40 rounded-sm ${canPlayMemory ? 'animate-pulse' : ''}`}></div>
+                      <div className={`w-4 h-4 bg-white/80 rounded-sm ${canPlayMemory ? 'animate-pulse' : ''}`} style={{ animationDelay: '0.4s' }}></div>
+                      <div className={`w-4 h-4 bg-white/80 rounded-sm ${canPlayMemory ? 'animate-pulse' : ''}`} style={{ animationDelay: '0.9s' }}></div>
+                      <div className={`w-4 h-4 bg-white/40 rounded-sm ${canPlayMemory ? 'animate-pulse' : ''}`} style={{ animationDelay: '1.4s' }}></div>
                     </div>
                     <Brain className={`absolute w-6 h-6 ${canPlayMemory ? 'text-white/80' : 'text-white/50'}`} />
                   </div>
@@ -619,15 +619,15 @@ const HomePage = () => {
                   {/* Mini Puzzle İkonu */}
                   <div className="relative w-12 h-12 flex items-center justify-center">
                     <div className="grid grid-cols-3 gap-0.5">
-                      <div className="w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600">1</div>
-                      <div className="w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600">2</div>
-                      <div className="w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600">3</div>
-                      <div className="w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600">4</div>
-                      <div className="w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600">5</div>
-                      <div className="w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600">6</div>
-                      <div className="w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600">7</div>
-                      <div className="w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600">8</div>
-                      <div className="w-3 h-3 bg-white/20 rounded-sm"></div>
+                      <div className={`w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600 ${canPlayMemory ? 'animate-pulse' : ''}`}>1</div>
+                      <div className={`w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600 ${canPlayMemory ? 'animate-pulse' : ''}`} style={{ animationDelay: '0.1s' }}>2</div>
+                      <div className={`w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600 ${canPlayMemory ? 'animate-pulse' : ''}`} style={{ animationDelay: '0.2s' }}>3</div>
+                      <div className={`w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600 ${canPlayMemory ? 'animate-pulse' : ''}`} style={{ animationDelay: '0.3s' }}>4</div>
+                      <div className={`w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600 ${canPlayMemory ? 'animate-pulse' : ''}`} style={{ animationDelay: '0.4s' }}>5</div>
+                      <div className={`w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600 ${canPlayMemory ? 'animate-pulse' : ''}`} style={{ animationDelay: '0.5s' }}>6</div>
+                      <div className={`w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600 ${canPlayMemory ? 'animate-pulse' : ''}`} style={{ animationDelay: '0.6s' }}>7</div>
+                      <div className={`w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600 ${canPlayMemory ? 'animate-pulse' : ''}`} style={{ animationDelay: '0.7s' }}>8</div>
+                      <div className={`w-3 h-3 bg-white/20 rounded-sm ${canPlayMemory ? 'animate-pulse' : ''}`} style={{ animationDelay: '0.8s' }}></div>
                     </div>
                     <Grid3X3 className="absolute w-6 h-6 text-white/20" />
                   </div>
