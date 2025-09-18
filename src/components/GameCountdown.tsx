@@ -23,7 +23,7 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
       // Extra countdown beep for emphasis
       setTimeout(() => {
         playSound('letterSelect');
-      }, 100);
+      }, 100);}
       
       const timer = setTimeout(() => {
         setIsVisible(false);
