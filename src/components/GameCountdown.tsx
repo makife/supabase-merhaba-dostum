@@ -63,9 +63,9 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
       textShadow: '0 0 20px rgba(255, 255, 0, 0.8), 0 0 40px rgba(255, 0, 0, 0.6)',
       filter: 'drop-shadow(0 0 15px rgba(255, 255, 0, 0.8))'
     } : {}}>
-      {showStart ? "🚀 BAŞLA! 🚀" : count}
+      {showStart ? "BAŞLA!" : count}
     </div>
   </div>
 );
-
+};
 export default GameCountdown;
