@@ -19,11 +19,7 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
       if (count <= 4) {
       console.log('🔊 Countdown ses çalıyor:', count);
       playSound('buttonClick');
-      
-      // Extra countdown beep for emphasis
-      setTimeout(() => {
-        playSound('letterSelect');
-      }, 100);}
+      }
       
       const timer = setTimeout(() => {
         setIsVisible(false);
