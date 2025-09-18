@@ -16,6 +16,7 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
   useEffect(() => {
     if (count > 0) {
       // Geri sayım sesi çal - hem buttonClick hem de özel countdown sesi
+      if (count <= 4) {
       console.log('🔊 Countdown ses çalıyor:', count);
       playSound('buttonClick');
       
