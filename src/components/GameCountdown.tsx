@@ -46,7 +46,7 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
         }, 200);
       }, 800);
     }
-  }, [count, showStart, onComplete, playSound]);
+  }, [count, showStart, onComplete]);
 
   if (count === 0 && !showStart) return null;
 
