@@ -13,35 +13,36 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
   const [showStart, setShowStart] = useState(false);
   const { playSound } = useSounds();
 
-  useEffect(() => {
+ useEffect(() => {
+  if (count > 0) {
+    // Sadece 4, 3, 2, 1 için ses çal (5 için değil)
     if (count <= 4) {
-      // Geri sayım sesi çal - hem buttonClick hem de özel countdown sesi
       console.log('🔊 Countdown ses çalıyor:', count);
       playSound('buttonClick');
     }
-      const timer = setTimeout(() => {
-        setIsVisible(false);
-        setTimeout(() => {
-          setCount(count - 1);
-          setIsVisible(true);
-        }, 200);
-      }, 800);
-
-      return () => clearTimeout(timer);
-    } else if (count === 0 && !showStart) {
-      setShowStart(true);
-      // "Başla!" anında farklı ses çal
-      console.log('🔊 Başla sesi çalıyor');
-      playSound('correctWord');
-      
+    
+    const timer = setTimeout(() => {
+      setIsVisible(false);
       setTimeout(() => {
-        setIsVisible(false);
-        setTimeout(() => {
-          onComplete();
-        }, 200);
-      }, 800);
-    }
-  }, [count, showStart, onComplete]);
+        setCount(count - 1);
+        setIsVisible(true);
+      }, 200);
+    }, 800);
+
+    return () => clearTimeout(timer);
+  } else if (count === 0 && !showStart) {
+    setShowStart(true);
+    console.log('🔊 Başla sesi çalıyor');
+    playSound('correctWord');
+    
+    setTimeout(() => {
+      setIsVisible(false);
+      setTimeout(() => {
+        onComplete();
+      }, 200);
+    }, 800);
+  }
+}, [count, showStart, onComplete]);
 
   if (count === 0 && !showStart) return null;
 
