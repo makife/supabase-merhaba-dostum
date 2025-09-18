@@ -16,10 +16,6 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
   useEffect(() => {
     if (count <= 4) {
   console.log('🔊 Countdown ses çalıyor:', count);
-  // Son saniye farklı ses
-  if (count === 1) {
-    playSound('timeWarning'); // Daha dramatik
-  } else {
     playSound('buttonClick');
   }
 }
