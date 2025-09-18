@@ -18,7 +18,7 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
       // Geri sayım sesi çal - hem buttonClick hem de özel countdown sesi
       console.log('🔊 Countdown ses çalıyor:', count);
       playSound('buttonClick');
-      
+    }
       const timer = setTimeout(() => {
         setIsVisible(false);
         setTimeout(() => {
