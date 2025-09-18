@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useSounds } from '@/hooks/useSounds';
 
@@ -14,10 +14,10 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
   const { playSound } = useSounds();
 
   useEffect(() => {
-    if (count <= 4) {
-  console.log('🔊 Countdown ses çalıyor:', count);
-  playSound('letterSelect');
-}
+    if (count > 0) {
+      // Geri sayım sesi çal - hem buttonClick hem de özel countdown sesi
+      console.log('🔊 Countdown ses çalıyor:', count);
+      playSound('buttonClick');
       
       const timer = setTimeout(() => {
         setIsVisible(false);
@@ -41,7 +41,7 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
         }, 200);
       }, 800);
     }
-  }, [count, showStart, onComplete]);
+  }, [count, showStart, onComplete, playSound]);
 
   if (count === 0 && !showStart) return null;
 
