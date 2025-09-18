@@ -62,11 +62,7 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
         
         console.log('🔄 Oda oluşturma sonrası participants:', participants?.length);
       }, 1000);
-      
-      toast({
-        title: 'Oda Oluşturuldu!',
-        description: `Oda kodu: ${room.room_code} (${gameType === 'timed' ? 'Zamana Karşı' : 'Puana Karşı'})`,
-      });
+
     }
   } catch (error) {
     // error handling
