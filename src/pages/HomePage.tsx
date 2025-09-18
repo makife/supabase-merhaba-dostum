@@ -541,8 +541,8 @@ const HomePage = () => {
                   <div className="relative w-12 h-12 flex items-center justify-center">
                     <div className="grid grid-cols-2 gap-1">
                       <div className={`w-4 h-4 bg-white/30 rounded-sm ${canPlayMemory ? 'animate-pulse' : ''}`}></div>
-                      <div className={`w-4 h-4 bg-white/50 rounded-sm ${canPlayMemory ? 'animate-pulse' : ''}`} style={{ animationDelay: '0.5s' }}></div>
-                      <div className={`w-4 h-4 bg-white/50 rounded-sm ${canPlayMemory ? 'animate-pulse' : ''}`} style={{ animationDelay: '1s' }}></div>
+                      <div className={`w-4 h-4 bg-white/90 rounded-sm ${canPlayMemory ? 'animate-pulse' : ''}`} style={{ animationDelay: '0.5s' }}></div>
+                      <div className={`w-4 h-4 bg-white/90 rounded-sm ${canPlayMemory ? 'animate-pulse' : ''}`} style={{ animationDelay: '1s' }}></div>
                       <div className={`w-4 h-4 bg-white/30 rounded-sm ${canPlayMemory ? 'animate-pulse' : ''}`} style={{ animationDelay: '1.5s' }}></div>
                     </div>
                     <Brain className={`absolute w-6 h-6 ${canPlayMemory ? 'text-white/80' : 'text-white/50'}`} />
