@@ -2214,4 +2214,13 @@ All colors MUST be HSL.
   animation: tile-slide 0.3s ease-out;
 }
 
+@keyframes sequentialPulse {
+  0%, 90% { opacity: 0.9; }
+  10% { opacity: 0.3; }
+}
+.sequential-pulse {
+  animation: sequentialPulse 2.7s infinite;
+}
+
+
 /* ===== PUZZLE GAME STYLES END ===== */
