@@ -29,7 +29,7 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
 
     if (count > 0) {
       // Sadece 4, 3, 2, 1 için ses çal (5 için değil)
-      if (count <= 4) {
+      if (count <= 5) {
         console.log('🔊 Countdown ses çalıyor:', count);
         playSound('buttonClick');
       }
