@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { useSounds } from '@/hooks/useSounds';
 
 interface GameCountdownProps {
   onComplete: () => void;
@@ -10,9 +11,13 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
   const [count, setCount] = useState(5);
   const [isVisible, setIsVisible] = useState(true);
   const [showStart, setShowStart] = useState(false);
+  const { playSound } = useSounds();
 
   useEffect(() => {
     if (count > 0) {
+      // Geri sayım sesi çal
+      playSound('buttonClick');
+      
       const timer = setTimeout(() => {
         setIsVisible(false);
         setTimeout(() => {
@@ -24,6 +29,9 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
       return () => clearTimeout(timer);
     } else if (count === 0 && !showStart) {
       setShowStart(true);
+      // "Başla!" anında farklı ses çal
+      playSound('correctWord');
+      
       setTimeout(() => {
         setIsVisible(false);
         setTimeout(() => {
@@ -31,7 +39,7 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
         }, 200);
       }, 800);
     }
-  }, [count, showStart, onComplete]);
+  }, [count, showStart, onComplete, playSound]);
 
   if (count === 0 && !showStart) return null;
 
