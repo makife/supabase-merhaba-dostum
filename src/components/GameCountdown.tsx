@@ -15,8 +15,14 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
 
   useEffect(() => {
     if (count > 0) {
-      // Geri sayım sesi çal
+      // Geri sayım sesi çal - hem buttonClick hem de özel countdown sesi
+      console.log('🔊 Countdown ses çalıyor:', count);
       playSound('buttonClick');
+      
+      // Extra countdown beep for emphasis
+      setTimeout(() => {
+        playSound('letterSelect');
+      }, 100);
       
       const timer = setTimeout(() => {
         setIsVisible(false);
@@ -30,6 +36,7 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
     } else if (count === 0 && !showStart) {
       setShowStart(true);
       // "Başla!" anında farklı ses çal
+      console.log('🔊 Başla sesi çalıyor');
       playSound('correctWord');
       
       setTimeout(() => {
