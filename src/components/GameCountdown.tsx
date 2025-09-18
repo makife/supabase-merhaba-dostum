@@ -14,12 +14,15 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
   const { playSound } = useSounds();
 
   useEffect(() => {
-    if (count > 0) {
-      // Geri sayım sesi çal - hem buttonClick hem de özel countdown sesi
-      if (count <= 4) {
-      console.log('🔊 Countdown ses çalıyor:', count);
-      playSound('buttonClick');
-      }
+    if (count <= 4) {
+  console.log('🔊 Countdown ses çalıyor:', count);
+  // Son saniye farklı ses
+  if (count === 1) {
+    playSound('timeWarning'); // Daha dramatik
+  } else {
+    playSound('buttonClick');
+  }
+}
       
       const timer = setTimeout(() => {
         setIsVisible(false);
