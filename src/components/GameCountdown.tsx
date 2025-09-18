@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { useSounds } from '@/hooks/useSounds';
 
@@ -41,7 +41,7 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
         }, 200);
       }, 800);
     }
-  }, [count, showStart, onComplete, playSound]);
+  }, [count, showStart, onComplete]);
 
   if (count === 0 && !showStart) return null;
 
