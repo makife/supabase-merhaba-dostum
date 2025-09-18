@@ -46,23 +46,26 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
   if (count === 0 && !showStart) return null;
 
   return (
+  <div className={cn(
+    "fixed inset-0 z-50 flex items-center justify-center",
+    className
+  )}>
     <div className={cn(
-      "fixed inset-0 z-50 flex items-center justify-center",
-      className
-    )}>
-      <div className={cn(
-        "text-9xl font-bold transition-all duration-200",
-        isVisible 
-          ? "scale-100 opacity-100" 
-          : "scale-75 opacity-0",
-        showStart 
-          ? "text-primary animate-pulse" 
-          : "text-foreground"
-      )}>
-        {showStart ? "Başla!" : count}
-      </div>
+      "text-9xl font-bold transition-all duration-200 select-none",
+      isVisible 
+        ? "scale-100 opacity-100" 
+        : "scale-75 opacity-0",
+      showStart 
+        ? "text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-red-500 to-pink-500 animate-bounce drop-shadow-2xl" 
+        : "text-foreground"
+    )}
+    style={showStart ? {
+      textShadow: '0 0 20px rgba(255, 255, 0, 0.8), 0 0 40px rgba(255, 0, 0, 0.6)',
+      filter: 'drop-shadow(0 0 15px rgba(255, 255, 0, 0.8))'
+    } : {}}>
+      {showStart ? "🚀 BAŞLA! 🚀" : count}
     </div>
-  );
-};
+  </div>
+);
 
 export default GameCountdown;
