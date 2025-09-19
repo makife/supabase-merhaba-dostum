@@ -3811,7 +3811,16 @@ if (gameEnded) {
               if (currentRematchRequest) {
                 await respondRematchRequest(currentRematchRequest.id, true);
                 if (currentRematchRequest.room_code) {
-                  await joinRoom(currentRematchRequest.room_code);
+                  const success = await joinRoom(currentRematchRequest.room_code);
+                  if (success) {
+                    console.log('✅ Rematch odaya katıldı, oyun sayfasına yönlendiriliyor');
+                    // Oyun durumunu tamamen sıfırla
+                    resetGameForRematch();
+                    // Yeni oyun başlatması için küçük gecikme
+                    setTimeout(() => {
+                      setShowCountdown(true);
+                    }, 500);
+                  }
                 }
               }
             }}>
@@ -4395,7 +4404,16 @@ return (
             if (currentRematchRequest) {
               await respondRematchRequest(currentRematchRequest.id, true);
               if (currentRematchRequest.room_code) {
-                await joinRoom(currentRematchRequest.room_code);
+                const success = await joinRoom(currentRematchRequest.room_code);
+                if (success) {
+                  console.log('✅ Rematch odaya katıldı, oyun sayfasına yönlendiriliyor');
+                  // Oyun durumunu tamamen sıfırla
+                  resetGameForRematch();
+                  // Yeni oyun başlatması için küçük gecikme
+                  setTimeout(() => {
+                    setShowCountdown(true);
+                  }, 500);
+                }
               }
             }
           }}>
