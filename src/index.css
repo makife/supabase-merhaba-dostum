@@ -2222,5 +2222,48 @@ All colors MUST be HSL.
   animation: sequentialPulse 2.7s infinite;
 }
 
+/* Capacitor Native için immersive mode */
+body.is-capacitor {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* Status bar overlay */
+body.is-capacitor::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 30px;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999999;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+/* Navigation bar overlay */
+body.is-capacitor::after {
+  content: '';
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50px;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999999;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+/* Auto-hide after 3 seconds */
+body.is-capacitor.hide-bars::after,
+body.is-capacitor.hide-bars::before {
+  opacity: 0;
+}
+
 
 /* ===== PUZZLE GAME STYLES END ===== */
