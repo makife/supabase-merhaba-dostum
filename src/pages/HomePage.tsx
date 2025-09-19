@@ -524,32 +524,6 @@ const HomePage = () => {
           <div className="mb-4">
             <div className="w-full overflow-x-auto scrollbar-hide">
               <div className="flex gap-3 pb-2" style={{ minWidth: 'max-content' }}>
-                {/* Hafıza Oyunu */}
-                <div 
-                  className={`rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-500 ease-in-out min-w-[200px] ${
-                    canPlayMemory 
-                      ? 'bg-gradient-to-r from-purple-500 to-pink-500' 
-                      : 'bg-gradient-to-r from-gray-400 to-gray-500'
-                  }`}
-                  onClick={() => navigate('/memory-game')}
-                >
-                  <div className="flex-1">
-                    <h2 className="text-xl font-semibold text-white font-painter">Hafıza Oyunu</h2>
-                    {!canPlayMemory && timeUntilNextPlay && (
-                      <p className="text-xs text-white/80">Sonraki: {timeUntilNextPlay}</p>
-                    )}
-                  </div>
-                  {/* Mini Kart İkonu */}
-                  <div className="relative w-12 h-12 flex items-center justify-center">
-                    <div className="grid grid-cols-2 gap-1">
-                      <div className={`w-4 h-4 bg-white/40 rounded-sm ${canPlayMemory ? 'animate-pulse' : ''}`}></div>
-                      <div className={`w-4 h-4 bg-white/80 rounded-sm ${canPlayMemory ? 'animate-pulse' : ''}`} style={{ animationDelay: '0.4s' }}></div>
-                      <div className={`w-4 h-4 bg-white/80 rounded-sm ${canPlayMemory ? 'animate-pulse' : ''}`} style={{ animationDelay: '0.9s' }}></div>
-                      <div className={`w-4 h-4 bg-white/40 rounded-sm ${canPlayMemory ? 'animate-pulse' : ''}`} style={{ animationDelay: '1.4s' }}></div>
-                    </div>
-                    <Brain className={`absolute w-6 h-6 ${canPlayMemory ? 'text-white/80' : 'text-white/50'}`} />
-                  </div>
-                </div>
                 
                 {/* Günlük Çark */}
                 <div 
@@ -607,6 +581,33 @@ const HomePage = () => {
                     <div className="absolute -top-1 left-1/2 transform -translate-x-1/2">
                       <div className="w-0 h-0 border-l-2 border-r-2 border-b-4 border-l-transparent border-r-transparent border-b-white"></div>
                     </div>
+                  </div>
+                </div>
+
+                {/* Hafıza Oyunu */}
+                <div 
+                  className={`rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-500 ease-in-out min-w-[200px] ${
+                    canPlayMemory 
+                      ? 'bg-gradient-to-r from-purple-500 to-pink-500' 
+                      : 'bg-gradient-to-r from-gray-400 to-gray-500'
+                  }`}
+                  onClick={() => navigate('/memory-game')}
+                >
+                  <div className="flex-1">
+                    <h2 className="text-xl font-semibold text-white font-painter">Hafıza Oyunu</h2>
+                    {!canPlayMemory && timeUntilNextPlay && (
+                      <p className="text-xs text-white/80">Sonraki: {timeUntilNextPlay}</p>
+                    )}
+                  </div>
+                  {/* Mini Kart İkonu */}
+                  <div className="relative w-12 h-12 flex items-center justify-center">
+                    <div className="grid grid-cols-2 gap-1">
+                      <div className={`w-4 h-4 bg-white/40 rounded-sm ${canPlayMemory ? 'animate-pulse' : ''}`}></div>
+                      <div className={`w-4 h-4 bg-white/80 rounded-sm ${canPlayMemory ? 'animate-pulse' : ''}`} style={{ animationDelay: '0.4s' }}></div>
+                      <div className={`w-4 h-4 bg-white/80 rounded-sm ${canPlayMemory ? 'animate-pulse' : ''}`} style={{ animationDelay: '0.9s' }}></div>
+                      <div className={`w-4 h-4 bg-white/40 rounded-sm ${canPlayMemory ? 'animate-pulse' : ''}`} style={{ animationDelay: '1.4s' }}></div>
+                    </div>
+                    <Brain className={`absolute w-6 h-6 ${canPlayMemory ? 'text-white/80' : 'text-white/50'}`} />
                   </div>
                 </div>
                 
