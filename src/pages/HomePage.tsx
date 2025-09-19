@@ -309,12 +309,14 @@ const HomePage = () => {
                     className="relative cursor-pointer group flex-shrink-0"
                     onClick={handleAvatarClick}
                   >
-                    <Avatar className="w-14 h-14 ring-2 ring-white/50 shadow-lg">
+                    <Avatar className="w-14 h-14 ring-2 ring-white/50 shadow-lg transition-all duration-500 ease-in-out">
                       <AvatarImage 
                         src={userAvatar || user?.user_metadata?.avatar_url} 
                         alt="Profile"
+                        className="transition-opacity duration-500 ease-in-out"
+                        loading="eager"
                       />
-                      <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-sm font-bold">
+                      <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-sm font-bold transition-all duration-500 ease-in-out">
                         <User className="w-6 h-6" />
                       </AvatarFallback>
                     </Avatar>
@@ -524,10 +526,10 @@ const HomePage = () => {
               <div className="flex gap-3 pb-2" style={{ minWidth: 'max-content' }}>
                 {/* Hafıza Oyunu */}
                 <div 
-                  className={`rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px] ${
+                  className={`rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-500 ease-in-out min-w-[200px] ${
                     canPlayMemory 
                       ? 'bg-gradient-to-r from-purple-500 to-pink-500' 
-                      : 'bg-gradient-to-r from-gray-500 to-gray-600'
+                      : 'bg-gradient-to-r from-gray-400 to-gray-500'
                   }`}
                   onClick={() => navigate('/memory-game')}
                 >
