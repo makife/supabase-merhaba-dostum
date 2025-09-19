@@ -178,29 +178,69 @@ const AppRoutes = () => {
 const App = () => {
   // CSS-Only Immersive Mode
   useEffect(() => {
-    if (Capacitor.isNativePlatform()) {
-      document.body.classList.add('is-capacitor');
+  if (Capacitor.isNativePlatform()) {
+    document.body.classList.add('is-capacitor');
+    document.body.classList.add('hide-bars'); // Başlangıçta gizli
+    
+    let hideTimer: NodeJS.Timeout;
+    let touchStartY: number | null = null;
+    let touchStartX: number | null = null;
+    
+    const scheduleHide = () => {
+      clearTimeout(hideTimer);
+      document.body.classList.remove('hide-bars');
+      hideTimer = setTimeout(() => {
+        document.body.classList.add('hide-bars');
+      }, 3000);
+    };
+    
+    const handleTouchStart = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      touchStartY = touch.clientY;
+      touchStartX = touch.clientX;
+    };
+    
+    const handleTouchMove = (e: TouchEvent) => {
+      if (touchStartY === null || touchStartX === null) return;
       
-      let hideTimer: NodeJS.Timeout;
+      const touch = e.touches[0];
+      const deltaY = touch.clientY - touchStartY;
+      const deltaX = Math.abs(touch.clientX - touchStartX);
+      const windowHeight = window.innerHeight;
       
-      const scheduleHide = () => {
-        clearTimeout(hideTimer);
-        document.body.classList.remove('hide-bars');
-        hideTimer = setTimeout(() => {
-          document.body.classList.add('hide-bars');
-        }, 3000);
-      };
+      // Dikey kaydırma mı kontrol et
+      const isVerticalSwipe = Math.abs(deltaY) > deltaX;
       
-      document.addEventListener('touchstart', scheduleHide);
-      scheduleHide(); // İlk başlatma
+      // Üst kenardan aşağı kaydırma (status bar için)
+      const isTopEdgeSwipe = touchStartY < 50 && deltaY > 30;
       
-      return () => {
-        clearTimeout(hideTimer);
-        document.removeEventListener('touchstart', scheduleHide);
-        document.body.classList.remove('is-capacitor', 'hide-bars');
-      };
-    }
-  }, []);
+      // Alt kenardan yukarı kaydırma (navigation bar için)
+      const isBottomEdgeSwipe = touchStartY > windowHeight - 50 && deltaY < -30;
+      
+      if (isVerticalSwipe && (isTopEdgeSwipe || isBottomEdgeSwipe)) {
+        scheduleHide();
+      }
+    };
+    
+    const handleTouchEnd = () => {
+      touchStartY = null;
+      touchStartX = null;
+    };
+    
+    // Touch event listeners
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchmove', handleTouchMove, { passive: true });
+    document.addEventListener('touchend', handleTouchEnd, { passive: true });
+    
+    return () => {
+      clearTimeout(hideTimer);
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+      document.body.classList.remove('is-capacitor', 'hide-bars');
+    };
+  }
+}, []);
 
   return (
     <QueryClientProvider client={queryClient}>
