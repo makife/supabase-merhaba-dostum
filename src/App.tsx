@@ -49,7 +49,7 @@ const AppRoutes = () => {
   useScreenOrientation();
   
   // Immersive mode'u aktif et (navigasyon tuşlarını gizle)
-  useImmersiveMode();
+  //useImmersiveMode();
 
   if (loading || customLoading) {
     return (
