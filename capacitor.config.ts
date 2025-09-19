@@ -32,9 +32,9 @@ const config: CapacitorConfig = {
     },
     StatusBar: {
       style: 'DARK',
-      backgroundColor: '#F7FAFC',
+      backgroundColor: '#1a1a1a',
       overlay: true,
-      androidStatusBarColor: '#F7FAFC'
+      androidStatusBarColor: '#1a1a1a'
     },
     SafeArea: {
       enabled: false,

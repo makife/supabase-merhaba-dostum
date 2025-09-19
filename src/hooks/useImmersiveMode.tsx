@@ -1,83 +1,130 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { Capacitor } from '@capacitor/core';
 import { NavigationBar } from '@ethion/capacitor-navigation-bar';
 import { App } from '@capacitor/app';
 
 export const useImmersiveMode = () => {
+  const [barsVisible, setBarsVisible] = useState(false);
+  const [touchStartY, setTouchStartY] = useState<number | null>(null);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+
   useEffect(() => {
-    let autoHideInterval: ReturnType<typeof setInterval> | undefined;
+    let hideTimer: ReturnType<typeof setTimeout> | undefined;
     let appListener: { remove: () => void } | undefined;
     let overlayApplied = false;
-    const hideSystemUI = async () => {
+
+    const hideSystemUI = async (immediate = false) => {
       if (!Capacitor.isNativePlatform()) return;
+      
       try {
-        // Hide status bar (overlay is applied only once to avoid re-layout on Android)
+        // Apply overlay only once to avoid layout issues
         if (!overlayApplied) {
-          try { await StatusBar.setOverlaysWebView({ overlay: true }); } catch {}
-          overlayApplied = true;
-        }
-        await StatusBar.hide();
-        if (Capacitor.getPlatform() === 'android') {
-          try {
+          try { 
+            await StatusBar.setOverlaysWebView({ overlay: true }); 
             await StatusBar.setStyle({ style: Style.Dark });
           } catch {}
+          overlayApplied = true;
+        }
 
-          try {
-            await NavigationBar.hide();
-          } catch (e) {
-            console.warn('⚠️ NavigationBar hide failed:', e);
+        if (immediate) {
+          await StatusBar.hide();
+          if (Capacitor.getPlatform() === 'android') {
+            try {
+              await NavigationBar.hide();
+            } catch (e) {
+              console.warn('⚠️ NavigationBar hide failed:', e);
+            }
           }
+          setBarsVisible(false);
         }
       } catch (error) {
         console.warn('⚠️ Could not hide system UI:', error);
       }
     };
 
-    const startAutoHide = () => {
-      if (autoHideInterval) clearInterval(autoHideInterval);
-      // Disabled periodic auto-hide to avoid Android WebView white-screen bug
-      autoHideInterval = undefined;
+    const showSystemUI = async () => {
+      if (!Capacitor.isNativePlatform()) return;
+      
+      try {
+        await StatusBar.show();
+        if (Capacitor.getPlatform() === 'android') {
+          try {
+            await NavigationBar.show();
+          } catch (e) {
+            console.warn('⚠️ NavigationBar show failed:', e);
+          }
+        }
+        setBarsVisible(true);
+      } catch (error) {
+        console.warn('⚠️ Could not show system UI:', error);
+      }
     };
 
-    const handleUserInteraction = () => {
-      hideSystemUI();
-      startAutoHide();
+    const scheduleHide = () => {
+      if (hideTimer) clearTimeout(hideTimer);
+      hideTimer = setTimeout(() => {
+        hideSystemUI(true);
+      }, 3000); // 3 saniye sonra gizle
+    };
+
+    const handleTouchStart = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      setTouchStartY(touch.clientY);
+      setTouchStartX(touch.clientX);
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (touchStartY === null || touchStartX === null) return;
+      
+      const touch = e.touches[0];
+      const deltaY = touch.clientY - touchStartY;
+      const deltaX = Math.abs(touch.clientX - touchStartX);
+      const windowHeight = window.innerHeight;
+      const windowWidth = window.innerWidth;
+      
+      // Kenarlardan kaydırma kontrolü
+      const isTopEdge = touchStartY < 50; // Üstten 50px
+      const isBottomEdge = touchStartY > windowHeight - 50; // Alttan 50px
+      const isVerticalSwipe = Math.abs(deltaY) > deltaX; // Dikey kaydırma
+      
+      // Üstten aşağı kaydırma veya alttan yukarı kaydırma
+      if (isVerticalSwipe && ((isTopEdge && deltaY > 30) || (isBottomEdge && deltaY < -30))) {
+        showSystemUI();
+        scheduleHide();
+      }
+    };
+
+    const handleTouchEnd = () => {
+      setTouchStartY(null);
+      setTouchStartX(null);
     };
 
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        hideSystemUI();
-        startAutoHide();
+        hideSystemUI(true);
       }
     };
 
-    const handleFocus = () => {
-      hideSystemUI();
-      startAutoHide();
-    };
-
     const setupImmersiveMode = async () => {
-      // Only work on native mobile platforms
       if (!Capacitor.isNativePlatform()) return;
 
-      await hideSystemUI();
-      startAutoHide();
+      // Başlangıçta gizle
+      await hideSystemUI(true);
 
-      // Interaction listeners to force-hide bars again
-      document.addEventListener('touchstart', handleUserInteraction, { passive: true });
-      document.addEventListener('click', handleUserInteraction, { passive: true });
-      window.addEventListener('focus', handleFocus);
+      // Touch event listeners
+      document.addEventListener('touchstart', handleTouchStart, { passive: true });
+      document.addEventListener('touchmove', handleTouchMove, { passive: true });
+      document.addEventListener('touchend', handleTouchEnd, { passive: true });
+      
+      // Visibility change listener
       document.addEventListener('visibilitychange', handleVisibilityChange);
-      window.addEventListener('resize', handleUserInteraction);
-      window.addEventListener('scroll', handleUserInteraction, { passive: true });
 
-      // App lifecycle (resume)
+      // App lifecycle listener
       try {
         appListener = await App.addListener('appStateChange', ({ isActive }) => {
           if (isActive) {
-            hideSystemUI();
-            startAutoHide();
+            hideSystemUI(true);
           }
         });
       } catch (e) {
@@ -89,8 +136,9 @@ export const useImmersiveMode = () => {
 
     // Cleanup function
     return () => {
-      if (autoHideInterval) clearInterval(autoHideInterval);
+      if (hideTimer) clearTimeout(hideTimer);
 
+      // Show bars on cleanup
       if (Capacitor.isNativePlatform()) {
         StatusBar.show().catch((error) => {
           console.warn('⚠️ Could not show status bar:', error);
@@ -103,13 +151,13 @@ export const useImmersiveMode = () => {
       }
 
       // Remove event listeners
-      document.removeEventListener('touchstart', handleUserInteraction as any);
-      document.removeEventListener('click', handleUserInteraction as any);
-      window.removeEventListener('focus', handleFocus as any);
-      document.removeEventListener('visibilitychange', handleVisibilityChange as any);
-      window.removeEventListener('resize', handleUserInteraction as any);
-      window.removeEventListener('scroll', handleUserInteraction as any);
+      document.removeEventListener('touchstart', handleTouchStart as any);
+      document.removeEventListener('touchmove', handleTouchMove as any);
+      document.removeEventListener('touchend', handleTouchEnd as any);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       appListener?.remove?.();
     };
-  }, []);
+  }, [touchStartY, touchStartX]);
+
+  return { barsVisible };
 };
