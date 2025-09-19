@@ -264,8 +264,8 @@ const HomePage = () => {
 
   return (
     <MatchmakingProvider onMatchFound={handleMatchFound}>
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
-        <div className="max-w-4xl mx-auto space-y-4">
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted px-4 pt-4 pb-2">
+        <div className="max-w-4xl mx-auto space-y-3">
         {/* Birleştirilmiş Header ve Level Progress */}
         <Card className="border-0 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/10 shadow-2xl relative overflow-hidden">
           <HeaderAnimation />
@@ -519,9 +519,9 @@ const HomePage = () => {
         )}
 
          {/* Game Modes */}
-        <div className="h-96">
+        <div className="flex-1 min-h-0">
           {/* Üst Oyunlar - Scroll edilebilir */}
-          <div className="mb-4">
+          <div className="mb-3">
             <div className="w-full overflow-x-auto scrollbar-hide">
               <div className="flex gap-3 pb-2" style={{ minWidth: 'max-content' }}>
                 
@@ -639,8 +639,8 @@ const HomePage = () => {
             </div>
           </div>
           
-          <div className="h-80 overflow-y-auto scrollbar-hide">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="h-72 overflow-y-auto scrollbar-hide">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-2">
               {gameModesConfig.map((mode) => (
                 <Card key={mode.id} className={`cursor-pointer border-0 overflow-hidden ${mode.gradient}`}
                   onClick={() => {
