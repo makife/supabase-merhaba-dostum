@@ -28,11 +28,11 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
     if (!hasStarted) return; // Henüz başlamamışsa hiçbir şey yapma
 
     if (count > 0) {
-      // Sadece 4, 3, 2, 1 için ses çal (5 için değil)
-      if (count <= 5) {
+      // Mobilde çoklu ses sorununu önlemek için sadece bir kez çal
+      const soundTimer = setTimeout(() => {
         console.log('🔊 Countdown ses çalıyor:', count);
         playSound('buttonClick');
-      }
+      }, 100); // Küçük gecikme ile mobil optimizasyonu
       
       const timer = setTimeout(() => {
         setIsVisible(false);
@@ -42,11 +42,17 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
         }, 200);
       }, 800);
 
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(soundTimer);
+      };
     } else if (count === 0 && !showStart) {
       setShowStart(true);
-      console.log('🔊 Başla sesi çalıyor');
-      playSound('correctWord');
+      
+      const startSoundTimer = setTimeout(() => {
+        console.log('🔊 Başla sesi çalıyor');
+        playSound('correctWord');
+      }, 100);
       
       setTimeout(() => {
         setIsVisible(false);
@@ -54,8 +60,10 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
           onComplete();
         }, 200);
       }, 800);
+
+      return () => clearTimeout(startSoundTimer);
     }
-  }, [count, showStart, onComplete, hasStarted]);
+  }, [count, showStart, onComplete, hasStarted, playSound]);
 
   // Henüz başlamamışsa hiçbir şey gösterme
   if (!hasStarted) return null;
