@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -31,9 +31,9 @@ import TournamentBracketPage from './pages/TournamentBracketPage';
 import WheelPage from './pages/WheelPage';
 import { useLocalStorageClear } from "@/hooks/useLocalStorageClear";
 import { useScreenOrientation } from "@/hooks/useScreenOrientation";
-import { useImmersiveMode } from "@/hooks/useImmersiveMode";
 import MemoryGamePage from "@/pages/MemoryGamePage";
 import PuzzleGamePage from "@/pages/PuzzleGame";
+import { Capacitor } from '@capacitor/core';
 
 
 const queryClient = new QueryClient();
@@ -176,6 +176,32 @@ const AppRoutes = () => {
 };
 
 const App = () => {
+  // CSS-Only Immersive Mode
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      document.body.classList.add('is-capacitor');
+      
+      let hideTimer: NodeJS.Timeout;
+      
+      const scheduleHide = () => {
+        clearTimeout(hideTimer);
+        document.body.classList.remove('hide-bars');
+        hideTimer = setTimeout(() => {
+          document.body.classList.add('hide-bars');
+        }, 3000);
+      };
+      
+      document.addEventListener('touchstart', scheduleHide);
+      scheduleHide(); // İlk başlatma
+      
+      return () => {
+        clearTimeout(hideTimer);
+        document.removeEventListener('touchstart', scheduleHide);
+        document.body.classList.remove('is-capacitor', 'hide-bars');
+      };
+    }
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
