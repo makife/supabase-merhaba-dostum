@@ -407,20 +407,20 @@ const BubbleShooter = () => {
   }, [bubbles, playSound, vibrate]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted px-4 pt-4 pb-2">
-      <div className="max-w-md mx-auto">
-        {/* Geri Dön Butonu */}
-        <div className="mb-4">
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Geri Dön
-          </button>
-        </div>
-        
-        <div className="bubble-game">
+    <div className="bubble-game">
+      {/* Geri Dön Butonu */}
+      <div className="mb-4 relative z-20">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-white/80 hover:text-white transition-colors bg-transparent border-none cursor-pointer p-2"
+          style={{ fontSize: '14px' }}
+        >
+          <ArrowLeft className="w-5 h-5" />
+          Geri Dön
+        </button>
+      </div>
+      
+      <div className="game-header">
         <h2>🫧 Bubble Shooter</h2>
         <div className="game-info">
           <span>Seviye: {level}</span>
