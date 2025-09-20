@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 
 const GridSimonSays = () => {
   const navigate = useNavigate();
@@ -200,13 +201,16 @@ const GridSimonSays = () => {
 
   return (
     <div className="simon-game">
-      {/* Geri Butonu */}
-      <button 
-        className="back-button"
-        onClick={() => navigate('/')}
-      >
-        ← Ana Sayfa
-      </button>
+      {/* Geri Dön Butonu */}
+      <div className="mb-4">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-white/80 hover:text-white transition-colors bg-transparent border-none cursor-pointer"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          Geri Dön
+        </button>
+      </div>
       
       <div className="game-header">
         <h2>4x4 Grid Simon Says</h2>
