@@ -17,8 +17,8 @@ const BubbleShooter = () => {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [vibrationEnabled, setVibrationEnabled] = useState(true);
   
-  const gameAreaRef = useRef();
-  const shooterRef = useRef();
+  const gameAreaRef = useRef<HTMLDivElement>(null);
+  const shooterRef = useRef<HTMLDivElement>(null);
   
   // Oyun sabitleri
   const BUBBLE_SIZE = 30;
@@ -143,7 +143,7 @@ const BubbleShooter = () => {
     }
     
     return Array.from(connected).map(key => {
-      const [row, col] = key.split('-').map(Number);
+      const [row, col] = (key as string).split('-').map(Number);
       return bubbles.find(b => b.row === row && b.col === col);
     }).filter(Boolean);
   }, []);
@@ -572,7 +572,7 @@ const BubbleShooter = () => {
         <p>• ⚡ Her seviye daha zor olur</p>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .bubble-game {
           max-width: 400px;
           margin: 0 auto;
