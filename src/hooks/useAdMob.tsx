@@ -1,8 +1,17 @@
 import { useState, useCallback } from 'react';
-import { Capacitor } from '@capacitor/core';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+
+// Lovable.dev ortamı kontrolü
+const isLovableEnv = typeof window !== 'undefined' && window.location.hostname.includes('lovable');
+const isCapacitorAvailable = !isLovableEnv;
+
+// Mock Capacitor for development
+const mockCapacitor = {
+  isNativePlatform: () => false,
+  getPlatform: () => 'web' as const
+};
 
 export const useAdMob = () => {
   const [isAdLoading, setIsAdLoading] = useState(false);
@@ -12,13 +21,22 @@ export const useAdMob = () => {
 
   // Initialize AdMob
   const initializeAdMob = useCallback(async () => {
-    if (!Capacitor.isNativePlatform()) {
+    if (!isCapacitorAvailable) {
       toast({ title: 'Bilgi', description: 'Reklamlar sadece mobil uygulamada çalışır' });
       return;
     }
+
     try {
-      // Dynamic import with proper error handling
-      const admobModule = await import(/* @vite-ignore */ '@capacitor-community/admob').catch(() => null);
+      // Capacitor'u dinamik olarak import et
+      const { Capacitor } = await import('@capacitor/core');
+      
+      if (!Capacitor.isNativePlatform()) {
+        toast({ title: 'Bilgi', description: 'Reklamlar sadece mobil uygulamada çalışır' });
+        return;
+      }
+
+      // AdMob modülünü dinamik olarak import et
+      const admobModule = await import('@capacitor-community/admob').catch(() => null);
       if (!admobModule) {
         console.log('AdMob module not available');
         return;
@@ -37,13 +55,22 @@ export const useAdMob = () => {
   // Load rewarded ad
   const loadRewardedAd = useCallback(async () => {
     if (isAdLoading) return;
-    if (!Capacitor.isNativePlatform()) {
+    
+    if (!isCapacitorAvailable) {
       toast({ title: 'Bilgi', description: 'Reklamlar sadece mobil uygulamada çalışır' });
       return;
     }
+
     setIsAdLoading(true);
     try {
-      const admobModule = await import(/* @vite-ignore */ '@capacitor-community/admob').catch(() => null);
+      const { Capacitor } = await import('@capacitor/core');
+      
+      if (!Capacitor.isNativePlatform()) {
+        toast({ title: 'Bilgi', description: 'Reklamlar sadece mobil uygulamada çalışır' });
+        return;
+      }
+
+      const admobModule = await import('@capacitor-community/admob').catch(() => null);
       if (!admobModule) {
         console.log('AdMob module not available');
         return;
@@ -116,12 +143,21 @@ export const useAdMob = () => {
       });
       return;
     }
-    if (!Capacitor.isNativePlatform()) {
+    
+    if (!isCapacitorAvailable) {
       toast({ title: 'Bilgi', description: 'Reklamlar sadece mobil uygulamada çalışır' });
       return;
     }
+
     try {
-      const admobModule = await import(/* @vite-ignore */ '@capacitor-community/admob').catch(() => null);
+      const { Capacitor } = await import('@capacitor/core');
+      
+      if (!Capacitor.isNativePlatform()) {
+        toast({ title: 'Bilgi', description: 'Reklamlar sadece mobil uygulamada çalışır' });
+        return;
+      }
+
+      const admobModule = await import('@capacitor-community/admob').catch(() => null);
       if (!admobModule) {
         console.log('AdMob module not available');
         return;
@@ -163,7 +199,6 @@ export const useAdMob = () => {
       });
     }
   }, [isAdReady, toast, loadRewardedAd, giveReward]);
-
 
   return {
     isAdLoading,
