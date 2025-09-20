@@ -16,9 +16,9 @@ const DinoRunner = () => {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [vibrationEnabled, setVibrationEnabled] = useState(true);
 
-  const gameLoopRef = useRef();
-  const canvasRef = useRef();
-  const gameAreaRef = useRef();
+  const gameLoopRef = useRef<number | undefined>();
+  const canvasRef = useRef<HTMLDivElement>();
+  const gameAreaRef = useRef<HTMLDivElement>();
 
   // Oyun sabitleri
   const GAME_WIDTH = 600;
@@ -36,7 +36,7 @@ const DinoRunner = () => {
     if (!soundEnabled) return;
     
     try {
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
       
@@ -420,7 +420,7 @@ const DinoRunner = () => {
         <p>• 🏆 En yüksek puanınızı geçmeye çalışın</p>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .dino-game {
           max-width: 650px;
           margin: 0 auto;
