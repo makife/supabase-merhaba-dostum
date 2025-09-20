@@ -33,7 +33,7 @@ import { useLocalStorageClear } from "@/hooks/useLocalStorageClear";
 import { useScreenOrientation } from "@/hooks/useScreenOrientation";
 import MemoryGamePage from "@/pages/MemoryGamePage";
 import PuzzleGamePage from "@/pages/PuzzleGame";
-import GridSimonSaysPage from "@/pages/GridSimonSaysPage";
+import GridSimonSaysPage from "@/pages/GridSimonSays";
 import { Capacitor } from '@capacitor/core';
 import { useImmersiveBars } from '@/hooks/useImmersiveBars';
 
