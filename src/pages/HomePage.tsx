@@ -633,6 +633,35 @@ const HomePage = () => {
     </div>
   </div>
 </div>
+
+{/* Bubble Shooter */}
+<div 
+  className="bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px]"
+  onClick={() => navigate('/bubble-shooter')}
+>
+  <div className="flex-1">
+    <h2 className="text-xl font-semibold text-white font-painter">Balon Oyunu</h2>
+  </div>
+  {/* Mini Bubble İkonu */}
+  <div className="relative w-12 h-12 flex items-center justify-center">
+    {/* Ana balon */}
+    <div className="w-6 h-6 bg-red-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }}>
+      🔴
+    </div>
+    {/* Çevresindeki balonlar */}
+    <div className="absolute top-0 left-2 w-4 h-4 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}>
+      🔵
+    </div>
+    <div className="absolute bottom-0 right-1 w-4 h-4 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0.6s' }}>
+      🟢
+    </div>
+    <div className="absolute top-1 right-0 w-4 h-4 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0.9s' }}>
+      🟡
+    </div>
+    {/* Nişan çizgisi */}
+    <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0.5 h-4 bg-white/60"></div>
+  </div>
+</div>
                 
                 {/* Grid Simon Says */}
 <div 
