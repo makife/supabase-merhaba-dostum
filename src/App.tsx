@@ -35,6 +35,7 @@ import MemoryGamePage from "@/pages/MemoryGamePage";
 import PuzzleGamePage from "@/pages/PuzzleGame";
 import GridSimonSaysPage from "@/pages/GridSimonSays";
 import ReactorRunnerPage from "@/pages/DinoRunner";
+import BubbleShooterPage from "@/pages/BubbleShooter";
 import { Capacitor } from '@capacitor/core';
 import { useImmersiveBars } from '@/hooks/useImmersiveBars';
 
@@ -182,6 +183,11 @@ const AppRoutes = () => {
       <Route path="/reactor-runner" element={
         <ProtectedRoute>
           <ReactorRunnerPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/bubble-shooter" element={
+        <ProtectedRoute>
+          <BubbleShooterPage />
         </ProtectedRoute>
       } />
       <Route path="*" element={<NotFound />} />
