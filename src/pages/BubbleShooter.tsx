@@ -407,27 +407,20 @@ const BubbleShooter = () => {
   }, [bubbles, playSound, vibrate]);
 
   return (
-    <div className="bubble-game">
-      {/* Geri Dön Butonu - Absolute Position */}
-      <button
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          console.log('Geri butonu tıklandı');
-          navigate('/'); // Ana sayfaya direkt git
-        }}
-        className="absolute top-4 left-4 z-50 flex items-center gap-2 text-white hover:text-yellow-300 transition-colors bg-black/20 hover:bg-black/40 backdrop-blur-sm rounded-lg px-3 py-2 border border-white/20"
-        style={{ 
-          position: 'absolute',
-          zIndex: 9999,
-          pointerEvents: 'auto'
-        }}
-      >
-        <ArrowLeft className="w-4 h-4" />
-        <span className="text-sm font-medium">Geri</span>
-      </button>
-      
-      <div className="game-header">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted px-4 pt-4 pb-2">
+      <div className="max-w-md mx-auto">
+        {/* Geri Dön Butonu */}
+        <div className="mb-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            Geri Dön
+          </button>
+        </div>
+        
+        <div className="bubble-game">
         <h2>🫧 Bubble Shooter</h2>
         <div className="game-info">
           <span>Seviye: {level}</span>
