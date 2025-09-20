@@ -413,8 +413,8 @@ const BubbleShooter = () => {
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          console.log('Geri butonu tıklandı'); // Debug için
-          navigate(-1);
+          console.log('Geri butonu tıklandı');
+          navigate('/'); // Ana sayfaya direkt git
         }}
         className="absolute top-4 left-4 z-50 flex items-center gap-2 text-white hover:text-yellow-300 transition-colors bg-black/20 hover:bg-black/40 backdrop-blur-sm rounded-lg px-3 py-2 border border-white/20"
         style={{ 
