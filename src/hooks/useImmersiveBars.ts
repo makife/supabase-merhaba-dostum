@@ -47,7 +47,14 @@ export function useImmersiveBars() {
 
     const hideBars = async () => {
       try { await StatusBar.hide(); } catch {}
-      try { Nav?.setVisibility && (await Nav.setVisibility({ visibility: 'hidden' })); } catch {}
+      try { 
+        if (Nav?.setVisibility) {
+          await Nav.setVisibility({ visibility: 'hidden' });
+        }
+        if (Nav?.hide) {
+          await Nav.hide();
+        }
+      } catch {}
     };
 
     const scheduleAutoHide = () => {
