@@ -34,6 +34,7 @@ import { useScreenOrientation } from "@/hooks/useScreenOrientation";
 import MemoryGamePage from "@/pages/MemoryGamePage";
 import PuzzleGamePage from "@/pages/PuzzleGame";
 import GridSimonSaysPage from "@/pages/GridSimonSays";
+import ReactorRunnerPage from "@/pages/DinoRunner";
 import { Capacitor } from '@capacitor/core';
 import { useImmersiveBars } from '@/hooks/useImmersiveBars';
 
@@ -176,6 +177,11 @@ const AppRoutes = () => {
       <Route path="/grid-simon-says" element={
         <ProtectedRoute>
           <GridSimonSaysPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/reactor-runner" element={
+        <ProtectedRoute>
+          <ReactorRunnerPage />
         </ProtectedRoute>
       } />
       <Route path="*" element={<NotFound />} />
