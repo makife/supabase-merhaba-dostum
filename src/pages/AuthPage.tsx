@@ -63,8 +63,8 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 game-grid">
-      <div className="w-full max-w-md space-y-6 bounce-in">
+    <div className="min-h-screen flex items-center justify-center p-4 game-grid touch-none overscroll-none">
+      <div className="w-full max-w-md space-y-6 bounce-in touch-auto overscroll-auto">
         <Card className="border-0 bg-card/50 backdrop-blur relative overflow-hidden">
           <HeaderAnimation />
           
