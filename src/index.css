@@ -2265,5 +2265,184 @@ body.is-capacitor.hide-bars::before {
   opacity: 0;
 }
 
+/* Grid Simon Says Game Styles */
+.simon-game {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 15px;
+  color: white;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.simon-game .game-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 30px 0;
+  max-width: 320px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.simon-game .grid-cell {
+  aspect-ratio: 1;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.1);
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255,255,255,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.simon-game .grid-cell:hover {
+  background: rgba(255,255,255,0.2);
+  transform: scale(1.05);
+}
+
+.simon-game .grid-cell.active {
+  background: #FFD700 !important;
+  color: #333;
+  transform: scale(1.1);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+  border-color: #FFD700;
+}
+
+.simon-game .grid-cell.clickable {
+  cursor: pointer;
+}
+
+.simon-game .grid-cell:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.simon-game .game-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.simon-game .game-info span {
+  background: rgba(255,255,255,0.2);
+  padding: 5px 10px;
+  border-radius: 15px;
+  font-size: 14px;
+  backdrop-filter: blur(10px);
+}
+
+.simon-game .settings {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.simon-game .setting-btn {
+  background: rgba(255,255,255,0.1);
+  border: 2px solid rgba(255,255,255,0.3);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.simon-game .setting-btn.active {
+  background: rgba(255,215,0,0.3);
+  border-color: #FFD700;
+  color: #FFD700;
+  box-shadow: 0 0 15px rgba(255,215,0,0.3);
+}
+
+.simon-game .setting-btn:hover {
+  transform: scale(1.05);
+}
+
+.simon-game .start-btn, 
+.simon-game .restart-btn {
+  background: linear-gradient(45deg, #4CAF50, #45a049);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 25px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+
+.simon-game .start-btn:hover, 
+.simon-game .restart-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+}
+
+.simon-game .game-over {
+  background: rgba(255,255,255,0.1);
+  padding: 20px;
+  border-radius: 15px;
+  backdrop-filter: blur(10px);
+}
+
+.simon-game .game-over p {
+  margin-bottom: 15px;
+  font-size: 18px;
+  color: #FFD700;
+}
+
+.simon-game .game-instructions {
+  background: rgba(255,255,255,0.1);
+  padding: 15px;
+  border-radius: 15px;
+  margin-top: 20px;
+  backdrop-filter: blur(10px);
+}
+
+.simon-game .game-instructions h4 {
+  margin-bottom: 10px;
+  color: #FFD700;
+}
+
+.simon-game .game-instructions p {
+  margin: 5px 0;
+  font-size: 14px;
+  text-align: left;
+}
+
+/* Mobil uyumluluk */
+@media (max-width: 480px) {
+  .simon-game {
+    margin: 10px;
+    padding: 15px;
+  }
+  
+  .simon-game .game-info {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .simon-game .game-grid {
+    max-width: 280px;
+  }
+  
+  .simon-game .grid-cell {
+    font-size: 14px;
+  }
+}
+
 
 /* ===== PUZZLE GAME STYLES END ===== */
