@@ -610,6 +610,31 @@ const HomePage = () => {
                     <Brain className={`absolute w-6 h-6 ${canPlayMemory ? 'text-white/80' : 'text-white/50'}`} />
                   </div>
                 </div>
+
+                {/* Grid Simon Says */}
+<div 
+  className="bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px]"
+  onClick={() => navigate('/grid-simon-says')}
+>
+  <div className="flex-1">
+    <h2 className="text-xl font-semibold text-white font-painter">Grid Simon Says</h2>
+  </div>
+  {/* Mini Grid İkonu */}
+  <div className="relative w-12 h-12 flex items-center justify-center">
+    <div className="grid grid-cols-4 gap-0.5">
+      {Array.from({ length: 16 }, (_, i) => (
+        <div 
+          key={i}
+          className={`w-2 h-2 bg-white/40 rounded-sm ${i === 5 || i === 9 || i === 10 ? 'bg-yellow-300 animate-pulse' : ''}`}
+          style={{ animationDelay: `${i * 0.1}s` }}
+        />
+      ))}
+    </div>
+    <div className="absolute inset-0 flex items-center justify-center">
+      <div className="w-8 h-8 border-2 border-white/30 rounded-full animate-ping" />
+    </div>
+  </div>
+</div>
                 
                 {/* Puzzle Oyunu */}
                 <div 
