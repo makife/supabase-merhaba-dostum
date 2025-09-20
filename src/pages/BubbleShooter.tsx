@@ -874,7 +874,6 @@ const BubbleShooter = () => {
           }
         }
       `}</style>
-      </div>
     </div>
   );
 };
