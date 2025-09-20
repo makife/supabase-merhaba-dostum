@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const GridSimonSays = () => {
+  const navigate = useNavigate();
   const [gameState, setGameState] = useState('waiting'); // waiting, showing, playing, gameOver
   const [sequence, setSequence] = useState([]);
   const [playerSequence, setPlayerSequence] = useState([]);
@@ -198,6 +200,14 @@ const GridSimonSays = () => {
 
   return (
     <div className="simon-game">
+      {/* Geri Butonu */}
+      <button 
+        className="back-button"
+        onClick={() => navigate('/')}
+      >
+        ← Ana Sayfa
+      </button>
+      
       <div className="game-header">
         <h2>4x4 Grid Simon Says</h2>
         <div className="game-info">
