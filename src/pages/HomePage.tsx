@@ -611,6 +611,29 @@ const HomePage = () => {
                   </div>
                 </div>
 
+{/* Reactor Runner */}
+<div 
+  className="bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px]"
+  onClick={() => navigate('/reactor-runner')}
+>
+  <div className="flex-1">
+    <h2 className="text-xl font-semibold text-white font-painter">Reactor Runner</h2>
+  </div>
+  {/* Mini Reaktör İkonu */}
+  <div className="relative w-12 h-12 flex items-center justify-center">
+    <div className="w-8 h-8 bg-yellow-300 rounded-full animate-spin flex items-center justify-center" style={{ animationDuration: '1s' }}>
+      ☢️
+    </div>
+    <div className="absolute inset-0 flex items-center justify-center">
+      <div className="w-10 h-10 border-2 border-white/30 rounded-full animate-ping" />
+    </div>
+    {/* Kaktüs engeller */}
+    <div className="absolute right-0 bottom-1">
+      <span className="text-lg">🌵</span>
+    </div>
+  </div>
+</div>
+                
                 {/* Grid Simon Says */}
 <div 
   className="bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px]"
