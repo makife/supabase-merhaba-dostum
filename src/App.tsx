@@ -33,8 +33,10 @@ import { useLocalStorageClear } from "@/hooks/useLocalStorageClear";
 import { useScreenOrientation } from "@/hooks/useScreenOrientation";
 import MemoryGamePage from "@/pages/MemoryGamePage";
 import PuzzleGamePage from "@/pages/PuzzleGame";
+import GridSimonSaysPage from "@/pages/GridSimonSaysPage";
 import { Capacitor } from '@capacitor/core';
 import { useImmersiveBars } from '@/hooks/useImmersiveBars';
+
 
 
 const queryClient = new QueryClient();
@@ -169,6 +171,11 @@ const AppRoutes = () => {
       <Route path="/puzzle-game" element={
         <ProtectedRoute>
           <PuzzleGamePage />
+        </ProtectedRoute>
+      } />
+      <Route path="/grid-simon-says" element={
+        <ProtectedRoute>
+          <GridSimonSaysPage />
         </ProtectedRoute>
       } />
       <Route path="*" element={<NotFound />} />
