@@ -213,7 +213,7 @@ const GridSimonSays = () => {
       </div>
       
       <div className="game-header">
-        <h2>4x4 Grid Simon Says</h2>
+        <h2>4x4 İzci Oyunu</h2>
         <div className="game-info">
           <span>Seviye: {level}</span>
           <span>Puan: {score}</span>
