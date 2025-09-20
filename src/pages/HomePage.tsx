@@ -264,7 +264,7 @@ const HomePage = () => {
 
   return (
     <MatchmakingProvider onMatchFound={handleMatchFound}>
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted px-4 pt-4 pb-2">
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
         <div className="max-w-4xl mx-auto space-y-3">
         {/* Birleştirilmiş Header ve Level Progress */}
         <Card className="border-0 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/10 shadow-2xl relative overflow-hidden">
