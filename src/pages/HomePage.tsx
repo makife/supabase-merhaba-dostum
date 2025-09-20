@@ -639,7 +639,7 @@ const HomePage = () => {
             </div>
           </div>
           
-          <div className="h-92 overflow-y-auto scrollbar-hide">
+          <div className="h-72 overflow-y-auto scrollbar-hide">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-2">
               {gameModesConfig.map((mode) => (
                 <Card key={mode.id} className={`cursor-pointer border-0 overflow-hidden ${mode.gradient}`}
