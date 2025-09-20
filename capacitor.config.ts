@@ -11,7 +11,10 @@ const config: CapacitorConfig = {
   android: {
     allowMixedContent: true,
     captureInput: true,
-    webContentsDebuggingEnabled: true
+    webContentsDebuggingEnabled: true,
+    // Immersive mode için ek ayarlar
+    windowSoftInputMode: 'adjustResize',
+    appendUserAgent: 'ImmersiveApp'
   },
   ios: {
     contentInset: 'automatic',
@@ -45,12 +48,18 @@ const config: CapacitorConfig = {
       resize: 'ionic'
     },
     AdMob: {
-      appId: 'ca-app-pub-4768026665961339~9319477813', // Android App ID
+      appId: 'ca-app-pub-4768026665961339~9319477813',
       androidAppId: 'ca-app-pub-4768026665961339~9319477813',
-      iosAppId: 'ca-app-pub-4768026665961339~6286120368' // iOS App ID
+      iosAppId: 'ca-app-pub-4768026665961339~6286120368'
     },
     ScreenOrientation: {
       orientation: 'portrait'
+    },
+    // NavigationBar plugin ayarları
+    NavigationBar: {
+      height: 0,
+      color: '#1a1a1a',
+      visibility: 'hidden'
     }
   }
 };
