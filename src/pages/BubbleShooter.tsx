@@ -409,10 +409,11 @@ const BubbleShooter = () => {
   return (
     <div className="bubble-game">
       {/* Geri Dön Butonu */}
-      <div className="mb-4">
+      <div className="mb-4 relative z-20">
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-white/80 hover:text-white transition-colors bg-transparent border-none cursor-pointer"
+          className="flex items-center gap-2 text-white/80 hover:text-white transition-colors bg-transparent border-none cursor-pointer p-2"
+          style={{ fontSize: '14px' }}
         >
           <ArrowLeft className="w-5 h-5" />
           Geri Dön
