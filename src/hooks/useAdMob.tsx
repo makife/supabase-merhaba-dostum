@@ -5,12 +5,10 @@ import { supabase } from '@/integrations/supabase/client';
 
 // Lovable.dev ortamı kontrolü
 const isLovableEnv = typeof window !== 'undefined' && window.location.hostname.includes('lovable');
-const isCapacitorAvailable = !isLovableEnv;
 
-// Mock Capacitor for development
-const mockCapacitor = {
-  isNativePlatform: () => false,
-  getPlatform: () => 'web' as const
+// Runtime import fonksiyonu - Vite tarafından analiz edilmeyecek
+const importModule = (moduleName: string) => {
+  return import(/* @vite-ignore */ moduleName).catch(() => null);
 };
 
 export const useAdMob = () => {
@@ -21,14 +19,21 @@ export const useAdMob = () => {
 
   // Initialize AdMob
   const initializeAdMob = useCallback(async () => {
-    if (!isCapacitorAvailable) {
+    if (isLovableEnv) {
+      console.log('AdMob not available in Lovable.dev environment');
       toast({ title: 'Bilgi', description: 'Reklamlar sadece mobil uygulamada çalışır' });
       return;
     }
 
     try {
       // Capacitor'u dinamik olarak import et
-      const { Capacitor } = await import('@capacitor/core');
+      const capacitorModule = await importModule('@capacitor/core');
+      if (!capacitorModule) {
+        console.log('Capacitor not available');
+        return;
+      }
+
+      const { Capacitor } = capacitorModule;
       
       if (!Capacitor.isNativePlatform()) {
         toast({ title: 'Bilgi', description: 'Reklamlar sadece mobil uygulamada çalışır' });
@@ -36,7 +41,7 @@ export const useAdMob = () => {
       }
 
       // AdMob modülünü dinamik olarak import et
-      const admobModule = await import('@capacitor-community/admob').catch(() => null);
+      const admobModule = await importModule('@capacitor-community/admob');
       if (!admobModule) {
         console.log('AdMob module not available');
         return;
@@ -56,21 +61,28 @@ export const useAdMob = () => {
   const loadRewardedAd = useCallback(async () => {
     if (isAdLoading) return;
     
-    if (!isCapacitorAvailable) {
+    if (isLovableEnv) {
+      console.log('AdMob not available in Lovable.dev environment');
       toast({ title: 'Bilgi', description: 'Reklamlar sadece mobil uygulamada çalışır' });
       return;
     }
 
     setIsAdLoading(true);
     try {
-      const { Capacitor } = await import('@capacitor/core');
+      const capacitorModule = await importModule('@capacitor/core');
+      if (!capacitorModule) {
+        console.log('Capacitor not available');
+        return;
+      }
+
+      const { Capacitor } = capacitorModule;
       
       if (!Capacitor.isNativePlatform()) {
         toast({ title: 'Bilgi', description: 'Reklamlar sadece mobil uygulamada çalışır' });
         return;
       }
 
-      const admobModule = await import('@capacitor-community/admob').catch(() => null);
+      const admobModule = await importModule('@capacitor-community/admob');
       if (!admobModule) {
         console.log('AdMob module not available');
         return;
@@ -144,20 +156,27 @@ export const useAdMob = () => {
       return;
     }
     
-    if (!isCapacitorAvailable) {
+    if (isLovableEnv) {
+      console.log('AdMob not available in Lovable.dev environment');
       toast({ title: 'Bilgi', description: 'Reklamlar sadece mobil uygulamada çalışır' });
       return;
     }
 
     try {
-      const { Capacitor } = await import('@capacitor/core');
+      const capacitorModule = await importModule('@capacitor/core');
+      if (!capacitorModule) {
+        console.log('Capacitor not available');
+        return;
+      }
+
+      const { Capacitor } = capacitorModule;
       
       if (!Capacitor.isNativePlatform()) {
         toast({ title: 'Bilgi', description: 'Reklamlar sadece mobil uygulamada çalışır' });
         return;
       }
 
-      const admobModule = await import('@capacitor-community/admob').catch(() => null);
+      const admobModule = await importModule('@capacitor-community/admob');
       if (!admobModule) {
         console.log('AdMob module not available');
         return;
