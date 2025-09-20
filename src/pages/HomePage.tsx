@@ -636,11 +636,11 @@ const HomePage = () => {
 
 {/* Bubble Shooter */}
 <div 
-  className="bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px]"
+  className="bg-gradient-to-r from-red-500 to-pink-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px]"
   onClick={() => navigate('/bubble-shooter')}
 >
   <div className="flex-1">
-    <h2 className="text-xl font-semibold text-white font-painter">Balon Oyunu</h2>
+    <h2 className="text-xl font-semibold text-white font-painter">Bubble Shooter</h2>
   </div>
   {/* Mini Bubble İkonu */}
   <div className="relative w-12 h-12 flex items-center justify-center">
