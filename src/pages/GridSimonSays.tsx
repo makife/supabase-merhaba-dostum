@@ -16,12 +16,12 @@ const GridSimonSays = () => {
   // 4x4 grid oluştur (0-15 arası sayılar)
   const gridSize = 16;
 
-  // Ses efektleri oluştur
+  // Ses efektleri
   const createSound = useCallback((frequency, duration = 200) => {
     if (!soundEnabled) return;
     
     try {
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
       
@@ -267,7 +267,7 @@ const GridSimonSays = () => {
         <p>• 🎯 Yanıp sönen hücrelerin sırasını hatırla</p>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .simon-game {
           max-width: 500px;
           margin: 0 auto;
