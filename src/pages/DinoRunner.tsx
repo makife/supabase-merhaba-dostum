@@ -305,7 +305,7 @@ const DinoRunner = () => {
       </div>
       
       <div className="game-header">
-        <h2>☢️ Reactor Runner</h2>
+        <h2>☢️ Reaktör Oyunu</h2>
         <div className="game-info">
           <span>Puan: {score.toString().padStart(5, '0')}</span>
           <span>En Yüksek: {highScore.toString().padStart(5, '0')}</span>
