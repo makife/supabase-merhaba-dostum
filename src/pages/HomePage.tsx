@@ -640,7 +640,7 @@ const HomePage = () => {
   onClick={() => navigate('/bubble-shooter')}
 >
   <div className="flex-1">
-    <h2 className="text-xl font-semibold text-white font-painter">Bubble Shooter</h2>
+    <h2 className="text-xl font-semibold text-white font-painter">Balon Oyunu</h2>
   </div>
   {/* Mini Bubble İkonu */}
   <div className="relative w-12 h-12 flex items-center justify-center">
