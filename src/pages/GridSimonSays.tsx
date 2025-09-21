@@ -278,16 +278,16 @@ const GridSimonSays = () => {
           padding: 20px;
           font-family: Arial, sans-serif;
           text-align: center;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: hsl(var(--background));
           border-radius: 15px;
-          color: white;
+          color: hsl(var(--foreground));
           min-height: 100vh;
           box-sizing: border-box;
         }
 
         .game-header h2 {
           margin-bottom: 20px;
-          color: #fff;
+          color: hsl(var(--foreground));
           text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
           font-size: 24px;
         }
@@ -301,7 +301,7 @@ const GridSimonSays = () => {
         }
 
         .game-info span {
-          background: rgba(255,255,255,0.2);
+          background: hsl(var(--muted) / 0.8);
           padding: 8px 12px;
           border-radius: 20px;
           font-size: 13px;
@@ -317,9 +317,9 @@ const GridSimonSays = () => {
         }
 
         .setting-btn {
-          background: rgba(255,255,255,0.1);
-          border: 2px solid rgba(255,255,255,0.3);
-          color: white;
+          background: hsl(var(--muted) / 0.5);
+          border: 2px solid hsl(var(--border));
+          color: hsl(var(--foreground));
           padding: 8px 16px;
           border-radius: 20px;
           cursor: pointer;
@@ -329,10 +329,10 @@ const GridSimonSays = () => {
         }
 
         .setting-btn.active {
-          background: rgba(255,215,0,0.3);
-          border-color: #FFD700;
-          color: #FFD700;
-          box-shadow: 0 0 15px rgba(255,215,0,0.3);
+          background: hsl(var(--primary) / 0.3);
+          border-color: hsl(var(--primary));
+          color: hsl(var(--primary));
+          box-shadow: 0 0 15px hsl(var(--primary) / 0.3);
         }
 
         .setting-btn:hover {
@@ -353,20 +353,20 @@ const GridSimonSays = () => {
           aspect-ratio: 1;
           border: none;
           border-radius: 12px;
-          background: rgba(255,255,255,0.1);
-          color: white;
+          background: hsl(var(--muted) / 0.8);
+          color: hsl(var(--foreground));
           font-size: 16px;
           font-weight: bold;
           cursor: pointer;
           transition: all 0.15s ease;
           backdrop-filter: blur(10px);
-          border: 2px solid rgba(255,255,255,0.2);
+          border: 2px solid hsl(var(--border));
           user-select: none;
           -webkit-tap-highlight-color: transparent;
         }
 
         .grid-cell:hover {
-          background: rgba(255,255,255,0.2);
+          background: hsl(var(--muted) / 0.9);
           transform: scale(1.03);
         }
 
@@ -375,11 +375,11 @@ const GridSimonSays = () => {
         }
 
         .grid-cell.active {
-          background: #FFD700 !important;
-          color: #333;
+          background: hsl(var(--primary)) !important;
+          color: hsl(var(--primary-foreground));
           transform: scale(1.08);
-          box-shadow: 0 0 25px rgba(255, 215, 0, 0.8);
-          border-color: #FFD700;
+          box-shadow: 0 0 25px hsl(var(--primary) / 0.8);
+          border-color: hsl(var(--primary));
           animation: pulse 0.15s ease-in-out;
         }
 
@@ -427,7 +427,7 @@ const GridSimonSays = () => {
         }
 
         .game-over {
-          background: rgba(255,255,255,0.1);
+          background: hsl(var(--muted) / 0.8);
           padding: 20px;
           border-radius: 15px;
           backdrop-filter: blur(10px);
@@ -442,12 +442,12 @@ const GridSimonSays = () => {
         .game-over p {
           margin-bottom: 15px;
           font-size: 18px;
-          color: #FFD700;
+          color: hsl(var(--primary));
           text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
         }
 
         .game-instructions {
-          background: rgba(255,255,255,0.1);
+          background: hsl(var(--muted) / 0.8);
           padding: 15px;
           border-radius: 15px;
           margin-top: 20px;
@@ -456,7 +456,7 @@ const GridSimonSays = () => {
 
         .game-instructions h4 {
           margin-bottom: 10px;
-          color: #FFD700;
+          color: hsl(var(--primary));
           text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
         }
 
