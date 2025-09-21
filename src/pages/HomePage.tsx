@@ -342,7 +342,7 @@ const HomePage = () => {
                       Merhaba 👋
                     </p>
                     <p className="text-sm font-semibold text-foreground truncate">
-                      {user?.user_metadata?.username || user?.email?.split('@')[0]}
+                      {profile?.username || user?.user_metadata?.username || user?.email?.split('@')[0]}
                     </p>
                   </div>
                 </div>

@@ -362,6 +362,17 @@ const ProfilePage = () => {
   const handleSaveProfile = async () => {
     if (!user || !isOwnProfile) return;
 
+    // Rumuz uzunluk kontrolü
+    if (editedUsername.length > 15) {
+      toast.error('Rumuz en fazla 15 karakter olabilir');
+      return;
+    }
+
+    if (editedUsername.length < 2) {
+      toast.error('Rumuz en az 2 karakter olmalıdır');
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('profiles')
@@ -540,6 +551,7 @@ const ProfilePage = () => {
                       onChange={(e) => setEditedUsername(e.target.value)}
                       className="text-2xl font-bold mb-2"
                       placeholder="Kullanıcı adınız"
+                      maxLength={15}
                     />
                   ) : (
                     <h2 className="text-2xl font-bold">{profileData.username}</h2>
