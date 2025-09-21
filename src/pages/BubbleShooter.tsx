@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 const BubbleShooter = () => {
-  const navigate = useNavigate();
-  const [gameState, setGameState] = useState('waiting'); // waiting, playing, gameOver, won
+  const [gameState, setGameState] = useState('waiting');
   const [score, setScore] = useState(0);
   const [level, setLevel] = useState(1);
   const [bubbles, setBubbles] = useState([]);
@@ -16,26 +14,28 @@ const BubbleShooter = () => {
   const [explodingBubbles, setExplodingBubbles] = useState([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [vibrationEnabled, setVibrationEnabled] = useState(true);
+  const [shotCount, setShotCount] = useState(0);
+  const [nextRowWarning, setNextRowWarning] = useState(false);
   
-  const gameAreaRef = useRef<HTMLDivElement>(null);
-  const shooterRef = useRef<HTMLDivElement>(null);
+  const gameAreaRef = useRef(null);
+  const shooterRef = useRef(null);
+  const animationRef = useRef(null);
   
-  // Oyun sabitleri
   const BUBBLE_SIZE = 30;
   const GRID_WIDTH = 12;
   const GRID_HEIGHT = 10;
   const SHOOTER_X = 185;
   const SHOOTER_Y = 450;
+  const BUBBLE_SPEED = 8;
+  const SHOTS_PER_NEW_ROW = 8; // Her 8 atışta bir yeni sıra
   
-  // Renk paleti
   const COLORS = ['🔴', '🟡', '🔵', '🟢', '🟠', '🟣'];
   
-  // Ses efektleri
   const playSound = useCallback((frequency, duration = 150, type = 'sine') => {
     if (!soundEnabled) return;
     
     try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
       
@@ -55,7 +55,6 @@ const BubbleShooter = () => {
     }
   }, [soundEnabled]);
 
-  // Titreşim efekti
   const vibrate = useCallback((pattern = [50]) => {
     if (!vibrationEnabled) return;
     
@@ -70,12 +69,18 @@ const BubbleShooter = () => {
     }
   }, [vibrationEnabled]);
 
-  // Rastgele renk seç
   const getRandomColor = useCallback(() => {
     return COLORS[Math.floor(Math.random() * Math.min(COLORS.length, 3 + level))];
   }, [level]);
 
-  // Balon pozisyonu hesapla (hexagonal grid)
+  const createBubble = useCallback((color, id) => {
+    return {
+      color: color,
+      id: id,
+      timestamp: Date.now()
+    };
+  }, []);
+
   const getBubblePosition = useCallback((row, col) => {
     const offsetX = (row % 2) * (BUBBLE_SIZE / 2);
     return {
@@ -84,13 +89,49 @@ const BubbleShooter = () => {
     };
   }, []);
 
-  // Grid pozisyonunu hesapla
+  // Yeni sıra ekle
+  const addNewRow = useCallback(() => {
+    setBubbles(prevBubbles => {
+      const newBubbles = [...prevBubbles];
+      
+      // Tüm balonları aşağı kaydır
+      newBubbles.forEach(bubble => {
+        bubble.row += 1;
+        bubble.y += BUBBLE_SIZE * 0.85;
+      });
+      
+      // Yeni sırayı en üste ekle
+      const newRow = 0;
+      const maxCols = newRow % 2 === 0 ? GRID_WIDTH : GRID_WIDTH - 1;
+      
+      for (let col = 0; col < maxCols; col++) {
+        if (Math.random() < 0.7) { // %70 doluluk
+          const pos = getBubblePosition(newRow, col);
+          newBubbles.push({
+            id: `newrow-${Date.now()}-${col}`,
+            row: newRow,
+            col,
+            x: pos.x,
+            y: pos.y,
+            color: getRandomColor(),
+            isNew: true
+          });
+        }
+      }
+      
+      return newBubbles;
+    });
+    
+    playSound(150, 300, 'triangle');
+    vibrate([100, 50, 100]);
+    setNextRowWarning(false);
+  }, [getBubblePosition, getRandomColor, playSound, vibrate]);
+
   const getGridPosition = useCallback((x, y) => {
     const row = Math.round(y / (BUBBLE_SIZE * 0.85));
     const offsetX = (row % 2) * (BUBBLE_SIZE / 2);
     const col = Math.round((x - offsetX - 10) / BUBBLE_SIZE);
     
-    // Grid sınırları içinde tut
     const clampedRow = Math.max(0, Math.min(row, GRID_HEIGHT - 1));
     const maxCol = clampedRow % 2 === 0 ? GRID_WIDTH - 1 : GRID_WIDTH - 2;
     const clampedCol = Math.max(0, Math.min(col, maxCol));
@@ -98,7 +139,6 @@ const BubbleShooter = () => {
     return { row: clampedRow, col: clampedCol };
   }, []);
 
-  // Bağlı balonları bul (aynı renk)
   const findConnectedBubbles = useCallback((bubbles, startRow, startCol, color) => {
     const connected = new Set();
     const stack = [[startRow, startCol]];
@@ -114,17 +154,14 @@ const BubbleShooter = () => {
       
       connected.add(key);
       
-      // Komşuları kontrol et (hexagonal grid için doğru komşuluk)
       let neighbors;
       if (row % 2 === 0) {
-        // Çift satır
         neighbors = [
           [row - 1, col - 1], [row - 1, col],
           [row, col - 1], [row, col + 1],
           [row + 1, col - 1], [row + 1, col]
         ];
       } else {
-        // Tek satır
         neighbors = [
           [row - 1, col], [row - 1, col + 1],
           [row, col - 1], [row, col + 1],
@@ -143,12 +180,11 @@ const BubbleShooter = () => {
     }
     
     return Array.from(connected).map(key => {
-      const [row, col] = (key as string).split('-').map(Number);
+      const [row, col] = key.split('-').map(Number);
       return bubbles.find(b => b.row === row && b.col === col);
     }).filter(Boolean);
   }, []);
 
-  // Oyun alanını başlat
   const initializeGame = useCallback(() => {
     const initialBubbles = [];
     const rows = Math.min(5 + Math.floor(level / 2), 8);
@@ -171,13 +207,14 @@ const BubbleShooter = () => {
     }
     
     setBubbles(initialBubbles);
-    setCurrentBubble({ color: getRandomColor(), id: 'current' });
-    setNextBubble({ color: getRandomColor(), id: 'next' });
+    setCurrentBubble(createBubble(getRandomColor(), 'current'));
+    setNextBubble(createBubble(getRandomColor(), 'next'));
     setShootingBubble(null);
     setExplodingBubbles([]);
-  }, [level, getBubblePosition, getRandomColor]);
+    setShotCount(0);
+    setNextRowWarning(false);
+  }, [level, getBubblePosition, getRandomColor, createBubble]);
 
-  // Oyunu başlat
   const startGame = useCallback(() => {
     setGameState('playing');
     setScore(0);
@@ -187,54 +224,58 @@ const BubbleShooter = () => {
     initializeGame();
   }, [playSound, vibrate, initializeGame]);
 
-  // Atış yap
+  const stopAnimation = useCallback(() => {
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+  }, []);
+
   const shoot = useCallback((targetX, targetY) => {
     if (gameState !== 'playing' || !currentBubble || shootingBubble) return;
+    
+    stopAnimation();
     
     const dx = targetX - SHOOTER_X;
     const dy = targetY - SHOOTER_Y;
     const distance = Math.sqrt(dx * dx + dy * dy);
     
-    // Normalleştirilmiş yön
-    let dirX = dx / distance;
-    let dirY = dy / distance;
+    const dirX = dx / distance;
+    const dirY = dy / distance;
     
-    // Shooting bubble animasyonu başlat
     const shootBubble = {
-      ...currentBubble,
+      color: currentBubble.color,
+      id: `shooting-${Date.now()}`,
       x: SHOOTER_X,
       y: SHOOTER_Y,
       dirX,
-      dirY
+      dirY,
+      speed: BUBBLE_SPEED
     };
     
     setShootingBubble(shootBubble);
     playSound(300, 100);
     vibrate([30]);
     
-    // Animasyon loop
     const animateShoot = () => {
       setShootingBubble(prev => {
         if (!prev) return null;
         
-        let newX = prev.x + prev.dirX * 8;
-        let newY = prev.y + prev.dirY * 8;
+        let newX = prev.x + prev.dirX * prev.speed;
+        let newY = prev.y + prev.dirY * prev.speed;
         let newDirX = prev.dirX;
         let newDirY = prev.dirY;
         
-        // Duvarlardan sekme
         if (newX <= BUBBLE_SIZE/2 || newX >= 370 - BUBBLE_SIZE/2) {
           newDirX *= -1;
           playSound(250, 50);
         }
         
-        // Üst duvardan sekme
         if (newY <= BUBBLE_SIZE/2) {
           newDirY *= -1;
           playSound(250, 50);
         }
         
-        // Balonla çarpışma kontrolü
         const hitBubble = bubbles.find(bubble => {
           const dist = Math.sqrt(
             Math.pow(newX - bubble.x - BUBBLE_SIZE/2, 2) + 
@@ -244,7 +285,6 @@ const BubbleShooter = () => {
         });
         
         if (hitBubble || newY > 480) {
-          // En yakın boş pozisyonu bul
           let bestRow = Math.round(newY / (BUBBLE_SIZE * 0.85));
           let bestCol = 0;
           let minDistance = Infinity;
@@ -276,24 +316,21 @@ const BubbleShooter = () => {
             col: bestCol,
             x: finalPos.x,
             y: finalPos.y,
-            color: currentBubble.color,
+            color: prev.color,
             isNew: true
           };
           
-          setBubbles(prev => {
-            const updated = [...prev, newBubble];
+          setBubbles(prevBubbles => {
+            const updated = [...prevBubbles, newBubble];
             
-            // Aynı renkteki bağlı balonları bul
-            const connected = findConnectedBubbles(updated, bestRow, bestCol, currentBubble.color);
+            const connected = findConnectedBubbles(updated, bestRow, bestCol, prev.color);
             
             if (connected.length >= 3) {
-              // Patlatma animasyonu başlat
               setExplodingBubbles(connected);
               playSound(800, 200);
               vibrate([50, 25, 50]);
               setScore(s => s + connected.length * 10 * level);
               
-              // 300ms sonra balonları kaldır
               setTimeout(() => {
                 setBubbles(current => {
                   const remaining = current.filter(b => !connected.some(c => c.id === b.id));
@@ -318,9 +355,22 @@ const BubbleShooter = () => {
             }
           });
           
-          // Yeni balon hazırla
-          setCurrentBubble(nextBubble);
-          setNextBubble({ color: getRandomColor(), id: 'next-new' });
+          // Atış sayısını artır ve yeni sıra kontrolü
+          setShotCount(prev => {
+            const newCount = prev + 1;
+            if (newCount % SHOTS_PER_NEW_ROW === SHOTS_PER_NEW_ROW - 2) {
+              // 2 atış kala uyarı ver
+              setNextRowWarning(true);
+              playSound(200, 100);
+            } else if (newCount % SHOTS_PER_NEW_ROW === 0) {
+              // Yeni sıra ekle
+              setTimeout(() => addNewRow(), 500);
+            }
+            return newCount;
+          });
+          
+          setCurrentBubble(createBubble(nextBubble.color, `current-${Date.now()}`));
+          setNextBubble(createBubble(getRandomColor(), `next-${Date.now()}`));
           setShootingBubble(null);
           return null;
         }
@@ -333,21 +383,14 @@ const BubbleShooter = () => {
           dirY: newDirY
         };
       });
+      
+      animationRef.current = requestAnimationFrame(animateShoot);
     };
     
-    const shootInterval = setInterval(() => {
-      animateShoot();
-    }, 16); // 60 FPS
+    animationRef.current = requestAnimationFrame(animateShoot);
     
-    // Temizlik için timeout
-    setTimeout(() => {
-      clearInterval(shootInterval);
-      setShootingBubble(null);
-    }, 5000);
-    
-  }, [gameState, currentBubble, nextBubble, bubbles, shootingBubble, getGridPosition, getBubblePosition, findConnectedBubbles, getRandomColor, playSound, vibrate, level]);
+  }, [gameState, currentBubble, nextBubble, bubbles, shootingBubble, getBubblePosition, findConnectedBubbles, getRandomColor, createBubble, playSound, vibrate, level, stopAnimation]);
 
-  // Mouse/Touch kontrolleri
   const handleAiming = useCallback((e) => {
     if (gameState !== 'playing') return;
     
@@ -385,7 +428,6 @@ const BubbleShooter = () => {
     setIsAiming(false);
   }, [gameState, isAiming, shoot]);
 
-  // Seviye geçişi
   const nextLevel = useCallback(() => {
     setLevel(prev => prev + 1);
     setGameState('playing');
@@ -394,7 +436,6 @@ const BubbleShooter = () => {
     vibrate([75, 25, 75]);
   }, [initializeGame, playSound, vibrate]);
 
-  // Oyun bitiş kontrolü
   useEffect(() => {
     if (bubbles.length > 0) {
       const lowestBubble = Math.max(...bubbles.map(b => b.row));
@@ -406,12 +447,17 @@ const BubbleShooter = () => {
     }
   }, [bubbles, playSound, vibrate]);
 
+  useEffect(() => {
+    return () => {
+      stopAnimation();
+    };
+  }, [stopAnimation]);
+
   return (
     <div className="bubble-game">
-      {/* Geri Dön Butonu */}
       <div className="mb-4 relative z-20">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => window.history.back()}
           className="flex items-center gap-2 text-white/80 hover:text-white transition-colors bg-transparent border-none cursor-pointer p-2"
           style={{ fontSize: '14px' }}
         >
@@ -426,6 +472,9 @@ const BubbleShooter = () => {
           <span>Seviye: {level}</span>
           <span>Puan: {score}</span>
           <span>Kalan: {bubbles.length}</span>
+          <span className={nextRowWarning ? 'warning' : ''}>
+            Atış: {shotCount % SHOTS_PER_NEW_ROW + 1}/{SHOTS_PER_NEW_ROW}
+          </span>
         </div>
         
         <div className="settings">
@@ -452,7 +501,6 @@ const BubbleShooter = () => {
         onTouchMove={handleAiming}
         onTouchEnd={handleShoot}
       >
-        {/* Balonlar */}
         {bubbles.map((bubble) => (
           <div
             key={bubble.id}
@@ -468,7 +516,6 @@ const BubbleShooter = () => {
           </div>
         ))}
         
-        {/* Uçan balon */}
         {shootingBubble && (
           <div
             className="shooting-bubble"
@@ -481,7 +528,6 @@ const BubbleShooter = () => {
           </div>
         )}
         
-        {/* Nişan çizgisi */}
         {isAiming && gameState === 'playing' && (
           <div
             className="aim-line"
@@ -494,7 +540,6 @@ const BubbleShooter = () => {
           />
         )}
         
-        {/* Atıcı */}
         <div 
           className="shooter"
           ref={shooterRef}
@@ -506,7 +551,6 @@ const BubbleShooter = () => {
           🎯
         </div>
         
-        {/* Mevcut balon */}
         {currentBubble && (
           <div
             className="current-bubble"
@@ -519,7 +563,6 @@ const BubbleShooter = () => {
           </div>
         )}
         
-        {/* Sonraki balon */}
         {nextBubble && (
           <div className="next-bubble">
             <span>Sonraki:</span>
@@ -527,7 +570,12 @@ const BubbleShooter = () => {
           </div>
         )}
         
-        {/* Oyun durumu overlay */}
+        {nextRowWarning && (
+          <div className="row-warning">
+            ⚠️ Yeni sıra geliyor!
+          </div>
+        )}
+        
         {gameState === 'waiting' && (
           <div className="game-overlay">
             <div className="message">
@@ -634,6 +682,39 @@ const BubbleShooter = () => {
           border-color: #FFD700;
           color: #FFD700;
           box-shadow: 0 0 15px rgba(255,215,0,0.3);
+        }
+
+        .game-info span.warning {
+          background: rgba(255, 69, 0, 0.3);
+          border: 2px solid #FF4500;
+          color: #FFD700;
+          animation: warningPulse 1s infinite;
+        }
+
+        @keyframes warningPulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.7; transform: scale(1.05); }
+        }
+
+        .row-warning {
+          position: absolute;
+          top: 50px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(255, 69, 0, 0.9);
+          color: white;
+          padding: 10px 20px;
+          border-radius: 25px;
+          font-weight: bold;
+          font-size: 14px;
+          z-index: 15;
+          animation: warningBounce 0.5s ease-in-out infinite alternate;
+          box-shadow: 0 4px 15px rgba(255, 69, 0, 0.4);
+        }
+
+        @keyframes warningBounce {
+          0% { transform: translateX(-50%) translateY(0px); }
+          100% { transform: translateX(-50%) translateY(-5px); }
         }
 
         .game-area {
@@ -749,13 +830,16 @@ const BubbleShooter = () => {
 
         .next-bubble {
           position: absolute;
-          top: 10px;
-          right: 10px;
-          background: rgba(255,255,255,0.1);
-          padding: 8px;
-          border-radius: 10px;
+          bottom: 20px;
+          left: 20px;
+          background: rgba(255,255,255,0.15);
+          padding: 12px 16px;
+          border-radius: 15px;
           backdrop-filter: blur(10px);
           font-size: 12px;
+          border: 2px solid rgba(255,255,255,0.3);
+          box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+          z-index: 13;
         }
 
         .next-bubble-icon {
