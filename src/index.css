@@ -2278,7 +2278,7 @@ body.is-capacitor.hide-bars::before {
   word-spacing: 30px;
   line-height: 100px;
   white-space: pre-wrap;
-  z-index: 0;
+  z-index: -1;
   pointer-events: none;
   transform: rotate(-12deg);
   overflow: hidden;
