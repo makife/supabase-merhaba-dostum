@@ -885,4 +885,5 @@ const HomePage = () => {
     </div>
   </MatchmakingProvider>
 );
+};
 export default HomePage;
