@@ -1,24 +1,24 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 const DinoRunner = () => {
-  const navigate = useNavigate();
-  const [gameState, setGameState] = useState('waiting'); // waiting, playing, gameOver
+  const navigate = () => console.log('Geri Dön');
+  const [gameState, setGameState] = useState('waiting');
   const [score, setScore] = useState(0);
-  const [highScore, setHighScore] = useState(parseInt(localStorage.getItem('dinoHighScore') || '0'));
+  const [highScore, setHighScore] = useState(0);
   const [speed, setSpeed] = useState(2);
   const [dinoY, setDinoY] = useState(0);
-  const [isJumping, setIsJumping] = useState(false);
+  const [jumpPhase, setJumpPhase] = useState('ground');
+  const [doubleJumpsLeft, setDoubleJumpsLeft] = useState(3);
+  const [canDoubleJump, setCanDoubleJump] = useState(false);
   const [obstacles, setObstacles] = useState([]);
   const [clouds, setClouds] = useState([]);
   const [groundOffset, setGroundOffset] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [vibrationEnabled, setVibrationEnabled] = useState(true);
+  const [nextObstacleTime, setNextObstacleTime] = useState(0);
 
-  const gameLoopRef = useRef<number | undefined>();
-  const canvasRef = useRef<HTMLDivElement>();
-  const gameAreaRef = useRef<HTMLDivElement>();
+  const gameLoopRef = useRef();
 
   // Oyun sabitleri
   const GAME_WIDTH = 600;
@@ -29,14 +29,14 @@ const DinoRunner = () => {
   const DINO_GROUND_Y = GAME_HEIGHT - GROUND_HEIGHT - DINO_HEIGHT;
   const JUMP_HEIGHT = 100;
   const OBSTACLE_WIDTH = 20;
-  const OBSTACLE_HEIGHT = 40;
 
   // Ses efektleri
   const playSound = useCallback((frequency, duration = 100, type = 'sine') => {
     if (!soundEnabled) return;
     
     try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      const audioContext = new AudioContext();
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
       
@@ -63,8 +63,6 @@ const DinoRunner = () => {
     try {
       if (navigator.vibrate) {
         navigator.vibrate(pattern);
-      } else if (window.Capacitor && window.Capacitor.Plugins.Haptics) {
-        window.Capacitor.Plugins.Haptics.impact({ style: 'light' });
       }
     } catch (error) {
       console.log('Titreşim çalışmadı:', error);
@@ -73,33 +71,88 @@ const DinoRunner = () => {
 
   // Zıplama fonksiyonu
   const jump = useCallback(() => {
-    if (gameState !== 'playing' || isJumping) return;
+    if (gameState !== 'playing') return;
     
-    setIsJumping(true);
-    playSound(800, 150);
-    vibrate([30]);
-    
-    let jumpProgress = 0;
-    const jumpDuration = 600; // Biraz daha uzun zıplama
-    const startTime = Date.now();
-    
-    const jumpAnimation = () => {
-      const elapsed = Date.now() - startTime;
-      jumpProgress = elapsed / jumpDuration;
+    // Normal zıplama
+    if (jumpPhase === 'ground') {
+      setJumpPhase('jumping');
+      setCanDoubleJump(true);
+      playSound(800, 150);
+      vibrate([30]);
       
-      if (jumpProgress <= 1) {
-        // Daha yüksek parabol hareketi + hafif ileri hareket
-        const jumpY = Math.sin(jumpProgress * Math.PI) * JUMP_HEIGHT;
-        setDinoY(jumpY);
-        requestAnimationFrame(jumpAnimation);
-      } else {
-        setDinoY(0);
-        setIsJumping(false);
-      }
-    };
-    
-    jumpAnimation();
-  }, [gameState, isJumping, playSound, vibrate]);
+      let progress = 0;
+      const totalDuration = 600;
+      const startTime = Date.now();
+      
+      const singleJumpAnimation = () => {
+        const elapsed = Date.now() - startTime;
+        progress = elapsed / totalDuration;
+        
+        if (progress <= 1) {
+          const jumpY = Math.sin(progress * Math.PI) * JUMP_HEIGHT;
+          setDinoY(jumpY);
+          requestAnimationFrame(singleJumpAnimation);
+        } else {
+          setDinoY(0);
+          setJumpPhase('ground');
+          setCanDoubleJump(false);
+        }
+      };
+      
+      singleJumpAnimation();
+    }
+    // Çift zıplama
+    else if (jumpPhase === 'jumping' && canDoubleJump && doubleJumpsLeft > 0) {
+      setDoubleJumpsLeft(prev => prev - 1);
+      setCanDoubleJump(false);
+      setJumpPhase('doubleJumping');
+      
+      playSound(1000, 200);
+      vibrate([50, 30, 50]);
+      
+      const currentHeight = dinoY;
+      const extraJumpHeight = 60;
+      
+      let doubleProgress = 0;
+      const doubleDuration = 400;
+      const doubleStartTime = Date.now();
+      
+      const doubleJumpAnimation = () => {
+        const elapsed = Date.now() - doubleStartTime;
+        doubleProgress = elapsed / doubleDuration;
+        
+        if (doubleProgress <= 1) {
+          const extraY = Math.sin(doubleProgress * Math.PI) * extraJumpHeight;
+          setDinoY(currentHeight + extraY);
+          requestAnimationFrame(doubleJumpAnimation);
+        } else {
+          // Çift zıplama bitti, hızlı yerçekimi düşüşü
+          let fallProgress = 0;
+          const fallDuration = 150; // Çok hızlı düşüş
+          const fallStartTime = Date.now();
+          
+          const fallAnimation = () => {
+            const fallElapsed = Date.now() - fallStartTime;
+            fallProgress = fallElapsed / fallDuration;
+            
+            if (fallProgress <= 1) {
+              // Hızlandırmalı düşüş - yerçekimi etkisi
+              const fallY = currentHeight * (1 - fallProgress * fallProgress * 2);
+              setDinoY(Math.max(0, fallY));
+              requestAnimationFrame(fallAnimation);
+            } else {
+              setDinoY(0);
+              setJumpPhase('ground');
+            }
+          };
+          
+          fallAnimation();
+        }
+      };
+      
+      doubleJumpAnimation();
+    }
+  }, [gameState, jumpPhase, canDoubleJump, doubleJumpsLeft, dinoY, playSound, vibrate]);
 
   // Engel oluştur
   const createObstacle = useCallback(() => {
@@ -108,16 +161,16 @@ const DinoRunner = () => {
     
     if (random < 0.3) {
       type = 'short';
-      height = 25; // Çok kısa - kolay geçiş
+      height = 25;
     } else if (random < 0.5) {
       type = 'normal';
-      height = 40; // Normal boy
+      height = 40;
     } else if (random < 0.8) {
       type = 'tall';
-      height = 55; // Uzun - zıplamak gerekir
+      height = 55;
     } else {
       type = 'giant';
-      height = 70; // Dev boy - tam zıplama gerekir
+      height = 70;
     }
     
     return {
@@ -143,15 +196,15 @@ const DinoRunner = () => {
     const dinoRect = {
       x: 50,
       y: DINO_GROUND_Y - dinoY,
-      width: DINO_WIDTH - 5, // Biraz daha toleranslı
-      height: DINO_HEIGHT - 5 // Biraz daha toleranslı
+      width: DINO_WIDTH - 5,
+      height: DINO_HEIGHT - 5
     };
     
     const obstacleRect = {
-      x: obstacle.x + 3, // Engelin kenarlarında biraz tolerans
+      x: obstacle.x + 3,
       y: obstacle.y,
-      width: obstacle.width - 6, // Daha dar çarpışma alanı
-      height: obstacle.height // Artık dinamik height kullanıyoruz
+      width: obstacle.width - 6,
+      height: obstacle.height
     };
     
     return (
@@ -168,10 +221,13 @@ const DinoRunner = () => {
     setScore(0);
     setSpeed(2);
     setDinoY(0);
-    setIsJumping(false);
+    setJumpPhase('ground');
+    setDoubleJumpsLeft(3);
+    setCanDoubleJump(false);
     setObstacles([]);
     setClouds([createCloud()]);
     setGroundOffset(0);
+    setNextObstacleTime(Date.now() + 2000); // İlk engel 2 saniye sonra
     playSound(440, 200);
     vibrate([100]);
   }, [createCloud, playSound, vibrate]);
@@ -182,11 +238,10 @@ const DinoRunner = () => {
     
     if (score > highScore) {
       setHighScore(score);
-      localStorage.setItem('dinoHighScore', score.toString());
-      playSound(660, 300); // Yeni rekor sesi
+      playSound(660, 300);
       vibrate([100, 50, 100, 50, 100]);
     } else {
-      playSound(200, 500); // Ölüm sesi
+      playSound(200, 500);
       vibrate([200]);
     }
     
@@ -199,32 +254,46 @@ const DinoRunner = () => {
   const gameLoop = useCallback(() => {
     if (gameState !== 'playing') return;
 
-    // Puanı artır
     setScore(prev => prev + 1);
-    
-    // Hızı artır
     setSpeed(prev => Math.min(prev + 0.002, 6));
-    
-    // Yer offsetini güncelle
     setGroundOffset(prev => (prev + speed) % 40);
     
-    // Engelleri güncelle
     setObstacles(prev => {
       let newObstacles = prev.map(obstacle => ({
         ...obstacle,
         x: obstacle.x - speed
       })).filter(obstacle => obstacle.x > -OBSTACLE_WIDTH);
       
-      // Yeni engel ekle - random mesafe
-      const lastObstacle = newObstacles[newObstacles.length - 1];
-      const shouldAddObstacle = newObstacles.length === 0 || 
-        (lastObstacle && lastObstacle.x < GAME_WIDTH - (150 + Math.random() * 300));
-      
-      if (shouldAddObstacle) {
+      // Zaman bazlı engel ekleme sistemi
+      const currentTime = Date.now();
+      if (currentTime >= nextObstacleTime) {
+        // Yeni engel ekle
         newObstacles.push(createObstacle());
+        
+        // Sonraki engel için rastgele zaman belirle
+        const randomWaitTime = Math.random();
+        let nextWait;
+        
+        if (randomWaitTime < 0.1) {
+          // %10 - Çok kısa (0.3-0.8 saniye)
+          nextWait = 300 + Math.random() * 500;
+        } else if (randomWaitTime < 0.3) {
+          // %20 - Kısa (0.8-1.5 saniye)
+          nextWait = 800 + Math.random() * 700;
+        } else if (randomWaitTime < 0.7) {
+          // %40 - Normal (1.5-2.5 saniye)
+          nextWait = 1500 + Math.random() * 1000;
+        } else if (randomWaitTime < 0.9) {
+          // %20 - Uzun (2.5-4 saniye)
+          nextWait = 2500 + Math.random() * 1500;
+        } else {
+          // %10 - Çok uzun (4-6 saniye)
+          nextWait = 4000 + Math.random() * 2000;
+        }
+        
+        setNextObstacleTime(currentTime + nextWait);
       }
       
-      // Çarpışma kontrolü
       newObstacles.forEach(obstacle => {
         if (checkCollision({ x: 50, y: DINO_GROUND_Y - dinoY }, obstacle)) {
           endGame();
@@ -234,7 +303,6 @@ const DinoRunner = () => {
       return newObstacles;
     });
     
-    // Bulutları güncelle
     setClouds(prev => {
       let newClouds = prev.map(cloud => ({
         ...cloud,
@@ -293,10 +361,9 @@ const DinoRunner = () => {
 
   return (
     <div className="dino-game">
-      {/* Geri Dön Butonu */}
       <div className="mb-4">
         <button
-          onClick={() => navigate(-1)}
+          onClick={navigate}
           className="flex items-center gap-2 text-white/80 hover:text-white transition-colors bg-transparent border-none cursor-pointer"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -310,6 +377,9 @@ const DinoRunner = () => {
           <span>Puan: {score.toString().padStart(5, '0')}</span>
           <span>En Yüksek: {highScore.toString().padStart(5, '0')}</span>
           <span>Hız: {speed.toFixed(1)}x</span>
+          <span className="double-jump-counter">
+            ⚡ Çift Zıplama: {doubleJumpsLeft}
+          </span>
         </div>
         
         <div className="settings">
@@ -330,11 +400,9 @@ const DinoRunner = () => {
 
       <div 
         className="game-area"
-        ref={gameAreaRef}
         onTouchStart={handleTouch}
         onClick={handleTouch}
       >
-        {/* Bulutlar */}
         {clouds.map((cloud, index) => (
           <div
             key={index}
@@ -348,9 +416,8 @@ const DinoRunner = () => {
           </div>
         ))}
         
-        {/* Reaktör */}
         <div
-          className={`reactor ${isJumping ? 'jumping' : ''}`}
+          className={`reactor ${jumpPhase !== 'ground' ? 'jumping' : ''} ${canDoubleJump ? 'can-double-jump' : ''}`}
           style={{
             bottom: `${GROUND_HEIGHT + dinoY}px`
           }}
@@ -358,7 +425,6 @@ const DinoRunner = () => {
           ☢️
         </div>
         
-        {/* Engeller */}
         {obstacles.map((obstacle, index) => (
           <div
             key={index}
@@ -375,7 +441,6 @@ const DinoRunner = () => {
           </div>
         ))}
         
-        {/* Zemin */}
         <div 
           className="ground"
           style={{
@@ -383,12 +448,12 @@ const DinoRunner = () => {
           }}
         />
         
-        {/* Oyun durumu overlay */}
         {gameState === 'waiting' && (
           <div className="game-overlay">
             <div className="message">
               <h3>☢️ Reactor Runner</h3>
               <p>Zıplamak için dokunun veya Space tuşuna basın</p>
+              <p className="double-jump-info">⚡ Havadayken tekrar zıplayabilirsiniz! (3 hak)</p>
               <button className="play-btn" onClick={startGame}>
                 🚀 Başla
               </button>
@@ -416,6 +481,8 @@ const DinoRunner = () => {
         <h4>🎮 Nasıl Oynanır:</h4>
         <p>• ☢️ Reaktörün kaktüslere çarpmasını engelleyin</p>
         <p>• 🖱️ Dokunarak veya Space ile zıplayın</p>
+        <p>• ⚡ Havadayken tekrar zıplayarak çift zıplama yapın (3 hak)</p>
+        <p>• 🎯 Engeller arası mesafe artık tamamen rastgele!</p>
         <p>• ⚡ Oyun zamanla hızlanır</p>
         <p>• 🏆 En yüksek puanınızı geçmeye çalışın</p>
       </div>
@@ -456,6 +523,13 @@ const DinoRunner = () => {
           backdrop-filter: blur(10px);
           font-weight: bold;
           font-family: 'Courier New', monospace;
+        }
+
+        .double-jump-counter {
+          background: rgba(255,215,0,0.3) !important;
+          border: 1px solid rgba(255,215,0,0.5) !important;
+          color: #FFD700 !important;
+          box-shadow: 0 0 10px rgba(255,215,0,0.2) !important;
         }
 
         .settings {
@@ -510,38 +584,29 @@ const DinoRunner = () => {
           font-size: 30px;
           transition: none;
           z-index: 10;
-          animation: reactorSpin 1s linear infinite; /* Sürekli dönen animasyon */
+          animation: reactorSpin 1s linear infinite;
         }
 
         .reactor.jumping {
           animation: reactorJumpSpin 0.6s ease-in-out;
         }
 
+        .reactor.can-double-jump {
+          box-shadow: 0 0 20px rgba(255,215,0,0.8);
+          filter: drop-shadow(0 0 10px rgba(255,215,0,0.6));
+        }
+
         @keyframes reactorSpin {
-          from { 
-            transform: rotate(0deg); 
-          }
-          to { 
-            transform: rotate(360deg); 
-          }
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
 
         @keyframes reactorJumpSpin {
-          0% { 
-            transform: rotate(0deg) scale(1); 
-          }
-          25% { 
-            transform: rotate(90deg) scale(1.1); 
-          }
-          50% { 
-            transform: rotate(180deg) scale(1.2); 
-          }
-          75% { 
-            transform: rotate(270deg) scale(1.1); 
-          }
-          100% { 
-            transform: rotate(360deg) scale(1); 
-          }
+          0% { transform: rotate(0deg) scale(1); }
+          25% { transform: rotate(90deg) scale(1.1); }
+          50% { transform: rotate(180deg) scale(1.2); }
+          75% { transform: rotate(270deg) scale(1.1); }
+          100% { transform: rotate(360deg) scale(1); }
         }
 
         .obstacle {
@@ -553,21 +618,10 @@ const DinoRunner = () => {
           transition: none;
         }
 
-        .obstacle.short {
-          font-size: 18px; /* Küçük bitki */
-        }
-
-        .obstacle.normal {
-          font-size: 22px; /* Normal bitki */
-        }
-
-        .obstacle.tall {
-          font-size: 28px; /* Uzun kaktüs */
-        }
-
-        .obstacle.giant {
-          font-size: 35px; /* Dev ağaç */
-        }
+        .obstacle.short { font-size: 18px; }
+        .obstacle.normal { font-size: 22px; }
+        .obstacle.tall { font-size: 28px; }
+        .obstacle.giant { font-size: 35px; }
 
         .ground {
           position: absolute;
@@ -616,6 +670,12 @@ const DinoRunner = () => {
         .message p {
           margin-bottom: 10px;
           font-size: 16px;
+        }
+
+        .double-jump-info {
+          color: #FFD700 !important;
+          font-weight: bold;
+          text-shadow: 0 0 10px rgba(255,215,0,0.5);
         }
 
         .new-record {
