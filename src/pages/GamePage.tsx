@@ -484,29 +484,6 @@ useEffect(() => {
   const [finalPlayerScore, setFinalPlayerScore] = useState(0);
   const [finalOpponentScore, setFinalOpponentScore] = useState(0);
 
-const RandomLettersBackground = () => {
-  const letters = 'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ'.split('');
-  
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-      {Array.from({ length: 80 }, (_, i) => (
-        <span
-          key={i}
-          className="absolute text-green-500/8 font-bold select-none"
-          style={{
-            left: `${Math.random() * 95}%`,
-            top: `${Math.random() * 95}%`,
-            fontSize: `${30 + Math.random() * 40}px`,
-            transform: `rotate(${Math.random() * 360}deg)`,
-            fontWeight: Math.random() > 0.5 ? 'bold' : 'normal'
-          }}
-        >
-          {letters[Math.floor(Math.random() * letters.length)]}
-        </span>
-      ))}
-    </div>
-  );
-};
   
 const handleTournamentGameEnd = async (userScore: number, opponentScore: number) => {
   if (!user || !tournamentMatch) return;
@@ -3974,15 +3951,14 @@ return (
         onComplete={handleCountdownComplete}
       />
     )}
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 relative overflow-hidden"
-     style={{ 
-       paddingTop: 'calc(env(safe-area-inset-top, 8px) + 1rem)', 
-       paddingBottom: 'env(safe-area-inset-bottom, 8px)',
-       paddingLeft: 'env(safe-area-inset-left, 4px)',
-       paddingRight: 'env(safe-area-inset-right, 4px)'
-     }}>
-  <RandomLettersBackground />
-  <div className="h-full flex flex-col px-2 relative z-10">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 relative overflow-hidden letters-background"
+         style={{ 
+           paddingTop: 'calc(env(safe-area-inset-top, 8px) + 1rem)', 
+           paddingBottom: 'env(safe-area-inset-bottom, 8px)',
+           paddingLeft: 'env(safe-area-inset-left, 4px)',
+           paddingRight: 'env(safe-area-inset-right, 4px)'
+         }}>
+      <div className="h-full flex flex-col px-2 relative z-10">
         
         {/* Header - GÜNCELLENMIŞ */}
         <div className="flex items-center justify-between py-2 shrink-0">
