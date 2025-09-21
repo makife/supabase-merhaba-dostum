@@ -2266,14 +2266,7 @@ body.is-capacitor.hide-bars::before {
 }
 
 .letters-background::before {
-  content: 'Ğ T A İ Ö K Ç B U Ş Y E P L M Z İ N R F V D G A H C Ü S O J
-Ş U K İ F Ö M B Ç T A Y Z E V N P Ğ L D R H G C J Ü O S I
-M A T İ K Ç Ö B L E U N R Ş F Y Z V P G D H C Ü J O S İ A
-T Ğ E O Ü P K Ş R L İ M F Y C A D H N B Z V G U J Ç Ö S T
-A İ O M Ş Ğ K U E B Y L R F N P C T D H V Z G J Ç Ü Ö S İ
-P Ö B L K Ş M A İ E U N R F Y C T D H V Z G J Ç Ğ Ü O S
-R Y A İ Ş U K F M E O L B N C D H T V P Z G J Ç Ğ Ü Ö S
-Ü M K A İ Ş O E U B L R F Y N C D H P T V Z G J Ç Ğ Ö S İ';
+  content: 'A A B CA B C Ç D E A B C Ç D EA B C Ç D E F G Ğ H I İ A B C Ç D E F G Ğ H I İ J K L J K L  F G ĞA B C Ç D E F G Ğ H I İ J K L  H I İ J K L F G Ğ H I İ J K L  Ç D E F G Ğ H I İ J K L B C Ç D E F G Ğ H I İ J K L M N O Ö P R S Ş T U Ü V Y Z A B C Ç D E F G Ğ H I İ J K L M N O Ö P R S Ş T U Ü V Y Z K E L İ M E C İ A R A B A O K U L D E N İ Z A Ğ A Ç Ç İ Ç E K S E V G İ M U T L U L U K K E L İ M E C İ A R A B A O K U L D E N İ Z A Ğ A Ç Ç İ Ç E K S E V G İ M U T L U L U K A B C Ç D E F G Ğ H I İ J K L M N O Ö P R S Ş T U Ü V Y Z';
   position: absolute;
   top: 0;
   left: 0;
@@ -2284,12 +2277,16 @@ R Y A İ Ş U K F M E O L B N C D H T V P Z G J Ç Ğ Ü Ö S
   font-weight: bold;
   word-spacing: 30px;
   line-height: 100px;
-  white-space: pre-line;
+  white-space: pre-wrap;
   z-index: 0;
   pointer-events: none;
-  transform: rotate(-12deg) translateY(-50px);
+  transform: rotate(-12deg);
   overflow: hidden;
   user-select: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  height: 120vh; /* Ekrandan daha uzun yap */
 }
 
 /* ===== PUZZLE GAME STYLES END ===== */
