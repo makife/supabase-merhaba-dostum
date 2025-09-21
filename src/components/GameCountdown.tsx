@@ -51,7 +51,7 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
       
       const startSoundTimer = setTimeout(() => {
         console.log('🔊 Başla sesi çalıyor');
-        playSound('correctWord');
+        playSound('gameWin');
       }, 100);
       
       setTimeout(() => {
