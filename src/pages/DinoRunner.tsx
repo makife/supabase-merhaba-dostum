@@ -28,12 +28,12 @@ const DinoRunner = () => {
 
   // Oyun sabitleri
   const GAME_WIDTH = 600;
-  const GAME_HEIGHT = 200;
+  const GAME_HEIGHT = 250; // 200'den 250'ye artırdım
   const GROUND_HEIGHT = 20;
   const DINO_WIDTH = 30;
   const DINO_HEIGHT = 40;
   const DINO_GROUND_Y = GAME_HEIGHT - GROUND_HEIGHT - DINO_HEIGHT;
-  const JUMP_HEIGHT = 100;
+  const JUMP_HEIGHT = 120; // 100'den 120'ye artırdım
   const OBSTACLE_WIDTH = 20;
 
   // Ses efektleri
@@ -342,9 +342,23 @@ const DinoRunner = () => {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [gameState, startGame, jump]);
 
-  // Dokunma kontrolü
+  // Dokunma kontrolü - Mobil uyumlu
   const handleTouch = useCallback((e) => {
     e.preventDefault();
+    e.stopPropagation();
+    
+    if (gameState === 'waiting' || gameState === 'gameOver') {
+      startGame();
+    } else {
+      jump();
+    }
+  }, [gameState, startGame, jump]);
+
+  // Ayrı mouse click handler
+  const handleClick = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (gameState === 'waiting' || gameState === 'gameOver') {
       startGame();
     } else {
@@ -407,7 +421,9 @@ const DinoRunner = () => {
       <div 
         className="game-area"
         onTouchStart={handleTouch}
-        onClick={handleTouch}
+        onTouchEnd={handleTouch}
+        onClick={handleClick}
+        onMouseDown={handleClick}
       >
         {clouds.map((cloud, index) => (
           <div
@@ -567,9 +583,9 @@ const DinoRunner = () => {
         .game-area {
           position: relative;
           width: 600px;
-          height: 200px;
+          height: 250px;
           margin: 0 auto;
-          background: linear-gradient(to bottom, #87CEEB 0%, #87CEEB 70%, #DEB887 70%, #DEB887 100%);
+          background: linear-gradient(to bottom, #87CEEB 0%, #87CEEB 75%, #DEB887 75%, #DEB887 100%);
           border-radius: 10px;
           overflow: hidden;
           cursor: pointer;
@@ -739,25 +755,93 @@ const DinoRunner = () => {
         @media (max-width: 650px) {
           .dino-game {
             margin: 0;
-            padding: 15px;
+            padding: 10px;
             border-radius: 0;
+          }
+          
+          .game-header h2 {
+            font-size: 18px;
+            margin-bottom: 10px;
           }
           
           .game-area {
             width: 100%;
-            max-width: 500px;
+            max-width: 100%;
+            height: 180px;
           }
           
           .game-info {
             flex-direction: column;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
+            margin-bottom: 10px;
+          }
+          
+          .game-info span {
+            font-size: 11px;
+            padding: 6px 10px;
+            margin: 2px;
+          }
+          
+          .double-jump-counter {
+            font-size: 10px !important;
+            padding: 4px 8px !important;
           }
 
           .settings {
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 6px;
+            margin-bottom: 15px;
           }
+          
+          .setting-btn {
+            font-size: 10px;
+            padding: 6px 12px;
+          }
+          
+          .message {
+            padding: 15px;
+            max-width: 90%;
+          }
+          
+          .message h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+          }
+          
+          .message p {
+            font-size: 13px;
+            margin-bottom: 8px;
+          }
+          
+          .play-btn {
+            font-size: 14px;
+            padding: 10px 20px;
+          }
+          
+          .game-instructions {
+            padding: 10px;
+            margin-top: 15px;
+          }
+          
+          .game-instructions h4 {
+            font-size: 14px;
+            margin-bottom: 8px;
+          }
+          
+          .game-instructions p {
+            font-size: 11px;
+            margin: 6px 0;
+          }
+          
+          .reactor {
+            font-size: 24px;
+          }
+          
+          .obstacle.short { font-size: 14px; }
+          .obstacle.normal { font-size: 18px; }
+          .obstacle.tall { font-size: 22px; }
+          .obstacle.giant { font-size: 28px; }
         }
       `}</style>
     </div>
