@@ -35,7 +35,8 @@ const BubbleShooter = () => {
     if (!soundEnabled) return;
     
     try {
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const audioContext = new AudioCtx();
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
       
@@ -43,7 +44,7 @@ const BubbleShooter = () => {
       gainNode.connect(audioContext.destination);
       
       oscillator.frequency.value = frequency;
-      oscillator.type = type;
+      oscillator.type = type as OscillatorType;
       
       gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
       gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
@@ -180,7 +181,7 @@ const BubbleShooter = () => {
     }
     
     return Array.from(connected).map(key => {
-      const [row, col] = key.split('-').map(Number);
+      const [row, col] = (key as string).split('-').map(Number);
       return bubbles.find(b => b.row === row && b.col === col);
     }).filter(Boolean);
   }, []);
