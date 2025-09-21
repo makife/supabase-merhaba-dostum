@@ -3958,7 +3958,7 @@ return (
            paddingLeft: 'env(safe-area-inset-left, 4px)',
            paddingRight: 'env(safe-area-inset-right, 4px)'
          }}>
-      <div className="h-full flex flex-col px-2 relative z-1">
+      <div className="h-full flex flex-col px-2 relative z-10">
         
         {/* Header - GÜNCELLENMIŞ */}
         <div className="flex items-center justify-between py-2 shrink-0">
