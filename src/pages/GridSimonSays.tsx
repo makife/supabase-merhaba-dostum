@@ -240,7 +240,7 @@ const GridSimonSays = () => {
         </div>
       </div>
 
-      <div className="game-grid">
+      <div className="simon-grid">
         {renderGrid()}
       </div>
 
@@ -340,7 +340,7 @@ const GridSimonSays = () => {
           background: rgba(255, 255, 255, 0.2);
         }
 
-        .game-grid {
+        .simon-grid {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
           gap: 8px;
@@ -486,7 +486,7 @@ const GridSimonSays = () => {
             gap: 5px;
           }
           
-          .game-grid {
+          .simon-grid {
             max-width: 280px;
             gap: 6px;
           }
