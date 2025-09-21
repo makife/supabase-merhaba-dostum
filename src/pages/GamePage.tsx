@@ -483,6 +483,30 @@ useEffect(() => {
   const [waitingForRematchResponse, setWaitingForRematchResponse] = useState(false);
   const [finalPlayerScore, setFinalPlayerScore] = useState(0);
   const [finalOpponentScore, setFinalOpponentScore] = useState(0);
+
+const RandomLettersBackground = () => {
+  const letters = 'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ'.split('');
+  
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+      {Array.from({ length: 80 }, (_, i) => (
+        <span
+          key={i}
+          className="absolute text-green-500/8 font-bold select-none"
+          style={{
+            left: `${Math.random() * 95}%`,
+            top: `${Math.random() * 95}%`,
+            fontSize: `${30 + Math.random() * 40}px`,
+            transform: `rotate(${Math.random() * 360}deg)`,
+            fontWeight: Math.random() > 0.5 ? 'bold' : 'normal'
+          }}
+        >
+          {letters[Math.floor(Math.random() * letters.length)]}
+        </span>
+      ))}
+    </div>
+  );
+};
   
 const handleTournamentGameEnd = async (userScore: number, opponentScore: number) => {
   if (!user || !tournamentMatch) return;
