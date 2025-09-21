@@ -739,93 +739,25 @@ const DinoRunner = () => {
         @media (max-width: 650px) {
           .dino-game {
             margin: 0;
-            padding: 10px;
+            padding: 15px;
             border-radius: 0;
-          }
-          
-          .game-header h2 {
-            font-size: 18px;
-            margin-bottom: 10px;
           }
           
           .game-area {
             width: 100%;
-            max-width: 100%;
-            height: 150px;
+            max-width: 500px;
           }
           
           .game-info {
             flex-direction: column;
             align-items: center;
-            gap: 4px;
-            margin-bottom: 10px;
-          }
-          
-          .game-info span {
-            font-size: 11px;
-            padding: 6px 10px;
-            margin: 2px;
-          }
-          
-          .double-jump-counter {
-            font-size: 10px !important;
-            padding: 4px 8px !important;
+            gap: 5px;
           }
 
           .settings {
             flex-wrap: wrap;
-            gap: 6px;
-            margin-bottom: 15px;
+            gap: 8px;
           }
-          
-          .setting-btn {
-            font-size: 10px;
-            padding: 6px 12px;
-          }
-          
-          .message {
-            padding: 15px;
-            max-width: 90%;
-          }
-          
-          .message h3 {
-            font-size: 18px;
-            margin-bottom: 10px;
-          }
-          
-          .message p {
-            font-size: 13px;
-            margin-bottom: 8px;
-          }
-          
-          .play-btn {
-            font-size: 14px;
-            padding: 10px 20px;
-          }
-          
-          .game-instructions {
-            padding: 10px;
-            margin-top: 15px;
-          }
-          
-          .game-instructions h4 {
-            font-size: 14px;
-            margin-bottom: 8px;
-          }
-          
-          .game-instructions p {
-            font-size: 11px;
-            margin: 6px 0;
-          }
-          
-          .reactor {
-            font-size: 24px;
-          }
-          
-          .obstacle.short { font-size: 14px; }
-          .obstacle.normal { font-size: 18px; }
-          .obstacle.tall { font-size: 22px; }
-          .obstacle.giant { font-size: 28px; }
         }
       `}</style>
     </div>
