@@ -2275,8 +2275,8 @@ body.is-capacitor.hide-bars::before {
   font-size: 50px; /* 80px'den 50px'e düşürdüm */
   color: rgba(34, 197, 94, 0.06);
   font-weight: bold;
-  word-spacing: 40px; /* Bu da orantılı olarak küçültüldü */
-  line-height: 80px; /* Bu da orantılı olarak küçültüldü */
+  word-spacing: 20px; /* Bu da orantılı olarak küçültüldü */
+  line-height: 60px; /* Bu da orantılı olarak küçültüldü */
   white-space: pre-wrap;
   z-index: 0;
   pointer-events: none;
