@@ -70,7 +70,6 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
           <div>
             <h3 className="font-semibold mb-3 text-center">Oyun Türü Seçin</h3>
             <RadioGroup value={selectedType} onValueChange={(value) => {
-              playSound('buttonClick');
               setSelectedType(value as 'timed' | 'score');
             }}>
               <div className="space-y-4">
@@ -152,16 +151,10 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
           </div>
 
           <div className="flex space-x-3">
-            <Button variant="outline" onClick={() => {
-              playSound('buttonClick');
-              onClose();
-            }} className="flex-1">
+            <Button variant="outline" onClick={onClose} className="flex-1">
               İptal
             </Button>
-            <Button onClick={() => {
-              playSound('buttonClick');
-              onStart(selectedType);
-            }} className="flex-1">
+            <Button onClick={() => onStart(selectedType)} className="flex-1">
               Oyunu Başlat
             </Button>
           </div>
