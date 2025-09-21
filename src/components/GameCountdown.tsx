@@ -108,22 +108,17 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
         clearTimeout(soundTimer);
       };
     } else if (count === 0 && !showStart) {
+      // Önce sesi çal, sonra state'i güncelle
+      playStartSound();
       setShowStart(true);
       
-      // Ses çalmaya başla
-      const startSoundTimer = setTimeout(() => {
-        playStartSound();
-      }, 50);
-      
-      // Ses çalmayı bitirmek için daha uzun bekle
+      // Daha uzun süre bekle
       setTimeout(() => {
         setIsVisible(false);
         setTimeout(() => {
           onComplete();
-        }, 200);
-      }, 1500); // 800'den 1500'e çıkardık - sesin bitmesini bekle
-
-      return () => clearTimeout(startSoundTimer);
+        }, 300);
+      }, 2000); // 2 saniye bekle ki ses bitsin
     }
   }, [count, showStart, onComplete, hasStarted]);
 
