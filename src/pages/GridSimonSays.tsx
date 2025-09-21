@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 const GridSimonSays = () => {
-  const navigate = useNavigate();
   const [gameState, setGameState] = useState('waiting'); // waiting, showing, playing, gameOver
   const [sequence, setSequence] = useState([]);
   const [playerSequence, setPlayerSequence] = useState([]);
@@ -204,7 +202,7 @@ const GridSimonSays = () => {
       {/* Geri Dön Butonu */}
       <div className="mb-4">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => console.log('Geri Dön')}
           className="flex items-center gap-2 text-white/80 hover:text-white transition-colors bg-transparent border-none cursor-pointer"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -273,21 +271,21 @@ const GridSimonSays = () => {
 
       <style>{`
         .simon-game {
+          min-height: 100vh;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
           max-width: 500px;
           margin: 0 auto;
           padding: 20px;
           font-family: Arial, sans-serif;
           text-align: center;
-          background: hsl(var(--background));
-          border-radius: 15px;
-          color: hsl(var(--foreground));
-          min-height: 100vh;
+          border-radius: 0;
+          color: white;
           box-sizing: border-box;
         }
 
         .game-header h2 {
           margin-bottom: 20px;
-          color: hsl(var(--foreground));
+          color: white;
           text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
           font-size: 24px;
         }
@@ -301,12 +299,14 @@ const GridSimonSays = () => {
         }
 
         .game-info span {
-          background: hsl(var(--muted) / 0.8);
+          background: rgba(255, 255, 255, 0.15);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
           padding: 8px 12px;
           border-radius: 20px;
           font-size: 13px;
-          backdrop-filter: blur(10px);
           font-weight: bold;
+          color: white;
         }
 
         .settings {
@@ -317,9 +317,9 @@ const GridSimonSays = () => {
         }
 
         .setting-btn {
-          background: hsl(var(--muted) / 0.5);
-          border: 2px solid hsl(var(--border));
-          color: hsl(var(--foreground));
+          background: rgba(255, 255, 255, 0.1);
+          border: 2px solid rgba(255, 255, 255, 0.2);
+          color: white;
           padding: 8px 16px;
           border-radius: 20px;
           cursor: pointer;
@@ -329,14 +329,15 @@ const GridSimonSays = () => {
         }
 
         .setting-btn.active {
-          background: hsl(var(--primary) / 0.3);
-          border-color: hsl(var(--primary));
-          color: hsl(var(--primary));
-          box-shadow: 0 0 15px hsl(var(--primary) / 0.3);
+          background: rgba(100, 255, 100, 0.3);
+          border-color: #64ff64;
+          color: #64ff64;
+          box-shadow: 0 0 15px rgba(100, 255, 100, 0.3);
         }
 
         .setting-btn:hover {
           transform: scale(1.05);
+          background: rgba(255, 255, 255, 0.2);
         }
 
         .game-grid {
@@ -353,20 +354,20 @@ const GridSimonSays = () => {
           aspect-ratio: 1;
           border: none;
           border-radius: 12px;
-          background: hsl(var(--muted) / 0.8);
-          color: hsl(var(--foreground));
+          background: rgba(255, 255, 255, 0.15);
+          backdrop-filter: blur(10px);
+          color: white;
           font-size: 16px;
           font-weight: bold;
           cursor: pointer;
           transition: all 0.15s ease;
-          backdrop-filter: blur(10px);
-          border: 2px solid hsl(var(--border));
+          border: 2px solid rgba(255, 255, 255, 0.2);
           user-select: none;
           -webkit-tap-highlight-color: transparent;
         }
 
         .grid-cell:hover {
-          background: hsl(var(--muted) / 0.9);
+          background: rgba(255, 255, 255, 0.25);
           transform: scale(1.03);
         }
 
@@ -375,11 +376,11 @@ const GridSimonSays = () => {
         }
 
         .grid-cell.active {
-          background: hsl(var(--primary)) !important;
-          color: hsl(var(--primary-foreground));
+          background: linear-gradient(45deg, #ff6b6b, #feca57) !important;
+          color: white;
           transform: scale(1.08);
-          box-shadow: 0 0 25px hsl(var(--primary) / 0.8);
-          border-color: hsl(var(--primary));
+          box-shadow: 0 0 25px rgba(255, 202, 87, 0.8);
+          border-color: #feca57;
           animation: pulse 0.15s ease-in-out;
         }
 
@@ -403,7 +404,7 @@ const GridSimonSays = () => {
         }
 
         .start-btn, .restart-btn {
-          background: linear-gradient(45deg, #4CAF50, #45a049);
+          background: linear-gradient(45deg, #48cae4, #023e8a);
           color: white;
           border: none;
           padding: 15px 30px;
@@ -412,14 +413,15 @@ const GridSimonSays = () => {
           font-weight: bold;
           cursor: pointer;
           transition: all 0.3s ease;
-          box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+          box-shadow: 0 4px 15px rgba(72, 202, 228, 0.3);
           user-select: none;
           -webkit-tap-highlight-color: transparent;
         }
 
         .start-btn:hover, .restart-btn:hover {
           transform: translateY(-3px);
-          box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+          box-shadow: 0 6px 20px rgba(72, 202, 228, 0.4);
+          background: linear-gradient(45deg, #0077b6, #001d3d);
         }
 
         .start-btn:active, .restart-btn:active {
@@ -427,10 +429,11 @@ const GridSimonSays = () => {
         }
 
         .game-over {
-          background: hsl(var(--muted) / 0.8);
+          background: rgba(255, 255, 255, 0.15);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
           padding: 20px;
           border-radius: 15px;
-          backdrop-filter: blur(10px);
           animation: fadeIn 0.5s ease-in;
         }
 
@@ -442,21 +445,22 @@ const GridSimonSays = () => {
         .game-over p {
           margin-bottom: 15px;
           font-size: 18px;
-          color: hsl(var(--primary));
+          color: #feca57;
           text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
         }
 
         .game-instructions {
-          background: hsl(var(--muted) / 0.8);
+          background: rgba(255, 255, 255, 0.15);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
           padding: 15px;
           border-radius: 15px;
           margin-top: 20px;
-          backdrop-filter: blur(10px);
         }
 
         .game-instructions h4 {
           margin-bottom: 10px;
-          color: hsl(var(--primary));
+          color: #64ffda;
           text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
         }
 
@@ -465,6 +469,7 @@ const GridSimonSays = () => {
           font-size: 13px;
           text-align: left;
           line-height: 1.4;
+          color: white;
         }
 
         @media (max-width: 480px) {
