@@ -64,6 +64,12 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
         startAudioRef.current.currentTime = 0;
         await startAudioRef.current.play();
         console.log('🔊 Başla sesi çalıyor');
+        
+        // Ses bittiğinde event dinle
+        startAudioRef.current.onended = () => {
+          console.log('🔊 Başla sesi bitti');
+        };
+        
       } catch (error) {
         console.warn('Başla sesi çalamadı:', error);
       }
@@ -104,16 +110,18 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
     } else if (count === 0 && !showStart) {
       setShowStart(true);
       
+      // Ses çalmaya başla
       const startSoundTimer = setTimeout(() => {
         playStartSound();
       }, 50);
       
+      // Ses çalmayı bitirmek için daha uzun bekle
       setTimeout(() => {
         setIsVisible(false);
         setTimeout(() => {
           onComplete();
         }, 200);
-      }, 800);
+      }, 1500); // 800'den 1500'e çıkardık - sesin bitmesini bekle
 
       return () => clearTimeout(startSoundTimer);
     }
