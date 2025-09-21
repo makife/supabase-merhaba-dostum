@@ -3974,14 +3974,15 @@ return (
         onComplete={handleCountdownComplete}
       />
     )}
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 relative overflow-hidden letters-background"
-         style={{ 
-           paddingTop: 'calc(env(safe-area-inset-top, 8px) + 1rem)', 
-           paddingBottom: 'env(safe-area-inset-bottom, 8px)',
-           paddingLeft: 'env(safe-area-inset-left, 4px)',
-           paddingRight: 'env(safe-area-inset-right, 4px)'
-         }}>
-      <div className="h-full flex flex-col px-2 relative z-10">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 relative overflow-hidden"
+     style={{ 
+       paddingTop: 'calc(env(safe-area-inset-top, 8px) + 1rem)', 
+       paddingBottom: 'env(safe-area-inset-bottom, 8px)',
+       paddingLeft: 'env(safe-area-inset-left, 4px)',
+       paddingRight: 'env(safe-area-inset-right, 4px)'
+     }}>
+  <RandomLettersBackground />
+  <div className="h-full flex flex-col px-2 relative z-10">
         
         {/* Header - GÜNCELLENMIŞ */}
         <div className="flex items-center justify-between py-2 shrink-0">
