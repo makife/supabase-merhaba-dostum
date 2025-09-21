@@ -2272,7 +2272,7 @@ body.is-capacitor.hide-bars::before {
   left: 0;
   right: 0;
   bottom: 0;
-  font-size: 50px; /* 80px'den 50px'e düşürdüm */
+  font-size: 30px; /* 80px'den 50px'e düşürdüm */
   color: rgba(34, 197, 94, 0.06);
   font-weight: bold;
   word-spacing: 20px; /* Bu da orantılı olarak küçültüldü */
