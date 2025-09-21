@@ -2,7 +2,13 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ArrowLeft } from 'lucide-react';
 
 const DinoRunner = () => {
-  const navigate = () => console.log('Geri Dön');
+  const navigate = () => {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      window.location.href = '/';
+    }
+  };
   const [gameState, setGameState] = useState('waiting');
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
@@ -363,7 +369,7 @@ const DinoRunner = () => {
     <div className="dino-game">
       <div className="mb-4">
         <button
-          onClick={navigate}
+          onClick={() => navigate()}
           className="flex items-center gap-2 text-white/80 hover:text-white transition-colors bg-transparent border-none cursor-pointer"
         >
           <ArrowLeft className="w-5 h-5" />
