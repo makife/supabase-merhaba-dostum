@@ -112,13 +112,13 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
       playStartSound();
       setShowStart(true);
       
-      // Daha uzun süre bekle
+      // Yazıyı kısa göster ama sesi çalmaya devam et
       setTimeout(() => {
         setIsVisible(false);
         setTimeout(() => {
           onComplete();
-        }, 300);
-      }, 2000); // 2 saniye bekle ki ses bitsin
+        }, 200);
+      }, 1000); // 1 saniye - daha kısa ama sesin çalmasına izin ver
     }
   }, [count, showStart, onComplete, hasStarted]);
 
