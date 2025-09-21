@@ -3950,14 +3950,14 @@ return (
         onComplete={handleCountdownComplete}
       />
     )}
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted relative overflow-hidden mt-4"
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted relative overflow-hidden"
          style={{ 
            paddingTop: 'calc(env(safe-area-inset-top, 8px) + 1rem)', 
            paddingBottom: 'env(safe-area-inset-bottom, 8px)',
            paddingLeft: 'env(safe-area-inset-left, 4px)',
            paddingRight: 'env(safe-area-inset-right, 4px)'
          }}>
-      <div className="h-full flex flex-col px-2">
+      <div className="h-full flex flex-col px-2 pt-6 pb-2">
         
         {/* Header - GÜNCELLENMIŞ */}
         <div className="flex items-center justify-between py-2 shrink-0">
