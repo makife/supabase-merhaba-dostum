@@ -2266,23 +2266,27 @@ body.is-capacitor.hide-bars::before {
 }
 
 .letters-background::before {
-  content: 'A B C Ç D E F G Ğ H I İ J K L M N O Ö P R S Ş T U Ü V Y Z K E L İ M E C İ A R A B A O K U L D E N İ Z A Ğ A Ç Ç İ Ç E K S E V G İ M U T L U L U K';
+  content: 'A B C Ç D E F G Ğ H I İ J K L M N O Ö P R S Ş T U Ü V Y Z A B C Ç D E F G Ğ H I İ J K L M N O Ö P R S Ş T U Ü V Y Z K E L İ M E C İ A R A B A O K U L D E N İ Z A Ğ A Ç Ç İ Ç E K S E V G İ M U T L U L U K K E L İ M E C İ A R A B A O K U L D E N İ Z A Ğ A Ç Ç İ Ç E K S E V G İ M U T L U L U K A B C Ç D E F G Ğ H I İ J K L M N O Ö P R S Ş T U Ü V Y Z';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  font-size: 30px; /* 80px'den 50px'e düşürdüm */
+  font-size: 20px;
   color: rgba(34, 197, 94, 0.12);
   font-weight: bold;
-  word-spacing: 20px; /* Bu da orantılı olarak küçültüldü */
-  line-height: 60px; /* Bu da orantılı olarak küçültüldü */
+  word-spacing: 30px;
+  line-height: 100px;
   white-space: pre-wrap;
   z-index: 0;
   pointer-events: none;
-  transform: rotate(-12deg) translateY(-50px);
+  transform: rotate(-12deg);
   overflow: hidden;
   user-select: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  height: 120vh; /* Ekrandan daha uzun yap */
 }
 
 
