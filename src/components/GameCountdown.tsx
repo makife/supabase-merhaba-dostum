@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
-import { useSounds } from '@/hooks/useSounds';
 
 interface GameCountdownProps {
   onComplete: () => void;
@@ -9,30 +8,86 @@ interface GameCountdownProps {
 
 const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
   const [count, setCount] = useState(5);
-  const [isVisible, setIsVisible] = useState(false); // false ile başla
+  const [isVisible, setIsVisible] = useState(false);
   const [showStart, setShowStart] = useState(false);
-  const [hasStarted, setHasStarted] = useState(false); // Yeni state
-  const { playSound } = useSounds();
+  const [hasStarted, setHasStarted] = useState(false);
+  
+  // Ses dosyaları için ref'ler
+  const countdownAudioRef = useRef<HTMLAudioElement | null>(null);
+  const startAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Ses dosyalarını yükle
+  useEffect(() => {
+    countdownAudioRef.current = new Audio('/gerisayim.mp3');
+    startAudioRef.current = new Audio('/basla.mp3');
+
+    // Ses dosyalarını preload et
+    if (countdownAudioRef.current) {
+      countdownAudioRef.current.preload = 'auto';
+      countdownAudioRef.current.volume = 0.7; // Ses seviyesi ayarla
+    }
+    if (startAudioRef.current) {
+      startAudioRef.current.preload = 'auto';
+      startAudioRef.current.volume = 0.7;
+    }
+
+    // Cleanup
+    return () => {
+      if (countdownAudioRef.current) {
+        countdownAudioRef.current.pause();
+        countdownAudioRef.current = null;
+      }
+      if (startAudioRef.current) {
+        startAudioRef.current.pause();
+        startAudioRef.current = null;
+      }
+    };
+  }, []);
+
+  // Ses çalma fonksiyonu
+  const playCountdownSound = async () => {
+    if (countdownAudioRef.current) {
+      try {
+        // Önceki ses varsa durdur ve başa sar
+        countdownAudioRef.current.currentTime = 0;
+        await countdownAudioRef.current.play();
+        console.log('🔊 Geri sayım sesi çalıyor:', count);
+      } catch (error) {
+        console.warn('Geri sayım sesi çalamadı:', error);
+      }
+    }
+  };
+
+  const playStartSound = async () => {
+    if (startAudioRef.current) {
+      try {
+        startAudioRef.current.currentTime = 0;
+        await startAudioRef.current.play();
+        console.log('🔊 Başla sesi çalıyor');
+      } catch (error) {
+        console.warn('Başla sesi çalamadı:', error);
+      }
+    }
+  };
 
   // İlk başlatma için useEffect
   useEffect(() => {
     const initialTimer = setTimeout(() => {
       setHasStarted(true);
       setIsVisible(true);
-    }, 1000); // 1 saniye bekle
+    }, 1000);
 
     return () => clearTimeout(initialTimer);
   }, []);
 
   useEffect(() => {
-    if (!hasStarted) return; // Henüz başlamamışsa hiçbir şey yapma
+    if (!hasStarted) return;
 
     if (count > 0) {
-      // Mobilde çoklu ses sorununu önlemek için sadece bir kez çal
+      // Ses çalma - daha kısa gecikme ile
       const soundTimer = setTimeout(() => {
-        console.log('🔊 Countdown ses çalıyor:', count);
-        playSound('buttonClick');
-      }, 100); // Küçük gecikme ile mobil optimizasyonu
+        playCountdownSound();
+      }, 50);
       
       const timer = setTimeout(() => {
         setIsVisible(false);
@@ -50,9 +105,8 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
       setShowStart(true);
       
       const startSoundTimer = setTimeout(() => {
-        console.log('🔊 Başla sesi çalıyor');
-        playSound('gameWin');
-      }, 100);
+        playStartSound();
+      }, 50);
       
       setTimeout(() => {
         setIsVisible(false);
@@ -63,7 +117,7 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
 
       return () => clearTimeout(startSoundTimer);
     }
-  }, [count, showStart, onComplete, hasStarted, playSound]);
+  }, [count, showStart, onComplete, hasStarted]);
 
   // Henüz başlamamışsa hiçbir şey gösterme
   if (!hasStarted) return null;
@@ -89,4 +143,5 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
     </div>
   );
 };
+
 export default GameCountdown;
