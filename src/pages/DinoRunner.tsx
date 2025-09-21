@@ -342,20 +342,8 @@ const DinoRunner = () => {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [gameState, startGame, jump]);
 
-  // Dokunma kontrolü - Mobil uyumlu
+  // Dokunma kontrolü - Sadece bir event kullan
   const handleTouch = useCallback((e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (gameState === 'waiting' || gameState === 'gameOver') {
-      startGame();
-    } else {
-      jump();
-    }
-  }, [gameState, startGame, jump]);
-
-  // Ayrı mouse click handler
-  const handleClick = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -421,9 +409,7 @@ const DinoRunner = () => {
       <div 
         className="game-area"
         onTouchStart={handleTouch}
-        onTouchEnd={handleTouch}
-        onClick={handleClick}
-        onMouseDown={handleClick}
+        onClick={handleTouch}
       >
         {clouds.map((cloud, index) => (
           <div
