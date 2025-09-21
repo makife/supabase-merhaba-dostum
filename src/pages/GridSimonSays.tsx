@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 const GridSimonSays = () => {
+  const navigate = useNavigate();
   const [gameState, setGameState] = useState('waiting'); // waiting, showing, playing, gameOver
   const [sequence, setSequence] = useState([]);
   const [playerSequence, setPlayerSequence] = useState([]);
@@ -202,7 +204,7 @@ const GridSimonSays = () => {
       {/* Geri Dön Butonu */}
       <div className="mb-4">
         <button
-          onClick={() => console.log('Geri Dön')}
+          onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-white/80 hover:text-white transition-colors bg-transparent border-none cursor-pointer"
         >
           <ArrowLeft className="w-5 h-5" />
