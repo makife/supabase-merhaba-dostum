@@ -263,10 +263,11 @@ const HomePage = () => {
   ];
 
   return (
-    <MatchmakingProvider onMatchFound={handleMatchFound}>
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted px-4 pt-4 pb-2">
-        <div className="max-w-4xl mx-auto space-y-3">
-        {/* Birleştirilmiş Header ve Level Progress */}
+  <MatchmakingProvider onMatchFound={handleMatchFound}>
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted px-4 pt-4 pb-2">
+      <div className="max-w-4xl mx-auto space-y-3">
+        
+        {/* Header Card */}
         <Card className="border-0 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/10 shadow-2xl relative overflow-hidden">
           <HeaderAnimation />
           
@@ -406,18 +407,18 @@ const HomePage = () => {
             <div className="space-y-2 mt-2 pt-2 border-t border-white/20">
               {/* Hak barı - Real-time güncellemeler */}
               {!isPremium && (
-                  <div className="space-y-1">
-        <div className="flex justify-between items-center">
-          <span className="text-xs text-muted-foreground">Oyun Hakları</span>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-foreground">{(profile?.game_credits || 0) + (profile?.bonus_credits || 0)}/5</span>
-            {timeUntilNextCredit && (profile?.game_credits < 5) && (
-              <span className="text-xs text-orange-500 bg-orange-100 px-2 py-1 rounded-full">
-                +1 {timeUntilNextCredit}
-              </span>
-            )}
-          </div>
-        </div>
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-muted-foreground">Oyun Hakları</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-foreground">{(profile?.game_credits || 0) + (profile?.bonus_credits || 0)}/5</span>
+                      {timeUntilNextCredit && (profile?.game_credits < 5) && (
+                        <span className="text-xs text-orange-500 bg-orange-100 px-2 py-1 rounded-full">
+                          +1 {timeUntilNextCredit}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                   <div className="flex gap-1 h-2 w-full">
                     {Array.from({ length: 5 }, (_, i) => {
                       const isActive = i < (profile?.game_credits || 0);
@@ -518,205 +519,204 @@ const HomePage = () => {
           </Card>
         )}
 
-         {/* Game Modes */}
-        <div className="flex-1 min-h-0">
+        {/* Game Modes */}
+        <div className="space-y-3">
           {/* Üst Oyunlar - Scroll edilebilir */}
-          <div className="mb-3">
-            <div className="w-full overflow-x-auto scrollbar-hide">
-              <div className="flex gap-3 pb-2" style={{ minWidth: 'max-content' }}>
-                
-                {/* Günlük Çark */}
-                <div 
-                  className="bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px]"
-                  onClick={() => navigate('/wheel')}
-                >
-                  <div className="flex-1">
-                    <h2 className="text-xl font-semibold text-white font-painter">Günlük Çark</h2>
-                  </div>
-                  {/* Mini Çark SVG */}
-                  <div className="relative w-12 h-12">
-                    <svg
-                      width="48"
-                      height="48"
-                      viewBox="0 0 48 48"
-                      className="animate-spin"
-                      style={{ animationDuration: '3s' }}
-                    >
-                      <g transform="translate(24,24)">
-                        {/* 8 segment çark */}
-                        {[0, 1, 2, 3, 4, 5, 6, 7].map((index) => {
-                          const angle = (360 / 8) * index;
-                          const nextAngle = (360 / 8) * (index + 1);
-                          const startAngle = (angle - 90) * (Math.PI / 180);
-                          const endAngle = (nextAngle - 90) * (Math.PI / 180);
-                          
-                          const radius = 20;
-                          const x1 = radius * Math.cos(startAngle);
-                          const y1 = radius * Math.sin(startAngle);
-                          const x2 = radius * Math.cos(endAngle);
-                          const y2 = radius * Math.sin(endAngle);
-                          
-                          const largeArcFlag = (nextAngle - angle) > 180 ? 1 : 0;
-                          
-                          const colors = [
-                            '#ef4444', '#f97316', '#eab308', '#22c55e',
-                            '#3b82f6', '#8b5cf6', '#ec4899', '#6b7280'
-                          ];
-                          
-                          return (
-                            <path
-                              key={index}
-                              d={`M 0 0 L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
-                              fill={colors[index]}
-                              stroke="white"
-                              strokeWidth="1"
-                            />
-                          );
-                        })}
-                      </g>
-                      {/* Merkez daire */}
-                      <circle cx="24" cy="24" r="4" fill="white" stroke="#333" strokeWidth="1"/>
-                    </svg>
-                    {/* Ok */}
-                    <div className="absolute -top-1 left-1/2 transform -translate-x-1/2">
-                      <div className="w-0 h-0 border-l-2 border-r-2 border-b-4 border-l-transparent border-r-transparent border-b-white"></div>
-                    </div>
+          <div className="w-full overflow-x-auto scrollbar-hide">
+            <div className="flex gap-3 pb-2" style={{ minWidth: 'max-content' }}>
+              
+              {/* Günlük Çark */}
+              <div 
+                className="bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px]"
+                onClick={() => navigate('/wheel')}
+              >
+                <div className="flex-1">
+                  <h2 className="text-xl font-semibold text-white font-painter">Günlük Çark</h2>
+                </div>
+                {/* Mini Çark SVG */}
+                <div className="relative w-12 h-12">
+                  <svg
+                    width="48"
+                    height="48"
+                    viewBox="0 0 48 48"
+                    className="animate-spin"
+                    style={{ animationDuration: '3s' }}
+                  >
+                    <g transform="translate(24,24)">
+                      {/* 8 segment çark */}
+                      {[0, 1, 2, 3, 4, 5, 6, 7].map((index) => {
+                        const angle = (360 / 8) * index;
+                        const nextAngle = (360 / 8) * (index + 1);
+                        const startAngle = (angle - 90) * (Math.PI / 180);
+                        const endAngle = (nextAngle - 90) * (Math.PI / 180);
+                        
+                        const radius = 20;
+                        const x1 = radius * Math.cos(startAngle);
+                        const y1 = radius * Math.sin(startAngle);
+                        const x2 = radius * Math.cos(endAngle);
+                        const y2 = radius * Math.sin(endAngle);
+                        
+                        const largeArcFlag = (nextAngle - angle) > 180 ? 1 : 0;
+                        
+                        const colors = [
+                          '#ef4444', '#f97316', '#eab308', '#22c55e',
+                          '#3b82f6', '#8b5cf6', '#ec4899', '#6b7280'
+                        ];
+                        
+                        return (
+                          <path
+                            key={index}
+                            d={`M 0 0 L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
+                            fill={colors[index]}
+                            stroke="white"
+                            strokeWidth="1"
+                          />
+                        );
+                      })}
+                    </g>
+                    {/* Merkez daire */}
+                    <circle cx="24" cy="24" r="4" fill="white" stroke="#333" strokeWidth="1"/>
+                  </svg>
+                  {/* Ok */}
+                  <div className="absolute -top-1 left-1/2 transform -translate-x-1/2">
+                    <div className="w-0 h-0 border-l-2 border-r-2 border-b-4 border-l-transparent border-r-transparent border-b-white"></div>
                   </div>
                 </div>
+              </div>
 
-                {/* Hafıza Oyunu */}
-                <div 
-                  className={`rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-500 ease-in-out min-w-[200px] ${
-                    canPlayMemory 
-                      ? 'bg-gradient-to-r from-purple-500 to-pink-500' 
-                      : 'bg-gradient-to-r from-gray-400 to-gray-500'
-                  }`}
-                  onClick={() => navigate('/memory-game')}
-                >
-                  <div className="flex-1">
-                    <h2 className="text-xl font-semibold text-white font-painter">Hafıza Oyunu</h2>
-                    {!canPlayMemory && timeUntilNextPlay && (
-                      <p className="text-xs text-white/80">Sonraki: {timeUntilNextPlay}</p>
-                    )}
+              {/* Hafıza Oyunu */}
+              <div 
+                className={`rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-500 ease-in-out min-w-[200px] ${
+                  canPlayMemory 
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-500' 
+                    : 'bg-gradient-to-r from-gray-400 to-gray-500'
+                }`}
+                onClick={() => navigate('/memory-game')}
+              >
+                <div className="flex-1">
+                  <h2 className="text-xl font-semibold text-white font-painter">Hafıza Oyunu</h2>
+                  {!canPlayMemory && timeUntilNextPlay && (
+                    <p className="text-xs text-white/80">Sonraki: {timeUntilNextPlay}</p>
+                  )}
+                </div>
+                {/* Mini Kart İkonu */}
+                <div className="relative w-12 h-12 flex items-center justify-center">
+                  <div className="grid grid-cols-2 gap-1">
+                    <div className={`w-4 h-4 bg-white/40 rounded-sm ${canPlayMemory ? 'animate-pulse' : ''}`}></div>
+                    <div className={`w-4 h-4 bg-white/80 rounded-sm ${canPlayMemory ? 'animate-pulse' : ''}`} style={{ animationDelay: '0.4s' }}></div>
+                    <div className={`w-4 h-4 bg-white/80 rounded-sm ${canPlayMemory ? 'animate-pulse' : ''}`} style={{ animationDelay: '0.9s' }}></div>
+                    <div className={`w-4 h-4 bg-white/40 rounded-sm ${canPlayMemory ? 'animate-pulse' : ''}`} style={{ animationDelay: '1.4s' }}></div>
                   </div>
-                  {/* Mini Kart İkonu */}
-                  <div className="relative w-12 h-12 flex items-center justify-center">
-                    <div className="grid grid-cols-2 gap-1">
-                      <div className={`w-4 h-4 bg-white/40 rounded-sm ${canPlayMemory ? 'animate-pulse' : ''}`}></div>
-                      <div className={`w-4 h-4 bg-white/80 rounded-sm ${canPlayMemory ? 'animate-pulse' : ''}`} style={{ animationDelay: '0.4s' }}></div>
-                      <div className={`w-4 h-4 bg-white/80 rounded-sm ${canPlayMemory ? 'animate-pulse' : ''}`} style={{ animationDelay: '0.9s' }}></div>
-                      <div className={`w-4 h-4 bg-white/40 rounded-sm ${canPlayMemory ? 'animate-pulse' : ''}`} style={{ animationDelay: '1.4s' }}></div>
-                    </div>
-                    <Brain className={`absolute w-6 h-6 ${canPlayMemory ? 'text-white/80' : 'text-white/50'}`} />
+                  <Brain className={`absolute w-6 h-6 ${canPlayMemory ? 'text-white/80' : 'text-white/50'}`} />
+                </div>
+              </div>
+
+              {/* Reactor Runner */}
+              <div 
+                className="bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px]"
+                onClick={() => navigate('/reactor-runner')}
+              >
+                <div className="flex-1">
+                  <h2 className="text-xl font-semibold text-white font-painter">Reaktör Oyunu</h2>
+                </div>
+                {/* Mini Reaktör İkonu */}
+                <div className="relative w-12 h-12 flex items-center justify-center">
+                  <div className="w-8 h-8 bg-yellow-300 rounded-full animate-spin flex items-center justify-center" style={{ animationDuration: '1s' }}>
+                    ☢️
+                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-10 h-10 border-2 border-white/30 rounded-full animate-ping" />
+                  </div>
+                  {/* Kaktüs engeller */}
+                  <div className="absolute right-0 bottom-1">
+                    <span className="text-lg">🌵</span>
                   </div>
                 </div>
+              </div>
 
-{/* Reactor Runner */}
-<div 
-  className="bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px]"
-  onClick={() => navigate('/reactor-runner')}
->
-  <div className="flex-1">
-    <h2 className="text-xl font-semibold text-white font-painter">Reaktör Oyunu</h2>
-  </div>
-  {/* Mini Reaktör İkonu */}
-  <div className="relative w-12 h-12 flex items-center justify-center">
-    <div className="w-8 h-8 bg-yellow-300 rounded-full animate-spin flex items-center justify-center" style={{ animationDuration: '1s' }}>
-      ☢️
-    </div>
-    <div className="absolute inset-0 flex items-center justify-center">
-      <div className="w-10 h-10 border-2 border-white/30 rounded-full animate-ping" />
-    </div>
-    {/* Kaktüs engeller */}
-    <div className="absolute right-0 bottom-1">
-      <span className="text-lg">🌵</span>
-    </div>
-  </div>
-</div>
-
-{/* Bubble Shooter */}
-<div 
-  className="bg-gradient-to-r from-red-500 to-pink-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px]"
-  onClick={() => navigate('/bubble-shooter')}
->
-  <div className="flex-1">
-    <h2 className="text-xl font-semibold text-white font-painter">Balon Oyunu</h2>
-  </div>
-  {/* Mini Bubble İkonu */}
-  <div className="relative w-12 h-12 flex items-center justify-center">
-    {/* Ana balon */}
-    <div className="w-6 h-6 bg-red-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }}>
-      🔴
-    </div>
-    {/* Çevresindeki balonlar */}
-    <div className="absolute top-0 left-2 w-4 h-4 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}>
-      🔵
-    </div>
-    <div className="absolute bottom-0 right-1 w-4 h-4 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0.6s' }}>
-      🟢
-    </div>
-    <div className="absolute top-1 right-0 w-4 h-4 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0.9s' }}>
-      🟡
-    </div>
-    {/* Nişan çizgisi */}
-    <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0.5 h-4 bg-white/60"></div>
-  </div>
-</div>
-                
-                {/* Grid Simon Says */}
-<div 
-  className="bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px]"
-  onClick={() => navigate('/grid-simon-says')}
->
-  <div className="flex-1">
-    <h2 className="text-xl font-semibold text-white font-painter">izci Oyunu</h2>
-  </div>
-  {/* Mini Grid İkonu */}
-  <div className="relative w-12 h-12 flex items-center justify-center">
-    <div className="grid grid-cols-4 gap-0.5">
-      {Array.from({ length: 16 }, (_, i) => (
-        <div 
-          key={i}
-          className={`w-2 h-2 bg-white/40 rounded-sm ${i === 5 || i === 9 || i === 10 ? 'bg-yellow-300 animate-pulse' : ''}`}
-          style={{ animationDelay: `${i * 0.1}s` }}
-        />
-      ))}
-    </div>
-    <div className="absolute inset-0 flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-white/30 rounded-full animate-ping" />
-    </div>
-  </div>
-</div>
-                
-                {/* Puzzle Oyunu */}
-                <div 
-                  className="bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px]"
-                  onClick={() => navigate('/puzzle-game')}
-                >
-                  <div className="flex-1">
-                    <h2 className="text-xl font-semibold text-white font-painter">Puzzle Oyunu</h2>
+              {/* Bubble Shooter */}
+              <div 
+                className="bg-gradient-to-r from-red-500 to-pink-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px]"
+                onClick={() => navigate('/bubble-shooter')}
+              >
+                <div className="flex-1">
+                  <h2 className="text-xl font-semibold text-white font-painter">Balon Oyunu</h2>
+                </div>
+                {/* Mini Bubble İkonu */}
+                <div className="relative w-12 h-12 flex items-center justify-center">
+                  {/* Ana balon */}
+                  <div className="w-6 h-6 bg-red-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }}>
+                    🔴
                   </div>
-                  {/* Mini Puzzle İkonu */}
-                  <div className="relative w-12 h-12 flex items-center justify-center">
-                    <div className="grid grid-cols-3 gap-0.5">
-                      <div className={`w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600 ${canPlayMemory ? 'sequential-pulse' : ''}`} style={{ animationDelay: '0s' }}>1</div>
-                      <div className={`w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600 ${canPlayMemory ? 'sequential-pulse' : ''}`} style={{ animationDelay: '0.3s' }}>2</div>
-                      <div className={`w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600 ${canPlayMemory ? 'sequential-pulse' : ''}`} style={{ animationDelay: '0.6s' }}>3</div>
-                      <div className={`w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600 ${canPlayMemory ? 'sequential-pulse' : ''}`} style={{ animationDelay: '0.9s' }}>4</div>
-                      <div className={`w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600 ${canPlayMemory ? 'sequential-pulse' : ''}`} style={{ animationDelay: '1.2s' }}>5</div>
-                      <div className={`w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600 ${canPlayMemory ? 'sequential-pulse' : ''}`} style={{ animationDelay: '1.5s' }}>6</div>
-                      <div className={`w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600 ${canPlayMemory ? 'sequential-pulse' : ''}`} style={{ animationDelay: '1.8s' }}>7</div>
-                      <div className={`w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600 ${canPlayMemory ? 'sequential-pulse' : ''}`} style={{ animationDelay: '2.1s' }}>8</div>
-                      <div className={`w-3 h-3 bg-white/20 rounded-sm ${canPlayMemory ? 'sequential-pulse' : ''}`} style={{ animationDelay: '2.4s' }}></div>
-                    </div>
-                    <Grid3X3 className="absolute w-6 h-6 text-white/20" />
+                  {/* Çevresindeki balonlar */}
+                  <div className="absolute top-0 left-2 w-4 h-4 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}>
+                    🔵
                   </div>
+                  <div className="absolute bottom-0 right-1 w-4 h-4 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0.6s' }}>
+                    🟢
+                  </div>
+                  <div className="absolute top-1 right-0 w-4 h-4 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0.9s' }}>
+                    🟡
+                  </div>
+                  {/* Nişan çizgisi */}
+                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0.5 h-4 bg-white/60"></div>
+                </div>
+              </div>
+              
+              {/* Grid Simon Says */}
+              <div 
+                className="bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px]"
+                onClick={() => navigate('/grid-simon-says')}
+              >
+                <div className="flex-1">
+                  <h2 className="text-xl font-semibold text-white font-painter">izci Oyunu</h2>
+                </div>
+                {/* Mini Grid İkonu */}
+                <div className="relative w-12 h-12 flex items-center justify-center">
+                  <div className="grid grid-cols-4 gap-0.5">
+                    {Array.from({ length: 16 }, (_, i) => (
+                      <div 
+                        key={i}
+                        className={`w-2 h-2 bg-white/40 rounded-sm ${i === 5 || i === 9 || i === 10 ? 'bg-yellow-300 animate-pulse' : ''}`}
+                        style={{ animationDelay: `${i * 0.1}s` }}
+                      />
+                    ))}
+                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-8 h-8 border-2 border-white/30 rounded-full animate-ping" />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Puzzle Oyunu */}
+              <div 
+                className="bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px]"
+                onClick={() => navigate('/puzzle-game')}
+              >
+                <div className="flex-1">
+                  <h2 className="text-xl font-semibold text-white font-painter">Puzzle Oyunu</h2>
+                </div>
+                {/* Mini Puzzle İkonu */}
+                <div className="relative w-12 h-12 flex items-center justify-center">
+                  <div className="grid grid-cols-3 gap-0.5">
+                    <div className={`w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600 ${canPlayMemory ? 'sequential-pulse' : ''}`} style={{ animationDelay: '0s' }}>1</div>
+                    <div className={`w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600 ${canPlayMemory ? 'sequential-pulse' : ''}`} style={{ animationDelay: '0.3s' }}>2</div>
+                    <div className={`w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600 ${canPlayMemory ? 'sequential-pulse' : ''}`} style={{ animationDelay: '0.6s' }}>3</div>
+                    <div className={`w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600 ${canPlayMemory ? 'sequential-pulse' : ''}`} style={{ animationDelay: '0.9s' }}>4</div>
+                    <div className={`w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600 ${canPlayMemory ? 'sequential-pulse' : ''}`} style={{ animationDelay: '1.2s' }}>5</div>
+                    <div className={`w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600 ${canPlayMemory ? 'sequential-pulse' : ''}`} style={{ animationDelay: '1.5s' }}>6</div>
+                    <div className={`w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600 ${canPlayMemory ? 'sequential-pulse' : ''}`} style={{ animationDelay: '1.8s' }}>7</div>
+                    <div className={`w-3 h-3 bg-white/90 rounded-sm flex items-center justify-center text-[10px] font-bold text-cyan-600 ${canPlayMemory ? 'sequential-pulse' : ''}`} style={{ animationDelay: '2.1s' }}>8</div>
+                    <div className={`w-3 h-3 bg-white/20 rounded-sm ${canPlayMemory ? 'sequential-pulse' : ''}`} style={{ animationDelay: '2.4s' }}></div>
+                  </div>
+                  <Grid3X3 className="absolute w-6 h-6 text-white/20" />
                 </div>
               </div>
             </div>
           </div>
           
-          <div className="h-81 overflow-y-auto scrollbar-hide">
+          {/* Game Modes Grid - Sadece bu kısım scroll */}
+          <div className="h-80 overflow-y-auto scrollbar-hide">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-2">
               {gameModesConfig.map((mode) => (
                 <Card key={mode.id} className={`cursor-pointer border-0 overflow-hidden ${mode.gradient}`}
@@ -883,8 +883,6 @@ const HomePage = () => {
         <FloatingMenu />
       </div>
     </div>
-    </MatchmakingProvider>
-  );
-};
-
+  </MatchmakingProvider>
+);
 export default HomePage;
