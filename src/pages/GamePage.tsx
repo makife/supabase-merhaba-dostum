@@ -3020,10 +3020,15 @@ useEffect(() => {
           duration: 2000,
         });
         
-        // Odaya katıl
+        // Odaya katıl ve oyun sayfasına yönlendir
         if (request.room_code) {
-          setTimeout(() => {
-            joinRoom(request.room_code);
+          setTimeout(async () => {
+            const success = await joinRoom(request.room_code);
+            if (success) {
+              console.log('✅ Rematch request sender: odaya katıldı, sayfa yenileniyor');
+              // Sayfayı yenile veya oyun sayfasına yönlendir
+              navigate(`/game?mode=private-room&type=${gameType}`, { replace: true });
+            }
           }, 1000);
         }
       } else if (request.status === 'rejected') {
@@ -3814,13 +3819,9 @@ if (gameEnded) {
                 if (currentRematchRequest.room_code) {
                   const success = await joinRoom(currentRematchRequest.room_code);
                   if (success) {
-                    console.log('✅ Rematch odaya katıldı, oyun sayfasına yönlendiriliyor');
-                    // Oyun durumunu tamamen sıfırla
-                    resetGameForRematch();
-                    // Yeni oyun başlatması için küçük gecikme
-                    setTimeout(() => {
-                      setShowCountdown(true);
-                    }, 500);
+                    console.log('✅ Rematch receiver: odaya katıldı, sayfa yenileniyor');
+                    // Sayfayı yenile veya oyun sayfasına yönlendir
+                    navigate(`/game?mode=private-room&type=${gameType}`, { replace: true });
                   }
                 }
               }
