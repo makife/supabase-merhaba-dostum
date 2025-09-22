@@ -3020,13 +3020,18 @@ useEffect(() => {
           duration: 2000,
         });
         
-        // Odaya katıl ve oyun sayfasına yönlendir
+        // Odaya katıl ve oyunu başlat
         if (request.room_code) {
           setTimeout(async () => {
             const success = await joinRoom(request.room_code);
             if (success) {
-              console.log('✅ Rematch request sender: odaya katıldı, sayfa yenileniyor');
-              // Sayfayı yenile veya oyun sayfasına yönlendir
+              console.log('✅ Rematch request sender: odaya katıldı, yeni oyun başlatılıyor');
+              // Oyun durumunu tamamen sıfırla ve geri sayımı başlat
+              resetGameForRematch();
+              setTimeout(() => {
+                setShowCountdown(true);
+              }, 500);
+              // Aynı route ise no-op; yine de güvenli olması için replace ile yönlendir
               navigate(`/game/private-room?type=${gameType}`, { replace: true });
             }
           }, 1000);
@@ -3819,8 +3824,13 @@ if (gameEnded) {
                 if (currentRematchRequest.room_code) {
                   const success = await joinRoom(currentRematchRequest.room_code);
                   if (success) {
-                    console.log('✅ Rematch receiver: odaya katıldı, sayfa yenileniyor');
-                    // Sayfayı yenile veya oyun sayfasına yönlendir
+                    console.log('✅ Rematch receiver: odaya katıldı, yeni oyun başlatılıyor');
+                    // Oyun durumunu tamamen sıfırla ve geri sayımı başlat
+                    resetGameForRematch();
+                    setTimeout(() => {
+                      setShowCountdown(true);
+                    }, 500);
+                    // Aynı route ise no-op; yine de güvenli olması için replace ile yönlendir
                     navigate(`/game/private-room?type=${gameType}`, { replace: true });
                   }
                 }
