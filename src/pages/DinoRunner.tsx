@@ -23,8 +23,11 @@ const DinoRunner = () => {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [vibrationEnabled, setVibrationEnabled] = useState(true);
   const [nextObstacleTime, setNextObstacleTime] = useState(0);
+  const [scoreHistory, setScoreHistory] = useState<number[]>([]);
+  const [showScoreHistory, setShowScoreHistory] = useState(false);
 
   const gameLoopRef = useRef<number>();
+  const lastTouchTime = useRef<number>(0);
 
   // Oyun sabitleri
   const GAME_WIDTH = 600;
@@ -242,6 +245,12 @@ const DinoRunner = () => {
   const endGame = useCallback(() => {
     setGameState('gameOver');
     
+    // Skoru geçmişe ekle
+    setScoreHistory(prev => {
+      const newHistory = [score, ...prev].slice(0, 10); // Son 10 skoru sakla
+      return newHistory;
+    });
+    
     if (score > highScore) {
       setHighScore(score);
       playSound(660, 300);
@@ -342,10 +351,17 @@ const DinoRunner = () => {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [gameState, startGame, jump]);
 
-  // Dokunma kontrolü - Sadece bir event kullan
+  // Dokunma kontrolü - Debounce ile
   const handleTouch = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    const currentTime = Date.now();
+    // 200ms içinde birden fazla dokunmayı engelle
+    if (currentTime - lastTouchTime.current < 200) {
+      return;
+    }
+    lastTouchTime.current = currentTime;
     
     if (gameState === 'waiting' || gameState === 'gameOver') {
       startGame();
@@ -403,7 +419,37 @@ const DinoRunner = () => {
           >
             📳 Titreşim
           </button>
+          <button 
+            className={`setting-btn ${showScoreHistory ? 'active' : ''}`}
+            onClick={() => setShowScoreHistory(!showScoreHistory)}
+          >
+            📊 Skorlar
+          </button>
         </div>
+
+        {showScoreHistory && scoreHistory.length > 0 && (
+          <div className="score-history">
+            <h4>🏆 Son Skorlar</h4>
+            <div className="score-list">
+              {scoreHistory.map((historyScore, index) => (
+                <div key={index} className={`score-item ${index === 0 ? 'latest' : ''}`}>
+                  <span className="rank">#{index + 1}</span>
+                  <span className="score-value">{historyScore.toString().padStart(5, '0')}</span>
+                  {historyScore === Math.max(...scoreHistory) && <span className="best-badge">👑</span>}
+                </div>
+              ))}
+            </div>
+            <button 
+              className="clear-scores-btn"
+              onClick={() => {
+                setScoreHistory([]);
+                setShowScoreHistory(false);
+              }}
+            >
+              🗑️ Temizle
+            </button>
+          </div>
+        )}
       </div>
 
       <div 
@@ -564,6 +610,86 @@ const DinoRunner = () => {
           border-color: #FFD700;
           color: #FFD700;
           box-shadow: 0 0 15px rgba(255,215,0,0.3);
+        }
+
+        .score-history {
+          background: rgba(255,255,255,0.1);
+          padding: 15px;
+          border-radius: 15px;
+          margin-bottom: 15px;
+          backdrop-filter: blur(10px);
+          border: 2px solid rgba(255,215,0,0.3);
+        }
+
+        .score-history h4 {
+          margin-bottom: 12px;
+          color: #FFD700;
+          text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+          font-size: 16px;
+        }
+
+        .score-list {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          margin-bottom: 12px;
+        }
+
+        .score-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          background: rgba(255,255,255,0.1);
+          padding: 8px 12px;
+          border-radius: 10px;
+          font-family: 'Courier New', monospace;
+          font-size: 14px;
+        }
+
+        .score-item.latest {
+          background: rgba(255,215,0,0.2);
+          border: 1px solid rgba(255,215,0,0.5);
+          box-shadow: 0 0 10px rgba(255,215,0,0.2);
+        }
+
+        .rank {
+          color: #FFD700;
+          font-weight: bold;
+          min-width: 30px;
+        }
+
+        .score-value {
+          color: white;
+          font-weight: bold;
+          flex: 1;
+          text-align: center;
+        }
+
+        .best-badge {
+          font-size: 18px;
+          animation: shine 2s ease-in-out infinite;
+        }
+
+        @keyframes shine {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.1); }
+        }
+
+        .clear-scores-btn {
+          background: rgba(220,20,60,0.3);
+          border: 2px solid rgba(220,20,60,0.5);
+          color: #FF6B6B;
+          padding: 8px 16px;
+          border-radius: 20px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          font-size: 12px;
+          backdrop-filter: blur(10px);
+        }
+
+        .clear-scores-btn:hover {
+          background: rgba(220,20,60,0.5);
+          transform: translateY(-1px);
         }
 
         .game-area {
@@ -782,6 +908,39 @@ const DinoRunner = () => {
           
           .setting-btn {
             font-size: 10px;
+            padding: 6px 12px;
+          }
+
+          .score-history {
+            padding: 12px;
+            margin-bottom: 10px;
+          }
+
+          .score-history h4 {
+            font-size: 14px;
+            margin-bottom: 10px;
+          }
+
+          .score-item {
+            padding: 6px 10px;
+            font-size: 12px;
+          }
+
+          .rank {
+            min-width: 25px;
+            font-size: 11px;
+          }
+
+          .score-value {
+            font-size: 12px;
+          }
+
+          .best-badge {
+            font-size: 14px;
+          }
+
+          .clear-scores-btn {
+            font-size: 11px;
             padding: 6px 12px;
           }
           
