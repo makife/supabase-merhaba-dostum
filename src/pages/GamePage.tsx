@@ -3767,7 +3767,7 @@ if (gameEnded) {
                     variant="outline" 
                     onClick={() => {
                       playSound('buttonClick');
-
+                      resetGameForRematch();
                       setGameGrid(generateRandomGrid());
                       setSelectedLetters([]);
                       setCurrentWord('');
