@@ -3027,7 +3027,7 @@ useEffect(() => {
             if (success) {
               console.log('✅ Rematch request sender: odaya katıldı, sayfa yenileniyor');
               // Sayfayı yenile veya oyun sayfasına yönlendir
-              navigate(`/game?mode=private-room&type=${gameType}`, { replace: true });
+              navigate(`/game/private-room?type=${gameType}`, { replace: true });
             }
           }, 1000);
         }
@@ -3821,7 +3821,7 @@ if (gameEnded) {
                   if (success) {
                     console.log('✅ Rematch receiver: odaya katıldı, sayfa yenileniyor');
                     // Sayfayı yenile veya oyun sayfasına yönlendir
-                    navigate(`/game?mode=private-room&type=${gameType}`, { replace: true });
+                    navigate(`/game/private-room?type=${gameType}`, { replace: true });
                   }
                 }
               }
