@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Play, Pause, RotateCcw, Trophy, Target, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const GRID_SIZE = 20;
 const INITIAL_SNAKE = [{ x: 10, y: 10 }];
