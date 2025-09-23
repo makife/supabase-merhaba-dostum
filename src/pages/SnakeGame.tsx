@@ -6,12 +6,7 @@ const INITIAL_SNAKE = [{ x: 10, y: 10 }];
 const INITIAL_DIRECTION = { x: 0, y: -1 };
 
 const SnakeGame = () => {
-  const navigate = (path) => {
-    // Bu fonksiyon gerçek projede react-router-dom'dan gelecek
-    // Şimdilik sadece console.log ile simüle ediyoruz
-    console.log('Navigating to:', path);
-    // window.location.href = path; // Gerçek projede böyle olabilir
-  };
+  const navigate = useNavigate();
   const [snake, setSnake] = useState(INITIAL_SNAKE);
   const [food, setFood] = useState({ x: 5, y: 5 });
   const [direction, setDirection] = useState(INITIAL_DIRECTION);
