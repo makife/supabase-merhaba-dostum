@@ -634,32 +634,38 @@ const HomePage = () => {
   </div>
 </div>
 
-{/* Bubble Shooter */}
+{/* Snake Game */}
 <div 
-  className="bg-gradient-to-r from-red-500 to-pink-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px]"
-  onClick={() => navigate('/bubble-shooter')}
+  className="bg-gradient-to-r from-green-600 to-lime-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px]"
+  onClick={() => navigate('/snake-game')}
 >
   <div className="flex-1">
-    <h2 className="text-xl font-semibold text-white font-painter">Balon Oyunu</h2>
+    <h2 className="text-xl font-semibold text-white font-painter">Yılan Oyunu</h2>
   </div>
-  {/* Mini Bubble İkonu */}
+  {/* Mini Snake İkonu */}
   <div className="relative w-12 h-12 flex items-center justify-center">
-    {/* Ana balon */}
-    <div className="w-6 h-6 bg-red-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }}>
-      🔴
+    {/* Yılan başı */}
+    <div className="w-4 h-4 bg-green-300 rounded-full animate-pulse flex items-center justify-center">
+      🐍
     </div>
-    {/* Çevresindeki balonlar */}
-    <div className="absolute top-0 left-2 w-4 h-4 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}>
-      🔵
+    {/* Yılan vücudu */}
+    <div className="absolute left-2 top-6 w-3 h-3 bg-green-400 rounded-full opacity-80"></div>
+    <div className="absolute left-3 top-7 w-2 h-2 bg-green-500 rounded-full opacity-60"></div>
+    <div className="absolute left-4 top-8 w-2 h-2 bg-green-600 rounded-full opacity-40"></div>
+    
+    {/* Yiyecek (elma) */}
+    <div className="absolute top-1 right-1 w-3 h-3 bg-red-400 rounded-full animate-bounce flex items-center justify-center text-[8px]" style={{ animationDelay: '0.5s' }}>
+      🍎
     </div>
-    <div className="absolute bottom-0 right-1 w-4 h-4 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0.6s' }}>
-      🟢
+    
+    {/* Hareket çizgileri */}
+    <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0.5 h-3 bg-white/40 animate-pulse"></div>
+    <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 translate-x-1 w-0.5 h-2 bg-white/30 animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+    
+    {/* Skor efekti */}
+    <div className="absolute top-0 left-0 text-[8px] text-yellow-300 font-bold animate-pulse">
+      +10
     </div>
-    <div className="absolute top-1 right-0 w-4 h-4 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0.9s' }}>
-      🟡
-    </div>
-    {/* Nişan çizgisi */}
-    <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0.5 h-4 bg-white/60"></div>
   </div>
 </div>
                 
