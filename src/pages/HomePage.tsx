@@ -475,12 +475,12 @@ const HomePage = () => {
                 </div>
                 <div className="flex gap-2 text-xs">
                   <div className="bg-white/10 rounded-lg p-2 flex items-center gap-1">
-                    <span>🔄</span>
+                    <span>♻️</span>
                     <span className="font-medium">Değiştir</span>
                     <span className="font-semibold">×{jokers.degistir}</span>
                   </div>
                   <div className="bg-white/10 rounded-lg p-2 flex items-center gap-1">
-                    <span>💬</span>
+                    <span>🗣️</span>
                     <span className="font-medium">Fısılda</span>
                     <span className="font-semibold">×{jokers.fisilida}</span>
                   </div>
@@ -636,7 +636,7 @@ const HomePage = () => {
 
 {/* Snake Game */}
 <div 
-  className="bg-gradient-to-r from-pink-600 to-rose-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px]"
+  className="bg-gradient-to-r from-green-600 to-lime-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px]"
   onClick={() => navigate('/snake-game')}
 >
   <div className="flex-1">
@@ -645,13 +645,13 @@ const HomePage = () => {
   {/* Mini Snake İkonu */}
   <div className="relative w-12 h-12 flex items-center justify-center">
     {/* Yılan başı */}
-    <div className="w-4 h-4 bg-pink-300 rounded-full animate-pulse flex items-center justify-center">
+    <div className="w-4 h-4 bg-green-300 rounded-full animate-pulse flex items-center justify-center">
       🐍
     </div>
     {/* Yılan vücudu */}
-    <div className="absolute left-2 top-6 w-3 h-3 bg-pink-400 rounded-full opacity-80"></div>
-    <div className="absolute left-3 top-7 w-2 h-2 bg-pink-500 rounded-full opacity-60"></div>
-    <div className="absolute left-4 top-8 w-2 h-2 bg-pink-600 rounded-full opacity-40"></div>
+    <div className="absolute left-2 top-6 w-3 h-3 bg-green-400 rounded-full opacity-80"></div>
+    <div className="absolute left-3 top-7 w-2 h-2 bg-green-500 rounded-full opacity-60"></div>
+    <div className="absolute left-4 top-8 w-2 h-2 bg-green-600 rounded-full opacity-40"></div>
     
     {/* Yiyecek (elma) */}
     <div className="absolute top-1 right-1 w-3 h-3 bg-red-400 rounded-full animate-bounce flex items-center justify-center text-[8px]" style={{ animationDelay: '0.5s' }}>
