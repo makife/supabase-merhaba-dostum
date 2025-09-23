@@ -1,11 +1,17 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Play, Pause, RotateCcw, Trophy, Target } from 'lucide-react';
+import { Play, Pause, RotateCcw, Trophy, Target, ArrowLeft } from 'lucide-react';
 
 const GRID_SIZE = 20;
 const INITIAL_SNAKE = [{ x: 10, y: 10 }];
 const INITIAL_DIRECTION = { x: 0, y: -1 };
 
 const SnakeGame = () => {
+  const navigate = (path) => {
+    // Bu fonksiyon gerçek projede react-router-dom'dan gelecek
+    // Şimdilik sadece console.log ile simüle ediyoruz
+    console.log('Navigating to:', path);
+    // window.location.href = path; // Gerçek projede böyle olabilir
+  };
   const [snake, setSnake] = useState(INITIAL_SNAKE);
   const [food, setFood] = useState({ x: 5, y: 5 });
   const [direction, setDirection] = useState(INITIAL_DIRECTION);
@@ -200,6 +206,17 @@ const SnakeGame = () => {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-4">
       <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 max-w-md w-full">
+        
+        {/* Geri Dön Butonu */}
+        <div className="mb-4">
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            Geri Dön
+          </button>
+        </div>
         {/* Header */}
         <div className="text-center mb-4">
           <h1 className="text-3xl font-bold text-white mb-2">🐍 Snake Game</h1>
