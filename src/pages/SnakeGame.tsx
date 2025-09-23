@@ -6,7 +6,7 @@ const INITIAL_SNAKE = [{ x: 10, y: 10 }];
 const INITIAL_DIRECTION = { x: 0, y: -1 };
 
 const SnakeGame = () => {
-  const navigate = useNavigate();
+  const navigate = (path) => {
     // Bu fonksiyon gerçek projede react-router-dom'dan gelecek
     // Şimdilik sadece console.log ile simüle ediyoruz
     console.log('Navigating to:', path);
