@@ -31,7 +31,7 @@ const DinoRunner = () => {
 
   // Oyun sabitleri
   const GAME_WIDTH = 600;
-  const GAME_HEIGHT = 250; // 200'den 250'ye artırdım
+  const GAME_HEIGHT = 350; // 200'den 250'ye artırdım
   const GROUND_HEIGHT = 20;
   const DINO_WIDTH = 30;
   const DINO_HEIGHT = 40;
@@ -236,7 +236,7 @@ const DinoRunner = () => {
     setObstacles([]);
     setClouds([createCloud()]);
     setGroundOffset(0);
-    setNextObstacleTime(Date.now() + 2000); // İlk engel 2 saniye sonra
+    setNextObstacleTime(Date.now() + 1000); // İlk engel 2 saniye sonra
     playSound(440, 200);
     vibrate([100]);
   }, [createCloud, playSound, vibrate]);
@@ -302,8 +302,8 @@ const DinoRunner = () => {
           // %20 - Uzun (2.5-4 saniye)
           nextWait = 2500 + Math.random() * 1500;
         } else {
-          // %10 - Çok uzun (4-6 saniye)
-          nextWait = 4000 + Math.random() * 2000;
+          // %10 - Çok uzun (3-5 saniye)
+          nextWait = 3000 + Math.random() * 2000;
         }
         
         setNextObstacleTime(currentTime + nextWait);
@@ -505,7 +505,7 @@ const DinoRunner = () => {
         {gameState === 'waiting' && (
           <div className="game-overlay">
             <div className="message">
-              <h3>☢️ Reactor Runner</h3>
+              <h3>☢️ Reaktör Oyunu</h3>
               <p>Zıplamak için dokunun veya Space tuşuna basın</p>
               <p className="double-jump-info">⚡ Havadayken tekrar zıplayabilirsiniz! (3 hak)</p>
               <button className="play-btn" onClick={startGame}>
