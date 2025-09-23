@@ -1359,25 +1359,14 @@ const fetchParticipants = useCallback(
       }
     }
     
-    // Use database function to update game stats
+    // Use database function to update game stats (only for non-trigger flows if needed)
+    // Rely primarily on game_rooms 'finished' triggers to avoid double increments
     if (playerStats) {
-      await supabase.rpc('update_game_stats', {
-        p_user_id: playerStats.userId,
-        p_score: playerStats.score,
-        p_words: playerStats.words,
-        p_is_winner: playerStats.isWinner,
-        p_game_duration: gameDuration
-      });
+      // No-op: triggers will handle stats to prevent duplication
     }
     
     if (opponentStats && !participants.find(p => p.user_id === opponentStats.userId && p.is_bot)) {
-      await supabase.rpc('update_game_stats', {
-        p_user_id: opponentStats.userId,
-        p_score: opponentStats.score,
-        p_words: opponentStats.words,
-        p_is_winner: opponentStats.isWinner,
-        p_game_duration: gameDuration
-      });
+      // No-op: triggers will handle stats to prevent duplication
     }
     
     // Update room with final status

@@ -367,6 +367,14 @@ useEffect(() => {
   const [gameStarted, setGameStarted] = useState(false);
   const [waitingForPlayer, setWaitingForPlayer] = useState(false);
   const [gameEnded, setGameEnded] = useState(false);
+  const statsUpdatedRef = useRef(false);
+
+  // Reset duplicate stats guard when game resets
+  useEffect(() => {
+    if (!gameEnded) {
+      statsUpdatedRef.current = false;
+    }
+  }, [gameEnded]);
   const [winner, setWinner] = useState<'player' | 'opponent' | 'tie' | null>(null);
   const [disconnectWin, setDisconnectWin] = useState(false);
   const [playerAvatar, setPlayerAvatar] = useState<string>('');
@@ -1075,23 +1083,28 @@ const handleGameEnd = async () => {
 
   // vs-computer modunda istatistik güncelle
   if (user) {
-  const gameDuration = gameType === 'timed' ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
-  
-  const { data, error } = await (supabase.rpc as any)('update_game_stats', {
-    p_user_id: user.id,
-    p_score: finalUserScore,
-    p_words: playerWordsWithScores,
-    p_is_winner: finalUserScore > finalOpponentScore,
-    p_game_duration: gameDuration
-  });
-  
-  if (error) {
-    console.error('İstatistik güncelleme hatası:', error);
-  } else {
-    console.log('İstatistikler güncellendi - gameMode:', gameMode);
-    await forceRefreshProfile?.();
+    if (statsUpdatedRef.current) {
+      console.log('⏭️ Skipping duplicate stats update (handleGameEnd)');
+    } else {
+      statsUpdatedRef.current = true;
+      const gameDuration = gameType === 'timed' ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
+      
+      const { data, error } = await (supabase.rpc as any)('update_game_stats', {
+        p_user_id: user.id,
+        p_score: finalUserScore,
+        p_words: playerWordsWithScores,
+        p_is_winner: finalUserScore > finalOpponentScore,
+        p_game_duration: gameDuration
+      });
+      
+      if (error) {
+        console.error('İstatistik güncelleme hatası:', error);
+      } else {
+        console.log('İstatistikler güncellendi - gameMode:', gameMode);
+        await forceRefreshProfile?.();
+      }
+    }
   }
-}
 
   // Normal oyun sonu
   setGameEnded(true);
@@ -2126,71 +2139,76 @@ const checkWinnerWithScores = useCallback(async (currentPlayerScore: number, cur
 
   // İstatistik güncelleme (vs-computer için)
   if (user && gameMode === 'vs-computer') {
-    console.log('📊 checkWinnerWithScores - İstatistik güncelleniyor...');
-  
-    try {
-      const gameDuration = gameType === 'timed' ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
+    if (statsUpdatedRef.current) {
+      console.log('⏭️ Skipping duplicate stats update (effect)');
+    } else {
+      statsUpdatedRef.current = true;
+      console.log('📊 checkWinnerWithScores - İstatistik güncelleniyor...');
     
-      const { data, error } = await (supabase.rpc as any)('update_game_stats', {
-        p_user_id: user.id,
-        p_score: currentPlayerScore,
-        p_words: playerWordsWithScores,
-        p_is_winner: gameResult === 'player',
-        p_game_duration: gameDuration
-      });
-    
-      if (error) {
-        console.error('❌ İstatistik güncelleme hatası:', error);
-      } else {
-        console.log('✅ İstatistikler başarıyla güncellendi!');
-        await forceRefreshProfile?.();
-      }
-
-      // ➕ En uzun kelime ve en yüksek puanlı kelime istatistiklerini (vs-computer) güncelle - RPC sonucu ne olursa olsun çalıştır
       try {
-        const longest = playerWordsWithScores.reduce<{ word: string; score: number } | null>((acc, w) => {
-          return !acc || w.word.length > acc.word.length ? w : acc;
-        }, null);
-        const bestScore = playerWordsWithScores.reduce<{ word: string; score: number } | null>((acc, w) => {
-          return !acc || w.score > acc.score ? w : acc;
-        }, null);
-
-        if (user && (longest || bestScore)) {
-          const { data: cur } = await supabase
-            .from('profiles')
-            .select('longest_word_length, highest_word_score')
-            .eq('id', user.id)
-            .maybeSingle();
-
-          const updates: Record<string, any> = {};
-          if (longest) {
-            const len = longest.word.length;
-            if (!cur || (cur.longest_word_length ?? 0) < len) {
-              updates.longest_word = longest.word;
-              updates.longest_word_length = len;
-            }
-          }
-          if (bestScore) {
-            if (!cur || (cur.highest_word_score ?? 0) < bestScore.score) {
-              updates.highest_word = bestScore.word;
-              updates.highest_word_score = bestScore.score;
-            }
-          }
-
-          if (Object.keys(updates).length > 0) {
-            await supabase.from('profiles').update(updates).eq('id', user.id);
-          }
+        const gameDuration = gameType === 'timed' ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
+      
+        const { data, error } = await (supabase.rpc as any)('update_game_stats', {
+          p_user_id: user.id,
+          p_score: currentPlayerScore,
+          p_words: playerWordsWithScores,
+          p_is_winner: gameResult === 'player',
+          p_game_duration: gameDuration
+        });
+      
+        if (error) {
+          console.error('❌ İstatistik güncelleme hatası:', error);
+        } else {
+          console.log('✅ İstatistikler başarıyla güncellendi!');
+          await forceRefreshProfile?.();
         }
-      } catch (e) {
-        console.warn('⚠️ Profil kelime istatistikleri güncellenemedi:', e);
-      }
 
-      // Rozet kontrolü
-      setTimeout(() => {
-        checkBadges(user.id, playerWordsWithScores.length);
-      }, 500);
-    } catch (error) {
-      console.error('❌ İstatistik güncelleme hatası:', error);
+        // ➕ En uzun kelime ve en yüksek puanlı kelime istatistiklerini (vs-computer) güncelle - RPC sonucu ne olursa olsun çalıştır
+        try {
+          const longest = playerWordsWithScores.reduce<{ word: string; score: number } | null>((acc, w) => {
+            return !acc || w.word.length > acc.word.length ? w : acc;
+          }, null);
+          const bestScore = playerWordsWithScores.reduce<{ word: string; score: number } | null>((acc, w) => {
+            return !acc || w.score > acc.score ? w : acc;
+          }, null);
+
+          if (user && (longest || bestScore)) {
+            const { data: cur } = await supabase
+              .from('profiles')
+              .select('longest_word_length, highest_word_score')
+              .eq('id', user.id)
+              .maybeSingle();
+
+            const updates: Record<string, any> = {};
+            if (longest) {
+              const len = longest.word.length;
+              if (!cur || (cur.longest_word_length ?? 0) < len) {
+                updates.longest_word = longest.word;
+                updates.longest_word_length = len;
+              }
+            }
+            if (bestScore) {
+              if (!cur || (cur.highest_word_score ?? 0) < bestScore.score) {
+                updates.highest_word = bestScore.word;
+                updates.highest_word_score = bestScore.score;
+              }
+            }
+
+            if (Object.keys(updates).length > 0) {
+              await supabase.from('profiles').update(updates).eq('id', user.id);
+            }
+          }
+        } catch (e) {
+          console.warn('⚠️ Profil kelime istatistikleri güncellenemedi:', e);
+        }
+
+        // Rozet kontrolü
+        setTimeout(() => {
+          checkBadges(user.id, playerWordsWithScores.length);
+        }, 500);
+      } catch (error) {
+        console.error('❌ İstatistik güncelleme hatası:', error);
+      }
     }
   }
 
