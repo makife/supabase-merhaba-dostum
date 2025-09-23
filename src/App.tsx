@@ -185,9 +185,9 @@ const AppRoutes = () => {
           <ReactorRunnerPage />
         </ProtectedRoute>
       } />
-      <Route path="/bubble-shooter" element={
+      <Route path="/snake-game" element={
         <ProtectedRoute>
-          <BubbleShooterPage />
+          <SnakeGamePage />
         </ProtectedRoute>
       } />
       <Route path="*" element={<NotFound />} />
