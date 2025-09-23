@@ -369,14 +369,16 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     return () => clearInterval(interval);
   }, [user, isPremium]);
 
-  // ENHANCED Real-time profile subscription
+  // ENHANCED Real-time profile subscription - Deduplication fix
   useEffect(() => {
     if (!user) return;
 
     console.log('🔄 Setting up real-time profile subscription for user:', user.id);
+    
+    let isProcessing = false;
 
     const channel = supabase
-      .channel('profile-realtime-updates')
+      .channel(`profile-realtime-${user.id}`)
       .on(
         'postgres_changes',
         {
@@ -386,6 +388,14 @@ export const UserProvider = ({ children }: UserProviderProps) => {
           filter: `id=eq.${user.id}`
         },
         (payload) => {
+          // Prevent duplicate processing
+          if (isProcessing) {
+            console.log('🚫 Skipping duplicate profile update');
+            return;
+          }
+          
+          isProcessing = true;
+          
           console.log('🎯 Profile updated via real-time:', payload.new);
           if (payload.new) {
             // Immediately update the profile state
@@ -401,6 +411,11 @@ export const UserProvider = ({ children }: UserProviderProps) => {
             setProfile(newProfile);
             setLoading(false);
           }
+          
+          // Reset processing flag after a short delay
+          setTimeout(() => {
+            isProcessing = false;
+          }, 500);
         }
       )
       .subscribe((status) => {
