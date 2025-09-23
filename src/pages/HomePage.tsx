@@ -464,7 +464,7 @@ const HomePage = () => {
                 </Badge>
                 <Badge variant="secondary" className="bg-white/20 text-foreground border-white/30 text-xs">
                   <Zap className="w-3 h-3 mr-1" />
-                  Günlük Seri: {profile?.win_streak || 0}
+                  Günlük Seri: {profile?.win_streak || 0}/∞
                 </Badge>
               </div>
               
