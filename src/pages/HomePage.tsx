@@ -475,7 +475,7 @@ const HomePage = () => {
                 </div>
                 <div className="flex gap-2 text-xs">
                   <div className="bg-white/10 rounded-lg p-2 flex items-center gap-1">
-                    <span>♻️</span>
+                    <span>5️⃣♻️</span>
                     <span className="font-medium">Değiştir</span>
                     <span className="font-semibold">×{jokers.degistir}</span>
                   </div>
