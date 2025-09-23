@@ -460,11 +460,11 @@ const HomePage = () => {
               <div className="flex flex-wrap gap-2 justify-center">
                 <Badge variant="secondary" className="bg-white/20 text-foreground border-white/30 text-xs">
                   <Target className="w-3 h-3 mr-1" />
-                  Günlük: {profile?.daily_games || 0}/∞
+                  Günlük Oyun: {profile?.daily_games || 0}/∞
                 </Badge>
                 <Badge variant="secondary" className="bg-white/20 text-foreground border-white/30 text-xs">
                   <Zap className="w-3 h-3 mr-1" />
-                  Seri: {profile?.win_streak || 0}
+                  Günlük Seri: {profile?.win_streak || 0}
                 </Badge>
               </div>
               
