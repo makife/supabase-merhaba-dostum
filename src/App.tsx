@@ -35,7 +35,7 @@ import MemoryGamePage from "@/pages/MemoryGamePage";
 import PuzzleGamePage from "@/pages/PuzzleGame";
 import GridSimonSaysPage from "@/pages/GridSimonSays";
 import ReactorRunnerPage from "@/pages/DinoRunner";
-import BubbleShooterPage from "@/pages/BubbleShooter";
+import SnakeGamePage from "@/pages/SnakeGame";
 import { Capacitor } from '@capacitor/core';
 import { useImmersiveBars } from '@/hooks/useImmersiveBars';
 
