@@ -1454,6 +1454,10 @@ export type Database = {
         Args: { user_id: string }
         Returns: undefined
       }
+      check_memory_game_cooldown: {
+        Args: { p_hours_ago: number; p_user_id: string }
+        Returns: number
+      }
       check_round_completion: {
         Args: { p_round: number; p_tournament_id: string }
         Returns: Json
@@ -1650,6 +1654,10 @@ export type Database = {
       reset_daily_games: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      save_memory_game_play: {
+        Args: { p_joker_given: string; p_moves: number; p_user_id: string }
+        Returns: boolean
       }
       send_game_invite_notification: {
         Args: {
