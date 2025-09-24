@@ -2521,7 +2521,7 @@ useEffect(() => {
       let remaining = Math.max(0, (currentRoom.time_limit || 120) - elapsed);
 
       // 🛡️ Early-finish guard: first 3s after start should never be <= 0
-      if (Date.now() - startTs < 3000 && remaining <= 0) {
+      if (Date.now() - startTs < 10000 && remaining <= 0) {
         remaining = 5;
       }
       
