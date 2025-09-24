@@ -2521,7 +2521,7 @@ useEffect(() => {
       let remaining = Math.max(0, (currentRoom.time_limit || 120) - elapsed);
 
       // 🛡️ Early-finish guard: first 3s after start should never be <= 0
-      if (Date.now() - startTs < 1000 && remaining <= 0) {
+      if (Date.now() - startTs < 15000 && remaining <= 0) {
         remaining = 5;
       }
       
@@ -3969,7 +3969,7 @@ const handleCountdownComplete = () => {
   gameHasStartedRef.current = true;
   // Özel oda ve rastgele eşleşmede sunucu senkronunu kısa süre bastır (2:00'ı kesmemesi için)
   if (gameMode === 'private-room' || gameMode === 'random-match') {
-    syncSuppressUntilRef.current = Date.now() + 1000; // 3sn (daha kısa süre)
+    syncSuppressUntilRef.current = Date.now() + 15000; // 3sn (daha kısa süre)
   }
 };
 
