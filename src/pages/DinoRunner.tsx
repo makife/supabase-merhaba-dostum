@@ -541,16 +541,22 @@ const DinoRunner = () => {
       </div>
 
       <style>{`
+        body {
+          margin: 0;
+          padding: 0;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          min-height: 100vh;
+        }
+
         .dino-game {
           max-width: 650px;
           margin: 0 auto;
           padding: 20px;
           font-family: Arial, sans-serif;
           text-align: center;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          border-radius: 15px;
           color: white;
           user-select: none;
+          min-height: 100vh;
         }
 
         .game-header h2 {
