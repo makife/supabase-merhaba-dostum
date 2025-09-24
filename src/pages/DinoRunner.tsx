@@ -270,7 +270,7 @@ const DinoRunner = () => {
     if (gameState !== 'playing') return;
 
     setScore(prev => prev + 1);
-    setSpeed(prev => Math.min(prev + 0.002, 6));
+    setSpeed(prev => Math.min(prev + 0.002, 10));
     setGroundOffset(prev => (prev + speed) % 40);
     
     setObstacles(prev => {
