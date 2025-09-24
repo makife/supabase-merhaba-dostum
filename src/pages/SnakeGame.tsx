@@ -1,13 +1,19 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Play, Pause, RotateCcw, Trophy, Target, ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 
 const GRID_SIZE = 20;
 const INITIAL_SNAKE = [{ x: 10, y: 10 }];
 const INITIAL_DIRECTION = { x: 0, y: -1 };
 
 const SnakeGame = () => {
-  const navigate = useNavigate();
+  const navigate = () => {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      window.location.href = '/';
+    }
+  };
+  
   const [snake, setSnake] = useState(INITIAL_SNAKE);
   const [food, setFood] = useState({ x: 5, y: 5 });
   const [direction, setDirection] = useState(INITIAL_DIRECTION);
@@ -17,8 +23,12 @@ const SnakeGame = () => {
   const [level, setLevel] = useState(1);
   const [speed, setSpeed] = useState(200);
   const [highScore, setHighScore] = useState(() => {
-    const saved = localStorage.getItem('snakeHighScore');
-    return saved ? parseInt(saved) : 0;
+    try {
+      const saved = localStorage?.getItem('snakeHighScore');
+      return saved ? parseInt(saved) : 0;
+    } catch {
+      return 0;
+    }
   });
   
   const gameAreaRef = useRef(null);
@@ -87,7 +97,11 @@ const SnakeGame = () => {
         // High score kontrolü
         if (newScore > highScore) {
           setHighScore(newScore);
-          localStorage.setItem('snakeHighScore', newScore.toString());
+          try {
+            localStorage?.setItem('snakeHighScore', newScore.toString());
+          } catch (error) {
+            console.log('LocalStorage error:', error);
+          }
         }
       } else {
         newSnake.pop();
@@ -200,47 +214,161 @@ const SnakeGame = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-4">
-      <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 max-w-md w-full">
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      padding: '16px',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }}>
+      <div style={{
+        background: 'rgba(255, 255, 255, 0.1)',
+        borderRadius: '24px',
+        backdropFilter: 'blur(10px)',
+        border: '1px solid rgba(255, 255, 255, 0.2)',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+        padding: '24px',
+        maxWidth: '448px',
+        width: '100%'
+      }}>
         
         {/* Geri Dön Butonu */}
-        <div className="mb-4">
+        <div style={{ marginBottom: '16px' }}>
           <button
-            onClick={() => navigate('/')}
-            className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
+            onClick={() => navigate()}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              color: 'rgba(255, 255, 255, 0.8)',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'color 0.3s ease',
+              fontSize: '14px'
+            }}
+            onMouseOver={(e) => e.target.style.color = 'white'}
+            onMouseOut={(e) => e.target.style.color = 'rgba(255, 255, 255, 0.8)'}
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft size={20} />
             Geri Dön
           </button>
         </div>
+
         {/* Header */}
-        <div className="text-center mb-4">
-          <h1 className="text-3xl font-bold text-white mb-2">🐍 Snake Game</h1>
-          <div className="flex justify-between items-center text-sm">
-            <div className="flex items-center gap-2 text-yellow-400">
+        <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+          <h1 style={{ 
+            fontSize: '32px', 
+            fontWeight: 'bold', 
+            color: 'white', 
+            marginBottom: '8px',
+            textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
+          }}>
+            🐍 Snake Game
+          </h1>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            fontSize: '14px' 
+          }}>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px', 
+              color: '#FFD700',
+              background: 'rgba(255, 215, 0, 0.1)',
+              padding: '8px 12px',
+              borderRadius: '20px',
+              backdropFilter: 'blur(10px)'
+            }}>
               <Trophy size={16} />
               <span>En Yüksek: {highScore}</span>
             </div>
-            <div className="flex items-center gap-2 text-blue-400">
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px', 
+              color: '#60A5FA',
+              background: 'rgba(96, 165, 250, 0.1)',
+              padding: '8px 12px',
+              borderRadius: '20px',
+              backdropFilter: 'blur(10px)'
+            }}>
               <Target size={16} />
               <span>Skor: {score}</span>
             </div>
           </div>
           <div 
-            className="mt-2 px-4 py-2 rounded-full text-white font-bold text-lg"
-            style={{ backgroundColor: getLevelColor() }}
+            style={{
+              marginTop: '8px',
+              padding: '8px 16px',
+              borderRadius: '9999px',
+              color: 'white',
+              fontWeight: 'bold',
+              fontSize: '18px',
+              backgroundColor: getLevelColor(),
+              textShadow: '1px 1px 2px rgba(0,0,0,0.3)',
+              boxShadow: `0 0 20px ${getLevelColor()}40`
+            }}
           >
             Seviye {level}
+          </div>
+
+          {/* Seviye İlerleme Çubuğu */}
+          <div style={{
+            marginTop: '12px',
+            background: 'rgba(255, 255, 255, 0.1)',
+            borderRadius: '12px',
+            padding: '12px',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)'
+          }}>
+            <div style={{ color: 'white', fontSize: '14px' }}>
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                marginBottom: '4px' 
+              }}>
+                <span>Sonraki Seviye:</span>
+                <span style={{ color: '#FFD700' }}>{50 - (score % 50)} puan kaldı</span>
+              </div>
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.2)',
+                borderRadius: '9999px',
+                height: '8px',
+                overflow: 'hidden'
+              }}>
+                <div 
+                  style={{ 
+                    height: '8px',
+                    borderRadius: '9999px',
+                    transition: 'all 0.3s ease',
+                    width: `${(score % 50) * 2}%`,
+                    background: `linear-gradient(90deg, ${getLevelColor()}, ${getLevelColor()}aa)`,
+                    boxShadow: `0 0 10px ${getLevelColor()}60`
+                  }}
+                />
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Oyun Alanı */}
         <div 
           ref={gameAreaRef}
-          className="relative bg-gray-700 rounded-xl border-4 border-gray-600 mx-auto"
           style={{
+            position: 'relative',
+            background: 'rgba(0, 0, 0, 0.3)',
+            borderRadius: '12px',
+            border: '4px solid rgba(255, 255, 255, 0.2)',
+            margin: '0 auto',
             width: GRID_SIZE * 15,
             height: GRID_SIZE * 15,
+            backdropFilter: 'blur(10px)',
+            boxShadow: 'inset 0 0 20px rgba(0, 0, 0, 0.2)'
           }}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
@@ -249,38 +377,74 @@ const SnakeGame = () => {
           {snake.map((segment, index) => (
             <div
               key={index}
-              className={`absolute rounded ${index === 0 ? 'bg-green-400' : 'bg-green-500'}`}
               style={{
+                position: 'absolute',
                 left: segment.x * 15,
                 top: segment.y * 15,
                 width: 14,
                 height: 14,
-                boxShadow: index === 0 ? '0 0 10px rgba(74, 222, 128, 0.8)' : 'none'
+                borderRadius: index === 0 ? '50%' : '4px',
+                background: index === 0 
+                  ? 'linear-gradient(45deg, #10b981, #34d399)' 
+                  : 'linear-gradient(45deg, #059669, #10b981)',
+                boxShadow: index === 0 
+                  ? '0 0 15px rgba(16, 185, 129, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.3)' 
+                  : 'inset 0 0 5px rgba(255, 255, 255, 0.2)',
+                animation: index === 0 ? 'pulse 2s infinite' : 'none'
               }}
             />
           ))}
 
           {/* Yiyecek */}
           <div
-            className="absolute bg-red-500 rounded-full animate-pulse"
             style={{
+              position: 'absolute',
               left: food.x * 15 + 1,
               top: food.y * 15 + 1,
               width: 12,
               height: 12,
-              boxShadow: '0 0 15px rgba(239, 68, 68, 0.8)'
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, #ef4444, #dc2626)',
+              boxShadow: '0 0 20px rgba(239, 68, 68, 0.8), inset 0 0 5px rgba(255, 255, 255, 0.3)',
+              animation: 'pulse 1.5s infinite'
             }}
           />
 
           {/* Game Over Overlay */}
           {gameOver && (
-            <div className="absolute inset-0 bg-black bg-opacity-80 flex items-center justify-center rounded-xl">
-              <div className="text-center text-white">
-                <h2 className="text-2xl font-bold mb-2">Oyun Bitti!</h2>
-                <p className="text-lg mb-2">Skor: {score}</p>
-                <p className="text-md mb-4">Seviye: {level}</p>
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0, 0, 0, 0.8)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '12px',
+              backdropFilter: 'blur(5px)'
+            }}>
+              <div style={{ textAlign: 'center', color: 'white' }}>
+                <h2 style={{ 
+                  fontSize: '24px', 
+                  fontWeight: 'bold', 
+                  marginBottom: '8px',
+                  textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
+                }}>
+                  💥 Oyun Bitti!
+                </h2>
+                <p style={{ fontSize: '18px', marginBottom: '8px' }}>Skor: {score}</p>
+                <p style={{ fontSize: '16px', marginBottom: '16px' }}>Seviye: {level}</p>
                 {score === highScore && score > 0 && (
-                  <p className="text-yellow-400 font-bold mb-4">🎉 Yeni Rekor!</p>
+                  <p style={{ 
+                    color: '#FFD700', 
+                    fontWeight: 'bold', 
+                    marginBottom: '16px',
+                    textShadow: '0 0 10px rgba(255, 215, 0, 0.5)'
+                  }}>
+                    🎉 Yeni Rekor!
+                  </p>
                 )}
               </div>
             </div>
@@ -288,12 +452,193 @@ const SnakeGame = () => {
         </div>
 
         {/* Kontrol Düğmeleri */}
-        <div className="mt-6 space-y-4">
-          <div className="flex justify-center gap-4">
+        <div style={{ marginTop: '24px' }}>
+          {/* Yön Kontrol Butonları */}
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center', 
+            marginBottom: '20px',
+            gap: '8px'
+          }}>
+            {/* Yukarı */}
+            <button
+              onClick={() => direction.y === 0 && setDirection({ x: 0, y: -1 })}
+              disabled={!gameRunning || gameOver || direction.y !== 0}
+              style={{
+                width: '50px',
+                height: '50px',
+                borderRadius: '12px',
+                background: direction.y !== 0 
+                  ? 'rgba(255, 255, 255, 0.1)' 
+                  : 'linear-gradient(45deg, #667eea, #764ba2)',
+                border: '2px solid rgba(255, 255, 255, 0.3)',
+                color: 'white',
+                fontSize: '20px',
+                cursor: direction.y === 0 && gameRunning && !gameOver ? 'pointer' : 'not-allowed',
+                transition: 'all 0.3s ease',
+                backdropFilter: 'blur(10px)',
+                opacity: direction.y !== 0 ? 0.5 : 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              onMouseOver={(e) => {
+                if (direction.y === 0 && gameRunning && !gameOver) {
+                  e.target.style.transform = 'scale(1.1)';
+                  e.target.style.boxShadow = '0 0 20px rgba(102, 126, 234, 0.5)';
+                }
+              }}
+              onMouseOut={(e) => {
+                e.target.style.transform = 'scale(1)';
+                e.target.style.boxShadow = 'none';
+              }}
+            >
+              ⬆️
+            </button>
+            
+            {/* Sol - Sağ */}
+            <div style={{ display: 'flex', gap: '120px' }}>
+              <button
+                onClick={() => direction.x === 0 && setDirection({ x: -1, y: 0 })}
+                disabled={!gameRunning || gameOver || direction.x !== 0}
+                style={{
+                  width: '50px',
+                  height: '50px',
+                  borderRadius: '12px',
+                  background: direction.x !== 0 
+                    ? 'rgba(255, 255, 255, 0.1)' 
+                    : 'linear-gradient(45deg, #667eea, #764ba2)',
+                  border: '2px solid rgba(255, 255, 255, 0.3)',
+                  color: 'white',
+                  fontSize: '20px',
+                  cursor: direction.x === 0 && gameRunning && !gameOver ? 'pointer' : 'not-allowed',
+                  transition: 'all 0.3s ease',
+                  backdropFilter: 'blur(10px)',
+                  opacity: direction.x !== 0 ? 0.5 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                onMouseOver={(e) => {
+                  if (direction.x === 0 && gameRunning && !gameOver) {
+                    e.target.style.transform = 'scale(1.1)';
+                    e.target.style.boxShadow = '0 0 20px rgba(102, 126, 234, 0.5)';
+                  }
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.transform = 'scale(1)';
+                  e.target.style.boxShadow = 'none';
+                }}
+              >
+                ⬅️
+              </button>
+              
+              <button
+                onClick={() => direction.x === 0 && setDirection({ x: 1, y: 0 })}
+                disabled={!gameRunning || gameOver || direction.x !== 0}
+                style={{
+                  width: '50px',
+                  height: '50px',
+                  borderRadius: '12px',
+                  background: direction.x !== 0 
+                    ? 'rgba(255, 255, 255, 0.1)' 
+                    : 'linear-gradient(45deg, #667eea, #764ba2)',
+                  border: '2px solid rgba(255, 255, 255, 0.3)',
+                  color: 'white',
+                  fontSize: '20px',
+                  cursor: direction.x === 0 && gameRunning && !gameOver ? 'pointer' : 'not-allowed',
+                  transition: 'all 0.3s ease',
+                  backdropFilter: 'blur(10px)',
+                  opacity: direction.x !== 0 ? 0.5 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                onMouseOver={(e) => {
+                  if (direction.x === 0 && gameRunning && !gameOver) {
+                    e.target.style.transform = 'scale(1.1)';
+                    e.target.style.boxShadow = '0 0 20px rgba(102, 126, 234, 0.5)';
+                  }
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.transform = 'scale(1)';
+                  e.target.style.boxShadow = 'none';
+                }}
+              >
+                ➡️
+              </button>
+            </div>
+            
+            {/* Aşağı */}
+            <button
+              onClick={() => direction.y === 0 && setDirection({ x: 0, y: 1 })}
+              disabled={!gameRunning || gameOver || direction.y !== 0}
+              style={{
+                width: '50px',
+                height: '50px',
+                borderRadius: '12px',
+                background: direction.y !== 0 
+                  ? 'rgba(255, 255, 255, 0.1)' 
+                  : 'linear-gradient(45deg, #667eea, #764ba2)',
+                border: '2px solid rgba(255, 255, 255, 0.3)',
+                color: 'white',
+                fontSize: '20px',
+                cursor: direction.y === 0 && gameRunning && !gameOver ? 'pointer' : 'not-allowed',
+                transition: 'all 0.3s ease',
+                backdropFilter: 'blur(10px)',
+                opacity: direction.y !== 0 ? 0.5 : 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              onMouseOver={(e) => {
+                if (direction.y === 0 && gameRunning && !gameOver) {
+                  e.target.style.transform = 'scale(1.1)';
+                  e.target.style.boxShadow = '0 0 20px rgba(102, 126, 234, 0.5)';
+                }
+              }}
+              onMouseOut={(e) => {
+                e.target.style.transform = 'scale(1)';
+                e.target.style.boxShadow = 'none';
+              }}
+            >
+              ⬇️
+            </button>
+          </div>
+
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            gap: '16px',
+            marginBottom: '16px'
+          }}>
             {!gameRunning && !gameOver && (
               <button
                 onClick={startGame}
-                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-bold transition-colors"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: 'linear-gradient(45deg, #10b981, #34d399)',
+                  color: 'white',
+                  padding: '12px 24px',
+                  borderRadius: '12px',
+                  fontWeight: 'bold',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)',
+                  fontSize: '16px'
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.transform = 'translateY(-2px)';
+                  e.target.style.boxShadow = '0 6px 20px rgba(16, 185, 129, 0.4)';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = '0 4px 15px rgba(16, 185, 129, 0.3)';
+                }}
               >
                 <Play size={20} />
                 Başla
@@ -303,7 +648,29 @@ const SnakeGame = () => {
             {gameRunning && !gameOver && (
               <button
                 onClick={pauseGame}
-                className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded-xl font-bold transition-colors"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: 'linear-gradient(45deg, #f59e0b, #fbbf24)',
+                  color: 'white',
+                  padding: '12px 24px',
+                  borderRadius: '12px',
+                  fontWeight: 'bold',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 15px rgba(245, 158, 11, 0.3)',
+                  fontSize: '16px'
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.transform = 'translateY(-2px)';
+                  e.target.style.boxShadow = '0 6px 20px rgba(245, 158, 11, 0.4)';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = '0 4px 15px rgba(245, 158, 11, 0.3)';
+                }}
               >
                 <Pause size={20} />
                 Duraklat
@@ -312,7 +679,29 @@ const SnakeGame = () => {
             
             <button
               onClick={resetGame}
-              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-bold transition-colors"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: 'linear-gradient(45deg, #ef4444, #f87171)',
+                color: 'white',
+                padding: '12px 24px',
+                borderRadius: '12px',
+                fontWeight: 'bold',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 4px 15px rgba(239, 68, 68, 0.3)',
+                fontSize: '16px'
+              }}
+              onMouseOver={(e) => {
+                e.target.style.transform = 'translateY(-2px)';
+                e.target.style.boxShadow = '0 6px 20px rgba(239, 68, 68, 0.4)';
+              }}
+              onMouseOut={(e) => {
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = '0 4px 15px rgba(239, 68, 68, 0.3)';
+              }}
             >
               <RotateCcw size={20} />
               Yeniden
@@ -320,32 +709,39 @@ const SnakeGame = () => {
           </div>
 
           {/* Kontrol Talimatları */}
-          <div className="text-center text-gray-400 text-sm">
-            <p>🖱️ Ok tuşları ile kontrol edin</p>
-            <p>📱 Mobilde parmağınızı kaydırın</p>
-            <p>🎯 Her 50 puan = Yeni seviye!</p>
-          </div>
-        </div>
-
-        {/* Seviye Bilgisi */}
-        <div className="mt-4 bg-gray-700 rounded-lg p-3">
-          <div className="text-white text-sm">
-            <div className="flex justify-between mb-1">
-              <span>Sonraki Seviye:</span>
-              <span>{50 - (score % 50)} puan kaldı</span>
-            </div>
-            <div className="bg-gray-600 rounded-full h-2">
-              <div 
-                className="h-2 rounded-full transition-all duration-300"
-                style={{ 
-                  width: `${(score % 50) * 2}%`,
-                  backgroundColor: getLevelColor()
-                }}
-              />
-            </div>
+          <div style={{ 
+            textAlign: 'center', 
+            color: 'rgba(255, 255, 255, 0.8)', 
+            fontSize: '14px',
+            background: 'rgba(255, 255, 255, 0.1)',
+            padding: '12px',
+            borderRadius: '12px',
+            backdropFilter: 'blur(10px)'
+          }}>
+            <p style={{ margin: '4px 0' }}>🎮 Yön butonları ile kontrol edin</p>
+            <p style={{ margin: '4px 0' }}>⌨️ Veya ok tuşlarını kullanın</p>
+            <p style={{ margin: '4px 0' }}>📱 Mobilde kaydırma da çalışır</p>
+            <p style={{ margin: '4px 0' }}>🎯 Her 50 puan = Yeni seviye!</p>
           </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.8;
+            transform: scale(1.05);
+          }
+        }
+
+        @media (max-width: 480px) {
+          /* Mobil responsive ayarları */
+        }
+      `}</style>
     </div>
   );
 };
