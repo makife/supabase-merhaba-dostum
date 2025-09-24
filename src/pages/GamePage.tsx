@@ -3011,7 +3011,7 @@ useEffect(() => {
 
 // Real-time rematch response listener (istek gönderen taraf için)
 useEffect(() => {
-  if (!currentRoom || gameMode !== 'private-room' || !user || !waitingForRematchResponse) return;
+  if (!currentRoom || (gameMode !== 'private-room' && gameMode !== 'random-match') || !user || !waitingForRematchResponse) return;
   
   console.log('🔄 Rematch response listener aktif:', { user: user.id, waiting: waitingForRematchResponse });
   
@@ -3050,7 +3050,8 @@ useEffect(() => {
                 setShowCountdown(true);
               }, 500);
               // Aynı route ise no-op; yine de güvenli olması için replace ile yönlendir
-              navigate(`/game/private-room?type=${gameType}`, { replace: true });
+              const targetRoute = gameMode === 'random-match' ? `/game/random-match?type=${gameType}` : `/game/private-room?type=${gameType}`;
+              navigate(targetRoute, { replace: true });
             }
           }, 1000);
         }
@@ -3734,8 +3735,8 @@ if (gameEnded) {
 </Button>
 )}
               </>
-            ) : gameMode === 'private-room' ? (
-    // ✅ ÖZEL ODA BUTONLARI - YENİ
+            ) : gameMode === 'private-room' || gameMode === 'random-match' ? (
+    // ✅ ÖZEL ODA VE RASTGELE EŞLEŞME BUTONLARI - YENİ
     <div className="space-y-2">
       {/* Disconnect durumunda rematch butonu gösterme */}
       {!disconnectWin && !rematchRequested && !waitingForRematchResponse && (
@@ -3849,7 +3850,8 @@ if (gameEnded) {
                       setShowCountdown(true);
                     }, 500);
                     // Aynı route ise no-op; yine de güvenli olması için replace ile yönlendir
-                    navigate(`/game/private-room?type=${gameType}`, { replace: true });
+                    const targetRoute = gameMode === 'random-match' ? `/game/random-match?type=${gameType}` : `/game/private-room?type=${gameType}`;
+                    navigate(targetRoute, { replace: true });
                   }
                 }
               }
