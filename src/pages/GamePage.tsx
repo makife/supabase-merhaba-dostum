@@ -3969,7 +3969,7 @@ const handleCountdownComplete = () => {
   gameHasStartedRef.current = true;
   // Özel oda ve rastgele eşleşmede sunucu senkronunu kısa süre bastır (2:00'ı kesmemesi için)
   if (gameMode === 'private-room' || gameMode === 'random-match') {
-    syncSuppressUntilRef.current = Date.now() + 6000; // 6sn
+    syncSuppressUntilRef.current = Date.now() + 3000; // 3sn (daha kısa süre)
   }
 };
 
