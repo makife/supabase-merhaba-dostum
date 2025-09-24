@@ -499,8 +499,8 @@ const SnakeGame = () => {
               ⬆️
             </button>
             
-            {/* Sol - Sağ */}
-            <div style={{ display: 'flex', gap: '120px' }}>
+            {/* Sol - Aşağı - Sağ */}
+            <div style={{ display: 'flex', gap: '30px', alignItems: 'center' }}>
               <button
                 onClick={() => direction.x === 0 && setDirection({ x: -1, y: 0 })}
                 disabled={!gameRunning || gameOver || direction.x !== 0}
@@ -536,6 +536,43 @@ const SnakeGame = () => {
                 }}
               >
                 ⬅️
+              </button>
+              
+              <button
+                onClick={() => direction.y === 0 && setDirection({ x: 0, y: 1 })}
+                disabled={!gameRunning || gameOver || direction.y !== 0}
+                style={{
+                  width: '50px',
+                  height: '50px',
+                  borderRadius: '12px',
+                  background: direction.y !== 0 
+                    ? 'rgba(255, 255, 255, 0.1)' 
+                    : 'linear-gradient(45deg, #667eea, #764ba2)',
+                  border: '2px solid rgba(255, 255, 255, 0.3)',
+                  color: 'white',
+                  fontSize: '20px',
+                  cursor: direction.y === 0 && gameRunning && !gameOver ? 'pointer' : 'not-allowed',
+                  transition: 'all 0.3s ease',
+                  backdropFilter: 'blur(10px)',
+                  opacity: direction.y !== 0 ? 0.5 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                onMouseOver={(e) => {
+                  if (direction.y === 0 && gameRunning && !gameOver) {
+                    const target = e.target as HTMLButtonElement;
+                    target.style.transform = 'scale(1.1)';
+                    target.style.boxShadow = '0 0 20px rgba(102, 126, 234, 0.5)';
+                  }
+                }}
+                onMouseOut={(e) => {
+                  const target = e.target as HTMLButtonElement;
+                  target.style.transform = 'scale(1)';
+                  target.style.boxShadow = 'none';
+                }}
+              >
+                ⬇️
               </button>
               
               <button
@@ -575,44 +612,6 @@ const SnakeGame = () => {
                 ➡️
               </button>
             </div>
-            
-            {/* Aşağı */}
-            <button
-              onClick={() => direction.y === 0 && setDirection({ x: 0, y: 1 })}
-              disabled={!gameRunning || gameOver || direction.y !== 0}
-              style={{
-                width: '50px',
-                height: '50px',
-                borderRadius: '12px',
-                background: direction.y !== 0 
-                  ? 'rgba(255, 255, 255, 0.1)' 
-                  : 'linear-gradient(45deg, #667eea, #764ba2)',
-                border: '2px solid rgba(255, 255, 255, 0.3)',
-                color: 'white',
-                fontSize: '20px',
-                cursor: direction.y === 0 && gameRunning && !gameOver ? 'pointer' : 'not-allowed',
-                transition: 'all 0.3s ease',
-                backdropFilter: 'blur(10px)',
-                opacity: direction.y !== 0 ? 0.5 : 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-              onMouseOver={(e) => {
-                if (direction.y === 0 && gameRunning && !gameOver) {
-                  const target = e.target as HTMLButtonElement;
-                  target.style.transform = 'scale(1.1)';
-                  target.style.boxShadow = '0 0 20px rgba(102, 126, 234, 0.5)';
-                }
-              }}
-              onMouseOut={(e) => {
-                const target = e.target as HTMLButtonElement;
-                target.style.transform = 'scale(1)';
-                target.style.boxShadow = 'none';
-              }}
-            >
-              ⬇️
-            </button>
           </div>
 
           <div style={{ 
