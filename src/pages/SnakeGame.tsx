@@ -260,7 +260,7 @@ const SnakeGame = () => {
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '16px' }}>
           <h1 style={{ 
-            fontSize: '28px', 
+            fontSize: '20px', 
             fontWeight: 'bold', 
             color: 'white', 
             marginBottom: '8px',
