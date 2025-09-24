@@ -534,9 +534,8 @@ const DinoRunner = () => {
       <div className="game-instructions">
         <h4>🎮 Nasıl Oynanır:</h4>
         <p>• ☢️ Reaktörün kaktüslere çarpmasını engelleyin</p>
-        <p>• 🖱️ Dokunarak veya Space ile zıplayın</p>
+        <p>• 🖱️ Dokunarak zıplayın</p>
         <p>• ⚡ Havadayken tekrar zıplayarak çift zıplama yapın (3 hak)</p>
-        <p>• 🎯 Engeller arası mesafe artık tamamen rastgele!</p>
         <p>• ⚡ Oyun zamanla hızlanır</p>
         <p>• 🏆 En yüksek puanınızı geçmeye çalışın</p>
       </div>
