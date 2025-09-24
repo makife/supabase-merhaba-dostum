@@ -1216,6 +1216,64 @@ const handleBackToMenu = async () => {
   navigate('/');
 };
 
+// Random match room'a katılma - SADECE gameMode 'random-match' ise
+useEffect(() => {
+  const initializeRandomMatch = async () => {
+    // SADECE random-match modunda çalışsın
+    if (gameMode !== 'random-match') return;
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomId = urlParams.get('roomId');
+    
+    console.log('🎯 Random match URL roomId:', roomId);
+    
+    if (roomId && roomId !== 'ai-game') {
+      try {
+        // Room bilgilerini al
+        const { data: roomData, error } = await supabase
+          .from('matchmaking_rooms')
+          .select('*')
+          .eq('id', roomId)
+          .single();
+
+        if (error) {
+          console.error('❌ Random match room bilgisi alınamadı:', error);
+          toast({
+            title: "Oda Hatası",
+            description: "Oyun odasına katılamadık",
+            variant: "destructive",
+          });
+          navigate('/');
+          return;
+        }
+
+        if (roomData) {
+          console.log('✅ Random match room bulundu:', roomData.id);
+          
+          // GameContext'teki joinRoom fonksiyonunu kullan
+          const success = await joinRoom(roomData.id);
+          if (success) {
+            console.log('✅ Random match room\'a katıldı');
+          } else {
+            console.error('❌ Random match room\'a katılamadı');
+            toast({
+              title: "Bağlantı Hatası", 
+              description: "Oyun odasına bağlanılamadı",
+              variant: "destructive",
+            });
+            navigate('/');
+          }
+        }
+      } catch (error) {
+        console.error('❌ Random match initialization hatası:', error);
+        navigate('/');
+      }
+    }
+  };
+
+  initializeRandomMatch();
+}, [gameMode, user?.id, joinRoom, navigate, toast]);
+
 // Tournament match bilgisini al - SADECE gameMode 'tournament' ise
 useEffect(() => {
   const initializeTournamentMatch = async () => {
