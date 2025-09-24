@@ -266,7 +266,7 @@ const SnakeGame = () => {
             marginBottom: '8px',
             textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
           }}>
-            🐍 Snake Game
+            🐍 Yılan Oyunu
           </h1>
           <div style={{ 
             display: 'flex', 
@@ -304,7 +304,7 @@ const SnakeGame = () => {
           <div 
             style={{
               marginTop: '8px',
-              padding: '8px 16px',
+              padding: '7px 16px',
               borderRadius: '9999px',
               color: 'white',
               fontWeight: 'bold',
