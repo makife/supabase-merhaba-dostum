@@ -732,8 +732,6 @@ const SnakeGame = () => {
             backdropFilter: 'blur(10px)'
           }}>
             <p style={{ margin: '4px 0' }}>🎮 Yön butonları ile kontrol edin</p>
-            <p style={{ margin: '4px 0' }}>⌨️ Veya ok tuşlarını kullanın</p>
-            <p style={{ margin: '4px 0' }}>📱 Mobilde kaydırma da çalışır</p>
             <p style={{ margin: '4px 0' }}>🎯 Her 50 puan = Yeni seviye!</p>
           </div>
         </div>
