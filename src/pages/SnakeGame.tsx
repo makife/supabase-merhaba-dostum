@@ -629,7 +629,7 @@ const SnakeGame = () => {
                   gap: '8px',
                   background: 'linear-gradient(45deg, #10b981, #34d399)',
                   color: 'white',
-                  padding: '10px 24px',
+                  padding: '12px 24px',
                   borderRadius: '12px',
                   fontWeight: 'bold',
                   border: 'none',
@@ -663,7 +663,7 @@ const SnakeGame = () => {
                   gap: '8px',
                   background: 'linear-gradient(45deg, #f59e0b, #fbbf24)',
                   color: 'white',
-                  padding: '10px 24px',
+                  padding: '12px 24px',
                   borderRadius: '12px',
                   fontWeight: 'bold',
                   border: 'none',
@@ -696,7 +696,7 @@ const SnakeGame = () => {
                 gap: '8px',
                 background: 'linear-gradient(45deg, #ef4444, #f87171)',
                 color: 'white',
-                padding: '10px 24px',
+                padding: '12px 24px',
                 borderRadius: '12px',
                 fontWeight: 'bold',
                 border: 'none',
@@ -731,8 +731,7 @@ const SnakeGame = () => {
             borderRadius: '12px',
             backdropFilter: 'blur(10px)'
           }}>
-            <p style={{ margin: '4px 0' }}>🎮 Yön butonları ile kontrol edin</p>
-            <p style={{ margin: '4px 0' }}>🎯 Her 50 puan = Yeni seviye!</p>
+
           </div>
         </div>
       </div>
