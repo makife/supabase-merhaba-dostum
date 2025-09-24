@@ -249,8 +249,8 @@ const SnakeGame = () => {
               transition: 'color 0.3s ease',
               fontSize: '14px'
             }}
-            onMouseOver={(e) => e.target.style.color = 'white'}
-            onMouseOut={(e) => e.target.style.color = 'rgba(255, 255, 255, 0.8)'}
+            onMouseOver={(e) => (e.target as HTMLButtonElement).style.color = 'white'}
+            onMouseOut={(e) => (e.target as HTMLButtonElement).style.color = 'rgba(255, 255, 255, 0.8)'}
           >
             <ArrowLeft size={20} />
             Geri Dön
@@ -485,13 +485,15 @@ const SnakeGame = () => {
               }}
               onMouseOver={(e) => {
                 if (direction.y === 0 && gameRunning && !gameOver) {
-                  e.target.style.transform = 'scale(1.1)';
-                  e.target.style.boxShadow = '0 0 20px rgba(102, 126, 234, 0.5)';
+                  const target = e.target as HTMLButtonElement;
+                  target.style.transform = 'scale(1.1)';
+                  target.style.boxShadow = '0 0 20px rgba(102, 126, 234, 0.5)';
                 }
               }}
               onMouseOut={(e) => {
-                e.target.style.transform = 'scale(1)';
-                e.target.style.boxShadow = 'none';
+                const target = e.target as HTMLButtonElement;
+                target.style.transform = 'scale(1)';
+                target.style.boxShadow = 'none';
               }}
             >
               ⬆️
@@ -522,13 +524,15 @@ const SnakeGame = () => {
                 }}
                 onMouseOver={(e) => {
                   if (direction.x === 0 && gameRunning && !gameOver) {
-                    e.target.style.transform = 'scale(1.1)';
-                    e.target.style.boxShadow = '0 0 20px rgba(102, 126, 234, 0.5)';
+                    const target = e.target as HTMLButtonElement;
+                    target.style.transform = 'scale(1.1)';
+                    target.style.boxShadow = '0 0 20px rgba(102, 126, 234, 0.5)';
                   }
                 }}
                 onMouseOut={(e) => {
-                  e.target.style.transform = 'scale(1)';
-                  e.target.style.boxShadow = 'none';
+                  const target = e.target as HTMLButtonElement;
+                  target.style.transform = 'scale(1)';
+                  target.style.boxShadow = 'none';
                 }}
               >
                 ⬅️
@@ -557,13 +561,15 @@ const SnakeGame = () => {
                 }}
                 onMouseOver={(e) => {
                   if (direction.x === 0 && gameRunning && !gameOver) {
-                    e.target.style.transform = 'scale(1.1)';
-                    e.target.style.boxShadow = '0 0 20px rgba(102, 126, 234, 0.5)';
+                    const target = e.target as HTMLButtonElement;
+                    target.style.transform = 'scale(1.1)';
+                    target.style.boxShadow = '0 0 20px rgba(102, 126, 234, 0.5)';
                   }
                 }}
                 onMouseOut={(e) => {
-                  e.target.style.transform = 'scale(1)';
-                  e.target.style.boxShadow = 'none';
+                  const target = e.target as HTMLButtonElement;
+                  target.style.transform = 'scale(1)';
+                  target.style.boxShadow = 'none';
                 }}
               >
                 ➡️
@@ -594,13 +600,15 @@ const SnakeGame = () => {
               }}
               onMouseOver={(e) => {
                 if (direction.y === 0 && gameRunning && !gameOver) {
-                  e.target.style.transform = 'scale(1.1)';
-                  e.target.style.boxShadow = '0 0 20px rgba(102, 126, 234, 0.5)';
+                  const target = e.target as HTMLButtonElement;
+                  target.style.transform = 'scale(1.1)';
+                  target.style.boxShadow = '0 0 20px rgba(102, 126, 234, 0.5)';
                 }
               }}
               onMouseOut={(e) => {
-                e.target.style.transform = 'scale(1)';
-                e.target.style.boxShadow = 'none';
+                const target = e.target as HTMLButtonElement;
+                target.style.transform = 'scale(1)';
+                target.style.boxShadow = 'none';
               }}
             >
               ⬇️
@@ -632,12 +640,14 @@ const SnakeGame = () => {
                   fontSize: '16px'
                 }}
                 onMouseOver={(e) => {
-                  e.target.style.transform = 'translateY(-2px)';
-                  e.target.style.boxShadow = '0 6px 20px rgba(16, 185, 129, 0.4)';
+                  const target = e.target as HTMLButtonElement;
+                  target.style.transform = 'translateY(-2px)';
+                  target.style.boxShadow = '0 6px 20px rgba(16, 185, 129, 0.4)';
                 }}
                 onMouseOut={(e) => {
-                  e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = '0 4px 15px rgba(16, 185, 129, 0.3)';
+                  const target = e.target as HTMLButtonElement;
+                  target.style.transform = 'translateY(0)';
+                  target.style.boxShadow = '0 4px 15px rgba(16, 185, 129, 0.3)';
                 }}
               >
                 <Play size={20} />
@@ -664,12 +674,14 @@ const SnakeGame = () => {
                   fontSize: '16px'
                 }}
                 onMouseOver={(e) => {
-                  e.target.style.transform = 'translateY(-2px)';
-                  e.target.style.boxShadow = '0 6px 20px rgba(245, 158, 11, 0.4)';
+                  const target = e.target as HTMLButtonElement;
+                  target.style.transform = 'translateY(-2px)';
+                  target.style.boxShadow = '0 6px 20px rgba(245, 158, 11, 0.4)';
                 }}
                 onMouseOut={(e) => {
-                  e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = '0 4px 15px rgba(245, 158, 11, 0.3)';
+                  const target = e.target as HTMLButtonElement;
+                  target.style.transform = 'translateY(0)';
+                  target.style.boxShadow = '0 4px 15px rgba(245, 158, 11, 0.3)';
                 }}
               >
                 <Pause size={20} />
@@ -695,12 +707,14 @@ const SnakeGame = () => {
                 fontSize: '16px'
               }}
               onMouseOver={(e) => {
-                e.target.style.transform = 'translateY(-2px)';
-                e.target.style.boxShadow = '0 6px 20px rgba(239, 68, 68, 0.4)';
+                const target = e.target as HTMLButtonElement;
+                target.style.transform = 'translateY(-2px)';
+                target.style.boxShadow = '0 6px 20px rgba(239, 68, 68, 0.4)';
               }}
               onMouseOut={(e) => {
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = '0 4px 15px rgba(239, 68, 68, 0.3)';
+                const target = e.target as HTMLButtonElement;
+                target.style.transform = 'translateY(0)';
+                target.style.boxShadow = '0 4px 15px rgba(239, 68, 68, 0.3)';
               }}
             >
               <RotateCcw size={20} />
