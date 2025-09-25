@@ -243,6 +243,12 @@ const sendRematchRequest = useCallback(async (_roomCode: string, gameType: 'time
     throw new Error('Rakip bulunamadı');
   }
   
+  console.log('🔄 Tekrar oyun isteği gönderiliyor...', {
+    from: user.id.slice(-8),
+    to: opponent.user_id.slice(-8),
+    gameType
+  });
+  
   try {
     // Her rematch için yeni ve boş bir oda oluştur (createRoom'a bağlı kalmadan)
     const code = generateRoomCode();
@@ -1826,12 +1832,13 @@ useEffect(() => {
   getGameModeFromRoom
 ]);
 
-// Real-time rematch listener  
+// Real-time rematch listener - iki yönlü dinleyici
 useEffect(() => {
   if (!user) return;
   
   const rematchChannel = supabase
     .channel(`rematch-listener-${user.id}`)
+    // Bana gelen istekleri dinle
     .on('postgres_changes', {
       event: 'INSERT',
       schema: 'public',
@@ -1839,8 +1846,38 @@ useEffect(() => {
       filter: `to_user_id=eq.${user.id}`
     }, (payload) => {
       const request = payload.new as RematchRequest;
+      console.log('📨 Rematch isteği alındı:', request);
       if (request.status === 'pending') {
         setCurrentRematchRequest(request);
+        toast({
+          title: '🔄 Tekrar Oyun İsteği',
+          description: 'Rakibiniz tekrar oyun istiyor!',
+          duration: 4000,
+        });
+      }
+    })
+    // Benim gönderdiğim isteklerin yanıtlarını dinle
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'rematch_requests',
+      filter: `from_user_id=eq.${user.id}`
+    }, (payload) => {
+      const request = payload.new as RematchRequest;
+      console.log('📬 Gönderdiğim istek yanıtlandı:', request);
+      
+      if (request.status === 'accepted') {
+        toast({
+          title: '✅ İstek Kabul Edildi!',
+          description: 'Rakibiniz tekrar oyunu kabul etti!',
+          duration: 3000,
+        });
+      } else if (request.status === 'rejected') {
+        toast({
+          title: '❌ İstek Reddedildi',
+          description: 'Rakibiniz tekrar oyunu reddetti.',
+          duration: 3000,
+        });
       }
     })
     .subscribe();
@@ -1848,7 +1885,7 @@ useEffect(() => {
   return () => {
     supabase.removeChannel(rematchChannel);
   };
-}, [user?.id, setCurrentRematchRequest]);
+}, [user?.id, setCurrentRematchRequest, toast]);
 
 useEffect(() => {
   if (!currentRoom || !currentRoom.game_mode.includes('private-room')) return;
