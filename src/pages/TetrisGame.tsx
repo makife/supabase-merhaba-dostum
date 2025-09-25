@@ -371,9 +371,10 @@ const TetrisGame = () => {
         width: '100%'
       }}>
         
+        {/* Geri Dön Butonu */}
         <div style={{ marginBottom: '16px' }}>
           <button
-            onClick={() => navigate()}
+            onClick={() => navigate(-1)}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -382,8 +383,11 @@ const TetrisGame = () => {
               background: 'transparent',
               border: 'none',
               cursor: 'pointer',
-              fontSize: '14px'
+              fontSize: '14px',
+              transition: 'color 0.3s ease'
             }}
+            onMouseOver={(e) => (e.target as HTMLButtonElement).style.color = 'white'}
+            onMouseOut={(e) => (e.target as HTMLButtonElement).style.color = 'rgba(255, 255, 255, 0.8)'}
           >
             <ArrowLeft size={20} />
             Geri Dön
