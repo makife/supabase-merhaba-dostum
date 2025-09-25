@@ -163,20 +163,16 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
         }
       }
 
-      // Oda bulunamadıysa yeni oda oluştur - önceden grid üret
+      // Oda bulunamadıysa yeni oda oluştur - grid'i room_data içinde sakla
       if (!roomToJoin) {
         console.log('🆕 Yeni oda oluşturuluyor...');
         
         // Sabit grid üret (her oyuncu için aynı olacak)
         const letterPool = ['A','A','A','A','A','A','A','A','E','E','E','E','E','E','E','İ','İ','İ','İ','İ','İ','I','I','I','I','I','O','O','O','O','O','U','U','U','U','Ü','Ü','Ü','Ö','Ö','Ö','L','L','L','L','L','N','N','N','N','N','R','R','R','R','R','K','K','K','K','M','M','M','M','T','T','T','T','S','S','S','S','D','D','D','Y','Y','Y','B','B','B','C','C','Ç','Ç','F','F','G','G','Ğ','Ğ','H','H','J','P','P','Ş','Ş','V','V','Z'];
-        const gameGrid: string[][] = [];
-        for (let i = 0; i < 4; i++) {
-          const row: string[] = [];
-          for (let j = 0; j < 4; j++) {
-            const randomIndex = Math.floor(Math.random() * letterPool.length);
-            row.push(letterPool[randomIndex]);
-          }
-          gameGrid.push(row);
+        const gameGrid: string[] = [];
+        for (let i = 0; i < 16; i++) {
+          const randomIndex = Math.floor(Math.random() * letterPool.length);
+          gameGrid.push(letterPool[randomIndex]);
         }
         
         const { data: newRoom, error: createError } = await supabase
@@ -187,7 +183,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
             current_players: 1,
             max_players: 2,
             expires_at: new Date(Date.now() + 60000).toISOString(), // 1 dakika
-            game_grid: gameGrid.flat() // Grid'i düz array olarak kaydet
+            room_data: { game_grid: gameGrid } // Grid'i room_data içinde sakla
           })
           .select()
           .single();
@@ -198,7 +194,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
         }
 
         roomToJoin = newRoom;
-        console.log('✅ Yeni oda oluşturuldu:', roomToJoin.id, 'grid:', gameGrid.flat().slice(0, 4));
+        console.log('✅ Yeni oda oluşturuldu:', roomToJoin.id, 'grid:', gameGrid.slice(0, 4));
       }
 
       setCurrentRoom(roomToJoin);

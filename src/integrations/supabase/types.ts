@@ -516,6 +516,7 @@ export type Database = {
           created_at: string
           current_players: number
           expires_at: string
+          game_grid: Json | null
           game_type: string
           id: string
           max_players: number
@@ -526,6 +527,7 @@ export type Database = {
           created_at?: string
           current_players?: number
           expires_at?: string
+          game_grid?: Json | null
           game_type: string
           id?: string
           max_players?: number
@@ -536,6 +538,7 @@ export type Database = {
           created_at?: string
           current_players?: number
           expires_at?: string
+          game_grid?: Json | null
           game_type?: string
           id?: string
           max_players?: number

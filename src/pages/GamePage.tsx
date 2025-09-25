@@ -1251,8 +1251,27 @@ useEffect(() => {
           console.log('✅ Random match room bulundu:', roomData.id);
           
           // Grid'i kontrol et ve ayarla
-          if (roomData.game_grid && Array.isArray(roomData.game_grid)) {
-            console.log('📊 Matchmaking room grid alındı:', roomData.game_grid.slice(0, 4));
+          if (roomData.room_data && typeof roomData.room_data === 'object' && roomData.room_data !== null) {
+            const roomDataObj = roomData.room_data as any;
+            if (roomDataObj.game_grid && Array.isArray(roomDataObj.game_grid)) {
+              console.log('📊 Matchmaking room grid alındı:', roomDataObj.game_grid.slice(0, 4));
+              
+              // Grid'i 4x4 matrise çevir
+              const grid = [];
+              for (let i = 0; i < 4; i++) {
+                const row = [];
+                for (let j = 0; j < 4; j++) {
+                  row.push(roomDataObj.game_grid[i * 4 + j] || 'A');
+                }
+                grid.push(row);
+              }
+              setGameGrid(grid);
+              console.log('✅ Grid matchmaking room\'dan ayarlandı');
+            } else {
+              console.log('⚠️ Room_data\'da grid yok, varsayılan grid kullanılıyor');
+            }
+          } else if (roomData.game_grid && Array.isArray(roomData.game_grid)) {
+            console.log('📊 Matchmaking room game_grid alındı:', roomData.game_grid.slice(0, 4));
             
             // Grid'i 4x4 matrise çevir
             const grid = [];
