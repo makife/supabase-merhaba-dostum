@@ -402,7 +402,7 @@ const TetrisGame = () => {
             marginBottom: '16px',
             textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
           }}>
-            🧩 Tetris
+            🧩 TetriS 🧩
           </h1>
           
           <div style={{ 
