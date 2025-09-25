@@ -36,6 +36,7 @@ import PuzzleGamePage from "@/pages/PuzzleGame";
 import GridSimonSaysPage from "@/pages/GridSimonSays";
 import ReactorRunnerPage from "@/pages/DinoRunner";
 import SnakeGamePage from "@/pages/SnakeGame";
+import TetrisGamePage from "@/pages/TetrisGame";
 import { Capacitor } from '@capacitor/core';
 import { useImmersiveBars } from '@/hooks/useImmersiveBars';
 
@@ -188,6 +189,11 @@ const AppRoutes = () => {
       <Route path="/snake-game" element={
         <ProtectedRoute>
           <SnakeGamePage />
+        </ProtectedRoute>
+      } />
+      <Route path="/tetris-game" element={
+        <ProtectedRoute>
+          <TetrisGamePage />
         </ProtectedRoute>
       } />
       <Route path="*" element={<NotFound />} />
