@@ -402,7 +402,7 @@ const TetrisGame = () => {
             marginBottom: '16px',
             textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
           }}>
-            🧩 Tetris 🧩
+            🧩 Tetris
           </h1>
           
           <div style={{ 
@@ -558,56 +558,140 @@ const TetrisGame = () => {
             )}
           </div>
 
-          <div style={{
-            background: 'rgba(255, 255, 255, 0.1)',
-            borderRadius: '12px',
-            padding: '16px',
-            backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            minWidth: '100px'
-          }}>
-            <h3 style={{ color: 'white', fontSize: '16px', marginBottom: '12px', textAlign: 'center' }}>
-              Sonraki
-            </h3>
+          {/* Sağ Panel - Sonraki Parça ve Kontroller */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            
+            {/* Sonraki Parça */}
             <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(4, 15px)',
-              gridTemplateRows: 'repeat(4, 15px)',
-              gap: '1px',
-              justifyContent: 'center'
+              background: 'rgba(255, 255, 255, 0.1)',
+              borderRadius: '12px',
+              padding: '16px',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              minWidth: '120px'
             }}>
-              {(() => {
-                const cells = [];
-                for (let y = 0; y < 4; y++) {
-                  for (let x = 0; x < 4; x++) {
-                    const isPartOfPiece = nextPiece && 
-                      nextPiece.shape[y] && 
-                      nextPiece.shape[y][x];
-                    
-                    cells.push(
-                      <div
-                        key={`next-${y}-${x}`}
-                        style={{
-                          width: '13px',
-                          height: '13px',
-                          background: isPartOfPiece 
-                            ? nextPiece.color 
-                            : 'rgba(255, 255, 255, 0.1)',
-                          border: isPartOfPiece 
-                            ? `1px solid ${nextPiece.color}` 
-                            : '1px solid rgba(255, 255, 255, 0.1)',
-                          borderRadius: '2px',
-                          boxShadow: isPartOfPiece 
-                            ? 'inset 0 0 5px rgba(255, 255, 255, 0.3)' 
-                            : 'none'
-                        }}
-                      />
-                    );
+              <h3 style={{ color: 'white', fontSize: '16px', marginBottom: '12px', textAlign: 'center' }}>
+                Sonraki
+              </h3>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, 15px)',
+                gridTemplateRows: 'repeat(4, 15px)',
+                gap: '1px',
+                justifyContent: 'center'
+              }}>
+                {(() => {
+                  const cells = [];
+                  for (let y = 0; y < 4; y++) {
+                    for (let x = 0; x < 4; x++) {
+                      const isPartOfPiece = nextPiece && 
+                        nextPiece.shape[y] && 
+                        nextPiece.shape[y][x];
+                      
+                      cells.push(
+                        <div
+                          key={`next-${y}-${x}`}
+                          style={{
+                            width: '13px',
+                            height: '13px',
+                            background: isPartOfPiece 
+                              ? nextPiece.color 
+                              : 'rgba(255, 255, 255, 0.1)',
+                            border: isPartOfPiece 
+                              ? `1px solid ${nextPiece.color}` 
+                              : '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: '2px',
+                            boxShadow: isPartOfPiece 
+                              ? 'inset 0 0 5px rgba(255, 255, 255, 0.3)' 
+                              : 'none'
+                          }}
+                        />
+                      );
+                    }
                   }
-                }
-                return cells;
-              })()}
+                  return cells;
+                })()}
+              </div>
             </div>
+
+            {/* Oyun Kontrol Butonları */}
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center',
+              gap: '12px'
+            }}>
+              {!gameRunning && !gameOver && (
+                <button
+                  onClick={startGame}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    background: 'linear-gradient(45deg, #10b981, #34d399)',
+                    color: 'white',
+                    padding: '12px 24px',
+                    borderRadius: '12px',
+                    fontWeight: 'bold',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '16px',
+                    minWidth: '120px',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <Play size={20} />
+                  Başlat
+                </button>
+              )}
+              
+              {gameRunning && !gameOver && (
+                <button
+                  onClick={pauseGame}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    background: 'linear-gradient(45deg, #f59e0b, #fbbf24)',
+                    color: 'white',
+                    padding: '12px 24px',
+                    borderRadius: '12px',
+                    fontWeight: 'bold',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '16px',
+                    minWidth: '120px',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <Pause size={20} />
+                  Durdur
+                </button>
+              )}
+              
+              <button
+                onClick={resetGame}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: 'linear-gradient(45deg, #ef4444, #f87171)',
+                  color: 'white',
+                  padding: '12px 24px',
+                  borderRadius: '12px',
+                  fontWeight: 'bold',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '16px',
+                  minWidth: '120px',
+                  justifyContent: 'center'
+                }}
+              >
+                <RotateCcw size={20} />
+                Yenile
+              </button>
+            </div>
+
           </div>
         </div>
 
@@ -715,78 +799,6 @@ const TetrisGame = () => {
               </button>
             </div>
           </div>
-
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
-            gap: '12px',
-            marginBottom: '16px'
-          }}>
-            {!gameRunning && !gameOver && (
-              <button
-                onClick={startGame}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  background: 'linear-gradient(45deg, #10b981, #34d399)',
-                  color: 'white',
-                  padding: '12px 24px',
-                  borderRadius: '12px',
-                  fontWeight: 'bold',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontSize: '16px'
-                }}
-              >
-                <Play size={20} />
-                Başlat
-              </button>
-            )}
-            
-            {gameRunning && !gameOver && (
-              <button
-                onClick={pauseGame}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  background: 'linear-gradient(45deg, #f59e0b, #fbbf24)',
-                  color: 'white',
-                  padding: '12px 24px',
-                  borderRadius: '12px',
-                  fontWeight: 'bold',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontSize: '16px'
-                }}
-              >
-                <Pause size={20} />
-                Durdur
-              </button>
-            )}
-            
-            <button
-              onClick={resetGame}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                background: 'linear-gradient(45deg, #ef4444, #f87171)',
-                color: 'white',
-                padding: '12px 24px',
-                borderRadius: '12px',
-                fontWeight: 'bold',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '16px'
-              }}
-            >
-              <RotateCcw size={20} />
-              Yenile
-            </button>
-          </div>
-
         </div>
       </div>
     </div>
