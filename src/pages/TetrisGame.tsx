@@ -796,9 +796,6 @@ const TetrisGame = () => {
             borderRadius: '12px',
             backdropFilter: 'blur(10px)'
           }}>
-            <p>Klavye ok tuşları veya ekran butonlarıyla kontrol et!</p>
-            <p>🧩 Satırları tamamla ve yüksek skor yap! 🏆</p>
-            <p>Yukarı ok ya da Space ile döndür ↻</p>
           </div>
         </div>
       </div>
