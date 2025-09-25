@@ -787,16 +787,6 @@ const TetrisGame = () => {
             </button>
           </div>
 
-          <div style={{ 
-            textAlign: 'center', 
-            color: 'rgba(255, 255, 255, 0.8)', 
-            fontSize: '14px',
-            background: 'rgba(255, 255, 255, 0.1)',
-            padding: '12px',
-            borderRadius: '12px',
-            backdropFilter: 'blur(10px)'
-          }}>
-          </div>
         </div>
       </div>
     </div>
