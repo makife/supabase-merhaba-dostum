@@ -740,7 +740,7 @@ const TetrisGame = () => {
                 }}
               >
                 <Play size={20} />
-                Başla
+                Başlat
               </button>
             )}
             
@@ -762,7 +762,7 @@ const TetrisGame = () => {
                 }}
               >
                 <Pause size={20} />
-                Duraklat
+                Durdur
               </button>
             )}
             
@@ -783,7 +783,7 @@ const TetrisGame = () => {
               }}
             >
               <RotateCcw size={20} />
-              Yeniden
+              Yenile
             </button>
           </div>
 
