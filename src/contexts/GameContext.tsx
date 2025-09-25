@@ -1632,9 +1632,17 @@ useEffect(() => {
           console.log('🏆 ===== DOĞRULANMIŞ DISCONNECT (DELETE) =====');
           console.log('🏆 Ayrılan:', oldParticipant.user_id?.slice(-8), 'Kazanan:', winnerUserId?.slice(-8));
 
-          // Anlık UI bildirimini tetikle (eventRoomId ile sabitle)
+          // Doğru kazananı belirle - ben mi ayrıldım yoksa rakip mi?
+          const isMyDisconnect = oldParticipant.user_id === user?.id;
+          const winnerSide = isMyDisconnect ? 'opponent' : 'player';
+          
+          // Anlık UI bildirimini tetikle 
           window.dispatchEvent(new CustomEvent('playerDisconnected', {
-            detail: { winner: 'player', reason: 'opponent_left', roomId: eventRoomId }
+            detail: { 
+              winner: winnerSide, 
+              reason: 'opponent_left', 
+              roomId: eventRoomId 
+            }
           }));
 
           const gameMode = getGameModeFromRoom(currentRoom);

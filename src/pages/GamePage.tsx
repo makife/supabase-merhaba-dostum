@@ -1216,101 +1216,134 @@ const handleBackToMenu = async () => {
   navigate('/');
 };
 
-// Random match room'a katılma ve grid synchronization - SADECE gameMode 'random-match' ise
+// Random match için grid'i URL'den al ve game room oluştur
 useEffect(() => {
   const initializeRandomMatch = async () => {
-    // SADECE random-match modunda çalışsın
     if (gameMode !== 'random-match') return;
+    if (!user?.id) return;
+    
+    console.log('🎲 Random match initialization başlıyor');
     
     const urlParams = new URLSearchParams(window.location.search);
-    const roomId = urlParams.get('roomId');
+    const roomId = urlParams.get('room');
+    const type = urlParams.get('type') as 'timed' | 'score';
     
-    console.log('🎯 Random match URL roomId:', roomId);
+    if (!roomId || !type) {
+      console.error('❌ Random match için room ID veya type eksik');
+      navigate('/');
+      return;
+    }
     
-    if (roomId && roomId !== 'ai-game') {
-      try {
-        // Room bilgilerini al (grid dahil)
-        const { data: roomData, error } = await supabase
-          .from('matchmaking_rooms')
-          .select('*')
-          .eq('id', roomId)
+    try {
+      // Matchmaking room'dan grid'i al
+      const { data: matchmakingRoom, error: matchError } = await supabase
+        .from('matchmaking_rooms')
+        .select('*')
+        .eq('id', roomId)
+        .single();
+
+      if (matchError || !matchmakingRoom) {
+        console.error('❌ Matchmaking room bulunamadı:', matchError);
+        toast({
+          title: "Oda Hatası",
+          description: "Eşleşme odasına ulaşılamadı",
+          variant: "destructive",
+        });
+        navigate('/');
+        return;
+      }
+
+      console.log('✅ Matchmaking room bulundu:', matchmakingRoom.id);
+      
+      // Grid'i al
+      let gridToUse: string[][] = generateRandomGrid();
+      
+      if (matchmakingRoom.room_data && typeof matchmakingRoom.room_data === 'object') {
+        const roomDataObj = matchmakingRoom.room_data as any;
+        if (roomDataObj.game_grid && Array.isArray(roomDataObj.game_grid)) {
+          console.log('📊 Matchmaking room grid alındı:', roomDataObj.game_grid.slice(0, 4));
+          
+          // Grid'i 4x4 matrise çevir
+          const grid = [];
+          for (let i = 0; i < 4; i++) {
+            const row = [];
+            for (let j = 0; j < 4; j++) {
+              row.push(roomDataObj.game_grid[i * 4 + j] || 'A');
+            }
+            grid.push(row);
+          }
+          gridToUse = grid;
+          console.log('✅ Grid matchmaking room\'dan ayarlandı');
+        }
+      }
+      
+      setGameGrid(gridToUse);
+      
+      // Game room oluştur veya bul
+      const { data: existingRoom } = await supabase
+        .from('game_rooms')
+        .select('*')
+        .eq('id', roomId)
+        .eq('status', 'waiting')
+        .single();
+
+      let gameRoomId = roomId;
+      
+      if (!existingRoom) {
+        // Flat grid oluştur
+        const flatGrid = gridToUse.flat();
+        
+        // Yeni game room oluştur
+        const { data: newRoom, error: createError } = await supabase
+          .from('game_rooms')
+          .insert({
+            id: roomId,
+            host_id: user.id,
+            game_mode: type,
+            status: 'waiting',
+            max_players: 2,
+            time_limit: type === 'timed' ? 120 : 0,
+            max_score: type === 'score' ? 100 : 0,
+            current_grid: flatGrid
+          })
+          .select()
           .single();
 
-        if (error) {
-          console.error('❌ Random match room bilgisi alınamadı:', error);
+        if (createError) {
+          console.error('❌ Game room oluşturulamadı:', createError);
           toast({
-            title: "Oda Hatası",
-            description: "Oyun odasına katılamadık",
+            title: "Oda Hatası", 
+            description: "Oyun odası oluşturulamadı",
             variant: "destructive",
           });
           navigate('/');
           return;
         }
-
-        if (roomData) {
-          console.log('✅ Random match room bulundu:', roomData.id);
-          
-          // Grid'i kontrol et ve ayarla
-          if (roomData.room_data && typeof roomData.room_data === 'object' && roomData.room_data !== null) {
-            const roomDataObj = roomData.room_data as any;
-            if (roomDataObj.game_grid && Array.isArray(roomDataObj.game_grid)) {
-              console.log('📊 Matchmaking room grid alındı:', roomDataObj.game_grid.slice(0, 4));
-              
-              // Grid'i 4x4 matrise çevir
-              const grid = [];
-              for (let i = 0; i < 4; i++) {
-                const row = [];
-                for (let j = 0; j < 4; j++) {
-                  row.push(roomDataObj.game_grid[i * 4 + j] || 'A');
-                }
-                grid.push(row);
-              }
-              setGameGrid(grid);
-              console.log('✅ Grid matchmaking room\'dan ayarlandı');
-            } else {
-              console.log('⚠️ Room_data\'da grid yok, varsayılan grid kullanılıyor');
-            }
-          } else if (roomData.game_grid && Array.isArray(roomData.game_grid)) {
-            console.log('📊 Matchmaking room game_grid alındı:', roomData.game_grid.slice(0, 4));
-            
-            // Grid'i 4x4 matrise çevir
-            const grid = [];
-            for (let i = 0; i < 4; i++) {
-              const row = [];
-              for (let j = 0; j < 4; j++) {
-                row.push(roomData.game_grid[i * 4 + j] || 'A');
-              }
-              grid.push(row);
-            }
-            setGameGrid(grid);
-            console.log('✅ Grid matchmaking room\'dan ayarlandı');
-          } else {
-            console.log('⚠️ Matchmaking room\'da grid yok, varsayılan grid kullanılıyor');
-          }
-          
-          // GameContext'teki joinRoom fonksiyonunu kullan
-          const success = await joinRoom(roomData.id);
-          if (success) {
-            console.log('✅ Random match room\'a katıldı');
-          } else {
-            console.error('❌ Random match room\'a katılamadı');
-            toast({
-              title: "Bağlantı Hatası", 
-              description: "Oyun odasına bağlanılamadı",
-              variant: "destructive",
-            });
-            navigate('/');
-          }
-        }
-      } catch (error) {
-        console.error('❌ Random match initialization hatası:', error);
+        
+        console.log('✅ Game room oluşturuldu:', newRoom.id);
+      }
+      
+      // GameContext'teki joinRoom fonksiyonunu kullan
+      const success = await joinRoom(gameRoomId);
+      if (success) {
+        console.log('✅ Random match room\'a katıldı');
+      } else {
+        console.error('❌ Random match room\'a katılamadı');
+        toast({
+          title: "Bağlantı Hatası", 
+          description: "Oyun odasına bağlanılamadı",
+          variant: "destructive",
+        });
         navigate('/');
       }
+    } catch (error) {
+      console.error('❌ Random match initialization hatası:', error);
+      navigate('/');
     }
   };
 
   initializeRandomMatch();
-}, [gameMode, user?.id, joinRoom, navigate, toast, setGameGrid]);
+}, [gameMode, user?.id, joinRoom, navigate, toast, setGameGrid, generateRandomGrid]);
 
 // Tournament match bilgisini al - SADECE gameMode 'tournament' ise
 useEffect(() => {
