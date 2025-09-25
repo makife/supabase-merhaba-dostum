@@ -211,33 +211,40 @@ const TetrisGame = () => {
   }, [currentPiece, gameRunning, gameOver, rotatePiece, checkCollision, currentPosition, board]);
 
   // Stable drop function ref to prevent timer resets
-  const dropPieceRef = useRef();
-  dropPieceRef.current = () => {
-    movePiece('down');
-  };
+  const dropPieceRef = useRef<(() => void) | null>(null);
+  
+  useEffect(() => {
+    dropPieceRef.current = () => {
+      movePiece('down');
+    };
+  });
 
   useEffect(() => {
     if (gameRunning && !gameOver) {
       gameLoopRef.current = setInterval(() => {
-        dropPieceRef.current();
+        if (dropPieceRef.current) {
+          dropPieceRef.current();
+        }
       }, dropTime);
     } else {
       clearInterval(gameLoopRef.current);
     }
     return () => clearInterval(gameLoopRef.current);
-  }, [gameRunning, gameOver, dropTime]); // movePiece dependency'sini kaldırdık
+  }, [gameRunning, gameOver, dropTime]);
 
   // Hızlı düşüş için ayrı timer
   useEffect(() => {
     if (fastDrop && gameRunning && !gameOver) {
       fastDropRef.current = setInterval(() => {
-        dropPieceRef.current();
-      }, 50); // Çok hızlı düşüş
+        if (dropPieceRef.current) {
+          dropPieceRef.current();
+        }
+      }, 50);
     } else {
       clearInterval(fastDropRef.current);
     }
     return () => clearInterval(fastDropRef.current);
-  }, [fastDrop, gameRunning, gameOver]); // movePiece dependency'sini kaldırdık
+  }, [fastDrop, gameRunning, gameOver]);
 
   useEffect(() => {
     const handleKeyPress = (e) => {
@@ -391,7 +398,7 @@ const TetrisGame = () => {
             marginBottom: '16px',
             textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
           }}>
-            🧩 TetriS 🧩
+            🧩 Tetris
           </h1>
           
           <div style={{ 
@@ -785,6 +792,9 @@ const TetrisGame = () => {
             borderRadius: '12px',
             backdropFilter: 'blur(10px)'
           }}>
+            <p>Klavye ok tuşları veya ekran butonlarıyla kontrol et!</p>
+            <p>🧩 Satırları tamamla ve yüksek skor yap! 🏆</p>
+            <p>Yukarı ok ya da Space ile döndür ↻</p>
           </div>
         </div>
       </div>
