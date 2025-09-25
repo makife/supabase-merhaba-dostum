@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Play, Pause, RotateCcw, Trophy, Target, ArrowLeft, RotateCw } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const BOARD_WIDTH = 10;
 const BOARD_HEIGHT = 20;
