@@ -470,7 +470,7 @@ const TetrisGame = () => {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', alignItems: 'flex-start' }}>
           
           <div 
             style={{
@@ -559,14 +559,14 @@ const TetrisGame = () => {
           </div>
 
           {/* Sağ Panel - Sonraki Parça ve Kontroller */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             
             {/* Sonraki Parça */}
             <div style={{
-              padding: '16px',
-              minWidth: '120px'
+              padding: '8px',
+              minWidth: '80px'
             }}>
-              <h3 style={{ color: 'white', fontSize: '16px', marginBottom: '12px', textAlign: 'center' }}>
+              <h3 style={{ color: 'white', fontSize: '14px', marginBottom: '8px', textAlign: 'center' }}>
                 Sonraki
               </h3>
               <div style={{
@@ -615,7 +615,7 @@ const TetrisGame = () => {
               display: 'flex', 
               flexDirection: 'column', 
               alignItems: 'center',
-              gap: '8px'
+              gap: '6px'
             }}>
               {!gameRunning && !gameOver && (
                 <button
@@ -624,20 +624,20 @@ const TetrisGame = () => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '6px',
+                    gap: '4px',
                     background: 'linear-gradient(45deg, #10b981, #34d399)',
                     color: 'white',
-                    padding: '8px 12px',
-                    borderRadius: '8px',
+                    padding: '6px 10px',
+                    borderRadius: '6px',
                     fontWeight: 'bold',
                     border: 'none',
                     cursor: 'pointer',
-                    fontSize: '12px',
+                    fontSize: '11px',
                     width: '64px',
-                    height: '32px'
+                    height: '28px'
                   }}
                 >
-                  <Play size={14} />
+                  <Play size={12} />
                   Başlat
                 </button>
               )}
@@ -649,20 +649,20 @@ const TetrisGame = () => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '6px',
+                    gap: '4px',
                     background: 'linear-gradient(45deg, #f59e0b, #fbbf24)',
                     color: 'white',
-                    padding: '8px 12px',
-                    borderRadius: '8px',
+                    padding: '6px 10px',
+                    borderRadius: '6px',
                     fontWeight: 'bold',
                     border: 'none',
                     cursor: 'pointer',
-                    fontSize: '12px',
+                    fontSize: '11px',
                     width: '64px',
-                    height: '32px'
+                    height: '28px'
                   }}
                 >
-                  <Pause size={14} />
+                  <Pause size={12} />
                   Durdur
                 </button>
               )}
@@ -673,20 +673,20 @@ const TetrisGame = () => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '6px',
+                  gap: '4px',
                   background: 'linear-gradient(45deg, #ef4444, #f87171)',
                   color: 'white',
-                  padding: '8px 12px',
-                  borderRadius: '8px',
+                  padding: '6px 10px',
+                  borderRadius: '6px',
                   fontWeight: 'bold',
                   border: 'none',
                   cursor: 'pointer',
-                  fontSize: '12px',
+                  fontSize: '11px',
                   width: '64px',
-                  height: '32px'
+                  height: '28px'
                 }}
               >
-                <RotateCcw size={14} />
+                <RotateCcw size={12} />
                 Yenile
               </button>
             </div>
