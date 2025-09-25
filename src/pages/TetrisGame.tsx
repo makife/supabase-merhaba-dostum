@@ -719,7 +719,7 @@ const TetrisGame = () => {
           <div style={{ 
             display: 'flex', 
             justifyContent: 'center', 
-            gap: '16px',
+            gap: '12px',
             marginBottom: '16px'
           }}>
             {!gameRunning && !gameOver && (
