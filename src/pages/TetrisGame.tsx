@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Play, Pause, RotateCcw, Trophy, Target, ArrowLeft, RotateCw } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 
 const BOARD_WIDTH = 10;
 const BOARD_HEIGHT = 20;
@@ -19,7 +18,7 @@ const TETRIS_PIECES = {
 const PIECE_TYPES = Object.keys(TETRIS_PIECES);
 
 const TetrisGame = () => {
-  const navigate = () => {
+  const goBack = () => {
     if (window.history.length > 1) {
       window.history.back();
     } else {
@@ -375,7 +374,7 @@ const TetrisGame = () => {
         {/* Geri Dön Butonu */}
         <div style={{ marginBottom: '16px' }}>
           <button
-            onClick={() => navigate(-1)}
+            onClick={goBack}
             style={{
               display: 'flex',
               alignItems: 'center',
