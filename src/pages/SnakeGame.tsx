@@ -6,7 +6,7 @@ const INITIAL_SNAKE = [{ x: 10, y: 10 }];
 const INITIAL_DIRECTION = { x: 0, y: -1 };
 
 // Meyve emojileri dizisi
-const FRUIT_EMOJIS = ['🍎', '🍊', '🍋', '🍌', '🍇', '🍓', '🫐', '🍑', '🍒', '🥝', '🍑', '🥭', '🍍', '🥥', '🍈', '🍉'];
+const FRUIT_EMOJIS = ['🍎', '🍊', '🍋', '🍌', '🍇', '🍓', '🍑', '🍒', '🥝', '🍑', '🥭', '🍍', '🥥', '🍈', '🍉'];
 
 const SnakeGame = () => {
   const navigate = () => {
@@ -37,6 +37,14 @@ const SnakeGame = () => {
   const gameAreaRef = useRef(null);
   const gameLoopRef = useRef(null);
   const touchStartRef = useRef({ x: 0, y: 0 });
+
+  // Yön değiştir ve oyunu başlat (eğer durmuşsa)
+  const changeDirection = useCallback((newDirection) => {
+    setDirection(newDirection);
+    if (!gameRunning && !gameOver) {
+      setGameRunning(true);
+    }
+  }, [gameRunning, gameOver]);
 
   // Yeni yiyecek pozisyonu ve rastgele meyve oluştur
   const generateFood = useCallback((currentSnake) => {
@@ -193,14 +201,6 @@ const SnakeGame = () => {
     setGameRunning(true);
     setGameOver(false);
   };
-
-  // Yön değiştir ve oyunu başlat (eğer durmuşsa)
-  const changeDirection = useCallback((newDirection) => {
-    setDirection(newDirection);
-    if (!gameRunning && !gameOver) {
-      setGameRunning(true);
-    }
-  }, [gameRunning, gameOver]);
 
   // Oyunu duraklat
   const pauseGame = () => {
@@ -763,8 +763,6 @@ const SnakeGame = () => {
             borderRadius: '12px',
             backdropFilter: 'blur(10px)'
           }}>
-            <p>Klavye ok tuşları veya ekran butonlarıyla yönlendir!</p>
-            <p>🍎 Meyveleri topla ve büyü! 🍓</p>
           </div>
         </div>
       </div>
