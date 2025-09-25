@@ -611,6 +611,32 @@ const HomePage = () => {
                   </div>
                 </div>
 
+                {/* Tetris Game */}
+<div 
+  className="bg-gradient-to-r from-cyan-500 to-teal-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px]"
+  onClick={() => navigate('/tetris-game')}
+>
+  <div className="flex-1">
+    <h2 className="text-xl font-semibold text-white font-painter">Tetris Oyunu</h2>
+  </div>
+  {/* Mini Tetris İkonu */}
+  <div className="relative w-12 h-12 flex items-center justify-center">
+    <div className="w-8 h-8 bg-purple-400 rounded flex items-center justify-center animate-pulse">
+      🧩
+    </div>
+    <div className="absolute inset-0 flex items-center justify-center">
+      <div className="w-10 h-10 border-2 border-white/30 rounded animate-spin" style={{ animationDuration: '2s' }} />
+    </div>
+    {/* Tetris blokları */}
+    <div className="absolute right-0 bottom-1">
+      <span className="text-lg">🟦</span>
+    </div>
+    <div className="absolute left-0 top-1">
+      <span className="text-sm">🟨</span>
+    </div>
+  </div>
+</div>
+
 {/* Reactor Runner */}
 <div 
   className="bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px]"
