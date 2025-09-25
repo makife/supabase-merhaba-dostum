@@ -627,12 +627,31 @@ const HomePage = () => {
     <div className="absolute inset-0 flex items-center justify-center">
       <div className="w-10 h-10 border-2 border-white/30 rounded animate-spin" style={{ animationDuration: '2s' }} />
     </div>
-    {/* Tetris blokları */}
+    {/* Mini L bloğu */}
     <div className="absolute right-0 bottom-1">
-      <span className="text-lg">🟦</span>
+      <div className="flex flex-col items-end">
+        <div className="flex">
+          <div className="w-1.5 h-1.5 bg-orange-400 border border-orange-500"></div>
+        </div>
+        <div className="flex">
+          <div className="w-1.5 h-1.5 bg-orange-400 border border-orange-500"></div>
+          <div className="w-1.5 h-1.5 bg-orange-400 border border-orange-500"></div>
+          <div className="w-1.5 h-1.5 bg-orange-400 border border-orange-500"></div>
+        </div>
+      </div>
     </div>
+    {/* Mini S bloğu */}
     <div className="absolute left-0 top-1">
-      <span className="text-sm">🟨</span>
+      <div className="flex flex-col">
+        <div className="flex">
+          <div className="w-1.5 h-1.5 bg-green-400 border border-green-500"></div>
+          <div className="w-1.5 h-1.5 bg-green-400 border border-green-500"></div>
+        </div>
+        <div className="flex">
+          <div className="w-1.5 h-1.5 bg-green-400 border border-green-500"></div>
+          <div className="w-1.5 h-1.5 bg-green-400 border border-green-500"></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
