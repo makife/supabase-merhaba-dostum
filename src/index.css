@@ -1617,11 +1617,27 @@ All colors MUST be HSL.
 
 /* Input field yazı rengi siyah */
 .game-grid input {
-  color: black !important;
+  color: #000000 !important;
+  text-shadow: 
+    0 0 5px #00ffff,
+    0 0 10px #00ffff,
+    0 0 15px #00ffff,
+    0 0 20px #00ffff,
+    1px 1px 0px #ffffff,
+    -1px -1px 0px #ffffff,
+    1px -1px 0px #ffffff,
+    -1px 1px 0px #ffffff !important;
+  font-weight: bold !important;
 }
 
 .game-grid input::placeholder {
-  color: rgba(0, 0, 0, 0.5) !important;
+  color: rgba(0, 0, 0, 0.7) !important;
+  text-shadow: 
+    0 0 3px #00ffff,
+    0 0 6px #00ffff,
+    0 0 9px #00ffff,
+    1px 1px 0px rgba(255, 255, 255, 0.5),
+    -1px -1px 0px rgba(255, 255, 255, 0.5) !important;
 }
 
 /* ===== LOADING SCREEN STYLES - index.css dosyanızın sonuna ekleyin ===== */
