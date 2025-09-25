@@ -5,6 +5,9 @@ const GRID_SIZE = 20;
 const INITIAL_SNAKE = [{ x: 10, y: 10 }];
 const INITIAL_DIRECTION = { x: 0, y: -1 };
 
+// Meyve emojileri dizisi
+const FRUIT_EMOJIS = ['🍎', '🍊', '🍋', '🍌', '🍇', '🍓', '🫐', '🍑', '🍒', '🥝', '🍑', '🥭', '🍍', '🥥', '🍈', '🍉'];
+
 const SnakeGame = () => {
   const navigate = () => {
     if (window.history.length > 1) {
@@ -15,7 +18,7 @@ const SnakeGame = () => {
   };
   
   const [snake, setSnake] = useState(INITIAL_SNAKE);
-  const [food, setFood] = useState({ x: 5, y: 5 });
+  const [food, setFood] = useState({ x: 5, y: 5, emoji: FRUIT_EMOJIS[0] });
   const [direction, setDirection] = useState(INITIAL_DIRECTION);
   const [gameRunning, setGameRunning] = useState(false);
   const [gameOver, setGameOver] = useState(false);
@@ -35,13 +38,14 @@ const SnakeGame = () => {
   const gameLoopRef = useRef(null);
   const touchStartRef = useRef({ x: 0, y: 0 });
 
-  // Yeni yiyecek pozisyonu oluştur
+  // Yeni yiyecek pozisyonu ve rastgele meyve oluştur
   const generateFood = useCallback((currentSnake) => {
     let newFood;
     do {
       newFood = {
         x: Math.floor(Math.random() * GRID_SIZE),
-        y: Math.floor(Math.random() * GRID_SIZE)
+        y: Math.floor(Math.random() * GRID_SIZE),
+        emoji: FRUIT_EMOJIS[Math.floor(Math.random() * FRUIT_EMOJIS.length)]
       };
     } while (currentSnake.some(segment => segment.x === newFood.x && segment.y === newFood.y));
     return newFood;
@@ -125,27 +129,27 @@ const SnakeGame = () => {
   // Klavye kontrolleri
   useEffect(() => {
     const handleKeyPress = (e) => {
-      if (!gameRunning || gameOver) return;
+      if (gameOver) return;
 
       switch (e.key) {
         case 'ArrowUp':
-          if (direction.y === 0) setDirection({ x: 0, y: -1 });
+          if (direction.y === 0) changeDirection({ x: 0, y: -1 });
           break;
         case 'ArrowDown':
-          if (direction.y === 0) setDirection({ x: 0, y: 1 });
+          if (direction.y === 0) changeDirection({ x: 0, y: 1 });
           break;
         case 'ArrowLeft':
-          if (direction.x === 0) setDirection({ x: -1, y: 0 });
+          if (direction.x === 0) changeDirection({ x: -1, y: 0 });
           break;
         case 'ArrowRight':
-          if (direction.x === 0) setDirection({ x: 1, y: 0 });
+          if (direction.x === 0) changeDirection({ x: 1, y: 0 });
           break;
       }
     };
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [direction, gameRunning, gameOver]);
+  }, [direction, gameOver, changeDirection]);
 
   // Dokunmatik kontroller
   const handleTouchStart = (e) => {
@@ -156,7 +160,7 @@ const SnakeGame = () => {
 
   const handleTouchEnd = (e) => {
     e.preventDefault();
-    if (!gameRunning || gameOver) return;
+    if (gameOver) return;
 
     const touch = e.changedTouches[0];
     const deltaX = touch.clientX - touchStartRef.current.x;
@@ -170,16 +174,16 @@ const SnakeGame = () => {
     if (absX > absY) {
       // Yatay hareket
       if (deltaX > 0 && direction.x === 0) {
-        setDirection({ x: 1, y: 0 }); // Sağ
+        changeDirection({ x: 1, y: 0 }); // Sağ
       } else if (deltaX < 0 && direction.x === 0) {
-        setDirection({ x: -1, y: 0 }); // Sol
+        changeDirection({ x: -1, y: 0 }); // Sol
       }
     } else {
       // Dikey hareket
       if (deltaY > 0 && direction.y === 0) {
-        setDirection({ x: 0, y: 1 }); // Aşağı
+        changeDirection({ x: 0, y: 1 }); // Aşağı
       } else if (deltaY < 0 && direction.y === 0) {
-        setDirection({ x: 0, y: -1 }); // Yukarı
+        changeDirection({ x: 0, y: -1 }); // Yukarı
       }
     }
   };
@@ -190,6 +194,14 @@ const SnakeGame = () => {
     setGameOver(false);
   };
 
+  // Yön değiştir ve oyunu başlat (eğer durmuşsa)
+  const changeDirection = useCallback((newDirection) => {
+    setDirection(newDirection);
+    if (!gameRunning && !gameOver) {
+      setGameRunning(true);
+    }
+  }, [gameRunning, gameOver]);
+
   // Oyunu duraklat
   const pauseGame = () => {
     setGameRunning(false);
@@ -198,7 +210,7 @@ const SnakeGame = () => {
   // Oyunu sıfırla
   const resetGame = () => {
     setSnake(INITIAL_SNAKE);
-    setFood({ x: 5, y: 5 });
+    setFood({ x: 5, y: 5, emoji: FRUIT_EMOJIS[Math.floor(Math.random() * FRUIT_EMOJIS.length)] });
     setDirection(INITIAL_DIRECTION);
     setGameRunning(false);
     setGameOver(false);
@@ -395,20 +407,24 @@ const SnakeGame = () => {
             />
           ))}
 
-          {/* Yiyecek */}
+          {/* Meyve Yiyecek */}
           <div
             style={{
               position: 'absolute',
-              left: food.x * 15 + 1,
-              top: food.y * 15 + 1,
-              width: 12,
-              height: 12,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, #ef4444, #dc2626)',
-              boxShadow: '0 0 20px rgba(239, 68, 68, 0.8), inset 0 0 5px rgba(255, 255, 255, 0.3)',
-              animation: 'pulse 1.5s infinite'
+              left: food.x * 15,
+              top: food.y * 15,
+              width: 15,
+              height: 15,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '12px',
+              animation: 'bounce 1.5s infinite',
+              filter: 'drop-shadow(0 0 8px rgba(255, 255, 255, 0.6))'
             }}
-          />
+          >
+            {food.emoji}
+          </div>
 
           {/* Game Over Overlay */}
           {gameOver && (
@@ -463,8 +479,12 @@ const SnakeGame = () => {
           }}>
             {/* Yukarı */}
             <button
-              onClick={() => direction.y === 0 && setDirection({ x: 0, y: -1 })}
-              disabled={!gameRunning || gameOver || direction.y !== 0}
+              onClick={() => {
+                if (direction.y === 0) {
+                  changeDirection({ x: 0, y: -1 });
+                }
+              }}
+              disabled={gameOver || direction.y !== 0}
               style={{
                 width: '50px',
                 height: '50px',
@@ -475,16 +495,16 @@ const SnakeGame = () => {
                 border: '2px solid rgba(255, 255, 255, 0.3)',
                 color: 'white',
                 fontSize: '20px',
-                cursor: direction.y === 0 && gameRunning && !gameOver ? 'pointer' : 'not-allowed',
+                cursor: direction.y === 0 && !gameOver ? 'pointer' : 'not-allowed',
                 transition: 'all 0.3s ease',
                 backdropFilter: 'blur(10px)',
-                opacity: direction.y !== 0 ? 0.5 : 1,
+                opacity: direction.y !== 0 || gameOver ? 0.5 : 1,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
               }}
               onMouseOver={(e) => {
-                if (direction.y === 0 && gameRunning && !gameOver) {
+                if (direction.y === 0 && !gameOver) {
                   const target = e.target as HTMLButtonElement;
                   target.style.transform = 'scale(1.1)';
                   target.style.boxShadow = '0 0 20px rgba(102, 126, 234, 0.5)';
@@ -502,8 +522,12 @@ const SnakeGame = () => {
             {/* Sol - Aşağı - Sağ */}
             <div style={{ display: 'flex', gap: '30px', alignItems: 'center' }}>
               <button
-                onClick={() => direction.x === 0 && setDirection({ x: -1, y: 0 })}
-                disabled={!gameRunning || gameOver || direction.x !== 0}
+                onClick={() => {
+                  if (direction.x === 0) {
+                    changeDirection({ x: -1, y: 0 });
+                  }
+                }}
+                disabled={gameOver || direction.x !== 0}
                 style={{
                   width: '50px',
                   height: '50px',
@@ -514,16 +538,16 @@ const SnakeGame = () => {
                   border: '2px solid rgba(255, 255, 255, 0.3)',
                   color: 'white',
                   fontSize: '20px',
-                  cursor: direction.x === 0 && gameRunning && !gameOver ? 'pointer' : 'not-allowed',
+                  cursor: direction.x === 0 && !gameOver ? 'pointer' : 'not-allowed',
                   transition: 'all 0.3s ease',
                   backdropFilter: 'blur(10px)',
-                  opacity: direction.x !== 0 ? 0.5 : 1,
+                  opacity: direction.x !== 0 || gameOver ? 0.5 : 1,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
                 }}
                 onMouseOver={(e) => {
-                  if (direction.x === 0 && gameRunning && !gameOver) {
+                  if (direction.x === 0 && !gameOver) {
                     const target = e.target as HTMLButtonElement;
                     target.style.transform = 'scale(1.1)';
                     target.style.boxShadow = '0 0 20px rgba(102, 126, 234, 0.5)';
@@ -539,8 +563,12 @@ const SnakeGame = () => {
               </button>
               
               <button
-                onClick={() => direction.y === 0 && setDirection({ x: 0, y: 1 })}
-                disabled={!gameRunning || gameOver || direction.y !== 0}
+                onClick={() => {
+                  if (direction.y === 0) {
+                    changeDirection({ x: 0, y: 1 });
+                  }
+                }}
+                disabled={gameOver || direction.y !== 0}
                 style={{
                   width: '50px',
                   height: '50px',
@@ -551,16 +579,16 @@ const SnakeGame = () => {
                   border: '2px solid rgba(255, 255, 255, 0.3)',
                   color: 'white',
                   fontSize: '20px',
-                  cursor: direction.y === 0 && gameRunning && !gameOver ? 'pointer' : 'not-allowed',
+                  cursor: direction.y === 0 && !gameOver ? 'pointer' : 'not-allowed',
                   transition: 'all 0.3s ease',
                   backdropFilter: 'blur(10px)',
-                  opacity: direction.y !== 0 ? 0.5 : 1,
+                  opacity: direction.y !== 0 || gameOver ? 0.5 : 1,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
                 }}
                 onMouseOver={(e) => {
-                  if (direction.y === 0 && gameRunning && !gameOver) {
+                  if (direction.y === 0 && !gameOver) {
                     const target = e.target as HTMLButtonElement;
                     target.style.transform = 'scale(1.1)';
                     target.style.boxShadow = '0 0 20px rgba(102, 126, 234, 0.5)';
@@ -576,8 +604,12 @@ const SnakeGame = () => {
               </button>
               
               <button
-                onClick={() => direction.x === 0 && setDirection({ x: 1, y: 0 })}
-                disabled={!gameRunning || gameOver || direction.x !== 0}
+                onClick={() => {
+                  if (direction.x === 0) {
+                    changeDirection({ x: 1, y: 0 });
+                  }
+                }}
+                disabled={gameOver || direction.x !== 0}
                 style={{
                   width: '50px',
                   height: '50px',
@@ -588,16 +620,16 @@ const SnakeGame = () => {
                   border: '2px solid rgba(255, 255, 255, 0.3)',
                   color: 'white',
                   fontSize: '20px',
-                  cursor: direction.x === 0 && gameRunning && !gameOver ? 'pointer' : 'not-allowed',
+                  cursor: direction.x === 0 && !gameOver ? 'pointer' : 'not-allowed',
                   transition: 'all 0.3s ease',
                   backdropFilter: 'blur(10px)',
-                  opacity: direction.x !== 0 ? 0.5 : 1,
+                  opacity: direction.x !== 0 || gameOver ? 0.5 : 1,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
                 }}
                 onMouseOver={(e) => {
-                  if (direction.x === 0 && gameRunning && !gameOver) {
+                  if (direction.x === 0 && !gameOver) {
                     const target = e.target as HTMLButtonElement;
                     target.style.transform = 'scale(1.1)';
                     target.style.boxShadow = '0 0 20px rgba(102, 126, 234, 0.5)';
@@ -731,7 +763,8 @@ const SnakeGame = () => {
             borderRadius: '12px',
             backdropFilter: 'blur(10px)'
           }}>
-
+            <p>Klavye ok tuşları veya ekran butonlarıyla yönlendir!</p>
+            <p>🍎 Meyveleri topla ve büyü! 🍓</p>
           </div>
         </div>
       </div>
@@ -745,6 +778,21 @@ const SnakeGame = () => {
           50% {
             opacity: 0.8;
             transform: scale(1.05);
+          }
+        }
+
+        @keyframes bounce {
+          0%, 100% {
+            transform: scale(1) rotate(0deg);
+          }
+          25% {
+            transform: scale(1.1) rotate(-5deg);
+          }
+          50% {
+            transform: scale(1.15) rotate(0deg);
+          }
+          75% {
+            transform: scale(1.1) rotate(5deg);
           }
         }
 
