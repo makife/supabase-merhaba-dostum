@@ -408,275 +408,273 @@ return (
         </div>
       </div>
     </div>
-  </div>
-);
 
-      {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-6xl mx-auto p-4 space-y-6">
+    {/* Scrollable Content */}
+    <div className="flex-1 overflow-y-auto">
+      <div className="max-w-6xl mx-auto p-4 space-y-6">
 
-        {/* User Status */}
-        {user && (
-          <Card className="bg-gradient-to-r from-card to-muted/50 border-primary/20">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className={`p-2 rounded-lg ${isPremium ? 'bg-yellow-500/20' : 'bg-muted'}`}>
-                    <Crown className={`w-5 h-5 ${isPremium ? 'text-yellow-500' : 'text-muted-foreground'}`} />
-                  </div>
-                  <div>
-                    <p className="font-semibold">
-                      {isPremium ? 'Premium Üye' : 'Ücretsiz Üye'}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Oyun Hakkı: {((profile?.game_credits || 0) + (profile?.bonus_credits || 0))}/5
-                    </p>
-                  </div>
+      {/* User Status */}
+      {user && (
+        <Card className="bg-gradient-to-r from-card to-muted/50 border-primary/20">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className={`p-2 rounded-lg ${isPremium ? 'bg-yellow-500/20' : 'bg-muted'}`}>
+                  <Crown className={`w-5 h-5 ${isPremium ? 'text-yellow-500' : 'text-muted-foreground'}`} />
                 </div>
-                {isPremium && (
-                  <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white">
-                    Premium
-                  </Badge>
-                )}
+                <div>
+                  <p className="font-semibold">
+                    {isPremium ? 'Premium Üye' : 'Ücretsiz Üye'}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Oyun Hakkı: {((profile?.game_credits || 0) + (profile?.bonus_credits || 0))}/5
+                  </p>
+                </div>
+              </div>
+              {isPremium && (
+                <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white">
+                  Premium
+                </Badge>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Reklam İzle Bölümü */}
+      {user && window.Capacitor && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Gift className="w-5 h-5 mr-2" />
+              Ücretsiz Kredi Kazan
+            </CardTitle>
+            <CardDescription>
+              Reklam izleyerek ücretsiz oyun kredisi kazanabilirsiniz
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              onClick={watchAdForCredits}
+              disabled={isAdLoading || !isAdReady}
+              className="w-full"
+            >
+              <Gamepad2 className="w-4 h-4 mr-2" />
+              {isAdLoading ? 'Reklam yükleniyor...' : 'Reklam İzle (+1 Kredi)'}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Satın Alımları Geri Yükle */}
+      {user && window.Capacitor && (
+        <Card>
+          <CardContent className="p-4">
+            <Button 
+              onClick={restoreSubscriptions}
+              variant="outline"
+              className="w-full"
+              disabled={isSubscriptionLoading}
+            >
+              Satın Alımları Geri Yükle
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Market Kategorileri */}
+      <Tabs defaultValue="credits" className="w-full">
+        <TabsList className="grid w-full grid-cols-4 bg-muted/50">
+          <TabsTrigger 
+            value="credits" 
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white"
+          >
+            <Zap className="w-4 h-4 mr-2" />
+            Oyun
+          </TabsTrigger>
+          <TabsTrigger 
+            value="premium"
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-500 data-[state=active]:to-orange-500 data-[state=active]:text-white"
+          >
+            <Crown className="w-4 h-4 mr-2" />
+            Premium
+          </TabsTrigger>
+          <TabsTrigger 
+            value="themes"
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white"
+          >
+            <Palette className="w-4 h-4 mr-2" />
+            Temalar
+          </TabsTrigger>
+          <TabsTrigger 
+            value="jokers"
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white"
+          >
+            <Star className="w-4 h-4 mr-2" />
+            Jokerler
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="credits" className="space-y-4">
+          <div className="text-center mb-6">
+            <h3 className="text-xl font-bold mb-2">Oyun Hakları ve Sınırsız Zaman</h3>
+            <p className="text-muted-foreground">Daha fazla oyun oynayın, yeteneklerinizi geliştirin</p>
+          </div>
+          
+          {renderMarketItems(getItemsByCategory('credits'))}
+
+          {/* Oyun Açıklaması */}
+          <Card className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border-blue-500/30">
+            <CardHeader>
+              <CardTitle className="flex items-center text-blue-600">
+                <Zap className="w-5 h-5 mr-2" />
+                Oyun Hakkı Nasıl Çalışır?
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2 text-sm">
+                <li className="flex items-center">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mr-3" />
+                  Her oyun için 1 hak harcanır
+                </li>
+                <li className="flex items-center">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mr-3" />
+                  Satın aldığınız haklar mevcut haklarınıza eklenir
+                </li>
+                <li className="flex items-center">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mr-3" />
+                  Premium üyeler sınırsız hak sahibidir
+                </li>
+                <li className="flex items-center">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mr-3" />
+                  Her 15 dakikada 1 ücretsiz hak kazanırsınız (max 5)
+                </li>
+              </ul>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="premium" className="space-y-4">
+          <div className="text-center mb-6">
+            <h3 className="text-xl font-bold mb-2">Premium Üyelik</h3>
+            <p className="text-muted-foreground">Tüm özelliklere sınırsız erişim</p>
+          </div>
+          
+          {renderMarketItems(getItemsByCategory('premium'))}
+          
+          {/* Premium Avantajları */}
+          <Card className="mt-6 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30">
+            <CardHeader>
+              <CardTitle className="flex items-center text-yellow-600">
+                <Crown className="w-5 h-5 mr-2" />
+                Premium Avantajları
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2 text-sm">
+                <li className="flex items-center">
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full mr-3" />
+                  Sınırsız oyun hakkı
+                </li>
+                <li className="flex items-center">
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full mr-3" />
+                  Tüm temalara erişim
+                </li>
+                <li className="flex items-center">
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full mr-3" />
+                  Özel premium rozet
+                </li>
+                <li className="flex items-center">
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full mr-3" />
+                  Reklamsız deneyim
+                </li>
+                <li className="flex items-center">
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full mr-3" />
+                  Yeni özellikler için öncelikli erişim
+                </li>
+              </ul>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="themes" className="space-y-4">
+          <div className="text-center mb-6">
+            <h3 className="text-xl font-bold mb-2">Özel Temalar</h3>
+            <p className="text-muted-foreground">Oyunu kendi tarzınızla oynayın</p>
+          </div>
+          
+          {renderMarketItems(getItemsByCategory('themes'))}
+
+          {/* Tema Açıklaması */}
+          <Card className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/30">
+            <CardHeader>
+              <CardTitle className="flex items-center text-purple-600">
+                <Palette className="w-5 h-5 mr-2" />
+                Tema Sistemi
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2 text-sm">
+                <li className="flex items-center">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full mr-3" />
+                  Oyun arayüzünün görsel temasını değiştirir
+                </li>
+                <li className="flex items-center">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full mr-3" />
+                  Farklı renk paleti ve tasarım stilleri
+                </li>
+                <li className="flex items-center">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full mr-3" />
+                  Kişisel zevkinize göre özelleştirin
+                </li>
+                <li className="flex items-center">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full mr-3" />
+                  Premium üyeler tüm temalara erişebilir
+                </li>
+              </ul>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="jokers" className="space-y-4">
+          <div className="text-center mb-6">
+            <h3 className="text-xl font-bold mb-2">Joker Paketleri</h3>
+            <p className="text-muted-foreground">Zor durumlarda kullanabileceğiniz jokerler</p>
+          </div>
+          
+          {renderMarketItems(getItemsByCategory('jokers'))}
+
+          {/* Joker Açıklaması */}
+          <Card className="mb-6 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/30">
+            <CardHeader>
+              <CardTitle className="flex items-center text-green-600">
+                <Star className="w-5 h-5 mr-2" />
+                Joker Türleri ve Kullanımları
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div className="bg-white/50 p-3 rounded-lg">
+                  <h4 className="font-semibold text-green-700 mb-2">🔄 Değiştir Jokeri</h4>
+                  <p>Oyun tahtasındaki harfleri yeniden karıştırır. Yeni kombinasyonlar için ideal.</p>
+                </div>
+                <div className="bg-white/50 p-3 rounded-lg">
+                  <h4 className="font-semibold text-green-700 mb-2">💡 Fısılda Jokeri</h4>
+                  <p>Bulunabilecek kelimelerden birinin ipucunu verir. Takıldığınızda kullanın.</p>
+                </div>
+                <div className="bg-white/50 p-3 rounded-lg">
+                  <h4 className="font-semibold text-green-700 mb-2">✏️ Sen Yaz Jokeri</h4>
+                  <p>Kendi belirlediğiniz kelimeyi oyuna yazmanızı sağlar. En güçlü joker!</p>
+                </div>
               </div>
             </CardContent>
           </Card>
-        )}
-
-        {/* Reklam İzle Bölümü */}
-        {user && window.Capacitor && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Gift className="w-5 h-5 mr-2" />
-                Ücretsiz Kredi Kazan
-              </CardTitle>
-              <CardDescription>
-                Reklam izleyerek ücretsiz oyun kredisi kazanabilirsiniz
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button 
-                onClick={watchAdForCredits}
-                disabled={isAdLoading || !isAdReady}
-                className="w-full"
-              >
-                <Gamepad2 className="w-4 h-4 mr-2" />
-                {isAdLoading ? 'Reklam yükleniyor...' : 'Reklam İzle (+1 Kredi)'}
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Satın Alımları Geri Yükle */}
-        {user && window.Capacitor && (
-          <Card>
-            <CardContent className="p-4">
-              <Button 
-                onClick={restoreSubscriptions}
-                variant="outline"
-                className="w-full"
-                disabled={isSubscriptionLoading}
-              >
-                Satın Alımları Geri Yükle
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Market Kategorileri */}
-        <Tabs defaultValue="credits" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 bg-muted/50">
-            <TabsTrigger 
-              value="credits" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white"
-            >
-              <Zap className="w-4 h-4 mr-2" />
-              Oyun
-            </TabsTrigger>
-            <TabsTrigger 
-              value="premium"
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-500 data-[state=active]:to-orange-500 data-[state=active]:text-white"
-            >
-              <Crown className="w-4 h-4 mr-2" />
-              Premium
-            </TabsTrigger>
-            <TabsTrigger 
-              value="themes"
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white"
-            >
-              <Palette className="w-4 h-4 mr-2" />
-              Temalar
-            </TabsTrigger>
-            <TabsTrigger 
-              value="jokers"
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white"
-            >
-              <Star className="w-4 h-4 mr-2" />
-              Jokerler
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="credits" className="space-y-4">
-            <div className="text-center mb-6">
-              <h3 className="text-xl font-bold mb-2">Oyun Hakları ve Sınırsız Zaman</h3>
-              <p className="text-muted-foreground">Daha fazla oyun oynayın, yeteneklerinizi geliştirin</p>
-            </div>
-            
-            {renderMarketItems(getItemsByCategory('credits'))}
-
-            {/* Oyun Açıklaması */}
-            <Card className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border-blue-500/30">
-              <CardHeader>
-                <CardTitle className="flex items-center text-blue-600">
-                  <Zap className="w-5 h-5 mr-2" />
-                  Oyun Hakkı Nasıl Çalışır?
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 text-sm">
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-3" />
-                    Her oyun için 1 hak harcanır
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-3" />
-                    Satın aldığınız haklar mevcut haklarınıza eklenir
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-3" />
-                    Premium üyeler sınırsız hak sahibidir
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-3" />
-                    Her 15 dakikada 1 ücretsiz hak kazanırsınız (max 5)
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="premium" className="space-y-4">
-            <div className="text-center mb-6">
-              <h3 className="text-xl font-bold mb-2">Premium Üyelik</h3>
-              <p className="text-muted-foreground">Tüm özelliklere sınırsız erişim</p>
-            </div>
-            
-            {renderMarketItems(getItemsByCategory('premium'))}
-            
-            {/* Premium Avantajları */}
-            <Card className="mt-6 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30">
-              <CardHeader>
-                <CardTitle className="flex items-center text-yellow-600">
-                  <Crown className="w-5 h-5 mr-2" />
-                  Premium Avantajları
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 text-sm">
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full mr-3" />
-                    Sınırsız oyun hakkı
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full mr-3" />
-                    Tüm temalara erişim
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full mr-3" />
-                    Özel premium rozet
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full mr-3" />
-                    Reklamsız deneyim
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full mr-3" />
-                    Yeni özellikler için öncelikli erişim
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="themes" className="space-y-4">
-            <div className="text-center mb-6">
-              <h3 className="text-xl font-bold mb-2">Özel Temalar</h3>
-              <p className="text-muted-foreground">Oyunu kendi tarzınızla oynayın</p>
-            </div>
-            
-            {renderMarketItems(getItemsByCategory('themes'))}
-
-            {/* Tema Açıklaması */}
-            <Card className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/30">
-              <CardHeader>
-                <CardTitle className="flex items-center text-purple-600">
-                  <Palette className="w-5 h-5 mr-2" />
-                  Tema Sistemi
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 text-sm">
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full mr-3" />
-                    Oyun arayüzünün görsel temasını değiştirir
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full mr-3" />
-                    Farklı renk paleti ve tasarım stilleri
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full mr-3" />
-                    Kişisel zevkinize göre özelleştirin
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full mr-3" />
-                    Premium üyeler tüm temalara erişebilir
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="jokers" className="space-y-4">
-            <div className="text-center mb-6">
-              <h3 className="text-xl font-bold mb-2">Joker Paketleri</h3>
-              <p className="text-muted-foreground">Zor durumlarda kullanabileceğiniz jokerler</p>
-            </div>
-            
-            {renderMarketItems(getItemsByCategory('jokers'))}
-
-            {/* Joker Açıklaması */}
-            <Card className="mb-6 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/30">
-              <CardHeader>
-                <CardTitle className="flex items-center text-green-600">
-                  <Star className="w-5 h-5 mr-2" />
-                  Joker Türleri ve Kullanımları
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                  <div className="bg-white/50 p-3 rounded-lg">
-                    <h4 className="font-semibold text-green-700 mb-2">🔄 Değiştir Jokeri</h4>
-                    <p>Oyun tahtasındaki harfleri yeniden karıştırır. Yeni kombinasyonlar için ideal.</p>
-                  </div>
-                  <div className="bg-white/50 p-3 rounded-lg">
-                    <h4 className="font-semibold text-green-700 mb-2">💡 Fısılda Jokeri</h4>
-                    <p>Bulunabilecek kelimelerden birinin ipucunu verir. Takıldığınızda kullanın.</p>
-                  </div>
-                  <div className="bg-white/50 p-3 rounded-lg">
-                    <h4 className="font-semibold text-green-700 mb-2">✏️ Sen Yaz Jokeri</h4>
-                    <p>Kendi belirlediğiniz kelimeyi oyuna yazmanızı sağlar. En güçlü joker!</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-        </div>
+        </TabsContent>
+      </Tabs>
       </div>
     </div>
-  );
+  </div>
+);
 };
 
 export default MarketPage;
