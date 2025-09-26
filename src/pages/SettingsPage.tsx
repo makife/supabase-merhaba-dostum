@@ -332,11 +332,12 @@ const SettingsPage = () => {
     openModal("İletişim", content);
   };
 
-  return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-background to-muted overflow-x-hidden">
-      {/* Fixed Header */}
-      <div className="sticky top-0 z-10 bg-purple-50/95 backdrop-blur-sm border-b border-purple-200 p-3">
-        <div className="max-w-2xl mx-auto">
+return (
+  <div className="flex flex-col h-screen bg-gradient-to-br from-background to-muted overflow-x-hidden">
+    {/* Fixed Header */}
+    <div className="sticky top-0 z-10 bg-purple-50/95 backdrop-blur-sm border-b border-purple-200 p-3">
+      <div className="max-w-2xl mx-auto">
+        <div className="space-y-4"> {/* space-y-4'ü buraya ekledim */}
           {/* Header */}
           <div className="flex items-center justify-between">
             <Button variant="outline" size="sm" onClick={() => navigate('/')} className="text-purple-600 border-purple-500/30 hover:bg-purple-500/20 bg-purple-500/10">
@@ -349,7 +350,6 @@ const SettingsPage = () => {
             </h1>
             <div className="w-16" />
           </div>
-
           {/* Game Settings */}
           <Card>
             <CardHeader>
@@ -364,6 +364,7 @@ const SettingsPage = () => {
           </Card>
         </div>
       </div>
+    </div>
 
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
