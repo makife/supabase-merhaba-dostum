@@ -375,10 +375,21 @@ return (
               <ArrowLeft className="w-4 h-4 mr-2" />
               Geri
             </Button>
-            <h1 className="text-2xl font-bold flex items-center text-green-600">
-              <ShoppingCart className="w-5 h-5 mr-2 text-green-500" />
-              Market
-            </h1>
+            
+            <div className="relative">
+              {/* Stroke Background */}
+              <img 
+                src="/stroke.png" 
+                alt="Stroke Background" 
+                className="absolute inset-0 w-full h-full object-cover opacity-30 -z-10"
+              />
+              {/* Market Title */}
+              <h1 className="text-2xl font-bold flex items-center text-green-600 relative z-10 px-4 py-2">
+                <ShoppingCart className="w-5 h-5 mr-2 text-green-500" />
+                Market
+              </h1>
+            </div>
+            
             <div className="w-16" />
           </div>
           {/* Hero Section */}
@@ -397,6 +408,8 @@ return (
         </div>
       </div>
     </div>
+  </div>
+);
 
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
