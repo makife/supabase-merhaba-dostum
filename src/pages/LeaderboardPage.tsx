@@ -353,63 +353,72 @@ const LeaderboardPage = () => {
 
   const currentStats = getCurrentUserStats();
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted flex flex-col">
-      <div className="max-w-2xl mx-auto w-full">
-        {/* Sabit Header */}
-        <div className="sticky top-0 z-10 bg-yellow-50/95 backdrop-blur-sm border-b border-yellow-200 p-3">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Button variant="outline" size="sm" onClick={() => navigate('/')} className="text-yellow-600 border-yellow-500/30 hover:bg-yellow-500/20 bg-yellow-500/10">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Geri
-              </Button>
-              <h1 className="text-2xl font-bold flex items-center text-yellow-600">
-                <Trophy className="w-5 h-5 mr-2 text-yellow-500" />
+return (
+  <div className="min-h-screen bg-gradient-to-br from-background to-muted flex flex-col">
+    <div className="max-w-2xl mx-auto w-full">
+      {/* Sabit Header */}
+      <div className="sticky top-0 z-10 bg-yellow-50/95 backdrop-blur-sm border-b border-yellow-200 p-3">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Button variant="outline" size="sm" onClick={() => navigate('/')} className="text-yellow-600 border-yellow-500/30 hover:bg-yellow-500/20 bg-yellow-500/10">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Geri
+            </Button>
+            
+            <div className="relative inline-block">
+              {/* Stroke Background */}
+              <img 
+                src="/stroke.png" 
+                alt="Stroke Background" 
+                className="absolute inset-0 w-full h-full object-contain opacity-50" 
+              />
+              {/* Liderlik Title */}
+              <h1 className="text-3xl font-bold flex items-center text-yellow-600 relative z-10 px-6 py-3">
+                <Trophy className="w-6 h-6 mr-3 text-yellow-500" />
                 Liderlik
               </h1>
-              <div className="w-16" />
             </div>
-
-            {currentStats && (
-              <Card className="border-primary">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center justify-between text-base">
-                    <div className="flex items-center">
-                      <TrendingUp className="w-4 h-4 mr-2" />
-                      Senin Performansın
-                    </div>
-                    <Badge variant="outline" className="text-xs">
-                      {activeTab === 'weekly' ? 'Bu Hafta' : 
-                       activeTab === 'monthly' ? 'Bu Ay' : 'Genel'}
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="grid grid-cols-2 gap-3 text-center">
-                    <div className="bg-muted/50 rounded-lg p-3">
-                      <div className="text-xl font-bold text-primary">{currentStats.rank || '—'}</div>
-                      <div className="text-xs text-muted-foreground">Sıralama</div>
-                    </div>
-                    <div className="bg-muted/50 rounded-lg p-3">
-                      <div className="text-xl font-bold text-primary">{currentStats.score}</div>
-                      <div className="text-xs text-muted-foreground">Puan</div>
-                    </div>
-                    <div className="bg-muted/50 rounded-lg p-3">
-                      <div className="text-xl font-bold text-primary">{currentStats.games_played}</div>
-                      <div className="text-xs text-muted-foreground">Oyun</div>
-                    </div>
-                    <div className="bg-muted/50 rounded-lg p-3">
-                      <div className="text-xl font-bold text-primary">{currentStats.wins}</div>
-                      <div className="text-xs text-muted-foreground">Galibiyet</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+            
+            <div className="w-16" />
           </div>
+          {currentStats && (
+            <Card className="border-primary">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center justify-between text-base">
+                  <div className="flex items-center">
+                    <TrendingUp className="w-4 h-4 mr-2" />
+                    Senin Performansın
+                  </div>
+                  <Badge variant="outline" className="text-xs">
+                    {activeTab === 'weekly' ? 'Bu Hafta' : 
+                     activeTab === 'monthly' ? 'Bu Ay' : 'Genel'}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="grid grid-cols-2 gap-3 text-center">
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <div className="text-xl font-bold text-primary">{currentStats.rank || '—'}</div>
+                    <div className="text-xs text-muted-foreground">Sıralama</div>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <div className="text-xl font-bold text-primary">{currentStats.score}</div>
+                    <div className="text-xs text-muted-foreground">Puan</div>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <div className="text-xl font-bold text-primary">{currentStats.games_played}</div>
+                    <div className="text-xs text-muted-foreground">Oyun</div>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <div className="text-xl font-bold text-primary">{currentStats.wins}</div>
+                    <div className="text-xs text-muted-foreground">Galibiyet</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
-
+      </div>
         {/* Scroll edilebilir İçerik */}
         <div className="flex-1 overflow-y-auto p-3 space-y-4">
           {/* Liderlik Tabloları */}
