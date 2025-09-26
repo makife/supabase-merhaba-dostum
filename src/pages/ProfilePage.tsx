@@ -501,36 +501,47 @@ const ProfilePage = () => {
         {/* Fixed Header */}
         <div className="p-4 bg-blue-50/95 backdrop-blur-sm border-b border-blue-200 sticky top-0 z-10">
           <div className="flex items-center justify-between mb-4">
-            <Button variant="outline" size="sm" onClick={() => {
-              const fromPage = location.state?.from;
-              if (fromPage === '/chat') {
-                navigate('/chat');
-              } else {
-                navigate('/');
-              }
-            }} className="text-blue-600 border-blue-500/30 hover:bg-blue-500/20 bg-blue-500/10">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Geri
-            </Button>
-            <h1 className="text-2xl font-bold flex items-center text-blue-600">
-              <User className="w-5 h-5 mr-2 text-blue-500"/>
-              {isOwnProfile ? 'Profil' :`${profileData.username} Profili`}
-            </h1>
-            <div className="w-16 flex justify-end">
-              {isOwnProfile && (
-                isEditing ? (
-                  <Button variant="outline" size="sm" onClick={handleSaveProfile}>
-                    Kaydet
-                  </Button>
-                ) : (
-                  <Button variant="outline" size="sm" onClick={handleEditToggle}>
-                    <Edit className="w-4 h-4 mr-2" />
-                    Düzenle
-                  </Button>
-                )
-              )}
-            </div>
-          </div>
+  <Button variant="outline" size="sm" onClick={() => {
+    const fromPage = location.state?.from;
+    if (fromPage === '/chat') {
+      navigate('/chat');
+    } else {
+      navigate('/');
+    }
+  }} className="text-blue-600 border-blue-500/30 hover:bg-blue-500/20 bg-blue-500/10">
+    <ArrowLeft className="w-4 h-4 mr-2" />
+    Geri
+  </Button>
+  
+  <div className="relative inline-block">
+    {/* Stroke Background */}
+    <img 
+      src="/stroke.png" 
+      alt="Stroke Background" 
+      className="absolute inset-0 w-full h-full object-contain opacity-50" 
+    />
+    {/* Profile Title */}
+    <h1 className="text-3xl font-bold flex items-center text-blue-600 relative z-10 px-6 py-3">
+      <User className="w-6 h-6 mr-3 text-blue-500"/>
+      {isOwnProfile ? 'Profil' : `${profileData.username} Profili`}
+    </h1>
+  </div>
+  
+  <div className="w-16 flex justify-end">
+    {isOwnProfile && (
+      isEditing ? (
+        <Button variant="outline" size="sm" onClick={handleSaveProfile}>
+          Kaydet
+        </Button>
+      ) : (
+        <Button variant="outline" size="sm" onClick={handleEditToggle}>
+          <Edit className="w-4 h-4 mr-2" />
+          Düzenle
+        </Button>
+      )
+    )}
+  </div>
+</div>
 
           {/* Profile Header in Fixed Area */}
           <Card>
