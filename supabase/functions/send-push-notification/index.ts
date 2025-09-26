@@ -258,7 +258,8 @@ serve(async (req) => {
     }
 
     // Use background task for notification sending
-    EdgeRuntime.waitUntil(sendNotification())
+    // Background task - send notification asynchronously
+    sendNotification().catch(console.error)
 
     return new Response(
       JSON.stringify({ success: true, message: 'Notification queued successfully' }),

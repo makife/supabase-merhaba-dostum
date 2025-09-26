@@ -132,7 +132,7 @@ Kelimeler:`;
     console.log(`Found ${existingWordSet.size} existing words in database`);
     
     // Sadece yeni kelimeleri filtrele
-    const newWords = words.filter(word => !existingWordSet.has(word.toUpperCase()));
+    const newWords = words.filter((word: string) => !existingWordSet.has(word.toUpperCase()));
     
     console.log(`${newWords.length} new words to insert`);
 
@@ -161,7 +161,7 @@ Kelimeler:`;
     };
 
     // Veritabanına ekle
-    const wordsToInsert = newWords.map(word => ({
+    const wordsToInsert = newWords.map((word: string) => ({
       word: word.toUpperCase(),
       length: word.length,
       difficulty: calculateDifficulty(word),
@@ -231,7 +231,7 @@ Kelimeler:`;
   } catch (error) {
     console.error('Error generating Turkish words:', error);
     return new Response(JSON.stringify({ 
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error',
       success: false 
     }), {
       status: 500,

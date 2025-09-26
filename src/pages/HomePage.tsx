@@ -172,6 +172,25 @@ const HomePage = () => {
     startBackgroundMusic();
   }, [startBackgroundMusic]);
 
+  // Check for daily reset on component mount
+  useEffect(() => {
+    const checkDailyReset = async () => {
+      if (!user || !profile) return;
+      
+      const now = new Date();
+      const lastReset = profile.last_daily_reset ? new Date(profile.last_daily_reset) : null;
+      const today = now.toISOString().split('T')[0];
+      
+      // If no reset recorded or last reset was before today
+      if (!lastReset || lastReset.toISOString().split('T')[0] !== today) {
+        console.log('🔄 Daily reset needed for user:', user.id);
+        await refreshProfile();
+      }
+    };
+
+    checkDailyReset();
+  }, [user, profile?.last_daily_reset]);
+
   // Fetch user profile data including avatar
   useEffect(() => {
     const fetchUserProfile = async () => {

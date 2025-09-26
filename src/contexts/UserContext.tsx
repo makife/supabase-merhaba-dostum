@@ -96,6 +96,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         .single();
 
       if (!error && data) {
+        // Check if daily reset is needed
+        await checkAndResetDailyStats(data);
         console.log('Profile refreshed:', data);
         setProfile(data);
       }
@@ -103,6 +105,39 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       console.error('Error loading profile:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkAndResetDailyStats = async (profileData: any) => {
+    if (!user || !profileData) return;
+    
+    const now = new Date();
+    const lastReset = profileData.last_daily_reset ? new Date(profileData.last_daily_reset) : null;
+    const today = now.toISOString().split('T')[0];
+    
+    // If no reset recorded or last reset was before today
+    if (!lastReset || lastReset.toISOString().split('T')[0] !== today) {
+      console.log('🔄 Resetting daily stats for user:', user.id);
+      
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            daily_games: 0,
+            daily_wins: 0,
+            win_streak: 0,
+            last_daily_reset: today
+          })
+          .eq('id', user.id);
+          
+        if (error) {
+          console.error('Error resetting daily stats:', error);
+        } else {
+          console.log('✅ Daily stats reset completed');
+        }
+      } catch (error) {
+        console.error('Error in daily reset:', error);
+      }
     }
   };
 
