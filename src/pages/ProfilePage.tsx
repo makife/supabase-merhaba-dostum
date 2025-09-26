@@ -528,19 +528,18 @@ const ProfilePage = () => {
   </div>
   
   <div className="w-16 flex justify-end">
-    {isOwnProfile && (
-      isEditing ? (
-        <Button variant="outline" size="sm" onClick={handleSaveProfile}>
-          Kaydet
-        </Button>
-      ) : (
-        <Button variant="outline" size="sm" onClick={handleEditToggle}>
-          <Edit className="w-4 h-4 mr-2" />
-          Düzenle
-        </Button>
-      )
-    )}
-  </div>
+  {isOwnProfile && (
+    isEditing ? (
+      <Button variant="outline" size="sm" onClick={handleSaveProfile}>
+        Kaydet
+      </Button>
+    ) : (
+      <Button variant="outline" size="sm" onClick={handleEditToggle} className="p-2">
+        <Edit className="w-5 h-5 text-red-500" />
+      </Button>
+    )
+  )}
+</div>
 </div>
 
           {/* Profile Header in Fixed Area */}
