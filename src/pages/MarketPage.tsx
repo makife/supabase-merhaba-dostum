@@ -363,11 +363,12 @@ const MarketPage = () => {
     </div>
   );
 
-  return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-background to-muted/50">
-      {/* Fixed Header */}
-      <div className="sticky top-0 z-10 bg-green-50/95 backdrop-blur-sm border-b border-green-200 p-4 space-y-4">
-        <div className="max-w-6xl mx-auto">
+return (
+  <div className="flex flex-col h-screen bg-gradient-to-br from-background to-muted/50">
+    {/* Fixed Header */}
+    <div className="sticky top-0 z-10 bg-green-50/95 backdrop-blur-sm border-b border-green-200 p-4">
+      <div className="max-w-6xl mx-auto">
+        <div className="space-y-4"> {/* space-y-4'ü buraya taşıdım */}
           {/* Header */}
           <div className="flex items-center justify-between">
             <Button variant="outline" size="sm" onClick={() => navigate('/')} className="text-green-600 border-green-500/30 hover:bg-green-500/20 bg-green-500/10">
@@ -380,7 +381,6 @@ const MarketPage = () => {
             </h1>
             <div className="w-16" />
           </div>
-          <div className="h-6"></div>
           {/* Hero Section */}
           <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary to-accent p-6 text-primary-foreground">
             <div className="relative z-10">
@@ -396,6 +396,7 @@ const MarketPage = () => {
           </div>
         </div>
       </div>
+    </div>
 
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
