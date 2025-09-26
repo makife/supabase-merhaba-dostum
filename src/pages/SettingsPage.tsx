@@ -344,10 +344,21 @@ return (
               <ArrowLeft className="w-4 h-4 mr-2" />
               Geri
             </Button>
-            <h1 className="text-2xl font-bold flex items-center text-purple-600">
-              <Settings className="w-5 h-5 mr-2 text-purple-500" />
-              Ayarlar
-            </h1>
+            
+            <div className="relative inline-block">
+              {/* Stroke Background */}
+              <img 
+                src="/stroke.png" 
+                alt="Stroke Background" 
+                className="absolute inset-0 w-full h-full object-contain opacity-50" 
+              />
+              {/* Ayarlar Title */}
+              <h1 className="text-3xl font-bold flex items-center text-purple-600 relative z-10 px-6 py-3">
+                <Settings className="w-6 h-6 mr-3 text-purple-500" />
+                Ayarlar
+              </h1>
+            </div>
+            
             <div className="w-16" />
           </div>
           {/* Game Settings */}
