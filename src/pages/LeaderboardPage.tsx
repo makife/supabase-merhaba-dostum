@@ -18,7 +18,8 @@ import {
   Users,
   Star,
   TrendingUp,
-  CalendarRange
+  CalendarRange,
+  TrendingDown
 } from 'lucide-react';
 
 interface LeaderboardEntry {
@@ -60,7 +61,7 @@ const LeaderboardPage = () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, username, avatar_url, total_score')
+        .select('id, username, avatar_url, total_score, total_games, wins')
         .order('total_score', { ascending: false })
         .limit(50);
 
@@ -71,11 +72,12 @@ const LeaderboardPage = () => {
         username: entry.username || 'Anonim',
         avatar_url: entry.avatar_url,
         score: entry.total_score || 0,
-        games_played: 0,
-        wins: 0,
+        games_played: entry.total_games || 0,
+        wins: entry.wins || 0,
         best_word: null,
         best_word_score: 0,
-        rank: index + 1
+        rank: index + 1,
+        change: 0 // Genel sıralamada değişim göstermiyoruz ama veri tutarlılığı için
       })) || [];
 
       setAllTimeLeaders(allTimeData);
@@ -219,13 +221,23 @@ const LeaderboardPage = () => {
   };
 
   const getRankChangeIcon = (change?: number) => {
-    if (!change) return null;
+    if (!change || change === 0) return null;
     if (change > 0) {
-      return <span className="text-green-600 text-xs font-bold">↑{change}</span>;
+      return (
+        <div className="flex items-center text-green-600 text-xs font-bold">
+          <TrendingUp className="w-3 h-3 mr-1" />
+          {change}
+        </div>
+      );
     } else if (change < 0) {
-      return <span className="text-red-600 text-xs font-bold">↓{Math.abs(change)}</span>;
+      return (
+        <div className="flex items-center text-red-600 text-xs font-bold">
+          <TrendingDown className="w-3 h-3 mr-1" />
+          {Math.abs(change)}
+        </div>
+      );
     }
-    return <span className="text-gray-500 text-xs font-bold">-</span>;
+    return null;
   };
 
   const renderLeaderboard = (leaders: LeaderboardEntry[], showChange: boolean = false) => (
@@ -283,10 +295,12 @@ const LeaderboardPage = () => {
                       <Target className="w-3 h-3 mr-1" />
                       {leader.score}
                     </span>
-                    <span className={`flex items-center ${leader.rank <= 3 ? 'text-white/80' : 'text-muted-foreground'}`}>
-                      <Users className="w-3 h-3 mr-1" />
-                      {leader.games_played}
-                    </span>
+                    {leader.games_played > 0 && (
+                      <span className={`flex items-center ${leader.rank <= 3 ? 'text-white/80' : 'text-muted-foreground'}`}>
+                        <Users className="w-3 h-3 mr-1" />
+                        {leader.games_played}
+                      </span>
+                    )}
                     {leader.wins > 0 && (
                       <span className={`flex items-center ${leader.rank <= 3 ? 'text-white/80' : 'text-muted-foreground'}`}>
                         <Star className="w-3 h-3 mr-1" />
@@ -459,9 +473,9 @@ const LeaderboardPage = () => {
                   <ul className="list-disc list-inside space-y-1 text-blue-700">
                     <li><strong>Genel:</strong> Tüm zamanların toplam puanı</li>
                     <li><strong>Haftalık:</strong> Son 7 gündeki performans</li>
-                    <li><strong>Aylık:</strong> Bu ayki toplam puan</li>
-                    <li>Oklar önceki döneme göre sıralama değişimini gösterir</li>
-                    <li>Her oyun kazancınız ilgili dönemin puanına eklenir</li>
+                    <li><strong>Aylık:</strong> Bu aydaki performans</li>
+                    <li>🏆 <strong>İlk 3:</strong> Özel renkler ve ikonlar</li>
+                    <li>📈 <strong>Oklar:</strong> Haftalık ve aylık sıralama değişiklikleri</li>
                   </ul>
                 </div>
               </div>
