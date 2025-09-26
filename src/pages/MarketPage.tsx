@@ -380,7 +380,7 @@ const MarketPage = () => {
             </h1>
             <div className="w-16" />
           </div>
-
+          <div className="h-6"></div>
           {/* Hero Section */}
           <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary to-accent p-6 text-primary-foreground">
             <div className="relative z-10">
