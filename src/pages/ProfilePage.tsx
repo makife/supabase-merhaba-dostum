@@ -514,7 +514,7 @@ const ProfilePage = () => {
             </Button>
             <h1 className="text-2xl font-bold flex items-center text-blue-600">
               <User className="w-5 h-5 mr-2 text-blue-500" />
-              {isOwnProfile ? 'Profil' : `${profileData.username} Profili`}
+              {isOwnProfile ? 'Profil' :`${profileData.username} Profili`}
             </h1>
             <div className="w-16 flex justify-end">
               {isOwnProfile && (
