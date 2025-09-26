@@ -366,7 +366,7 @@ const MarketPage = () => {
 return (
   <div className="flex flex-col h-screen bg-gradient-to-br from-background to-muted/50">
     {/* Fixed Header */}
-    <div className="sticky top-0 z-10 bg-green-50/95 backdrop-blur-sm border-b border-green-200 p-4">
+    <div className="sticky top-0 z-10 bg-green-50/95 backdrop-blur-sm border-b border-green-200 p-3 pt-6">
       <div className="max-w-6xl mx-auto">
         <div className="space-y-4"> {/* space-y-4'ü buraya taşıdım */}
           {/* Header */}
