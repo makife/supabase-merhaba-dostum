@@ -42,6 +42,7 @@ this.client = new Client(
   config.port,
   config.useSSL
 );
+      this.client.ssl = config.useSSL;
       
       this.isInitialized = true;
       console.log("✅ Nakama client initialized with config:", {
