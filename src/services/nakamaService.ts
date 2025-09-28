@@ -29,15 +29,19 @@ class NakamaService {
       console.log("🔧 Initializing Nakama client...");
       
       // Supabase Edge Function'dan config al
-      const response = await fetch('https://nnlvtqmuwmrqfinsgvwc.supabase.co/functions/v1/nakama-config');
-      const { config } = await response.json();
-      
-      this.client = new Client(
-        config.serverKey,
-        config.host,
-        config.port,
-        config.useSSL
-      );
+      const config = {
+  serverKey: 'z8qmZL074JjopCZh',
+  host: 'kelimeci.eu-west1-a.nakamacloud.io',
+  port: '443',
+  useSSL: true
+};
+
+this.client = new Client(
+  config.serverKey,
+  config.host,
+  config.port,
+  config.useSSL
+);
       
       this.isInitialized = true;
       console.log("✅ Nakama client initialized with config:", {
