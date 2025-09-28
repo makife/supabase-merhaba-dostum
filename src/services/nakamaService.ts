@@ -45,7 +45,7 @@ this.client = new Client(
 
 // SSL ayarını type assertion ile belirt
 (this.client as any).ssl = true;
-
+(this.client as any).useSSL = true;
       
       this.isInitialized = true;
       console.log("✅ Nakama client initialized with config:", {
