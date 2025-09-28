@@ -39,10 +39,12 @@ class NakamaService {
 this.client = new Client(
   config.serverKey,
   config.host,
-  config.port,
-  config.useSSL
+  config.port
 );
-      (this.client as any).ssl = config.useSSL;
+
+// SSL ayarını type assertion ile belirt
+(this.client as any).ssl = true;
+(this.client as any).useSSL = true;
       
       this.isInitialized = true;
       console.log("✅ Nakama client initialized with config:", {
