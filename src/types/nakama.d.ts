@@ -5,10 +5,32 @@ declare module '@heroiclabs/nakama-js' {
     token?: string;
   }
 
+  export interface MatchmakerTicket {
+    ticket: string;
+  }
+
+  export interface Match {
+    match_id: string;
+    size: number;
+    presence: any[];
+  }
+
+  export interface Tournament {
+    tournament_id: string;
+    title: string;
+    description: string;
+  }
+
   export interface Socket {
-    connect(): Promise<void>;
+    connect(session: Session): Promise<void>;
     disconnect(): void;
     send(message: any): void;
+    addMatchmaker(query: string, minCount: number, maxCount: number, stringProperties?: Record<string, string>): Promise<MatchmakerTicket>;
+    removeMatchmaker(ticket: string): Promise<void>;
+    createMatch(): Promise<Match>;
+    joinMatch(matchId: string): Promise<void>;
+    createTournament(params: any): Promise<Tournament>;
+    joinTournament(tournamentId: string): Promise<void>;
     onmatchmakingmatched?: (matched: any) => void;
     onmatchmakermatched?: (matched: any) => void; // alias used in app
     onmatchmakerticket?: (ticket: any) => void;

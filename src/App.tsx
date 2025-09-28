@@ -22,6 +22,7 @@ import ProfilePage from "@/pages/ProfilePage";
 import SettingsPage from "@/pages/SettingsPage";
 import MarketPage from "@/pages/MarketPage";
 import TestMatchmakingPage from "@/pages/TestMatchmakingPage";
+import NakamaTestPage from "@/pages/NakamaTestPage";
 import NotFound from "./pages/NotFound";
 import LeaderboardPage from "@/pages/LeaderboardPage";
 import ChatPage from './pages/ChatPage';
@@ -159,6 +160,11 @@ const AppRoutes = () => {
       <Route path="/test-matchmaking" element={
         <ProtectedRoute>
           <TestMatchmakingPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/nakama-test" element={
+        <ProtectedRoute>
+          <NakamaTestPage />
         </ProtectedRoute>
       } />
       <Route path="/wheel" element={
