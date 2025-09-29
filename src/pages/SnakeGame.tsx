@@ -479,45 +479,43 @@ const SnakeGame = () => {
           }}>
             {/* Yukarı */}
             <button
-              onClick={() => {
-                if (direction.y === 0) {
-                  changeDirection({ x: 0, y: -1 });
-                }
-              }}
-              disabled={gameOver || direction.y !== 0}
-              style={{
-                width: '50px',
-                height: '50px',
-                borderRadius: '12px',
-                background: direction.y !== 0 
-                  ? 'rgba(255, 255, 255, 0.1)' 
-                  : 'linear-gradient(45deg, #667eea, #764ba2)',
-                border: '2px solid rgba(255, 255, 255, 0.3)',
-                color: 'white',
-                fontSize: '20px',
-                cursor: direction.y === 0 && !gameOver ? 'pointer' : 'not-allowed',
-                transition: 'all 0.3s ease',
-                backdropFilter: 'blur(10px)',
-                opacity: direction.y !== 0 || gameOver ? 0.5 : 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-              onMouseOver={(e) => {
-                if (direction.y === 0 && !gameOver) {
-                  const target = e.target as HTMLButtonElement;
-                  target.style.transform = 'scale(1.1)';
-                  target.style.boxShadow = '0 0 20px rgba(102, 126, 234, 0.5)';
-                }
-              }}
-              onMouseOut={(e) => {
-                const target = e.target as HTMLButtonElement;
-                target.style.transform = 'scale(1)';
-                target.style.boxShadow = 'none';
-              }}
-            >
-              ⬆️
-            </button>
+  onClick={() => {
+    if (direction.y === 0) {
+      changeDirection({ x: 0, y: -1 });
+    }
+  }}
+  disabled={gameOver}
+  style={{
+    width: '50px',
+    height: '50px',
+    borderRadius: '12px',
+    background: 'linear-gradient(45deg, #667eea, #764ba2)',
+    border: '2px solid rgba(255, 255, 255, 0.3)',
+    color: 'white',
+    fontSize: '20px',
+    cursor: !gameOver ? 'pointer' : 'not-allowed',
+    transition: 'all 0.3s ease',
+    backdropFilter: 'blur(10px)',
+    opacity: gameOver ? 0.5 : 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  }}
+  onMouseOver={(e) => {
+    if (!gameOver) {
+      const target = e.target as HTMLButtonElement;
+      target.style.transform = 'scale(1.1)';
+      target.style.boxShadow = '0 0 20px rgba(102, 126, 234, 0.5)';
+    }
+  }}
+  onMouseOut={(e) => {
+    const target = e.target as HTMLButtonElement;
+    target.style.transform = 'scale(1)';
+    target.style.boxShadow = 'none';
+  }}
+>
+  ⬆️
+</button>
             
             {/* Sol - Aşağı - Sağ */}
             <div style={{ display: 'flex', gap: '30px', alignItems: 'center' }}>
