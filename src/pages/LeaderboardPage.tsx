@@ -224,16 +224,16 @@ const LeaderboardPage = () => {
     if (!change || change === 0) return null;
     if (change > 0) {
       return (
-        <div className="flex items-center text-green-600 text-xs font-bold">
-          <TrendingUp className="w-3 h-3 mr-1" />
-          {change}
+        <div className="flex items-center gap-1 bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-bold shadow-sm animate-pulse">
+          <TrendingUp className="w-3.5 h-3.5" />
+          <span>+{change}</span>
         </div>
       );
     } else if (change < 0) {
       return (
-        <div className="flex items-center text-red-600 text-xs font-bold">
-          <TrendingDown className="w-3 h-3 mr-1" />
-          {Math.abs(change)}
+        <div className="flex items-center gap-1 bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-bold shadow-sm animate-pulse">
+          <TrendingDown className="w-3.5 h-3.5" />
+          <span>{change}</span>
         </div>
       );
     }
