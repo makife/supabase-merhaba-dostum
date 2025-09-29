@@ -10,19 +10,23 @@ interface NewMatchmakingModalProps {
   onClose: () => void;
   gameType: 'timed' | 'score';
   onMatchFound: (roomId: string) => void;
+  useNakama?: boolean;
 }
 
 const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
   isOpen,
   onClose,
   gameType,
-  onMatchFound
+  onMatchFound,
+  useNakama = false
 }) => {
   const { 
     isSearching, 
     currentRoom, 
     searchProgress, 
     searchTimeout,
+    useNakama: isUsingNakama,
+    nakamaMatch,
     startSearch, 
     cancelSearch,
     restartSearch,
@@ -31,9 +35,9 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
 
   useEffect(() => {
     if (isOpen && !isSearching) {
-      startSearch(gameType);
+      startSearch(gameType, useNakama);
     }
-  }, [isOpen, gameType]);
+  }, [isOpen, gameType, useNakama]);
 
   const handleClose = () => {
     if (isSearching) {
@@ -171,10 +175,14 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
               </>
             ) : searchProgress < 100 ? (
               <>
-                <p>• 🔍 Oyuncular aranıyor</p>
+                <p>• 🔍 {isUsingNakama ? 'Nakama sunucusunda' : 'Supabase'} oyuncular aranıyor</p>
                 <p>• ⏱️ 30 saniye sonra seçenekler gösterilecek</p>
                 <p>• 👤 {currentRoom?.current_players || 0}/2 oyuncu</p>
-                <p>• 🏠 Oda ID: {currentRoom?.id.slice(-8) || 'N/A'}</p>
+                {isUsingNakama ? (
+                  <p>• 🌐 Nakama Match ID: {nakamaMatch?.matchId?.slice(-8) || 'Aranıyor...'}</p>
+                ) : (
+                  <p>• 🏠 Oda ID: {currentRoom?.id.slice(-8) || 'N/A'}</p>
+                )}
               </>
             ) : (
               <>

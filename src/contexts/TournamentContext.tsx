@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tournament, TournamentParticipant, TournamentMatch } from '@/types/tournament';
 import { toast } from '@/components/ui/use-toast';
+import { nakamaService } from '@/services/nakamaService';
 
 interface TournamentContextType {
   // State
@@ -13,8 +14,10 @@ interface TournamentContextType {
   loading: boolean;
   
   // Actions
-  createTournament: () => Promise<string | null>;
+  createTournament: (useNakama?: boolean) => Promise<string | null>;
+  createNakamaTournament: (name: string) => Promise<string | null>;
   joinTournament: (tournamentId: string) => Promise<boolean>;
+  joinNakamaTournament: (tournamentId: string) => Promise<boolean>;
   leaveTournament: (tournamentId: string) => Promise<boolean>;
   startTournament: (tournamentId: string) => Promise<boolean>;
   fetchTournaments: () => Promise<void>;
@@ -93,9 +96,75 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
     }
   };
 
-  // Create new tournament
-  const createTournament = async (): Promise<string | null> => {
+  // Create Nakama tournament
+  const createNakamaTournament = async (name: string): Promise<string | null> => {
     if (!user) return null;
+    
+    try {
+      setLoading(true);
+      console.log('🏆 Creating Nakama tournament:', name);
+      
+      await nakamaService.authenticate(user.id);
+      await nakamaService.createSocket();
+      const tournamentId = await nakamaService.createTournament(name);
+      
+      toast({
+        title: "🏆 Nakama Turnuva Oluşturuldu",
+        description: `${name} başarıyla oluşturuldu!`,
+      });
+      
+      return tournamentId;
+    } catch (error: any) {
+      console.error('❌ Nakama tournament creation failed:', error);
+      toast({
+        title: "❌ Nakama Turnuva Hatası",
+        description: error.message,
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Join Nakama tournament
+  const joinNakamaTournament = async (tournamentId: string): Promise<boolean> => {
+    if (!user) return false;
+    
+    try {
+      setLoading(true);
+      console.log('🎯 Joining Nakama tournament:', tournamentId);
+      
+      await nakamaService.authenticate(user.id);
+      await nakamaService.createSocket();
+      await nakamaService.joinTournament(tournamentId);
+      
+      toast({
+        title: "🎯 Nakama Turnuvaya Katıldınız",
+        description: `Turnuva ID: ${tournamentId}`,
+      });
+      
+      return true;
+    } catch (error: any) {
+      console.error('❌ Nakama tournament join failed:', error);
+      toast({
+        title: "❌ Nakama Katılma Hatası",
+        description: error.message,
+        variant: "destructive",
+      });
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Create new tournament
+  const createTournament = async (useNakama = false): Promise<string | null> => {
+    if (!user) return null;
+
+    if (useNakama) {
+      return await createNakamaTournament(`Turnuva ${new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`);
+    }
 
     try {
       setLoading(true);
@@ -550,7 +619,9 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
     matches,
     loading,
     createTournament,
+    createNakamaTournament,
     joinTournament,
+    joinNakamaTournament,
     leaveTournament,
     startTournament,
     fetchTournaments,
