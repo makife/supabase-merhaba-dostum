@@ -89,9 +89,10 @@ this.client = new Client(
         throw new Error("Client not initialized");
       }
       
-      this.socket = this.client.createSocket();
+      // WSS zorunlu olsun (TS tipleri 0 arg istiyor, runtime'da parametre geçiyoruz)
+      this.socket = (this.client as any).createSocket(true);
       await this.socket.connect(this.session);
-      console.log("✅ Nakama WebSocket connected");
+      console.log("✅ Nakama WebSocket connected via WSS");
       return this.socket;
     } catch (error) {
       console.error("❌ Nakama WebSocket creation failed:", error);
