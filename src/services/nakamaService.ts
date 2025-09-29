@@ -36,6 +36,7 @@ class NakamaService {
   useSSL: true
 };
 
+// SSL protokolü için doğru URL yapısı kullan
 this.client = new Client(
   'z8qmZL074JjopCZh',
   'kelimeci.eu-west1-a.nakamacloud.io',
@@ -43,7 +44,7 @@ this.client = new Client(
   true // SSL açık
 );
 
-// SSL ayarını type assertion ile belirt
+// WebSocket SSL ayarlarını zorla
 (this.client as any).ssl = true;
 (this.client as any).useSSL = true;
       
