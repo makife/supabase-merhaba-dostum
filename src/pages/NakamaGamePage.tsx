@@ -28,41 +28,30 @@ const NakamaGamePage = () => {
     initializeNakamaGame();
   }, [matchId, gameType, user]);
 
-  const initializeNakamaGame = async () => {
-    try {
-      setLoading(true);
-      console.log('🎮 Nakama oyun başlatılıyor:', { matchId, gameType });
+ const initializeNakamaGame = async () => {
+  try {
+    setLoading(true);
+    console.log('🎮 Nakama game starting:', { matchId, gameType });
 
-      // Mevcut socket'i kontrol et
-      let socket = nakamaService.getSocket();
-      
-      if (!socket) {
-        // Socket yoksa yeni oluştur
-        console.log('🔌 Creating new socket connection...');
-        await nakamaService.authenticate(user.id);
-        socket = await nakamaService.createSocket();
-      } else {
-        console.log('✅ Reusing existing socket connection');
-      }
-
-      // Match'e katıl (match ID'nin sonundaki nokta varsa temizle)
-      const cleanMatchId = matchId?.replace(/\.+$/, '') || '';
-      
-      console.log('🎯 Joining match:', cleanMatchId);
-      await socket.joinMatch(cleanMatchId);
-      
-      console.log('✅ Nakama match joined successfully');
-      
-      // Oyun başlatılabilir
-      setGameStarted(true);
-      setLoading(false);
-
-    } catch (error: any) {
-      console.error('❌ Nakama game initialization failed:', error);
-      setError(error.message || 'Oyun başlatılamadı');
-      setLoading(false);
+    let socket = nakamaService.getSocket();
+    
+    if (!socket) {
+      await nakamaService.authenticate(user.id);
+      socket = await nakamaService.createSocket();
     }
-  };
+
+    // Relayed mode - join'e gerek yok, direkt oyun başlat
+    console.log('✅ Socket ready, starting game');
+    
+    setGameStarted(true);
+    setLoading(false);
+
+  } catch (error: any) {
+    console.error('❌ Game init failed:', error);
+    setError(error.message || 'Oyun başlatılamadı');
+    setLoading(false);
+  }
+};
 
   const startActualGame = () => {
     console.log('🚀 Starting actual game with Nakama match:', matchId);
