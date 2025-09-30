@@ -117,7 +117,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
   };
 
   // Nakama arama fonksiyonu
- const startNakamaSearch = async (gameType: 'timed' | 'score') => {
+const startNakamaSearch = async (gameType: 'timed' | 'score') => {
   try {
     console.log('🎯 Nakama matchmaking başlatılıyor:', gameType);
     
@@ -154,7 +154,12 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
           gameType: gameType
         });
         
-        cleanup();
+        // Socket'i KAPATMA - match devam ediyor
+        setIsSearching(false);
+        if (progressInterval) {
+          clearInterval(progressInterval);
+          setProgressInterval(null);
+        }
         
         toast({
           title: "🎉 Nakama Eşleşme!",
