@@ -43,39 +43,44 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
     return result;
   };
 
- const handleCreateRoom = async () => {
-  setLoading(true);
-  playSound('buttonClick');
-  
-  try {
-    // Her zaman Nakama kullan
-    if (!user) return;
+  const handleCreateRoom = async () => {
+    setLoading(true);
+    playSound('buttonClick');
     
-    console.log('🏠 Creating Nakama private room:', gameType);
-    await nakamaService.authenticate(user.id);
-    await nakamaService.createSocket();
-    const roomId = await nakamaService.createPrivateRoom(gameType);
-    
-    setNakamaRoomId(roomId);
-    setRoomCode(roomId.slice(-6).toUpperCase()); // Son 6 karakter kısa kod olarak
-    
-    toast({
-      title: "🏠 Nakama Özel Oda",
-      description: `Oda ID: ${roomId}`,
-    });
-    
-    onRoomCreated(roomId, gameType);
-  } catch (error: any) {
-    console.error('Error creating room:', error);
-    toast({
-      title: 'Hata',
-      description: error.message || 'Oda oluşturulamadı',
-      variant: 'destructive',
-    });
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      if (!user) return;
+      
+      console.log('🏠 Creating Nakama private room:', gameType);
+      await nakamaService.authenticate(user.id);
+      await nakamaService.createSocket();
+      const roomId = await nakamaService.createPrivateRoom(gameType);
+      
+      // 6 haneli temiz kod üret
+      const shortCode = generateRoomCode();
+      
+      setNakamaRoomId(roomId);
+      setRoomCode(shortCode);
+      
+      // Kodu ve gerçek room ID'yi localStorage'a kaydet
+      localStorage.setItem(`room_${shortCode}`, roomId);
+      
+      toast({
+        title: "🏠 Nakama Özel Oda",
+        description: `Oda kodu: ${shortCode}`,
+      });
+      
+      onRoomCreated(roomId, gameType);
+    } catch (error: any) {
+      console.error('Error creating room:', error);
+      toast({
+        title: 'Hata',
+        description: error.message || 'Oda oluşturulamadı',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleJoinRoom = async () => {
     if (!joinCode.trim()) {
@@ -91,13 +96,24 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
     playSound('buttonClick');
     
     try {
-      // Her zaman Nakama kullan
       if (!user) return;
       
-      console.log('🚪 Joining Nakama private room:', joinCode);
+      // 6 haneli kod mu yoksa tam ID mi kontrol et
+      let actualRoomId = joinCode.trim();
+      
+      if (joinCode.length === 6) {
+        // Kısa kod ise localStorage'dan gerçek ID'yi al
+        const storedRoomId = localStorage.getItem(`room_${joinCode.toUpperCase()}`);
+        if (storedRoomId) {
+          actualRoomId = storedRoomId;
+          console.log('🔑 Short code resolved to:', actualRoomId);
+        }
+      }
+      
+      console.log('🚪 Joining Nakama private room:', actualRoomId);
       await nakamaService.authenticate(user.id);
       await nakamaService.createSocket();
-      await nakamaService.joinPrivateRoom(joinCode);
+      await nakamaService.joinPrivateRoom(actualRoomId);
       
       toast({
         title: "🚪 Nakama Odaya Katıldınız",
@@ -171,7 +187,6 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
                       setGameType(value as 'timed' | 'score');
                     }}>
                       <div className="space-y-3">
-                        {/* Zamana Karşı */}
                         <Label className={`relative flex items-center space-x-3 p-3 rounded-lg border-2 cursor-pointer transition-all duration-300 ${
                           gameType === 'timed' 
                             ? 'border-blue-500 bg-blue-50' 
@@ -198,7 +213,6 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
                           </div>
                         </Label>
 
-                        {/* Puana Karşı */}
                         <Label className={`relative flex items-center space-x-3 p-3 rounded-lg border-2 cursor-pointer transition-all duration-300 ${
                           gameType === 'score' 
                             ? 'border-amber-500 bg-amber-50' 
@@ -239,7 +253,7 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
                   <div className="space-y-4">
                     <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                       <Label className="text-sm font-medium text-green-800">
-                        Nakama Oda Kodu
+                        Oda Kodu
                       </Label>
                       <div className="flex items-center justify-between mt-2">
                         <span className="text-2xl font-bold font-mono text-green-900">{roomCode}</span>
@@ -256,11 +270,9 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
                           )}
                         </Button>
                       </div>
-                      {nakamaRoomId && (
-                        <p className="text-xs text-green-600 mt-1">
-                          Full ID: {nakamaRoomId}
-                        </p>
-                      )}
+                      <p className="text-xs text-green-600 mt-2">
+                        6 haneli kod arkadaşınla paylaş
+                      </p>
                     </div>
                     <p className="text-sm text-muted-foreground">
                       Bu kodu arkadaşınızla paylaşın. Arkadaşınız katıldığında oyun başlayabilir.
@@ -283,15 +295,15 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="joinCode">
-                    Nakama Oda Kodu/ID
+                    Oda Kodu
                   </Label>
                   <Input
                     id="joinCode"
-                    placeholder="Nakama oda ID'sini girin"
+                    placeholder="6 haneli kodu girin (örn: A4K7B2)"
                     value={joinCode}
-                    onChange={(e) => setJoinCode(e.target.value)}
-                    maxLength={50}
-                    className="mt-1 text-center font-mono text-lg tracking-wider"
+                    onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                    maxLength={6}
+                    className="mt-1 text-center font-mono text-lg tracking-wider uppercase"
                   />
                 </div>
                 
@@ -305,7 +317,7 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
                 </Button>
                 
                 <p className="text-sm text-muted-foreground text-center">
-                  Arkadaşınızdan aldığınız oda kodunu girin
+                  Arkadaşınızdan aldığınız 6 haneli kodu girin
                 </p>
               </div>
             </TabsContent>
@@ -316,7 +328,6 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
               variant="outline"
               onClick={() => {
                 playSound('buttonClick');
-                // If in a room with other players, show warning
                 if (currentRoom && participants.length > 1) {
                   setShowExitDialog(true);
                 } else {
@@ -329,7 +340,6 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
             </Button>
           </div>
           
-          {/* Modern Exit Dialog */}
           <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
             <AlertDialogContent className="max-w-sm">
               <AlertDialogHeader className="text-center">
