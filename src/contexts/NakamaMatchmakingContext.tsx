@@ -81,50 +81,32 @@ export const NakamaMatchmakingProvider: React.FC<NakamaMatchmakingProviderProps>
   console.log('🎉 Nakama match found!', matched);
   
   try {
-    // Match'i oluştur veya katıl
-    let actualMatchId: string;
+    // Runtime modül olmadığı için token kullan
+    const matchId = matched.token;
     
-    if (matched.match_id) {
-      actualMatchId = matched.match_id;
-      console.log('✅ Using existing match_id:', actualMatchId);
-    } else {
-      console.log('🏗️ Creating new match from matchmaking...');
-      const newMatch = await socket.createMatch();
-      actualMatchId = newMatch.match_id;
-      console.log('✅ Created new match:', actualMatchId);
+    setNakamaMatch({
+      matchId: matchId,
+      gameType: gameType
+    });
+    
+    setIsSearching(false);
+    if (progressInterval) {
+      clearInterval(progressInterval);
+      setProgressInterval(null);
     }
     
-    // Match ID'deki noktayı temizle
-    const cleanMatchId = actualMatchId.endsWith('.') ? actualMatchId.slice(0, -1) : actualMatchId;
-    console.log('🧹 Clean match ID:', cleanMatchId);
-    
-    // Match'e katıl
-    await socket.joinMatch(cleanMatchId);
-    console.log('✅ Joined match successfully');
-    
-    setMatchFound(true);
-    setIsSearching(false);
-    setCurrentTicket(null);
-    
-    const match: NakamaMatch = {
-      matchId: cleanMatchId,
-      gameType,
-      players: matched.users || []
-    };
-    setCurrentMatch(match);
-
     toast({
       title: "🎉 Eşleşme Bulundu!",
-      description: `${gameType === 'timed' ? 'Zamana karşı' : 'Puanlı'} oyun başlıyor!`,
+      description: "Oyun başlıyor...",
     });
-
-    onMatchFound?.(cleanMatchId, gameType);
+    
+    // Direkt oyuna yönlendir
+    onMatchFound?.(matchId);
     
   } catch (error: any) {
-    console.error('❌ Failed to create/join match:', error);
-    setIsSearching(false);
+    console.error('❌ Match setup failed:', error);
     toast({
-      title: "❌ Match Hatası",
+      title: "❌ Hata",
       description: error.message,
       variant: "destructive",
     });
