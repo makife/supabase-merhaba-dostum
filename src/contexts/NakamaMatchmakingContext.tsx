@@ -79,12 +79,26 @@ export const NakamaMatchmakingProvider: React.FC<NakamaMatchmakingProviderProps>
       // Setup match found listener
       socket.onmatchmakermatched = (matched: any) => {
         console.log('🎉 Nakama match found!', matched);
+        
+        // Nakama'dan gelen match_id yerine token kullan (match henüz yaratılmamış)
+        const matchId = matched.match_id || matched.token || matched.ticket;
+        
+        if (!matchId) {
+          console.error('❌ No match ID found in response:', matched);
+          toast({
+            title: "❌ Eşleşme Hatası",
+            description: "Match ID alınamadı",
+            variant: "destructive",
+          });
+          return;
+        }
+        
         setMatchFound(true);
         setIsSearching(false);
         setCurrentTicket(null);
         
         const match: NakamaMatch = {
-          matchId: matched.match_id,
+          matchId: matchId,
           gameType,
           players: matched.users || []
         };
@@ -92,10 +106,10 @@ export const NakamaMatchmakingProvider: React.FC<NakamaMatchmakingProviderProps>
 
         toast({
           title: "🎉 Eşleşme Bulundu!",
-          description: `Nakama ile ${gameType === 'timed' ? 'zamana karşı' : 'puanlı'} oyun başlıyor!`,
+          description: `🏁 ${gameType === 'timed' ? 'zamana karşı' : 'puanlı'} Oyun Başlıyor! 🏁`,
         });
 
-        onMatchFound?.(matched.match_id, gameType);
+        onMatchFound?.(matchId, gameType);
       };
 
       // Start matchmaking
