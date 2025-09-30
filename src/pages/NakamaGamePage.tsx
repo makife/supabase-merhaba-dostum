@@ -46,7 +46,7 @@ const NakamaGamePage = () => {
       }
 
       // Match'e katıl (match ID'nin sonundaki nokta varsa temizle)
-      const cleanMatchId = matchId?.endsWith('.') ? matchId.slice(0, -1) : matchId;
+      const cleanMatchId = matchId?.replace(/\.+$/, '') || '';
       
       console.log('🎯 Joining match:', cleanMatchId);
       await socket.joinMatch(cleanMatchId);
