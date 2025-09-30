@@ -49,8 +49,8 @@ const NakamaGamePage = () => {
         socket = await nakamaService.createSocket();
       }
 
-      // Match data listener ekle
-      socket.onmatchdata = (matchData: any) => {
+      // Match data listener - Type assertion gerekli
+      (socket as any).onmatchdata = (matchData: any) => {
         try {
           const content = JSON.parse(new TextDecoder().decode(matchData.data));
           console.log('📨 Received match data:', content);
@@ -61,7 +61,7 @@ const NakamaGamePage = () => {
           }
           
           if (content.type === 'game_start') {
-            console.log('🚀 Game starting signal received');
+            console.log('🚀 Game starting - SYNCHRONIZED');
             startActualGame();
           }
         } catch (e) {
@@ -69,13 +69,13 @@ const NakamaGamePage = () => {
         }
       };
 
-      // Kendi hazır sinyalini gönder
+      // Hazır sinyali gönder
       setTimeout(() => {
         const readyMessage = JSON.stringify({ 
           type: 'player_ready', 
           userId: user.id 
         });
-        socket.sendMatchState(matchId, 1, readyMessage);
+        (socket as any).sendMatchState(matchId, 1, readyMessage);
         setPlayersReady(prev => new Set([...prev, user.id]));
         console.log('✅ Ready signal sent');
       }, 500);
@@ -98,13 +98,18 @@ const NakamaGamePage = () => {
       return;
     }
 
-    console.log('🚀 Sending game start signal');
+    console.log('🚀 Broadcasting game start to ALL players');
     setWaitingForOthers(true);
     
-    const startMessage = JSON.stringify({ type: 'game_start' });
-    socket.sendMatchState(matchId, 1, startMessage);
+    // TÜM oyunculara başlama sinyali gönder
+    const startMessage = JSON.stringify({ 
+      type: 'game_start',
+      timestamp: Date.now() // Senkronizasyon için timestamp
+    });
+    (socket as any).sendMatchState(matchId, 1, startMessage);
     
-    setTimeout(() => startActualGame(), 500);
+    // Kendi oyununu da başlat
+    setTimeout(() => startActualGame(), 100);
   };
 
   const startActualGame = () => {
