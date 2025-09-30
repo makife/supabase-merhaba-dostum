@@ -105,14 +105,6 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
       // Her zaman Nakama kullan
       return await startNakamaSearch(gameType);
 
-      // Önce süresi dolmuş odaları temizle
-      await supabase
-        .from('matchmaking_rooms')
-        .delete()
-        .lt('expires_at', new Date().toISOString());
-
-      console.log('✅ Expired rooms cleaned, starting search...');
-
     } catch (error) {
       console.error('Error starting search:', error);
       setIsSearching(false);
@@ -133,12 +125,27 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
       await nakamaService.authenticate(user.id);
       const socket = await nakamaService.createSocket();
 
-      // Match found listener
+      // Match found listener - DÜZELTİLDİ
       socket.onmatchmakermatched = (matched: any) => {
         console.log('🎉 Nakama match found!', matched);
         
+        // match_id bazen undefined olabiliyor, token'ı kullan
+        const matchId = matched.match_id || matched.token || matched.ticket;
+        
+        if (!matchId) {
+          console.error('❌ No match ID found:', matched);
+          toast({
+            title: "❌ Eşleşme Hatası",
+            description: "Match ID alınamadı",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        console.log('✅ Using match ID:', matchId);
+        
         setNakamaMatch({
-          matchId: matched.match_id,
+          matchId: matchId,
           gameType: gameType
         });
         
@@ -149,7 +156,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
           description: `Nakama sunucusunda ${gameType === 'timed' ? 'zamana karşı' : 'puanlı'} oyun bulundu!`,
         });
         
-        onMatchFound?.(matched.match_id);
+        onMatchFound?.(matchId);
       };
 
       // Matchmaking başlat
@@ -204,9 +211,8 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
   // Tekrar arama yap
   const restartSearch = async (gameType: 'timed' | 'score') => {
     console.log('🔄 Tekrar arama başlatılıyor...');
-    cleanup(); // Önce tamamen temizle
+    cleanup();
     setSearchTimeout(false);
-    // Kısa bir delay ekleyelim ki cleanup tam olsun
     setTimeout(() => {
       startSearch(gameType);
     }, 100);
