@@ -28,18 +28,18 @@ class NakamaService {
     try {
       console.log("🔧 Initializing Nakama client...");
       
-      const config = {
-        serverKey: 'z8qmZL074JjopCZh',
-        host: 'kelimeci.eu-west1-a.nakamacloud.io',
-        port: '443',
-        useSSL: true
-      };
+     const config = {
+  serverKey: 'defaultkey',
+  host: 'nakama.kelimeci.com.tr',
+  port: '443',
+  useSSL: true
+};
 
-      this.client = new Client(
+this.client = new Client(
   'defaultkey',
-  '88.99.121.2',  // Hetzner IP'n
-  '7350',
-  false  // HTTP (SSL yok)
+  'nakama.kelimeci.com.tr',
+  '443',
+  true  // SSL
 );
 
 // WebSocket için de HTTP kullan
