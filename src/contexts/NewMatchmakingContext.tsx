@@ -117,35 +117,40 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
   };
 
   // Nakama arama fonksiyonu
-  const startNakamaSearch = async (gameType: 'timed' | 'score') => {
-    try {
-      console.log('🎯 Nakama matchmaking başlatılıyor:', gameType);
-      
-      // Authenticate ve socket oluştur
-      await nakamaService.authenticate(user.id);
-      const socket = await nakamaService.createSocket();
+ const startNakamaSearch = async (gameType: 'timed' | 'score') => {
+  try {
+    console.log('🎯 Nakama matchmaking başlatılıyor:', gameType);
+    
+    // Authenticate ve socket oluştur
+    await nakamaService.authenticate(user.id);
+    const socket = await nakamaService.createSocket();
 
-      // Match found listener - DÜZELTİLDİ
-      socket.onmatchmakermatched = (matched: any) => {
-        console.log('🎉 Nakama match found!', matched);
+    // Match found listener - DÜZELTİLDİ
+    socket.onmatchmakermatched = async (matched: any) => {
+      console.log('🎉 Nakama match found!', matched);
+      
+      try {
+        // Match'i oluştur veya katıl
+        let actualMatchId: string;
         
-        // match_id bazen undefined olabiliyor, token'ı kullan
-        const matchId = matched.match_id || matched.token || matched.ticket;
-        
-        if (!matchId) {
-          console.error('❌ No match ID found:', matched);
-          toast({
-            title: "❌ Eşleşme Hatası",
-            description: "Match ID alınamadı",
-            variant: "destructive",
-          });
-          return;
+        if (matched.match_id) {
+          // Eğer match_id varsa direkt kullan
+          actualMatchId = matched.match_id;
+          console.log('✅ Using existing match_id:', actualMatchId);
+        } else {
+          // Match ID yoksa yeni match oluştur
+          console.log('🏗️ Creating new match from token...');
+          const newMatch = await socket.createMatch();
+          actualMatchId = newMatch.match_id;
+          console.log('✅ Created new match:', actualMatchId);
         }
         
-        console.log('✅ Using match ID:', matchId);
+        // Match'e katıl
+        await socket.joinMatch(actualMatchId);
+        console.log('✅ Joined match successfully');
         
         setNakamaMatch({
-          matchId: matchId,
+          matchId: actualMatchId,
           gameType: gameType
         });
         
@@ -153,45 +158,54 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
         
         toast({
           title: "🎉 Nakama Eşleşme!",
-          description: `Nakama sunucusunda ${gameType === 'timed' ? 'zamana karşı' : 'puanlı'} oyun bulundu!`,
+          description: `Oyun bulundu!`,
         });
         
-        onMatchFound?.(matchId);
-      };
-
-      // Matchmaking başlat
-      const ticket = await nakamaService.findMatch(gameType);
-      setCurrentTicket(ticket.ticket);
-
-      // Progress animation
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += 3.33; // 30 saniye için
-        setSearchProgress(Math.min(progress, 100));
+        onMatchFound?.(actualMatchId);
         
-        if (progress >= 100 && isSearching) {
-          clearInterval(interval);
-          setIsSearching(false);
-          setSearchTimeout(true);
-          toast({
-            title: "⏰ Nakama Timeout",
-            description: "Nakama'da oyuncu bulunamadı",
-            variant: "destructive",
-          });
-        }
-      }, 1000);
-      setProgressInterval(interval);
+      } catch (error: any) {
+        console.error('❌ Failed to join match:', error);
+        toast({
+          title: "❌ Match Join Hatası",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    };
 
-    } catch (error: any) {
-      console.error('❌ Nakama matchmaking failed:', error);
-      setIsSearching(false);
-      toast({
-        title: "❌ Nakama Hatası",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
+    // Matchmaking başlat
+    const ticket = await nakamaService.findMatch(gameType);
+    setCurrentTicket(ticket.ticket);
+
+    // Progress animation
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += 3.33;
+      setSearchProgress(Math.min(progress, 100));
+      
+      if (progress >= 100 && isSearching) {
+        clearInterval(interval);
+        setIsSearching(false);
+        setSearchTimeout(true);
+        toast({
+          title: "⏰ Nakama Timeout",
+          description: "Nakama'da oyuncu bulunamadı",
+          variant: "destructive",
+        });
+      }
+    }, 1000);
+    setProgressInterval(interval);
+
+  } catch (error: any) {
+    console.error('❌ Nakama matchmaking failed:', error);
+    setIsSearching(false);
+    toast({
+      title: "❌ Nakama Hatası",
+      description: error.message,
+      variant: "destructive",
+    });
+  }
+};
 
   // Arama iptal et
   const cancelSearch = async () => {
