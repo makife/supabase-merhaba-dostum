@@ -4,8 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Clock, Target, Trophy, Bot, Users, Zap, X, Globe, Database } from 'lucide-react';
+import { Clock, Target, Trophy, Bot, Users, Zap, X } from 'lucide-react';
 import { useSounds } from '@/hooks/useSounds';
 
 interface GameModeSelectorProps {
