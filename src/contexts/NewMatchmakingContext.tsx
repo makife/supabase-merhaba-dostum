@@ -134,23 +134,25 @@ const startNakamaSearch = async (gameType: 'timed' | 'score') => {
         let actualMatchId: string;
         
         if (matched.match_id) {
-          // Eğer match_id varsa direkt kullan
           actualMatchId = matched.match_id;
           console.log('✅ Using existing match_id:', actualMatchId);
         } else {
-          // Match ID yoksa yeni match oluştur
-          console.log('🏗️ Creating new match from token...');
+          console.log('🏗️ Creating new match from matchmaking...');
           const newMatch = await socket.createMatch();
           actualMatchId = newMatch.match_id;
           console.log('✅ Created new match:', actualMatchId);
         }
         
+        // Match ID'deki noktayı temizle
+        const cleanMatchId = actualMatchId.endsWith('.') ? actualMatchId.slice(0, -1) : actualMatchId;
+        console.log('🧹 Clean match ID:', cleanMatchId);
+        
         // Match'e katıl
-        await socket.joinMatch(actualMatchId);
+        await socket.joinMatch(cleanMatchId);
         console.log('✅ Joined match successfully');
         
         setNakamaMatch({
-          matchId: actualMatchId,
+          matchId: cleanMatchId,
           gameType: gameType
         });
         
@@ -166,7 +168,7 @@ const startNakamaSearch = async (gameType: 'timed' | 'score') => {
           description: `Oyun bulundu!`,
         });
         
-        onMatchFound?.(actualMatchId);
+        onMatchFound?.(cleanMatchId);
         
       } catch (error: any) {
         console.error('❌ Failed to join match:', error);
