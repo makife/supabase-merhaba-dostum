@@ -10,13 +10,12 @@ import { useSounds } from '@/hooks/useSounds';
 
 interface GameModeSelectorProps {
   mode: string;
-  onStart: (gameType: 'timed' | 'score', useNakama?: boolean) => void;
+  onStart: (gameType: 'timed' | 'score') => void;
   onClose: () => void;
 }
 
 const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => {
   const [selectedType, setSelectedType] = useState<'timed' | 'score'>('timed');
-  const [useNakama, setUseNakama] = useState(false);
   const { playSound } = useSounds();
 
   const getModeInfo = () => {
@@ -164,48 +163,6 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
             </RadioGroup>
           </div>
 
-          {/* Sadece random-match için sunucu seçimi */}
-          {mode === 'random-match' && (
-            <div>
-              <h3 className="font-semibold mb-3 text-center">Eşleşme Sistemi</h3>
-              <Tabs value={useNakama ? 'nakama' : 'supabase'} onValueChange={(value) => setUseNakama(value === 'nakama')}>
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="supabase" className="flex items-center gap-2">
-                    <Database className="w-4 h-4" />
-                    Supabase
-                  </TabsTrigger>
-                  <TabsTrigger value="nakama" className="flex items-center gap-2">
-                    <Globe className="w-4 h-4" />
-                    Nakama
-                  </TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="supabase" className="mt-3">
-                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Database className="w-4 h-4 text-blue-600" />
-                      <span className="font-medium text-blue-800">Supabase Eşleşme</span>
-                    </div>
-                    <p className="text-xs text-blue-700">
-                      Hızlı yerel eşleşme, anlık bağlantı
-                    </p>
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="nakama" className="mt-3">
-                  <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Globe className="w-4 h-4 text-green-600" />
-                      <span className="font-medium text-green-800">Nakama Sunucu</span>
-                    </div>
-                    <p className="text-xs text-green-700">
-                      Global oyuncu havuzu, gelişmiş eşleşme algoritması
-                    </p>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </div>
-          )}
 
           <div className="flex space-x-3">
             <Button variant="outline" onClick={onClose} className="flex-1">
@@ -213,7 +170,7 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
             </Button>
             <Button onClick={() => {
               playSound('buttonClick');
-              onStart(selectedType, mode === 'random-match' ? useNakama : false);
+              onStart(selectedType);
             }} className="flex-1">
               Oyunu Başlat
             </Button>

@@ -21,7 +21,7 @@ interface MatchmakingContextType {
   searchTimeout: boolean;
   useNakama: boolean;
   nakamaMatch: { matchId: string; gameType: 'timed' | 'score' } | null;
-  startSearch: (gameType: 'timed' | 'score', useNakama?: boolean) => Promise<void>;
+  startSearch: (gameType: 'timed' | 'score') => Promise<void>;
   cancelSearch: () => void;
   restartSearch: (gameType: 'timed' | 'score') => Promise<void>;
   playWithAI: () => void;
@@ -89,8 +89,8 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
     console.log('✅ Matchmaking state temizlendi');
   };
 
-  // Arama başlat
-  const startSearch = async (gameType: 'timed' | 'score', enableNakama = false) => {
+  // Arama başlat - Default olarak Nakama kullan
+  const startSearch = async (gameType: 'timed' | 'score') => {
     if (!user) return;
 
     try {
@@ -98,14 +98,12 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
       setSearchProgress(0);
       setSearchTimeout(false);
       setCurrentGameType(gameType);
-      setUseNakama(enableNakama);
+      setUseNakama(true);
 
-      console.log('🔍 Matchmaking başlatıldı:', gameType, enableNakama ? '(Nakama)' : '(Supabase)');
+      console.log('🔍 Nakama matchmaking başlatıldı:', gameType);
 
-      // Nakama matchmaking
-      if (enableNakama) {
-        return await startNakamaSearch(gameType);
-      }
+      // Her zaman Nakama kullan
+      return await startNakamaSearch(gameType);
 
       // Önce süresi dolmuş odaları temizle
       await supabase

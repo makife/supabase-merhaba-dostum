@@ -10,15 +10,13 @@ interface NewMatchmakingModalProps {
   onClose: () => void;
   gameType: 'timed' | 'score';
   onMatchFound: (roomId: string) => void;
-  useNakama?: boolean;
 }
 
 const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
   isOpen,
   onClose,
   gameType,
-  onMatchFound,
-  useNakama = false
+  onMatchFound
 }) => {
   const { 
     isSearching, 
@@ -35,9 +33,9 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
 
   useEffect(() => {
     if (isOpen && !isSearching) {
-      startSearch(gameType, useNakama);
+      startSearch(gameType);
     }
-  }, [isOpen, gameType, useNakama]);
+  }, [isOpen, gameType]);
 
   const handleClose = () => {
     if (isSearching) {

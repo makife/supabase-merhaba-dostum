@@ -238,7 +238,14 @@ const HomePage = () => {
       return;
     }
     
-    // Gerçek oda için normal yönlendirme
+    // Nakama match ID kontrolü - match ID'ler genellikle daha uzun olur
+    if (roomId.length > 36) {
+      // Bu bir Nakama match ID'si
+      navigate(`/game/nakama-match?match=${roomId}&type=${matchmakingGameType}`);
+      return;
+    }
+    
+    // Normal Supabase oda için
     navigate(`/game/random-match?room=${roomId}&type=${matchmakingGameType}`);
   };
 
