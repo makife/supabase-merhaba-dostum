@@ -85,19 +85,21 @@ export const NakamaMatchmakingProvider: React.FC<NakamaMatchmakingProviderProps>
     let actualMatchId: string;
     
     if (matched.match_id) {
-      // Eğer match_id varsa direkt kullan
       actualMatchId = matched.match_id;
       console.log('✅ Using existing match_id:', actualMatchId);
     } else {
-      // Match ID yoksa yeni match oluştur
       console.log('🏗️ Creating new match from matchmaking...');
       const newMatch = await socket.createMatch();
       actualMatchId = newMatch.match_id;
       console.log('✅ Created new match:', actualMatchId);
     }
     
+    // Match ID'deki noktayı temizle
+    const cleanMatchId = actualMatchId.endsWith('.') ? actualMatchId.slice(0, -1) : actualMatchId;
+    console.log('🧹 Clean match ID:', cleanMatchId);
+    
     // Match'e katıl
-    await socket.joinMatch(actualMatchId);
+    await socket.joinMatch(cleanMatchId);
     console.log('✅ Joined match successfully');
     
     setMatchFound(true);
@@ -105,7 +107,7 @@ export const NakamaMatchmakingProvider: React.FC<NakamaMatchmakingProviderProps>
     setCurrentTicket(null);
     
     const match: NakamaMatch = {
-      matchId: actualMatchId,
+      matchId: cleanMatchId,
       gameType,
       players: matched.users || []
     };
@@ -116,7 +118,7 @@ export const NakamaMatchmakingProvider: React.FC<NakamaMatchmakingProviderProps>
       description: `${gameType === 'timed' ? 'Zamana karşı' : 'Puanlı'} oyun başlıyor!`,
     });
 
-    onMatchFound?.(actualMatchId, gameType);
+    onMatchFound?.(cleanMatchId, gameType);
     
   } catch (error: any) {
     console.error('❌ Failed to create/join match:', error);
