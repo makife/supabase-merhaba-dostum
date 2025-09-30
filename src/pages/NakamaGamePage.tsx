@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Home, Users, Clock, Trophy } from 'lucide-react';
+import { Home, Users, Clock, Trophy, Loader2 } from 'lucide-react';
 import { nakamaService } from '@/services/nakamaService';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -16,7 +16,9 @@ const NakamaGamePage = () => {
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [gameStarted, setGameStarted] = useState(false);
+  const [playersReady, setPlayersReady] = useState<Set<string>>(new Set());
+  const [canStart, setCanStart] = useState(false);
+  const [waitingForOthers, setWaitingForOthers] = useState(false);
 
   useEffect(() => {
     if (!matchId || !gameType || !user) {
@@ -28,35 +30,88 @@ const NakamaGamePage = () => {
     initializeNakamaGame();
   }, [matchId, gameType, user]);
 
- const initializeNakamaGame = async () => {
-  try {
-    setLoading(true);
-    console.log('🎮 Nakama game starting:', { matchId, gameType });
+  useEffect(() => {
+    // 2 oyuncu hazır olunca başlatma butonunu aktif et
+    if (playersReady.size >= 2) {
+      setCanStart(true);
+    }
+  }, [playersReady]);
 
-    let socket = nakamaService.getSocket();
+  const initializeNakamaGame = async () => {
+    try {
+      setLoading(true);
+      console.log('🎮 Nakama game starting:', { matchId, gameType });
+
+      let socket = nakamaService.getSocket();
+      
+      if (!socket) {
+        await nakamaService.authenticate(user.id);
+        socket = await nakamaService.createSocket();
+      }
+
+      // Oyuncu hazır sinyali gönder
+      socket.onopen = () => {
+        console.log('✅ Socket connected, sending ready signal');
+        socket.send(1, JSON.stringify({ 
+          type: 'player_ready', 
+          userId: user.id 
+        }), true);
+        
+        // Kendi hazır durumunu ekle
+        setPlayersReady(prev => new Set([...prev, user.id]));
+      };
+
+      // Diğer oyuncuların mesajlarını dinle
+      socket.onmatchdata = (matchData: any) => {
+        try {
+          const data = JSON.parse(new TextDecoder().decode(matchData.data));
+          console.log('📨 Received match data:', data);
+          
+          if (data.type === 'player_ready') {
+            console.log('✅ Player ready:', data.userId);
+            setPlayersReady(prev => new Set([...prev, data.userId]));
+          }
+          
+          if (data.type === 'game_start') {
+            console.log('🚀 Game starting signal received');
+            startActualGame();
+          }
+        } catch (e) {
+          console.error('Failed to parse match data:', e);
+        }
+      };
+
+      console.log('✅ Socket ready, waiting for players');
+      setLoading(false);
+
+    } catch (error: any) {
+      console.error('❌ Game init failed:', error);
+      setError(error.message || 'Oyun başlatılamadı');
+      setLoading(false);
+    }
+  };
+
+  const handleStartGame = () => {
+    const socket = nakamaService.getSocket();
     
     if (!socket) {
-      await nakamaService.authenticate(user.id);
-      socket = await nakamaService.createSocket();
+      console.error('Socket not available');
+      return;
     }
 
-    // Relayed mode - join'e gerek yok, direkt oyun başlat
-    console.log('✅ Socket ready, starting game');
+    console.log('🚀 Sending game start signal');
+    setWaitingForOthers(true);
     
-    setGameStarted(true);
-    setLoading(false);
-
-  } catch (error: any) {
-    console.error('❌ Game init failed:', error);
-    setError(error.message || 'Oyun başlatılamadı');
-    setLoading(false);
-  }
-};
+    // Tüm oyunculara başlama sinyali gönder
+    socket.send(1, JSON.stringify({ type: 'game_start' }), true);
+    
+    // Kendi oyununu başlat
+    setTimeout(() => startActualGame(), 500);
+  };
 
   const startActualGame = () => {
-    console.log('🚀 Starting actual game with Nakama match:', matchId);
-    // Gerçek oyun sayfasına yönlendir
-    navigate(`/game?nakama=true&match=${matchId}&type=${gameType}`);
+    console.log('🚀 Starting actual game with Nakama');
+    navigate(`/game?mode=nakama&match=${matchId}&type=${gameType}`);
   };
 
   if (loading) {
@@ -134,25 +189,34 @@ const NakamaGamePage = () => {
                 </>
               )}
             </div>
-            <p className="text-sm text-muted-foreground">
-              Match ID: <code className="bg-muted px-2 py-1 rounded text-xs">{matchId}</code>
-            </p>
           </div>
 
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <h3 className="font-semibold text-green-800 mb-2">✅ Nakama Bağlantısı Başarılı</h3>
-            <p className="text-sm text-green-700">
-              Nakama sunucusuna başarıyla bağlandınız ve match'e katıldınız.
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h3 className="font-semibold text-blue-800 mb-2">
+              👥 Oyuncular: {playersReady.size}/2
+            </h3>
+            <p className="text-sm text-blue-700">
+              {canStart 
+                ? 'Tüm oyuncular hazır! Oyunu başlatabilirsiniz.' 
+                : 'Diğer oyuncular bekleniyor...'}
             </p>
           </div>
 
           <div className="space-y-3">
             <Button 
-              onClick={startActualGame}
-              className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600"
+              onClick={handleStartGame}
+              disabled={!canStart || waitingForOthers}
+              className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 disabled:opacity-50"
               size="lg"
             >
-              🚀 Oyunu Başlat
+              {waitingForOthers ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Başlatılıyor...
+                </>
+              ) : (
+                <>🚀 Oyunu Başlat</>
+              )}
             </Button>
             
             <Button 
@@ -166,8 +230,8 @@ const NakamaGamePage = () => {
           </div>
 
           <div className="text-xs text-muted-foreground space-y-1">
-            <p>• Nakama ile global oyuncu ağına bağlandınız</p>
-            <p>• Oyun gerçek zamanlı senkronize edilecek</p>
+            <p>• Her iki oyuncu hazır olduğunda buton aktif olacak</p>
+            <p>• Oyun senkronize başlayacak</p>
             <p>• Bağlantı kesilirse otomatik yeniden bağlanır</p>
           </div>
         </CardContent>
