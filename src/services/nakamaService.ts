@@ -151,34 +151,37 @@ this.client = new Client(
 
   // Özel oda oluştur
   async createPrivateRoom(gameType: 'timed' | 'score'): Promise<string> {
-    try {
-      if (!this.socket) {
-        throw new Error("Socket not connected");
-      }
-
-      const match = await this.socket.createMatch();
-      console.log("✅ Private room created:", match.match_id);
-      return match.match_id;
-    } catch (error) {
-      console.error("❌ Failed to create private room:", error);
-      throw error;
+  try {
+    if (!this.socket) {
+      throw new Error("Socket not connected");
     }
+
+    const match = await this.socket.createMatch();
+    // Match ID'nin sonundaki nokta varsa temizle
+    const cleanMatchId = match.match_id.endsWith('.') ? match.match_id.slice(0, -1) : match.match_id;
+    console.log("✅ Private room created:", cleanMatchId);
+    return cleanMatchId;
+  } catch (error) {
+    console.error("❌ Failed to create private room:", error);
+    throw error;
   }
 
   // Özel odaya katıl
   async joinPrivateRoom(roomCode: string): Promise<void> {
-    try {
-      if (!this.socket) {
-        throw new Error("Socket not connected");
-      }
-
-      await this.socket.joinMatch(roomCode);
-      console.log("✅ Joined private room:", roomCode);
-    } catch (error) {
-      console.error("❌ Failed to join private room:", error);
-      throw error;
+  try {
+    if (!this.socket) {
+      throw new Error("Socket not connected");
     }
+
+    // Room code temizliği
+    const cleanRoomCode = roomCode.endsWith('.') ? roomCode.slice(0, -1) : roomCode;
+    await this.socket.joinMatch(cleanRoomCode);
+    console.log("✅ Joined private room:", cleanRoomCode);
+  } catch (error) {
+    console.error("❌ Failed to join private room:", error);
+    throw error;
   }
+}
 
   // Turnuva oluştur
   async createTournament(name: string, maxPlayers: number = 8): Promise<string> {
