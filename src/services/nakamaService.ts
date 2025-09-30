@@ -36,14 +36,15 @@ class NakamaService {
       };
 
       this.client = new Client(
-        'z8qmZL074JjopCZh',
-        'kelimeci.eu-west1-a.nakamacloud.io',
-        '443',
-        true
-      );
+  'defaultkey',
+  '88.99.121.2',  // Hetzner IP'n
+  '7350',
+  false  // HTTP (SSL yok)
+);
 
-      (this.client as any).ssl = true;
-      (this.client as any).useSSL = true;
+// WebSocket için de HTTP kullan
+(this.client as any).ssl = false;
+(this.client as any).useSSL = false;
       
       this.isInitialized = true;
       console.log("✅ Nakama client initialized with config:", {
