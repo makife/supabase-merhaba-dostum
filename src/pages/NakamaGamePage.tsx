@@ -33,12 +33,23 @@ const NakamaGamePage = () => {
       setLoading(true);
       console.log('🎮 Nakama oyun başlatılıyor:', { matchId, gameType });
 
-      // Nakama bağlantısını kontrol et
-      await nakamaService.authenticate(user.id);
-      const socket = await nakamaService.createSocket();
+      // Mevcut socket'i kontrol et
+      let socket = nakamaService.getSocket();
+      
+      if (!socket) {
+        // Socket yoksa yeni oluştur
+        console.log('🔌 Creating new socket connection...');
+        await nakamaService.authenticate(user.id);
+        socket = await nakamaService.createSocket();
+      } else {
+        console.log('✅ Reusing existing socket connection');
+      }
 
-      // Match'e katıl
-      await socket.joinMatch(matchId);
+      // Match'e katıl (match ID'nin sonundaki nokta varsa temizle)
+      const cleanMatchId = matchId?.endsWith('.') ? matchId.slice(0, -1) : matchId;
+      
+      console.log('🎯 Joining match:', cleanMatchId);
+      await socket.joinMatch(cleanMatchId);
       
       console.log('✅ Nakama match joined successfully');
       
