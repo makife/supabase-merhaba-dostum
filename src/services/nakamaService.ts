@@ -28,25 +28,22 @@ class NakamaService {
     try {
       console.log("🔧 Initializing Nakama client...");
       
-      // Supabase Edge Function'dan config al
       const config = {
-  serverKey: 'z8qmZL074JjopCZh',
-  host: 'kelimeci.eu-west1-a.nakamacloud.io',
-  port: '443',
-  useSSL: true
-};
+        serverKey: 'z8qmZL074JjopCZh',
+        host: 'kelimeci.eu-west1-a.nakamacloud.io',
+        port: '443',
+        useSSL: true
+      };
 
-// SSL protokolü için doğru URL yapısı kullan
-this.client = new Client(
-  'z8qmZL074JjopCZh',
-  'kelimeci.eu-west1-a.nakamacloud.io',
-  '443',
-  true // SSL açık
-);
+      this.client = new Client(
+        'z8qmZL074JjopCZh',
+        'kelimeci.eu-west1-a.nakamacloud.io',
+        '443',
+        true
+      );
 
-// WebSocket SSL ayarlarını zorla
-(this.client as any).ssl = true;
-(this.client as any).useSSL = true;
+      (this.client as any).ssl = true;
+      (this.client as any).useSSL = true;
       
       this.isInitialized = true;
       console.log("✅ Nakama client initialized with config:", {
@@ -89,7 +86,6 @@ this.client = new Client(
         throw new Error("Client not initialized");
       }
       
-      // WSS zorunlu olsun (TS tipleri 0 arg istiyor, runtime'da parametre geçiyoruz)
       this.socket = (this.client as any).createSocket(true);
       await this.socket.connect(this.session);
       console.log("✅ Nakama WebSocket connected via WSS");
@@ -108,7 +104,6 @@ this.client = new Client(
         throw new Error("Socket not connected");
       }
 
-      // Nakama matchmaking başlat
       const ticket = await this.socket.addMatchmaker("*", 2, 2, {
         "game_type": gameType,
         "region": "eu-west"
@@ -138,7 +133,6 @@ this.client = new Client(
     }
   }
 
-  // Socket bağlantısını temizle
   disconnect(): void {
     console.log("🔌 Disconnecting Nakama socket...");
     if (this.socket) {
@@ -149,41 +143,37 @@ this.client = new Client(
     console.log("✅ Nakama disconnected");
   }
 
-  // Özel oda oluştur
   async createPrivateRoom(gameType: 'timed' | 'score'): Promise<string> {
-  try {
-    if (!this.socket) {
-      throw new Error("Socket not connected");
-    }
+    try {
+      if (!this.socket) {
+        throw new Error("Socket not connected");
+      }
 
-    const match = await this.socket.createMatch();
-    // Match ID'nin sonundaki nokta varsa temizle
-    const cleanMatchId = match.match_id.endsWith('.') ? match.match_id.slice(0, -1) : match.match_id;
-    console.log("✅ Private room created:", cleanMatchId);
-    return cleanMatchId;
-  } catch (error) {
-    console.error("❌ Failed to create private room:", error);
-    throw error;
+      const match = await this.socket.createMatch();
+      const cleanMatchId = match.match_id.endsWith('.') ? match.match_id.slice(0, -1) : match.match_id;
+      console.log("✅ Private room created:", cleanMatchId);
+      return cleanMatchId;
+    } catch (error) {
+      console.error("❌ Failed to create private room:", error);
+      throw error;
+    }
   }
 
-  // Özel odaya katıl
   async joinPrivateRoom(roomCode: string): Promise<void> {
-  try {
-    if (!this.socket) {
-      throw new Error("Socket not connected");
+    try {
+      if (!this.socket) {
+        throw new Error("Socket not connected");
+      }
+
+      const cleanRoomCode = roomCode.endsWith('.') ? roomCode.slice(0, -1) : roomCode;
+      await this.socket.joinMatch(cleanRoomCode);
+      console.log("✅ Joined private room:", cleanRoomCode);
+    } catch (error) {
+      console.error("❌ Failed to join private room:", error);
+      throw error;
     }
-
-    // Room code temizliği
-    const cleanRoomCode = roomCode.endsWith('.') ? roomCode.slice(0, -1) : roomCode;
-    await this.socket.joinMatch(cleanRoomCode);
-    console.log("✅ Joined private room:", cleanRoomCode);
-  } catch (error) {
-    console.error("❌ Failed to join private room:", error);
-    throw error;
   }
-}
 
-  // Turnuva oluştur
   async createTournament(name: string, maxPlayers: number = 8): Promise<string> {
     try {
       if (!this.socket) {
@@ -198,9 +188,9 @@ this.client = new Client(
         size: maxPlayers,
         max_size: maxPlayers,
         max_num_score: 1,
-        duration: 900, // 15 dakika
-        start_active: Date.now() + 60000, // 1 dakika sonra başla
-        end_active: Date.now() + 900000 // 15 dakika sonra bitir
+        duration: 900,
+        start_active: Date.now() + 60000,
+        end_active: Date.now() + 900000
       });
       
       console.log("✅ Tournament created:", tournament.tournament_id);
@@ -211,7 +201,6 @@ this.client = new Client(
     }
   }
 
-  // Turnuvaya katıl
   async joinTournament(tournamentId: string): Promise<void> {
     try {
       if (!this.socket) {
@@ -226,7 +215,6 @@ this.client = new Client(
     }
   }
 
-  // Getter'lar
   getSocket(): Socket | null {
     return this.socket;
   }
@@ -236,5 +224,4 @@ this.client = new Client(
   }
 }
 
-// Singleton instance
 export const nakamaService = new NakamaService();
