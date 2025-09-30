@@ -49,30 +49,18 @@ const NakamaGamePage = () => {
         socket = await nakamaService.createSocket();
       }
 
-      // Oyuncu hazır sinyali gönder
-      socket.onopen = () => {
-        console.log('✅ Socket connected, sending ready signal');
-        socket.send(1, JSON.stringify({ 
-          type: 'player_ready', 
-          userId: user.id 
-        }), true);
-        
-        // Kendi hazır durumunu ekle
-        setPlayersReady(prev => new Set([...prev, user.id]));
-      };
-
-      // Diğer oyuncuların mesajlarını dinle
+      // Match data listener ekle
       socket.onmatchdata = (matchData: any) => {
         try {
-          const data = JSON.parse(new TextDecoder().decode(matchData.data));
-          console.log('📨 Received match data:', data);
+          const content = JSON.parse(new TextDecoder().decode(matchData.data));
+          console.log('📨 Received match data:', content);
           
-          if (data.type === 'player_ready') {
-            console.log('✅ Player ready:', data.userId);
-            setPlayersReady(prev => new Set([...prev, data.userId]));
+          if (content.type === 'player_ready') {
+            console.log('✅ Player ready:', content.userId);
+            setPlayersReady(prev => new Set([...prev, content.userId]));
           }
           
-          if (data.type === 'game_start') {
+          if (content.type === 'game_start') {
             console.log('🚀 Game starting signal received');
             startActualGame();
           }
@@ -80,6 +68,17 @@ const NakamaGamePage = () => {
           console.error('Failed to parse match data:', e);
         }
       };
+
+      // Kendi hazır sinyalini gönder
+      setTimeout(() => {
+        const readyMessage = JSON.stringify({ 
+          type: 'player_ready', 
+          userId: user.id 
+        });
+        socket.sendMatchState(matchId, 1, readyMessage);
+        setPlayersReady(prev => new Set([...prev, user.id]));
+        console.log('✅ Ready signal sent');
+      }, 500);
 
       console.log('✅ Socket ready, waiting for players');
       setLoading(false);
@@ -94,18 +93,17 @@ const NakamaGamePage = () => {
   const handleStartGame = () => {
     const socket = nakamaService.getSocket();
     
-    if (!socket) {
-      console.error('Socket not available');
+    if (!socket || !matchId) {
+      console.error('Socket or matchId not available');
       return;
     }
 
     console.log('🚀 Sending game start signal');
     setWaitingForOthers(true);
     
-    // Tüm oyunculara başlama sinyali gönder
-    socket.send(1, JSON.stringify({ type: 'game_start' }), true);
+    const startMessage = JSON.stringify({ type: 'game_start' });
+    socket.sendMatchState(matchId, 1, startMessage);
     
-    // Kendi oyununu başlat
     setTimeout(() => startActualGame(), 500);
   };
 
