@@ -27,7 +27,7 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
-  const [useNakama, setUseNakama] = useState(false);
+  
   const [nakamaRoomId, setNakamaRoomId] = useState('');
   const { createRoom, joinRoom, leaveRoom, currentRoom, participants } = useGame();
   const { playSound } = useSounds();
@@ -48,47 +48,23 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
   playSound('buttonClick');
   
   try {
-    if (useNakama) {
-      // Nakama özel oda
-      if (!user) return;
-      
-      console.log('🏠 Creating Nakama private room:', gameType);
-      await nakamaService.authenticate(user.id);
-      await nakamaService.createSocket();
-      const roomId = await nakamaService.createPrivateRoom(gameType);
-      
-      setNakamaRoomId(roomId);
-      setRoomCode(roomId.slice(-6).toUpperCase()); // Son 6 karakter kısa kod olarak
-      
-      toast({
-        title: "🏠 Nakama Özel Oda",
-        description: `Oda ID: ${roomId}`,
-      });
-      
-      onRoomCreated(roomId, gameType);
-    } else {
-      // Supabase özel oda
-      const newRoomCode = generateRoomCode();
-      const room = await createRoom(`private-room-${gameType}`, newRoomCode);
-      
-      if (room && room.room_code) {
-        setRoomCode(room.room_code);
-        onRoomCreated(room.room_code, gameType);
-        
-        // ✅ DÜZELTME: Oda oluşturulduktan sonra participants'ı manuel fetch et
-        setTimeout(async () => {
-          const { data: participants } = await supabase
-            .from('game_participants')
-            .select(`
-              *,
-              profiles:user_id (username, avatar_url)
-            `)
-            .eq('room_id', room.id);
-          
-          console.log('🔄 Oda oluşturma sonrası participants:', participants?.length);
-        }, 1000);
-      }
-    }
+    // Her zaman Nakama kullan
+    if (!user) return;
+    
+    console.log('🏠 Creating Nakama private room:', gameType);
+    await nakamaService.authenticate(user.id);
+    await nakamaService.createSocket();
+    const roomId = await nakamaService.createPrivateRoom(gameType);
+    
+    setNakamaRoomId(roomId);
+    setRoomCode(roomId.slice(-6).toUpperCase()); // Son 6 karakter kısa kod olarak
+    
+    toast({
+      title: "🏠 Nakama Özel Oda",
+      description: `Oda ID: ${roomId}`,
+    });
+    
+    onRoomCreated(roomId, gameType);
   } catch (error: any) {
     console.error('Error creating room:', error);
     toast({
@@ -115,28 +91,20 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
     playSound('buttonClick');
     
     try {
-      if (useNakama) {
-        // Nakama odaya katıl
-        if (!user) return;
-        
-        console.log('🚪 Joining Nakama private room:', joinCode);
-        await nakamaService.authenticate(user.id);
-        await nakamaService.createSocket();
-        await nakamaService.joinPrivateRoom(joinCode);
-        
-        toast({
-          title: "🚪 Nakama Odaya Katıldınız",
-          description: `Oda: ${joinCode}`,
-        });
-        
-        onRoomJoined();
-      } else {
-        // Supabase odaya katıl
-        const success = await joinRoom(joinCode.toUpperCase());
-        if (success) {
-          onRoomJoined();
-        }
-      }
+      // Her zaman Nakama kullan
+      if (!user) return;
+      
+      console.log('🚪 Joining Nakama private room:', joinCode);
+      await nakamaService.authenticate(user.id);
+      await nakamaService.createSocket();
+      await nakamaService.joinPrivateRoom(joinCode);
+      
+      toast({
+        title: "🚪 Nakama Odaya Katıldınız",
+        description: `Oda: ${joinCode}`,
+      });
+      
+      onRoomJoined();
     } catch (error: any) {
       console.error('Error joining room:', error);
       toast({
@@ -196,22 +164,6 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
             <TabsContent value="create" className="space-y-4 mt-4">
               {!roomCode && (
                 <div className="space-y-4">
-                  {/* Platform Seçimi */}
-                  <div>
-                    <h3 className="font-semibold mb-3 text-center">Platform</h3>
-                    <Tabs value={useNakama ? 'nakama' : 'supabase'} onValueChange={(value) => setUseNakama(value === 'nakama')}>
-                      <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="supabase" className="flex items-center gap-2">
-                          <Database className="w-4 h-4" />
-                          Supabase
-                        </TabsTrigger>
-                        <TabsTrigger value="nakama" className="flex items-center gap-2">
-                          <Globe className="w-4 h-4" />
-                          Nakama
-                        </TabsTrigger>
-                      </TabsList>
-                    </Tabs>
-                  </div>
                   <div>
                     <h3 className="font-semibold mb-3 text-center">Oyun Türü Seçin</h3>
                     <RadioGroup value={gameType} onValueChange={(value) => {
@@ -287,7 +239,7 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
                   <div className="space-y-4">
                     <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                       <Label className="text-sm font-medium text-green-800">
-                        {useNakama ? 'Nakama Oda Kodu' : 'Oda Kodu'}
+                        Nakama Oda Kodu
                       </Label>
                       <div className="flex items-center justify-between mt-2">
                         <span className="text-2xl font-bold font-mono text-green-900">{roomCode}</span>
@@ -304,7 +256,7 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
                           )}
                         </Button>
                       </div>
-                      {useNakama && nakamaRoomId && (
+                      {nakamaRoomId && (
                         <p className="text-xs text-green-600 mt-1">
                           Full ID: {nakamaRoomId}
                         </p>
@@ -329,32 +281,16 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
             
             <TabsContent value="join" className="space-y-4 mt-4">
               <div className="space-y-4">
-                {/* Platform Seçimi */}
-                <div>
-                  <h3 className="font-semibold mb-3 text-center">Platform</h3>
-                  <Tabs value={useNakama ? 'nakama' : 'supabase'} onValueChange={(value) => setUseNakama(value === 'nakama')}>
-                    <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="supabase" className="flex items-center gap-2">
-                        <Database className="w-4 h-4" />
-                        Supabase
-                      </TabsTrigger>
-                      <TabsTrigger value="nakama" className="flex items-center gap-2">
-                        <Globe className="w-4 h-4" />
-                        Nakama
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                </div>
                 <div>
                   <Label htmlFor="joinCode">
-                    {useNakama ? 'Nakama Oda Kodu/ID' : 'Oda Kodu'}
+                    Nakama Oda Kodu/ID
                   </Label>
                   <Input
                     id="joinCode"
-                    placeholder={useNakama ? "Nakama oda ID'sini girin" : "6 haneli oda kodunu girin"}
+                    placeholder="Nakama oda ID'sini girin"
                     value={joinCode}
-                    onChange={(e) => setJoinCode(useNakama ? e.target.value : e.target.value.toUpperCase())}
-                    maxLength={useNakama ? 50 : 6}
+                    onChange={(e) => setJoinCode(e.target.value)}
+                    maxLength={50}
                     className="mt-1 text-center font-mono text-lg tracking-wider"
                   />
                 </div>
@@ -369,7 +305,7 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
                 </Button>
                 
                 <p className="text-sm text-muted-foreground text-center">
-                  Arkadaşınızdan aldığınız 6 haneli kodu girin
+                  Arkadaşınızdan aldığınız oda kodunu girin
                 </p>
               </div>
             </TabsContent>

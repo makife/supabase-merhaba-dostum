@@ -241,7 +241,7 @@ const HomePage = () => {
     // Nakama match ID kontrolü - match ID'ler genellikle daha uzun olur
     if (roomId.length > 36) {
       // Bu bir Nakama match ID'si
-      navigate(`/game/nakama-match?match=${roomId}&type=${matchmakingGameType}`);
+      navigate(`/game/nakama-game?match=${roomId}&type=${matchmakingGameType}`);
       return;
     }
     

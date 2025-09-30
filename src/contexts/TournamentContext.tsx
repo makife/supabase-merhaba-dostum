@@ -14,7 +14,7 @@ interface TournamentContextType {
   loading: boolean;
   
   // Actions
-  createTournament: (useNakama?: boolean) => Promise<string | null>;
+  createTournament: () => Promise<string | null>;
   createNakamaTournament: (name: string) => Promise<string | null>;
   joinTournament: (tournamentId: string) => Promise<boolean>;
   joinNakamaTournament: (tournamentId: string) => Promise<boolean>;
@@ -158,13 +158,12 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
     }
   };
 
-  // Create new tournament
-  const createTournament = async (useNakama = false): Promise<string | null> => {
+  // Create new tournament - Her zaman Nakama kullan
+  const createTournament = async (): Promise<string | null> => {
     if (!user) return null;
 
-    if (useNakama) {
-      return await createNakamaTournament(`Turnuva ${new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`);
-    }
+    // Her zaman Nakama kullan
+    return await createNakamaTournament(`Turnuva ${new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`);
 
     try {
       setLoading(true);
