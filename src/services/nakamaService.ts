@@ -28,21 +28,27 @@ class NakamaService {
     try {
       console.log("🔧 Initializing Nakama client...");
       
-     const config = {
-  serverKey: 'defaultkey',
-  host: 'nakama.kelimeci.com.tr',
-  port: '443',
-  useSSL: true
-};
+      // Nakama default port is 7350
+      const config = {
+        serverKey: 'defaultkey',
+        host: 'nakama.kelimeci.com.tr',
+        port: '7350',
+        useSSL: true
+      };
 
-this.client = new Client(
-  'defaultkey',
-  'nakama.kelimeci.com.tr',
-  '443',
-  true  // SSL
-);
+      this.client = new Client(
+        config.serverKey,
+        config.host,
+        config.port,
+        config.useSSL
+      );
 
-// SSL enforced for browser compatibility
+      console.log("📡 Nakama configured:", {
+        host: config.host,
+        port: config.port,
+        ssl: config.useSSL,
+        wsUrl: `${config.useSSL ? 'wss' : 'ws'}://${config.host}:${config.port}`
+      });
       
       this.isInitialized = true;
       console.log("✅ Nakama client initialized with config:", {
