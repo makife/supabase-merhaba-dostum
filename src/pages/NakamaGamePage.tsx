@@ -77,11 +77,12 @@ const NakamaGamePage = () => {
       }
     };
 
-    // Hazır sinyali gönder
+    // Hazır sinyali gönder (TextEncoder ile encode et)
     setTimeout(() => {
       try {
         const msg = JSON.stringify({ type: 'player_ready', userId: user.id });
-        (socket as any).sendMatchState(matchId, 1, msg);
+        const encoder = new TextEncoder();
+        (socket as any).sendMatchState(matchId, 1, encoder.encode(msg));
         setPlayersReady(prev => new Set([...prev, user.id]));
         console.log('✅ Ready signal sent');
       } catch (sendError) {
@@ -108,20 +109,22 @@ const NakamaGamePage = () => {
     console.log('🚀 Broadcasting game start to ALL players');
     setWaitingForOthers(true);
     
-    // TÜM oyunculara başlama sinyali gönder
+    // TÜM oyunculara başlama sinyali gönder (TextEncoder ile encode et)
     const startMessage = JSON.stringify({ 
       type: 'game_start',
-      timestamp: Date.now() // Senkronizasyon için timestamp
+      timestamp: Date.now()
     });
-    (socket as any).sendMatchState(matchId, 1, startMessage);
+    const encoder = new TextEncoder();
+    (socket as any).sendMatchState(matchId, 1, encoder.encode(startMessage));
     
     // Kendi oyununu da başlat
     setTimeout(() => startActualGame(), 100);
   };
 
   const startActualGame = () => {
-    console.log('🚀 Starting actual game with Nakama');
-    navigate(`/game?mode=nakama&match=${matchId}&type=${gameType}`);
+    console.log('🚀 Starting actual game - navigating to GamePage');
+    // Random match mode olarak başlat, nakama matchId'yi room_id gibi kullan
+    navigate(`/game?mode=random-match&room=${matchId}&type=${gameType}`);
   };
 
   if (loading) {
