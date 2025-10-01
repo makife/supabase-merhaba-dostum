@@ -38,20 +38,17 @@ class NakamaService {
 
     const config = configData.config;
     
-    // SSL için özel host formatı
-    const secureHost = `wss://${config.host}`;
-    
     console.log("📡 Nakama config received:", {
-      host: secureHost,
+      host: config.host,  // Sadece nakama.kelimeci.com.tr - protokol YOK
       port: config.port,
-      useSSL: true
+      useSSL: config.useSSL
     });
 
     this.client = new Client(
       config.serverKey,
-      secureHost,  // wss:// prefix ile
+      config.host,  // wss:// prefix OLMADAN
       config.port,
-      true
+      true  // useSSL true olmalı
     );
 
     console.log("✅ Nakama client initialized");
