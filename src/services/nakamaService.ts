@@ -22,42 +22,45 @@ class NakamaService {
   }
 
   private async initializeClient(): Promise<void> {
-    if (this.isInitialized && this.client) {
-      return;
-    }
-
-    try {
-      console.log("🔧 Initializing Nakama client...");
-      
-      const { data: configData, error: configError } = await supabase.functions.invoke('nakama-config');
-      
-      if (configError || !configData?.config) {
-        console.error("❌ Failed to fetch Nakama config:", configError);
-        throw new Error("Could not fetch Nakama configuration");
-      }
-
-      const config = configData.config;
-      console.log("📡 Nakama config received:", {
-        host: config.host,
-        port: config.port,
-        useSSL: config.useSSL
-      });
-
-      // SSL'i zorla - port string olarak kalmalı
-      this.client = new Client(
-        config.serverKey,
-        config.host,
-        config.port,
-        true  // Her zaman SSL kullan
-      );
-
-      console.log("✅ Nakama client initialized");
-      this.isInitialized = true;
-    } catch (error) {
-      console.error("❌ Failed to initialize Nakama client:", error);
-      throw error;
-    }
+  if (this.isInitialized && this.client) {
+    return;
   }
+
+  try {
+    console.log("🔧 Initializing Nakama client...");
+    
+    const { data: configData, error: configError } = await supabase.functions.invoke('nakama-config');
+    
+    if (configError || !configData?.config) {
+      console.error("❌ Failed to fetch Nakama config:", configError);
+      throw new Error("Could not fetch Nakama configuration");
+    }
+
+    const config = configData.config;
+    
+    // SSL için özel host formatı
+    const secureHost = `wss://${config.host}`;
+    
+    console.log("📡 Nakama config received:", {
+      host: secureHost,
+      port: config.port,
+      useSSL: true
+    });
+
+    this.client = new Client(
+      config.serverKey,
+      secureHost,  // wss:// prefix ile
+      config.port,
+      true
+    );
+
+    console.log("✅ Nakama client initialized");
+    this.isInitialized = true;
+  } catch (error) {
+    console.error("❌ Failed to initialize Nakama client:", error);
+    throw error;
+  }
+}
 
   async authenticate(userId: string): Promise<Session> {
     try {
@@ -121,10 +124,9 @@ class NakamaService {
       throw new Error("Client not initialized");
     }
     
-    // Manuel WebSocket URL oluştur
-    this.socket = this.client.createSocket(true, false);  // useSSL=true, verbose=false
+    this.socket = this.client.createSocket();
     
-    console.log("🔗 Connecting to Nakama WebSocket with SSL enforced...");
+    console.log("🔗 Connecting to Nakama WebSocket...");
     await this.socket.connect(this.session);
     
     console.log("✅ Nakama WebSocket connected");
