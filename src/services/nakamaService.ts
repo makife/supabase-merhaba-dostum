@@ -1,5 +1,5 @@
 import { Client, Session, Socket } from '@heroiclabs/nakama-js';
-
+import { supabase } from '@/integrations/supabase/client';
 interface MatchTicket {
   ticket: string;
 }
@@ -42,9 +42,7 @@ this.client = new Client(
   true  // SSL
 );
 
-// WebSocket için de HTTP kullan
-(this.client as any).ssl = false;
-(this.client as any).useSSL = false;
+// SSL enforced for browser compatibility
       
       this.isInitialized = true;
       console.log("✅ Nakama client initialized with config:", {
@@ -61,17 +59,51 @@ this.client = new Client(
   async authenticate(userId: string): Promise<Session> {
     try {
       await this.initializeClient();
-      console.log("🔐 Nakama authentication starting for:", userId);
+      console.log("🔐 Nakama auth via Edge Function for:", userId);
       
       if (!this.client) {
         throw new Error("Client not initialized");
       }
-      
-      this.session = await this.client.authenticateDevice(userId);
-      console.log("✅ Nakama authentication successful");
+
+      // Use Supabase Edge Function to bypass CORS
+      const { data, error } = await (supabase.functions as any).invoke('nakama-auth', {
+        body: { deviceId: userId }
+      });
+
+      if (error) {
+        console.error("❌ Edge function error:", error);
+        throw error;
+      }
+      if (!data?.token) {
+        throw new Error("Nakama auth failed: no token received");
+      }
+
+      const minimalSession: any = {
+        token: data.token,
+        refresh_token: data.refresh_token,
+        created: true,
+        created_at: Math.floor(Date.now() / 1000),
+        expires_at: (() => {
+          try {
+            const parts = String(data.token).split('.');
+            const payload = JSON.parse(atob(parts[1] || ''));
+            return payload?.exp ?? Math.floor(Date.now() / 1000) + 3600;
+          } catch {
+            return Math.floor(Date.now() / 1000) + 3600;
+          }
+        })(),
+        isexpired: function () { return Math.floor(Date.now() / 1000) >= this.expires_at; },
+        canrefresh: function () { return !!this.refresh_token; },
+        user_id: data.user_id ?? userId,
+        username: data.username ?? '',
+        vars: data.vars ?? {}
+      };
+
+      this.session = minimalSession as Session;
+      console.log("✅ Nakama authentication via Edge successful");
       return this.session;
     } catch (error) {
-      console.error("❌ Nakama authentication failed:", error);
+      console.error("❌ Nakama authentication failed (edge):", error);
       throw error;
     }
   }
