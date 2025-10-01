@@ -1,5 +1,6 @@
+import { Client, Session, Socket } from '@heroiclabs/nakama-js';
 import { supabase } from '@/integrations/supabase/client';
-import { Client, Session, Socket, WebSocketAdapterText } from '@heroiclabs/nakama-js';
+
 interface MatchTicket {
   ticket: string;
 }
@@ -28,7 +29,6 @@ class NakamaService {
     try {
       console.log("🔧 Initializing Nakama client...");
       
-      // Get config from Edge Function
       const { data: configData, error: configError } = await supabase.functions.invoke('nakama-config');
       
       if (configError || !configData?.config) {
@@ -43,19 +43,15 @@ class NakamaService {
         useSSL: config.useSSL
       });
 
+      // SSL'i zorla - port string olarak kalmalı
       this.client = new Client(
         config.serverKey,
         config.host,
-        parseInt(config.port),
-        config.useSSL
+        config.port,
+        true  // Her zaman SSL kullan
       );
 
-      console.log("✅ Nakama client initialized:", {
-        host: config.host,
-        port: config.port,
-        wsUrl: `${config.useSSL ? 'wss' : 'ws'}://${config.host}:${config.port}`
-      });
-      
+      console.log("✅ Nakama client initialized");
       this.isInitialized = true;
     } catch (error) {
       console.error("❌ Failed to initialize Nakama client:", error);
@@ -72,7 +68,6 @@ class NakamaService {
         throw new Error("Client not initialized");
       }
 
-      // Use Supabase Edge Function to bypass CORS
       const { data, error } = await (supabase.functions as any).invoke('nakama-auth', {
         body: { deviceId: userId }
       });
@@ -115,37 +110,30 @@ class NakamaService {
     }
   }
 
- async createSocket(): Promise<Socket> {
-  try {
-    console.log("🔌 Creating Nakama WebSocket...");
-    if (!this.session) {
-      throw new Error("Must authenticate before creating socket");
+  async createSocket(): Promise<Socket> {
+    try {
+      console.log("🔌 Creating Nakama WebSocket...");
+      if (!this.session) {
+        throw new Error("Must authenticate before creating socket");
+      }
+      
+      if (!this.client) {
+        throw new Error("Client not initialized");
+      }
+      
+      // createSocket parametresiz - constructor'daki SSL ayarını kullanır
+      this.socket = this.client.createSocket();
+      
+      console.log("🔗 Connecting to Nakama WebSocket...");
+      await this.socket.connect(this.session);
+      
+      console.log("✅ Nakama WebSocket connected");
+      return this.socket;
+    } catch (error) {
+      console.error("❌ Nakama WebSocket creation failed:", error);
+      throw error;
     }
-    
-    if (!this.client) {
-      throw new Error("Client not initialized");
-    }
-    
-    // Manuel olarak SSL kullan
-    const useSSL = true;
-    const adapter = new WebSocketAdapterText();
-    this.socket = this.client.createSocket(useSSL, false, adapter);
-    
-    console.log("🔗 Connecting to Nakama WebSocket...");
-    await this.socket.connect(this.session);
-    
-    console.log("✅ Nakama WebSocket connected");
-    return this.socket;
-  } catch (error) {
-    console.error("❌ Nakama WebSocket creation failed:", error);
-    console.error("Error details:", {
-      name: error?.name,
-      message: error?.message,
-      stack: error?.stack
-    });
-    throw error;
   }
-}
 
   async findMatch(gameType: 'timed' | 'score'): Promise<{ ticket: string }> {
     try {
