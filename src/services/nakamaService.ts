@@ -46,7 +46,7 @@ class NakamaService {
       this.client = new Client(
         config.serverKey,
         config.host,
-        config.port,
+        parseInt(config.port),
         config.useSSL
       );
 
