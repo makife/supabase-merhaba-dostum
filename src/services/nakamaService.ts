@@ -28,13 +28,20 @@ class NakamaService {
     try {
       console.log("🔧 Initializing Nakama client...");
       
-      // Nakama default port is 7350
-      const config = {
-        serverKey: 'defaultkey',
-        host: 'nakama.kelimeci.com.tr',
-        port: '7350',
-        useSSL: true
-      };
+      // Get config from Edge Function
+      const { data: configData, error: configError } = await supabase.functions.invoke('nakama-config');
+      
+      if (configError || !configData?.config) {
+        console.error("❌ Failed to fetch Nakama config:", configError);
+        throw new Error("Could not fetch Nakama configuration");
+      }
+
+      const config = configData.config;
+      console.log("📡 Nakama config received:", {
+        host: config.host,
+        port: config.port,
+        useSSL: config.useSSL
+      });
 
       this.client = new Client(
         config.serverKey,
@@ -43,19 +50,13 @@ class NakamaService {
         config.useSSL
       );
 
-      console.log("📡 Nakama configured:", {
+      console.log("✅ Nakama client initialized:", {
         host: config.host,
         port: config.port,
-        ssl: config.useSSL,
         wsUrl: `${config.useSSL ? 'wss' : 'ws'}://${config.host}:${config.port}`
       });
       
       this.isInitialized = true;
-      console.log("✅ Nakama client initialized with config:", {
-        host: config.host,
-        port: config.port,
-        useSSL: config.useSSL
-      });
     } catch (error) {
       console.error("❌ Failed to initialize Nakama client:", error);
       throw error;
@@ -125,12 +126,21 @@ class NakamaService {
         throw new Error("Client not initialized");
       }
       
-      this.socket = (this.client as any).createSocket(true);
+      // Create socket
+      this.socket = this.client.createSocket();
+      
+      console.log("🔗 Connecting to Nakama WebSocket...");
       await this.socket.connect(this.session);
-      console.log("✅ Nakama WebSocket connected via WSS");
+      
+      console.log("✅ Nakama WebSocket connected");
       return this.socket;
     } catch (error) {
       console.error("❌ Nakama WebSocket creation failed:", error);
+      console.error("Error details:", {
+        name: error?.name,
+        message: error?.message,
+        stack: error?.stack
+      });
       throw error;
     }
   }

@@ -2,3 +2,6 @@ project_id = "nnlvtqmuwmrqfinsgvwc"
 
 [functions.reset-daily-stats]
 verify_jwt = false
+
+[functions.nakama-config]
+verify_jwt = false
