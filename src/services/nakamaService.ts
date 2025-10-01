@@ -1,5 +1,5 @@
-import { Client, Session, Socket } from '@heroiclabs/nakama-js';
 import { supabase } from '@/integrations/supabase/client';
+import { Client, Session, Socket, WebSocketAdapterText } from '@heroiclabs/nakama-js';
 interface MatchTicket {
   ticket: string;
 }
@@ -115,35 +115,37 @@ class NakamaService {
     }
   }
 
-  async createSocket(): Promise<Socket> {
-    try {
-      console.log("🔌 Creating Nakama WebSocket...");
-      if (!this.session) {
-        throw new Error("Must authenticate before creating socket");
-      }
-      
-      if (!this.client) {
-        throw new Error("Client not initialized");
-      }
-      
-      // Create socket
-      this.socket = this.client.createSocket();
-      
-      console.log("🔗 Connecting to Nakama WebSocket...");
-      await this.socket.connect(this.session);
-      
-      console.log("✅ Nakama WebSocket connected");
-      return this.socket;
-    } catch (error) {
-      console.error("❌ Nakama WebSocket creation failed:", error);
-      console.error("Error details:", {
-        name: error?.name,
-        message: error?.message,
-        stack: error?.stack
-      });
-      throw error;
+ async createSocket(): Promise<Socket> {
+  try {
+    console.log("🔌 Creating Nakama WebSocket...");
+    if (!this.session) {
+      throw new Error("Must authenticate before creating socket");
     }
+    
+    if (!this.client) {
+      throw new Error("Client not initialized");
+    }
+    
+    // Manuel olarak SSL kullan
+    const useSSL = true;
+    const adapter = new WebSocketAdapterText();
+    this.socket = this.client.createSocket(useSSL, false, adapter);
+    
+    console.log("🔗 Connecting to Nakama WebSocket...");
+    await this.socket.connect(this.session);
+    
+    console.log("✅ Nakama WebSocket connected");
+    return this.socket;
+  } catch (error) {
+    console.error("❌ Nakama WebSocket creation failed:", error);
+    console.error("Error details:", {
+      name: error?.name,
+      message: error?.message,
+      stack: error?.stack
+    });
+    throw error;
   }
+}
 
   async findMatch(gameType: 'timed' | 'score'): Promise<{ ticket: string }> {
     try {
