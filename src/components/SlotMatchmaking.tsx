@@ -75,6 +75,12 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
     }
   }, [searchProgress, stopped]);
 
+  const handleCancel = () => {
+    console.log('Matchmaking cancelled'); // Debug
+    setIsSpinning(false); // Spinner'ı durdur
+    onCancel(); // Modalı kapat
+  };
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
       <Card className="w-full max-w-lg bg-black/40 backdrop-blur-xl border-2 border-yellow-500/50 shadow-2xl">
@@ -154,7 +160,7 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
 
           <Button 
             variant="outline" 
-            onClick={onCancel}
+            onClick={handleCancel}
             className="w-full bg-red-600/20 border-red-500 hover:bg-red-600/40 text-white"
           >
             Aramayi Iptal Et
