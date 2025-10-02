@@ -312,20 +312,25 @@ try {
   }
 };
   // Arama iptal et
-  const cancelSearch = async () => {
-    console.log('❌ Arama iptal ediliyor...');
-    // Nakama için cancellation logic
-    if (useNakama && currentTicket) {
-      try {
-        await nakamaService.cancelMatchmaking(currentTicket);
-        setCurrentTicket(null);
-      } catch (error) {
-        console.error('Nakama cancel error:', error);
-      }
+ const cancelSearch = async () => {
+  console.log('❌ Arama iptal ediliyor...');
+  
+  // Nakama için cancellation logic
+  if (useNakama && currentTicket) {
+    try {
+      await nakamaService.cancelMatchmaking(currentTicket);
+      setCurrentTicket(null);
+    } catch (error) {
+      console.error('Nakama cancel error:', error);
     }
-    cleanup();
-  };
-
+  }
+  
+  cleanup();
+  
+  // ✅ EKLEME: Explicit olarak isSearching'i false yap
+  setIsSearching(false);
+  setSearchProgress(0);
+};
   // Tekrar arama yap
   const restartSearch = async (gameType: 'timed' | 'score') => {
     console.log('🔄 Tekrar arama başlatılıyor...');
