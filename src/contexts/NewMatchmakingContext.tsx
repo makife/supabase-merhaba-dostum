@@ -381,7 +381,7 @@ try {
     onMatchFound
   };
 
-  if (isSearching && !nakamaMatch) {
+  if (false) { // SlotMatchmaking'i devre dışı bırak
   return <SlotMatchmaking onCancel={cancelSearch} searchProgress={searchProgress} />;
 }
 
