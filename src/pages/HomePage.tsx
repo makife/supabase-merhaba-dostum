@@ -23,6 +23,7 @@ import { useJokerInventory } from '@/hooks/useJokerInventory';
 import { MatchmakingProvider } from '@/contexts/NewMatchmakingContext';
 import { Brain, Grid3X3 } from 'lucide-react';
 import { useMemoryGame } from '@/hooks/useMemoryGame';
+import { useMatchmaking } from '@/contexts/NewMatchmakingContext';
 
 import {
   Bot,
@@ -67,6 +68,7 @@ const HomePage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [timeUntilNextCredit, setTimeUntilNextCredit] = useState<string>('');
   const { canPlay: canPlayMemory, timeUntilNextPlay } = useMemoryGame();
+  const { startSearch } = useMatchmaking();
 
 
   // Level hesaplama fonksiyonu
@@ -908,7 +910,7 @@ const HomePage = () => {
               playSound('buttonClick');
               setSelectedMode(null);
               setMatchmakingGameType(gameType);
-              setShowMatchmaking(true);
+              startSearch('timed');
             }}
             onClose={() => {
               playSound('buttonClick');
