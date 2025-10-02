@@ -58,7 +58,7 @@ export const NakamaMatchmakingProvider: React.FC<NakamaMatchmakingProviderProps>
     setSearchProgress(0);
     setMatchFound(false);
     setCurrentTicket(null);
-    nakamaService.disconnect();
+    //nakamaService.disconnect();
   };
 
   // Random matchmaking
