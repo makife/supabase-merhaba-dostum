@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+app.tsx kodlarım import React, { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -224,16 +224,15 @@ const App = () => {
             <UserProvider>
               <ThemeProvider>
                 <MusicProvider>
-                  {/* ✅ ÖNEMLİ: GameProvider'ı MatchmakingProvider'ın DIŞINA AL */}
-                  <GameProvider>
-                    <MatchmakingProvider>
+                  <MatchmakingProvider>
+                    <GameProvider>
                       <TournamentProvider>
                         <NotificationProvider>
                           <AppRoutes />
                         </NotificationProvider>
                       </TournamentProvider>
-                    </MatchmakingProvider>
-                  </GameProvider>
+                    </GameProvider>
+                  </MatchmakingProvider>
                 </MusicProvider>
               </ThemeProvider>
             </UserProvider>
