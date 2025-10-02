@@ -110,7 +110,7 @@ class NakamaService {
     }
   }
 
- async createSocket(): Promise<Socket> {
+async createSocket(): Promise<Socket> {
   try {
     console.log("🔌 Creating Nakama WebSocket...");
     if (!this.session) {
@@ -121,7 +121,8 @@ class NakamaService {
       throw new Error("Client not initialized");
     }
     
-    this.socket = this.client.createSocket();
+    // ÖNEMLİ: useSSL parametresi TRUE olmalı
+    this.socket = this.client.createSocket(true, false);  // İLK PARAMETRE: useSSL
     
     console.log("🔗 Connecting to Nakama WebSocket...");
     await this.socket.connect(this.session);
