@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { nakamaService } from '@/services/nakamaService';
+import { SlotMatchmaking } from '@/components/SlotMatchmaking';
 
 interface MatchmakingRoom {
   id: string;
@@ -362,6 +363,10 @@ try {
     playWithAI,
     onMatchFound
   };
+
+  if (isSearching && !matchFound) {
+    return <SlotMatchmaking onCancel={cancelSearch} searchProgress={searchProgress} />;
+  }
 
   return (
     <MatchmakingContext.Provider value={value}>
