@@ -36,7 +36,7 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
       console.log('🚀 Modal açıldı, arama başlatılıyor');
       startSearch(gameType);
     }
-  }, [isOpen, gameType]);
+  }, [isOpen, gameType, isSearching, startSearch]);
 
   // BU EFFEKTİ EKLE: Modal kapandığında tamamen temizle
   useEffect(() => {
@@ -48,7 +48,7 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
         cancelSearch();
       }
     };
-  }, [isSearching]); // isSearching değiştiğinde cleanup yap
+  }, [isSearching, cancelSearch]);
 
   const handleClose = () => {
     console.log('❌ Kapat butonuna basıldı');
@@ -57,12 +57,6 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
     if (isSearching) {
       console.log('🛑 Aktif arama iptal ediliyor');
       cancelSearch();
-    }
-    
-    // Global state'i temizle (güvence için)
-    if (window.nakamaMatchmakingActive) {
-      console.log('🧹 Global nakama state temizleniyor');
-      window.nakamaMatchmakingActive = null;
     }
     
     // Modalı kapat
@@ -132,7 +126,7 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
   // Timeout durumu - seçenek kartı göster
   if (searchTimeout || (searchProgress >= 100 && (!currentRoom || currentRoom.current_players < 2))) {
     return (
-      <Dialog open={isOpen} onOpenChange={handleClose}> {/* Burayı değiştir */}
+      <Dialog open={isOpen} onOpenChange={handleClose}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -157,7 +151,7 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
                 onClick={() => {
                   console.log('🤖 AI ile oyna seçildi');
                   playWithAI();
-                  onClose(); // AI seçince de kapat
+                  onClose();
                 }}
                 className="flex-1"
               >
@@ -180,7 +174,7 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}> {/* Burayı değiştir */}
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
