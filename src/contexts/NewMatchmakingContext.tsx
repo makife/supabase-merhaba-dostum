@@ -386,12 +386,14 @@ const cancelSearch = async () => {
 
   if (isSearching && !nakamaMatch) {
   return (
-    <div className="fixed inset-0 z-50">
-      {/* GameContext'ten bağımsız bir wrapper */}
-      <div onClick={(e) => e.stopPropagation()}>
+    <>
+      {/* Children'ı (AppRoutes) render et - GameContext korunsun */}
+      {children}
+      {/* SlotMatchmaking'i overlay olarak ekle */}
+      <div className="fixed inset-0 z-50">
         <SlotMatchmaking onCancel={cancelSearch} searchProgress={searchProgress} />
       </div>
-    </div>
+    </>
   );
 }
 
