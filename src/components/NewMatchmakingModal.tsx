@@ -32,23 +32,23 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
   } = useMatchmaking();
 
   useEffect(() => {
-    if (isOpen && !isSearching) {
-      console.log('🚀 Modal açıldı, arama başlatılıyor');
-      startSearch(gameType);
-    }
-  }, [isOpen, gameType, isSearching, startSearch]);
+  // Sadece modal AÇIKKEN ve arama YAPILMIYORKEN başlat
+  if (isOpen && !isSearching) {
+    console.log('🚀 Modal açıldı, arama başlatılıyor');
+    startSearch(gameType);
+  }
+}, [isOpen]);
 
   // BU EFFEKTİ EKLE: Modal kapandığında tamamen temizle
   useEffect(() => {
-    return () => {
-      // Component unmount olduğunda veya kapandığında
-      console.log('🧹 NewMatchmakingModal temizleniyor...');
-      if (isSearching) {
-        console.log('🛑 Aktif arama iptal ediliyor');
-        cancelSearch();
-      }
-    };
-  }, [isSearching, cancelSearch]);
+  if (!isOpen) {
+    // Modal kapalıyken arama yapılıyorsa durdur
+    if (isSearching) {
+      console.log('🛑 Modal kapandı, arama durduruluyor');
+      cancelSearch();
+    }
+  }
+}, [isOpen, isSearching, cancelSearch]);
 
   const handleClose = () => {
     console.log('❌ Kapat butonuna basıldı');
