@@ -209,7 +209,6 @@ const AppRoutes = () => {
 };
 
 const App = () => {
-  // Native immersive bars (Android): show on edge-swipe for 3s, then auto-hide
   useImmersiveBars();
   return (
     <QueryClientProvider client={queryClient}>
@@ -224,6 +223,7 @@ const App = () => {
             <UserProvider>
               <ThemeProvider>
                 <MusicProvider>
+                  {/* ✅ Tüm sayfaları kapsayacak şekilde MatchmakingProvider'ı en dışa al */}
                   <MatchmakingProvider>
                     <GameProvider>
                       <TournamentProvider>
@@ -242,5 +242,4 @@ const App = () => {
     </QueryClientProvider>
   );
 };
-
 export default App;
