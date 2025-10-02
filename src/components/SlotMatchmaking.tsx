@@ -76,10 +76,22 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
   }, [searchProgress, stopped]);
 
   const handleCancel = () => {
-    console.log('Matchmaking cancelled'); // Debug
-    setIsSpinning(false); // Spinner'ı durdur
-    onCancel(); // Modalı kapat
-  };
+  console.log('🔄 Matchmaking iptal ediliyor, URL temizleniyor');
+  
+  // 1. Spinner'ı durdur
+  setIsSpinning(false);
+  
+  // 2. URL'den matchmaking parametrelerini temizle
+  const url = new URL(window.location.href);
+  url.searchParams.delete('match');
+  url.searchParams.delete('type');
+  window.history.replaceState({}, '', url.toString());
+  
+  // 3. Modalı kapat
+  onCancel();
+  
+  console.log('✅ URL temizlendi ve modal kapatıldı');
+};
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
