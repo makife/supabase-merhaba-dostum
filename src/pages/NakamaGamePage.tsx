@@ -20,6 +20,7 @@ const NakamaGamePage = () => {
   const [playersReady, setPlayersReady] = useState<Set<string>>(new Set());
   const [gameStartSignals, setGameStartSignals] = useState<Set<string>>(new Set());
   const [hasStarted, setHasStarted] = useState(false);
+  const [joinedMatchId, setJoinedMatchId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!matchId || !gameType || !user) {
@@ -54,10 +55,26 @@ const NakamaGamePage = () => {
 
     // ÖNEMLİ: Match'e katıl
     try {
-      await (socket as any).joinMatch(matchId);
-      console.log('✅ Joined match:', matchId);
+      const joinResult = await (socket as any).joinMatch(matchId);
+      const realMatchId = joinResult.match_id ?? joinResult.matchId;
+      setJoinedMatchId(realMatchId);
+      console.log('✅ Joined match with id:', realMatchId, 'token:', matchId);
+
+      // Mevcut oyuncu sayısını presences üzerinden başlat
+      const others = (joinResult.presences?.length ?? 0);
+      setTotalPlayers(1 + others);
+
+      // Hazır sinyali gönder
+      const readyMsg = JSON.stringify({ type: 'player_ready', userId: user.id });
+      const encoder = new TextEncoder();
+      (socket as any).sendMatchState(realMatchId, 1, encoder.encode(readyMsg));
+      setPlayersReady(prev => new Set([...prev, user.id]));
+      console.log('✅ Ready signal sent (post-join)');
     } catch (joinError) {
-      console.warn('Join match failed (expected in relayed mode):', joinError);
+      console.error('❌ Join match failed:', joinError);
+      setError('Maça katılım başarısız. Lütfen tekrar deneyin.');
+      setLoading(false);
+      return;
     }
 
     // Match presence listener - oyuncu sayısını al
@@ -99,22 +116,6 @@ const NakamaGamePage = () => {
       }
     };
 
-    // İlk presence bilgisi - mevcut oyuncu sayısını 1 olarak başlat
-    setTotalPlayers(1);
-
-    // Hazır sinyali gönder (TextEncoder ile encode et)
-    setTimeout(() => {
-      try {
-        const msg = JSON.stringify({ type: 'player_ready', userId: user.id });
-        const encoder = new TextEncoder();
-        (socket as any).sendMatchState(matchId, 1, encoder.encode(msg));
-        setPlayersReady(prev => new Set([...prev, user.id]));
-        console.log('✅ Ready signal sent');
-      } catch (sendError) {
-        console.error('Send failed:', sendError);
-      }
-    }, 1000);
-
     setLoading(false);
   } catch (error: any) {
     console.error('❌ Init failed:', error);
@@ -125,12 +126,13 @@ const NakamaGamePage = () => {
 
   const handleStartGame = () => {
     const socket = nakamaService.getSocket();
+    const targetMatchId = joinedMatchId ?? matchId;
     
-    if (!socket || !matchId) {
+    if (!socket || !targetMatchId) {
       console.error('Socket or matchId not available');
       return;
     }
-
+  
     console.log('🎮 Oyuncu başlat sinyali gönderiyor');
     
     // Başlatma isteği gönder
@@ -140,18 +142,17 @@ const NakamaGamePage = () => {
       timestamp: Date.now()
     });
     const encoder = new TextEncoder();
-    (socket as any).sendMatchState(matchId, 1, encoder.encode(startMessage));
+    (socket as any).sendMatchState(targetMatchId, 1, encoder.encode(startMessage));
     
     // Kendi sinyalini de ekle
     setGameStartSignals(prev => new Set([...prev, user.id]));
   };
-
   const startActualGame = () => {
     console.log('🚀 Starting actual game - navigating to GamePage');
     // Random match mode olarak başlat, nakama matchId'yi room_id gibi kullan
-    navigate(`/game?mode=random-match&room=${matchId}&type=${gameType}`);
+    const targetRoom = joinedMatchId ?? matchId;
+    navigate(`/game?mode=random-match&room=${targetRoom}&type=${gameType}`);
   };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center p-4">
