@@ -315,22 +315,34 @@ try {
  const cancelSearch = async () => {
   console.log('❌ Arama iptal ediliyor...');
   
-  // Nakama için cancellation logic
+  // Progress interval'ı durdur
+  if (progressInterval) {
+    clearInterval(progressInterval);
+    setProgressInterval(null);
+  }
+  
+  // Nakama ticket'ı iptal et (ama bağlantıyı kesme)
   if (useNakama && currentTicket) {
     try {
       await nakamaService.cancelMatchmaking(currentTicket);
       setCurrentTicket(null);
+      console.log('✅ Nakama matchmaking ticket iptal edildi');
     } catch (error) {
       console.error('Nakama cancel error:', error);
     }
   }
   
-  cleanup();
-  
-  // ✅ EKLEME: Explicit olarak isSearching'i false yap
+  // State'leri temizle
   setIsSearching(false);
   setSearchProgress(0);
+  setSearchTimeout(false);
+  
+  // ❌ KALDIRIN - Bağlantıyı kesmeyin
+  // nakamaService.disconnect();
+  
+  console.log('✅ Arama iptal edildi');
 };
+
   // Tekrar arama yap
   const restartSearch = async (gameType: 'timed' | 'score') => {
     console.log('🔄 Tekrar arama başlatılıyor...');
