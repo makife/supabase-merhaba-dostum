@@ -387,10 +387,11 @@ const cancelSearch = async () => {
   if (isSearching && !nakamaMatch) {
   return (
     <>
-      {/* Children'ı (AppRoutes) render et - GameContext korunsun */}
+      {/* Ana içerik (HomePage) arka planda kalsın */}
       {children}
-      {/* SlotMatchmaking'i overlay olarak ekle */}
-      <div className="fixed inset-0 z-50">
+      
+      {/* SlotMatchmaking overlay olarak gelsin */}
+      <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
         <SlotMatchmaking onCancel={cancelSearch} searchProgress={searchProgress} />
       </div>
     </>
