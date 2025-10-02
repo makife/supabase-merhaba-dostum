@@ -62,33 +62,34 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
   const [currentTicket, setCurrentTicket] = useState<string | null>(null);
 
   // Temizlik fonksiyonu
-  const cleanup = () => {
-    console.log('🧹 Matchmaking cleanup çalışıyor...');
-    if (searchChannel) {
-      supabase.removeChannel(searchChannel);
-      setSearchChannel(null);
-      console.log('📡 Real-time channel kapatıldı');
-    }
-    if (progressInterval) {
-      clearInterval(progressInterval);
-      setProgressInterval(null);
-      console.log('⏰ Progress timer temizlendi');
-    }
-    // Nakama cleanup
-    if (useNakama && currentTicket) {
-      nakamaService.cancelMatchmaking(currentTicket).catch(console.error);
-      setCurrentTicket(null);
-    }
-    nakamaService.disconnect();
-    
-    setIsSearching(false);
-    setCurrentRoom(null);
-    setSearchProgress(0);
-    setSearchTimeout(false);
-    setUseNakama(false);
-    setNakamaMatch(null);
-    console.log('✅ Matchmaking state temizlendi');
-  };
+ const cleanup = () => {
+  console.log('🧹 Matchmaking cleanup çalışıyor...');
+  
+  if (searchChannel) {
+    supabase.removeChannel(searchChannel);
+    setSearchChannel(null);
+    console.log('📡 Real-time channel kapatıldı');
+  }
+  
+  if (progressInterval) {
+    clearInterval(progressInterval);
+    setProgressInterval(null);
+    console.log('⏰ Progress timer temizlendi');
+  }
+  
+  // ❌ BU SATIRI KALDIR - Nakama bağlantısını kesme!
+  // nakamaService.disconnect();
+  
+  // State'leri temizle
+  setIsSearching(false);
+  setCurrentRoom(null);
+  setSearchProgress(0);
+  setSearchTimeout(false);
+  setUseNakama(false);
+  setNakamaMatch(null);
+  
+  console.log('✅ Matchmaking state temizlendi');
+};
 
   // Arama başlat - Default olarak Nakama kullan
   const startSearch = async (gameType: 'timed' | 'score') => {
@@ -312,8 +313,13 @@ try {
   }
 };
   // Arama iptal et
- const cancelSearch = async () => {
+const cancelSearch = async () => {
   console.log('❌ Arama iptal ediliyor...');
+  
+  // Önce state'leri temizle
+  setIsSearching(false);
+  setSearchProgress(0);
+  setSearchTimeout(false);
   
   // Progress interval'ı durdur
   if (progressInterval) {
@@ -321,28 +327,25 @@ try {
     setProgressInterval(null);
   }
   
-  // Nakama ticket'ı iptal et (ama bağlantıyı kesme)
+  // Nakama ticket'ı iptal et (bağlantı açıkken)
   if (useNakama && currentTicket) {
     try {
+      console.log('❌ Cancelling Nakama matchmaking:', currentTicket);
       await nakamaService.cancelMatchmaking(currentTicket);
       setCurrentTicket(null);
       console.log('✅ Nakama matchmaking ticket iptal edildi');
     } catch (error) {
       console.error('Nakama cancel error:', error);
+      // Hata olsa bile devam et, state'ler temizlensin
     }
   }
   
-  // State'leri temizle
-  setIsSearching(false);
-  setSearchProgress(0);
-  setSearchTimeout(false);
-  
-  // ❌ KALDIRIN - Bağlantıyı kesmeyin
-  // nakamaService.disconnect();
+  // Diğer state'leri temizle
+  setNakamaMatch(null);
+  setCurrentTicket(null);
   
   console.log('✅ Arama iptal edildi');
 };
-
   // Tekrar arama yap
   const restartSearch = async (gameType: 'timed' | 'score') => {
     console.log('🔄 Tekrar arama başlatılıyor...');
