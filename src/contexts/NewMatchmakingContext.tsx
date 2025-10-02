@@ -131,20 +131,42 @@ const startNakamaSearch = async (gameType: 'timed' | 'score') => {
       console.log('📋 Matched object:', JSON.stringify(matched, null, 2));
       
       try {
-        // ÖNEMLİ: match_id kullan (token DEĞİL)
         let matchId = matched.match_id || matched.matchId;
         
         if (!matchId) {
-          // Eğer match_id yoksa, yeni bir match oluştur
           console.log('🏗️ match_id yok, yeni match oluşturuluyor...');
           const newMatch = await socket.createMatch();
           matchId = newMatch.match_id;
           console.log('✅ Yeni match oluşturuldu:', matchId);
         }
         
-        // Sondaki noktayı temizle
         const cleanMatchId = matchId.endsWith('.') ? matchId.slice(0, -1) : matchId;
         console.log('🧹 Temiz match ID:', cleanMatchId);
+        
+        // 🔥 YENİ: Supabase'e minimal game room oluştur
+        try {
+          const { error: roomError } = await supabase
+            .from('game_rooms')
+            .insert({
+              id: cleanMatchId,
+              room_code: cleanMatchId,
+              host_id: user.id,
+              game_mode: gameType,
+              status: 'waiting',
+              max_players: 2,
+              time_limit: gameType === 'timed' ? 120 : 0,
+              max_score: gameType === 'score' ? 500 : 0,
+              current_grid: Array(16).fill('A') // Placeholder grid
+            });
+          
+          if (roomError) {
+            console.warn('⚠️ Room insert failed (may already exist):', roomError);
+          } else {
+            console.log('✅ Game room created for Nakama match');
+          }
+        } catch (err) {
+          console.warn('⚠️ Room creation error:', err);
+        }
         
         setNakamaMatch({
           matchId: cleanMatchId,
@@ -162,6 +184,7 @@ const startNakamaSearch = async (gameType: 'timed' | 'score') => {
           description: "Oyun başlıyor...",
         });
         
+        // Match ID'yi URL'ye gönder
         onMatchFound?.(cleanMatchId);
         
       } catch (error: any) {
