@@ -76,21 +76,13 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
   }, [searchProgress, stopped]);
 
   const handleCancel = () => {
-  console.log('🔄 Matchmaking iptal ediliyor, URL temizleniyor');
-  
-  // 1. Spinner'ı durdur
+  console.log('Matchmaking cancelled');
   setIsSpinning(false);
   
-  // 2. URL'den matchmaking parametrelerini temizle
-  const url = new URL(window.location.href);
-  url.searchParams.delete('match');
-  url.searchParams.delete('type');
-  window.history.replaceState({}, '', url.toString());
+  // BU SATIRI EKLE 👇 - URL'yi temizle
+  window.history.replaceState({}, '', window.location.pathname);
   
-  // 3. Modalı kapat
   onCancel();
-  
-  console.log('✅ URL temizlendi ve modal kapatıldı');
 };
   
   return (
