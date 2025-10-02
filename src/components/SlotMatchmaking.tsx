@@ -76,13 +76,15 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
   }, [searchProgress, stopped]);
 
   const handleCancel = () => {
-  console.log('Matchmaking cancelled');
+  console.log('🛑 SlotMatchmaking iptal ediliyor');
+  
+  // 1. Önce spinner'ı durdur
   setIsSpinning(false);
   
-  // BU SATIRI EKLE 👇 - URL'yi temizle
-  window.history.replaceState({}, '', window.location.pathname);
+  // 2. Context'teki cancelSearch'i çağır
+  onCancel(); // Bu, context'teki cancelSearch fonksiyonu
   
-  onCancel();
+  console.log('✅ SlotMatchmaking iptal edildi');
 };
   
   return (
