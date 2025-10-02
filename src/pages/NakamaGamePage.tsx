@@ -16,9 +16,10 @@ const NakamaGamePage = () => {
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [totalPlayers, setTotalPlayers] = useState(0);
   const [playersReady, setPlayersReady] = useState<Set<string>>(new Set());
-  const [canStart, setCanStart] = useState(false);
-  const [waitingForOthers, setWaitingForOthers] = useState(false);
+  const [gameStartSignals, setGameStartSignals] = useState<Set<string>>(new Set());
+  const [hasStarted, setHasStarted] = useState(false);
 
   useEffect(() => {
     if (!matchId || !gameType || !user) {
@@ -31,11 +32,13 @@ const NakamaGamePage = () => {
   }, [matchId, gameType, user]);
 
   useEffect(() => {
-    // 2 oyuncu hazır olunca başlatma butonunu aktif et
-    if (playersReady.size >= 2) {
-      setCanStart(true);
+    // Her iki oyuncu "Başlat" sinyali gönderdiğinde oyunu başlat
+    if (gameStartSignals.size >= 2 && !hasStarted) {
+      console.log('🚀 İki oyuncu da başlat dedi, oyun başlıyor!');
+      setHasStarted(true);
+      startActualGame();
     }
-  }, [playersReady]);
+  }, [gameStartSignals, hasStarted]);
 
  const initializeNakamaGame = async () => {
   try {
@@ -57,6 +60,25 @@ const NakamaGamePage = () => {
       console.warn('Join match failed (expected in relayed mode):', joinError);
     }
 
+    // Match presence listener - oyuncu sayısını al
+    (socket as any).onmatchpresence = (presence: any) => {
+      console.log('👥 Match presence event:', presence);
+      
+      // Joins array'inden toplam oyuncu sayısını hesapla
+      if (presence.joins && presence.joins.length > 0) {
+        setTotalPlayers(prev => {
+          const newTotal = prev + presence.joins.length;
+          console.log(`👥 Toplam oyuncu: ${newTotal}`);
+          return newTotal;
+        });
+      }
+      
+      // Leaves array'inden oyuncu ayrıldığında azalt
+      if (presence.leaves && presence.leaves.length > 0) {
+        setTotalPlayers(prev => Math.max(0, prev - presence.leaves.length));
+      }
+    };
+
     // Match data listener
     (socket as any).onmatchdata = (matchData: any) => {
       try {
@@ -68,14 +90,17 @@ const NakamaGamePage = () => {
           setPlayersReady(prev => new Set([...prev, content.userId]));
         }
         
-        if (content.type === 'game_start') {
-          console.log('🚀 GAME START RECEIVED');
-          startActualGame();
+        if (content.type === 'game_start_request') {
+          console.log('🎮 Player requested start:', content.userId);
+          setGameStartSignals(prev => new Set([...prev, content.userId]));
         }
       } catch (e) {
         console.error('Parse error:', e);
       }
     };
+
+    // İlk presence bilgisi - mevcut oyuncu sayısını 1 olarak başlat
+    setTotalPlayers(1);
 
     // Hazır sinyali gönder (TextEncoder ile encode et)
     setTimeout(() => {
@@ -106,19 +131,19 @@ const NakamaGamePage = () => {
       return;
     }
 
-    console.log('🚀 Broadcasting game start to ALL players');
-    setWaitingForOthers(true);
+    console.log('🎮 Oyuncu başlat sinyali gönderiyor');
     
-    // TÜM oyunculara başlama sinyali gönder (TextEncoder ile encode et)
+    // Başlatma isteği gönder
     const startMessage = JSON.stringify({ 
-      type: 'game_start',
+      type: 'game_start_request',
+      userId: user.id,
       timestamp: Date.now()
     });
     const encoder = new TextEncoder();
     (socket as any).sendMatchState(matchId, 1, encoder.encode(startMessage));
     
-    // Kendi oyununu da başlat
-    setTimeout(() => startActualGame(), 100);
+    // Kendi sinyalini de ekle
+    setGameStartSignals(prev => new Set([...prev, user.id]));
   };
 
   const startActualGame = () => {
@@ -204,31 +229,53 @@ const NakamaGamePage = () => {
             </div>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="font-semibold text-blue-800 mb-2">
-              👥 Oyuncular: {playersReady.size}/2
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
+            <h3 className="font-semibold text-blue-800">
+              👥 Oyuncular: {totalPlayers}/2
             </h3>
-            <p className="text-sm text-blue-700">
-              {canStart 
-                ? 'Tüm oyuncular hazır! Oyunu başlatabilirsiniz.' 
-                : 'Diğer oyuncular bekleniyor...'}
-            </p>
+            <div className="text-sm text-blue-700">
+              <p>✅ Hazır: {playersReady.size}/2</p>
+              <p>🎮 Başlatma: {gameStartSignals.size}/2</p>
+            </div>
+            {totalPlayers < 2 && (
+              <p className="text-sm text-blue-600 animate-pulse">
+                Diğer oyuncu bekleniyor...
+              </p>
+            )}
+            {totalPlayers === 2 && gameStartSignals.size < 2 && (
+              <p className="text-sm font-medium text-green-700">
+                ⚡ Her iki oyuncu "Başlat" butonuna basmalı!
+              </p>
+            )}
+            {gameStartSignals.size === 2 && (
+              <p className="text-sm font-bold text-green-700 animate-pulse">
+                🚀 Oyun başlıyor...
+              </p>
+            )}
           </div>
 
           <div className="space-y-3">
             <Button 
               onClick={handleStartGame}
-              disabled={!canStart || waitingForOthers}
+              disabled={totalPlayers < 2 || gameStartSignals.has(user.id) || hasStarted}
               className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 disabled:opacity-50"
               size="lg"
             >
-              {waitingForOthers ? (
+              {hasStarted ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Başlatılıyor...
+                  Oyun Başlıyor...
+                </>
+              ) : gameStartSignals.has(user.id) ? (
+                <>
+                  ⏳ Diğer Oyuncu Bekleniyor...
+                </>
+              ) : totalPlayers < 2 ? (
+                <>
+                  ⏳ Oyuncu Bekleniyor...
                 </>
               ) : (
-                <>🚀 Oyunu Başlat</>
+                <>🚀 Hazırım / Başlat</>
               )}
             </Button>
             
@@ -243,9 +290,9 @@ const NakamaGamePage = () => {
           </div>
 
           <div className="text-xs text-muted-foreground space-y-1">
-            <p>• Her iki oyuncu hazır olduğunda buton aktif olacak</p>
-            <p>• Oyun senkronize başlayacak</p>
-            <p>• Bağlantı kesilirse otomatik yeniden bağlanır</p>
+            <p>• Her iki oyuncu "Başlat" butonuna basmalı</p>
+            <p>• İki oyuncu da bastığında oyun otomatik başlar</p>
+            <p>• Oyun tamamen senkronize olacak</p>
           </div>
         </CardContent>
       </Card>
