@@ -170,38 +170,86 @@ const startNakamaSearch = async (gameType: 'timed' | 'score') => {
           console.error('Failed to join Nakama match:', joinError);
         }
         
-        // Supabase'e game room olustur
-        try {
-          const { error: roomError } = await supabase
-            .from('game_rooms')
-            .insert({
-              id: cleanMatchId,
-              room_code: cleanMatchId,
-              host_id: user.id,
-              game_mode: gameType,
-              status: 'waiting',
-              max_players: 2,
-              time_limit: gameType === 'timed' ? 120 : 0,
-              max_score: gameType === 'score' ? 500 : 0,
-              current_grid: Array(16).fill('A')
-            });
-          
-          if (roomError) {
-            if (roomError.message?.includes('duplicate') || roomError.code === '23505') {
-              console.log('Room already exists (expected for 2nd player)');
-            } else {
-              console.error('Room insert failed:', roomError);
-            }
-          } else {
-            console.log('Game room created for Nakama match');
-          }
-        } catch (err: any) {
-          if (err.code === '23505') {
-            console.log('Room already exists (duplicate key)');
-          } else {
-            console.warn('Room creation error:', err);
-          }
-        }
+       // Supabase'e game room olustur
+try {
+  // Match ID'yi seed olarak kullanarak deterministik grid olustur
+  const generateGridFromSeed = (seed: string): string[] => {
+    // Basit LCG (Linear Congruential Generator)
+    const seedNum = parseInt(seed.replace(/[^0-9]/g, '').slice(0, 10)) || Date.now();
+    let currentSeed = seedNum;
+    
+    const seededRandom = () => {
+      currentSeed = (currentSeed * 1664525 + 1013904223) % 4294967296;
+      return currentSeed / 4294967296;
+    };
+    
+    const letterPool = [
+      'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A',
+      'E', 'E', 'E', 'E', 'E', 'E', 'E',
+      'İ', 'İ', 'İ', 'İ', 'İ', 'İ',
+      'I', 'I', 'I', 'I', 'I',
+      'O', 'O', 'O', 'O', 'O',
+      'U', 'U', 'U', 'U',
+      'Ü', 'Ü', 'Ü', 'Ö', 'Ö', 'Ö',
+      'L', 'L', 'L', 'L', 'L',
+      'N', 'N', 'N', 'N', 'N',
+      'R', 'R', 'R', 'R', 'R',
+      'K', 'K', 'K', 'K',
+      'M', 'M', 'M', 'M',
+      'T', 'T', 'T', 'T',
+      'S', 'S', 'S', 'S',
+      'D', 'D', 'D',
+      'Y', 'Y', 'Y',
+      'B', 'B', 'B',
+      'C', 'C', 'Ç', 'Ç',
+      'F', 'F', 'G', 'G',
+      'Ğ', 'Ğ', 'H', 'H',
+      'J', 'P', 'P',
+      'Ş', 'Ş', 'V', 'V', 'Z'
+    ];
+    
+    const grid: string[] = [];
+    for (let i = 0; i < 16; i++) {
+      const randomIndex = Math.floor(seededRandom() * letterPool.length);
+      grid.push(letterPool[randomIndex]);
+    }
+    
+    return grid;
+  };
+  
+  const gridArray = generateGridFromSeed(cleanMatchId);
+  console.log('Generated seeded grid:', gridArray.slice(0, 4));
+  
+  const { error: roomError } = await supabase
+    .from('game_rooms')
+    .insert({
+      id: cleanMatchId,
+      room_code: cleanMatchId,
+      host_id: user.id,
+      game_mode: gameType,
+      status: 'waiting',
+      max_players: 2,
+      time_limit: gameType === 'timed' ? 120 : 0,
+      max_score: gameType === 'score' ? 500 : 0,
+      current_grid: gridArray
+    });
+  
+  if (roomError) {
+    if (roomError.message?.includes('duplicate') || roomError.code === '23505') {
+      console.log('Room already exists (expected for 2nd player)');
+    } else {
+      console.error('Room insert failed:', roomError);
+    }
+  } else {
+    console.log('Game room created with seeded grid');
+  }
+} catch (err: any) {
+  if (err.code === '23505') {
+    console.log('Room already exists (duplicate key)');
+  } else {
+    console.warn('Room creation error:', err);
+  }
+}
         
         setNakamaMatch({
           matchId: cleanMatchId,
