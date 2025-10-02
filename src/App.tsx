@@ -224,15 +224,16 @@ const App = () => {
             <UserProvider>
               <ThemeProvider>
                 <MusicProvider>
-                  <MatchmakingProvider>
-                    <GameProvider>
+                  {/* ✅ ÖNEMLİ: GameProvider'ı MatchmakingProvider'ın DIŞINA AL */}
+                  <GameProvider>
+                    <MatchmakingProvider>
                       <TournamentProvider>
                         <NotificationProvider>
                           <AppRoutes />
                         </NotificationProvider>
                       </TournamentProvider>
-                    </GameProvider>
-                  </MatchmakingProvider>
+                    </MatchmakingProvider>
+                  </GameProvider>
                 </MusicProvider>
               </ThemeProvider>
             </UserProvider>
