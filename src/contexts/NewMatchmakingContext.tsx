@@ -364,9 +364,9 @@ try {
     onMatchFound
   };
 
-  if (isSearching && !matchFound) {
-    return <SlotMatchmaking onCancel={cancelSearch} searchProgress={searchProgress} />;
-  }
+  if (isSearching && !nakamaMatch) {
+  return <SlotMatchmaking onCancel={cancelSearch} searchProgress={searchProgress} />;
+}
 
   return (
     <MatchmakingContext.Provider value={value}>
