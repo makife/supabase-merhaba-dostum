@@ -1221,6 +1221,8 @@ useEffect(() => {
   const initializeRandomMatch = async () => {
     if (gameMode !== 'random-match') return;
     if (!user?.id) return;
+    if (randomMatchInitRef.current) return;
+    randomMatchInitRef.current = true;
     
     console.log('🎲 Random match initialization başlıyor');
     
@@ -1235,7 +1237,27 @@ useEffect(() => {
     }
     
     try {
-      // Matchmaking room'dan grid'i al
+      // 🎮 Nakama match ID formatı kontrol et (UUID)
+      const isNakamaMatch = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(roomId);
+      
+      if (isNakamaMatch) {
+        console.log('🎮 Nakama match detected:', roomId);
+        console.log('✅ Skipping Supabase room lookup for Nakama match');
+        
+        // Nakama match için direkt grid oluştur
+        const gridToUse = generateRandomGrid();
+        setGameGrid(gridToUse);
+        
+        // Oyun başlamasını bekle
+        setWaitingForPlayer(false);
+        setShowCountdown(true);
+        
+        return; // Supabase işlemlerini atla
+      }
+      
+      // Eski Supabase sistemi için devam et
+      console.log('📊 Supabase matchmaking room aranıyor:', roomId);
+      
       const { data: matchmakingRoom, error: matchError } = await supabase
         .from('matchmaking_rooms')
         .select('*')
@@ -1261,9 +1283,8 @@ useEffect(() => {
       if (matchmakingRoom.room_data && typeof matchmakingRoom.room_data === 'object') {
         const roomDataObj = matchmakingRoom.room_data as any;
         if (roomDataObj.game_grid && Array.isArray(roomDataObj.game_grid)) {
-          console.log('📊 Matchmaking room grid alındı:', roomDataObj.game_grid.slice(0, 4));
+          console.log('📊 Matchmaking room grid alındı');
           
-          // Grid'i 4x4 matrise çevir
           const grid = [];
           for (let i = 0; i < 4; i++) {
             const row = [];
@@ -1273,7 +1294,6 @@ useEffect(() => {
             grid.push(row);
           }
           gridToUse = grid;
-          console.log('✅ Grid matchmaking room\'dan ayarlandı');
         }
       }
       
@@ -1290,10 +1310,8 @@ useEffect(() => {
       let gameRoomId = roomId;
       
       if (!existingRoom) {
-        // Flat grid oluştur
         const flatGrid = gridToUse.flat();
         
-        // Yeni game room oluştur
         const { data: newRoom, error: createError } = await supabase
           .from('game_rooms')
           .insert({
@@ -1323,7 +1341,6 @@ useEffect(() => {
         console.log('✅ Game room oluşturuldu:', newRoom.id);
       }
       
-      // GameContext'teki joinRoom fonksiyonunu kullan
       const success = await joinRoom(gameRoomId);
       if (success) {
         console.log('✅ Random match room\'a katıldı');
