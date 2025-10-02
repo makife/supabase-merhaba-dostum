@@ -33,16 +33,54 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
 
   useEffect(() => {
     if (isOpen && !isSearching) {
+      console.log('🚀 Modal açıldı, arama başlatılıyor');
       startSearch(gameType);
     }
   }, [isOpen, gameType]);
 
+  // BU EFFEKTİ EKLE: Modal kapandığında tamamen temizle
+  useEffect(() => {
+    return () => {
+      // Component unmount olduğunda veya kapandığında
+      console.log('🧹 NewMatchmakingModal temizleniyor...');
+      if (isSearching) {
+        console.log('🛑 Aktif arama iptal ediliyor');
+        cancelSearch();
+      }
+    };
+  }, [isSearching]); // isSearching değiştiğinde cleanup yap
+
   const handleClose = () => {
+    console.log('❌ Kapat butonuna basıldı');
+    
+    // Önce aramayı iptal et
     if (isSearching) {
+      console.log('🛑 Aktif arama iptal ediliyor');
       cancelSearch();
     }
+    
+    // Global state'i temizle (güvence için)
+    if (window.nakamaMatchmakingActive) {
+      console.log('🧹 Global nakama state temizleniyor');
+      window.nakamaMatchmakingActive = null;
+    }
+    
+    // Modalı kapat
     onClose();
+    
+    console.log('✅ Modal kapatıldı');
   };
+
+  // BU EFFEKTİ EKLE: Match bulunduğunda modalı kapat
+  useEffect(() => {
+    if (currentRoom?.status === 'matched' && currentRoom.current_players >= 2) {
+      console.log('🎯 Eşleşme bulundu, modal kapatılıyor');
+      // 1 saniye sonra kapat (animasyon için)
+      setTimeout(() => {
+        onClose();
+      }, 1000);
+    }
+  }, [currentRoom?.status, currentRoom?.current_players, onClose]);
 
   const getSearchStatus = () => {
     // Timeout durumu kontrolü
@@ -94,7 +132,7 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
   // Timeout durumu - seçenek kartı göster
   if (searchTimeout || (searchProgress >= 100 && (!currentRoom || currentRoom.current_players < 2))) {
     return (
-      <Dialog open={isOpen} onOpenChange={() => {}}>
+      <Dialog open={isOpen} onOpenChange={handleClose}> {/* Burayı değiştir */}
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -116,7 +154,11 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
             <div className="flex flex-col gap-2">
               <Button
                 variant="secondary"
-                onClick={playWithAI}
+                onClick={() => {
+                  console.log('🤖 AI ile oyna seçildi');
+                  playWithAI();
+                  onClose(); // AI seçince de kapat
+                }}
                 className="flex-1"
               >
                 <Bot className="h-4 w-4 mr-2" />
@@ -138,7 +180,7 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={() => {}}>
+    <Dialog open={isOpen} onOpenChange={handleClose}> {/* Burayı değiştir */}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
