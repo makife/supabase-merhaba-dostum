@@ -121,29 +121,35 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({
 
 const startNakamaSearch = async (gameType: 'timed' | 'score') => {
   try {
-    console.log('🎯 Nakama matchmaking başlatılıyor:', gameType);
+    console.log('Nakama matchmaking baslatiliyor:', gameType);
     
     await nakamaService.authenticate(user.id);
     const socket = await nakamaService.createSocket();
 
     socket.onmatchmakermatched = async (matched: any) => {
-      console.log('🎉 Nakama match bulundu!', matched);
-      console.log('📋 Matched object:', JSON.stringify(matched, null, 2));
+      console.log('Nakama match bulundu!', matched);
+      console.log('Matched object:', JSON.stringify(matched, null, 2));
       
       try {
-        let matchId = matched.match_id || matched.matchId;
+        // Nakama matchmaker token'i match ID olarak kullan
+        const matchId = matched.token;
         
         if (!matchId) {
-          console.log('🏗️ match_id yok, yeni match oluşturuluyor...');
-          const newMatch = await socket.createMatch();
-          matchId = newMatch.match_id;
-          console.log('✅ Yeni match oluşturuldu:', matchId);
+          throw new Error('No match token received from Nakama');
         }
         
         const cleanMatchId = matchId.endsWith('.') ? matchId.slice(0, -1) : matchId;
-        console.log('🧹 Temiz match ID:', cleanMatchId);
+        console.log('Using match token as ID:', cleanMatchId);
         
-        // 🔥 YENİ: Supabase'e minimal game room oluştur
+        // Match'e katil
+        try {
+          await socket.joinMatch(cleanMatchId);
+          console.log('Joined Nakama match:', cleanMatchId);
+        } catch (joinError) {
+          console.error('Failed to join Nakama match:', joinError);
+        }
+        
+        // Supabase'e game room olustur (ilk oyuncu olusturur, ikincisi duplicate alir)
         try {
           const { error: roomError } = await supabase
             .from('game_rooms')
@@ -156,16 +162,24 @@ const startNakamaSearch = async (gameType: 'timed' | 'score') => {
               max_players: 2,
               time_limit: gameType === 'timed' ? 120 : 0,
               max_score: gameType === 'score' ? 500 : 0,
-              current_grid: Array(16).fill('A') // Placeholder grid
+              current_grid: Array(16).fill('A')
             });
           
           if (roomError) {
-            console.warn('⚠️ Room insert failed (may already exist):', roomError);
+            if (roomError.message?.includes('duplicate') || roomError.code === '23505') {
+              console.log('Room already exists (expected for 2nd player)');
+            } else {
+              console.error('Room insert failed:', roomError);
+            }
           } else {
-            console.log('✅ Game room created for Nakama match');
+            console.log('Game room created for Nakama match');
           }
-        } catch (err) {
-          console.warn('⚠️ Room creation error:', err);
+        } catch (err: any) {
+          if (err.code === '23505') {
+            console.log('Room already exists (duplicate key)');
+          } else {
+            console.warn('Room creation error:', err);
+          }
         }
         
         setNakamaMatch({
@@ -180,17 +194,16 @@ const startNakamaSearch = async (gameType: 'timed' | 'score') => {
         }
         
         toast({
-          title: "🎉 Eşleşme Bulundu!",
-          description: "Oyun başlıyor...",
+          title: "Eslesme Bulundu!",
+          description: "Oyun basliyor...",
         });
         
-        // Match ID'yi URL'ye gönder
         onMatchFound?.(cleanMatchId);
         
       } catch (error: any) {
-        console.error('❌ Match setup failed:', error);
+        console.error('Match setup failed:', error);
         toast({
-          title: "❌ Hata",
+          title: "Hata",
           description: error.message,
           variant: "destructive",
         });
@@ -210,8 +223,8 @@ const startNakamaSearch = async (gameType: 'timed' | 'score') => {
         setIsSearching(false);
         setSearchTimeout(true);
         toast({
-          title: "⏰ Timeout",
-          description: "Oyuncu bulunamadı",
+          title: "Timeout",
+          description: "Oyuncu bulunamadi",
           variant: "destructive",
         });
       }
@@ -219,16 +232,15 @@ const startNakamaSearch = async (gameType: 'timed' | 'score') => {
     setProgressInterval(interval);
 
   } catch (error: any) {
-    console.error('❌ Nakama matchmaking failed:', error);
+    console.error('Nakama matchmaking failed:', error);
     setIsSearching(false);
     toast({
-      title: "❌ Nakama Hatası",
+      title: "Nakama Hatasi",
       description: error.message,
       variant: "destructive",
     });
   }
 };
-
   // Arama iptal et
   const cancelSearch = async () => {
     console.log('❌ Arama iptal ediliyor...');
