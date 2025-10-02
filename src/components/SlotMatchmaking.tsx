@@ -165,12 +165,13 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
           </div>
 
           <Button 
-            variant="outline" 
-            onClick={handleCancel}
-            className="w-full bg-red-600/20 border-red-500 hover:bg-red-600/40 text-white"
-          >
-            Aramayi Iptal Et
-          </Button>
+  type="button" // 👈 BU SATIRI EKLE
+  variant="outline" 
+  onClick={handleCancel}
+  className="w-full bg-red-600/20 border-red-500 hover:bg-red-600/40 text-white"
+>
+  Aramayi Iptal Et
+</Button>
         </CardContent>
       </Card>
     </div>
