@@ -9,8 +9,12 @@ interface SlotMatchmakingProps {
   searchProgress: number;
 }
 
-// Örnek oyuncu profilleri (gerçek verilerle değiştirebilirsiniz)
-const SAMPLE_PLAYERS = [
+interface Player {
+  avatar: string;
+  name: string;
+}
+
+const SAMPLE_PLAYERS: Player[] = [
   { avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=1', name: 'Oyuncu 1' },
   { avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=2', name: 'Oyuncu 2' },
   { avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=3', name: 'Oyuncu 3' },
@@ -25,7 +29,7 @@ const SLOT_COUNT = 3;
 const SPIN_DURATION = 100;
 
 export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingProps) => {
-  const [slots, setSlots] = useState<typeof SAMPLE_PLAYERS[][]>(
+  const [slots, setSlots] = useState<Player[][]>(() =>
     Array(SLOT_COUNT).fill(null).map(() => 
       Array(20).fill(null).map(() => SAMPLE_PLAYERS[Math.floor(Math.random() * SAMPLE_PLAYERS.length)])
     )
@@ -77,12 +81,11 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
         <CardContent className="p-8">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-yellow-400 mb-2 animate-pulse">
-              Rakip Aranıyor
+              Rakip Araniyor
             </h2>
-            <p className="text-white/70">Eşleşme bekleniyor...</p>
+            <p className="text-white/70">Eslesme bekleniyor...</p>
           </div>
 
-          {/* Slot Machine with Player Avatars */}
           <div className="bg-gradient-to-b from-yellow-600 to-yellow-800 rounded-2xl p-6 mb-6 shadow-2xl border-4 border-yellow-500">
             <div className="flex justify-center gap-4">
               {slots.map((slotData, slotIndex) => (
@@ -117,18 +120,15 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
                     </div>
                   </div>
                   
-                  {/* Gradient overlays */}
                   <div className="absolute top-0 left-0 right-0 h-1/3 bg-gradient-to-b from-gray-900 to-transparent pointer-events-none z-10" />
                   <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-gray-900 to-transparent pointer-events-none z-10" />
                   
-                  {/* Center highlight */}
                   <div className="absolute left-0 right-0 top-1/2 transform -translate-y-1/2 h-16 border-y-2 border-yellow-400/70 pointer-events-none z-20 bg-yellow-400/5" />
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Progress Bar */}
           <div className="mb-6">
             <div className="flex justify-between text-sm text-white/70 mb-2">
               <span>Arama ilerlemesi</span>
@@ -142,24 +142,22 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
             </div>
           </div>
 
-          {/* Loading indicator */}
           <div className="flex items-center justify-center gap-2 mb-6 text-white/90">
             <Loader2 className="w-5 h-5 animate-spin" />
             <span className="text-sm">
               {searchProgress < 30 ? 'Oyuncular taranıyor...' :
                searchProgress < 60 ? 'Uygun rakip aranıyor...' :
-               searchProgress < 90 ? 'Eşleşme kontrol ediliyor...' :
-               'Neredeyse hazır...'}
+               searchProgress < 90 ? 'Eslesme kontrol ediliyor...' :
+               'Neredeyse hazir...'}
             </span>
           </div>
 
-          {/* Cancel Button */}
           <Button 
             variant="outline" 
             onClick={onCancel}
             className="w-full bg-red-600/20 border-red-500 hover:bg-red-600/40 text-white"
           >
-            Aramayı İptal Et
+            Aramayi Iptal Et
           </Button>
         </CardContent>
       </Card>
