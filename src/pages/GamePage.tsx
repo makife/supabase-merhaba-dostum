@@ -1242,17 +1242,29 @@ useEffect(() => {
       
       if (isNakamaMatch) {
         console.log('🎮 Nakama match detected:', roomId);
-        console.log('✅ Skipping Supabase room lookup for Nakama match');
+        console.log('✅ Skipping Supabase matchmaking_rooms lookup');
         
         // Nakama match için direkt grid oluştur
         const gridToUse = generateRandomGrid();
         setGameGrid(gridToUse);
         
-        // Oyun başlamasını bekle
-        setWaitingForPlayer(false);
-        setShowCountdown(true);
+        // 🔥 ÖNEMLİ: joinRoom çağır ki participants yüklensin
+        console.log('🔗 Joining Nakama game room:', roomId);
+        const success = await joinRoom(roomId);
         
-        return; // Supabase işlemlerini atla
+        if (!success) {
+          console.error('❌ Nakama room\'a katılamadı');
+          toast({
+            title: "Bağlantı Hatası",
+            description: "Oyun odasına bağlanılamadı",
+            variant: "destructive",
+          });
+          navigate('/');
+          return;
+        }
+        
+        console.log('✅ Nakama room\'a katıldı, participants yüklenecek');
+        return; // Supabase matchmaking_rooms işlemlerini atla
       }
       
       // Eski Supabase sistemi için devam et
