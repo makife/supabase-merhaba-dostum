@@ -16,7 +16,7 @@ class NakamaService {
   private session: Session | null = null;
   private socket: Socket | null = null;
   private isInitialized: boolean = false;
-  
+  private useSSL: boolean = false;
   constructor() {
     console.log("🚀 Nakama Service created, will initialize on first use");
   }
@@ -44,13 +44,15 @@ private async initializeClient(): Promise<void> {
       useSSL: config.useSSL
     });
 
-    // ÖNEMLİ: 4. parametre true olmalı (useSSL)
+    // useSSL config'den gelir
     this.client = new Client(
       config.serverKey,     // 1. serverKey
       config.host,          // 2. host (protokol YOK)
       config.port,          // 3. port
-      true                  // 4. useSSL - WSS için TRUE
+      config.useSSL         // 4. useSSL - WSS için config'e göre
     );
+
+    this.useSSL = !!config.useSSL;
 
     console.log("✅ Nakama client initialized with SSL");
     this.isInitialized = true;
@@ -122,8 +124,8 @@ async createSocket(): Promise<Socket> {
       throw new Error("Client not initialized");
     }
     
-    // createSocket() parametre almıyor, SSL client seviyesinde ayarlandı
-    this.socket = this.client.createSocket();
+    // SSL tercihini açıkça ilet
+    this.socket = this.client.createSocket(this.useSSL, false);
     
     console.log("🔗 Connecting to Nakama WebSocket...");
     await this.socket.connect(this.session);

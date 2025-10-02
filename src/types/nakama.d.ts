@@ -38,12 +38,12 @@ declare module '@heroiclabs/nakama-js' {
 
   export interface Client {
     authenticateDevice(deviceId: string): Promise<Session>;
-    createSocket(): Socket;
+    createSocket(useSSL?: boolean, verbose?: boolean): Socket;
   }
 
   export class Client {
     constructor(serverKey?: string, host?: string, port?: string, useSSL?: boolean);
     authenticateDevice(deviceId: string): Promise<Session>;
-    createSocket(): Socket;
+    createSocket(useSSL?: boolean, verbose?: boolean): Socket;
   }
 }
