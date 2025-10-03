@@ -149,6 +149,13 @@ const startNakamaSearch = async (gameType: 'timed' | 'score') => {
         
         console.log('Successfully joined Nakama match:', matchId);
         
+        // ID'yi sanitize et (token kaynaklı sondaki nokta vb.)
+        const cleanMatchId = (matchId || '').trim().replace(/[^a-f0-9-]/gi, '');
+        if (!cleanMatchId || cleanMatchId.length < 10) {
+          throw new Error('Invalid match_id after sanitize');
+        }
+        console.log('Clean match ID:', cleanMatchId);
+        
         // Supabase'e game room olustur
 try {
   // Match ID'yi seed olarak kullanarak deterministik grid olustur
@@ -196,14 +203,14 @@ try {
     return grid;
   };
   
-  const gridArray = generateGridFromSeed(matchId);
+  const gridArray = generateGridFromSeed(cleanMatchId);
   console.log('Generated seeded grid:', gridArray.slice(0, 4));
   
   const { error: roomError } = await supabase
     .from('game_rooms')
     .insert({
-      id: matchId,
-      room_code: matchId,
+      id: cleanMatchId,
+      room_code: cleanMatchId,
       host_id: user.id,
       game_mode: gameType,
       status: 'waiting',
@@ -231,7 +238,7 @@ try {
 }
         
         setNakamaMatch({
-          matchId: matchId,
+          matchId: cleanMatchId,
           gameType: gameType
         });
         
@@ -246,7 +253,7 @@ try {
           description: "Oyun basliyor...",
         });
         
-        onMatchFound?.(matchId);
+        onMatchFound?.(cleanMatchId);
         
       } catch (error: any) {
         console.error('Match setup failed:', error);
