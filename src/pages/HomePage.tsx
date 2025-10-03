@@ -20,7 +20,6 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { useJokerInventory } from '@/hooks/useJokerInventory';
-import { MatchmakingProvider } from '@/contexts/NewMatchmakingContext';
 import { Brain, Grid3X3 } from 'lucide-react';
 import { useMemoryGame } from '@/hooks/useMemoryGame';
 import { useMatchmaking } from '@/contexts/NewMatchmakingContext';
@@ -291,7 +290,6 @@ const HomePage = () => {
   ];
 
   return (
-    <MatchmakingProvider onMatchFound={handleMatchFound}>
       <div className="min-h-screen bg-gradient-to-br from-background to-muted px-4 pt-4 pb-2">
         <div className="max-w-4xl mx-auto space-y-3">
         {/* Birleştirilmiş Header ve Level Progress */}
@@ -962,7 +960,6 @@ const HomePage = () => {
         <FloatingMenu />
       </div>
     </div>
-    </MatchmakingProvider>
   );
 };
 
