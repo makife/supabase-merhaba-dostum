@@ -139,40 +139,19 @@ const startNakamaSearch = async (gameType: 'timed' | 'score') => {
           throw new Error('No match token received from Nakama');
         }
         
-        // JWT token'dan match ID'yi cikart (payload decode et)
-        let matchId: string;
-        try {
-          const parts = token.split('.');
-          if (parts.length !== 3) {
-            throw new Error('Invalid JWT token format');
-          }
-          
-          const payload = JSON.parse(atob(parts[1]));
-          matchId = payload.mid; // "mid" field'i match ID'yi icerir
-          
-          console.log('Decoded match ID from token:', matchId);
-        } catch (decodeError) {
-          console.error('Failed to decode token:', decodeError);
-          throw new Error('Could not extract match ID from token');
-        }
+        console.log('Using token to join match:', token);
         
-        if (!matchId) {
-          throw new Error('No match ID found in token payload');
-        }
+        // Token kullanarak match'e katıl (match ID değil!)
+        await socket.joinMatch(token);
         
-        // Match ID'den sondaki noktayi temizle
-        const cleanMatchId = matchId.endsWith('.') ? matchId.slice(0, -1) : matchId;
-        console.log('Clean match ID:', cleanMatchId);
+        // Token'dan match ID'yi çıkar
+        const parts = token.split('.');
+        const payload = JSON.parse(atob(parts[1]));
+        const matchId = payload.mid?.replace(/\.$/, '') || token;
         
-        // Match'e katil
-        try {
-          await socket.joinMatch(cleanMatchId);
-          console.log('Joined Nakama match:', cleanMatchId);
-        } catch (joinError) {
-          console.error('Failed to join Nakama match:', joinError);
-        }
+        console.log('Successfully joined Nakama match:', matchId);
         
-       // Supabase'e game room olustur
+        // Supabase'e game room olustur
 try {
   // Match ID'yi seed olarak kullanarak deterministik grid olustur
   const generateGridFromSeed = (seed: string): string[] => {
@@ -219,14 +198,14 @@ try {
     return grid;
   };
   
-  const gridArray = generateGridFromSeed(cleanMatchId);
+  const gridArray = generateGridFromSeed(matchId);
   console.log('Generated seeded grid:', gridArray.slice(0, 4));
   
   const { error: roomError } = await supabase
     .from('game_rooms')
     .insert({
-      id: cleanMatchId,
-      room_code: cleanMatchId,
+      id: matchId,
+      room_code: matchId,
       host_id: user.id,
       game_mode: gameType,
       status: 'waiting',
@@ -254,7 +233,7 @@ try {
 }
         
         setNakamaMatch({
-          matchId: cleanMatchId,
+          matchId: matchId,
           gameType: gameType
         });
         
@@ -269,7 +248,7 @@ try {
           description: "Oyun basliyor...",
         });
         
-        onMatchFound?.(cleanMatchId);
+        onMatchFound?.(matchId);
         
       } catch (error: any) {
         console.error('Match setup failed:', error);
