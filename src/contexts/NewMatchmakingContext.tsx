@@ -384,23 +384,14 @@ const cancelSearch = async () => {
     onMatchFound
   };
 
-  if (isSearching && !nakamaMatch) {
-  return (
-    <>
-      {/* Ana içerik (HomePage) arka planda kalsın */}
-      {children}
-      
-      {/* SlotMatchmaking overlay olarak gelsin */}
-      <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
-        <SlotMatchmaking onCancel={cancelSearch} searchProgress={searchProgress} />
-      </div>
-    </>
-  );
-}
-
   return (
     <MatchmakingContext.Provider value={value}>
       {children}
+      {isSearching && !nakamaMatch && (
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
+          <SlotMatchmaking onCancel={cancelSearch} searchProgress={searchProgress} />
+        </div>
+      )}
     </MatchmakingContext.Provider>
   );
 };
