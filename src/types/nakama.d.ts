@@ -28,7 +28,7 @@ declare module '@heroiclabs/nakama-js' {
     addMatchmaker(query: string, minCount: number, maxCount: number, stringProperties?: Record<string, string>): Promise<MatchmakerTicket>;
     removeMatchmaker(ticket: string): Promise<void>;
     createMatch(): Promise<Match>;
-    joinMatch(matchId: string): Promise<void>;
+    joinMatch(matchId?: string, token?: string, metadata?: object): Promise<Match>;
     createTournament(params: any): Promise<Tournament>;
     joinTournament(tournamentId: string): Promise<void>;
     onmatchmakingmatched?: (matched: any) => void;

@@ -141,10 +141,11 @@ const startNakamaSearch = async (gameType: 'timed' | 'score') => {
         
         console.log('Using token to join match:', token);
         
-        // Token kullanarak match'e katıl (SDK tipleri için any cast)
-        const joinRes: any = await (socket as any).joinMatchToken(token);
-        const matchId: string = joinRes?.match_id || joinRes?.matchId || '';
-        if (!matchId) throw new Error('Join returned no match_id');
+        // Token kullanarak match'e katıl
+        const match = await socket.joinMatch(undefined, token);
+        const matchId = match.match_id;
+        
+        if (!matchId) throw new Error('No match_id returned from joinMatch');
         
         console.log('Successfully joined Nakama match:', matchId);
         
