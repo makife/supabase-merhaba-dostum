@@ -65,16 +65,27 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
     console.log('✅ Modal kapatıldı');
   };
 
-  // BU EFFEKTİ EKLE: Match bulunduğunda modalı kapat
+  // Eşleşme bulunduğunda yönlendir ve modalı kapat
   useEffect(() => {
     if (currentRoom?.status === 'matched' && currentRoom.current_players >= 2) {
-      console.log('🎯 Eşleşme bulundu, modal kapatılıyor');
-      // 1 saniye sonra kapat (animasyon için)
+      console.log('🎯 Supabase eşleşme bulundu, yönlendiriliyor');
+      onMatchFound(currentRoom.id);
       setTimeout(() => {
         onClose();
-      }, 1000);
+      }, 500);
     }
-  }, [currentRoom?.status, currentRoom?.current_players, onClose]);
+  }, [currentRoom?.status, currentRoom?.current_players, currentRoom?.id, onClose, onMatchFound]);
+
+  // Nakama eşleşmesi bulunduğunda yönlendir
+  useEffect(() => {
+    if (nakamaMatch?.matchId) {
+      console.log('🎯 Nakama eşleşme bulundu, yönlendiriliyor');
+      onMatchFound(nakamaMatch.matchId);
+      setTimeout(() => {
+        onClose();
+      }, 500);
+    }
+  }, [nakamaMatch?.matchId, onClose, onMatchFound]);
 
   const getSearchStatus = () => {
     // Timeout durumu kontrolü
