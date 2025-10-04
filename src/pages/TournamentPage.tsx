@@ -22,16 +22,18 @@ const TournamentPage = () => {
   }, []);
 
   const handleCreateTournament = async () => {
-    const tournamentId = await createTournament();
-    if (tournamentId) {
-      navigate(`/tournament-waiting/${tournamentId}`);
+    const nakamaTournamentId = await createTournament();
+    if (nakamaTournamentId) {
+      // Nakama turnuva ID'si ile bekleme sayfasına git
+      navigate(`/tournament-waiting/${nakamaTournamentId}`);
     }
   };
 
-  const handleJoinTournament = async (tournamentId: string) => {
-    const success = await joinTournament(tournamentId);
+  const handleJoinTournament = async (nakamaTournamentId: string) => {
+    const success = await joinTournament(nakamaTournamentId);
     if (success) {
-      navigate(`/tournament-waiting/${tournamentId}`);
+      // Nakama turnuva ID'si ile bekleme sayfasına git
+      navigate(`/tournament-waiting/${nakamaTournamentId}`);
     }
   };
 

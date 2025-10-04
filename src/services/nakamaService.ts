@@ -257,6 +257,28 @@ async createSocket(): Promise<Socket> {
     }
   }
 
+  async listTournaments(): Promise<any[]> {
+    try {
+      if (!this.socket) {
+        throw new Error("Socket not connected");
+      }
+
+      const result = await this.socket.listTournaments({
+        category_start: 1,
+        category_end: 1,
+        start_time: Math.floor(Date.now() / 1000),
+        end_time: Math.floor(Date.now() / 1000) + 86400, // Next 24 hours
+        limit: 100
+      });
+      
+      console.log("✅ Listed tournaments:", result.tournaments?.length || 0);
+      return result.tournaments || [];
+    } catch (error) {
+      console.error("❌ Failed to list tournaments:", error);
+      return [];
+    }
+  }
+
   getSocket(): Socket | null {
     return this.socket;
   }

@@ -31,6 +31,7 @@ declare module '@heroiclabs/nakama-js' {
     joinMatch(matchId?: string, token?: string, metadata?: object): Promise<Match>;
     createTournament(params: any): Promise<Tournament>;
     joinTournament(tournamentId: string): Promise<void>;
+    listTournaments(params: any): Promise<{ tournaments: Tournament[] }>;
     onmatchmakingmatched?: (matched: any) => void;
     onmatchmakermatched?: (matched: any) => void; // alias used in app
     onmatchmakerticket?: (ticket: any) => void;
