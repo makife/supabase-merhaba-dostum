@@ -16,8 +16,8 @@ import { useAuth } from '@/contexts/AuthContext';
 
 interface PrivateRoomModalProps {
   onClose: () => void;
-  onRoomCreated: (roomCode: string, gameType: 'timed' | 'score') => void;
-  onRoomJoined: () => void;
+  onRoomCreated: (nakamaMatchId: string, gameType: 'timed' | 'score') => void;
+  onRoomJoined: (nakamaMatchId: string, gameType: 'timed' | 'score') => void;
 }
 
 const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomModalProps) => {
@@ -27,6 +27,7 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
+  const [joinedMatchId, setJoinedMatchId] = useState<string>('');
   
   const [nakamaRoomId, setNakamaRoomId] = useState('');
   const { createRoom, joinRoom, leaveRoom, currentRoom, participants } = useGame();
@@ -61,8 +62,9 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
       setNakamaRoomId(roomId);
       setRoomCode(shortCode);
       
-      // Kodu ve gerçek room ID'yi localStorage'a kaydet
+      // Kodu, gerçek room ID'yi ve gameType'ı localStorage'a kaydet
       localStorage.setItem(`room_${shortCode}`, roomId);
+      localStorage.setItem(`room_type_${shortCode}`, gameType);
       
       toast({
         title: "🏠 Nakama Özel Oda",
@@ -112,15 +114,20 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
       
       console.log('🚪 Joining Nakama private room:', actualRoomId);
       await nakamaService.authenticate(user.id);
-      await nakamaService.createSocket();
-      await nakamaService.joinPrivateRoom(actualRoomId);
+      const socket = await nakamaService.createSocket();
+      const joinResult = await (socket as any).joinMatch(actualRoomId);
+      const realMatchId = joinResult.match_id ?? joinResult.matchId ?? actualRoomId;
+      
+      setJoinedMatchId(realMatchId);
       
       toast({
         title: "🚪 Nakama Odaya Katıldınız",
         description: `Oda: ${joinCode}`,
       });
       
-      onRoomJoined();
+      // gameType'ı joinCode ile birlikte localStorage'dan al veya default 'timed'
+      const savedGameType = localStorage.getItem(`room_type_${joinCode.toUpperCase()}`) as 'timed' | 'score' || 'timed';
+      onRoomJoined(realMatchId, savedGameType);
     } catch (error: any) {
       console.error('Error joining room:', error);
       toast({

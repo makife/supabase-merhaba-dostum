@@ -882,22 +882,13 @@ const HomePage = () => {
         {selectedMode && selectedMode === 'private-room' ? (
           <PrivateRoomModal
             onClose={() => setSelectedMode(null)}
-            onRoomCreated={(roomCode, gameType) => {
+            onRoomCreated={(nakamaMatchId, gameType) => {
               setSelectedMode(null);
-              navigate('/game/private-room', { 
-                state: { 
-                  gameType: gameType,
-                  roomCode: roomCode
-                } 
-              });
+              navigate(`/game/nakama-game?match=${nakamaMatchId}&type=${gameType}`);
             }}
-            onRoomJoined={() => {
+            onRoomJoined={(nakamaMatchId, gameType) => {
               setSelectedMode(null);
-              navigate('/game/private-room', { 
-                state: { 
-                  gameType: 'timed'
-                } 
-              });
+              navigate(`/game/nakama-game?match=${nakamaMatchId}&type=${gameType}`);
             }}
           />
         ) : selectedMode === 'random-match' ? (
