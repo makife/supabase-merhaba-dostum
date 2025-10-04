@@ -67,7 +67,7 @@ const HomePage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [timeUntilNextCredit, setTimeUntilNextCredit] = useState<string>('');
   const { canPlay: canPlayMemory, timeUntilNextPlay } = useMemoryGame();
-  const { startSearch } = useMatchmaking();
+  const { startSearch, useNakama } = useMatchmaking();
 
 
   // Level hesaplama fonksiyonu
@@ -239,9 +239,8 @@ const HomePage = () => {
       return;
     }
     
-    // Nakama match ID kontrolü - match ID'ler genellikle daha uzun olur
-    if (roomId.length > 36) {
-      // Bu bir Nakama match ID'si
+    // Nakama eşleşmesi için (context üzerinden güvenli tespit)
+    if (useNakama) {
       navigate(`/game/nakama-game?match=${roomId}&type=${matchmakingGameType}`);
       return;
     }
