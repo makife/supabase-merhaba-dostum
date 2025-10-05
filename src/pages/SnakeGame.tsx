@@ -38,7 +38,13 @@ const SnakeGame = () => {
 
   // Yön değiştir ve oyunu başlat (eğer durmuşsa)
   const changeDirection = useCallback((newDirection) => {
-    setDirection(newDirection);
+    setDirection(prev => {
+      // Ters yöne dönmeyi engelle
+      if (prev.x + newDirection.x === 0 && prev.y + newDirection.y === 0) {
+        return prev;
+      }
+      return newDirection;
+    });
     if (!gameRunning && !gameOver) {
       setGameRunning(true);
     }
@@ -135,23 +141,23 @@ const SnakeGame = () => {
 
       switch (e.key) {
         case 'ArrowUp':
-          if (direction.y === 0) changeDirection({ x: 0, y: -1 });
+          changeDirection({ x: 0, y: -1 });
           break;
         case 'ArrowDown':
-          if (direction.y === 0) changeDirection({ x: 0, y: 1 });
+          changeDirection({ x: 0, y: 1 });
           break;
         case 'ArrowLeft':
-          if (direction.x === 0) changeDirection({ x: -1, y: 0 });
+          changeDirection({ x: -1, y: 0 });
           break;
         case 'ArrowRight':
-          if (direction.x === 0) changeDirection({ x: 1, y: 0 });
+          changeDirection({ x: 1, y: 0 });
           break;
       }
     };
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [direction, gameOver, changeDirection]);
+  }, [gameOver, changeDirection]);
 
   // Dokunmatik kontroller
   const handleTouchStart = (e) => {
@@ -175,16 +181,16 @@ const SnakeGame = () => {
 
     if (absX > absY) {
       // Yatay hareket
-      if (deltaX > 0 && direction.x === 0) {
+      if (deltaX > 0) {
         changeDirection({ x: 1, y: 0 }); // Sağ
-      } else if (deltaX < 0 && direction.x === 0) {
+      } else if (deltaX < 0) {
         changeDirection({ x: -1, y: 0 }); // Sol
       }
     } else {
       // Dikey hareket
-      if (deltaY > 0 && direction.y === 0) {
+      if (deltaY > 0) {
         changeDirection({ x: 0, y: 1 }); // Aşağı
-      } else if (deltaY < 0 && direction.y === 0) {
+      } else if (deltaY < 0) {
         changeDirection({ x: 0, y: -1 }); // Yukarı
       }
     }
