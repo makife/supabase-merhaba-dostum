@@ -13,12 +13,17 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         classNames: {
           toast:
-            "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg",
-          description: "group-[.toast]:text-muted-foreground",
+            "group toast group-[.toaster]:bg-card/98 group-[.toaster]:text-foreground group-[.toaster]:border-2 group-[.toaster]:border-primary/30 group-[.toaster]:shadow-[0_8px_32px_rgba(0,0,0,0.12)] group-[.toaster]:backdrop-blur-xl group-[.toaster]:rounded-2xl group-[.toaster]:font-sans group-[.toaster]:font-medium",
+          description: "group-[.toast]:text-muted-foreground group-[.toast]:font-medium group-[.toast]:opacity-85",
           actionButton:
-            "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
+            "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground group-[.toast]:font-semibold group-[.toast]:rounded-xl group-[.toast]:px-4",
           cancelButton:
-            "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
+            "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground group-[.toast]:font-semibold group-[.toast]:rounded-xl",
+          title: "group-[.toast]:font-bold group-[.toast]:text-base group-[.toast]:tracking-tight",
+          success: "group-[.toaster]:border-green-500/30 group-[.toaster]:shadow-[0_0_24px_rgba(34,197,94,0.15)]",
+          error: "group-[.toaster]:border-destructive/40 group-[.toaster]:shadow-[0_0_24px_rgba(239,68,68,0.25)]",
+          warning: "group-[.toaster]:border-yellow-500/30 group-[.toaster]:shadow-[0_0_24px_rgba(234,179,8,0.15)]",
+          info: "group-[.toaster]:border-blue-500/30 group-[.toaster]:shadow-[0_0_24px_rgba(59,130,246,0.15)]",
         },
       }}
       {...props}
