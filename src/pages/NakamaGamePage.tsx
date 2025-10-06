@@ -41,7 +41,7 @@ const NakamaGamePage = () => {
     }
   }, [gameStartSignals, hasStarted]);
 
- const initializeNakamaGame = async () => {
+const initializeNakamaGame = async () => {
   try {
     setLoading(true);
     console.log('🎮 Nakama game starting:', { matchId, gameType });
@@ -116,9 +116,8 @@ const NakamaGamePage = () => {
         const snapshotCount = presence.snapshot.length;
         console.log(`📸 Presence snapshot: ${snapshotCount} players`);
         setTotalPlayers(snapshotCount);
-          });
-        }
-      };
+      }
+    };
 
       // Data listener
       (socket as any).onmatchdata = (matchData: any) => {
