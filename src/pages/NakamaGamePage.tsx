@@ -57,27 +57,43 @@ const NakamaGamePage = () => {
       const savedToken = (nakamaService as any).getLastJoinToken?.();
 
       let realMatchId: string | null = null;
+      let joinResult: any = null;
 
       if (savedMatchId) {
         console.log('♻️ Reusing previously joined match:', savedMatchId);
         realMatchId = savedMatchId;
+        // Already joined, so we can skip join and use saved id
+        // Set initial player count to 1 (self)
+        setTotalPlayers(1);
       } else {
         // Try joining using URL parameter
         try {
           // Heuristic: if looks like JWT, treat as token
           const looksLikeToken = matchId && matchId.startsWith('eyJ');
-          const joinResult = looksLikeToken
+          joinResult = looksLikeToken
             ? await (socket as any).joinMatch(undefined, matchId)
             : await (socket as any).joinMatch(matchId);
           realMatchId = joinResult.match_id ?? joinResult.matchId ?? null;
           console.log('✅ Joined match with id:', realMatchId, looksLikeToken ? '(via token)' : '(via id)');
+          
+          // Count presences from join result
+          const presences = joinResult.presences || [];
+          const playerCount = presences.length;
+          console.log(`👥 Initial presence count: ${playerCount}`);
+          setTotalPlayers(playerCount);
+          
         } catch (joinError: any) {
           console.error('❌ Join match by URL failed, trying fallback token if available:', joinError);
           if (savedToken) {
             try {
-              const res = await (socket as any).joinMatch(undefined, savedToken);
-              realMatchId = res.match_id ?? res.matchId ?? null;
+              joinResult = await (socket as any).joinMatch(undefined, savedToken);
+              realMatchId = joinResult.match_id ?? joinResult.matchId ?? null;
               console.log('✅ Joined match using saved token. Id:', realMatchId);
+              
+              const presences = joinResult.presences || [];
+              const playerCount = presences.length;
+              console.log(`👥 Initial presence count (via token): ${playerCount}`);
+              setTotalPlayers(playerCount);
             } catch (e2) {
               throw joinError; // keep original error
             }
@@ -94,10 +110,18 @@ const NakamaGamePage = () => {
       (socket as any).onmatchpresence = (presence: any) => {
         console.log('👥 Match presence event:', presence);
         if (presence.joins && presence.joins.length > 0) {
-          setTotalPlayers(prev => Math.max(0, prev + presence.joins.length));
+          setTotalPlayers(prev => {
+            const newCount = prev + presence.joins.length;
+            console.log(`👥 Player joined, new total: ${newCount}`);
+            return newCount;
+          });
         }
         if (presence.leaves && presence.leaves.length > 0) {
-          setTotalPlayers(prev => Math.max(0, prev - presence.leaves.length));
+          setTotalPlayers(prev => {
+            const newCount = Math.max(0, prev - presence.leaves.length);
+            console.log(`👋 Player left, new total: ${newCount}`);
+            return newCount;
+          });
         }
       };
 
@@ -107,9 +131,11 @@ const NakamaGamePage = () => {
           const content = JSON.parse(new TextDecoder().decode(matchData.data));
           console.log('📨 Received:', content);
           if (content.type === 'player_ready') {
+            console.log('✅ Player ready:', content.userId);
             setPlayersReady(prev => new Set([...prev, content.userId]));
           }
           if (content.type === 'game_start_request') {
+            console.log('🎮 Player requested start:', content.userId);
             setGameStartSignals(prev => new Set([...prev, content.userId]));
           }
         } catch (e) {
@@ -117,18 +143,12 @@ const NakamaGamePage = () => {
         }
       };
 
-      // Initialize players count optimistically if we just joined
-      if (!savedMatchId) {
-        const others = ((await (socket as any).joinMatch) ? 0 : 0); // placeholder: count handled by presence events
-        setTotalPlayers(prev => Math.max(prev, 1 + others));
-      }
-
       // Send ready signal
       const readyMsg = JSON.stringify({ type: 'player_ready', userId: user.id });
       const encoder = new TextEncoder();
       (socket as any).sendMatchState(realMatchId, 1, encoder.encode(readyMsg));
       setPlayersReady(prev => new Set([...prev, user.id]));
-      console.log('✅ Ready signal sent');
+      console.log('✅ Ready signal sent to match:', realMatchId);
 
       setLoading(false);
     } catch (error: any) {
