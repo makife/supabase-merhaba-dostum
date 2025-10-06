@@ -41,88 +41,102 @@ const NakamaGamePage = () => {
     }
   }, [gameStartSignals, hasStarted]);
 
- const initializeNakamaGame = async () => {
-  try {
-    setLoading(true);
-    console.log('🎮 Nakama game starting:', { matchId, gameType });
-
-    let socket = nakamaService.getSocket();
-    
-    if (!socket) {
-      await nakamaService.authenticate(user.id);
-      socket = await nakamaService.createSocket();
-    }
-
-    // ÖNEMLİ: Match'e katıl
+  const initializeNakamaGame = async () => {
     try {
-      const joinResult = await (socket as any).joinMatch(matchId);
-      const realMatchId = joinResult.match_id ?? joinResult.matchId;
+      setLoading(true);
+      console.log('🎮 Nakama game starting:', { matchId, gameType });
+
+      let socket = nakamaService.getSocket();
+      if (!socket) {
+        await nakamaService.authenticate(user.id);
+        socket = await nakamaService.createSocket();
+      }
+
+      // If we already joined a match in matchmaking phase, reuse it
+      const savedMatchId = (nakamaService as any).getLastMatchId?.();
+      const savedToken = (nakamaService as any).getLastJoinToken?.();
+
+      let realMatchId: string | null = null;
+
+      if (savedMatchId) {
+        console.log('♻️ Reusing previously joined match:', savedMatchId);
+        realMatchId = savedMatchId;
+      } else {
+        // Try joining using URL parameter
+        try {
+          // Heuristic: if looks like JWT, treat as token
+          const looksLikeToken = matchId && matchId.startsWith('eyJ');
+          const joinResult = looksLikeToken
+            ? await (socket as any).joinMatch(undefined, matchId)
+            : await (socket as any).joinMatch(matchId);
+          realMatchId = joinResult.match_id ?? joinResult.matchId ?? null;
+          console.log('✅ Joined match with id:', realMatchId, looksLikeToken ? '(via token)' : '(via id)');
+        } catch (joinError: any) {
+          console.error('❌ Join match by URL failed, trying fallback token if available:', joinError);
+          if (savedToken) {
+            try {
+              const res = await (socket as any).joinMatch(undefined, savedToken);
+              realMatchId = res.match_id ?? res.matchId ?? null;
+              console.log('✅ Joined match using saved token. Id:', realMatchId);
+            } catch (e2) {
+              throw joinError; // keep original error
+            }
+          } else {
+            throw joinError;
+          }
+        }
+      }
+
+      if (!realMatchId) throw new Error('No match id available after join');
       setJoinedMatchId(realMatchId);
-      console.log('✅ Joined match with id:', realMatchId, 'token:', matchId);
 
-      // Mevcut oyuncu sayısını presences üzerinden başlat
-      const others = (joinResult.presences?.length ?? 0);
-      setTotalPlayers(1 + others);
+      // Presence listener
+      (socket as any).onmatchpresence = (presence: any) => {
+        console.log('👥 Match presence event:', presence);
+        if (presence.joins && presence.joins.length > 0) {
+          setTotalPlayers(prev => Math.max(0, prev + presence.joins.length));
+        }
+        if (presence.leaves && presence.leaves.length > 0) {
+          setTotalPlayers(prev => Math.max(0, prev - presence.leaves.length));
+        }
+      };
 
-      // Hazır sinyali gönder
+      // Data listener
+      (socket as any).onmatchdata = (matchData: any) => {
+        try {
+          const content = JSON.parse(new TextDecoder().decode(matchData.data));
+          console.log('📨 Received:', content);
+          if (content.type === 'player_ready') {
+            setPlayersReady(prev => new Set([...prev, content.userId]));
+          }
+          if (content.type === 'game_start_request') {
+            setGameStartSignals(prev => new Set([...prev, content.userId]));
+          }
+        } catch (e) {
+          console.error('Parse error:', e);
+        }
+      };
+
+      // Initialize players count optimistically if we just joined
+      if (!savedMatchId) {
+        const others = ((await (socket as any).joinMatch) ? 0 : 0); // placeholder: count handled by presence events
+        setTotalPlayers(prev => Math.max(prev, 1 + others));
+      }
+
+      // Send ready signal
       const readyMsg = JSON.stringify({ type: 'player_ready', userId: user.id });
       const encoder = new TextEncoder();
       (socket as any).sendMatchState(realMatchId, 1, encoder.encode(readyMsg));
       setPlayersReady(prev => new Set([...prev, user.id]));
-      console.log('✅ Ready signal sent (post-join)');
-    } catch (joinError) {
-      console.error('❌ Join match failed:', joinError);
-      setError('Maça katılım başarısız. Lütfen tekrar deneyin.');
+      console.log('✅ Ready signal sent');
+
       setLoading(false);
-      return;
+    } catch (error: any) {
+      console.error('❌ Init failed:', error);
+      setError(error.message);
+      setLoading(false);
     }
-
-    // Match presence listener - oyuncu sayısını al
-    (socket as any).onmatchpresence = (presence: any) => {
-      console.log('👥 Match presence event:', presence);
-      
-      // Joins array'inden toplam oyuncu sayısını hesapla
-      if (presence.joins && presence.joins.length > 0) {
-        setTotalPlayers(prev => {
-          const newTotal = prev + presence.joins.length;
-          console.log(`👥 Toplam oyuncu: ${newTotal}`);
-          return newTotal;
-        });
-      }
-      
-      // Leaves array'inden oyuncu ayrıldığında azalt
-      if (presence.leaves && presence.leaves.length > 0) {
-        setTotalPlayers(prev => Math.max(0, prev - presence.leaves.length));
-      }
-    };
-
-    // Match data listener
-    (socket as any).onmatchdata = (matchData: any) => {
-      try {
-        const content = JSON.parse(new TextDecoder().decode(matchData.data));
-        console.log('📨 Received:', content);
-        
-        if (content.type === 'player_ready') {
-          console.log('✅ Player ready:', content.userId);
-          setPlayersReady(prev => new Set([...prev, content.userId]));
-        }
-        
-        if (content.type === 'game_start_request') {
-          console.log('🎮 Player requested start:', content.userId);
-          setGameStartSignals(prev => new Set([...prev, content.userId]));
-        }
-      } catch (e) {
-        console.error('Parse error:', e);
-      }
-    };
-
-    setLoading(false);
-  } catch (error: any) {
-    console.error('❌ Init failed:', error);
-    setError(error.message);
-    setLoading(false);
-  }
-};
+  };
 
   const handleStartGame = () => {
     const socket = nakamaService.getSocket();

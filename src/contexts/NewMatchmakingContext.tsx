@@ -241,6 +241,13 @@ try {
           matchId: cleanMatchId,
           gameType: gameType
         });
+
+        // Save match details to service for reuse on the game page (avoid re-join with invalid id)
+        try {
+          nakamaService.setLastMatch({ id: match.match_id, token });
+        } catch (e) {
+          console.warn('setLastMatch failed (non-fatal):', e);
+        }
         
         setIsSearching(false);
         if (progressInterval) {
@@ -254,7 +261,7 @@ try {
         });
         
         onMatchFound?.(cleanMatchId);
-        
+
       } catch (error: any) {
         console.error('Match setup failed:', error);
         toast({

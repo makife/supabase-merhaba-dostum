@@ -17,6 +17,9 @@ class NakamaService {
   private socket: Socket | null = null;
   private isInitialized: boolean = false;
   private useSSL: boolean = false;
+  // Keep last joined match info to avoid re-joining issues across pages
+  private lastMatchId: string | null = null;
+  private lastJoinToken: string | null = null;
   constructor() {
     console.log("🚀 Nakama Service created, will initialize on first use");
   }
@@ -182,6 +185,8 @@ async createSocket(): Promise<Socket> {
       this.socket = null;
     }
     this.session = null;
+    this.lastMatchId = null;
+    this.lastJoinToken = null;
     console.log("✅ Nakama disconnected");
   }
 
@@ -286,6 +291,14 @@ async createSocket(): Promise<Socket> {
   getSession(): Session | null {
     return this.session;
   }
+
+  // Track last match details
+  setLastMatch(info: { id: string; token?: string | null }) {
+    this.lastMatchId = info.id || null;
+    this.lastJoinToken = info.token || null;
+  }
+  getLastMatchId(): string | null { return this.lastMatchId; }
+  getLastJoinToken(): string | null { return this.lastJoinToken; }
 }
 
 export const nakamaService = new NakamaService();
