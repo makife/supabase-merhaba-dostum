@@ -898,7 +898,8 @@ const HomePage = () => {
               playSound('buttonClick');
               setSelectedMode(null);
               setMatchmakingGameType(gameType);
-              startSearch('timed');
+              // Matchmaking modalını aç – modal açılınca arama kendisi başlayacak
+              setShowMatchmaking(true);
             }}
             onClose={() => {
               playSound('buttonClick');
