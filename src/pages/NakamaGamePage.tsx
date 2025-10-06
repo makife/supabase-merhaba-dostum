@@ -291,28 +291,23 @@ const NakamaGamePage = () => {
 
           <div className="space-y-3">
             <Button 
-              onClick={handleStartGame}
-              disabled={totalPlayers < 2 || gameStartSignals.has(user.id) || hasStarted}
-              className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 disabled:opacity-50"
-              size="lg"
-            >
-              {hasStarted ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Oyun Başlıyor...
-                </>
-              ) : gameStartSignals.has(user.id) ? (
-                <>
-                  ⏳ Diğer Oyuncu Bekleniyor...
-                </>
-              ) : totalPlayers < 2 ? (
-                <>
-                  ⏳ Oyuncu Bekleniyor...
-                </>
-              ) : (
-                <>🚀 Hazırım / Başlat</>
-              )}
-            </Button>
+  onClick={handleStartGame}
+  disabled={playersReady.size < 2 || gameStartSignals.has(user.id) || hasStarted}
+  // totalPlayers kontrolünü kaldırın
+>
+  {hasStarted ? (
+    <>
+      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+      Oyun Başlıyor...
+    </>
+  ) : gameStartSignals.has(user.id) ? (
+    <>⏳ Diğer Oyuncu Bekleniyor...</>
+  ) : playersReady.size < 2 ? (
+    <>⏳ Hazır Sinyali Bekleniyor...</>
+  ) : (
+    <>🚀 Hazırım / Başlat</>
+  )}
+</Button>
             
             <Button 
               variant="outline" 
