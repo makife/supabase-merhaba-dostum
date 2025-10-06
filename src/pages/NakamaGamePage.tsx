@@ -185,7 +185,7 @@ const NakamaGamePage = () => {
     console.log('🚀 Starting actual game - navigating to GamePage');
     // Random match mode olarak başlat, nakama matchId'yi room_id gibi kullan
     const targetRoom = joinedMatchId ?? matchId;
-    navigate(`/game?mode=random-match&room=${targetRoom}&type=${gameType}`);
+    navigate(`/game/random-match?room=${targetRoom}&type=${gameType}`);
   };
   if (loading) {
     return (
