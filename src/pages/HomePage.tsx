@@ -241,6 +241,7 @@ const HomePage = () => {
     
     // Nakama eşleşmesi için (context üzerinden güvenli tespit)
     if (useNakama) {
+      // Token URL param'ı eklemeye gerek yok; oyun sayfası kaydedilmiş token'ı kullanır
       navigate(`/game/nakama-game?match=${roomId}&type=${matchmakingGameType}`);
       return;
     }

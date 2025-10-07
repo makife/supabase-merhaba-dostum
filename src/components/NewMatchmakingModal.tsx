@@ -76,7 +76,6 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
     }
   }, [currentRoom?.status, currentRoom?.current_players, currentRoom?.id, onClose, onMatchFound]);
 
-  // Nakama eşleşmesi bulunduğunda yönlendir
   useEffect(() => {
     if (nakamaMatch?.matchId) {
       console.log('🎯 Nakama eşleşme bulundu, yönlendiriliyor');

@@ -13,7 +13,7 @@ const NakamaGamePage = () => {
   
   const matchId = searchParams.get('match');
   const gameType = searchParams.get('type') as 'timed' | 'score';
-  
+  const joinToken = searchParams.get('token');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [totalPlayers, setTotalPlayers] = useState(0);
@@ -44,7 +44,7 @@ const NakamaGamePage = () => {
 const initializeNakamaGame = async () => {
   try {
     setLoading(true);
-    console.log('🎮 Nakama game starting:', { matchId, gameType });
+    console.log('🎮 Nakama game starting:', { matchId, gameType, joinToken });
 
     let socket = nakamaService.getSocket();
     if (!socket) {
@@ -52,105 +52,97 @@ const initializeNakamaGame = async () => {
       socket = await nakamaService.createSocket();
     }
 
-    const savedMatchId = (nakamaService as any).getLastMatchId?.();
-    let realMatchId: string | null = null;
+    // Always (re)join the match to ensure presence and data stream
+    const savedToken = (nakamaService as any).getLastJoinToken?.();
     let joinResult: any = null;
 
-    if (savedMatchId) {
-      console.log('♻️ Reusing previously joined match:', savedMatchId);
-      realMatchId = savedMatchId;
-      
-      // ✅ DÜZELTME: Kaydedilmiş match'te presence bilgisini al
-      try {
-        const matchState = await (socket as any).rpc('get_match_state', realMatchId);
-        const presenceCount = matchState?.presences?.length || 1;
-        setTotalPlayers(presenceCount);
-        console.log(`👥 Saved match presence count: ${presenceCount}`);
-      } catch (e) {
-        console.warn('Could not fetch saved match state, defaulting to 1');
-        setTotalPlayers(1);
+    const tryJoinWithToken = async (tokenStr: string) => {
+      return await (socket as any).joinMatch(undefined, tokenStr);
+    };
+    const tryJoinWithId = async (id: string) => {
+      return await (socket as any).joinMatch(id);
+    };
+
+    try {
+      if (joinToken) {
+        joinResult = await tryJoinWithToken(joinToken);
+      } else if (matchId) {
+        try {
+          joinResult = await tryJoinWithId(matchId);
+        } catch (e: any) {
+          // Fallback to saved token for authoritative matches
+          if (savedToken) {
+            console.warn('Join by id failed, retrying with saved token');
+            joinResult = await tryJoinWithToken(savedToken);
+          } else {
+            throw e;
+          }
+        }
       }
-    } else {
-      try {
-        const looksLikeToken = matchId && matchId.startsWith('eyJ');
-        joinResult = looksLikeToken
-          ? await (socket as any).joinMatch(undefined, matchId)
-          : await (socket as any).joinMatch(matchId);
-        realMatchId = joinResult.match_id ?? joinResult.matchId ?? null;
-        
-        const presences = joinResult.presences || [];
-        const playerCount = presences.length;
-        console.log(`👥 Initial presence count: ${playerCount}`);
-        setTotalPlayers(playerCount);
-        
-      } catch (joinError: any) {
-        // ... error handling
+    } catch (e: any) {
+      // Final fallback if nothing worked
+      if (savedToken) {
+        console.warn('Primary join failed, trying saved token as final fallback');
+        joinResult = await tryJoinWithToken(savedToken);
+      } else {
+        throw e;
       }
     }
 
+    if (!joinResult) {
+      throw new Error('Failed to join match');
+    }
+
+    const realMatchId = joinResult.match_id ?? joinResult.matchId ?? null;
     if (!realMatchId) throw new Error('No match id available after join');
     setJoinedMatchId(realMatchId);
 
-    // ✅ DÜZELTME: Presence listener - daha agresif güncelleme
+    const presences = joinResult.presences || [];
+    const playerCount = presences.length;
+    console.log(`👥 Initial presence count after join: ${playerCount}`);
+    setTotalPlayers(playerCount);
+
+    // Presence listener
     (socket as any).onmatchpresence = (presence: any) => {
       console.log('👥 Match presence event:', presence);
-      
-      // Joins ve leaves'i aynı anda işle
       if (presence.joins && presence.joins.length > 0) {
-        setTotalPlayers(prev => {
-          const newCount = prev + presence.joins.length;
-          console.log(`👥 Player joined, new total: ${newCount}`);
-          return newCount;
-        });
+        setTotalPlayers(prev => Math.max(1, prev + presence.joins.length));
       }
       if (presence.leaves && presence.leaves.length > 0) {
-        setTotalPlayers(prev => {
-          const newCount = Math.max(1, prev - presence.leaves.length); // En az 1
-          console.log(`👋 Player left, new total: ${newCount}`);
-          return newCount;
-        });
-      }
-      
-      // ✅ YENİ: Presence snapshot varsa direkt kullan
-      if (presence.snapshot) {
-        const snapshotCount = presence.snapshot.length;
-        console.log(`📸 Presence snapshot: ${snapshotCount} players`);
-        setTotalPlayers(snapshotCount);
+        setTotalPlayers(prev => Math.max(1, prev - presence.leaves.length));
       }
     };
 
-      // Data listener
-      (socket as any).onmatchdata = (matchData: any) => {
-        try {
-          const content = JSON.parse(new TextDecoder().decode(matchData.data));
-          console.log('📨 Received:', content);
-          if (content.type === 'player_ready') {
-            console.log('✅ Player ready:', content.userId);
-            setPlayersReady(prev => new Set([...prev, content.userId]));
-          }
-          if (content.type === 'game_start_request') {
-            console.log('🎮 Player requested start:', content.userId);
-            setGameStartSignals(prev => new Set([...prev, content.userId]));
-          }
-        } catch (e) {
-          console.error('Parse error:', e);
+    // Data listener
+    (socket as any).onmatchdata = (matchData: any) => {
+      try {
+        const content = JSON.parse(new TextDecoder().decode(matchData.data));
+        console.log('📨 Received:', content);
+        if (content.type === 'player_ready') {
+          setPlayersReady(prev => new Set([...prev, content.userId]));
         }
-      };
+        if (content.type === 'game_start_request') {
+          setGameStartSignals(prev => new Set([...prev, content.userId]));
+        }
+      } catch (e) {
+        console.error('Parse error:', e);
+      }
+    };
 
-      // Send ready signal
-      const readyMsg = JSON.stringify({ type: 'player_ready', userId: user.id });
-      const encoder = new TextEncoder();
-      (socket as any).sendMatchState(realMatchId, 1, encoder.encode(readyMsg));
-      setPlayersReady(prev => new Set([...prev, user.id]));
-      console.log('✅ Ready signal sent to match:', realMatchId);
+    // Send ready signal
+    const readyMsg = JSON.stringify({ type: 'player_ready', userId: user.id });
+    const encoder = new TextEncoder();
+    (socket as any).sendMatchState(realMatchId, 1, encoder.encode(readyMsg));
+    setPlayersReady(prev => new Set([...prev, user.id]));
+    console.log('✅ Ready signal sent to match:', realMatchId);
 
-      setLoading(false);
-    } catch (error: any) {
-      console.error('❌ Init failed:', error);
-      setError(error.message);
-      setLoading(false);
-    }
-  };
+    setLoading(false);
+  } catch (error: any) {
+    console.error('❌ Init failed:', error);
+    setError(error.message);
+    setLoading(false);
+  }
+};
 
   const handleStartGame = () => {
     const socket = nakamaService.getSocket();
