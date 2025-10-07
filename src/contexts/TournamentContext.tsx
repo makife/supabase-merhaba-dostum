@@ -98,9 +98,9 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
     try {
       setLoading(true);
       
-      // 5 dakika sonrasını hesapla
+      // 30 saniye sonrasını hesapla
       const expiresAt = new Date();
-      expiresAt.setMinutes(expiresAt.getMinutes() + 5);
+      expiresAt.setSeconds(expiresAt.getSeconds() + 30);
       
       // Supabase'de turnuva oluştur
       const { data: tournament, error } = await supabase
