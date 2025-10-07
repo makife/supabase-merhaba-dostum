@@ -1,10 +1,8 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { nakamaService } from "@/services/nakamaService";
-import { SlotMatchmaking } from "@/components/SlotMatchmaking";
 
 interface MatchmakingRoom {
   id: string;
@@ -48,7 +46,7 @@ interface MatchmakingProviderProps {
 export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ children, onMatchFound }) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
+  
   const [isSearching, setIsSearching] = useState(false);
   const [currentRoom, setCurrentRoom] = useState<MatchmakingRoom | null>(null);
   const [searchProgress, setSearchProgress] = useState(0);
@@ -335,16 +333,9 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
             description: "Oyun basliyor...",
           });
 
-          console.log("🚀 Navigating to game page:", {
-            matchId: cleanMatchId,
-            gameType: gameType,
-            token: token.substring(0, 20) + "...",
-          });
-
-          setTimeout(() => {
-            navigate(`/game/nakama?match=${cleanMatchId}&type=${gameType}&token=${token}`);
-          }, 500);
-
+          console.log("🎯 Match ready. Handing off navigation to modal/parent handler.");
+          // Do NOT navigate here to avoid duplicate navigations.
+          // NewMatchmakingModal will detect nakamaMatch and call onMatchFound from the page.
           //onMatchFound?.(cleanMatchId);
         } catch (error: any) {
           console.error("Match setup failed:", error);
@@ -461,11 +452,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   return (
     <MatchmakingContext.Provider value={value}>
       {children}
-      {isSearching && !nakamaMatch && (
-        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
-          <SlotMatchmaking onCancel={cancelSearch} searchProgress={searchProgress} />
-        </div>
-      )}
+      {/* UI rendering moved to NewMatchmakingModal to avoid duplicate overlays */}
     </MatchmakingContext.Provider>
   );
 };

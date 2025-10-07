@@ -131,7 +131,7 @@ const initializeNakamaGame = async () => {
     const presences = joinResult.presences || [];
     const playerCount = presences.length;
     console.log(`👥 Initial presence count after join: ${playerCount}`);
-    setTotalPlayers(playerCount);
+    setTotalPlayers(Math.max(1, playerCount));
 
     const readyMsg = JSON.stringify({ type: 'player_ready', userId: user.id });
     const encoder = new TextEncoder();

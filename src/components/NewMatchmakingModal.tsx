@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useMatchmaking } from '@/contexts/NewMatchmakingContext';
@@ -143,6 +143,7 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
               <Search className="h-5 w-5 text-orange-500" />
               Oyuncu Bulunamadı
             </DialogTitle>
+            <DialogDescription className="sr-only">Eşleşme zaman aşımına uğradı seçenekleri</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -191,6 +192,7 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
             <StatusIcon className="h-5 w-5 animate-pulse text-primary" />
             {status.title}
           </DialogTitle>
+          <DialogDescription className="sr-only">Eşleşme durumu ve ilerleme bilgisi</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
