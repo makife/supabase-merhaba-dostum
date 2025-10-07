@@ -118,7 +118,7 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4 z-50">
       <Card className="w-full max-w-lg bg-black/40 backdrop-blur-xl border-2 border-yellow-500/50 shadow-2xl">
         <CardContent className="p-8">
           <div className="text-center mb-8">
@@ -182,7 +182,7 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
           </div>
 
           <div className="flex items-center justify-center gap-2 mb-6 text-white/90">
-            <Loader2 className="w-5 h-5 animate-spin" />
+            {searchProgress < 100 && <Loader2 className="w-5 h-5 animate-spin" />}
             <span className="text-sm">
               {searchProgress >= 100
                 ? "Uygun oyuncu bulunamadı"
