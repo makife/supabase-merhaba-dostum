@@ -97,6 +97,10 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
     }
 
     try {
+      // Önce eski match'i temizle
+      setNakamaMatch(null);
+      setCurrentRoom(null);
+      
       setIsSearching(true);
       setSearchProgress(0);
       setSearchTimeout(false);

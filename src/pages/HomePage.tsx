@@ -233,10 +233,11 @@ const HomePage = () => {
 
   // Nakama match bulunduğunda otomatik yönlendir
   useEffect(() => {
-    if (nakamaMatch?.matchId && showMatchmaking) {
+    if (nakamaMatch?.matchId) {
+      setShowMatchmaking(false);
       handleMatchFound(nakamaMatch.matchId);
     }
-  }, [nakamaMatch?.matchId, showMatchmaking]);
+  }, [nakamaMatch?.matchId]);
 
   const handleMatchFound = (roomId: string) => {
     console.log('🎯 Match found! Room ID:', roomId);
@@ -900,8 +901,9 @@ const HomePage = () => {
               onStart={(gameType) => {
                 setSelectedMode(null);
                 setMatchmakingGameType(gameType);
-                startSearch(gameType);
                 setShowMatchmaking(true);
+                // Küçük gecikme ile arama başlat (modal mount olduktan sonra)
+                setTimeout(() => startSearch(gameType), 100);
               }}
             onClose={() => {
               playSound('buttonClick');
@@ -941,6 +943,7 @@ const HomePage = () => {
         {showMatchmaking && isSearching && (
           <div className="fixed inset-0 z-[60] bg-background/80 backdrop-blur-sm">
             <SlotMatchmaking 
+              key={`matchmaking-${Date.now()}`}
               onCancel={() => {
                 cancelSearch();
                 setShowMatchmaking(false);

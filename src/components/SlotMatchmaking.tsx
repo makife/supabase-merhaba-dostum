@@ -38,6 +38,18 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
   const [stopped, setStopped] = useState<boolean[]>(Array(SLOT_COUNT).fill(false));
   const [isSpinning, setIsSpinning] = useState(true);
 
+  // Her mount'ta state'leri sıfırla
+  useEffect(() => {
+    console.log('🎰 SlotMatchmaking mounted - fresh start');
+    setPositions(Array(SLOT_COUNT).fill(0));
+    setStopped(Array(SLOT_COUNT).fill(false));
+    setIsSpinning(true);
+    
+    return () => {
+      console.log('🎰 SlotMatchmaking unmounted - cleanup');
+    };
+  }, []);
+
   useEffect(() => {
     if (!isSpinning) return;
 
