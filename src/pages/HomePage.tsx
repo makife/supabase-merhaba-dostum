@@ -888,11 +888,13 @@ const HomePage = () => {
             onClose={() => setSelectedMode(null)}
             onRoomCreated={(nakamaMatchId, gameType) => {
               setSelectedMode(null);
-              navigate(`/game/nakama-game?match=${nakamaMatchId}&type=${gameType}`);
+              // Özel oda için direkt oyun sayfasına git
+              navigate(`/game/random-match?room=${nakamaMatchId}&type=${gameType}`);
             }}
             onRoomJoined={(nakamaMatchId, gameType) => {
               setSelectedMode(null);
-              navigate(`/game/nakama-game?match=${nakamaMatchId}&type=${gameType}`);
+              // Özel oda için direkt oyun sayfasına git
+              navigate(`/game/random-match?room=${nakamaMatchId}&type=${gameType}`);
             }}
           />
         ) : selectedMode === 'random-match' ? (
