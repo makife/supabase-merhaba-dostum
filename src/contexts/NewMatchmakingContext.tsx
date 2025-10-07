@@ -54,7 +54,14 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   const [searchTimeout, setSearchTimeout] = useState(false);
   const [currentGameType, setCurrentGameType] = useState<"timed" | "score">("timed");
   const [searchChannel, setSearchChannel] = useState<any>(null);
-  const [progressInterval, setProgressInterval] = useState<NodeJS.Timeout | null>(null);
+  const progressIntervalRef = React.useRef<number | null>(null);
+  const clearProgressTimer = () => {
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+      console.log("⏰ Progress timer temizlendi");
+    }
+  };
   const [useNakama, setUseNakama] = useState(false);
   const [nakamaMatch, setNakamaMatch] = useState<{ matchId: string; gameType: "timed" | "score" } | null>(null);
   const [currentTicket, setCurrentTicket] = useState<string | null>(null);
@@ -69,11 +76,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       console.log("📡 Real-time channel kapatıldı");
     }
 
-    if (progressInterval) {
-      clearInterval(progressInterval);
-      setProgressInterval(null);
-      console.log("⏰ Progress timer temizlendi");
-    }
+    clearProgressTimer();
 
     // ❌ BU SATIRI KALDIR - Nakama bağlantısını kesme!
     // nakamaService.disconnect();
@@ -171,7 +174,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
             console.warn("Banned/ended match detected, restarting search:", cleanMatchId);
             try { await (socket as any).leaveMatch(cleanMatchId); } catch {}
             toast({ title: "Eski oda engellendi", description: "Yeni eşleşme aranıyor..." });
-            if (progressInterval) { clearInterval(progressInterval); setProgressInterval(null); }
+            clearProgressTimer();
             restartSearch(gameType);
             return;
           }
@@ -341,10 +344,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
 
 
           setIsSearching(false);
-          if (progressInterval) {
-            clearInterval(progressInterval);
-            setProgressInterval(null);
-          }
+          clearProgressTimer();
 
           toast({
             title: "Eslesme Bulundu!",
@@ -377,12 +377,13 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       setCurrentTicket(ticket.ticket);
 
       let progress = 0;
-      const interval = setInterval(() => {
+      clearProgressTimer();
+      const intervalId = window.setInterval(() => {
         progress += 3.33;
         setSearchProgress(Math.min(progress, 100));
 
         if (progress >= 100 && isSearching) {
-          clearInterval(interval);
+          clearInterval(intervalId);
           setIsSearching(false);
           setSearchTimeout(true);
           toast({
@@ -392,7 +393,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
           });
         }
       }, 1000);
-      setProgressInterval(interval);
+      progressIntervalRef.current = intervalId;
     } catch (error: any) {
       console.error("Nakama matchmaking failed:", error);
       setIsSearching(false);
@@ -413,10 +414,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
     setSearchTimeout(false);
 
     // Progress interval'ı durdur
-    if (progressInterval) {
-      clearInterval(progressInterval);
-      setProgressInterval(null);
-    }
+    clearProgressTimer();
 
     // Nakama ticket'ı iptal et (bağlantı açıkken)
     if (useNakama && currentTicket) {
