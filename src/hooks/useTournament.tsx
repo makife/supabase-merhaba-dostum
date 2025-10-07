@@ -28,7 +28,8 @@ export const useTournament = (tournamentId?: string) => {
 
       // Auto-start or cancel when time is up AND tournament is still waiting
       if (remaining === 0 && context.currentTournament?.status === 'waiting') {
-        if (realPlayerCount >= 1) {
+        const effectiveReal = Math.max(realPlayerCount, isCreator ? 1 : 0);
+        if (effectiveReal >= 1) {
           if (isCreator) {
             startTournament();
           }
