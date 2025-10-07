@@ -939,13 +939,15 @@ const HomePage = () => {
 
         {/* Slot Matchmaking Modal for Random Match */}
         {showMatchmaking && isSearching && (
-          <SlotMatchmaking 
-            onCancel={() => {
-              cancelSearch();
-              setShowMatchmaking(false);
-            }}
-            searchProgress={searchProgress}
-          />
+          <div className="fixed inset-0 z-[60] bg-background/80 backdrop-blur-sm">
+            <SlotMatchmaking 
+              onCancel={() => {
+                cancelSearch();
+                setShowMatchmaking(false);
+              }}
+              searchProgress={searchProgress}
+            />
+          </div>
         )}
 
         {/* Floating Menu */}

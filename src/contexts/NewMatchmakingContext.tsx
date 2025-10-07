@@ -337,6 +337,16 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
             description: "Oyun basliyor...",
           });
 
+          // Skor/oda birikmesini önlemek için eski katılımcıları ve skorları sıfırla
+          try {
+            await supabase.from('game_participants').delete().eq('room_id', cleanMatchId);
+            await supabase.from('game_rooms')
+              .update({ status: 'waiting', started_at: null, player1_score: 0, player2_score: 0 })
+              .eq('id', cleanMatchId);
+          } catch (resetErr) {
+            console.warn('Room reset warning:', resetErr);
+          }
+
           console.log("🎯 Match ready. Navigating via onMatchFound callback.");
           onMatchFound?.(cleanMatchId);
         } catch (error: any) {

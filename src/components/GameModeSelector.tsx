@@ -168,7 +168,6 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
               İptal
             </Button>
             <Button onClick={() => {
-              playSound('buttonClick');
               onStart(selectedType);
             }} className="flex-1">
               Oyunu Başlat
