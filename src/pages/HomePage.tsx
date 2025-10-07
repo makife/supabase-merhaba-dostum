@@ -23,6 +23,7 @@ import { useJokerInventory } from '@/hooks/useJokerInventory';
 import { Brain, Grid3X3 } from 'lucide-react';
 import { useMemoryGame } from '@/hooks/useMemoryGame';
 import { useMatchmaking } from '@/contexts/NewMatchmakingContext';
+import { nakamaService } from '@/services/nakamaService';
 
 import {
   Bot,
@@ -241,8 +242,11 @@ const HomePage = () => {
     
     // Nakama eşleşmesi için (context üzerinden güvenli tespit)
     if (useNakama) {
-      // Token URL param'ı eklemeye gerek yok; oyun sayfası kaydedilmiş token'ı kullanır
-      navigate(`/game/nakama-game?match=${roomId}&type=${matchmakingGameType}`);
+      const token = (nakamaService as any).getLastJoinToken?.();
+      const url = token
+        ? `/game/nakama-game?match=${roomId}&type=${matchmakingGameType}&token=${encodeURIComponent(token)}`
+        : `/game/nakama-game?match=${roomId}&type=${matchmakingGameType}`;
+      navigate(url);
       return;
     }
     

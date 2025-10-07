@@ -52,57 +52,13 @@ const initializeNakamaGame = async () => {
       socket = await nakamaService.createSocket();
     }
 
-    // Always (re)join the match to ensure presence and data stream
+    // Determine match identifiers and possible re-use
     const savedToken = (nakamaService as any).getLastJoinToken?.();
-    let joinResult: any = null;
+    const savedId = (nakamaService as any).getLastMatchId?.();
+    const rawUrlId = matchId || '';
+    const cleanUrlId = rawUrlId.endsWith('.') ? rawUrlId.slice(0, -1) : rawUrlId;
 
-    const tryJoinWithToken = async (tokenStr: string) => {
-      return await (socket as any).joinMatch(undefined, tokenStr);
-    };
-    const tryJoinWithId = async (id: string) => {
-      return await (socket as any).joinMatch(id);
-    };
-
-    try {
-      if (joinToken) {
-        joinResult = await tryJoinWithToken(joinToken);
-      } else if (matchId) {
-        try {
-          joinResult = await tryJoinWithId(matchId);
-        } catch (e: any) {
-          // Fallback to saved token for authoritative matches
-          if (savedToken) {
-            console.warn('Join by id failed, retrying with saved token');
-            joinResult = await tryJoinWithToken(savedToken);
-          } else {
-            throw e;
-          }
-        }
-      }
-    } catch (e: any) {
-      // Final fallback if nothing worked
-      if (savedToken) {
-        console.warn('Primary join failed, trying saved token as final fallback');
-        joinResult = await tryJoinWithToken(savedToken);
-      } else {
-        throw e;
-      }
-    }
-
-    if (!joinResult) {
-      throw new Error('Failed to join match');
-    }
-
-    const realMatchId = joinResult.match_id ?? joinResult.matchId ?? null;
-    if (!realMatchId) throw new Error('No match id available after join');
-    setJoinedMatchId(realMatchId);
-
-    const presences = joinResult.presences || [];
-    const playerCount = presences.length;
-    console.log(`👥 Initial presence count after join: ${playerCount}`);
-    setTotalPlayers(playerCount);
-
-    // Presence listener
+    // Attach listeners once
     (socket as any).onmatchpresence = (presence: any) => {
       console.log('👥 Match presence event:', presence);
       if (presence.joins && presence.joins.length > 0) {
@@ -112,8 +68,6 @@ const initializeNakamaGame = async () => {
         setTotalPlayers(prev => Math.max(1, prev - presence.leaves.length));
       }
     };
-
-    // Data listener
     (socket as any).onmatchdata = (matchData: any) => {
       try {
         const content = JSON.parse(new TextDecoder().decode(matchData.data));
@@ -129,7 +83,56 @@ const initializeNakamaGame = async () => {
       }
     };
 
-    // Send ready signal
+    // If already joined, skip re-join to avoid invalid token errors
+    if (savedId && (savedId.replace(/\.$/, '') === cleanUrlId)) {
+      console.log('✅ Already in match, skipping re-join:', savedId);
+      const effectiveId = savedId.replace(/\.$/, '');
+      setJoinedMatchId(effectiveId);
+      // We don't know exact presence count; keep current and proceed
+      const readyMsg = JSON.stringify({ type: 'player_ready', userId: user.id });
+      const encoder = new TextEncoder();
+      (socket as any).sendMatchState(effectiveId, 1, encoder.encode(readyMsg));
+      setPlayersReady(prev => new Set([...prev, user.id]));
+      console.log('✅ Ready signal sent to match:', effectiveId);
+      setLoading(false);
+      return;
+    }
+
+    let joinResult: any = null;
+    const tryJoinWithToken = async (tokenStr: string) => (socket as any).joinMatch(undefined, tokenStr);
+    const tryJoinWithId = async (id: string) => (socket as any).joinMatch(id);
+
+    try {
+      if (joinToken) {
+        joinResult = await tryJoinWithToken(joinToken);
+      } else if (savedToken) {
+        // Prefer valid saved token for authoritative matches
+        console.warn('Using saved token to join authoritative match');
+        joinResult = await tryJoinWithToken(savedToken);
+      } else if (cleanUrlId) {
+        joinResult = await tryJoinWithId(cleanUrlId);
+      }
+    } catch (e: any) {
+      if (savedToken) {
+        console.warn('Primary join failed, retrying with saved token');
+        joinResult = await tryJoinWithToken(savedToken);
+      } else {
+        throw e;
+      }
+    }
+
+    if (!joinResult) throw new Error('Failed to join match');
+
+    const realMatchId = (joinResult.match_id ?? joinResult.matchId ?? '').replace(/\.$/, '');
+    if (!realMatchId) throw new Error('No match id available after join');
+    setJoinedMatchId(realMatchId);
+    try { (nakamaService as any).setLastMatch?.({ id: realMatchId, token: joinToken || savedToken || null }); } catch {}
+
+    const presences = joinResult.presences || [];
+    const playerCount = presences.length;
+    console.log(`👥 Initial presence count after join: ${playerCount}`);
+    setTotalPlayers(playerCount);
+
     const readyMsg = JSON.stringify({ type: 'player_ready', userId: user.id });
     const encoder = new TextEncoder();
     (socket as any).sendMatchState(realMatchId, 1, encoder.encode(readyMsg));
