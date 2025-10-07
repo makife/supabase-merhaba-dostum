@@ -457,9 +457,17 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   // Tekrar arama yap
   const restartSearch = async (gameType: "timed" | "score") => {
     console.log("🔄 Tekrar arama başlatılıyor...");
+    
+    // Önce state'leri hemen sıfırla (UI güncellemesi için)
+    setSearchProgress(0);
+    setSearchTimeout(false);
+    setIsSearching(false);
+    
+    // Sonra temizlik yap
     await cancelSearch();
     cleanup();
-    setSearchTimeout(false);
+    
+    // Kısa gecikme sonra yeni arama başlat
     setTimeout(() => {
       startSearch(gameType);
     }, 100);
