@@ -63,6 +63,24 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       console.log("⏰ Progress timer temizlendi");
     }
   };
+  const startProgressTimer = () => {
+    console.log("⏱️ Progress timer başlatılıyor");
+    clearProgressTimer();
+    let progress = 0;
+    const id = window.setInterval(() => {
+      progress += 3.33;
+      setSearchProgress(Math.min(progress, 100));
+      if (progress >= 100) {
+        clearInterval(id);
+        if (isSearching) {
+          cancelSearch();
+          setSearchTimeout(true);
+          toast({ title: "Timeout", description: "Oyuncu bulunamadi", variant: "destructive" });
+        }
+      }
+    }, 1000);
+    progressIntervalRef.current = id;
+  };
   const [useNakama, setUseNakama] = useState(false);
   const [nakamaMatch, setNakamaMatch] = useState<{ matchId: string; gameType: "timed" | "score" } | null>(null);
   const [currentTicket, setCurrentTicket] = useState<string | null>(null);
@@ -130,6 +148,9 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
 
       console.log("🔍 Nakama matchmaking başlatıldı:", gameType);
 
+      // Progress timer'ı hemen başlat
+      startProgressTimer();
+
       // Her zaman Nakama kullan
       return await startNakamaSearch(gameType);
     } catch (error) {
@@ -150,27 +171,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
     try {
       console.log("Nakama matchmaking baslatiliyor:", gameType);
 
-      // Start progress immediately, before network calls
-      clearProgressTimer();
-      let progress = 0;
-      const intervalId = window.setInterval(() => {
-        progress += 3.33;
-        setSearchProgress(Math.min(progress, 100));
-
-        if (progress >= 100 && isSearching) {
-          clearInterval(intervalId);
-          // Cancel any pending Nakama matchmaking to avoid self-matching
-          cancelSearch();
-          setSearchTimeout(true);
-          toast({
-            title: "Timeout",
-            description: "Oyuncu bulunamadi",
-            variant: "destructive",
-          });
-        }
-      }, 1000);
-      progressIntervalRef.current = intervalId;
-
+      // Progress timer already started in startSearch
       await nakamaService.authenticate(user.id);
       const socket = await nakamaService.createSocket();
 
