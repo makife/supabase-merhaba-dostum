@@ -60,68 +60,69 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
     setLoading(false);
   };
 
-  // Fetch active tournaments - Nakama only
+  // Fetch active tournaments - Supabase
   const fetchTournaments = async () => {
     if (!user) return;
     
     try {
       setLoading(true);
-      console.log('🏆 Fetching Nakama tournaments...');
       
-      await nakamaService.authenticate(user.id);
-      await nakamaService.createSocket();
-      const nakamaTournaments = await nakamaService.listTournaments();
+      const { data, error } = await supabase
+        .from('tournaments')
+        .select('*')
+        .in('status', ['waiting', 'in_progress'])
+        .order('created_at', { ascending: false });
       
-      // Nakama turnuvalarını yerel Tournament formatına dönüştür
-      const converted = nakamaTournaments.map((nt: any) => ({
-        id: nt.id,
-        name: nt.title || 'Turnuva',
-        creator_id: null,
-        status: 'waiting' as const,
-        game_type: 'timed' as const,
-        max_participants: nt.max_size || 8,
-        current_round: 1,
-        timeout_duration: 30,
-        created_at: new Date(nt.create_time * 1000).toISOString(),
-        started_at: null,
-        finished_at: null,
-        updated_at: new Date(nt.create_time * 1000).toISOString(),
-        expires_at: nt.end_time ? new Date(nt.end_time * 1000).toISOString() : null
-      }));
+      if (error) throw error;
       
-      setTournaments(converted);
-      console.log('✅ Nakama tournaments loaded:', converted.length);
+      setTournaments((data || []) as Tournament[]);
     } catch (error) {
-      console.error('❌ Nakama tournament fetch error:', error);
-      setTournaments([]);
+      console.error('Turnuvalar alınırken hata:', error);
+      toast({
+        title: "Hata",
+        description: "Turnuvalar yüklenirken bir hata oluştu"
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  // Create Nakama tournament
+  // Create tournament - Supabase
   const createNakamaTournament = async (name: string): Promise<string | null> => {
     if (!user) return null;
     
     try {
       setLoading(true);
-      console.log('🏆 Creating Nakama tournament:', name);
       
-      await nakamaService.authenticate(user.id);
-      await nakamaService.createSocket();
-      const tournamentId = await nakamaService.createTournament(name);
+      // Supabase'de turnuva oluştur
+      const { data: tournament, error } = await supabase
+        .from('tournaments')
+        .insert({
+          creator_id: user.id,
+          name: name,
+          status: 'waiting',
+          game_type: 'timed',
+          max_participants: 8,
+          current_round: 1,
+          timeout_duration: 15
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
       
       toast({
-        title: "🏆 Nakama Turnuva Oluşturuldu",
+        title: "🏆 Turnuva Oluşturuldu",
         description: `${name} başarıyla oluşturuldu!`,
       });
       
-      return tournamentId;
+      await fetchTournaments();
+      return tournament.id;
     } catch (error: any) {
-      console.error('❌ Nakama tournament creation failed:', error);
+      console.error('Turnuva oluşturulurken hata:', error);
       toast({
-        title: "❌ Nakama Turnuva Hatası",
-        description: error.message,
+        title: "❌ Hata",
+        description: "Turnuva oluşturulamadı",
         variant: "destructive",
       });
       return null;
@@ -130,29 +131,36 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
     }
   };
   
-  // Join Nakama tournament
+  // Join tournament - Supabase
   const joinNakamaTournament = async (tournamentId: string): Promise<boolean> => {
     if (!user) return false;
     
     try {
       setLoading(true);
-      console.log('🎯 Joining Nakama tournament:', tournamentId);
       
-      await nakamaService.authenticate(user.id);
-      await nakamaService.createSocket();
-      await nakamaService.joinTournament(tournamentId);
+      // Turnuvaya katılımcı olarak ekle
+      const { error } = await supabase
+        .from('tournament_participants')
+        .insert({
+          tournament_id: tournamentId,
+          user_id: user.id,
+          is_bot: false
+        });
+      
+      if (error) throw error;
       
       toast({
-        title: "🎯 Nakama Turnuvaya Katıldınız",
-        description: `Turnuva ID: ${tournamentId}`,
+        title: "🎯 Turnuvaya Katıldınız",
+        description: "Başarıyla katıldınız!",
       });
       
+      await fetchTournamentDetails(tournamentId);
       return true;
     } catch (error: any) {
-      console.error('❌ Nakama tournament join failed:', error);
+      console.error('Turnuvaya katılırken hata:', error);
       toast({
-        title: "❌ Nakama Katılma Hatası",
-        description: error.message,
+        title: "❌ Hata",
+        description: "Turnuvaya katılınamadı",
         variant: "destructive",
       });
       return false;
@@ -178,103 +186,135 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
     if (!user) return false;
 
     try {
+      setLoading(true);
+
       const { error } = await supabase
         .from('tournament_participants')
         .delete()
         .eq('tournament_id', tournamentId)
         .eq('user_id', user.id);
 
-      if (error) {
-        console.error('Ayrılma hatası:', error);
-        return false;
-      }
+      if (error) throw error;
+
+      toast({
+        title: "Başarılı",
+        description: "Turnuvadan ayrıldınız"
+      });
 
       return true;
     } catch (error) {
       console.error('Ayrılma hatası:', error);
+      toast({
+        title: "Hata",
+        description: "Turnuvadan ayrılınamadı",
+        variant: "destructive"
+      });
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 
   // Start tournament
   const startTournament = async (tournamentId: string): Promise<boolean> => {
     try {
-      const { data, error } = await supabase.rpc('start_tournament_with_bracket', {
+      setLoading(true);
+
+      const { data, error } = await supabase.rpc('create_matches_for_active_tournament', {
         p_tournament_id: tournamentId
       });
 
-      const result = data as any;
-      
-      if (error || !result || typeof result !== 'object' || !result.success) {
-        console.error('Turnuva başlatma hatası:', error || result?.error || 'Bilinmeyen hata');
-        toast({
-          title: "Hata",
-          description: "Turnuva başlatılamadı"
-        });
-        return false;
-      }
+      if (error) throw error;
 
       toast({
         title: "Başarılı",
         description: "Turnuva başlatıldı!"
       });
 
-      // Refresh data to get latest state
       await fetchTournaments();
       await fetchTournamentDetails(tournamentId);
       
       return true;
     } catch (error) {
       console.error('Turnuva başlatma hatası:', error);
+      toast({
+        title: "Hata",
+        description: "Turnuva başlatılamadı",
+        variant: "destructive"
+      });
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Fetch tournament details
+  // Fetch tournament details - Supabase
   const fetchTournamentDetails = async (tournamentId: string) => {
     try {
+      if (!user) return;
+      
       setLoading(true);
       
-      console.log('🔍 Fetching Nakama tournament details:', tournamentId);
+      // Turnuva bilgisini çek
+      const { data: tournament, error: tournamentError } = await supabase
+        .from('tournaments')
+        .select('*')
+        .eq('id', tournamentId)
+        .single();
       
-      // Nakama'dan turnuva detaylarını al
-      await nakamaService.authenticate(user!.id);
-      await nakamaService.createSocket();
-      const nakamaTournaments = await nakamaService.listTournaments();
+      if (tournamentError) throw tournamentError;
       
-      const nakamaT = nakamaTournaments.find((t: any) => t.id === tournamentId);
+      // Katılımcıları çek
+      const { data: rawParticipants, error: participantsError } = await supabase
+        .from('tournament_participants')
+        .select('*')
+        .eq('tournament_id', tournamentId);
       
-      if (!nakamaT) {
-        console.error('Nakama turnuvası bulunamadı:', tournamentId);
-        return;
-      }
-      
-      // Nakama turnuvasını yerel formata çevir
-      setCurrentTournament({
-        id: nakamaT.id,
-        name: nakamaT.title || 'Turnuva',
-        creator_id: null,
-        status: 'waiting' as const, // Nakama'da statü yok, default waiting
-        game_type: 'timed' as const,
-        max_participants: nakamaT.max_size || 8,
-        current_round: 1,
-        timeout_duration: 30,
-        created_at: new Date(nakamaT.create_time * 1000).toISOString(),
-        started_at: null,
-        finished_at: null,
-        updated_at: new Date(nakamaT.create_time * 1000).toISOString(),
-        expires_at: nakamaT.end_time ? new Date(nakamaT.end_time * 1000).toISOString() : null
-      });
+      if (participantsError) throw participantsError;
 
-      // Nakama'da participant bilgisi yok, boş liste döndür
-      // Gerçek uygulamada Nakama API'sinden participant listesi çekilebilir
-      setParticipants([]);
+      // Her katılımcı için profil bilgisini al
+      const participantsWithProfiles = await Promise.all(
+        (rawParticipants || []).map(async (p) => {
+          if (p.is_bot || !p.user_id) {
+            return {
+              ...p,
+              profiles: undefined
+            };
+          }
 
-      // Nakama'da maç bilgisi yok, boş liste döndür
-      setMatches([]);
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('username, avatar_url')
+            .eq('id', p.user_id)
+            .single();
 
+          return {
+            ...p,
+            profiles: profile || undefined
+          };
+        })
+      );
+      
+      // Maçları çek
+      const { data: matches, error: matchesError } = await supabase
+        .from('tournament_matches')
+        .select('*')
+        .eq('tournament_id', tournamentId)
+        .order('round', { ascending: true })
+        .order('match_number', { ascending: true });
+      
+      if (matchesError) throw matchesError;
+      
+      setCurrentTournament(tournament as Tournament);
+      setParticipants(participantsWithProfiles as TournamentParticipant[]);
+      setMatches((matches || []) as TournamentMatch[]);
     } catch (error) {
-      console.error('Turnuva detayları alınamadı:', error);
+      console.error('Turnuva detayları alınırken hata:', error);
+      toast({
+        title: "Hata",
+        description: "Turnuva detayları yüklenemedi",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
