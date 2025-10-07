@@ -28,7 +28,7 @@ export const useTournament = (tournamentId?: string) => {
 
       // Auto-start or cancel when time is up AND tournament is still waiting
       if (remaining === 0 && context.currentTournament?.status === 'waiting') {
-        if (realPlayerCount >= 2) {
+        if (realPlayerCount >= 1) {
           if (isCreator) {
             startTournament();
           }
@@ -77,8 +77,8 @@ export const useTournament = (tournamentId?: string) => {
       return;
     }
 
-    // Check minimum participants
-    if (realPlayerCount < 2) {
+    // Check minimum participants (at least 1 real player, bots will fill the rest)
+    if (realPlayerCount < 1) {
       // Cancel tournament
       await supabase
         .from('tournaments')
