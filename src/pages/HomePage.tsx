@@ -941,8 +941,8 @@ const HomePage = () => {
         ) : null}
 
         {/* Slot Matchmaking Modal for Random Match */}
-        {showMatchmaking && isSearching && (
-          <div className="fixed inset-0 z-[60] bg-background/80 backdrop-blur-sm">
+        {showMatchmaking && (
+          <div className="fixed inset-0 z-[9999] bg-background">
             <SlotMatchmaking 
               key={`matchmaking-${matchmakingKey}`}
               onCancel={() => {
