@@ -22,6 +22,7 @@ interface MatchmakingContextType {
   searchTimeout: boolean;
   useNakama: boolean;
   nakamaMatch: { matchId: string; gameType: "timed" | "score" } | null;
+  currentGameType: "timed" | "score";
   startSearch: (gameType: "timed" | "score") => Promise<void>;
   cancelSearch: () => void;
   restartSearch: (gameType: "timed" | "score") => Promise<void>;
@@ -466,6 +467,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
     searchTimeout,
     useNakama,
     nakamaMatch,
+    currentGameType,
     startSearch,
     cancelSearch,
     restartSearch,

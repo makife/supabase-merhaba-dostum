@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Loader2, User } from 'lucide-react';
+import { useMatchmaking } from '@/contexts/NewMatchmakingContext';
 
 interface SlotMatchmakingProps {
   onCancel: () => void;
@@ -37,6 +38,7 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
   const [positions, setPositions] = useState<number[]>(Array(SLOT_COUNT).fill(0));
   const [stopped, setStopped] = useState<boolean[]>(Array(SLOT_COUNT).fill(false));
   const [isSpinning, setIsSpinning] = useState(true);
+  const { restartSearch, currentGameType } = useMatchmaking();
 
   // Her mount'ta state'leri sıfırla
   useEffect(() => {
@@ -88,16 +90,20 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
   }, [searchProgress, stopped]);
 
   const handleCancel = () => {
-  console.log('🛑 SlotMatchmaking iptal ediliyor');
-  
-  // 1. Önce spinner'ı durdur
-  setIsSpinning(false);
-  
-  // 2. Context'teki cancelSearch'i çağır
-  onCancel(); // Bu, context'teki cancelSearch fonksiyonu
-  
-  console.log('✅ SlotMatchmaking iptal edildi');
-};
+    console.log('🛑 SlotMatchmaking iptal ediliyor');
+    setIsSpinning(false);
+    onCancel();
+    console.log('✅ SlotMatchmaking iptal edildi');
+  };
+
+  const handleRetry = () => {
+    console.log('🔄 Tekrar arama başlatılıyor');
+    setPositions(Array(SLOT_COUNT).fill(0));
+    setStopped(Array(SLOT_COUNT).fill(false));
+    setIsSpinning(true);
+    restartSearch(currentGameType);
+  };
+
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
@@ -175,6 +181,12 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
                'Neredeyse hazir...'}
             </span>
           </div>
+
+          {searchProgress >= 100 && (
+            <Button onClick={handleRetry} className="w-full mb-3">
+              Tekrar Ara
+            </Button>
+          )}
 
           <Button 
   type="button" // 👈 BU SATIRI EKLE
