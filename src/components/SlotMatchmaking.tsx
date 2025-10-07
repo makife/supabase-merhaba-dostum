@@ -184,13 +184,15 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
           <div className="flex items-center justify-center gap-2 mb-6 text-white/90">
             <Loader2 className="w-5 h-5 animate-spin" />
             <span className="text-sm">
-              {searchProgress < 30
-                ? "Oyuncular taranıyor..."
-                : searchProgress < 60
-                  ? "Uygun rakip aranıyor..."
-                  : searchProgress < 90
-                    ? "Eşleşme kontrol ediliyor..."
-                    : "Neredeyse hazır..."}
+              {searchProgress >= 100
+                ? "Uygun oyuncu bulunamadı"
+                : searchProgress < 30
+                  ? "Oyuncular taranıyor..."
+                  : searchProgress < 60
+                    ? "Uygun rakip aranıyor..."
+                    : searchProgress < 90
+                      ? "Eşleşme kontrol ediliyor..."
+                      : "Neredeyse hazır..."}
             </span>
           </div>
 
