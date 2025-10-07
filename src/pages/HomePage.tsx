@@ -16,6 +16,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import PrivateRoomModal from '@/components/PrivateRoomModal';
 import NewMatchmakingModal from '@/components/NewMatchmakingModal';
+import { SlotMatchmaking } from '@/components/SlotMatchmaking';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
@@ -68,7 +69,7 @@ const HomePage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [timeUntilNextCredit, setTimeUntilNextCredit] = useState<string>('');
   const { canPlay: canPlayMemory, timeUntilNextPlay } = useMemoryGame();
-  const { startSearch, useNakama } = useMatchmaking();
+  const { startSearch, useNakama, isSearching, searchProgress, cancelSearch } = useMatchmaking();
 
 
   // Level hesaplama fonksiyonu
@@ -240,14 +241,7 @@ const HomePage = () => {
       return;
     }
     
-    // Nakama eşleşmesi için (context üzerinden güvenli tespit)
-    if (useNakama) {
-      // Nakama eşleşmesinde artık doğrudan oyun sayfasına geçiyoruz
-      navigate(`/game/random-match?room=${roomId}&type=${matchmakingGameType}`);
-      return;
-    }
-    
-    // Normal Supabase oda için
+    // Tüm eşleşmeler (Nakama dahil) artık doğrudan oyun sayfasına gidiyor
     navigate(`/game/random-match?room=${roomId}&type=${matchmakingGameType}`);
   };
 
@@ -939,13 +933,14 @@ const HomePage = () => {
           />
         ) : null}
 
-        {/* Matchmaking Modal for Random Match */}
-        {showMatchmaking && (
-          <NewMatchmakingModal
-            isOpen={showMatchmaking}
-            onClose={() => setShowMatchmaking(false)}
-            onMatchFound={handleMatchFound}
-            gameType={matchmakingGameType}
+        {/* Slot Matchmaking Modal for Random Match */}
+        {showMatchmaking && isSearching && (
+          <SlotMatchmaking 
+            onCancel={() => {
+              cancelSearch();
+              setShowMatchmaking(false);
+            }}
+            searchProgress={searchProgress}
           />
         )}
 

@@ -91,6 +91,10 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   // Arama başlat - Default olarak Nakama kullan
   const startSearch = async (gameType: "timed" | "score") => {
     if (!user) return;
+    if (isSearching) {
+      console.warn('⚠️ Arama zaten devam ediyor, tekrar başlatma atlandı');
+      return;
+    }
 
     try {
       setIsSearching(true);
@@ -333,10 +337,8 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
             description: "Oyun basliyor...",
           });
 
-          console.log("🎯 Match ready. Handing off navigation to modal/parent handler.");
-          // Do NOT navigate here to avoid duplicate navigations.
-          // NewMatchmakingModal will detect nakamaMatch and call onMatchFound from the page.
-          //onMatchFound?.(cleanMatchId);
+          console.log("🎯 Match ready. Navigating via onMatchFound callback.");
+          onMatchFound?.(cleanMatchId);
         } catch (error: any) {
           console.error("Match setup failed:", error);
           toast({
