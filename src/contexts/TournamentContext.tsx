@@ -268,6 +268,45 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
     }
   };
 
+  // Helper function to get player info
+  const getPlayerInfo = async (playerId: string | null, participants: TournamentParticipant[]) => {
+    if (!playerId) return null;
+    
+    // Bot kontrolü
+    if (playerId.startsWith('bot_')) {
+      const botIndex = participants.filter(p => p.is_bot && p.user_id && p.user_id.startsWith('bot_')).findIndex(p => p.user_id === playerId);
+      return {
+        username: generateBotName(botIndex),
+        avatar_url: null,
+        is_bot: true
+      };
+    }
+
+    // Gerçek oyuncu
+    const participant = participants.find(p => p.user_id === playerId);
+    if (participant?.profiles) {
+      return {
+        username: participant.profiles.username || 'Oyuncu',
+        avatar_url: participant.profiles.avatar_url,
+        is_bot: false
+      };
+    }
+
+    return {
+      username: 'Oyuncu',
+      avatar_url: null,
+      is_bot: false
+    };
+  };
+
+  const generateBotName = (index: number): string => {
+    const botNames = [
+      'Şimşek Bot', 'Zeka Bot', 'Hızlı Bot', 'Güçlü Bot',
+      'Akıllı Bot', 'Süper Bot', 'Mega Bot', 'Ultra Bot'
+    ];
+    return botNames[index % botNames.length] || `Bot ${index + 1}`;
+  };
+
   // Fetch tournament details - Supabase
   const fetchTournamentDetails = async (tournamentId: string) => {
     try {
@@ -315,8 +354,8 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
         })
       );
       
-      // Maçları çek
-      const { data: matches, error: matchesError } = await supabase
+      // Maçları çek ve oyuncu bilgilerini de al
+      const { data: rawMatches, error: matchesError } = await supabase
         .from('tournament_matches')
         .select('*')
         .eq('tournament_id', tournamentId)
@@ -324,10 +363,24 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
         .order('match_number', { ascending: true });
       
       if (matchesError) throw matchesError;
+
+      // Her maç için oyuncu bilgilerini ekle
+      const matchesWithPlayers = await Promise.all(
+        (rawMatches || []).map(async (match) => {
+          const player1Data = await getPlayerInfo(match.player1_id, participantsWithProfiles);
+          const player2Data = await getPlayerInfo(match.player2_id, participantsWithProfiles);
+
+          return {
+            ...match,
+            player1: player1Data,
+            player2: player2Data
+          };
+        })
+      );
       
       setCurrentTournament(tournament as Tournament);
       setParticipants(participantsWithProfiles as TournamentParticipant[]);
-      setMatches((matches || []) as TournamentMatch[]);
+      setMatches(matchesWithPlayers as TournamentMatch[]);
     } catch (error) {
       console.error('Turnuva detayları alınırken hata:', error);
       toast({
