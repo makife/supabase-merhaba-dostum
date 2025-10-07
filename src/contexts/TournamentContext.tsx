@@ -234,126 +234,44 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
   const fetchTournamentDetails = async (tournamentId: string) => {
     try {
       setLoading(true);
-
-      // Fetch tournament
-      const { data: tournamentData, error: tournamentError } = await supabase
-        .from('tournaments')
-        .select('*')
-        .eq('id', tournamentId)
-        .single();
-
-      if (tournamentError || !tournamentData) {
-        console.error('Turnuva bulunamadı:', tournamentError);
+      
+      console.log('🔍 Fetching Nakama tournament details:', tournamentId);
+      
+      // Nakama'dan turnuva detaylarını al
+      await nakamaService.authenticate(user!.id);
+      await nakamaService.createSocket();
+      const nakamaTournaments = await nakamaService.listTournaments();
+      
+      const nakamaT = nakamaTournaments.find((t: any) => t.id === tournamentId);
+      
+      if (!nakamaT) {
+        console.error('Nakama turnuvası bulunamadı:', tournamentId);
         return;
       }
-
+      
+      // Nakama turnuvasını yerel formata çevir
       setCurrentTournament({
-        ...tournamentData,
-        status: tournamentData.status as 'waiting' | 'in_progress' | 'completed' | 'cancelled'
+        id: nakamaT.id,
+        name: nakamaT.title || 'Turnuva',
+        creator_id: null,
+        status: 'waiting' as const, // Nakama'da statü yok, default waiting
+        game_type: 'timed' as const,
+        max_participants: nakamaT.max_size || 8,
+        current_round: 1,
+        timeout_duration: 30,
+        created_at: new Date(nakamaT.create_time * 1000).toISOString(),
+        started_at: null,
+        finished_at: null,
+        updated_at: new Date(nakamaT.create_time * 1000).toISOString(),
+        expires_at: nakamaT.end_time ? new Date(nakamaT.end_time * 1000).toISOString() : null
       });
 
-      // Fetch participants (without join due to user_id text vs uuid)
-      const { data: participantData, error: participantError } = await supabase
-        .from('tournament_participants')
-        .select('*')
-        .eq('tournament_id', tournamentId)
-        .order('seed');
+      // Nakama'da participant bilgisi yok, boş liste döndür
+      // Gerçek uygulamada Nakama API'sinden participant listesi çekilebilir
+      setParticipants([]);
 
-      if (!participantError && participantData) {
-        // Collect valid UUID user ids (exclude bots and non-uuid strings)
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-        const userIds = (participantData as any[])
-          .filter(p => !p.is_bot && typeof p.user_id === 'string' && uuidRegex.test(p.user_id))
-          .map(p => p.user_id);
-
-        let profilesMap: Record<string, { username: string; avatar_url: string | null }> = {};
-        if (userIds.length > 0) {
-          const { data: profilesData } = await supabase
-            .from('profiles')
-            .select('id, username, avatar_url')
-            .in('id', userIds as any);
-
-          (profilesData || []).forEach((prof: any) => {
-            profilesMap[prof.id] = { username: prof.username, avatar_url: prof.avatar_url };
-          });
-        }
-
-        const enriched = (participantData as any[]).map(p => ({
-          ...p,
-          profiles: p.user_id && profilesMap[p.user_id] ? profilesMap[p.user_id] : null
-        }));
-
-        setParticipants(enriched as any);
-      }
-
-      // Fetch matches if tournament is in progress
-      if (tournamentData.status === 'in_progress') {
-        try {
-          const { data: matchData, error: matchError } = await supabase
-            .from('tournament_matches')
-            .select('*')
-            .eq('tournament_id', tournamentId)
-            .order('round')
-            .order('match_number');
-
-          if (!matchError && matchData) {
-            // Enrich matches with player info
-            const enrichedMatches = await Promise.all(
-              matchData.map(async (match: any) => {
-                let player1Info = null;
-                let player2Info = null;
-
-                try {
-                  // Get player1 info if not a bot
-                  if (match.player1_id && !match.player1_id.startsWith('bot_')) {
-                    const { data: p1 } = await supabase
-                      .from('profiles')
-                      .select('username, avatar_url')
-                      .eq('id', match.player1_id)
-                      .maybeSingle();
-                    if (p1) {
-                      player1Info = { username: p1.username, avatar_url: p1.avatar_url, is_bot: false };
-                    }
-                  } else if (match.player1_id?.startsWith('bot_')) {
-                    const botNumber = match.player1_id.split('_').pop();
-                    player1Info = { username: `Bot ${botNumber}`, avatar_url: null, is_bot: true };
-                  }
-
-                  // Get player2 info if not a bot
-                  if (match.player2_id && !match.player2_id.startsWith('bot_')) {
-                    const { data: p2 } = await supabase
-                      .from('profiles')
-                      .select('username, avatar_url')
-                      .eq('id', match.player2_id)
-                      .maybeSingle();
-                    if (p2) {
-                      player2Info = { username: p2.username, avatar_url: p2.avatar_url, is_bot: false };
-                    }
-                  } else if (match.player2_id?.startsWith('bot_')) {
-                    const botNumber = match.player2_id.split('_').pop();
-                    player2Info = { username: `Bot ${botNumber}`, avatar_url: null, is_bot: true };
-                  }
-                } catch (playerError) {
-                  console.error('Error fetching player info:', playerError);
-                }
-
-                return {
-                  ...match,
-                  player1: player1Info,
-                  player2: player2Info
-                };
-              })
-            );
-
-            setMatches(enrichedMatches as any);
-
-          } else {
-            console.error('Match fetch error:', matchError);
-          }
-        } catch (matchFetchError) {
-          console.error('Error in match fetching process:', matchFetchError);
-        }
-      }
+      // Nakama'da maç bilgisi yok, boş liste döndür
+      setMatches([]);
 
     } catch (error) {
       console.error('Turnuva detayları alınamadı:', error);
