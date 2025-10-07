@@ -158,6 +158,17 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
 
             <div className="flex flex-col gap-2">
               <Button
+                variant="default"
+                onClick={() => {
+                  console.log('🔄 Tekrar arama başlatılıyor');
+                  restartSearch(gameType);
+                }}
+                className="flex-1"
+              >
+                <Search className="h-4 w-4 mr-2" />
+                Tekrar Ara
+              </Button>
+              <Button
                 variant="secondary"
                 onClick={() => {
                   console.log('🤖 AI ile oyna seçildi');
