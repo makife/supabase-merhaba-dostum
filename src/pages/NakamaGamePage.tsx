@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Home, Users, Clock, Trophy, Loader2 } from 'lucide-react';
 import { nakamaService } from '@/services/nakamaService';
 import { useAuth } from '@/contexts/AuthContext';
+import { matchBanlist } from '@/utils/matchBanlist';
 
 const NakamaGamePage = () => {
   const navigate = useNavigate();
@@ -32,12 +33,13 @@ const NakamaGamePage = () => {
     initializeNakamaGame();
   }, [matchId, gameType, user]);
 
-  // Clear any persisted last match on unmount to avoid rejoining ended rooms
+  // Çıkarken bu maçı ban listesine ekleyip yeniden bağlanmayı engelle
   useEffect(() => {
     return () => {
+      try { if (joinedMatchId) { matchBanlist.add(joinedMatchId); } } catch {}
       try { (nakamaService as any).setLastMatch?.({ id: '', token: null }); } catch {}
     };
-  }, []);
+  }, [joinedMatchId]);
 
   useEffect(() => {
     // Her iki oyuncu "Başlat" sinyali gönderdiğinde oyunu başlat

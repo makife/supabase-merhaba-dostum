@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { nakamaService } from "@/services/nakamaService";
+import { matchBanlist } from "@/utils/matchBanlist";
 
 interface MatchmakingRoom {
   id: string;
@@ -164,6 +165,16 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
             throw new Error("Invalid match_id after sanitize");
           }
           console.log("Clean match ID:", cleanMatchId);
+
+          // Eğer bu match ID banlıysa, hemen ayrıl ve yeni aramayı başlat
+          if (matchBanlist.has(cleanMatchId)) {
+            console.warn("Banned/ended match detected, restarting search:", cleanMatchId);
+            try { await (socket as any).leaveMatch(cleanMatchId); } catch {}
+            toast({ title: "Eski oda engellendi", description: "Yeni eşleşme aranıyor..." });
+            if (progressInterval) { clearInterval(progressInterval); setProgressInterval(null); }
+            restartSearch(gameType);
+            return;
+          }
 
           // Supabase'e game room olustur
           try {
