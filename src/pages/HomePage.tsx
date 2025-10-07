@@ -242,11 +242,8 @@ const HomePage = () => {
     
     // Nakama eşleşmesi için (context üzerinden güvenli tespit)
     if (useNakama) {
-      const token = (nakamaService as any).getLastJoinToken?.();
-      const url = token
-        ? `/game/nakama-game?match=${roomId}&type=${matchmakingGameType}&token=${encodeURIComponent(token)}`
-        : `/game/nakama-game?match=${roomId}&type=${matchmakingGameType}`;
-      navigate(url);
+      // Nakama eşleşmesinde artık doğrudan oyun sayfasına geçiyoruz
+      navigate(`/game/random-match?room=${roomId}&type=${matchmakingGameType}`);
       return;
     }
     
