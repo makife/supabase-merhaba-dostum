@@ -65,6 +65,53 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
       // Kodu, gerçek room ID'yi ve gameType'ı localStorage'a kaydet
       localStorage.setItem(`room_${shortCode}`, roomId);
       localStorage.setItem(`room_type_${shortCode}`, gameType);
+
+      // Deterministik grid oluştur (NewMatchmakingContext'teki gibi)
+      const generateGridFromSeed = (seed: string): string[] => {
+        const seedNum = parseInt(seed.replace(/[^0-9]/g, "").slice(0, 10)) || Date.now();
+        let currentSeed = seedNum;
+
+        const seededRandom = () => {
+          currentSeed = (currentSeed * 1664525 + 1013904223) % 4294967296;
+          return currentSeed / 4294967296;
+        };
+
+        const letterPool = [
+          "A","A","A","A","A","A","A","A","E","E","E","E","E","E","E",
+          "İ","İ","İ","İ","İ","İ","I","I","I","I","I","O","O","O","O","O",
+          "U","U","U","U","Ü","Ü","Ü","Ö","Ö","Ö","L","L","L","L","L",
+          "N","N","N","N","N","R","R","R","R","R","K","K","K","K",
+          "M","M","M","M","T","T","T","T","S","S","S","S","D","D","D",
+          "Y","Y","Y","B","B","B","C","C","Ç","Ç","F","F","G","G","Ğ","Ğ",
+          "H","H","J","P","P","Ş","Ş","V","V","Z"
+        ];
+
+        const grid: string[] = [];
+        for (let i = 0; i < 16; i++) {
+          const randomIndex = Math.floor(seededRandom() * letterPool.length);
+          grid.push(letterPool[randomIndex]);
+        }
+        return grid;
+      };
+
+      const gridArray = generateGridFromSeed(roomId);
+      
+      // Supabase'e game_room kaydı oluştur
+      const { error: roomError } = await supabase.from("game_rooms").insert({
+        id: roomId,
+        room_code: shortCode,
+        host_id: user.id,
+        game_mode: gameType,
+        status: "waiting",
+        max_players: 2,
+        time_limit: gameType === "timed" ? 120 : 0,
+        max_score: gameType === "score" ? 500 : 0,
+        current_grid: gridArray,
+      });
+
+      if (roomError && !roomError.message?.includes("duplicate")) {
+        console.error("Room insert failed:", roomError);
+      }
       
       toast({
         title: "🏠 Nakama Özel Oda",
@@ -119,6 +166,21 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
       const realMatchId = joinResult.match_id ?? joinResult.matchId ?? actualRoomId;
       
       setJoinedMatchId(realMatchId);
+
+      // Supabase'de room'un varlığını kontrol et ve participant ekle
+      const { data: room } = await supabase
+        .from('game_rooms')
+        .select('*')
+        .eq('id', realMatchId)
+        .single();
+
+      if (room) {
+        // Participant olarak ekle
+        await supabase.from('game_participants').insert({
+          room_id: realMatchId,
+          user_id: user.id,
+        });
+      }
       
       toast({
         title: "🚪 Nakama Odaya Katıldınız",
@@ -126,7 +188,7 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
       });
       
       // gameType'ı joinCode ile birlikte localStorage'dan al veya default 'timed'
-      const savedGameType = localStorage.getItem(`room_type_${joinCode.toUpperCase()}`) as 'timed' | 'score' || 'timed';
+      const savedGameType = (localStorage.getItem(`room_type_${joinCode.toUpperCase()}`) as 'timed' | 'score') || 'timed';
       onRoomJoined(realMatchId, savedGameType);
     } catch (error: any) {
       console.error('Error joining room:', error);
