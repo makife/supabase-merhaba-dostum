@@ -200,12 +200,10 @@ async createSocket(): Promise<Socket> {
       const match = await this.socket.createMatch();
       const cleanMatchId = match.match_id.endsWith('.') ? match.match_id.slice(0, -1) : match.match_id;
       
-      console.log("✅ Private match created:", cleanMatchId);
+      console.log("✅ Private match created (host auto-joined):", cleanMatchId);
       
-      // Host olarak match'e katıl
-      console.log("👤 Joining as host...");
-      await this.socket.joinMatch(cleanMatchId);
-      console.log("✅ Joined as host");
+      // createMatch çağrıldığında host otomatik olarak match'e katılır
+      // Tekrar joinMatch çağırmaya gerek yok
       
       // Last match bilgisini kaydet
       this.setLastMatch({ id: cleanMatchId });
