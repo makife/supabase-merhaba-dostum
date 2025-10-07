@@ -67,10 +67,14 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
     try {
       setLoading(true);
       
+      // Önce süresi dolmuş turnuvaları temizle
+      await supabase.rpc('cleanup_expired_tournaments');
+      
       const { data, error } = await supabase
         .from('tournaments')
         .select('*')
         .in('status', ['waiting', 'in_progress'])
+        .gt('expires_at', new Date().toISOString()) // Süresi dolmamış olanlar
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -94,6 +98,10 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
     try {
       setLoading(true);
       
+      // 5 dakika sonrasını hesapla
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + 5);
+      
       // Supabase'de turnuva oluştur
       const { data: tournament, error } = await supabase
         .from('tournaments')
@@ -104,12 +112,24 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
           game_type: 'timed',
           max_participants: 8,
           current_round: 1,
-          timeout_duration: 15
+          timeout_duration: 15,
+          expires_at: expiresAt.toISOString()
         })
         .select()
         .single();
       
       if (error) throw error;
+      
+      // Yaratıcıyı otomatik olarak katılımcılara ekle
+      const { error: participantError } = await supabase
+        .from('tournament_participants')
+        .insert({
+          tournament_id: tournament.id,
+          user_id: user.id,
+          is_bot: false
+        });
+      
+      if (participantError) throw participantError;
       
       toast({
         title: "🏆 Turnuva Oluşturuldu",
