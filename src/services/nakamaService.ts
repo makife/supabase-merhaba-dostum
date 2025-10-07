@@ -196,9 +196,20 @@ async createSocket(): Promise<Socket> {
         throw new Error("Socket not connected");
       }
 
+      console.log("🏠 Creating private match...");
       const match = await this.socket.createMatch();
       const cleanMatchId = match.match_id.endsWith('.') ? match.match_id.slice(0, -1) : match.match_id;
-      console.log("✅ Private room created:", cleanMatchId);
+      
+      console.log("✅ Private match created:", cleanMatchId);
+      
+      // Host olarak match'e katıl
+      console.log("👤 Joining as host...");
+      await this.socket.joinMatch(cleanMatchId);
+      console.log("✅ Joined as host");
+      
+      // Last match bilgisini kaydet
+      this.setLastMatch({ id: cleanMatchId });
+      
       return cleanMatchId;
     } catch (error) {
       console.error("❌ Failed to create private room:", error);
@@ -206,15 +217,24 @@ async createSocket(): Promise<Socket> {
     }
   }
 
-  async joinPrivateRoom(roomCode: string): Promise<void> {
+  async joinPrivateRoom(roomCode: string): Promise<string> {
     try {
       if (!this.socket) {
         throw new Error("Socket not connected");
       }
 
       const cleanRoomCode = roomCode.endsWith('.') ? roomCode.slice(0, -1) : roomCode;
-      await this.socket.joinMatch(cleanRoomCode);
-      console.log("✅ Joined private room:", cleanRoomCode);
+      console.log("🚪 Joining private match:", cleanRoomCode);
+      
+      const joinResult = await this.socket.joinMatch(cleanRoomCode);
+      const actualMatchId = joinResult.match_id || cleanRoomCode;
+      
+      console.log("✅ Joined private room:", actualMatchId);
+      
+      // Last match bilgisini kaydet
+      this.setLastMatch({ id: actualMatchId });
+      
+      return actualMatchId;
     } catch (error) {
       console.error("❌ Failed to join private room:", error);
       throw error;

@@ -112,6 +112,16 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
       if (roomError && !roomError.message?.includes("duplicate")) {
         console.error("Room insert failed:", roomError);
       }
+
+      // Host olarak participant ekle
+      const { error: participantError } = await supabase.from("game_participants").insert({
+        room_id: roomId,
+        user_id: user.id,
+      });
+
+      if (participantError && !participantError.message?.includes("duplicate")) {
+        console.error("Participant insert failed:", participantError);
+      }
       
       toast({
         title: "🏠 Nakama Özel Oda",
@@ -161,9 +171,10 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
       
       console.log('🚪 Joining Nakama private room:', actualRoomId);
       await nakamaService.authenticate(user.id);
-      const socket = await nakamaService.createSocket();
-      const joinResult = await (socket as any).joinMatch(actualRoomId);
-      const realMatchId = joinResult.match_id ?? joinResult.matchId ?? actualRoomId;
+      await nakamaService.createSocket();
+      
+      // Nakama'ya katıl ve gerçek match ID'yi al
+      const realMatchId = await nakamaService.joinPrivateRoom(actualRoomId);
       
       setJoinedMatchId(realMatchId);
 

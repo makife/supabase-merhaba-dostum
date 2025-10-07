@@ -177,12 +177,17 @@ export const NakamaMatchmakingProvider: React.FC<NakamaMatchmakingProviderProps>
 
       toast({
         title: "🏠 Özel Oda Oluşturuldu",
-        description: `Oda kodu: ${roomId}`,
+        description: `Match ID: ${roomId.slice(0, 8)}...`,
       });
 
       return roomId;
     } catch (error: any) {
       console.error('❌ Failed to create private room:', error);
+      toast({
+        title: "❌ Oda Oluşturulamadı",
+        description: error.message,
+        variant: "destructive",
+      });
       throw error;
     }
   };
@@ -196,15 +201,20 @@ export const NakamaMatchmakingProvider: React.FC<NakamaMatchmakingProviderProps>
 
       await nakamaService.authenticate(user.id);
       await nakamaService.createSocket();
-      await nakamaService.joinPrivateRoom(roomCode);
+      const actualMatchId = await nakamaService.joinPrivateRoom(roomCode);
 
       toast({
         title: "🚪 Odaya Katıldınız",
-        description: `Oda: ${roomCode}`,
+        description: `Match ID: ${actualMatchId.slice(0, 8)}...`,
       });
 
     } catch (error: any) {
       console.error('❌ Failed to join private room:', error);
+      toast({
+        title: "❌ Odaya Katılamadı",
+        description: error.message,
+        variant: "destructive",
+      });
       throw error;
     }
   };
