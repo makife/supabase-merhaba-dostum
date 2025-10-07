@@ -886,14 +886,8 @@ const HomePage = () => {
         {selectedMode && selectedMode === 'private-room' ? (
           <PrivateRoomModal
             onClose={() => setSelectedMode(null)}
-            onRoomCreated={(nakamaMatchId, gameType) => {
+            onStartGame={(nakamaMatchId, gameType) => {
               setSelectedMode(null);
-              // Özel oda için direkt oyun sayfasına git
-              navigate(`/game/random-match?room=${nakamaMatchId}&type=${gameType}`);
-            }}
-            onRoomJoined={(nakamaMatchId, gameType) => {
-              setSelectedMode(null);
-              // Özel oda için direkt oyun sayfasına git
               navigate(`/game/random-match?room=${nakamaMatchId}&type=${gameType}`);
             }}
           />

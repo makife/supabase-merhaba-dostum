@@ -16,11 +16,10 @@ import { useAuth } from '@/contexts/AuthContext';
 
 interface PrivateRoomModalProps {
   onClose: () => void;
-  onRoomCreated: (nakamaMatchId: string, gameType: 'timed' | 'score') => void;
-  onRoomJoined: (nakamaMatchId: string, gameType: 'timed' | 'score') => void;
+  onStartGame: (nakamaMatchId: string, gameType: 'timed' | 'score') => void;
 }
 
-const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomModalProps) => {
+const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
   const [roomCode, setRoomCode] = useState('');
   const [joinCode, setJoinCode] = useState('');
   const [gameType, setGameType] = useState<'timed' | 'score'>('timed');
@@ -66,7 +65,7 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
       localStorage.setItem(`room_${shortCode}`, roomId);
       localStorage.setItem(`room_type_${shortCode}`, gameType);
 
-      // Deterministik grid oluştur (NewMatchmakingContext'teki gibi)
+      // Deterministik grid oluştur
       const generateGridFromSeed = (seed: string): string[] => {
         const seedNum = parseInt(seed.replace(/[^0-9]/g, "").slice(0, 10)) || Date.now();
         let currentSeed = seedNum;
@@ -124,11 +123,39 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
       }
       
       toast({
-        title: "🏠 Nakama Özel Oda",
-        description: `Oda kodu: ${shortCode}`,
+        title: "🏠 Oda Oluşturuldu",
+        description: `Kod: ${shortCode} - Diğer oyuncu bekleniyor...`,
       });
       
-      onRoomCreated(roomId, gameType);
+      // Realtime ile participants tablosunu dinle
+      const channel = supabase
+        .channel(`room_${roomId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'game_participants',
+            filter: `room_id=eq.${roomId}`
+          },
+          async (payload) => {
+            console.log('👥 Yeni katılımcı:', payload);
+            
+            // Toplam katılımcı sayısını kontrol et
+            const { data: participants } = await supabase
+              .from('game_participants')
+              .select('*')
+              .eq('room_id', roomId);
+            
+            if (participants && participants.length >= 2) {
+              console.log('✅ 2 oyuncu tamam, oyun başlıyor!');
+              channel.unsubscribe();
+              onStartGame(roomId, gameType);
+            }
+          }
+        )
+        .subscribe();
+      
     } catch (error: any) {
       console.error('Error creating room:', error);
       toast({
@@ -198,9 +225,11 @@ const PrivateRoomModal = ({ onClose, onRoomCreated, onRoomJoined }: PrivateRoomM
         description: `Oda: ${joinCode}`,
       });
       
-      // gameType'ı joinCode ile birlikte localStorage'dan al veya default 'timed'
+      // gameType'ı localStorage'dan al
       const savedGameType = (localStorage.getItem(`room_type_${joinCode.toUpperCase()}`) as 'timed' | 'score') || 'timed';
-      onRoomJoined(realMatchId, savedGameType);
+      
+      // Direkt oyunu başlat
+      onStartGame(realMatchId, savedGameType);
     } catch (error: any) {
       console.error('Error joining room:', error);
       toast({
