@@ -79,6 +79,17 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
 
     clearProgressTimer();
 
+    // Aktif bir matchmaking bileti varsa iptal et (self-match'i önler)
+    if (currentTicket) {
+      try {
+        void nakamaService.cancelMatchmaking(currentTicket);
+      } catch (e) {
+        console.warn("Cleanup cancel error:", e);
+      } finally {
+        setCurrentTicket(null);
+      }
+    }
+
     // ❌ BU SATIRI KALDIR - Nakama bağlantısını kesme!
     // nakamaService.disconnect();
 
@@ -343,6 +354,8 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
             gameType: gameType,
           });
 
+          // Artık bilet gereksiz, temizle
+          setCurrentTicket(null);
 
           setIsSearching(false);
           clearProgressTimer();
@@ -385,7 +398,8 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
 
         if (progress >= 100 && isSearching) {
           clearInterval(intervalId);
-          setIsSearching(false);
+          // Cancel any pending Nakama matchmaking to avoid self-matching
+          cancelSearch();
           setSearchTimeout(true);
           toast({
             title: "Timeout",
@@ -439,6 +453,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   // Tekrar arama yap
   const restartSearch = async (gameType: "timed" | "score") => {
     console.log("🔄 Tekrar arama başlatılıyor...");
+    await cancelSearch();
     cleanup();
     setSearchTimeout(false);
     setTimeout(() => {
