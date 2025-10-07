@@ -245,21 +245,12 @@ async createSocket(): Promise<Socket> {
         throw new Error("Socket not connected");
       }
 
-      const tournament = await this.socket.createTournament({
-        title: name,
-        description: "Kelime oyunu turnuvası",
-        category: 1,
-        sort_order: 0,
-        size: maxPlayers,
-        max_size: maxPlayers,
-        max_num_score: 1,
-        duration: 900,
-        start_active: Date.now() + 60000,
-        end_active: Date.now() + 900000
-      });
+      // Nakama'da tournament yerine özel bir match oluştur
+      const match = await this.socket.createMatch();
+      const tournamentId = match.match_id.endsWith('.') ? match.match_id.slice(0, -1) : match.match_id;
       
-      console.log("✅ Tournament created:", tournament.tournament_id);
-      return tournament.tournament_id;
+      console.log("✅ Tournament match created:", tournamentId);
+      return tournamentId;
     } catch (error) {
       console.error("❌ Failed to create tournament:", error);
       throw error;
@@ -272,8 +263,9 @@ async createSocket(): Promise<Socket> {
         throw new Error("Socket not connected");
       }
 
-      await this.socket.joinTournament(tournamentId);
-      console.log("✅ Joined tournament:", tournamentId);
+      // Tournament match'e katıl
+      await this.socket.joinMatch(tournamentId);
+      console.log("✅ Joined tournament match:", tournamentId);
     } catch (error) {
       console.error("❌ Failed to join tournament:", error);
       throw error;
@@ -282,20 +274,9 @@ async createSocket(): Promise<Socket> {
 
   async listTournaments(): Promise<any[]> {
     try {
-      if (!this.socket) {
-        throw new Error("Socket not connected");
-      }
-
-      const result = await this.socket.listTournaments({
-        category_start: 1,
-        category_end: 1,
-        start_time: Math.floor(Date.now() / 1000),
-        end_time: Math.floor(Date.now() / 1000) + 86400, // Next 24 hours
-        limit: 100
-      });
-      
-      console.log("✅ Listed tournaments:", result.tournaments?.length || 0);
-      return result.tournaments || [];
+      // Nakama'nın tournament API'si olmadığı için boş liste döndür
+      console.log("⚠️ Nakama tournament API not available, returning empty list");
+      return [];
     } catch (error) {
       console.error("❌ Failed to list tournaments:", error);
       return [];
