@@ -150,6 +150,27 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
     try {
       console.log("Nakama matchmaking baslatiliyor:", gameType);
 
+      // Start progress immediately, before network calls
+      clearProgressTimer();
+      let progress = 0;
+      const intervalId = window.setInterval(() => {
+        progress += 3.33;
+        setSearchProgress(Math.min(progress, 100));
+
+        if (progress >= 100 && isSearching) {
+          clearInterval(intervalId);
+          // Cancel any pending Nakama matchmaking to avoid self-matching
+          cancelSearch();
+          setSearchTimeout(true);
+          toast({
+            title: "Timeout",
+            description: "Oyuncu bulunamadi",
+            variant: "destructive",
+          });
+        }
+      }, 1000);
+      progressIntervalRef.current = intervalId;
+
       await nakamaService.authenticate(user.id);
       const socket = await nakamaService.createSocket();
 
@@ -390,27 +411,10 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       const ticket = await nakamaService.findMatch(gameType);
       setCurrentTicket(ticket.ticket);
 
-      let progress = 0;
-      clearProgressTimer();
-      const intervalId = window.setInterval(() => {
-        progress += 3.33;
-        setSearchProgress(Math.min(progress, 100));
-
-        if (progress >= 100 && isSearching) {
-          clearInterval(intervalId);
-          // Cancel any pending Nakama matchmaking to avoid self-matching
-          cancelSearch();
-          setSearchTimeout(true);
-          toast({
-            title: "Timeout",
-            description: "Oyuncu bulunamadi",
-            variant: "destructive",
-          });
-        }
-      }, 1000);
-      progressIntervalRef.current = intervalId;
+      // Progress timer already running at start; no duplicate timer here
     } catch (error: any) {
       console.error("Nakama matchmaking failed:", error);
+      clearProgressTimer();
       setIsSearching(false);
       toast({
         title: "Nakama Hatasi",
