@@ -85,6 +85,11 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
     setUseNakama(false);
     setNakamaMatch(null);
 
+    // Clear any persisted last match to prevent rejoining ended rooms
+    try {
+      (nakamaService as any).setLastMatch?.({ id: '' });
+    } catch {}
+
     console.log("✅ Matchmaking state temizlendi");
   };
 
@@ -323,12 +328,6 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
             gameType: gameType,
           });
 
-          // Save match details to service for reuse on the game page (avoid re-join with invalid id)
-          try {
-            nakamaService.setLastMatch({ id: match.match_id, token });
-          } catch (e) {
-            console.warn("setLastMatch failed (non-fatal):", e);
-          }
 
           setIsSearching(false);
           if (progressInterval) {
