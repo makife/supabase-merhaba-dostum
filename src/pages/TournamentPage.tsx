@@ -1,39 +1,31 @@
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Home, Trophy, Users, Plus } from 'lucide-react';
-import { TournamentCard } from '@/components/TournamentCard';
-import { useTournamentContext } from '@/contexts/TournamentContext';
-import { getRealPlayerCount } from '@/utils/tournamentHelpers';
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Home, Trophy, Users, Plus } from "lucide-react";
+import { TournamentCard } from "@/components/TournamentCard";
+import { useTournamentContext } from "@/contexts/TournamentContext";
+import { getRealPlayerCount } from "@/utils/tournamentHelpers";
 
 const TournamentPage = () => {
   const navigate = useNavigate();
-  const { 
-    tournaments, 
-    loading, 
-    createTournament, 
-    joinTournament,
-    fetchTournaments 
-  } = useTournamentContext();
+  const { tournaments, loading, createTournament, joinTournament, fetchTournaments } = useTournamentContext();
 
   useEffect(() => {
     fetchTournaments();
   }, []);
 
   const handleCreateTournament = async () => {
-    const nakamaTournamentId = await createTournament();
-    if (nakamaTournamentId) {
-      // Nakama turnuva ID'si ile bekleme sayfasına git
-      navigate(`/tournament-waiting/${nakamaTournamentId}`);
+    const tournamentId = await createTournament();
+    if (tournamentId) {
+      navigate(`/tournament-waiting/${tournamentId}`);
     }
   };
 
-  const handleJoinTournament = async (nakamaTournamentId: string) => {
-    const success = await joinTournament(nakamaTournamentId);
+  const handleJoinTournament = async (tournamentId: string) => {
+    const success = await joinTournament(tournamentId);
     if (success) {
-      // Nakama turnuva ID'si ile bekleme sayfasına git
-      navigate(`/tournament-waiting/${nakamaTournamentId}`);
+      navigate(`/tournament-waiting/${tournamentId}`);
     }
   };
 
@@ -42,7 +34,7 @@ const TournamentPage = () => {
       {/* Çıkış butonu */}
       <div className="absolute top-4 left-4 z-50">
         <Button
-          onClick={() => navigate('/')}
+          onClick={() => navigate("/")}
           className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
         >
           <Home className="w-4 h-4 mr-2" />
@@ -61,18 +53,16 @@ const TournamentPage = () => {
         {/* Turnuva Oluştur */}
         <Card className="mb-8 bg-white/10 backdrop-blur-md border-white/20">
           <CardContent className="p-6 text-center">
-            <Button 
+            <Button
               onClick={handleCreateTournament}
               disabled={loading}
               className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-4 px-8 text-lg"
               size="lg"
             >
               <Plus className="w-6 h-6 mr-2" />
-              {loading ? 'Oluşturuluyor...' : 'Yeni Turnuva Oluştur'}
+              {loading ? "Oluşturuluyor..." : "Yeni Turnuva Oluştur"}
             </Button>
-            <p className="text-gray-300 text-sm mt-2">
-              Kendi turnuvanı oluştur ve arkadaşlarını davet et!
-            </p>
+            <p className="text-gray-300 text-sm mt-2">Kendi turnuvanı oluştur ve arkadaşlarını davet et!</p>
           </CardContent>
         </Card>
 
@@ -89,7 +79,7 @@ const TournamentPage = () => {
               Yenile
             </Button>
           </div>
-          
+
           {loading ? (
             <Card className="bg-white/10 backdrop-blur-md border-white/20">
               <CardContent className="p-6 text-center">
@@ -102,17 +92,13 @@ const TournamentPage = () => {
               <CardContent className="p-8 text-center">
                 <Users className="w-16 h-16 mx-auto mb-4 text-gray-400" />
                 <h3 className="text-xl font-bold text-white mb-2">Aktif Turnuva Yok</h3>
-                <p className="text-gray-300 mb-4">
-                  Şu anda beklemedeki turnuva bulunmuyor.
-                </p>
-                <p className="text-gray-400 text-sm">
-                  İlk turnuvayı sen oluştur ve eğlence başlasın!
-                </p>
+                <p className="text-gray-300 mb-4">Şu anda beklemedeki turnuva bulunmuyor.</p>
+                <p className="text-gray-400 text-sm">İlk turnuvayı sen oluştur ve eğlence başlasın!</p>
               </CardContent>
             </Card>
           ) : (
             <div className="space-y-3">
-          {tournaments.map((tournament) => (
+              {tournaments.map((tournament) => (
                 <TournamentCard
                   key={tournament.id}
                   tournament={tournament}
