@@ -84,14 +84,14 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
   }, [isSpinning, stopped, speeds]);
 
   useEffect(() => {
-    if (searchProgress > 50 && !stopped[0]) {
+    if (searchProgress > 100 && !stopped[0]) {
       setStopped((prev) => {
         const newStopped = [...prev];
         newStopped[0] = true;
         return newStopped;
       });
     }
-    if (searchProgress > 90 && !stopped[1]) {
+    if (searchProgress > 100 && !stopped[1]) {
       setStopped((prev) => {
         const newStopped = [...prev];
         newStopped[1] = true;
