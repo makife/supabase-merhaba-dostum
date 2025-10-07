@@ -90,6 +90,22 @@ const initializeNakamaGame = async () => {
       }
     };
 
+    // If we just created this private room as host, skip re-joining
+    const lastMatchId = (nakamaService as any).getLastMatchId?.();
+    if (lastMatchId && lastMatchId === cleanUrlId) {
+      console.log('ℹ️ Already joined as host, skipping joinMatch for', cleanUrlId);
+      const realMatchId = cleanUrlId;
+      setJoinedMatchId(realMatchId);
+      // ensure at least self is counted
+      setTotalPlayers(prev => Math.max(1, prev));
+      const readyMsg = JSON.stringify({ type: 'player_ready', userId: user.id });
+      const encoder = new TextEncoder();
+      (socket as any).sendMatchState(realMatchId, 1, encoder.encode(readyMsg));
+      setPlayersReady(prev => new Set([...prev, user.id]));
+      console.log('✅ Ready signal sent (host already in match):', realMatchId);
+      setLoading(false);
+      return;
+    }
 
     let joinResult: any = null;
     const tryJoinWithToken = async (tokenStr: string) => (socket as any).joinMatch(undefined, tokenStr);
