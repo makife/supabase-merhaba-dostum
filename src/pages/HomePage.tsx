@@ -69,7 +69,7 @@ const HomePage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [timeUntilNextCredit, setTimeUntilNextCredit] = useState<string>('');
   const { canPlay: canPlayMemory, timeUntilNextPlay } = useMemoryGame();
-  const { startSearch, useNakama, isSearching, searchProgress, cancelSearch } = useMatchmaking();
+  const { startSearch, useNakama, isSearching, searchProgress, cancelSearch, nakamaMatch } = useMatchmaking();
 
 
   // Level hesaplama fonksiyonu
@@ -230,6 +230,13 @@ const HomePage = () => {
       fileInputRef.current.value = '';
     }
   };
+
+  // Nakama match bulunduğunda otomatik yönlendir
+  useEffect(() => {
+    if (nakamaMatch?.matchId && showMatchmaking) {
+      handleMatchFound(nakamaMatch.matchId);
+    }
+  }, [nakamaMatch?.matchId, showMatchmaking]);
 
   const handleMatchFound = (roomId: string) => {
     console.log('🎯 Match found! Room ID:', roomId);
@@ -890,13 +897,12 @@ const HomePage = () => {
         ) : selectedMode === 'random-match' ? (
           <GameModeSelector
             mode={selectedMode}
-            onStart={(gameType) => {
-              playSound('buttonClick');
-              setSelectedMode(null);
-              setMatchmakingGameType(gameType);
-              // Matchmaking modalını aç – modal açılınca arama kendisi başlayacak
-              setShowMatchmaking(true);
-            }}
+              onStart={(gameType) => {
+                setSelectedMode(null);
+                setMatchmakingGameType(gameType);
+                startSearch(gameType);
+                setShowMatchmaking(true);
+              }}
             onClose={() => {
               playSound('buttonClick');
               setSelectedMode(null);
@@ -906,7 +912,6 @@ const HomePage = () => {
           <GameModeSelector
             mode={selectedMode}
             onStart={(gameType) => {
-              playSound('buttonClick');
               navigate('/tournament', { state: { gameType } });
               setSelectedMode(null);
             }}
@@ -919,7 +924,6 @@ const HomePage = () => {
           <GameModeSelector
             mode={selectedMode}
             onStart={(gameType) => {
-              playSound('buttonClick');
               const mode = gameModesConfig.find(m => m.id === selectedMode);
               if (mode) {
                 navigate(`${mode.route}?type=${gameType}`);
