@@ -743,13 +743,36 @@ const fetchParticipants = useCallback(
   try {
     console.log('🔍 Özel oda aranıyor:', roomCode);
   
-    // Önce oda var mı kontrol et
-    const { data: room, error: roomError } = await supabase
+    // Önce ID ile ara (Nakama özel odaları için)
+    let room = null;
+    let roomError = null;
+    
+    const { data: roomById, error: errorById } = await supabase
       .from('game_rooms')
       .select('*')
-      .eq('room_code', roomCode)
+      .eq('id', roomCode)
       .in('status', ['waiting', 'active'])
       .maybeSingle();
+    
+    if (roomById) {
+      room = roomById;
+      console.log('✅ Oda ID ile bulundu:', room.id.slice(-8));
+    } else {
+      // ID ile bulunamazsa room_code ile ara
+      const { data: roomByCode, error: errorByCode } = await supabase
+        .from('game_rooms')
+        .select('*')
+        .eq('room_code', roomCode)
+        .in('status', ['waiting', 'active'])
+        .maybeSingle();
+      
+      room = roomByCode;
+      roomError = errorByCode;
+      
+      if (room) {
+        console.log('✅ Oda room_code ile bulundu:', room.id.slice(-8));
+      }
+    }
 
     if (roomError || !room) {
       console.error('❌ Oda bulunamadı:', roomError);
@@ -760,8 +783,6 @@ const fetchParticipants = useCallback(
       });
       return false;
     }
-
-    console.log('✅ Oda bulundu:', room.id.slice(-8));
 
     // ✅ Katılımcıları kontrol et
     const { data: participants, error: participantsError } = await supabase

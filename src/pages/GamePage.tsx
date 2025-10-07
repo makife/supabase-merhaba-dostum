@@ -2104,15 +2104,48 @@ useEffect(() => {
     console.log('🎯 Loading random match room data:', roomId);
     
     try {
-      // Fetch the matchmaking room data first
+      // Önce game_rooms tablosunu kontrol et (özel odalar için)
+      const { data: existingGameRoom } = await supabase
+        .from('game_rooms')
+        .select('*')
+        .eq('id', roomId)
+        .in('status', ['waiting', 'active'])
+        .maybeSingle();
+      
+      if (existingGameRoom) {
+        console.log('🏠 Private/Game room found:', existingGameRoom.id);
+        
+        // Join existing room using GameContext function
+        const joined = await joinRoom(roomId);
+        if (!joined) {
+          console.error('❌ Failed to join existing room');
+          toast({
+            title: 'Bağlantı Hatası',
+            description: 'Oyun odasına bağlanılamadı',
+            variant: 'destructive',
+          });
+          navigate('/');
+          return;
+        }
+        
+        console.log('✅ Joined existing game room');
+        return;
+      }
+      
+      // Eğer game_rooms'da yoksa matchmaking_rooms'a bak
       const { data: matchmakingRoom } = await supabase
         .from('matchmaking_rooms')
         .select('*')
         .eq('id', roomId)
-        .single();
+        .maybeSingle();
       
       if (!matchmakingRoom) {
-        console.error('❌ Matchmaking room not found:', roomId);
+        console.error('❌ Room not found in either table:', roomId);
+        toast({
+          title: 'Hata',
+          description: 'Oyun odası bulunamadı',
+          variant: 'destructive',
+        });
         navigate('/');
         return;
       }
