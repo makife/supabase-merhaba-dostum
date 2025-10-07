@@ -121,6 +121,15 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+      {/* Backward-compatible alias to prevent 404s from older links */}
+      <Route
+        path="/game/nakama-game"
+        element={
+          <ProtectedRoute>
+            <NakamaGamePage />
+          </ProtectedRoute>
+        }
+      />
 
       <Route
         path="/game"
