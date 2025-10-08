@@ -277,9 +277,10 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
     
     // Bot kontrolü - is_bot alanını kullan
     if (participant?.is_bot) {
-      const botIndex = participants.filter(p => p.is_bot).findIndex(p => p.user_id === playerId);
+      // Deterministic seed from user_id to keep bot names stable
+      const seed = Array.from(String(playerId)).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
       return {
-        username: generateBotName(botIndex >= 0 ? botIndex : 0),
+        username: generateBotName(seed),
         avatar_url: null,
         is_bot: true
       };
@@ -311,24 +312,34 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
       'eylül', 'tunç', 'lara', 'uras', 'derin', 'çağlar', 'pelin', 'koray',
       'damla', 'tolga', 'su', 'onur', 'ceren', 'umut', 'begüm', 'barış'
     ];
-    
+
+    // Seeded RNG (deterministic) using index
+    let seed = (index >>> 0) || 0;
+    const next = (mod: number) => {
+      seed = (seed * 1664525 + 1013904223) >>> 0; // LCG
+      return seed % mod;
+    };
+
+    const nameIndex = Math.abs(index) % turkishNames.length;
+    const decorationIndex = Math.floor(Math.abs(index) / turkishNames.length) % 9;
+
+    const baseName = turkishNames[nameIndex];
+    const num4 = 1000 + next(9000);
+    const num2 = 10 + next(90);
+    const num3 = 100 + next(900);
+
     const decorations = [
-      (name: string) => name + Math.floor(Math.random() * 10000),
+      (name: string) => name + String(num4),
       (name: string) => name + '_',
       (name: string) => '_' + name,
       (name: string) => '_' + name + '_',
       (name: string) => name + name.charAt(name.length - 1).repeat(2),
-      (name: string) => name.charAt(0) + name.slice(1).repeat(1) + Math.floor(Math.random() * 100),
-      (name: string) => name + '.' + Math.floor(Math.random() * 100),
-      (name: string) => name.charAt(0).toUpperCase() + name.slice(1) + Math.floor(Math.random() * 999),
+      (name: string) => name.charAt(0) + name.slice(1) + String(num2),
+      (name: string) => name + '.' + String(next(100)),
+      (name: string) => name.charAt(0).toUpperCase() + name.slice(1) + String(num3),
       (name: string) => name,
     ];
-    
-    // Index'i seed olarak kullan
-    const nameIndex = index % turkishNames.length;
-    const decorationIndex = Math.floor(index / turkishNames.length) % decorations.length;
-    
-    const baseName = turkishNames[nameIndex];
+
     return decorations[decorationIndex](baseName);
   };
 
