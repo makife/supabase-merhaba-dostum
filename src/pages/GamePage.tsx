@@ -33,6 +33,7 @@ import {
   PenTool,
   Loader2
 } from 'lucide-react';
+import { generateBotName } from '@/utils/tournamentHelpers';
 
 interface TournamentMatch {
   id: string;
@@ -1132,7 +1133,8 @@ useEffect(() => {
       setOpponentName('Bekleniyor...');
     } else if (String(opponentId).startsWith('bot_')) {
       setIsAIOpponent(true);
-      setOpponentName('Turnuva Botu');
+      const seed = Array.from(String(opponentId)).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+      setOpponentName(generateBotName(seed));
     } else {
       setIsAIOpponent(false);
       const realOpponent = participants.find(p => String(p.user_id) === String(opponentId));
@@ -1155,7 +1157,8 @@ const getOpponentDisplayName = () => {
       tournamentMatch.player1_id;
   
     if (!opponentId || String(opponentId).startsWith('bot_')) {
-      return 'Turnuva Botu';
+      const seed = Array.from(String(opponentId || 'bot')).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+      return generateBotName(seed);
     }
     
     // Eğer state'te belirlenmiş bir rakip adı varsa onu kullan
@@ -3709,8 +3712,9 @@ const createFireworksEffect = () => {
         ? tournamentMatch.player2_id 
         : tournamentMatch.player1_id;
       
-      if (!opponentId || opponentId.startsWith('bot_')) {
-        return { name: 'Turnuva Botu', icon: Trophy, avatar: null };
+      if (!opponentId || String(opponentId).startsWith('bot_')) {
+        const seed = Array.from(String(opponentId || 'bot')).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+        return { name: generateBotName(seed), icon: Trophy, avatar: null };
       }
       
       const realOpponent = participants.find(p => 
