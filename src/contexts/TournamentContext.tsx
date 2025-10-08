@@ -300,11 +300,34 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
   };
 
   const generateBotName = (index: number): string => {
-    const botNames = [
-      'Şimşek Bot', 'Zeka Bot', 'Hızlı Bot', 'Güçlü Bot',
-      'Akıllı Bot', 'Süper Bot', 'Mega Bot', 'Ultra Bot'
+    const turkishNames = [
+      'ahmet', 'mehmet', 'ayşe', 'fatma', 'ali', 'veli', 'zeynep', 'elif',
+      'mustafa', 'emre', 'can', 'ece', 'selin', 'burak', 'deniz', 'yusuf',
+      'merve', 'özge', 'berk', 'arda', 'sude', 'efe', 'ada', 'emir',
+      'defne', 'kaan', 'ilayda', 'mert', 'asya', 'kerem', 'nisa', 'bora',
+      'irem', 'doruk', 'ela', 'eren', 'nehir', 'alp', 'maya', 'ege',
+      'eylül', 'tunç', 'lara', 'uras', 'derin', 'çağlar', 'pelin', 'koray',
+      'damla', 'tolga', 'su', 'onur', 'ceren', 'umut', 'begüm', 'barış'
     ];
-    return botNames[index % botNames.length] || `Bot ${index + 1}`;
+    
+    const decorations = [
+      (name: string) => name + Math.floor(Math.random() * 10000),
+      (name: string) => name + '_',
+      (name: string) => '_' + name,
+      (name: string) => '_' + name + '_',
+      (name: string) => name + name.charAt(name.length - 1).repeat(2),
+      (name: string) => name.charAt(0) + name.slice(1).repeat(1) + Math.floor(Math.random() * 100),
+      (name: string) => name + '.' + Math.floor(Math.random() * 100),
+      (name: string) => name.charAt(0).toUpperCase() + name.slice(1) + Math.floor(Math.random() * 999),
+      (name: string) => name,
+    ];
+    
+    // Index'i seed olarak kullan
+    const nameIndex = index % turkishNames.length;
+    const decorationIndex = Math.floor(index / turkishNames.length) % decorations.length;
+    
+    const baseName = turkishNames[nameIndex];
+    return decorations[decorationIndex](baseName);
   };
 
   // Fetch tournament details - Supabase
