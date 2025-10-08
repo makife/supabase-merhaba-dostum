@@ -261,14 +261,14 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
-              <Users className="w-5 h-5 text-white" />
+      <Card className="w-full max-w-md border-primary/20">
+        <CardHeader className="text-center space-y-4 pb-4">
+          <div className="flex flex-col items-center gap-3">
+            <div className="h-16 w-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
+              <Users className="h-8 w-8 text-primary" />
             </div>
             <div>
-              <CardTitle>Özel Oda</CardTitle>
+              <CardTitle className="text-xl">Özel Oda</CardTitle>
               <CardDescription>Arkadaşınla özel oyun oluştur</CardDescription>
             </div>
           </div>
@@ -298,14 +298,14 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
                       <div className="space-y-3">
                         <Label className={`relative flex items-center space-x-3 p-3 rounded-lg border-2 cursor-pointer transition-all duration-300 ${
                           gameType === 'timed' 
-                            ? 'border-blue-500 bg-blue-50' 
-                            : 'border-gray-200 hover:border-blue-300'
+                            ? 'border-primary bg-primary/10' 
+                            : 'border-muted hover:border-primary/50'
                         }`}>
                           <RadioGroupItem value="timed" className="sr-only" />
                           <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 ${
                             gameType === 'timed' 
-                              ? 'bg-blue-500 text-white' 
-                              : 'bg-gray-100 text-gray-600'
+                              ? 'bg-primary text-primary-foreground' 
+                              : 'bg-muted text-muted-foreground'
                           }`}>
                             <Clock className="w-5 h-5" />
                           </div>
@@ -313,8 +313,8 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
                             <div className="flex items-center justify-between">
                               <span className="font-semibold">Zamana Karşı</span>
                               {gameType === 'timed' && (
-                                <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                                  <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                                <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                                  <div className="w-1.5 h-1.5 bg-primary-foreground rounded-full"></div>
                                 </div>
                               )}
                             </div>
@@ -324,14 +324,14 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
 
                         <Label className={`relative flex items-center space-x-3 p-3 rounded-lg border-2 cursor-pointer transition-all duration-300 ${
                           gameType === 'score' 
-                            ? 'border-amber-500 bg-amber-50' 
-                            : 'border-gray-200 hover:border-amber-300'
+                            ? 'border-primary bg-primary/10' 
+                            : 'border-muted hover:border-primary/50'
                         }`}>
                           <RadioGroupItem value="score" className="sr-only" />
                           <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 ${
                             gameType === 'score' 
-                              ? 'bg-amber-500 text-white' 
-                              : 'bg-gray-100 text-gray-600'
+                              ? 'bg-primary text-primary-foreground' 
+                              : 'bg-muted text-muted-foreground'
                           }`}>
                             <Trophy className="w-5 h-5" />
                           </div>
@@ -339,8 +339,8 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
                             <div className="flex items-center justify-between">
                               <span className="font-semibold">Puanlı</span>
                               {gameType === 'score' && (
-                                <div className="w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center">
-                                  <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                                <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                                  <div className="w-1.5 h-1.5 bg-primary-foreground rounded-full"></div>
                                 </div>
                               )}
                             </div>
@@ -360,12 +360,12 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
                 
                 {roomCode ? (
                   <div className="space-y-4">
-                    <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                      <Label className="text-sm font-medium text-green-800">
+                    <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
+                      <Label className="text-sm font-medium">
                         Oda Kodu
                       </Label>
                       <div className="flex items-center justify-between mt-2">
-                        <span className="text-2xl font-bold font-mono text-green-900">{roomCode}</span>
+                        <span className="text-2xl font-bold font-mono">{roomCode}</span>
                         <Button
                           variant="outline"
                           size="sm"
@@ -379,11 +379,11 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
                           )}
                         </Button>
                       </div>
-                      <p className="text-xs text-green-600 mt-2">
+                      <p className="text-xs text-muted-foreground mt-2">
                         6 haneli kod arkadaşınla paylaş
                       </p>
                     </div>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground text-center">
                       Bu kodu arkadaşınızla paylaşın. Arkadaşınız katıldığında oyun başlayabilir.
                     </p>
                   </div>
