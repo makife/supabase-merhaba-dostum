@@ -131,6 +131,14 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/nakama-game"
+        element={
+          <ProtectedRoute>
+            <NakamaGamePage />
+          </ProtectedRoute>
+        }
+      />
 
       <Route
         path="/game"
