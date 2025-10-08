@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Trophy, Home, Clock, Crown } from "lucide-react";
 import { useTournament } from "@/hooks/useTournament";
-import { organizeMatchesByRound, getRoundName, getMatchStatus } from "@/utils/tournamentHelpers";
+import { organizeMatchesByRound, getRoundName, getMatchStatus, generateBotName } from "@/utils/tournamentHelpers";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSounds } from "@/hooks/useSounds";
@@ -545,15 +545,20 @@ const TournamentBracketPage = () => {
     const getPlayerInfo = (playerId: string, isPlayer1: boolean) => {
       if (!playerId) return { name: "TBD", isBot: false };
 
-      if (playerId.startsWith("bot_")) {
-        return { name: `Bot ${playerId.split("_").pop()}`, isBot: true };
+      // Önce match içindeki zenginleştirilmiş player bilgisini kullan
+      const playerInfo = isPlayer1 ? match.player1 : match.player2;
+      const isBot = Boolean(playerInfo?.is_bot) || playerId.startsWith("bot_");
+
+      if (isBot) {
+        // Zenginleştirilmiş isim varsa onu kullan; yoksa seed'li üret
+        const seed = [...playerId].reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+        const name = playerInfo?.username || generateBotName(seed);
+        return { name, isBot: true };
       }
 
-      // Get from match player info
-      const playerInfo = isPlayer1 ? match.player1 : match.player2;
       return {
         name: playerInfo?.username || "Oyuncu",
-        isBot: playerInfo?.is_bot || false,
+        isBot: false,
       };
     };
 
