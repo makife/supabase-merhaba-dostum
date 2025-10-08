@@ -222,16 +222,38 @@ async createSocket(): Promise<Socket> {
       }
 
       const cleanRoomCode = roomCode.endsWith('.') ? roomCode.slice(0, -1) : roomCode;
-      console.log("🚪 Joining private match:", cleanRoomCode);
-      
-      const joinResult = await this.socket.joinMatch(cleanRoomCode);
-      const actualMatchId = joinResult.match_id || cleanRoomCode;
-      
+
+      // If a short 6-char code was provided, resolve it to the real match (game_rooms.id)
+      let matchIdToJoin = cleanRoomCode;
+      const isShortCode = /^[A-Z0-9]{6}$/.test(cleanRoomCode);
+      if (isShortCode) {
+        const { data: roomByCode, error: lookupError } = await supabase
+          .from('game_rooms')
+          .select('id')
+          .eq('room_code', cleanRoomCode)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (lookupError) {
+          console.warn('⚠️ Room code lookup failed, trying to join with code directly:', lookupError);
+        }
+        if (roomByCode?.id) {
+          matchIdToJoin = roomByCode.id;
+          console.log('🔑 Room code resolved to match id:', matchIdToJoin);
+        }
+      }
+
+      console.log("🚪 Joining private match:", matchIdToJoin);
+      const joinResult = await this.socket.joinMatch(matchIdToJoin);
+      const actualMatchIdRaw = joinResult.match_id || matchIdToJoin;
+      const actualMatchId = actualMatchIdRaw.endsWith('.') ? actualMatchIdRaw.slice(0, -1) : actualMatchIdRaw;
+
       console.log("✅ Joined private room:", actualMatchId);
-      
+
       // Last match bilgisini kaydet
       this.setLastMatch({ id: actualMatchId });
-      
+
       return actualMatchId;
     } catch (error) {
       console.error("❌ Failed to join private room:", error);
