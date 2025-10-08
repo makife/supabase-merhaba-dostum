@@ -19,7 +19,10 @@ interface PrivateRoomModalProps {
   onStartGame: (nakamaMatchId: string, gameType: 'timed' | 'score') => void;
 }
 
+import { useNavigate } from 'react-router-dom';
+
 const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
+  const navigate = useNavigate();
   const [roomCode, setRoomCode] = useState('');
   const [joinCode, setJoinCode] = useState('');
   const [gameType, setGameType] = useState<'timed' | 'score'>('timed');
@@ -124,37 +127,12 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
       
       toast({
         title: "🏠 Oda Oluşturuldu",
-        description: `Kod: ${shortCode} - Diğer oyuncu bekleniyor...`,
+        description: `Kod: ${shortCode}`,
       });
       
-      // Realtime ile participants tablosunu dinle
-      const channel = supabase
-        .channel(`room_${roomId}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'game_participants',
-            filter: `room_id=eq.${roomId}`
-          },
-          async (payload) => {
-            console.log('👥 Yeni katılımcı:', payload);
-            
-            // Toplam katılımcı sayısını kontrol et
-            const { data: participants } = await supabase
-              .from('game_participants')
-              .select('*')
-              .eq('room_id', roomId);
-            
-            if (participants && participants.length >= 2) {
-              console.log('✅ 2 oyuncu tamam, oyun başlıyor!');
-              channel.unsubscribe();
-              onStartGame(roomId, gameType);
-            }
-          }
-        )
-        .subscribe();
+      // Bekleme sayfasına yönlendir
+      navigate(`/private-room-waiting?code=${shortCode}&roomId=${roomId}&gameType=${gameType}`);
+      onClose();
       
     } catch (error: any) {
       console.error('Error creating room:', error);
@@ -260,16 +238,16 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-purple-900 to-blue-900 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-md bg-white/10 backdrop-blur-md border-white/20">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <Card className="w-full max-w-md border-primary/20">
         <CardHeader className="text-center space-y-4 pb-4">
           <div className="flex flex-col items-center gap-3">
-            <div className="h-16 w-16 mx-auto bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
-              <Users className="h-8 w-8 text-white" />
+            <div className="h-16 w-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
+              <Users className="h-8 w-8 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-xl text-white">Özel Oda</CardTitle>
-              <CardDescription className="text-gray-300">Arkadaşınla özel oyun oluştur</CardDescription>
+              <CardTitle className="text-xl">Özel Oda</CardTitle>
+              <CardDescription>Arkadaşınla özel oyun oluştur</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -354,56 +332,25 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
               )}
               
               <div className="text-center space-y-4">
-                <p className="text-sm text-gray-300">
+                <p className="text-sm text-muted-foreground">
                   Yeni bir özel oda oluşturun ve arkadaşınızla paylaşın
                 </p>
                 
-                {roomCode ? (
-                  <div className="space-y-4">
-                    <div className="p-6 bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-xl border-2 border-yellow-400/30 backdrop-blur-sm">
-                      <Label className="text-sm font-semibold text-yellow-300">
-                        Oda Kodu
-                      </Label>
-                      <div className="flex items-center justify-center gap-3 mt-3">
-                        <span className="text-3xl font-bold font-mono text-white tracking-widest">{roomCode}</span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={copyRoomCode}
-                          className="bg-white/10 border-white/20 hover:bg-white/20 text-white"
-                        >
-                          {copied ? (
-                            <Check className="w-4 h-4" />
-                          ) : (
-                            <Copy className="w-4 h-4" />
-                          )}
-                        </Button>
-                      </div>
-                      <p className="text-xs text-yellow-200 mt-3">
-                        6 haneli kod arkadaşınla paylaş
-                      </p>
-                    </div>
-                    <p className="text-sm text-gray-300 text-center">
-                      Bu kodu arkadaşınızla paylaşın. Arkadaşınız katıldığında oyun başlayabilir.
-                    </p>
-                  </div>
-                ) : (
-                  <Button
-                    onClick={handleCreateRoom}
-                    disabled={loading}
-                    className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold"
-                    size="lg"
-                  >
-                    {loading ? 'Oda Oluşturuluyor...' : 'Oda Oluştur'}
-                  </Button>
-                )}
+                <Button
+                  onClick={handleCreateRoom}
+                  disabled={loading}
+                  className="w-full"
+                  size="lg"
+                >
+                  {loading ? 'Oda Oluşturuluyor...' : 'Oda Oluştur'}
+                </Button>
               </div>
             </TabsContent>
             
             <TabsContent value="join" className="space-y-4 mt-4">
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="joinCode" className="text-gray-300">
+                  <Label htmlFor="joinCode">
                     Oda Kodu
                   </Label>
                   <Input
@@ -412,20 +359,20 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
                     value={joinCode}
                     onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                     maxLength={6}
-                    className="mt-1 text-center font-mono text-lg tracking-wider uppercase bg-white/5 border-white/20 text-white"
+                    className="mt-1 text-center font-mono text-lg tracking-wider uppercase"
                   />
                 </div>
                 
                 <Button
                   onClick={handleJoinRoom}
                   disabled={loading || !joinCode.trim()}
-                  className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-bold"
+                  className="w-full"
                   size="lg"
                 >
                   {loading ? 'Odaya Katılıyor...' : 'Odaya Katıl'}
                 </Button>
                 
-                <p className="text-sm text-gray-300 text-center">
+                <p className="text-sm text-muted-foreground text-center">
                   Arkadaşınızdan aldığınız 6 haneli kodu girin
                 </p>
               </div>
@@ -443,7 +390,7 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
                   onClose();
                 }
               }}
-              className="w-full border-white/30 hover:bg-white/10 text-white"
+              className="w-full"
             >
               {currentRoom && participants.length > 1 ? 'Çıkış' : 'İptal'}
             </Button>

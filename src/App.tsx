@@ -30,6 +30,7 @@ import TournamentPage from "./pages/TournamentPage";
 import TournamentWaitingPage from "./pages/TournamentWaitingPage";
 import TournamentBracketPage from "./pages/TournamentBracketPage";
 import WheelPage from "./pages/WheelPage";
+import PrivateRoomWaitingPage from "./pages/PrivateRoomWaitingPage";
 import { useLocalStorageClear } from "@/hooks/useLocalStorageClear";
 import { useScreenOrientation } from "@/hooks/useScreenOrientation";
 import MemoryGamePage from "@/pages/MemoryGamePage";
@@ -145,6 +146,15 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <TournamentPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/private-room-waiting"
+        element={
+          <ProtectedRoute>
+            <PrivateRoomWaitingPage />
           </ProtectedRoute>
         }
       />
