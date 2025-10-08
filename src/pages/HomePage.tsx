@@ -270,7 +270,7 @@ const HomePage = () => {
       icon: Users,
       color: 'bg-green-500',
       gradient: 'bg-gradient-to-br from-green-500 via-emerald-600 to-green-700',
-      route: '/private-room',
+      route: '/game/private-room',
     },
     {
       id: 'random-match',
