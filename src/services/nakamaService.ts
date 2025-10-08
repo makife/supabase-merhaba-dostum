@@ -216,21 +216,20 @@ async createSocket(): Promise<Socket> {
   }
 
   async joinPrivateRoom(roomCode: string): Promise<string> {
+    // Keep a reference accessible in catch for fallback logic
+    let matchIdToJoin = roomCode.endsWith('.') ? roomCode.slice(0, -1) : roomCode;
     try {
       if (!this.socket) {
         throw new Error("Socket not connected");
       }
 
-      const cleanRoomCode = roomCode.endsWith('.') ? roomCode.slice(0, -1) : roomCode;
-
       // If a short 6-char code was provided, resolve it to the real match (game_rooms.id)
-      let matchIdToJoin = cleanRoomCode;
-      const isShortCode = /^[A-Z0-9]{6}$/.test(cleanRoomCode);
+      const isShortCode = /^[A-Z0-9]{6}$/.test(matchIdToJoin);
       if (isShortCode) {
         const { data: roomByCode, error: lookupError } = await supabase
           .from('game_rooms')
           .select('id')
-          .eq('room_code', cleanRoomCode)
+          .eq('room_code', matchIdToJoin)
           .order('created_at', { ascending: false })
           .limit(1)
           .single();
@@ -255,7 +254,22 @@ async createSocket(): Promise<Socket> {
       this.setLastMatch({ id: actualMatchId });
 
       return actualMatchId;
-    } catch (error) {
+    } catch (error: any) {
+      // If invalid match id, try with trailing dot (some servers return IDs with a trailing '.')
+      if (error?.message === 'Invalid match ID' || (typeof error?.message === 'string' && error.message.includes('Invalid match ID'))) {
+        try {
+          const fallbackId = matchIdToJoin.endsWith('.') ? matchIdToJoin : `${matchIdToJoin}.`;
+          console.warn('⚠️ Invalid match id, retrying with trailing dot:', fallbackId);
+          const joinResult2 = await this.socket!.joinMatch(fallbackId);
+          const actualMatchIdRaw2 = joinResult2.match_id || fallbackId;
+          const actualMatchId2 = actualMatchIdRaw2.endsWith('.') ? actualMatchIdRaw2.slice(0, -1) : actualMatchIdRaw2;
+          console.log('✅ Joined private room on fallback:', actualMatchId2);
+          this.setLastMatch({ id: actualMatchId2 });
+          return actualMatchId2;
+        } catch (e2) {
+          console.error('❌ Fallback join failed:', e2);
+        }
+      }
       console.error("❌ Failed to join private room:", error);
       throw error;
     }
