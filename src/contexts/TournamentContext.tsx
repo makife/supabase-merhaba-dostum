@@ -272,18 +272,20 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
   const getPlayerInfo = async (playerId: string | null, participants: TournamentParticipant[]) => {
     if (!playerId) return null;
     
-    // Bot kontrolü
-    if (playerId.startsWith('bot_')) {
-      const botIndex = participants.filter(p => p.is_bot && p.user_id && p.user_id.startsWith('bot_')).findIndex(p => p.user_id === playerId);
+    // Önce participant'ı bul
+    const participant = participants.find(p => p.user_id === playerId);
+    
+    // Bot kontrolü - is_bot alanını kullan
+    if (participant?.is_bot) {
+      const botIndex = participants.filter(p => p.is_bot).findIndex(p => p.user_id === playerId);
       return {
-        username: generateBotName(botIndex),
+        username: generateBotName(botIndex >= 0 ? botIndex : 0),
         avatar_url: null,
         is_bot: true
       };
     }
 
     // Gerçek oyuncu
-    const participant = participants.find(p => p.user_id === playerId);
     if (participant?.profiles) {
       return {
         username: participant.profiles.username || 'Oyuncu',
