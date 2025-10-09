@@ -46,6 +46,20 @@ const PrivateRoomWaitingPage = () => {
 
           if (participants && participants.length >= 2) {
             console.log("✅ 2 oyuncu tamam, oyun başlıyor!");
+            
+            // 🎯 SERVER-SIDE COUNTDOWN: Oyun başlamadan önce countdown başlat
+            try {
+              const { data: countdownTime, error: countdownError } = await supabase.rpc('start_game_countdown', {
+                p_room_id: roomId
+              });
+              
+              if (!countdownError && countdownTime) {
+                console.log('🎯 Private room countdown başlatıldı:', countdownTime);
+              }
+            } catch (err) {
+              console.error('Countdown başlatma hatası:', err);
+            }
+            
             channel.unsubscribe();
             // DIREKT oyun sayfasına yönlendir
             navigate(`/game/random-match?room=${roomId}&type=${gameType}`);

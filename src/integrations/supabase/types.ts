@@ -275,6 +275,7 @@ export type Database = {
       }
       game_rooms: {
         Row: {
+          countdown_started_at: string | null
           created_at: string | null
           current_grid: string[] | null
           finished_at: string | null
@@ -298,6 +299,7 @@ export type Database = {
           winner_id: string | null
         }
         Insert: {
+          countdown_started_at?: string | null
           created_at?: string | null
           current_grid?: string[] | null
           finished_at?: string | null
@@ -321,6 +323,7 @@ export type Database = {
           winner_id?: string | null
         }
         Update: {
+          countdown_started_at?: string | null
           created_at?: string | null
           current_grid?: string[] | null
           finished_at?: string | null
@@ -946,6 +949,7 @@ export type Database = {
       }
       tournament_matches: {
         Row: {
+          countdown_started_at: string | null
           created_at: string | null
           id: string
           match_number: number
@@ -960,6 +964,7 @@ export type Database = {
           winner_id: string | null
         }
         Insert: {
+          countdown_started_at?: string | null
           created_at?: string | null
           id?: string
           match_number: number
@@ -974,6 +979,7 @@ export type Database = {
           winner_id?: string | null
         }
         Update: {
+          countdown_started_at?: string | null
           created_at?: string | null
           id?: string
           match_number?: number
@@ -1429,6 +1435,10 @@ export type Database = {
           penalty: number
         }[]
       }
+      auto_start_countdown_finished_games: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       ban_user_for_inappropriate_content: {
         Args: {
           p_ban_duration_hours?: number
@@ -1695,9 +1705,17 @@ export type Database = {
           | { p_chat_id: string; p_sender_username: string; p_user_id: string }
         Returns: boolean
       }
+      start_game_countdown: {
+        Args: { p_room_id: string }
+        Returns: string
+      }
       start_tournament_automatically: {
         Args: { p_tournament_id: string }
         Returns: Json
+      }
+      start_tournament_countdown: {
+        Args: { p_match_id: string }
+        Returns: string
       }
       start_tournament_with_bots: {
         Args: { p_tournament_id: string }

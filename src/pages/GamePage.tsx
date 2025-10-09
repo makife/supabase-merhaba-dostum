@@ -370,6 +370,7 @@ useEffect(() => {
   const timeLeftRef = useRef<number>(gameType === 'timed' ? 120 : 0);
   const [displayTime, setDisplayTime] = useState<number>(timeLeftRef.current);
   const [showCountdown, setShowCountdown] = useState(true);
+  const [countdownServerTime, setCountdownServerTime] = useState<string | null>(null);
   const [gameStarted, setGameStarted] = useState(false);
   const [waitingForPlayer, setWaitingForPlayer] = useState(false);
   const [gameEnded, setGameEnded] = useState(false);
@@ -1468,11 +1469,21 @@ useEffect(() => {
           console.log('✅ Turnuva maçı yüklendi:', matchData.id);
           setTournamentMatch(matchData);
           
+          // 🎯 SERVER-SIDE COUNTDOWN: Turnuva maçı için countdown başlat
+          const { data: countdownTime, error: countdownError } = await supabase.rpc('start_tournament_countdown', {
+            p_match_id: matchId
+          });
+          
+          if (!countdownError && countdownTime) {
+            console.log('🎯 Tournament countdown başlatıldı:', countdownTime);
+            setCountdownServerTime(countdownTime);
+          }
+          
           // Maç durumunu güncelle
           await supabase
             .from('tournament_matches')
             .update({
-              status: 'in_progress',
+              status: 'pending', // pending olsun ki auto_start_countdown_finished_games fonksiyonu başlatsın
               updated_at: new Date().toISOString()
             })
             .eq('id', matchId);
@@ -3238,10 +3249,27 @@ useEffect(() => {
       console.log('✅ 2 gerçek oyuncu hazır - OYUN BAŞLIYOR!');
       setWaitingForPlayer(false);
 
-      // Oyun başlamadıysa ve geri sayım gösterilmiyorsa yalnızca bir kez geri sayımı başlat
-      if (!gameStarted && !showCountdown && !gameHasStartedRef.current) {
-        setShowCountdown(true);
-        setGameStarted(false);
+      // 🎯 SERVER-SIDE COUNTDOWN: Oyun başlamadıysa server'dan countdown başlat
+      if (!gameStarted && !showCountdown && !gameHasStartedRef.current && currentRoom?.id) {
+        (async () => {
+          try {
+            const { data, error } = await supabase.rpc('start_game_countdown', {
+              p_room_id: currentRoom.id
+            });
+            
+            if (!error && data) {
+              console.log('🎯 Server countdown başlatıldı:', data);
+              setCountdownServerTime(data);
+              setShowCountdown(true);
+              setGameStarted(false);
+            }
+          } catch (err) {
+            console.error('Countdown başlatma hatası:', err);
+            // Fallback: client-side countdown
+            setShowCountdown(true);
+            setGameStarted(false);
+          }
+        })();
       }
       
       if (!hasShownStartMessage) {
@@ -3301,7 +3329,20 @@ useEffect(() => {
               console.log('✅ Rematch request sender: odaya katıldı, yeni oyun başlatılıyor');
               // Oyun durumunu tamamen sıfırla ve geri sayımı başlat
               resetGameForRematch();
-              setTimeout(() => {
+              setTimeout(async () => {
+                // 🎯 SERVER-SIDE COUNTDOWN for rematch
+                if (currentRoom?.id) {
+                  try {
+                    const { data, error } = await supabase.rpc('start_game_countdown', {
+                      p_room_id: currentRoom.id
+                    });
+                    if (!error && data) {
+                      setCountdownServerTime(data);
+                    }
+                  } catch (err) {
+                    console.error('Rematch countdown error:', err);
+                  }
+                }
                 setShowCountdown(true);
               }, 500);
               // Aynı route ise no-op; yine de güvenli olması için replace ile yönlendir
@@ -4102,7 +4143,20 @@ if (gameEnded) {
                     console.log('✅ Rematch receiver: odaya katıldı, yeni oyun başlatılıyor');
                     // Oyun durumunu tamamen sıfırla ve geri sayımı başlat
                     resetGameForRematch();
-                    setTimeout(() => {
+                    setTimeout(async () => {
+                      // 🎯 SERVER-SIDE COUNTDOWN for rematch (receiver)
+                      if (currentRoom?.id) {
+                        try {
+                          const { data, error } = await supabase.rpc('start_game_countdown', {
+                            p_room_id: currentRoom.id
+                          });
+                          if (!error && data) {
+                            setCountdownServerTime(data);
+                          }
+                        } catch (err) {
+                          console.error('Rematch countdown error:', err);
+                        }
+                      }
                       setShowCountdown(true);
                     }, 500);
                     // Aynı route ise no-op; yine de güvenli olması için replace ile yönlendir
@@ -4236,6 +4290,7 @@ return (
     {showCountdown && (
       <GameCountdown 
         onComplete={handleCountdownComplete}
+        serverStartTime={countdownServerTime}
       />
     )}
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 relative overflow-hidden letters-background"
@@ -4698,7 +4753,20 @@ return (
                   // Oyun durumunu tamamen sıfırla
                   resetGameForRematch();
                   // Yeni oyun başlatması için küçük gecikme
-                  setTimeout(() => {
+                  setTimeout(async () => {
+                    // 🎯 SERVER-SIDE COUNTDOWN
+                    if (currentRoom?.id) {
+                      try {
+                        const { data, error } = await supabase.rpc('start_game_countdown', {
+                          p_room_id: currentRoom.id
+                        });
+                        if (!error && data) {
+                          setCountdownServerTime(data);
+                        }
+                      } catch (err) {
+                        console.error('Countdown error:', err);
+                      }
+                    }
                     setShowCountdown(true);
                   }, 500);
                 }

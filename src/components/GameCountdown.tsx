@@ -4,9 +4,10 @@ import { cn } from '@/lib/utils';
 interface GameCountdownProps {
   onComplete: () => void;
   className?: string;
+  serverStartTime?: string | null; // Server timestamp for sync
 }
 
-const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
+const GameCountdown = ({ onComplete, className, serverStartTime }: GameCountdownProps) => {
   const [count, setCount] = useState(5);
   const [isVisible, setIsVisible] = useState(false);
   const [showStart, setShowStart] = useState(false);
@@ -76,21 +77,56 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
     }
   };
 
-  // İlk başlatma için useEffect
+  // 🎯 SERVER-SIDE COUNTDOWN SYNC
   useEffect(() => {
-    const initialTimer = setTimeout(() => {
-      setHasStarted(true);
-      setIsVisible(true);
-    }, 1000);
+    if (!serverStartTime) {
+      // Fallback to client-side if no server time
+      const initialTimer = setTimeout(() => {
+        setHasStarted(true);
+        setIsVisible(true);
+      }, 1000);
+      return () => clearTimeout(initialTimer);
+    }
 
-    return () => clearTimeout(initialTimer);
-  }, []);
+    // Calculate countdown based on server timestamp
+    const startTime = new Date(serverStartTime).getTime();
+    setHasStarted(true);
+    setIsVisible(true);
 
+    const updateCountdown = () => {
+      const now = Date.now();
+      const elapsed = Math.floor((now - startTime) / 1000);
+      const remaining = Math.max(0, 5 - elapsed);
+
+      if (remaining > 0) {
+        setCount(remaining);
+        if (remaining !== count) {
+          playCountdownSound();
+        }
+      } else if (remaining === 0 && !showStart) {
+        setCount(0);
+        playStartSound();
+        setShowStart(true);
+        setTimeout(() => {
+          setIsVisible(false);
+          setTimeout(() => {
+            onComplete();
+          }, 200);
+        }, 1000);
+      }
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 100);
+
+    return () => clearInterval(interval);
+  }, [serverStartTime, onComplete]);
+
+  // Client-side fallback countdown (if no server time)
   useEffect(() => {
-    if (!hasStarted) return;
+    if (serverStartTime || !hasStarted) return;
 
     if (count > 0) {
-      // Ses çalma - daha kısa gecikme ile
       const soundTimer = setTimeout(() => {
         playCountdownSound();
       }, 50);
@@ -108,19 +144,17 @@ const GameCountdown = ({ onComplete, className }: GameCountdownProps) => {
         clearTimeout(soundTimer);
       };
     } else if (count === 0 && !showStart) {
-      // Önce sesi çal, sonra state'i güncelle
       playStartSound();
       setShowStart(true);
       
-      // Yazıyı kısa göster ama sesi çalmaya devam et
       setTimeout(() => {
         setIsVisible(false);
         setTimeout(() => {
           onComplete();
         }, 200);
-      }, 1000); // 1 saniye - daha kısa ama sesin çalmasına izin ver
+      }, 1000);
     }
-  }, [count, showStart, onComplete, hasStarted]);
+  }, [count, showStart, onComplete, hasStarted, serverStartTime]);
 
   // Henüz başlamamışsa hiçbir şey gösterme
   if (!hasStarted) return null;
