@@ -246,15 +246,19 @@ const sendRematchRequest = useCallback(async (_roomCode: string, gameType: 'time
   console.log('🔄 Tekrar oyun isteği gönderiliyor...', {
     from: user.id.slice(-8),
     to: opponent.user_id.slice(-8),
-    gameType
+    gameType,
+    currentMode: currentRoom?.game_mode
   });
   
   try {
-    // Her rematch için yeni ve boş bir oda oluştur (createRoom'a bağlı kalmadan)
+    // Her rematch için yeni ve boş bir oda oluştur
     const code = generateRoomCode();
-    const mode = `private-room-${gameType}`;
+    
+    // Mevcut moddan base mode'u al (private-room veya random-match)
+    const baseMode = currentRoom?.game_mode?.includes('random-match') ? 'random-match' : 'private-room';
+    const mode = `${baseMode}-${gameType}`;
 
-    // Rastgele grid üret (küçük kopya)
+    // Rastgele grid üret
     const letterPool = ['A','A','A','A','A','A','A','A','E','E','E','E','E','E','E','İ','İ','İ','İ','İ','İ','I','I','I','I','I','O','O','O','O','O','U','U','U','U','Ü','Ü','Ü','Ö','Ö','Ö','L','L','L','L','L','N','N','N','N','N','R','R','R','R','R','K','K','K','K','M','M','M','M','T','T','T','T','S','S','S','S','D','D','D','Y','Y','Y','B','B','B','C','C','Ç','Ç','F','F','G','G','Ğ','Ğ','H','H','J','P','P','Ş','Ş','V','V','Z'];
     const grid: string[][] = [];
     for (let i = 0; i < 4; i++) {
@@ -321,15 +325,11 @@ const sendRematchRequest = useCallback(async (_roomCode: string, gameType: 'time
       
     if (error) throw error;
     
-    console.log('🔄 Tekrar oyun isteği gönderildi:', data.id, 'room:', code);
-    
-    // Test için hemen dinleyici kurma durumunu kontrol et
-    console.log('🔍 Real-time dinleyici durumu kontrol ediliyor...');
-    
-    // Kısa bir süre sonra test isteği gönder
-    setTimeout(() => {
-      console.log('🧪 Test için manuel istek gönderiliyor...');
-    }, 1000);
+    console.log('🔄 Tekrar oyun isteği gönderildi:', {
+      requestId: data.id,
+      room: code,
+      mode: mode
+    });
     
     // Push notification gönder (opsiyonel)
     try {
@@ -356,7 +356,7 @@ const sendRematchRequest = useCallback(async (_roomCode: string, gameType: 'time
     console.error('❌ Tekrar oyun isteği hatası:', error);
     throw error;
   }
-}, [user, participants, toast, setCurrentRoom]);
+}, [user, participants, lastOpponent, currentRoom, toast, setCurrentRoom]);
   
 const respondRematchRequest = useCallback(async (requestId: string, accepted: boolean) => {
   if (!user) return;
