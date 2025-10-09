@@ -62,7 +62,7 @@ const PrivateRoomWaitingPage = () => {
             
             channel.unsubscribe();
             // DIREKT oyun sayfasına yönlendir
-            navigate(`/game/random-match?room=${roomId}&type=${gameType}`);
+            navigate(`/game/private-room?room=${roomId}&type=${gameType}`);
           }
         },
       )
