@@ -207,7 +207,7 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
       const savedGameType = (localStorage.getItem(`room_type_${joinCode.toUpperCase()}`) as 'timed' | 'score') || 'timed';
       
       // DIREKT oyun sayfasına yönlendir
-      navigate(`/game/random-match?room=${realMatchId}&type=${savedGameType}`);
+      navigate(`/game/private-room?room=${realMatchId}&type=${savedGameType}`);
       onClose();
     } catch (error: any) {
       console.error('Error joining room:', error);
