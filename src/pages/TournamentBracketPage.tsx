@@ -271,6 +271,19 @@ const TournamentBracketPage = () => {
       }
 
       if (allCompleted && round < 3) {
+        // Bir sonraki tur zaten oluşturulmuş mu kontrol et (çift çağrıyı önle)
+        const { data: nextRoundMatches } = await supabase
+          .from("tournament_matches")
+          .select("id")
+          .eq("tournament_id", tournamentId)
+          .eq("round", round + 1)
+          .limit(1);
+
+        if (nextRoundMatches && nextRoundMatches.length > 0) {
+          console.log(`⚠️ Round ${round + 1} already exists, skipping advancement`);
+          return;
+        }
+
         console.log(`✅ Round ${round} completed, advancing to round ${round + 1}`);
 
         // Tüm maçlar tamamlandıysa advance fonksiyonunu çağır
@@ -334,50 +347,7 @@ const TournamentBracketPage = () => {
     }
   }, [matches, tournamentId, currentTournament, user, playSpecialSound, showChampion, showEliminated]);
 
-  // Tur ilerletme mantığı (şampiyon kartlarından ayrı)
-  useEffect(() => {
-    if (!tournamentId || !currentTournament) return;
-    const round = currentTournament.current_round || 1;
-
-    // Bu turdaki tüm maçlar tamamlandı mı?
-    const roundMatches = matches.filter((m) => m.round === round);
-    if (roundMatches.length === 0) return;
-
-    const allCompleted = roundMatches.every((m) => m.status === "completed");
-    if (!allCompleted) return;
-
-    // Final turu tamamlandıysa turnuvayı bitir
-    if (round === 3) {
-      supabase
-        .from("tournaments")
-        .update({ status: "completed", finished_at: new Date().toISOString() })
-        .eq("id", tournamentId);
-      return;
-    }
-
-    // Çift çağrıyı önlemek için: bir sonraki tur zaten oluşturulmuş mu?
-    supabase
-      .from("tournament_matches")
-      .select("id")
-      .eq("tournament_id", tournamentId)
-      .eq("round", round + 1)
-      .limit(1)
-      .then(async ({ data }) => {
-        try {
-          if (!data || data.length === 0) {
-            // Sadece turu ilerlet; maçların başlamasını 10 sn sayaca bırak
-            const { data: result } = await supabase.rpc("advance_tournament_round", {
-              p_tournament_id: tournamentId,
-            });
-            if (result && (result as any).success) {
-              fetchTournamentDetails(tournamentId);
-            }
-          }
-        } catch (e) {
-          console.error("Auto-advance error:", e);
-        }
-      });
-  }, [matches, currentTournament?.current_round, tournamentId]);
+  // REMOVED: Duplicate round advancement logic moved to checkAndAdvanceRound
 
   // Countdown for match start (senkronize, DB zamanına göre)
   useEffect(() => {
@@ -456,6 +426,7 @@ const TournamentBracketPage = () => {
   }, []);
 
   // Otomatik oyuncu yönlendirme: Kullanıcı maçı başladıysa oyuna gir
+  // SADECE countdown 0'a ulaştıktan sonra yönlendir
   useEffect(() => {
     if (!user || navigatedToGame || !tournamentId) return;
 
@@ -480,12 +451,13 @@ const TournamentBracketPage = () => {
       return isInProgress && (isPlayer1 || isPlayer2);
     });
 
-    if (myInProgressMatch) {
-      console.log("✅ Found user match, navigating:", myInProgressMatch.id.slice(-8));
+    // SADECE countdown 0 ise oyuna yönlendir
+    if (myInProgressMatch && countdown === 0) {
+      console.log("✅ Found user match and countdown finished, navigating:", myInProgressMatch.id.slice(-8));
       setNavigatedToGame(true);
       navigate(`/game?match=${myInProgressMatch.id}&tournament=${tournamentId}`);
     }
-  }, [matches, user, navigatedToGame, tournamentId, navigate]);
+  }, [matches, user, navigatedToGame, tournamentId, navigate, countdown]);
 
   // Şampiyon ekranında 10 saniye sonra otomatik listeye dön
   useEffect(() => {
