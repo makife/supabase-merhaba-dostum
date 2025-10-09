@@ -1431,6 +1431,27 @@ useEffect(() => {
     }
 
     console.log('🎯 Loading private room data:', roomId);
+    
+    // Grid'i yükle
+    const { data: roomData } = await supabase
+      .from('game_rooms')
+      .select('current_grid')
+      .eq('id', roomId)
+      .single();
+    
+    if (roomData?.current_grid) {
+      console.log('📊 Private room grid yüklendi');
+      const grid = [];
+      for (let i = 0; i < 4; i++) {
+        const row = [];
+        for (let j = 0; j < 4; j++) {
+          row.push(roomData.current_grid[i * 4 + j] || 'A');
+        }
+        grid.push(row);
+      }
+      setGameGrid(grid);
+    }
+    
     const joined = await joinRoom(roomId);
     if (!joined) {
       toast({ title: 'Bağlantı Hatası', description: 'Oyun odasına bağlanılamadı', variant: 'destructive' });
@@ -1439,7 +1460,7 @@ useEffect(() => {
     }
   };
   init();
-}, [gameMode, user?.id, joinRoom, navigate, searchParams, toast]);
+}, [gameMode, user?.id, joinRoom, navigate, searchParams, toast, setGameGrid]);
 
 // Tournament match bilgisini al - SADECE gameMode 'tournament' ise
 useEffect(() => {

@@ -390,18 +390,19 @@ const respondRematchRequest = useCallback(async (requestId: string, accepted: bo
     console.log('✅ Tekrar oyun isteğine yanıt verildi:', accepted);
     
     if (accepted && request.room_code) {
-      console.log('🎮 Odaya yönlendiriliyor:', request.room_code);
+      console.log('🎮 Rematch kabul edildi, yeni oyun başlatılıyor');
       
       // Odayı al
       const { data: roomData } = await supabase
         .from('game_rooms')
-        .select('id')
+        .select('id, current_grid')
         .eq('room_code', request.room_code)
         .single();
       
       if (roomData) {
-        // Bekleme sayfasına roomId ile yönlendir
-        navigate(`/private-room-waiting?code=${request.room_code}&roomId=${roomData.id}&gameType=${request.game_type}`);
+        // Direkt oyun sayfasına git, bekleme sayfasına değil
+        console.log('🎮 Direkt oyun sayfasına yönlendiriliyor');
+        navigate(`/game/private-room?room=${roomData.id}&type=${request.game_type}`);
       }
     }
     
