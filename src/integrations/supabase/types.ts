@@ -1453,6 +1453,10 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
+      check_and_finish_expired_games: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       check_and_refresh_credits: {
         Args: { user_id: string }
         Returns: undefined
