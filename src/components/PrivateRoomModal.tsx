@@ -130,8 +130,8 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
         description: `Kod: ${shortCode}`,
       });
       
-      // Bekleme sayfasına yönlendir
-      navigate(`/private-room-waiting?code=${shortCode}&roomId=${roomId}&gameType=${gameType}`);
+      // Direkt oyun sayfasına yönlendir
+      navigate(`/game/private-room?room=${roomId}&type=${gameType}`);
       onClose();
       
     } catch (error: any) {
