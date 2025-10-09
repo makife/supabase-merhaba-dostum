@@ -20,12 +20,29 @@ const PrivateRoomWaitingPage = () => {
   const gameType = searchParams.get("gameType") as "timed" | "score";
 
   const [copied, setCopied] = useState(false);
+  const [navigated, setNavigated] = useState(false);
 
   useEffect(() => {
     if (!roomCode || !roomId || !user) {
       navigate("/");
       return;
     }
+
+    let unsubscribed = false;
+
+    const checkAndNavigate = async () => {
+      const { data: parts } = await supabase
+        .from("game_participants")
+        .select("*")
+        .eq("room_id", roomId);
+      if (!unsubscribed && parts && parts.length >= 2 && !navigated) {
+        setNavigated(true);
+        navigate(`/game/private-room?room=${roomId}&type=${gameType}`);
+      }
+    };
+
+    // İlk yüklemede mevcut katılımcıları kontrol et (gecikmeli insert kaçırılabilir)
+    checkAndNavigate();
 
     // Realtime ile participants tablosunu dinle
     const channel = supabase
@@ -38,40 +55,19 @@ const PrivateRoomWaitingPage = () => {
           table: "game_participants",
           filter: `room_id=eq.${roomId}`,
         },
-          async (payload) => {
+        async (payload) => {
           console.log("👥 Yeni katılımcı:", payload);
-
-          // Toplam katılımcı sayısını kontrol et
-          const { data: participants } = await supabase.from("game_participants").select("*").eq("room_id", roomId);
-
-          if (participants && participants.length >= 2) {
-            console.log("✅ 2 oyuncu tamam, oyun başlıyor!");
-            
-            // 🎯 SERVER-SIDE COUNTDOWN: Oyun başlamadan önce countdown başlat
-            try {
-              const { data: countdownTime, error: countdownError } = await supabase.rpc('start_game_countdown', {
-                p_room_id: roomId
-              });
-              
-              if (!countdownError && countdownTime) {
-                console.log('🎯 Private room countdown başlatıldı:', countdownTime);
-              }
-            } catch (err) {
-              console.error('Countdown başlatma hatası:', err);
-            }
-            
-            channel.unsubscribe();
-            // DIREKT oyun sayfasına yönlendir
-            navigate(`/game/private-room?room=${roomId}&type=${gameType}`);
-          }
+          if (navigated) return;
+          await checkAndNavigate();
         },
       )
       .subscribe();
 
     return () => {
+      unsubscribed = true;
       channel.unsubscribe();
     };
-  }, [roomCode, roomId, gameType, user, navigate]);
+  }, [roomCode, roomId, gameType, user, navigate, navigated]);
 
   const copyRoomCode = async () => {
     if (roomCode) {

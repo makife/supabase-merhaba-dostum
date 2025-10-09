@@ -119,6 +119,7 @@ const GamePage = ({
   const timerStartedRef = useRef(false);
   const recentSubmissionsRef = useRef<Set<string>>(new Set());
   const randomMatchInitRef = useRef(false);
+  const privateRoomInitRef = useRef(false);
   const serverMatchStartRef = useRef<number | null>(null);
   const syncSuppressUntilRef = useRef<number>(0);
   const countdownCompletedAtRef = useRef<number | null>(null);
@@ -1411,6 +1412,34 @@ useEffect(() => {
 
   initializeRandomMatch();
 }, [gameMode, user?.id, joinRoom, navigate, toast, setGameGrid, generateRandomGrid]);
+
+// Initialize private room from URL params
+useEffect(() => {
+  const init = async () => {
+    if (gameMode !== 'private-room') return;
+    if (!user?.id) return;
+    if (privateRoomInitRef.current) return;
+    privateRoomInitRef.current = true;
+
+    const roomId = searchParams.get('room');
+    const type = searchParams.get('type') as 'timed' | 'score';
+
+    if (!roomId || !type) {
+      console.error('❌ Private room için room veya type eksik');
+      navigate('/');
+      return;
+    }
+
+    console.log('🎯 Loading private room data:', roomId);
+    const joined = await joinRoom(roomId);
+    if (!joined) {
+      toast({ title: 'Bağlantı Hatası', description: 'Oyun odasına bağlanılamadı', variant: 'destructive' });
+      navigate('/');
+      return;
+    }
+  };
+  init();
+}, [gameMode, user?.id, joinRoom, navigate, searchParams, toast]);
 
 // Tournament match bilgisini al - SADECE gameMode 'tournament' ise
 useEffect(() => {
