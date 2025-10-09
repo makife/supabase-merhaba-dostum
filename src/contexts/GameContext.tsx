@@ -430,6 +430,60 @@ const generateRoomCode = () => {
   return result;
 };
 
+  // Real-time listener for rematch requests (for sender)
+  useEffect(() => {
+    if (!user) return;
+    
+    console.log('🔔 Rematch gönderen için dinleyici kuruluyor...');
+    
+    const channel = supabase
+      .channel(`rematch_sender_${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'rematch_requests',
+          filter: `from_user_id=eq.${user.id}`
+        },
+        async (payload: any) => {
+          console.log('🔔 Rematch durumu güncellendi (gönderen):', payload);
+          
+          const newRequest = payload.new as RematchRequest;
+          
+          if (newRequest.status === 'accepted') {
+            console.log('✅ Rematch kabul edildi! Oyuna yönlendiriliyor...');
+            
+            // Odayı al
+            const { data: roomData } = await supabase
+              .from('game_rooms')
+              .select('id')
+              .eq('room_code', newRequest.room_code)
+              .single();
+            
+            if (roomData) {
+              toast({
+                title: '🎮 Kabul Edildi!',
+                description: 'Rakibiniz kabul etti, oyun başlıyor...',
+              });
+              navigate(`/game/private-room?room=${roomData.id}&type=${newRequest.game_type}`);
+            }
+          } else if (newRequest.status === 'rejected') {
+            toast({
+              title: '❌ Reddedildi',
+              description: 'Rakibiniz tekrar oyun isteğini reddetti',
+            });
+          }
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      console.log('🔔 Rematch gönderen dinleyicisi kapatılıyor');
+      supabase.removeChannel(channel);
+    };
+  }, [user, navigate]);
+
   // Cleanup old rooms
   const cleanupOldRooms = useCallback(async () => {
   try {
