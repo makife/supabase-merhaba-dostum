@@ -4175,7 +4175,7 @@ if (gameEnded) {
   );
 }
 
-if (waitingForPlayer) {
+if (waitingForPlayer && gameMode !== 'private-room') {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background to-muted">
       <Card className="w-full max-w-md text-center">
@@ -4185,12 +4185,10 @@ if (waitingForPlayer) {
               <User className="w-8 h-8 text-white" />
             </div>
             <h2 className="text-2xl font-bold">
-              {gameMode === 'private-room' ? 'Özel Oda' : 'Rastgele Eşleşme'}
+              Eşleşme Bekleniyor
             </h2>
             <p className="text-muted-foreground">
-              {gameMode === 'private-room' 
-                ? 'İkinci oyuncuyu bekliyoruz...' 
-                : 'Rakip aranıyor...'}
+              Rakip aranıyor...
             </p>
           
             {/* Mevcut katılımcıları göster - SADECE GERÇEK OYUNCULAR */}
@@ -4211,34 +4209,6 @@ if (waitingForPlayer) {
               ))}
             </div>
           
-{gameMode === 'private-room' && (
-  <>
-    <div className="bg-muted rounded-lg p-4">
-      <p className="text-sm font-medium">Oda Kodu</p>
-      <div className="flex items-center justify-center space-x-2 mt-2">
-        <span className="text-2xl font-mono font-bold">{currentRoom?.room_code}</span>
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={async () => {
-            if (currentRoom?.room_code) {
-              await navigator.clipboard.writeText(currentRoom.room_code);
-              toast({
-                title: 'Kopyalandı!',
-                description: 'Oda kodu panoya kopyalandı',
-              });
-            }
-          }}
-        >
-          Kopyala
-        </Button>
-      </div>
-    </div>
-    <p className="text-sm text-muted-foreground">
-      Bu kodu arkadaşınızla paylaşın
-    </p>
-  </>
-)}
           
             {/* Debug bilgisi (development modunda) */}
             {process.env.NODE_ENV === 'development' && (
