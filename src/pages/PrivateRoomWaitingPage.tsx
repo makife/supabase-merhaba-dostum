@@ -111,28 +111,28 @@ const PrivateRoomWaitingPage = () => {
         <Card className="bg-white/10 backdrop-blur-md border-white/20 mb-6">
           <CardContent className="p-8">
             <div className="text-center space-y-6">
-              <div className="p-8 bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-2xl border-2 border-yellow-400/30 backdrop-blur-sm">
+              <div className="p-4 sm:p-8 bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-2xl border-2 border-yellow-400/30 backdrop-blur-sm">
                 <p className="text-sm font-semibold text-yellow-300 mb-4">
                   Oda Kodu
                 </p>
-                <div className="flex items-center justify-center gap-4">
-                  <span className="text-5xl font-bold font-mono text-white tracking-[0.3em]">
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+                  <span className="text-3xl sm:text-5xl font-bold font-mono text-white tracking-[0.2em] sm:tracking-[0.3em] break-all">
                     {roomCode}
                   </span>
                   <Button
                     variant="outline"
                     size="lg"
                     onClick={copyRoomCode}
-                    className="bg-white/10 border-white/20 hover:bg-white/20 text-white h-14 w-14"
+                    className="bg-white/10 border-white/20 hover:bg-white/20 text-white h-12 w-12 sm:h-14 sm:w-14 flex-shrink-0"
                   >
                     {copied ? (
-                      <Check className="w-6 h-6" />
+                      <Check className="w-5 h-5 sm:w-6 sm:h-6" />
                     ) : (
-                      <Copy className="w-6 h-6" />
+                      <Copy className="w-5 h-5 sm:w-6 sm:h-6" />
                     )}
                   </Button>
                 </div>
-                <p className="text-sm text-yellow-200 mt-4">
+                <p className="text-xs sm:text-sm text-yellow-200 mt-4">
                   6 haneli kodu arkadaşınla paylaş
                 </p>
               </div>
