@@ -130,8 +130,8 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
         description: `Kod: ${shortCode}`,
       });
       
-      // Direkt oyun sayfasına yönlendir
-      navigate(`/game/private-room?room=${roomId}&type=${gameType}`);
+      // Mor temalı bekleme sayfasına yönlendir
+      navigate(`/private-room-waiting?roomCode=${shortCode}&roomId=${roomId}&gameType=${gameType}`);
       onClose();
       
     } catch (error: any) {
@@ -206,8 +206,8 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
       // gameType'ı localStorage'dan al
       const savedGameType = (localStorage.getItem(`room_type_${joinCode.toUpperCase()}`) as 'timed' | 'score') || 'timed';
       
-      // DIREKT oyun sayfasına yönlendir
-      navigate(`/game/private-room?room=${realMatchId}&type=${savedGameType}`);
+      // Mor temalı bekleme sayfasına yönlendir
+      navigate(`/private-room-waiting?roomCode=${joinCode.toUpperCase()}&roomId=${realMatchId}&gameType=${savedGameType}`);
       onClose();
     } catch (error: any) {
       console.error('Error joining room:', error);
