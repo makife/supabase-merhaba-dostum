@@ -69,9 +69,15 @@ const initializeNakamaGame = async () => {
     (socket as any).onmatchpresence = (presence: any) => {
       console.log('👥 Match presence event:', presence);
       if (presence.joins && presence.joins.length > 0) {
-        setTotalPlayers(prev => Math.max(1, prev + presence.joins.length));
+        console.log(`➕ ${presence.joins.length} oyuncu katıldı`);
+        setTotalPlayers(prev => {
+          const newCount = prev + presence.joins.length;
+          console.log(`📊 Oyuncu sayısı: ${prev} -> ${newCount}`);
+          return newCount;
+        });
       }
       if (presence.leaves && presence.leaves.length > 0) {
+        console.log(`➖ ${presence.leaves.length} oyuncu ayrıldı`);
         setTotalPlayers(prev => Math.max(1, prev - presence.leaves.length));
       }
     };
@@ -96,8 +102,8 @@ const initializeNakamaGame = async () => {
       console.log('ℹ️ Already joined as host, skipping joinMatch for', cleanUrlId);
       const realMatchId = cleanUrlId;
       setJoinedMatchId(realMatchId);
-      // ensure at least self is counted
-      setTotalPlayers(prev => Math.max(1, prev));
+      // Host olarak başlangıçta 1 oyuncu var (kendimiz)
+      setTotalPlayers(1);
       const readyMsg = JSON.stringify({ type: 'player_ready', userId: user.id });
       const encoder = new TextEncoder();
       (socket as any).sendMatchState(realMatchId, 1, encoder.encode(readyMsg));
