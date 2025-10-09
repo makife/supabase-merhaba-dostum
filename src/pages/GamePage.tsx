@@ -533,6 +533,7 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
     const player2Score = isPlayer1 ? finalOpponentScore : finalUserScore;
     
     console.log('🏆 Tournament match completion:', {
+      matchId: tournamentMatch.id,
       user: user.id,
       isPlayer1,
       player1Score,
@@ -544,6 +545,15 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
       finalOpponentScore,
       wasTie: userScore === opponentScore
     });
+    
+    // ✅ Bu maçı tamamlanmış olarak işaretle (tekrar oynamayı engelle)
+    const completedMatchKey = `tournament_match_completed_${tournamentMatch.id}`;
+    localStorage.setItem(completedMatchKey, JSON.stringify({
+      matchId: tournamentMatch.id,
+      tournamentId: tournamentMatch.tournament_id,
+      completedAt: new Date().toISOString(),
+      winner: winnerId
+    }));
     
     // ✅ Frontend state'ini GÜNCEL skorlarla güncelle
     setPlayerScore(finalUserScore);
@@ -1414,6 +1424,21 @@ useEffect(() => {
     console.log('🎯 URL parametreleri:', { matchId, tournamentId });
     
     if (matchId) {
+      // 🛡️ TURNUVA MAÇI KORUMASI: Bu maç daha önce tamamlandıysa tekrar oynama
+      const completedKey = `tournament_match_completed_${matchId}`;
+      const completed = localStorage.getItem(completedKey);
+      if (completed) {
+        const data = JSON.parse(completed);
+        console.warn('⚠️ Bu turnuva maçı zaten tamamlanmış:', data);
+        toast({
+          title: "⚠️ Maç Zaten Bitti",
+          description: "Bu maç daha önce tamamlandı. Lütfen bir sonraki tura geçin.",
+          variant: "destructive"
+        });
+        setTimeout(() => navigate('/tournament'), 2000);
+        return;
+      }
+      
       try {
         // Maç bilgilerini al
         const { data: matchData, error } = await supabase
@@ -1428,6 +1453,18 @@ useEffect(() => {
         }
 
         if (matchData) {
+          // Maç zaten completed ise tekrar oynama
+          if (matchData.status === 'completed') {
+            console.warn('⚠️ Bu maç zaten tamamlanmış (DB):', matchData);
+            toast({
+              title: "⚠️ Maç Zaten Bitti",
+              description: "Bu maç daha önce tamamlandı.",
+              variant: "destructive"
+            });
+            setTimeout(() => navigate('/tournament'), 2000);
+            return;
+          }
+          
           console.log('✅ Turnuva maçı yüklendi:', matchData.id);
           setTournamentMatch(matchData);
           
