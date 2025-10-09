@@ -362,6 +362,20 @@ const respondRematchRequest = useCallback(async (requestId: string, accepted: bo
   if (!user) return;
   
   try {
+    console.log('📝 Rematch yanıtı veriliyor:', { requestId, accepted });
+    
+    // İstek detaylarını al
+    const { data: request } = await supabase
+      .from('rematch_requests')
+      .select('*')
+      .eq('id', requestId)
+      .single();
+    
+    if (!request) {
+      console.error('❌ Rematch request bulunamadı');
+      return;
+    }
+    
     const { error } = await supabase
       .from('rematch_requests')
       .update({
@@ -373,14 +387,21 @@ const respondRematchRequest = useCallback(async (requestId: string, accepted: bo
       
     if (error) throw error;
     
-    console.log('Tekrar oyun isteğine yanıt verildi:', accepted);
+    console.log('✅ Tekrar oyun isteğine yanıt verildi:', accepted);
+    
+    if (accepted && request.room_code) {
+      console.log('🎮 Odaya yönlendiriliyor:', request.room_code);
+      // Odaya yönlendir
+      navigate(`/private-room-waiting?code=${request.room_code}&gameType=${request.game_type}`);
+    }
+    
     setCurrentRematchRequest(null);
     
   } catch (error) {
-    console.error('Tekrar oyun yanıt hatası:', error);
+    console.error('❌ Tekrar oyun yanıt hatası:', error);
     throw error;
   }
-}, [user, setCurrentRematchRequest]);
+}, [user, setCurrentRematchRequest, navigate]);
 
   // Helper function to determine game mode
   const getGameModeFromRoom = useCallback((room: GameRoom | null): string => {
@@ -1861,9 +1882,12 @@ useEffect(() => {
   getGameModeFromRoom
 ]);
 
-// Real-time rematch listener - iki yönlü dinleyici
+// Real-time rematch listener - iki yönlü dinleyici + timeout yönetimi
 useEffect(() => {
   if (!user) return;
+  
+  console.log('🔄 Rematch realtime listener kuruluyor...');
+  const timeoutMap = new Map<string, NodeJS.Timeout>();
   
   const rematchChannel = supabase
     .channel(`rematch-listener-${user.id}`)
@@ -1876,13 +1900,41 @@ useEffect(() => {
     }, (payload) => {
       const request = payload.new as RematchRequest;
       console.log('📨 Rematch isteği alındı:', request);
+      
       if (request.status === 'pending') {
         setCurrentRematchRequest(request);
         toast({
           title: '🔄 Tekrar Oyun İsteği',
-          description: 'Rakibiniz tekrar oyun istiyor!',
-          duration: 4000,
+          description: 'Rakibiniz tekrar oyun istiyor! 30 saniye içinde yanıt verin.',
+          duration: 5000,
         });
+        
+        // 30 saniye timeout başlat
+        const timeoutId = setTimeout(async () => {
+          console.log('⏰ Rematch timeout - istek iptal ediliyor:', request.id);
+          
+          // İsteği otomatik reddet
+          await supabase
+            .from('rematch_requests')
+            .update({ 
+              status: 'rejected',
+              responded_at: new Date().toISOString()
+            })
+            .eq('id', request.id);
+          
+          setCurrentRematchRequest(null);
+          
+          toast({
+            title: '⏰ Süre Doldu',
+            description: 'Tekrar oyun isteği zaman aşımına uğradı.',
+            variant: 'destructive',
+            duration: 3000,
+          });
+          
+          timeoutMap.delete(request.id);
+        }, 30000); // 30 saniye
+        
+        timeoutMap.set(request.id, timeoutId);
       }
     })
     // Benim gönderdiğim isteklerin yanıtlarını dinle
@@ -1895,12 +1947,24 @@ useEffect(() => {
       const request = payload.new as RematchRequest;
       console.log('📬 Gönderdiğim istek yanıtlandı:', request);
       
+      // Timeout'u temizle
+      const timeoutId = timeoutMap.get(request.id);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutMap.delete(request.id);
+      }
+      
       if (request.status === 'accepted') {
         toast({
           title: '✅ İstek Kabul Edildi!',
-          description: 'Rakibiniz tekrar oyunu kabul etti!',
+          description: 'Rakibiniz tekrar oyunu kabul etti, yönlendiriliyorsunuz...',
           duration: 3000,
         });
+        
+        // Kabul edildiğinde odaya yönlendir
+        if (request.room_code) {
+          navigate(`/private-room-waiting?code=${request.room_code}&gameType=${request.game_type}`);
+        }
       } else if (request.status === 'rejected') {
         toast({
           title: '❌ İstek Reddedildi',
@@ -1908,13 +1972,19 @@ useEffect(() => {
           duration: 3000,
         });
       }
+      
+      setCurrentRematchRequest(null);
     })
     .subscribe();
   
   return () => {
+    console.log('🔌 Rematch listener kapatılıyor...');
+    // Tüm timeout'ları temizle
+    timeoutMap.forEach(timeout => clearTimeout(timeout));
+    timeoutMap.clear();
     supabase.removeChannel(rematchChannel);
   };
-}, [user?.id, setCurrentRematchRequest, toast]);
+}, [user?.id, setCurrentRematchRequest, toast, navigate]);
 
 useEffect(() => {
   if (!currentRoom || !currentRoom.game_mode.includes('private-room')) return;
