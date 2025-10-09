@@ -391,8 +391,18 @@ const respondRematchRequest = useCallback(async (requestId: string, accepted: bo
     
     if (accepted && request.room_code) {
       console.log('🎮 Odaya yönlendiriliyor:', request.room_code);
-      // Odaya yönlendir
-      navigate(`/private-room-waiting?code=${request.room_code}&gameType=${request.game_type}`);
+      
+      // Odayı al
+      const { data: roomData } = await supabase
+        .from('game_rooms')
+        .select('id')
+        .eq('room_code', request.room_code)
+        .single();
+      
+      if (roomData) {
+        // Bekleme sayfasına roomId ile yönlendir
+        navigate(`/private-room-waiting?code=${request.room_code}&roomId=${roomData.id}&gameType=${request.game_type}`);
+      }
     }
     
     setCurrentRematchRequest(null);
