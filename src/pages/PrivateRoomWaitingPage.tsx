@@ -38,7 +38,7 @@ const PrivateRoomWaitingPage = () => {
           table: "game_participants",
           filter: `room_id=eq.${roomId}`,
         },
-        async (payload) => {
+          async (payload) => {
           console.log("👥 Yeni katılımcı:", payload);
 
           // Toplam katılımcı sayısını kontrol et
@@ -47,8 +47,8 @@ const PrivateRoomWaitingPage = () => {
           if (participants && participants.length >= 2) {
             console.log("✅ 2 oyuncu tamam, oyun başlıyor!");
             channel.unsubscribe();
-            // Oyun sayfasına yönlendir
-            navigate(`/nakama-game?matchId=${roomId}&gameType=${gameType}`);
+            // DIREKT oyun sayfasına yönlendir
+            navigate(`/game/random-match?room=${roomId}&type=${gameType}`);
           }
         },
       )

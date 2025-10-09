@@ -206,8 +206,8 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
       // gameType'ı localStorage'dan al
       const savedGameType = (localStorage.getItem(`room_type_${joinCode.toUpperCase()}`) as 'timed' | 'score') || 'timed';
       
-      // NakamaGamePage'e yönlendir (host ile aynı akış)
-      navigate(`/nakama-game?matchId=${realMatchId}&gameType=${savedGameType}`);
+      // DIREKT oyun sayfasına yönlendir
+      navigate(`/game/random-match?room=${realMatchId}&type=${savedGameType}`);
       onClose();
     } catch (error: any) {
       console.error('Error joining room:', error);
