@@ -194,58 +194,52 @@ useEffect(() => {
   }, [messages]);
 
 
-// Bot hoşgeldin mesajı için ayrı useEffect - her açılışta gönder
+// Bot hoşgeldin mesajı - sadece kullanıcıya özel toast olarak göster
 useEffect(() => {
-  const sendBotWelcome = async () => {
+  const showBotWelcome = () => {
     if (!user?.id || !isOpen) return;
     
     try {
       // Son bot mesajı zamanını kontrol et
-      const lastBotMessageKey = `lastBotMessage_${user.id}`;
+      const lastBotMessageKey = `lastBotWelcome_${user.id}`;
       const lastBotTime = localStorage.getItem(lastBotMessageKey);
       const now = Date.now();
       const thirtyMinutes = 30 * 60 * 1000; // 30 dakika milisaniye cinsinden
       
-      // Eğer 30 dakika geçmemişse bot mesajı gönderme
+      // Eğer 30 dakika geçmemişse bot mesajı gösterme
       if (lastBotTime) {
         const timeDiff = now - parseInt(lastBotTime);
         if (timeDiff < thirtyMinutes) {
           const remainingMinutes = Math.ceil((thirtyMinutes - timeDiff) / 60000);
-          console.log(`🤖 Bot mesajı için ${remainingMinutes} dakika daha beklenmeli`);
+          console.log(`🤖 Bot hoşgeldin için ${remainingMinutes} dakika daha beklenmeli`);
           return;
         }
       }
       
-      console.log('🤖 Bot hoşgeldin mesajı gönderiliyor...');
+      console.log('🤖 Bot hoşgeldin mesajı gösteriliyor (sadece kullanıcıya özel)...');
       
-      const { error } = await supabase
-        .from('global_chat')
-        .insert({
-          user_id: null,
-          username: 'kelimeciBot',
-          message: 'Hoşgeldiniz! 🎉 Lütfen kurallar çerçevesinde sohbet ediniz. Küfür, argo ve hakaret içeren mesajlar otomatik olarak tespit edilir ve 2 gün sohbet yasağı uygulanır.',
-          avatar_url: '/bot-avatar.png'
-        });
-
-      if (error) {
-        console.error('❌ Bot mesajı gönderilemedi:', error);
-      } else {
-        console.log('✅ Bot hoşgeldin mesajı gönderildi!');
-        // Son bot mesajı zamanını kaydet
-        localStorage.setItem(lastBotMessageKey, now.toString());
-      }
+      // Global chat'e mesaj göndermek yerine toast ile göster
+      toast.info('🤖 Hoşgeldiniz! 🎉 Lütfen kurallar çerçevesinde sohbet ediniz. Küfür, argo ve hakaret içeren mesajlar otomatik olarak tespit edilir ve 2 gün sohbet yasağı uygulanır.', {
+        duration: 8000,
+        position: 'top-center',
+      });
+      
+      // Son bot mesajı zamanını kaydet
+      localStorage.setItem(lastBotMessageKey, now.toString());
+      console.log('✅ Bot hoşgeldin mesajı gösterildi (toast)!');
     } catch (error) {
-      console.error('❌ Bot kontrolü hatası:', error);
+      console.error('❌ Bot hoşgeldin hatası:', error);
     }
   };
 
   // Chat açıldığında bot mesajı kontrolü yap
   if (isOpen && user?.id) {
     setTimeout(() => {
-      sendBotWelcome();
+      showBotWelcome();
     }, 1000); // 1 saniye gecikme ile
   }
 }, [isOpen, user?.id]);
+
 
 
 // Real-time subscription için ayrı bir useEffect
