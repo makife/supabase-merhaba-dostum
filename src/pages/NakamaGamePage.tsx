@@ -12,8 +12,8 @@ const NakamaGamePage = () => {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   
-  const matchId = searchParams.get('match');
-  const gameType = searchParams.get('type') as 'timed' | 'score';
+  const matchId = searchParams.get('matchId') || searchParams.get('match');
+  const gameType = (searchParams.get('gameType') || searchParams.get('type')) as 'timed' | 'score';
   const joinToken = searchParams.get('token');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
