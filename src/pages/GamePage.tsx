@@ -305,21 +305,15 @@ const generateTournamentGrid = useCallback((seed: string): string[][] => {
     return Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => ''));
   }
   
-  // Normal room grid kontrolü
-  if (currentRoom?.current_grid) {
-    const flatGrid = currentRoom.current_grid;
-    const grid: string[][] = [];
-    for (let i = 0; i < 4; i++) {
-      grid.push(flatGrid.slice(i * 4, (i + 1) * 4));
-    }
-    return grid;
-  }
-  
+  // ÖZEL ODA VE RANDOM MATCH: HEMEN PLACEHOLDER GRID KULLAN
+  // Supabase'den senkronize edilecek
   if (gameMode === 'random-match' || gameMode === 'private-room') {
-    // Oda verisi gelene kadar placeholder grid kullan (farklı grid oluşmasını engeller)
+    console.log('🎲 Private/Random room: Waiting for server grid...');
     return Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => ''));
   }
   
+  // Sadece vs-computer modunda random grid
+  console.log('🤖 vs-computer: Generating random grid');
   return generateRandomGrid();
 });
 
@@ -334,7 +328,11 @@ useEffect(() => {
 const initialGridSyncRef = useRef(false);
 useEffect(() => {
   if (gameMode === 'tournament') return;
-  if (!currentRoom?.current_grid) return;
+  if (gameMode !== 'random-match' && gameMode !== 'private-room') return;
+  if (!currentRoom?.current_grid) {
+    console.log('⏳ Waiting for room grid data...');
+    return;
+  }
   
   // Sadece ilk kez grid senkronize et - joker kullanımından sonra tekrar senkronize etme
   if (initialGridSyncRef.current) return;
@@ -344,6 +342,13 @@ useEffect(() => {
   for (let i = 0; i < 4; i++) {
     grid.push(flat.slice(i * 4, (i + 1) * 4));
   }
+  
+  console.log('🎲 Grid senkronize edildi:', {
+    mode: gameMode,
+    roomId: currentRoom.id,
+    gridPreview: grid[0]
+  });
+  
   setGameGrid(grid);
   initialGridSyncRef.current = true;
 }, [gameMode, currentRoom?.id, currentRoom?.current_grid]);
