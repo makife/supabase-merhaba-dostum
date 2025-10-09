@@ -507,12 +507,30 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
     const isPlayer1 = String(tournamentMatch.player1_id) === String(user.id);
     const opponentId = isPlayer1 ? tournamentMatch.player2_id : tournamentMatch.player1_id;
     
-    // Kazananı belirle
-    const winnerId = userScore > opponentScore ? user.id : opponentId;
+    // BERABERLİK DURUMUNDA: Rastgele kazanan belirle ve ona 1 puan ekle
+    let finalUserScore = userScore;
+    let finalOpponentScore = opponentScore;
+    let winnerId: string;
+    
+    if (userScore === opponentScore) {
+      console.log('⚖️ BERABERLIK! Rastgele kazanan belirleniyor...');
+      const userWinsOnTie = Math.random() < 0.5;
+      if (userWinsOnTie) {
+        finalUserScore += 1;
+        winnerId = user.id;
+        console.log('✅ Kullanıcı beraberliği kazandı (+1 puan)');
+      } else {
+        finalOpponentScore += 1;
+        winnerId = opponentId as string;
+        console.log('❌ Rakip beraberliği kazandı (+1 puan)');
+      }
+    } else {
+      winnerId = userScore > opponentScore ? user.id : opponentId as string;
+    }
     
     // Skorları doğru oyunculara ata
-    const player1Score = isPlayer1 ? userScore : opponentScore;
-    const player2Score = isPlayer1 ? opponentScore : userScore;
+    const player1Score = isPlayer1 ? finalUserScore : finalOpponentScore;
+    const player2Score = isPlayer1 ? finalOpponentScore : finalUserScore;
     
     console.log('🏆 Tournament match completion:', {
       user: user.id,
@@ -520,36 +538,37 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
       player1Score,
       player2Score,
       winnerId,
-      userScore,
-      opponentScore
+      originalUserScore: userScore,
+      originalOpponentScore: opponentScore,
+      finalUserScore,
+      finalOpponentScore,
+      wasTie: userScore === opponentScore
     });
     
-    // ✅ Frontend state'ini doğru güncelle
-    setPlayerScore(userScore);
-    setOpponentScore(opponentScore);
+    // ✅ Frontend state'ini GÜNCEL skorlarla güncelle
+    setPlayerScore(finalUserScore);
+    setOpponentScore(finalOpponentScore);
     setGameEnded(true);
     setShowResults(true);
     
     // ✅ Frontend kazanan belirleme - DOĞRU MANTIK
     console.log('🎯 Tournament winner determination:', {
-      userScore,
-      opponentScore,
-      comparison: userScore > opponentScore ? 'user wins' : userScore < opponentScore ? 'opponent wins' : 'tie'
+      finalUserScore,
+      finalOpponentScore,
+      winnerId,
+      userIsWinner: winnerId === user.id
     });
     
-    if (userScore > opponentScore) {
+    if (winnerId === user.id) {
       setWinner('player');
       playSound('gameWin');
       setTimeout(() => playCelebrationSound(), 500);
       console.log('✅ User WINS - Setting winner to player');
-    } else if (userScore < opponentScore) {
+    } else {
       setWinner('opponent');  
       playSound('gameLose');
       setTimeout(() => playGameLoseSound(), 500);
       console.log('❌ User LOSES - Setting winner to opponent');
-    } else {
-      setWinner('tie');
-      console.log('⚖️ TIE - This should not happen in tournament');
     }
     
     // Mevcut maçı tamamla
