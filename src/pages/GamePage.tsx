@@ -3303,6 +3303,35 @@ useEffect(() => {
   }
 }, [gameStarted, gameEnded]);
 
+// 🤖 vs-computer modunda otomatik countdown başlatma
+useEffect(() => {
+  if (gameMode === 'vs-computer' && !gameStarted && !showCountdown && !gameEnded) {
+    console.log('🤖 vs-computer mode - countdown başlatılıyor');
+    setWaitingForPlayer(false);
+    
+    // vs-computer modunda server countdown'a gerek yok, direkt başlat
+    setShowCountdown(true);
+    setGameStarted(false);
+  }
+}, [gameMode, gameStarted, showCountdown, gameEnded]);
+
+// 🎯 Countdown event listener (tüm modlar için)
+useEffect(() => {
+  const handleCountdownStart = (event: CustomEvent) => {
+    const { serverTime } = event.detail;
+    console.log('⏰ Countdown event alındı:', serverTime);
+    setCountdownServerTime(serverTime);
+    setShowCountdown(true);
+    setGameStarted(false);
+  };
+
+  window.addEventListener('countdownStarted', handleCountdownStart as EventListener);
+  
+  return () => {
+    window.removeEventListener('countdownStarted', handleCountdownStart as EventListener);
+  };
+}, []);
+
 // Multiplayer (private-room & random-match) waiting/start logic
 useEffect(() => {
   if (gameMode === 'private-room' || gameMode === 'random-match') {

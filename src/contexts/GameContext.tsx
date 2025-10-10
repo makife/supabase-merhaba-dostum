@@ -20,6 +20,7 @@ interface GameRoom {
   created_at: string;
   started_at: string | null;
   finished_at: string | null;
+  countdown_started_at?: string | null;
   player1_id?: string | null;
   player2_id?: string | null;
   winner_id?: string | null;
@@ -1850,6 +1851,14 @@ useEffect(() => {
     (payload) => {
       const newRoom = payload.new as GameRoom;
       console.log('🏠 Room güncelleme:', newRoom);
+
+      // 🎯 Countdown başlatma eventi
+      if (newRoom.countdown_started_at && !currentRoom.countdown_started_at) {
+        console.log('⏰ Countdown başlatıldı (real-time):', newRoom.countdown_started_at);
+        window.dispatchEvent(new CustomEvent('countdownStarted', {
+          detail: { serverTime: newRoom.countdown_started_at }
+        }));
+      }
 
       if (newRoom.status === 'finished') {
         const winner = newRoom.winner_id
