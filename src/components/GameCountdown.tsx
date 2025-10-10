@@ -16,6 +16,8 @@ const GameCountdown = ({ onComplete, className, serverStartTime }: GameCountdown
   // Ses dosyaları için ref'ler
   const countdownAudioRef = useRef<HTMLAudioElement | null>(null);
   const startAudioRef = useRef<HTMLAudioElement | null>(null);
+  const lastPlayedCountRef = useRef<number>(-1);
+  const hasPlayedStartRef = useRef<boolean>(false);
 
   // Ses dosyalarını yükle
   useEffect(() => {
@@ -45,14 +47,16 @@ const GameCountdown = ({ onComplete, className, serverStartTime }: GameCountdown
     };
   }, []);
 
-  // Ses çalma fonksiyonu
-  const playCountdownSound = async () => {
-    if (countdownAudioRef.current) {
+  // Ses çalma fonksiyonu - sadece bir kez çal
+  const playCountdownSound = async (currentCount: number) => {
+    if (countdownAudioRef.current && lastPlayedCountRef.current !== currentCount) {
       try {
-        // Önceki ses varsa durdur ve başa sar
+        // Önceki sesi durdur
+        countdownAudioRef.current.pause();
         countdownAudioRef.current.currentTime = 0;
         await countdownAudioRef.current.play();
-        console.log('🔊 Geri sayım sesi çalıyor:', count);
+        lastPlayedCountRef.current = currentCount;
+        console.log('🔊 Geri sayım sesi çalıyor:', currentCount);
       } catch (error) {
         console.warn('Geri sayım sesi çalamadı:', error);
       }
@@ -60,10 +64,12 @@ const GameCountdown = ({ onComplete, className, serverStartTime }: GameCountdown
   };
 
   const playStartSound = async () => {
-    if (startAudioRef.current) {
+    if (startAudioRef.current && !hasPlayedStartRef.current) {
       try {
+        startAudioRef.current.pause();
         startAudioRef.current.currentTime = 0;
         await startAudioRef.current.play();
+        hasPlayedStartRef.current = true;
         console.log('🔊 Başla sesi çalıyor');
         
         // Ses bittiğinde event dinle
@@ -99,9 +105,9 @@ const GameCountdown = ({ onComplete, className, serverStartTime }: GameCountdown
       const remaining = Math.max(0, 5 - elapsed);
 
       if (remaining > 0) {
-        setCount(remaining);
         if (remaining !== count) {
-          playCountdownSound();
+          setCount(remaining);
+          playCountdownSound(remaining);
         }
       } else if (remaining === 0 && !showStart) {
         setCount(0);
@@ -127,9 +133,7 @@ const GameCountdown = ({ onComplete, className, serverStartTime }: GameCountdown
     if (serverStartTime || !hasStarted) return;
 
     if (count > 0) {
-      const soundTimer = setTimeout(() => {
-        playCountdownSound();
-      }, 50);
+      playCountdownSound(count);
       
       const timer = setTimeout(() => {
         setIsVisible(false);
@@ -141,7 +145,6 @@ const GameCountdown = ({ onComplete, className, serverStartTime }: GameCountdown
 
       return () => {
         clearTimeout(timer);
-        clearTimeout(soundTimer);
       };
     } else if (count === 0 && !showStart) {
       playStartSound();
