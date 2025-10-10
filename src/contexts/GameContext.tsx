@@ -403,6 +403,27 @@ const respondRematchRequest = useCallback(async (requestId: string, accepted: bo
         .single();
       
       if (roomData) {
+        // 🎯 SERVER-SIDE COUNTDOWN başlat
+        try {
+          const { data: countdownTime, error: rpcError } = await supabase.rpc('start_game_countdown', {
+            p_room_id: roomData.id
+          });
+          
+          if (rpcError) {
+            console.warn('⚠️ RPC countdown hatası, fallback kullanılıyor:', rpcError);
+            // Fallback: Manuel DB update
+            const nowIso = new Date().toISOString();
+            await supabase
+              .from('game_rooms')
+              .update({ countdown_started_at: nowIso, updated_at: nowIso })
+              .eq('id', roomData.id);
+          } else {
+            console.log('✅ Server-side countdown başlatıldı:', countdownTime);
+          }
+        } catch (countdownError) {
+          console.error('❌ Countdown başlatma hatası:', countdownError);
+        }
+        
         console.log('🎮 Direkt oyun sayfasına yönlendiriliyor');
         const baseRoute = roomData.game_mode?.includes('random-match') ? '/game/random-match' : '/game/private-room';
         navigate(`${baseRoute}?room=${roomData.id}&type=${request.game_type}`);
