@@ -325,8 +325,7 @@ useEffect(() => {
   }
 }, [gameMode, tournamentMatch?.id, generateTournamentGrid]);
 
-// Random/private odalarda sunucu grid'ini senkronize et (SADECE BAŞLANGICTA)
-const initialGridSyncRef = useRef(false);
+// Random/private odalarda sunucu grid'ini senkronize et (ZORUNLU)
 useEffect(() => {
   if (gameMode === 'tournament') return;
   if (gameMode !== 'random-match' && gameMode !== 'private-room') return;
@@ -335,24 +334,20 @@ useEffect(() => {
     return;
   }
   
-  // Sadece ilk kez grid senkronize et - joker kullanımından sonra tekrar senkronize etme
-  if (initialGridSyncRef.current) return;
-  
   const flat = currentRoom.current_grid as string[];
   const grid: string[][] = [];
   for (let i = 0; i < 4; i++) {
     grid.push(flat.slice(i * 4, (i + 1) * 4));
   }
   
-  console.log('🎲 Grid senkronize edildi:', {
+  console.log('✅ Grid SYNC - Both players see same grid:', {
     mode: gameMode,
-    roomId: currentRoom.id,
+    roomId: currentRoom.id.slice(-8),
     gridPreview: grid[0]
   });
   
   setGameGrid(grid);
-  initialGridSyncRef.current = true;
-}, [gameMode, currentRoom?.id, currentRoom?.current_grid]);
+}, [gameMode, currentRoom?.current_grid, currentRoom?.id]);
   
   const [selectedLetters, setSelectedLetters] = useState<{letter: string, row: number, col: number}[]>([]);
   const [currentWord, setCurrentWord] = useState('');
@@ -651,7 +646,12 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
 };
 
 const requestRematch = async () => {
-  if (!user) return;
+  if (!user) {
+    console.error('❌ Rematch: User yok');
+    return;
+  }
+  
+  console.log('🔄 Rematch isteği başlatılıyor...');
   
   try {
     // Disconnect logic'i geçici olarak devre dışı bırak
@@ -692,9 +692,8 @@ const requestRematch = async () => {
 
 // 4. resetGameForRematch fonksiyonunu ekleyin:
 const resetGameForRematch = () => {
-  // Grid sync'i yeniden aktifleştir yeni oyun için
-  initialGridSyncRef.current = false;
-  disconnectHandledRef.current = false; // Disconnect kontrolü de yeniden aktif et
+  // Disconnect kontrolü yeniden aktif et
+  disconnectHandledRef.current = false;
   
   // Oyunu sıfırla
   setGameGrid(generateRandomGrid());
