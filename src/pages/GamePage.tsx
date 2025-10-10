@@ -3358,11 +3358,27 @@ useEffect(() => {
               setCountdownServerTime(data);
               setShowCountdown(true);
               setGameStarted(false);
+            } else {
+              console.warn('⚠️ RPC yok veya hata döndü, local fallback ile başlatılıyor:', error);
+              const nowIso = new Date().toISOString();
+              // DB'yi güncelle ki diğer istemci de senkron olsun
+              await supabase
+                .from('game_rooms')
+                .update({ countdown_started_at: nowIso, updated_at: nowIso })
+                .eq('id', currentRoom.id);
+              setCountdownServerTime(nowIso);
+              setShowCountdown(true);
+              setGameStarted(false);
             }
           } catch (err) {
             console.error('Countdown başlatma hatası:', err);
-            // Fallback: client-side countdown
-            setCountdownServerTime(new Date().toISOString());
+            // Fallback: client-side countdown + DB güncelle
+            const nowIso = new Date().toISOString();
+            await supabase
+              .from('game_rooms')
+              .update({ countdown_started_at: nowIso, updated_at: nowIso })
+              .eq('id', currentRoom.id);
+            setCountdownServerTime(nowIso);
             setShowCountdown(true);
             setGameStarted(false);
           }
@@ -3435,9 +3451,22 @@ useEffect(() => {
                     });
                     if (!error && data) {
                       setCountdownServerTime(data);
+                    } else {
+                      const nowIso = new Date().toISOString();
+                      await supabase
+                        .from('game_rooms')
+                        .update({ countdown_started_at: nowIso, updated_at: nowIso })
+                        .eq('id', currentRoom.id);
+                      setCountdownServerTime(nowIso);
                     }
                   } catch (err) {
                     console.error('Rematch countdown error:', err);
+                    const nowIso = new Date().toISOString();
+                    await supabase
+                      .from('game_rooms')
+                      .update({ countdown_started_at: nowIso, updated_at: nowIso })
+                      .eq('id', currentRoom.id);
+                    setCountdownServerTime(nowIso);
                   }
                 }
                 if (!currentRoom?.id) {
