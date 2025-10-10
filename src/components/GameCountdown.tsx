@@ -86,7 +86,6 @@ const GameCountdown = ({ onComplete, className, serverStartTime }: GameCountdown
   // 🎯 SERVER-SIDE COUNTDOWN SYNC (SADECE)
   useEffect(() => {
     if (!serverStartTime) {
-      console.error('⚠️ Server start time eksik! Countdown başlatılamıyor.');
       return;
     }
 

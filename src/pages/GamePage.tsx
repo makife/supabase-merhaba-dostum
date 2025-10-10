@@ -370,7 +370,7 @@ useEffect(() => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const timeLeftRef = useRef<number>(gameType === 'timed' ? 120 : 0);
   const [displayTime, setDisplayTime] = useState<number>(timeLeftRef.current);
-  const [showCountdown, setShowCountdown] = useState(true);
+  const [showCountdown, setShowCountdown] = useState(false);
   const [countdownServerTime, setCountdownServerTime] = useState<string | null>(null);
   const [gameStarted, setGameStarted] = useState(false);
   const [waitingForPlayer, setWaitingForPlayer] = useState(false);
