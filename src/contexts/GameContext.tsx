@@ -180,6 +180,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   const [currentRematchRequest, setCurrentRematchRequest] = useState<RematchRequest | null>(null);
   
   const isClosingRoomRef = useRef(false);
+  const lastCountdownAtRef = useRef<string | null>(null);
 
   const toggleNakama = () => {
     setUseNakama(!useNakama);
@@ -1571,6 +1572,8 @@ useEffect(() => {
 
   console.log('🔗 Setting up optimized real-time for room:', currentRoom.id.slice(-8));
   setIsConnected(true);
+  // Init countdown guard with current room state to avoid duplicate dispatches
+  lastCountdownAtRef.current = currentRoom.countdown_started_at ?? null;
   const pendingTimers: NodeJS.Timeout[] = [];
 
   // Participants'ı fetch et
@@ -1852,9 +1855,10 @@ useEffect(() => {
       const newRoom = payload.new as GameRoom;
       console.log('🏠 Room güncelleme:', newRoom);
 
-      // 🎯 Countdown başlatma eventi
-      if (newRoom.countdown_started_at && !currentRoom.countdown_started_at) {
+      // 🎯 Countdown event - fire only when value changes (avoid stale-closure issue)
+      if (newRoom.countdown_started_at && lastCountdownAtRef.current !== newRoom.countdown_started_at) {
         console.log('⏰ Countdown başlatıldı (real-time):', newRoom.countdown_started_at);
+        lastCountdownAtRef.current = newRoom.countdown_started_at;
         window.dispatchEvent(new CustomEvent('countdownStarted', {
           detail: { serverTime: newRoom.countdown_started_at }
         }));
@@ -1878,6 +1882,8 @@ useEffect(() => {
   // Cleanup
   return () => {
     console.log('🔌 Cleaning up real-time subscriptions for room:', currentRoom.id.slice(-8));
+    // Reset countdown guard for next room/game
+    lastCountdownAtRef.current = null;
     
     // Presence untrack & cleanup
     presenceChannel.untrack();
