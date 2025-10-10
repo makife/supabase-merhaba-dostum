@@ -280,15 +280,15 @@ const TournamentBracketPage = () => {
 
       if (allCompleted && round < 3) {
         // Bir sonraki tur zaten oluşturulmuş mu kontrol et (çift çağrıyı önle)
-        const { data: nextRoundMatches } = await supabase
+        const { data: nextRoundMatches, count } = await supabase
           .from("tournament_matches")
-          .select("id")
+          .select("*", { count: 'exact' })
           .eq("tournament_id", tournamentId)
-          .eq("round", round + 1)
-          .limit(1);
+          .eq("round", round + 1);
 
+        // Eğer bir sonraki round için maçlar zaten varsa, skip
         if (nextRoundMatches && nextRoundMatches.length > 0) {
-          console.log(`⚠️ Round ${round + 1} already exists, skipping advancement`);
+          console.log(`⚠️ Round ${round + 1} already has ${nextRoundMatches.length} matches, skipping advancement`);
           return;
         }
 
