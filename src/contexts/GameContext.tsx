@@ -398,14 +398,14 @@ const respondRematchRequest = useCallback(async (requestId: string, accepted: bo
       // Odayı al
       const { data: roomData } = await supabase
         .from('game_rooms')
-        .select('id, current_grid')
+        .select('id, game_mode, current_grid')
         .eq('room_code', request.room_code)
         .single();
       
       if (roomData) {
-        // Direkt oyun sayfasına git, bekleme sayfasına değil
         console.log('🎮 Direkt oyun sayfasına yönlendiriliyor');
-        navigate(`/game/private-room?room=${roomData.id}&type=${request.game_type}`);
+        const baseRoute = roomData.game_mode?.includes('random-match') ? '/game/random-match' : '/game/private-room';
+        navigate(`${baseRoute}?room=${roomData.id}&type=${request.game_type}`);
       }
     }
     
@@ -433,59 +433,6 @@ const generateRoomCode = () => {
   return result;
 };
 
-  // Real-time listener for rematch requests (for sender)
-  useEffect(() => {
-    if (!user) return;
-    
-    console.log('🔔 Rematch gönderen için dinleyici kuruluyor...');
-    
-    const channel = supabase
-      .channel(`rematch_sender_${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'rematch_requests',
-          filter: `from_user_id=eq.${user.id}`
-        },
-        async (payload: any) => {
-          console.log('🔔 Rematch durumu güncellendi (gönderen):', payload);
-          
-          const newRequest = payload.new as RematchRequest;
-          
-          if (newRequest.status === 'accepted') {
-            console.log('✅ Rematch kabul edildi! Oyuna yönlendiriliyor...');
-            
-            // Odayı al
-            const { data: roomData } = await supabase
-              .from('game_rooms')
-              .select('id')
-              .eq('room_code', newRequest.room_code)
-              .single();
-            
-            if (roomData) {
-              toast({
-                title: '🎮 Kabul Edildi!',
-                description: 'Rakibiniz kabul etti, oyun başlıyor...',
-              });
-              navigate(`/game/private-room?room=${roomData.id}&type=${newRequest.game_type}`);
-            }
-          } else if (newRequest.status === 'rejected') {
-            toast({
-              title: '❌ Reddedildi',
-              description: 'Rakibiniz tekrar oyun isteğini reddetti',
-            });
-          }
-        }
-      )
-      .subscribe();
-    
-    return () => {
-      console.log('🔔 Rematch gönderen dinleyicisi kapatılıyor');
-      supabase.removeChannel(channel);
-    };
-  }, [user, navigate]);
 
   // Cleanup old rooms
   const cleanupOldRooms = useCallback(async () => {
@@ -1988,7 +1935,17 @@ useEffect(() => {
           });
           
           if (request.room_code) {
-            navigate(`/private-room-waiting?code=${request.room_code}&gameType=${request.game_type}`);
+            (async () => {
+              const { data: roomData } = await supabase
+                .from('game_rooms')
+                .select('id, game_mode')
+                .eq('room_code', request.room_code)
+                .single();
+              if (roomData) {
+                const baseRoute = roomData.game_mode?.includes('random-match') ? '/game/random-match' : '/game/private-room';
+                navigate(`${baseRoute}?room=${roomData.id}&type=${request.game_type}`);
+              }
+            })();
           }
         } else if (request.status === 'rejected') {
           toast({

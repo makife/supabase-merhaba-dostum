@@ -3404,102 +3404,30 @@ useEffect(() => {
   }
 }, [participants, gameMode, hasShownStartMessage, gameType, toast, currentRoom?.status, gameStarted, showCountdown]);
 
-// Real-time rematch response listener (istek gönderen taraf için)
+// Lightweight sender-side rematch status listener (no navigation)
 useEffect(() => {
-  if (!currentRoom || (gameMode !== 'private-room' && gameMode !== 'random-match') || !user || !waitingForRematchResponse) return;
-  
-  console.log('🔄 Rematch response listener aktif:', { user: user.id, waiting: waitingForRematchResponse });
-  
-  const rematchResponseChannel = supabase
-    .channel(`rematch-response-${user.id}`)
+  if (!user || !waitingForRematchResponse) return;
+  const channel = supabase
+    .channel(`rematch-sender-${user.id}`)
     .on('postgres_changes', {
       event: 'UPDATE',
       schema: 'public',
       table: 'rematch_requests',
       filter: `from_user_id=eq.${user.id}`
     }, (payload) => {
-      console.log('🔄 Rematch response alındı:', payload.new);
-      const request = payload.new as any;
-      
-      if (request.status === 'accepted') {
-        console.log('✅ Rematch kabul edildi!');
+      const req = payload.new as any;
+      if (req?.status === 'accepted' || req?.status === 'rejected') {
         setWaitingForRematchResponse(false);
         setRematchRequested(false);
         disconnectHandledRef.current = false;
-        
-        toast({
-          title: 'Tekrar Oyun Kabul Edildi!',
-          description: 'Yeni odaya katılıyorsunuz...',
-          duration: 2000,
-        });
-        
-        // Odaya katıl ve oyunu başlat
-        if (request.room_code) {
-          setTimeout(async () => {
-            const success = await joinRoom(request.room_code);
-            if (success) {
-              console.log('✅ Rematch request sender: odaya katıldı, yeni oyun başlatılıyor');
-              // Oyun durumunu tamamen sıfırla ve geri sayımı başlat
-              resetGameForRematch();
-              setTimeout(async () => {
-                // 🎯 SERVER-SIDE COUNTDOWN for rematch
-                if (currentRoom?.id) {
-                  try {
-                    const { data, error } = await supabase.rpc('start_game_countdown', {
-                      p_room_id: currentRoom.id
-                    });
-                    if (!error && data) {
-                      setCountdownServerTime(data);
-                    } else {
-                      const nowIso = new Date().toISOString();
-                      await supabase
-                        .from('game_rooms')
-                        .update({ countdown_started_at: nowIso, updated_at: nowIso })
-                        .eq('id', currentRoom.id);
-                      setCountdownServerTime(nowIso);
-                    }
-                  } catch (err) {
-                    console.error('Rematch countdown error:', err);
-                    const nowIso = new Date().toISOString();
-                    await supabase
-                      .from('game_rooms')
-                      .update({ countdown_started_at: nowIso, updated_at: nowIso })
-                      .eq('id', currentRoom.id);
-                    setCountdownServerTime(nowIso);
-                  }
-                }
-                if (!currentRoom?.id) {
-                  // Local fallback
-                  setCountdownServerTime(new Date().toISOString());
-                }
-                setShowCountdown(true);
-              }, 500);
-              // Aynı route ise no-op; yine de güvenli olması için replace ile yönlendir
-              const targetRoute = gameMode === 'random-match' ? `/game/random-match?type=${gameType}` : `/game/private-room?type=${gameType}`;
-              navigate(targetRoute, { replace: true });
-            }
-          }, 1000);
-        }
-      } else if (request.status === 'rejected') {
-        console.log('❌ Rematch reddedildi');
-        setWaitingForRematchResponse(false);
-        setRematchRequested(false);
-        disconnectHandledRef.current = false;
-        
-        toast({
-          title: 'Tekrar Oyun Reddedildi',
-          description: 'Rakibiniz tekrar oynamak istemiyor.',
-          variant: 'destructive',
-        });
       }
     })
     .subscribe();
-  
   return () => {
-    console.log('🔄 Rematch response listener temizleniyor');
-    supabase.removeChannel(rematchResponseChannel);
+    supabase.removeChannel(channel);
   };
-}, [currentRoom, gameMode, waitingForRematchResponse, user, toast, joinRoom]);
+}, [user?.id, waitingForRematchResponse]);
+
 
   // Touch olayları için optimize edilmiş handler
   const handleLetterTouch = (letter: string, row: number, col: number, event: React.TouchEvent) => {
@@ -4267,34 +4195,6 @@ if (gameEnded) {
             <AlertDialogAction onClick={async () => {
               if (currentRematchRequest) {
                 await respondRematchRequest(currentRematchRequest.id, true);
-                if (currentRematchRequest.room_code) {
-                  const success = await joinRoom(currentRematchRequest.room_code);
-                  if (success) {
-                    console.log('✅ Rematch receiver: odaya katıldı, yeni oyun başlatılıyor');
-                    // Oyun durumunu tamamen sıfırla ve geri sayımı başlat
-                    resetGameForRematch();
-                    setTimeout(async () => {
-                      // 🎯 SERVER-SIDE COUNTDOWN for rematch (receiver)
-                      if (currentRoom?.id) {
-                        try {
-                          const { data, error } = await supabase.rpc('start_game_countdown', {
-                            p_room_id: currentRoom.id
-                          });
-                          if (!error && data) {
-                            setCountdownServerTime(data);
-                          }
-                        } catch (err) {
-                          console.error('Rematch countdown error:', err);
-                        }
-                      }
-                      setCountdownServerTime(new Date().toISOString());
-                      setShowCountdown(true);
-                    }, 500);
-                    // Aynı route ise no-op; yine de güvenli olması için replace ile yönlendir
-                    const targetRoute = gameMode === 'random-match' ? `/game/random-match?type=${gameType}` : `/game/private-room?type=${gameType}`;
-                    navigate(targetRoute, { replace: true });
-                  }
-                }
               }
             }}>
               Evet, Tekrar Oyna
