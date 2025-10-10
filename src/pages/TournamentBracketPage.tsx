@@ -203,17 +203,47 @@ const TournamentBracketPage = () => {
             })
             .eq("id", match.id);
         } else {
-          // Gerçek oyuncu varsa: countdown_started_at set et (server-side sync için)
-          const countdownStart = new Date().toISOString();
-          console.log(`👤 Real player match detected, setting countdown_started_at:`, countdownStart);
+          // Gerçek oyuncu varsa: SERVER-SIDE countdown başlat (RPC ile)
+          console.log(`👤 Real player match detected, starting server-side countdown via RPC`);
           
+          // Önce match'e room_id ataması gerekiyor, countdown RPC'si room_id bekliyor
+          // Tournament maçları için room_id'yi match_id olarak kullanabiliriz
           await supabase
             .from("tournament_matches")
             .update({
-              countdown_started_at: countdownStart,
+              room_id: match.id,
               updated_at: new Date().toISOString(),
             })
             .eq("id", match.id);
+          
+          // Şimdi server-side countdown başlat
+          const { data: countdownStart, error: rpcError } = await supabase.rpc('start_game_countdown', {
+            p_room_id: match.id
+          });
+          
+          if (!rpcError && countdownStart) {
+            console.log(`✅ Server-side countdown started for tournament match:`, countdownStart);
+            
+            // countdown_started_at'ı server'dan gelen değerle güncelle
+            await supabase
+              .from("tournament_matches")
+              .update({
+                countdown_started_at: countdownStart,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", match.id);
+          } else {
+            console.error('❌ RPC countdown error:', rpcError);
+            // Fallback: Local timestamp kullan
+            const fallbackTime = new Date().toISOString();
+            await supabase
+              .from("tournament_matches")
+              .update({
+                countdown_started_at: fallbackTime,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", match.id);
+          }
         }
       }
 
