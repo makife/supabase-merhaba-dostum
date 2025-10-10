@@ -86,7 +86,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   const [currentTicket, setCurrentTicket] = useState<string | null>(null);
 
   // Temizlik fonksiyonu
-  const cleanup = () => {
+  const cleanup = async () => {
     console.log("🧹 Matchmaking cleanup çalışıyor...");
 
     if (searchChannel) {
@@ -100,7 +100,8 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
     // Aktif bir matchmaking bileti varsa iptal et (self-match'i önler)
     if (currentTicket) {
       try {
-        void nakamaService.cancelMatchmaking(currentTicket);
+        await nakamaService.cancelMatchmaking(currentTicket);
+        console.log("✅ Nakama ticket iptal edildi");
       } catch (e) {
         console.warn("Cleanup cancel error:", e);
       } finally {
@@ -108,8 +109,9 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       }
     }
 
-    // ❌ BU SATIRI KALDIR - Nakama bağlantısını kesme!
-    // nakamaService.disconnect();
+    // 🔥 Nakama socket'ini temizle - yeni aramada yeniden bağlanacak
+    nakamaService.disconnect();
+    console.log("✅ Nakama socket kapatıldı");
 
     // State'leri temizle
     setIsSearching(false);
@@ -428,11 +430,6 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   const cancelSearch = async () => {
     console.log("❌ Arama iptal ediliyor...");
 
-    // Önce state'leri temizle
-    setIsSearching(false);
-    setSearchProgress(0);
-    setSearchTimeout(false);
-
     // Progress interval'ı durdur
     clearProgressTimer();
 
@@ -441,15 +438,17 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       try {
         console.log("❌ Cancelling Nakama matchmaking:", currentTicket);
         await nakamaService.cancelMatchmaking(currentTicket);
-        setCurrentTicket(null);
         console.log("✅ Nakama matchmaking ticket iptal edildi");
       } catch (error) {
         console.error("Nakama cancel error:", error);
-        // Hata olsa bile devam et, state'ler temizlensin
+        // Hata olsa bile devam et
       }
     }
 
-    // Diğer state'leri temizle
+    // State'leri temizle
+    setIsSearching(false);
+    setSearchProgress(0);
+    setSearchTimeout(false);
     setNakamaMatch(null);
     setCurrentTicket(null);
 
@@ -459,23 +458,14 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   const restartSearch = async (gameType: "timed" | "score") => {
     console.log("🔄 Tekrar arama başlatılıyor...");
     
-    // UI anında güncellensin
-    setSearchProgress(0);
-    setSearchTimeout(false);
-    setIsSearching(false);
-    
-    // Aktif aramayı düzgün kapat
+    // Önce tüm aktif işlemleri temizle
     await cancelSearch();
-    cleanup();
+    await cleanup();
 
-    // Temizlikten HEMEN SONRA ilerlemeyi başlat ve 'searching' durumuna al
-    setIsSearching(true);
-    startProgressTimer();
-    
-    // Kısa gecikme sonra yeni arama başlat (Nakama auth/socket vs.)
+    // Kısa bekleme sonra yeni arama başlat
     setTimeout(() => {
       startSearch(gameType);
-    }, 100);
+    }, 300);
   };
 
   // AI ile oyna

@@ -119,6 +119,18 @@ private async initializeClient(): Promise<void> {
 async createSocket(): Promise<Socket> {
   try {
     console.log("🔌 Creating Nakama WebSocket...");
+    
+    // Eğer zaten bağlantı varsa, önce kapat
+    if (this.socket) {
+      console.log("⚠️ Mevcut socket bulundu, kapatılıyor...");
+      try {
+        this.socket.disconnect();
+      } catch (e) {
+        console.warn("Old socket disconnect error:", e);
+      }
+      this.socket = null;
+    }
+    
     if (!this.session) {
       throw new Error("Must authenticate before creating socket");
     }
