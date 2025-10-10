@@ -710,7 +710,9 @@ const resetGameForRematch = () => {
   setOpponentScore(0);
   timeLeftRef.current = gameType === 'timed' ? 120 : 0;
   setDisplayTime(timeLeftRef.current);
-  setShowCountdown(true);
+  // Countdown, server zamanıyla veya vs-computer'da local zamanla başlatılacak
+  setCountdownServerTime(null);
+  setShowCountdown(false);
   setGameStarted(false);
   setGameEnded(false);
   setWinner(null);
@@ -3310,6 +3312,7 @@ useEffect(() => {
     setWaitingForPlayer(false);
     
     // vs-computer modunda server countdown'a gerek yok, direkt başlat
+    setCountdownServerTime(new Date().toISOString());
     setShowCountdown(true);
     setGameStarted(false);
   }
@@ -3359,6 +3362,7 @@ useEffect(() => {
           } catch (err) {
             console.error('Countdown başlatma hatası:', err);
             // Fallback: client-side countdown
+            setCountdownServerTime(new Date().toISOString());
             setShowCountdown(true);
             setGameStarted(false);
           }
@@ -3435,6 +3439,10 @@ useEffect(() => {
                   } catch (err) {
                     console.error('Rematch countdown error:', err);
                   }
+                }
+                if (!currentRoom?.id) {
+                  // Local fallback
+                  setCountdownServerTime(new Date().toISOString());
                 }
                 setShowCountdown(true);
               }, 500);
@@ -4189,6 +4197,7 @@ if (gameEnded) {
                       setOpponentScore(0);
                       timeLeftRef.current = gameType === 'timed' ? 120 : 0;
                       setDisplayTime(timeLeftRef.current);
+                      setCountdownServerTime(new Date().toISOString());
                       setShowCountdown(true);
                       setGameStarted(false);
                       setGameEnded(false);
@@ -4250,6 +4259,7 @@ if (gameEnded) {
                           console.error('Rematch countdown error:', err);
                         }
                       }
+                      setCountdownServerTime(new Date().toISOString());
                       setShowCountdown(true);
                     }, 500);
                     // Aynı route ise no-op; yine de güvenli olması için replace ile yönlendir
