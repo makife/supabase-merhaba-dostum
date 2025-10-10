@@ -6,6 +6,7 @@ import { useUser } from './UserContext';
 import { useToast } from '@/hooks/use-toast';
 import { useNakamaMatchmaking } from '@/hooks/useNakamaMatchmaking';
 import { useNavigate } from 'react-router-dom';
+import { realtimeManager } from '@/utils/realtimeManager';
 
 interface GameRoom {
   id: string;
@@ -1560,19 +1561,19 @@ const fetchParticipants = useCallback(
     }
   }, [participants, currentRoom, closeFullRoom]);
 
-  // Real-time subscriptions
+  // 🎯 OPTIMIZED Real-time subscriptions with RealtimeManager + Presence
 useEffect(() => {
   if (!currentRoom || !user) {
     setIsConnected(false);
     return;
   }
 
-  console.log('🔗 Real-time bağlantı kuruluyor:', currentRoom.id.slice(-8));
+  console.log('🔗 Setting up optimized real-time for room:', currentRoom.id.slice(-8));
   setIsConnected(true);
   const pendingTimers: NodeJS.Timeout[] = [];
-  
+
   // Participants'ı fetch et
-  const fetchParticipants = async (roomId: string) => {
+  const fetchParticipantsLocal = async (roomId: string) => {
     try {
       const { data, error } = await supabase
         .from('game_participants')
@@ -1596,228 +1597,260 @@ useEffect(() => {
     }
   };
 
-  fetchParticipants(currentRoom.id);
+  fetchParticipantsLocal(currentRoom.id);
 
   const currentGameMode = getGameModeFromRoom(currentRoom);
-  const presenceGraceUntil = Date.now() + 2000; // 2s grace to avoid false disconnects at start
+  const presenceGraceUntil = Date.now() + 2000;
 
-  const channel = supabase
-    .channel(`room-${currentRoom.id}`, { config: { presence: { key: `user-${user.id}` } } })
-    .on('postgres_changes', {
-  event: '*',
-  schema: 'public',
-  table: 'game_participants',
-  filter: `room_id=eq.${currentRoom.id}`
-}, async (payload: any) => {
-  console.log('🔡 ===== REAL-TIME EVENT =====');
-  console.log('🔡 Event Type:', payload.eventType);
-  console.log('🔡 Payload:', payload);
-  console.log('🔡 Old data:', payload.old);
-  console.log('🔡 New data:', payload.new);
-  console.log('🔡 Room ID:', currentRoom.id);
-  console.log('🔡 Current user:', user?.id?.slice(-8));
-  
-  // ✅ UPDATE olayında anında skor güncellemesi yap
-  if (payload.eventType === 'UPDATE' && isValidParticipantPayload(payload.new)) {
-    const updatedParticipant = payload.new as GameParticipantPayload;
-    const gotUserId = !!updatedParticipant.user_id;
-    console.log('📊 Participant skor UPDATE:', {
-      hasUserId: gotUserId,
-      user: updatedParticipant.user_id?.slice?.(-8),
-      score: (updatedParticipant as any).score
-    });
-
-    if (gotUserId) {
-      // Anında local state'i güncelle
-      setParticipants(prevParticipants => 
-        prevParticipants.map(p => 
-          p.user_id === updatedParticipant.user_id 
-            ? { ...p, score: (updatedParticipant as any).score as number }
-            : p
-        )
-      );
-    }
-
-    // Bazı durumlarda Realtime 'new' içinde user_id gelmeyebilir -> güvenli fetch
-    await fetchParticipants(currentRoom.id);
-  }
-  
-  // INSERT VE DELETE'TE participants fetch et
-  if (payload.eventType === 'INSERT' || payload.eventType === 'DELETE') {
-    console.log('🔄 Fetching participants after INSERT/DELETE...');
-    await fetchParticipants(currentRoom.id);
-  }
-  
-  // INSERT event - tip güvenli erişim
-  if (payload.eventType === 'INSERT' && isValidParticipantPayload(payload.new)) {
-    const newParticipant = payload.new as GameParticipantPayload;
-    console.log('👤 Yeni katılımcı tespit edildi:', newParticipant.user_id?.slice(-8));
-    
-    if (!newParticipant.is_bot && 
-        newParticipant.user_id && 
-        newParticipant.user_id !== user?.id) {
-      
-      const gameMode = getGameModeFromRoom(currentRoom);
-      console.log('🎮 Game mode for participant join:', gameMode);
-      
-      if (gameMode?.startsWith('random-match')) {
-        console.log('✅ RASTGELE OYUN EŞLEŞME BAŞARILI!');
-        toast({
-          title: '🎯 Eşleşme Tamamlandı!',
-          description: 'Rakip bulundu, oyun başlıyor...',
-          duration: 2000,
-        });
-      } else {
-        console.log('✅ GERÇEK OYUNCU KATILDI! Private room eşleşmesi');
-        toast({
-          title: '🎉 Oyuncu Katıldı!',
-          description: 'İkinci oyuncu odaya katıldı, oyun başlıyor...',
-          duration: 2000,
-        });
+  // ✅ PRESENCE CHANNEL (ayrı, tek instance - duplicate önleme)
+  const presenceChannel = supabase
+    .channel(`presence-${currentRoom.id}`, {
+      config: {
+        presence: {
+          key: user.id // ✅ Sadece user.id (user-${user.id} değil)
+        }
       }
-    }
-  }
-  
-  // DELETE event - tip güvenli erişim  
-  if (payload.eventType === 'DELETE' && isValidParticipantPayload(payload.old)) {
-    const oldParticipant = payload.old as GameParticipantPayload;
-    console.log('🚪 ====== OYUNCU AYRILDI EVENT ======');
-    console.log('🚪 Ayrılan oyuncu:', oldParticipant.user_id?.slice(-8));
-    console.log('🚪 Mevcut oyuncu:', user?.id?.slice(-8));
-    console.log('🚪 Room status:', currentRoom.status);
-    console.log('🚪 Is bot?:', oldParticipant.is_bot);
-    console.log('🚪 Game mode:', getGameModeFromRoom(currentRoom));
-    console.log('🚪 Self exit check:', oldParticipant.user_id === user?.id);
-    
-    const gameMode = getGameModeFromRoom(currentRoom);
-    
-    // ✅ ANLIK BILDIRIM - Database event ile tetiklenen güvenilir bildirim
-    // AI rakip için disconnect bildirimi YAPMA
-    if (!oldParticipant.is_bot && 
-        oldParticipant.user_id && 
-        oldParticipant.user_id !== user?.id && 
-        currentRoom.status === 'active' &&
-        getGameModeFromRoom(currentRoom) !== 'vs-computer') { // AI modu değilse
+    })
+    .on('presence', { event: 'sync' }, () => {
+      const state = presenceChannel.presenceState();
+      console.log('🔄 Presence sync:', state);
+    })
+    .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+      console.log('👋 Player joined:', key, newPresences);
+    })
+    .on('presence', { event: 'leave' }, async ({ key }) => {
+      console.log('🚪 Presence leave event:', key);
       
-      console.log('⏳ DELETE event alındı, 2sn sonra doğrulanacak...');
-
-      // Kısa bekleme: sahte DELETE olasılıklarına karşı DB+presence doğrulaması
-      const eventRoomId = currentRoom.id; // capture room id at schedule time
-      const winnerUserId = user?.id || null; // capture winner id at schedule time
-      const tId = setTimeout(async () => {
-        try {
-          // Oyun odası hâlâ aktif mi? (eventRoomId ile kontrol et)
-          const { data: roomState } = await supabase
-            .from('game_rooms')
-            .select('status')
-            .eq('id', eventRoomId)
-            .single();
-          if (roomState?.status !== 'active') {
-            console.log('⛔ Oda aktif değil, DELETE işlenmeyecek');
-            return;
-          }
-
-          // Oyuncu yeniden katılmış olabilir: participants tablosunu kontrol et
-          const { data: participantRow } = await supabase
-            .from('game_participants')
-            .select('id')
-            .eq('room_id', eventRoomId)
-            .eq('user_id', oldParticipant.user_id)
-            .maybeSingle();
-
-          // Presence durumunu da kontrol et (aynı kullanıcı görünüyorsa iptal et)
-          const state = channel.presenceState() as Record<string, Array<{ user_id?: string }>>;
-          const reAppearedInPresence = Object.values(state)
+      if (Date.now() < presenceGraceUntil) {
+        console.log('⏳ Grace period - ignoring presence leave');
+        return;
+      }
+      
+      if (currentRoom.status === 'active' && key !== user?.id) {
+        console.log('⏱️ Bağlantı kopması kontrolü başlıyor, 3 saniye bekleniyor...');
+        
+        setTimeout(async () => {
+          const state = presenceChannel.presenceState() as Record<string, Array<{ user_id?: string }>>;
+          const otherPlayers = Object.values(state)
             .flat()
-            .some((p: any) => p?.user_id === oldParticipant.user_id);
-
-          if (participantRow || reAppearedInPresence) {
-            console.log('✅ Oyuncu geri döndü/görünüyor, DELETE eventi yok sayıldı');
-            return;
-          }
-
-          console.log('🏆 ===== DOĞRULANMIŞ DISCONNECT (DELETE) =====');
-          console.log('🏆 Ayrılan:', oldParticipant.user_id?.slice(-8), 'Kazanan:', winnerUserId?.slice(-8));
-
-          // Doğru kazananı belirle - ben mi ayrıldım yoksa rakip mi?
-          const isMyDisconnect = oldParticipant.user_id === user?.id;
-          const winnerSide = isMyDisconnect ? 'opponent' : 'player';
+            .filter((p: any) => p.user_id && p.user_id !== user?.id);
           
-          // Anlık UI bildirimini tetikle 
-          window.dispatchEvent(new CustomEvent('playerDisconnected', {
-            detail: { 
-              winner: winnerSide, 
-              reason: 'opponent_left', 
-              roomId: eventRoomId 
+          const { count: realCount } = await supabase
+            .from('game_participants')
+            .select('user_id', { count: 'exact', head: true } as any)
+            .eq('room_id', currentRoom.id)
+            .eq('is_bot', false);
+          
+          if (currentRoom.status === 'active' && ((otherPlayers.length === 0) || ((realCount ?? 0) <= 1))) {
+            console.log('🏆 Gerçek rakip yok - kazandın! (presence+DB doğrulandı)');
+            
+            if (typeof key === 'string') {
+              console.log('⚖️ Disconnect penalty uygulanıyor. Offender:', key.slice(-8));
+              await applyDisconnectPenalty(key, currentRoom.id);
             }
-          }));
-
-          const gameMode = getGameModeFromRoom(currentRoom);
-          if (gameMode === 'tournament') {
-            console.log('🏆 TURNUVA: Rakip ayrıldı, oyunu sonlandır');
-
-            // Turnuva maçında rakip ayrıldı, kullanıcı kazanır
-            await supabase
-              .from('game_rooms')
-              .update({
-                status: 'finished',
-                winner_id: winnerUserId,
-                finished_at: new Date().toISOString()
-              })
-              .eq('id', eventRoomId);
-              
+            
+            if (applyWinBonus && user?.id) {
+              await applyWinBonus(user?.id, 50);
+            }
+            
             toast({
-              title: '🏆 Turnuva Zaferi!',
-              description: 'Rakip ayrıldı, siz kazandınız! +100 bonus puan.',
+              title: '🏆 Kazandınız!',
+              description: 'Rakip bağlantısı koptu. +50 puan!',
               duration: 4000,
             });
             
-            if (winnerUserId) {
-              await applyWinBonus(winnerUserId, 100);
-            }
-          } else {
-            console.log('🏆 NORMAL OYUN: Rakip ayrıldı, kazandınız!');
-
-            await applyDisconnectPenalty(oldParticipant.user_id, eventRoomId);
-            
-            if (winnerUserId) {
-              await applyWinBonus(winnerUserId);
-              toast({
-                title: '🏆 Kazandınız!',
-                description: 'Rakip oyundan ayrıldı. +100 bonus puan!',
-                duration: 4000,
-              });
-            }
-            
             await supabase
               .from('game_rooms')
               .update({
                 status: 'finished',
-                winner_id: winnerUserId,
+                winner_id: user?.id || null,
                 finished_at: new Date().toISOString()
               })
-              .eq('id', eventRoomId);
+              .eq('id', currentRoom.id);
+            
+            window.dispatchEvent(new CustomEvent('playerDisconnected', {
+              detail: { winner: 'player', reason: 'connection_lost', roomId: currentRoom.id }
+            }));
           }
-        } catch (err) {
-          console.error('❌ DELETE doğrulama hatası:', err);
+        }, 3000);
+      }
+    })
+    .subscribe(async (status) => {
+      console.log('📡 Presence subscription status:', status);
+      if (status === 'SUBSCRIBED') {
+        await presenceChannel.track({ user_id: user.id, room_id: currentRoom.id });
+        console.log('✅ Presence tracked for room:', currentRoom.id.slice(-8));
+      } else if (status === 'CHANNEL_ERROR') {
+        console.error('❌ Presence channel error for room:', currentRoom.id.slice(-8));
+      }
+    });
+
+  // ✅ PARTICIPANTS SUBSCRIPTION (RealtimeManager ile optimize)
+  const participantsChannel = realtimeManager.subscribe(
+    'game_participants',
+    user.id,
+    `room_id=eq.${currentRoom.id}`,
+    async (payload: any) => {
+      console.log('🔡 Participant event:', payload.eventType);
+      
+      // UPDATE: Anında skor güncellemesi
+      if (payload.eventType === 'UPDATE' && isValidParticipantPayload(payload.new)) {
+        const updatedParticipant = payload.new as GameParticipantPayload;
+        
+        if (updatedParticipant.user_id) {
+          setParticipants(prevParticipants => 
+            prevParticipants.map(p => 
+              p.user_id === updatedParticipant.user_id 
+                ? { ...p, score: (updatedParticipant as any).score as number }
+                : p
+            )
+          );
         }
-      }, 2000);
-      pendingTimers.push(tId);
+        
+        await fetchParticipantsLocal(currentRoom.id);
+      }
+      
+      // INSERT/DELETE: Participants fetch
+      if (payload.eventType === 'INSERT' || payload.eventType === 'DELETE') {
+        await fetchParticipantsLocal(currentRoom.id);
+        
+        // INSERT: Rakip katıldı bildirimi
+        if (payload.eventType === 'INSERT' && isValidParticipantPayload(payload.new)) {
+          const newParticipant = payload.new as GameParticipantPayload;
+          
+          if (!newParticipant.is_bot && newParticipant.user_id && newParticipant.user_id !== user?.id) {
+            const gameMode = getGameModeFromRoom(currentRoom);
+            
+            if (gameMode?.startsWith('random-match')) {
+              toast({
+                title: '🎯 Eşleşme Tamamlandı!',
+                description: 'Rakip bulundu, oyun başlıyor...',
+                duration: 2000,
+              });
+            } else {
+              toast({
+                title: '🎉 Oyuncu Katıldı!',
+                description: 'İkinci oyuncu odaya katıldı, oyun başlıyor...',
+                duration: 2000,
+              });
+            }
+          }
+        }
+        
+        // DELETE: Disconnect handling
+        if (payload.eventType === 'DELETE' && isValidParticipantPayload(payload.old)) {
+          const oldParticipant = payload.old as GameParticipantPayload;
+          
+          if (!oldParticipant.is_bot && 
+              oldParticipant.user_id && 
+              oldParticipant.user_id !== user?.id && 
+              currentRoom.status === 'active' &&
+              getGameModeFromRoom(currentRoom) !== 'vs-computer') {
+            
+            console.log('⏳ DELETE event alındı, 2sn sonra doğrulanacak...');
+            
+            const eventRoomId = currentRoom.id;
+            const winnerUserId = user?.id || null;
+            
+            const tId = setTimeout(async () => {
+              try {
+                const { data: roomState } = await supabase
+                  .from('game_rooms')
+                  .select('status')
+                  .eq('id', eventRoomId)
+                  .single();
+                  
+                if (roomState?.status !== 'active') return;
+                
+                const { data: participantRow } = await supabase
+                  .from('game_participants')
+                  .select('id')
+                  .eq('room_id', eventRoomId)
+                  .eq('user_id', oldParticipant.user_id)
+                  .maybeSingle();
+                  
+                const state = presenceChannel.presenceState() as Record<string, Array<{ user_id?: string }>>;
+                const reAppearedInPresence = Object.values(state)
+                  .flat()
+                  .some((p: any) => p?.user_id === oldParticipant.user_id);
+                  
+                if (participantRow || reAppearedInPresence) {
+                  console.log('✅ Oyuncu geri döndü, disconnect yok sayıldı');
+                  return;
+                }
+                
+                console.log('🏆 Doğrulanmış disconnect');
+                
+                window.dispatchEvent(new CustomEvent('playerDisconnected', {
+                  detail: { 
+                    winner: 'player',
+                    reason: 'opponent_left',
+                    roomId: eventRoomId 
+                  }
+                }));
+                
+                const gameMode = getGameModeFromRoom(currentRoom);
+                if (gameMode === 'tournament') {
+                  await supabase
+                    .from('game_rooms')
+                    .update({
+                      status: 'finished',
+                      winner_id: winnerUserId,
+                      finished_at: new Date().toISOString()
+                    })
+                    .eq('id', eventRoomId);
+                    
+                  toast({
+                    title: '🏆 Turnuva Zaferi!',
+                    description: 'Rakip ayrıldı, siz kazandınız! +100 bonus puan.',
+                    duration: 4000,
+                  });
+                  
+                  if (winnerUserId) {
+                    await applyWinBonus(winnerUserId, 100);
+                  }
+                } else {
+                  await applyDisconnectPenalty(oldParticipant.user_id, eventRoomId);
+                  
+                  if (winnerUserId) {
+                    await applyWinBonus(winnerUserId);
+                    toast({
+                      title: '🏆 Kazandınız!',
+                      description: 'Rakip oyundan ayrıldı. +100 bonus puan!',
+                      duration: 4000,
+                    });
+                  }
+                  
+                  await supabase
+                    .from('game_rooms')
+                    .update({
+                      status: 'finished',
+                      winner_id: winnerUserId,
+                      finished_at: new Date().toISOString()
+                    })
+                    .eq('id', eventRoomId);
+                }
+              } catch (err) {
+                console.error('❌ DELETE doğrulama hatası:', err);
+              }
+            }, 2000);
+            
+            pendingTimers.push(tId);
+          }
+        }
+      }
     }
-  }
-  
-  await fetchParticipants(currentRoom.id);
-})
-    .on('postgres_changes', {
-      event: 'UPDATE',
-      schema: 'public', 
-      table: 'game_rooms',
-      filter: `id=eq.${currentRoom.id}`
-    }, (payload) => {
+  );
+
+  // ✅ ROOM UPDATES SUBSCRIPTION (RealtimeManager ile)
+  const roomChannel = realtimeManager.subscribe(
+    'game_rooms',
+    user.id,
+    `id=eq.${currentRoom.id}`,
+    (payload) => {
       const newRoom = payload.new as GameRoom;
       console.log('🏠 Room güncelleme:', newRoom);
 
-      // Oda DB tarafından bitirildiyse (ör. rakip ayrıldı tetikleyicisi)
       if (newRoom.status === 'finished') {
         const winner = newRoom.winner_id
           ? (newRoom.winner_id === user?.id ? 'player' : 'opponent')
@@ -1828,114 +1861,29 @@ useEffect(() => {
       }
 
       setCurrentRoom(newRoom);
-    })
-    .on('presence', { event: 'leave' }, async ({ key }) => {
-      console.log('🚪 Presence leave event:', key);
-      
-      // Ignore early false leaves during initial subscription grace period
-      if (Date.now() < presenceGraceUntil) {
-        console.log('⏳ Grace period - ignoring presence leave');
-        return;
-      }
-      
-      if (currentRoom.status === 'active' && 
-          key !== `user-${user?.id}`) {
-        
-        console.log('⏱️ Bağlantı kopması kontrolü başlıyor, 3 saniye bekleniyor...');
-        
-        setTimeout(async () => {
-          // Presence tabanlı doğrulama (RLS görünürlük sorunlarını aşmak için)
-          const state = channel.presenceState() as Record<string, Array<{ user_id?: string }>>;
-          const otherPlayers = Object.values(state)
-            .flat()
-            .filter((p: any) => p.user_id && p.user_id !== user?.id);
-          
-          // Ek DB doğrulaması: odadaki gerçek oyuncu sayısı
-          const { count: realCount } = await supabase
-            .from('game_participants')
-            .select('user_id', { count: 'exact', head: true } as any)
-            .eq('room_id', currentRoom.id)
-            .eq('is_bot', false);
-          
-          if (currentRoom.status === 'active' && ((otherPlayers.length === 0) || ((realCount ?? 0) <= 1))) {
-            console.log('🏆 Gerçek rakip yok - kazandın! (presence+DB doğrulandı)');
-            
-            // 🔻 Ayrılan oyuncuya ceza uygula (presence key'den çıkar)
-            try {
-              const offenderId = typeof key === 'string' && key.startsWith('user-')
-                ? key.substring('user-'.length)
-                : null;
-              if (offenderId) {
-                console.log('⚖️ Presence tabanlı ceza uygulanıyor. Offender:', offenderId.slice(-8));
-                await applyDisconnectPenalty(offenderId, currentRoom.id);
-              } else {
-                console.warn('⚠️ Offender ID tespit edilemedi, ceza atlandı');
-              }
-            } catch (e) {
-              console.error('❌ Presence ceza uygulama hatası:', e);
-            }
-            
-            if (applyWinBonus && user?.id) {
-              await applyWinBonus(user?.id, 50);
-            }
-            
-            if (toast) {
-              toast({
-                title: '🏆 Kazandınız!',
-                description: 'Rakip bağlantısı koptu. +50 puan!',
-                duration: 4000,
-              });
-            }
-            
-            console.log('🗑️ ODA SİLİNİYOR - BAĞLANTI KOPMASI');
-            await supabase
-              .from('game_rooms')
-              .update({
-                status: 'finished',
-                winner_id: user?.id || null,
-                finished_at: new Date().toISOString()
-              })
-              .eq('id', currentRoom.id);
-            
-            console.log('📢 Dispatching playerDisconnected event (connection lost)');
-            window.dispatchEvent(new CustomEvent('playerDisconnected', {
-              detail: { winner: 'player', reason: 'connection_lost', roomId: currentRoom.id }
-            }));
-            
-            // Oda durumunu temizlemiyoruz; UI sonuç ekranı açık kalmalı
-          } else {
-            console.log('✅ Leave event false positive - rakip hala mevcut (presence or DB)');
-          }
-        }, 3000);
-      }
-    })
-    .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-      console.log('👋 Player joined:', key, newPresences);
-    })
-    .on('presence', { event: 'sync' }, () => {
-      const state = channel.presenceState();
-      console.log('🔄 Presence sync:', state);
-    })
-    .subscribe(async (status) => {
-      console.log('📡 Real-time subscription status:', status, 'Room:', currentRoom.id.slice(-8));
-      if (status === 'SUBSCRIBED') {
-        try {
-          await channel.track({ user_id: user.id, room_id: currentRoom.id });
-          console.log('✅ Presence tracked for room:', currentRoom.id.slice(-8));
-          console.log('🔧 Real-time subscriptions active for participants and room updates');
-        } catch (e) {
-          console.error('❌ Presence track error:', e);
-        }
-      } else if (status === 'CHANNEL_ERROR') {
-        console.error('❌ Real-time channel error for room:', currentRoom.id.slice(-8));
-      }
-    });
+    }
+  );
 
+  console.log('🔧 Real-time subscriptions active (RealtimeManager + Presence)');
+
+  // Cleanup
   return () => {
-    console.log('🔌 Real-time bağlantı kesiliyor');
-    // Bekleyen doğrulama zamanlayıcılarını temizle
+    console.log('🔌 Cleaning up real-time subscriptions for room:', currentRoom.id.slice(-8));
+    
+    // Presence untrack & cleanup
+    presenceChannel.untrack();
+    supabase.removeChannel(presenceChannel);
+    
+    // RealtimeManager cleanup
+    if (participantsChannel) {
+      realtimeManager.unsubscribe(`game_participants-room_id=eq.${currentRoom.id}`, user.id);
+    }
+    if (roomChannel) {
+      realtimeManager.unsubscribe(`game_rooms-id=eq.${currentRoom.id}`, user.id);
+    }
+    
+    // Clear timers
     pendingTimers.forEach((t) => clearTimeout(t));
-    supabase.removeChannel(channel);
   };
 }, [
   currentRoom?.id, 
@@ -1947,107 +1895,110 @@ useEffect(() => {
   getGameModeFromRoom
 ]);
 
-// Real-time rematch listener - iki yönlü dinleyici + timeout yönetimi
+// 🎯 OPTIMIZED Rematch listener (RealtimeManager ile)
 useEffect(() => {
   if (!user) return;
   
   console.log('🔄 Rematch realtime listener kuruluyor...');
   const timeoutMap = new Map<string, NodeJS.Timeout>();
   
-  const rematchChannel = supabase
-    .channel(`rematch-listener-${user.id}`)
-    // Bana gelen istekleri dinle
-    .on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'rematch_requests',
-      filter: `to_user_id=eq.${user.id}`
-    }, (payload) => {
-      const request = payload.new as RematchRequest;
-      console.log('📨 Rematch isteği alındı:', request);
-      
-      if (request.status === 'pending') {
-        setCurrentRematchRequest(request);
-        toast({
-          title: '🔄 Tekrar Oyun İsteği',
-          description: 'Rakibiniz tekrar oyun istiyor! 30 saniye içinde yanıt verin.',
-          duration: 5000,
-        });
+  // Bana gelen istekler
+  const incomingChannel = realtimeManager.subscribe(
+    'rematch_requests',
+    user.id,
+    `to_user_id=eq.${user.id}`,
+    (payload) => {
+      if (payload.eventType === 'INSERT') {
+        const request = payload.new as RematchRequest;
+        console.log('📨 Rematch isteği alındı:', request);
         
-        // 30 saniye timeout başlat
-        const timeoutId = setTimeout(async () => {
-          console.log('⏰ Rematch timeout - istek iptal ediliyor:', request.id);
-          
-          // İsteği otomatik reddet
-          await supabase
-            .from('rematch_requests')
-            .update({ 
-              status: 'rejected',
-              responded_at: new Date().toISOString()
-            })
-            .eq('id', request.id);
-          
-          setCurrentRematchRequest(null);
-          
+        if (request.status === 'pending') {
+          setCurrentRematchRequest(request);
           toast({
-            title: '⏰ Süre Doldu',
-            description: 'Tekrar oyun isteği zaman aşımına uğradı.',
-            variant: 'destructive',
+            title: '🔄 Tekrar Oyun İsteği',
+            description: 'Rakibiniz tekrar oyun istiyor! 30 saniye içinde yanıt verin.',
+            duration: 5000,
+          });
+          
+          const timeoutId = setTimeout(async () => {
+            console.log('⏰ Rematch timeout - istek iptal ediliyor:', request.id);
+            
+            await supabase
+              .from('rematch_requests')
+              .update({ 
+                status: 'rejected',
+                responded_at: new Date().toISOString()
+              })
+              .eq('id', request.id);
+            
+            setCurrentRematchRequest(null);
+            
+            toast({
+              title: '⏰ Süre Doldu',
+              description: 'Tekrar oyun isteği zaman aşımına uğradı.',
+              variant: 'destructive',
+              duration: 3000,
+            });
+            
+            timeoutMap.delete(request.id);
+          }, 30000);
+          
+          timeoutMap.set(request.id, timeoutId);
+        }
+      }
+    }
+  );
+  
+  // Benim gönderdiğim isteklerin yanıtları
+  const outgoingChannel = realtimeManager.subscribe(
+    'rematch_requests',
+    user.id,
+    `from_user_id=eq.${user.id}`,
+    (payload) => {
+      if (payload.eventType === 'UPDATE') {
+        const request = payload.new as RematchRequest;
+        console.log('📬 Gönderdiğim istek yanıtlandı:', request);
+        
+        const timeoutId = timeoutMap.get(request.id);
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutMap.delete(request.id);
+        }
+        
+        if (request.status === 'accepted') {
+          toast({
+            title: '✅ İstek Kabul Edildi!',
+            description: 'Rakibiniz tekrar oyunu kabul etti, yönlendiriliyorsunuz...',
             duration: 3000,
           });
           
-          timeoutMap.delete(request.id);
-        }, 30000); // 30 saniye
-        
-        timeoutMap.set(request.id, timeoutId);
-      }
-    })
-    // Benim gönderdiğim isteklerin yanıtlarını dinle
-    .on('postgres_changes', {
-      event: 'UPDATE',
-      schema: 'public',
-      table: 'rematch_requests',
-      filter: `from_user_id=eq.${user.id}`
-    }, (payload) => {
-      const request = payload.new as RematchRequest;
-      console.log('📬 Gönderdiğim istek yanıtlandı:', request);
-      
-      // Timeout'u temizle
-      const timeoutId = timeoutMap.get(request.id);
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-        timeoutMap.delete(request.id);
-      }
-      
-      if (request.status === 'accepted') {
-        toast({
-          title: '✅ İstek Kabul Edildi!',
-          description: 'Rakibiniz tekrar oyunu kabul etti, yönlendiriliyorsunuz...',
-          duration: 3000,
-        });
-        
-        // Kabul edildiğinde odaya yönlendir
-        if (request.room_code) {
-          navigate(`/private-room-waiting?code=${request.room_code}&gameType=${request.game_type}`);
+          if (request.room_code) {
+            navigate(`/private-room-waiting?code=${request.room_code}&gameType=${request.game_type}`);
+          }
+        } else if (request.status === 'rejected') {
+          toast({
+            title: '❌ İstek Reddedildi',
+            description: 'Rakibiniz tekrar oyunu reddetti.',
+            duration: 3000,
+          });
         }
-      } else if (request.status === 'rejected') {
-        toast({
-          title: '❌ İstek Reddedildi',
-          description: 'Rakibiniz tekrar oyunu reddetti.',
-          duration: 3000,
-        });
+        
+        setCurrentRematchRequest(null);
       }
-      
-      setCurrentRematchRequest(null);
-    })
-    .subscribe();
+    }
+  );
   
   return () => {
     console.log('🔌 Rematch listener kapatılıyor...');
-    // Tüm timeout'ları temizle
     timeoutMap.forEach(timeout => clearTimeout(timeout));
     timeoutMap.clear();
-    supabase.removeChannel(rematchChannel);
+    
+    if (incomingChannel) {
+      realtimeManager.unsubscribe(`rematch_requests-to_user_id=eq.${user.id}`, user.id);
+    }
+    if (outgoingChannel) {
+      realtimeManager.unsubscribe(`rematch_requests-from_user_id=eq.${user.id}`, user.id);
+    }
   };
 }, [user?.id, setCurrentRematchRequest, toast, navigate]);
 
@@ -2091,12 +2042,14 @@ useEffect(() => {
     
     // Cleanup on component unmount
     return () => {
-      // window.removeEventListener('beforeunload', handleBeforeUnload);
+      console.log('🧹 GameContext unmounting - cleaning all real-time subscriptions');
       
-      // 🔥 Component unmount'da da sadece log
-      console.log('🧹 GameContext component unmounting');
+      // RealtimeManager'daki user'ın tüm subscription'larını temizle
+      if (user?.id) {
+        realtimeManager.unsubscribeAll(user.id);
+      }
     };
-  }, [currentRoom?.id, user?.id, applyDisconnectPenalty]); // participants'ı kaldırdık!
+  }, [currentRoom?.id, user?.id]);
 
   // Initialize cleanup on mount
   useEffect(() => {

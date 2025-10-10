@@ -1,4 +1,4 @@
-// Advanced Realtime Connection Manager
+import React from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
@@ -302,5 +302,3 @@ declare global {
 if (typeof window !== 'undefined') {
   window.realtimeManager = realtimeManager;
 }
-
-import React from 'react';
