@@ -2160,6 +2160,13 @@ useEffect(() => {
       if (matchData) {
         console.log('🏆 Tournament match loaded:', matchData.id);
         setTournamentMatch(matchData);
+        
+        // 🎯 Eğer countdown_started_at varsa hemen countdown başlat
+        if (matchData.countdown_started_at && !showCountdown && !gameStarted) {
+          console.log('🎯 Tournament countdown başlatılıyor (initial load):', matchData.countdown_started_at);
+          setCountdownServerTime(matchData.countdown_started_at);
+          setShowCountdown(true);
+        }
       }
       
       // Load tournament participants (profiles ayrı sorgu ile eklenecek)
@@ -2583,7 +2590,7 @@ const checkWinnerWithScores = useCallback(async (currentPlayerScore: number, cur
   setShowResults(true);
 }, [gameEnded, winner, user, currentRoom, gameMode, endGame, playSound, playCelebrationSound, playGameLoseSound, toast, participants, playerWordsWithScores, opponentWordsWithScores, gameStartTime, gameType]);
 
-  // 🏆 TURNUVA MAÇLARI İÇİN REAL-TIME SCORE SYNC
+  // 🏆 TURNUVA MAÇLARI İÇİN REAL-TIME SCORE SYNC + COUNTDOWN SYNC
   useEffect(() => {
     if (gameMode !== 'tournament' || !tournamentMatch || !user) return;
 
@@ -2603,6 +2610,13 @@ const checkWinnerWithScores = useCallback(async (currentPlayerScore: number, cur
           console.log('🏆 Turnuva maçı güncellendi:', payload);
           const newData = payload.new as any;
           
+          // 🎯 SERVER-SIDE COUNTDOWN SYNC
+          if (newData.countdown_started_at && !showCountdown && !gameStarted) {
+            console.log('🎯 Tournament countdown başlatılıyor (server-sync):', newData.countdown_started_at);
+            setCountdownServerTime(newData.countdown_started_at);
+            setShowCountdown(true);
+          }
+          
           // Karşı oyuncunun skorunu güncelle
           const isPlayer1 = tournamentMatch.player1_id === user.id;
           const opponentScore = isPlayer1 ? newData.player2_score : newData.player1_score;
@@ -2619,7 +2633,7 @@ const checkWinnerWithScores = useCallback(async (currentPlayerScore: number, cur
       console.log('🔌 Turnuva maçı subscription temizleniyor');
       supabase.removeChannel(channel);
     };
-  }, [gameMode, tournamentMatch, user, gameEnded]);
+  }, [gameMode, tournamentMatch, user, gameEnded, showCountdown, gameStarted]);
 
 const handleTournamentExit = async () => {
   if (!user || !tournamentMatch) return;

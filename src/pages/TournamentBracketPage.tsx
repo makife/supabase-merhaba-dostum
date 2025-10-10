@@ -185,7 +185,7 @@ const TournamentBracketPage = () => {
         }
 
         // SADECE her iki oyuncu da bot ise otomatik tamamla
-        // Gerçek oyuncular varsa maçı otomatik tamamlama
+        // Gerçek oyuncular varsa countdown_started_at set et (server-sync için)
         if (player1IsBot && player2IsBot) {
           console.log("🤖 Both players are bots, auto-completing match");
           const player1Score = Math.floor(Math.random() * 50) + 20;
@@ -203,9 +203,17 @@ const TournamentBracketPage = () => {
             })
             .eq("id", match.id);
         } else {
-          console.log("👤 Real player detected, NOT auto-completing match - leaving as in_progress");
-          // Gerçek oyuncu varsa maçı olduğu gibi bırak (in_progress)
-          // Bu maç gerçek oyuncu tarafından oynanmalı
+          // Gerçek oyuncu varsa: countdown_started_at set et (server-side sync için)
+          const countdownStart = new Date().toISOString();
+          console.log(`👤 Real player match detected, setting countdown_started_at:`, countdownStart);
+          
+          await supabase
+            .from("tournament_matches")
+            .update({
+              countdown_started_at: countdownStart,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", match.id);
         }
       }
 

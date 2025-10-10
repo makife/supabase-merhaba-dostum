@@ -83,15 +83,11 @@ const GameCountdown = ({ onComplete, className, serverStartTime }: GameCountdown
     }
   };
 
-  // 🎯 SERVER-SIDE COUNTDOWN SYNC
+  // 🎯 SERVER-SIDE COUNTDOWN SYNC (SADECE)
   useEffect(() => {
     if (!serverStartTime) {
-      // Fallback to client-side if no server time
-      const initialTimer = setTimeout(() => {
-        setHasStarted(true);
-        setIsVisible(true);
-      }, 1000);
-      return () => clearTimeout(initialTimer);
+      console.error('⚠️ Server start time eksik! Countdown başlatılamıyor.');
+      return;
     }
 
     // Calculate countdown based on server timestamp
@@ -128,36 +124,8 @@ const GameCountdown = ({ onComplete, className, serverStartTime }: GameCountdown
     return () => clearInterval(interval);
   }, [serverStartTime, onComplete]);
 
-  // Client-side fallback countdown (if no server time)
-  useEffect(() => {
-    if (serverStartTime || !hasStarted) return;
-
-    if (count > 0) {
-      playCountdownSound(count);
-      
-      const timer = setTimeout(() => {
-        setIsVisible(false);
-        setTimeout(() => {
-          setCount(count - 1);
-          setIsVisible(true);
-        }, 200);
-      }, 800);
-
-      return () => {
-        clearTimeout(timer);
-      };
-    } else if (count === 0 && !showStart) {
-      playStartSound();
-      setShowStart(true);
-      
-      setTimeout(() => {
-        setIsVisible(false);
-        setTimeout(() => {
-          onComplete();
-        }, 200);
-      }, 1000);
-    }
-  }, [count, showStart, onComplete, hasStarted, serverStartTime]);
+  // ❌ CLIENT-SIDE FALLBACK KALDIRILDI - Sadece server-side sync kullanıyoruz
+  // Bu sayede tüm oyuncular tamamen senkronize oluyor
 
   // Henüz başlamamışsa hiçbir şey gösterme
   if (!hasStarted) return null;
