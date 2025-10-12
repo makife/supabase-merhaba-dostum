@@ -3334,6 +3334,16 @@ useEffect(() => {
   };
 }, []);
 
+// ⏱️ Initial server countdown sync for private/random
+useEffect(() => {
+  if ((gameMode === 'private-room' || gameMode === 'random-match') && currentRoom?.countdown_started_at && !showCountdown && !gameStarted) {
+    console.log('⏰ Initial countdown sync from room state:', currentRoom.countdown_started_at);
+    setCountdownServerTime(currentRoom.countdown_started_at);
+    setShowCountdown(true);
+    setGameStarted(false);
+  }
+}, [gameMode, currentRoom?.countdown_started_at, showCountdown, gameStarted]);
+
 // Multiplayer (private-room & random-match) waiting/start logic
 useEffect(() => {
   if (gameMode === 'private-room' || gameMode === 'random-match') {
@@ -4242,9 +4252,9 @@ const handleCountdownComplete = () => {
   }
   setGameStarted(true);
   gameHasStartedRef.current = true;
-  // Özel oda ve rastgele eşleşmede sunucu senkronunu kısa süre bastır (2:00'ı kesmemesi için)
+  // Özel oda ve rastgele eşleşmede sunucu senkronunu kısa süre bastır (3sn)
   if (gameMode === 'private-room' || gameMode === 'random-match') {
-    syncSuppressUntilRef.current = Date.now() + 200000; // 3sn (daha kısa süre)
+    syncSuppressUntilRef.current = Date.now() + 3000; // 3sn
   }
 };
 
