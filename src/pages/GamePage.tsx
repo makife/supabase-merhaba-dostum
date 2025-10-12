@@ -3344,45 +3344,7 @@ useEffect(() => {
       console.log('✅ 2 gerçek oyuncu hazır - OYUN BAŞLIYOR!');
       setWaitingForPlayer(false);
 
-      // 🎯 SERVER-SIDE COUNTDOWN: Oyun başlamadıysa server'dan countdown başlat
-      if (!gameStarted && !showCountdown && !gameHasStartedRef.current && currentRoom?.id) {
-        (async () => {
-          try {
-            const { data, error } = await supabase.rpc('start_game_countdown', {
-              p_room_id: currentRoom.id
-            });
-            
-            if (!error && data) {
-              console.log('🎯 Server countdown başlatıldı:', data);
-              setCountdownServerTime(data);
-              setShowCountdown(true);
-              setGameStarted(false);
-            } else {
-              console.warn('⚠️ RPC yok veya hata döndü, local fallback ile başlatılıyor:', error);
-              const nowIso = new Date().toISOString();
-              // DB'yi güncelle ki diğer istemci de senkron olsun
-              await supabase
-                .from('game_rooms')
-                .update({ countdown_started_at: nowIso, updated_at: nowIso })
-                .eq('id', currentRoom.id);
-              setCountdownServerTime(nowIso);
-              setShowCountdown(true);
-              setGameStarted(false);
-            }
-          } catch (err) {
-            console.error('Countdown başlatma hatası:', err);
-            // Fallback: client-side countdown + DB güncelle
-            const nowIso = new Date().toISOString();
-            await supabase
-              .from('game_rooms')
-              .update({ countdown_started_at: nowIso, updated_at: nowIso })
-              .eq('id', currentRoom.id);
-            setCountdownServerTime(nowIso);
-            setShowCountdown(true);
-            setGameStarted(false);
-          }
-        })();
-      }
+      // 🎯 Countdown GameContext tarafından başlatılıyor - burada duplike kod yok!
       
       if (!hasShownStartMessage) {
         setHasShownStartMessage(true);
