@@ -2967,7 +2967,7 @@ const isPlayingWithAI = useCallback(() => {
 
   // Real-time kelime senkronizasyonu
 useEffect(() => {
-  if (!currentRoom || !user) return;
+  if (!currentRoom?.id || !user) return;
 
   console.log('🔄 === WORD SYNC BAŞLADI ===');
   console.log('🔄 Room ID:', currentRoom.id.slice(-8));
