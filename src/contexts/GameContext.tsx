@@ -622,16 +622,38 @@ const generateRoomCode = () => {
       const player1Id = realPlayers?.[0]?.user_id || null;
       const player2Id = realPlayers?.[1]?.user_id || null;
       
-      await supabase
-        .from('game_rooms')
-        .update({ 
-          status: 'active',
-          started_at: startedAt,
-          player1_id: player1Id,
-          player2_id: player2Id,
-        })
-        .eq('id', roomId)
-        .is('started_at', null);
+      // 🎯 SERVER-SIDE COUNTDOWN başlat
+      const { data: countdownTime, error: rpcError } = await supabase.rpc('start_game_countdown', {
+        p_room_id: roomId
+      });
+      
+      if (rpcError) {
+        console.warn('⚠️ RPC countdown hatası, fallback kullanılıyor:', rpcError);
+        // Fallback: Manuel DB update
+        await supabase
+          .from('game_rooms')
+          .update({ 
+            status: 'active',
+            started_at: startedAt,
+            countdown_started_at: startedAt,
+            player1_id: player1Id,
+            player2_id: player2Id,
+          })
+          .eq('id', roomId)
+          .is('started_at', null);
+      } else {
+        console.log('✅ Server-side countdown başlatıldı:', countdownTime);
+        await supabase
+          .from('game_rooms')
+          .update({ 
+            status: 'active',
+            started_at: startedAt,
+            player1_id: player1Id,
+            player2_id: player2Id,
+          })
+          .eq('id', roomId)
+          .is('started_at', null);
+      }
         
       // Lokal state'i anında güncelle ki tekrar kapanma döngüsü oluşmasın
       setCurrentRoom(prev => {
@@ -639,7 +661,7 @@ const generateRoomCode = () => {
         return { ...prev, status: 'active', started_at: startedAt, player1_id: player1Id, player2_id: player2Id } as GameRoom;
       });
 
-      console.log('✅ Oda kapatıldı');
+      console.log('✅ Oda kapatıldı ve countdown başlatıldı');
     } catch (error) {
       console.error('❌ Oda kapatma hatası:', error);
     } finally {
@@ -1014,6 +1036,21 @@ const fetchParticipants = useCallback(
         } else {
           // Successful join!
           console.log('✅ BAŞARILI EŞLEŞME!');
+          
+          // 🎯 SERVER-SIDE COUNTDOWN başlat (2. oyuncu join olduğunda)
+          try {
+            const { data: countdownTime, error: rpcError } = await supabase.rpc('start_game_countdown', {
+              p_room_id: targetRoom.id
+            });
+            
+            if (rpcError) {
+              console.warn('⚠️ RPC countdown hatası:', rpcError);
+            } else {
+              console.log('✅ Matchmaking countdown başlatıldı:', countdownTime);
+            }
+          } catch (countdownError) {
+            console.error('❌ Countdown başlatma hatası:', countdownError);
+          }
           
           // ✅ ÖNEMLI: Oda zaten bir ızgara var, onu kullan
           setCurrentRoom(targetRoom);
