@@ -634,31 +634,29 @@ const generateRoomCode = () => {
           .from('game_rooms')
           .update({ 
             status: 'active',
-            started_at: startedAt,
             countdown_started_at: startedAt,
             player1_id: player1Id,
             player2_id: player2Id,
           })
           .eq('id', roomId)
-          .is('started_at', null);
+          .is('countdown_started_at', null);
       } else {
         console.log('✅ Server-side countdown başlatıldı:', countdownTime);
         await supabase
           .from('game_rooms')
           .update({ 
             status: 'active',
-            started_at: startedAt,
             player1_id: player1Id,
             player2_id: player2Id,
           })
           .eq('id', roomId)
-          .is('started_at', null);
+          .is('countdown_started_at', null);
       }
         
       // Lokal state'i anında güncelle ki tekrar kapanma döngüsü oluşmasın
       setCurrentRoom(prev => {
         if (!prev || prev.id !== roomId) return prev;
-        return { ...prev, status: 'active', started_at: startedAt, player1_id: player1Id, player2_id: player2Id } as GameRoom;
+        return { ...prev, status: 'active', player1_id: player1Id, player2_id: player2Id } as GameRoom;
       });
 
       console.log('✅ Oda kapatıldı ve countdown başlatıldı');
