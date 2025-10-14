@@ -234,21 +234,38 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   };
 
 const sendRematchRequest = useCallback(async (_roomCode: string, gameType: 'timed' | 'score') => {
-  if (!user) return;
+  if (!user) {
+    console.error('❌ User bulunamadı');
+    throw new Error('Kullanıcı bulunamadı');
+  }
   
-  console.log('🔔 sendRematchRequest çağrıldı:', { roomCode: _roomCode, gameType, userId: user.id });
+  console.log('🔔 sendRematchRequest çağrıldı:', { 
+    roomCode: _roomCode, 
+    gameType, 
+    userId: user.id.slice(-8),
+    participantCount: participants.length,
+    participants: participants.map(p => ({
+      userId: p.user_id?.slice(-8),
+      isBot: p.is_bot
+    }))
+  });
   
-  // Önce aktif participants'tan rakip bul, yoksa lastOpponent'ı kullan
+  // Rakip bul: Önce aktif participants, yoksa lastOpponent
   let opponent = participants.find(p => !p.is_bot && p.user_id !== user.id);
   if (!opponent && lastOpponent) {
+    console.log('⚠️ Participants\'ta rakip yok, lastOpponent kullanılıyor');
     opponent = lastOpponent;
   }
   
   if (!opponent || !opponent.user_id) {
+    console.error('❌ Rakip bulunamadı!', { 
+      participantsLength: participants.length,
+      hasLastOpponent: !!lastOpponent 
+    });
     throw new Error('Rakip bulunamadı');
   }
   
-  console.log('🔄 Tekrar oyun isteği gönderiliyor...', {
+  console.log('🔄 Tekrar oyun isteği gönderiliyor:', {
     from: user.id.slice(-8),
     to: opponent.user_id.slice(-8),
     gameType,
@@ -317,12 +334,12 @@ const sendRematchRequest = useCallback(async (_roomCode: string, gameType: 'time
 
     console.log('📤 Rematch request DB\'ye yazılıyor:', {
       room_code: code,
-      from_user_id: user.id,
-      to_user_id: opponent?.user_id,
+      from_user_id: user.id.slice(-8),
+      to_user_id: opponent.user_id.slice(-8),
       game_type: gameType
     });
     
-    // Rematch request kaydı
+    // Rematch request kaydı oluştur
     const { data, error } = await supabase
       .from('rematch_requests')
       .insert({
@@ -335,12 +352,17 @@ const sendRematchRequest = useCallback(async (_roomCode: string, gameType: 'time
       .select()
       .single();
       
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Rematch request insert hatası:', error);
+      throw error;
+    }
     
-    console.log('🔄 Tekrar oyun isteği gönderildi:', {
+    console.log('✅ Rematch request başarıyla oluşturuldu:', {
       requestId: data.id,
       room: code,
-      mode: mode
+      mode: mode,
+      from: user.id.slice(-8),
+      to: opponent.user_id.slice(-8)
     });
     
     // Push notification gönder (opsiyonel)

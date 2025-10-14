@@ -31,24 +31,21 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
     playWithAI
   } = useMatchmaking();
 
+  // Modal açıldığında arama başlat
   useEffect(() => {
-  // Sadece modal AÇIKKEN ve arama YAPILMIYORKEN başlat
-  if (isOpen && !isSearching) {
-    console.log('🚀 Modal açıldı, arama başlatılıyor');
-    startSearch(gameType);
-  }
-}, [isOpen]);
+    if (isOpen && !isSearching) {
+      console.log('🚀 Modal açıldı, arama başlatılıyor');
+      startSearch(gameType);
+    }
+  }, [isOpen, gameType]);
 
-  // BU EFFEKTİ EKLE: Modal kapandığında tamamen temizle
+  // Modal kapandığında cleanup
   useEffect(() => {
-  if (!isOpen) {
-    // Modal kapalıyken arama yapılıyorsa durdur
-    if (isSearching) {
-      console.log('🛑 Modal kapandı, arama durduruluyor');
+    if (!isOpen && isSearching) {
+      console.log('🛑 Modal kapandı, arama durduruluyor ve temizleniyor');
       cancelSearch();
     }
-  }
-}, [isOpen, isSearching, cancelSearch]);
+  }, [isOpen]);
 
   const handleClose = () => {
     console.log('❌ Kapat butonuna basıldı');
@@ -70,21 +67,17 @@ const NewMatchmakingModal: React.FC<NewMatchmakingModalProps> = ({
     if (currentRoom?.status === 'matched' && currentRoom.current_players >= 2) {
       console.log('🎯 Supabase eşleşme bulundu, yönlendiriliyor');
       onMatchFound(currentRoom.id);
-      setTimeout(() => {
-        onClose();
-      }, 500);
+      onClose();
     }
-  }, [currentRoom?.status, currentRoom?.current_players, currentRoom?.id, onClose, onMatchFound]);
+  }, [currentRoom?.status, currentRoom?.current_players, currentRoom?.id]);
 
   useEffect(() => {
     if (nakamaMatch?.matchId) {
-      console.log('🎯 Nakama eşleşme bulundu, yönlendiriliyor');
+      console.log('🎯 Nakama eşleşme bulundu, yönlendiriliyor:', nakamaMatch.matchId);
       onMatchFound(nakamaMatch.matchId);
-      setTimeout(() => {
-        onClose();
-      }, 500);
+      onClose();
     }
-  }, [nakamaMatch?.matchId, onClose, onMatchFound]);
+  }, [nakamaMatch?.matchId]);
 
   const getSearchStatus = () => {
     // Timeout durumu kontrolü

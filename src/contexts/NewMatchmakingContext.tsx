@@ -87,33 +87,38 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
 
   // Temizlik fonksiyonu
   const cleanup = async () => {
-    console.log("🧹 Matchmaking cleanup çalışıyor...");
+    console.log("🧹 Matchmaking cleanup başlatılıyor...");
 
+    // Timer'ı durdur
+    clearProgressTimer();
+
+    // Real-time channel kapat
     if (searchChannel) {
       supabase.removeChannel(searchChannel);
       setSearchChannel(null);
       console.log("📡 Real-time channel kapatıldı");
     }
 
-    clearProgressTimer();
-
-    // Aktif bir matchmaking bileti varsa iptal et (self-match'i önler)
+    // Nakama ticket iptal
     if (currentTicket) {
       try {
         await nakamaService.cancelMatchmaking(currentTicket);
         console.log("✅ Nakama ticket iptal edildi");
       } catch (e) {
         console.warn("Cleanup cancel error:", e);
-      } finally {
-        setCurrentTicket(null);
       }
+      setCurrentTicket(null);
     }
 
-    // 🔥 Nakama socket'ini temizle - yeni aramada yeniden bağlanacak
-    nakamaService.disconnect();
-    console.log("✅ Nakama socket kapatıldı");
+    // Nakama socket'i kapat
+    try {
+      nakamaService.disconnect();
+      console.log("✅ Nakama socket kapatıldı");
+    } catch (e) {
+      console.warn("Nakama disconnect error:", e);
+    }
 
-    // State'leri temizle
+    // State'leri sıfırla
     setIsSearching(false);
     setCurrentRoom(null);
     setSearchProgress(0);
@@ -121,12 +126,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
     setUseNakama(false);
     setNakamaMatch(null);
 
-    // Clear any persisted last match to prevent rejoining ended rooms
-    try {
-      (nakamaService as any).setLastMatch?.({ id: '' });
-    } catch {}
-
-    console.log("✅ Matchmaking state temizlendi");
+    console.log("✅ Matchmaking tamamen temizlendi");
   };
 
   // Arama başlat - Default olarak Nakama kullan
