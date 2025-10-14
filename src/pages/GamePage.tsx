@@ -1263,6 +1263,9 @@ const handleBackToMenu = async () => {
     await leaveRoom();
   }
   
+  // Oyundan çıkarken matchmaking state'ini de temizle
+  window.dispatchEvent(new CustomEvent('cleanupMatchmaking'));
+  
   navigate('/');
 };
 
@@ -4174,6 +4177,8 @@ if (gameEnded) {
       
       <Button onClick={() => {
         playSound('buttonClick');
+        // Oyun bitiminde matchmaking state'ini temizle
+        window.dispatchEvent(new CustomEvent('cleanupMatchmaking'));
         navigate('/');
       }} variant="outline" className="w-full">
         Ana Menüye Dön
@@ -4184,6 +4189,8 @@ if (gameEnded) {
               <>
                 <Button onClick={() => {
                   playSound('buttonClick');
+                  // Oyun bitiminde matchmaking state'ini temizle
+                  window.dispatchEvent(new CustomEvent('cleanupMatchmaking'));
                   navigate('/');
                 }} className="w-full">
                   Ana Menüye Dön

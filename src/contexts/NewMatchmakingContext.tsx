@@ -85,7 +85,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   const [nakamaMatch, setNakamaMatch] = useState<{ matchId: string; gameType: "timed" | "score" } | null>(null);
   const [currentTicket, setCurrentTicket] = useState<string | null>(null);
 
-  // Temizlik fonksiyonu
+  // Temizlik fonksiyonu - Global kullanım için export edilebilir
   const cleanup = async () => {
     console.log("🧹 Matchmaking cleanup başlatılıyor...");
 
@@ -118,13 +118,14 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       console.warn("Nakama disconnect error:", e);
     }
 
-    // State'leri sıfırla
+    // State'leri TAMAMEN sıfırla
     setIsSearching(false);
     setCurrentRoom(null);
     setSearchProgress(0);
     setSearchTimeout(false);
     setUseNakama(false);
     setNakamaMatch(null);
+    setCurrentGameType("timed"); // Default'a dön
 
     console.log("✅ Matchmaking tamamen temizlendi");
   };
@@ -138,9 +139,12 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
     }
 
     try {
-      // Önce eski match'i temizle
-      setNakamaMatch(null);
-      setCurrentRoom(null);
+      // Önce tam temizlik yap
+      console.log("🧹 Yeni arama öncesi tam temizlik yapılıyor...");
+      await cleanup();
+      
+      // Kısa gecikme - state'lerin tamamen temizlenmesi için
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       setIsSearching(true);
       setSearchProgress(0);
@@ -502,6 +506,20 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   useEffect(() => {
     return () => {
       cleanup();
+    };
+  }, []);
+
+  // Oyun bitimi veya ayrılma durumlarında cleanup eventi dinle
+  useEffect(() => {
+    const handleCleanup = () => {
+      console.log("🧹 Global cleanup eventi alındı, matchmaking temizleniyor...");
+      cleanup();
+    };
+
+    window.addEventListener('cleanupMatchmaking', handleCleanup);
+    
+    return () => {
+      window.removeEventListener('cleanupMatchmaking', handleCleanup);
     };
   }, []);
 
