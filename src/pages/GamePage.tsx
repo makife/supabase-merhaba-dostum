@@ -368,6 +368,7 @@ useEffect(() => {
   const [showCountdown, setShowCountdown] = useState(false);
   const [countdownServerTime, setCountdownServerTime] = useState<string | null>(null);
   const [gameStarted, setGameStarted] = useState(false);
+  const countdownCheckDoneRef = useRef(false);
   const [waitingForPlayer, setWaitingForPlayer] = useState(false);
   const [gameEnded, setGameEnded] = useState(false);
   const statsUpdatedRef = useRef(false);
@@ -3343,6 +3344,45 @@ useEffect(() => {
     setGameStarted(false);
   }
 }, [gameMode, currentRoom?.countdown_started_at, showCountdown, gameStarted]);
+
+// 🔍 Countdown eksiklik kontrolü: Eğer 2 oyuncu var ama countdown başlamamışsa kontrol et
+useEffect(() => {
+  if (gameMode !== 'private-room' && gameMode !== 'random-match') return;
+  if (showCountdown || gameStarted) return; // Zaten countdown varsa veya oyun başlamışsa skip
+  if (countdownCheckDoneRef.current) return; // Tek seferlik kontrol
+  
+  const realPlayers = participants.filter(p => !p.is_bot && p.user_id !== null);
+  if (realPlayers.length < 2) return; // Henüz 2 oyuncu yok
+  
+  // 🎯 2 oyuncu var ama countdown yok - sunucudan kontrol et
+  const checkCountdown = async () => {
+    if (!currentRoom?.id) return;
+    
+    try {
+      console.log('🔍 Countdown kontrol ediliyor - 2 oyuncu var ama countdown başlamamış olabilir');
+      const { data } = await supabase
+        .from('game_rooms')
+        .select('countdown_started_at, status')
+        .eq('id', currentRoom.id)
+        .single();
+      
+      if (data?.countdown_started_at) {
+        console.log('✅ Sunucuda countdown var, senkronize ediliyor:', data.countdown_started_at);
+        setCountdownServerTime(data.countdown_started_at);
+        setShowCountdown(true);
+        countdownCheckDoneRef.current = true;
+      } else {
+        console.log('⚠️ Sunucuda countdown yok - beklenmeyen durum');
+      }
+    } catch (error) {
+      console.error('❌ Countdown kontrol hatası:', error);
+    }
+  };
+  
+  // 1 saniye gecikme ile kontrol et (realtime subscription'dan sonra)
+  const timer = setTimeout(checkCountdown, 1000);
+  return () => clearTimeout(timer);
+}, [gameMode, participants, showCountdown, gameStarted, currentRoom?.id]);
 
 // Multiplayer (private-room & random-match) waiting/start logic
 useEffect(() => {

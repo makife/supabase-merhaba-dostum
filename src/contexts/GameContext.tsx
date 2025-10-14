@@ -627,6 +627,8 @@ const generateRoomCode = () => {
         p_room_id: roomId
       });
       
+      const serverTime = rpcError ? startedAt : countdownTime;
+      
       if (rpcError) {
         console.warn('⚠️ RPC countdown hatası, fallback kullanılıyor:', rpcError);
         // Fallback: Manuel DB update
@@ -653,10 +655,16 @@ const generateRoomCode = () => {
           .is('countdown_started_at', null);
       }
         
-      // Lokal state'i anında güncelle ki tekrar kapanma döngüsü oluşmasın
+      // 🎯 KRITIK: Lokal state'i HEMEN güncelle + countdown zamanını set et
       setCurrentRoom(prev => {
         if (!prev || prev.id !== roomId) return prev;
-        return { ...prev, status: 'active', player1_id: player1Id, player2_id: player2Id } as GameRoom;
+        return { 
+          ...prev, 
+          status: 'active', 
+          countdown_started_at: serverTime,
+          player1_id: player1Id, 
+          player2_id: player2Id 
+        } as GameRoom;
       });
 
       console.log('✅ Oda kapatıldı ve countdown başlatıldı');
