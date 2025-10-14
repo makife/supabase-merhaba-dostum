@@ -1622,15 +1622,8 @@ useEffect(() => {
   setHighlightedLetters(positions);
   setGameGrid(newGrid);
   
-  // ✅ Server'a yeni grid'i gönder
-  if (currentRoom?.id) {
-    const flatGrid = newGrid.flat();
-    await supabase
-      .from('game_rooms')
-      .update({ current_grid: flatGrid })
-      .eq('id', currentRoom.id);
-    console.log('✅ Grid updated on server after joker use');
-  }
+  // ⚠️ Server'a grid gönderme - sadece lokal değişiklik
+  console.log('🎯 Değiştir jokeri - sadece lokal grid değişikliği');
   
   const jokerUsed = await useJoker('degistir');
   if (!jokerUsed) {
@@ -1643,7 +1636,7 @@ useEffect(() => {
   setTimeout(() => {
     setHighlightedLetters([]);
     setIsJokerActive(false);
-    setGridSyncPaused(false);
+    // Grid sync'i sürekli kapalı tut - değiştir jokeri lokal kalmalı
   }, 1000);
   
   setSelectedLetters([]);
