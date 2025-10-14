@@ -404,6 +404,24 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
             console.warn('Room reset warning:', resetErr);
           }
 
+          // ✅ Supabase tutarlılığını bekle - oda görünene kadar kısa süre dene
+          try {
+            for (let i = 1; i <= 20; i++) {
+              const { data } = await supabase
+                .from('game_rooms')
+                .select('id')
+                .eq('id', cleanMatchId)
+                .maybeSingle();
+              if (data?.id) {
+                console.log(`🟢 Room visible on Supabase after ${i} tries`);
+                break;
+              }
+              await new Promise((r) => setTimeout(r, 150));
+            }
+          } catch (visErr) {
+            console.warn('Room visibility wait error:', visErr);
+          }
+
           console.log("🎯 Match ready. Navigating via onMatchFound callback.");
           onMatchFound?.(cleanMatchId);
         } catch (error: any) {

@@ -902,6 +902,11 @@ const fetchParticipants = useCallback(
 
     if (roomError || !room) {
       console.error('❌ Oda bulunamadı:', roomError);
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(roomCode);
+      if (isUuid) {
+        // Nakama match odası henüz Supabase'de görünmüyor olabilir; sessizce false dön
+        return false;
+      }
       toast({
         title: 'Hata',
         description: 'Oda bulunamadı veya dolu',
