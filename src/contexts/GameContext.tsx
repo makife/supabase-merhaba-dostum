@@ -2070,28 +2070,7 @@ useEffect(() => {
   };
 }, [user?.id, setCurrentRematchRequest, toast, navigate]);
 
-useEffect(() => {
-  if (!currentRoom || !currentRoom.game_mode.includes('private-room')) return;
-  
-  // Oyun başladıysa polling'i durdur
-  if (currentRoom.status === 'active') {
-    console.log('🎮 Oyun aktif - polling durduruldu');
-    return;
-  }
-  
-  console.log('🔄 Private room polling başlatıldı');
-  const interval = setInterval(() => {
-    // Sadece waiting durumunda polling yap
-    if (currentRoom.status === 'waiting') {
-      fetchParticipants(currentRoom.id);
-    }
-  }, 2000); // 1 saniye yerine 2 saniye
-  
-  return () => {
-    console.log('🛑 Private room polling durduruldu');
-    clearInterval(interval);
-  };
-}, [currentRoom?.id, currentRoom?.game_mode, currentRoom?.status]);
+// ❌ PRIVATE ROOM POLLING KALDIRILDI - Realtime subscription yeterli
 
   // Handle page close/refresh cleanup
   useEffect(() => {
