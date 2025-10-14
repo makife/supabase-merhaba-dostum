@@ -326,11 +326,20 @@ useEffect(() => {
 }, [gameMode, tournamentMatch?.id, generateTournamentGrid]);
 
 // Random/private odalarda sunucu grid'ini senkronize et (ZORUNLU)
+// ⚠️ DEĞİŞTİR JOKER KORUMASI: Joker kullanımından sonra kısa süre sync'i devre dışı bırak
+const [gridSyncPaused, setGridSyncPaused] = useState(false);
+
 useEffect(() => {
   if (gameMode === 'tournament') return;
   if (gameMode !== 'random-match' && gameMode !== 'private-room') return;
   if (!currentRoom?.current_grid) {
     console.log('⏳ Waiting for room grid data...');
+    return;
+  }
+  
+  // Joker kullanımından sonra grid sync'i duraklat
+  if (gridSyncPaused) {
+    console.log('⏸️ Grid sync paused (joker protection)');
     return;
   }
   
@@ -347,7 +356,7 @@ useEffect(() => {
   });
   
   setGameGrid(grid);
-}, [gameMode, currentRoom?.current_grid, currentRoom?.id]);
+}, [gameMode, currentRoom?.current_grid, currentRoom?.id, gridSyncPaused]);
   
   const [selectedLetters, setSelectedLetters] = useState<{letter: string, row: number, col: number}[]>([]);
   const [currentWord, setCurrentWord] = useState('');
@@ -1583,6 +1592,10 @@ useEffect(() => {
   // ✅ Diğer jokerler gibi kendini koru
   setIsJokerActive(true);
   
+  // 🛡️ Grid sync'i duraklat - değiştir joker kullanımı sırasında
+  setGridSyncPaused(true);
+  console.log('🔒 Grid sync paused for joker usage');
+  
   const vowels = ['A', 'E', 'İ', 'I', 'O', 'U', 'Ü', 'Ö'];
   const consonants = ['B', 'C', 'Ç', 'D', 'F', 'G', 'Ğ', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'R', 'S', 'Ş', 'T', 'V', 'Y', 'Z'];
   
@@ -1616,6 +1629,12 @@ useEffect(() => {
     setHighlightedLetters([]);
     // ✅ İşlem bitince aktif durumu kapat
     setIsJokerActive(false);
+    
+    // 🔓 Grid sync'i tekrar aktifleştir - 3 saniye sonra
+    setTimeout(() => {
+      setGridSyncPaused(false);
+      console.log('🔓 Grid sync resumed');
+    }, 3000);
   }, 1000);
   
   setGameGrid(newGrid);
@@ -1623,6 +1642,7 @@ useEffect(() => {
   if (!jokerUsed) {
     console.error('❌ Değiştir joker kullanılamadı!');
     setIsJokerActive(false);
+    setGridSyncPaused(false);
     return;
   }
   setSelectedLetters([]);

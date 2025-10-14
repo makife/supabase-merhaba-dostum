@@ -236,6 +236,8 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 const sendRematchRequest = useCallback(async (_roomCode: string, gameType: 'timed' | 'score') => {
   if (!user) return;
   
+  console.log('🔔 sendRematchRequest çağrıldı:', { roomCode: _roomCode, gameType, userId: user.id });
+  
   // Önce aktif participants'tan rakip bul, yoksa lastOpponent'ı kullan
   let opponent = participants.find(p => !p.is_bot && p.user_id !== user.id);
   if (!opponent && lastOpponent) {
@@ -313,6 +315,13 @@ const sendRematchRequest = useCallback(async (_roomCode: string, gameType: 'time
       if (parts) setParticipants(parts as any);
     } catch {}
 
+    console.log('📤 Rematch request DB\'ye yazılıyor:', {
+      room_code: code,
+      from_user_id: user.id,
+      to_user_id: opponent?.user_id,
+      game_type: gameType
+    });
+    
     // Rematch request kaydı
     const { data, error } = await supabase
       .from('rematch_requests')
