@@ -174,8 +174,13 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       console.log("Nakama matchmaking baslatiliyor:", gameType);
 
       // Progress timer already started in startSearch
+      console.log("🔐 Authenticating with Nakama...");
       await nakamaService.authenticate(user.id);
+      console.log("✅ Nakama authenticated");
+      
+      console.log("🔌 Creating Nakama socket...");
       const socket = await nakamaService.createSocket();
+      console.log("✅ Nakama socket created");
 
       socket.onmatchmakermatched = async (matched: any) => {
         console.log("Nakama match bulundu!", matched);
