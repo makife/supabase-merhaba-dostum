@@ -1944,11 +1944,11 @@ useEffect(() => {
   getGameModeFromRoom
 ]);
 
-// 🎯 OPTIMIZED Rematch listener (RealtimeManager ile)
+// 🎯 OPTIMIZED Rematch listener (RealtimeManager ile) - GLOBAL (her zaman aktif)
 useEffect(() => {
   if (!user) return;
   
-  console.log('🔄 Rematch realtime listener kuruluyor...');
+  console.log('🔄 Rematch realtime listener kuruluyor... User:', user.id.slice(-8));
   const timeoutMap = new Map<string, NodeJS.Timeout>();
   
   // Bana gelen istekler
@@ -1959,9 +1959,16 @@ useEffect(() => {
     (payload) => {
       if (payload.eventType === 'INSERT') {
         const request = payload.new as RematchRequest;
-        console.log('📨 Rematch isteği alındı:', request);
+        console.log('📨 Rematch isteği alındı:', {
+          requestId: request.id,
+          from: request.from_user_id?.slice(-8),
+          to: request.to_user_id?.slice(-8),
+          myId: user.id.slice(-8),
+          status: request.status
+        });
         
-        if (request.status === 'pending') {
+        if (request.status === 'pending' && request.to_user_id === user.id) {
+          console.log('✅ Rematch dialog açılıyor');
           setCurrentRematchRequest(request);
           toast({
             title: '🔄 Tekrar Oyun İsteği',
@@ -1993,6 +2000,8 @@ useEffect(() => {
           }, 30000);
           
           timeoutMap.set(request.id, timeoutId);
+        } else {
+          console.log('⚠️ Rematch isteği göz ardı edildi - pending değil veya bana yönelik değil');
         }
       }
     }
