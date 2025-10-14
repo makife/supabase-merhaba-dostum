@@ -1298,12 +1298,18 @@ useEffect(() => {
         const gridToUse = generateRandomGrid();
         setGameGrid(gridToUse);
         
-        // 🔥 ÖNEMLİ: joinRoom çağır ki participants yüklensin
+        // 🔥 ÖNEMLİ: joinRoom çağır ki participants yüklensin (küçük gecikmeli yeniden dene)
         console.log('🔗 Joining Nakama game room:', roomId);
-        const success = await joinRoom(roomId);
+        let success = false;
+        for (let attempt = 1; attempt <= 6; attempt++) {
+          success = await joinRoom(roomId);
+          if (success) break;
+          console.warn(`⏳ Join retry ${attempt}/6 - oda hazır değil olabilir`);
+          await new Promise(resolve => setTimeout(resolve, 250));
+        }
         
         if (!success) {
-          console.error('❌ Nakama room\'a katılamadı');
+          console.error('❌ Nakama room\'a katılamadı (tüm denemeler başarısız)');
           toast({
             title: "Bağlantı Hatası",
             description: "Oyun odasına bağlanılamadı",
@@ -1403,11 +1409,18 @@ useEffect(() => {
         console.log('✅ Game room oluşturuldu:', newRoom.id);
       }
       
-      const success = await joinRoom(gameRoomId);
+      // Küçük gecikmeli yeniden dene (eventual consistency için)
+      let success = false;
+      for (let attempt = 1; attempt <= 6; attempt++) {
+        success = await joinRoom(gameRoomId);
+        if (success) break;
+        console.warn(`⏳ Random match join retry ${attempt}/6`);
+        await new Promise(resolve => setTimeout(resolve, 250));
+      }
       if (success) {
         console.log('✅ Random match room\'a katıldı');
       } else {
-        console.error('❌ Random match room\'a katılamadı');
+        console.error('❌ Random match room\'a katılamadı (tüm denemeler başarısız)');
         toast({
           title: "Bağlantı Hatası", 
           description: "Oyun odasına bağlanılamadı",
@@ -1463,7 +1476,14 @@ useEffect(() => {
       setGameGrid(grid);
     }
     
-    const joined = await joinRoom(roomId);
+    // Küçük gecikmeli yeniden dene
+    let joined = false;
+    for (let attempt = 1; attempt <= 6; attempt++) {
+      joined = await joinRoom(roomId);
+      if (joined) break;
+      console.warn(`⏳ Join retry ${attempt}/6`);
+      await new Promise(resolve => setTimeout(resolve, 250));
+    }
     if (!joined) {
       toast({ title: 'Bağlantı Hatası', description: 'Oyun odasına bağlanılamadı', variant: 'destructive' });
       navigate('/');
@@ -2264,9 +2284,16 @@ useEffect(() => {
         console.log('🏠 Private/Game room found:', existingGameRoom.id);
         
         // Join existing room using GameContext function
-        const joined = await joinRoom(roomId);
+        // Küçük gecikmeli yeniden dene
+        let joined = false;
+        for (let attempt = 1; attempt <= 6; attempt++) {
+          joined = await joinRoom(roomId);
+          if (joined) break;
+          console.warn(`⏳ Existing room join retry ${attempt}/6`);
+          await new Promise(resolve => setTimeout(resolve, 250));
+        }
         if (!joined) {
-          console.error('❌ Failed to join existing room');
+          console.error('❌ Failed to join existing room (tüm denemeler başarısız)');
           toast({
             title: 'Bağlantı Hatası',
             description: 'Oyun odasına bağlanılamadı',
