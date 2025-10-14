@@ -1717,36 +1717,50 @@ useEffect(() => {
         await fetchParticipantsLocal(currentRoom.id);
       }
       
-      // INSERT/DELETE: Participants fetch
-      if (payload.eventType === 'INSERT' || payload.eventType === 'DELETE') {
+      // INSERT: Yeni participant eklendi - ANINDA state'e ekle
+      if (payload.eventType === 'INSERT' && isValidParticipantPayload(payload.new)) {
+        const newParticipant = payload.new as GameParticipantPayload;
+        
+        // ✅ KRITIK: Anında state'e ekle (async fetch beklemeden)
+        setParticipants(prev => {
+          // Duplicate check
+          if (prev.some(p => p.user_id === newParticipant.user_id)) {
+            return prev;
+          }
+          return [...prev, newParticipant as GameParticipant];
+        });
+        
+        console.log('✅ Participant anında eklendi:', newParticipant.user_id?.slice(-8));
+        
+        // Sonra async fetch ile detaylı bilgileri al
         await fetchParticipantsLocal(currentRoom.id);
         
-        // INSERT: Rakip katıldı bildirimi
-        if (payload.eventType === 'INSERT' && isValidParticipantPayload(payload.new)) {
-          const newParticipant = payload.new as GameParticipantPayload;
+        // Rakip katıldı bildirimi
+        if (!newParticipant.is_bot && newParticipant.user_id && newParticipant.user_id !== user?.id) {
+          const gameMode = getGameModeFromRoom(currentRoom);
           
-          if (!newParticipant.is_bot && newParticipant.user_id && newParticipant.user_id !== user?.id) {
-            const gameMode = getGameModeFromRoom(currentRoom);
-            
-            if (gameMode?.startsWith('random-match')) {
-              toast({
-                title: '🎯 Eşleşme Tamamlandı!',
-                description: 'Rakip bulundu, oyun başlıyor...',
-                duration: 2000,
-              });
-            } else {
-              toast({
-                title: '🎉 Oyuncu Katıldı!',
-                description: 'İkinci oyuncu odaya katıldı, oyun başlıyor...',
-                duration: 2000,
-              });
-            }
+          if (gameMode?.startsWith('random-match')) {
+            toast({
+              title: '🎯 Eşleşme Tamamlandı!',
+              description: 'Rakip bulundu, oyun başlıyor...',
+              duration: 2000,
+            });
+          } else {
+            toast({
+              title: '🎉 Oyuncu Katıldı!',
+              description: 'İkinci oyuncu odaya katıldı, oyun başlıyor...',
+              duration: 2000,
+            });
           }
         }
+      }
+      
+      // DELETE: Participant silindi + Disconnect handling
+      if (payload.eventType === 'DELETE' && isValidParticipantPayload(payload.old)) {
+        await fetchParticipantsLocal(currentRoom.id);
         
-        // DELETE: Disconnect handling
-        if (payload.eventType === 'DELETE' && isValidParticipantPayload(payload.old)) {
-          const oldParticipant = payload.old as GameParticipantPayload;
+        const oldParticipant = payload.old as GameParticipantPayload;
+        
           
           if (!oldParticipant.is_bot && 
               oldParticipant.user_id && 
@@ -1844,7 +1858,6 @@ useEffect(() => {
             
             pendingTimers.push(tId);
           }
-        }
       }
     }
   );
