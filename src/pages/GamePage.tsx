@@ -1589,12 +1589,8 @@ useEffect(() => {
 
   playSpecialSound('/degistir.mp3');
   
-  // ✅ Diğer jokerler gibi kendini koru
   setIsJokerActive(true);
-  
-  // 🛡️ Grid sync'i duraklat - değiştir joker kullanımı sırasında
   setGridSyncPaused(true);
-  console.log('🔒 Grid sync paused for joker usage');
   
   const vowels = ['A', 'E', 'İ', 'I', 'O', 'U', 'Ü', 'Ö'];
   const consonants = ['B', 'C', 'Ç', 'D', 'F', 'G', 'Ğ', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'R', 'S', 'Ş', 'T', 'V', 'Y', 'Z'];
@@ -1624,20 +1620,18 @@ useEffect(() => {
   }
 
   setHighlightedLetters(positions);
-  
-  setTimeout(() => {
-    setHighlightedLetters([]);
-    // ✅ İşlem bitince aktif durumu kapat
-    setIsJokerActive(false);
-    
-    // 🔓 Grid sync'i tekrar aktifleştir - 3 saniye sonra
-    setTimeout(() => {
-      setGridSyncPaused(false);
-      console.log('🔓 Grid sync resumed');
-    }, 3000);
-  }, 1000);
-  
   setGameGrid(newGrid);
+  
+  // ✅ Server'a yeni grid'i gönder
+  if (currentRoom?.id) {
+    const flatGrid = newGrid.flat();
+    await supabase
+      .from('game_rooms')
+      .update({ current_grid: flatGrid })
+      .eq('id', currentRoom.id);
+    console.log('✅ Grid updated on server after joker use');
+  }
+  
   const jokerUsed = await useJoker('degistir');
   if (!jokerUsed) {
     console.error('❌ Değiştir joker kullanılamadı!');
@@ -1645,6 +1639,13 @@ useEffect(() => {
     setGridSyncPaused(false);
     return;
   }
+  
+  setTimeout(() => {
+    setHighlightedLetters([]);
+    setIsJokerActive(false);
+    setGridSyncPaused(false);
+  }, 1000);
+  
   setSelectedLetters([]);
   setCurrentWord('');
   
