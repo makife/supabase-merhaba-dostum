@@ -393,41 +393,51 @@ const respondRematchRequest = useCallback(async (requestId: string, accepted: bo
     console.log('✅ Tekrar oyun isteğine yanıt verildi:', accepted);
     
     if (accepted && request.room_code) {
-      console.log('🎮 Rematch kabul edildi, yeni oyun başlatılıyor');
+      console.log('🎮 Rematch kabul edildi, odaya katılıyorum');
       
-      // Odayı al
+      // Odaya katıl
       const { data: roomData } = await supabase
         .from('game_rooms')
-        .select('id, game_mode, current_grid')
+        .select('*')
         .eq('room_code', request.room_code)
         .single();
       
-      if (roomData) {
-        // 🎯 SERVER-SIDE COUNTDOWN başlat
-        try {
-          const { data: countdownTime, error: rpcError } = await supabase.rpc('start_game_countdown', {
-            p_room_id: roomData.id
-          });
-          
-          if (rpcError) {
-            console.warn('⚠️ RPC countdown hatası, fallback kullanılıyor:', rpcError);
-            // Fallback: Manuel DB update
-            const nowIso = new Date().toISOString();
-            await supabase
-              .from('game_rooms')
-              .update({ countdown_started_at: nowIso, updated_at: nowIso })
-              .eq('id', roomData.id);
-          } else {
-            console.log('✅ Server-side countdown başlatıldı:', countdownTime);
-          }
-        } catch (countdownError) {
-          console.error('❌ Countdown başlatma hatası:', countdownError);
-        }
-        
-        console.log('🎮 Direkt oyun sayfasına yönlendiriliyor');
-        const baseRoute = roomData.game_mode?.includes('random-match') ? '/game/random-match' : '/game/private-room';
-        navigate(`${baseRoute}?room=${roomData.id}&type=${request.game_type}`);
+      if (!roomData) {
+        console.error('❌ Rematch odası bulunamadı');
+        return;
       }
+      
+      // 🔑 Kendini participant olarak ekle
+      const { error: participantError } = await supabase
+        .from('game_participants')
+        .insert({
+          room_id: roomData.id,
+          user_id: user.id,
+          score: 0,
+          is_bot: false
+        });
+      
+      if (participantError) {
+        console.error('❌ Participant ekleme hatası:', participantError);
+        // Zaten katılmışsa hatayı yoksay
+        if (!participantError.message?.includes('duplicate')) {
+          throw participantError;
+        }
+      }
+      
+      // State'i güncelle
+      setCurrentRoom(roomData);
+      
+      // Participants'ı hemen çek
+      const { data: parts } = await supabase
+        .from('game_participants')
+        .select(`*, profiles:user_id (username, avatar_url)`) 
+        .eq('room_id', roomData.id);
+      if (parts) setParticipants(parts as any);
+      
+      console.log('🎮 Odaya katıldım, oyun sayfasına yönlendiriliyor');
+      const baseRoute = roomData.game_mode?.includes('random-match') ? '/game/random-match' : '/game/private-room';
+      navigate(`${baseRoute}?room=${roomData.id}&type=${request.game_type}`);
     }
     
     setCurrentRematchRequest(null);
@@ -436,7 +446,7 @@ const respondRematchRequest = useCallback(async (requestId: string, accepted: bo
     console.error('❌ Tekrar oyun yanıt hatası:', error);
     throw error;
   }
-}, [user, setCurrentRematchRequest, navigate]);
+}, [user, setCurrentRematchRequest, navigate, setCurrentRoom, setParticipants]);
 
   // Helper function to determine game mode
   const getGameModeFromRoom = useCallback((room: GameRoom | null): string => {
