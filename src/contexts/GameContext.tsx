@@ -1911,25 +1911,45 @@ useEffect(() => {
                 
                 const gameMode = getGameModeFromRoom(currentRoom);
                 if (gameMode === 'tournament') {
+                  // Turnuva maçında rakip ayrılırsa oyuncuya +500 bonus puan ver ve devam etmesine izin ver
+                  const bonusScore = 500;
+                  
+                  // Mevcut skora +500 ekle
+                  const currentScore = currentRoom.player1_id === winnerUserId 
+                    ? (currentRoom.player1_score || 0)
+                    : (currentRoom.player2_score || 0);
+                  
                   await supabase
                     .from('game_rooms')
                     .update({
-                      status: 'finished',
-                      winner_id: winnerUserId,
-                      finished_at: new Date().toISOString()
+                      // Oyunu bitirme, sadece skoru güncelle
+                      ...(currentRoom.player1_id === winnerUserId 
+                        ? { player1_score: currentScore + bonusScore }
+                        : { player2_score: currentScore + bonusScore }),
+                      updated_at: new Date().toISOString()
                     })
                     .eq('id', eventRoomId);
                     
                   toast({
-                    title: '🏆 Turnuva Zaferi!',
-                    description: 'Rakip ayrıldı, siz kazandınız! +100 bonus puan.',
-                    duration: 4000,
+                    title: '⚠️ Rakip Ayrıldı',
+                    description: 'Rakip oyuncu ayrıldı veya bağlantısı koptu, +500 puan ile oyun bitene kadar devam edebilirsin',
+                    duration: 5000,
                   });
                   
+                  // Bonus puanı profile'a da ekle
                   if (winnerUserId) {
-                    await applyWinBonus(winnerUserId, 100);
+                    await supabase
+                      .from('profiles')
+                      .update({
+                        total_score: (currentRoom.player1_id === winnerUserId 
+                          ? currentRoom.player1_score 
+                          : currentRoom.player2_score) + bonusScore,
+                        updated_at: new Date().toISOString()
+                      })
+                      .eq('id', winnerUserId);
                   }
                 } else {
+                  // Diğer oyun modlarında oyunu bitir
                   await applyDisconnectPenalty(oldParticipant.user_id, eventRoomId);
                   
                   if (winnerUserId) {
