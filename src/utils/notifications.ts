@@ -100,22 +100,18 @@ export const sendRematchNotification = async (
   gameType: string
 ) => {
   try {
-    const { error } = await supabase
-      .from('notifications')
-      .insert({
-        user_id: receiverId,
-        type: 'invite',
-        message: `${senderUsername} tekrar oyun istiyor`,
-        related_id: roomCode,
-        is_read: false
-      });
+    const { error } = await supabase.rpc('send_game_invite_notification', {
+      p_receiver_id: receiverId,
+      p_sender_username: senderUsername,
+      p_room_code: roomCode,
+    });
 
     if (error) {
-      console.error('Rematch notification error:', error);
+      console.error('Rematch notification error (rpc):', error);
       return false;
     }
 
-    console.log('🔄 REMATCH NOTIFICATION SAVED:', {
+    console.log('🔄 REMATCH NOTIFICATION SAVED (RPC):', {
       to: receiverId,
       from: senderUsername,
       roomCode: roomCode,
@@ -126,7 +122,7 @@ export const sendRematchNotification = async (
     
     return true;
   } catch (error) {
-    console.error('Error sending rematch notification:', error);
+    console.error('Error sending rematch notification (rpc):', error);
     return false;
   }
 };

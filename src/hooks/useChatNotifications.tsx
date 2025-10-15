@@ -91,6 +91,71 @@ export function useChatNotifications() {
     setGlobalMentionCount(mentionCount);
   };
 
+  // Rematch davetini kabul et
+  const acceptRematch = async (roomCode?: string | null) => {
+    if (!user?.id || !roomCode) return;
+    try {
+      const { data: req } = await supabase
+        .from('rematch_requests')
+        .select('id, game_type')
+        .eq('room_code', roomCode)
+        .eq('to_user_id', user.id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!req) {
+        toast({ title: 'İstek bulunamadı', duration: 2500, variant: 'destructive' as any });
+        return;
+      }
+
+      await supabase
+        .from('rematch_requests')
+        .update({ status: 'accepted', responded_at: new Date().toISOString() })
+        .eq('id', req.id);
+
+      const { data: room } = await supabase
+        .from('game_rooms')
+        .select('id, game_mode')
+        .eq('room_code', roomCode)
+        .single();
+
+      if (room) {
+        const baseRoute = room.game_mode?.includes('random-match') ? '/game/random-match' : '/game/private-room';
+        navigate(`${baseRoute}?room=${room.id}&type=${req.game_type}`);
+      }
+    } catch (e) {
+      console.error('acceptRematch error:', e);
+    }
+  };
+
+  // Rematch davetini reddet
+  const rejectRematch = async (roomCode?: string | null) => {
+    if (!user?.id || !roomCode) return;
+    try {
+      const { data: req } = await supabase
+        .from('rematch_requests')
+        .select('id')
+        .eq('room_code', roomCode)
+        .eq('to_user_id', user.id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!req) return;
+
+      await supabase
+        .from('rematch_requests')
+        .update({ status: 'rejected', responded_at: new Date().toISOString() })
+        .eq('id', req.id);
+
+      toast({ title: 'İstek reddedildi', duration: 2000 });
+    } catch (e) {
+      console.error('rejectRematch error:', e);
+    }
+  };
   useEffect(() => {
     if (!user?.id) return;
 
@@ -127,7 +192,13 @@ export function useChatNotifications() {
               toast({
                 title: '🎮 Tekrar Oyun İsteği',
                 description: notif.message || 'Rakibiniz tekrar oyun istiyor!',
-                duration: 5000,
+                duration: 10000,
+                action: (
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => acceptRematch(notif.related_id)}>Kabul</Button>
+                    <Button size="sm" variant="outline" onClick={() => rejectRematch(notif.related_id)}>Reddet</Button>
+                  </div>
+                ) as any,
               });
             } catch (e) {
               console.warn('Toast show failed:', e);
