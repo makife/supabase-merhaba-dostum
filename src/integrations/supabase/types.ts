@@ -1546,6 +1546,23 @@ export type Database = {
         Args: { p_tournament_id: string }
         Returns: Json
       }
+      create_notification: {
+        Args: {
+          p_message: string
+          p_related_id?: string
+          p_type: string
+          p_user_id: string
+        }
+        Returns: {
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          related_id: string | null
+          type: string
+          user_id: string | null
+        }
+      }
       create_tournament_matches: {
         Args: { p_round: number; p_tournament_id: string }
         Returns: undefined

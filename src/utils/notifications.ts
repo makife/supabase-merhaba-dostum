@@ -62,15 +62,12 @@ export const sendGameInviteNotification = async (
   roomCode: string
 ) => {
   try {
-    const { error } = await supabase
-      .from('notifications')
-      .insert({
-        user_id: receiverId,
-        type: 'invite',
-        message: `${senderUsername} sana oyun daveti gönderdi`,
-        related_id: roomCode,
-        is_read: false
-      });
+    const { error } = await supabase.rpc('create_notification', {
+      p_user_id: receiverId,
+      p_type: 'invite',
+      p_message: `${senderUsername} sana oyun daveti gönderdi`,
+      p_related_id: roomCode
+    });
 
     if (error) {
       console.error('Game invite notification error:', error);
@@ -102,15 +99,12 @@ export const sendRematchNotification = async (
   try {
     const gameTypeText = gameType === 'timed' ? 'Zamana Karşı' : 'Skora Karşı';
     
-    const { error } = await supabase
-      .from('notifications')
-      .insert({
-        user_id: receiverId,
-        type: 'invite',
-        message: `${senderUsername} sana tekrar oyun daveti gönderdi (${gameTypeText})`,
-        related_id: roomCode,
-        is_read: false
-      });
+    const { error } = await supabase.rpc('create_notification', {
+      p_user_id: receiverId,
+      p_type: 'invite',
+      p_message: `${senderUsername} sana tekrar oyun daveti gönderdi (${gameTypeText})`,
+      p_related_id: roomCode
+    });
 
     if (error) {
       console.error('Rematch notification error:', error);
