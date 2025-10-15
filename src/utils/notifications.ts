@@ -104,7 +104,7 @@ export const sendRematchNotification = async (
       .from('notifications')
       .insert({
         user_id: receiverId,
-        type: 'rematch',
+        type: 'invite',
         message: `${senderUsername} tekrar oyun istiyor`,
         related_id: roomCode,
         is_read: false
