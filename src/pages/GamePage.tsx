@@ -2775,7 +2775,7 @@ useEffect(() => {
     gameStarted &&
     !gameEnded &&
     !timerRef.current &&
-    (!isMp || (roomActive && haveTwoRealPlayers))
+    (!isMp || (roomActive && haveTwoRealPlayers && !!currentRoom?.started_at))
   );
 
   if (!canStart) return;
@@ -2956,7 +2956,7 @@ useEffect(() => {
       let remaining = Math.max(0, (currentRoom.time_limit || 120) - elapsed);
 
       // 🛡️ Early-finish guard: first 3s after start should never be <= 0
-      if (Date.now() - startTs < 200000 && remaining <= 0) {
+      if (Date.now() - startTs < 3000 && remaining <= 0) {
         remaining = 5;
       }
       
@@ -4345,16 +4345,36 @@ const opponent = getOpponentInfo();
 
 const handleCountdownComplete = () => {
   setShowCountdown(false);
-  // Süreli modda geri sayım biter bitmez süreyi tamdan başlat
-  if (gameType === 'timed') {
+
+  const isMp = gameMode === 'private-room' || gameMode === 'random-match';
+
+  // Single-player/tournament: start locally from full time
+  if (!isMp && gameType === 'timed') {
     const initial = currentRoom?.time_limit || 120;
     timeLeftRef.current = initial;
     setDisplayTime(initial);
   }
+
+  // Multiplayer: set authoritative server start time exactly once
+  if (isMp && currentRoom?.id) {
+    (async () => {
+      try {
+        await supabase
+          .from('game_rooms')
+          .update({ started_at: new Date().toISOString(), status: 'active' })
+          .is('started_at', null)
+          .eq('id', currentRoom.id);
+      } catch (e) {
+        console.error('started_at set failed:', e);
+      }
+    })();
+  }
+
   setGameStarted(true);
   gameHasStartedRef.current = true;
-  // Özel oda ve rastgele eşleşmede sunucu senkronunu kısa süre bastır (3sn)
-  if (gameMode === 'private-room' || gameMode === 'random-match') {
+
+  // Bastırmayı sadece multiplayer'da uygula (ilk 3sn ekstra sync yok)
+  if (isMp) {
     syncSuppressUntilRef.current = Date.now() + 3000; // 3sn
   }
 };
