@@ -161,10 +161,17 @@ async createSocket(): Promise<Socket> {
         throw new Error("Socket not connected");
       }
 
-      const ticket = await this.socket.addMatchmaker("*", 2, 2, {
-        "game_type": gameType,
-        "region": "eu-west"
-      });
+      // Nakama matchmaking - DOĞRU PARAMETRELER
+      // min=2, max=2: Tam 2 oyuncu eşleşmesi gerekiyor
+      // query kullanmıyoruz, sadece stringProperties ile eşleşme yapıyoruz
+      const ticket = await this.socket.addMatchmaker(
+        "*",  // query - tüm matchleri kabul et
+        2,    // minCount - minimum 2 oyuncu
+        2,    // maxCount - maksimum 2 oyuncu
+        {
+          "game_type": gameType,  // Aynı oyun tipinde olanları eşleştir
+        }
+      );
       
       console.log("✅ Nakama matchmaking ticket created:", ticket.ticket);
       return { ticket: ticket.ticket };

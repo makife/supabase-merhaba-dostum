@@ -175,17 +175,22 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
 
   const startNakamaSearch = async (gameType: "timed" | "score") => {
     try {
-      console.log("Nakama matchmaking baslatiliyor:", gameType);
+      console.log("🔍 Nakama matchmaking başlatılıyor:", gameType);
 
       // Progress timer already started in startSearch
       console.log("🔐 Authenticating with Nakama...");
-      await nakamaService.authenticate(user.id);
-      console.log("✅ Nakama authenticated");
+      // Her bağlantı için unique bir device ID kullan (aynı user farklı cihazlarda olabilir)
+      const deviceId = `${user.id}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      console.log("🆔 Device ID:", deviceId);
+      await nakamaService.authenticate(deviceId);
+      console.log("✅ Nakama authenticated with device:", deviceId);
       
       console.log("🔌 Creating Nakama socket...");
       const socket = await nakamaService.createSocket();
       console.log("✅ Nakama socket created");
 
+      // ÖNCE handler'ı set et, SONRA matchmaker'a ekle
+      console.log("📡 Setting up match found handler...");
       socket.onmatchmakermatched = async (matched: any) => {
         console.log("Nakama match bulundu!", matched);
         console.log("Matched object:", JSON.stringify(matched, null, 2));
