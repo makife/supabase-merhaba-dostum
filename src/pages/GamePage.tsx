@@ -2694,6 +2694,44 @@ const checkWinnerWithScores = useCallback(async (currentPlayerScore: number, cur
     };
   }, [gameMode, tournamentMatch, user, gameEnded, showCountdown, gameStarted]);
 
+  // 🎮 NORMAL OYUNLAR (RANDOM-MATCH, PRIVATE-ROOM) İÇİN COUNTDOWN SYNC
+  useEffect(() => {
+    if (gameMode === 'tournament' || gameMode === 'vs-computer') return;
+    if (!currentRoom || !user) return;
+    if (showCountdown || gameStarted) return; // Zaten countdown başlamışsa tekrar başlatma
+
+    console.log('🔄 Game room countdown subscription başlatılıyor:', currentRoom.id.slice(-8));
+    
+    const channel = supabase
+      .channel(`game-room-countdown-${currentRoom.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'game_rooms',
+          filter: `id=eq.${currentRoom.id}`
+        },
+        (payload) => {
+          console.log('🎮 Game room güncellendi:', payload);
+          const newData = payload.new as any;
+          
+          // 🎯 SERVER-SIDE COUNTDOWN SYNC - sadece henüz başlamamışsa
+          if (newData.countdown_started_at && !showCountdown && !gameStarted) {
+            console.log('🎯 Game room countdown başlatılıyor (server-sync):', newData.countdown_started_at);
+            setCountdownServerTime(newData.countdown_started_at);
+            setShowCountdown(true);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('🔌 Game room countdown subscription temizleniyor');
+      supabase.removeChannel(channel);
+    };
+  }, [gameMode, currentRoom?.id, user, showCountdown, gameStarted]);
+
 const handleTournamentExit = async () => {
   if (!user || !tournamentMatch) return;
 
