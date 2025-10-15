@@ -15,7 +15,6 @@ import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import PrivateRoomModal from '@/components/PrivateRoomModal';
-import NewMatchmakingModal from '@/components/NewMatchmakingModal';
 import { SlotMatchmaking } from '@/components/SlotMatchmaking';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
