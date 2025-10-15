@@ -18,7 +18,6 @@ const GameCountdown = ({ onComplete, className, serverStartTime }: GameCountdown
   const startAudioRef = useRef<HTMLAudioElement | null>(null);
   const lastPlayedCountRef = useRef<number>(-1);
   const hasPlayedStartRef = useRef<boolean>(false);
-  const initialServerStartTimeRef = useRef<string | null>(null);
 
   // Ses dosyalarını yükle
   useEffect(() => {
@@ -87,15 +86,6 @@ const GameCountdown = ({ onComplete, className, serverStartTime }: GameCountdown
   // 🎯 SERVER-SIDE COUNTDOWN SYNC (SADECE)
   useEffect(() => {
     if (!serverStartTime) {
-      return;
-    }
-
-    // İlk serverStartTime'ı kaydet ve bir daha değiştirme
-    if (!initialServerStartTimeRef.current) {
-      initialServerStartTimeRef.current = serverStartTime;
-    } else if (initialServerStartTimeRef.current !== serverStartTime) {
-      // serverStartTime değişti ama biz ilk değeri kullanmaya devam ediyoruz
-      console.log('⚠️ serverStartTime changed but using initial value to prevent restart');
       return;
     }
 
