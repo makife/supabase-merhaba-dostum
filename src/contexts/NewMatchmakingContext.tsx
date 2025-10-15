@@ -541,7 +541,6 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   return (
     <MatchmakingContext.Provider value={value}>
       {children}
-      {/* UI rendering moved to NewMatchmakingModal to avoid duplicate overlays */}
     </MatchmakingContext.Provider>
   );
 };

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MatchmakingProvider } from '@/contexts/NewMatchmakingContext';
-import NewMatchmakingModal from '@/components/NewMatchmakingModal';
+import { SlotMatchmaking } from '@/components/SlotMatchmaking';
 
 const TestMatchmakingPage = () => {
   const navigate = useNavigate();
@@ -75,12 +75,14 @@ const TestMatchmakingPage = () => {
           </Card>
         </div>
 
-        <NewMatchmakingModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          gameType={gameType}
-          onMatchFound={handleMatchFound}
-        />
+        {isModalOpen && (
+          <div className="fixed inset-0 z-[9999] bg-background">
+            <SlotMatchmaking 
+              onCancel={() => setIsModalOpen(false)}
+              searchProgress={0}
+            />
+          </div>
+        )}
       </div>
     </MatchmakingProvider>
   );
