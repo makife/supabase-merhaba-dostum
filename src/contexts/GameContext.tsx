@@ -8,6 +8,7 @@ import { useNakamaMatchmaking } from '@/hooks/useNakamaMatchmaking';
 import { useNavigate } from 'react-router-dom';
 import { realtimeManager } from '@/utils/realtimeManager';
 import { matchBanlist } from '@/utils/matchBanlist';
+import { Button } from '@/components/ui/button';
 
 interface GameRoom {
   id: string;
@@ -2053,7 +2054,38 @@ useEffect(() => {
           toast({
             title: '🔄 Tekrar Oyun İsteği',
             description: 'Rakibiniz tekrar oyun istiyor! 30 saniye içinde yanıt verin.',
-            duration: 5000,
+            duration: 10000,
+            action: (
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    const t = timeoutMap.get(request.id);
+                    if (t) {
+                      clearTimeout(t);
+                      timeoutMap.delete(request.id);
+                    }
+                    respondRematchRequest(request.id, true);
+                  }}
+                >
+                  Kabul
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const t = timeoutMap.get(request.id);
+                    if (t) {
+                      clearTimeout(t);
+                      timeoutMap.delete(request.id);
+                    }
+                    respondRematchRequest(request.id, false);
+                  }}
+                >
+                  Reddet
+                </Button>
+              </div>
+            ) as any,
           });
           
           const timeoutId = setTimeout(async () => {
@@ -2148,7 +2180,7 @@ useEffect(() => {
       realtimeManager.unsubscribe(`rematch_requests-from_user_id=eq.${user.id}`, user.id);
     }
   };
-}, [user?.id, setCurrentRematchRequest, toast, navigate]);
+}, [user?.id, setCurrentRematchRequest, toast, navigate, respondRematchRequest]);
 
 // ❌ PRIVATE ROOM POLLING KALDIRILDI - Realtime subscription yeterli
 
