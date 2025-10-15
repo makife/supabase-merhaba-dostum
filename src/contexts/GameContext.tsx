@@ -2036,7 +2036,7 @@ useEffect(() => {
   const incomingChannel = realtimeManager.subscribe(
     'rematch_requests',
     user.id,
-    `to_user_id=eq.${user.id}`,
+    undefined,
     (payload) => {
       if (payload.eventType === 'INSERT') {
         const request = payload.new as RematchRequest;
@@ -2173,9 +2173,9 @@ useEffect(() => {
     timeoutMap.forEach(timeout => clearTimeout(timeout));
     timeoutMap.clear();
     
-    if (incomingChannel) {
-      realtimeManager.unsubscribe(`rematch_requests-to_user_id=eq.${user.id}`, user.id);
-    }
+  if (incomingChannel) {
+    realtimeManager.unsubscribe('rematch_requests', user.id);
+  }
     if (outgoingChannel) {
       realtimeManager.unsubscribe(`rematch_requests-from_user_id=eq.${user.id}`, user.id);
     }
