@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+// removed sonner toast import (using shadcn use-toast)
 import { useAuth } from './AuthContext';
 import { useUser } from './UserContext';
 import { useToast } from '@/hooks/use-toast';
@@ -2036,7 +2036,7 @@ useEffect(() => {
   const incomingChannel = realtimeManager.subscribe(
     'rematch_requests',
     user.id,
-    undefined,
+    `to_user_id=eq.${user.id}`,
     (payload) => {
       if (payload.eventType === 'INSERT') {
         const request = payload.new as RematchRequest;
@@ -2174,7 +2174,7 @@ useEffect(() => {
     timeoutMap.clear();
     
   if (incomingChannel) {
-    realtimeManager.unsubscribe('rematch_requests', user.id);
+    realtimeManager.unsubscribe(`rematch_requests-to_user_id=eq.${user.id}`, user.id);
   }
     if (outgoingChannel) {
       realtimeManager.unsubscribe(`rematch_requests-from_user_id=eq.${user.id}`, user.id);
