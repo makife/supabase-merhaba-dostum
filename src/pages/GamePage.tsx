@@ -4266,67 +4266,6 @@ if (gameEnded) {
   );
 }
 
-if (waitingForPlayer && gameMode !== 'private-room') {
-  return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background to-muted">
-      <Card className="w-full max-w-md text-center">
-        <CardContent className="p-8">
-          <div className="animate-pulse space-y-4">
-            <div className="w-16 h-16 bg-green-500 rounded-full mx-auto flex items-center justify-center">
-              <User className="w-8 h-8 text-white" />
-            </div>
-            <h2 className="text-2xl font-bold">
-              Eşleşme Bekleniyor
-            </h2>
-            <p className="text-muted-foreground">
-              Rakip aranıyor...
-            </p>
-          
-            {/* Mevcut katılımcıları göster - SADECE GERÇEK OYUNCULAR */}
-            <div className="bg-muted rounded-lg p-4 space-y-2">
-              <p className="text-sm font-medium">
-                Katılımcılar ({participants.filter(p => !p.is_bot && p.user_id !== null).length}/2)
-              </p>
-              {participants
-                .filter(p => !p.is_bot && p.user_id !== null)
-                .map((participant, index) => (
-                <div key={participant.user_id} className="flex items-center justify-center space-x-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-sm">
-                    {participant.user_id === user?.id ? 'Siz' : 
-                     (participant as any).profiles?.username || 'Oyuncu'}
-                  </span>
-                </div>
-              ))}
-            </div>
-          
-          
-            {/* Debug bilgisi (development modunda) */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
-                <p>🏠 Oda: {currentRoom?.id?.slice(-8)}</p>
-                <p>📊 Total: {participants.length} | Real: {participants.filter(p => !p.is_bot && p.user_id !== null).length}</p>
-                {participants.map((p, i) => (
-                  <p key={i}>
-                    {i+1}. {p.is_bot ? '🤖 Bot' : '👤 Real'} {p.user_id?.slice(-8) || 'null'} 
-                    {p.user_id === user?.id ? ' (SİZ)' : ''}
-                  </p>
-                ))}
-              </div>
-            )}
-          </div>
-          <Button 
-            variant="outline" 
-            onClick={() => navigate('/')}
-            className="mt-6 w-full"
-          >
-            Ana Menüye Dön
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
 
 const opponent = getOpponentInfo();
 
