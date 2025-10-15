@@ -2932,10 +2932,18 @@ useEffect(() => {
   }, [currentRoom?.id, gameMode, user?.id]);
 
   // Timer sync for private-room and random-match games using server started_at
+  const startedAtRef = useRef<string | null>(null);
+  
   useEffect(() => {
     if (gameType !== 'timed' || !gameStarted || gameEnded) return;
     if (gameMode !== 'private-room' && gameMode !== 'random-match') return;
     if (!currentRoom?.started_at) return;
+
+    // Eğer started_at değişmemişse, sync'i yeniden başlatma
+    if (startedAtRef.current === currentRoom.started_at) return;
+    
+    // İlk kez veya değiştiyse kaydet
+    startedAtRef.current = currentRoom.started_at;
 
     let syncInterval: NodeJS.Timeout | null = null;
     const syncTimer = () => {
@@ -2969,6 +2977,13 @@ useEffect(() => {
       if (syncInterval) clearInterval(syncInterval);
     };
   }, [gameType, gameMode, gameStarted, gameEnded, currentRoom?.started_at, currentRoom?.time_limit]);
+  
+  // started_at değiştiğinde ref'i resetle
+  useEffect(() => {
+    if (!currentRoom?.started_at) {
+      startedAtRef.current = null;
+    }
+  }, [currentRoom?.id]);
 
   // Focus/blur event handler
   useEffect(() => {
