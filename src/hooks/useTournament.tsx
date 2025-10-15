@@ -16,23 +16,34 @@ export const useTournament = (tournamentId?: string) => {
   
   // Track expires_at to prevent countdown reset on every render
   const expiresAtRef = useRef<string | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Calculate countdown - only reset when expires_at actually changes
   useEffect(() => {
     if (!context.currentTournament?.expires_at || context.currentTournament?.status !== "waiting") {
       expiresAtRef.current = null;
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      setTimeLeft(0);
       return;
     }
 
     // Only reset countdown if expires_at actually changed
     const newExpiresAt = context.currentTournament.expires_at;
-    if (expiresAtRef.current === newExpiresAt) {
-      return; // Don't restart interval if expires_at hasn't changed
+    if (expiresAtRef.current === newExpiresAt && intervalRef.current) {
+      return; // Don't restart interval if expires_at hasn't changed and interval is running
     }
     
     expiresAtRef.current = newExpiresAt;
 
-    const interval = setInterval(() => {
+    // Clear any existing interval before starting new one
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+
+    intervalRef.current = setInterval(() => {
       const expiresAt = new Date(newExpiresAt).getTime();
       const now = Date.now();
       const remaining = Math.max(0, Math.floor((expiresAt - now) / 1000));
@@ -59,7 +70,12 @@ export const useTournament = (tournamentId?: string) => {
       }
     }, 1000);
 
-    return () => clearInterval(interval);
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
   }, [
     context.currentTournament?.expires_at,
     context.currentTournament?.status,
