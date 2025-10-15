@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useNakamaMatchmaking } from '@/hooks/useNakamaMatchmaking';
 import { useNavigate } from 'react-router-dom';
 import { realtimeManager } from '@/utils/realtimeManager';
+import { matchBanlist } from '@/utils/matchBanlist';
 
 interface GameRoom {
   id: string;
@@ -1309,6 +1310,15 @@ const fetchParticipants = useCallback(
             .eq('id', currentRoom.id);
         }
       }
+      
+      // Odayı banlist'e ekle (tekrar bağlanmayı önle)
+      if (currentRoom?.id) {
+        matchBanlist.add(currentRoom.id);
+        console.log('🚫 Oda banlist\'e eklendi:', currentRoom.id.slice(-8));
+      }
+      
+      // Matchmaking state'ini temizle
+      window.dispatchEvent(new CustomEvent('cleanupMatchmaking'));
       
       // State temizle
       setCurrentRoom(null);

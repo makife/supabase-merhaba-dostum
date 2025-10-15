@@ -34,6 +34,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { generateBotName } from '@/utils/tournamentHelpers';
+import { matchBanlist } from '@/utils/matchBanlist';
 
 interface TournamentMatch {
   id: string;
@@ -357,6 +358,18 @@ useEffect(() => {
   
   setGameGrid(grid);
 }, [gameMode, currentRoom?.current_grid, currentRoom?.id, gridSyncPaused]);
+
+// Cleanup on unmount - oda ID'sini banla ve matchmaking'i temizle
+useEffect(() => {
+  return () => {
+    console.log('🧹 GamePage unmount - cleanup başlatılıyor');
+    if (currentRoom?.id) {
+      matchBanlist.add(currentRoom.id);
+      console.log('🚫 Unmount: Oda banlist\'e eklendi:', currentRoom.id.slice(-8));
+    }
+    window.dispatchEvent(new CustomEvent('cleanupMatchmaking'));
+  };
+}, [currentRoom?.id]);
   
   const [selectedLetters, setSelectedLetters] = useState<{letter: string, row: number, col: number}[]>([]);
   const [currentWord, setCurrentWord] = useState('');
@@ -4177,7 +4190,11 @@ if (gameEnded) {
       
       <Button onClick={() => {
         playSound('buttonClick');
-        // Oyun bitiminde matchmaking state'ini temizle
+        // Oyun bitiminde matchmaking state'ini temizle ve odayı banla
+        if (currentRoom?.id) {
+          matchBanlist.add(currentRoom.id);
+          console.log('🚫 Oda banlist\'e eklendi:', currentRoom.id.slice(-8));
+        }
         window.dispatchEvent(new CustomEvent('cleanupMatchmaking'));
         navigate('/');
       }} variant="outline" className="w-full">
@@ -4189,7 +4206,11 @@ if (gameEnded) {
               <>
                 <Button onClick={() => {
                   playSound('buttonClick');
-                  // Oyun bitiminde matchmaking state'ini temizle
+                  // Oyun bitiminde matchmaking state'ini temizle ve odayı banla
+                  if (currentRoom?.id) {
+                    matchBanlist.add(currentRoom.id);
+                    console.log('🚫 Oda banlist\'e eklendi:', currentRoom.id.slice(-8));
+                  }
                   window.dispatchEvent(new CustomEvent('cleanupMatchmaking'));
                   navigate('/');
                 }} className="w-full">
@@ -4781,4 +4802,5 @@ return (
   </>
 );
 };
+
 export default GamePage;
