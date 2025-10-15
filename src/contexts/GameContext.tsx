@@ -980,17 +980,45 @@ const fetchParticipants = useCallback(
     console.log('✅ Odaya katılım başarılı');
     setCurrentRoom(room);
     
+    // 🎯 PRIVATE ROOM İÇİN COUNTDOWN BAŞLATMA
+    // Eğer ikinci oyuncu join olduysa countdown başlat
+    if (room.game_mode.includes('private-room')) {
+      const { data: participantCount } = await supabase
+        .from('game_participants')
+        .select('id', { count: 'exact' })
+        .eq('room_id', room.id)
+        .eq('is_bot', false);
+      
+      const playerCount = participantCount?.length || 0;
+      console.log('👥 Private room oyuncu sayısı:', playerCount);
+      
+      if (playerCount >= 2) {
+        // İkinci oyuncu join oldu, countdown başlat
+        try {
+          const { data: countdownTime, error: rpcError } = await supabase.rpc('start_game_countdown', {
+            p_room_id: room.id
+          });
+          
+          if (rpcError) {
+            console.warn('⚠️ RPC countdown hatası:', rpcError);
+          } else {
+            console.log('✅ Private room countdown başlatıldı:', countdownTime);
+          }
+        } catch (countdownError) {
+          console.error('❌ Countdown başlatma hatası:', countdownError);
+        }
+      } else {
+        toast({
+          title: 'Odaya Katıldınız',
+          description: 'Diğer oyuncu bekleniyor...',
+        });
+      }
+    }
+    
     // ✅ ÖNEMLI: Hemen participants'ı fetch et
     setTimeout(() => {
       fetchParticipants(room.id);
     }, 500);
-  
-    if (room.game_mode.includes('private-room')) {
-      toast({
-        title: 'Odaya Katıldınız',
-        description: 'Diğer oyuncu bekleniyor...',
-      });
-    }
 
     return true;
   } catch (error: any) {
