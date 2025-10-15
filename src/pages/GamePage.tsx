@@ -631,20 +631,12 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
     if (allMatchesCompleted) {
       console.log(`🏆 Tüm ${tournamentMatch.round}. tur maçları tamamlandı!`);
       
-      // Sonraki turu oluştur YALNIZCA final değilse
-      if (tournamentMatch.round < 3) {
-        await createNextRoundMatches(
-          tournamentMatch.tournament_id, 
-          tournamentMatch.round + 1
-        );
-      } else {
-        // Final tamamlandı -> turnuvayı bitir
-        await supabase
-          .from('tournaments')
-          .update({ status: 'completed', finished_at: new Date().toISOString() })
-          .eq('id', tournamentMatch.tournament_id);
-      }
-      
+      // Centralize advancement on server to avoid duplicate semi-finals/finals
+      const { error: advanceErr } = await supabase.rpc('advance_tournament_round', {
+        p_tournament_id: tournamentMatch.tournament_id,
+      });
+      if (advanceErr) {
+        console.error('advance_tournament_round error:', advanceErr);
       // Turnuva sayfasına yönlendir
       setTimeout(() => {
         navigate(`/tournament-bracket/${tournamentMatch.tournament_id}`);
