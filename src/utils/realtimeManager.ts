@@ -13,7 +13,7 @@ interface ChannelInfo {
 class RealtimeManager {
   private channels = new Map<string, ChannelInfo>();
   private userChannels = new Map<string, Set<string>>(); // userId -> channel keys
-  private maxChannelsPerUser = 3;
+  private maxChannelsPerUser = 10;
   private cleanupInterval: NodeJS.Timeout | null = null;
   private stats = {
     totalChannels: 0,
