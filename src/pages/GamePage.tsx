@@ -637,6 +637,8 @@ const handleTournamentGameEnd = async (userScore: number, opponentScore: number)
       });
       if (advanceErr) {
         console.error('advance_tournament_round error:', advanceErr);
+      }
+      
       // Turnuva sayfasına yönlendir
       setTimeout(() => {
         navigate(`/tournament-bracket/${tournamentMatch.tournament_id}`);
