@@ -61,14 +61,74 @@ export const sendGameInviteNotification = async (
   senderUsername: string, 
   roomCode: string
 ) => {
-  console.log('🎮 GAME INVITE NOTIFICATION:', {
-    to: receiverId,
-    from: senderUsername,
-    roomCode: roomCode,
-    type: 'game_invite',
-    timestamp: new Date().toLocaleString('tr-TR')
-  });
-  return true;
+  try {
+    const { error } = await supabase
+      .from('notifications')
+      .insert({
+        user_id: receiverId,
+        type: 'invite',
+        message: `${senderUsername} sana oyun daveti gönderdi`,
+        related_id: roomCode,
+        is_read: false
+      });
+
+    if (error) {
+      console.error('Game invite notification error:', error);
+      return false;
+    }
+
+    console.log('🎮 GAME INVITE NOTIFICATION SAVED:', {
+      to: receiverId,
+      from: senderUsername,
+      roomCode: roomCode,
+      type: 'game_invite',
+      timestamp: new Date().toLocaleString('tr-TR')
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Error sending game invite notification:', error);
+    return false;
+  }
+};
+
+// Tekrar oyun bildirimi
+export const sendRematchNotification = async (
+  receiverId: string,
+  senderUsername: string,
+  roomCode: string,
+  gameType: string
+) => {
+  try {
+    const { error } = await supabase
+      .from('notifications')
+      .insert({
+        user_id: receiverId,
+        type: 'rematch',
+        message: `${senderUsername} tekrar oyun istiyor`,
+        related_id: roomCode,
+        is_read: false
+      });
+
+    if (error) {
+      console.error('Rematch notification error:', error);
+      return false;
+    }
+
+    console.log('🔄 REMATCH NOTIFICATION SAVED:', {
+      to: receiverId,
+      from: senderUsername,
+      roomCode: roomCode,
+      gameType: gameType,
+      type: 'rematch',
+      timestamp: new Date().toLocaleString('tr-TR')
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Error sending rematch notification:', error);
+    return false;
+  }
 };
 
 // Bildirimleri okundu olarak işaretle

@@ -366,19 +366,25 @@ const sendRematchRequest = useCallback(async (_roomCode: string, gameType: 'time
       to: opponent.user_id.slice(-8)
     });
     
-    // Push notification gönder (opsiyonel)
+    // Bildirim gönder
     try {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('push_token')
-        .eq('id', opponent.user_id)
+        .select('username')
+        .eq('id', user.id)
         .single();
         
-      if (profile?.push_token) {
-        // Push notification gönder (varsa)
+      if (profile?.username) {
+        const { sendRematchNotification } = await import('@/utils/notifications');
+        await sendRematchNotification(
+          opponent.user_id,
+          profile.username,
+          code,
+          gameType
+        );
       }
     } catch (e) {
-      console.log('Push notification error (ignored):', e);
+      console.log('Rematch notification error (ignored):', e);
     }
     
     toast({
