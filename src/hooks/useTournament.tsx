@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useTournamentContext } from "@/contexts/TournamentContext";
@@ -13,13 +13,27 @@ export const useTournament = (tournamentId?: string) => {
   const [isCreator, setIsCreator] = useState(false);
   const [hasJoined, setHasJoined] = useState(false);
   const [realPlayerCount, setRealPlayerCount] = useState(0);
+  
+  // Track expires_at to prevent countdown reset on every render
+  const expiresAtRef = useRef<string | null>(null);
 
-  // Calculate countdown
+  // Calculate countdown - only reset when expires_at actually changes
   useEffect(() => {
-    if (!context.currentTournament?.expires_at || context.currentTournament?.status !== "waiting") return;
+    if (!context.currentTournament?.expires_at || context.currentTournament?.status !== "waiting") {
+      expiresAtRef.current = null;
+      return;
+    }
+
+    // Only reset countdown if expires_at actually changed
+    const newExpiresAt = context.currentTournament.expires_at;
+    if (expiresAtRef.current === newExpiresAt) {
+      return; // Don't restart interval if expires_at hasn't changed
+    }
+    
+    expiresAtRef.current = newExpiresAt;
 
     const interval = setInterval(() => {
-      const expiresAt = new Date(context.currentTournament.expires_at!).getTime();
+      const expiresAt = new Date(newExpiresAt).getTime();
       const now = Date.now();
       const remaining = Math.max(0, Math.floor((expiresAt - now) / 1000));
 
