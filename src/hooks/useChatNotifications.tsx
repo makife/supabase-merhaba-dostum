@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/use-toast';
 
 export function useChatNotifications() {
   const { user } = useAuth();
@@ -112,10 +113,22 @@ export function useChatNotifications() {
           table: 'notifications',
           filter: `user_id=eq.${user.id}`
         },
-        (payload) => {
-          // Mention notification'ı geldiğinde badge'leri güncelle
-          if (payload.new && payload.new.type === 'mention') {
+(payload) => {
+          const notif: any = payload.new;
+          if (!notif) return;
+          if (notif.type === 'mention') {
             refreshUnreadCounts();
+          } else if (notif.type === 'invite') {
+            // Rematch veya oyun daveti bildirimi için kullanıcıya toast göster
+            try {
+              toast({
+                title: '🎮 Tekrar Oyun İsteği',
+                description: notif.message || 'Rakibiniz tekrar oyun istiyor!',
+                duration: 5000,
+              });
+            } catch (e) {
+              console.warn('Toast show failed:', e);
+            }
           }
         }
       )
