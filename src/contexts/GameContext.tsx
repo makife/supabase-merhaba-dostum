@@ -367,7 +367,7 @@ const sendRematchRequest = useCallback(async (_roomCode: string, gameType: 'time
       to: opponent.user_id.slice(-8)
     });
     
-    // Bildirim gönder
+    // Bildirim gönder (RPC - security definer)
     try {
       const { data: profile } = await supabase
         .from('profiles')
@@ -376,13 +376,16 @@ const sendRematchRequest = useCallback(async (_roomCode: string, gameType: 'time
         .single();
         
       if (profile?.username) {
-        const { sendRematchNotification } = await import('@/utils/notifications');
-        await sendRematchNotification(
-          opponent.user_id,
-          profile.username,
-          code,
-          gameType
-        );
+        const gameTypeText = gameType === 'timed' ? 'Zamana Karşı' : 'Skora Karşı';
+        const { error: notifError } = await supabase.rpc('create_notification', {
+          p_user_id: opponent.user_id,
+          p_type: 'invite',
+          p_message: `${profile.username} tekrar oyun istiyor (${gameTypeText})`,
+          p_related_id: code
+        });
+        if (notifError) {
+          console.error('Rematch notification error:', notifError);
+        }
       }
     } catch (e) {
       console.log('Rematch notification error (ignored):', e);
