@@ -323,7 +323,7 @@ const GlobalRematchListener = () => {
       try {
         const { data: req } = await supabase
           .from('rematch_requests')
-          .select('id, game_type')
+          .select('id, game_type, from_user_id')
           .eq('room_code', roomCode)
           .eq('to_user_id', user.id)
           .eq('status', 'pending')
@@ -336,23 +336,43 @@ const GlobalRematchListener = () => {
           return;
         }
 
-        await supabase
-          .from('rematch_requests')
-          .update({ status: 'accepted', responded_at: new Date().toISOString() })
-          .eq('id', req.id);
-
-        const { data: room } = await supabase
+        // Yeni room oluştur
+        const newRoomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+        const { data: newRoom, error: roomError } = await supabase
           .from('game_rooms')
-          .select('id, game_mode')
-          .eq('room_code', roomCode)
+          .insert({
+            room_code: newRoomCode,
+            game_mode: 'private-room',
+            player1_id: req.from_user_id,
+            player2_id: user.id,
+            status: 'waiting'
+          })
+          .select('id')
           .single();
 
-        if (room) {
-          const baseRoute = room.game_mode?.includes('random-match') ? '/game/random-match' : '/game/private-room';
-          navigate(`${baseRoute}?room=${room.id}&type=${req.game_type}`);
+        if (roomError || !newRoom) {
+          console.error('Room oluşturulamadı:', roomError);
+          toast({ title: 'Oda oluşturulamadı', variant: 'destructive' as any });
+          return;
         }
+
+        // Request'i kabul et ve yeni room_code ekle
+        await supabase
+          .from('rematch_requests')
+          .update({ 
+            status: 'accepted', 
+            responded_at: new Date().toISOString(),
+            new_room_code: newRoomCode
+          })
+          .eq('id', req.id);
+
+        console.log('✅ Rematch kabul edildi, yeni room:', newRoomCode);
+
+        // Oyuna yönlendir
+        navigate(`/game/private-room?room=${newRoom.id}&type=${req.game_type}`);
       } catch (e) {
         console.error('acceptRematch error:', e);
+        toast({ title: 'Bir hata oluştu', variant: 'destructive' as any });
       }
     };
 
@@ -410,6 +430,31 @@ const GlobalRematchListener = () => {
             });
           } catch (e) {
             console.warn('Toast gösterilemedi:', e);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'rematch_requests',
+          filter: `from_user_id=eq.${user.id}`
+        },
+        async (payload) => {
+          const req: any = payload.new;
+          if (!req || req.status !== 'accepted' || !req.new_room_code) return;
+          console.log('✅ Rematch kabul edildi (istek gönderen):', req);
+          
+          // İstek gönderen oyuncuyu da yeni room'a yönlendir
+          const { data: newRoom } = await supabase
+            .from('game_rooms')
+            .select('id')
+            .eq('room_code', req.new_room_code)
+            .single();
+
+          if (newRoom) {
+            navigate(`/game/private-room?room=${newRoom.id}&type=${req.game_type}`);
           }
         }
       )
