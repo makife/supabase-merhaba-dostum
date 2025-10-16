@@ -339,6 +339,32 @@ const GlobalRematchListener = () => {
 
         // Yeni room oluştur
         const newRoomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+        // Grid oluştur (oda koduna göre deterministik, yoksa tarih bazlı)
+        const generateGridFromSeed = (seed: string): string[] => {
+          const seedNum = parseInt(seed.replace(/[^0-9]/g, "").slice(0, 10)) || Date.now();
+          let currentSeed = seedNum;
+          const seededRandom = () => {
+            currentSeed = (currentSeed * 1664525 + 1013904223) % 4294967296;
+            return currentSeed / 4294967296;
+          };
+          const letterPool = [
+            "A","A","A","A","A","A","A","A","E","E","E","E","E","E","E",
+            "İ","İ","İ","İ","İ","İ","I","I","I","I","I","O","O","O","O","O",
+            "U","U","U","U","Ü","Ü","Ü","Ö","Ö","Ö","L","L","L","L","L",
+            "N","N","N","N","N","R","R","R","R","R","K","K","K","K",
+            "M","M","M","M","T","T","T","T","S","S","S","S","D","D","D",
+            "Y","Y","Y","B","B","B","C","C","Ç","Ç","F","F","G","G","Ğ","Ğ",
+            "H","H","J","P","P","Ş","Ş","V","V","Z"
+          ];
+          const grid: string[] = [];
+          for (let i = 0; i < 16; i++) {
+            const randomIndex = Math.floor(seededRandom() * letterPool.length);
+            grid.push(letterPool[randomIndex]);
+          }
+          return grid;
+        };
+        const gridArray = generateGridFromSeed(newRoomCode);
+
         const { data: newRoom, error: roomError } = await supabase
           .from('game_rooms')
           .insert({
@@ -347,7 +373,8 @@ const GlobalRematchListener = () => {
             host_id: user.id,
             player1_id: req.from_user_id,
             player2_id: user.id,
-            status: 'waiting'
+            status: 'waiting',
+            current_grid: gridArray
           })
           .select('id')
           .single();
