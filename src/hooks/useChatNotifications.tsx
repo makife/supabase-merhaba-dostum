@@ -181,7 +181,7 @@ export function useChatNotifications() {
           table: 'notifications',
           filter: `user_id=eq.${user.id}`
         },
-(payload) => {
+        (payload) => {
           const notif: any = payload.new;
           if (!notif) return;
           if (notif.type === 'mention') {
@@ -203,6 +203,35 @@ export function useChatNotifications() {
             } catch (e) {
               console.warn('Toast show failed:', e);
             }
+          }
+        }
+      )
+      // Fallback: Bildirim gecikirse direct rematch_requests realtime ile tetikle
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'rematch_requests',
+          filter: `to_user_id=eq.${user.id}`
+        },
+        (payload) => {
+          const req: any = payload.new;
+          if (!req || req.status !== 'pending') return;
+          try {
+            toast({
+              title: '🎮 Tekrar Oyun İsteği',
+              description: 'Rakibiniz tekrar oyun istiyor!',
+              duration: 10000,
+              action: (
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={() => acceptRematch(req.room_code)}>Kabul</Button>
+                  <Button size="sm" variant="outline" onClick={() => rejectRematch(req.room_code)}>Reddet</Button>
+                </div>
+              ) as any,
+            });
+          } catch (e) {
+            console.warn('Toast show failed:', e);
           }
         }
       )
