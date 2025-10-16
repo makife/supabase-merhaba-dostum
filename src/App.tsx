@@ -344,6 +344,7 @@ const GlobalRematchListener = () => {
           .insert({
             room_code: newRoomCode,
             game_mode: 'private-room',
+            host_id: user.id,
             player1_id: req.from_user_id,
             player2_id: user.id,
             status: 'waiting'
@@ -363,7 +364,7 @@ const GlobalRematchListener = () => {
           .update({ 
             status: 'accepted', 
             responded_at: new Date().toISOString(),
-            new_room_code: newRoomCode
+            room_code: newRoomCode
           })
           .eq('id', req.id);
 
@@ -448,14 +449,14 @@ const GlobalRematchListener = () => {
         },
         async (payload) => {
           const req: any = payload.new;
-          if (!req || req.status !== 'accepted' || !req.new_room_code) return;
+          if (!req || req.status !== 'accepted' || !req.room_code) return;
           console.log('✅ Rematch kabul edildi (istek gönderen):', req);
           
           // İstek gönderen oyuncuyu da yeni room'a yönlendir
           const { data: newRoom } = await supabase
             .from('game_rooms')
             .select('id')
-            .eq('room_code', req.new_room_code)
+            .eq('room_code', req.room_code)
             .single();
 
           if (newRoom) {
