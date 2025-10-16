@@ -44,6 +44,7 @@ import { useImmersiveBars } from "@/hooks/useImmersiveBars";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { ToastAction } from "@/components/ui/toast";
 import { useNavigate } from "react-router-dom";
 
 const queryClient = new QueryClient();
@@ -423,8 +424,12 @@ const GlobalRematchListener = () => {
               duration: 10000,
               action: (
                 <div className="flex gap-2">
-                  <Button size="sm" onClick={() => acceptRematch(req.room_code)}>Kabul</Button>
-                  <Button size="sm" variant="outline" onClick={() => rejectRematch(req.room_code)}>Reddet</Button>
+                  <ToastAction altText="Kabul et" asChild>
+                    <Button size="sm" onClick={() => acceptRematch(req.room_code)}>Kabul</Button>
+                  </ToastAction>
+                  <ToastAction altText="Reddet" asChild>
+                    <Button size="sm" variant="outline" onClick={() => rejectRematch(req.room_code)}>Reddet</Button>
+                  </ToastAction>
                 </div>
               ) as any,
             });
@@ -477,8 +482,12 @@ const GlobalRematchListener = () => {
               duration: 10000,
               action: (
                 <div className="flex gap-2">
-                  <Button size="sm" onClick={() => acceptRematch(notif.related_id)}>Kabul</Button>
-                  <Button size="sm" variant="outline" onClick={() => rejectRematch(notif.related_id)}>Reddet</Button>
+                  <ToastAction altText="Kabul et" asChild>
+                    <Button size="sm" onClick={() => acceptRematch(notif.related_id)}>Kabul</Button>
+                  </ToastAction>
+                  <ToastAction altText="Reddet" asChild>
+                    <Button size="sm" variant="outline" onClick={() => rejectRematch(notif.related_id)}>Reddet</Button>
+                  </ToastAction>
                 </div>
               ) as any,
             });
