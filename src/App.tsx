@@ -41,6 +41,10 @@ import SnakeGamePage from "@/pages/SnakeGame";
 import TetrisGamePage from "@/pages/TetrisGame";
 import { Capacitor } from "@capacitor/core";
 import { useImmersiveBars } from "@/hooks/useImmersiveBars";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 const queryClient = new QueryClient();
 
@@ -304,6 +308,151 @@ const AppRoutes = () => {
   );
 };
 
+// 🎮 Global Rematch Listener (uygulama seviyesinde, her yerde çalışır)
+const GlobalRematchListener = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    console.log('🔔 Global rematch listener başlatıldı:', user.id.slice(-8));
+
+    const acceptRematch = async (roomCode?: string | null) => {
+      if (!roomCode) return;
+      try {
+        const { data: req } = await supabase
+          .from('rematch_requests')
+          .select('id, game_type')
+          .eq('room_code', roomCode)
+          .eq('to_user_id', user.id)
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!req) {
+          toast({ title: 'İstek bulunamadı', duration: 2500, variant: 'destructive' as any });
+          return;
+        }
+
+        await supabase
+          .from('rematch_requests')
+          .update({ status: 'accepted', responded_at: new Date().toISOString() })
+          .eq('id', req.id);
+
+        const { data: room } = await supabase
+          .from('game_rooms')
+          .select('id, game_mode')
+          .eq('room_code', roomCode)
+          .single();
+
+        if (room) {
+          const baseRoute = room.game_mode?.includes('random-match') ? '/game/random-match' : '/game/private-room';
+          navigate(`${baseRoute}?room=${room.id}&type=${req.game_type}`);
+        }
+      } catch (e) {
+        console.error('acceptRematch error:', e);
+      }
+    };
+
+    const rejectRematch = async (roomCode?: string | null) => {
+      if (!roomCode) return;
+      try {
+        const { data: req } = await supabase
+          .from('rematch_requests')
+          .select('id')
+          .eq('room_code', roomCode)
+          .eq('to_user_id', user.id)
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!req) return;
+
+        await supabase
+          .from('rematch_requests')
+          .update({ status: 'rejected', responded_at: new Date().toISOString() })
+          .eq('id', req.id);
+
+        toast({ title: 'İstek reddedildi', duration: 2000 });
+      } catch (e) {
+        console.error('rejectRematch error:', e);
+      }
+    };
+
+    const channel = supabase
+      .channel('global-rematch-listener')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'rematch_requests',
+          filter: `to_user_id=eq.${user.id}`
+        },
+        (payload) => {
+          const req: any = payload.new;
+          if (!req || req.status !== 'pending') return;
+          console.log('🎮 Rematch isteği alındı (global):', req);
+          try {
+            toast({
+              title: '🎮 Tekrar Oyun İsteği',
+              description: 'Rakibiniz tekrar oyun istiyor!',
+              duration: 10000,
+              action: (
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={() => acceptRematch(req.room_code)}>Kabul</Button>
+                  <Button size="sm" variant="outline" onClick={() => rejectRematch(req.room_code)}>Reddet</Button>
+                </div>
+              ) as any,
+            });
+          } catch (e) {
+            console.warn('Toast gösterilemedi:', e);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          const notif: any = payload.new;
+          if (!notif || notif.type !== 'invite') return;
+          console.log('🔔 Notification rematch isteği alındı (fallback):', notif);
+          try {
+            toast({
+              title: '🎮 Tekrar Oyun İsteği',
+              description: notif.message || 'Rakibiniz tekrar oyun istiyor!',
+              duration: 10000,
+              action: (
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={() => acceptRematch(notif.related_id)}>Kabul</Button>
+                  <Button size="sm" variant="outline" onClick={() => rejectRematch(notif.related_id)}>Reddet</Button>
+                </div>
+              ) as any,
+            });
+          } catch (e) {
+            console.warn('Toast gösterilemedi:', e);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('🔌 Global rematch listener kapatılıyor');
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, navigate]);
+
+  return null;
+};
+
 const App = () => {
   // Native immersive bars (Android): show on edge-swipe for 3s, then auto-hide
   useImmersiveBars();
@@ -320,6 +469,7 @@ const App = () => {
         >
           <AuthProvider>
             <UserProvider>
+              <GlobalRematchListener />
               <ThemeProvider>
                 <MusicProvider>
                   <MatchmakingProvider>
