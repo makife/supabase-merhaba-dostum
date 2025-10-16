@@ -2778,24 +2778,24 @@ useEffect(() => {
   
   let syncInterval: NodeJS.Timeout | null = null;
   
-  // For tournament matches, sync timer with database
+  // For tournament matches, sync timer with database using countdown_started_at
   if (gameMode === 'tournament' && tournamentMatch) {
     const syncTimer = async () => {
       try {
-        // Maç statüsünü kontrol et
+        // Maç countdown_started_at zamanını kontrol et
         const { data: matchData } = await supabase
           .from('tournament_matches')
-          .select('updated_at, created_at, status')
+          .select('countdown_started_at, status')
           .eq('id', tournamentMatch.id)
           .single();
           
-        if (matchData && matchData.status === 'in_progress') {
-          // ✅ updated_at kullan - maç başlatıldığı anı temsil eder
+        if (matchData && matchData.status === 'in_progress' && matchData.countdown_started_at) {
+          // ✅ SERVER-SIDE COUNTDOWN ZAMANI KULLAN
           if (!serverMatchStartRef.current) {
-            // Maç başlatma zamanını ayarla (küçük bir tampon ekle)
-            const startSource = matchData.updated_at || matchData.created_at;
-            serverMatchStartRef.current = new Date(startSource).getTime() + 2000;
-            console.log('📌 Tournament match start time fixed (updated_at):', new Date(serverMatchStartRef.current).toISOString());
+            // Countdown 10 saniye, oyun başlangıcı = countdown_started_at + 10 saniye
+            const countdownStart = new Date(matchData.countdown_started_at).getTime();
+            serverMatchStartRef.current = countdownStart + 10000; // 10 saniye sonra başlar
+            console.log('📌 Tournament match start time (countdown_started_at + 10s):', new Date(serverMatchStartRef.current).toISOString());
           }
           
           const matchStartTime = serverMatchStartRef.current!;
@@ -2803,12 +2803,10 @@ useEffect(() => {
           const elapsedSeconds = Math.floor((currentTime - matchStartTime) / 1000);
           const remainingTime = Math.max(0, 120 - elapsedSeconds);
           
-          // Sadece 3+ saniye fark varsa senkronize et
-          if (Math.abs(timeLeftRef.current - remainingTime) > 3) {
-            timeLeftRef.current = remainingTime;
-            setDisplayTime(remainingTime);
-            console.log('🔄 Timer synced to:', remainingTime, 'seconds - Both players now synced!');
-          }
+          // Her zaman senkronize et (jitter'ı önlemek için)
+          timeLeftRef.current = remainingTime;
+          setDisplayTime(remainingTime);
+          console.log('🔄 Timer synced to:', remainingTime, 'seconds (server-side)');
         }
       } catch (error) {
         console.error('Timer sync error:', error);
@@ -2818,8 +2816,8 @@ useEffect(() => {
     // Initial sync
     syncTimer();
     
-    // Sync every 5 seconds for tournament matches
-    syncInterval = setInterval(syncTimer, 5000);
+    // Sync every 1 second for precise tournament timer
+    syncInterval = setInterval(syncTimer, 1000);
   }
   
   timerRef.current = setInterval(() => {
