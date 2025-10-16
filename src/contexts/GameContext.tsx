@@ -1003,17 +1003,9 @@ const fetchParticipants = useCallback(
       console.log('👥 Private room oyuncu sayısı:', playerCount);
       
       if (playerCount >= 2) {
-        // İkinci oyuncu join oldu, countdown başlat
+        // İkinci oyuncu join oldu, countdown'ı güvenli şekilde başlat (RPC olmadan)
         try {
-          const { data: countdownTime, error: rpcError } = await supabase.rpc('start_game_countdown', {
-            p_room_id: room.id
-          });
-          
-          if (rpcError) {
-            console.warn('⚠️ RPC countdown hatası:', rpcError);
-          } else {
-            console.log('✅ Private room countdown başlatıldı:', countdownTime);
-          }
+          await closeFullRoom(room.id);
         } catch (countdownError) {
           console.error('❌ Countdown başlatma hatası:', countdownError);
         }
