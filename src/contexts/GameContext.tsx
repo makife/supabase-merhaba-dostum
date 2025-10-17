@@ -604,7 +604,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           // ⏳ Oda oluşmasını bekle (retry mekanizması)
           let roomData = null;
           let retryCount = 0;
-          const maxRetries = 10;
+          const maxRetries = 15; // Retry sayısını artırdım
 
           while (!roomData && retryCount < maxRetries) {
             const { data } = await supabase
@@ -615,11 +615,12 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
             if (data) {
               roomData = data;
+              console.log("✅ Rematch odası bulundu:", roomData.id.slice(-8));
               break;
             }
 
             console.log(`⏳ Oda henüz hazır değil, bekleniyor... (${retryCount + 1}/${maxRetries})`);
-            await new Promise((resolve) => setTimeout(resolve, 300));
+            await new Promise((resolve) => setTimeout(resolve, 500)); // Bekleme süresini artırdım
             retryCount++;
           }
 
@@ -633,7 +634,11 @@ export const GameProvider = ({ children }: GameProviderProps) => {
             return;
           }
 
-          console.log("✅ Rematch odası bulundu:", roomData.id.slice(-8));
+          console.log("✅ Rematch odası bulundu:", {
+            roomId: roomData.id.slice(-8),
+            roomCode: roomData.room_code,
+            mode: roomData.game_mode,
+          });
 
           // 🔑 Kendini participant olarak ekle
           const { error: participantError } = await supabase.from("game_participants").insert({
@@ -653,27 +658,35 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
           console.log("✅ Participant olarak eklendi");
 
-          // State'i güncelle
+          // 🎯 ÖNEMLİ: State'i GÜNCEL ve TAM olarak ayarla
           setCurrentRoom(roomData);
 
-          // Participants'ı hemen çek
+          // 🎯 Participants'ı HEMEN çek ve state'e set et
           const { data: parts } = await supabase
             .from("game_participants")
             .select(`*, profiles:user_id (username, avatar_url)`)
             .eq("room_id", roomData.id);
+
           if (parts) {
             setParticipants(parts as any);
             console.log("✅ Participants güncellendi:", parts.length);
           }
 
-          // 🎯 Küçük gecikme ile yönlendir (state'in güncellenmesini bekle)
-          setTimeout(() => {
-            console.log("🎮 Odaya katıldım, oyun sayfasına yönlendiriliyor");
-            const baseRoute = roomData.game_mode?.includes("random-match")
-              ? "/game/random-match"
-              : "/game/private-room";
-            navigate(`${baseRoute}?room=${roomData.id}&type=${request.game_type}`);
-          }, 500);
+          // 🎯 Yönlendirme için gerekli tüm state'lerin güncellenmesini bekle
+          await new Promise((resolve) => setTimeout(resolve, 800));
+
+          console.log("🎮 Odaya katıldım, oyun sayfasına yönlendiriliyor", {
+            roomId: roomData.id,
+            gameMode: roomData.game_mode,
+            gameType: request.game_type,
+          });
+
+          // 🎯 Yönlendirme işlemi
+          const baseRoute = roomData.game_mode?.includes("random-match") ? "/game/random-match" : "/game/private-room";
+
+          navigate(`${baseRoute}?room=${roomData.id}&type=${request.game_type}`, {
+            replace: true, // 🎯 Önemli: history'de replace kullan
+          });
         }
 
         setCurrentRematchRequest(null);
