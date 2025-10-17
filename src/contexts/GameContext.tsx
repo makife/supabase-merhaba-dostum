@@ -604,7 +604,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           // ⏳ Oda oluşmasını bekle (retry mekanizması)
           let roomData = null;
           let retryCount = 0;
-          const maxRetries = 10;
+          const maxRetries = 20; // Retry sayısını artırdım
 
           while (!roomData && retryCount < maxRetries) {
             const { data } = await supabase
@@ -615,11 +615,16 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
             if (data) {
               roomData = data;
+              console.log("✅ Rematch odası bulundu:", {
+                roomId: roomData.id.slice(-8),
+                roomCode: roomData.room_code,
+                mode: roomData.game_mode,
+              });
               break;
             }
 
             console.log(`⏳ Oda henüz hazır değil, bekleniyor... (${retryCount + 1}/${maxRetries})`);
-            await new Promise((resolve) => setTimeout(resolve, 300));
+            await new Promise((resolve) => setTimeout(resolve, 500));
             retryCount++;
           }
 
@@ -633,7 +638,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
             return;
           }
 
-          console.log("✅ Rematch odası bulundu:", roomData.id.slice(-8));
+          console.log("🎯 Odaya katılım başlatılıyor...");
 
           // 🔑 Kendini participant olarak ekle
           const { error: participantError } = await supabase.from("game_participants").insert({
@@ -653,27 +658,35 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
           console.log("✅ Participant olarak eklendi");
 
-          // State'i güncelle
+          // 🎯 ÖNEMLİ: State'i GÜNCEL ve TAM olarak ayarla
           setCurrentRoom(roomData);
 
-          // Participants'ı hemen çek
+          // 🎯 Participants'ı HEMEN çek ve state'e set et
           const { data: parts } = await supabase
             .from("game_participants")
             .select(`*, profiles:user_id (username, avatar_url)`)
             .eq("room_id", roomData.id);
+
           if (parts) {
             setParticipants(parts as any);
             console.log("✅ Participants güncellendi:", parts.length);
           }
 
-          // 🎯 Küçük gecikme ile yönlendir (state'in güncellenmesini bekle)
-          setTimeout(() => {
-            console.log("🎮 Odaya katıldım, oyun sayfasına yönlendiriliyor");
-            const baseRoute = roomData.game_mode?.includes("random-match")
-              ? "/game/random-match"
-              : "/game/private-room";
-            navigate(`${baseRoute}?room=${roomData.id}&type=${request.game_type}`);
-          }, 500);
+          // 🎯 Yönlendirme için gerekli tüm state'lerin güncellenmesini bekle
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+
+          console.log("🎮 Odaya katıldım, oyun sayfasına yönlendiriliyor", {
+            roomId: roomData.id,
+            gameMode: roomData.game_mode,
+            gameType: request.game_type,
+          });
+
+          // 🎯 Yönlendirme işlemi - REPLACE kullan
+          const baseRoute = roomData.game_mode?.includes("random-match") ? "/game/random-match" : "/game/private-room";
+
+          navigate(`${baseRoute}?room=${roomData.id}&type=${request.game_type}`, {
+            replace: true,
+          });
         }
 
         setCurrentRematchRequest(null);
@@ -851,8 +864,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
       console.log("🔒 Oda kapatılıyor (dolu):", String(roomId).slice(-8));
 
-      // Manuel countdown başlat (RPC olmadan)
-      const countdownTime = new Date(Date.now() + 3000).toISOString();
+      const startedAt = new Date().toISOString();
 
       // Odaya katılan gerçek oyuncuları sırayla al (ilk giren player1)
       const { data: realPlayers } = await supabase
@@ -865,36 +877,52 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       const player1Id = realPlayers?.[0]?.user_id || null;
       const player2Id = realPlayers?.[1]?.user_id || null;
 
-      // Manuel update (RPC olmadan)
-      const { error: updateError } = await supabase
-        .from("game_rooms")
-        .update({
-          status: "active",
-          countdown_started_at: countdownTime,
-          player1_id: player1Id,
-          player2_id: player2Id,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", roomId);
+      // 🎯 SERVER-SIDE COUNTDOWN başlat
+      const { data: countdownTime, error: rpcError } = await supabase.rpc("start_game_countdown", {
+        p_room_id: roomId,
+      });
 
-      if (updateError) {
-        console.error("❌ Oda güncelleme hatası:", updateError);
-        throw updateError;
+      const serverTime = rpcError ? startedAt : countdownTime;
+
+      if (rpcError) {
+        console.warn("⚠️ RPC countdown hatası, fallback kullanılıyor:", rpcError);
+        // Fallback: Manuel DB update
+        await supabase
+          .from("game_rooms")
+          .update({
+            status: "active",
+            countdown_started_at: startedAt,
+            player1_id: player1Id,
+            player2_id: player2Id,
+          })
+          .eq("id", roomId)
+          .is("countdown_started_at", null);
+      } else {
+        console.log("✅ Server-side countdown başlatıldı:", countdownTime);
+        await supabase
+          .from("game_rooms")
+          .update({
+            status: "active",
+            player1_id: player1Id,
+            player2_id: player2Id,
+          })
+          .eq("id", roomId)
+          .is("countdown_started_at", null);
       }
 
-      // 🎯 KRITIK: Lokal state'i HEMEN güncelle
+      // 🎯 KRITIK: Lokal state'i HEMEN güncelle + countdown zamanını set et
       setCurrentRoom((prev) => {
         if (!prev || prev.id !== roomId) return prev;
         return {
           ...prev,
           status: "active",
-          countdown_started_at: countdownTime,
+          countdown_started_at: serverTime,
           player1_id: player1Id,
           player2_id: player2Id,
         } as GameRoom;
       });
 
-      console.log("✅ Oda kapatıldı ve countdown başlatıldı (manuel)");
+      console.log("✅ Oda kapatıldı ve countdown başlatıldı");
     } catch (error) {
       console.error("❌ Oda kapatma hatası:", error);
     } finally {
