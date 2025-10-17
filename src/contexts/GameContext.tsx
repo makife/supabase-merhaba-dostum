@@ -244,7 +244,7 @@ const sendRematchRequest = useCallback(async (_roomCode: string, gameType: 'time
   console.log('🔔 sendRematchRequest çağrıldı:', { 
     roomCode: _roomCode, 
     gameType, 
-    userId: user.id.slice(-8),
+    userId: String(user.id).slice(-8),
     participantCount: participants.length,
     participants: participants.map(p => ({
       userId: p.user_id?.slice(-8),
@@ -268,8 +268,8 @@ const sendRematchRequest = useCallback(async (_roomCode: string, gameType: 'time
   }
   
   console.log('🔄 Tekrar oyun isteği gönderiliyor:', {
-    from: user.id.slice(-8),
-    to: opponent.user_id.slice(-8),
+    from: String(user.id).slice(-8),
+    to: String(opponent.user_id || '').slice(-8),
     gameType,
     currentMode: currentRoom?.game_mode
   });
@@ -336,8 +336,8 @@ const sendRematchRequest = useCallback(async (_roomCode: string, gameType: 'time
 
     console.log('📤 Rematch request DB\'ye yazılıyor:', {
       room_code: code,
-      from_user_id: user.id.slice(-8),
-      to_user_id: opponent.user_id.slice(-8),
+      from_user_id: String(user.id).slice(-8),
+      to_user_id: String(opponent.user_id || '').slice(-8),
       game_type: gameType
     });
     
@@ -363,8 +363,8 @@ const sendRematchRequest = useCallback(async (_roomCode: string, gameType: 'time
       requestId: data.id,
       room: code,
       mode: mode,
-      from: user.id.slice(-8),
-      to: opponent.user_id.slice(-8)
+      from: String(user.id).slice(-8),
+      to: String(opponent.user_id || '').slice(-8)
     });
     
     // Bildirim gönder (RPC - security definer)
@@ -659,7 +659,7 @@ const generateRoomCode = () => {
       }
       isClosingRoomRef.current = true;
 
-      console.log('🔒 Oda kapatılıyor (dolu):', roomId.slice(-8));
+      console.log('🔒 Oda kapatılıyor (dolu):', String(roomId).slice(-8));
       
       const startedAt = new Date().toISOString();
       
@@ -731,7 +731,7 @@ const generateRoomCode = () => {
 const fetchParticipants = useCallback(
   debounce(async (roomId: string) => {
     try {
-      console.log('📥 Fetching participants for room:', roomId.slice(-8));
+      console.log('📥 Fetching participants for room:', String(roomId).slice(-8));
       
       const { data, error } = await supabase
         .from('game_participants')
@@ -893,7 +893,7 @@ const fetchParticipants = useCallback(
     
     if (roomById) {
       room = roomById;
-      console.log('✅ Oda ID ile bulundu:', room.id.slice(-8));
+      console.log('✅ Oda ID ile bulundu:', String(room.id).slice(-8));
     } else {
       // ID ile bulunamazsa room_code ile ara
       const { data: roomByCode, error: errorByCode } = await supabase
@@ -907,7 +907,7 @@ const fetchParticipants = useCallback(
       roomError = errorByCode;
       
       if (room) {
-        console.log('✅ Oda room_code ile bulundu:', room.id.slice(-8));
+        console.log('✅ Oda room_code ile bulundu:', String(room.id).slice(-8));
       }
     }
 
@@ -1035,7 +1035,7 @@ const fetchParticipants = useCallback(
 
   try {
     console.log('🔍 ===== RASTGELE MATCHMAKING BAŞLADI =====');
-    console.log('👤 User:', user.id.slice(-8));
+    console.log('👤 User:', String(user.id).slice(-8));
     console.log('🎮 Type:', gameType);
     
     // DÜZELTME: Supabase query'sini düzelt - created_at kontrolünü kaldır
@@ -1062,7 +1062,7 @@ const fetchParticipants = useCallback(
       const realPlayers = room.game_participants?.filter(p => !p.is_bot) || [];
       const gameTypeMatch = gameType === 'timed' ? room.time_limit > 0 : room.max_score > 0;
       
-      console.log(`🏠 Oda ${room.id.slice(-8)}: ${realPlayers.length} oyuncu, type: ${gameTypeMatch ? 'uygun' : 'uyumsuz'}, time_limit: ${room.time_limit}, max_score: ${room.max_score}`);
+      console.log(`🏠 Oda ${String(room.id).slice(-8)}: ${realPlayers.length} oyuncu, type: ${gameTypeMatch ? 'uygun' : 'uyumsuz'}, time_limit: ${room.time_limit}, max_score: ${room.max_score}`);
       
       return realPlayers.length === 1 && gameTypeMatch;
     }) || [];
@@ -1072,7 +1072,7 @@ const fetchParticipants = useCallback(
     // Try to join first available room
     if (availableRooms.length > 0) {
       const targetRoom = availableRooms[0];
-      console.log('🎯 Hedef oda:', targetRoom.id.slice(-8));
+      console.log('🎯 Hedef oda:', String(targetRoom.id).slice(-8));
       
       try {
         // DÜZELTME: Önce mevcut katılımları kontrol et
@@ -1199,8 +1199,8 @@ const fetchParticipants = useCallback(
       fetchParticipants(newRoom.id);
     }, 500);
     
-    console.log('🆕 Yeni oda oluşturuldu:', newRoom.id.slice(-8));
-    console.log('👤 Host kendini katılımcı olarak ekledi:', user.id.slice(-8));
+    console.log('🆕 Yeni oda oluşturuldu:', String(newRoom.id).slice(-8));
+    console.log('👤 Host kendini katılımcı olarak ekledi:', String(user.id).slice(-8));
     console.log('🔍 ===== MATCHMAKING BİTTİ (BEKLEMEDE) =====');
     
     toast({
@@ -1344,7 +1344,7 @@ const fetchParticipants = useCallback(
       // Odayı banlist'e ekle (tekrar bağlanmayı önle)
       if (currentRoom?.id) {
         matchBanlist.add(currentRoom.id);
-        console.log('🚫 Oda banlist\'e eklendi:', currentRoom.id.slice(-8));
+        console.log('🚫 Oda banlist\'e eklendi:', String(currentRoom.id).slice(-8));
       }
       
       // Matchmaking state'ini temizle
@@ -1520,7 +1520,7 @@ const fetchParticipants = useCallback(
   if (!currentRoom) return;
 
   try {
-    console.log('🏁 Oyun bitiyor - room güncelleniyor:', currentRoom.id.slice(-8));
+    console.log('🏁 Oyun bitiyor - room güncelleniyor:', String(currentRoom.id).slice(-8));
     
     // Calculate game duration
     const gameDuration = currentRoom.started_at 
@@ -1667,7 +1667,7 @@ useEffect(() => {
     return;
   }
 
-  console.log('🔗 Setting up optimized real-time for room:', currentRoom.id.slice(-8));
+  console.log('🔗 Setting up optimized real-time for room:', String(currentRoom.id).slice(-8));
   setIsConnected(true);
   // Init countdown guard with current room state to avoid duplicate dispatches
   lastCountdownAtRef.current = currentRoom.countdown_started_at ?? null;
@@ -1780,9 +1780,9 @@ useEffect(() => {
       console.log('📡 Presence subscription status:', status);
       if (status === 'SUBSCRIBED') {
         await presenceChannel.track({ user_id: user.id, room_id: currentRoom.id });
-        console.log('✅ Presence tracked for room:', currentRoom.id.slice(-8));
+        console.log('✅ Presence tracked for room:', String(currentRoom.id).slice(-8));
       } else if (status === 'CHANNEL_ERROR') {
-        console.error('❌ Presence channel error for room:', currentRoom.id.slice(-8));
+        console.error('❌ Presence channel error for room:', String(currentRoom.id).slice(-8));
       }
     });
 
@@ -2011,7 +2011,7 @@ useEffect(() => {
 
   // Cleanup
   return () => {
-    console.log('🔌 Cleaning up real-time subscriptions for room:', currentRoom.id.slice(-8));
+    console.log('🔌 Cleaning up real-time subscriptions for room:', String(currentRoom.id).slice(-8));
     // Reset countdown guard for next room/game
     lastCountdownAtRef.current = null;
     
@@ -2044,7 +2044,7 @@ useEffect(() => {
 useEffect(() => {
   if (!user) return;
   
-  console.log('🔄 Rematch realtime listener kuruluyor... User:', user.id.slice(-8));
+  console.log('🔄 Rematch realtime listener kuruluyor... User:', String(user.id).slice(-8));
   const timeoutMap = new Map<string, NodeJS.Timeout>();
   
   // Bana gelen istekler
@@ -2059,7 +2059,7 @@ useEffect(() => {
           requestId: request.id,
           from: request.from_user_id?.slice(-8),
           to: request.to_user_id?.slice(-8),
-          myId: user.id.slice(-8),
+          myId: String(user.id).slice(-8),
           status: request.status
         });
         
