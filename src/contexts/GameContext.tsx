@@ -2356,25 +2356,10 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           if (request.status === "accepted") {
             toast({
               title: "✅ İstek Kabul Edildi!",
-              description: "Rakibiniz tekrar oyunu kabul etti, yönlendiriliyorsunuz...",
+              description: "Rakibiniz tekrar oyunu kabul etti, oyun başlıyor...",
               duration: 3000,
             });
-
-            if (request.room_code) {
-              (async () => {
-                const { data: roomData } = await supabase
-                  .from("game_rooms")
-                  .select("id, game_mode")
-                  .eq("room_code", request.room_code)
-                  .single();
-                if (roomData) {
-                  const baseRoute = roomData.game_mode?.includes("random-match")
-                    ? "/game/random-match"
-                    : "/game/private-room";
-                  navigate(`${baseRoute}?room=${roomData.id}&type=${request.game_type}`);
-                }
-              })();
-            }
+            // ✅ Navigation App.tsx'teki GlobalRematchListener tarafından yapılıyor
           } else if (request.status === "rejected") {
             toast({
               title: "❌ İstek Reddedildi",
