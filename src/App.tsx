@@ -598,11 +598,11 @@ const App = () => {
           <AuthProvider>
             <UserProvider>
               <GlobalRematchListener />
-              <RoomAutoNavigator />
               <ThemeProvider>
                 <MusicProvider>
                   <MatchmakingProvider>
                     <GameProvider>
+                      <RoomAutoNavigator />
                       <TournamentProvider>
                         <NotificationProvider>
                           <AppRoutes />
