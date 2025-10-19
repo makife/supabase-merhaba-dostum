@@ -44,6 +44,7 @@ import { useImmersiveBars } from "@/hooks/useImmersiveBars";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import RoomAutoNavigator from "@/components/RoomAutoNavigator";
 import { ToastAction } from "@/components/ui/toast";
 import { useNavigate } from "react-router-dom";
 
@@ -597,6 +598,7 @@ const App = () => {
           <AuthProvider>
             <UserProvider>
               <GlobalRematchListener />
+              <RoomAutoNavigator />
               <ThemeProvider>
                 <MusicProvider>
                   <MatchmakingProvider>
