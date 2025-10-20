@@ -36,6 +36,10 @@ import {
 import { generateBotName } from '@/utils/tournamentHelpers';
 import { matchBanlist } from '@/utils/matchBanlist';
 
+// Safe helpers
+const shortId = (v?: string | null) => (v ? String(v).slice(-8) : 'NULL');
+const isUuid = (v?: string | null) => !!v && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+
 interface TournamentMatch {
   id: string;
   tournament_id: string;
@@ -352,7 +356,7 @@ useEffect(() => {
   
   console.log('✅ Grid SYNC - Both players see same grid:', {
     mode: gameMode,
-    roomId: currentRoom.id.slice(-8),
+    roomId: shortId(currentRoom?.id),
     gridPreview: grid[0]
   });
   
@@ -365,7 +369,7 @@ useEffect(() => {
     console.log('🧹 GamePage unmount - cleanup başlatılıyor');
     if (currentRoom?.id) {
       matchBanlist.add(currentRoom.id);
-      console.log('🚫 Unmount: Oda banlist\'e eklendi:', currentRoom.id.slice(-8));
+      console.log('🚫 Unmount: Oda banlist\'e eklendi:', shortId(currentRoom?.id));
     }
     window.dispatchEvent(new CustomEvent('cleanupMatchmaking'));
   };
@@ -1455,16 +1459,40 @@ useEffect(() => {
     if (privateRoomInitRef.current) return;
     privateRoomInitRef.current = true;
 
-    const roomId = searchParams.get('room');
+    const roomParam = searchParams.get('room');
     const type = searchParams.get('type') as 'timed' | 'score';
 
-    if (!roomId || !type) {
+    if (!roomParam || !type) {
       console.error('❌ Private room için room veya type eksik');
       navigate('/');
       return;
     }
 
-    console.log('🎯 Loading private room data:', roomId);
+    // room param kod (room_code) olabilir; UUID değilse ID'yi lookup yap
+    let roomId = roomParam;
+    if (!isUuid(roomParam)) {
+      const getIdByCode = async (code: string, attempts = 8, delayMs = 250): Promise<string | null> => {
+        for (let i = 0; i < attempts; i++) {
+          const { data } = await supabase
+            .from('game_rooms')
+            .select('id')
+            .eq('room_code', code)
+            .maybeSingle();
+          if (data?.id) return data.id;
+          await new Promise(r => setTimeout(r, delayMs));
+        }
+        return null;
+      };
+      const resolvedId = await getIdByCode(roomParam);
+      if (!resolvedId) {
+        toast({ title: 'Bağlantı Hatası', description: 'Oda bulunamadı', variant: 'destructive' });
+        navigate('/');
+        return;
+      }
+      roomId = resolvedId;
+    }
+
+    console.log('🎯 Loading private room data:', shortId(roomId));
     
     // Grid'i yükle
     const { data: roomData } = await supabase
@@ -1493,6 +1521,11 @@ useEffect(() => {
       if (joined) break;
       console.warn(`⏳ Join retry ${attempt}/6`);
       await new Promise(resolve => setTimeout(resolve, 250));
+    }
+    if (!joined) {
+      toast({ title: 'Bağlantı Hatası', description: 'Oyun odasına bağlanılamadı', variant: 'destructive' });
+      navigate('/');
+      return;
     }
     if (!joined) {
       toast({ title: 'Bağlantı Hatası', description: 'Oyun odasına bağlanılamadı', variant: 'destructive' });
@@ -2694,7 +2727,7 @@ const checkWinnerWithScores = useCallback(async (currentPlayerScore: number, cur
     if (!currentRoom || !user) return;
     if (showCountdown || gameStarted) return; // Zaten countdown başlamışsa tekrar başlatma
 
-    console.log('🔄 Game room countdown subscription başlatılıyor:', currentRoom.id.slice(-8));
+    console.log('🔄 Game room countdown subscription başlatılıyor:', shortId(currentRoom?.id));
     
     const channel = supabase
       .channel(`game-room-countdown-${currentRoom.id}`)
@@ -3073,7 +3106,7 @@ useEffect(() => {
   if (!currentRoom?.id || !user) return;
 
   console.log('🔄 === WORD SYNC BAŞLADI ===');
-  console.log('🔄 Room ID:', currentRoom.id.slice(-8));
+  console.log('🔄 Room ID:', shortId(currentRoom?.id));
 
   const syncUsedWords = async () => {
     if (syncingRef.current) {
@@ -4238,7 +4271,7 @@ if (gameEnded) {
         // Oyun bitiminde matchmaking state'ini temizle ve odayı banla
         if (currentRoom?.id) {
           matchBanlist.add(currentRoom.id);
-          console.log('🚫 Oda banlist\'e eklendi:', currentRoom.id.slice(-8));
+          console.log('🚫 Oda banlist\'e eklendi:', shortId(currentRoom?.id));
         }
         window.dispatchEvent(new CustomEvent('cleanupMatchmaking'));
         navigate('/');
@@ -4254,7 +4287,7 @@ if (gameEnded) {
                   // Oyun bitiminde matchmaking state'ini temizle ve odayı banla
                   if (currentRoom?.id) {
                     matchBanlist.add(currentRoom.id);
-                    console.log('🚫 Oda banlist\'e eklendi:', currentRoom.id.slice(-8));
+                    console.log('🚫 Oda banlist\'e eklendi:', shortId(currentRoom?.id));
                   }
                   window.dispatchEvent(new CustomEvent('cleanupMatchmaking'));
                   navigate('/');
