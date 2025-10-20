@@ -398,8 +398,8 @@ const GlobalRematchListener = () => {
 
         console.log('✅ Rematch kabul edildi, yeni room:', newRoomCode);
 
-        // Oyuna yönlendir
-        navigate(`/game/private-room?room=${newRoom.id}&type=${req.game_type}`);
+        // Oyuna yönlendir (room_code'u kullan - ID'yi bekleme)
+        navigate(`/game/private-room?room=${newRoomCode}&type=${req.game_type}`);
       } catch (e) {
         console.error('acceptRematch error:', e);
         toast({ title: 'Bir hata oluştu', variant: 'destructive' as any });
@@ -480,26 +480,8 @@ const GlobalRematchListener = () => {
           if (!req || req.status !== 'accepted' || !req.room_code) return;
           console.log('✅ Rematch kabul edildi (istek gönderen):', req);
           
-          // İstek gönderen oyuncuyu da yeni room'a yönlendir (retry ile)
-          const getRoomIdByCode = async (code: string, attempts = 5, delayMs = 200): Promise<string | null> => {
-            for (let i = 0; i < attempts; i++) {
-              const { data } = await supabase
-                .from('game_rooms')
-                .select('id')
-                .eq('room_code', code)
-                .maybeSingle();
-              if (data?.id) return data.id;
-              await new Promise(r => setTimeout(r, delayMs));
-            }
-            return null;
-          };
-
-          const roomId = await getRoomIdByCode(req.room_code);
-          if (roomId) {
-            navigate(`/game/private-room?room=${roomId}&type=${req.game_type}`);
-          } else {
-            console.warn('Rematch room henüz bulunamadı, daha sonra tekrar denenecek', req.room_code);
-          }
+          // Direkt room_code ile oyuna yönlendir (ID'yi bekleme)
+          navigate(`/game/private-room?room=${req.room_code}&type=${req.game_type}`);
         }
       )
       .on(
@@ -515,26 +497,8 @@ const GlobalRematchListener = () => {
           if (!req || req.status !== 'accepted' || !req.room_code) return;
           console.log('✅ Rematch kabul edildi (istek alan):', req);
 
-          // İstek alan oyuncuyu da yeni room'a yönlendir (retry ile)
-          const getRoomIdByCode = async (code: string, attempts = 5, delayMs = 200): Promise<string | null> => {
-            for (let i = 0; i < attempts; i++) {
-              const { data } = await supabase
-                .from('game_rooms')
-                .select('id')
-                .eq('room_code', code)
-                .maybeSingle();
-              if (data?.id) return data.id;
-              await new Promise(r => setTimeout(r, delayMs));
-            }
-            return null;
-          };
-
-          const roomId = await getRoomIdByCode(req.room_code);
-          if (roomId) {
-            navigate(`/game/private-room?room=${roomId}&type=${req.game_type}`);
-          } else {
-            console.warn('Rematch room henüz bulunamadı (receiver), daha sonra tekrar denenecek', req.room_code);
-          }
+          // Direkt room_code ile oyuna yönlendir (ID'yi bekleme)
+          navigate(`/game/private-room?room=${req.room_code}&type=${req.game_type}`);
         }
       )
       .on(
