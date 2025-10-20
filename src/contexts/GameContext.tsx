@@ -1849,10 +1849,12 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     if (!currentRoom || currentRoom.status !== "waiting") return;
 
     const realPlayers = participants.filter((p) => !p.is_bot);
+    const hasBot = participants.some((p) => p.is_bot);
     console.log("🔍 Oda kontrolü - Gerçek oyuncu sayısı:", realPlayers.length);
 
-    if (realPlayers.length >= 2) {
-      console.log("🔒 Oda dolu, kapatılıyor...");
+    // Oda kapanma kriteri: 2 gerçek oyuncu YA DA 1 gerçek oyuncu + 1 bot (AI)
+    if (realPlayers.length >= 2 || (hasBot && realPlayers.length >= 1)) {
+      console.log("🔒 Oda dolu (AI dahil), kapatılıyor...");
       closeFullRoom(currentRoom.id);
     }
   }, [participants, currentRoom, closeFullRoom]);

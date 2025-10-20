@@ -3524,9 +3524,10 @@ useEffect(() => {
   if (gameMode === 'private-room' || gameMode === 'random-match') {
     const realPlayers = participants.filter(p => !p.is_bot && p.user_id !== null);
     const roomActive = currentRoom?.status === 'active';
+    const aiPlaying = isPlayingWithAI();
   
-    if (roomActive && realPlayers.length >= 2) {
-      console.log('✅ 2 gerçek oyuncu hazır - OYUN BAŞLIYOR!');
+    if (roomActive && (realPlayers.length >= 2 || aiPlaying)) {
+      console.log('✅ Oyun başlıyor! Koşul:', { realPlayers: realPlayers.length, aiPlaying });
       setWaitingForPlayer(false);
 
       // 🎯 Countdown GameContext tarafından başlatılıyor - burada duplike kod yok!
@@ -3549,7 +3550,7 @@ useEffect(() => {
       setHasShownStartMessage(false);
     }
   }
-}, [participants, gameMode, hasShownStartMessage, gameType, toast, currentRoom?.status, gameStarted, showCountdown]);
+}, [participants, gameMode, hasShownStartMessage, gameType, toast, currentRoom?.status, gameStarted, showCountdown, isPlayingWithAI]);
 
 // Lightweight sender-side rematch status listener (no navigation)
 useEffect(() => {
