@@ -634,12 +634,16 @@ export const GameProvider = ({ children }: GameProviderProps) => {
             .from('game_rooms')
             .insert({
               room_code: newRoomCode,
-              game_mode: 'private-room',
+              // Rematch odası modu, game_type'e göre belirlenir
+              game_mode: `private-room-${request.game_type}`,
               host_id: user.id,
               player1_id: request.from_user_id,
               player2_id: user.id,
               status: 'waiting',
-              current_grid: gridArray
+              current_grid: gridArray,
+              // Tip algısı için açıkça set et (kritik)
+              time_limit: request.game_type === 'timed' ? 120 : 0,
+              max_score: request.game_type === 'score' ? 500 : 0
             })
             .select()
             .single();
