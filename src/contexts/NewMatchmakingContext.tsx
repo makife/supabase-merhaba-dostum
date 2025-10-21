@@ -440,62 +440,19 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
             console.warn('Room visibility wait error:', visErr);
           }
 
-          // ⏱️ Start countdown when 2 real players are present (realtime, idempotent)
+          // ⏱️ Countdown başlat - Nakama eşleşmesi = 2 oyuncu = direkt başla
           try {
-            let started = false;
-            const startedRef = { v: false };
-
-            const maybeStart = async () => {
-              if (startedRef.v) return;
-              const { count: realCount, error: countError } = await supabase
-                .from('game_participants')
-                .select('id', { count: 'exact', head: true })
-                .eq('room_id', cleanMatchId)
-                .eq('is_bot', false);
-              if (countError) {
-                console.warn('Participant count error:', countError);
-                return;
-              }
-              if ((realCount || 0) >= 2 && !startedRef.v) {
-                const { data: countdownTime, error: rpcError } = await supabase.rpc('start_game_countdown', { p_room_id: cleanMatchId });
-                if (rpcError) {
-                  console.warn('⚠️ Countdown RPC error (Nakama flow):', rpcError);
-                } else {
-                  console.log('⏰ Countdown started via RPC (Nakama):', countdownTime);
-                  // UI'ya anında haber ver (real-time gecikmesini bekleme)
-                  if (countdownTime) {
-                    window.dispatchEvent(new CustomEvent('countdownStarted', { detail: { serverTime: countdownTime } }));
-                  }
-                }
-                startedRef.v = true;
-                started = true;
-                supabase.removeChannel(channel);
-              }
-            };
-
-            const channel = supabase
-              .channel(`participants-${cleanMatchId}`)
-              .on(
-                'postgres_changes',
-                { event: '*', schema: 'public', table: 'game_participants', filter: `room_id=eq.${cleanMatchId}` },
-                () => {
-                  maybeStart();
-                }
-              )
-              .subscribe();
-
-            // İlk kontrol - oyuncular çoktan gelmiş olabilir
-            await maybeStart();
-
-            // Güvenlik zaman aşımı: 30sn sonra dinleyiciyi kaldır
-            setTimeout(() => {
-              if (!startedRef.v) {
-                console.log('⏳ Countdown 30sn içinde başlamadı, listener temizleniyor.');
-                supabase.removeChannel(channel);
-              }
-            }, 30000);
+            console.log('⏰ Nakama eşleşmesi tamamlandı, countdown başlatılıyor...');
+            const { data: countdownTime, error: rpcError } = await supabase.rpc('start_game_countdown', { p_room_id: cleanMatchId });
+            if (rpcError) {
+              console.warn('⚠️ Countdown RPC error:', rpcError);
+            } else if (countdownTime) {
+              console.log('✅ Countdown başlatıldı:', countdownTime);
+              // UI'ya anında haber ver
+              window.dispatchEvent(new CustomEvent('countdownStarted', { detail: { serverTime: countdownTime } }));
+            }
           } catch (e) {
-            console.warn('Countdown start error (Nakama flow):', e);
+            console.warn('Countdown start error:', e);
           }
 
           console.log("🎯 Match ready. Navigating via onMatchFound callback.");
