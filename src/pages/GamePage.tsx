@@ -2109,6 +2109,27 @@ const useSenYazJoker = async () => {
   fetchAvatars();
 }, [user?.id, participants, gameMode, gameEnded]);
 
+// 🎯 MP modlarında skoru participants'tan senkronize et (tek kaynak)
+useEffect(() => {
+  if (gameMode !== 'private-room' && gameMode !== 'random-match') return;
+  if (!user) return;
+
+  const me = participants.find(p => String(p.user_id) === String(user.id));
+  const opp = participants.find(p => p.user_id && String(p.user_id) !== String(user.id) && !p.is_bot);
+
+  // Rakip skoru
+  if (opp && typeof (opp as any).score === 'number' && (opp as any).score !== opponentScore) {
+    console.log('🎯 Participants sync -> opponent score:', opponentScore, '->', (opp as any).score);
+    setOpponentScore((opp as any).score);
+  }
+
+  // Kendi skorunu da senkronize et (gerekirse)
+  if (me && typeof (me as any).score === 'number' && (me as any).score !== playerScore) {
+    console.log('🎯 Participants sync -> player score:', playerScore, '->', (me as any).score);
+    setPlayerScore((me as any).score);
+  }
+}, [participants, gameMode, user?.id]);
+
   // Load wordlist from public/wordlist.txt
   useEffect(() => {
     const loadWordlist = async () => {
