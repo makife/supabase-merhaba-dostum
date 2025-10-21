@@ -362,7 +362,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
               id: cleanMatchId,
               room_code: cleanMatchId,
               host_id: user.id,
-              game_mode: gameType,
+              game_mode: `random-match-${gameType}`,
               status: "waiting",
               max_players: 2,
               time_limit: gameType === "timed" ? 120 : 0,
@@ -403,15 +403,8 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
             description: "Oyun basliyor...",
           });
 
-          // Skor/oda birikmesini önlemek için eski katılımcıları ve skorları sıfırla
-          try {
-            await supabase.from('game_participants').delete().eq('room_id', cleanMatchId);
-            await supabase.from('game_rooms')
-              .update({ status: 'waiting', started_at: null, player1_score: 0, player2_score: 0 })
-              .eq('id', cleanMatchId);
-          } catch (resetErr) {
-            console.warn('Room reset warning:', resetErr);
-          }
+          // Skor/oda birikmesini önlemek için reset kaldırıldı - countdown ve katılımcı tutarlılığı için
+          console.log('⏭️ Room reset skipped to preserve participants and countdown state');
 
           // ✅ Supabase tutarlılığını bekle - oda görünene kadar kısa süre dene
           try {
@@ -429,6 +422,15 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
             }
           } catch (visErr) {
             console.warn('Room visibility wait error:', visErr);
+          }
+
+          // ⏱️ Start server-side countdown to sync both clients
+          try {
+            const { data: countdownTime, error: rpcError } = await supabase.rpc('start_game_countdown', { p_room_id: cleanMatchId });
+            if (rpcError) console.warn('⚠️ Countdown RPC error (Nakama flow):', rpcError);
+            else console.log('⏰ Countdown started via RPC (Nakama):', countdownTime);
+          } catch (e) {
+            console.warn('Countdown start error (Nakama flow):', e);
           }
 
           console.log("🎯 Match ready. Navigating via onMatchFound callback.");
