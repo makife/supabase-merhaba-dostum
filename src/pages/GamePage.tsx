@@ -4098,9 +4098,11 @@ const createFireworksEffect = () => {
         }
         return { name: 'Arkadaş', icon: User, avatar: opponentAvatar };
       case 'random-match':
+      case 'private-room':
         if (participants.length >= 2) {
           const opponent = participants.find(p => String(p.user_id) !== String(user?.id));
           if (opponent && (opponent as any).profiles?.username) {
+            console.log('✅ Rakip bilgisi gösteriliyor:', (opponent as any).profiles.username);
             return { 
               name: (opponent as any).profiles.username, 
               icon: User, 
@@ -4110,6 +4112,7 @@ const createFireworksEffect = () => {
         }
         // 🛡️ Oyun başladıysa veya countdown gösteriliyorsa SON BİLİNEN rakibi göster
         if ((gameStarted || showCountdown) && opponentName && opponentName !== 'Rakip Aranıyor...') {
+          console.log('🛡️ Oyun başladı - son bilinen rakip:', opponentName);
           return { 
             name: opponentName, 
             icon: User, 
@@ -4118,12 +4121,14 @@ const createFireworksEffect = () => {
         }
         // Henüz başlamadıysa ama state'te rakip varsa göster
         if (opponentName && opponentName !== 'Rakip Aranıyor...') {
+          console.log('📝 State\'ten rakip:', opponentName);
           return { 
             name: opponentName, 
             icon: User, 
             avatar: opponentAvatar 
           };
         }
+        console.log('⏳ Henüz rakip yok, aranıyor...');
         return { name: 'Rakip Aranıyor...', icon: User, avatar: null };
       default:
         return { name: 'Rakip', icon: User, avatar: null };

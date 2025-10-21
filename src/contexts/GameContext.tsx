@@ -2073,20 +2073,46 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           }
         }
 
-        // INSERT: Yeni participant eklendi - ANINDA state'e ekle
+        // INSERT: Yeni participant eklendi - Profile bilgileriyle birlikte fetch et
         if (payload.eventType === "INSERT" && isValidParticipantPayload(payload.new)) {
           const newParticipant = payload.new as GameParticipantPayload;
 
-          // ✅ KRITIK: Anında state'e ekle (async fetch beklemeden)
-          setParticipants((prev) => {
-            // Duplicate check
-            if (prev.some((p) => p.user_id === newParticipant.user_id)) {
-              return prev;
-            }
-            return [...prev, newParticipant as GameParticipant];
-          });
+          console.log("👤 Yeni participant eklendi, profil bilgisi çekiliyor...", newParticipant.user_id?.slice(-8));
 
-          console.log("✅ Participant anında eklendi:", newParticipant.user_id?.slice(-8));
+          // 🔄 Profil bilgileriyle birlikte participant'ı fetch et
+          if (newParticipant.user_id) {
+            try {
+              const { data: participantWithProfile } = await supabase
+                .from("game_participants")
+                .select(`
+                  *,
+                  profiles!inner(username, avatar_url)
+                `)
+                .eq("room_id", currentRoom.id)
+                .eq("user_id", newParticipant.user_id)
+                .single();
+
+              if (participantWithProfile) {
+                setParticipants((prev) => {
+                  // Duplicate check
+                  if (prev.some((p) => p.user_id === newParticipant.user_id)) {
+                    return prev;
+                  }
+                  console.log("✅ Participant profil bilgileriyle eklendi:", participantWithProfile.profiles?.username);
+                  return [...prev, participantWithProfile as GameParticipant];
+                });
+              }
+            } catch (error) {
+              console.error("❌ Participant profil fetch hatası:", error);
+              // Fallback: Profil bilgisi olmadan ekle
+              setParticipants((prev) => {
+                if (prev.some((p) => p.user_id === newParticipant.user_id)) {
+                  return prev;
+                }
+                return [...prev, newParticipant as GameParticipant];
+              });
+            }
+          }
 
           // ❌ fetchParticipantsLocal KALDIRILDI - optimistic update yeterli
           // Gereksiz refetch titreme yapıyordu
