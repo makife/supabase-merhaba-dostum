@@ -498,14 +498,18 @@ useEffect(() => {
     }
   }, [participants.length, gameMode, gameStarted, gameEnded, user?.id]);
 
-  // Oyunun gerçekten başladığını işaretle (participants yüklendikten sonra)
+  // Oyunun gerçekten başladığını işaretle - Countdown TAMAMLANDIKTAN sonra
   useEffect(() => {
     if ((gameMode === 'private-room' || gameMode === 'random-match') && 
-        participants.length >= 2 && gameStarted && !gameEnded) {
+        participants.length >= 2 && gameStarted && !gameEnded && !showCountdown) { // showCountdown false olmalı
       console.log('🎮 Game truly started with participants:', participants.length);
-      gameHasStartedRef.current = true;
+      // Küçük delay - hemen disconnect kontrolü yapmasın
+      const timer = setTimeout(() => {
+        gameHasStartedRef.current = true;
+      }, 2000); // Countdown bitip oyun başladıktan 2sn sonra
+      return () => clearTimeout(timer);
     }
-  }, [participants.length, gameMode, gameStarted, gameEnded]);
+  }, [participants.length, gameMode, gameStarted, gameEnded, showCountdown]);
 
   useEffect(() => {
     // Oda değiştiğinde fallback bayrağını sıfırla

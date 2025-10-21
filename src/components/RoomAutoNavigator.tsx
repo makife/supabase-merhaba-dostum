@@ -15,6 +15,12 @@ const RoomAutoNavigator = () => {
     const roomId = currentRoom?.id;
     if (!roomId) return;
 
+    // Ana sayfadaysak yönlendirme yapma - kullanıcı bilinçli çıktı
+    if (location.pathname === '/') {
+      console.log('🏠 Ana sayfada, RoomAutoNavigator devre dışı');
+      return;
+    }
+
     // Aynı odaya tekrar tekrar yönlendirme yapmayalım
     if (lastNavigatedRoomRef.current === roomId) return;
 
