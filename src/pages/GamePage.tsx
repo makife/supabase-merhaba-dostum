@@ -2899,6 +2899,7 @@ useEffect(() => {
 
   // Timer sync for private-room and random-match games using server started_at
   const startedAtRef = useRef<string | null>(null);
+  const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
     if (gameType !== 'timed' || !gameStarted || gameEnded) return;
@@ -2911,7 +2912,12 @@ useEffect(() => {
     // İlk kez veya değiştiyse kaydet
     startedAtRef.current = currentRoom.started_at;
 
-    let syncInterval: NodeJS.Timeout | null = null;
+    // Önceki sync'i temizle
+    if (syncIntervalRef.current) {
+      clearInterval(syncIntervalRef.current);
+      syncIntervalRef.current = null;
+    }
+
     const syncTimer = () => {
       // Başlangıçta (geri sayımdan hemen sonra) 2:00'dan başlamayı koru
       if (Date.now() < syncSuppressUntilRef.current) {
@@ -2926,21 +2932,24 @@ useEffect(() => {
         remaining = 5;
       }
       
-      // 1 saniye toleransla senkronize et (daha hassas)
-      if (Math.abs(timeLeftRef.current - remaining) > 1) {
+      // 🛡️ 2 saniye toleransla senkronize et - küçük farklara müdahale etme
+      if (Math.abs(timeLeftRef.current - remaining) > 2) {
+        console.log(`🔄 ${gameMode} timer syncing - current: ${timeLeftRef.current}s, server: ${remaining}s`);
         timeLeftRef.current = remaining;
         setDisplayTime(remaining);
-        console.log(`🔄 ${gameMode} timer synced:`, remaining, 'seconds');
       }
     };
 
     console.log('⏱️ Timer sync başlatılıyor - mode:', gameMode, 'started_at:', currentRoom.started_at);
     
     syncTimer();
-    syncInterval = setInterval(syncTimer, 1000); // Her saniye sync
+    syncIntervalRef.current = setInterval(syncTimer, 2000); // 2 saniyede bir sync (daha az agresif)
 
     return () => {
-      if (syncInterval) clearInterval(syncInterval);
+      if (syncIntervalRef.current) {
+        clearInterval(syncIntervalRef.current);
+        syncIntervalRef.current = null;
+      }
     };
   }, [gameType, gameMode, gameStarted, gameEnded, currentRoom?.started_at, currentRoom?.time_limit]);
   

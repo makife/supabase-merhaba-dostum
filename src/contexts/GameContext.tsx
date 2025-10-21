@@ -2007,32 +2007,37 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       async (payload: any) => {
         console.log("🔡 Participant event:", payload.eventType);
 
-        // UPDATE: Anında skor güncellemesi (SADECE optimistic update, gereksiz refetch yok)
+        // UPDATE: Anında skor güncellemesi (profile bilgileri korunuyor)
         if (payload.eventType === "UPDATE" && isValidParticipantPayload(payload.new)) {
           const updatedParticipant = payload.new as GameParticipantPayload;
           
           console.log('🔄 Participant UPDATE payload:', {
             user_id: updatedParticipant.user_id?.slice(-8),
             score: (updatedParticipant as any).score,
-            full_payload: updatedParticipant
           });
 
           if (updatedParticipant.user_id) {
             const newScore = (updatedParticipant as any).score;
             if (typeof newScore === 'number') {
               setParticipants((prevParticipants) =>
-                prevParticipants.map((p) =>
-                  p.user_id === updatedParticipant.user_id
-                    ? { ...p, score: newScore }
-                    : p,
-                ),
+                prevParticipants.map((p) => {
+                  if (p.user_id === updatedParticipant.user_id) {
+                    // 🛡️ KRITIK: Profile bilgilerini koru, sadece score'u güncelle
+                    return { 
+                      ...p, 
+                      score: newScore,
+                      // profiles bilgisini koru (kaybolmasın!)
+                      profiles: p.profiles || (updatedParticipant as any).profiles
+                    };
+                  }
+                  return p;
+                }),
               );
-              console.log('✅ Participant score updated (optimistic):', updatedParticipant.user_id?.slice(-8), 'new score:', newScore);
+              console.log('✅ Participant score updated (profile preserved):', updatedParticipant.user_id?.slice(-8), 'new score:', newScore);
             } else {
               console.warn('⚠️ Score field missing or invalid in UPDATE payload');
             }
           }
-          // ❌ fetchParticipantsLocal KALDIRILDI - gereksiz refetch yapıp titremeye sebep oluyor
         }
 
         // INSERT: Yeni participant eklendi - ANINDA state'e ekle
