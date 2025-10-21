@@ -510,11 +510,11 @@ const App = () => {
         >
           <AuthProvider>
             <UserProvider>
-              <GlobalRematchListener />
               <ThemeProvider>
                 <MusicProvider>
                   <MatchmakingProvider>
                     <GameProvider>
+                      <GlobalRematchListener />
                       <RoomAutoNavigator />
                       <TournamentProvider>
                         <NotificationProvider>
