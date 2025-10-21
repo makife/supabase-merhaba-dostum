@@ -414,6 +414,8 @@ useEffect(() => {
   const [matchmakingTimeout, setMatchmakingTimeout] = useState<NodeJS.Timeout | null>(null);
   const [timeoutCountdown, setTimeoutCountdown] = useState(30);
   const [showResults, setShowResults] = useState(false);
+  const [rematchRequested, setRematchRequested] = useState(false);
+  const [waitingForRematchResponse, setWaitingForRematchResponse] = useState(false);
   
   // Rakip ayrıldığında sonuç kartını göster (turnuvada devre dışı)
   useEffect(() => {
@@ -470,11 +472,18 @@ useEffect(() => {
     return () => window.removeEventListener('playerDisconnected', handler as EventListener);
   }, [gameMode, playSound, playCelebrationSound, toast, currentRoom?.id, isPremium, playerWordsWithScores.length, opponentWordsWithScores.length, addBonusCredits]);
 
-  // Fallback: Katılımcı azalınca disconnect'i yakala ve oyunu bitir
+  // Fallback: Katılımcı azalınca disconnect'i yakala - 3-4sn gecikme ile
   const disconnectHandledRef = useRef(false);
   const gameHasStartedRef = useRef(false);
+  const disconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
+    // Temizlik: Önceki timer'ı iptal et
+    if (disconnectTimerRef.current) {
+      clearTimeout(disconnectTimerRef.current);
+      disconnectTimerRef.current = null;
+    }
+
     // Oyun gerçekten başladıktan sonra disconnect kontrolü yap
     // REMATCH SIRASINDA DISCONNECT KONTROL ETMEYİN!
     if (disconnectHandledRef.current || waitingForRematchResponse || rematchRequested) {
@@ -483,20 +492,40 @@ useEffect(() => {
     
     if ((gameMode === 'private-room' || gameMode === 'random-match') && 
         gameStarted && !gameEnded && 
-        gameHasStartedRef.current && // Oyun gerçekten başlamış olmalı
-        participants.length > 0) { // En az bir kez participants yüklenmiş olmalı
+        gameHasStartedRef.current && 
+        participants.length > 0) {
       
       const realPlayers = participants.filter(p => !p.is_bot);
       const amIStillParticipant = participants.some(p => p.user_id === user?.id);
+      
       if (realPlayers.length < 2 && amIStillParticipant && !disconnectHandledRef.current) {
-        console.log('🚪 Fallback disconnect detected - ending game (current user still in room)');
-        disconnectHandledRef.current = true;
-        window.dispatchEvent(new CustomEvent('playerDisconnected', {
-          detail: { winner: 'player', reason: 'opponent_left_fallback', roomId: currentRoom?.id }
-        }));
+        console.log('⏳ Fallback disconnect tespit edildi, 3.5 saniye doğrulanacak...');
+        
+        // 🛡️ 3.5 saniye bekle, tekrar kontrol et (oyuncu geri dönebilir)
+        disconnectTimerRef.current = setTimeout(() => {
+          const currentRealPlayers = participants.filter(p => !p.is_bot);
+          const stillAmIInRoom = participants.some(p => p.user_id === user?.id);
+          
+          if (currentRealPlayers.length < 2 && stillAmIInRoom && !disconnectHandledRef.current) {
+            console.log('🚪 Fallback disconnect doğrulandı - oyun sonlandırılıyor');
+            disconnectHandledRef.current = true;
+            window.dispatchEvent(new CustomEvent('playerDisconnected', {
+              detail: { winner: 'player', reason: 'opponent_left_fallback', roomId: currentRoom?.id }
+            }));
+          } else {
+            console.log('✅ Oyuncu geri döndü, disconnect iptal edildi');
+          }
+        }, 3500);
       }
     }
-  }, [participants.length, gameMode, gameStarted, gameEnded, user?.id]);
+
+    return () => {
+      if (disconnectTimerRef.current) {
+        clearTimeout(disconnectTimerRef.current);
+        disconnectTimerRef.current = null;
+      }
+    };
+  }, [participants.length, gameMode, gameStarted, gameEnded, user?.id, waitingForRematchResponse, rematchRequested]);
 
   // Oyunun gerçekten başladığını işaretle - Countdown TAMAMLANDIKTAN sonra
   useEffect(() => {
@@ -521,8 +550,6 @@ useEffect(() => {
   const [opponentName, setOpponentName] = useState('');
   const [targetScore, setTargetScore] = useState(gameType === 'score' ? 500 : 0);
   const [gameStartTime, setGameStartTime] = useState<number>(Date.now());
-  const [rematchRequested, setRematchRequested] = useState(false);
-  const [waitingForRematchResponse, setWaitingForRematchResponse] = useState(false);
   const [finalPlayerScore, setFinalPlayerScore] = useState(0);
   const [finalOpponentScore, setFinalOpponentScore] = useState(0);
 
@@ -2109,7 +2136,7 @@ const useSenYazJoker = async () => {
   fetchAvatars();
 }, [user?.id, participants, gameMode, gameEnded]);
 
-// 🎯 MP modlarında skoru participants'tan senkronize et (tek kaynak)
+// 🎯 MP modlarında skoru participants'tan senkronize et (tek kaynak) - 0'a düşmeyi engelle
 useEffect(() => {
   if (gameMode !== 'private-room' && gameMode !== 'random-match') return;
   if (!user) return;
@@ -2117,18 +2144,33 @@ useEffect(() => {
   const me = participants.find(p => String(p.user_id) === String(user.id));
   const opp = participants.find(p => p.user_id && String(p.user_id) !== String(user.id) && !p.is_bot);
 
-  // Rakip skoru
-  if (opp && typeof (opp as any).score === 'number' && (opp as any).score !== opponentScore) {
-    console.log('🎯 Participants sync -> opponent score:', opponentScore, '->', (opp as any).score);
-    setOpponentScore((opp as any).score);
+  // 🛡️ Rakip skoru - SADECE geçerli ve artan bir skor varsa güncelle (0'a düşmeyi engelle)
+  if (opp && typeof (opp as any).score === 'number') {
+    const newOppScore = (opp as any).score;
+    // Oyun başladıysa ve yeni skor mevcut skordan küçükse güncelleme (reset dışında)
+    if (gameStarted && newOppScore < opponentScore && opponentScore > 0) {
+      console.log('⚠️ Rakip skoru düşüyor, güncelleme atlandı:', opponentScore, '-x->', newOppScore);
+      return;
+    }
+    if (newOppScore !== opponentScore) {
+      console.log('🎯 Participants sync -> opponent score:', opponentScore, '->', newOppScore);
+      setOpponentScore(newOppScore);
+    }
   }
 
-  // Kendi skorunu da senkronize et (gerekirse)
-  if (me && typeof (me as any).score === 'number' && (me as any).score !== playerScore) {
-    console.log('🎯 Participants sync -> player score:', playerScore, '->', (me as any).score);
-    setPlayerScore((me as any).score);
+  // 🛡️ Kendi skorunu da aynı mantıkla senkronize et
+  if (me && typeof (me as any).score === 'number') {
+    const newMyScore = (me as any).score;
+    if (gameStarted && newMyScore < playerScore && playerScore > 0) {
+      console.log('⚠️ Kendi skorum düşüyor, güncelleme atlandı:', playerScore, '-x->', newMyScore);
+      return;
+    }
+    if (newMyScore !== playerScore) {
+      console.log('🎯 Participants sync -> player score:', playerScore, '->', newMyScore);
+      setPlayerScore(newMyScore);
+    }
   }
-}, [participants, gameMode, user?.id]);
+}, [participants, gameMode, user?.id, gameStarted, opponentScore, playerScore]);
 
   // Load wordlist from public/wordlist.txt
   useEffect(() => {
@@ -4062,20 +4104,25 @@ const createFireworksEffect = () => {
             return { 
               name: (opponent as any).profiles.username, 
               icon: User, 
-              avatar: (opponent as any).profiles?.avatar_url || opponentAvatar 
-            };
-          }
-          if (opponent) {
-            return { 
-              name: 'Oyuncu', 
-              icon: User, 
-              avatar: opponentAvatar 
+              avatar: (opponent as any).profiles?.avatar_url || null 
             };
           }
         }
-        // Fallback: oyun başladıysa son bilinen rakip bilgisini göster, "aranıyor" deme
-        if (gameStarted && (opponentName || opponentAvatar)) {
-          return { name: opponentName || 'Oyuncu', icon: User, avatar: opponentAvatar };
+        // 🛡️ Oyun başladıysa veya countdown gösteriliyorsa SON BİLİNEN rakibi göster
+        if ((gameStarted || showCountdown) && opponentName && opponentName !== 'Rakip Aranıyor...') {
+          return { 
+            name: opponentName, 
+            icon: User, 
+            avatar: opponentAvatar 
+          };
+        }
+        // Henüz başlamadıysa ama state'te rakip varsa göster
+        if (opponentName && opponentName !== 'Rakip Aranıyor...') {
+          return { 
+            name: opponentName, 
+            icon: User, 
+            avatar: opponentAvatar 
+          };
         }
         return { name: 'Rakip Aranıyor...', icon: User, avatar: null };
       default:
