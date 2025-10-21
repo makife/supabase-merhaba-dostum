@@ -15,11 +15,9 @@ const RoomAutoNavigator = () => {
     const roomId = currentRoom?.id;
     if (!roomId) return;
 
-    // Ana sayfadaysak yönlendirme yapma - kullanıcı bilinçli çıktı
-    if (location.pathname === '/') {
-      console.log('🏠 Ana sayfada, RoomAutoNavigator devre dışı');
-      return;
-    }
+    // Ana sayfadaysak bile otomatik yönlendirmeye izin ver (rematch senaryolarında gerekli)
+    // Önceden burası engelliyordu ve oyun sayfası açılmıyordu
+
 
     // Aynı odaya tekrar tekrar yönlendirme yapmayalım
     if (lastNavigatedRoomRef.current === roomId) return;
