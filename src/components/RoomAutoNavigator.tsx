@@ -18,11 +18,17 @@ const RoomAutoNavigator = () => {
     // Aynı odaya tekrar tekrar yönlendirme yapmayalım
     if (lastNavigatedRoomRef.current === roomId) return;
 
-    const isRandom = (currentRoom?.game_mode || '').includes('random-match');
+    const gameMode = currentRoom?.game_mode || '';
+    const isRandom = gameMode.includes('random-match');
     const basePath = isRandom ? '/game/random-match' : '/game/private-room';
 
-    // Tipi mevcut room ayarlarından çıkar (varsayılan: timed)
-    const type = currentRoom?.max_score && currentRoom.max_score > 0 ? 'score' : 'timed';
+    // Tipi game_mode'dan veya max_score'dan çıkar
+    let type = 'timed';
+    if (gameMode.includes('-score') || (currentRoom?.max_score && currentRoom.max_score > 0)) {
+      type = 'score';
+    } else if (gameMode.includes('-timed')) {
+      type = 'timed';
+    }
 
     const target = `${basePath}?room=${roomId}&type=${type}`;
 
@@ -30,7 +36,7 @@ const RoomAutoNavigator = () => {
     const currentUrl = `${location.pathname}${location.search}`;
     if (currentUrl === target) return;
 
-    console.log('🚀 RoomAutoNavigator: navigating to game page', { target, from: currentUrl });
+    console.log('🚀 RoomAutoNavigator: navigating to game page', { target, from: currentUrl, gameMode });
     lastNavigatedRoomRef.current = roomId;
     navigate(target, { replace: true });
   }, [currentRoom?.id, currentRoom?.game_mode, currentRoom?.max_score, location.pathname, location.search, navigate]);
