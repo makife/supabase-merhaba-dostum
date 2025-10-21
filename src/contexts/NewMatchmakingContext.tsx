@@ -440,10 +440,13 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
             console.warn('Room visibility wait error:', visErr);
           }
 
-          // ⏱️ Start countdown ONLY when 2 real players are present
+          // ⏱️ Start countdown when 2 real players are present (realtime, idempotent)
           try {
             let started = false;
-            for (let i = 0; i < 20; i++) { // up to ~5s
+            const startedRef = { v: false };
+
+            const maybeStart = async () => {
+              if (startedRef.v) return;
               const { count: realCount, error: countError } = await supabase
                 .from('game_participants')
                 .select('id', { count: 'exact', head: true })
@@ -451,20 +454,46 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
                 .eq('is_bot', false);
               if (countError) {
                 console.warn('Participant count error:', countError);
-                break;
+                return;
               }
-              if ((realCount || 0) >= 2) {
+              if ((realCount || 0) >= 2 && !startedRef.v) {
                 const { data: countdownTime, error: rpcError } = await supabase.rpc('start_game_countdown', { p_room_id: cleanMatchId });
-                if (rpcError) console.warn('⚠️ Countdown RPC error (Nakama flow):', rpcError);
-                else console.log('⏰ Countdown started via RPC (Nakama):', countdownTime);
+                if (rpcError) {
+                  console.warn('⚠️ Countdown RPC error (Nakama flow):', rpcError);
+                } else {
+                  console.log('⏰ Countdown started via RPC (Nakama):', countdownTime);
+                  // UI'ya anında haber ver (real-time gecikmesini bekleme)
+                  if (countdownTime) {
+                    window.dispatchEvent(new CustomEvent('countdownStarted', { detail: { serverTime: countdownTime } }));
+                  }
+                }
+                startedRef.v = true;
                 started = true;
-                break;
+                supabase.removeChannel(channel);
               }
-              await new Promise(r => setTimeout(r, 250));
-            }
-            if (!started) {
-              console.log('⏳ Waiting for second player to join before starting countdown');
-            }
+            };
+
+            const channel = supabase
+              .channel(`participants-${cleanMatchId}`)
+              .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'game_participants', filter: `room_id=eq.${cleanMatchId}` },
+                () => {
+                  maybeStart();
+                }
+              )
+              .subscribe();
+
+            // İlk kontrol - oyuncular çoktan gelmiş olabilir
+            await maybeStart();
+
+            // Güvenlik zaman aşımı: 30sn sonra dinleyiciyi kaldır
+            setTimeout(() => {
+              if (!startedRef.v) {
+                console.log('⏳ Countdown 30sn içinde başlamadı, listener temizleniyor.');
+                supabase.removeChannel(channel);
+              }
+            }, 30000);
           } catch (e) {
             console.warn('Countdown start error (Nakama flow):', e);
           }
