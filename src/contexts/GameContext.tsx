@@ -599,131 +599,19 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         console.log("✅ Tekrar oyun isteğine yanıt verildi:", accepted);
 
         if (accepted) {
-          console.log("🎮 Rematch kabul edildi, yeni oda oluşturuluyor");
-
-          // 🆕 YENİ ROOM OLUŞTUR (kabul eden oluşturur)
-          const newRoomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-          
-          // Grid oluştur
-          const generateGridFromSeed = (seed: string): string[] => {
-            const seedNum = parseInt(seed.replace(/[^0-9]/g, "").slice(0, 10)) || Date.now();
-            let currentSeed = seedNum;
-            const seededRandom = () => {
-              currentSeed = (currentSeed * 1664525 + 1013904223) % 4294967296;
-              return currentSeed / 4294967296;
-            };
-            const letterPool = [
-              "A","A","A","A","A","A","A","A","E","E","E","E","E","E","E",
-              "İ","İ","İ","İ","İ","İ","I","I","I","I","I","O","O","O","O","O",
-              "U","U","U","U","Ü","Ü","Ü","Ö","Ö","Ö","L","L","L","L","L",
-              "N","N","N","N","N","R","R","R","R","R","K","K","K","K",
-              "M","M","M","M","T","T","T","T","S","S","S","S","D","D","D",
-              "Y","Y","Y","B","B","B","C","C","Ç","Ç","F","F","G","G","Ğ","Ğ",
-              "H","H","J","P","P","Ş","Ş","V","V","Z"
-            ];
-            const grid: string[] = [];
-            for (let i = 0; i < 16; i++) {
-              const randomIndex = Math.floor(seededRandom() * letterPool.length);
-              grid.push(letterPool[randomIndex]);
-            }
-            return grid;
-          };
-          const gridArray = generateGridFromSeed(newRoomCode);
-
-          const { data: newRoom, error: roomError } = await supabase
-            .from('game_rooms')
-            .insert({
-              room_code: newRoomCode,
-              // Rematch odası modu, game_type'e göre belirlenir
-              game_mode: `private-room-${request.game_type}`,
-              host_id: user.id,
-              player1_id: request.from_user_id,
-              player2_id: user.id,
-              status: 'waiting',
-              current_grid: gridArray,
-              // Tip algısı için açıkça set et (kritik)
-              time_limit: request.game_type === 'timed' ? 120 : 0,
-              max_score: request.game_type === 'score' ? 500 : 0
-            })
-            .select()
-            .single();
-
-          if (roomError || !newRoom) {
-            console.error('❌ Rematch room oluşturulamadı:', roomError);
-            toast({
-              title: "Hata",
-              description: "Rematch odası oluşturulamadı",
-              variant: "destructive",
-            });
+          // Mevcut rematch odasına gir ve o sayfayı aç
+          if (!request.room_code) {
+            console.error('❌ Rematch request room_code eksik');
+            toast({ title: 'Hata', description: 'Rematch odası bulunamadı', variant: 'destructive' });
             return;
           }
-
-          console.log('✅ Yeni rematch room oluşturuldu:', {
-            roomId: newRoom.id.slice(-8),
-            roomCode: newRoomCode
-          });
-
-          // Request'i güncelle - yeni room_code ekle
-          await supabase
-            .from('rematch_requests')
-            .update({ 
-              status: 'accepted',
-              responded_at: new Date().toISOString(),
-              room_code: newRoomCode
-            })
-            .eq('id', requestId);
-
-          let roomData = newRoom;
-
-          console.log("🎯 Odaya katılım başlatılıyor...");
-
-          // 🔑 Kendini participant olarak ekle
-          const { error: participantError } = await supabase.from("game_participants").insert({
-            room_id: roomData.id,
-            user_id: user.id,
-            score: 0,
-            is_bot: false,
-          });
-
-          if (participantError) {
-            console.error("❌ Participant ekleme hatası:", participantError);
-            // Zaten katılmışsa hatayı yoksay
-            if (!participantError.message?.includes("duplicate")) {
-              throw participantError;
-            }
-          }
-
-          console.log("✅ Participant olarak eklendi");
-
-          // 🎯 ÖNEMLİ: State'i GÜNCEL ve TAM olarak ayarla
-          setCurrentRoom(roomData);
-
-          // 🎯 Participants'ı HEMEN çek ve state'e set et
-          const { data: parts } = await supabase
-            .from("game_participants")
-            .select(`*, profiles:user_id (username, avatar_url)`)
-            .eq("room_id", roomData.id);
-
-          if (parts) {
-            setParticipants(parts as any);
-            console.log("✅ Participants güncellendi:", parts.length);
-          }
-
-          // 🎯 Yönlendirme için gerekli tüm state'lerin güncellenmesini bekle
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-
-          console.log("🎮 Odaya katıldım, oyun sayfasına yönlendiriliyor", {
-            roomId: roomData.id,
-            gameMode: roomData.game_mode,
+          console.log('🎮 Rematch kabul edildi, mevcut oda açılıyor', {
+            roomCode: request.room_code,
             gameType: request.game_type,
           });
 
-          // 🎯 Yönlendirme işlemi - REPLACE kullan
-          const baseRoute = roomData.game_mode?.includes("random-match") ? "/game/random-match" : "/game/private-room";
-
-          navigate(`${baseRoute}?room=${roomData.id}&type=${request.game_type}`, {
-            replace: true,
-          });
+          // Odaya yönlendir (join işlemini GamePage halleder)
+          navigate(`/game/private-room?room=${request.room_code}&type=${request.game_type}`, { replace: true });
         }
 
         setCurrentRematchRequest(null);
