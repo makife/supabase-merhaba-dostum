@@ -4025,9 +4025,9 @@ const createFireworksEffect = () => {
       return { name: 'Turnuva Rakibi', icon: Trophy, avatar: null };
     }
 
-    const realOpponent = participants.find(p => 
+  const realOpponent = participants.find(p => 
     !p.is_bot && 
-    p.user_id !== user?.id && 
+    String(p.user_id) !== String(user?.id) && 
     p.user_id !== null
   );
 
@@ -4057,7 +4057,7 @@ const createFireworksEffect = () => {
         return { name: 'Arkadaş', icon: User, avatar: opponentAvatar };
       case 'random-match':
         if (participants.length >= 2) {
-          const opponent = participants.find(p => p.user_id !== user?.id);
+          const opponent = participants.find(p => String(p.user_id) !== String(user?.id));
           if (opponent && (opponent as any).profiles?.username) {
             return { 
               name: (opponent as any).profiles.username, 
@@ -4072,6 +4072,10 @@ const createFireworksEffect = () => {
               avatar: opponentAvatar 
             };
           }
+        }
+        // Fallback: oyun başladıysa son bilinen rakip bilgisini göster, "aranıyor" deme
+        if (gameStarted && (opponentName || opponentAvatar)) {
+          return { name: opponentName || 'Oyuncu', icon: User, avatar: opponentAvatar };
         }
         return { name: 'Rakip Aranıyor...', icon: User, avatar: null };
       default:
