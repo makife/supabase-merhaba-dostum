@@ -2010,16 +2010,27 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         // UPDATE: Anında skor güncellemesi (SADECE optimistic update, gereksiz refetch yok)
         if (payload.eventType === "UPDATE" && isValidParticipantPayload(payload.new)) {
           const updatedParticipant = payload.new as GameParticipantPayload;
+          
+          console.log('🔄 Participant UPDATE payload:', {
+            user_id: updatedParticipant.user_id?.slice(-8),
+            score: (updatedParticipant as any).score,
+            full_payload: updatedParticipant
+          });
 
           if (updatedParticipant.user_id) {
-            setParticipants((prevParticipants) =>
-              prevParticipants.map((p) =>
-                p.user_id === updatedParticipant.user_id
-                  ? { ...p, score: (updatedParticipant as any).score as number }
-                  : p,
-              ),
-            );
-            console.log('✅ Participant score updated (optimistic):', updatedParticipant.user_id);
+            const newScore = (updatedParticipant as any).score;
+            if (typeof newScore === 'number') {
+              setParticipants((prevParticipants) =>
+                prevParticipants.map((p) =>
+                  p.user_id === updatedParticipant.user_id
+                    ? { ...p, score: newScore }
+                    : p,
+                ),
+              );
+              console.log('✅ Participant score updated (optimistic):', updatedParticipant.user_id?.slice(-8), 'new score:', newScore);
+            } else {
+              console.warn('⚠️ Score field missing or invalid in UPDATE payload');
+            }
           }
           // ❌ fetchParticipantsLocal KALDIRILDI - gereksiz refetch yapıp titremeye sebep oluyor
         }
@@ -2039,8 +2050,8 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
           console.log("✅ Participant anında eklendi:", newParticipant.user_id?.slice(-8));
 
-          // Sonra async fetch ile detaylı bilgileri al
-          await fetchParticipantsLocal(currentRoom.id);
+          // ❌ fetchParticipantsLocal KALDIRILDI - optimistic update yeterli
+          // Gereksiz refetch titreme yapıyordu
 
           // Rakip katıldı bildirimi
           if (!newParticipant.is_bot && newParticipant.user_id && newParticipant.user_id !== user?.id) {

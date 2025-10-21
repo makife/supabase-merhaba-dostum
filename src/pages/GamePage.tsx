@@ -2098,20 +2098,12 @@ const useSenYazJoker = async () => {
           }
         }
         
-        if (opponent.score !== undefined && !gameEnded) {
-          console.log('🔄 Updating opponent score from participants:', opponent.score);
-          setOpponentScore(opponent.score);
-        }
+        // ❌ setOpponentScore KALDIRILDI - skorlar artık direkt participants'tan okunuyor
+        // Bu gereksiz güncelleme titreme yapıyordu
       }
     }
     
-    if (gameMode === 'random-match' && participants.length >= 2 && !gameEnded) {
-      const opponent = participants.find(p => p.user_id !== user.id && !p.is_bot);
-      if (opponent && opponent.score !== undefined) {
-        console.log('🔄 Updating opponent score in random match:', opponent.score);
-        setOpponentScore(opponent.score);
-      }
-    }
+    // ❌ random-match için ayrı güncelleme kaldırıldı
   };
 
   fetchAvatars();
@@ -2897,68 +2889,13 @@ useEffect(() => {
   };
 }, [gameStarted, gameEnded, gameType, gameMode, tournamentMatch, participants.length, currentRoom?.status, currentRoom?.started_at]);
   
-  // Real-time score sync for private-room/random-match via game_rooms
-  useEffect(() => {
-    if (!currentRoom || !user) return;
-    if (gameMode !== 'private-room' && gameMode !== 'random-match') return;
+  // ❌ KALDIRILDI: currentRoom'dan skor güncellemesi artık gereksiz
+  // GameContext'teki participants zaten real-time güncel tutuluyor
+  // Bu ekstra güncelleme titreme yapıyordu
 
-    const isP1 = currentRoom.player1_id === user.id;
-    const myScore = isP1 ? currentRoom.player1_score : currentRoom.player2_score;
-    const oppScore = isP1 ? currentRoom.player2_score : currentRoom.player1_score;
-
-    if (typeof myScore === 'number' && myScore !== playerScore) {
-      setPlayerScore(myScore);
-    }
-    if (typeof oppScore === 'number' && oppScore !== opponentScore) {
-      setOpponentScore(oppScore);
-    }
-  }, [
-    currentRoom?.player1_score,
-    currentRoom?.player2_score,
-    currentRoom?.player1_id,
-    currentRoom?.player2_id,
-    gameMode,
-    user?.id
-  ]);
-
-  // Realtime participant score sync fallback (ensures opponent score updates instantly)
-  useEffect(() => {
-    if (!currentRoom || !user) return;
-    if (gameMode !== 'private-room' && gameMode !== 'random-match') return;
-
-    const channel = supabase
-      .channel(`room-scores-${currentRoom.id}`)
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'game_participants',
-        filter: `room_id=eq.${currentRoom.id}`
-      }, (payload) => {
-        // Realtime UPDATE'lerde bazı kolonlar gelmeyebilir -> güvenli fetch
-        (async () => {
-          try {
-            const { data } = await supabase
-              .from('game_participants')
-              .select('user_id, is_bot, score')
-              .eq('room_id', currentRoom.id);
-            if (!data) return;
-
-            const me = data.find((p: any) => p.user_id === user.id && !p.is_bot);
-            const opp = data.find((p: any) => p.user_id !== user.id && !p.is_bot);
-
-            if (me && typeof me.score === 'number') setPlayerScore(me.score);
-            if (opp && typeof opp.score === 'number') setOpponentScore(opp.score);
-          } catch (e) {
-            console.error('Participant fetch error on UPDATE:', e);
-          }
-        })();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [currentRoom?.id, gameMode, user?.id]);
+  // ❌ KALDIRILDI: Gereksiz real-time listener
+  // GameContext'te zaten optimistic update yapılıyor
+  // Bu ekstra listener ve fetch titreme yapıyordu
 
   // Timer sync for private-room and random-match games using server started_at
   const startedAtRef = useRef<string | null>(null);
