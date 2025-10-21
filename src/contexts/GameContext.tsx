@@ -598,45 +598,78 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
         console.log("✅ Tekrar oyun isteğine yanıt verildi:", accepted);
 
-        if (accepted && request.room_code) {
-          console.log("🎮 Rematch kabul edildi, odaya katılıyorum");
+        if (accepted) {
+          console.log("🎮 Rematch kabul edildi, yeni oda oluşturuluyor");
 
-          // ⏳ Oda oluşmasını bekle (retry mekanizması)
-          let roomData = null;
-          let retryCount = 0;
-          const maxRetries = 20; // Retry sayısını artırdım
-
-          while (!roomData && retryCount < maxRetries) {
-            const { data } = await supabase
-              .from("game_rooms")
-              .select("*")
-              .eq("room_code", request.room_code)
-              .maybeSingle();
-
-            if (data) {
-              roomData = data;
-              console.log("✅ Rematch odası bulundu:", {
-                roomId: roomData.id.slice(-8),
-                roomCode: roomData.room_code,
-                mode: roomData.game_mode,
-              });
-              break;
+          // 🆕 YENİ ROOM OLUŞTUR (kabul eden oluşturur)
+          const newRoomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+          
+          // Grid oluştur
+          const generateGridFromSeed = (seed: string): string[] => {
+            const seedNum = parseInt(seed.replace(/[^0-9]/g, "").slice(0, 10)) || Date.now();
+            let currentSeed = seedNum;
+            const seededRandom = () => {
+              currentSeed = (currentSeed * 1664525 + 1013904223) % 4294967296;
+              return currentSeed / 4294967296;
+            };
+            const letterPool = [
+              "A","A","A","A","A","A","A","A","E","E","E","E","E","E","E",
+              "İ","İ","İ","İ","İ","İ","I","I","I","I","I","O","O","O","O","O",
+              "U","U","U","U","Ü","Ü","Ü","Ö","Ö","Ö","L","L","L","L","L",
+              "N","N","N","N","N","R","R","R","R","R","K","K","K","K",
+              "M","M","M","M","T","T","T","T","S","S","S","S","D","D","D",
+              "Y","Y","Y","B","B","B","C","C","Ç","Ç","F","F","G","G","Ğ","Ğ",
+              "H","H","J","P","P","Ş","Ş","V","V","Z"
+            ];
+            const grid: string[] = [];
+            for (let i = 0; i < 16; i++) {
+              const randomIndex = Math.floor(seededRandom() * letterPool.length);
+              grid.push(letterPool[randomIndex]);
             }
+            return grid;
+          };
+          const gridArray = generateGridFromSeed(newRoomCode);
 
-            console.log(`⏳ Oda henüz hazır değil, bekleniyor... (${retryCount + 1}/${maxRetries})`);
-            await new Promise((resolve) => setTimeout(resolve, 500));
-            retryCount++;
-          }
+          const { data: newRoom, error: roomError } = await supabase
+            .from('game_rooms')
+            .insert({
+              room_code: newRoomCode,
+              game_mode: 'private-room',
+              host_id: user.id,
+              player1_id: request.from_user_id,
+              player2_id: user.id,
+              status: 'waiting',
+              current_grid: gridArray
+            })
+            .select()
+            .single();
 
-          if (!roomData) {
-            console.error("❌ Rematch odası bulunamadı (timeout)");
+          if (roomError || !newRoom) {
+            console.error('❌ Rematch room oluşturulamadı:', roomError);
             toast({
               title: "Hata",
-              description: "Rematch odası hazırlanamadı",
+              description: "Rematch odası oluşturulamadı",
               variant: "destructive",
             });
             return;
           }
+
+          console.log('✅ Yeni rematch room oluşturuldu:', {
+            roomId: newRoom.id.slice(-8),
+            roomCode: newRoomCode
+          });
+
+          // Request'i güncelle - yeni room_code ekle
+          await supabase
+            .from('rematch_requests')
+            .update({ 
+              status: 'accepted',
+              responded_at: new Date().toISOString(),
+              room_code: newRoomCode
+            })
+            .eq('id', requestId);
+
+          let roomData = newRoom;
 
           console.log("🎯 Odaya katılım başlatılıyor...");
 

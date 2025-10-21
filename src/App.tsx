@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { GameProvider } from "@/contexts/GameContext";
+import { GameProvider, useGame } from "@/contexts/GameContext";
 import { MusicProvider } from "@/contexts/MusicContext";
 import { UserProvider } from "@/contexts/UserContext";
 import { MatchmakingProvider } from "@/contexts/NewMatchmakingContext";
@@ -313,6 +313,7 @@ const AppRoutes = () => {
 // 🎮 Global Rematch Listener (uygulama seviyesinde, her yerde çalışır)
 const GlobalRematchListener = () => {
   const { user } = useAuth();
+  const { respondRematchRequest } = useGame();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -338,68 +339,16 @@ const GlobalRematchListener = () => {
           return;
         }
 
-        // Yeni room oluştur
-        const newRoomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-        // Grid oluştur (oda koduna göre deterministik, yoksa tarih bazlı)
-        const generateGridFromSeed = (seed: string): string[] => {
-          const seedNum = parseInt(seed.replace(/[^0-9]/g, "").slice(0, 10)) || Date.now();
-          let currentSeed = seedNum;
-          const seededRandom = () => {
-            currentSeed = (currentSeed * 1664525 + 1013904223) % 4294967296;
-            return currentSeed / 4294967296;
-          };
-          const letterPool = [
-            "A","A","A","A","A","A","A","A","E","E","E","E","E","E","E",
-            "İ","İ","İ","İ","İ","İ","I","I","I","I","I","O","O","O","O","O",
-            "U","U","U","U","Ü","Ü","Ü","Ö","Ö","Ö","L","L","L","L","L",
-            "N","N","N","N","N","R","R","R","R","R","K","K","K","K",
-            "M","M","M","M","T","T","T","T","S","S","S","S","D","D","D",
-            "Y","Y","Y","B","B","B","C","C","Ç","Ç","F","F","G","G","Ğ","Ğ",
-            "H","H","J","P","P","Ş","Ş","V","V","Z"
-          ];
-          const grid: string[] = [];
-          for (let i = 0; i < 16; i++) {
-            const randomIndex = Math.floor(seededRandom() * letterPool.length);
-            grid.push(letterPool[randomIndex]);
-          }
-          return grid;
-        };
-        const gridArray = generateGridFromSeed(newRoomCode);
-
-        const { data: newRoom, error: roomError } = await supabase
-          .from('game_rooms')
-          .insert({
-            room_code: newRoomCode,
-            game_mode: 'private-room',
-            host_id: user.id,
-            player1_id: req.from_user_id,
-            player2_id: user.id,
-            status: 'waiting',
-            current_grid: gridArray
-          })
-          .select('id')
-          .single();
-
-        if (roomError || !newRoom) {
-          console.error('Room oluşturulamadı:', roomError);
-          toast({ title: 'Oda oluşturulamadı', variant: 'destructive' as any });
-          return;
-        }
-
-        // Request'i kabul et ve yeni room_code ekle
-        await supabase
-          .from('rematch_requests')
-          .update({ 
-            status: 'accepted', 
-            responded_at: new Date().toISOString(),
-            room_code: newRoomCode
-          })
-          .eq('id', req.id);
-
-        console.log('✅ Rematch kabul edildi, yeni room:', newRoomCode);
-
-        // Oyuna yönlendir (room_code'u kullan - ID'yi bekleme)
-        navigate(`/game/private-room?room=${newRoomCode}&type=${req.game_type}`);
+        console.log('✅ Rematch kabul ediliyor, respondRematchRequest çağrılıyor:', req.id);
+        
+        // GameContext'teki respondRematchRequest'i kullan - bu fonksiyon:
+        // 1. Room'u oluşturur/bekler
+        // 2. Participant olarak ekler
+        // 3. setCurrentRoom çağırır ✅
+        // 4. setParticipants çağırır ✅
+        // 5. Navigate eder (RoomAutoNavigator otomatik devreye girer)
+        await respondRematchRequest(req.id, true);
+        
       } catch (e) {
         console.error('acceptRematch error:', e);
         toast({ title: 'Bir hata oluştu', variant: 'destructive' as any });
