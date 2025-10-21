@@ -610,20 +610,8 @@ export const GameProvider = ({ children }: GameProviderProps) => {
             gameType: request.game_type,
           });
 
-          // Odanın modunu kontrol et ve doğru route'a yönlendir (ID beklemeden)
-          try {
-            const { data: room } = await supabase
-              .from('game_rooms')
-              .select('game_mode')
-              .eq('room_code', request.room_code)
-              .maybeSingle();
-            const isRandom = room?.game_mode?.includes('random-match');
-            const basePath = isRandom ? '/game/random-match' : '/game/private-room';
-            setTimeout(() => navigate(`${basePath}?room=${request.room_code}&type=${request.game_type}`), 0);
-          } catch {
-            // Fallback
-            setTimeout(() => navigate(`/game/private-room?room=${request.room_code}&type=${request.game_type}`), 0);
-          }
+          // Rematch navigasyonu: her zaman private-room rotası (room_code ile)
+          setTimeout(() => navigate(`/game/private-room?room=${request.room_code}&type=${request.game_type}`), 0);
         }
 
         setCurrentRematchRequest(null);
