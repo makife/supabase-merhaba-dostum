@@ -450,39 +450,7 @@ const GlobalRematchListener = () => {
           navigate(`/game/private-room?room=${req.room_code}&type=${req.game_type}`);
         }
       )
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          const notif: any = payload.new;
-          if (!notif || notif.type !== 'invite') return;
-          console.log('🔔 Notification rematch isteği alındı (fallback):', notif);
-          try {
-            toast({
-              title: '🎮 Tekrar Oyun İsteği',
-              description: notif.message || 'Rakibiniz tekrar oyun istiyor!',
-              duration: 10000,
-              action: (
-                <div className="flex gap-2">
-                  <ToastAction altText="Kabul et" asChild>
-                    <Button size="sm" onClick={() => acceptRematch(notif.related_id)}>Kabul</Button>
-                  </ToastAction>
-                  <ToastAction altText="Reddet" asChild>
-                    <Button size="sm" variant="outline" onClick={() => rejectRematch(notif.related_id)}>Reddet</Button>
-                  </ToastAction>
-                </div>
-              ) as any,
-            });
-          } catch (e) {
-            console.warn('Toast gösterilemedi:', e);
-          }
-        }
-      )
+      // Notifications tablosu listener'ı kaldırıldı - sadece rematch_requests yeterli
       .subscribe();
 
     return () => {
