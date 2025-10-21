@@ -429,8 +429,20 @@ const GlobalRematchListener = () => {
           if (!req || req.status !== 'accepted' || !req.room_code) return;
           console.log('✅ Rematch kabul edildi (istek gönderen):', req);
           
-          // Direkt room_code ile oyuna yönlendir (ID'yi bekleme)
-          navigate(`/game/private-room?room=${req.room_code}&type=${req.game_type}`);
+          // Odanın modunu al ve doğru route'a yönlendir
+          try {
+            const { data: room } = await supabase
+              .from('game_rooms')
+              .select('game_mode')
+              .eq('room_code', req.room_code)
+              .maybeSingle();
+            const isRandom = room?.game_mode?.includes('random-match');
+            const basePath = isRandom ? '/game/random-match' : '/game/private-room';
+            setTimeout(() => navigate(`${basePath}?room=${req.room_code}&type=${req.game_type}`), 0);
+          } catch {
+            // Fallback
+            setTimeout(() => navigate(`/game/private-room?room=${req.room_code}&type=${req.game_type}`), 0);
+          }
         }
       )
       .on(
@@ -446,8 +458,20 @@ const GlobalRematchListener = () => {
           if (!req || req.status !== 'accepted' || !req.room_code) return;
           console.log('✅ Rematch kabul edildi (istek alan):', req);
 
-          // Direkt room_code ile oyuna yönlendir (ID'yi bekleme)
-          navigate(`/game/private-room?room=${req.room_code}&type=${req.game_type}`);
+          // Odanın modunu al ve doğru route'a yönlendir
+          try {
+            const { data: room } = await supabase
+              .from('game_rooms')
+              .select('game_mode')
+              .eq('room_code', req.room_code)
+              .maybeSingle();
+            const isRandom = room?.game_mode?.includes('random-match');
+            const basePath = isRandom ? '/game/random-match' : '/game/private-room';
+            setTimeout(() => navigate(`${basePath}?room=${req.room_code}&type=${req.game_type}`), 0);
+          } catch {
+            // Fallback
+            setTimeout(() => navigate(`/game/private-room?room=${req.room_code}&type=${req.game_type}`), 0);
+          }
         }
       )
       // Notifications tablosu listener'ı kaldırıldı - sadece rematch_requests yeterli
