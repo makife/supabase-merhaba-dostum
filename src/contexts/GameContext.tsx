@@ -2007,7 +2007,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       async (payload: any) => {
         console.log("🔡 Participant event:", payload.eventType);
 
-        // UPDATE: Anında skor güncellemesi
+        // UPDATE: Anında skor güncellemesi (SADECE optimistic update, gereksiz refetch yok)
         if (payload.eventType === "UPDATE" && isValidParticipantPayload(payload.new)) {
           const updatedParticipant = payload.new as GameParticipantPayload;
 
@@ -2019,9 +2019,9 @@ export const GameProvider = ({ children }: GameProviderProps) => {
                   : p,
               ),
             );
+            console.log('✅ Participant score updated (optimistic):', updatedParticipant.user_id);
           }
-
-          await fetchParticipantsLocal(currentRoom.id);
+          // ❌ fetchParticipantsLocal KALDIRILDI - gereksiz refetch yapıp titremeye sebep oluyor
         }
 
         // INSERT: Yeni participant eklendi - ANINDA state'e ekle
