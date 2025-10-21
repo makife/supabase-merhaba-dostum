@@ -387,6 +387,22 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
             }
           }
 
+          // Ensure current user is participant in this Nakama room (idempotent)
+          try {
+            const { error: participantErr } = await supabase
+              .from('game_participants')
+              .insert({ room_id: cleanMatchId, user_id: user.id, score: 0, is_bot: false });
+            if (participantErr && participantErr.code !== '23505') {
+              console.warn('Participant insert error:', participantErr);
+            } else if (!participantErr) {
+              console.log('👤 Participant inserted for current user');
+            } else {
+              console.log('👤 Participant already exists for current user');
+            }
+          } catch (piErr) {
+            console.warn('Participant insert exception:', piErr);
+          }
+
           setNakamaMatch({
             matchId: cleanMatchId,
             gameType: gameType,
@@ -424,11 +440,31 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
             console.warn('Room visibility wait error:', visErr);
           }
 
-          // ⏱️ Start server-side countdown to sync both clients
+          // ⏱️ Start countdown ONLY when 2 real players are present
           try {
-            const { data: countdownTime, error: rpcError } = await supabase.rpc('start_game_countdown', { p_room_id: cleanMatchId });
-            if (rpcError) console.warn('⚠️ Countdown RPC error (Nakama flow):', rpcError);
-            else console.log('⏰ Countdown started via RPC (Nakama):', countdownTime);
+            let started = false;
+            for (let i = 0; i < 20; i++) { // up to ~5s
+              const { count: realCount, error: countError } = await supabase
+                .from('game_participants')
+                .select('id', { count: 'exact', head: true })
+                .eq('room_id', cleanMatchId)
+                .eq('is_bot', false);
+              if (countError) {
+                console.warn('Participant count error:', countError);
+                break;
+              }
+              if ((realCount || 0) >= 2) {
+                const { data: countdownTime, error: rpcError } = await supabase.rpc('start_game_countdown', { p_room_id: cleanMatchId });
+                if (rpcError) console.warn('⚠️ Countdown RPC error (Nakama flow):', rpcError);
+                else console.log('⏰ Countdown started via RPC (Nakama):', countdownTime);
+                started = true;
+                break;
+              }
+              await new Promise(r => setTimeout(r, 250));
+            }
+            if (!started) {
+              console.log('⏳ Waiting for second player to join before starting countdown');
+            }
           } catch (e) {
             console.warn('Countdown start error (Nakama flow):', e);
           }
