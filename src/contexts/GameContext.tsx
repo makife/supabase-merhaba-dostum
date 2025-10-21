@@ -1866,6 +1866,12 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       return;
     }
 
+    if (!currentRoom.id) {
+      console.warn('⚠️ Room ID eksik, real-time kurulumu atlandı');
+      setIsConnected(false);
+      return;
+    }
+
     console.log("🔗 Setting up optimized real-time for room:", String(currentRoom.id).slice(-8));
     setIsConnected(true);
     // Init countdown guard with current room state to avoid duplicate dispatches
@@ -1875,6 +1881,10 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     // Participants'ı fetch et
     const fetchParticipantsLocal = async (roomId: string) => {
       try {
+        if (!roomId) {
+          console.warn('⚠️ fetchParticipantsLocal çağrıldı ama roomId yok');
+          return;
+        }
         const { data, error } = await supabase
           .from("game_participants")
           .select(

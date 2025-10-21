@@ -3492,7 +3492,6 @@ useEffect(() => {
   // 🎯 2 oyuncu var ama countdown yok - sunucudan kontrol et
   const checkCountdown = async () => {
     if (!currentRoom?.id) return;
-    
     try {
       console.log('🔍 Countdown kontrol ediliyor - 2 oyuncu var ama countdown başlamamış olabilir');
       const { data } = await supabase
@@ -3500,14 +3499,28 @@ useEffect(() => {
         .select('countdown_started_at, status')
         .eq('id', currentRoom.id)
         .single();
-      
+
       if (data?.countdown_started_at) {
         console.log('✅ Sunucuda countdown var, senkronize ediliyor:', data.countdown_started_at);
         setCountdownServerTime(data.countdown_started_at);
         setShowCountdown(true);
         countdownCheckDoneRef.current = true;
       } else {
-        console.log('⚠️ Sunucuda countdown yok - beklenmeyen durum');
+        // Eğer gerçekten 2 oyuncu varsa, sunucu tarafında countdown'u başlatmayı dene (idempotent)
+        if (realPlayers.length >= 2) {
+          console.log('⚠️ Sunucuda countdown yok - RPC ile başlatılıyor...');
+          const { data: startedAt, error: rpcErr } = await supabase.rpc('start_game_countdown', { p_room_id: currentRoom.id });
+          if (rpcErr) {
+            console.warn('RPC countdown başlatma hatası:', rpcErr);
+          } else if (startedAt) {
+            console.log('⏰ Countdown RPC ile başlatıldı:', startedAt);
+            setCountdownServerTime(startedAt);
+            setShowCountdown(true);
+            countdownCheckDoneRef.current = true;
+          }
+        } else {
+          console.log('⚠️ Sunucuda countdown yok - beklenmeyen durum');
+        }
       }
     } catch (error) {
       console.error('❌ Countdown kontrol hatası:', error);
