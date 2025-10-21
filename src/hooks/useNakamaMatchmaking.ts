@@ -29,9 +29,12 @@ export const useNakamaMatchmaking = () => {
       
       console.log("⏳ Waiting for match...");
       
+      let foundMatch = false;
+      
       // Listen for match found
       socket.onmatchmakermatched = (matched: any) => {
         console.log("🎉 Nakama match found!", matched);
+        foundMatch = true;
         setMatchFound(true);
         setIsSearching(false);
         setCurrentTicket(null);
@@ -45,9 +48,9 @@ export const useNakamaMatchmaking = () => {
         return matched;
       };
 
-      // Timeout fallback (30 saniye)
-      setTimeout(() => {
-        if (isSearching && !matchFound) {
+      // Timeout fallback (60 saniye)
+      const timeoutId = setTimeout(() => {
+        if (!foundMatch) {
           console.log("⏰ Nakama matchmaking timeout");
           cancelSearch();
           
@@ -57,7 +60,7 @@ export const useNakamaMatchmaking = () => {
             variant: "destructive",
           });
         }
-      }, 30000);
+      }, 60000);
 
       return ticket.ticket;
     } catch (error: any) {
