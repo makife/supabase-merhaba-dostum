@@ -37,7 +37,17 @@ const PrivateRoomWaitingPage = () => {
         .eq("room_id", roomId);
       if (!unsubscribed && parts && parts.length >= 2 && !navigated) {
         setNavigated(true);
-        navigate(`/game/private-room?room=${roomId}`);
+        
+        // Odanın game_mode'unu al ve doğru type parametresiyle yönlendir
+        const { data: room } = await supabase
+          .from("game_rooms")
+          .select("game_mode")
+          .eq("id", roomId)
+          .single();
+        
+        const type = room?.game_mode?.includes('score') ? 'score' : 'timed';
+        console.log('🎮 Oyun sayfasına yönlendiriliyor, type:', type, 'game_mode:', room?.game_mode);
+        navigate(`/game/private-room?room=${roomId}&type=${type}`);
       }
     };
 
