@@ -2213,14 +2213,8 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         );
       }
 
-      if (newRoom.status === "finished") {
-        const winner = newRoom.winner_id ? (newRoom.winner_id === user?.id ? "player" : "opponent") : "none";
-        window.dispatchEvent(
-          new CustomEvent("playerDisconnected", {
-            detail: { winner, reason: "room_finished", roomId: newRoom.id },
-          }),
-        );
-      }
+      // Do not dispatch 'playerDisconnected' on normal finish; handled by result flow instead.
+
 
       setCurrentRoom(newRoom);
     });
