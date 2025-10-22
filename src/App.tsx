@@ -429,8 +429,22 @@ const GlobalRematchListener = () => {
           if (!req || req.status !== 'accepted' || !req.room_code) return;
           console.log('✅ Rematch kabul edildi (istek gönderen):', req);
           
-          // Rematch her zaman private-room rotasında açılır (room_code ile)
-          setTimeout(() => navigate(`/game/private-room?room=${req.room_code}&type=${req.game_type}`), 0);
+          // Rematch kabul edildi (gönderen): Bekleme sayfasına yönlendir, iki oyuncu hazır olunca oyun sayfasına geçer
+          try {
+            const { data: roomRow } = await supabase
+              .from('game_rooms')
+              .select('id')
+              .eq('room_code', req.room_code)
+              .maybeSingle();
+            if (roomRow?.id) {
+              setTimeout(() =>
+                navigate(`/private-room-waiting?code=${req.room_code}&roomId=${roomRow.id}&gameType=${req.game_type}`),
+              0);
+            }
+          } catch (e) {
+            console.warn('Room lookup failed:', e);
+            setTimeout(() => navigate(`/game/private-room?room=${req.room_code}&type=${req.game_type}`), 0);
+          }
         }
       )
       .on(

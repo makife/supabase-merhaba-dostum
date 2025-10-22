@@ -599,7 +599,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         console.log("✅ Tekrar oyun isteğine yanıt verildi:", accepted);
 
         if (accepted) {
-          // Mevcut rematch odasına gir ve o sayfayı aç
+          // Mevcut rematch odasına gir ve o sayfayı açmadan önce güvenli şekilde katılımı garantile
           if (!request.room_code) {
             console.error('❌ Rematch request room_code eksik');
             toast({ title: 'Hata', description: 'Rematch odası bulunamadı', variant: 'destructive' });
@@ -610,8 +610,43 @@ export const GameProvider = ({ children }: GameProviderProps) => {
             gameType: request.game_type,
           });
 
-          // Rematch navigasyonu: her zaman private-room rotası (room_code ile)
-          setTimeout(() => navigate(`/game/private-room?room=${request.room_code}&type=${request.game_type}`), 0);
+          // Oda ID'sini room_code üzerinden bul
+          const { data: roomRow } = await supabase
+            .from('game_rooms')
+            .select('id')
+            .eq('room_code', request.room_code)
+            .maybeSingle();
+
+          if (!roomRow?.id) {
+            toast({ title: 'Hata', description: 'Oda bulunamadı', variant: 'destructive' });
+            return;
+          }
+
+          // Katılımcı olarak ekli değilsek ekle (yeni eşleşme gibi davran)
+          try {
+            const { data: existing } = await supabase
+              .from('game_participants')
+              .select('id')
+              .eq('room_id', roomRow.id)
+              .eq('user_id', user.id)
+              .maybeSingle();
+
+            if (!existing) {
+              await supabase.from('game_participants').insert({
+                room_id: roomRow.id,
+                user_id: user.id,
+                score: 0,
+                is_bot: false,
+              });
+            }
+          } catch (e) {
+            console.warn('Katılımcı ekleme sırasında uyarı:', e);
+          }
+
+          // Önce bekleme sayfasına yönlendir; iki oyuncu hazır olunca oyun sayfasına geçer
+          setTimeout(() =>
+            navigate(`/private-room-waiting?code=${request.room_code}&roomId=${roomRow.id}&gameType=${request.game_type}`),
+          0);
         }
 
         setCurrentRematchRequest(null);
