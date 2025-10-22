@@ -322,11 +322,18 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         })),
       });
 
-      // Rakip bul: Önce aktif participants, yoksa lastOpponent
+      // Rakip bul: Önce aktif participants, yoksa lastOpponent, o da yoksa currentRoom player alanları
       let opponent = participants.find((p) => !p.is_bot && p.user_id !== user.id);
       if (!opponent && lastOpponent) {
         console.log("⚠️ Participants'ta rakip yok, lastOpponent kullanılıyor");
         opponent = lastOpponent;
+      }
+      if (!opponent && currentRoom) {
+        const candidate = currentRoom.player1_id === user.id ? currentRoom.player2_id : currentRoom.player1_id;
+        if (candidate) {
+          console.log("🧭 Fallback: currentRoom üzerinden rakip bulundu");
+          opponent = { id: '', room_id: currentRoom.id, user_id: candidate, score: 0, is_bot: false, joined_at: '' } as any;
+        }
       }
 
       if (!opponent || !opponent.user_id) {
@@ -510,6 +517,24 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           to_user_id: String(opponent.user_id || "").slice(-8),
           game_type: gameType,
         });
+
+        // Eski pending rematch isteklerini kapat (iki yönlü)
+        try {
+          await supabase
+            .from("rematch_requests")
+            .update({ status: "rejected", responded_at: new Date().toISOString() })
+            .eq("from_user_id", user.id)
+            .eq("to_user_id", opponent.user_id)
+            .eq("status", "pending");
+          await supabase
+            .from("rematch_requests")
+            .update({ status: "rejected", responded_at: new Date().toISOString() })
+            .eq("from_user_id", opponent.user_id)
+            .eq("to_user_id", user.id)
+            .eq("status", "pending");
+        } catch (e) {
+          console.warn("⚠️ Önceki rematch istekleri kapatılamadı (devam ediliyor)", e);
+        }
 
         // Rematch request kaydı oluştur
         const { data, error } = await supabase

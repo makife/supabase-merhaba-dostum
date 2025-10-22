@@ -125,6 +125,7 @@ const GamePage = ({
   const recentSubmissionsRef = useRef<Set<string>>(new Set());
   const randomMatchInitRef = useRef(false);
   const privateRoomInitRef = useRef(false);
+  const lastInitializedRoomRef = useRef<string | null>(null);
   const serverMatchStartRef = useRef<number | null>(null);
   const syncSuppressUntilRef = useRef<number>(0);
   const countdownCompletedAtRef = useRef<number | null>(null);
@@ -1508,11 +1509,14 @@ useEffect(() => {
   const init = async () => {
     if (gameMode !== 'private-room') return;
     if (!user?.id) return;
-    if (privateRoomInitRef.current) return;
-    privateRoomInitRef.current = true;
 
     const roomParam = searchParams.get('room');
     const type = searchParams.get('type') as 'timed' | 'score';
+
+    // Aynı oda için tekrar init etme, oda değiştiyse init'i tekrar çalıştır
+    if (privateRoomInitRef.current && lastInitializedRoomRef.current === roomParam) return;
+    privateRoomInitRef.current = true;
+    lastInitializedRoomRef.current = roomParam || null;
 
     if (!roomParam || !type) {
       console.error('❌ Private room için room veya type eksik');
@@ -1538,6 +1542,11 @@ useEffect(() => {
       const resolvedId = await getIdByCode(roomParam);
       if (!resolvedId) {
         toast({ title: 'Bağlantı Hatası', description: 'Oda bulunamadı', variant: 'destructive' });
+        navigate('/');
+        return;
+      }
+      roomId = resolvedId;
+    }
         navigate('/');
         return;
       }
