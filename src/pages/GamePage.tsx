@@ -1547,11 +1547,11 @@ useEffect(() => {
       }
       roomId = resolvedId;
     }
-        navigate('/');
-        return;
-      }
-      roomId = resolvedId;
-    }
+
+    // Yeni oda açıldığında rematch ve disconnect bayraklarını temizle
+    setRematchRequested(false);
+    setWaitingForRematchResponse(false);
+    disconnectHandledRef.current = false;
 
     console.log('🎯 Loading private room data:', shortId(roomId));
     
@@ -1582,11 +1582,6 @@ useEffect(() => {
       if (joined) break;
       console.warn(`⏳ Join retry ${attempt}/6`);
       await new Promise(resolve => setTimeout(resolve, 250));
-    }
-    if (!joined) {
-      toast({ title: 'Bağlantı Hatası', description: 'Oyun odasına bağlanılamadı', variant: 'destructive' });
-      navigate('/');
-      return;
     }
     if (!joined) {
       toast({ title: 'Bağlantı Hatası', description: 'Oyun odasına bağlanılamadı', variant: 'destructive' });
