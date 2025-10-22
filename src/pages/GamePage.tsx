@@ -729,8 +729,12 @@ const requestRematch = async () => {
     setRematchRequested(true);
     setWaitingForRematchResponse(true);
     
-    // Rematch request gönder
-    await sendRematchRequest(currentRoom?.room_code || generateRoomCode(), gameType);
+    // Rematch request gönder - currentRoom'dan kesin game type al
+    const currentGameType: 'timed' | 'score' = currentRoom?.game_mode?.includes('score') 
+      ? 'score' 
+      : 'timed';
+    console.log('🎮 Mevcut oyun türü:', currentGameType, 'game_mode:', currentRoom?.game_mode);
+    await sendRematchRequest(currentRoom?.room_code || generateRoomCode(), currentGameType);
     
     // 30 saniye timeout
     setTimeout(() => {
