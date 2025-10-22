@@ -423,10 +423,27 @@ useEffect(() => {
 
     const handler = async (e: any) => {
       const evtRoomId = e?.detail?.roomId;
+      const eventWinner = e?.detail?.winner; // 'player' veya 'opponent'
+      
       if (!evtRoomId || evtRoomId !== currentRoom?.id) {
         console.log('🚫 Farklı odaya ait disconnect eventi yok sayıldı', { evtRoomId, current: currentRoom?.id });
         return;
       }
+      
+      // Eğer ben kaybettim (opponent kazandı), sadece kaybetme ekranını göster
+      if (eventWinner === 'opponent') {
+        console.log('😢 Ben oyundan ayrıldım veya kaybettim');
+        setWinner('opponent');
+        setGameEnded(true);
+        setShowResults(true);
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+        return; // HAK İADESİ YOK!
+      }
+      
+      // Kazanan benim, disconnect win göster
       console.log('🚪 Rakip oyundan ayrıldı eventi alındı');
       setDisconnectWin(true);
       setWinner('player');
@@ -445,7 +462,7 @@ useEffect(() => {
         duration: 3000,
       });
       
-      // Çok erken kopan eşleşmelerde hak iadesi (premium değilse)
+      // Çok erken kopan eşleşmelerde hak iadesi (premium değilse) - SADECE KAZANAN OYUNCUYA
       try {
         if (!isPremium) {
           const earlyDc = Date.now() - gameStartTime < 15000; // 15s altında
@@ -454,7 +471,7 @@ useEffect(() => {
             await addBonusCredits(1);
             toast({
               title: '🎟 Hak iade edildi',
-              description: 'Eşleşme hemen koptuğu için oyun hakkınız iade edildi.',
+              description: 'Rakip erken ayrıldığı için oyun hakkınız iade edildi.',
               duration: 2500,
             });
           }
