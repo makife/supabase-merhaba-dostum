@@ -443,7 +443,7 @@ const GlobalRematchListener = () => {
             }
           } catch (e) {
             console.warn('Room lookup failed:', e);
-            setTimeout(() => navigate(`/game/private-room?room=${req.room_code}&type=${req.game_type}`), 0);
+            setTimeout(() => navigate(`/game/private-room?room=${req.room_code}`), 0);
           }
         }
       )

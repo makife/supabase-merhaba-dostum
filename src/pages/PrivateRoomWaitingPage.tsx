@@ -37,7 +37,7 @@ const PrivateRoomWaitingPage = () => {
         .eq("room_id", roomId);
       if (!unsubscribed && parts && parts.length >= 2 && !navigated) {
         setNavigated(true);
-        navigate(`/game/private-room?room=${roomId}&type=${gameType}`);
+        navigate(`/game/private-room?room=${roomId}`);
       }
     };
 
