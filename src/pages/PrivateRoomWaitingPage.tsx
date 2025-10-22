@@ -64,8 +64,9 @@ const PrivateRoomWaitingPage = () => {
           .single();
         
         const type = room?.game_mode?.includes('score') ? 'score' : 'timed';
-        console.log('🎮 Oyun sayfasına yönlendiriliyor, type:', type, 'game_mode:', room?.game_mode);
-        navigate(`/game/private-room?room=${roomId}&type=${type}`);
+        const basePath = room?.game_mode?.includes('random-match') ? '/game/random-match' : '/game/private-room';
+        console.log('🎮 Oyun sayfasına yönlendiriliyor', { type, gameMode: room?.game_mode, target: `${basePath}?room=${roomId}&type=${type}` });
+        navigate(`${basePath}?room=${roomId}&type=${type}`);
       }
     };
 
