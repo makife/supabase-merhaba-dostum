@@ -484,11 +484,17 @@ useEffect(() => {
       // Ses efekti çal
       playSound('gameWin');
       setTimeout(() => playCelebrationSound(), 500);
+      
+      // Room state'ini temizle (Ana menüye dön butonunda yeniden yönlendirmeyi önle)
+      setTimeout(() => {
+        console.log('🧹 Disconnect sonrası room temizleniyor');
+        leaveRoom();
+      }, 5000); // 5 saniye sonra temizle (kullanıcı sonuçları görebilsin)
     };
 
     window.addEventListener('playerDisconnected', handler as EventListener);
     return () => window.removeEventListener('playerDisconnected', handler as EventListener);
-  }, [gameMode, playSound, playCelebrationSound, toast, currentRoom?.id, isPremium, playerWordsWithScores.length, opponentWordsWithScores.length, addBonusCredits]);
+  }, [gameMode, playSound, playCelebrationSound, toast, currentRoom?.id, isPremium, playerWordsWithScores.length, opponentWordsWithScores.length, addBonusCredits, leaveRoom]);
 
   // Fallback: Katılımcı azalınca disconnect'i yakala - 3-4sn gecikme ile
   const disconnectHandledRef = useRef(false);
