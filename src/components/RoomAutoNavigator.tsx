@@ -26,13 +26,8 @@ const RoomAutoNavigator = () => {
     const isRandom = gameMode.includes('random-match');
     const basePath = isRandom ? '/game/random-match' : '/game/private-room';
 
-    // Tipi game_mode'dan veya max_score'dan çıkar
-    let type = 'timed';
-    if (gameMode.includes('-score') || (currentRoom?.max_score && currentRoom.max_score > 0)) {
-      type = 'score';
-    } else if (gameMode.includes('-timed')) {
-      type = 'timed';
-    }
+    // Tipi sadece game_mode'dan çıkar (tek otorite)
+    const type = gameMode.includes('score') ? 'score' : 'timed';
 
     const target = `${basePath}?room=${roomId}&type=${type}`;
 

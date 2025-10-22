@@ -433,17 +433,18 @@ const GlobalRematchListener = () => {
           try {
             const { data: roomRow } = await supabase
               .from('game_rooms')
-              .select('id')
+              .select('id, game_mode')
               .eq('room_code', req.room_code)
               .maybeSingle();
             if (roomRow?.id) {
+              const type = roomRow?.game_mode?.includes('score') ? 'score' : 'timed';
               setTimeout(() =>
-                navigate(`/private-room-waiting?code=${req.room_code}&roomId=${roomRow.id}&gameType=${req.game_type}`),
+                navigate(`/private-room-waiting?code=${req.room_code}&roomId=${roomRow.id}&gameType=${type}`),
               0);
             }
           } catch (e) {
             console.warn('Room lookup failed:', e);
-            setTimeout(() => navigate(`/game/private-room?room=${req.room_code}`), 0);
+            setTimeout(() => navigate(`/private-room-waiting?code=${req.room_code}`), 0);
           }
         }
       )
@@ -464,17 +465,17 @@ const GlobalRematchListener = () => {
           try {
             const { data: roomRow } = await supabase
               .from('game_rooms')
-              .select('id')
+              .select('id, game_mode')
               .eq('room_code', req.room_code)
               .maybeSingle();
             if (roomRow?.id) {
+              const type = roomRow?.game_mode?.includes('score') ? 'score' : 'timed';
               setTimeout(() =>
-                navigate(`/private-room-waiting?code=${req.room_code}&roomId=${roomRow.id}&gameType=${req.game_type}`),
+                navigate(`/private-room-waiting?code=${req.room_code}&roomId=${roomRow.id}&gameType=${type}`),
               0);
             }
           } catch (e) {
-            console.warn('Room lookup failed:', e);
-            setTimeout(() => navigate(`/game/private-room?room=${req.room_code}&type=${req.game_type}`), 0);
+            setTimeout(() => navigate(`/private-room-waiting?code=${req.room_code}`), 0);
           }
         }
       )

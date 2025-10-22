@@ -23,8 +23,26 @@ const PrivateRoomWaitingPage = () => {
   const [navigated, setNavigated] = useState(false);
 
   useEffect(() => {
-    if (!roomCode || !roomId || !user) {
+    if (!roomCode || !user) {
       navigate("/");
+      return;
+    }
+
+    // roomId yoksa room_code üzerinden bul ve URL'i tamamla
+    if (!roomId) {
+      (async () => {
+        const { data: roomRow } = await supabase
+          .from("game_rooms")
+          .select("id, game_mode")
+          .eq("room_code", roomCode)
+          .maybeSingle();
+        if (roomRow?.id) {
+          const typeFromRoom = roomRow?.game_mode?.includes("score") ? "score" : "timed";
+          navigate(`/private-room-waiting?code=${roomCode}&roomId=${roomRow.id}&gameType=${typeFromRoom}`);
+        } else {
+          navigate("/");
+        }
+      })();
       return;
     }
 

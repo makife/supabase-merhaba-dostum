@@ -613,7 +613,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           // Oda ID'sini room_code üzerinden bul
           const { data: roomRow } = await supabase
             .from('game_rooms')
-            .select('id')
+            .select('id, game_mode')
             .eq('room_code', request.room_code)
             .maybeSingle();
 
@@ -644,8 +644,9 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           }
 
           // Önce bekleme sayfasına yönlendir; iki oyuncu hazır olunca oyun sayfasına geçer
+          const type = roomRow?.game_mode?.includes('score') ? 'score' : 'timed';
           setTimeout(() =>
-            navigate(`/private-room-waiting?code=${request.room_code}&roomId=${roomRow.id}&gameType=${request.game_type}`),
+            navigate(`/private-room-waiting?code=${request.room_code}&roomId=${roomRow.id}&gameType=${type}`),
           0);
         }
 
