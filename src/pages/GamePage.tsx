@@ -2699,7 +2699,7 @@ const checkWinnerWithScores = useCallback(async (currentPlayerScore: number, cur
         // ➕ En uzun kelime ve en yüksek puanlı kelime istatistiklerini (vs-computer) güncelle - RPC sonucu ne olursa olsun çalıştır
         try {
           const longest = playerWordsWithScores.reduce<{ word: string; score: number } | null>((acc, w) => {
-            return !acc || w.word.length > acc.word.length ? w : acc;
+            return !acc || w.word.length >= acc.word.length ? w : acc;
           }, null);
           const bestScore = playerWordsWithScores.reduce<{ word: string; score: number } | null>((acc, w) => {
             return !acc || w.score > acc.score ? w : acc;
@@ -2715,7 +2715,7 @@ const checkWinnerWithScores = useCallback(async (currentPlayerScore: number, cur
             const updates: Record<string, any> = {};
             if (longest) {
               const len = longest.word.length;
-              if (!cur || (cur.longest_word_length ?? 0) < len) {
+              if (!cur || (cur.longest_word_length ?? 0) <= len) {
                 updates.longest_word = longest.word;
                 updates.longest_word_length = len;
               }
@@ -3843,7 +3843,7 @@ const submitWord = async () => {
       try {
         const newLen = normalizedWord.length;
         const currentLen = (profile?.longest_word_length ?? 0);
-        if (newLen > currentLen) {
+        if (newLen >= currentLen) {
           await supabase
             .from('profiles')
             .update({ longest_word: normalizedWord, longest_word_length: newLen })
