@@ -485,11 +485,9 @@ useEffect(() => {
       playSound('gameWin');
       setTimeout(() => playCelebrationSound(), 500);
       
-      // Room state'ini temizle (Ana menüye dön butonunda yeniden yönlendirmeyi önle)
-      setTimeout(() => {
-        console.log('🧹 Disconnect sonrası room temizleniyor');
-        leaveRoom();
-      }, 5000); // 5 saniye sonra temizle (kullanıcı sonuçları görebilsin)
+      // Room state'ini hemen temizle (RoomAutoNavigator yeniden yönlendirmeyi önle)
+      console.log('🧹 Disconnect sonrası room temizleniyor');
+      leaveRoom();
     };
 
     window.addEventListener('playerDisconnected', handler as EventListener);
