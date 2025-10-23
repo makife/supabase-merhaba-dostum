@@ -417,8 +417,9 @@ useEffect(() => {
   const [usedWords, setUsedWords] = useState<Set<string>>(new Set());
   const [playerWords, setPlayerWords] = useState<string[]>([]);
   const [opponentWords, setOpponentWords] = useState<string[]>([]);
-  const [playerWordsWithScores, setPlayerWordsWithScores] = useState<Array<{word: string, score: number}>>([]);
-  const [opponentWordsWithScores, setOpponentWordsWithScores] = useState<Array<{word: string, score: number}>>([]);
+  const [playerWordsWithScores, setPlayerWordsWithScores] = useState<Array<{word: string, score: number, timestamp?: number}>>([]);
+  const [opponentWordsWithScores, setOpponentWordsWithScores] = useState<Array<{word: string, score: number, timestamp?: number}>>([]);
+  const [firstWordTime, setFirstWordTime] = useState<number | null>(null);
   const [playerScore, setPlayerScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
   const playerScoreRef = useRef(0);
@@ -1246,7 +1247,8 @@ const handleGameEnd = async () => {
         p_score: finalUserScore,
         p_words: playerWordsWithScores,
         p_is_winner: finalUserScore > finalOpponentScore,
-        p_game_duration: gameDuration
+        p_game_duration: gameDuration,
+        p_first_word_time: firstWordTime
       });
       
       if (error) {
@@ -2089,8 +2091,16 @@ const useSenYazJoker = async () => {
           const newScore = playerScore + result.points;
           setPlayerScore(newScore);
           
+          // Calculate first word time (in seconds)
+          const wordTimestamp = Date.now();
+          if (firstWordTime === null && gameStartTime > 0) {
+            const timeToFirstWord = Math.floor((wordTimestamp - gameStartTime) / 1000);
+            setFirstWordTime(timeToFirstWord);
+            console.log('⚡ İlk kelime süresi:', timeToFirstWord, 'saniye');
+          }
+          
           setPlayerWords(prev => [...prev, selectedWord]);
-          setPlayerWordsWithScores(prev => [...prev, { word: selectedWord, score: result.points }]);
+          setPlayerWordsWithScores(prev => [...prev, { word: selectedWord, score: result.points, timestamp: wordTimestamp }]);
           
           triggerWordEffects();
           
@@ -3864,8 +3874,16 @@ const submitWord = async () => {
     const newScore = playerScore + result.points;
     setPlayerScore(newScore);
     
+    // Calculate first word time (in seconds)
+    const wordTimestamp = Date.now();
+    if (firstWordTime === null && gameStartTime > 0) {
+      const timeToFirstWord = Math.floor((wordTimestamp - gameStartTime) / 1000);
+      setFirstWordTime(timeToFirstWord);
+      console.log('⚡ İlk kelime süresi:', timeToFirstWord, 'saniye');
+    }
+    
     setPlayerWords(prev => [...prev, currentWord]);
-    setPlayerWordsWithScores(prev => [...prev, { word: currentWord, score: result.points }]);
+    setPlayerWordsWithScores(prev => [...prev, { word: currentWord, score: result.points, timestamp: wordTimestamp }]);
 
     const wordLength = currentWord.length;
 
