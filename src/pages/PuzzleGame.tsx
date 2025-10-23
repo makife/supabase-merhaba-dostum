@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Timer, RotateCcw, Trophy, ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from "react";
+import { Timer, RotateCcw, Trophy, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface GameState {
   board: number[];
@@ -21,28 +21,28 @@ const PuzzleGamePage: React.FC = () => {
     timeLeft: 60,
     isRunning: false,
     isCompleted: false,
-    difficulty: 3
+    difficulty: 3,
   });
-  
-  const [bestTimes, setBestTimes] = useState<{3: number | null, 4: number | null}>({
+
+  const [bestTimes, setBestTimes] = useState<{ 3: number | null; 4: number | null }>({
     3: null,
-    4: null
+    4: null,
   });
 
   const initializeBoard = useCallback((difficulty: 3 | 4) => {
     const size = difficulty * difficulty;
     const board = Array.from({ length: size - 1 }, (_, i) => i + 1);
     board.push(0); // Empty space
-    
+
     // Shuffle the board
     for (let i = board.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [board[i], board[j]] = [board[j], board[i]];
     }
-    
+
     const emptyIndex = board.indexOf(0);
     const timeLimit = difficulty === 3 ? 120 : 180; // 2dk ve 3dk
-    
+
     setGameState({
       board,
       emptyIndex,
@@ -50,7 +50,7 @@ const PuzzleGamePage: React.FC = () => {
       timeLeft: timeLimit,
       isRunning: false,
       isCompleted: false,
-      difficulty
+      difficulty,
     });
   }, []);
 
@@ -59,11 +59,8 @@ const PuzzleGamePage: React.FC = () => {
     const col = index % difficulty;
     const emptyRow = Math.floor(emptyIndex / difficulty);
     const emptyCol = emptyIndex % difficulty;
-    
-    return (
-      (Math.abs(row - emptyRow) === 1 && col === emptyCol) ||
-      (Math.abs(col - emptyCol) === 1 && row === emptyRow)
-    );
+
+    return (Math.abs(row - emptyRow) === 1 && col === emptyCol) || (Math.abs(col - emptyCol) === 1 && row === emptyRow);
   };
 
   const makeMove = (index: number) => {
@@ -73,43 +70,43 @@ const PuzzleGamePage: React.FC = () => {
 
     const newBoard = [...gameState.board];
     [newBoard[index], newBoard[gameState.emptyIndex]] = [newBoard[gameState.emptyIndex], newBoard[index]];
-    
+
     const newEmptyIndex = index;
     const newMoves = gameState.moves + 1;
-    
+
     if (!gameState.isRunning) {
-      setGameState(prev => ({ ...prev, isRunning: true }));
+      setGameState((prev) => ({ ...prev, isRunning: true }));
     }
-    
+
     // Check if puzzle is solved
     const isSolved = newBoard.every((value, i) => {
       if (i === newBoard.length - 1) return value === 0;
       return value === i + 1;
     });
-    
+
     if (isSolved) {
       const finalTime = (gameState.difficulty === 3 ? 120 : 180) - gameState.timeLeft;
       const currentBest = bestTimes[gameState.difficulty];
-      
+
       if (!currentBest || finalTime < currentBest) {
-        setBestTimes(prev => ({ ...prev, [gameState.difficulty]: finalTime }));
+        setBestTimes((prev) => ({ ...prev, [gameState.difficulty]: finalTime }));
         localStorage.setItem(`bestTime${gameState.difficulty}`, finalTime.toString());
       }
-      
-      setGameState(prev => ({
+
+      setGameState((prev) => ({
         ...prev,
         board: newBoard,
         emptyIndex: newEmptyIndex,
         moves: newMoves,
         isCompleted: true,
-        isRunning: false
+        isRunning: false,
       }));
     } else {
-      setGameState(prev => ({
+      setGameState((prev) => ({
         ...prev,
         board: newBoard,
         emptyIndex: newEmptyIndex,
-        moves: newMoves
+        moves: newMoves,
       }));
     }
   };
@@ -119,7 +116,7 @@ const PuzzleGamePage: React.FC = () => {
     let interval: NodeJS.Timeout;
     if (gameState.isRunning && gameState.timeLeft > 0) {
       interval = setInterval(() => {
-        setGameState(prev => {
+        setGameState((prev) => {
           if (prev.timeLeft <= 1) {
             return { ...prev, timeLeft: 0, isRunning: false };
           }
@@ -132,11 +129,11 @@ const PuzzleGamePage: React.FC = () => {
 
   // Load best times from localStorage
   useEffect(() => {
-    const best3 = localStorage.getItem('bestTime3');
-    const best4 = localStorage.getItem('bestTime4');
+    const best3 = localStorage.getItem("bestTime3");
+    const best4 = localStorage.getItem("bestTime4");
     setBestTimes({
       3: best3 ? parseInt(best3) : null,
-      4: best4 ? parseInt(best4) : null
+      4: best4 ? parseInt(best4) : null,
     });
   }, []);
 
@@ -148,7 +145,7 @@ const PuzzleGamePage: React.FC = () => {
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   const getTimeProgress = () => {
@@ -159,7 +156,6 @@ const PuzzleGamePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-4">
       <div className="max-w-md mx-auto">
-        
         {/* Geri Dön Butonu */}
         <div className="mb-4">
           <button
@@ -174,7 +170,7 @@ const PuzzleGamePage: React.FC = () => {
         {/* Başlık */}
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold text-white mb-2 bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
-            Sliding Puzzle
+            🧱 Puzzle Oyunu 🧱
           </h1>
           <div className="flex justify-center items-center gap-4 text-white/80">
             <div className="flex items-center gap-1">
@@ -194,14 +190,14 @@ const PuzzleGamePage: React.FC = () => {
         <div className="mb-6">
           <div className="flex justify-between items-center mb-2">
             <span className="text-white/80 text-sm">Süre</span>
-            <span className={`text-sm font-mono ${gameState.timeLeft <= 10 ? 'text-red-400' : 'text-white'}`}>
+            <span className={`text-sm font-mono ${gameState.timeLeft <= 10 ? "text-red-400" : "text-white"}`}>
               {formatTime(gameState.timeLeft)}
             </span>
           </div>
           <div className="w-full bg-gray-700 rounded-full h-2">
             <div
               className={`h-2 rounded-full transition-all duration-1000 ${
-                gameState.timeLeft <= 10 ? 'bg-red-500' : 'bg-gradient-to-r from-green-400 to-blue-500'
+                gameState.timeLeft <= 10 ? "bg-red-500" : "bg-gradient-to-r from-green-400 to-blue-500"
               }`}
               style={{ width: `${getTimeProgress()}%` }}
             />
@@ -223,13 +219,16 @@ const PuzzleGamePage: React.FC = () => {
                 disabled={gameState.isCompleted || gameState.timeLeft === 0}
                 className={`
                   aspect-square rounded-lg font-bold text-xl transition-all duration-200 transform
-                  ${number === 0
-                    ? 'bg-transparent'
-                    : `bg-gradient-to-br from-cyan-400 to-purple-500 text-white shadow-lg
+                  ${
+                    number === 0
+                      ? "bg-transparent"
+                      : `bg-gradient-to-br from-cyan-400 to-purple-500 text-white shadow-lg
                        hover:scale-105 active:scale-95 border-2 border-white/20
-                       ${isValidMove(index, gameState.emptyIndex, gameState.difficulty) 
-                         ? 'hover:shadow-cyan-400/50 cursor-pointer' 
-                         : 'cursor-not-allowed opacity-70'}`
+                       ${
+                         isValidMove(index, gameState.emptyIndex, gameState.difficulty)
+                           ? "hover:shadow-cyan-400/50 cursor-pointer"
+                           : "cursor-not-allowed opacity-70"
+                       }`
                   }
                 `}
               >
@@ -244,7 +243,8 @@ const PuzzleGamePage: React.FC = () => {
           <div className="mb-6 p-4 bg-green-500/20 border border-green-400/30 rounded-xl text-center">
             <div className="text-green-400 font-bold text-lg mb-1">🎉 Tebrikler!</div>
             <div className="text-white/80 text-sm">
-              {gameState.moves} hamle ile {(gameState.difficulty === 3 ? 120 : 180) - gameState.timeLeft} saniyede tamamladın!
+              {gameState.moves} hamle ile {(gameState.difficulty === 3 ? 120 : 180) - gameState.timeLeft} saniyede
+              tamamladın!
             </div>
           </div>
         )}
@@ -263,8 +263,8 @@ const PuzzleGamePage: React.FC = () => {
               onClick={() => initializeBoard(3)}
               className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
                 gameState.difficulty === 3
-                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                  : 'bg-white/10 text-white/70 hover:bg-white/20'
+                  ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white"
+                  : "bg-white/10 text-white/70 hover:bg-white/20"
               }`}
             >
               Kolay (3x3)
@@ -273,14 +273,14 @@ const PuzzleGamePage: React.FC = () => {
               onClick={() => initializeBoard(4)}
               className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
                 gameState.difficulty === 4
-                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                  : 'bg-white/10 text-white/70 hover:bg-white/20'
+                  ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white"
+                  : "bg-white/10 text-white/70 hover:bg-white/20"
               }`}
             >
               Zor (4x4)
             </button>
           </div>
-          
+
           <button
             onClick={() => initializeBoard(gameState.difficulty)}
             className="w-full py-3 px-4 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2"
@@ -295,7 +295,6 @@ const PuzzleGamePage: React.FC = () => {
           <p>Sayıları sıralayarak puzzle'ı çöz!</p>
           <p className="mt-1">Zamana karşı yarış ve rekorunu kır! 🏆</p>
         </div>
-
       </div>
     </div>
   );
