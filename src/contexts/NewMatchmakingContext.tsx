@@ -133,19 +133,12 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   // Arama başlat - Default olarak Nakama kullan
   const startSearch = async (gameType: "timed" | "score") => {
     if (!user) return;
-    if (isSearching) {
-      console.warn('⚠️ Arama zaten devam ediyor, tekrar başlatma atlandı');
-      return;
-    }
+    
+    // Not: restart durumunda isSearching kontrolü yapma
+    // cleanup zaten çağrılmış olacak
 
     try {
-      // Önce tam temizlik yap
-      console.log("🧹 Yeni arama öncesi tam temizlik yapılıyor...");
-      await cleanup();
-      
-      // Kısa gecikme - state'lerin tamamen temizlenmesi için
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
+      // State'leri temizle ve yeni aramaya hazırlan
       setIsSearching(true);
       setSearchProgress(0);
       setSearchTimeout(false);
@@ -514,14 +507,18 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   const restartSearch = async (gameType: "timed" | "score") => {
     console.log("🔄 Tekrar arama başlatılıyor...");
     
-    // Önce tüm aktif işlemleri temizle
-    await cancelSearch();
-    await cleanup();
-
-    // Kısa bekleme sonra yeni arama başlat
-    setTimeout(() => {
-      startSearch(gameType);
-    }, 300);
+    try {
+      // Önce tüm aktif işlemleri temizle
+      await cleanup();
+      
+      // State'lerin tamamen temizlenmesi için kısa gecikme
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Yeni arama başlat
+      await startSearch(gameType);
+    } catch (error) {
+      console.error("Restart search error:", error);
+    }
   };
 
   // AI ile oyna
