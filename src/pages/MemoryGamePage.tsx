@@ -236,18 +236,6 @@ const MemoryGamePage: React.FC = () => {
             ))}
           </div>
         )}
-
-        {/* Alt Bilgi */}
-        <div className="text-center text-purple-200 text-sm">
-          {canPlay ? (
-            <>
-              <p>Aynı sembolleri bularak kartları eşleştir</p>
-              <p className="mt-1">Tüm kartları temizleyerek joker kazan! 🏆</p>
-            </>
-          ) : (
-            <p>Her gün bir kez oynayarak joker kazanabilirsin! 🎁</p>
-          )}
-        </div>
       </div>
     </div>
   );
