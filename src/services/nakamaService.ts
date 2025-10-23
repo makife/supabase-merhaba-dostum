@@ -163,9 +163,9 @@ async createSocket(): Promise<Socket> {
 
       // Nakama matchmaking - DOĞRU PARAMETRELER
       // min=2, max=2: Tam 2 oyuncu eşleşmesi gerekiyor
-      // query kullanmıyoruz, sadece stringProperties ile eşleşme yapıyoruz
+      // query ile game_type filtresi ekliyoruz, aynı tipteki oyuncuları eşleştir
       const ticket = await this.socket.addMatchmaker(
-        "*",  // query - tüm matchleri kabul et
+        `+properties.game_type:${gameType}`,  // query - sadece aynı game_type'dakilerle eşleş
         2,    // minCount - minimum 2 oyuncu
         2,    // maxCount - maksimum 2 oyuncu
         {
