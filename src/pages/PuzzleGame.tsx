@@ -289,12 +289,6 @@ const PuzzleGamePage: React.FC = () => {
             Yeniden Başla
           </button>
         </div>
-
-        {/* Alt Bilgi */}
-        <div className="text-center text-purple-200 text-sm mt-6">
-          <p>Sayıları sıralayarak puzzle'ı çöz!</p>
-          <p className="mt-1">Zamana karşı yarış ve rekorunu kır! 🏆</p>
-        </div>
       </div>
     </div>
   );
