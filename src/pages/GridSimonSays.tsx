@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
 const GridSimonSays = () => {
   const navigate = useNavigate();
-  const [gameState, setGameState] = useState('waiting'); // waiting, showing, playing, gameOver
+  const [gameState, setGameState] = useState("waiting"); // waiting, showing, playing, gameOver
   const [sequence, setSequence] = useState([]);
   const [playerSequence, setPlayerSequence] = useState([]);
   const [currentStep, setCurrentStep] = useState(0);
@@ -18,49 +18,55 @@ const GridSimonSays = () => {
   const gridSize = 16;
 
   // Ses efektleri
-  const createSound = useCallback((frequency, duration = 200) => {
-    if (!soundEnabled) return;
-    
-    try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      oscillator.frequency.value = frequency;
-      oscillator.type = 'sine';
-      
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
-      
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + duration / 1000);
-    } catch (error) {
-      console.log('Ses çalınamadı:', error);
-    }
-  }, [soundEnabled]);
+  const createSound = useCallback(
+    (frequency, duration = 200) => {
+      if (!soundEnabled) return;
+
+      try {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        oscillator.frequency.value = frequency;
+        oscillator.type = "sine";
+
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
+
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + duration / 1000);
+      } catch (error) {
+        console.log("Ses çalınamadı:", error);
+      }
+    },
+    [soundEnabled],
+  );
 
   // Titreşim efekti
-  const vibrate = useCallback((pattern = [100]) => {
-    if (!vibrationEnabled) return;
-    
-    try {
-      if (navigator.vibrate) {
-        navigator.vibrate(pattern);
-      } else if (window.Capacitor && window.Capacitor.Plugins.Haptics) {
-        window.Capacitor.Plugins.Haptics.impact({ style: 'medium' });
+  const vibrate = useCallback(
+    (pattern = [100]) => {
+      if (!vibrationEnabled) return;
+
+      try {
+        if (navigator.vibrate) {
+          navigator.vibrate(pattern);
+        } else if (window.Capacitor && window.Capacitor.Plugins.Haptics) {
+          window.Capacitor.Plugins.Haptics.impact({ style: "medium" });
+        }
+      } catch (error) {
+        console.log("Titreşim çalışmadı:", error);
       }
-    } catch (error) {
-      console.log('Titreşim çalışmadı:', error);
-    }
-  }, [vibrationEnabled]);
+    },
+    [vibrationEnabled],
+  );
 
   // Hücre sesler - her hücre için farklı frekans
   const getCellSound = useCallback((cellIndex) => {
     const baseFreq = 200;
-    return baseFreq + (cellIndex * 50);
+    return baseFreq + cellIndex * 50;
   }, []);
 
   // Rastgele hücre seç
@@ -76,98 +82,115 @@ const GridSimonSays = () => {
     setCurrentStep(0);
     setScore(0);
     setLevel(1);
-    setGameState('showing');
+    setGameState("showing");
     createSound(440, 300); // Başlama sesi
     vibrate([200]);
     showSequence([firstCell]);
   }, [getRandomCell, createSound, vibrate]);
 
   // Diziyi göster (daha hızlı)
-  const showSequence = useCallback((seq) => {
-    let index = 0;
-    setActiveCell(null);
-    
-    const showNext = () => {
-      if (index < seq.length) {
-        const cellIndex = seq[index];
-        setActiveCell(cellIndex);
-        
-        // Hücre sesi çal
-        createSound(getCellSound(cellIndex), 300);
-        vibrate([50]);
-        
-        setTimeout(() => {
-          setActiveCell(null);
+  const showSequence = useCallback(
+    (seq) => {
+      let index = 0;
+      setActiveCell(null);
+
+      const showNext = () => {
+        if (index < seq.length) {
+          const cellIndex = seq[index];
+          setActiveCell(cellIndex);
+
+          // Hücre sesi çal
+          createSound(getCellSound(cellIndex), 300);
+          vibrate([50]);
+
           setTimeout(() => {
-            index++;
-            showNext();
-          }, 100); // Daha hızlı geçiş (200'den 100'e)
-        }, 400); // Daha hızlı gösterim (600'den 400'e)
-      } else {
-        setTimeout(() => {
-          setGameState('playing');
-          createSound(880, 200); // Oyuncu sırası sesi
-        }, 300); // Daha hızlı başlama (500'den 300'e)
-      }
-    };
-    
-    setTimeout(showNext, 500); // Daha hızlı başlama (1000'den 500'e)
-  }, [createSound, getCellSound, vibrate]);
+            setActiveCell(null);
+            setTimeout(() => {
+              index++;
+              showNext();
+            }, 100); // Daha hızlı geçiş (200'den 100'e)
+          }, 400); // Daha hızlı gösterim (600'den 400'e)
+        } else {
+          setTimeout(() => {
+            setGameState("playing");
+            createSound(880, 200); // Oyuncu sırası sesi
+          }, 300); // Daha hızlı başlama (500'den 300'e)
+        }
+      };
+
+      setTimeout(showNext, 500); // Daha hızlı başlama (1000'den 500'e)
+    },
+    [createSound, getCellSound, vibrate],
+  );
 
   // Hücreye tıklanma
-  const handleCellClick = useCallback((cellIndex) => {
-    if (gameState !== 'playing') return;
+  const handleCellClick = useCallback(
+    (cellIndex) => {
+      if (gameState !== "playing") return;
 
-    const newPlayerSequence = [...playerSequence, cellIndex];
-    setPlayerSequence(newPlayerSequence);
+      const newPlayerSequence = [...playerSequence, cellIndex];
+      setPlayerSequence(newPlayerSequence);
 
-    // Tıklama efekti
-    setActiveCell(cellIndex);
-    createSound(getCellSound(cellIndex), 150);
-    vibrate([30]);
-    
-    setTimeout(() => setActiveCell(null), 150); // Daha hızlı efekt (200'den 150'ye)
+      // Tıklama efekti
+      setActiveCell(cellIndex);
+      createSound(getCellSound(cellIndex), 150);
+      vibrate([30]);
 
-    // Kontrol et
-    const currentSequenceIndex = newPlayerSequence.length - 1;
-    
-    if (newPlayerSequence[currentSequenceIndex] !== sequence[currentSequenceIndex]) {
-      // Yanlış tıklama - oyun bitti
-      setGameState('gameOver');
-      createSound(150, 500); // Hata sesi
-      vibrate([200, 100, 200]);
-      return;
-    }
+      setTimeout(() => setActiveCell(null), 150); // Daha hızlı efekt (200'den 150'ye)
 
-    // Doğru tıklama
-    if (newPlayerSequence.length === sequence.length) {
-      // Seviye tamamlandı
-      const newScore = score + (level * 10);
-      const newLevel = level + 1;
-      
-      setScore(newScore);
-      setLevel(newLevel);
-      
-      // Başarı sesi
-      createSound(660, 200);
-      setTimeout(() => createSound(880, 200), 100);
-      setTimeout(() => createSound(1100, 300), 200);
-      vibrate([100, 50, 100]);
-      
-      setTimeout(() => {
-        // Yeni hücre ekle ve göster
-        const newSequence = [...sequence, getRandomCell()];
-        setSequence(newSequence);
-        setPlayerSequence([]);
-        setGameState('showing');
-        showSequence(newSequence);
-      }, 600); // Daha hızlı geçiş (1000'den 600'e)
-    }
-  }, [gameState, playerSequence, sequence, score, level, getRandomCell, showSequence, createSound, getCellSound, vibrate]);
+      // Kontrol et
+      const currentSequenceIndex = newPlayerSequence.length - 1;
+
+      if (newPlayerSequence[currentSequenceIndex] !== sequence[currentSequenceIndex]) {
+        // Yanlış tıklama - oyun bitti
+        setGameState("gameOver");
+        createSound(150, 500); // Hata sesi
+        vibrate([200, 100, 200]);
+        return;
+      }
+
+      // Doğru tıklama
+      if (newPlayerSequence.length === sequence.length) {
+        // Seviye tamamlandı
+        const newScore = score + level * 10;
+        const newLevel = level + 1;
+
+        setScore(newScore);
+        setLevel(newLevel);
+
+        // Başarı sesi
+        createSound(660, 200);
+        setTimeout(() => createSound(880, 200), 100);
+        setTimeout(() => createSound(1100, 300), 200);
+        vibrate([100, 50, 100]);
+
+        setTimeout(() => {
+          // Yeni hücre ekle ve göster
+          const newSequence = [...sequence, getRandomCell()];
+          setSequence(newSequence);
+          setPlayerSequence([]);
+          setGameState("showing");
+          showSequence(newSequence);
+        }, 600); // Daha hızlı geçiş (1000'den 600'e)
+      }
+    },
+    [
+      gameState,
+      playerSequence,
+      sequence,
+      score,
+      level,
+      getRandomCell,
+      showSequence,
+      createSound,
+      getCellSound,
+      vibrate,
+    ],
+  );
 
   // Oyunu sıfırla
   const resetGame = useCallback(() => {
-    setGameState('waiting');
+    setGameState("waiting");
     setSequence([]);
     setPlayerSequence([]);
     setCurrentStep(0);
@@ -179,23 +202,23 @@ const GridSimonSays = () => {
   // Grid oluştur
   const renderGrid = () => {
     const cells = [];
-    
+
     for (let i = 0; i < gridSize; i++) {
       const isActive = activeCell === i;
-      const isClickable = gameState === 'playing';
-      
+      const isClickable = gameState === "playing";
+
       cells.push(
         <button
           key={i}
-          className={`grid-cell ${isActive ? 'active' : ''} ${isClickable ? 'clickable' : ''}`}
+          className={`grid-cell ${isActive ? "active" : ""} ${isClickable ? "clickable" : ""}`}
           onClick={() => handleCellClick(i)}
           disabled={!isClickable}
         >
           {i + 1}
-        </button>
+        </button>,
       );
     }
-    
+
     return cells;
   };
 
@@ -211,30 +234,34 @@ const GridSimonSays = () => {
           Geri Dön
         </button>
       </div>
-      
+
       <div className="game-header">
-        <h2>4x4 İzci Oyunu</h2>
+        <h2>👣 Adım Oyunu 👣</h2>
         <div className="game-info">
           <span>Seviye: {level}</span>
           <span>Puan: {score}</span>
-          <span>Durum: {
-            gameState === 'waiting' ? 'Başlamayı bekliyor' :
-            gameState === 'showing' ? 'Diziyi gösteriyor...' :
-            gameState === 'playing' ? 'Sırayı tekrarla!' :
-            'Oyun Bitti!'
-          }</span>
+          <span>
+            Durum:{" "}
+            {gameState === "waiting"
+              ? "Başlamayı bekliyor"
+              : gameState === "showing"
+                ? "Diziyi gösteriyor..."
+                : gameState === "playing"
+                  ? "Sırayı tekrarla!"
+                  : "Oyun Bitti!"}
+          </span>
         </div>
-        
+
         {/* Ayarlar */}
         <div className="settings">
-          <button 
-            className={`setting-btn ${soundEnabled ? 'active' : ''}`}
+          <button
+            className={`setting-btn ${soundEnabled ? "active" : ""}`}
             onClick={() => setSoundEnabled(!soundEnabled)}
           >
             🔊 Ses
           </button>
-          <button 
-            className={`setting-btn ${vibrationEnabled ? 'active' : ''}`}
+          <button
+            className={`setting-btn ${vibrationEnabled ? "active" : ""}`}
             onClick={() => setVibrationEnabled(!vibrationEnabled)}
           >
             📳 Titreşim
@@ -242,18 +269,16 @@ const GridSimonSays = () => {
         </div>
       </div>
 
-      <div className="simon-grid">
-        {renderGrid()}
-      </div>
+      <div className="simon-grid">{renderGrid()}</div>
 
       <div className="game-controls">
-        {gameState === 'waiting' && (
+        {gameState === "waiting" && (
           <button className="start-btn" onClick={startGame}>
             🚀 Oyunu Başlat
           </button>
         )}
-        
-        {gameState === 'gameOver' && (
+
+        {gameState === "gameOver" && (
           <div className="game-over">
             <p>🎯 Oyun Bitti! Final Puanınız: {score}</p>
             <button className="restart-btn" onClick={resetGame}>
