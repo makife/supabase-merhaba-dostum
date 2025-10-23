@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
+import { useAppState } from "@/hooks/useAppState";
 
 interface MusicContextType {
   isPlaying: boolean;
@@ -26,6 +27,27 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const originalVolumeRef = useRef(0.3);
   const shuffledPlaylistRef = useRef<number[]>([]);
   const shuffleIndexRef = useRef(0);
+  const wasPlayingBeforeBackgroundRef = useRef(false);
+
+  // Arka plan yönetimi - uygulama arka plana gittiğinde müziği duraklat
+  useAppState(
+    () => {
+      // Arka plana gitti
+      if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
+        console.log('🎵 Müzik arka plan için duraklatılıyor');
+        wasPlayingBeforeBackgroundRef.current = true;
+        backgroundMusicRef.current.pause();
+      }
+    },
+    () => {
+      // Ön plana geldi
+      if (wasPlayingBeforeBackgroundRef.current && musicEnabled && backgroundMusicRef.current) {
+        console.log('🎵 Müzik ön plan için devam ettiriliyor');
+        wasPlayingBeforeBackgroundRef.current = false;
+        backgroundMusicRef.current.play().catch(console.warn);
+      }
+    }
+  );
 
   // Default pack playlist
   const defaultPlaylist = [

@@ -4,6 +4,7 @@ import { useAuth } from "./AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { nakamaService } from "@/services/nakamaService";
 import { matchBanlist } from "@/utils/matchBanlist";
+import { useAppState } from "@/hooks/useAppState";
 
 interface MatchmakingRoom {
   id: string;
@@ -56,6 +57,31 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   const [currentGameType, setCurrentGameType] = useState<"timed" | "score">("timed");
   const [searchChannel, setSearchChannel] = useState<any>(null);
   const progressIntervalRef = React.useRef<number | null>(null);
+  
+  // Arka plan yönetimi - matchmaking devam ediyor mu kontrol et
+  const matchmakingStateRef = React.useRef({ isSearching: false, foundMatch: false });
+  
+  useAppState(
+    () => {
+      // Arka plana gitti
+      console.log('📱 Uygulama arka plana gitti');
+      if (isSearching) {
+        console.log('🔍 Matchmaking arka planda devam ediyor...');
+        matchmakingStateRef.current.isSearching = true;
+      }
+    },
+    () => {
+      // Ön plana geldi
+      console.log('📱 Uygulama ön plana geldi');
+      if (matchmakingStateRef.current.foundMatch) {
+        console.log('✅ Arka planda eşleşme bulundu!');
+        toast({ title: "Eşleşme Bulundu!", description: "Oyun başlıyor..." });
+        matchmakingStateRef.current.foundMatch = false;
+      }
+      matchmakingStateRef.current.isSearching = false;
+    }
+  );
+  
   const clearProgressTimer = () => {
     if (progressIntervalRef.current) {
       clearInterval(progressIntervalRef.current);

@@ -6,11 +6,14 @@ import { Home, Users, Clock, Trophy, Loader2 } from 'lucide-react';
 import { nakamaService } from '@/services/nakamaService';
 import { useAuth } from '@/contexts/AuthContext';
 import { matchBanlist } from '@/utils/matchBanlist';
+import { useAppState } from '@/hooks/useAppState';
+import { useToast } from '@/hooks/use-toast';
 
 const NakamaGamePage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  const { toast } = useToast();
   
   const matchId = searchParams.get('matchId') || searchParams.get('match');
   const gameType = (searchParams.get('gameType') || searchParams.get('type')) as 'timed' | 'score';
@@ -22,6 +25,22 @@ const NakamaGamePage = () => {
   const [gameStartSignals, setGameStartSignals] = useState<Set<string>>(new Set());
   const [hasStarted, setHasStarted] = useState(false);
   const [joinedMatchId, setJoinedMatchId] = useState<string | null>(null);
+
+  // Arka plan yönetimi - bekleme ekranında arka plana giderse uyar
+  useAppState(
+    () => {
+      console.log('📱 Nakama oyun arka plana gitti');
+      if (!hasStarted) {
+        toast({
+          title: "Arka Planda",
+          description: "Eşleşme bekleniyor, lütfen uygulamaya dönün"
+        });
+      }
+    },
+    () => {
+      console.log('📱 Nakama oyun ön plana geldi');
+    }
+  );
 
   useEffect(() => {
     if (!matchId || !gameType || !user) {

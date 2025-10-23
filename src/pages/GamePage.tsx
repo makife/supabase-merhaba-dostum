@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/contexts/UserContext';
+import { useAppState } from '@/hooks/useAppState';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -197,6 +198,41 @@ const getGameType = useCallback((): 'timed' | 'score' => {
   const [timeWarningPlayed, setTimeWarningPlayed] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [showTournamentExitDialog, setShowTournamentExitDialog] = useState(false);
+  const [isInBackground, setIsInBackground] = useState(false);
+  const backgroundTimerRef = useRef<number | null>(null);
+
+  // Arka plan yönetimi - oyun sırasında disconnect mantığı
+  useAppState(
+    () => {
+      // Arka plana gitti
+      console.log('🎮 Oyun arka plana gitti');
+      setIsInBackground(true);
+      
+      // Eğer multiplayer oyun aktifse, 30 saniye timeout başlat
+      if ((gameMode === 'random-match' || gameMode === 'private-room' || gameMode === 'tournament') && gameStarted) {
+        backgroundTimerRef.current = window.setTimeout(() => {
+          console.log('⚠️ Arka plan timeout - oyuncu disconnect ediliyor');
+          toast({
+            title: "Bağlantı Kesildi",
+            description: "Oyun çok uzun süre arka planda kaldı",
+            variant: "destructive"
+          });
+          handleGameEnd();
+        }, 30000); // 30 saniye
+      }
+    },
+    () => {
+      // Ön plana geldi
+      console.log('🎮 Oyun ön plana geldi');
+      setIsInBackground(false);
+      
+      // Timeout'u iptal et
+      if (backgroundTimerRef.current) {
+        clearTimeout(backgroundTimerRef.current);
+        backgroundTimerRef.current = null;
+      }
+    }
+  );
 
   // Game state - Generate random letters each time
   const generateRandomGrid = useCallback((): string[][] => {
