@@ -153,8 +153,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     isStartingRef.current = true;
 
-    // Reset to beginning and start fresh
-    backgroundMusicRef.current.currentTime = 0;
+    // Kaldığı yerden devam et (currentTime = 0 kaldırıldı)
 
     // Try to play with better error handling
     const playPromise = backgroundMusicRef.current.play();
@@ -181,6 +180,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
       backgroundMusicRef.current.pause();
+      // Kaldığı yerden devam etsin diye currentTime = 0 kaldırıldı
       backgroundMusicRef.current.volume = originalVolumeRef.current;
     }
     isStartingRef.current = false;
@@ -268,7 +268,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     // Control music based on setting
     if (enabled && backgroundMusicRef.current && backgroundMusicRef.current.paused && !isStartingRef.current) {
-      backgroundMusicRef.current.currentTime = 0;
+      // Kaldığı yerden devam et
       isStartingRef.current = true;
       const playPromise = backgroundMusicRef.current.play();
       if (playPromise !== undefined) {
@@ -284,7 +284,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     } else if (!enabled && backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
       backgroundMusicRef.current.pause();
-      backgroundMusicRef.current.currentTime = 0;
+      // Kaldığı yerden devam etsin diye currentTime = 0 kaldırıldı
       isStartingRef.current = false;
     }
   };
