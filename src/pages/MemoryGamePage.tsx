@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { RefreshCw, Trophy, Star, ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useMemoryGame } from '@/hooks/useMemoryGame';
+import React, { useState, useEffect } from "react";
+import { RefreshCw, Trophy, Star, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useMemoryGame } from "@/hooks/useMemoryGame";
 
 interface Kart {
   id: number;
@@ -21,24 +21,24 @@ const MemoryGamePage: React.FC = () => {
   const [gameLoading, setGameLoading] = useState(false);
 
   // Kart sembolleri ve renkleri
-  const semboller = ['🎮', '🎯', '🎨', '🎪', '🎭', '🎸', '🎲', '🎊'];
+  const semboller = ["🎮", "🎯", "🎨", "🎪", "🎭", "🎸", "🎲", "🎊"];
   const renkler = [
-    'from-purple-400 to-purple-600',
-    'from-blue-400 to-blue-600', 
-    'from-green-400 to-green-600',
-    'from-yellow-400 to-yellow-600',
-    'from-red-400 to-red-600',
-    'from-pink-400 to-pink-600',
-    'from-indigo-400 to-indigo-600',
-    'from-orange-400 to-orange-600'
+    "from-purple-400 to-purple-600",
+    "from-blue-400 to-blue-600",
+    "from-green-400 to-green-600",
+    "from-yellow-400 to-yellow-600",
+    "from-red-400 to-red-600",
+    "from-pink-400 to-pink-600",
+    "from-indigo-400 to-indigo-600",
+    "from-orange-400 to-orange-600",
   ];
 
   // Oyunu başlat
   const oyunuBaslat = () => {
     if (!canPlay) return;
-    
+
     setGameLoading(true);
-    
+
     // Kartları oluştur (her sembolden 2 tane)
     const yeniKartlar: Kart[] = [];
     semboller.forEach((symbol, index) => {
@@ -48,14 +48,14 @@ const MemoryGamePage: React.FC = () => {
           symbol,
           acik: false,
           eslesti: false,
-          renk: renkler[index]
+          renk: renkler[index],
         });
       }
     });
 
     // Kartları karıştır
     const karisikKartlar = yeniKartlar.sort(() => Math.random() - 0.5);
-    
+
     setTimeout(() => {
       setKartlar(karisikKartlar);
       setSecilenKartlar([]);
@@ -79,9 +79,9 @@ const MemoryGamePage: React.FC = () => {
 
     if (yeniSecilenler.length === 2) {
       setHamle(hamle + 1);
-      
+
       const [birinci, ikinci] = yeniSecilenler;
-      
+
       if (kartlar[birinci].symbol === kartlar[ikinci].symbol) {
         // Eşleşti!
         setTimeout(() => {
@@ -90,9 +90,9 @@ const MemoryGamePage: React.FC = () => {
           eslesmisKartlar[ikinci].eslesti = true;
           setKartlar(eslesmisKartlar);
           setSecilenKartlar([]);
-          
+
           // Tüm kartlar eşleşti mi kontrol et
-          if (eslesmisKartlar.every(kart => kart.eslesti)) {
+          if (eslesmisKartlar.every((kart) => kart.eslesti)) {
             setOyunBitti(true);
             // Joker ver
             completeGame(hamle + 1);
@@ -121,7 +121,6 @@ const MemoryGamePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-4">
       <div className="max-w-md mx-auto">
-        
         {/* Geri Dön Butonu */}
         <div className="mb-4">
           <button
@@ -136,17 +135,13 @@ const MemoryGamePage: React.FC = () => {
         {/* Başlık */}
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-2">
-            <Star className="text-yellow-400" />
-            Hafıza Oyunu
-            <Star className="text-yellow-400" />
+            🤔 Hafıza Oyunu 🤔
           </h1>
           <p className="text-purple-200">
-            {canPlay ? 'Aynı kartları bulup eşleştir!' : '24 saatte bir oynayabilirsin!'}
+            {canPlay ? "Aynı kartları bulup eşleştir!" : "24 saatte bir oynayabilirsin!"}
           </p>
           {!canPlay && timeUntilNextPlay && (
-            <p className="text-yellow-300 text-sm mt-1">
-              Sonraki oyun: {timeUntilNextPlay}
-            </p>
+            <p className="text-yellow-300 text-sm mt-1">Sonraki oyun: {timeUntilNextPlay}</p>
           )}
         </div>
 
@@ -163,40 +158,32 @@ const MemoryGamePage: React.FC = () => {
           <div className="text-center mb-6 bg-white/10 backdrop-blur-sm rounded-lg p-6">
             <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-white mb-2">Oyunu Tamamladın! 🎉</h2>
-            <p className="text-purple-200 mb-2">
-              24 saat sonra tekrar oynayabilirsin
-            </p>
-            {timeUntilNextPlay && (
-              <p className="text-yellow-300 font-semibold">
-                Kalan süre: {timeUntilNextPlay}
-              </p>
-            )}
+            <p className="text-purple-200 mb-2">24 saat sonra tekrar oynayabilirsin</p>
+            {timeUntilNextPlay && <p className="text-yellow-300 font-semibold">Kalan süre: {timeUntilNextPlay}</p>}
           </div>
         )}
 
         {/* Skorlar */}
         {canPlay && !loading && (
           <div className="flex justify-between items-center mb-6 bg-white/10 backdrop-blur-sm rounded-lg p-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-white">{hamle}</div>
-            <div className="text-sm text-purple-200">Hamle</div>
-          </div>
-          <button
-            onClick={oyunuBaslat}
-            disabled={gameLoading || !canPlay}
-            className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 
+            <div className="text-center">
+              <div className="text-2xl font-bold text-white">{hamle}</div>
+              <div className="text-sm text-purple-200">Hamle</div>
+            </div>
+            <button
+              onClick={oyunuBaslat}
+              disabled={gameLoading || !canPlay}
+              className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 
                      disabled:opacity-50 text-white px-4 py-2 rounded-lg flex items-center gap-2 
                      transform transition-all duration-200 hover:scale-105 active:scale-95"
-          >
-            <RefreshCw className={`w-4 h-4 ${gameLoading ? 'animate-spin' : ''}`} />
-            {gameLoading ? 'Hazırlanıyor...' : 'Yeni Oyun'}
-          </button>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-white">
-              {kartlar.filter(kart => kart.eslesti).length / 2}
+            >
+              <RefreshCw className={`w-4 h-4 ${gameLoading ? "animate-spin" : ""}`} />
+              {gameLoading ? "Hazırlanıyor..." : "Yeni Oyun"}
+            </button>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-white">{kartlar.filter((kart) => kart.eslesti).length / 2}</div>
+              <div className="text-sm text-purple-200">Çift</div>
             </div>
-            <div className="text-sm text-purple-200">Çift</div>
-          </div>
           </div>
         )}
 
@@ -212,43 +199,41 @@ const MemoryGamePage: React.FC = () => {
         {/* Kart İzgarası */}
         {canPlay && !loading && (
           <div className="grid grid-cols-4 gap-3 mb-6">
-          {kartlar.map((kart, index) => (
-            <div
-              key={`${kart.symbol}-${kart.id}`}
-              onClick={() => kartTikla(index)}
-              className="aspect-square relative cursor-pointer transform transition-all duration-300 hover:scale-105"
-              style={{ perspective: '1000px' }}
-            >
+            {kartlar.map((kart, index) => (
               <div
-                className={`w-full h-full relative transform-style-preserve-3d transition-transform duration-600 ${
-                  kart.acik || kart.eslesti ? 'rotate-y-180' : ''
-                }`}
+                key={`${kart.symbol}-${kart.id}`}
+                onClick={() => kartTikla(index)}
+                className="aspect-square relative cursor-pointer transform transition-all duration-300 hover:scale-105"
+                style={{ perspective: "1000px" }}
               >
-                {/* Kart Arka Yüzü */}
-                <div className="absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-purple-600 to-indigo-600 rounded-lg border-2 border-white/30 flex items-center justify-center">
-                  <div className="text-2xl">🎪</div>
-                </div>
-                
-                {/* Kart Ön Yüzü */}
-                <div 
-                  className={`absolute inset-0 w-full h-full backface-hidden rotate-y-180 rounded-lg border-2 border-white/30 flex items-center justify-center bg-gradient-to-br ${kart.renk} ${
-                    kart.eslesti ? 'opacity-20 scale-95' : ''
-                  } transition-all duration-300`}
+                <div
+                  className={`w-full h-full relative transform-style-preserve-3d transition-transform duration-600 ${
+                    kart.acik || kart.eslesti ? "rotate-y-180" : ""
+                  }`}
                 >
-                  <div className={`text-3xl ${kart.eslesti ? 'grayscale' : ''}`}>
-                    {kart.symbol}
+                  {/* Kart Arka Yüzü */}
+                  <div className="absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-purple-600 to-indigo-600 rounded-lg border-2 border-white/30 flex items-center justify-center">
+                    <div className="text-2xl">🎪</div>
                   </div>
-                  
-                  {/* Eşleşme Efekti */}
-                  {kart.eslesti && (
-                    <div className="absolute inset-0 bg-green-500/20 rounded-lg flex items-center justify-center">
-                      <div className="text-4xl">✓</div>
-                    </div>
-                  )}
+
+                  {/* Kart Ön Yüzü */}
+                  <div
+                    className={`absolute inset-0 w-full h-full backface-hidden rotate-y-180 rounded-lg border-2 border-white/30 flex items-center justify-center bg-gradient-to-br ${kart.renk} ${
+                      kart.eslesti ? "opacity-20 scale-95" : ""
+                    } transition-all duration-300`}
+                  >
+                    <div className={`text-3xl ${kart.eslesti ? "grayscale" : ""}`}>{kart.symbol}</div>
+
+                    {/* Eşleşme Efekti */}
+                    {kart.eslesti && (
+                      <div className="absolute inset-0 bg-green-500/20 rounded-lg flex items-center justify-center">
+                        <div className="text-4xl">✓</div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
           </div>
         )}
 
@@ -263,7 +248,6 @@ const MemoryGamePage: React.FC = () => {
             <p>Her gün bir kez oynayarak joker kazanabilirsin! 🎁</p>
           )}
         </div>
-
       </div>
     </div>
   );
