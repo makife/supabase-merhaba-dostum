@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 
 interface MusicContextType {
   isPlaying: boolean;
@@ -18,7 +18,7 @@ const MusicContext = createContext<MusicContextType | undefined>(undefined);
 export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [musicEnabled, setMusicEnabledState] = useState(true);
-  const [musicPack, setMusicPackState] = useState('default');
+  const [musicPack, setMusicPackState] = useState("default");
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const backgroundMusicRef = useRef<HTMLAudioElement | null>(null);
   const isStartingRef = useRef(false);
@@ -26,13 +26,16 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const originalVolumeRef = useRef(0.3);
   const shuffledPlaylistRef = useRef<number[]>([]);
   const shuffleIndexRef = useRef(0);
-  
+
   // Default pack playlist
   const defaultPlaylist = [
-    '/sounds/default/backround-music.mp3',
-    '/sounds/default/backround-music1.mp3',
-    '/sounds/default/backround-music2.mp3',
-    '/sounds/default/backround-music3.mp3'
+    "/sounds/default/backround-music.mp3",
+    "/sounds/default/backround-music1.mp3",
+    "/sounds/default/backround-music2.mp3",
+    "/sounds/default/backround-music3.mp3",
+    "/sounds/default/backround-music4.mp3",
+    "/sounds/default/backround-music5.mp3",
+    "/sounds/default/backround-music6.mp3",
   ];
 
   // Shuffle function
@@ -56,24 +59,24 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     const loadSettings = () => {
       try {
-        const settings = JSON.parse(localStorage.getItem('kelimeci-settings') || '{}');
+        const settings = JSON.parse(localStorage.getItem("kelimeci-settings") || "{}");
         setMusicEnabledState(settings.music ?? true);
-        setMusicPackState(settings.musicPack ?? 'default');
+        setMusicPackState(settings.musicPack ?? "default");
       } catch (error) {
-        console.warn('Failed to load music settings:', error);
+        console.warn("Failed to load music settings:", error);
       }
     };
 
     loadSettings();
-    
+
     // Listen for settings changes
     const handleStorageChange = () => loadSettings();
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('settingsChanged', handleStorageChange);
-    
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("settingsChanged", handleStorageChange);
+
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('settingsChanged', handleStorageChange);
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("settingsChanged", handleStorageChange);
     };
   }, []);
 
@@ -84,43 +87,43 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
         backgroundMusicRef.current.pause();
       }
-      
+
       // Get music file based on selected pack
       const getMusicFile = () => {
         switch (musicPack) {
-          case 'nature1':
-            return '/sounds/default/doga1.mp3';
-          case 'nature2':
-            return '/sounds/default/doga2.mp3';
-          case 'space1':
-            return '/sounds/default/uzay1.mp3';
-          case 'space2':
-            return '/sounds/default/uzay2.mp3';
+          case "nature1":
+            return "/sounds/default/doga1.mp3";
+          case "nature2":
+            return "/sounds/default/doga2.mp3";
+          case "space1":
+            return "/sounds/default/uzay1.mp3";
+          case "space2":
+            return "/sounds/default/uzay2.mp3";
           default:
             return defaultPlaylist[shuffledPlaylistRef.current[shuffleIndexRef.current] || 0];
         }
       };
-      
+
       backgroundMusicRef.current = new Audio(getMusicFile());
       // Don't loop individual tracks for default pack, we'll handle playlist rotation
-      backgroundMusicRef.current.loop = musicPack !== 'default';
+      backgroundMusicRef.current.loop = musicPack !== "default";
       backgroundMusicRef.current.volume = 0.3;
-      backgroundMusicRef.current.preload = 'auto';
-      
+      backgroundMusicRef.current.preload = "auto";
+
       // Event listeners for state tracking
       backgroundMusicRef.current.onplay = () => setIsPlaying(true);
       backgroundMusicRef.current.onpause = () => setIsPlaying(false);
       backgroundMusicRef.current.onended = () => {
         setIsPlaying(false);
         // For default pack, move to next track in shuffled playlist and autoplay the next one
-        if (musicPack === 'default' && musicEnabled) {
+        if (musicPack === "default" && musicEnabled) {
           shuffleIndexRef.current = (shuffleIndexRef.current + 1) % shuffledPlaylistRef.current.length;
-          
+
           // If we've played all tracks in the shuffled playlist, create a new shuffle
           if (shuffleIndexRef.current === 0) {
             shuffledPlaylistRef.current = shuffleArray(Array.from({ length: defaultPlaylist.length }, (_, i) => i));
           }
-          
+
           const nextTrackIndex = shuffledPlaylistRef.current[shuffleIndexRef.current];
           setCurrentTrackIndex(nextTrackIndex);
           // Allow the effect to create the new Audio element, then start it
@@ -144,15 +147,15 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const startBackgroundMusic = () => {
     if (!musicEnabled || !backgroundMusicRef.current || isStartingRef.current) return;
-    
+
     // Müzik zaten çalıyorsa tekrar başlatma
     if (!backgroundMusicRef.current.paused) return;
-    
+
     isStartingRef.current = true;
-    
+
     // Reset to beginning and start fresh
     backgroundMusicRef.current.currentTime = 0;
-    
+
     // Try to play with better error handling
     const playPromise = backgroundMusicRef.current.play();
     if (playPromise !== undefined) {
@@ -160,9 +163,9 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         .then(() => {
           isStartingRef.current = false;
         })
-        .catch(error => {
+        .catch((error) => {
           isStartingRef.current = false;
-          console.warn('Could not play background music:', error);
+          console.warn("Could not play background music:", error);
         });
     } else {
       isStartingRef.current = false;
@@ -175,7 +178,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       clearInterval(fadeIntervalRef.current);
       fadeIntervalRef.current = null;
     }
-    
+
     if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
       backgroundMusicRef.current.pause();
       backgroundMusicRef.current.volume = originalVolumeRef.current;
@@ -185,16 +188,16 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const fadeOutBackgroundMusic = (duration: number = 2000) => {
     if (!backgroundMusicRef.current || backgroundMusicRef.current.paused) return;
-    
+
     // Clear any existing fade
     if (fadeIntervalRef.current) {
       clearInterval(fadeIntervalRef.current);
     }
-    
+
     const audio = backgroundMusicRef.current;
     const startVolume = audio.volume;
     const fadeStep = startVolume / (duration / 50); // 50ms intervals
-    
+
     fadeIntervalRef.current = setInterval(() => {
       if (audio.volume > fadeStep) {
         audio.volume = Math.max(0, audio.volume - fadeStep);
@@ -212,25 +215,25 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const fadeInBackgroundMusic = (duration: number = 2000) => {
     if (!musicEnabled || !backgroundMusicRef.current || isStartingRef.current) return;
-    
+
     // Clear any existing fade
     if (fadeIntervalRef.current) {
       clearInterval(fadeIntervalRef.current);
     }
-    
+
     const audio = backgroundMusicRef.current;
     const targetVolume = originalVolumeRef.current;
     audio.volume = 0;
     audio.currentTime = 0;
-    
+
     isStartingRef.current = true;
-    
+
     const playPromise = audio.play();
     if (playPromise !== undefined) {
       playPromise
         .then(() => {
           const fadeStep = targetVolume / (duration / 50); // 50ms intervals
-          
+
           fadeIntervalRef.current = setInterval(() => {
             if (audio.volume < targetVolume - fadeStep) {
               audio.volume = Math.min(targetVolume, audio.volume + fadeStep);
@@ -242,12 +245,12 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               }
             }
           }, 50);
-          
+
           isStartingRef.current = false;
         })
-        .catch(error => {
+        .catch((error) => {
           isStartingRef.current = false;
-          console.warn('Could not play background music:', error);
+          console.warn("Could not play background music:", error);
         });
     } else {
       isStartingRef.current = false;
@@ -256,13 +259,13 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const setMusicEnabled = (enabled: boolean) => {
     setMusicEnabledState(enabled);
-    
+
     // Save to localStorage
-    const settings = JSON.parse(localStorage.getItem('kelimeci-settings') || '{}');
+    const settings = JSON.parse(localStorage.getItem("kelimeci-settings") || "{}");
     settings.music = enabled;
-    localStorage.setItem('kelimeci-settings', JSON.stringify(settings));
-    window.dispatchEvent(new Event('settingsChanged'));
-    
+    localStorage.setItem("kelimeci-settings", JSON.stringify(settings));
+    window.dispatchEvent(new Event("settingsChanged"));
+
     // Control music based on setting
     if (enabled && backgroundMusicRef.current && backgroundMusicRef.current.paused && !isStartingRef.current) {
       backgroundMusicRef.current.currentTime = 0;
@@ -288,20 +291,20 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const setMusicPack = (pack: string) => {
     const wasPlaying = backgroundMusicRef.current && !backgroundMusicRef.current.paused;
-    
+
     // Stop current music if playing
     if (wasPlaying) {
       stopBackgroundMusic();
     }
-    
+
     setMusicPackState(pack);
-    
+
     // Save to localStorage
-    const settings = JSON.parse(localStorage.getItem('kelimeci-settings') || '{}');
+    const settings = JSON.parse(localStorage.getItem("kelimeci-settings") || "{}");
     settings.musicPack = pack;
-    localStorage.setItem('kelimeci-settings', JSON.stringify(settings));
-    window.dispatchEvent(new Event('settingsChanged'));
-    
+    localStorage.setItem("kelimeci-settings", JSON.stringify(settings));
+    window.dispatchEvent(new Event("settingsChanged"));
+
     // Restart music with new pack if it was playing and music is enabled
     if (wasPlaying && musicEnabled) {
       // Small delay to allow audio element to update
@@ -312,18 +315,20 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   return (
-    <MusicContext.Provider value={{
-      isPlaying,
-      musicEnabled,
-      musicPack,
-      currentTrackIndex,
-      setMusicEnabled,
-      setMusicPack,
-      startBackgroundMusic,
-      stopBackgroundMusic,
-      fadeOutBackgroundMusic,
-      fadeInBackgroundMusic,
-    }}>
+    <MusicContext.Provider
+      value={{
+        isPlaying,
+        musicEnabled,
+        musicPack,
+        currentTrackIndex,
+        setMusicEnabled,
+        setMusicPack,
+        startBackgroundMusic,
+        stopBackgroundMusic,
+        fadeOutBackgroundMusic,
+        fadeInBackgroundMusic,
+      }}
+    >
       {children}
     </MusicContext.Provider>
   );
@@ -332,7 +337,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 export const useMusic = () => {
   const context = useContext(MusicContext);
   if (context === undefined) {
-    throw new Error('useMusic must be used within a MusicProvider');
+    throw new Error("useMusic must be used within a MusicProvider");
   }
   return context;
 };
