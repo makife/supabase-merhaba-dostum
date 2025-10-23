@@ -30,44 +30,49 @@ const TournamentPage = () => {
   };
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-purple-900 to-blue-900 p-4">
-      {/* Çıkış butonu */}
-      <div className="absolute top-4 left-4 z-50">
-        <Button
-          onClick={() => navigate("/")}
-          className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
-        >
-          <Home className="w-4 h-4 mr-2" />
-          Ana Sayfa
-        </Button>
-      </div>
-
-      <div className="max-w-4xl mx-auto pt-16">
-        {/* Başlık */}
-        <div className="text-center mb-8">
-          <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
-          <h1 className="text-4xl font-bold text-white mb-2">Turnuvalar</h1>
-          <p className="text-gray-300 text-lg">8 oyunculu heyecan dolu turnuvalara katıl!</p>
+    <div className="relative min-h-screen bg-gradient-to-br from-purple-900 to-blue-900 flex flex-col">
+      {/* Sabit üst bölüm */}
+      <div className="sticky top-0 z-10 bg-gradient-to-br from-purple-900 to-blue-900 p-4">
+        {/* Çıkış butonu */}
+        <div className="absolute top-4 left-4">
+          <Button
+            onClick={() => navigate("/")}
+            className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
+          >
+            <Home className="w-4 h-4 mr-2" />
+            Ana Sayfa
+          </Button>
         </div>
 
-        {/* Turnuva Oluştur */}
-        <Card className="mb-8 bg-white/10 backdrop-blur-md border-white/20">
-          <CardContent className="p-6 text-center">
-            <Button
-              onClick={handleCreateTournament}
-              disabled={loading}
-              className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-4 px-8 text-lg"
-              size="lg"
-            >
-              <Plus className="w-6 h-6 mr-2" />
-              {loading ? "Oluşturuluyor..." : "Yeni Turnuva Oluştur"}
-            </Button>
-            <p className="text-gray-300 text-sm mt-2">Kendi turnuvanı oluştur ve arkadaşlarını davet et!</p>
-          </CardContent>
-        </Card>
+        <div className="max-w-4xl mx-auto pt-12">
+          {/* Başlık */}
+          <div className="text-center mb-8">
+            <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
+            <h1 className="text-4xl font-bold text-white mb-2">Turnuvalar</h1>
+            <p className="text-gray-300 text-lg">8 oyunculu heyecan dolu turnuvalara katıl!</p>
+          </div>
 
-        {/* Aktif Turnuvalar */}
-        <div className="space-y-4">
+          {/* Turnuva Oluştur */}
+          <Card className="mb-8 bg-white/10 backdrop-blur-md border-white/20">
+            <CardContent className="p-6 text-center">
+              <Button
+                onClick={handleCreateTournament}
+                disabled={loading}
+                className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-4 px-8 text-lg"
+                size="lg"
+              >
+                <Plus className="w-6 h-6 mr-2" />
+                {loading ? "Oluşturuluyor..." : "Yeni Turnuva Oluştur"}
+              </Button>
+              <p className="text-gray-300 text-sm mt-2">Kendi turnuvanı oluştur ve arkadaşlarını davet et!</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Scroll edilebilir içerik */}
+      <div className="flex-1 overflow-y-auto px-4 pb-4">
+        <div className="max-w-4xl mx-auto space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-white">Aktif Turnuvalar</h2>
             <Button
@@ -108,21 +113,21 @@ const TournamentPage = () => {
               ))}
             </div>
           )}
-        </div>
 
-        {/* Bilgi */}
-        <Card className="mt-8 bg-white/5 backdrop-blur-md border-white/10">
-          <CardContent className="p-4">
-            <h3 className="text-lg font-bold text-white mb-2">Turnuva Kuralları</h3>
-            <ul className="text-gray-300 text-sm space-y-1">
-              <li>• Her turnuvada maksimum 8 oyuncu katılabilir</li>
-              <li>• Yetersiz oyuncu durumunda botlar otomatik eklenir</li>
-              <li>• Turnuva 3 aşamada tamamlanır: Çeyrek Final → Yarı Final → Final</li>
-              <li>• Her maç zamana karşı oynanır (2 dakika)</li>
-              <li>• Turnuva başladıktan sonra katılım mümkün değildir</li>
-            </ul>
-          </CardContent>
-        </Card>
+          {/* Bilgi */}
+          <Card className="mt-8 bg-white/5 backdrop-blur-md border-white/10">
+            <CardContent className="p-4">
+              <h3 className="text-lg font-bold text-white mb-2">Turnuva Kuralları</h3>
+              <ul className="text-gray-300 text-sm space-y-1">
+                <li>• Her turnuvada maksimum 8 oyuncu katılabilir</li>
+                <li>• Yetersiz oyuncu durumunda botlar otomatik eklenir</li>
+                <li>• Turnuva 3 aşamada tamamlanır: Çeyrek Final → Yarı Final → Final</li>
+                <li>• Her maç zamana karşı oynanır (2 dakika)</li>
+                <li>• Turnuva başladıktan sonra katılım mümkün değildir</li>
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
