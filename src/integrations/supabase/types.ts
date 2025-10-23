@@ -1420,12 +1420,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      advance_tournament_round: {
-        Args:
-          | { p_current_round: number; p_tournament_id: string }
-          | { p_tournament_id: string }
-        Returns: Json
-      }
+      advance_tournament_round:
+        | {
+            Args: { p_current_round: number; p_tournament_id: string }
+            Returns: Json
+          }
+        | { Args: { p_tournament_id: string }; Returns: Json }
       apply_disconnect_penalty: {
         Args: { p_offender_id: string; p_room_id: string }
         Returns: {
@@ -1435,10 +1435,7 @@ export type Database = {
           penalty: number
         }[]
       }
-      auto_start_countdown_finished_games: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      auto_start_countdown_finished_games: { Args: never; Returns: undefined }
       ban_user_for_inappropriate_content: {
         Args: {
           p_ban_duration_hours?: number
@@ -1455,18 +1452,12 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
-      check_and_award_badges: {
-        Args: { p_user_id: string }
-        Returns: Json[]
-      }
+      check_and_award_badges: { Args: { p_user_id: string }; Returns: Json[] }
       check_and_award_badges_simple: {
         Args: { p_user_id: string }
         Returns: undefined
       }
-      check_and_finish_expired_games: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      check_and_finish_expired_games: { Args: never; Returns: undefined }
       check_and_refresh_credits: {
         Args: { user_id: string }
         Returns: undefined
@@ -1498,32 +1489,13 @@ export type Database = {
       }
       check_words_per_game_badge: {
         Args: { p_user_id: string; p_words_count: number }
-        Returns: {
-          new_badge_icon: string
-          new_badge_id: string
-          new_badge_name: string
-        }[]
+        Returns: Json[]
       }
-      cleanup_expired_bans: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_expired_matchmaking_rooms: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_expired_rematch_requests: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_expired_rooms: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_expired_tournaments: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      cleanup_expired_bans: { Args: never; Returns: undefined }
+      cleanup_expired_matchmaking_rooms: { Args: never; Returns: undefined }
+      cleanup_expired_rematch_requests: { Args: never; Returns: undefined }
+      cleanup_expired_rooms: { Args: never; Returns: undefined }
+      cleanup_expired_tournaments: { Args: never; Returns: undefined }
       complete_tournament_match: {
         Args: {
           p_match_id: string
@@ -1562,19 +1534,19 @@ export type Database = {
           type: string
           user_id: string | null
         }
+        SetofOptions: {
+          from: "*"
+          to: "notifications"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       create_tournament_matches: {
         Args: { p_round: number; p_tournament_id: string }
         Returns: undefined
       }
-      generate_random_grid: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      get_avatar_url: {
-        Args: { user_id: string }
-        Returns: string
-      }
+      generate_random_grid: { Args: never; Returns: Json }
+      get_avatar_url: { Args: { user_id: string }; Returns: string }
       get_daily_top_leaders: {
         Args: { limit_count?: number; target_date?: string }
         Returns: {
@@ -1685,10 +1657,7 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
-      reset_daily_games: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      reset_daily_games: { Args: never; Returns: undefined }
       save_memory_game_play: {
         Args: { p_joker_given: string; p_moves: number; p_user_id: string }
         Returns: boolean
@@ -1701,31 +1670,42 @@ export type Database = {
         }
         Returns: boolean
       }
-      send_mention_notification: {
-        Args:
-          | {
+      send_mention_notification:
+        | {
+            Args: {
+              p_message: string
+              p_sender_username: string
+              p_user_id: string
+            }
+            Returns: boolean
+          }
+        | {
+            Args: {
               p_message: string
               p_message_id?: string
               p_receiver_id: string
               p_sender_username: string
             }
-          | { p_message: string; p_sender_username: string; p_user_id: string }
-        Returns: boolean
-      }
-      send_private_message_notification: {
-        Args:
-          | {
+            Returns: boolean
+          }
+      send_private_message_notification:
+        | {
+            Args: {
+              p_chat_id: string
+              p_sender_username: string
+              p_user_id: string
+            }
+            Returns: boolean
+          }
+        | {
+            Args: {
               p_chat_id: string
               p_recipient_id: string
               p_sender_username: string
             }
-          | { p_chat_id: string; p_sender_username: string; p_user_id: string }
-        Returns: boolean
-      }
-      start_game_countdown: {
-        Args: { p_room_id: string }
-        Returns: string
-      }
+            Returns: boolean
+          }
+      start_game_countdown: { Args: { p_room_id: string }; Returns: string }
       start_tournament_automatically: {
         Args: { p_tournament_id: string }
         Returns: Json
@@ -1742,14 +1722,8 @@ export type Database = {
         Args: { p_tournament_id: string }
         Returns: Json
       }
-      test_game_completion: {
-        Args: { p_user_id: string }
-        Returns: undefined
-      }
-      trigger_global_storage_clear: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      test_game_completion: { Args: { p_user_id: string }; Returns: undefined }
+      trigger_global_storage_clear: { Args: never; Returns: undefined }
       update_daily_leaderboard: {
         Args: {
           p_avatar_url: string
