@@ -288,14 +288,6 @@ const GridSimonSays = () => {
         )}
       </div>
 
-      <div className="game-instructions">
-        <h4>⚡ Hızlı Mod Nasıl Oynanır:</h4>
-        <p>• 🎵 Her hücrenin kendine özel sesi var</p>
-        <p>• 📳 Dokunmatik geri bildirim aktif</p>
-        <p>• ⚡ Daha hızlı tempo için hazır ol!</p>
-        <p>• 🎯 Yanıp sönen hücrelerin sırasını hatırla</p>
-      </div>
-
       <style>{`
         .simon-game {
           min-height: 100vh;
