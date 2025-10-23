@@ -228,11 +228,6 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
         console.error("Participant insert failed:", participantError);
       }
 
-      toast({
-        title: "🏠 Oda Oluşturuldu",
-        description: `Kod: ${shortCode}`,
-      });
-
       // Mor temalı bekleme sayfasına yönlendir
       navigate(`/private-room-waiting?code=${shortCode}&roomId=${roomId}&gameType=${gameType}`);
       onClose();
