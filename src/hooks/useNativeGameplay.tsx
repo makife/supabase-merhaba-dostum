@@ -25,32 +25,41 @@ export const useNativeGameplay = () => {
     }
   }, []);
 
-  // Prevent context menu and text selection on mobile
+  // Prevent context menu and text selection globally
   useEffect(() => {
-    if (Capacitor.isNativePlatform()) {
-      const preventContextMenu = (e: Event) => {
-        e.preventDefault();
-        return false;
-      };
+    const preventContextMenu = (e: Event) => {
+      e.preventDefault();
+      return false;
+    };
 
-      const preventTextSelection = (e: Event) => {
-        e.preventDefault();
-        return false;
-      };
+    const preventTextSelection = (e: Event) => {
+      e.preventDefault();
+      return false;
+    };
 
-      // Disable context menu
-      document.addEventListener('contextmenu', preventContextMenu);
-      
-      // Disable text selection
-      document.addEventListener('selectstart', preventTextSelection);
-      document.addEventListener('dragstart', preventTextSelection);
+    const preventCopyPaste = (e: Event) => {
+      e.preventDefault();
+      return false;
+    };
 
-      return () => {
-        document.removeEventListener('contextmenu', preventContextMenu);
-        document.removeEventListener('selectstart', preventTextSelection);
-        document.removeEventListener('dragstart', preventTextSelection);
-      };
-    }
+    // Disable context menu on all platforms
+    document.addEventListener('contextmenu', preventContextMenu);
+    
+    // Disable text selection on long press
+    document.addEventListener('selectstart', preventTextSelection);
+    document.addEventListener('dragstart', preventTextSelection);
+    
+    // Disable copy/paste menu
+    document.addEventListener('copy', preventCopyPaste);
+    document.addEventListener('cut', preventCopyPaste);
+
+    return () => {
+      document.removeEventListener('contextmenu', preventContextMenu);
+      document.removeEventListener('selectstart', preventTextSelection);
+      document.removeEventListener('dragstart', preventTextSelection);
+      document.removeEventListener('copy', preventCopyPaste);
+      document.removeEventListener('cut', preventCopyPaste);
+    };
   }, []);
 
   // Optimize touch events for native
@@ -76,15 +85,9 @@ export const useNativeGameplay = () => {
       // Disable pull-to-refresh behavior
       document.body.style.overscrollBehavior = 'none';
       
-      // Disable text selection globally
-      document.body.style.webkitUserSelect = 'none';
-      document.body.style.userSelect = 'none';
-      
       return () => {
         document.body.classList.remove('native-platform');
         document.body.style.overscrollBehavior = '';
-        document.body.style.webkitUserSelect = '';
-        document.body.style.userSelect = '';
       };
     }
   }, []);
