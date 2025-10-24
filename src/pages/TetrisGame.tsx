@@ -64,6 +64,20 @@ const TetrisGame = () => {
     }
   }, []);
 
+  // Normalize existing pieces (fixes old shapes lingering after hot reload)
+  const normalizeToDef = useCallback((p) => {
+    if (!p) return p;
+    const def = BLOCK_PIECES[p.type];
+    if (!def) return p;
+    const sameShape = JSON.stringify(p.shape) === JSON.stringify(def.shape) && p.color === def.color;
+    return sameShape ? p : { ...p, shape: def.shape, color: def.color };
+  }, []);
+
+  useEffect(() => {
+    setCurrentPiece(prev => normalizeToDef(prev));
+    setNextPiece(prev => normalizeToDef(prev));
+  }, [normalizeToDef]);
+
   const createRandomPiece = useCallback(() => {
     const pieceType = PIECE_TYPES[Math.floor(Math.random() * PIECE_TYPES.length)];
     return {
