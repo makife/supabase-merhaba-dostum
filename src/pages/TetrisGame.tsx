@@ -5,15 +5,15 @@ const BOARD_WIDTH = 10;
 const BOARD_HEIGHT = 20;
 const EMPTY_CELL = 0;
 
-// Özgün blok şekilleri - Telif sorunlarını önlemek için tasarlandı
+// Özgün blok şekilleri - Her biri 4 birimden oluşur (telif sorunu yok)
 const BLOCK_PIECES = {
-  I: { shape: [[1, 0], [1, 0], [1, 1]], color: '#00f5ff' },           // Vertical L
-  O: { shape: [[1, 0], [1, 1], [1, 0]], color: '#ffff00' },           // T variant
-  T: { shape: [[0, 1], [1, 1], [0, 1]], color: '#800080' },           // Plus variant
-  S: { shape: [[1, 1], [0, 1], [0, 1]], color: '#00ff00' },           // Stairs
-  Z: { shape: [[0, 1], [0, 1], [1, 1]], color: '#ff0000' },           // Hook
-  J: { shape: [[1, 1], [1, 0], [1, 0]], color: '#0000ff' },           // Reverse L
-  L: { shape: [[0, 1], [1, 1], [1, 0]], color: '#ffa500' }            // Corner
+  I: { shape: [[1, 1], [1, 1]], color: '#00f5ff' },                    // Kare
+  O: { shape: [[1, 1, 1], [0, 1, 0]], color: '#ffff00' },              // Şapka
+  T: { shape: [[0, 1], [1, 1], [0, 1]], color: '#800080' },            // + işareti
+  S: { shape: [[1, 0], [1, 1], [0, 1]], color: '#00ff00' },            // Diagonal
+  Z: { shape: [[0, 1], [1, 1], [1, 0]], color: '#ff0000' },            // Diagonal ters
+  J: { shape: [[1, 1, 1], [1, 0, 0]], color: '#0000ff' },              // Köşe
+  L: { shape: [[0, 0, 1], [1, 1, 0]], color: '#ffa500' }               // L kısaltılmış
 };
 
 const PIECE_TYPES = Object.keys(BLOCK_PIECES);
