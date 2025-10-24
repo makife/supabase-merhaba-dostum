@@ -7,13 +7,13 @@ const EMPTY_CELL = 0;
 
 // Özgün blok şekilleri - Her biri 4 birimden oluşur (telif sorunu yok)
 const BLOCK_PIECES = {
-  I: { shape: [[1, 1], [1, 1]], color: '#00f5ff' },                    // Kare
-  O: { shape: [[1, 1, 1], [0, 1, 0]], color: '#ffff00' },              // Şapka
+  I: { shape: [[1, 1], [1, 1]], color: '#00f5ff' },                    // Kare 2x2
+  O: { shape: [[1, 1, 0], [0, 1, 1]], color: '#ffff00' },              // Basamak
   PLUS: { shape: [[0, 1, 0], [1, 1, 1], [0, 1, 0]], color: '#800080' }, // + işareti
-  S: { shape: [[1, 0], [1, 1], [0, 1]], color: '#00ff00' },            // Diagonal
-  Z: { shape: [[0, 1], [1, 1], [1, 0]], color: '#ff0000' },            // Diagonal ters
-  J: { shape: [[1, 1, 1], [1, 0, 0]], color: '#0000ff' },              // Köşe
-  L: { shape: [[0, 0, 1], [1, 1, 0]], color: '#ffa500' }               // L kısaltılmış
+  S: { shape: [[1, 0], [1, 1], [0, 1]], color: '#00ff00' },            // Diagonal S
+  Z: { shape: [[0, 1], [1, 1], [1, 0]], color: '#ff0000' },            // Diagonal Z
+  J: { shape: [[1, 0], [1, 1], [1, 0]], color: '#0000ff' },            // Düz Çubuk
+  L: { shape: [[0, 1], [1, 1], [0, 1]], color: '#ffa500' }             // Düz Çubuk Ters
 };
 
 const PIECE_TYPES = Object.keys(BLOCK_PIECES);
