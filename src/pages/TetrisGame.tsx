@@ -5,15 +5,15 @@ const BOARD_WIDTH = 10;
 const BOARD_HEIGHT = 20;
 const EMPTY_CELL = 0;
 
-// Özgün blok şekilleri - Her biri 4 birimden oluşur (telif sorunu yok)
+// Özgün blok şekilleri - Mor spektrumu renk paleti
 const BLOCK_PIECES = {
-  I: { shape: [[1, 1], [1, 1], [1, 1]], color: '#00f5ff' },                    // Dikdörtgen 3x2 (6 birim)
-  LINE: { shape: [[1], [1], [1], [1], [1]], color: '#00ffff' },              // Çubuk 5 birim
-  O: { shape: [[1, 1], [0, 1]], color: '#ffff00' },              // Basamak (3 birim)
-  PLUS: { shape: [[0, 1, 0], [1, 1, 1], [0, 1, 0]], color: '#800080' }, // + işareti
-  S: { shape: [[1, 0], [1, 0], [0, 1]], color: '#00ff00' },            // Diagonal S (3 birim)
-  Z: { shape: [[0, 1], [0, 1], [1, 0]], color: '#ff0000' },            // Diagonal Z (3 birim)
-  L: { shape: [[1, 0], [1, 1]], color: '#ffa500' }                     // Kısa L (3 birim)
+  I: { shape: [[1, 1], [1, 1], [1, 1]], color: '#9333ea' },                    // Dikdörtgen 3x2 (koyu mor)
+  LINE: { shape: [[1], [1], [1], [1], [1]], color: '#a855f7' },              // Çubuk 5 birim (orta mor)
+  O: { shape: [[1, 1], [0, 1]], color: '#c084fc' },              // Basamak (açık mor)
+  PLUS: { shape: [[0, 1, 0], [1, 1, 1], [0, 1, 0]], color: '#e879f9' }, // + işareti (pembe-mor)
+  S: { shape: [[1, 0], [1, 0], [0, 1]], color: '#d946ef' },            // Diagonal S (fuşya-mor)
+  Z: { shape: [[0, 1], [0, 1], [1, 0]], color: '#a78bfa' },            // Diagonal Z (lila)
+  L: { shape: [[1, 0], [1, 1]], color: '#8b5cf6' }                     // Kısa L (mor-mavi)
 };
 
 const PIECE_TYPES = Object.keys(BLOCK_PIECES);
