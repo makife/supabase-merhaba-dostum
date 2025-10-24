@@ -144,38 +144,6 @@ const MarketPage = () => {
       value: 365
     },
 
-    // Temalar
-    {
-      id: 'theme_dark_ocean',
-      title: 'Mistik Okyanus',
-      description: '🌊 Büyülü deniz teması - Premium',
-      price: 19.99,
-      currency: 'premium',
-      icon: Moon,
-      type: 'theme',
-      value: 1
-    },
-    {
-      id: 'theme_sunset',
-      title: 'Altın Günbatımı',
-      description: '🌅 Lüks sıcaklık koleksiyonu - Premium',
-      price: 19.99,
-      currency: 'premium',
-      icon: Sun,
-      type: 'theme',
-      value: 1
-    },
-    {
-      id: 'theme_forest',
-      title: 'Zümrüt Orman',
-      description: '🌲 Doğanın premium sığınağı',
-      price: 19.99,
-      currency: 'premium',
-      icon: Palette,
-      type: 'theme',
-      value: 1
-    },
-
     // Jokerler
     {
       id: 'joker_degistir',
@@ -484,7 +452,7 @@ return (
 
       {/* Market Kategorileri */}
       <Tabs defaultValue="credits" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 bg-muted/50">
+        <TabsList className="grid w-full grid-cols-3 bg-muted/50">
           <TabsTrigger 
             value="credits" 
             className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white"
@@ -498,13 +466,6 @@ return (
           >
             <Crown className="w-4 h-4 mr-2" />
             Premium
-          </TabsTrigger>
-          <TabsTrigger 
-            value="themes"
-            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white"
-          >
-            <Palette className="w-4 h-4 mr-2" />
-            Temalar
           </TabsTrigger>
           <TabsTrigger 
             value="jokers"
@@ -578,10 +539,6 @@ return (
                 </li>
                 <li className="flex items-center">
                   <div className="w-2 h-2 bg-yellow-500 rounded-full mr-3" />
-                  Tüm temalara erişim
-                </li>
-                <li className="flex items-center">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full mr-3" />
                   Özel premium rozet
                 </li>
                 <li className="flex items-center">
@@ -591,45 +548,6 @@ return (
                 <li className="flex items-center">
                   <div className="w-2 h-2 bg-yellow-500 rounded-full mr-3" />
                   Yeni özellikler için öncelikli erişim
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="themes" className="space-y-4">
-          <div className="text-center mb-6">
-            <h3 className="text-xl font-bold mb-2">Özel Temalar</h3>
-            <p className="text-muted-foreground">Oyunu kendi tarzınızla oynayın</p>
-          </div>
-          
-          {renderMarketItems(getItemsByCategory('themes'))}
-
-          {/* Tema Açıklaması */}
-          <Card className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/30">
-            <CardHeader>
-              <CardTitle className="flex items-center text-purple-600">
-                <Palette className="w-5 h-5 mr-2" />
-                Tema Sistemi
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-center">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full mr-3" />
-                  Oyun arayüzünün görsel temasını değiştirir
-                </li>
-                <li className="flex items-center">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full mr-3" />
-                  Farklı renk paleti ve tasarım stilleri
-                </li>
-                <li className="flex items-center">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full mr-3" />
-                  Kişisel zevkinize göre özelleştirin
-                </li>
-                <li className="flex items-center">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full mr-3" />
-                  Premium üyeler tüm temalara erişebilir
                 </li>
               </ul>
             </CardContent>

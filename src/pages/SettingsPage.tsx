@@ -1,5 +1,4 @@
 import { MusicPackSelector } from '@/components/MusicPackSelector';
-import { ThemeSelector } from '@/components/ThemeSelector';
 import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -439,12 +438,6 @@ return (
             </div>
 
             <Separator />
-
-
-            {/* Theme Selector */}
-            <ThemeSelector />
-            
-            <Separator />
             
             {/* Legacy Theme for backward compatibility */}
             <div className="flex items-center justify-between">
@@ -465,42 +458,6 @@ return (
                   <SelectItem value="system">Sistem</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Account Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Shield className="w-5 h-5 mr-2" />
-              Hesap
-            </CardTitle>
-            <CardDescription>
-              Hesap bilgilerinizi yönetin
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">E-posta</p>
-                <p className="text-sm text-muted-foreground">{user?.email}</p>
-              </div>
-              <Button variant="outline" size="sm">
-                Değiştir
-              </Button>
-            </div>
-
-            <Separator />
-
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Şifre</p>
-                <p className="text-sm text-muted-foreground">Son değişiklik: 1 hafta önce</p>
-              </div>
-              <Button variant="outline" size="sm">
-                Değiştir
-              </Button>
             </div>
           </CardContent>
         </Card>
