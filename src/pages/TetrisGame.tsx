@@ -147,8 +147,15 @@ const TetrisGame = () => {
   }, []);
 
   const spawnNewPiece = useCallback(() => {
-    const piece = nextPiece || createRandomPiece();
-    const newNextPiece = createRandomPiece();
+    // Normalize to latest BLOCK_PIECES to avoid stale shapes after hot reload/state persistence
+    const rawPiece = nextPiece || createRandomPiece();
+    const defPiece = BLOCK_PIECES[rawPiece.type];
+    const piece = defPiece ? { ...rawPiece, shape: defPiece.shape, color: defPiece.color } : rawPiece;
+
+    const rawNext = createRandomPiece();
+    const defNext = BLOCK_PIECES[rawNext.type];
+    const newNextPiece = defNext ? { ...rawNext, shape: defNext.shape, color: defNext.color } : rawNext;
+
     const startPosition = { x: Math.floor(BOARD_WIDTH / 2) - 1, y: 0 };
     
     if (checkCollision(piece, startPosition, board)) {
