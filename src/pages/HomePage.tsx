@@ -664,12 +664,12 @@ const HomePage = () => {
                   onClick={() => navigate("/tetris-game")}
                 >
                   <div className="flex-1">
-                    <h2 className="text-xl font-semibold text-white font-painter">Tetris Oyunu</h2>
+                    <h2 className="text-xl font-semibold text-white font-painter">Morles Oyunu</h2>
                   </div>
                   {/* Mini Tetris İkonu */}
                   <div className="relative w-12 h-12 flex items-center justify-center">
                     <div className="w-8 h-8 bg-purple-400 rounded flex items-center justify-center animate-pulse">
-                      🧩
+                      👾
                     </div>
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div
