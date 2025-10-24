@@ -9,7 +9,7 @@ const EMPTY_CELL = 0;
 const BLOCK_PIECES = {
   I: { shape: [[1, 1], [1, 1]], color: '#00f5ff' },                    // Kare
   O: { shape: [[1, 1, 1], [0, 1, 0]], color: '#ffff00' },              // Şapka
-  T: { shape: [[0, 1, 0], [1, 1, 1], [0, 1, 0]], color: '#800080' },            // + işareti
+  PLUS: { shape: [[0, 1, 0], [1, 1, 1], [0, 1, 0]], color: '#800080' }, // + işareti
   S: { shape: [[1, 0], [1, 1], [0, 1]], color: '#00ff00' },            // Diagonal
   Z: { shape: [[0, 1], [1, 1], [1, 0]], color: '#ff0000' },            // Diagonal ters
   J: { shape: [[1, 1, 1], [1, 0, 0]], color: '#0000ff' },              // Köşe
