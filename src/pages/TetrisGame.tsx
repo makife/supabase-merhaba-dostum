@@ -12,8 +12,8 @@ const BLOCK_PIECES = {
   PLUS: { shape: [[0, 1, 0], [1, 1, 1], [0, 1, 0]], color: '#800080' }, // + işareti
   S: { shape: [[1, 0], [1, 1], [0, 1]], color: '#00ff00' },            // Diagonal S
   Z: { shape: [[0, 1], [1, 1], [1, 0]], color: '#ff0000' },            // Diagonal Z
-  J: { shape: [[1, 0], [1, 1], [1, 0]], color: '#0000ff' },            // Düz Çubuk
-  L: { shape: [[0, 1], [1, 1], [0, 1]], color: '#ffa500' }             // Düz Çubuk Ters
+  J: { shape: [[1, 1], [1, 0], [1, 0]], color: '#0000ff' },            // Kanca (T değil)
+  L: { shape: [[1, 0], [1, 1]], color: '#ffa500' }                     // Kısa L (3 kare)
 };
 
 const PIECE_TYPES = Object.keys(BLOCK_PIECES);
