@@ -10,7 +10,7 @@ const BLOCK_PIECES = {
   I: { shape: [[1, 1], [1, 1]], color: '#00f5ff' },                    // Kare 2x2
   O: { shape: [[1, 1, 0], [0, 1, 1]], color: '#ffff00' },              // Basamak
   PLUS: { shape: [[0, 1, 0], [1, 1, 1], [0, 1, 0]], color: '#800080' }, // + işareti
-  S: { shape: [[1, 0], [1, 1], [0, 1]], color: '#00ff00' },            // Diagonal S
+  S: { shape: [[1, 0], [1, 0], [0, 1]], color: '#00ff00' },            // Diagonal S (3 birim)
   Z: { shape: [[0, 1], [0, 1], [1, 0]], color: '#ff0000' },            // Diagonal Z (3 birim)
   L: { shape: [[1, 0], [1, 1]], color: '#ffa500' }                     // Kısa L (3 birim)
 };
