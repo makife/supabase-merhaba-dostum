@@ -5,17 +5,18 @@ const BOARD_WIDTH = 10;
 const BOARD_HEIGHT = 20;
 const EMPTY_CELL = 0;
 
-const TETRIS_PIECES = {
-  I: { shape: [[1, 1, 1, 1]], color: '#00f5ff' },
-  O: { shape: [[1, 1], [1, 1]], color: '#ffff00' },
-  T: { shape: [[0, 1, 0], [1, 1, 1]], color: '#800080' },
-  S: { shape: [[0, 1, 1], [1, 1, 0]], color: '#00ff00' },
-  Z: { shape: [[1, 1, 0], [0, 1, 1]], color: '#ff0000' },
-  J: { shape: [[1, 0, 0], [1, 1, 1]], color: '#0000ff' },
-  L: { shape: [[0, 0, 1], [1, 1, 1]], color: '#ffa500' }
+// Özgün blok şekilleri - Telif sorunlarını önlemek için tasarlandı
+const BLOCK_PIECES = {
+  I: { shape: [[1, 0], [1, 0], [1, 1]], color: '#00f5ff' },           // Vertical L
+  O: { shape: [[1, 0], [1, 1], [1, 0]], color: '#ffff00' },           // T variant
+  T: { shape: [[0, 1], [1, 1], [0, 1]], color: '#800080' },           // Plus variant
+  S: { shape: [[1, 1], [0, 1], [0, 1]], color: '#00ff00' },           // Stairs
+  Z: { shape: [[0, 1], [0, 1], [1, 1]], color: '#ff0000' },           // Hook
+  J: { shape: [[1, 1], [1, 0], [1, 0]], color: '#0000ff' },           // Reverse L
+  L: { shape: [[0, 1], [1, 1], [1, 0]], color: '#ffa500' }            // Corner
 };
 
-const PIECE_TYPES = Object.keys(TETRIS_PIECES);
+const PIECE_TYPES = Object.keys(BLOCK_PIECES);
 
 const TetrisGame = () => {
   const goBack = () => {
@@ -68,8 +69,8 @@ const TetrisGame = () => {
     const pieceType = PIECE_TYPES[Math.floor(Math.random() * PIECE_TYPES.length)];
     return {
       type: pieceType,
-      shape: TETRIS_PIECES[pieceType].shape,
-      color: TETRIS_PIECES[pieceType].color
+      shape: BLOCK_PIECES[pieceType].shape,
+      color: BLOCK_PIECES[pieceType].color
     };
   }, []);
 
@@ -402,7 +403,7 @@ const TetrisGame = () => {
             marginBottom: '16px',
             textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
           }}>
-            🧩 TetriS 🧩
+            🎮 Block Stack 🎮
           </h1>
           
           <div style={{ 
