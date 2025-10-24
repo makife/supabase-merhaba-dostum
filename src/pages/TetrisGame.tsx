@@ -8,6 +8,7 @@ const EMPTY_CELL = 0;
 // Özgün blok şekilleri - Her biri 4 birimden oluşur (telif sorunu yok)
 const BLOCK_PIECES = {
   I: { shape: [[1, 1], [1, 1], [1, 1]], color: '#00f5ff' },                    // Dikdörtgen 3x2 (6 birim)
+  LINE: { shape: [[1], [1], [1], [1], [1]], color: '#00ffff' },              // Çubuk 5 birim
   O: { shape: [[1, 1], [0, 1]], color: '#ffff00' },              // Basamak (3 birim)
   PLUS: { shape: [[0, 1, 0], [1, 1, 1], [0, 1, 0]], color: '#800080' }, // + işareti
   S: { shape: [[1, 0], [1, 0], [0, 1]], color: '#00ff00' },            // Diagonal S (3 birim)
