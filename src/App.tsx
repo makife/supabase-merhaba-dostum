@@ -13,8 +13,10 @@ import { MatchmakingProvider } from "@/contexts/NewMatchmakingContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { TournamentProvider } from "@/contexts/TournamentContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import ModeratorRoute from "@/components/ModeratorRoute";
 import LoadingScreen from "@/components/LoadingScreen";
 import AuthPage from "@/pages/AuthPage";
+import ModeratorPage from "@/pages/ModeratorPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import HomePage from "@/pages/HomePage";
 import GamePage from "@/pages/GamePage";
@@ -303,6 +305,14 @@ const AppRoutes = () => {
           <ProtectedRoute>
             <TetrisGamePage />
           </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/moderator"
+        element={
+          <ModeratorRoute>
+            <ModeratorPage />
+          </ModeratorRoute>
         }
       />
       <Route path="*" element={<NotFound />} />

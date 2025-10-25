@@ -1,0 +1,421 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from 'sonner';
+import { AlertCircle, Ban, CheckCircle, Clock, MessageSquare, Shield } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+interface MessageReport {
+  id: string;
+  message_id: string;
+  message_type: string;
+  reporter_id: string;
+  reported_user_id: string;
+  reason: string;
+  description: string | null;
+  status: string;
+  created_at: string;
+  message_content?: string;
+  reporter_username?: string;
+  reported_username?: string;
+}
+
+interface UserBan {
+  id: string;
+  user_id: string;
+  reason: string;
+  banned_until: string;
+  banned_at: string;
+  is_active: boolean;
+  username?: string;
+}
+
+const ModeratorPage = () => {
+  const { user } = useAuth();
+  const [reports, setReports] = useState<MessageReport[]>([]);
+  const [bans, setBans] = useState<UserBan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedReport, setSelectedReport] = useState<MessageReport | null>(null);
+  const [banDialogOpen, setBanDialogOpen] = useState(false);
+  const [banDuration, setBanDuration] = useState<string>("48");
+
+  useEffect(() => {
+    fetchReports();
+    fetchBans();
+
+    // Realtime subscription for new reports
+    const reportChannel = supabase
+      .channel('moderator-reports')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'message_reports'
+      }, () => {
+        fetchReports();
+        toast.info('Yeni şikayet raporu alındı');
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(reportChannel);
+    };
+  }, []);
+
+  const fetchReports = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('message_reports')
+        .select(`
+          *,
+          reporter:profiles!message_reports_reporter_id_fkey(username),
+          reported_user:profiles!message_reports_reported_user_id_fkey(username)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const formattedReports = data?.map((report: any) => ({
+        ...report,
+        reporter_username: report.reporter?.username,
+        reported_username: report.reported_user?.username
+      })) || [];
+
+      setReports(formattedReports);
+    } catch (error) {
+      console.error('Error fetching reports:', error);
+      toast.error('Raporlar yüklenirken hata oluştu');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchBans = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('user_bans')
+        .select(`
+          *,
+          user:profiles!user_bans_user_id_fkey(username)
+        `)
+        .eq('is_active', true)
+        .order('banned_at', { ascending: false });
+
+      if (error) throw error;
+
+      const formattedBans = data?.map((ban: any) => ({
+        ...ban,
+        username: ban.user?.username
+      })) || [];
+
+      setBans(formattedBans);
+    } catch (error) {
+      console.error('Error fetching bans:', error);
+    }
+  };
+
+  const handleBanUser = async () => {
+    if (!selectedReport) return;
+
+    try {
+      const bannedUntil = new Date();
+      bannedUntil.setHours(bannedUntil.getHours() + parseInt(banDuration));
+
+      const { error } = await supabase
+        .from('user_bans')
+        .insert({
+          user_id: selectedReport.reported_user_id,
+          reason: `Şikayet: ${selectedReport.reason} - ${selectedReport.description || ''}`,
+          banned_until: bannedUntil.toISOString(),
+          banned_by: user?.id,
+          is_active: true
+        });
+
+      if (error) throw error;
+
+      await updateReportStatus(selectedReport.id, 'resolved');
+      
+      toast.success('Kullanıcı yasaklandı');
+      setBanDialogOpen(false);
+      setSelectedReport(null);
+      fetchBans();
+    } catch (error) {
+      console.error('Error banning user:', error);
+      toast.error('Yasaklama sırasında hata oluştu');
+    }
+  };
+
+  const updateReportStatus = async (reportId: string, status: 'resolved' | 'dismissed') => {
+    try {
+      const { error } = await supabase
+        .from('message_reports')
+        .update({
+          status,
+          reviewed_by: user?.id,
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', reportId);
+
+      if (error) throw error;
+
+      await fetchReports();
+      toast.success(`Rapor ${status === 'resolved' ? 'çözüldü' : 'reddedildi'}`);
+    } catch (error) {
+      console.error('Error updating report:', error);
+      toast.error('Rapor güncellenirken hata oluştu');
+    }
+  };
+
+  const removeBan = async (banId: string) => {
+    try {
+      const { error } = await supabase
+        .from('user_bans')
+        .update({ is_active: false })
+        .eq('id', banId);
+
+      if (error) throw error;
+
+      toast.success('Yasak kaldırıldı');
+      fetchBans();
+    } catch (error) {
+      console.error('Error removing ban:', error);
+      toast.error('Yasak kaldırılırken hata oluştu');
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20"><Clock className="w-3 h-3 mr-1" />Beklemede</Badge>;
+      case 'resolved':
+        return <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20"><CheckCircle className="w-3 h-3 mr-1" />Çözüldü</Badge>;
+      case 'rejected':
+        return <Badge variant="outline" className="bg-red-500/10 text-red-500 border-red-500/20"><AlertCircle className="w-3 h-3 mr-1" />Reddedildi</Badge>;
+      default:
+        return null;
+    }
+  };
+
+  const getReasonBadge = (reason: string) => {
+    const colors: Record<string, string> = {
+      spam: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
+      harassment: 'bg-red-500/10 text-red-500 border-red-500/20',
+      inappropriate: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
+      offensive: 'bg-pink-500/10 text-pink-500 border-pink-500/20',
+      other: 'bg-gray-500/10 text-gray-500 border-gray-500/20'
+    };
+    
+    return <Badge variant="outline" className={colors[reason] || colors.other}>{reason}</Badge>;
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex items-center gap-3">
+          <Shield className="w-8 h-8 text-primary" />
+          <div>
+            <h1 className="text-3xl font-bold">Moderatör Paneli</h1>
+            <p className="text-muted-foreground">Raporları yönetin ve kullanıcı yasaklarını kontrol edin</p>
+          </div>
+        </div>
+
+        <Tabs defaultValue="reports" className="space-y-4">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="reports" className="gap-2">
+              <MessageSquare className="w-4 h-4" />
+              Şikayet Raporları ({reports.filter(r => r.status === 'pending').length})
+            </TabsTrigger>
+            <TabsTrigger value="bans" className="gap-2">
+              <Ban className="w-4 h-4" />
+              Aktif Yasaklar ({bans.length})
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="reports" className="space-y-4">
+            {reports.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <MessageSquare className="w-12 h-12 text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">Henüz şikayet raporu yok</p>
+                </CardContent>
+              </Card>
+            ) : (
+              reports.map((report) => (
+                <Card key={report.id}>
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <CardTitle className="text-lg">
+                          {report.reporter_username} → {report.reported_username} hakkında şikayet
+                        </CardTitle>
+                        <CardDescription>
+                          {new Date(report.created_at).toLocaleString('tr-TR')}
+                        </CardDescription>
+                      </div>
+                      <div className="flex gap-2">
+                        {getReasonBadge(report.reason)}
+                        {getStatusBadge(report.status)}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {report.description && (
+                      <div className="bg-muted/50 p-3 rounded-lg">
+                        <p className="text-sm font-medium mb-1">Açıklama:</p>
+                        <p className="text-sm text-muted-foreground">{report.description}</p>
+                      </div>
+                    )}
+                    
+                    <div className="bg-muted/30 p-3 rounded-lg border border-border">
+                      <p className="text-sm font-medium mb-1">Mesaj Tipi:</p>
+                      <p className="text-sm text-muted-foreground">
+                        {report.message_type === 'global' ? 'Global Chat' : 'Özel Mesaj'}
+                      </p>
+                    </div>
+
+                    {report.status === 'pending' && (
+                      <div className="flex gap-2 pt-2">
+                        <Button
+                          variant="destructive"
+                          onClick={() => {
+                            setSelectedReport(report);
+                            setBanDialogOpen(true);
+                          }}
+                          className="gap-2"
+                        >
+                          <Ban className="w-4 h-4" />
+                          Kullanıcıyı Yasakla
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => updateReportStatus(report.id, 'dismissed')}
+                        >
+                          Reddet
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => updateReportStatus(report.id, 'resolved')}
+                          className="gap-2"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                          Çözüldü Olarak İşaretle
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </TabsContent>
+
+          <TabsContent value="bans" className="space-y-4">
+            {bans.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <Ban className="w-12 h-12 text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">Aktif yasak yok</p>
+                </CardContent>
+              </Card>
+            ) : (
+              bans.map((ban) => (
+                <Card key={ban.id}>
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <CardTitle className="text-lg">{ban.username}</CardTitle>
+                        <CardDescription>
+                          Yasaklandı: {new Date(ban.banned_at).toLocaleString('tr-TR')}
+                        </CardDescription>
+                      </div>
+                      <Badge variant="destructive">Yasaklı</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="bg-muted/50 p-3 rounded-lg">
+                      <p className="text-sm font-medium mb-1">Sebep:</p>
+                      <p className="text-sm text-muted-foreground">{ban.reason}</p>
+                    </div>
+                    
+                    <div className="bg-muted/30 p-3 rounded-lg border border-border">
+                      <p className="text-sm font-medium mb-1">Yasak Bitiş:</p>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(ban.banned_until).toLocaleString('tr-TR')}
+                      </p>
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      onClick={() => removeBan(ban.id)}
+                      className="gap-2"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Yasakı Kaldır
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      <AlertDialog open={banDialogOpen} onOpenChange={setBanDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Kullanıcıyı Yasakla</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4">
+              <p>
+                {selectedReport?.reported_username} kullanıcısını yasaklamak istediğinize emin misiniz?
+              </p>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Yasak Süresi</label>
+                <Select value={banDuration} onValueChange={setBanDuration}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="24">24 Saat</SelectItem>
+                    <SelectItem value="48">48 Saat (2 Gün)</SelectItem>
+                    <SelectItem value="72">72 Saat (3 Gün)</SelectItem>
+                    <SelectItem value="168">1 Hafta</SelectItem>
+                    <SelectItem value="720">30 Gün (1 Ay)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>İptal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBanUser} className="bg-destructive hover:bg-destructive/90">
+              Yasakla
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+};
+
+export default ModeratorPage;
