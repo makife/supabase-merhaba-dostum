@@ -1155,14 +1155,32 @@ const renderGlobalChat = () => (
   </>
 );
 
-  if (!isOpen) return null;
+  // Report Dialog - her zaman render et
+  const reportDialog = reportingMessage && (
+    <ReportMessageDialog
+      isOpen={reportDialogOpen}
+      onClose={() => {
+        setReportDialogOpen(false);
+        setReportingMessage(null);
+      }}
+      messageId={reportingMessage.id}
+      messageType="global"
+      reportedUserId={reportingMessage.userId}
+      reportedUsername={reportingMessage.username}
+    />
+  );
+
+  if (!isOpen) return reportDialog;
 
   // If it's full page mode, don't wrap in modal
   if (isFullPage) {
     return (
-      <div className="h-full w-full flex flex-col">
-        {renderGlobalChat()}
-      </div>
+      <>
+        <div className="h-full w-full flex flex-col">
+          {renderGlobalChat()}
+        </div>
+        {reportDialog}
+      </>
     );
   }
 
@@ -1173,21 +1191,7 @@ const renderGlobalChat = () => (
           {renderContent()}
         </Card>
       </div>
-      
-      {/* Report Dialog */}
-      {reportingMessage && (
-        <ReportMessageDialog
-          isOpen={reportDialogOpen}
-          onClose={() => {
-            setReportDialogOpen(false);
-            setReportingMessage(null);
-          }}
-          messageId={reportingMessage.id}
-          messageType="global"
-          reportedUserId={reportingMessage.userId}
-          reportedUsername={reportingMessage.username}
-        />
-      )}
+      {reportDialog}
     </>
   );
 }

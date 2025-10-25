@@ -296,11 +296,11 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
                 key={message.id}
                 className={`group flex ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
               >
-                <div className="flex items-end space-x-2">
+                <div className="flex items-end space-x-2 max-w-[70%]">
                   {message.sender_id !== user?.id && (
                     <button
                       onClick={() => handleReportMessage(message.id, message.sender_id)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-orange-100 rounded mb-1"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-orange-100 rounded mb-1 flex-shrink-0"
                       title="Mesajı bildir"
                     >
                       <Flag className="w-3 h-3 text-orange-500" />
@@ -308,7 +308,7 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
                   )}
                   
                   <div
-                    className={`max-w-[70%] p-3 rounded-lg ${
+                    className={`p-3 rounded-lg ${
                       message.sender_id === user?.id
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-muted'
@@ -332,32 +332,32 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
           </div>
         </ScrollArea>
 
-      <Separator />
+        <Separator />
 
-      <div className="p-4 bg-background">
-        <div className="flex space-x-2">
-          <Input
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Mesajınızı yazın..."
-            maxLength={500}
-            disabled={isLoading}
-            className="flex-1"
-          />
-          <Button
-            onClick={sendMessage}
-            disabled={!newMessage.trim() || isLoading}
-            size="sm"
-            className="px-3 flex-shrink-0"
-          >
-            <Send className="w-4 h-4" />
-          </Button>
+        <div className="p-4 bg-background">
+          <div className="flex space-x-2">
+            <Input
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Mesajınızı yazın..."
+              maxLength={500}
+              disabled={isLoading}
+              className="flex-1"
+            />
+            <Button
+              onClick={sendMessage}
+              disabled={!newMessage.trim() || isLoading}
+              size="sm"
+              className="px-3 flex-shrink-0"
+            >
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
+          <div className="text-xs text-muted-foreground mt-1 text-right">
+            {newMessage.length}/500
+          </div>
         </div>
-        <div className="text-xs text-muted-foreground mt-1 text-right">
-          {newMessage.length}/500
-        </div>
-      </div>
       </div>
 
       {/* Report Dialog */}
