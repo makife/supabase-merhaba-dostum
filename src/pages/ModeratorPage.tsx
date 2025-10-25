@@ -332,14 +332,15 @@ const ModeratorPage = () => {
                     </div>
 
                     {report.status === 'pending' && (
-                      <div className="flex gap-2 pt-2">
+                      <div className="flex flex-col sm:flex-row gap-2 pt-2">
                         <Button
                           variant="destructive"
                           onClick={() => {
                             setSelectedReport(report);
                             setBanDialogOpen(true);
                           }}
-                          className="gap-2"
+                          className="gap-2 w-full sm:w-auto text-sm"
+                          size="sm"
                         >
                           <Ban className="w-4 h-4" />
                           Kullanıcıyı Yasakla
@@ -347,16 +348,19 @@ const ModeratorPage = () => {
                         <Button
                           variant="outline"
                           onClick={() => updateReportStatus(report.id, 'dismissed')}
+                          className="w-full sm:w-auto text-sm"
+                          size="sm"
                         >
                           Reddet
                         </Button>
                         <Button
                           variant="outline"
                           onClick={() => updateReportStatus(report.id, 'resolved')}
-                          className="gap-2"
+                          className="gap-2 w-full sm:w-auto text-sm"
+                          size="sm"
                         >
                           <CheckCircle className="w-4 h-4" />
-                          Çözüldü Olarak İşaretle
+                          Çözüldü İşaretle
                         </Button>
                       </div>
                     )}
@@ -404,7 +408,8 @@ const ModeratorPage = () => {
                     <Button
                       variant="outline"
                       onClick={() => removeBan(ban.id)}
-                      className="gap-2"
+                      className="gap-2 w-full sm:w-auto"
+                      size="sm"
                     >
                       <CheckCircle className="w-4 h-4" />
                       Yasakı Kaldır
