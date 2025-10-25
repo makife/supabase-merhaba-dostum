@@ -163,7 +163,8 @@ const ModeratorPage = () => {
       const bannedUntil = new Date();
       bannedUntil.setHours(bannedUntil.getHours() + parseInt(banDuration));
 
-      const { error } = await supabase
+      // user_bans tablosuna kayıt ekle
+      const { error: banError } = await supabase
         .from('user_bans')
         .insert({
           user_id: selectedReport.reported_user_id,
@@ -173,7 +174,17 @@ const ModeratorPage = () => {
           is_active: true
         });
 
-      if (error) throw error;
+      if (banError) throw banError;
+
+      // profiles tablosundaki banned_until alanını güncelle
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          banned_until: bannedUntil.toISOString()
+        })
+        .eq('id', selectedReport.reported_user_id);
+
+      if (profileError) throw profileError;
 
       await updateReportStatus(selectedReport.id, 'resolved');
       
@@ -210,12 +221,30 @@ const ModeratorPage = () => {
 
   const removeBan = async (banId: string) => {
     try {
-      const { error } = await supabase
+      // İlgili ban kaydını bul
+      const { data: banData, error: fetchError } = await supabase
+        .from('user_bans')
+        .select('user_id')
+        .eq('id', banId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // user_bans tablosunda is_active'i false yap
+      const { error: banError } = await supabase
         .from('user_bans')
         .update({ is_active: false })
         .eq('id', banId);
 
-      if (error) throw error;
+      if (banError) throw banError;
+
+      // profiles tablosundaki banned_until alanını temizle
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ banned_until: null })
+        .eq('id', banData.user_id);
+
+      if (profileError) throw profileError;
 
       toast.success('Yasak kaldırıldı');
       fetchBans();
