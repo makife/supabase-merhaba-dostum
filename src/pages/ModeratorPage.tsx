@@ -83,8 +83,8 @@ const ModeratorPage = () => {
         .from('message_reports')
         .select(`
           *,
-          reporter:profiles!message_reports_reporter_id_fkey(username),
-          reported_user:profiles!message_reports_reported_user_id_fkey(username)
+          reporter:reporter_id(username),
+          reported_user:reported_user_id(username)
         `)
         .order('created_at', { ascending: false });
 
@@ -111,7 +111,7 @@ const ModeratorPage = () => {
         .from('user_bans')
         .select(`
           *,
-          user:profiles!user_bans_user_id_fkey(username)
+          user:user_id(username)
         `)
         .eq('is_active', true)
         .order('banned_at', { ascending: false });
