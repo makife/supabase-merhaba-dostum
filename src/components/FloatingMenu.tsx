@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useChatNotifications } from '@/hooks/useChatNotifications';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useUserRole } from '@/hooks/useUserRole';
 
 
 import {
@@ -20,7 +21,8 @@ import {
   Home,
   MessageCircle,
   Trophy,
-  Zap
+  Zap,
+  Shield
 } from 'lucide-react';
 
 
@@ -101,6 +103,7 @@ export function FloatingMenu() {
   const { signOut, user } = useAuth(); // user context'ten alınmalı
   const { playSound } = useSounds();
   const { totalNotifications } = useChatNotifications();
+  const { isModerator } = useUserRole();
 
 
   const handleToggle = () => {
@@ -210,6 +213,42 @@ export function FloatingMenu() {
           </div>
         ))}
 
+        {/* Moderator Button (only for moderators/admins) */}
+        {isModerator && (
+          <div
+            className={`flex items-center space-x-3 transform transition-all duration-300 ${
+              isOpen 
+                ? 'translate-x-0 scale-100' 
+                : 'translate-x-8 scale-75'
+            }`}
+            style={{ 
+              transitionDelay: isOpen ? `${menuItems.length * 60}ms` : `${(3 - menuItems.length) * 40}ms` 
+            }}
+          >
+            <div className="flex items-center space-x-2 bg-black/80 backdrop-blur-md rounded-full px-3 py-1.5 border border-white/20 shadow-xl">
+              <span 
+                className="text-sm font-semibold text-white whitespace-nowrap pointer-events-none select-none tracking-wide"
+                style={{ 
+                  fontFamily: '"Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif',
+                  textShadow: '0 1px 3px rgba(0,0,0,0.8), 0 0 6px rgba(255,255,255,0.1)' 
+                }}
+              >
+                Moderatör
+              </span>
+              
+              <Button
+                onClick={() => handleMenuClick('/moderator', 'Moderatör')}
+                className="group relative overflow-hidden bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700
+                           text-white border-2 border-white shadow-lg hover:shadow-xl transform hover:scale-105 
+                           transition-all duration-200 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+              >
+                <div className="absolute inset-0 bg-white/20 scale-0 group-hover:scale-100 transition-transform duration-300 rounded-full" />
+                <Shield className="w-4 h-4 relative z-10" />
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Chat Button */}
         <div
           className={`flex items-center space-x-3 transform transition-all duration-300 ${
@@ -218,7 +257,7 @@ export function FloatingMenu() {
               : 'translate-x-8 scale-75'
           }`}
           style={{ 
-            transitionDelay: isOpen ? `${menuItems.length * 60}ms` : `${(2 - menuItems.length) * 40}ms` 
+            transitionDelay: isOpen ? `${(menuItems.length + (isModerator ? 1 : 0)) * 60}ms` : `${(2 - menuItems.length) * 40}ms` 
           }}
         >
           <div className="flex items-center space-x-2 bg-black/80 backdrop-blur-md rounded-full px-3 py-1.5 border border-white/20 shadow-xl">
@@ -261,7 +300,7 @@ export function FloatingMenu() {
               : 'translate-x-8 scale-75'
           }`}
           style={{ 
-            transitionDelay: isOpen ? `${(menuItems.length + 1) * 60}ms` : `${(1 - menuItems.length) * 40}ms` 
+            transitionDelay: isOpen ? `${(menuItems.length + 1 + (isModerator ? 1 : 0)) * 60}ms` : `${(1 - menuItems.length) * 40}ms` 
           }}
         >
           <div className="flex items-center space-x-2 bg-black/80 backdrop-blur-md rounded-full px-3 py-1.5 border border-white/20 shadow-xl">

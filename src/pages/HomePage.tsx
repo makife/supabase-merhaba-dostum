@@ -71,7 +71,6 @@ const HomePage = () => {
   const [timeUntilNextCredit, setTimeUntilNextCredit] = useState<string>("");
   const { canPlay: canPlayMemory, timeUntilNextPlay } = useMemoryGame();
   const { startSearch, useNakama, isSearching, searchProgress, cancelSearch, nakamaMatch } = useMatchmaking();
-  const { isModerator } = useUserRole();
 
   // Level hesaplama fonksiyonu
   const calculateLevel = (totalScore: number) => {
@@ -1027,20 +1026,6 @@ const HomePage = () => {
 
         {/* Floating Menu */}
         <FloatingMenu />
-
-        {/* Moderator Panel Button - Sadece moderatörlere görünür */}
-        {isModerator && (
-          <div className="fixed bottom-24 right-6 z-50">
-            <Button
-              onClick={() => navigate("/moderator")}
-              className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-lg rounded-full p-4 gap-2"
-              size="lg"
-            >
-              <Shield className="w-5 h-5" />
-              <span className="font-semibold">Moderatör Paneli</span>
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   );
