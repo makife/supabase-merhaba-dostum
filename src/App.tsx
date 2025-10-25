@@ -507,17 +507,18 @@ const App = () => {
   // Native immersive bars (Android): show on edge-swipe for 3s, then auto-hide
   useImmersiveBars();
 
-  // Arka plan/ön plan yönetimi - mobil uygulamada arka plana gidince işlemleri durdur
+  // Arka plan/ön plan yönetimi - 30 saniye sonra durdur
   useAppState(
     () => {
-      // Arka plana gitti - tüm realtime subscription'ları kapat
-      console.log('📱 Uygulama arka plana alındı - subscription\'lar kapatılıyor');
+      // Arka plana gitti - 30 saniye beklendi, hala arka plandaysa durdur
+      console.log('⏹️ 30 saniye arka planda kaldı - realtime bağlantılar kapatılıyor');
       realtimeManager.forceCleanupAll();
     },
     () => {
-      // Ön plana geldi - sayfalar kendi subscription'larını yeniden başlatacak
-      console.log('📱 Uygulama ön plana geldi');
-    }
+      // Ön plana geldi
+      console.log('▶️ Uygulama ön plana geldi');
+    },
+    30000 // 30 saniye gecikme
   );
 
   return (
