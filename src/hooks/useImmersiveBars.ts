@@ -34,15 +34,24 @@ export function useImmersiveBars() {
       try {
         // NavigationBar ayarları (sadece Android)
         if (Capacitor.getPlatform() === 'android') {
-          // Önce rengi ayarla
+          // 1. İlk olarak transparency'yi ayarla (bazı cihazlarda önce bu olmalı)
+          if (Nav?.setTransparency) {
+            try {
+              await Nav.setTransparency({ isTransparent: true });
+            } catch (e) {
+              console.log('Transparency not supported, using color fallback');
+            }
+          }
+          
+          // 2. Renk ayarla - saydam cihazlarda gösterildiğinde koyu görünsün
           if (Nav?.setColor) {
             await Nav.setColor({ color: DARK_HEX, darkButtons: false });
           }
           
-          // Tam immersive mod için farklı behavior'lar dene
+          // 3. Tam immersive mod için behavior ayarla
           if (Nav?.setBehavior) {
             try {
-              // İlk olarak immersive sticky modunu dene
+              // İlk olarak immersive sticky modunu dene (en agresif gizleme)
               await Nav.setBehavior({ behavior: 'immersive-sticky' });
             } catch {
               try {
@@ -57,9 +66,11 @@ export function useImmersiveBars() {
             }
           }
 
-          // Tam gizleme için ek ayarlar
+          // 4. Son olarak transparency'yi tekrar ayarla (bazı cihazlarda behavior sonrası resetleniyor)
           if (Nav?.setTransparency) {
-            await Nav.setTransparency({ isTransparent: true });
+            try {
+              await Nav.setTransparency({ isTransparent: true });
+            } catch {}
           }
         }
       } catch (error) {
@@ -91,17 +102,38 @@ export function useImmersiveBars() {
       try {
         await StatusBar.hide();
         
-        // Android için navigation bar'ı gizle
+        // Android için navigation bar'ı gizle - birden fazla yöntem dene (cihaz uyumluluğu için)
         if (Capacitor.getPlatform() === 'android') {
+          // 1. Önce hide metodunu dene
           if (Nav?.hide) {
             await Nav.hide();
-          } else if (Nav?.setVisibility) {
+          }
+          
+          // 2. setVisibility ile de gizle (bazı cihazlarda sadece bu çalışıyor)
+          if (Nav?.setVisibility) {
             await Nav.setVisibility({ visibility: 'hidden' });
           }
+          
+          // 3. Immersive sticky behavior'ı yeniden uygula (bazı cihazlarda gerekli)
+          if (Nav?.setBehavior) {
+            try {
+              await Nav.setBehavior({ behavior: 'immersive-sticky' });
+            } catch {
+              // Sessizce devam et
+            }
+          }
+          
+          // 4. Kısa bir gecikme sonra tekrar gizle (bazı cihazlarda ilk seferde tutmuyor)
+          setTimeout(async () => {
+            try {
+              if (Nav?.hide) await Nav.hide();
+              if (Nav?.setVisibility) await Nav.setVisibility({ visibility: 'hidden' });
+            } catch {}
+          }, 100);
         }
         
         barsVisible.current = false;
-        console.log('Bars hidden');
+        console.log('Bars hidden (multi-attempt)');
       } catch (error) {
         console.log('Hide bars error:', error);
       }
