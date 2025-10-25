@@ -562,25 +562,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           to: String(opponent.user_id || "").slice(-8),
         });
 
-        // Bildirim gönder (RPC - security definer)
-        try {
-          const { data: profile } = await supabase.from("profiles").select("username").eq("id", user.id).single();
-
-          if (profile?.username) {
-            const gameTypeText = gameType === "timed" ? "Zamana Karşı" : "Skora Karşı";
-            const { error: notifError } = await supabase.rpc("create_notification", {
-              p_user_id: opponent.user_id,
-              p_type: "invite",
-              p_message: `${profile.username} tekrar oyun istiyor (${gameTypeText})`,
-              p_related_id: code,
-            });
-            if (notifError) {
-              console.error("Rematch notification error:", notifError);
-            }
-          }
-        } catch (e) {
-          console.log("Rematch notification error (ignored):", e);
-        }
+        // Rematch bildirimi özelliği kaldırıldı
 
         toast({
           title: "🔄 Tekrar Oyun İsteği Gönderildi",

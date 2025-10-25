@@ -55,77 +55,7 @@ export const sendMessageNotification = async (
   return true;
 };
 
-// Oyun daveti bildirimi
-export const sendGameInviteNotification = async (
-  receiverId: string, 
-  senderUsername: string, 
-  roomCode: string
-) => {
-  try {
-    const { error } = await supabase.rpc('create_notification', {
-      p_user_id: receiverId,
-      p_type: 'invite',
-      p_message: `${senderUsername} sana oyun daveti gönderdi`,
-      p_related_id: roomCode
-    });
-
-    if (error) {
-      console.error('Game invite notification error:', error);
-      return false;
-    }
-
-    console.log('🎮 GAME INVITE NOTIFICATION SAVED:', {
-      to: receiverId,
-      from: senderUsername,
-      roomCode: roomCode,
-      type: 'game_invite',
-      timestamp: new Date().toLocaleString('tr-TR')
-    });
-    
-    return true;
-  } catch (error) {
-    console.error('Error sending game invite notification:', error);
-    return false;
-  }
-};
-
-// Tekrar oyun bildirimi
-export const sendRematchNotification = async (
-  receiverId: string,
-  senderUsername: string,
-  roomCode: string,
-  gameType: string
-) => {
-  try {
-    const gameTypeText = gameType === 'timed' ? 'Zamana Karşı' : 'Skora Karşı';
-    
-    const { error } = await supabase.rpc('create_notification', {
-      p_user_id: receiverId,
-      p_type: 'invite',
-      p_message: `${senderUsername} sana tekrar oyun daveti gönderdi (${gameTypeText})`,
-      p_related_id: roomCode
-    });
-
-    if (error) {
-      console.error('Rematch notification error:', error);
-      return false;
-    }
-
-    console.log('🔄 REMATCH NOTIFICATION SAVED:', {
-      to: receiverId,
-      from: senderUsername,
-      roomCode: roomCode,
-      gameType: gameType,
-      type: 'invite',
-      timestamp: new Date().toLocaleString('tr-TR')
-    });
-    
-    return true;
-  } catch (error) {
-    console.error('Error sending rematch notification:', error);
-    return false;
-  }
-};
+// Oyun daveti ve rematch özellikleri kaldırıldı
 
 // Bildirimleri okundu olarak işaretle
 export const markNotificationsAsRead = async (notificationIds: string[]) => {
