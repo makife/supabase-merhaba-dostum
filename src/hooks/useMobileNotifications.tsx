@@ -178,7 +178,10 @@ export const useMobileNotifications = () => {
     try {
       const notificationData = notification.notification?.extra || notification.actionId;
       
-      if (notificationData?.type === 'private_message') {
+      if (notificationData?.type === 'game_invite') {
+        // Navigate to game with room code
+        window.location.href = `/game?room=${notificationData.roomCode}`;
+      } else if (notificationData?.type === 'private_message') {
         // Navigate to private chat
         window.location.href = `/chat?chat=${notificationData.chatId}`;
       } else if (notificationData?.type === 'tournament') {
@@ -190,7 +193,32 @@ export const useMobileNotifications = () => {
     }
   };
 
-  // Oyun daveti özelliği kaldırıldı
+  // Send game invite notification
+  const sendGameInviteNotification = async (
+    receiverId: string,
+    senderUsername: string,
+    roomCode: string
+  ) => {
+    const title = 'Oyun Daveti';
+    const body = `${senderUsername} sizi oyuna davet ediyor!`;
+    
+    if (isMobile) {
+      // Send push notification via your backend
+      await sendPushNotification(receiverId, title, body, {
+        type: 'game_invite',
+        roomCode,
+        senderUsername
+      });
+    }
+    
+    console.log('🎮 GAME INVITE NOTIFICATION SENT:', {
+      to: receiverId,
+      from: senderUsername,
+      roomCode,
+      title,
+      body
+    });
+  };
 
   // Send private message notification
   const sendMessageNotification = async (
@@ -332,6 +360,7 @@ export const useMobileNotifications = () => {
     requestPermissions,
     checkPermissionStatus,
     showLocalNotification,
+    sendGameInviteNotification,
     sendMessageNotification,
     sendTournamentNotification
   };
