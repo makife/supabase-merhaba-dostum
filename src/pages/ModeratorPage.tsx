@@ -81,20 +81,35 @@ const ModeratorPage = () => {
     try {
       const { data, error } = await supabase
         .from('message_reports')
-        .select(`
-          *,
-          reporter:reporter_id(username),
-          reported_user:reported_user_id(username)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      const formattedReports = data?.map((report: any) => ({
+      const reportsData = data || [];
+
+      // Kullanıcı adlarını profillerden topla (FK olmadığından ayrı sorgu)
+      const userIds = Array.from(new Set(
+        reportsData.flatMap((r: any) => [r.reporter_id, r.reported_user_id]).filter(Boolean)
+      ));
+
+      let usernameMap: Record<string, string> = {};
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, username')
+          .in('id', userIds);
+        usernameMap = (profiles || []).reduce((acc: Record<string, string>, p: any) => {
+          acc[p.id] = p.username;
+          return acc;
+        }, {});
+      }
+
+      const formattedReports = reportsData.map((report: any) => ({
         ...report,
-        reporter_username: report.reporter?.username,
-        reported_username: report.reported_user?.username
-      })) || [];
+        reporter_username: usernameMap[report.reporter_id] || 'Bilinmiyor',
+        reported_username: usernameMap[report.reported_user_id] || 'Bilinmiyor',
+      }));
 
       setReports(formattedReports);
     } catch (error) {
@@ -109,19 +124,31 @@ const ModeratorPage = () => {
     try {
       const { data, error } = await supabase
         .from('user_bans')
-        .select(`
-          *,
-          user:user_id(username)
-        `)
+        .select('*')
         .eq('is_active', true)
         .order('banned_at', { ascending: false });
 
       if (error) throw error;
 
-      const formattedBans = data?.map((ban: any) => ({
+      const bansData = data || [];
+      const userIds = Array.from(new Set(bansData.map((b: any) => b.user_id).filter(Boolean)));
+
+      let usernameMap: Record<string, string> = {};
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, username')
+          .in('id', userIds);
+        usernameMap = (profiles || []).reduce((acc: Record<string, string>, p: any) => {
+          acc[p.id] = p.username;
+          return acc;
+        }, {});
+      }
+
+      const formattedBans = bansData.map((ban: any) => ({
         ...ban,
-        username: ban.user?.username
-      })) || [];
+        username: usernameMap[ban.user_id] || 'Bilinmiyor',
+      }));
 
       setBans(formattedBans);
     } catch (error) {
@@ -204,7 +231,7 @@ const ModeratorPage = () => {
         return <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20"><Clock className="w-3 h-3 mr-1" />Beklemede</Badge>;
       case 'resolved':
         return <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20"><CheckCircle className="w-3 h-3 mr-1" />Çözüldü</Badge>;
-      case 'rejected':
+      case 'dismissed':
         return <Badge variant="outline" className="bg-red-500/10 text-red-500 border-red-500/20"><AlertCircle className="w-3 h-3 mr-1" />Reddedildi</Badge>;
       default:
         return null;
