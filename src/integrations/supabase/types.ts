@@ -1319,6 +1319,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_settings: {
         Row: {
           active_avatar_frame: string | null
@@ -1671,6 +1692,13 @@ export type Database = {
           weekly_score: number
         }[]
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       increment_tournament_participants: {
         Args: { tournament_id: string }
         Returns: undefined
@@ -1828,6 +1856,7 @@ export type Database = {
           }
     }
     Enums: {
+      app_role: "admin" | "moderator" | "user"
       report_reason:
         | "spam"
         | "harassment"
@@ -1963,6 +1992,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "moderator", "user"],
       report_reason: [
         "spam",
         "harassment",
