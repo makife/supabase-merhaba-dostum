@@ -109,29 +109,29 @@ export function ReportMessageDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
-            <AlertCircle className="w-5 h-5 text-destructive" />
+      <DialogContent className="w-[95vw] max-w-[500px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="space-y-2">
+          <DialogTitle className="flex items-center space-x-2 text-base sm:text-lg">
+            <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-destructive flex-shrink-0" />
             <span>Mesajı Bildir</span>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm">
             <span className="font-semibold">{reportedUsername}</span> kullanıcısının mesajını bildiriyorsunuz
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <div className="space-y-3">
-            <Label>Bildirme Nedeni</Label>
+        <div className="space-y-3 sm:space-y-4 py-2 sm:py-4">
+          <div className="space-y-2 sm:space-y-3">
+            <Label className="text-sm sm:text-base">Bildirme Nedeni</Label>
             <RadioGroup value={reason} onValueChange={(value) => setReason(value as ReportReason)}>
               {REPORT_REASONS.map((item) => (
-                <div key={item.value} className="flex items-start space-x-3 space-y-0">
-                  <RadioGroupItem value={item.value} id={item.value} />
-                  <div className="space-y-1 leading-none">
-                    <Label htmlFor={item.value} className="font-medium cursor-pointer">
+                <div key={item.value} className="flex items-start space-x-2 sm:space-x-3 space-y-0 py-1">
+                  <RadioGroupItem value={item.value} id={item.value} className="mt-0.5 flex-shrink-0" />
+                  <div className="space-y-0.5 sm:space-y-1 leading-none flex-1 min-w-0">
+                    <Label htmlFor={item.value} className="font-medium cursor-pointer text-sm sm:text-base">
                       {item.label}
                     </Label>
-                    <p className="text-sm text-muted-foreground">{item.description}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">{item.description}</p>
                   </div>
                 </div>
               ))}
@@ -139,7 +139,7 @@ export function ReportMessageDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Açıklama (Opsiyonel)</Label>
+            <Label htmlFor="description" className="text-sm sm:text-base">Açıklama (Opsiyonel)</Label>
             <Textarea
               id="description"
               placeholder="Ek bilgi vermek isterseniz buraya yazabilirsiniz..."
@@ -147,22 +147,39 @@ export function ReportMessageDialog({
               onChange={(e) => setDescription(e.target.value)}
               maxLength={500}
               rows={3}
+              className="text-sm sm:text-base resize-none"
             />
             <p className="text-xs text-muted-foreground text-right">{description.length}/500</p>
           </div>
 
-          <div className="bg-muted p-3 rounded-lg">
-            <p className="text-sm text-muted-foreground">
+          <div className="bg-muted p-2 sm:p-3 rounded-lg">
+            <p className="text-xs sm:text-sm text-muted-foreground">
               ⚠️ Yanlış veya kötü niyetli raporlar hesabınıza yaptırım uygulanmasına sebep olabilir.
+            </p>
+          </div>
+
+          <div className="bg-blue-50 dark:bg-blue-950/20 p-2 sm:p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+            <p className="text-xs sm:text-sm text-blue-900 dark:text-blue-100">
+              ℹ️ Raporlar veritabanına kaydedilir ve moderatörler tarafından incelenir. Ciddi ihlaller kullanıcı yasaklanmasına yol açabilir.
             </p>
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+        <DialogFooter className="flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+          <Button 
+            variant="outline" 
+            onClick={onClose} 
+            disabled={isSubmitting}
+            className="w-full sm:w-auto text-sm sm:text-base"
+          >
             İptal
           </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting} variant="destructive">
+          <Button 
+            onClick={handleSubmit} 
+            disabled={isSubmitting} 
+            variant="destructive"
+            className="w-full sm:w-auto text-sm sm:text-base"
+          >
             {isSubmitting ? 'Gönderiliyor...' : 'Rapor Gönder'}
           </Button>
         </DialogFooter>
