@@ -34,18 +34,18 @@ export function useImmersiveBars() {
       try {
         // NavigationBar ayarları (sadece Android)
         if (Capacitor.getPlatform() === 'android') {
-          // 1. İlk olarak transparency'yi ayarla (bazı cihazlarda önce bu olmalı)
-          if (Nav?.setTransparency) {
-            try {
-              await Nav.setTransparency({ isTransparent: true });
-            } catch (e) {
-              console.log('Transparency not supported, using color fallback');
-            }
-          }
-          
-          // 2. Renk ayarla - saydam cihazlarda gösterildiğinde koyu görünsün
+          // 1. Renk ayarla - koyu arka plan, beyaz butonlar
           if (Nav?.setColor) {
             await Nav.setColor({ color: DARK_HEX, darkButtons: false });
+          }
+          
+          // 2. Transparency'yi KAPALI tut (koyu arka plan görünsün)
+          if (Nav?.setTransparency) {
+            try {
+              await Nav.setTransparency({ isTransparent: false });
+            } catch (e) {
+              console.log('Transparency setting not supported');
+            }
           }
           
           // 3. Tam immersive mod için behavior ayarla
@@ -66,11 +66,9 @@ export function useImmersiveBars() {
             }
           }
 
-          // 4. Son olarak transparency'yi tekrar ayarla (bazı cihazlarda behavior sonrası resetleniyor)
-          if (Nav?.setTransparency) {
-            try {
-              await Nav.setTransparency({ isTransparent: true });
-            } catch {}
+          // 4. Renk ayarlarını pekiştir (behavior sonrası bazı cihazlarda resetleniyor)
+          if (Nav?.setColor) {
+            await Nav.setColor({ color: DARK_HEX, darkButtons: false });
           }
         }
       } catch (error) {
