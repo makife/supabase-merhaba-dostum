@@ -29,12 +29,12 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const shuffleIndexRef = useRef(0);
   const wasPlayingBeforeBackgroundRef = useRef(false);
 
-  // Arka plan yönetimi - uygulama arka plana gittiğinde müziği duraklat
+  // Arka plan yönetimi - uygulama arka plana gittiğinde müziği hemen durdur
   useAppState(
     () => {
-      // Arka plana gitti
+      // Arka plana gitti - müziği hemen durdur
       if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
-        console.log('🎵 Müzik arka plan için duraklatılıyor');
+        console.log('🎵 Müzik arka plan için hemen duraklatılıyor');
         wasPlayingBeforeBackgroundRef.current = true;
         backgroundMusicRef.current.pause();
       }
@@ -46,7 +46,8 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         wasPlayingBeforeBackgroundRef.current = false;
         backgroundMusicRef.current.play().catch(console.warn);
       }
-    }
+    },
+    0 // Gecikme yok, hemen durdur
   );
 
   // Default pack playlist
