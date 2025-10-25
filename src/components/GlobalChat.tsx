@@ -9,9 +9,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
-import { Send, Shield, MessageCircle, X, Trash2, Mail, Users, UserX } from 'lucide-react';
+import { Send, Shield, MessageCircle, X, Trash2, Mail, Users, UserX, Flag } from 'lucide-react';
 import { UserAvatar } from '@/components/UserAvatar';
 import { PrivateChat } from '@/components/PrivateChat';
+import { ReportMessageDialog } from '@/components/ReportMessageDialog';
 import { toast } from 'sonner';
 import { sendMentionNotification } from '@/utils/notifications';
 import { isUserBanned, containsBannedWords, banUser, getBanTimeLeft } from '@/utils/chatBot';
@@ -71,6 +72,12 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   const [selectedUser, setSelectedUser] = useState<SelectedUser | null>(null);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [allUsers, setAllUsers] = useState<SelectedUser[]>([]);
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [reportingMessage, setReportingMessage] = useState<{
+    id: string;
+    userId: string;
+    username: string;
+  } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
 
@@ -611,6 +618,22 @@ const sendMessage = async () => {
     }
   };
 
+  // Report message
+  const handleReportMessage = (messageId: string, userId: string, username: string) => {
+    if (!user) {
+      toast.error('Rapor göndermek için giriş yapmalısınız');
+      return;
+    }
+    
+    if (userId === user.id) {
+      toast.info('Kendi mesajınızı raporlayamazsınız');
+      return;
+    }
+
+    setReportingMessage({ id: messageId, userId, username });
+    setReportDialogOpen(true);
+  };
+
   // Delete message
   const deleteMessage = async (messageId: string) => {
     if (!user) return;
@@ -1032,16 +1055,30 @@ const renderGlobalChat = () => (
                 )}
               </div>
               
-              {/* Delete button - sadece kendi mesajları için */}
-              {message.user_id === user?.id && (
-                <button
-                  onClick={() => deleteMessage(message.id)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-100 rounded"
-                  title="Mesajı sil"
-                >
-                  <Trash2 className="w-3 h-3 text-red-500" />
-                </button>
-              )}
+              {/* Action buttons */}
+              <div className="flex items-center space-x-1">
+                {/* Report button - başkalarının mesajları için */}
+                {message.user_id && message.user_id !== user?.id && message.username !== 'kelimeciBot' && (
+                  <button
+                    onClick={() => handleReportMessage(message.id, message.user_id, message.username)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-orange-100 rounded"
+                    title="Mesajı bildir"
+                  >
+                    <Flag className="w-3 h-3 text-orange-500" />
+                  </button>
+                )}
+                
+                {/* Delete button - sadece kendi mesajları için */}
+                {message.user_id === user?.id && (
+                  <button
+                    onClick={() => deleteMessage(message.id)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-100 rounded"
+                    title="Mesajı sil"
+                  >
+                    <Trash2 className="w-3 h-3 text-red-500" />
+                  </button>
+                )}
+              </div>
             </div>
             
             <div className={`text-gray-800 break-words ${
@@ -1130,10 +1167,27 @@ const renderGlobalChat = () => (
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md h-[600px] flex flex-col bg-background border-2 border-primary/20">
-        {renderContent()}
-      </Card>
-    </div>
+    <>
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md h-[600px] flex flex-col bg-background border-2 border-primary/20">
+          {renderContent()}
+        </Card>
+      </div>
+      
+      {/* Report Dialog */}
+      {reportingMessage && (
+        <ReportMessageDialog
+          isOpen={reportDialogOpen}
+          onClose={() => {
+            setReportDialogOpen(false);
+            setReportingMessage(null);
+          }}
+          messageId={reportingMessage.id}
+          messageType="global"
+          reportedUserId={reportingMessage.userId}
+          reportedUsername={reportingMessage.username}
+        />
+      )}
+    </>
   );
 }

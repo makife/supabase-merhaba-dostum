@@ -9,8 +9,9 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Send, ArrowLeft } from 'lucide-react';
+import { Send, ArrowLeft, Flag } from 'lucide-react';
 import { UserAvatar } from '@/components/UserAvatar';
+import { ReportMessageDialog } from '@/components/ReportMessageDialog';
 import { toast } from 'sonner';
 import { useChatNotifications } from '@/hooks/useChatNotifications';
 
@@ -40,6 +41,12 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
   const [messages, setMessages] = useState<PrivateMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [reportingMessage, setReportingMessage] = useState<{
+    id: string;
+    userId: string;
+    username: string;
+  } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { refreshUnreadCounts } = useChatNotifications();
 
@@ -257,6 +264,21 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
     }
   };
 
+  const handleReportMessage = (messageId: string, senderId: string) => {
+    if (!user) {
+      toast.error('Rapor göndermek için giriş yapmalısınız');
+      return;
+    }
+    
+    if (senderId === user.id) {
+      toast.info('Kendi mesajınızı raporlayamazsınız');
+      return;
+    }
+
+    setReportingMessage({ id: messageId, userId: senderId, username: otherUser.username });
+    setReportDialogOpen(true);
+  };
+
   const formatTime = (timestamp: string) => {
     return new Date(timestamp).toLocaleTimeString('tr-TR', {
       hour: '2-digit',
@@ -265,37 +287,50 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
   };
 
   return (
-    <div className="w-full h-full flex flex-col bg-background">
-      <ScrollArea className="flex-1 p-4 overflow-hidden">
-        <div className="space-y-4">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
-            >
+    <>
+      <div className="w-full h-full flex flex-col bg-background">
+        <ScrollArea className="flex-1 p-4 overflow-hidden">
+          <div className="space-y-4">
+            {messages.map((message) => (
               <div
-                className={`max-w-[70%] p-3 rounded-lg ${
-                  message.sender_id === user?.id
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted'
-                }`}
+                key={message.id}
+                className={`group flex ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
               >
-                <div className="break-words text-sm">
-                  {message.message}
-                </div>
-                <div className={`text-xs mt-1 ${
-                  message.sender_id === user?.id
-                    ? 'text-primary-foreground/70'
-                    : 'text-muted-foreground'
-                }`}>
-                  {formatTime(message.created_at)}
+                <div className="flex items-end space-x-2">
+                  {message.sender_id !== user?.id && (
+                    <button
+                      onClick={() => handleReportMessage(message.id, message.sender_id)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-orange-100 rounded mb-1"
+                      title="Mesajı bildir"
+                    >
+                      <Flag className="w-3 h-3 text-orange-500" />
+                    </button>
+                  )}
+                  
+                  <div
+                    className={`max-w-[70%] p-3 rounded-lg ${
+                      message.sender_id === user?.id
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted'
+                    }`}
+                  >
+                    <div className="break-words text-sm">
+                      {message.message}
+                    </div>
+                    <div className={`text-xs mt-1 ${
+                      message.sender_id === user?.id
+                        ? 'text-primary-foreground/70'
+                        : 'text-muted-foreground'
+                    }`}>
+                      {formatTime(message.created_at)}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
-      </ScrollArea>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+        </ScrollArea>
 
       <Separator />
 
@@ -323,6 +358,22 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
           {newMessage.length}/500
         </div>
       </div>
-    </div>
+      </div>
+
+      {/* Report Dialog */}
+      {reportingMessage && (
+        <ReportMessageDialog
+          isOpen={reportDialogOpen}
+          onClose={() => {
+            setReportDialogOpen(false);
+            setReportingMessage(null);
+          }}
+          messageId={reportingMessage.id}
+          messageType="private"
+          reportedUserId={reportingMessage.userId}
+          reportedUsername={reportingMessage.username}
+        />
+      )}
+    </>
   );
 }

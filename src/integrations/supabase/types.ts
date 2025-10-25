@@ -574,6 +574,51 @@ export type Database = {
         }
         Relationships: []
       }
+      message_reports: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          message_id: string
+          message_type: string
+          reason: Database["public"]["Enums"]["report_reason"]
+          reported_user_id: string
+          reporter_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["report_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          message_id: string
+          message_type: string
+          reason: Database["public"]["Enums"]["report_reason"]
+          reported_user_id: string
+          reporter_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["report_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          message_id?: string
+          message_type?: string
+          reason?: Database["public"]["Enums"]["report_reason"]
+          reported_user_id?: string
+          reporter_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["report_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       monthly_stats: {
         Row: {
           avg_score: number | null
@@ -1466,6 +1511,7 @@ export type Database = {
         Args: { p_hours_ago: number; p_user_id: string }
         Returns: number
       }
+      check_report_rate_limit: { Args: { p_user_id: string }; Returns: boolean }
       check_round_completion: {
         Args: { p_round: number; p_tournament_id: string }
         Returns: Json
@@ -1569,6 +1615,10 @@ export type Database = {
           username: string
           win_count: number
         }[]
+      }
+      get_message_report_count: {
+        Args: { p_message_id: string; p_message_type: string }
+        Returns: number
       }
       get_monthly_leaderboard: {
         Args: { target_month_start?: string }
@@ -1778,7 +1828,14 @@ export type Database = {
           }
     }
     Enums: {
-      [_ in never]: never
+      report_reason:
+        | "spam"
+        | "harassment"
+        | "inappropriate_content"
+        | "hate_speech"
+        | "violence"
+        | "other"
+      report_status: "pending" | "reviewed" | "resolved" | "dismissed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1905,6 +1962,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      report_reason: [
+        "spam",
+        "harassment",
+        "inappropriate_content",
+        "hate_speech",
+        "violence",
+        "other",
+      ],
+      report_status: ["pending", "reviewed", "resolved", "dismissed"],
+    },
   },
 } as const
