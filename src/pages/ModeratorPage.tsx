@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { AlertCircle, Ban, CheckCircle, Clock, MessageSquare, Shield } from 'lucide-react';
+import { AlertCircle, Ban, CheckCircle, Clock, MessageSquare, Shield, ArrowLeft } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,6 +47,7 @@ interface UserBan {
 
 const ModeratorPage = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [reports, setReports] = useState<MessageReport[]>([]);
   const [bans, setBans] = useState<UserBan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -233,6 +235,14 @@ const ModeratorPage = () => {
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => navigate('/')}
+            className="flex-shrink-0"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
           <Shield className="w-8 h-8 text-primary" />
           <div>
             <h1 className="text-3xl font-bold">Moderatör Paneli</h1>
