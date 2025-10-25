@@ -186,9 +186,26 @@ const ModeratorPage = () => {
 
       if (profileError) throw profileError;
 
+      // Kullanıcıya bildirim gönder
+      const banHours = parseInt(banDuration);
+      const banMessage = `🚫 Sohbet yasağı aldınız.\n\nSebep: ${selectedReport.reason}\nDetay: ${selectedReport.description || 'Uygunsuz içerik paylaşımı'}\n\nYasak süresi: ${banHours} saat\nBitiş: ${new Date(bannedUntil).toLocaleString('tr-TR')}`;
+
+      const { error: notificationError } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: selectedReport.reported_user_id,
+          type: 'ban',
+          message: banMessage,
+          is_read: false
+        });
+
+      if (notificationError) {
+        console.error('Bildirim gönderme hatası:', notificationError);
+      }
+
       await updateReportStatus(selectedReport.id, 'resolved');
       
-      toast.success('Kullanıcı yasaklandı');
+      toast.success('Kullanıcı yasaklandı ve bildirim gönderildi');
       setBanDialogOpen(false);
       setSelectedReport(null);
       fetchBans();
@@ -224,7 +241,7 @@ const ModeratorPage = () => {
       // İlgili ban kaydını bul
       const { data: banData, error: fetchError } = await supabase
         .from('user_bans')
-        .select('user_id')
+        .select('user_id, reason')
         .eq('id', banId)
         .single();
 
@@ -246,7 +263,21 @@ const ModeratorPage = () => {
 
       if (profileError) throw profileError;
 
-      toast.success('Yasak kaldırıldı');
+      // Kullanıcıya yasak kaldırma bildirimi gönder
+      const { error: notificationError } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: banData.user_id,
+          type: 'ban_lifted',
+          message: '✅ Sohbet yasağınız kaldırıldı. Artık sohbete katılabilirsiniz.',
+          is_read: false
+        });
+
+      if (notificationError) {
+        console.error('Bildirim gönderme hatası:', notificationError);
+      }
+
+      toast.success('Yasak kaldırıldı ve kullanıcıya bildirim gönderildi');
       fetchBans();
     } catch (error) {
       console.error('Error removing ban:', error);
