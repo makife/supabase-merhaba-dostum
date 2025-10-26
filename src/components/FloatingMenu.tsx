@@ -100,10 +100,10 @@ const menuItems = [
 export function FloatingMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
-  const { signOut, user } = useAuth(); // user context'ten alınmalı
+  const { signOut, user } = useAuth();
   const { playSound } = useSounds();
   const { totalNotifications } = useChatNotifications();
-  const { isModerator } = useUserRole();
+  const { isModerator, loading: roleLoading } = useUserRole();
 
 
   const handleToggle = () => {
@@ -214,7 +214,7 @@ export function FloatingMenu() {
         ))}
 
         {/* Moderator Button (only for moderators/admins) */}
-        {isModerator && (
+        {!roleLoading && isModerator && (
           <div
             className={`flex items-center space-x-3 transform transition-all duration-300 ${
               isOpen 

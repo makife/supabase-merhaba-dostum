@@ -39,6 +39,32 @@ export function useUserRole() {
     };
 
     fetchUserRole();
+
+    // Real-time subscription for role changes
+    const channel = supabase
+      .channel('user_role_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_roles',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Role changed:', payload);
+          if (payload.eventType === 'DELETE') {
+            setRole('user');
+          } else if (payload.new && 'role' in payload.new) {
+            setRole(payload.new.role as UserRole);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user?.id]);
 
   const isModerator = role === 'moderator' || role === 'admin';
