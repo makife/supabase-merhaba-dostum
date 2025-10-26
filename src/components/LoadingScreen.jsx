@@ -43,44 +43,50 @@ const LoadingScreen = ({ onLoadingComplete }) => {
 
   useEffect(() => {
     // Ergan görselini 3 saniye göster
-    setTimeout(() => {
+    const erganTimer = setTimeout(() => {
       setShowErganImage(false);
       setShowLoading(true);
     }, 3000);
 
     // Loading süreci - Ergan bitince başla
-    let currentStep = 0;
-    
-    const updateStep = () => {
-      if (currentStep < loadingSteps.length) {
-        const step = loadingSteps[currentStep];
-        setProgress(step.progress);
-        setLoadingText(step.text);
-        currentStep++;
-        
+    const loadingTimer = setTimeout(() => {
+      let currentStep = 0;
+      
+      const updateStep = () => {
         if (currentStep < loadingSteps.length) {
-          // Her adım arası 700-1200ms (toplamda ~6-8 saniye)
-          setTimeout(updateStep, Math.random() * 500 + 700);
-        } else {
-          // Loading tamamlandı
-          setTimeout(() => {
-            setLoadingText('Oyun başlıyor...');
-            setIsComplete(true);
-            
-            // 1 saniye daha bekle, sonra callback çağır
+          const step = loadingSteps[currentStep];
+          setProgress(step.progress);
+          setLoadingText(step.text);
+          currentStep++;
+          
+          if (currentStep < loadingSteps.length) {
+            // Her adım arası 700-1200ms (toplamda ~6-8 saniye)
+            setTimeout(updateStep, Math.random() * 500 + 700);
+          } else {
+            // Loading tamamlandı
             setTimeout(() => {
-              console.log('Loading completed, calling callback...');
-              if (onLoadingComplete) {
-                onLoadingComplete();
-              }
-            }, 1000);
-          }, 500);
+              setLoadingText('Oyun başlıyor...');
+              setIsComplete(true);
+              
+              // 1 saniye daha bekle, sonra callback çağır
+              setTimeout(() => {
+                console.log('Loading completed, calling callback...');
+                if (onLoadingComplete) {
+                  onLoadingComplete();
+                }
+              }, 1000);
+            }, 500);
+          }
         }
-      }
-    };
+      };
 
-    // 3 saniye ergan görseli sonrasında loading başlasın
-    setTimeout(updateStep, 3500);
+      updateStep();
+    }, 3500);
+
+    return () => {
+      clearTimeout(erganTimer);
+      clearTimeout(loadingTimer);
+    };
   }, [onLoadingComplete]);
 
   return (
