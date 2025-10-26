@@ -300,7 +300,7 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
                   {message.sender_id !== user?.id && (
                     <button
                       onClick={() => handleReportMessage(message.id, message.sender_id)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-orange-100 rounded mb-1 flex-shrink-0"
+                      className="opacity-70 group-hover:opacity-100 transition-opacity p-1 hover:bg-orange-100 rounded mb-1 flex-shrink-0"
                       title="Mesajı bildir"
                     >
                       <Flag className="w-3 h-3 text-orange-500" />

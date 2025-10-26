@@ -1061,7 +1061,7 @@ const renderGlobalChat = () => (
                 {message.user_id && message.user_id !== user?.id && message.username !== 'kelimeciBot' && (
                   <button
                     onClick={() => handleReportMessage(message.id, message.user_id, message.username)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-orange-100 rounded"
+                    className="opacity-70 group-hover:opacity-100 transition-opacity p-1 hover:bg-orange-100 rounded"
                     title="Mesajı bildir"
                   >
                     <Flag className="w-3 h-3 text-orange-500" />
