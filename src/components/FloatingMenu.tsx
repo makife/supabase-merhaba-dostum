@@ -331,7 +331,7 @@ export function FloatingMenu() {
       <div className="fixed bottom-4 right-4">
         <Button
           onClick={handleToggle}
-          className={`group relative overflow-hidden w-14 h-14 rounded-full border-2 border-white shadow-2xl 
+          className={`group relative overflow-hidden w-[84px] h-[84px] rounded-full border-2 border-white shadow-2xl 
                      transform transition-all duration-300 hover:scale-110 active:scale-95
                      ${isOpen 
                        ? 'bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 rotate-45' 
@@ -349,9 +349,9 @@ export function FloatingMenu() {
           {/* Button content */}
           <div className="relative z-10 flex items-center justify-center">
             {isOpen ? (
-              <X className="w-6 h-6 text-white transition-transform duration-300" />
+              <X className="w-9 h-9 text-white transition-transform duration-300" />
             ) : (
-              <MenuIcon className="w-6 h-6 text-white transition-transform duration-300" />
+              <MenuIcon className="w-9 h-9 text-white transition-transform duration-300" />
             )}
           </div>
 
