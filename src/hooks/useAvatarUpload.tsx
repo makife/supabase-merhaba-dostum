@@ -4,10 +4,30 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Camera } from '@capacitor/camera';
 import { CameraResultType, CameraSource } from '@capacitor/camera';
+import imageCompression from 'browser-image-compression';
 
 export const useAvatarUpload = () => {
   const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
+
+  const compressImage = async (file: File): Promise<File> => {
+    const options = {
+      maxSizeMB: 0.3,          // 300KB max
+      maxWidthOrHeight: 800,    // 800px max
+      useWebWorker: true,
+      fileType: 'image/webp'    // WebP formatına çevir
+    };
+
+    try {
+      const compressedFile = await imageCompression(file, options);
+      toast.success(`Resim optimize edildi: ${(file.size / 1024 / 1024).toFixed(2)}MB → ${(compressedFile.size / 1024).toFixed(0)}KB`);
+      return compressedFile;
+    } catch (error) {
+      console.error('Error compressing image:', error);
+      // Compression başarısız olursa orijinal dosyayı döndür
+      return file;
+    }
+  };
 
   const uploadAvatar = async (file: File): Promise<string | null> => {
     if (!user) {
@@ -20,16 +40,13 @@ export const useAvatarUpload = () => {
       return null;
     }
 
-    if (file.size > 5 * 1024 * 1024) { // 5MB
-      toast.error('Dosya boyutu 5MB\'dan küçük olmalıdır');
-      return null;
-    }
-
     setUploading(true);
     try {
-      // Create a unique filename
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      // Resmi compress et
+      const compressedFile = await compressImage(file);
+
+      // Create a unique filename with webp extension
+      const fileName = `${user.id}/${Date.now()}.webp`;
 
       // Delete existing avatar if any
       const { data: existingFiles } = await supabase.storage
@@ -46,7 +63,7 @@ export const useAvatarUpload = () => {
       // Upload new avatar
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(fileName, file, {
+        .upload(fileName, compressedFile, {
           cacheControl: '3600',
           upsert: true
         });
@@ -138,6 +155,7 @@ export const useAvatarUpload = () => {
       const blob = await response.blob();
       const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
 
+      // uploadAvatar içinde zaten compress ediliyor
       return await uploadAvatar(file);
     } catch (error: any) {
       if (error.message !== 'User cancelled photos app') {
@@ -173,6 +191,7 @@ export const useAvatarUpload = () => {
       const blob = await response.blob();
       const file = new File([blob], 'gallery-photo.jpg', { type: 'image/jpeg' });
 
+      // uploadAvatar içinde zaten compress ediliyor
       return await uploadAvatar(file);
     } catch (error: any) {
       if (error.message !== 'User cancelled photos app') {
