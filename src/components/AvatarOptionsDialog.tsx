@@ -44,76 +44,61 @@ export const AvatarOptionsDialog = ({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-lg p-0 overflow-hidden bg-gradient-to-br from-background via-background to-primary/5">
-          <DialogHeader className="p-6 pb-4 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10">
-            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Avatar Değiştir
-            </DialogTitle>
-            <DialogDescription className="text-muted-foreground">
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Avatar Değiştir</DialogTitle>
+            <DialogDescription>
               Avatar resmini nasıl değiştirmek istersiniz?
             </DialogDescription>
           </DialogHeader>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-6 pt-4">
-            {/* Kamera - Primary Gradient */}
-            <button
+          <div className="grid gap-3 py-4">
+            <Button
               onClick={onCameraSelect}
-              className="group relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-primary/90 to-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 flex flex-col items-center justify-center gap-3 min-h-[140px]"
+              className="w-full justify-start gap-3 h-14"
+              variant="outline"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <div className="relative z-10 bg-white/20 rounded-full p-4 group-hover:scale-110 transition-transform duration-300">
-                <CameraIcon className="w-8 h-8" />
+              <CameraIcon className="w-5 h-5" />
+              <div className="text-left">
+                <div className="font-semibold">Kamerayı Kullan</div>
+                <div className="text-xs text-muted-foreground">Fotoğraf çek</div>
               </div>
-              <div className="relative z-10 text-center">
-                <div className="font-bold text-lg mb-1">Kamerayı Kullan</div>
-                <div className="text-xs opacity-90">Fotoğraf çek</div>
-              </div>
-            </button>
+            </Button>
 
-            {/* Galeri - Accent Gradient */}
-            <button
+            <Button
               onClick={onGallerySelect}
-              className="group relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-accent/90 to-accent text-accent-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 flex flex-col items-center justify-center gap-3 min-h-[140px]"
+              className="w-full justify-start gap-3 h-14"
+              variant="outline"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <div className="relative z-10 bg-white/20 rounded-full p-4 group-hover:scale-110 transition-transform duration-300">
-                <Image className="w-8 h-8" />
+              <Image className="w-5 h-5" />
+              <div className="text-left">
+                <div className="font-semibold">Galeriden Seç</div>
+                <div className="text-xs text-muted-foreground">Cihazdan resim seç</div>
               </div>
-              <div className="relative z-10 text-center">
-                <div className="font-bold text-lg mb-1">Galeriden Seç</div>
-                <div className="text-xs opacity-90">Cihazdan resim seç</div>
-              </div>
-            </button>
+            </Button>
 
-            {/* Oyun Avatarları - Success Gradient */}
-            <button
+            <Button
               onClick={handleGameAvatarsClick}
-              className="group relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 flex flex-col items-center justify-center gap-3 min-h-[140px]"
+              className="w-full justify-start gap-3 h-14"
+              variant="outline"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <div className="relative z-10 bg-white/20 rounded-full p-4 group-hover:scale-110 transition-transform duration-300">
-                <Gamepad2 className="w-8 h-8" />
+              <Gamepad2 className="w-5 h-5" />
+              <div className="text-left">
+                <div className="font-semibold">Oyun Avatarları</div>
+                <div className="text-xs text-muted-foreground">Hazır avatarlardan seç</div>
               </div>
-              <div className="relative z-10 text-center">
-                <div className="font-bold text-lg mb-1">Oyun Avatarları</div>
-                <div className="text-xs opacity-90">Hazır avatarlardan seç</div>
-              </div>
-            </button>
+            </Button>
 
-            {/* Sil - Destructive Gradient */}
-            <button
+            <Button
               onClick={onDelete}
-              className="group relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-destructive/90 to-destructive text-destructive-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 flex flex-col items-center justify-center gap-3 min-h-[140px]"
+              className="w-full justify-start gap-3 h-14"
+              variant="outline"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <div className="relative z-10 bg-white/20 rounded-full p-4 group-hover:scale-110 transition-transform duration-300">
-                <Trash2 className="w-8 h-8" />
+              <Trash2 className="w-5 h-5 text-destructive" />
+              <div className="text-left">
+                <div className="font-semibold text-destructive">Avatarı Sil</div>
+                <div className="text-xs text-muted-foreground">Varsayılan avatara dön</div>
               </div>
-              <div className="relative z-10 text-center">
-                <div className="font-bold text-lg mb-1">Avatarı Sil</div>
-                <div className="text-xs opacity-90">Varsayılan avatara dön</div>
-              </div>
-            </button>
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
