@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { Camera } from '@capacitor/camera';
+import { CameraResultType, CameraSource } from '@capacitor/camera';
 
 export const useAvatarUpload = () => {
   const { user } = useAuth();
@@ -113,9 +115,109 @@ export const useAvatarUpload = () => {
     }
   };
 
+  const uploadFromCamera = async (): Promise<string | null> => {
+    if (!user) {
+      toast.error('Giriş yapmanız gerekiyor');
+      return null;
+    }
+
+    setUploading(true);
+    try {
+      const photo = await Camera.getPhoto({
+        resultType: CameraResultType.DataUrl,
+        source: CameraSource.Camera,
+        quality: 90,
+      });
+
+      if (!photo.dataUrl) {
+        throw new Error('Fotoğraf alınamadı');
+      }
+
+      // DataUrl'i blob'a çevir
+      const response = await fetch(photo.dataUrl);
+      const blob = await response.blob();
+      const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
+
+      return await uploadAvatar(file);
+    } catch (error: any) {
+      if (error.message !== 'User cancelled photos app') {
+        console.error('Error taking photo:', error);
+        toast.error('Fotoğraf çekilirken hata oluştu');
+      }
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const uploadFromGallery = async (): Promise<string | null> => {
+    if (!user) {
+      toast.error('Giriş yapmanız gerekiyor');
+      return null;
+    }
+
+    setUploading(true);
+    try {
+      const photo = await Camera.getPhoto({
+        resultType: CameraResultType.DataUrl,
+        source: CameraSource.Photos,
+        quality: 90,
+      });
+
+      if (!photo.dataUrl) {
+        throw new Error('Fotoğraf seçilemedi');
+      }
+
+      // DataUrl'i blob'a çevir
+      const response = await fetch(photo.dataUrl);
+      const blob = await response.blob();
+      const file = new File([blob], 'gallery-photo.jpg', { type: 'image/jpeg' });
+
+      return await uploadAvatar(file);
+    } catch (error: any) {
+      if (error.message !== 'User cancelled photos app') {
+        console.error('Error selecting photo:', error);
+        toast.error('Fotoğraf seçilirken hata oluştu');
+      }
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const uploadGameAvatar = async (avatarPath: string): Promise<string | null> => {
+    if (!user) {
+      toast.error('Giriş yapmanız gerekiyor');
+      return null;
+    }
+
+    setUploading(true);
+    try {
+      // Update profile with game avatar path directly
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: avatarPath })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      toast.success('Avatar başarıyla güncellendi');
+      return avatarPath;
+    } catch (error) {
+      console.error('Error updating avatar:', error);
+      toast.error('Avatar güncellenirken hata oluştu');
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return {
     uploadAvatar,
     deleteAvatar,
+    uploadFromCamera,
+    uploadFromGallery,
+    uploadGameAvatar,
     uploading
   };
 };

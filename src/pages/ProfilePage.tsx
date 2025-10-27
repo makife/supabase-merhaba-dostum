@@ -5,13 +5,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { UserAvatar } from '@/components/UserAvatar';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { useJokerInventory } from '@/hooks/useJokerInventory';
+import { useAvatarUpload } from '@/hooks/useAvatarUpload';
+import { AvatarOptionsDialog } from '@/components/AvatarOptionsDialog';
 import {
   ArrowLeft,
   Trophy,
@@ -32,11 +34,13 @@ const ProfilePage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { jokers } = useJokerInventory();
+  const { uploadFromCamera, uploadFromGallery, uploadGameAvatar, deleteAvatar, uploading } = useAvatarUpload();
   const { id: routeId } = useParams();
   const viewedUserId = routeId || user?.id || null;
   const isOwnProfile = !routeId || routeId === user?.id;
   const [isEditing, setIsEditing] = useState(false);
   const [editedUsername, setEditedUsername] = useState('');
+  const [showAvatarOptions, setShowAvatarOptions] = useState(false);
   const [profileData, setProfileData] = useState({
     username: user?.email?.split('@')[0] || 'Oyuncu',
     avatar_url: '',
@@ -448,6 +452,43 @@ const ProfilePage = () => {
     }
   };
 
+  const handleAvatarClick = () => {
+    if (isOwnProfile) {
+      setShowAvatarOptions(true);
+    }
+  };
+
+  const handleCameraSelect = async () => {
+    setShowAvatarOptions(false);
+    const avatarUrl = await uploadFromCamera();
+    if (avatarUrl) {
+      setProfileData(prev => ({ ...prev, avatar_url: avatarUrl }));
+    }
+  };
+
+  const handleGallerySelect = async () => {
+    setShowAvatarOptions(false);
+    const avatarUrl = await uploadFromGallery();
+    if (avatarUrl) {
+      setProfileData(prev => ({ ...prev, avatar_url: avatarUrl }));
+    }
+  };
+
+  const handleGameAvatarsSelect = async (avatarPath: string) => {
+    const avatarUrl = await uploadGameAvatar(avatarPath);
+    if (avatarUrl) {
+      setProfileData(prev => ({ ...prev, avatar_url: avatarUrl }));
+    }
+  };
+
+  const handleDeleteAvatar = async () => {
+    setShowAvatarOptions(false);
+    const success = await deleteAvatar();
+    if (success) {
+      setProfileData(prev => ({ ...prev, avatar_url: '' }));
+    }
+  };
+
   const refreshStats = async () => {
     if (!viewedUserId) return;
   
@@ -546,14 +587,22 @@ const ProfilePage = () => {
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center space-x-4">
-                <UserAvatar
-                  src={profileData.avatar_url}
-                  alt={profileData.username}
-                  fallback={profileData.username.charAt(0).toUpperCase()}
-                  size="xl"
-                  editable={isOwnProfile}
-                  className="ring-2 ring-primary/20"
-                />
+                <div 
+                  className={`relative ${isOwnProfile ? 'cursor-pointer' : ''}`}
+                  onClick={handleAvatarClick}
+                >
+                  <Avatar className="w-20 h-20 ring-2 ring-primary/20">
+                    <AvatarImage src={profileData.avatar_url} alt={profileData.username} />
+                    <AvatarFallback className="text-2xl">
+                      {profileData.username.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  {uploading && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  )}
+                </div>
                 <div className="flex-1">
                   {isEditing && isOwnProfile ? (
                     <Input
@@ -819,7 +868,7 @@ const ProfilePage = () => {
               <span className="font-bold">
                 {profileData.longestWord ? 
                   `${profileData.longestWord} (${profileData.longestWordLength} harf)` : 
-                  profileData.longestWordLength > 0 ? 
+                  profileData.longestWordLength > 0 ?
                     `${profileData.longestWordLength} harfli kelime` : 
                     'Henüz yok'
                 }
@@ -863,6 +912,16 @@ const ProfilePage = () => {
         </Card>
           </div>
         </ScrollArea>
+
+        {/* Avatar Options Dialog */}
+        <AvatarOptionsDialog
+          open={showAvatarOptions}
+          onOpenChange={setShowAvatarOptions}
+          onCameraSelect={handleCameraSelect}
+          onGallerySelect={handleGallerySelect}
+          onGameAvatarsSelect={handleGameAvatarsSelect}
+          onDelete={handleDeleteAvatar}
+        />
       </div>
     </div>
   );

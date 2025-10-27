@@ -7,11 +7,9 @@ import { HeaderAnimation } from "@/components/HeaderAnimation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import { useSounds } from "@/hooks/useSounds";
-import { useProfilePicture } from "@/hooks/useProfilePicture";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import PrivateRoomModal from "@/components/PrivateRoomModal";
@@ -25,6 +23,7 @@ import { useMemoryGame } from "@/hooks/useMemoryGame";
 import { useMatchmaking } from "@/contexts/NewMatchmakingContext";
 import { nakamaService } from "@/services/nakamaService";
 import { useUserRole } from "@/hooks/useUserRole";
+import { AvatarViewDialog } from "@/components/AvatarViewDialog";
 
 import {
   Bot,
@@ -61,13 +60,11 @@ const HomePage = () => {
   const { playSound } = useSounds();
   const { startBackgroundMusic, musicEnabled, setMusicEnabled } = useMusic();
   const { jokers } = useJokerInventory();
-  const { uploadProfilePicture, uploading } = useProfilePicture();
   const [selectedMode, setSelectedMode] = useState<string | null>(null);
   const [showMatchmaking, setShowMatchmaking] = useState(false);
   const [matchmakingGameType, setMatchmakingGameType] = useState<"timed" | "score">("timed");
   const [matchmakingKey, setMatchmakingKey] = useState<number>(0);
   const [userAvatar, setUserAvatar] = useState<string>("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [timeUntilNextCredit, setTimeUntilNextCredit] = useState<string>("");
   const { canPlay: canPlayMemory, timeUntilNextPlay } = useMemoryGame();
   const { startSearch, useNakama, isSearching, searchProgress, cancelSearch, nakamaMatch } = useMatchmaking();
@@ -254,22 +251,10 @@ const HomePage = () => {
     checkNotifications();
   }, [user]);
 
+  const [showAvatarView, setShowAvatarView] = useState(false);
+
   const handleAvatarClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const avatarUrl = await uploadProfilePicture(file);
-    if (avatarUrl) {
-      setUserAvatar(avatarUrl);
-    }
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    setShowAvatarView(true);
   };
 
   // Nakama match bulunduğunda otomatik yönlendir
@@ -366,14 +351,6 @@ const HomePage = () => {
               {/* Üst satır - Avatar ve Kelimeci başlığı */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <Input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-
                   <div className="relative cursor-pointer group flex-shrink-0" onClick={handleAvatarClick}>
                     <Avatar className="w-14 h-14 ring-2 ring-white/50 shadow-lg transition-all duration-500 ease-in-out">
                       <AvatarImage
@@ -386,14 +363,6 @@ const HomePage = () => {
                         <User className="w-6 h-6" />
                       </AvatarFallback>
                     </Avatar>
-                    {uploading && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
-                        <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 rounded-full flex items-center justify-center transition-all duration-200 opacity-0 group-hover:opacity-100">
-                      <Camera className="w-3 h-3 text-white" />
-                    </div>
                   </div>
 
                   <div className="flex-1 min-w-0">
@@ -1071,6 +1040,14 @@ const HomePage = () => {
 
         {/* Floating Menu */}
         <FloatingMenu />
+
+        {/* Avatar View Dialog */}
+        <AvatarViewDialog
+          open={showAvatarView}
+          onOpenChange={setShowAvatarView}
+          avatarUrl={userAvatar || user?.user_metadata?.avatar_url || ''}
+          username={profile?.username || user?.user_metadata?.username || user?.email?.split("@")[0] || 'Oyuncu'}
+        />
       </div>
     </div>
   );
