@@ -321,17 +321,22 @@ const HomePage = () => {
     <div className="min-h-screen bg-gradient-to-br from-background to-muted px-4 pt-4 pb-2">
       <div className="max-w-4xl mx-auto space-y-3">
         {/* Birleştirilmiş Header ve Level Progress */}
-        <Card className="border-0 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/10 shadow-2xl relative overflow-hidden">
+        <Card className="border-0 relative overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.12)] bg-gradient-to-br from-primary/10 via-accent/8 to-primary/5 backdrop-blur-xl">
           <HeaderAnimation />
+          
+          {/* Dekoratif arka plan efektleri */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 animate-mystical-float pointer-events-none" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl opacity-50 pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-accent/10 to-transparent rounded-full blur-3xl opacity-40 pointer-events-none" />
 
           {/* Müzik Toggle */}
           <Button
             variant="outline"
             size="sm"
-            className={`absolute top-3 right-3 z-20 w-10 h-10 rounded-full backdrop-blur-md border-2 transition-all duration-300 hover:scale-105 shadow-lg ${
+            className={`absolute top-3 right-3 z-20 w-11 h-11 rounded-full backdrop-blur-xl border-2 transition-all duration-500 hover:scale-110 active:scale-95 ${
               musicEnabled
-                ? "bg-gradient-to-r from-primary/10 to-accent/10 hover:from-primary/20 hover:to-accent/20 border-primary/30 hover:border-primary/50"
-                : "bg-gradient-to-r from-muted/20 to-muted/30 hover:from-muted/30 hover:to-muted/40 border-muted-foreground/20 hover:border-muted-foreground/30"
+                ? "bg-gradient-to-br from-primary/20 to-accent/15 hover:from-primary/30 hover:to-accent/25 border-primary/40 hover:border-primary/60 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 animate-premium-glow"
+                : "bg-gradient-to-br from-muted/30 to-muted/20 hover:from-muted/40 hover:to-muted/30 border-muted-foreground/30 hover:border-muted-foreground/40 shadow-md"
             }`}
             onClick={() => {
               setMusicEnabled(!musicEnabled);
@@ -339,45 +344,50 @@ const HomePage = () => {
             }}
           >
             {musicEnabled ? (
-              <Volume2 className="w-5 h-5 text-primary font-bold" />
+              <Volume2 className="w-5 h-5 text-primary drop-shadow-lg" />
             ) : (
-              <VolumeX className="w-5 h-5 text-destructive font-bold" />
+              <VolumeX className="w-5 h-5 text-muted-foreground" />
             )}
           </Button>
 
-          <CardContent className="p-4 relative z-10">
+          <CardContent className="p-5 relative z-10">
             {/* Mobil optimized layout */}
-            <div className="space-y-3">
+            <div className="space-y-4">
               {/* Üst satır - Avatar ve Kelimeci başlığı */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-4">
                   <div className="relative cursor-pointer group flex-shrink-0" onClick={handleAvatarClick}>
-                    <Avatar className="w-14 h-14 ring-2 ring-white/50 shadow-lg transition-all duration-500 ease-in-out">
+                    {/* Animasyonlu halka efekti */}
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary via-accent to-primary opacity-75 blur-md group-hover:blur-lg transition-all duration-500 animate-royal-pulse" />
+                    <Avatar className="w-16 h-16 ring-[3px] ring-primary/30 ring-offset-2 ring-offset-background shadow-xl relative z-10 transition-all duration-500 group-hover:scale-110 group-hover:ring-primary/60 group-hover:shadow-2xl group-hover:shadow-primary/30">
                       <AvatarImage
                         src={userAvatar || user?.user_metadata?.avatar_url}
                         alt="Profile"
-                        className="transition-opacity duration-500 ease-in-out"
+                        className="transition-all duration-500"
                         loading="eager"
                       />
-                      <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-sm font-bold transition-all duration-500 ease-in-out">
-                        <User className="w-6 h-6" />
+                      <AvatarFallback className="bg-gradient-to-br from-primary via-accent to-primary text-white text-base font-bold">
+                        <User className="w-7 h-7" />
                       </AvatarFallback>
                     </Avatar>
+                    {/* Online indicator */}
+                    <div className="absolute bottom-0 right-0 w-4 h-4 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full border-2 border-background shadow-lg z-20 animate-pulse-slow" />
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <h1
-                      className="text-xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent drop-shadow-lg"
+                      className="text-2xl md:text-3xl font-extrabold font-bungee tracking-wider uppercase bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent drop-shadow-2xl animate-luxury-shimmer bg-[length:200%_auto]"
                       style={{
-                        textShadow:
-                          "1px 1px 0px hsl(var(--primary)), 2px 2px 0px rgba(0,0,0,0.3), 0 0 15px hsl(var(--primary) / 0.5)",
-                        WebkitTextStroke: "0.5px hsl(var(--border))",
+                        textShadow: "2px 2px 4px rgba(0,0,0,0.2), 0 0 20px hsl(var(--primary) / 0.6)",
                       }}
                     >
                       KELİMECİ
                     </h1>
-                    <p className="text-xs text-muted-foreground">Merhaba 👋</p>
-                    <p className="text-sm font-semibold text-foreground truncate">
+                    <p className="text-xs font-medium text-muted-foreground mt-1 flex items-center gap-1.5">
+                      <span className="text-base">👋</span>
+                      <span>Merhaba,</span>
+                    </p>
+                    <p className="text-base font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent truncate">
                       {profile?.username || user?.user_metadata?.username || user?.email?.split("@")[0]}
                     </p>
                   </div>
@@ -386,9 +396,9 @@ const HomePage = () => {
                 {/* Sağ taraf - Premium badge */}
                 <div className="flex-shrink-0">
                   {isPremium && (
-                    <div className="flex items-center space-x-1">
-                      <Crown className="w-4 h-4 text-yellow-500" />
-                      <span className="text-xs text-yellow-500 font-semibold">Premium</span>
+                    <div className="flex items-center gap-1.5 bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 px-3 py-1.5 rounded-full shadow-lg shadow-yellow-400/30 animate-premium-glow">
+                      <Crown className="w-4 h-4 text-yellow-900 drop-shadow" />
+                      <span className="text-xs font-bold text-yellow-900 tracking-wide">PREMIUM</span>
                     </div>
                   )}
                 </div>
@@ -396,106 +406,132 @@ const HomePage = () => {
             </div>
 
             {/* Seviye progress - Real-time güncellemeler için profile state'ini direkt kullan */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 shadow-inner">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg flex-shrink-0">
-                    <Trophy className="w-4 h-4 text-white" />
+            <div className="relative bg-gradient-to-br from-primary/10 via-accent/5 to-primary/8 backdrop-blur-md rounded-2xl p-4 border-2 border-primary/20 shadow-xl overflow-hidden group hover:border-primary/40 transition-all duration-500">
+              {/* Dekoratif arka plan */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent animate-luxury-shimmer opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-600 rounded-xl blur-sm opacity-75 animate-premium-glow" />
+                      <div className="relative w-11 h-11 bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-xl">
+                        <Trophy className="w-6 h-6 text-white drop-shadow-lg" />
+                      </div>
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-base font-extrabold text-foreground flex items-center gap-2">
+                        <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                          Seviye {calculateLevel(profile?.total_score || 0).level}
+                        </span>
+                        <Sparkles className="w-4 h-4 text-primary animate-pulse-slow" />
+                      </h3>
+                      <p className="text-xs font-medium text-muted-foreground">
+                        <span className="font-bold text-foreground">{calculateLevel(profile?.total_score || 0).experience}</span>
+                        {" / "}
+                        <span className="font-semibold">{calculateLevel(profile?.total_score || 0).nextLevelExp}</span>
+                        {" EXP"}
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <h3 className="text-sm font-bold text-foreground">
-                      Seviye {calculateLevel(profile?.total_score || 0).level}
-                    </h3>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {calculateLevel(profile?.total_score || 0).experience} /{" "}
-                      {calculateLevel(profile?.total_score || 0).nextLevelExp} EXP
-                    </p>
+
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-lg md:text-xl font-black bg-gradient-to-br from-primary via-accent to-primary bg-clip-text text-transparent">
+                      {(profile?.total_score || 0) > 9999
+                        ? `${Math.floor((profile?.total_score || 0) / 1000)}k`
+                        : (profile?.total_score || 0).toLocaleString()}
+                    </div>
+                    <div className="text-xs font-semibold text-muted-foreground">Toplam Puan</div>
                   </div>
                 </div>
 
-                <div className="text-right flex-shrink-0">
-                  <div className="text-base font-bold text-primary">
-                    {(profile?.total_score || 0) > 9999
-                      ? `${Math.floor((profile?.total_score || 0) / 1000)}k`
-                      : (profile?.total_score || 0).toLocaleString()}
+                {/* Progress bar - Real-time güncellemeler */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-semibold">
+                    <span className="text-muted-foreground">Seviye İlerlemesi</span>
+                    <span className="text-foreground bg-primary/10 px-2 py-0.5 rounded-full">
+                      %{Math.round(
+                        (calculateLevel(profile?.total_score || 0).experience /
+                          calculateLevel(profile?.total_score || 0).nextLevelExp) *
+                          100,
+                      )}
+                    </span>
                   </div>
-                  <div className="text-xs text-muted-foreground">Puan</div>
-                </div>
-              </div>
-
-              {/* Progress bar - Real-time güncellemeler */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>İlerleme</span>
-                  <span>
-                    %
-                    {Math.round(
-                      (calculateLevel(profile?.total_score || 0).experience /
-                        calculateLevel(profile?.total_score || 0).nextLevelExp) *
-                        100,
-                    )}
-                  </span>
-                </div>
-                <div className="w-full bg-black/20 rounded-full h-2 overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 rounded-full transition-all duration-1000 ease-out shadow-lg"
-                    style={{
-                      width: `${(calculateLevel(profile?.total_score || 0).experience / calculateLevel(profile?.total_score || 0).nextLevelExp) * 100}%`,
-                    }}
-                  />
+                  <div className="relative w-full h-3 bg-gradient-to-r from-muted/30 to-muted/20 rounded-full overflow-hidden shadow-inner border border-primary/10">
+                    {/* Glow effect */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-luxury-shimmer" />
+                    {/* Progress */}
+                    <div
+                      className="relative h-full bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 rounded-full transition-all duration-1000 ease-out shadow-lg shadow-primary/30"
+                      style={{
+                        width: `${(calculateLevel(profile?.total_score || 0).experience / calculateLevel(profile?.total_score || 0).nextLevelExp) * 100}%`,
+                      }}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/20 to-white/30 rounded-full" />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Alt kısım - Hak barı ve istatistikler */}
-            <div className="space-y-2 mt-2 pt-2 border-t border-white/20">
+            <div className="space-y-3 mt-4 pt-4 border-t-2 border-gradient-to-r from-transparent via-primary/20 to-transparent">
               {/* Hak barı - Real-time güncellemeler */}
               {!isPremium && (
-                <div className="space-y-1">
+                <div className="space-y-2 bg-gradient-to-br from-background/50 to-background/30 backdrop-blur-sm rounded-xl p-3 border border-primary/10 shadow-lg">
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-muted-foreground">Oyun Hakları</span>
+                    <span className="text-sm font-bold text-foreground flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-primary animate-pulse-slow" />
+                      Oyun Hakları
+                    </span>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-foreground">
+                      <span className="text-sm font-extrabold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                         {(profile?.game_credits || 0) + (profile?.bonus_credits || 0)}/5
                       </span>
                       {timeUntilNextCredit && profile?.game_credits < 5 && (
-                        <span className="text-xs text-orange-500 bg-orange-100 px-2 py-1 rounded-full">
+                        <span className="text-xs font-bold text-orange-600 bg-gradient-to-r from-orange-100 to-amber-100 px-2.5 py-1 rounded-full shadow-sm border border-orange-200 animate-pulse-slow">
                           +1 {timeUntilNextCredit}
                         </span>
                       )}
                     </div>
                   </div>
-                  <div className="flex gap-1 h-2 w-full">
+                  <div className="flex gap-1.5 h-3 w-full">
                     {Array.from({ length: 5 }, (_, i) => {
                       const isActive = i < (profile?.game_credits || 0);
-                      let segmentColor = "bg-black/20";
+                      let segmentColor = "bg-muted/30";
+                      let shadowClass = "";
 
                       if (isActive) {
                         switch (i + 1) {
                           case 1:
-                            segmentColor = "bg-red-500";
+                            segmentColor = "bg-gradient-to-r from-red-500 to-red-600";
+                            shadowClass = "shadow-md shadow-red-500/30";
                             break;
                           case 2:
-                            segmentColor = "bg-red-400";
+                            segmentColor = "bg-gradient-to-r from-orange-400 to-orange-500";
+                            shadowClass = "shadow-md shadow-orange-400/30";
                             break;
                           case 3:
-                            segmentColor = "bg-orange-500";
+                            segmentColor = "bg-gradient-to-r from-amber-400 to-yellow-500";
+                            shadowClass = "shadow-md shadow-amber-400/30";
                             break;
                           case 4:
-                            segmentColor = "bg-green-400";
+                            segmentColor = "bg-gradient-to-r from-lime-400 to-green-500";
+                            shadowClass = "shadow-md shadow-lime-400/30";
                             break;
                           case 5:
-                            segmentColor = "bg-green-500";
+                            segmentColor = "bg-gradient-to-r from-emerald-400 to-green-600";
+                            shadowClass = "shadow-md shadow-emerald-400/30 animate-premium-glow";
                             break;
                           default:
-                            segmentColor = "bg-black/20";
+                            segmentColor = "bg-muted/30";
                         }
                       }
 
                       return (
                         <div
                           key={i}
-                          className={`flex-1 rounded-full transition-all duration-500 ease-out shadow-sm ${segmentColor}`}
+                          className={`flex-1 rounded-full transition-all duration-500 ease-out border border-white/10 ${segmentColor} ${shadowClass}`}
                         />
                       );
                     })}
@@ -505,36 +541,66 @@ const HomePage = () => {
 
               {/* İstatistik badge'leri - Real-time güncellemeler */}
               <div className="flex flex-wrap gap-2 justify-center">
-                <Badge variant="secondary" className="bg-white/20 text-foreground border-white/30 text-xs">
-                  <Target className="w-3 h-3 mr-1" />
-                  Günlük Oyun: {profile?.daily_games || 0}/∞
+                <Badge className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-foreground border-2 border-blue-400/30 text-xs font-bold px-3 py-1.5 shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20 transition-all duration-300 hover:scale-105">
+                  <Target className="w-4 h-4 mr-1.5 text-blue-500 drop-shadow" />
+                  <span className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                    Günlük: {profile?.daily_games || 0}
+                  </span>
                 </Badge>
-                <Badge variant="secondary" className="bg-white/20 text-foreground border-white/30 text-xs">
-                  <Zap className="w-3 h-3 mr-1" />
-                  Günlük Seri: {profile?.win_streak || 0}/∞
+                <Badge className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-foreground border-2 border-amber-400/30 text-xs font-bold px-3 py-1.5 shadow-lg shadow-amber-500/10 hover:shadow-amber-500/20 transition-all duration-300 hover:scale-105 animate-premium-glow">
+                  <Zap className="w-4 h-4 mr-1.5 text-amber-500 drop-shadow animate-pulse-slow" />
+                  <span className="bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
+                    Seri: {profile?.win_streak || 0}
+                  </span>
                 </Badge>
               </div>
 
               {/* Joker Envanteri */}
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 mt-3">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-sm font-bold text-foreground">🃏 Jokerlerim</h4>
-                </div>
-                <div className="flex gap-2 text-xs">
-                  <div className="bg-white/10 rounded-lg p-2 flex items-center gap-1">
-                    <span>5️⃣</span>
-                    <span className="font-medium">Değiştir</span>
-                    <span className="font-semibold">×{jokers.degistir}</span>
+              <div className="relative bg-gradient-to-br from-purple-500/10 via-pink-500/10 to-purple-500/10 backdrop-blur-md rounded-2xl p-4 border-2 border-purple-400/20 shadow-xl overflow-hidden group hover:border-purple-400/40 transition-all duration-500">
+                {/* Dekoratif arka plan */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-500/5 to-transparent animate-luxury-shimmer opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                
+                <div className="relative z-10">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="w-5 h-5 text-purple-500 animate-pulse-slow drop-shadow" />
+                    <h4 className="text-base font-extrabold bg-gradient-to-r from-purple-600 via-pink-500 to-purple-600 bg-clip-text text-transparent">
+                      Jokerlerim
+                    </h4>
                   </div>
-                  <div className="bg-white/10 rounded-lg p-2 flex items-center gap-1">
-                    <span>🗣️</span>
-                    <span className="font-medium">Fısılda</span>
-                    <span className="font-semibold">×{jokers.fisilida}</span>
-                  </div>
-                  <div className="bg-white/10 rounded-lg p-2 flex items-center gap-1">
-                    <span>✍️</span>
-                    <span className="font-medium">Sen Yaz</span>
-                    <span className="font-semibold">×{jokers.senYaz}</span>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="relative bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-xl p-2.5 border-2 border-blue-400/30 shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20 hover:scale-105 transition-all duration-300">
+                      <div className="flex flex-col items-center gap-1">
+                        <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-lg flex items-center justify-center shadow-md text-lg">
+                          5️⃣
+                        </div>
+                        <span className="font-bold text-[10px] text-foreground text-center leading-tight">Değiştir</span>
+                        <span className="font-black text-sm bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                          ×{jokers.degistir}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="relative bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl p-2.5 border-2 border-purple-400/30 shadow-lg shadow-purple-500/10 hover:shadow-purple-500/20 hover:scale-105 transition-all duration-300">
+                      <div className="flex flex-col items-center gap-1">
+                        <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-pink-500 rounded-lg flex items-center justify-center shadow-md text-lg">
+                          🗣️
+                        </div>
+                        <span className="font-bold text-[10px] text-foreground text-center leading-tight">Fısılda</span>
+                        <span className="font-black text-sm bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                          ×{jokers.fisilida}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="relative bg-gradient-to-br from-emerald-500/20 to-green-500/20 rounded-xl p-2.5 border-2 border-emerald-400/30 shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20 hover:scale-105 transition-all duration-300">
+                      <div className="flex flex-col items-center gap-1">
+                        <div className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-green-500 rounded-lg flex items-center justify-center shadow-md text-lg">
+                          ✍️
+                        </div>
+                        <span className="font-bold text-[10px] text-foreground text-center leading-tight">Sen Yaz</span>
+                        <span className="font-black text-sm bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
+                          ×{jokers.senYaz}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
