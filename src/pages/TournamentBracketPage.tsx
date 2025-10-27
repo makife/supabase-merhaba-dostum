@@ -577,44 +577,123 @@ const TournamentBracketPage = () => {
     const isCompleted = match.status === "completed";
     const winner = match.winner_id;
 
+    // Round'a göre gradient renkleri
+    const roundGradients = {
+      1: "from-purple-600/80 via-fuchsia-600/80 to-pink-600/80", // Çeyrek Final
+      2: "from-amber-600/80 via-orange-600/80 to-red-600/80",    // Yarı Final
+      3: "from-yellow-500/80 via-amber-500/80 to-orange-500/80", // Final
+    };
+
+    const roundBorders = {
+      1: "border-purple-400/30",
+      2: "border-orange-400/30", 
+      3: "border-yellow-400/40",
+    };
+
     return (
-      <Card className="bg-white/10 backdrop-blur-md border-white/20 mb-3">
-        <CardContent className="p-4">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-300">Maç {match.match_number}</span>
-              <span className="text-xs px-2 py-1 rounded bg-blue-500/20 text-blue-300">{getMatchStatus(match)}</span>
+      <Card className={`bg-gradient-to-br ${roundGradients[roundNumber as keyof typeof roundGradients]} backdrop-blur-xl border-2 ${roundBorders[roundNumber as keyof typeof roundBorders]} mb-4 hover:scale-[1.02] transition-all duration-300 shadow-2xl`}>
+        <CardContent className="p-3 sm:p-4">
+          <div className="space-y-2">
+            {/* Match Header */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${roundGradients[roundNumber as keyof typeof roundGradients]} flex items-center justify-center border-2 border-white/30`}>
+                  <span className="text-white font-bold text-sm">{match.match_number}</span>
+                </div>
+                <span className="text-xs sm:text-sm text-white/90 font-semibold">Maç {match.match_number}</span>
+              </div>
+              <span className={`text-xs px-2 sm:px-3 py-1 rounded-full font-medium ${
+                match.status === "completed" 
+                  ? "bg-green-500/30 text-green-100 border border-green-400/40" 
+                  : match.status === "in_progress"
+                  ? "bg-yellow-500/30 text-yellow-100 border border-yellow-400/40"
+                  : "bg-blue-500/30 text-blue-100 border border-blue-400/40"
+              }`}>
+                {getMatchStatus(match)}
+              </span>
             </div>
 
-            {/* Player 1 */}
-            <div
-              className={`flex items-center justify-between p-2 rounded ${
-                isCompleted && winner === match.player1_id
-                  ? "bg-green-500/20 border border-green-500/40"
-                  : "bg-gray-500/10"
-              }`}
-            >
-              <span className="text-white font-medium">{player1.name}</span>
-              {isCompleted && <span className="text-white font-bold">{match.player1_score}</span>}
+            {/* Players Container */}
+            <div className="space-y-2">
+              {/* Player 1 */}
+              <div
+                className={`relative overflow-hidden rounded-xl p-3 sm:p-4 transition-all duration-300 ${
+                  isCompleted && winner === match.player1_id
+                    ? "bg-gradient-to-r from-green-500/40 via-emerald-500/40 to-green-600/40 border-2 border-green-400/60 shadow-lg shadow-green-500/30 scale-[1.02]"
+                    : "bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/15"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                    {/* Player Avatar/Icon */}
+                    <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-lg sm:text-xl flex-shrink-0 ${
+                      player1.isBot 
+                        ? "bg-gradient-to-br from-gray-600 to-gray-800" 
+                        : "bg-gradient-to-br from-blue-500 to-purple-600"
+                    }`}>
+                      {player1.isBot ? "🤖" : "👤"}
+                    </div>
+                    <span className="text-white font-bold text-sm sm:text-base truncate">{player1.name}</span>
+                  </div>
+                  {isCompleted && (
+                    <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                      {winner === match.player1_id && <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-300" />}
+                      <span className="text-white font-black text-lg sm:text-2xl">{match.player1_score}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* VS Divider */}
+              <div className="relative py-1">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t-2 border-white/20"></div>
+                </div>
+                <div className="relative flex justify-center">
+                  <span className="bg-gradient-to-r from-purple-500 to-pink-500 px-3 sm:px-4 py-1 rounded-full text-white font-black text-xs sm:text-sm border-2 border-white/30 shadow-lg">
+                    VS
+                  </span>
+                </div>
+              </div>
+
+              {/* Player 2 */}
+              <div
+                className={`relative overflow-hidden rounded-xl p-3 sm:p-4 transition-all duration-300 ${
+                  isCompleted && winner === match.player2_id
+                    ? "bg-gradient-to-r from-green-500/40 via-emerald-500/40 to-green-600/40 border-2 border-green-400/60 shadow-lg shadow-green-500/30 scale-[1.02]"
+                    : "bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/15"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                    {/* Player Avatar/Icon */}
+                    <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-lg sm:text-xl flex-shrink-0 ${
+                      player2.isBot 
+                        ? "bg-gradient-to-br from-gray-600 to-gray-800" 
+                        : "bg-gradient-to-br from-blue-500 to-purple-600"
+                    }`}>
+                      {player2.isBot ? "🤖" : "👤"}
+                    </div>
+                    <span className="text-white font-bold text-sm sm:text-base truncate">{player2.name}</span>
+                  </div>
+                  {isCompleted && (
+                    <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                      {winner === match.player2_id && <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-300" />}
+                      <span className="text-white font-black text-lg sm:text-2xl">{match.player2_score}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
-            {/* VS */}
-            <div className="text-center text-gray-400 text-sm">VS</div>
-
-            {/* Player 2 */}
-            <div
-              className={`flex items-center justify-between p-2 rounded ${
-                isCompleted && winner === match.player2_id
-                  ? "bg-green-500/20 border border-green-500/40"
-                  : "bg-gray-500/10"
-              }`}
-            >
-              <span className="text-white font-medium">{player2.name}</span>
-              {isCompleted && <span className="text-white font-bold">{match.player2_score}</span>}
-            </div>
-
+            {/* Match Status Message */}
             {match.status === "in_progress" && (
-              <div className="text-center text-yellow-300 text-sm">⚡ Maç devam ediyor...</div>
+              <div className="mt-3 text-center">
+                <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-yellow-500/20 border border-yellow-400/40 animate-pulse">
+                  <div className="w-2 h-2 rounded-full bg-yellow-400 animate-ping"></div>
+                  <span className="text-yellow-100 font-semibold text-xs sm:text-sm">Maç devam ediyor</span>
+                </div>
+              </div>
             )}
           </div>
         </CardContent>
@@ -699,30 +778,44 @@ const TournamentBracketPage = () => {
         )}
 
         {/* Bracket */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[1, 2, 3].map((round) => (
-            <div key={round} className="space-y-4">
-              <div className="text-center">
-                <h2 className="text-xl font-bold text-white mb-4 flex items-center justify-center">
-                  <Trophy className="w-5 h-5 mr-2 text-yellow-400" />
-                  {getRoundName(round)}
-                </h2>
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+          {[1, 2, 3].map((round) => {
+            const roundTitles = {
+              1: { name: "Çeyrek Final", icon: "⚔️", gradient: "from-purple-500 to-fuchsia-500" },
+              2: { name: "Yarı Final", icon: "🔥", gradient: "from-orange-500 to-red-500" },
+              3: { name: "Final", icon: "👑", gradient: "from-yellow-400 to-amber-500" },
+            };
+            const roundInfo = roundTitles[round as keyof typeof roundTitles];
 
-              {matchesByRound[round]?.map((match) => (
-                <MatchCard key={match.id} match={match} roundNumber={round} />
-              )) || (
-                <Card className="bg-white/5 backdrop-blur-md border-white/10">
-                  <CardContent className="p-4 text-center text-gray-400">
-                    {matches.length === 0 ? "Maçlar henüz oluşturulmadı" : `Round ${round} maçları mevcut değil`}
-                    <div className="text-xs mt-2">
-                      Toplam maç: {matches.length} | Bu round: {matchesByRound[round]?.length || 0}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          ))}
+            return (
+              <div key={round} className="space-y-3 sm:space-y-4">
+                {/* Round Header */}
+                <div className="text-center">
+                  <div className={`inline-flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2 sm:py-3 rounded-2xl bg-gradient-to-r ${roundInfo.gradient} shadow-2xl border-2 border-white/30 backdrop-blur-sm`}>
+                    <span className="text-xl sm:text-2xl">{roundInfo.icon}</span>
+                    <h2 className="text-base sm:text-xl font-black text-white tracking-wide">
+                      {roundInfo.name}
+                    </h2>
+                    <Trophy className="w-4 h-4 sm:w-6 sm:h-6 text-yellow-100" />
+                  </div>
+                </div>
+
+                {/* Matches */}
+                {matchesByRound[round]?.map((match) => (
+                  <MatchCard key={match.id} match={match} roundNumber={round} />
+                )) || (
+                  <Card className="bg-white/5 backdrop-blur-md border-white/10">
+                    <CardContent className="p-4 text-center text-gray-400">
+                      {matches.length === 0 ? "Maçlar henüz oluşturulmadı" : `Round ${round} maçları mevcut değil`}
+                      <div className="text-xs mt-2">
+                        Toplam maç: {matches.length} | Bu round: {matchesByRound[round]?.length || 0}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
