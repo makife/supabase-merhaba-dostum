@@ -289,7 +289,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
           )
         `)
         .eq('is_online', true)
-        .gte('last_seen', new Date(Date.now() - 15 * 1000).toISOString());
+        .gte('last_seen', new Date(Date.now() - 45 * 1000).toISOString()); // 45 saniye window
       
       if (data) {
         setOnlineUsers(data.map((item: any) => ({
@@ -333,7 +333,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
             )
           `)
           .eq('is_online', true)
-          .gte('last_seen', new Date(Date.now() - 15 * 1000).toISOString());
+          .gte('last_seen', new Date(Date.now() - 45 * 1000).toISOString()); // 45 saniye window
 
         if (data) {
           setOnlineUsers(data.map((item: any) => ({
@@ -364,7 +364,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     updatePresence();
     fetchOnlineUsers();
     
-    const interval = setInterval(updatePresence, 5000);
+    const interval = setInterval(updatePresence, 4000); // 4 saniyede bir güncelle
     const channel = supabase.channel('presence_changes').on('postgres_changes', {
       event: '*', 
       schema: 'public', 

@@ -54,7 +54,7 @@ interface SelectedUser {
 
 export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivateChat }: GlobalChatProps) {
   const { user } = useAuth();
-  const { profile, onlineUsers, isUserOnline } = useUser();
+  const { profile, onlineUsers, isUserOnline, refreshOnlineUsers } = useUser();
   const { playSound } = useSounds();
   const { isUserBlocked, blockUser, unblockUser, blockedUsers } = useUserBlocking();
   const navigate = useNavigate();
@@ -255,8 +255,9 @@ useEffect(() => {
 
     console.log('🔄 Setting up Global Chat real-time subscription');
     
-    // İlk mesajları yükle
+    // İlk mesajları ve online kullanıcıları yükle
     fetchMessages();
+    refreshOnlineUsers();
 
     // Real-time subscription kur
     const channel = supabase
