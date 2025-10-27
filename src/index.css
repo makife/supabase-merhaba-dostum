@@ -267,6 +267,14 @@ All colors MUST be HSL.
       padding-left: max(1rem, env(safe-area-inset-left));
       padding-right: max(1rem, env(safe-area-inset-right));
     }
+    
+    /* Native platform safe area - ensures equal padding from all edges */
+    html.is-native .native-safe-container {
+      padding-top: max(1rem, env(safe-area-inset-top)) !important;
+      padding-bottom: max(0.5rem, env(safe-area-inset-bottom)) !important;
+      padding-left: max(1rem, env(safe-area-inset-left)) !important;
+      padding-right: max(1rem, env(safe-area-inset-right)) !important;
+    }
   }
   
   /* 🎬 PREMIUM ANIMATIONS COLLECTION 🎬 */
