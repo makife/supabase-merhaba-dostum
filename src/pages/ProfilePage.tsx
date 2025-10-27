@@ -268,8 +268,13 @@ const ProfilePage = () => {
             };
           });
 
-          // Profilde bir güncelleme olduğunda rozetleri de tazele
+          // Profilde bir güncelleme olduğunda rozetleri de tazele ve kontrol et
           fetchBadges();
+          
+          // Rozet kontrolü yap
+          if (user) {
+            checkBadges(user.id);
+          }
         }
       )
       .on(
@@ -318,6 +323,11 @@ const ProfilePage = () => {
               tournamentsPlayed: tournamentStats.played,
               tournamentWinRate: tournamentStats.winRate,
             }));
+            
+            // Rozet kontrolü yap
+            if (user) {
+              checkBadges(user.id);
+            }
           }
         }
       )
@@ -340,6 +350,11 @@ const ProfilePage = () => {
               tournamentsPlayed: tournamentStats.played,
               tournamentWinRate: tournamentStats.winRate,
             }));
+            
+            // Rozet kontrolü yap
+            if (user) {
+              checkBadges(user.id);
+            }
           }
         }
       )
@@ -530,6 +545,12 @@ const ProfilePage = () => {
       }
     
       await fetchBadges();
+      
+      // Rozet kontrolü yap (sadece kendi profilinde)
+      if (isOwnProfile && user) {
+        await checkBadges(user.id);
+      }
+      
       toast.success('İstatistikler güncellendi!');
     } catch (error) {
       toast.error('Güncelleme hatası');
