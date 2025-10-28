@@ -58,6 +58,7 @@ const SettingsPage = () => {
   // Auto-save tracking
   const initialSettingsRef = useRef<any>(null);
   const hasChangedRef = useRef(false);
+  const isInitialMount = useRef(true);
   
   // Modal states
   const [modalOpen, setModalOpen] = useState(false);
@@ -97,6 +98,12 @@ const SettingsPage = () => {
   useEffect(() => {
     if (!initialSettingsRef.current) return;
 
+    // İlk mount'ta toast gösterme
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
     const currentSettings = {
       notifications,
       sounds: soundsEnabled,
@@ -115,14 +122,14 @@ const SettingsPage = () => {
       // Dispatch custom event to notify other components
       window.dispatchEvent(new Event('settingsChanged'));
       
-      // Only show toast if there was a real change
-      if (hasChangedRef.current) {
-        playSound('buttonClick');
-        toast({
-          title: 'Ayarlar Otomatik Kaydedildi',
-          description: 'Değişiklikleriniz otomatik olarak kaydedildi.',
-        });
-      }
+      // Update initial settings ref for next comparison
+      initialSettingsRef.current = currentSettings;
+      
+      playSound('buttonClick');
+      toast({
+        title: 'Ayarlar Kaydedildi',
+        description: 'Değişiklikleriniz kaydedildi.',
+      });
     }
   }, [notifications, soundsEnabled, musicEnabled, theme, language, playSound, toast]);
 

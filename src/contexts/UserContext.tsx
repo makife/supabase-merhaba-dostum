@@ -1,7 +1,8 @@
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useMobileNotifications } from '@/hooks/useMobileNotifications';
 
 interface OnlineUser {
   id: string;
@@ -80,6 +81,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
+  const previousCreditsRef = useRef<number>(0);
+  const { showLocalNotification, isPermissionGranted } = useMobileNotifications();
 
   const refreshProfile = async (forceRefresh = false) => {
     if (!user) {
@@ -197,8 +200,19 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     if (!user) return;
     
     try {
+      const previousTotal = getTotalCredits();
       await supabase.rpc('check_and_refresh_credits', { user_id: user.id });
       await refreshProfile(true);
+      
+      // Hak artışı kontrolü ve bildirim
+      const newTotal = getTotalCredits();
+      if (newTotal > previousTotal && isPermissionGranted) {
+        const creditsGained = newTotal - previousTotal;
+        showLocalNotification(
+          '🎮 Hak Doldu!',
+          `+${creditsGained} oyun hakkı kazandınız! Toplam: ${newTotal}/5`
+        );
+      }
     } catch (error) {
       console.error('Error checking credits:', error);
     }
@@ -395,13 +409,17 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     }
   }, [user]);
 
-  // Credit check interval
+  // Credit check interval - Her 1 dakikada bir kontrol et
   useEffect(() => {
     if (!user || isPremium) return;
     
+    // İlk kontrolü hemen yap
+    checkAndRefreshCredits();
+    
+    // 1 dakikada bir kontrol et (hak dolumu 15dk'da olsa bile 1dk'da kontrol daha responsive)
     const interval = setInterval(() => {
       checkAndRefreshCredits();
-    }, 15 * 60 * 1000);
+    }, 60 * 1000); // 1 dakika
 
     return () => clearInterval(interval);
   }, [user, isPremium]);
