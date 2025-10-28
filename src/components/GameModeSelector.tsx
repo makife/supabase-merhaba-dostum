@@ -82,6 +82,7 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
           <div>
             <h3 className="font-semibold mb-3 text-center">Oyun Türü Seçin</h3>
             <RadioGroup value={selectedType} onValueChange={(value) => {
+              playSound('buttonClick');
               setSelectedType(value as 'timed' | 'score');
             }}>
               <div className="space-y-4">
