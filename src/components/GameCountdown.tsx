@@ -5,9 +5,10 @@ interface GameCountdownProps {
   onComplete: () => void;
   className?: string;
   serverStartTime?: string | null; // Server timestamp for sync
+  serverTimeOffset?: number; // Server time offset in ms
 }
 
-const GameCountdown = ({ onComplete, className, serverStartTime }: GameCountdownProps) => {
+const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffset = 0 }: GameCountdownProps) => {
   const [count, setCount] = useState(5);
   const [isVisible, setIsVisible] = useState(false);
   const [showStart, setShowStart] = useState(false);
@@ -95,7 +96,7 @@ const GameCountdown = ({ onComplete, className, serverStartTime }: GameCountdown
     setIsVisible(true);
 
     const updateCountdown = () => {
-      const now = Date.now();
+      const now = Date.now() + serverTimeOffset;
       const elapsed = Math.floor((now - startTime) / 1000);
       const remaining = Math.max(0, 5 - elapsed);
 
@@ -121,7 +122,7 @@ const GameCountdown = ({ onComplete, className, serverStartTime }: GameCountdown
     const interval = setInterval(updateCountdown, 100);
 
     return () => clearInterval(interval);
-  }, [serverStartTime, onComplete]);
+  }, [serverStartTime, serverTimeOffset, onComplete]);
 
   // ❌ CLIENT-SIDE FALLBACK KALDIRILDI - Sadece server-side sync kullanıyoruz
   // Bu sayede tüm oyuncular tamamen senkronize oluyor

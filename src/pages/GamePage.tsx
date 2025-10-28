@@ -134,6 +134,7 @@ const GamePage = ({
   const submitTouchTsRef = useRef(0);
   
   const [globalUsedWords, setGlobalUsedWords] = useState<Set<string>>(new Set());
+  const [serverTimeOffset, setServerTimeOffset] = useState(0);
 
   const addCleanup = useCallback((cleanupFn: () => void) => {
   cleanupRef.current.push(cleanupFn);
@@ -454,6 +455,23 @@ useEffect(() => {
   const [showResults, setShowResults] = useState(false);
   const [rematchRequested, setRematchRequested] = useState(false);
   const [waitingForRematchResponse, setWaitingForRematchResponse] = useState(false);
+  
+  // Server time offset'i fetch et (turnuva senkronizasyonu için kritik)
+  useEffect(() => {
+    const fetchServerTime = async () => {
+      try {
+        const { data, error } = await supabase.rpc('get_server_time');
+        if (!error && data) {
+          const offset = new Date(data).getTime() - Date.now();
+          setServerTimeOffset(offset);
+          console.log('⏰ Server time offset:', offset, 'ms');
+        }
+      } catch (err) {
+        console.error('Server time fetch error:', err);
+      }
+    };
+    fetchServerTime();
+  }, []);
   
   // Rakip ayrıldığında sonuç kartını göster (turnuvada devre dışı)
   useEffect(() => {
@@ -4534,6 +4552,7 @@ return (
       <GameCountdown 
         onComplete={handleCountdownComplete}
         serverStartTime={countdownServerTime}
+        serverTimeOffset={serverTimeOffset}
       />
     )}
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 relative overflow-hidden letters-background"
