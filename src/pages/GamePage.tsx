@@ -2926,7 +2926,7 @@ const checkWinnerWithScores = useCallback(async (currentPlayerScore: number, cur
 const handleTournamentExit = async () => {
   if (!user || !tournamentMatch) return;
 
-  console.log('Turnuva maçından ayrılıyor:', user.id);
+  console.log('🚪 Turnuva maçından ayrılıyor:', user.id, 'Tournament:', tournamentMatch.tournament_id);
 
   try {
     // Rakibi kazanan yap
@@ -3069,6 +3069,20 @@ const handleTournamentExit = async () => {
       })
       .eq('id', tournamentMatch.id);
 
+    // ✅ TURNUVA KATILIMCISINI SİL (kritik - yoksa yeni turnuvaya katılamaz)
+    console.log('🗑️ tournament_participants kaydı siliniyor...');
+    const { error: participantDeleteError } = await supabase
+      .from('tournament_participants')
+      .delete()
+      .eq('tournament_id', tournamentMatch.tournament_id)
+      .eq('user_id', user.id);
+
+    if (participantDeleteError) {
+      console.error('❌ Tournament participant silinemedi:', participantDeleteError);
+    } else {
+      console.log('✅ Tournament participant başarıyla silindi');
+    }
+
     toast({
       title: "🏆 Turnuva Cezası",
       description: "Turnuva maçından ayrıldığınız için -50 puan cezası aldınız.",
@@ -3077,10 +3091,27 @@ const handleTournamentExit = async () => {
     });
 
     setShowTournamentExitDialog(false);
+    
+    // GameContext'i temizle
+    leaveRoom();
+    
     navigate('/tournament');
 
   } catch (error) {
     console.error('Çıkış hatası:', error);
+    
+    // Hata durumunda da turnuva kaydını temizle
+    try {
+      await supabase
+        .from('tournament_participants')
+        .delete()
+        .eq('tournament_id', tournamentMatch.tournament_id)
+        .eq('user_id', user.id);
+    } catch (cleanupError) {
+      console.error('Cleanup hatası:', cleanupError);
+    }
+    
+    leaveRoom();
     navigate('/tournament');
   }
 };
