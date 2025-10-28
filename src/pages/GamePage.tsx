@@ -473,10 +473,8 @@ useEffect(() => {
     fetchServerTime();
   }, []);
   
-  // Rakip ayrıldığında sonuç kartını göster (turnuvada devre dışı)
+  // Rakip ayrıldığında işlem yap
   useEffect(() => {
-    if (gameMode === 'tournament') return; // Turnuva modunda disconnect ile kazanım gösterme!
-
     const handler = async (e: any) => {
       const evtRoomId = e?.detail?.roomId;
       const eventWinner = e?.detail?.winner; // 'player' veya 'opponent'
@@ -496,10 +494,17 @@ useEffect(() => {
           clearInterval(timerRef.current);
           timerRef.current = null;
         }
-        return; // HAK İADESİ YOK!
+        return;
       }
       
-      // Kazanan benim, disconnect win göster
+      // Turnuva modunda sadece loglama yap, GameContext zaten toast gösteriyor
+      if (gameMode === 'tournament') {
+        console.log('🏆 Turnuva: Rakip ayrıldı, GameContext tarafından +500 puan bonusu veriliyor');
+        // Toast GameContext'te gösteriliyor, burada sadece return
+        return;
+      }
+      
+      // Normal modlarda: Kazanan benim, disconnect win göster
       console.log('🚪 Rakip oyundan ayrıldı eventi alındı');
       setDisconnectWin(true);
       setWinner('player');

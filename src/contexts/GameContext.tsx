@@ -2172,7 +2172,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
                   toast({
                     title: "⚠️ Rakip Ayrıldı",
                     description:
-                      "Rakip oyuncu ayrıldı veya bağlantısı koptu, +500 puan ile oyun bitene kadar devam edebilirsin",
+                      "Rakip oyundan ayrıldı veya bağlantısı koptu. Size +500 puan verildi.",
                     duration: 5000,
                   });
 
