@@ -120,9 +120,20 @@ export function useChatNotifications() {
         (payload) => {
           const notif: any = payload.new;
           if (!notif) return;
+          
           if (notif.type === 'mention') {
             refreshUnreadCounts();
           }
+          
+          // Turnuva rakip ayrıldı bildirimi
+          if (notif.type === 'tournament_opponent_left') {
+            toast({
+              title: "🏆 Turnuva Zaferi!",
+              description: notif.message,
+              duration: 6000,
+            });
+          }
+          
           // NOT: Rematch toast'ları App.tsx'te gösteriliyor (global)
         }
       )

@@ -483,10 +483,13 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
         schema: 'public',
         table: 'tournament_participants',
         filter: `tournament_id=eq.${tournamentId}`
-      }, () => {
+      }, (payload) => {
+        console.log('🔄 Participant değişikliği tespit edildi:', payload.eventType, payload);
         fetchTournamentDetails(tournamentId);
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 Participants channel status:', status);
+      });
 
     // Matches subscription  
     const matchesChannel = supabase

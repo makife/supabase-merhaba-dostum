@@ -3036,6 +3036,24 @@ const handleTournamentExit = async () => {
               }
             }
             
+            // ✅ RAKIBE BİLDİRİM GÖNDER (notifications tablosu)
+            console.log('📢 Rakibe bildirim gönderiliyor:', opponentId);
+            const { error: notificationError } = await supabase
+              .from('notifications')
+              .insert({
+                user_id: opponentId,
+                type: 'tournament_opponent_left',
+                message: `Rakibiniz turnuva maçından ayrıldı ve +500 puan kazandınız!`,
+                related_id: tournamentMatch.id,
+                is_read: false
+              });
+
+            if (notificationError) {
+              console.error('❌ Rakibe bildirim gönderilemedi:', notificationError);
+            } else {
+              console.log('✅ Rakibe bildirim başarıyla gönderildi');
+            }
+            
             // playerDisconnected event'ini tetikle (rakip için bildirim)
             console.log('📢 playerDisconnected event tetikleniyor');
             window.dispatchEvent(
