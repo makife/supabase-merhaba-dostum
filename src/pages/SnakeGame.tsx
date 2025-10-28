@@ -19,7 +19,7 @@ const SnakeGame = () => {
 
   const [snake, setSnake] = useState(INITIAL_SNAKE);
   const [food, setFood] = useState({ x: 5, y: 5, emoji: FRUIT_EMOJIS[0] });
-  const [direction, setDirection] = useState(INITIAL_DIRECTION);
+  const directionRef = useRef(INITIAL_DIRECTION);
   const [gameRunning, setGameRunning] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [score, setScore] = useState(0);
@@ -39,13 +39,12 @@ const SnakeGame = () => {
   // Yön değiştir ve oyunu başlat (eğer durmuşsa)
   const changeDirection = useCallback(
     (newDirection) => {
-      setDirection((prev) => {
-        // Ters yöne dönmeyi engelle
-        if (prev.x + newDirection.x === 0 && prev.y + newDirection.y === 0) {
-          return prev;
-        }
-        return newDirection;
-      });
+      const prev = directionRef.current;
+      // Ters yöne dönmeyi engelle
+      if (prev.x + newDirection.x === 0 && prev.y + newDirection.y === 0) {
+        return;
+      }
+      directionRef.current = newDirection;
       if (!gameRunning && !gameOver) {
         setGameRunning(true);
       }
@@ -88,8 +87,8 @@ const SnakeGame = () => {
       const newSnake = [...prevSnake];
       const head = { ...newSnake[0] };
 
-      head.x += direction.x;
-      head.y += direction.y;
+      head.x += directionRef.current.x;
+      head.y += directionRef.current.y;
 
       // Wrap-around: Bir kenardan çıkınca karşı kenardan gir
       if (head.x < 0) head.x = GRID_SIZE - 1;
@@ -129,7 +128,7 @@ const SnakeGame = () => {
 
       return newSnake;
     });
-  }, [direction, food, gameOver, gameRunning, score, level, highScore, generateFood, checkLevelUp]);
+  }, [food, gameOver, gameRunning, score, level, highScore, generateFood, checkLevelUp]);
 
   // Oyun döngüsünü başlat/durdur
   useEffect(() => {
@@ -219,7 +218,7 @@ const SnakeGame = () => {
   const resetGame = () => {
     setSnake(INITIAL_SNAKE);
     setFood({ x: 5, y: 5, emoji: FRUIT_EMOJIS[Math.floor(Math.random() * FRUIT_EMOJIS.length)] });
-    setDirection(INITIAL_DIRECTION);
+    directionRef.current = INITIAL_DIRECTION;
     setGameRunning(false);
     setGameOver(false);
     setScore(0);
@@ -515,7 +514,7 @@ const SnakeGame = () => {
             {/* Yukarı */}
             <button
               onClick={() => {
-                if (direction.y === 0) {
+                if (directionRef.current.y === 0) {
                   changeDirection({ x: 0, y: -1 });
                 }
               }}
@@ -556,7 +555,7 @@ const SnakeGame = () => {
             <div style={{ display: "flex", gap: "30px", alignItems: "center" }}>
               <button
                 onClick={() => {
-                  if (direction.x === 0) {
+                  if (directionRef.current.x === 0) {
                     changeDirection({ x: -1, y: 0 });
                   }
                 }}
@@ -595,7 +594,7 @@ const SnakeGame = () => {
 
               <button
                 onClick={() => {
-                  if (direction.y === 0) {
+                  if (directionRef.current.y === 0) {
                     changeDirection({ x: 0, y: 1 });
                   }
                 }}
@@ -634,7 +633,7 @@ const SnakeGame = () => {
 
               <button
                 onClick={() => {
-                  if (direction.x === 0) {
+                  if (directionRef.current.x === 0) {
                     changeDirection({ x: 1, y: 0 });
                   }
                 }}
