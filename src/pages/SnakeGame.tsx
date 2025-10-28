@@ -91,12 +91,11 @@ const SnakeGame = () => {
       head.x += direction.x;
       head.y += direction.y;
 
-      // Duvarlarla çarpışma kontrolü
-      if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) {
-        setGameOver(true);
-        setGameRunning(false);
-        return prevSnake;
-      }
+      // Wrap-around: Bir kenardan çıkınca karşı kenardan gir
+      if (head.x < 0) head.x = GRID_SIZE - 1;
+      if (head.x >= GRID_SIZE) head.x = 0;
+      if (head.y < 0) head.y = GRID_SIZE - 1;
+      if (head.y >= GRID_SIZE) head.y = 0;
 
       // Kendine çarpışma kontrolü
       if (newSnake.some((segment) => segment.x === head.x && segment.y === head.y)) {
