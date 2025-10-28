@@ -98,13 +98,8 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       setSearchProgress(Math.min(progress, 100));
       if (progress >= 100) {
         clearInterval(id);
-        setSearchTimeout(true);
-        console.log("⏰ Arama timeout'a ulaştı - kullanıcı 'Tekrar Ara' veya 'İptal' seçebilir");
-        toast({ 
-          title: "Timeout", 
-          description: "Oyuncu bulunamadı. Tekrar deneyin veya iptal edin.", 
-          variant: "destructive" 
-        });
+        setIsSearching(false);
+        console.log("⏰ Arama tamamlandı - oyuncu bulunamadı");
       }
     }, 1000);
     progressIntervalRef.current = id;
