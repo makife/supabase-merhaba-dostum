@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 
@@ -13,6 +13,22 @@ const GridSimonSays = () => {
   const [level, setLevel] = useState(1);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [vibrationEnabled, setVibrationEnabled] = useState(true);
+  const audioContextRef = useRef<AudioContext | null>(null);
+
+  // AudioContext'i oluştur
+  useEffect(() => {
+    if (!audioContextRef.current) {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      audioContextRef.current = new AudioContextClass();
+    }
+
+    return () => {
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
+    };
+  }, []);
 
   // 4x4 grid oluştur (0-15 arası sayılar)
   const gridSize = 16;
@@ -20,10 +36,10 @@ const GridSimonSays = () => {
   // Ses efektleri
   const createSound = useCallback(
     (frequency, duration = 200) => {
-      if (!soundEnabled) return;
+      if (!soundEnabled || !audioContextRef.current) return;
 
       try {
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const audioContext = audioContextRef.current;
         const oscillator = audioContext.createOscillator();
         const gainNode = audioContext.createGain();
 
