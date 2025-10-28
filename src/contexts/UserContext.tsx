@@ -252,7 +252,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         .from('profiles')
         .update({ 
           game_credits: newGameCredits,
-          bonus_credits: newBonusCredits
+          bonus_credits: newBonusCredits,
+          last_credit_refresh: new Date().toISOString()
         })
         .eq('id', user.id);
       
@@ -261,7 +262,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       const updatedProfile = { 
         ...profile, 
         game_credits: newGameCredits,
-        bonus_credits: newBonusCredits
+        bonus_credits: newBonusCredits,
+        last_credit_refresh: new Date().toISOString()
       };
       setProfile(updatedProfile);
       console.log('Credit consumed:', updatedProfile);
