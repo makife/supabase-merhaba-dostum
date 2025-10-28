@@ -498,7 +498,7 @@ useEffect(() => {
       }
       
       // Turnuva modunda rakip ayrıldı bildirimi
-      if (gameMode === 'tournament' && e?.detail?.reason === 'player_left_tournament') {
+      if (gameMode?.includes('tournament') && e?.detail?.reason === 'player_left_tournament') {
         console.log('🏆 Turnuva: Rakip ayrıldı, +500 puan bonusu verildi');
         
         toast({
