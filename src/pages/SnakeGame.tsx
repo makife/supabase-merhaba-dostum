@@ -66,19 +66,16 @@ const SnakeGame = () => {
   }, []);
 
   // Seviye kontrolü ve hız artışı
-  const checkLevelUp = useCallback(
-    (currentScore) => {
-      const newLevel = Math.floor(currentScore / 50) + 1;
-      setLevel((prevLevel) => {
-        if (newLevel > prevLevel) {
-          setSpeed((prev) => Math.max(80, prev - 15)); // Her seviyede hız artar
-          return prevLevel + 1; // Sadece 1 seviye artsın
-        }
-        return prevLevel;
-      });
-    },
-    [],
-  );
+  const checkLevelUp = useCallback((currentScore) => {
+    const newLevel = Math.floor(currentScore / 50) + 1;
+    setLevel((prevLevel) => {
+      if (newLevel > prevLevel) {
+        setSpeed((prev) => Math.max(80, prev - 15)); // Her seviyede hız artar
+        return prevLevel + 1; // Sadece 1 seviye artsın
+      }
+      return prevLevel;
+    });
+  }, []);
 
   // Oyun döngüsü
   const gameLoop = useCallback(() => {
@@ -291,7 +288,7 @@ const SnakeGame = () => {
               textShadow: "2px 2px 4px rgba(0,0,0,0.3)",
             }}
           >
-            🐍 Yılan Oyunu
+            🐍 Yılan Oyunu 🐍
           </h1>
           <div
             style={{
