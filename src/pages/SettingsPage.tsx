@@ -1,6 +1,7 @@
 import { MusicPackSelector } from '@/components/MusicPackSelector';
 import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -27,7 +28,10 @@ import {
   Sparkles,
   Gift,
   ShieldCheck,
-  Settings
+  Settings,
+  Trash2,
+  Download,
+  AlertTriangle
 } from 'lucide-react';
 import { triggerGlobalStorageClear } from '@/hooks/useLocalStorageClear';
 import { useMobileNotifications } from '@/hooks/useMobileNotifications';
@@ -58,6 +62,8 @@ const SettingsPage = () => {
   // Modal states
   const [modalOpen, setModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState({ title: '', content: '' });
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Load settings from localStorage and set initial values
   useEffect(() => {
@@ -558,6 +564,72 @@ return (
           </Card>
         )}
 
+        {/* Account Management - KVKK Compliance */}
+        <Card className="border-destructive/30">
+          <CardHeader>
+            <CardTitle className="flex items-center text-destructive">
+              <AlertTriangle className="w-5 h-5 mr-2" />
+              Hesap İşlemleri
+            </CardTitle>
+            <CardDescription>
+              Hesabınızı yönetin ve verilerinizi kontrol edin (KVKK)
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={async () => {
+                try {
+                  const { data, error } = await supabase.rpc('export_user_data');
+                  
+                  if (error) throw error;
+                  
+                  // JSON dosyası olarak indir
+                  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `kelimeci-verilerin-${new Date().toISOString().split('T')[0]}.json`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                  
+                  toast({
+                    title: 'Başarılı',
+                    description: 'Verileriniz indirildi.',
+                  });
+                } catch (error) {
+                  toast({
+                    title: 'Hata',
+                    description: 'Veriler indirilemedi.',
+                    variant: 'destructive',
+                  });
+                }
+              }}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Verilerimi İndir (KVKK)
+            </Button>
+
+            <Separator />
+
+            <Button
+              variant="destructive"
+              className="w-full justify-start"
+              onClick={() => setDeleteConfirmOpen(true)}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Hesabımı Sil
+            </Button>
+            
+            <p className="text-xs text-muted-foreground">
+              ⚠️ Hesabınızı sildiğinizde tüm verileriniz kalıcı olarak silinecektir. Bu işlem geri alınamaz.
+            </p>
+          </CardContent>
+        </Card>
+
         {/* App Version */}
         <Card>
           <CardContent className="pt-6">
@@ -580,6 +652,80 @@ return (
             className="prose prose-sm max-w-none"
             dangerouslySetInnerHTML={{ __html: modalContent.content }}
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Account Confirmation Dialog */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-destructive flex items-center">
+              <AlertTriangle className="w-5 h-5 mr-2" />
+              Hesabı Silmeyi Onaylayın
+            </DialogTitle>
+            <DialogDescription>
+              Bu işlem geri alınamaz. Tüm verileriniz kalıcı olarak silinecektir:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+              <li>Profil bilgileriniz</li>
+              <li>Oyun geçmişiniz ve istatistikleriniz</li>
+              <li>Rozetleriniz ve başarılarınız</li>
+              <li>Satın alımlarınız ve envanter</li>
+              <li>Tüm oyun kayıtlarınız</li>
+            </ul>
+            
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setDeleteConfirmOpen(false)}
+                disabled={isDeleting}
+              >
+                İptal
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1"
+                disabled={isDeleting}
+                onClick={async () => {
+                  setIsDeleting(true);
+                  try {
+                    // Hesap silme fonksiyonunu çağır
+                    const { error } = await supabase.rpc('delete_user_account');
+                    
+                    if (error) throw error;
+                    
+                    // Başarılı mesajı göster
+                    toast({
+                      title: 'Hesap Silindi',
+                      description: 'Hesabınız başarıyla silindi. Yönlendiriliyorsunuz...',
+                    });
+                    
+                    // Kullanıcıyı çıkış yap
+                    await supabase.auth.signOut();
+                    
+                    // Ana sayfaya yönlendir
+                    setTimeout(() => {
+                      navigate('/auth');
+                    }, 2000);
+                  } catch (error) {
+                    console.error('Delete error:', error);
+                    toast({
+                      title: 'Hata',
+                      description: 'Hesap silinemedi. Lütfen tekrar deneyin.',
+                      variant: 'destructive',
+                    });
+                    setIsDeleting(false);
+                    setDeleteConfirmOpen(false);
+                  }
+                }}
+              >
+                {isDeleting ? 'Siliniyor...' : 'Evet, Hesabımı Sil'}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

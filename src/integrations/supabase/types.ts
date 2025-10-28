@@ -1612,6 +1612,8 @@ export type Database = {
         Args: { p_round: number; p_tournament_id: string }
         Returns: undefined
       }
+      delete_user_account: { Args: never; Returns: undefined }
+      export_user_data: { Args: never; Returns: Json }
       generate_random_grid: { Args: never; Returns: Json }
       get_avatar_url: { Args: { user_id: string }; Returns: string }
       get_daily_top_leaders: {
