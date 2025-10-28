@@ -12,6 +12,7 @@ interface TournamentContextType {
   participants: TournamentParticipant[];
   matches: TournamentMatch[];
   loading: boolean;
+  serverTimeOffset: number;
   
   // Actions
   createTournament: () => Promise<string | null>;
@@ -50,6 +51,20 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
   const [participants, setParticipants] = useState<TournamentParticipant[]>([]);
   const [matches, setMatches] = useState<TournamentMatch[]>([]);
   const [loading, setLoading] = useState(false);
+  const [serverTimeOffset, setServerTimeOffset] = useState(0);
+
+  // Get server time offset once on mount
+  useEffect(() => {
+    const fetchServerTime = async () => {
+      const { data, error } = await supabase.rpc('get_server_time' as any);
+      if (!error && data) {
+        const serverTime = new Date(data as string).getTime();
+        const clientTime = Date.now();
+        setServerTimeOffset(serverTime - clientTime);
+      }
+    };
+    fetchServerTime();
+  }, []);
 
   // Cleanup function
   const resetContext = () => {
@@ -554,6 +569,7 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
     participants,
     matches,
     loading,
+    serverTimeOffset,
     createTournament,
     createNakamaTournament,
     joinTournament,

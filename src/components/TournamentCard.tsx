@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Trophy, Users, Clock, Swords } from 'lucide-react';
 import { Tournament } from '@/types/tournament';
 import { supabase } from '@/integrations/supabase/client';
+import { useTournamentContext } from '@/contexts/TournamentContext';
 
 interface TournamentCardProps {
   tournament: Tournament;
@@ -17,6 +18,7 @@ export const TournamentCard: React.FC<TournamentCardProps> = ({
   disabled = false
 }) => {
   const [participantCount, setParticipantCount] = useState(0);
+  const { serverTimeOffset } = useTournamentContext();
 
   // Fetch real participant count
   useEffect(() => {
@@ -31,8 +33,9 @@ export const TournamentCard: React.FC<TournamentCardProps> = ({
 
     fetchParticipants();
   }, [tournament.id]);
+  
   const timeRemaining = tournament.expires_at 
-    ? Math.max(0, Math.floor((new Date(tournament.expires_at).getTime() - Date.now()) / 1000))
+    ? Math.max(0, Math.floor((new Date(tournament.expires_at).getTime() - (Date.now() + serverTimeOffset)) / 1000))
     : 0;
 
   const formatTime = (seconds: number) => {

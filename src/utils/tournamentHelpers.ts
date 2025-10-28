@@ -6,9 +6,9 @@ export const formatTournamentTime = (seconds: number): string => {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
-export const calculateTimeRemaining = (expiresAt: string): number => {
+export const calculateTimeRemaining = (expiresAt: string, serverTimeOffset: number = 0): number => {
   const expiry = new Date(expiresAt).getTime();
-  const now = Date.now();
+  const now = Date.now() + serverTimeOffset;
   return Math.max(0, Math.floor((expiry - now) / 1000));
 };
 
