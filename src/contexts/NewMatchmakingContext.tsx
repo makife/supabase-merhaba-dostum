@@ -98,11 +98,13 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       setSearchProgress(Math.min(progress, 100));
       if (progress >= 100) {
         clearInterval(id);
-        if (isSearching) {
-          cancelSearch();
-          setSearchTimeout(true);
-          toast({ title: "Timeout", description: "Oyuncu bulunamadi", variant: "destructive" });
-        }
+        setSearchTimeout(true);
+        console.log("⏰ Arama timeout'a ulaştı - kullanıcı 'Tekrar Ara' veya 'İptal' seçebilir");
+        toast({ 
+          title: "Timeout", 
+          description: "Oyuncu bulunamadı. Tekrar deneyin veya iptal edin.", 
+          variant: "destructive" 
+        });
       }
     }, 1000);
     progressIntervalRef.current = id;
@@ -534,6 +536,9 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
     console.log("🔄 Tekrar arama başlatılıyor...");
     
     try {
+      // Timeout flag'ini temizle
+      setSearchTimeout(false);
+      
       // Önce tüm aktif işlemleri temizle
       await cleanup();
       
@@ -542,6 +547,8 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       
       // Yeni arama başlat
       await startSearch(gameType);
+      
+      console.log("✅ Yeni arama başlatıldı");
     } catch (error) {
       console.error("Restart search error:", error);
     }
