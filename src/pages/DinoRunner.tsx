@@ -28,6 +28,7 @@ const DinoRunner = () => {
 
   const gameLoopRef = useRef<number>();
   const lastTouchTime = useRef<number>(0);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   // Oyun sabitleri
   const GAME_WIDTH = 600;
@@ -39,14 +40,28 @@ const DinoRunner = () => {
   const JUMP_HEIGHT = 120; // 100'den 120'ye artırdım
   const OBSTACLE_WIDTH = 20;
 
+  // AudioContext'i oluştur
+  useEffect(() => {
+    if (!audioContextRef.current) {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      audioContextRef.current = new AudioContextClass();
+    }
+
+    return () => {
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
+    };
+  }, []);
+
   // Ses efektleri
   const playSound = useCallback(
     (frequency, duration = 100, type = "sine") => {
-      if (!soundEnabled) return;
+      if (!soundEnabled || !audioContextRef.current) return;
 
       try {
-        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-        const audioContext = new AudioContextClass();
+        const audioContext = audioContextRef.current;
         const oscillator = audioContext.createOscillator();
         const gainNode = audioContext.createGain();
 
@@ -54,7 +69,7 @@ const DinoRunner = () => {
         gainNode.connect(audioContext.destination);
 
         oscillator.frequency.value = frequency;
-        oscillator.type = type;
+        oscillator.type = type as OscillatorType;
 
         gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
         gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
