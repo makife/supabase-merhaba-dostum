@@ -497,10 +497,17 @@ useEffect(() => {
         return;
       }
       
-      // Turnuva modunda sadece loglama yap, GameContext zaten toast gösteriyor
-      if (gameMode === 'tournament') {
-        console.log('🏆 Turnuva: Rakip ayrıldı, GameContext tarafından +500 puan bonusu veriliyor');
-        // Toast GameContext'te gösteriliyor, burada sadece return
+      // Turnuva modunda rakip ayrıldı bildirimi
+      if (gameMode === 'tournament' && e?.detail?.reason === 'player_left_tournament') {
+        console.log('🏆 Turnuva: Rakip ayrıldı, +500 puan bonusu verildi');
+        
+        toast({
+          title: "⚠️ Rakip Ayrıldı",
+          description: "Rakip oyundan ayrıldı veya bağlantısı koptu. Size +500 puan verildi.",
+          duration: 5000,
+        });
+        
+        // Oyunu devam ettir
         return;
       }
       
@@ -2951,7 +2958,67 @@ const handleTournamentExit = async () => {
       if (deleteError) {
         console.error('❌ Participant silinemedi:', deleteError);
       } else {
-        console.log('✅ Participant silindi, presence sistemi tetiklenecek');
+        console.log('✅ Participant silindi, rakibe +500 puan ve bildirim gönderiliyor');
+        
+        // Karşı oyuncuya +500 puan ekle
+        const opponentId = tournamentMatch.player1_id === user.id ? 
+          tournamentMatch.player2_id : 
+          tournamentMatch.player1_id;
+        
+        if (opponentId) {
+          // Karşı oyuncunun game_rooms'daki skorunu güncelle
+          const { data: roomData } = await supabase
+            .from('game_rooms')
+            .select('player1_id, player1_score, player2_score')
+            .eq('id', currentRoom.id)
+            .single();
+          
+          if (roomData) {
+            const isOpponentPlayer1 = roomData.player1_id === opponentId;
+            const currentOpponentScore = isOpponentPlayer1 ? 
+              (roomData.player1_score || 0) : 
+              (roomData.player2_score || 0);
+            
+            await supabase
+              .from('game_rooms')
+              .update({
+                ...(isOpponentPlayer1 ? 
+                  { player1_score: currentOpponentScore + 500 } : 
+                  { player2_score: currentOpponentScore + 500 }),
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', currentRoom.id);
+            
+            console.log('✅ Rakibe +500 puan eklendi');
+          }
+          
+          // Karşı oyuncunun profile skorunu da güncelle
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('total_score')
+            .eq('id', opponentId)
+            .single();
+          
+          if (profile) {
+            await supabase
+              .from('profiles')
+              .update({
+                total_score: (profile.total_score || 0) + 500
+              })
+              .eq('id', opponentId);
+          }
+        }
+        
+        // playerDisconnected event'ini tetikle (rakip için bildirim)
+        window.dispatchEvent(
+          new CustomEvent("playerDisconnected", {
+            detail: {
+              winner: "opponent",
+              reason: "player_left_tournament",
+              roomId: currentRoom.id,
+            },
+          })
+        );
       }
     }
 
