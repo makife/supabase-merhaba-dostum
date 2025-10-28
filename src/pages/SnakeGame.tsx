@@ -69,14 +69,15 @@ const SnakeGame = () => {
   const checkLevelUp = useCallback(
     (currentScore) => {
       const newLevel = Math.floor(currentScore / 50) + 1;
-      if (newLevel > level) {
-        setLevel(newLevel);
-        setSpeed((prev) => Math.max(80, prev - 15)); // Her seviyede hız artar
-        return true;
-      }
-      return false;
+      setLevel((prevLevel) => {
+        if (newLevel > prevLevel) {
+          setSpeed((prev) => Math.max(80, prev - 15)); // Her seviyede hız artar
+          return prevLevel + 1; // Sadece 1 seviye artsın
+        }
+        return prevLevel;
+      });
     },
-    [level],
+    [],
   );
 
   // Oyun döngüsü
