@@ -2961,64 +2961,98 @@ const handleTournamentExit = async () => {
         console.log('✅ Participant silindi, rakibe +500 puan ve bildirim gönderiliyor');
         
         // Karşı oyuncuya +500 puan ekle
-        const opponentId = tournamentMatch.player1_id === user.id ? 
+        let opponentId = tournamentMatch.player1_id === user.id ? 
           tournamentMatch.player2_id : 
           tournamentMatch.player1_id;
         
-        if (opponentId) {
-          // Karşı oyuncunun game_rooms'daki skorunu güncelle
-          const { data: roomData } = await supabase
-            .from('game_rooms')
-            .select('player1_id, player1_score, player2_score')
-            .eq('id', currentRoom.id)
-            .single();
-          
-          if (roomData) {
-            const isOpponentPlayer1 = roomData.player1_id === opponentId;
-            const currentOpponentScore = isOpponentPlayer1 ? 
-              (roomData.player1_score || 0) : 
-              (roomData.player2_score || 0);
+        // Eğer opponentId bot değilse, UUID formatına çevir
+        if (opponentId && !opponentId.startsWith('bot_')) {
+          try {
+            // String'i UUID formatına dönüştür (eğer değilse)
+            opponentId = opponentId.trim();
             
-            await supabase
+            console.log('🎯 Rakip ID:', opponentId);
+            
+            // Karşı oyuncunun game_rooms'daki skorunu güncelle
+            const { data: roomData, error: roomError } = await supabase
               .from('game_rooms')
-              .update({
-                ...(isOpponentPlayer1 ? 
-                  { player1_score: currentOpponentScore + 500 } : 
-                  { player2_score: currentOpponentScore + 500 }),
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', currentRoom.id);
+              .select('player1_id, player1_score, player2_score')
+              .eq('id', currentRoom.id)
+              .single();
             
-            console.log('✅ Rakibe +500 puan eklendi');
-          }
-          
-          // Karşı oyuncunun profile skorunu da güncelle
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('total_score')
-            .eq('id', opponentId)
-            .single();
-          
-          if (profile) {
-            await supabase
+            if (roomError) {
+              console.error('❌ Room data alınamadı:', roomError);
+            } else if (roomData) {
+              console.log('📊 Room data:', roomData);
+              
+              // UUID karşılaştırması için her iki ID'yi de string'e çevir
+              const isOpponentPlayer1 = String(roomData.player1_id) === String(opponentId);
+              const currentOpponentScore = isOpponentPlayer1 ? 
+                (roomData.player1_score || 0) : 
+                (roomData.player2_score || 0);
+              
+              console.log('👤 Rakip player1 mi?', isOpponentPlayer1, 'Mevcut skor:', currentOpponentScore);
+              
+              const { error: updateError } = await supabase
+                .from('game_rooms')
+                .update({
+                  ...(isOpponentPlayer1 ? 
+                    { player1_score: currentOpponentScore + 500 } : 
+                    { player2_score: currentOpponentScore + 500 }),
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', currentRoom.id);
+              
+              if (updateError) {
+                console.error('❌ Room skoru güncellenemedi:', updateError);
+              } else {
+                console.log('✅ Rakibe game_rooms\'da +500 puan eklendi');
+              }
+            }
+            
+            // Karşı oyuncunun profile skorunu da güncelle
+            const { data: profile, error: profileError } = await supabase
               .from('profiles')
-              .update({
-                total_score: (profile.total_score || 0) + 500
+              .select('total_score')
+              .eq('id', opponentId)
+              .single();
+            
+            if (profileError) {
+              console.error('❌ Profile data alınamadı:', profileError);
+            } else if (profile) {
+              console.log('📊 Profile mevcut skor:', profile.total_score);
+              
+              const { error: profileUpdateError } = await supabase
+                .from('profiles')
+                .update({
+                  total_score: (profile.total_score || 0) + 500
+                })
+                .eq('id', opponentId);
+              
+              if (profileUpdateError) {
+                console.error('❌ Profile skoru güncellenemedi:', profileUpdateError);
+              } else {
+                console.log('✅ Rakibe profiles\'da +500 puan eklendi');
+              }
+            }
+            
+            // playerDisconnected event'ini tetikle (rakip için bildirim)
+            console.log('📢 playerDisconnected event tetikleniyor');
+            window.dispatchEvent(
+              new CustomEvent("playerDisconnected", {
+                detail: {
+                  winner: "opponent",
+                  reason: "player_left_tournament",
+                  roomId: currentRoom.id,
+                },
               })
-              .eq('id', opponentId);
+            );
+          } catch (err) {
+            console.error('❌ Rakibe puan eklenirken hata:', err);
           }
+        } else {
+          console.log('🤖 Rakip bot, puan ve bildirim gönderilmiyor');
         }
-        
-        // playerDisconnected event'ini tetikle (rakip için bildirim)
-        window.dispatchEvent(
-          new CustomEvent("playerDisconnected", {
-            detail: {
-              winner: "opponent",
-              reason: "player_left_tournament",
-              roomId: currentRoom.id,
-            },
-          })
-        );
       }
     }
 
