@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Trophy, Home, Clock, Crown } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTournament } from "@/hooks/useTournament";
 import { organizeMatchesByRound, getRoundName, getMatchStatus, generateBotName } from "@/utils/tournamentHelpers";
 import { supabase } from "@/integrations/supabase/client";
@@ -553,7 +554,7 @@ const TournamentBracketPage = () => {
 
   const MatchCard = ({ match, roundNumber }: { match: any; roundNumber: number }) => {
     const getPlayerInfo = (playerId: string, isPlayer1: boolean) => {
-      if (!playerId) return { name: "TBD", isBot: false };
+      if (!playerId) return { name: "TBD", isBot: false, avatar_url: undefined };
 
       // Önce match içindeki zenginleştirilmiş player bilgisini kullan
       const playerInfo = isPlayer1 ? match.player1 : match.player2;
@@ -563,12 +564,13 @@ const TournamentBracketPage = () => {
         // Zenginleştirilmiş isim varsa onu kullan; yoksa seed'li üret
         const seed = [...playerId].reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
         const name = playerInfo?.username || generateBotName(seed);
-        return { name, isBot: true };
+        return { name, isBot: true, avatar_url: undefined };
       }
 
       return {
         name: playerInfo?.username || "Oyuncu",
         isBot: false,
+        avatar_url: playerInfo?.avatar_url,
       };
     };
 
@@ -632,15 +634,18 @@ const TournamentBracketPage = () => {
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                     {/* Player Avatar/Icon */}
-                    <div
-                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-lg sm:text-xl flex-shrink-0 ${
-                        player1.isBot
-                          ? "bg-gradient-to-br from-gray-600 to-gray-800"
-                          : "bg-gradient-to-br from-blue-500 to-purple-600"
-                      }`}
-                    >
-                      {player1.isBot ? "🤖" : "👤"}
-                    </div>
+                    {player1.isBot ? (
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-lg sm:text-xl flex-shrink-0 bg-gradient-to-br from-gray-600 to-gray-800">
+                        🤖
+                      </div>
+                    ) : (
+                      <Avatar className="w-8 h-8 sm:w-10 sm:h-10" showFrame={true}>
+                        <AvatarImage src={player1.avatar_url || undefined} />
+                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm">
+                          {player1.name.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
                     <span className="text-white font-bold text-sm sm:text-base truncate">{player1.name}</span>
                   </div>
                   {isCompleted && (
@@ -675,15 +680,18 @@ const TournamentBracketPage = () => {
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                     {/* Player Avatar/Icon */}
-                    <div
-                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-lg sm:text-xl flex-shrink-0 ${
-                        player2.isBot
-                          ? "bg-gradient-to-br from-gray-600 to-gray-800"
-                          : "bg-gradient-to-br from-blue-500 to-purple-600"
-                      }`}
-                    >
-                      {player2.isBot ? "🤖" : "👤"}
-                    </div>
+                    {player2.isBot ? (
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-lg sm:text-xl flex-shrink-0 bg-gradient-to-br from-gray-600 to-gray-800">
+                        🤖
+                      </div>
+                    ) : (
+                      <Avatar className="w-8 h-8 sm:w-10 sm:h-10" showFrame={true}>
+                        <AvatarImage src={player2.avatar_url || undefined} />
+                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm">
+                          {player2.name.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
                     <span className="text-white font-bold text-sm sm:text-base truncate">{player2.name}</span>
                   </div>
                   {isCompleted && (

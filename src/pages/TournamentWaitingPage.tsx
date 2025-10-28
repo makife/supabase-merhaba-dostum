@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, Bot, User, ArrowLeft } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { TournamentCountdown } from "@/components/TournamentCountdown";
 import { useTournament } from "@/hooks/useTournament";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -113,9 +114,14 @@ const TournamentWaitingPage = () => {
                   <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
                     {index + 1}
                   </div>
+                  <Avatar className="w-10 h-10 ml-3" showFrame={true}>
+                    <AvatarImage src={participant.profiles?.avatar_url || undefined} />
+                    <AvatarFallback className="bg-green-500 text-white">
+                      <User className="w-5 h-5" />
+                    </AvatarFallback>
+                  </Avatar>
                   <div className="ml-3 flex-1">
                     <div className="flex items-center">
-                      <User className="w-4 h-4 mr-2 text-green-400" />
                       <span className="text-white font-medium">{participant.profiles?.username || "Oyuncu"}</span>
                       {participant.user_id === currentTournament.creator_id && (
                         <span className="ml-2 text-xs bg-yellow-500 text-black px-2 py-1 rounded">KURUCU</span>
