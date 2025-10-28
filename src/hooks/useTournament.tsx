@@ -13,10 +13,24 @@ export const useTournament = (tournamentId?: string) => {
   const [isCreator, setIsCreator] = useState(false);
   const [hasJoined, setHasJoined] = useState(false);
   const [realPlayerCount, setRealPlayerCount] = useState(0);
+  const [serverTimeOffset, setServerTimeOffset] = useState(0);
   
   // Track expires_at to prevent countdown reset on every render
   const expiresAtRef = useRef<string | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Get server time offset once on mount
+  useEffect(() => {
+    const fetchServerTime = async () => {
+      const { data, error } = await supabase.rpc('get_server_time');
+      if (!error && data) {
+        const serverTime = new Date(data).getTime();
+        const clientTime = Date.now();
+        setServerTimeOffset(serverTime - clientTime);
+      }
+    };
+    fetchServerTime();
+  }, []);
 
   // Calculate countdown - only reset when expires_at actually changes
   useEffect(() => {
@@ -45,7 +59,7 @@ export const useTournament = (tournamentId?: string) => {
 
     intervalRef.current = setInterval(() => {
       const expiresAt = new Date(newExpiresAt).getTime();
-      const now = Date.now();
+      const now = Date.now() + serverTimeOffset; // Use server time
       const remaining = Math.max(0, Math.floor((expiresAt - now) / 1000));
 
       setTimeLeft(remaining);
@@ -82,6 +96,7 @@ export const useTournament = (tournamentId?: string) => {
     isCreator,
     realPlayerCount,
     tournamentId,
+    serverTimeOffset,
   ]);
 
   // Update derived state

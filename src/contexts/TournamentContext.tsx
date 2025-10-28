@@ -70,11 +70,14 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
       // Önce süresi dolmuş turnuvaları temizle
       await supabase.rpc('cleanup_expired_tournaments');
       
+      // Get server time for comparison
+      const { data: serverTime } = await supabase.rpc('get_server_time');
+      
       const { data, error } = await supabase
         .from('tournaments')
         .select('*')
         .in('status', ['waiting', 'in_progress'])
-        .gt('expires_at', new Date().toISOString()) // Süresi dolmamış olanlar
+        .gt('expires_at', serverTime || new Date().toISOString())
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -98,8 +101,9 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
     try {
       setLoading(true);
       
-      // 30 saniye sonrasını hesapla
-      const expiresAt = new Date();
+      // Get server time and add 30 seconds
+      const { data: serverTime } = await supabase.rpc('get_server_time');
+      const expiresAt = new Date(serverTime || new Date());
       expiresAt.setSeconds(expiresAt.getSeconds() + 30);
       
       // Supabase'de turnuva oluştur

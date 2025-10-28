@@ -111,10 +111,7 @@ const TournamentWaitingPage = () => {
                   key={participant.id}
                   className="flex items-center p-3 bg-green-500/10 rounded-lg border border-green-500/20"
                 >
-                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                    {index + 1}
-                  </div>
-                  <Avatar className="w-10 h-10 ml-3" showFrame={true}>
+                  <Avatar className="w-10 h-10" showFrame={true}>
                     <AvatarImage src={participant.profiles?.avatar_url || undefined} />
                     <AvatarFallback className="bg-green-500 text-white">
                       <User className="w-5 h-5" />
@@ -138,10 +135,7 @@ const TournamentWaitingPage = () => {
                   key={participant.id}
                   className="flex items-center p-3 bg-gray-500/10 rounded-lg border border-gray-500/20"
                 >
-                  <div className="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                    {realPlayerCount + index + 1}
-                  </div>
-                  <div className="ml-3 flex-1">
+                  <div className="flex items-center flex-1">
                     <div className="flex items-center">
                       <Bot className="w-4 h-4 mr-2 text-gray-400" />
                       <span className="text-gray-300">{participant.profiles?.username || "Bot"}</span>
@@ -154,12 +148,7 @@ const TournamentWaitingPage = () => {
               {/* Empty Slots */}
               {Array.from({ length: emptySlots }, (_, i) => (
                 <div key={`empty-${i}`} className="flex items-center p-3 bg-white/5 rounded-lg opacity-50">
-                  <div className="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                    {participants.length + i + 1}
-                  </div>
-                  <div className="ml-3 flex-1">
-                    <span className="text-gray-400">Boş Slot</span>
-                  </div>
+                  <span className="text-gray-400">Boş Slot</span>
                 </div>
               ))}
             </div>
