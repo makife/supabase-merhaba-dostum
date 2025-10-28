@@ -406,6 +406,8 @@ const SnakeGame = () => {
             height: GRID_SIZE * 15,
             backdropFilter: "blur(10px)",
             boxShadow: "inset 0 0 20px rgba(0, 0, 0, 0.2)",
+            boxSizing: "border-box",
+            overflow: "hidden",
           }}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
