@@ -1770,16 +1770,16 @@ export type Database = {
         | {
             Args: {
               p_chat_id: string
+              p_recipient_id: string
               p_sender_username: string
-              p_user_id: string
             }
             Returns: boolean
           }
         | {
             Args: {
               p_chat_id: string
-              p_recipient_id: string
               p_sender_username: string
+              p_user_id: string
             }
             Returns: boolean
           }
