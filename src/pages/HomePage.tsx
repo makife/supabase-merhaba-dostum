@@ -42,6 +42,55 @@ import {
   RotateCcw,
 } from "lucide-react";
 
+// Pozitif selamlama mesajları
+const greetingMessages = [
+  "Harika görünüyorsun! 🌟",
+  "Bugün şanslı gününüz! 🍀",
+  "Mükemmel bir gün! ✨",
+  "Enerjiniz çok yüksek! ⚡",
+  "Harika bir başlangıç! 🚀",
+  "Bugün kazanma günün! 🏆",
+  "Muhteşem görünüyorsun! 💫",
+  "İnanılmaz bir enerji! 🔥",
+  "Kazanmaya hazır mısın? 🎯",
+  "Yıldız gibi parlıyorsun! ⭐",
+  "Bugün her şey harika! 🌈",
+  "Şampiyon geri döndü! 👑",
+  "Harika bir ruh hali! 🎨",
+  "Bugün farklısın! 💎",
+  "Enerjin bulaşıcı! 🎭",
+  "Mükemmel bir giriş! 🎪",
+  "Harika bir oyuncu! 🎮",
+  "Bugün çok iyisin! 🌺",
+  "Parlak bir gün! ☀️",
+  "Muhteşem bir başlangıç! 🎉",
+  "Efsane geri döndü! 🦁",
+  "Bugün imkansız yok! 💪",
+  "Harika bir his! 🎵",
+  "Mükemmel zamanlar! ⏰",
+  "Bugün seninle gurur duyuyoruz! 🏅",
+  "Muhteşem bir yolculuk! 🛸",
+  "Harika bir görünüm! 👀",
+  "Bugün çok keyiflisin! 😊",
+  "Parlak bir gelecek! 🌅",
+  "Harika bir macera! 🗺️",
+  "Mükemmel bir savaşçı! ⚔️",
+  "Bugün efsanesin! 🦄",
+  "Harika bir zeka! 🧠",
+  "Muhteşem bir yetenek! 🎯",
+  "Bugün her şey mükemmel! 🌸",
+  "Harika bir strateji! 📊",
+  "Mükemmel bir zamanlama! ⚡",
+  "Bugün şanslı yıldızın parlıyor! 🌟",
+  "Harika bir konsantrasyon! 🎓",
+  "Muhteşem bir performans! 🎬"
+];
+
+// Rastgele selamlama mesajı seç
+const getRandomGreeting = () => {
+  return greetingMessages[Math.floor(Math.random() * greetingMessages.length)];
+};
+
 // Check if user is in their first week (gift premium period)
 const isGiftPremium = (profile: any) => {
   if (!profile?.premium_until) return false;
@@ -68,6 +117,7 @@ const HomePage = () => {
   const [timeUntilNextCredit, setTimeUntilNextCredit] = useState<string>("");
   const { canPlay: canPlayMemory, timeUntilNextPlay } = useMemoryGame();
   const { startSearch, useNakama, isSearching, searchProgress, cancelSearch, nakamaMatch } = useMatchmaking();
+  const [greeting, setGreeting] = useState(getRandomGreeting());
 
   // Level hesaplama fonksiyonu
   const calculateLevel = (totalScore: number) => {
@@ -376,7 +426,7 @@ const HomePage = () => {
                     >
                       KELİMECİ
                     </h1>
-                    <p className="text-xs text-muted-foreground">Merhaba 👋</p>
+                    <p className="text-xs text-muted-foreground">{greeting}</p>
                     <p className="text-sm font-semibold text-foreground truncate">
                       {profile?.username || user?.user_metadata?.username || user?.email?.split("@")[0]}
                     </p>
