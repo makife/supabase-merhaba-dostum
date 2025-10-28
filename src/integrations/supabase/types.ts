@@ -1673,6 +1673,7 @@ export type Database = {
         Args: { room_id: string }
         Returns: Json
       }
+      get_server_time: { Args: never; Returns: string }
       get_tournament_status: {
         Args: { p_tournament_id: string }
         Returns: Json

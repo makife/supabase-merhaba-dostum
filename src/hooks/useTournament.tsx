@@ -22,9 +22,9 @@ export const useTournament = (tournamentId?: string) => {
   // Get server time offset once on mount
   useEffect(() => {
     const fetchServerTime = async () => {
-      const { data, error } = await supabase.rpc('get_server_time');
+      const { data, error } = await supabase.rpc('get_server_time' as any);
       if (!error && data) {
-        const serverTime = new Date(data).getTime();
+        const serverTime = new Date(data as string).getTime();
         const clientTime = Date.now();
         setServerTimeOffset(serverTime - clientTime);
       }
