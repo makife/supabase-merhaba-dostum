@@ -13,7 +13,7 @@ import { useSounds } from "@/hooks/useSounds";
 const TournamentBracketPage = () => {
   const { tournamentId } = useParams();
   const navigate = useNavigate();
-  const { currentTournament, matches, loading, fetchTournamentDetails } = useTournament(tournamentId);
+  const { currentTournament, matches, loading, fetchTournamentDetails, serverTimeOffset } = useTournament(tournamentId);
   const { user } = useAuth();
   const { playSpecialSound } = useSounds();
 
@@ -418,7 +418,7 @@ const TournamentBracketPage = () => {
       targetRoundPending
         .map((m) => new Date((m.updated_at || m.created_at) as string).getTime())
         .filter((ts) => !Number.isNaN(ts))
-        .reduce((max, ts) => Math.max(max, ts), 0) || Date.now();
+        .reduce((max, ts) => Math.max(max, ts), 0) || (Date.now() + serverTimeOffset);
 
     // Eğer anchor ileriye taşındıysa geri sayımı yeniden başlat (çift eşleşme gecikmeleri için)
     const shouldRestart =
@@ -434,7 +434,7 @@ const TournamentBracketPage = () => {
       }
       const tick = () => {
         const anchor = countdownGuard.current.anchorTs ?? latestTs;
-        const elapsed = Math.floor((Date.now() - anchor) / 1000);
+        const elapsed = Math.floor(((Date.now() + serverTimeOffset) - anchor) / 1000);
         const remaining = Math.max(0, 10 - elapsed);
         setCountdown(remaining);
 
