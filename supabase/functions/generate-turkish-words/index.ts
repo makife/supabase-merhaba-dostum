@@ -32,7 +32,43 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { 
+    // Rate limiting check
+    const authHeader = req.headers.get('Authorization');
+    let userId: string | null = null;
+
+    if (authHeader) {
+      const { data: { user }, error } = await supabaseClient.auth.getUser(authHeader.replace('Bearer ', ''));
+      if (!error && user) {
+        userId = user.id;
+        
+        // Rate limit: 5 requests per hour (AI is expensive)
+        const { data: rateLimitCheck, error: rateLimitError } = await supabaseClient
+          .rpc('check_rate_limit', {
+            p_user_id: userId,
+            p_action: 'generate-turkish-words',
+            p_max_requests: 5,
+            p_window_minutes: 60
+          });
+
+        if (rateLimitError) {
+          console.error('Rate limit check error:', rateLimitError);
+        } else if (!rateLimitCheck) {
+          return new Response(
+            JSON.stringify({ 
+              error: 'Çok fazla kelime üretme isteği gönderdiniz. Lütfen bir saat sonra tekrar deneyin.',
+              rateLimited: true,
+              success: false
+            }),
+            { 
+              status: 429, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
+        }
+      }
+    }
+
+    const {
       category = 'genel', 
       count = 50, 
       minLength = 3, 

@@ -156,7 +156,7 @@ serve(async (req) => {
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       {
         global: {
           headers: { Authorization: req.headers.get('Authorization')! },
@@ -178,6 +178,31 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       )
+    }
+
+    // Rate limit: 10 requests per minute
+    const { data: rateLimitCheck, error: rateLimitError } = await supabaseClient
+      .rpc('check_rate_limit', {
+        p_user_id: user.id,
+        p_action: 'send-push-notification',
+        p_max_requests: 10,
+        p_window_minutes: 1
+      });
+
+    if (rateLimitError) {
+      console.error('Rate limit check error:', rateLimitError);
+    } else if (!rateLimitCheck) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Çok fazla bildirim gönderdiniz. Lütfen bir dakika sonra tekrar deneyin.',
+          rateLimited: true,
+          success: false
+        }),
+        { 
+          status: 429, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
     const { receiverId, title, body, data }: PushNotificationRequest = await req.json()

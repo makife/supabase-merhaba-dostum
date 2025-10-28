@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { TURKISH_WORDS_RAW } from "./wordlist-data.ts";
 
 const corsHeaders = {
@@ -54,6 +55,48 @@ serve(async (req) => {
   }
 
   try {
+    // Rate limiting check
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const authHeader = req.headers.get('Authorization');
+    let userId: string | null = null;
+
+    if (authHeader) {
+      const { data: { user }, error } = await supabaseClient.auth.getUser(authHeader.replace('Bearer ', ''));
+      if (!error && user) {
+        userId = user.id;
+        
+        // Rate limit: 100 requests per minute
+        const { data: rateLimitCheck, error: rateLimitError } = await supabaseClient
+          .rpc('check_rate_limit', {
+            p_user_id: userId,
+            p_action: 'validate-word',
+            p_max_requests: 100,
+            p_window_minutes: 1
+          });
+
+        if (rateLimitError) {
+          console.error('Rate limit check error:', rateLimitError);
+        } else if (!rateLimitCheck) {
+          return new Response(
+            JSON.stringify({ 
+              error: 'Çok fazla istek gönderdiniz. Lütfen bir dakika sonra tekrar deneyin.',
+              rateLimited: true,
+              isValid: false,
+              points: 0
+            }),
+            { 
+              status: 429, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
+        }
+      }
+    }
+
     const { word } = await req.json();
     
     if (!word || typeof word !== 'string') {
