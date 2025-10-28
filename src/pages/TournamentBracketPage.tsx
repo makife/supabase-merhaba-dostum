@@ -205,7 +205,7 @@ const TournamentBracketPage = () => {
         } else {
           // Gerçek oyuncu varsa: SERVER-SIDE countdown başlat (RPC ile)
           console.log(`👤 Real player match detected, starting server-side countdown via RPC`);
-          
+
           // Önce match'e room_id ataması gerekiyor, countdown RPC'si room_id bekliyor
           // Tournament maçları için room_id'yi match_id olarak kullanabiliriz
           await supabase
@@ -215,15 +215,15 @@ const TournamentBracketPage = () => {
               updated_at: new Date().toISOString(),
             })
             .eq("id", match.id);
-          
+
           // Şimdi server-side countdown başlat
-          const { data: countdownStart, error: rpcError } = await supabase.rpc('start_game_countdown', {
-            p_room_id: match.id
+          const { data: countdownStart, error: rpcError } = await supabase.rpc("start_game_countdown", {
+            p_room_id: match.id,
           });
-          
+
           if (!rpcError && countdownStart) {
             console.log(`✅ Server-side countdown started for tournament match:`, countdownStart);
-            
+
             // countdown_started_at'ı server'dan gelen değerle güncelle
             await supabase
               .from("tournament_matches")
@@ -233,7 +233,7 @@ const TournamentBracketPage = () => {
               })
               .eq("id", match.id);
           } else {
-            console.error('❌ RPC countdown error:', rpcError);
+            console.error("❌ RPC countdown error:", rpcError);
             // Fallback: Local timestamp kullan
             const fallbackTime = new Date().toISOString();
             await supabase
@@ -312,7 +312,7 @@ const TournamentBracketPage = () => {
         // Bir sonraki tur zaten oluşturulmuş mu kontrol et (çift çağrıyı önle)
         const { data: nextRoundMatches, count } = await supabase
           .from("tournament_matches")
-          .select("*", { count: 'exact' })
+          .select("*", { count: "exact" })
           .eq("tournament_id", tournamentId)
           .eq("round", round + 1);
 
@@ -580,35 +580,41 @@ const TournamentBracketPage = () => {
     // Round'a göre gradient renkleri
     const roundGradients = {
       1: "from-purple-600/80 via-fuchsia-600/80 to-pink-600/80", // Çeyrek Final
-      2: "from-amber-600/80 via-orange-600/80 to-red-600/80",    // Yarı Final
+      2: "from-amber-600/80 via-orange-600/80 to-red-600/80", // Yarı Final
       3: "from-yellow-500/80 via-amber-500/80 to-orange-500/80", // Final
     };
 
     const roundBorders = {
       1: "border-purple-400/30",
-      2: "border-orange-400/30", 
+      2: "border-orange-400/30",
       3: "border-yellow-400/40",
     };
 
     return (
-      <Card className={`bg-gradient-to-br ${roundGradients[roundNumber as keyof typeof roundGradients]} backdrop-blur-xl border-2 ${roundBorders[roundNumber as keyof typeof roundBorders]} mb-4 hover:scale-[1.02] transition-all duration-300 shadow-2xl`}>
+      <Card
+        className={`bg-gradient-to-br ${roundGradients[roundNumber as keyof typeof roundGradients]} backdrop-blur-xl border-2 ${roundBorders[roundNumber as keyof typeof roundBorders]} mb-4 hover:scale-[1.02] transition-all duration-300 shadow-2xl`}
+      >
         <CardContent className="p-3 sm:p-4">
           <div className="space-y-2">
             {/* Match Header */}
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${roundGradients[roundNumber as keyof typeof roundGradients]} flex items-center justify-center border-2 border-white/30`}>
+                <div
+                  className={`w-8 h-8 rounded-full bg-gradient-to-br ${roundGradients[roundNumber as keyof typeof roundGradients]} flex items-center justify-center border-2 border-white/30`}
+                >
                   <span className="text-white font-bold text-sm">{match.match_number}</span>
                 </div>
                 <span className="text-xs sm:text-sm text-white/90 font-semibold">Maç {match.match_number}</span>
               </div>
-              <span className={`text-xs px-2 sm:px-3 py-1 rounded-full font-medium ${
-                match.status === "completed" 
-                  ? "bg-green-500/30 text-green-100 border border-green-400/40" 
-                  : match.status === "in_progress"
-                  ? "bg-yellow-500/30 text-yellow-100 border border-yellow-400/40"
-                  : "bg-blue-500/30 text-blue-100 border border-blue-400/40"
-              }`}>
+              <span
+                className={`text-xs px-2 sm:px-3 py-1 rounded-full font-medium ${
+                  match.status === "completed"
+                    ? "bg-green-500/30 text-green-100 border border-green-400/40"
+                    : match.status === "in_progress"
+                      ? "bg-yellow-500/30 text-yellow-100 border border-yellow-400/40"
+                      : "bg-blue-500/30 text-blue-100 border border-blue-400/40"
+                }`}
+              >
                 {getMatchStatus(match)}
               </span>
             </div>
@@ -626,11 +632,13 @@ const TournamentBracketPage = () => {
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                     {/* Player Avatar/Icon */}
-                    <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-lg sm:text-xl flex-shrink-0 ${
-                      player1.isBot 
-                        ? "bg-gradient-to-br from-gray-600 to-gray-800" 
-                        : "bg-gradient-to-br from-blue-500 to-purple-600"
-                    }`}>
+                    <div
+                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-lg sm:text-xl flex-shrink-0 ${
+                        player1.isBot
+                          ? "bg-gradient-to-br from-gray-600 to-gray-800"
+                          : "bg-gradient-to-br from-blue-500 to-purple-600"
+                      }`}
+                    >
                       {player1.isBot ? "🤖" : "👤"}
                     </div>
                     <span className="text-white font-bold text-sm sm:text-base truncate">{player1.name}</span>
@@ -667,11 +675,13 @@ const TournamentBracketPage = () => {
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                     {/* Player Avatar/Icon */}
-                    <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-lg sm:text-xl flex-shrink-0 ${
-                      player2.isBot 
-                        ? "bg-gradient-to-br from-gray-600 to-gray-800" 
-                        : "bg-gradient-to-br from-blue-500 to-purple-600"
-                    }`}>
+                    <div
+                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-lg sm:text-xl flex-shrink-0 ${
+                        player2.isBot
+                          ? "bg-gradient-to-br from-gray-600 to-gray-800"
+                          : "bg-gradient-to-br from-blue-500 to-purple-600"
+                      }`}
+                    >
                       {player2.isBot ? "🤖" : "👤"}
                     </div>
                     <span className="text-white font-bold text-sm sm:text-base truncate">{player2.name}</span>
@@ -762,7 +772,7 @@ const TournamentBracketPage = () => {
           </Button>
           <div className="text-center">
             <h1 className="text-3xl font-bold text-white">{currentTournament.name}</h1>
-            <p className="text-gray-300">Turnuva Bracket</p>
+            <p className="text-gray-300">Turnuva Ağacı</p>
           </div>
           <div className="w-24"></div> {/* Spacer */}
         </div>
@@ -791,11 +801,11 @@ const TournamentBracketPage = () => {
               <div key={round} className="space-y-3 sm:space-y-4">
                 {/* Round Header */}
                 <div className="text-center">
-                  <div className={`inline-flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2 sm:py-3 rounded-2xl bg-gradient-to-r ${roundInfo.gradient} shadow-2xl border-2 border-white/30 backdrop-blur-sm`}>
+                  <div
+                    className={`inline-flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2 sm:py-3 rounded-2xl bg-gradient-to-r ${roundInfo.gradient} shadow-2xl border-2 border-white/30 backdrop-blur-sm`}
+                  >
                     <span className="text-xl sm:text-2xl">{roundInfo.icon}</span>
-                    <h2 className="text-base sm:text-xl font-black text-white tracking-wide">
-                      {roundInfo.name}
-                    </h2>
+                    <h2 className="text-base sm:text-xl font-black text-white tracking-wide">{roundInfo.name}</h2>
                     <Trophy className="w-4 h-4 sm:w-6 sm:h-6 text-yellow-100" />
                   </div>
                 </div>
