@@ -2939,6 +2939,20 @@ const handleTournamentExit = async () => {
       } else {
         console.log('⚖️ Turnuva ayrılma cezası uygulandı: -50 puan');
       }
+
+      // game_participants'tan çıkarak presence sistemini tetikle
+      // Bu sayede karşı oyuncu bildirimi alacak ve +500 puan kazanacak
+      const { error: deleteError } = await supabase
+        .from('game_participants')
+        .delete()
+        .eq('room_id', currentRoom.id)
+        .eq('user_id', user.id);
+
+      if (deleteError) {
+        console.error('❌ Participant silinemedi:', deleteError);
+      } else {
+        console.log('✅ Participant silindi, presence sistemi tetiklenecek');
+      }
     }
 
     // Maçı tamamla (çıkan kişi 0 puan alır)
