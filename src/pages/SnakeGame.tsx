@@ -30,10 +30,51 @@ const SnakeGame = () => {
   const gameAreaRef = useRef(null);
   const gameLoopRef = useRef(null);
   const touchStartRef = useRef({ x: 0, y: 0 });
+  const audioContextRef = useRef<AudioContext | null>(null);
+
+  // AudioContext'i oluştur
+  useEffect(() => {
+    if (!audioContextRef.current) {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      audioContextRef.current = new AudioContextClass();
+    }
+
+    return () => {
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const savedScore = Number(sessionStorage.getItem("snakeHighScore")) || 0;
     setHighScore(savedScore);
+  }, []);
+
+  // Ses efekti
+  const playSound = useCallback((frequency: number, duration = 100, type: OscillatorType = "sine") => {
+    if (!audioContextRef.current) return;
+
+    try {
+      const audioContext = audioContextRef.current;
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.frequency.value = frequency;
+      oscillator.type = type;
+
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
+
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + duration / 1000);
+    } catch (error) {
+      console.log("Ses çalınamadı:", error);
+    }
   }, []);
 
   // Yön değiştir ve oyunu başlat (eğer durmuşsa)
@@ -103,6 +144,9 @@ const SnakeGame = () => {
         const newScore = score + 10 * level; // Seviye ile çarpan
         setScore(newScore);
         setFood(generateFood(newSnake));
+        
+        // Meyve yeme sesi
+        playSound(600 + (level * 50), 150, "sine");
 
         // Level atlama kontrolü
         checkLevelUp(newScore);
@@ -126,7 +170,7 @@ const SnakeGame = () => {
 
       return newSnake;
     });
-  }, [food, gameOver, gameRunning, score, level, highScore, generateFood, checkLevelUp]);
+  }, [food, gameOver, gameRunning, score, level, highScore, generateFood, checkLevelUp, playSound]);
 
   // Oyun döngüsünü başlat/durdur
   useEffect(() => {
