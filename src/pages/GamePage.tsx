@@ -2922,6 +2922,20 @@ const handleTournamentExit = async () => {
       tournamentMatch.player2_id : 
       tournamentMatch.player1_id;
 
+    // Turnuva maçından ayrılma cezası uygula (-50 puan)
+    if (currentRoom?.id) {
+      const { error: penaltyError } = await supabase.rpc('apply_disconnect_penalty', {
+        p_offender_id: user.id,
+        p_room_id: currentRoom.id
+      });
+
+      if (penaltyError) {
+        console.error('❌ Ceza uygulanamadı:', penaltyError);
+      } else {
+        console.log('⚖️ Turnuva ayrılma cezası uygulandı: -50 puan');
+      }
+    }
+
     // Maçı tamamla (çıkan kişi 0 puan alır)
     const isUserPlayer1 = tournamentMatch.player1_id === user.id;
     await supabase
@@ -2934,6 +2948,13 @@ const handleTournamentExit = async () => {
         updated_at: new Date().toISOString()
       })
       .eq('id', tournamentMatch.id);
+
+    toast({
+      title: "🏆 Turnuva Cezası",
+      description: "Turnuva maçından ayrıldığınız için -50 puan cezası aldınız.",
+      variant: "destructive",
+      duration: 4000,
+    });
 
     setShowTournamentExitDialog(false);
     navigate('/tournament');
