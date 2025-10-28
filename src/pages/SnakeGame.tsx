@@ -97,17 +97,12 @@ const SnakeGame = () => {
       if (head.y < 0) head.y = GRID_SIZE - 1;
       if (head.y >= GRID_SIZE) head.y = 0;
 
-      // Kendine çarpışma kontrolü
-      if (newSnake.some((segment) => segment.x === head.x && segment.y === head.y)) {
-        setGameOver(true);
-        setGameRunning(false);
-        return prevSnake;
-      }
-
+      // Baş: öne ekle
       newSnake.unshift(head);
 
       // Yiyecek yeme kontrolü
-      if (head.x === food.x && head.y === food.y) {
+      const ateFood = head.x === food.x && head.y === food.y;
+      if (ateFood) {
         const newScore = score + 10 * level; // Seviye ile çarpan
         setScore(newScore);
         setFood(generateFood(newSnake));
@@ -121,7 +116,15 @@ const SnakeGame = () => {
           sessionStorage.setItem("snakeHighScore", newScore.toString());
         }
       } else {
+        // Yemedi ise kuyruğu küçült
         newSnake.pop();
+      }
+
+      // Kendine çarpışma kontrolü (kuyruğun eski hücresine girmek serbest)
+      if (newSnake.slice(1).some((segment) => segment.x === head.x && segment.y === head.y)) {
+        setGameOver(true);
+        setGameRunning(false);
+        return prevSnake;
       }
 
       return newSnake;
