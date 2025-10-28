@@ -1474,7 +1474,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           variant: "destructive",
           duration: 4000,
         });
-      } else if (isActiveGame && gameMode === "tournament") {
+      } else if (isActiveGame && gameMode?.includes("tournament")) {
         // Turnuva oyunundan ayrılma - özel işlem gerekiyor
         console.log("🏆 Turnuva oyunundan ayrılma - bot ekleniyor");
 
@@ -2148,7 +2148,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
                 );
 
                 const gameMode = getGameModeFromRoom(currentRoom);
-                if (gameMode === "tournament") {
+                if (gameMode?.includes("tournament")) {
                   // Turnuva maçında rakip ayrılırsa oyuncuya +500 bonus puan ver ve devam etmesine izin ver
                   const bonusScore = 500;
 
