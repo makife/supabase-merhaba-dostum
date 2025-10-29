@@ -83,7 +83,7 @@ const greetingMessages = [
   "Mükemmel bir zamanlama! ⚡",
   "Bugün şanslı yıldızın parlıyor! 🌟",
   "Harika bir konsantrasyon! 🎓",
-  "Muhteşem bir performans! 🎬"
+  "Muhteşem bir performans! 🎬",
 ];
 
 // Rastgele selamlama mesajı seç
@@ -262,24 +262,24 @@ const HomePage = () => {
       if (!user) return;
 
       const { data: notifications, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_read', false)
-        .order('created_at', { ascending: false });
+        .from("notifications")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("is_read", false)
+        .order("created_at", { ascending: false });
 
       if (error) {
-        console.error('Bildirim kontrolü hatası:', error);
+        console.error("Bildirim kontrolü hatası:", error);
         return;
       }
 
       // Her okunmamış bildirimi göster
       notifications?.forEach((notification: any) => {
-        if (notification.type === 'ban') {
+        if (notification.type === "ban") {
           toast.error(notification.message, {
             duration: 10000,
           });
-        } else if (notification.type === 'ban_lifted') {
+        } else if (notification.type === "ban_lifted") {
           toast.success(notification.message, {
             duration: 7000,
           });
@@ -291,9 +291,9 @@ const HomePage = () => {
 
         // Bildirimi okundu olarak işaretle
         supabase
-          .from('notifications')
+          .from("notifications")
           .update({ is_read: true })
-          .eq('id', notification.id)
+          .eq("id", notification.id)
           .then(() => {});
       });
     };
@@ -723,41 +723,41 @@ const HomePage = () => {
                   </div>
                 </div>
 
-                {/* Tetris Game */}
+                {/* Morles Game */}
                 <div
                   className="bg-gradient-to-r from-cyan-500 to-teal-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px]"
-                  onClick={() => navigate("/tetris-game")}
+                  onClick={() => navigate("/morles-game")}
                 >
                   <div className="flex-1">
                     <h2 className="text-xl font-semibold text-white font-painter">Morles Oyunu</h2>
                   </div>
-                  {/* Mini Tetris İkonları - Dikdörtgen + L blok */}
+                  {/* Mini Morles İkonları - Dikdörtgen + L blok */}
                   <div className="relative w-12 h-12 flex items-center justify-center gap-1">
                     {/* 6 birimli dikdörtgen blok (3x2) */}
                     <div className="flex flex-col gap-0.5 animate-pulse" style={{ animationDelay: "0s" }}>
                       <div className="flex gap-0.5">
-                        <div className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: '#bf00ff' }}></div>
-                        <div className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: '#bf00ff' }}></div>
+                        <div className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: "#bf00ff" }}></div>
+                        <div className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: "#bf00ff" }}></div>
                       </div>
                       <div className="flex gap-0.5">
-                        <div className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: '#bf00ff' }}></div>
-                        <div className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: '#bf00ff' }}></div>
+                        <div className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: "#bf00ff" }}></div>
+                        <div className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: "#bf00ff" }}></div>
                       </div>
                       <div className="flex gap-0.5">
-                        <div className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: '#bf00ff' }}></div>
-                        <div className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: '#bf00ff' }}></div>
+                        <div className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: "#bf00ff" }}></div>
+                        <div className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: "#bf00ff" }}></div>
                       </div>
                     </div>
-                    
+
                     {/* L blok (azaltılmış - 2 satır) */}
                     <div className="flex flex-col gap-0.5 animate-pulse" style={{ animationDelay: "0.3s" }}>
                       <div className="flex gap-0.5">
-                        <div className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: '#b100ff' }}></div>
+                        <div className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: "#b100ff" }}></div>
                         <div className="w-1.5 h-1.5 bg-transparent"></div>
                       </div>
                       <div className="flex gap-0.5">
-                        <div className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: '#b100ff' }}></div>
-                        <div className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: '#b100ff' }}></div>
+                        <div className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: "#b100ff" }}></div>
+                        <div className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: "#b100ff" }}></div>
                       </div>
                     </div>
                   </div>
@@ -1095,8 +1095,8 @@ const HomePage = () => {
         <AvatarViewDialog
           open={showAvatarView}
           onOpenChange={setShowAvatarView}
-          avatarUrl={userAvatar || user?.user_metadata?.avatar_url || ''}
-          username={profile?.username || user?.user_metadata?.username || user?.email?.split("@")[0] || 'Oyuncu'}
+          avatarUrl={userAvatar || user?.user_metadata?.avatar_url || ""}
+          username={profile?.username || user?.user_metadata?.username || user?.email?.split("@")[0] || "Oyuncu"}
         />
       </div>
     </div>
