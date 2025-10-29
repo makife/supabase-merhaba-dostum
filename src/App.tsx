@@ -40,7 +40,7 @@ import PuzzleGamePage from "@/pages/PuzzleGame";
 import GridSimonSaysPage from "@/pages/GridSimonSays";
 import ReactorRunnerPage from "@/pages/DinoRunner";
 import SnakeGamePage from "@/pages/SnakeGame";
-import TetrisGamePage from "@/pages/MorlesGame";
+import MorlesGamePage from "@/pages/MorlesGame";
 import { Capacitor } from "@capacitor/core";
 import { useImmersiveBars } from "@/hooks/useImmersiveBars";
 import { supabase } from "@/integrations/supabase/client";
