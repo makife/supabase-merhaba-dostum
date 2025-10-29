@@ -40,7 +40,7 @@ import PuzzleGamePage from "@/pages/PuzzleGame";
 import GridSimonSaysPage from "@/pages/GridSimonSays";
 import ReactorRunnerPage from "@/pages/DinoRunner";
 import SnakeGamePage from "@/pages/SnakeGame";
-import TetrisGamePage from "@/pages/TetrisGame";
+import TetrisGamePage from "@/pages/MorlesGame";
 import { Capacitor } from "@capacitor/core";
 import { useImmersiveBars } from "@/hooks/useImmersiveBars";
 import { supabase } from "@/integrations/supabase/client";
@@ -302,10 +302,10 @@ const AppRoutes = () => {
         }
       />
       <Route
-        path="/tetris-game"
+        path="/morles-game"
         element={
           <ProtectedRoute>
-            <TetrisGamePage />
+            <MorlesGamePage />
           </ProtectedRoute>
         }
       />
@@ -331,28 +331,28 @@ const GlobalRematchListener = () => {
   useEffect(() => {
     if (!user?.id) return;
 
-    console.log('🔔 Global rematch listener başlatıldı:', user.id.slice(-8));
+    console.log("🔔 Global rematch listener başlatıldı:", user.id.slice(-8));
 
     const acceptRematch = async (roomCode?: string | null) => {
       if (!roomCode) return;
       try {
         const { data: req } = await supabase
-          .from('rematch_requests')
-          .select('id, game_type, from_user_id')
-          .eq('room_code', roomCode)
-          .eq('to_user_id', user.id)
-          .eq('status', 'pending')
-          .order('created_at', { ascending: false })
+          .from("rematch_requests")
+          .select("id, game_type, from_user_id")
+          .eq("room_code", roomCode)
+          .eq("to_user_id", user.id)
+          .eq("status", "pending")
+          .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
 
         if (!req) {
-          toast({ title: 'İstek bulunamadı', duration: 2500, variant: 'destructive' as any });
+          toast({ title: "İstek bulunamadı", duration: 2500, variant: "destructive" as any });
           return;
         }
 
-        console.log('✅ Rematch kabul ediliyor, respondRematchRequest çağrılıyor:', req.id);
-        
+        console.log("✅ Rematch kabul ediliyor, respondRematchRequest çağrılıyor:", req.id);
+
         // GameContext'teki respondRematchRequest'i kullan - bu fonksiyon:
         // 1. Room'u oluşturur/bekler
         // 2. Participant olarak ekler
@@ -360,10 +360,9 @@ const GlobalRematchListener = () => {
         // 4. setParticipants çağırır ✅
         // 5. Navigate eder (RoomAutoNavigator otomatik devreye girer)
         await respondRematchRequest(req.id, true);
-        
       } catch (e) {
-        console.error('acceptRematch error:', e);
-        toast({ title: 'Bir hata oluştu', variant: 'destructive' as any });
+        console.error("acceptRematch error:", e);
+        toast({ title: "Bir hata oluştu", variant: "destructive" as any });
       }
     };
 
@@ -371,131 +370,137 @@ const GlobalRematchListener = () => {
       if (!roomCode) return;
       try {
         const { data: req } = await supabase
-          .from('rematch_requests')
-          .select('id')
-          .eq('room_code', roomCode)
-          .eq('to_user_id', user.id)
-          .eq('status', 'pending')
-          .order('created_at', { ascending: false })
+          .from("rematch_requests")
+          .select("id")
+          .eq("room_code", roomCode)
+          .eq("to_user_id", user.id)
+          .eq("status", "pending")
+          .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
 
         if (!req) return;
 
         await supabase
-          .from('rematch_requests')
-          .update({ status: 'rejected', responded_at: new Date().toISOString() })
-          .eq('id', req.id);
+          .from("rematch_requests")
+          .update({ status: "rejected", responded_at: new Date().toISOString() })
+          .eq("id", req.id);
 
-        toast({ title: 'İstek reddedildi', duration: 2000 });
+        toast({ title: "İstek reddedildi", duration: 2000 });
       } catch (e) {
-        console.error('rejectRematch error:', e);
+        console.error("rejectRematch error:", e);
       }
     };
 
     const channel = supabase
-      .channel('global-rematch-listener')
+      .channel("global-rematch-listener")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'rematch_requests',
-          filter: `to_user_id=eq.${user.id}`
+          event: "INSERT",
+          schema: "public",
+          table: "rematch_requests",
+          filter: `to_user_id=eq.${user.id}`,
         },
         (payload) => {
           const req: any = payload.new;
-          if (!req || req.status !== 'pending') return;
-          console.log('🎮 Rematch isteği alındı (global):', req);
+          if (!req || req.status !== "pending") return;
+          console.log("🎮 Rematch isteği alındı (global):", req);
           try {
             toast({
-              title: '🎮 Tekrar Oyun İsteği',
-              description: 'Rakibiniz tekrar oyun istiyor!',
+              title: "🎮 Tekrar Oyun İsteği",
+              description: "Rakibiniz tekrar oyun istiyor!",
               duration: 10000,
               action: (
                 <div className="flex gap-2">
                   <ToastAction altText="Kabul et" asChild>
-                    <Button size="sm" onClick={() => acceptRematch(req.room_code)}>Kabul</Button>
+                    <Button size="sm" onClick={() => acceptRematch(req.room_code)}>
+                      Kabul
+                    </Button>
                   </ToastAction>
                   <ToastAction altText="Reddet" asChild>
-                    <Button size="sm" variant="outline" onClick={() => rejectRematch(req.room_code)}>Reddet</Button>
+                    <Button size="sm" variant="outline" onClick={() => rejectRematch(req.room_code)}>
+                      Reddet
+                    </Button>
                   </ToastAction>
                 </div>
               ) as any,
             });
           } catch (e) {
-            console.warn('Toast gösterilemedi:', e);
+            console.warn("Toast gösterilemedi:", e);
           }
-        }
+        },
       )
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'rematch_requests',
-          filter: `from_user_id=eq.${user.id}`
+          event: "UPDATE",
+          schema: "public",
+          table: "rematch_requests",
+          filter: `from_user_id=eq.${user.id}`,
         },
         async (payload) => {
           const req: any = payload.new;
-          if (!req || req.status !== 'accepted' || !req.room_code) return;
-          console.log('✅ Rematch kabul edildi (istek gönderen):', req);
-          
+          if (!req || req.status !== "accepted" || !req.room_code) return;
+          console.log("✅ Rematch kabul edildi (istek gönderen):", req);
+
           // Rematch kabul edildi (gönderen): Bekleme sayfasına yönlendir, iki oyuncu hazır olunca oyun sayfasına geçer
           try {
             const { data: roomRow } = await supabase
-              .from('game_rooms')
-              .select('id, game_mode')
-              .eq('room_code', req.room_code)
+              .from("game_rooms")
+              .select("id, game_mode")
+              .eq("room_code", req.room_code)
               .maybeSingle();
             if (roomRow?.id) {
-              const type = roomRow?.game_mode?.includes('score') ? 'score' : 'timed';
-              setTimeout(() =>
-                navigate(`/private-room-waiting?code=${req.room_code}&roomId=${roomRow.id}&gameType=${type}`),
-              0);
+              const type = roomRow?.game_mode?.includes("score") ? "score" : "timed";
+              setTimeout(
+                () => navigate(`/private-room-waiting?code=${req.room_code}&roomId=${roomRow.id}&gameType=${type}`),
+                0,
+              );
             }
           } catch (e) {
-            console.warn('Room lookup failed:', e);
+            console.warn("Room lookup failed:", e);
             setTimeout(() => navigate(`/private-room-waiting?code=${req.room_code}`), 0);
           }
-        }
+        },
       )
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'rematch_requests',
-          filter: `to_user_id=eq.${user.id}`
+          event: "UPDATE",
+          schema: "public",
+          table: "rematch_requests",
+          filter: `to_user_id=eq.${user.id}`,
         },
         async (payload) => {
           const req: any = payload.new;
-          if (!req || req.status !== 'accepted' || !req.room_code) return;
-          console.log('✅ Rematch kabul edildi (istek alan):', req);
+          if (!req || req.status !== "accepted" || !req.room_code) return;
+          console.log("✅ Rematch kabul edildi (istek alan):", req);
 
           // İstek alan için de bekleme sayfasına yönlendir, iki oyuncu hazır olunca oyun sayfasına geçer
           try {
             const { data: roomRow } = await supabase
-              .from('game_rooms')
-              .select('id, game_mode')
-              .eq('room_code', req.room_code)
+              .from("game_rooms")
+              .select("id, game_mode")
+              .eq("room_code", req.room_code)
               .maybeSingle();
             if (roomRow?.id) {
-              const type = roomRow?.game_mode?.includes('score') ? 'score' : 'timed';
-              setTimeout(() =>
-                navigate(`/private-room-waiting?code=${req.room_code}&roomId=${roomRow.id}&gameType=${type}`),
-              0);
+              const type = roomRow?.game_mode?.includes("score") ? "score" : "timed";
+              setTimeout(
+                () => navigate(`/private-room-waiting?code=${req.room_code}&roomId=${roomRow.id}&gameType=${type}`),
+                0,
+              );
             }
           } catch (e) {
             setTimeout(() => navigate(`/private-room-waiting?code=${req.room_code}`), 0);
           }
-        }
+        },
       )
       // Notifications tablosu listener'ı kaldırıldı - sadece rematch_requests yeterli
       .subscribe();
 
     return () => {
-      console.log('🔌 Global rematch listener kapatılıyor');
+      console.log("🔌 Global rematch listener kapatılıyor");
       supabase.removeChannel(channel);
     };
   }, [user?.id, navigate]);
@@ -511,14 +516,14 @@ const App = () => {
   useAppState(
     () => {
       // Arka plana gitti - 30 saniye beklendi, hala arka plandaysa durdur
-      console.log('⏹️ 30 saniye arka planda kaldı - realtime bağlantılar kapatılıyor');
+      console.log("⏹️ 30 saniye arka planda kaldı - realtime bağlantılar kapatılıyor");
       realtimeManager.forceCleanupAll();
     },
     () => {
       // Ön plana geldi
-      console.log('▶️ Uygulama ön plana geldi');
+      console.log("▶️ Uygulama ön plana geldi");
     },
-    30000 // 30 saniye gecikme
+    30000, // 30 saniye gecikme
   );
 
   return (
