@@ -227,6 +227,9 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
     try {
       setLoading(true);
 
+      // Optimistic update: remove myself immediately
+      setParticipants(prev => prev.filter(p => String(p.user_id) !== String(user.id)));
+
       const { error } = await supabase
         .from('tournament_participants')
         .delete()
@@ -234,6 +237,9 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
         .eq('user_id', user.id);
 
       if (error) throw error;
+
+      // Refresh details to stay in sync (also covers other derived state)
+      await fetchTournamentDetails(tournamentId);
 
       toast({
         title: "Başarılı",
@@ -243,6 +249,8 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
       return true;
     } catch (error) {
       console.error('Ayrılma hatası:', error);
+      // Re-fetch to rollback optimistic update if needed
+      await fetchTournamentDetails(tournamentId);
       toast({
         title: "Hata",
         description: "Turnuvadan ayrılınamadı",
@@ -253,7 +261,6 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
       setLoading(false);
     }
   };
-
   // Start tournament
   const startTournament = async (tournamentId: string): Promise<boolean> => {
     try {
