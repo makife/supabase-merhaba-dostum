@@ -332,7 +332,14 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         const candidate = currentRoom.player1_id === user.id ? currentRoom.player2_id : currentRoom.player1_id;
         if (candidate) {
           console.log("🧭 Fallback: currentRoom üzerinden rakip bulundu");
-          opponent = { id: '', room_id: currentRoom.id, user_id: candidate, score: 0, is_bot: false, joined_at: '' } as any;
+          opponent = {
+            id: "",
+            room_id: currentRoom.id,
+            user_id: candidate,
+            score: 0,
+            is_bot: false,
+            joined_at: "",
+          } as any;
         }
       }
 
@@ -626,38 +633,38 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         if (accepted) {
           // Mevcut rematch odasına gir ve o sayfayı açmadan önce güvenli şekilde katılımı garantile
           if (!request.room_code) {
-            console.error('❌ Rematch request room_code eksik');
-            toast({ title: 'Hata', description: 'Rematch odası bulunamadı', variant: 'destructive' });
+            console.error("❌ Rematch request room_code eksik");
+            toast({ title: "Hata", description: "Rematch odası bulunamadı", variant: "destructive" });
             return;
           }
-          console.log('🎮 Rematch kabul edildi, mevcut oda açılıyor', {
+          console.log("🎮 Rematch kabul edildi, mevcut oda açılıyor", {
             roomCode: request.room_code,
             gameType: request.game_type,
           });
 
           // Oda ID'sini room_code üzerinden bul
           const { data: roomRow } = await supabase
-            .from('game_rooms')
-            .select('id, game_mode')
-            .eq('room_code', request.room_code)
+            .from("game_rooms")
+            .select("id, game_mode")
+            .eq("room_code", request.room_code)
             .maybeSingle();
 
           if (!roomRow?.id) {
-            toast({ title: 'Hata', description: 'Oda bulunamadı', variant: 'destructive' });
+            toast({ title: "Hata", description: "Oda bulunamadı", variant: "destructive" });
             return;
           }
 
           // Katılımcı olarak ekli değilsek ekle (yeni eşleşme gibi davran)
           try {
             const { data: existing } = await supabase
-              .from('game_participants')
-              .select('id')
-              .eq('room_id', roomRow.id)
-              .eq('user_id', user.id)
+              .from("game_participants")
+              .select("id")
+              .eq("room_id", roomRow.id)
+              .eq("user_id", user.id)
               .maybeSingle();
 
             if (!existing) {
-              await supabase.from('game_participants').insert({
+              await supabase.from("game_participants").insert({
                 room_id: roomRow.id,
                 user_id: user.id,
                 score: 0,
@@ -665,14 +672,15 @@ export const GameProvider = ({ children }: GameProviderProps) => {
               });
             }
           } catch (e) {
-            console.warn('Katılımcı ekleme sırasında uyarı:', e);
+            console.warn("Katılımcı ekleme sırasında uyarı:", e);
           }
 
           // Önce bekleme sayfasına yönlendir; iki oyuncu hazır olunca oyun sayfasına geçer
-          const type = roomRow?.game_mode?.includes('score') ? 'score' : 'timed';
-          setTimeout(() =>
-            navigate(`/private-room-waiting?code=${request.room_code}&roomId=${roomRow.id}&gameType=${type}`),
-          0);
+          const type = roomRow?.game_mode?.includes("score") ? "score" : "timed";
+          setTimeout(
+            () => navigate(`/private-room-waiting?code=${request.room_code}&roomId=${roomRow.id}&gameType=${type}`),
+            0,
+          );
         }
 
         setCurrentRematchRequest(null);
@@ -1036,15 +1044,6 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           setTimeout(() => {
             fetchParticipants(room.id);
           }, 300);
-
-          // Only show room created notification for private rooms (avoid random-match spam)
-          if (gameMode.startsWith("private-room")) {
-            toast({
-              title: "Oda Oluşturuldu",
-              description: `Oda kodu: ${currentRoomCode}`,
-              duration: 1000,
-            });
-          }
 
           console.log("🏠 === ROOM CREATE DEBUG BİTTİ ===");
           return room;
@@ -1853,7 +1852,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     }
 
     if (!currentRoom.id) {
-      console.warn('⚠️ Room ID eksik, real-time kurulumu atlandı');
+      console.warn("⚠️ Room ID eksik, real-time kurulumu atlandı");
       setIsConnected(false);
       return;
     }
@@ -1868,7 +1867,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     const fetchParticipantsLocal = async (roomId: string) => {
       try {
         if (!roomId) {
-          console.warn('⚠️ fetchParticipantsLocal çağrıldı ama roomId yok');
+          console.warn("⚠️ fetchParticipantsLocal çağrıldı ama roomId yok");
           return;
         }
         const { data, error } = await supabase
@@ -1996,32 +1995,37 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         // UPDATE: Anında skor güncellemesi (profile bilgileri korunuyor)
         if (payload.eventType === "UPDATE" && isValidParticipantPayload(payload.new)) {
           const updatedParticipant = payload.new as GameParticipantPayload;
-          
-          console.log('🔄 Participant UPDATE payload:', {
+
+          console.log("🔄 Participant UPDATE payload:", {
             user_id: updatedParticipant.user_id?.slice(-8),
             score: (updatedParticipant as any).score,
           });
 
           if (updatedParticipant.user_id) {
             const newScore = (updatedParticipant as any).score;
-            if (typeof newScore === 'number') {
+            if (typeof newScore === "number") {
               setParticipants((prevParticipants) =>
                 prevParticipants.map((p) => {
                   if (p.user_id === updatedParticipant.user_id) {
                     // 🛡️ KRITIK: Profile bilgilerini koru, sadece score'u güncelle
-                    return { 
-                      ...p, 
+                    return {
+                      ...p,
                       score: newScore,
                       // profiles bilgisini koru (kaybolmasın!)
-                      profiles: p.profiles || (updatedParticipant as any).profiles
+                      profiles: p.profiles || (updatedParticipant as any).profiles,
                     };
                   }
                   return p;
                 }),
               );
-              console.log('✅ Participant score updated (profile preserved):', updatedParticipant.user_id?.slice(-8), 'new score:', newScore);
+              console.log(
+                "✅ Participant score updated (profile preserved):",
+                updatedParticipant.user_id?.slice(-8),
+                "new score:",
+                newScore,
+              );
             } else {
-              console.warn('⚠️ Score field missing or invalid in UPDATE payload');
+              console.warn("⚠️ Score field missing or invalid in UPDATE payload");
             }
           }
         }
@@ -2037,10 +2041,12 @@ export const GameProvider = ({ children }: GameProviderProps) => {
             try {
               const { data: participantWithProfile } = await supabase
                 .from("game_participants")
-                .select(`
+                .select(
+                  `
                   *,
                   profiles!inner(username, avatar_url)
-                `)
+                `,
+                )
                 .eq("room_id", currentRoom.id)
                 .eq("user_id", newParticipant.user_id)
                 .single();
@@ -2171,8 +2177,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
                   toast({
                     title: "⚠️ Rakip Ayrıldı",
-                    description:
-                      "Rakip oyundan ayrıldı veya bağlantısı koptu. Size +500 puan verildi.",
+                    description: "Rakip oyundan ayrıldı veya bağlantısı koptu. Size +500 puan verildi.",
                     duration: 5000,
                   });
 
@@ -2239,7 +2244,6 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       }
 
       // Do not dispatch 'playerDisconnected' on normal finish; handled by result flow instead.
-
 
       setCurrentRoom(newRoom);
     });
