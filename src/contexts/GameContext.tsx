@@ -1493,7 +1493,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
         toast({
           title: "🏆 Turnuva Cezası",
-          description: "Turnuva maçından ayrıldığınız için -50 puan cezası aldınız.",
+          description: "Turnuva maçından ayrıldığınız için -500 puan cezası aldınız.",
           variant: "destructive",
           duration: 4000,
         });

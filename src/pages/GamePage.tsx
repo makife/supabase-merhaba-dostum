@@ -2944,7 +2944,7 @@ const handleTournamentExit = async () => {
       if (penaltyError) {
         console.error('❌ Ceza uygulanamadı:', penaltyError);
       } else {
-        console.log('⚖️ Turnuva ayrılma cezası uygulandı: -50 puan');
+        console.log('⚖️ Turnuva ayrılma cezası uygulandı: -500 puan');
       }
 
       // game_participants'tan çıkarak presence sistemini tetikle
@@ -3103,7 +3103,7 @@ const handleTournamentExit = async () => {
 
     toast({
       title: "🏆 Turnuva Cezası",
-      description: "Turnuva maçından ayrıldığınız için -50 puan cezası aldınız.",
+      description: "Turnuva maçından ayrıldığınız için -500 puan cezası aldınız.",
       variant: "destructive",
       duration: 4000,
     });
