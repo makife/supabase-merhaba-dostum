@@ -2084,13 +2084,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
               toast({
                 title: "🎯 Eşleşme Tamamlandı!",
                 description: "Rakip bulundu, oyun başlıyor...",
-                duration: 2000,
-              });
-            } else {
-              toast({
-                title: "🎉 Oyuncu Katıldı!",
-                description: "İkinci oyuncu odaya katıldı, oyun başlıyor...",
-                duration: 2000,
+                duration: 1000,
               });
             }
           }
