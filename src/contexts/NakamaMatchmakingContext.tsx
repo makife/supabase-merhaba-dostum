@@ -224,11 +224,6 @@ export const NakamaMatchmakingProvider: React.FC<NakamaMatchmakingProviderProps>
       await nakamaService.createSocket();
       const tournamentId = await nakamaService.createTournament(name);
 
-      toast({
-        title: "🏆 Turnuva Oluşturuldu",
-        description: `Turnuva: ${name}`,
-      });
-
       return tournamentId;
     } catch (error: any) {
       console.error("❌ Failed to create tournament:", error);
