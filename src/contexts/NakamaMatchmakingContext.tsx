@@ -224,6 +224,11 @@ export const NakamaMatchmakingProvider: React.FC<NakamaMatchmakingProviderProps>
       await nakamaService.createSocket();
       const tournamentId = await nakamaService.createTournament(name);
 
+      toast({
+        title: "🏆 Turnuva Oluşturuldu",
+        description: `Turnuva: ${name}`,
+      });
+
       return tournamentId;
     } catch (error: any) {
       console.error("❌ Failed to create tournament:", error);
@@ -241,11 +246,6 @@ export const NakamaMatchmakingProvider: React.FC<NakamaMatchmakingProviderProps>
       await nakamaService.authenticate(user.id);
       await nakamaService.createSocket();
       await nakamaService.joinTournament(tournamentId);
-
-      toast({
-        title: "🎯 Turnuvaya Katıldınız",
-        description: `Turnuva ID: ${tournamentId}`,
-      });
     } catch (error: any) {
       console.error("❌ Failed to join tournament:", error);
       throw error;
