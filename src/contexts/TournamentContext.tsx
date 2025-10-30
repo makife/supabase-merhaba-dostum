@@ -260,11 +260,6 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
 
       if (error) throw error;
 
-      toast({
-        title: "Başarılı",
-        description: "Turnuva başlatıldı!",
-      });
-
       await fetchTournaments();
       await fetchTournamentDetails(tournamentId);
 
