@@ -3098,32 +3098,40 @@ useEffect(() => {
         if (matchData && matchData.status === 'in_progress' && matchData.countdown_started_at) {
           // ✅ SERVER-SIDE COUNTDOWN ZAMANI KULLAN
           if (!serverMatchStartRef.current) {
-            // Countdown 10 saniye, oyun başlangıcı = countdown_started_at + 10 saniye
+            // Countdown 5 saniye, oyun başlangıcı = countdown_started_at + 5 saniye
             const countdownStart = new Date(matchData.countdown_started_at).getTime();
-            serverMatchStartRef.current = countdownStart + 10000; // 10 saniye sonra başlar
-            console.log('📌 Tournament match start time (countdown_started_at + 10s):', new Date(serverMatchStartRef.current).toISOString());
+            serverMatchStartRef.current = countdownStart + 5000; // 5 saniye sonra başlar
+            console.log('📌 Tournament match start time (countdown_started_at + 5s):', new Date(serverMatchStartRef.current).toISOString());
           }
           
           const matchStartTime = serverMatchStartRef.current!;
-          const currentTime = Date.now();
+          const currentTime = Date.now() + serverTimeOffset;
           const elapsedSeconds = Math.floor((currentTime - matchStartTime) / 1000);
           const remainingTime = Math.max(0, 120 - elapsedSeconds);
           
-          // Her zaman senkronize et (jitter'ı önlemek için)
-          timeLeftRef.current = remainingTime;
-          setDisplayTime(remainingTime);
-          console.log('🔄 Timer synced to:', remainingTime, 'seconds (server-side)');
+          // İlk 3 saniye sadece countdown bittiğinde sync yap (titreme önleme)
+          if (countdownCompletedAtRef.current && Date.now() - countdownCompletedAtRef.current < 3000) {
+            console.log('⏸️ Skipping sync - countdown just completed');
+            return;
+          }
+          
+          // 1 saniyeden fazla fark varsa sync et
+          if (Math.abs(timeLeftRef.current - remainingTime) > 1) {
+            timeLeftRef.current = remainingTime;
+            setDisplayTime(remainingTime);
+            console.log('🔄 Timer synced to:', remainingTime, 'seconds (server-side)');
+          }
         }
       } catch (error) {
         console.error('Timer sync error:', error);
       }
     };
     
-    // Initial sync
-    syncTimer();
+    // Initial sync - ama countdown bitiminden 2 saniye sonra
+    setTimeout(() => syncTimer(), 2000);
     
-    // Sync every 1 second for precise tournament timer
-    syncInterval = setInterval(syncTimer, 1000);
+    // Sync every 2 seconds for precise tournament timer (1 saniye yerine 2 saniye - daha az agresif)
+    syncInterval = setInterval(syncTimer, 2000);
   }
   
   timerRef.current = setInterval(() => {
@@ -3196,12 +3204,18 @@ useEffect(() => {
     }
 
     const syncTimer = () => {
+      // İlk 3 saniye countdown bitiminden sonra sync'i duraklat (titreme önleme)
+      if (countdownCompletedAtRef.current && Date.now() - countdownCompletedAtRef.current < 3000) {
+        console.log('⏸️ Skipping sync - countdown just completed');
+        return;
+      }
+      
       // Başlangıçta (geri sayımdan hemen sonra) 2:00'dan başlamayı koru
       if (Date.now() < syncSuppressUntilRef.current) {
         return;
       }
       const startTs = new Date(currentRoom.started_at!).getTime();
-      const elapsed = Math.floor((Date.now() - startTs) / 1000);
+      const elapsed = Math.floor((Date.now() + serverTimeOffset - startTs) / 1000);
       let remaining = Math.max(0, (currentRoom.time_limit || 120) - elapsed);
 
       // 🛡️ Early-finish guard: first 3s after start should never be <= 0
@@ -3219,7 +3233,8 @@ useEffect(() => {
 
     console.log('⏱️ Timer sync başlatılıyor - mode:', gameMode, 'started_at:', currentRoom.started_at);
     
-    syncTimer();
+    // İlk sync'i 2 saniye geciktir (countdown bitiminden sonra)
+    setTimeout(() => syncTimer(), 2000);
     syncIntervalRef.current = setInterval(syncTimer, 2000); // 2 saniyede bir sync (daha az agresif)
 
     return () => {
@@ -4633,6 +4648,7 @@ const opponent = getOpponentInfo();
 
 const handleCountdownComplete = () => {
   setShowCountdown(false);
+  countdownCompletedAtRef.current = Date.now();
 
   const isMp = gameMode === 'private-room' || gameMode === 'random-match';
 
