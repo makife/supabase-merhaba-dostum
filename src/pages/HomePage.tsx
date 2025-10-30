@@ -424,7 +424,7 @@ const HomePage = () => {
                         WebkitTextStroke: "0.5px hsl(var(--border))",
                       }}
                     >
-                      KELİMECİ
+                      KELİMELE
                     </h1>
                     <p className="text-xs text-muted-foreground">{greeting}</p>
                     <p className="text-sm font-semibold text-foreground truncate">
