@@ -1,13 +1,13 @@
 // AuthPage.tsx
-import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Eye, EyeOff, Mail } from 'lucide-react';
-import { HeaderAnimation } from '@/components/HeaderAnimation';
+import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Eye, EyeOff, Mail } from "lucide-react";
+import { HeaderAnimation } from "@/components/HeaderAnimation";
 import {
   Dialog,
   DialogContent,
@@ -15,25 +15,25 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 
 const AuthPage = () => {
   const { signIn, signUp, resetPassword } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [resetEmail, setResetEmail] = useState('');
+  const [resetEmail, setResetEmail] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
   const [signInData, setSignInData] = useState({
-    email: '',
-    password: '',
+    email: "",
+    password: "",
   });
 
   const [signUpData, setSignUpData] = useState({
-    email: '',
-    password: '',
-    username: '',
+    email: "",
+    password: "",
+    username: "",
   });
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -55,10 +55,10 @@ const AuthPage = () => {
     setResetLoading(true);
     const { error } = await resetPassword(resetEmail);
     setResetLoading(false);
-    
+
     if (!error) {
       setResetDialogOpen(false);
-      setResetEmail('');
+      setResetEmail("");
     }
   };
 
@@ -67,14 +67,17 @@ const AuthPage = () => {
       <div className="w-full max-w-md space-y-6 bounce-in touch-auto overscroll-auto">
         <Card className="border-0 bg-card/50 backdrop-blur relative overflow-hidden">
           <HeaderAnimation />
-          
+
           <div className="text-center space-y-2 p-6 relative z-10">
-            <h1 className="text-3xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent drop-shadow-2xl"
-                style={{
-                  textShadow: '1px 1px 0px hsl(var(--primary)), 2px 2px 0px rgba(0,0,0,0.3), 0 0 15px hsl(var(--primary) / 0.5)',
-                  WebkitTextStroke: '0.5px hsl(var(--border))'
-                }}>
-              KELİMECİ
+            <h1
+              className="text-3xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent drop-shadow-2xl"
+              style={{
+                textShadow:
+                  "1px 1px 0px hsl(var(--primary)), 2px 2px 0px rgba(0,0,0,0.3), 0 0 15px hsl(var(--primary) / 0.5)",
+                WebkitTextStroke: "0.5px hsl(var(--border))",
+              }}
+            >
+              KELİMELE
             </h1>
             <p className="text-muted-foreground font-medium">Kelime oyununun en eğlenceli hali</p>
           </div>
@@ -90,9 +93,7 @@ const AuthPage = () => {
             <TabsContent value="signin">
               <CardHeader>
                 <CardTitle>Giriş Yap</CardTitle>
-                <CardDescription>
-                  E-posta adresiniz ve şifrenizle giriş yapın
-                </CardDescription>
+                <CardDescription>E-posta adresiniz ve şifrenizle giriş yapın</CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSignIn} className="space-y-4">
@@ -103,9 +104,7 @@ const AuthPage = () => {
                       type="email"
                       placeholder="ornek@email.com"
                       value={signInData.email}
-                      onChange={(e) =>
-                        setSignInData({ ...signInData, email: e.target.value })
-                      }
+                      onChange={(e) => setSignInData({ ...signInData, email: e.target.value })}
                       required
                     />
                   </div>
@@ -114,12 +113,10 @@ const AuthPage = () => {
                     <div className="relative">
                       <Input
                         id="signin-password"
-                        type={showPassword ? 'text' : 'password'}
+                        type={showPassword ? "text" : "password"}
                         placeholder="••••••••"
                         value={signInData.password}
-                        onChange={(e) =>
-                          setSignInData({ ...signInData, password: e.target.value })
-                        }
+                        onChange={(e) => setSignInData({ ...signInData, password: e.target.value })}
                         required
                       />
                       <Button
@@ -129,15 +126,11 @@ const AuthPage = () => {
                         className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                         onClick={() => setShowPassword(!showPassword)}
                       >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
                     </div>
                   </div>
-                  
+
                   <div className="text-right">
                     <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
                       <DialogTrigger asChild>
@@ -152,9 +145,7 @@ const AuthPage = () => {
                       <DialogContent>
                         <DialogHeader>
                           <DialogTitle>Şifre Sıfırlama</DialogTitle>
-                          <DialogDescription>
-                            E-posta adresinize şifre sıfırlama linki göndereceğiz.
-                          </DialogDescription>
+                          <DialogDescription>E-posta adresinize şifre sıfırlama linki göndereceğiz.</DialogDescription>
                         </DialogHeader>
                         <form onSubmit={handleResetPassword} className="space-y-4">
                           <div className="space-y-2">
@@ -169,7 +160,7 @@ const AuthPage = () => {
                             />
                           </div>
                           <Button type="submit" className="w-full" disabled={resetLoading}>
-                            {resetLoading ? 'Gönderiliyor...' : 'Şifre Sıfırlama Linki Gönder'}
+                            {resetLoading ? "Gönderiliyor..." : "Şifre Sıfırlama Linki Gönder"}
                           </Button>
                         </form>
                       </DialogContent>
@@ -177,7 +168,7 @@ const AuthPage = () => {
                   </div>
 
                   <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
+                    {loading ? "Giriş yapılıyor..." : "Giriş Yap"}
                   </Button>
                 </form>
               </CardContent>
@@ -186,9 +177,7 @@ const AuthPage = () => {
             <TabsContent value="signup">
               <CardHeader>
                 <CardTitle>Kayıt Ol</CardTitle>
-                <CardDescription>
-                  Yeni bir hesap oluşturun ve oyuna başlayın
-                </CardDescription>
+                <CardDescription>Yeni bir hesap oluşturun ve oyuna başlayın</CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSignUp} className="space-y-4">
@@ -199,9 +188,7 @@ const AuthPage = () => {
                       type="text"
                       placeholder="kullaniciadi"
                       value={signUpData.username}
-                      onChange={(e) =>
-                        setSignUpData({ ...signUpData, username: e.target.value })
-                      }
+                      onChange={(e) => setSignUpData({ ...signUpData, username: e.target.value })}
                       required
                     />
                   </div>
@@ -212,9 +199,7 @@ const AuthPage = () => {
                       type="email"
                       placeholder="ornek@email.com"
                       value={signUpData.email}
-                      onChange={(e) =>
-                        setSignUpData({ ...signUpData, email: e.target.value })
-                      }
+                      onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })}
                       required
                     />
                   </div>
@@ -223,12 +208,10 @@ const AuthPage = () => {
                     <div className="relative">
                       <Input
                         id="signup-password"
-                        type={showPassword ? 'text' : 'password'}
+                        type={showPassword ? "text" : "password"}
                         placeholder="••••••••"
                         value={signUpData.password}
-                        onChange={(e) =>
-                          setSignUpData({ ...signUpData, password: e.target.value })
-                        }
+                        onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
                         required
                       />
                       <Button
@@ -238,16 +221,12 @@ const AuthPage = () => {
                         className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                         onClick={() => setShowPassword(!showPassword)}
                       >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
                     </div>
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'Kayıt olunuyor...' : 'Kayıt Ol'}
+                    {loading ? "Kayıt olunuyor..." : "Kayıt Ol"}
                   </Button>
                 </form>
               </CardContent>
