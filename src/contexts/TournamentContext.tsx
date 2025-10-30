@@ -1,9 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { Tournament, TournamentParticipant, TournamentMatch } from '@/types/tournament';
-import { toast } from '@/components/ui/use-toast';
-import { nakamaService } from '@/services/nakamaService';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { Tournament, TournamentParticipant, TournamentMatch } from "@/types/tournament";
+import { toast } from "@/components/ui/use-toast";
+import { nakamaService } from "@/services/nakamaService";
 
 interface TournamentContextType {
   // State
@@ -13,7 +13,7 @@ interface TournamentContextType {
   matches: TournamentMatch[];
   loading: boolean;
   serverTimeOffset: number;
-  
+
   // Actions
   createTournament: () => Promise<string | null>;
   createNakamaTournament: (name: string) => Promise<string | null>;
@@ -23,7 +23,7 @@ interface TournamentContextType {
   startTournament: (tournamentId: string) => Promise<boolean>;
   fetchTournaments: () => Promise<void>;
   fetchTournamentDetails: (tournamentId: string) => Promise<void>;
-  
+
   // Cleanup
   resetContext: () => void;
 }
@@ -33,7 +33,7 @@ const TournamentContext = createContext<TournamentContextType | undefined>(undef
 export const useTournamentContext = () => {
   const context = useContext(TournamentContext);
   if (!context) {
-    throw new Error('useTournamentContext must be used within TournamentProvider');
+    throw new Error("useTournamentContext must be used within TournamentProvider");
   }
   return context;
 };
@@ -44,7 +44,7 @@ interface TournamentProviderProps {
 
 export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children }) => {
   const { user } = useAuth();
-  
+
   // State
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [currentTournament, setCurrentTournament] = useState<Tournament | null>(null);
@@ -56,7 +56,7 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
   // Get server time offset once on mount
   useEffect(() => {
     const fetchServerTime = async () => {
-      const { data, error } = await supabase.rpc('get_server_time' as any);
+      const { data, error } = await supabase.rpc("get_server_time" as any);
       if (!error && data) {
         const serverTime = new Date(data as string).getTime();
         const clientTime = Date.now();
@@ -78,31 +78,31 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
   // Fetch active tournaments - Supabase
   const fetchTournaments = async () => {
     if (!user) return;
-    
+
     try {
       setLoading(true);
-      
+
       // Önce süresi dolmuş turnuvaları temizle
-      await supabase.rpc('cleanup_expired_tournaments');
-      
+      await supabase.rpc("cleanup_expired_tournaments");
+
       // Get server time for comparison
-      const { data: serverTime } = await supabase.rpc('get_server_time' as any);
-      
+      const { data: serverTime } = await supabase.rpc("get_server_time" as any);
+
       const { data, error } = await supabase
-        .from('tournaments')
-        .select('*')
-        .in('status', ['waiting', 'in_progress'])
-        .gt('expires_at', (serverTime as string) || new Date().toISOString())
-        .order('created_at', { ascending: false });
-      
+        .from("tournaments")
+        .select("*")
+        .in("status", ["waiting", "in_progress"])
+        .gt("expires_at", (serverTime as string) || new Date().toISOString())
+        .order("created_at", { ascending: false });
+
       if (error) throw error;
-      
+
       setTournaments((data || []) as Tournament[]);
     } catch (error) {
-      console.error('Turnuvalar alınırken hata:', error);
+      console.error("Turnuvalar alınırken hata:", error);
       toast({
         title: "Hata",
-        description: "Turnuvalar yüklenirken bir hata oluştu"
+        description: "Turnuvalar yüklenirken bir hata oluştu",
       });
     } finally {
       setLoading(false);
@@ -112,53 +112,46 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
   // Create tournament - Supabase
   const createNakamaTournament = async (name: string): Promise<string | null> => {
     if (!user) return null;
-    
+
     try {
       setLoading(true);
-      
+
       // Get server time and add 30 seconds
-      const { data: serverTime } = await supabase.rpc('get_server_time' as any);
+      const { data: serverTime } = await supabase.rpc("get_server_time" as any);
       const expiresAt = new Date((serverTime as string) || new Date());
       expiresAt.setSeconds(expiresAt.getSeconds() + 30);
-      
+
       // Supabase'de turnuva oluştur
       const { data: tournament, error } = await supabase
-        .from('tournaments')
+        .from("tournaments")
         .insert({
           creator_id: user.id,
           name: name,
-          status: 'waiting',
-          game_type: 'timed',
+          status: "waiting",
+          game_type: "timed",
           max_participants: 8,
           current_round: 1,
           timeout_duration: 15,
-          expires_at: expiresAt.toISOString()
+          expires_at: expiresAt.toISOString(),
         })
         .select()
         .single();
-      
+
       if (error) throw error;
-      
+
       // Yaratıcıyı otomatik olarak katılımcılara ekle
-      const { error: participantError } = await supabase
-        .from('tournament_participants')
-        .insert({
-          tournament_id: tournament.id,
-          user_id: user.id,
-          is_bot: false
-        });
-      
-      if (participantError) throw participantError;
-      
-      toast({
-        title: "🏆 Turnuva Oluşturuldu",
-        description: `${name} başarıyla oluşturuldu!`,
+      const { error: participantError } = await supabase.from("tournament_participants").insert({
+        tournament_id: tournament.id,
+        user_id: user.id,
+        is_bot: false,
       });
-      
+
+      if (participantError) throw participantError;
+
       await fetchTournaments();
       return tournament.id;
     } catch (error: any) {
-      console.error('Turnuva oluşturulurken hata:', error);
+      console.error("Turnuva oluşturulurken hata:", error);
       toast({
         title: "❌ Hata",
         description: "Turnuva oluşturulamadı",
@@ -169,34 +162,32 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
       setLoading(false);
     }
   };
-  
+
   // Join tournament - Supabase
   const joinNakamaTournament = async (tournamentId: string): Promise<boolean> => {
     if (!user) return false;
-    
+
     try {
       setLoading(true);
-      
+
       // Turnuvaya katılımcı olarak ekle
-      const { error } = await supabase
-        .from('tournament_participants')
-        .insert({
-          tournament_id: tournamentId,
-          user_id: user.id,
-          is_bot: false
-        });
-      
+      const { error } = await supabase.from("tournament_participants").insert({
+        tournament_id: tournamentId,
+        user_id: user.id,
+        is_bot: false,
+      });
+
       if (error) throw error;
-      
+
       toast({
         title: "🎯 Turnuvaya Katıldınız",
         description: "Başarıyla katıldınız!",
       });
-      
+
       await fetchTournamentDetails(tournamentId);
       return true;
     } catch (error: any) {
-      console.error('Turnuvaya katılırken hata:', error);
+      console.error("Turnuvaya katılırken hata:", error);
       toast({
         title: "❌ Hata",
         description: "Turnuvaya katılınamadı",
@@ -211,7 +202,9 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
   // Create new tournament - Nakama only
   const createTournament = async (): Promise<string | null> => {
     if (!user) return null;
-    return await createNakamaTournament(`Turnuva ${new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`);
+    return await createNakamaTournament(
+      `Turnuva ${new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}`,
+    );
   };
 
   // Join tournament - Nakama only
@@ -228,13 +221,13 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
       setLoading(true);
 
       // Optimistic update: remove myself immediately
-      setParticipants(prev => prev.filter(p => String(p.user_id) !== String(user.id)));
+      setParticipants((prev) => prev.filter((p) => String(p.user_id) !== String(user.id)));
 
       const { error } = await supabase
-        .from('tournament_participants')
+        .from("tournament_participants")
         .delete()
-        .eq('tournament_id', tournamentId)
-        .eq('user_id', user.id);
+        .eq("tournament_id", tournamentId)
+        .eq("user_id", user.id);
 
       if (error) throw error;
 
@@ -243,18 +236,18 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
 
       toast({
         title: "Başarılı",
-        description: "Turnuvadan ayrıldınız"
+        description: "Turnuvadan ayrıldınız",
       });
 
       return true;
     } catch (error) {
-      console.error('Ayrılma hatası:', error);
+      console.error("Ayrılma hatası:", error);
       // Re-fetch to rollback optimistic update if needed
       await fetchTournamentDetails(tournamentId);
       toast({
         title: "Hata",
         description: "Turnuvadan ayrılınamadı",
-        variant: "destructive"
+        variant: "destructive",
       });
       return false;
     } finally {
@@ -266,27 +259,27 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
     try {
       setLoading(true);
 
-      const { data, error } = await supabase.rpc('create_matches_for_active_tournament', {
-        p_tournament_id: tournamentId
+      const { data, error } = await supabase.rpc("create_matches_for_active_tournament", {
+        p_tournament_id: tournamentId,
       });
 
       if (error) throw error;
 
       toast({
         title: "Başarılı",
-        description: "Turnuva başlatıldı!"
+        description: "Turnuva başlatıldı!",
       });
 
       await fetchTournaments();
       await fetchTournamentDetails(tournamentId);
-      
+
       return true;
     } catch (error) {
-      console.error('Turnuva başlatma hatası:', error);
+      console.error("Turnuva başlatma hatası:", error);
       toast({
         title: "Hata",
         description: "Turnuva başlatılamadı",
-        variant: "destructive"
+        variant: "destructive",
       });
       return false;
     } finally {
@@ -297,10 +290,10 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
   // Helper function to get player info
   const getPlayerInfo = async (playerId: string | null, participants: TournamentParticipant[]) => {
     if (!playerId) return null;
-    
+
     // Önce participant'ı bul
-    const participant = participants.find(p => p.user_id === playerId);
-    
+    const participant = participants.find((p) => p.user_id === playerId);
+
     // Bot kontrolü - is_bot alanını kullan
     if (participant?.is_bot) {
       // Deterministic seed from user_id to keep bot names stable
@@ -308,39 +301,88 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
       return {
         username: generateBotName(seed),
         avatar_url: null,
-        is_bot: true
+        is_bot: true,
       };
     }
 
     // Gerçek oyuncu
     if (participant?.profiles) {
       return {
-        username: participant.profiles.username || 'Oyuncu',
+        username: participant.profiles.username || "Oyuncu",
         avatar_url: participant.profiles.avatar_url,
-        is_bot: false
+        is_bot: false,
       };
     }
 
     return {
-      username: 'Oyuncu',
+      username: "Oyuncu",
       avatar_url: null,
-      is_bot: false
+      is_bot: false,
     };
   };
 
   const generateBotName = (index: number): string => {
     const turkishNames = [
-      'ahmet', 'mehmet', 'ayşe', 'fatma', 'ali', 'veli', 'zeynep', 'elif',
-      'mustafa', 'emre', 'can', 'ece', 'selin', 'burak', 'deniz', 'yusuf',
-      'merve', 'özge', 'berk', 'arda', 'sude', 'efe', 'ada', 'emir',
-      'defne', 'kaan', 'ilayda', 'mert', 'asya', 'kerem', 'nisa', 'bora',
-      'irem', 'doruk', 'ela', 'eren', 'nehir', 'alp', 'maya', 'ege',
-      'eylül', 'tunç', 'lara', 'uras', 'derin', 'çağlar', 'pelin', 'koray',
-      'damla', 'tolga', 'su', 'onur', 'ceren', 'umut', 'begüm', 'barış'
+      "ahmet",
+      "mehmet",
+      "ayşe",
+      "fatma",
+      "ali",
+      "veli",
+      "zeynep",
+      "elif",
+      "mustafa",
+      "emre",
+      "can",
+      "ece",
+      "selin",
+      "burak",
+      "deniz",
+      "yusuf",
+      "merve",
+      "özge",
+      "berk",
+      "arda",
+      "sude",
+      "efe",
+      "ada",
+      "emir",
+      "defne",
+      "kaan",
+      "ilayda",
+      "mert",
+      "asya",
+      "kerem",
+      "nisa",
+      "bora",
+      "irem",
+      "doruk",
+      "ela",
+      "eren",
+      "nehir",
+      "alp",
+      "maya",
+      "ege",
+      "eylül",
+      "tunç",
+      "lara",
+      "uras",
+      "derin",
+      "çağlar",
+      "pelin",
+      "koray",
+      "damla",
+      "tolga",
+      "su",
+      "onur",
+      "ceren",
+      "umut",
+      "begüm",
+      "barış",
     ];
 
     // Seeded RNG (deterministic) using index
-    let seed = (index >>> 0) || 0;
+    let seed = index >>> 0 || 0;
     const next = (mod: number) => {
       seed = (seed * 1664525 + 1013904223) >>> 0; // LCG
       return seed % mod;
@@ -356,12 +398,12 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
 
     const decorations = [
       (name: string) => name + String(num4),
-      (name: string) => name + '_',
-      (name: string) => '_' + name,
-      (name: string) => '_' + name + '_',
+      (name: string) => name + "_",
+      (name: string) => "_" + name,
+      (name: string) => "_" + name + "_",
       (name: string) => name + name.charAt(name.length - 1).repeat(2),
       (name: string) => name.charAt(0) + name.slice(1) + String(num2),
-      (name: string) => name + '.' + String(next(100)),
+      (name: string) => name + "." + String(next(100)),
       (name: string) => name.charAt(0).toUpperCase() + name.slice(1) + String(num3),
       (name: string) => name,
     ];
@@ -373,24 +415,24 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
   const fetchTournamentDetails = async (tournamentId: string) => {
     try {
       if (!user) return;
-      
+
       setLoading(true);
-      
+
       // Turnuva bilgisini çek
       const { data: tournament, error: tournamentError } = await supabase
-        .from('tournaments')
-        .select('*')
-        .eq('id', tournamentId)
+        .from("tournaments")
+        .select("*")
+        .eq("id", tournamentId)
         .single();
-      
+
       if (tournamentError) throw tournamentError;
-      
+
       // Katılımcıları çek
       const { data: rawParticipants, error: participantsError } = await supabase
-        .from('tournament_participants')
-        .select('*')
-        .eq('tournament_id', tournamentId);
-      
+        .from("tournament_participants")
+        .select("*")
+        .eq("tournament_id", tournamentId);
+
       if (participantsError) throw participantsError;
 
       // Her katılımcı için profil bilgisini al
@@ -399,31 +441,31 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
           if (p.is_bot || !p.user_id) {
             return {
               ...p,
-              profiles: undefined
+              profiles: undefined,
             };
           }
 
           const { data: profile } = await supabase
-            .from('profiles')
-            .select('username, avatar_url')
-            .eq('id', p.user_id)
+            .from("profiles")
+            .select("username, avatar_url")
+            .eq("id", p.user_id)
             .single();
 
           return {
             ...p,
-            profiles: profile || undefined
+            profiles: profile || undefined,
           };
-        })
+        }),
       );
-      
+
       // Maçları çek ve oyuncu bilgilerini de al
       const { data: rawMatches, error: matchesError } = await supabase
-        .from('tournament_matches')
-        .select('*')
-        .eq('tournament_id', tournamentId)
-        .order('round', { ascending: true })
-        .order('match_number', { ascending: true });
-      
+        .from("tournament_matches")
+        .select("*")
+        .eq("tournament_id", tournamentId)
+        .order("round", { ascending: true })
+        .order("match_number", { ascending: true });
+
       if (matchesError) throw matchesError;
 
       // Her maç için oyuncu bilgilerini ekle
@@ -435,20 +477,20 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
           return {
             ...match,
             player1: player1Data,
-            player2: player2Data
+            player2: player2Data,
           };
-        })
+        }),
       );
-      
+
       setCurrentTournament(tournament as Tournament);
       setParticipants(participantsWithProfiles as TournamentParticipant[]);
       setMatches(matchesWithPlayers as TournamentMatch[]);
     } catch (error) {
-      console.error('Turnuva detayları alınırken hata:', error);
+      console.error("Turnuva detayları alınırken hata:", error);
       toast({
         title: "Hata",
         description: "Turnuva detayları yüklenemedi",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -461,14 +503,18 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
 
     // Realtime subscription for tournaments
     const tournamentsChannel = supabase
-      .channel('tournaments-changes')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'tournaments' 
-      }, () => {
-        fetchTournaments();
-      })
+      .channel("tournaments-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "tournaments",
+        },
+        () => {
+          fetchTournaments();
+        },
+      )
       .subscribe();
 
     return () => {
@@ -481,53 +527,69 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
     if (!currentTournament?.id) return;
 
     const tournamentId = currentTournament.id;
-    
+
     // Participants subscription
     const participantsChannel = supabase
       .channel(`tournament-participants-${tournamentId}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'tournament_participants',
-        filter: `tournament_id=eq.${tournamentId}`
-      }, (payload) => {
-        console.log('🔄 Participant değişikliği tespit edildi:', payload.eventType, payload);
-        fetchTournamentDetails(tournamentId);
-      })
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "tournament_participants",
+          filter: `tournament_id=eq.${tournamentId}`,
+        },
+        (payload) => {
+          console.log("🔄 Participant değişikliği tespit edildi:", payload.eventType, payload);
+          fetchTournamentDetails(tournamentId);
+        },
+      )
       .subscribe((status) => {
-        console.log('📡 Participants channel status:', status);
+        console.log("📡 Participants channel status:", status);
       });
 
-    // Matches subscription  
+    // Matches subscription
     const matchesChannel = supabase
       .channel(`tournament-matches-${tournamentId}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public', 
-        table: 'tournament_matches',
-        filter: `tournament_id=eq.${tournamentId}`
-       }, (payload) => {
-        console.log('Match updated:', payload);
-        fetchTournamentDetails(tournamentId);
-      })
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "tournament_matches",
+          filter: `tournament_id=eq.${tournamentId}`,
+        },
+        (payload) => {
+          console.log("Match updated:", payload);
+          fetchTournamentDetails(tournamentId);
+        },
+      )
       .subscribe();
 
     // Tournament status subscription
     const statusChannel = supabase
       .channel(`tournament-status-${tournamentId}`)
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'tournaments',
-        filter: `id=eq.${tournamentId}`
-      }, (payload) => {
-        const newTournament = payload.new as any;
-        setCurrentTournament(prev => prev ? {
-          ...prev,
-          ...newTournament,
-          status: newTournament.status as 'waiting' | 'in_progress' | 'completed' | 'cancelled'
-        } : null);
-      })
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "tournaments",
+          filter: `id=eq.${tournamentId}`,
+        },
+        (payload) => {
+          const newTournament = payload.new as any;
+          setCurrentTournament((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  ...newTournament,
+                  status: newTournament.status as "waiting" | "in_progress" | "completed" | "cancelled",
+                }
+              : null,
+          );
+        },
+      )
       .subscribe();
 
     return () => {
@@ -541,35 +603,35 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
   const checkTournamentProgress = async (tournamentId: string) => {
     try {
       const { data: matches } = await supabase
-        .from('tournament_matches')
-        .select('*')
-        .eq('tournament_id', tournamentId)
-        .eq('status', 'completed');
+        .from("tournament_matches")
+        .select("*")
+        .eq("tournament_id", tournamentId)
+        .eq("status", "completed");
 
       const { data: tournament } = await supabase
-        .from('tournaments')
-        .select('current_round')
-        .eq('id', tournamentId)
+        .from("tournaments")
+        .select("current_round")
+        .eq("id", tournamentId)
         .single();
 
       if (!matches || !tournament) return;
 
       const currentRound = tournament.current_round;
-      const roundMatches = matches.filter(m => m.round === currentRound);
-      
+      const roundMatches = matches.filter((m) => m.round === currentRound);
+
       // Count expected matches for current round
       const expectedMatches = currentRound === 1 ? 4 : currentRound === 2 ? 2 : 1;
-      
+
       if (roundMatches.length === expectedMatches && currentRound < 3) {
         // Auto-advance to next round
         console.log(`Round ${currentRound} complete, advancing...`);
-        
-        await supabase.rpc('advance_tournament_round', {
-          p_tournament_id: tournamentId
+
+        await supabase.rpc("advance_tournament_round", {
+          p_tournament_id: tournamentId,
         });
       }
     } catch (error) {
-      console.error('Error checking tournament progress:', error);
+      console.error("Error checking tournament progress:", error);
     }
   };
 
@@ -588,12 +650,8 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
     startTournament,
     fetchTournaments,
     fetchTournamentDetails,
-    resetContext
+    resetContext,
   };
 
-  return (
-    <TournamentContext.Provider value={value}>
-      {children}
-    </TournamentContext.Provider>
-  );
+  return <TournamentContext.Provider value={value}>{children}</TournamentContext.Provider>;
 };
