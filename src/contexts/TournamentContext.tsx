@@ -148,6 +148,11 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
 
       if (participantError) throw participantError;
 
+      toast({
+        title: "🏆 Turnuva Oluşturuldu",
+        description: `${name} başarıyla oluşturuldu!`,
+      });
+
       await fetchTournaments();
       return tournament.id;
     } catch (error: any) {
@@ -178,11 +183,6 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
       });
 
       if (error) throw error;
-
-      toast({
-        title: "🎯 Turnuvaya Katıldınız",
-        description: "Başarıyla katıldınız!",
-      });
 
       await fetchTournamentDetails(tournamentId);
       return true;
