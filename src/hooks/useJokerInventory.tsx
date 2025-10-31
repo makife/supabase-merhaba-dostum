@@ -62,6 +62,35 @@ export const useJokerInventory = () => {
     if (!user || jokers[jokerType] <= 0) return false;
 
     try {
+      // Joker kullanım sayacını güncelle
+      const columnMap = {
+        degistir: 'degistir_joker_used',
+        fisilida: 'fisilida_joker_used',
+        senYaz: 'senyaz_joker_used'
+      };
+
+      // Önce mevcut değeri al
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select(columnMap[jokerType])
+        .eq('id', user.id)
+        .single();
+
+      const currentValue = (profile as any)?.[columnMap[jokerType]] || 0;
+
+      const { error: statsError } = await supabase
+        .from('profiles')
+        .update({ 
+          [columnMap[jokerType]]: currentValue + 1
+        })
+        .eq('id', user.id);
+
+      if (statsError) {
+        console.error('Joker istatistik güncellenemedi:', statsError);
+      } else {
+        // Rozet kontrolü yap
+        await supabase.rpc('check_and_award_badges_simple', { p_user_id: user.id });
+      }
       // Veritabanındaki olası item_type eşleşmeleri (geçmiş uyumluluğu için)
       const aliasMap: Record<keyof JokerInventory, string[]> = {
         degistir: ['joker_degistir', 'degistir'],

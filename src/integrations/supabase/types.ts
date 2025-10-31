@@ -805,10 +805,12 @@ export type Database = {
           created_at: string | null
           daily_games: number | null
           daily_wins: number | null
+          degistir_joker_used: number | null
           disconnect_count: number | null
           email: string
           fastest_word_time: number | null
           favorite_letter: string | null
+          fisilida_joker_used: number | null
           game_credits: number | null
           highest_word: string | null
           highest_word_score: number | null
@@ -817,12 +819,16 @@ export type Database = {
           last_credit_refresh: string | null
           last_daily_reset: string | null
           last_disconnect: string | null
+          last_seen: string | null
           last_win: string | null
           longest_word: string | null
           longest_word_length: number | null
           losses: number | null
           premium_until: string | null
+          private_room_games: number | null
           push_token: string | null
+          random_match_games: number | null
+          senyaz_joker_used: number | null
           total_games: number | null
           total_play_time: number | null
           total_score: number | null
@@ -831,6 +837,7 @@ export type Database = {
           tournament_wins: number | null
           updated_at: string | null
           username: string | null
+          vs_bot_games: number | null
           win_count: number | null
           win_streak: number | null
           wins: number | null
@@ -845,10 +852,12 @@ export type Database = {
           created_at?: string | null
           daily_games?: number | null
           daily_wins?: number | null
+          degistir_joker_used?: number | null
           disconnect_count?: number | null
           email: string
           fastest_word_time?: number | null
           favorite_letter?: string | null
+          fisilida_joker_used?: number | null
           game_credits?: number | null
           highest_word?: string | null
           highest_word_score?: number | null
@@ -857,12 +866,16 @@ export type Database = {
           last_credit_refresh?: string | null
           last_daily_reset?: string | null
           last_disconnect?: string | null
+          last_seen?: string | null
           last_win?: string | null
           longest_word?: string | null
           longest_word_length?: number | null
           losses?: number | null
           premium_until?: string | null
+          private_room_games?: number | null
           push_token?: string | null
+          random_match_games?: number | null
+          senyaz_joker_used?: number | null
           total_games?: number | null
           total_play_time?: number | null
           total_score?: number | null
@@ -871,6 +884,7 @@ export type Database = {
           tournament_wins?: number | null
           updated_at?: string | null
           username?: string | null
+          vs_bot_games?: number | null
           win_count?: number | null
           win_streak?: number | null
           wins?: number | null
@@ -885,10 +899,12 @@ export type Database = {
           created_at?: string | null
           daily_games?: number | null
           daily_wins?: number | null
+          degistir_joker_used?: number | null
           disconnect_count?: number | null
           email?: string
           fastest_word_time?: number | null
           favorite_letter?: string | null
+          fisilida_joker_used?: number | null
           game_credits?: number | null
           highest_word?: string | null
           highest_word_score?: number | null
@@ -897,12 +913,16 @@ export type Database = {
           last_credit_refresh?: string | null
           last_daily_reset?: string | null
           last_disconnect?: string | null
+          last_seen?: string | null
           last_win?: string | null
           longest_word?: string | null
           longest_word_length?: number | null
           losses?: number | null
           premium_until?: string | null
+          private_room_games?: number | null
           push_token?: string | null
+          random_match_games?: number | null
+          senyaz_joker_used?: number | null
           total_games?: number | null
           total_play_time?: number | null
           total_score?: number | null
@@ -911,6 +931,7 @@ export type Database = {
           tournament_wins?: number | null
           updated_at?: string | null
           username?: string | null
+          vs_bot_games?: number | null
           win_count?: number | null
           win_streak?: number | null
           wins?: number | null

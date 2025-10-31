@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { useJokerInventory } from '@/hooks/useJokerInventory';
 import { useAvatarUpload } from '@/hooks/useAvatarUpload';
 import { AvatarOptionsDialog } from '@/components/AvatarOptionsDialog';
+import { BadgesDialog } from '@/components/BadgesDialog';
 import {
   ArrowLeft,
   Trophy,
@@ -41,6 +42,7 @@ const ProfilePage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedUsername, setEditedUsername] = useState('');
   const [showAvatarOptions, setShowAvatarOptions] = useState(false);
+  const [showBadgesDialog, setShowBadgesDialog] = useState(false);
   const [profileData, setProfileData] = useState({
     username: user?.email?.split('@')[0] || 'Oyuncu',
     avatar_url: '',
@@ -447,18 +449,12 @@ const ProfilePage = () => {
     try {
       console.log('Rozet kontrolu yapiliyor:', userId);
 
-      const { data: badges, error } = await supabase.rpc('check_and_award_badges', {
+      const { data: badges, error } = await supabase.rpc('check_and_award_badges_simple', {
         p_user_id: userId
       });
 
       if (error) {
         console.error('Rozet kontrolu hatasi:', error);
-      } else if (badges && Array.isArray(badges) && badges.length > 0) {
-        badges.forEach((badge: any) => {
-          toast.success(`Yeni Rozet: ${badge.new_badge_name} ${badge.new_badge_icon}`, {
-            duration: 4000,
-          });
-        });
       }
 
       console.log('Rozet kontrolu tamamlandi');
@@ -806,42 +802,47 @@ const ProfilePage = () => {
         {/* Achievements / Badges */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <Crown className="w-5 h-5 mr-2" />
-              Rozetler
-            </CardTitle>
-            <CardDescription>
-              Oyun içi başarılarınız ve rozetleriniz
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center">
+                  <Crown className="w-5 h-5 mr-2" />
+                  Rozetler
+                </CardTitle>
+                <CardDescription>
+                  Oyun içi başarılarınız ve rozetleriniz
+                </CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowBadgesDialog(true)}
+              >
+                Tümünü Gör
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {badges.map((badge) => (
+              {badges.filter(b => b.earned).slice(0, 4).map((badge) => (
                 <div 
                   key={badge.id}
-                  className={`flex items-center space-x-3 p-3 rounded-lg border ${
-                    badge.earned 
-                      ? 'bg-accent/50 border-accent' 
-                      : 'bg-muted/30 border-muted opacity-50'
-                  }`}
+                  className="flex items-center space-x-3 p-3 rounded-lg border bg-accent/50 border-accent"
                 >
                   <div className="text-2xl">{badge.icon}</div>
-                  <div className="flex-1">
-                    <p className="font-medium">{badge.name}</p>
-                    <p className="text-sm text-muted-foreground">{badge.description}</p>
-                    {badge.earned && badge.earned_at && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {new Date(badge.earned_at).toLocaleDateString('tr-TR')} tarihinde kazanıldı
-                      </p>
-                    )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{badge.name}</p>
+                    <p className="text-sm text-muted-foreground truncate">{badge.description}</p>
                   </div>
-                  {badge.earned && (
-                    <Badge variant="secondary" className="text-xs">
-                      Kazanıldı
-                    </Badge>
-                  )}
+                  <Badge variant="secondary" className="text-xs">
+                    Kazanıldı
+                  </Badge>
                 </div>
               ))}
+              {badges.filter(b => b.earned).length === 0 && (
+                <div className="col-span-2 text-center py-8 text-muted-foreground">
+                  Henüz kazanılmış rozet yok
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -942,6 +943,13 @@ const ProfilePage = () => {
           onGallerySelect={handleGallerySelect}
           onGameAvatarsSelect={handleGameAvatarsSelect}
           onDelete={handleDeleteAvatar}
+        />
+
+        {/* Badges Dialog */}
+        <BadgesDialog
+          open={showBadgesDialog}
+          onOpenChange={setShowBadgesDialog}
+          badges={badges}
         />
       </div>
     </div>

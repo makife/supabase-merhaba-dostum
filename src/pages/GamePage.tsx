@@ -1223,21 +1223,47 @@ const showTournamentEndCard = async (isWinner: boolean, userScore: number, oppon
     try {
       console.log('🏆 Rozet kontrolü yapılıyor:', userId);
   
-      // ESKİ fonksiyon adını kullan (TypeScript'te tanımlı)
-      const { data: badges, error } = await supabase.rpc('check_and_award_badges', {
+      // Önce oyun modu sayacını güncelle
+      if (gameMode && user?.id === userId) {
+        const modeColumnMap: Record<string, string> = {
+          'vs-computer': 'vs_bot_games',
+          'private-room': 'private_room_games',
+          'random-match': 'random_match_games',
+          'random-match-timed': 'random_match_games',
+          'random-match-score': 'random_match_games'
+        };
+
+        const column = modeColumnMap[gameMode];
+        if (column) {
+          // Önce mevcut değeri al
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select(column)
+            .eq('id', userId)
+            .single();
+
+          const currentValue = (profile as any)?.[column] || 0;
+
+          const { error: modeError } = await supabase
+            .from('profiles')
+            .update({ 
+              [column]: currentValue + 1
+            })
+            .eq('id', userId);
+
+          if (modeError) {
+            console.error('Oyun modu sayacı güncellenemedi:', modeError);
+          }
+        }
+      }
+  
+      // YENİ fonksiyon adını kullan - void döndürüyor artık
+      const { error } = await supabase.rpc('check_and_award_badges_simple', {
         p_user_id: userId
       });
   
       if (error) {
         console.error('❌ Rozet kontrolü hatası:', error);
-      } else if (badges && Array.isArray(badges) && badges.length > 0) {
-        badges.forEach((badge: any) => {
-          toast({
-            title: '🏆 Yeni Rozet!',
-            description: `"${badge.new_badge_name}" rozetini kazandınız! ${badge.new_badge_icon}`,
-            duration: 4000,
-          });
-        });
       }
   
       console.log('✅ Rozet kontrolü tamamlandı');

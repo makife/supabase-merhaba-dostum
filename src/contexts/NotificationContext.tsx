@@ -1,7 +1,9 @@
 // contexts/NotificationContext.tsx
-import { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, ReactNode, useEffect } from 'react';
 import { useChatNotifications } from '@/hooks/useChatNotifications';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 
 interface NotificationContextType {
@@ -25,6 +27,38 @@ interface NotificationProviderProps {
 
 export const NotificationProvider = ({ children }: NotificationProviderProps) => {
   const { unreadCount } = useChatNotifications();
+  const { user } = useAuth();
+
+  // Badge kazanıldığında bildirim göster
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('badge-notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          const notification = payload.new as any;
+          if (notification.type === 'badge_earned') {
+            toast.success(notification.message, {
+              duration: 5000,
+              icon: '🏆'
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   const markAsRead = async (notificationId: string) => {
     try {
