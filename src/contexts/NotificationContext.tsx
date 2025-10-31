@@ -1,10 +1,10 @@
-// contexts/NotificationContext.tsx
 import { createContext, useContext, ReactNode, useEffect } from 'react';
 import { useChatNotifications } from '@/hooks/useChatNotifications';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-
+import { PushNotifications } from '@capacitor/push-notifications';
+import { Capacitor } from '@capacitor/core';
 
 interface NotificationContextType {
   unreadCount: number;
@@ -29,7 +29,28 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
   const { unreadCount } = useChatNotifications();
   const { user } = useAuth();
 
-  // Badge kazanıldığında bildirim göster
+  // 🔔 1️⃣ Uygulama açılırken bildirim iznini iste
+  useEffect(() => {
+    const registerNotifications = async () => {
+      if (Capacitor.getPlatform() === 'android') {
+        try {
+          const permission = await PushNotifications.requestPermissions();
+          if (permission.receive === 'granted') {
+            await PushNotifications.register();
+            console.log('Bildirim izni verildi ✅');
+          } else {
+            console.warn('Bildirim izni reddedildi ❌');
+          }
+        } catch (err) {
+          console.error('Bildirim izni alınırken hata:', err);
+        }
+      }
+    };
+
+    registerNotifications();
+  }, []);
+
+  // 🔔 2️⃣ Supabase bildirimleri dinle
   useEffect(() => {
     if (!user) return;
 
