@@ -1,19 +1,19 @@
-import { MusicPackSelector } from '@/components/MusicPackSelector';
-import { useState, useEffect, useRef } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
-import { useTheme } from '@/hooks/useTheme';
-import { useSounds } from '@/hooks/useSounds';
-import { useMusic } from '@/contexts/MusicContext';
-import { useUserPurchases } from '@/hooks/useUserPurchases';
+import { MusicPackSelector } from "@/components/MusicPackSelector";
+import { useState, useEffect, useRef } from "react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/hooks/useTheme";
+import { useSounds } from "@/hooks/useSounds";
+import { useMusic } from "@/contexts/MusicContext";
+import { useUserPurchases } from "@/hooks/useUserPurchases";
 import {
   ArrowLeft,
   Bell,
@@ -31,10 +31,10 @@ import {
   Settings,
   Trash2,
   Download,
-  AlertTriangle
-} from 'lucide-react';
-import { triggerGlobalStorageClear } from '@/hooks/useLocalStorageClear';
-import { useMobileNotifications } from '@/hooks/useMobileNotifications';
+  AlertTriangle,
+} from "lucide-react";
+import { triggerGlobalStorageClear } from "@/hooks/useLocalStorageClear";
+import { useMobileNotifications } from "@/hooks/useMobileNotifications";
 
 const SettingsPage = () => {
   const navigate = useNavigate();
@@ -44,43 +44,38 @@ const SettingsPage = () => {
   const { soundsEnabled, setSoundsEnabled, playSound } = useSounds();
   const { musicEnabled, setMusicEnabled } = useMusic();
   const { hasPurchased, settings, updateSettings } = useUserPurchases();
-  const { 
-    isPermissionGranted, 
-    isMobile, 
-    requestPermissions,
-    showLocalNotification 
-  } = useMobileNotifications();
+  const { isPermissionGranted, isMobile, requestPermissions, showLocalNotification } = useMobileNotifications();
 
   // Settings state
   const [notifications, setNotifications] = useState(true);
-  const [language, setLanguage] = useState('tr');
-  
+  const [language, setLanguage] = useState("tr");
+
   // Auto-save tracking
   const initialSettingsRef = useRef<any>(null);
   const hasChangedRef = useRef(false);
   const isInitialMount = useRef(true);
-  
+
   // Modal states
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalContent, setModalContent] = useState({ title: '', content: '' });
+  const [modalContent, setModalContent] = useState({ title: "", content: "" });
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Load settings from localStorage and set initial values
   useEffect(() => {
-    const savedSettings = localStorage.getItem('kelimeci-settings');
+    const savedSettings = localStorage.getItem("kelimeci-settings");
     if (savedSettings) {
       const settings = JSON.parse(savedSettings);
       setNotifications(settings.notifications ?? true);
-      setLanguage(settings.language ?? 'tr');
-      
+      setLanguage(settings.language ?? "tr");
+
       // Store initial settings for comparison
       initialSettingsRef.current = {
         notifications: settings.notifications ?? true,
         sounds: soundsEnabled,
         music: musicEnabled,
         theme,
-        language: settings.language ?? 'tr'
+        language: settings.language ?? "tr",
       };
     } else {
       // Store initial settings even if no saved settings exist
@@ -89,7 +84,7 @@ const SettingsPage = () => {
         sounds: soundsEnabled,
         music: musicEnabled,
         theme,
-        language: 'tr'
+        language: "tr",
       };
     }
   }, [soundsEnabled, musicEnabled, theme]);
@@ -109,54 +104,50 @@ const SettingsPage = () => {
       sounds: soundsEnabled,
       music: musicEnabled,
       theme,
-      language
+      language,
     };
 
     // Check if any setting has actually changed
     const hasRealChange = JSON.stringify(currentSettings) !== JSON.stringify(initialSettingsRef.current);
-    
+
     if (hasRealChange) {
       hasChangedRef.current = true;
-      localStorage.setItem('kelimeci-settings', JSON.stringify(currentSettings));
-      
+      localStorage.setItem("kelimeci-settings", JSON.stringify(currentSettings));
+
       // Dispatch custom event to notify other components
-      window.dispatchEvent(new Event('settingsChanged'));
-      
+      window.dispatchEvent(new Event("settingsChanged"));
+
       // Update initial settings ref for next comparison
       initialSettingsRef.current = currentSettings;
-      
-      playSound('buttonClick');
+
+      playSound("buttonClick");
       toast({
-        title: 'Ayarlar Kaydedildi',
-        description: 'Değişiklikleriniz kaydedildi.',
+        title: "Ayarlar Kaydedildi",
+        description: "Değişiklikleriniz kaydedildi.",
       });
     }
   }, [notifications, soundsEnabled, musicEnabled, theme, language, playSound, toast]);
 
-
   const handleNotificationChange = async (checked: boolean) => {
     setNotifications(checked);
-    
+
     if (checked) {
       // Mobile veya web bildirim izinlerini iste
       if (isMobile) {
         await requestPermissions();
-      } else if ('Notification' in window) {
+      } else if ("Notification" in window) {
         const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
+        if (permission === "granted") {
           toast({
-            title: 'Bildirimler Aktif',
-            description: 'Oyun bildirimleri başarıyla aktif edildi'
+            title: "Bildirimler Aktif",
+            description: "Oyun bildirimleri başarıyla aktif edildi",
           });
         }
       }
-      
+
       // Test bildirimi göster
       setTimeout(() => {
-        showLocalNotification(
-          'Bildirimler Aktif',
-          'Kelimeci bildirimleriniz aktif edildi!'
-        );
+        showLocalNotification("Bildirimler Aktif", "Kelimeci bildirimleriniz aktif edildi!");
       }, 2000);
     }
   };
@@ -344,50 +335,55 @@ const SettingsPage = () => {
     openModal("İletişim", content);
   };
 
-return (
-  <div className="flex flex-col h-screen bg-gradient-to-br from-background to-muted overflow-x-hidden">
-    {/* Fixed Header */}
-    <div className="sticky top-0 z-10 bg-purple-50/95 backdrop-blur-sm border-b border-purple-200 p-3 pt-6">
-      <div className="max-w-2xl mx-auto">
-        <div className="space-y-4"> {/* space-y-4'ü buraya ekledim */}
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <Button variant="outline" size="sm" onClick={() => navigate('/')} className="text-purple-600 border-purple-500/30 hover:bg-purple-500/20 bg-purple-500/10">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Geri
-            </Button>
-            
-            <div className="relative inline-block">
-              {/* Stroke Background */}
-              <img 
-                src="/stroke.png" 
-                alt="Stroke Background" 
-                className="absolute inset-0 w-full h-full object-contain opacity-50" 
-              />
-              {/* Ayarlar Title */}
-              <h1 className="text-3xl font-bold flex items-center text-purple-600 relative z-10 px-6 py-3">
-                <Settings className="w-6 h-6 mr-3 text-purple-500" />
-                Ayarlar
-              </h1>
+  return (
+    <div className="flex flex-col h-screen bg-gradient-to-br from-background to-muted overflow-x-hidden">
+      {/* Fixed Header */}
+      <div className="sticky top-0 z-10 bg-purple-50/95 backdrop-blur-sm border-b border-purple-200 p-3 pt-6">
+        <div className="max-w-2xl mx-auto">
+          <div className="space-y-4">
+            {" "}
+            {/* space-y-4'ü buraya ekledim */}
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/")}
+                className="text-purple-600 border-purple-500/30 hover:bg-purple-500/20 bg-purple-500/10"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Geri
+              </Button>
+
+              <div className="relative inline-block">
+                {/* Stroke Background */}
+                <img
+                  src="/stroke.png"
+                  alt="Stroke Background"
+                  className="absolute inset-0 w-full h-full object-contain opacity-50"
+                />
+                {/* Ayarlar Title */}
+                <h1 className="text-3xl font-bold flex items-center text-purple-600 relative z-10 px-6 py-3">
+                  <Settings className="w-6 h-6 mr-3 text-purple-500" />
+                  Ayarlar
+                </h1>
+              </div>
+
+              <div className="w-16" />
             </div>
-            
-            <div className="w-16" />
+            {/* Game Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Smartphone className="w-5 h-5 mr-2" />
+                  Oyun Ayarları
+                </CardTitle>
+                <CardDescription>Oyun deneyiminizi kişiselleştirin</CardDescription>
+              </CardHeader>
+            </Card>
           </div>
-          {/* Game Settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Smartphone className="w-5 h-5 mr-2" />
-                Oyun Ayarları
-              </CardTitle>
-              <CardDescription>
-                Oyun deneyiminizi kişiselleştirin
-              </CardDescription>
-            </CardHeader>
-          </Card>
         </div>
       </div>
-    </div>
 
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
@@ -395,257 +391,226 @@ return (
           {/* Game Settings Content */}
           <Card>
             <CardContent className="pt-6 space-y-6">
-            {/* Notifications */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <Bell className="w-5 h-5" />
-                <div>
-                  <p className="font-medium">Bildirimler</p>
-                  <p className="text-sm text-muted-foreground">Oyun bildirimlerini alın</p>
+              {/* Notifications */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <Bell className="w-5 h-5" />
+                  <div>
+                    <p className="font-medium">Bildirimler</p>
+                    <p className="text-sm text-muted-foreground">Oyun bildirimlerini alın</p>
+                  </div>
                 </div>
+                <Switch checked={notifications} offCheckedChange={handleNotificationChange} />
               </div>
-              <Switch
-                checked={notifications}
-                onCheckedChange={handleNotificationChange}
-              />
-            </div>
 
-            <Separator />
+              <Separator />
 
-            {/* Sounds */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <Volume2 className="w-5 h-5" />
-                <div>
-                  <p className="font-medium">Ses Efektleri</p>
-                  <p className="text-sm text-muted-foreground">Oyun seslerini açın/kapatın</p>
+              {/* Sounds */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <Volume2 className="w-5 h-5" />
+                  <div>
+                    <p className="font-medium">Ses Efektleri</p>
+                    <p className="text-sm text-muted-foreground">Oyun seslerini açın/kapatın</p>
+                  </div>
                 </div>
+                <Switch
+                  checked={soundsEnabled}
+                  onCheckedChange={(checked) => {
+                    setSoundsEnabled(checked);
+                    if (checked) playSound("buttonClick");
+                  }}
+                />
               </div>
-              <Switch
-                checked={soundsEnabled}
-                onCheckedChange={(checked) => {
-                  setSoundsEnabled(checked);
-                  if (checked) playSound('buttonClick');
-                }}
-              />
-            </div>
 
-            <Separator />
+              <Separator />
 
-            {/* Music */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <Volume2 className="w-5 h-5" />
-                <div>
-                  <p className="font-medium">Arka Plan Müziği</p>
-                  <p className="text-sm text-muted-foreground">Oyun müziğini açın/kapatın</p>
+              {/* Music */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <Volume2 className="w-5 h-5" />
+                  <div>
+                    <p className="font-medium">Arka Plan Müziği</p>
+                    <p className="text-sm text-muted-foreground">Oyun müziğini açın/kapatın</p>
+                  </div>
                 </div>
+                <Switch
+                  checked={musicEnabled}
+                  onCheckedChange={(checked) => {
+                    setMusicEnabled(checked);
+                    if (checked) playSound("buttonClick");
+                  }}
+                />
               </div>
-              <Switch
-                checked={musicEnabled}
-                onCheckedChange={(checked) => {
-                  setMusicEnabled(checked);
-                  if (checked) playSound('buttonClick');
-                }}
-              />
-            </div>
 
-            <Separator />
-            
-            {/* Legacy Theme for backward compatibility */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <Palette className="w-5 h-5" />
-                <div>
-                  <p className="font-medium">Sistem Teması</p>
-                  <p className="text-sm text-muted-foreground">Açık/Koyu sistem ayarı</p>
+              <Separator />
+
+              {/* Legacy Theme for backward compatibility */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <Palette className="w-5 h-5" />
+                  <div>
+                    <p className="font-medium">Sistem Teması</p>
+                    <p className="text-sm text-muted-foreground">Açık/Koyu sistem ayarı</p>
+                  </div>
                 </div>
+                <Select value={theme} onValueChange={(value) => setTheme(value as "light" | "dark" | "system")}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="light">Açık</SelectItem>
+                    <SelectItem value="dark">Koyu</SelectItem>
+                    <SelectItem value="system">Sistem</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <Select value={theme} onValueChange={(value) => setTheme(value as 'light' | 'dark' | 'system')}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="light">Açık</SelectItem>
-                  <SelectItem value="dark">Koyu</SelectItem>
-                  <SelectItem value="system">Sistem</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* Support & Info */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Info className="w-5 h-5 mr-2" />
-              Destek & Bilgi
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button
-              variant="ghost"
-              className="w-full justify-start"
-              onClick={openHowToPlay}
-            >
-              <PlayCircle className="w-4 h-4 mr-2" />
-              Nasıl Oynanır
-            </Button>
+          {/* Support & Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Info className="w-5 h-5 mr-2" />
+                Destek & Bilgi
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button variant="ghost" className="w-full justify-start" onClick={openHowToPlay}>
+                <PlayCircle className="w-4 h-4 mr-2" />
+                Nasıl Oynanır
+              </Button>
 
-            <Button
-              variant="ghost"
-              className="w-full justify-start"
-              onClick={openSupport}
-            >
-              <HelpCircle className="w-4 h-4 mr-2" />
-              Yardım & Destek
-            </Button>
+              <Button variant="ghost" className="w-full justify-start" onClick={openSupport}>
+                <HelpCircle className="w-4 h-4 mr-2" />
+                Yardım & Destek
+              </Button>
 
-            <Button
-              variant="ghost"
-              className="w-full justify-start"
-              onClick={openPrivacyPolicy}
-            >
-              <Shield className="w-4 h-4 mr-2" />
-              Gizlilik Politikası
-            </Button>
+              <Button variant="ghost" className="w-full justify-start" onClick={openPrivacyPolicy}>
+                <Shield className="w-4 h-4 mr-2" />
+                Gizlilik Politikası
+              </Button>
 
-            <Button
-              variant="ghost"
-              className="w-full justify-start"
-              onClick={openAbout}
-            >
-              <Info className="w-4 h-4 mr-2" />
-              Hakkımızda
-            </Button>
+              <Button variant="ghost" className="w-full justify-start" onClick={openAbout}>
+                <Info className="w-4 h-4 mr-2" />
+                Hakkımızda
+              </Button>
 
-            <Button
-              variant="ghost"
-              className="w-full justify-start"
-              onClick={openContact}
-            >
-              <Mail className="w-4 h-4 mr-2" />
-              İletişim
-            </Button>
-          </CardContent>
-        </Card>
+              <Button variant="ghost" className="w-full justify-start" onClick={openContact}>
+                <Mail className="w-4 h-4 mr-2" />
+                İletişim
+              </Button>
+            </CardContent>
+          </Card>
 
-        {/* Admin Panel - Only show for admin emails */}
-        {user?.email === 'info@erganmuhendislik.com' && (
-          <Card className="border-destructive/50 bg-destructive/5">
+          {/* Admin Panel - Only show for admin emails */}
+          {user?.email === "info@erganmuhendislik.com" && (
+            <Card className="border-destructive/50 bg-destructive/5">
+              <CardHeader>
+                <CardTitle className="flex items-center text-destructive">
+                  <ShieldCheck className="w-5 h-5 mr-2" />
+                  Admin Panel
+                </CardTitle>
+                <CardDescription>Sistem yönetimi araçları</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button
+                  variant="destructive"
+                  className="w-full"
+                  onClick={async () => {
+                    const result = await triggerGlobalStorageClear();
+                    if (result.success) {
+                      toast({
+                        title: "Başarılı",
+                        description: "Tüm kullanıcıların localStorage'ı temizlenecek.",
+                        variant: "default",
+                      });
+                    } else {
+                      toast({
+                        title: "Hata",
+                        description: "İşlem başarısız oldu.",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                >
+                  <ShieldCheck className="w-4 h-4 mr-2" />
+                  Tüm Kullanıcı Ayarlarını Sıfırla
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Account Management - KVKK Compliance */}
+          <Card className="border-destructive/30">
             <CardHeader>
               <CardTitle className="flex items-center text-destructive">
-                <ShieldCheck className="w-5 h-5 mr-2" />
-                Admin Panel
+                <AlertTriangle className="w-5 h-5 mr-2" />
+                Hesap İşlemleri
               </CardTitle>
-              <CardDescription>
-                Sistem yönetimi araçları
-              </CardDescription>
+              <CardDescription>Hesabınızı yönetin ve verilerinizi kontrol edin (KVKK)</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <Button
-                variant="destructive"
-                className="w-full"
+                variant="outline"
+                className="w-full justify-start"
                 onClick={async () => {
-                  const result = await triggerGlobalStorageClear();
-                  if (result.success) {
+                  try {
+                    const { data, error } = await supabase.rpc("export_user_data");
+
+                    if (error) throw error;
+
+                    // JSON dosyası olarak indir
+                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `kelimeci-verilerin-${new Date().toISOString().split("T")[0]}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+
                     toast({
-                      title: 'Başarılı',
-                      description: 'Tüm kullanıcıların localStorage\'ı temizlenecek.',
-                      variant: 'default',
+                      title: "Başarılı",
+                      description: "Verileriniz indirildi.",
                     });
-                  } else {
+                  } catch (error) {
                     toast({
-                      title: 'Hata',
-                      description: 'İşlem başarısız oldu.',
-                      variant: 'destructive',
+                      title: "Hata",
+                      description: "Veriler indirilemedi.",
+                      variant: "destructive",
                     });
                   }
                 }}
               >
-                <ShieldCheck className="w-4 h-4 mr-2" />
-                Tüm Kullanıcı Ayarlarını Sıfırla
+                <Download className="w-4 h-4 mr-2" />
+                Verilerimi İndir (KVKK)
               </Button>
+
+              <Separator />
+
+              <Button variant="destructive" className="w-full justify-start" onClick={() => setDeleteConfirmOpen(true)}>
+                <Trash2 className="w-4 h-4 mr-2" />
+                Hesabımı Sil
+              </Button>
+
+              <p className="text-xs text-muted-foreground">
+                ⚠️ Hesabınızı sildiğinizde tüm verileriniz kalıcı olarak silinecektir. Bu işlem geri alınamaz.
+              </p>
             </CardContent>
           </Card>
-        )}
 
-        {/* Account Management - KVKK Compliance */}
-        <Card className="border-destructive/30">
-          <CardHeader>
-            <CardTitle className="flex items-center text-destructive">
-              <AlertTriangle className="w-5 h-5 mr-2" />
-              Hesap İşlemleri
-            </CardTitle>
-            <CardDescription>
-              Hesabınızı yönetin ve verilerinizi kontrol edin (KVKK)
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              onClick={async () => {
-                try {
-                  const { data, error } = await supabase.rpc('export_user_data');
-                  
-                  if (error) throw error;
-                  
-                  // JSON dosyası olarak indir
-                  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = `kelimeci-verilerin-${new Date().toISOString().split('T')[0]}.json`;
-                  document.body.appendChild(a);
-                  a.click();
-                  document.body.removeChild(a);
-                  URL.revokeObjectURL(url);
-                  
-                  toast({
-                    title: 'Başarılı',
-                    description: 'Verileriniz indirildi.',
-                  });
-                } catch (error) {
-                  toast({
-                    title: 'Hata',
-                    description: 'Veriler indirilemedi.',
-                    variant: 'destructive',
-                  });
-                }
-              }}
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Verilerimi İndir (KVKK)
-            </Button>
-
-            <Separator />
-
-            <Button
-              variant="destructive"
-              className="w-full justify-start"
-              onClick={() => setDeleteConfirmOpen(true)}
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Hesabımı Sil
-            </Button>
-            
-            <p className="text-xs text-muted-foreground">
-              ⚠️ Hesabınızı sildiğinizde tüm verileriniz kalıcı olarak silinecektir. Bu işlem geri alınamaz.
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* App Version */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center text-sm text-muted-foreground">
-              <p>Kelimeci v1.0.0</p>
-              <p>© 2025 Ergan Yazılım</p>
-            </div>
-          </CardContent>
-        </Card>
+          {/* App Version */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center text-sm text-muted-foreground">
+                <p>Kelimeci v1.0.0</p>
+                <p>© 2025 Ergan Yazılım</p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
@@ -655,10 +620,7 @@ return (
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">{modalContent.title}</DialogTitle>
           </DialogHeader>
-          <div 
-            className="prose prose-sm max-w-none"
-            dangerouslySetInnerHTML={{ __html: modalContent.content }}
-          />
+          <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: modalContent.content }} />
         </DialogContent>
       </Dialog>
 
@@ -670,9 +632,7 @@ return (
               <AlertTriangle className="w-5 h-5 mr-2" />
               Hesabı Silmeyi Onaylayın
             </DialogTitle>
-            <DialogDescription>
-              Bu işlem geri alınamaz. Tüm verileriniz kalıcı olarak silinecektir:
-            </DialogDescription>
+            <DialogDescription>Bu işlem geri alınamaz. Tüm verileriniz kalıcı olarak silinecektir:</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
@@ -682,7 +642,7 @@ return (
               <li>Satın alımlarınız ve envanter</li>
               <li>Tüm oyun kayıtlarınız</li>
             </ul>
-            
+
             <div className="flex gap-2">
               <Button
                 variant="outline"
@@ -700,36 +660,36 @@ return (
                   setIsDeleting(true);
                   try {
                     // Hesap silme fonksiyonunu çağır
-                    const { error } = await supabase.rpc('delete_user_account');
-                    
+                    const { error } = await supabase.rpc("delete_user_account");
+
                     if (error) throw error;
-                    
+
                     // Başarılı mesajı göster
                     toast({
-                      title: 'Hesap Silindi',
-                      description: 'Hesabınız başarıyla silindi. Yönlendiriliyorsunuz...',
+                      title: "Hesap Silindi",
+                      description: "Hesabınız başarıyla silindi. Yönlendiriliyorsunuz...",
                     });
-                    
+
                     // Kullanıcıyı çıkış yap
                     await supabase.auth.signOut();
-                    
+
                     // Ana sayfaya yönlendir
                     setTimeout(() => {
-                      navigate('/auth');
+                      navigate("/auth");
                     }, 2000);
                   } catch (error) {
-                    console.error('Delete error:', error);
+                    console.error("Delete error:", error);
                     toast({
-                      title: 'Hata',
-                      description: 'Hesap silinemedi. Lütfen tekrar deneyin.',
-                      variant: 'destructive',
+                      title: "Hata",
+                      description: "Hesap silinemedi. Lütfen tekrar deneyin.",
+                      variant: "destructive",
                     });
                     setIsDeleting(false);
                     setDeleteConfirmOpen(false);
                   }
                 }}
               >
-                {isDeleting ? 'Siliniyor...' : 'Evet, Hesabımı Sil'}
+                {isDeleting ? "Siliniyor..." : "Evet, Hesabımı Sil"}
               </Button>
             </div>
           </div>
