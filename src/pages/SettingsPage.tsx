@@ -400,7 +400,7 @@ const SettingsPage = () => {
                     <p className="text-sm text-muted-foreground">Oyun bildirimlerini alın</p>
                   </div>
                 </div>
-                <Switch checked={notifications} offCheckedChange={handleNotificationChange} />
+                <Switch checked={notifications} onCheckedChange={handleNotificationChange} />
               </div>
 
               <Separator />
