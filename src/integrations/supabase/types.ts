@@ -1523,6 +1523,10 @@ export type Database = {
         }[]
       }
       auto_start_countdown_finished_games: { Args: never; Returns: undefined }
+      award_badge_with_notification: {
+        Args: { p_badge_id: string; p_badge_name: string; p_user_id: string }
+        Returns: undefined
+      }
       ban_user_for_inappropriate_content: {
         Args: {
           p_ban_duration_hours?: number
