@@ -51,12 +51,14 @@ import { ToastAction } from "@/components/ui/toast";
 import { useNavigate } from "react-router-dom";
 import { useAppState } from "@/hooks/useAppState";
 import { realtimeManager } from "@/utils/realtimeManager";
+import { OnboardingPermissions } from "@/components/OnboardingPermissions";
 
 const queryClient = new QueryClient();
 
 const AppRoutes = () => {
   const { user, loading } = useAuth();
   const [customLoading, setCustomLoading] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // LocalStorage temizleme hook'unu kullan
   useLocalStorageClear();
@@ -67,12 +69,27 @@ const AppRoutes = () => {
   // Immersive mode'u aktif et (navigasyon tuşlarını gizle)
   //useImmersiveMode();
 
+  // İlk açılış kontrolü
+  useEffect(() => {
+    if (user && !loading) {
+      const onboardingCompleted = localStorage.getItem('kelimeci-onboarding-completed');
+      if (!onboardingCompleted) {
+        setShowOnboarding(true);
+      }
+    }
+  }, [user, loading]);
+
   if (loading || customLoading) {
     return <LoadingScreen onLoadingComplete={() => setCustomLoading(false)} />;
   }
 
   return (
-    <Routes>
+    <>
+      <OnboardingPermissions 
+        open={showOnboarding} 
+        onComplete={() => setShowOnboarding(false)} 
+      />
+      <Routes>
       <Route path="/auth" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
       <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
       <Route
@@ -319,6 +336,7 @@ const AppRoutes = () => {
       />
       <Route path="*" element={<NotFound />} />
     </Routes>
+    </>
   );
 };
 

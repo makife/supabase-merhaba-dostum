@@ -29,56 +29,49 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
   const { unreadCount } = useChatNotifications();
   const { user } = useAuth();
 
-  // 🔔 1️⃣ Uygulama açılırken bildirim iznini iste
-  useEffect(() => {
-    const registerNotifications = async () => {
-      if (Capacitor.getPlatform() === 'android') {
-        try {
-          const permission = await PushNotifications.requestPermissions();
-          if (permission.receive === 'granted') {
-            await PushNotifications.register();
-            console.log('Bildirim izni verildi ✅');
-          } else {
-            console.warn('Bildirim izni reddedildi ❌');
-          }
-        } catch (err) {
-          console.error('Bildirim izni alınırken hata:', err);
-        }
-      }
-    };
+  // 🔔 Bildirim sistemi - sadece dinleme modu (izin kullanıcı tarafından verilmeli)
 
-    registerNotifications();
-  }, []);
-
-  // 🔔 2️⃣ Supabase bildirimleri dinle
+  // 🔔 Supabase bildirimleri dinle
   useEffect(() => {
     if (!user) return;
 
-    const channel = supabase
-      .channel('badge-notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          const notification = payload.new as any;
-          if (notification.type === 'badge_earned') {
-            toast.success(notification.message, {
-              duration: 5000,
-              icon: '🏆'
-            });
+    try {
+      const channel = supabase
+        .channel('badge-notifications')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            try {
+              const notification = payload.new as any;
+              if (notification.type === 'badge_earned') {
+                toast.success(notification.message, {
+                  duration: 5000,
+                  icon: '🏆'
+                });
+              }
+            } catch (err) {
+              console.error('Bildirim işlenirken hata:', err);
+            }
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+      return () => {
+        try {
+          supabase.removeChannel(channel);
+        } catch (err) {
+          console.error('Channel kapatılırken hata:', err);
+        }
+      };
+    } catch (err) {
+      console.error('Bildirim kanalı oluşturulurken hata:', err);
+    }
   }, [user]);
 
   const markAsRead = async (notificationId: string) => {

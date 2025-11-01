@@ -47,7 +47,7 @@ const SettingsPage = () => {
   const { isPermissionGranted, isMobile, requestPermissions, showLocalNotification } = useMobileNotifications();
 
   // Settings state
-  const [notifications, setNotifications] = useState(true);
+  const [notifications, setNotifications] = useState(false);
   const [language, setLanguage] = useState("tr");
 
   // Auto-save tracking
@@ -66,12 +66,12 @@ const SettingsPage = () => {
     const savedSettings = localStorage.getItem("kelimeci-settings");
     if (savedSettings) {
       const settings = JSON.parse(savedSettings);
-      setNotifications(settings.notifications ?? true);
+      setNotifications(settings.notifications ?? false);
       setLanguage(settings.language ?? "tr");
 
       // Store initial settings for comparison
       initialSettingsRef.current = {
-        notifications: settings.notifications ?? true,
+        notifications: settings.notifications ?? false,
         sounds: soundsEnabled,
         music: musicEnabled,
         theme,
@@ -80,7 +80,7 @@ const SettingsPage = () => {
     } else {
       // Store initial settings even if no saved settings exist
       initialSettingsRef.current = {
-        notifications: true,
+        notifications: false,
         sounds: soundsEnabled,
         music: musicEnabled,
         theme,
