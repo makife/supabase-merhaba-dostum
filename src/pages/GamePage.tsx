@@ -4212,11 +4212,6 @@ const GamePage = ({
         if (!hasShownStartMessage) {
           setHasShownStartMessage(true);
           const modeLabel = gameMode === "private-room" ? "Özel Oda" : "Rastgele Eşleşme";
-          toast({
-            title: `🎮 ${modeLabel} Başladı!`,
-            description: `${gameType === "score" ? "Puanlı" : "Süreli"} oyun başladı!`,
-            duration: 2000,
-          });
         }
       } else {
         setWaitingForPlayer(true);
