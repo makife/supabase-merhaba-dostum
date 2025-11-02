@@ -1690,6 +1690,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   );
 
   // End game
+  // End game fonksiyonunda, room'u finished olarak işaretledikten SONRA ekle
   const endGame = useCallback(
     async (
       playerStats?: {
@@ -1756,16 +1757,6 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           }
         }
 
-        // Use database function to update game stats (only for non-trigger flows if needed)
-        // Rely primarily on game_rooms 'finished' triggers to avoid double increments
-        if (playerStats) {
-          // No-op: triggers will handle stats to prevent duplication
-        }
-
-        if (opponentStats && !participants.find((p) => p.user_id === opponentStats.userId && p.is_bot)) {
-          // No-op: triggers will handle stats to prevent duplication
-        }
-
         // Update room with final status
         await supabase
           .from("game_rooms")
@@ -1780,7 +1771,42 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           })
           .eq("id", currentRoom.id);
 
-        console.log("✅ Room updated with game completion - triggers will handle stats");
+        console.log("✅ Room updated with game completion");
+
+        // 🎯 YENİ: OYUN KAYITLARINI game_sessions TABLOSUNA EKLE
+        if (playerStats) {
+          const { error: sessionError } = await supabase.from("game_sessions").insert({
+            user_id: playerStats.userId,
+            score: playerStats.score,
+            words_count: playerStats.words.length,
+            game_duration: gameDuration,
+            is_winner: playerStats.isWinner,
+            game_mode: currentRoom.game_mode,
+          });
+
+          if (sessionError) {
+            console.error("❌ Player game session kayıt hatası:", sessionError);
+          } else {
+            console.log("✅ Player game session kaydedildi:", playerStats.userId.slice(-8));
+          }
+        }
+
+        if (opponentStats && !participants.find((p) => p.user_id === opponentStats.userId && p.is_bot)) {
+          const { error: sessionError } = await supabase.from("game_sessions").insert({
+            user_id: opponentStats.userId,
+            score: opponentStats.score,
+            words_count: opponentStats.words.length,
+            game_duration: gameDuration,
+            is_winner: opponentStats.isWinner,
+            game_mode: currentRoom.game_mode,
+          });
+
+          if (sessionError) {
+            console.error("❌ Opponent game session kayıt hatası:", sessionError);
+          } else {
+            console.log("✅ Opponent game session kaydedildi:", opponentStats.userId.slice(-8));
+          }
+        }
 
         // Wait a moment for triggers to process
         await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -1788,22 +1814,18 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         // Check for new badges after database triggers complete
         if (playerStats) {
           await checkBadges(playerStats.userId, playerStats.words.length);
-          // Refresh user profile to update stats in UI
           if (playerStats.userId === user?.id) {
-            // Trigger immediate profile refresh for real-time updates
             refreshProfile();
           }
         }
         if (opponentStats && !participants.find((p) => p.user_id === opponentStats.userId && p.is_bot)) {
           await checkBadges(opponentStats.userId, opponentStats.words.length);
-          // Refresh user profile to update stats in UI
           if (opponentStats.userId === user?.id) {
-            // Trigger immediate profile refresh for real-time updates
             refreshProfile();
           }
         }
 
-        // Clean up room after a delay to allow triggers to complete
+        // Clean up room after a delay
         setTimeout(async () => {
           try {
             await supabase.from("game_rooms").delete().eq("id", currentRoom.id);
@@ -1821,12 +1843,12 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
         setCurrentRoom(null);
         setParticipants([]);
-        console.log("✅ Oyun bitti, istatistikler database trigger ile güncellendi");
+        console.log("✅ Oyun bitti, game_sessions tablosuna kaydedildi");
       } catch (error) {
         console.error("❌ End game hatası:", error);
       }
     },
-    [currentRoom, participants, checkBadges],
+    [currentRoom, participants, checkBadges, user?.id, refreshProfile],
   );
 
   // Check if room is full and close it
