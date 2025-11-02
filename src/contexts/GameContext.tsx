@@ -1337,12 +1337,6 @@ export const GameProvider = ({ children }: GameProviderProps) => {
                 fetchParticipants(targetRoom.id);
               }, 300);
 
-              toast({
-                title: "🎯 Eşleşme Bulundu!",
-                description: `${gameType === "timed" ? "Zamana karşı" : "Puanlı"} rakip bulundu!`,
-                duration: 2000,
-              });
-
               return true;
             }
           } catch (error) {
