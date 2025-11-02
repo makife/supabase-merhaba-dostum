@@ -72,7 +72,7 @@ const AppRoutes = () => {
   // İlk açılış kontrolü
   useEffect(() => {
     if (user && !loading) {
-      const onboardingCompleted = localStorage.getItem('kelimeci-onboarding-completed');
+      const onboardingCompleted = localStorage.getItem("kelimeci-onboarding-completed");
       if (!onboardingCompleted) {
         setShowOnboarding(true);
       }
@@ -85,257 +85,254 @@ const AppRoutes = () => {
 
   return (
     <>
-      <OnboardingPermissions 
-        open={showOnboarding} 
-        onComplete={() => setShowOnboarding(false)} 
-      />
+      <OnboardingPermissions open={showOnboarding} onComplete={() => setShowOnboarding(false)} />
       <Routes>
-      <Route path="/auth" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
-      <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <HomePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/profile"
-        element={
-          <ProtectedRoute>
-            <ProfilePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/profile/:id"
-        element={
-          <ProtectedRoute>
-            <ProfilePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/game/vs-computer"
-        element={
-          <ProtectedRoute>
-            <GamePage gameMode="vs-computer" />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/game/private-room"
-        element={
-          <ProtectedRoute>
-            <GamePage gameMode="private-room" />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/game/random-match"
-        element={
-          <ProtectedRoute>
-            <GamePage gameMode="random-match" />
-          </ProtectedRoute>
-        }
-      />
+        <Route path="/auth" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
+        <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <HomePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile/:id"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/game/vs-computer"
+          element={
+            <ProtectedRoute>
+              <GamePage gameMode="vs-computer" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/game/private-room"
+          element={
+            <ProtectedRoute>
+              <GamePage gameMode="private-room" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/game/random-match"
+          element={
+            <ProtectedRoute>
+              <GamePage gameMode="random-match" />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/game/nakama"
-        element={
-          <ProtectedRoute>
-            <NakamaGamePage />
-          </ProtectedRoute>
-        }
-      />
-      {/* Backward-compatible alias to prevent 404s from older links */}
-      <Route
-        path="/game/nakama-game"
-        element={
-          <ProtectedRoute>
-            <NakamaGamePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/nakama-game"
-        element={
-          <ProtectedRoute>
-            <NakamaGamePage />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/game/nakama"
+          element={
+            <ProtectedRoute>
+              <NakamaGamePage />
+            </ProtectedRoute>
+          }
+        />
+        {/* Backward-compatible alias to prevent 404s from older links */}
+        <Route
+          path="/game/nakama-game"
+          element={
+            <ProtectedRoute>
+              <NakamaGamePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/nakama-game"
+          element={
+            <ProtectedRoute>
+              <NakamaGamePage />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/game"
-        element={
-          <ProtectedRoute>
-            <GamePage gameMode="tournament" />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/game"
+          element={
+            <ProtectedRoute>
+              <GamePage gameMode="tournament" />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/tournament"
-        element={
-          <ProtectedRoute>
-            <TournamentPage />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/tournament"
+          element={
+            <ProtectedRoute>
+              <TournamentPage />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/private-room-waiting"
-        element={
-          <ProtectedRoute>
-            <PrivateRoomWaitingPage />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/private-room-waiting"
+          element={
+            <ProtectedRoute>
+              <PrivateRoomWaitingPage />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/tournament-waiting/:tournamentId"
-        element={
-          <ProtectedRoute>
-            <TournamentWaitingPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/tournament-bracket/:tournamentId"
-        element={
-          <ProtectedRoute>
-            <TournamentBracketPage />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/tournament-waiting/:tournamentId"
+          element={
+            <ProtectedRoute>
+              <TournamentWaitingPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tournament-bracket/:tournamentId"
+          element={
+            <ProtectedRoute>
+              <TournamentBracketPage />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/game/tournament"
-        element={
-          <ProtectedRoute>
-            <GamePage gameMode="tournament" />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/puzzle-game"
-        element={
-          <ProtectedRoute>
-            <PuzzleGamePage />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/game/tournament"
+          element={
+            <ProtectedRoute>
+              <GamePage gameMode="tournament" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/puzzle-game"
+          element={
+            <ProtectedRoute>
+              <PuzzleGamePage />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route path="/tournament-game/:matchId" element={<GamePage gameMode="tournament" />} />
+        <Route path="/tournament-game/:matchId" element={<GamePage gameMode="tournament" />} />
 
-      <Route
-        path="/market"
-        element={
-          <ProtectedRoute>
-            <MarketPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/settings"
-        element={
-          <ProtectedRoute>
-            <SettingsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/leaderboard"
-        element={
-          <ProtectedRoute>
-            <LeaderboardPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/chat"
-        element={
-          <ProtectedRoute>
-            <ChatPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/test-matchmaking"
-        element={
-          <ProtectedRoute>
-            <TestMatchmakingPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/wheel"
-        element={
-          <ProtectedRoute>
-            <WheelPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/memory-game"
-        element={
-          <ProtectedRoute>
-            <MemoryGamePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/puzzle-game"
-        element={
-          <ProtectedRoute>
-            <PuzzleGamePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/grid-simon-says"
-        element={
-          <ProtectedRoute>
-            <GridSimonSaysPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/reactor-runner"
-        element={
-          <ProtectedRoute>
-            <ReactorRunnerPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/snake-game"
-        element={
-          <ProtectedRoute>
-            <SnakeGamePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/morles-game"
-        element={
-          <ProtectedRoute>
-            <MorlesGamePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/moderator"
-        element={
-          <ModeratorRoute>
-            <ModeratorPage />
-          </ModeratorRoute>
-        }
-      />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+        <Route
+          path="/market"
+          element={
+            <ProtectedRoute>
+              <MarketPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <SettingsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leaderboard"
+          element={
+            <ProtectedRoute>
+              <LeaderboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/chat"
+          element={
+            <ProtectedRoute>
+              <ChatPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/test-matchmaking"
+          element={
+            <ProtectedRoute>
+              <TestMatchmakingPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/wheel"
+          element={
+            <ProtectedRoute>
+              <WheelPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/memory-game"
+          element={
+            <ProtectedRoute>
+              <MemoryGamePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/puzzle-game"
+          element={
+            <ProtectedRoute>
+              <PuzzleGamePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/grid-simon-says"
+          element={
+            <ProtectedRoute>
+              <GridSimonSaysPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reactor-runner"
+          element={
+            <ProtectedRoute>
+              <ReactorRunnerPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/snake-game"
+          element={
+            <ProtectedRoute>
+              <SnakeGamePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/morles-game"
+          element={
+            <ProtectedRoute>
+              <MorlesGamePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/moderator"
+          element={
+            <ModeratorRoute>
+              <ModeratorPage />
+            </ModeratorRoute>
+          }
+        />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
     </>
   );
 };
@@ -429,6 +426,7 @@ const GlobalRematchListener = () => {
               title: "🎮 Tekrar Oyun İsteği",
               description: "Rakibiniz tekrar oyun istiyor!",
               duration: 10000,
+              className: "text-black bg-white", // 👈 Yazıyı siyah yap, arka planı beyaz
               action: (
                 <div className="flex gap-2">
                   <ToastAction altText="Kabul et" asChild>
