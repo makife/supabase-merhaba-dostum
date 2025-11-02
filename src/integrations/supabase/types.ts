@@ -1670,6 +1670,19 @@ export type Database = {
       }
       get_monthly_leaderboard:
         | {
+            Args: { limit_count?: number }
+            Returns: {
+              avatar_url: string
+              games_played: number
+              games_won: number
+              monthly_score: number
+              rank_change: number
+              rank_position: number
+              user_id: string
+              username: string
+            }[]
+          }
+        | {
             Args: { target_month_start?: string }
             Returns: {
               avatar_url: string
@@ -1722,6 +1735,19 @@ export type Database = {
         Returns: Json
       }
       get_weekly_leaderboard:
+        | {
+            Args: { limit_count?: number }
+            Returns: {
+              avatar_url: string
+              games_played: number
+              games_won: number
+              rank_change: number
+              rank_position: number
+              user_id: string
+              username: string
+              weekly_score: number
+            }[]
+          }
         | {
             Args: { target_week_start?: string }
             Returns: {
