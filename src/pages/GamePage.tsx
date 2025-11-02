@@ -3094,8 +3094,19 @@ const GamePage = ({
       }
 
       // End the game and cleanup room (for multiplayer modes)
+      // End the game and cleanup room
       if (currentRoom) {
+        console.log("🎮 Oyun bitti, endGame çağrılacak:", {
+          gameMode: gameMode,
+          currentRoom: currentRoom?.id?.slice(-8),
+          user: user?.id?.slice(-8),
+          playerScore: currentPlayerScore,
+          gameResult: gameResult,
+        });
+
         setTimeout(async () => {
+          console.log("⏰ setTimeout tetiklendi, endGame çağrılıyor...");
+
           const playerStats = user
             ? {
                 userId: user.id,
@@ -3105,7 +3116,8 @@ const GamePage = ({
               }
             : undefined;
 
-          // vs-computer için bot stats eklemeye gerek yok, sadece player stats yeterli
+          console.log("📊 playerStats:", playerStats);
+
           const opponentParticipant = participants.find((p) => p.user_id !== user?.id && !p.is_bot);
           const opponentStats = opponentParticipant?.user_id
             ? {
@@ -3116,7 +3128,12 @@ const GamePage = ({
               }
             : undefined;
 
+          console.log("👥 opponentStats:", opponentStats);
+          console.log("🔥 endGame çağrılıyor...");
+
           await endGame(playerStats, opponentStats);
+
+          console.log("✅ endGame tamamlandı");
         }, 3000);
       }
 
