@@ -102,9 +102,7 @@ const LeaderboardPage = () => {
       // Tarih argümanı göndermeden (sunucu tarafı geçerli haftayı kullanır)
       console.log('Haftalık sorgu tarihi: (server default)');
 
-      const { data, error } = await supabase.rpc('get_weekly_leaderboard' as any, {});
-
-
+      const { data, error } = await supabase.rpc('get_weekly_leaderboard', { limit_count: 100 });
       if (error) {
         console.error('Weekly leaderboard RPC error:', error);
         setWeeklyLeaders([]);
@@ -144,9 +142,7 @@ const LeaderboardPage = () => {
       // Tarih argümanı göndermeden (sunucu tarafı geçerli ayı kullanır)
       console.log('Aylık sorgu tarihi: (server default)');
 
-      const { data, error } = await supabase.rpc('get_monthly_leaderboard' as any, {});
-
-
+      const { data, error } = await supabase.rpc('get_monthly_leaderboard', { limit_count: 100 });
       if (error) {
         console.error('Monthly leaderboard RPC error:', error);
         setMonthlyLeaders([]);
