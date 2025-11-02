@@ -1,44 +1,53 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useUser } from '@/contexts/UserContext';
-import { useAppState } from '@/hooks/useAppState';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
-import { useGame } from '@/contexts/GameContext';
-import { useMusic } from '@/contexts/MusicContext';
-import { useWordValidation } from '@/hooks/useWordValidation';
-import { useSounds } from '@/hooks/useSounds';
-import { useJokerInventory } from '@/hooks/useJokerInventory';
-import { useUserPurchases } from '@/hooks/useUserPurchases';
-import { useNativeGameplay } from '@/hooks/useNativeGameplay';
-import { supabase } from '@/integrations/supabase/client';
-import GameCountdown from '@/components/GameCountdown';
-import { 
-  ArrowLeft, 
-  Clock, 
-  Target, 
-  Trash2, 
-  Send, 
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useUser } from "@/contexts/UserContext";
+import { useAppState } from "@/hooks/useAppState";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import { useGame } from "@/contexts/GameContext";
+import { useMusic } from "@/contexts/MusicContext";
+import { useWordValidation } from "@/hooks/useWordValidation";
+import { useSounds } from "@/hooks/useSounds";
+import { useJokerInventory } from "@/hooks/useJokerInventory";
+import { useUserPurchases } from "@/hooks/useUserPurchases";
+import { useNativeGameplay } from "@/hooks/useNativeGameplay";
+import { supabase } from "@/integrations/supabase/client";
+import GameCountdown from "@/components/GameCountdown";
+import {
+  ArrowLeft,
+  Clock,
+  Target,
+  Trash2,
+  Send,
   Trophy,
   User,
   Bot,
   Shuffle,
   Lightbulb,
   PenTool,
-  Loader2
-} from 'lucide-react';
-import { generateBotName } from '@/utils/tournamentHelpers';
-import { matchBanlist } from '@/utils/matchBanlist';
+  Loader2,
+} from "lucide-react";
+import { generateBotName } from "@/utils/tournamentHelpers";
+import { matchBanlist } from "@/utils/matchBanlist";
 
 // Safe helpers
-const shortId = (v?: string | null) => (v ? String(v).slice(-8) : 'NULL');
+const shortId = (v?: string | null) => (v ? String(v).slice(-8) : "NULL");
 const isUuid = (v?: string | null) => !!v && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 
 interface TournamentMatch {
@@ -58,10 +67,10 @@ interface TournamentMatch {
 }
 
 interface GamePageProps {
-  gameMode: 'vs-computer' | 'private-room' | 'random-match' | 'tournament';
+  gameMode: "vs-computer" | "private-room" | "random-match" | "tournament";
   onGameComplete?: (winnerId: string, player1Score: number, player2Score: number) => void;
   tournamentMatch?: TournamentMatch;
-  gameType?: 'timed' | 'score';
+  gameType?: "timed" | "score";
   participants?: any[];
 }
 
@@ -72,46 +81,58 @@ interface JokerState {
   senYaz: number;
 }
 
-const GamePage = ({ 
-  gameMode = 'vs-computer', 
+const GamePage = ({
+  gameMode = "vs-computer",
   onGameComplete,
   tournamentMatch: propTournamentMatch,
   gameType: propGameType,
-  participants: propsParticipants = []
+  participants: propsParticipants = [],
 }: GamePageProps) => {
-
   const generateRoomCode = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let result = '';
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let result = "";
     for (let i = 0; i < 6; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return result;
   };
-  
+
   const { user } = useAuth();
   const { consumeCredit, isPremium, addBonusCredits, forceRefreshProfile, profile } = useUser();
   const { hasPurchased, settings } = useUserPurchases();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { currentRoom, updateScore, participants: gameParticipants, endGame, leaveRoom, sendRematchRequest, respondRematchRequest, currentRematchRequest, setCurrentRematchRequest, joinRoom, createRoom, addAIOpponent } = useGame();
+  const {
+    currentRoom,
+    updateScore,
+    participants: gameParticipants,
+    endGame,
+    leaveRoom,
+    sendRematchRequest,
+    respondRematchRequest,
+    currentRematchRequest,
+    setCurrentRematchRequest,
+    joinRoom,
+    createRoom,
+    addAIOpponent,
+  } = useGame();
   const { triggerHapticFeedback, optimizeTouchEvent, isNative } = useNativeGameplay();
-  
+
   // Tournament match bilgisini URL'den al
   const [tournamentMatch, setTournamentMatch] = useState(propTournamentMatch || null);
-  
+
   // Tournament participant state
   const [tournamentParticipants, setTournamentParticipants] = useState<any[]>([]);
-  
+
   const participants = useMemo(() => {
-    if (gameMode === 'tournament') {
+    if (gameMode === "tournament") {
       const tournamentParts = propsParticipants?.length > 0 ? propsParticipants : tournamentParticipants;
       return tournamentParts || [];
     }
-    
+
     return gameParticipants || [];
   }, [gameMode, propsParticipants, gameParticipants, tournamentParticipants]);
-  
+
   const { validateWord, isValidating } = useWordValidation();
   const { playSound, playTimeWarningSequence, playCelebrationSound, playGameLoseSound, playSpecialSound } = useSounds();
   const { jokers: jokerInventory, useJoker, loadJokers } = useJokerInventory();
@@ -132,69 +153,69 @@ const GamePage = ({
   const countdownCompletedAtRef = useRef<number | null>(null);
   // Touch/click double-fire koruması: Gönder butonu için son touch zaman damgası
   const submitTouchTsRef = useRef(0);
-  
+
   const [globalUsedWords, setGlobalUsedWords] = useState<Set<string>>(new Set());
   const [serverTimeOffset, setServerTimeOffset] = useState(0);
 
   const addCleanup = useCallback((cleanupFn: () => void) => {
-  cleanupRef.current.push(cleanupFn);
-}, []);
-  
+    cleanupRef.current.push(cleanupFn);
+  }, []);
+
   // Joker state'leri artık envanter hook'undan geliyor
   const jokers = jokerInventory;
   const [selectedJoker, setSelectedJoker] = useState<string | null>(null);
-  const [highlightedLetters, setHighlightedLetters] = useState<{row: number, col: number}[]>([]);
+  const [highlightedLetters, setHighlightedLetters] = useState<{ row: number; col: number }[]>([]);
   const [isJokerActive, setIsJokerActive] = useState(false);
-  
+
   // Wordlist for local validation
   const [wordlist, setWordlist] = useState<Set<string>>(new Set());
   const [wordlistLoaded, setWordlistLoaded] = useState(false);
-  
+
   // Get game type from room or URL params - DÜZELTME
-const getGameType = useCallback((): 'timed' | 'score' => {
-  // TURNUVA MODU HER ZAMAN SÜRELİ!
-  if (gameMode === 'tournament') {
-    console.log('🏆 Tournament mode: FORCED to timed');
-    return 'timed';
-  }
-  
-  if (gameMode === 'vs-computer') {
-    const urlType = (searchParams.get('type') as 'timed' | 'score') || 'timed';
-    console.log('🤖 vs-computer mode type:', urlType);
-    return urlType;
-  }
-  
-  // RANDOM MATCH için öncelikle matchmaking room datasını kontrol et
-  if (gameMode === 'random-match') {
-    // URL'den gelen type parametresini kontrol et (matchmaking'den gelir)
-    const urlType = searchParams.get('type') as 'timed' | 'score';
-    if (urlType) {
-      console.log('🎯 Random match URL type:', urlType);
+  const getGameType = useCallback((): "timed" | "score" => {
+    // TURNUVA MODU HER ZAMAN SÜRELİ!
+    if (gameMode === "tournament") {
+      console.log("🏆 Tournament mode: FORCED to timed");
+      return "timed";
+    }
+
+    if (gameMode === "vs-computer") {
+      const urlType = (searchParams.get("type") as "timed" | "score") || "timed";
+      console.log("🤖 vs-computer mode type:", urlType);
       return urlType;
     }
-    
-    // Fallback: Room datasından çıkar
-    if (currentRoom?.time_limit && currentRoom.time_limit > 0) {
-      console.log('⏱️ Room timed mode detected');
-      return 'timed';
+
+    // RANDOM MATCH için öncelikle matchmaking room datasını kontrol et
+    if (gameMode === "random-match") {
+      // URL'den gelen type parametresini kontrol et (matchmaking'den gelir)
+      const urlType = searchParams.get("type") as "timed" | "score";
+      if (urlType) {
+        console.log("🎯 Random match URL type:", urlType);
+        return urlType;
+      }
+
+      // Fallback: Room datasından çıkar
+      if (currentRoom?.time_limit && currentRoom.time_limit > 0) {
+        console.log("⏱️ Room timed mode detected");
+        return "timed";
+      }
+      if (currentRoom?.max_score && currentRoom.max_score > 0) {
+        console.log("🎯 Room score mode detected");
+        return "score";
+      }
     }
-    if (currentRoom?.max_score && currentRoom.max_score > 0) {
-      console.log('🎯 Room score mode detected');
-      return 'score';
+
+    // Diğer modlar için mevcut mantık
+    if (currentRoom?.game_mode) {
+      if (currentRoom.game_mode.includes("score")) return "score";
+      else return "timed";
     }
-  }
-  
-  // Diğer modlar için mevcut mantık
-  if (currentRoom?.game_mode) {
-    if (currentRoom.game_mode.includes('score')) return 'score';
-    else return 'timed';
-  }
-  
-  const urlType = (searchParams.get('type') as 'timed' | 'score') || 'timed';
-  console.log('🔧 Fallback type:', urlType);
-  return urlType;
-}, [gameMode, currentRoom?.game_mode, currentRoom?.time_limit, currentRoom?.max_score, searchParams]);
-  
+
+    const urlType = (searchParams.get("type") as "timed" | "score") || "timed";
+    console.log("🔧 Fallback type:", urlType);
+    return urlType;
+  }, [gameMode, currentRoom?.game_mode, currentRoom?.time_limit, currentRoom?.max_score, searchParams]);
+
   const gameType = getGameType();
   const [timeWarningPlayed, setTimeWarningPlayed] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
@@ -206,17 +227,17 @@ const getGameType = useCallback((): 'timed' | 'score' => {
   useAppState(
     () => {
       // Arka plana gitti
-      console.log('🎮 Oyun arka plana gitti');
+      console.log("🎮 Oyun arka plana gitti");
       setIsInBackground(true);
-      
+
       // Eğer multiplayer oyun aktifse, 30 saniye timeout başlat
-      if ((gameMode === 'random-match' || gameMode === 'private-room' || gameMode === 'tournament') && gameStarted) {
+      if ((gameMode === "random-match" || gameMode === "private-room" || gameMode === "tournament") && gameStarted) {
         backgroundTimerRef.current = window.setTimeout(() => {
-          console.log('⚠️ Arka plan timeout - oyuncu disconnect ediliyor');
+          console.log("⚠️ Arka plan timeout - oyuncu disconnect ediliyor");
           toast({
             title: "Bağlantı Kesildi",
             description: "Oyun çok uzun süre arka planda kaldı",
-            variant: "destructive"
+            variant: "destructive",
           });
           handleGameEnd();
         }, 30000); // 30 saniye
@@ -224,51 +245,123 @@ const getGameType = useCallback((): 'timed' | 'score' => {
     },
     () => {
       // Ön plana geldi
-      console.log('🎮 Oyun ön plana geldi');
+      console.log("🎮 Oyun ön plana geldi");
       setIsInBackground(false);
-      
+
       // Timeout'u iptal et
       if (backgroundTimerRef.current) {
         clearTimeout(backgroundTimerRef.current);
         backgroundTimerRef.current = null;
       }
-    }
+    },
   );
 
   // Game state - Generate random letters each time
   const generateRandomGrid = useCallback((): string[][] => {
     const letterPool = [
-      'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A', // A - very common
-      'E', 'E', 'E', 'E', 'E', 'E', 'E',       // E - very common
-      'İ', 'İ', 'İ', 'İ', 'İ', 'İ',           // İ - common
-      'I', 'I', 'I', 'I', 'I',                 // I - common
-      'O', 'O', 'O', 'O', 'O',                 // O - common
-      'U', 'U', 'U', 'U',                      // U - common
-      'Ü', 'Ü', 'Ü',                           // Ü - common
-      'Ö', 'Ö', 'Ö',                           // Ö - common
-      'L', 'L', 'L', 'L', 'L',                 // L - common
-      'N', 'N', 'N', 'N', 'N',                 // N - common
-      'R', 'R', 'R', 'R', 'R',                 // R - common
-      'K', 'K', 'K', 'K',                      // K - common
-      'M', 'M', 'M', 'M',                      // M - common
-      'T', 'T', 'T', 'T',                      // T - common
-      'S', 'S', 'S', 'S',                      // S - common
-      'D', 'D', 'D',                           // D - common
-      'Y', 'Y', 'Y',                           // Y - common
-      'B', 'B', 'B',                           // B - medium
-      'C', 'C',                                // C - medium
-      'Ç', 'Ç',                                // Ç - medium
-      'F', 'F',                                // F - medium
-      'G', 'G',                                // G - medium
-      'Ğ', 'Ğ',                                // Ğ - medium
-      'H', 'H',                                // H - medium
-      'J',                                     // J - rare
-      'P', 'P',                                // P - medium
-      'Ş', 'Ş',                                // Ş - medium
-      'V', 'V',                                // V - medium
-      'Z',                                     // Z - rare
+      "A",
+      "A",
+      "A",
+      "A",
+      "A",
+      "A",
+      "A",
+      "A", // A - very common
+      "E",
+      "E",
+      "E",
+      "E",
+      "E",
+      "E",
+      "E", // E - very common
+      "İ",
+      "İ",
+      "İ",
+      "İ",
+      "İ",
+      "İ", // İ - common
+      "I",
+      "I",
+      "I",
+      "I",
+      "I", // I - common
+      "O",
+      "O",
+      "O",
+      "O",
+      "O", // O - common
+      "U",
+      "U",
+      "U",
+      "U", // U - common
+      "Ü",
+      "Ü",
+      "Ü", // Ü - common
+      "Ö",
+      "Ö",
+      "Ö", // Ö - common
+      "L",
+      "L",
+      "L",
+      "L",
+      "L", // L - common
+      "N",
+      "N",
+      "N",
+      "N",
+      "N", // N - common
+      "R",
+      "R",
+      "R",
+      "R",
+      "R", // R - common
+      "K",
+      "K",
+      "K",
+      "K", // K - common
+      "M",
+      "M",
+      "M",
+      "M", // M - common
+      "T",
+      "T",
+      "T",
+      "T", // T - common
+      "S",
+      "S",
+      "S",
+      "S", // S - common
+      "D",
+      "D",
+      "D", // D - common
+      "Y",
+      "Y",
+      "Y", // Y - common
+      "B",
+      "B",
+      "B", // B - medium
+      "C",
+      "C", // C - medium
+      "Ç",
+      "Ç", // Ç - medium
+      "F",
+      "F", // F - medium
+      "G",
+      "G", // G - medium
+      "Ğ",
+      "Ğ", // Ğ - medium
+      "H",
+      "H", // H - medium
+      "J", // J - rare
+      "P",
+      "P", // P - medium
+      "Ş",
+      "Ş", // Ş - medium
+      "V",
+      "V", // V - medium
+      "Z", // Z - rare
     ];
-    
+
     const grid: string[][] = [];
     for (let i = 0; i < 4; i++) {
       const row: string[] = [];
@@ -281,154 +374,233 @@ const getGameType = useCallback((): 'timed' | 'score' => {
     return grid;
   }, []);
 
+  const generateTournamentGrid = useCallback((seed: string): string[][] => {
+    // Basit LCG (Linear Congruential Generator) ile seed-based random
+    const seedNum = parseInt(seed.slice(-8), 16) || Date.now();
+    let currentSeed = seedNum;
 
-const generateTournamentGrid = useCallback((seed: string): string[][] => {
-  // Basit LCG (Linear Congruential Generator) ile seed-based random
-  const seedNum = parseInt(seed.slice(-8), 16) || Date.now();
-  let currentSeed = seedNum;
-  
-  const seededRandom = () => {
-    currentSeed = (currentSeed * 1664525 + 1013904223) % 4294967296;
-    return currentSeed / 4294967296;
-  };
-  
-  const letterPool = [
-    'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A',
-    'E', 'E', 'E', 'E', 'E', 'E', 'E',
-    'İ', 'İ', 'İ', 'İ', 'İ', 'İ',
-    'I', 'I', 'I', 'I', 'I',
-    'O', 'O', 'O', 'O', 'O',
-    'U', 'U', 'U', 'U',
-    'Ü', 'Ü', 'Ü',
-    'Ö', 'Ö', 'Ö',
-    'L', 'L', 'L', 'L', 'L',
-    'N', 'N', 'N', 'N', 'N',
-    'R', 'R', 'R', 'R', 'R',
-    'K', 'K', 'K', 'K',
-    'M', 'M', 'M', 'M',
-    'T', 'T', 'T', 'T',
-    'S', 'S', 'S', 'S',
-    'D', 'D', 'D',
-    'Y', 'Y', 'Y',
-    'B', 'B', 'B',
-    'C', 'C',
-    'Ç', 'Ç',
-    'F', 'F',
-    'G', 'G',
-    'Ğ', 'Ğ',
-    'H', 'H',
-    'J',
-    'P', 'P',
-    'Ş', 'Ş',
-    'V', 'V',
-    'Z',
-  ];
-  
-  const grid: string[][] = [];
-  for (let i = 0; i < 4; i++) {
-    const row: string[] = [];
-    for (let j = 0; j < 4; j++) {
-      const randomIndex = Math.floor(seededRandom() * letterPool.length);
-      row.push(letterPool[randomIndex]);
+    const seededRandom = () => {
+      currentSeed = (currentSeed * 1664525 + 1013904223) % 4294967296;
+      return currentSeed / 4294967296;
+    };
+
+    const letterPool = [
+      "A",
+      "A",
+      "A",
+      "A",
+      "A",
+      "A",
+      "A",
+      "A",
+      "E",
+      "E",
+      "E",
+      "E",
+      "E",
+      "E",
+      "E",
+      "İ",
+      "İ",
+      "İ",
+      "İ",
+      "İ",
+      "İ",
+      "I",
+      "I",
+      "I",
+      "I",
+      "I",
+      "O",
+      "O",
+      "O",
+      "O",
+      "O",
+      "U",
+      "U",
+      "U",
+      "U",
+      "Ü",
+      "Ü",
+      "Ü",
+      "Ö",
+      "Ö",
+      "Ö",
+      "L",
+      "L",
+      "L",
+      "L",
+      "L",
+      "N",
+      "N",
+      "N",
+      "N",
+      "N",
+      "R",
+      "R",
+      "R",
+      "R",
+      "R",
+      "K",
+      "K",
+      "K",
+      "K",
+      "M",
+      "M",
+      "M",
+      "M",
+      "T",
+      "T",
+      "T",
+      "T",
+      "S",
+      "S",
+      "S",
+      "S",
+      "D",
+      "D",
+      "D",
+      "Y",
+      "Y",
+      "Y",
+      "B",
+      "B",
+      "B",
+      "C",
+      "C",
+      "Ç",
+      "Ç",
+      "F",
+      "F",
+      "G",
+      "G",
+      "Ğ",
+      "Ğ",
+      "H",
+      "H",
+      "J",
+      "P",
+      "P",
+      "Ş",
+      "Ş",
+      "V",
+      "V",
+      "Z",
+    ];
+
+    const grid: string[][] = [];
+    for (let i = 0; i < 4; i++) {
+      const row: string[] = [];
+      for (let j = 0; j < 4; j++) {
+        const randomIndex = Math.floor(seededRandom() * letterPool.length);
+        row.push(letterPool[randomIndex]);
+      }
+      grid.push(row);
     }
-    grid.push(row);
-  }
-  
-  console.log('🎯 Tournament grid generated with seed:', seed, 'Grid preview:', grid[0]);
-  return grid;
-}, []);
+
+    console.log("🎯 Tournament grid generated with seed:", seed, "Grid preview:", grid[0]);
+    return grid;
+  }, []);
 
   const [gameGrid, setGameGrid] = useState<string[][]>(() => {
-  // Turnuva modunda grid sadece ortak seed ile oluşturulur
-  if (gameMode === 'tournament') {
-    if (tournamentMatch?.id) {
-      console.log('🎯 Turnuva grid - match ID seed kullanılıyor:', tournamentMatch.id);
-      return generateTournamentGrid(tournamentMatch.id);
+    // Turnuva modunda grid sadece ortak seed ile oluşturulur
+    if (gameMode === "tournament") {
+      if (tournamentMatch?.id) {
+        console.log("🎯 Turnuva grid - match ID seed kullanılıyor:", tournamentMatch.id);
+        return generateTournamentGrid(tournamentMatch.id);
+      }
+      // Match bilgisi gelene kadar placeholder grid (farklı grid oluşmasını engeller)
+      return Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => ""));
     }
-    // Match bilgisi gelene kadar placeholder grid (farklı grid oluşmasını engeller)
-    return Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => ''));
-  }
-  
-  // ÖZEL ODA VE RANDOM MATCH: HEMEN PLACEHOLDER GRID KULLAN
-  // Supabase'den senkronize edilecek
-  if (gameMode === 'random-match' || gameMode === 'private-room') {
-    console.log('🎲 Private/Random room: Waiting for server grid...');
-    return Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => ''));
-  }
-  
-  // Sadece vs-computer modunda random grid
-  console.log('🤖 vs-computer: Generating random grid');
-  return generateRandomGrid();
-});
 
-// Turnuva maçı yüklendiğinde grid'i senkronize et
-useEffect(() => {
-  if (gameMode === 'tournament' && tournamentMatch?.id) {
-    setGameGrid(generateTournamentGrid(tournamentMatch.id));
-  }
-}, [gameMode, tournamentMatch?.id, generateTournamentGrid]);
+    // ÖZEL ODA VE RANDOM MATCH: HEMEN PLACEHOLDER GRID KULLAN
+    // Supabase'den senkronize edilecek
+    if (gameMode === "random-match" || gameMode === "private-room") {
+      console.log("🎲 Private/Random room: Waiting for server grid...");
+      return Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => ""));
+    }
 
-// Random/private odalarda sunucu grid'ini senkronize et (ZORUNLU)
-// ⚠️ DEĞİŞTİR JOKER KORUMASI: Joker kullanımından sonra kısa süre sync'i devre dışı bırak
-const [gridSyncPaused, setGridSyncPaused] = useState(false);
-
-useEffect(() => {
-  if (gameMode === 'tournament') return;
-  if (gameMode !== 'random-match' && gameMode !== 'private-room') return;
-  if (!currentRoom?.current_grid) {
-    console.log('⏳ Waiting for room grid data...');
-    return;
-  }
-  
-  // Joker kullanımından sonra grid sync'i duraklat
-  if (gridSyncPaused) {
-    console.log('⏸️ Grid sync paused (joker protection)');
-    return;
-  }
-  
-  const flat = currentRoom.current_grid as string[];
-  const grid: string[][] = [];
-  for (let i = 0; i < 4; i++) {
-    grid.push(flat.slice(i * 4, (i + 1) * 4));
-  }
-  
-  console.log('✅ Grid SYNC - Both players see same grid:', {
-    mode: gameMode,
-    roomId: shortId(currentRoom?.id),
-    gridPreview: grid[0]
+    // Sadece vs-computer modunda random grid
+    console.log("🤖 vs-computer: Generating random grid");
+    return generateRandomGrid();
   });
-  
-  setGameGrid(grid);
-}, [gameMode, currentRoom?.current_grid, currentRoom?.id, gridSyncPaused]);
 
-// Cleanup on unmount - oda ID'sini banla ve matchmaking'i temizle
-useEffect(() => {
-  return () => {
-    console.log('🧹 GamePage unmount - cleanup başlatılıyor');
-    if (currentRoom?.id) {
-      matchBanlist.add(currentRoom.id);
-      console.log('🚫 Unmount: Oda banlist\'e eklendi:', shortId(currentRoom?.id));
+  // Turnuva maçı yüklendiğinde grid'i senkronize et
+  useEffect(() => {
+    if (gameMode === "tournament" && tournamentMatch?.id) {
+      setGameGrid(generateTournamentGrid(tournamentMatch.id));
     }
-    window.dispatchEvent(new CustomEvent('cleanupMatchmaking'));
-  };
-}, [currentRoom?.id]);
-  
-  const [selectedLetters, setSelectedLetters] = useState<{letter: string, row: number, col: number}[]>([]);
-  const [currentWord, setCurrentWord] = useState('');
+  }, [gameMode, tournamentMatch?.id, generateTournamentGrid]);
+
+  // Random/private odalarda sunucu grid'ini senkronize et (ZORUNLU)
+  // ⚠️ DEĞİŞTİR JOKER KORUMASI: Joker kullanımından sonra kısa süre sync'i devre dışı bırak
+  const [gridSyncPaused, setGridSyncPaused] = useState(false);
+
+  useEffect(() => {
+    if (gameMode === "tournament") return;
+    if (gameMode !== "random-match" && gameMode !== "private-room") return;
+    if (!currentRoom?.current_grid) {
+      console.log("⏳ Waiting for room grid data...");
+      return;
+    }
+
+    // Joker kullanımından sonra grid sync'i duraklat
+    if (gridSyncPaused) {
+      console.log("⏸️ Grid sync paused (joker protection)");
+      return;
+    }
+
+    const flat = currentRoom.current_grid as string[];
+    const grid: string[][] = [];
+    for (let i = 0; i < 4; i++) {
+      grid.push(flat.slice(i * 4, (i + 1) * 4));
+    }
+
+    console.log("✅ Grid SYNC - Both players see same grid:", {
+      mode: gameMode,
+      roomId: shortId(currentRoom?.id),
+      gridPreview: grid[0],
+    });
+
+    setGameGrid(grid);
+  }, [gameMode, currentRoom?.current_grid, currentRoom?.id, gridSyncPaused]);
+
+  // Cleanup on unmount - oda ID'sini banla ve matchmaking'i temizle
+  useEffect(() => {
+    return () => {
+      console.log("🧹 GamePage unmount - cleanup başlatılıyor");
+      if (currentRoom?.id) {
+        matchBanlist.add(currentRoom.id);
+        console.log("🚫 Unmount: Oda banlist'e eklendi:", shortId(currentRoom?.id));
+      }
+      window.dispatchEvent(new CustomEvent("cleanupMatchmaking"));
+    };
+  }, [currentRoom?.id]);
+
+  const [selectedLetters, setSelectedLetters] = useState<{ letter: string; row: number; col: number }[]>([]);
+  const [currentWord, setCurrentWord] = useState("");
   const [usedWords, setUsedWords] = useState<Set<string>>(new Set());
   const [playerWords, setPlayerWords] = useState<string[]>([]);
   const [opponentWords, setOpponentWords] = useState<string[]>([]);
-  const [playerWordsWithScores, setPlayerWordsWithScores] = useState<Array<{word: string, score: number, timestamp?: number}>>([]);
-  const [opponentWordsWithScores, setOpponentWordsWithScores] = useState<Array<{word: string, score: number, timestamp?: number}>>([]);
+  const [playerWordsWithScores, setPlayerWordsWithScores] = useState<
+    Array<{ word: string; score: number; timestamp?: number }>
+  >([]);
+  const [opponentWordsWithScores, setOpponentWordsWithScores] = useState<
+    Array<{ word: string; score: number; timestamp?: number }>
+  >([]);
   const [firstWordTime, setFirstWordTime] = useState<number | null>(null);
   const [playerScore, setPlayerScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
   const playerScoreRef = useRef(0);
   const opponentScoreRef = useRef(0);
-  useEffect(() => { playerScoreRef.current = playerScore; }, [playerScore]);
-  useEffect(() => { opponentScoreRef.current = opponentScore; }, [opponentScore]);
+  useEffect(() => {
+    playerScoreRef.current = playerScore;
+  }, [playerScore]);
+  useEffect(() => {
+    opponentScoreRef.current = opponentScore;
+  }, [opponentScore]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const timeLeftRef = useRef<number>(gameType === 'timed' ? 120 : 0);
+  const timeLeftRef = useRef<number>(gameType === "timed" ? 120 : 0);
   const [displayTime, setDisplayTime] = useState<number>(timeLeftRef.current);
   const [showCountdown, setShowCountdown] = useState(false);
   const [countdownServerTime, setCountdownServerTime] = useState<string | null>(null);
@@ -444,10 +616,10 @@ useEffect(() => {
       statsUpdatedRef.current = false;
     }
   }, [gameEnded]);
-  const [winner, setWinner] = useState<'player' | 'opponent' | 'tie' | null>(null);
+  const [winner, setWinner] = useState<"player" | "opponent" | "tie" | null>(null);
   const [disconnectWin, setDisconnectWin] = useState(false);
-  const [playerAvatar, setPlayerAvatar] = useState<string>('');
-  const [opponentAvatar, setOpponentAvatar] = useState<string>('');
+  const [playerAvatar, setPlayerAvatar] = useState<string>("");
+  const [opponentAvatar, setOpponentAvatar] = useState<string>("");
   const [hasShownStartMessage, setHasShownStartMessage] = useState(false);
   const [lastPlayerAction, setLastPlayerAction] = useState<number>(0);
   const [matchmakingTimeout, setMatchmakingTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -455,39 +627,39 @@ useEffect(() => {
   const [showResults, setShowResults] = useState(false);
   const [rematchRequested, setRematchRequested] = useState(false);
   const [waitingForRematchResponse, setWaitingForRematchResponse] = useState(false);
-  
+
   // Server time offset'i fetch et (turnuva senkronizasyonu için kritik)
   useEffect(() => {
     const fetchServerTime = async () => {
       try {
-        const { data, error } = await supabase.rpc('get_server_time');
+        const { data, error } = await supabase.rpc("get_server_time");
         if (!error && data) {
           const offset = new Date(data).getTime() - Date.now();
           setServerTimeOffset(offset);
-          console.log('⏰ Server time offset:', offset, 'ms');
+          console.log("⏰ Server time offset:", offset, "ms");
         }
       } catch (err) {
-        console.error('Server time fetch error:', err);
+        console.error("Server time fetch error:", err);
       }
     };
     fetchServerTime();
   }, []);
-  
+
   // Rakip ayrıldığında işlem yap
   useEffect(() => {
     const handler = async (e: any) => {
       const evtRoomId = e?.detail?.roomId;
       const eventWinner = e?.detail?.winner; // 'player' veya 'opponent'
-      
+
       if (!evtRoomId || evtRoomId !== currentRoom?.id) {
-        console.log('🚫 Farklı odaya ait disconnect eventi yok sayıldı', { evtRoomId, current: currentRoom?.id });
+        console.log("🚫 Farklı odaya ait disconnect eventi yok sayıldı", { evtRoomId, current: currentRoom?.id });
         return;
       }
-      
+
       // Eğer ben kaybettim (opponent kazandı), sadece kaybetme ekranını göster
-      if (eventWinner === 'opponent') {
-        console.log('😢 Ben oyundan ayrıldım veya kaybettim');
-        setWinner('opponent');
+      if (eventWinner === "opponent") {
+        console.log("😢 Ben oyundan ayrıldım veya kaybettim");
+        setWinner("opponent");
         setGameEnded(true);
         setShowResults(true);
         if (timerRef.current) {
@@ -496,40 +668,40 @@ useEffect(() => {
         }
         return;
       }
-      
+
       // Turnuva modunda rakip ayrıldı bildirimi
-      if (gameMode?.includes('tournament') && e?.detail?.reason === 'player_left_tournament') {
-        console.log('🏆 Turnuva: Rakip ayrıldı, +500 puan bonusu verildi');
-        
+      if (gameMode?.includes("tournament") && e?.detail?.reason === "player_left_tournament") {
+        console.log("🏆 Turnuva: Rakip ayrıldı, +500 puan bonusu verildi");
+
         toast({
           title: "⚠️ Rakip Ayrıldı",
           description: "Rakip oyundan ayrıldı veya bağlantısı koptu. Size +500 puan verildi.",
           duration: 5000,
         });
-        
+
         // Oyunu devam ettir
         return;
       }
-      
+
       // Normal modlarda: Kazanan benim, disconnect win göster
-      console.log('🚪 Rakip oyundan ayrıldı eventi alındı');
+      console.log("🚪 Rakip oyundan ayrıldı eventi alındı");
       setDisconnectWin(true);
-      setWinner('player');
+      setWinner("player");
       setGameEnded(true);
       setShowResults(true);
-      
+
       // Oyunu durduran işlemleri
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
-      
+
       toast({
-        title: 'Rakip oyundan ayrıldı',
-        description: 'Maçı kazandınız! 🎉',
+        title: "Rakip oyundan ayrıldı",
+        description: "Maçı kazandınız! 🎉",
         duration: 3000,
       });
-      
+
       // Çok erken kopan eşleşmelerde hak iadesi (premium değilse) - SADECE KAZANAN OYUNCUYA
       try {
         if (!isPremium) {
@@ -538,34 +710,45 @@ useEffect(() => {
           if (earlyDc || noPlay) {
             await addBonusCredits(1);
             toast({
-              title: '🎟 Hak iade edildi',
-              description: 'Rakip erken ayrıldığı için oyun hakkınız iade edildi.',
+              title: "🎟 Hak iade edildi",
+              description: "Rakip erken ayrıldığı için oyun hakkınız iade edildi.",
               duration: 2500,
             });
           }
         }
       } catch (err) {
-        console.log('Credit refund skipped/failed:', err);
+        console.log("Credit refund skipped/failed:", err);
       }
-      
+
       // Ses efekti çal
-      playSound('gameWin');
+      playSound("gameWin");
       setTimeout(() => playCelebrationSound(), 500);
-      
+
       // Room state'ini hemen temizle (RoomAutoNavigator yeniden yönlendirmeyi önle)
-      console.log('🧹 Disconnect sonrası room temizleniyor');
+      console.log("🧹 Disconnect sonrası room temizleniyor");
       leaveRoom();
     };
 
-    window.addEventListener('playerDisconnected', handler as EventListener);
-    return () => window.removeEventListener('playerDisconnected', handler as EventListener);
-  }, [gameMode, playSound, playCelebrationSound, toast, currentRoom?.id, isPremium, playerWordsWithScores.length, opponentWordsWithScores.length, addBonusCredits, leaveRoom]);
+    window.addEventListener("playerDisconnected", handler as EventListener);
+    return () => window.removeEventListener("playerDisconnected", handler as EventListener);
+  }, [
+    gameMode,
+    playSound,
+    playCelebrationSound,
+    toast,
+    currentRoom?.id,
+    isPremium,
+    playerWordsWithScores.length,
+    opponentWordsWithScores.length,
+    addBonusCredits,
+    leaveRoom,
+  ]);
 
   // Fallback: Katılımcı azalınca disconnect'i yakala - 3-4sn gecikme ile
   const disconnectHandledRef = useRef(false);
   const gameHasStartedRef = useRef(false);
   const disconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   useEffect(() => {
     // Temizlik: Önceki timer'ı iptal et
     if (disconnectTimerRef.current) {
@@ -578,31 +761,35 @@ useEffect(() => {
     if (disconnectHandledRef.current || waitingForRematchResponse || rematchRequested) {
       return;
     }
-    
-    if ((gameMode === 'private-room' || gameMode === 'random-match') && 
-        gameStarted && !gameEnded && 
-        gameHasStartedRef.current && 
-        participants.length > 0) {
-      
-      const realPlayers = participants.filter(p => !p.is_bot);
-      const amIStillParticipant = participants.some(p => p.user_id === user?.id);
-      
+
+    if (
+      (gameMode === "private-room" || gameMode === "random-match") &&
+      gameStarted &&
+      !gameEnded &&
+      gameHasStartedRef.current &&
+      participants.length > 0
+    ) {
+      const realPlayers = participants.filter((p) => !p.is_bot);
+      const amIStillParticipant = participants.some((p) => p.user_id === user?.id);
+
       if (realPlayers.length < 2 && amIStillParticipant && !disconnectHandledRef.current) {
-        console.log('⏳ Fallback disconnect tespit edildi, 3.5 saniye doğrulanacak...');
-        
+        console.log("⏳ Fallback disconnect tespit edildi, 3.5 saniye doğrulanacak...");
+
         // 🛡️ 3.5 saniye bekle, tekrar kontrol et (oyuncu geri dönebilir)
         disconnectTimerRef.current = setTimeout(() => {
-          const currentRealPlayers = participants.filter(p => !p.is_bot);
-          const stillAmIInRoom = participants.some(p => p.user_id === user?.id);
-          
+          const currentRealPlayers = participants.filter((p) => !p.is_bot);
+          const stillAmIInRoom = participants.some((p) => p.user_id === user?.id);
+
           if (currentRealPlayers.length < 2 && stillAmIInRoom && !disconnectHandledRef.current) {
-            console.log('🚪 Fallback disconnect doğrulandı - oyun sonlandırılıyor');
+            console.log("🚪 Fallback disconnect doğrulandı - oyun sonlandırılıyor");
             disconnectHandledRef.current = true;
-            window.dispatchEvent(new CustomEvent('playerDisconnected', {
-              detail: { winner: 'player', reason: 'opponent_left_fallback', roomId: currentRoom?.id }
-            }));
+            window.dispatchEvent(
+              new CustomEvent("playerDisconnected", {
+                detail: { winner: "player", reason: "opponent_left_fallback", roomId: currentRoom?.id },
+              }),
+            );
           } else {
-            console.log('✅ Oyuncu geri döndü, disconnect iptal edildi');
+            console.log("✅ Oyuncu geri döndü, disconnect iptal edildi");
           }
         }, 3500);
       }
@@ -618,9 +805,15 @@ useEffect(() => {
 
   // Oyunun gerçekten başladığını işaretle - Countdown TAMAMLANDIKTAN sonra
   useEffect(() => {
-    if ((gameMode === 'private-room' || gameMode === 'random-match') && 
-        participants.length >= 2 && gameStarted && !gameEnded && !showCountdown) { // showCountdown false olmalı
-      console.log('🎮 Game truly started with participants:', participants.length);
+    if (
+      (gameMode === "private-room" || gameMode === "random-match") &&
+      participants.length >= 2 &&
+      gameStarted &&
+      !gameEnded &&
+      !showCountdown
+    ) {
+      // showCountdown false olmalı
+      console.log("🎮 Game truly started with participants:", participants.length);
       // Küçük delay - hemen disconnect kontrolü yapmasın
       const timer = setTimeout(() => {
         gameHasStartedRef.current = true;
@@ -634,513 +827,507 @@ useEffect(() => {
     disconnectHandledRef.current = false;
     gameHasStartedRef.current = false;
   }, [currentRoom?.id]);
-  
+
   const [isAIOpponent, setIsAIOpponent] = useState(false);
-  const [opponentName, setOpponentName] = useState('');
-  const [targetScore, setTargetScore] = useState(gameType === 'score' ? 500 : 0);
+  const [opponentName, setOpponentName] = useState("");
+  const [targetScore, setTargetScore] = useState(gameType === "score" ? 500 : 0);
   const [gameStartTime, setGameStartTime] = useState<number>(Date.now());
   const [finalPlayerScore, setFinalPlayerScore] = useState(0);
   const [finalOpponentScore, setFinalOpponentScore] = useState(0);
 
-  
-const handleTournamentGameEnd = async (userScore: number, opponentScore: number) => {
-  if (!user || !tournamentMatch) return;
+  const handleTournamentGameEnd = async (userScore: number, opponentScore: number) => {
+    if (!user || !tournamentMatch) return;
 
-  try {
-    // Kullanıcının hangi oyuncu olduğunu belirle
-    const isPlayer1 = String(tournamentMatch.player1_id) === String(user.id);
-    const opponentId = isPlayer1 ? tournamentMatch.player2_id : tournamentMatch.player1_id;
-    
-    // BERABERLİK DURUMUNDA: Rastgele kazanan belirle ve ona 1 puan ekle
-    let finalUserScore = userScore;
-    let finalOpponentScore = opponentScore;
-    let winnerId: string;
-    
-    if (userScore === opponentScore) {
-      console.log('⚖️ BERABERLIK! Rastgele kazanan belirleniyor...');
-      const userWinsOnTie = Math.random() < 0.5;
-      if (userWinsOnTie) {
-        finalUserScore += 1;
-        winnerId = user.id;
-        console.log('✅ Kullanıcı beraberliği kazandı (+1 puan)');
+    try {
+      // Kullanıcının hangi oyuncu olduğunu belirle
+      const isPlayer1 = String(tournamentMatch.player1_id) === String(user.id);
+      const opponentId = isPlayer1 ? tournamentMatch.player2_id : tournamentMatch.player1_id;
+
+      // BERABERLİK DURUMUNDA: Rastgele kazanan belirle ve ona 1 puan ekle
+      let finalUserScore = userScore;
+      let finalOpponentScore = opponentScore;
+      let winnerId: string;
+
+      if (userScore === opponentScore) {
+        console.log("⚖️ BERABERLIK! Rastgele kazanan belirleniyor...");
+        const userWinsOnTie = Math.random() < 0.5;
+        if (userWinsOnTie) {
+          finalUserScore += 1;
+          winnerId = user.id;
+          console.log("✅ Kullanıcı beraberliği kazandı (+1 puan)");
+        } else {
+          finalOpponentScore += 1;
+          winnerId = opponentId as string;
+          console.log("❌ Rakip beraberliği kazandı (+1 puan)");
+        }
       } else {
-        finalOpponentScore += 1;
-        winnerId = opponentId as string;
-        console.log('❌ Rakip beraberliği kazandı (+1 puan)');
+        winnerId = userScore > opponentScore ? user.id : (opponentId as string);
       }
-    } else {
-      winnerId = userScore > opponentScore ? user.id : opponentId as string;
-    }
-    
-    // Skorları doğru oyunculara ata
-    const player1Score = isPlayer1 ? finalUserScore : finalOpponentScore;
-    const player2Score = isPlayer1 ? finalOpponentScore : finalUserScore;
-    
-    console.log('🏆 Tournament match completion:', {
-      matchId: tournamentMatch.id,
-      user: user.id,
-      isPlayer1,
-      player1Score,
-      player2Score,
-      winnerId,
-      originalUserScore: userScore,
-      originalOpponentScore: opponentScore,
-      finalUserScore,
-      finalOpponentScore,
-      wasTie: userScore === opponentScore
-    });
-    
-    // ✅ Bu maçı tamamlanmış olarak işaretle (tekrar oynamayı engelle)
-    const completedMatchKey = `tournament_match_completed_${tournamentMatch.id}`;
-    localStorage.setItem(completedMatchKey, JSON.stringify({
-      matchId: tournamentMatch.id,
-      tournamentId: tournamentMatch.tournament_id,
-      completedAt: new Date().toISOString(),
-      winner: winnerId
-    }));
-    
-    // ✅ Frontend state'ini GÜNCEL skorlarla güncelle
-    setPlayerScore(finalUserScore);
-    setOpponentScore(finalOpponentScore);
-    setGameEnded(true);
-    setShowResults(true);
-    
-    // ✅ Frontend kazanan belirleme - DOĞRU MANTIK
-    console.log('🎯 Tournament winner determination:', {
-      finalUserScore,
-      finalOpponentScore,
-      winnerId,
-      userIsWinner: winnerId === user.id
-    });
-    
-    if (winnerId === user.id) {
-      setWinner('player');
-      playSound('gameWin');
-      setTimeout(() => playCelebrationSound(), 500);
-      console.log('✅ User WINS - Setting winner to player');
-    } else {
-      setWinner('opponent');  
-      playSound('gameLose');
-      setTimeout(() => playGameLoseSound(), 500);
-      console.log('❌ User LOSES - Setting winner to opponent');
-    }
-    
-    // Mevcut maçı tamamla
-    await supabase
-      .from('tournament_matches')
-      .update({
-        status: 'completed',
-        player1_score: player1Score,
-        player2_score: player2Score,
-        winner_id: winnerId,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', tournamentMatch.id);
 
-    console.log('✅ Turnuva maçı tamamlandı');
+      // Skorları doğru oyunculara ata
+      const player1Score = isPlayer1 ? finalUserScore : finalOpponentScore;
+      const player2Score = isPlayer1 ? finalOpponentScore : finalUserScore;
 
-    // Aynı turdaki TÜM maçları kontrol et
-    const { data: allRoundMatches } = await supabase
-      .from('tournament_matches')
-      .select('id, status')
-      .eq('tournament_id', tournamentMatch.tournament_id)
-      .eq('round', tournamentMatch.round);
-
-    console.log(`🔍 ${tournamentMatch.round}. turdaki toplam maç sayısı:`, allRoundMatches?.length);
-
-    const allMatchesCompleted = allRoundMatches?.every(match => 
-      match.status === 'completed'
-    );
-
-    if (allMatchesCompleted) {
-      console.log(`🏆 Tüm ${tournamentMatch.round}. tur maçları tamamlandı!`);
-      
-      // Centralize advancement on server to avoid duplicate semi-finals/finals
-      const { error: advanceErr } = await supabase.rpc('advance_tournament_round', {
-        p_tournament_id: tournamentMatch.tournament_id,
+      console.log("🏆 Tournament match completion:", {
+        matchId: tournamentMatch.id,
+        user: user.id,
+        isPlayer1,
+        player1Score,
+        player2Score,
+        winnerId,
+        originalUserScore: userScore,
+        originalOpponentScore: opponentScore,
+        finalUserScore,
+        finalOpponentScore,
+        wasTie: userScore === opponentScore,
       });
-      if (advanceErr) {
-        console.error('advance_tournament_round error:', advanceErr);
+
+      // ✅ Bu maçı tamamlanmış olarak işaretle (tekrar oynamayı engelle)
+      const completedMatchKey = `tournament_match_completed_${tournamentMatch.id}`;
+      localStorage.setItem(
+        completedMatchKey,
+        JSON.stringify({
+          matchId: tournamentMatch.id,
+          tournamentId: tournamentMatch.tournament_id,
+          completedAt: new Date().toISOString(),
+          winner: winnerId,
+        }),
+      );
+
+      // ✅ Frontend state'ini GÜNCEL skorlarla güncelle
+      setPlayerScore(finalUserScore);
+      setOpponentScore(finalOpponentScore);
+      setGameEnded(true);
+      setShowResults(true);
+
+      // ✅ Frontend kazanan belirleme - DOĞRU MANTIK
+      console.log("🎯 Tournament winner determination:", {
+        finalUserScore,
+        finalOpponentScore,
+        winnerId,
+        userIsWinner: winnerId === user.id,
+      });
+
+      if (winnerId === user.id) {
+        setWinner("player");
+        playSound("gameWin");
+        setTimeout(() => playCelebrationSound(), 500);
+        console.log("✅ User WINS - Setting winner to player");
+      } else {
+        setWinner("opponent");
+        playSound("gameLose");
+        setTimeout(() => playGameLoseSound(), 500);
+        console.log("❌ User LOSES - Setting winner to opponent");
       }
-      
-      // Turnuva sayfasına yönlendir
-      setTimeout(() => {
-        navigate(`/tournament-bracket/${tournamentMatch.tournament_id}`);
-      }, 3000);
-    } else {
-      console.log(`⏳ Diğer maçlar devam ediyor. Tamamlanan: ${allRoundMatches?.filter(m => m.status === 'completed').length}/${allRoundMatches?.length}`);
-      
-      // Kaybeden oyuncu ana turnuva sayfasına, kazanan bracket sayfasına yönlendir
-      const redirectDelay = userScore > opponentScore ? 3000 : 2000;
-      const redirectPath = userScore > opponentScore 
-        ? `/tournament-bracket/${tournamentMatch.tournament_id}`
-        : '/tournament';
-      
-      setTimeout(() => {
-        navigate(redirectPath);
-      }, redirectDelay);
+
+      // Mevcut maçı tamamla
+      await supabase
+        .from("tournament_matches")
+        .update({
+          status: "completed",
+          player1_score: player1Score,
+          player2_score: player2Score,
+          winner_id: winnerId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", tournamentMatch.id);
+
+      console.log("✅ Turnuva maçı tamamlandı");
+
+      // Aynı turdaki TÜM maçları kontrol et
+      const { data: allRoundMatches } = await supabase
+        .from("tournament_matches")
+        .select("id, status")
+        .eq("tournament_id", tournamentMatch.tournament_id)
+        .eq("round", tournamentMatch.round);
+
+      console.log(`🔍 ${tournamentMatch.round}. turdaki toplam maç sayısı:`, allRoundMatches?.length);
+
+      const allMatchesCompleted = allRoundMatches?.every((match) => match.status === "completed");
+
+      if (allMatchesCompleted) {
+        console.log(`🏆 Tüm ${tournamentMatch.round}. tur maçları tamamlandı!`);
+
+        // Centralize advancement on server to avoid duplicate semi-finals/finals
+        const { error: advanceErr } = await supabase.rpc("advance_tournament_round", {
+          p_tournament_id: tournamentMatch.tournament_id,
+        });
+        if (advanceErr) {
+          console.error("advance_tournament_round error:", advanceErr);
+        }
+
+        // Turnuva sayfasına yönlendir
+        setTimeout(() => {
+          navigate(`/tournament-bracket/${tournamentMatch.tournament_id}`);
+        }, 3000);
+      } else {
+        console.log(
+          `⏳ Diğer maçlar devam ediyor. Tamamlanan: ${allRoundMatches?.filter((m) => m.status === "completed").length}/${allRoundMatches?.length}`,
+        );
+
+        // Kaybeden oyuncu ana turnuva sayfasına, kazanan bracket sayfasına yönlendir
+        const redirectDelay = userScore > opponentScore ? 3000 : 2000;
+        const redirectPath =
+          userScore > opponentScore ? `/tournament-bracket/${tournamentMatch.tournament_id}` : "/tournament";
+
+        setTimeout(() => {
+          navigate(redirectPath);
+        }, redirectDelay);
+      }
+    } catch (error) {
+      console.error("Turnuva maç bitiş hatası:", error);
+    }
+  };
+
+  const requestRematch = async () => {
+    if (!user) {
+      console.error("❌ Rematch: User yok");
+      return;
     }
 
-  } catch (error) {
-    console.error('Turnuva maç bitiş hatası:', error);
-  }
-};
+    console.log("🔄 Rematch isteği başlatılıyor...");
 
-const requestRematch = async () => {
-  if (!user) {
-    console.error('❌ Rematch: User yok');
-    return;
-  }
-  
-  console.log('🔄 Rematch isteği başlatılıyor...');
-  
-  try {
-    // Disconnect logic'i geçici olarak devre dışı bırak
-    disconnectHandledRef.current = true;
-    
-    setRematchRequested(true);
-    setWaitingForRematchResponse(true);
-    
-    // Rematch request gönder - currentRoom'dan kesin game type al
-    const currentGameType: 'timed' | 'score' = currentRoom?.game_mode?.includes('score') 
-      ? 'score' 
-      : 'timed';
-    console.log('🎮 Mevcut oyun türü:', currentGameType, 'game_mode:', currentRoom?.game_mode);
-    await sendRematchRequest(currentRoom?.room_code || generateRoomCode(), currentGameType);
-    
-    // 30 saniye timeout
-    setTimeout(() => {
-      if (waitingForRematchResponse) {
-        setWaitingForRematchResponse(false);
-        setRematchRequested(false);
-        disconnectHandledRef.current = false; // Timeout'ta tekrar aktif et
-        toast({
-          title: 'Süre Doldu',
-          description: 'Rakibiniz yanıt vermedi.',
-          variant: 'destructive',
-        });
-      }
-    }, 30000);
-    
-  } catch (error) {
-    console.error('Rematch request error:', error);
+    try {
+      // Disconnect logic'i geçici olarak devre dışı bırak
+      disconnectHandledRef.current = true;
+
+      setRematchRequested(true);
+      setWaitingForRematchResponse(true);
+
+      // Rematch request gönder - currentRoom'dan kesin game type al
+      const currentGameType: "timed" | "score" = currentRoom?.game_mode?.includes("score") ? "score" : "timed";
+      console.log("🎮 Mevcut oyun türü:", currentGameType, "game_mode:", currentRoom?.game_mode);
+      await sendRematchRequest(currentRoom?.room_code || generateRoomCode(), currentGameType);
+
+      // 30 saniye timeout
+      setTimeout(() => {
+        if (waitingForRematchResponse) {
+          setWaitingForRematchResponse(false);
+          setRematchRequested(false);
+          disconnectHandledRef.current = false; // Timeout'ta tekrar aktif et
+          toast({
+            title: "Süre Doldu",
+            description: "Rakibiniz yanıt vermedi.",
+            variant: "destructive",
+          });
+        }
+      }, 30000);
+    } catch (error) {
+      console.error("Rematch request error:", error);
+      setRematchRequested(false);
+      setWaitingForRematchResponse(false);
+      disconnectHandledRef.current = false; // Hata durumunda da tekrar aktif et
+      toast({
+        title: "Hata",
+        description: "Tekrar oyun isteği gönderilemedi.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // 4. resetGameForRematch fonksiyonunu ekleyin:
+  const resetGameForRematch = () => {
+    // Disconnect kontrolü yeniden aktif et
+    disconnectHandledRef.current = false;
+
+    // Oyunu sıfırla
+    setGameGrid(generateRandomGrid());
+    setSelectedLetters([]);
+    setCurrentWord("");
+    setUsedWords(new Set());
+    setGlobalUsedWords(new Set());
+    setPlayerWords([]);
+    setOpponentWords([]);
+    setPlayerWordsWithScores([]);
+    setOpponentWordsWithScores([]);
+    setPlayerScore(0);
+    setOpponentScore(0);
+    timeLeftRef.current = gameType === "timed" ? 120 : 0;
+    setDisplayTime(timeLeftRef.current);
+    // Countdown, server zamanıyla veya vs-computer'da local zamanla başlatılacak
+    setCountdownServerTime(null);
+    setShowCountdown(false);
+    setGameStarted(false);
+    setGameEnded(false);
+    setWinner(null);
+    setTimeWarningPlayed(false);
     setRematchRequested(false);
     setWaitingForRematchResponse(false);
-    disconnectHandledRef.current = false; // Hata durumunda da tekrar aktif et
-    toast({
-      title: 'Hata',
-      description: 'Tekrar oyun isteği gönderilemedi.',
-      variant: 'destructive',
-    });
-  }
-};
+    setFinalPlayerScore(0);
+    setFinalOpponentScore(0);
+    // Joker state'leri artık hook'tan geldiği için sıfırlama yok
+    setSelectedJoker(null);
+    setHighlightedLetters([]);
+    setIsJokerActive(false);
 
-// 4. resetGameForRematch fonksiyonunu ekleyin:
-const resetGameForRematch = () => {
-  // Disconnect kontrolü yeniden aktif et
-  disconnectHandledRef.current = false;
-  
-  // Oyunu sıfırla
-  setGameGrid(generateRandomGrid());
-  setSelectedLetters([]);
-  setCurrentWord('');
-  setUsedWords(new Set());
-  setGlobalUsedWords(new Set());
-  setPlayerWords([]);
-  setOpponentWords([]);
-  setPlayerWordsWithScores([]);
-  setOpponentWordsWithScores([]);
-  setPlayerScore(0);
-  setOpponentScore(0);
-  timeLeftRef.current = gameType === 'timed' ? 120 : 0;
-  setDisplayTime(timeLeftRef.current);
-  // Countdown, server zamanıyla veya vs-computer'da local zamanla başlatılacak
-  setCountdownServerTime(null);
-  setShowCountdown(false);
-  setGameStarted(false);
-  setGameEnded(false);
-  setWinner(null);
-  setTimeWarningPlayed(false);
-  setRematchRequested(false);
-  setWaitingForRematchResponse(false);
-  setFinalPlayerScore(0);
-  setFinalOpponentScore(0);
-  // Joker state'leri artık hook'tan geldiği için sıfırlama yok
-  setSelectedJoker(null);
-  setHighlightedLetters([]);
-  setIsJokerActive(false);
-  
-  // Room'daki used words'ü temizle
-  if (currentRoom) {
-    supabase
-      .from('game_words')
-      .delete()
-      .eq('room_id', currentRoom.id);
-  }
-};
-  
-const createNextRoundMatches = async (tournamentId: string, nextRound: number) => {
-  try {
-    console.log(`🏆 ${nextRound}. tur maçları oluşturuluyor...`);
-
-    // Eğer bu tur için maçlar zaten oluşturulduysa tekrar oluşturma
-    const { data: existing } = await supabase
-      .from('tournament_matches')
-      .select('id')
-      .eq('tournament_id', tournamentId)
-      .eq('round', nextRound);
-
-    if (existing && existing.length > 0) {
-      console.log(`⏭️ ${nextRound}. tur için ${existing.length} maç zaten var, oluşturma atlandı.`);
-      return;
+    // Room'daki used words'ü temizle
+    if (currentRoom) {
+      supabase.from("game_words").delete().eq("room_id", currentRoom.id);
     }
-    
-    // Önceki turun kazananlarını al
-    const { data: winners } = await supabase
-      .from('tournament_matches')
-      .select('winner_id')
-      .eq('tournament_id', tournamentId)
-      .eq('round', nextRound - 1)
-      .eq('status', 'completed')
-      .not('winner_id', 'is', null);
+  };
 
-    if (!winners || winners.length === 0) {
-      console.error('Kazanan bulunamadı');
-      return;
-    }
+  const createNextRoundMatches = async (tournamentId: string, nextRound: number) => {
+    try {
+      console.log(`🏆 ${nextRound}. tur maçları oluşturuluyor...`);
 
-    // Kazananları karıştır
-    const winnerIds = winners.map(w => w.winner_id);
-    const shuffledWinners = [...winnerIds].sort(() => Math.random() - 0.5);
-    
-    // Yeni tur maçlarını oluştur
-    const newMatches = [];
-    for (let i = 0; i < shuffledWinners.length / 2; i++) {
-      const player1Id = shuffledWinners[i * 2];
-      const player2Id = shuffledWinners[i * 2 + 1];
+      // Eğer bu tur için maçlar zaten oluşturulduysa tekrar oluşturma
+      const { data: existing } = await supabase
+        .from("tournament_matches")
+        .select("id")
+        .eq("tournament_id", tournamentId)
+        .eq("round", nextRound);
 
-      newMatches.push({
-        tournament_id: tournamentId,
-        round: nextRound,
-        match_number: i + 1,
-        player1_id: player1Id,
-        player2_id: player2Id,
-        status: 'pending',
-        created_at: new Date().toISOString()
-      });
-    }
-
-    // Database'e kaydet
-    const { error } = await supabase
-      .from('tournament_matches')
-      .insert(newMatches);
-
-    if (error) {
-      console.error('Yeni tur maçları kaydedilemedi:', error);
-      return;
-    }
-
-    console.log(`✅ ${nextRound}. tur için ${newMatches.length} maç oluşturuldu`);
-    
-    // Turnuva bilgisini güncelle
-    await supabase
-      .from('tournaments')
-      .update({ 
-        current_round: nextRound,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', tournamentId);
-    
-  } catch (error) {
-    console.error('createNextRoundMatches hatası:', error);
-  }
-};
-
-const checkNextRoundCreation = async (tournamentId: string) => {
-  try {
-    // Bu turdaki tüm maçlar bitti mi kontrol et
-    const { data: remainingMatches } = await supabase
-      .from('tournament_matches')
-      .select('id')
-      .eq('tournament_id', tournamentId)
-      .eq('status', 'pending')
-      .limit(1);
-
-    if (remainingMatches && remainingMatches.length === 0) {
-      console.log('🏆 Turdaki tüm maçlar bitti, sonraki tur oluşturuluyor...');
-      
-      // Kazananları al
-      const { data: winners } = await supabase
-        .from('tournament_matches')
-        .select('winner_id, round')
-        .eq('tournament_id', tournamentId)
-        .eq('status', 'completed')
-        .order('round', { ascending: false });
-
-      if (winners && winners.length > 1) {
-        const currentRound = Math.max(...winners.map(w => w.round));
-        const nextRound = currentRound + 1;
-        
-        if (nextRound <= 3) { // Final'e kadar
-          await createNextRoundMatches(tournamentId, nextRound);
-        }
+      if (existing && existing.length > 0) {
+        console.log(`⏭️ ${nextRound}. tur için ${existing.length} maç zaten var, oluşturma atlandı.`);
+        return;
       }
+
+      // Önceki turun kazananlarını al
+      const { data: winners } = await supabase
+        .from("tournament_matches")
+        .select("winner_id")
+        .eq("tournament_id", tournamentId)
+        .eq("round", nextRound - 1)
+        .eq("status", "completed")
+        .not("winner_id", "is", null);
+
+      if (!winners || winners.length === 0) {
+        console.error("Kazanan bulunamadı");
+        return;
+      }
+
+      // Kazananları karıştır
+      const winnerIds = winners.map((w) => w.winner_id);
+      const shuffledWinners = [...winnerIds].sort(() => Math.random() - 0.5);
+
+      // Yeni tur maçlarını oluştur
+      const newMatches = [];
+      for (let i = 0; i < shuffledWinners.length / 2; i++) {
+        const player1Id = shuffledWinners[i * 2];
+        const player2Id = shuffledWinners[i * 2 + 1];
+
+        newMatches.push({
+          tournament_id: tournamentId,
+          round: nextRound,
+          match_number: i + 1,
+          player1_id: player1Id,
+          player2_id: player2Id,
+          status: "pending",
+          created_at: new Date().toISOString(),
+        });
+      }
+
+      // Database'e kaydet
+      const { error } = await supabase.from("tournament_matches").insert(newMatches);
+
+      if (error) {
+        console.error("Yeni tur maçları kaydedilemedi:", error);
+        return;
+      }
+
+      console.log(`✅ ${nextRound}. tur için ${newMatches.length} maç oluşturuldu`);
+
+      // Turnuva bilgisini güncelle
+      await supabase
+        .from("tournaments")
+        .update({
+          current_round: nextRound,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", tournamentId);
+    } catch (error) {
+      console.error("createNextRoundMatches hatası:", error);
     }
-  } catch (error) {
-    console.error('Sonraki tur kontrol hatası:', error);
-  }
-};
+  };
 
-const checkAndCreateNextRound = async (tournamentId: string) => {
-  try {
-    // Mevcut turdaki tüm maçlar tamamlandı mı?
-    const { data: incompleteMatches } = await supabase
-      .from('tournament_matches')
-      .select('id')
-      .eq('tournament_id', tournamentId)
-      .eq('status', 'pending')
-      .limit(1);
-
-    if (incompleteMatches.length === 0) {
-      // Bir sonraki turu başlat
-      const { data: currentRound } = await supabase
-        .from('tournament_matches')
-        .select('round')
-        .eq('tournament_id', tournamentId)
-        .order('round', { ascending: false })
+  const checkNextRoundCreation = async (tournamentId: string) => {
+    try {
+      // Bu turdaki tüm maçlar bitti mi kontrol et
+      const { data: remainingMatches } = await supabase
+        .from("tournament_matches")
+        .select("id")
+        .eq("tournament_id", tournamentId)
+        .eq("status", "pending")
         .limit(1);
 
-      const nextRound = currentRound[0].round + 1;
-      
-      if (nextRound <= 3) { // Finale kadar
-        await createTournamentMatches(tournamentId, nextRound);
-      } else {
-        // Turnuvayı tamamla
-        await supabase
-          .from('tournaments')
-          .update({
-            status: 'completed',
-            completed_at: new Date().toISOString()
-          })
-          .eq('id', tournamentId);
+      if (remainingMatches && remainingMatches.length === 0) {
+        console.log("🏆 Turdaki tüm maçlar bitti, sonraki tur oluşturuluyor...");
+
+        // Kazananları al
+        const { data: winners } = await supabase
+          .from("tournament_matches")
+          .select("winner_id, round")
+          .eq("tournament_id", tournamentId)
+          .eq("status", "completed")
+          .order("round", { ascending: false });
+
+        if (winners && winners.length > 1) {
+          const currentRound = Math.max(...winners.map((w) => w.round));
+          const nextRound = currentRound + 1;
+
+          if (nextRound <= 3) {
+            // Final'e kadar
+            await createNextRoundMatches(tournamentId, nextRound);
+          }
+        }
       }
+    } catch (error) {
+      console.error("Sonraki tur kontrol hatası:", error);
     }
-  } catch (error) {
-    console.error('Sonraki tur kontrol hatası:', error);
-  }
-};
+  };
 
+  const checkAndCreateNextRound = async (tournamentId: string) => {
+    try {
+      // Mevcut turdaki tüm maçlar tamamlandı mı?
+      const { data: incompleteMatches } = await supabase
+        .from("tournament_matches")
+        .select("id")
+        .eq("tournament_id", tournamentId)
+        .eq("status", "pending")
+        .limit(1);
 
+      if (incompleteMatches.length === 0) {
+        // Bir sonraki turu başlat
+        const { data: currentRound } = await supabase
+          .from("tournament_matches")
+          .select("round")
+          .eq("tournament_id", tournamentId)
+          .order("round", { ascending: false })
+          .limit(1);
 
-const createTournamentMatches = async (tournamentId: string, round: number) => {
-  try {
-    // Katılımcıları al
-    const { data: participants } = await supabase
-      .from('tournament_participants')
-      .select('user_id')
-      .eq('tournament_id', tournamentId);
+        const nextRound = currentRound[0].round + 1;
 
-    if (!participants) return;
+        if (nextRound <= 3) {
+          // Finale kadar
+          await createTournamentMatches(tournamentId, nextRound);
+        } else {
+          // Turnuvayı tamamla
+          await supabase
+            .from("tournaments")
+            .update({
+              status: "completed",
+              completed_at: new Date().toISOString(),
+            })
+            .eq("id", tournamentId);
+        }
+      }
+    } catch (error) {
+      console.error("Sonraki tur kontrol hatası:", error);
+    }
+  };
 
-    // Rastgele sırala
-    const shuffled = [...participants].sort(() => Math.random() - 0.5);
-    const matchCount = shuffled.length / 2;
+  const createTournamentMatches = async (tournamentId: string, round: number) => {
+    try {
+      // Katılımcıları al
+      const { data: participants } = await supabase
+        .from("tournament_participants")
+        .select("user_id")
+        .eq("tournament_id", tournamentId);
 
-    // Maçları oluştur
-    for (let i = 0; i < matchCount; i++) {
-      await supabase
-        .from('tournament_matches')
-        .insert({
+      if (!participants) return;
+
+      // Rastgele sırala
+      const shuffled = [...participants].sort(() => Math.random() - 0.5);
+      const matchCount = shuffled.length / 2;
+
+      // Maçları oluştur
+      for (let i = 0; i < matchCount; i++) {
+        await supabase.from("tournament_matches").insert({
           tournament_id: tournamentId,
           round: round,
           match_number: i + 1,
           player1_id: shuffled[i * 2].user_id,
           player2_id: shuffled[i * 2 + 1].user_id,
-          status: 'pending'
+          status: "pending",
         } as any);
-    }
-  } catch (error) {
-    console.error('Maç oluşturma hatası:', error);
-  }
-};
-
-const completeBotMatches = async (tournamentId: string, round: number) => {
-  try {
-    console.log(`Bot maçları tamamlanıyor - Round ${round}`);
-    
-    const { data: botMatches } = await supabase
-      .from('tournament_matches')
-      .select('*')
-      .eq('tournament_id', tournamentId)
-      .eq('round', round)
-      .eq('status', 'pending');
-
-    for (const match of botMatches || []) {
-      const isUserMatch = match.player1_id === user?.id || match.player2_id === user?.id;
-      
-      if (!isUserMatch) {
-        const winner = Math.random() > 0.5 ? match.player1_id : match.player2_id;
-        const winnerScore = Math.floor(Math.random() * 20) + 25; // 25-45
-        const loserScore = Math.floor(Math.random() * 15) + 10;  // 10-25
-        
-        await supabase
-          .from('tournament_matches')
-          .update({
-            status: 'completed',
-            winner_id: winner,
-            player1_score: winner === match.player1_id ? winnerScore : loserScore,
-            player2_score: winner === match.player2_id ? winnerScore : loserScore,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', match.id);
-        
-        console.log(`Bot maçı tamamlandı: ${match.id}`);
       }
+    } catch (error) {
+      console.error("Maç oluşturma hatası:", error);
     }
-    
-    console.log(`Round ${round} bot maçları tamamlandı`);
-  } catch (error) {
-    console.error('Bot maçları tamamlama hatası:', error);
-  }
-};
-  
-// YENİ FONKSİYON: Turnuva bitiş kartını göster
-const showTournamentEndCard = async (isWinner: boolean, userScore: number, opponentScore: number, tournamentId: string) => {
-  try {
-    // Mevcut turu ve durumu kontrol et
-    const { data: tournament } = await supabase
-      .from('tournaments')
-      .select('current_round, status')
-      .eq('id', tournamentId)
-      .single();
+  };
 
-    if (!tournament) {
-      navigate('/tournament');
-      return;
-    }
+  const completeBotMatches = async (tournamentId: string, round: number) => {
+    try {
+      console.log(`Bot maçları tamamlanıyor - Round ${round}`);
 
-    let message = '';
-    let buttonText = 'Turnuva Sayfasına Dön';
+      const { data: botMatches } = await supabase
+        .from("tournament_matches")
+        .select("*")
+        .eq("tournament_id", tournamentId)
+        .eq("round", round)
+        .eq("status", "pending");
 
-    if (isWinner) {
-      if (tournament.current_round === 1) {
-        message = '🎉 Tebrikler! Yarı finale çıkmaya hak kazandınız.';
-      } else if (tournament.current_round === 2) {
-        message = '🔥 Muhteşem! Finale hak kazandınız.';
-      } else if (tournament.current_round === 3) {
-        message = '👑 Tebrikler! TURNUVA ŞAMPİYONU OLDUNUZ!';
-        buttonText = 'Ana Sayfaya Dön';
+      for (const match of botMatches || []) {
+        const isUserMatch = match.player1_id === user?.id || match.player2_id === user?.id;
+
+        if (!isUserMatch) {
+          const winner = Math.random() > 0.5 ? match.player1_id : match.player2_id;
+          const winnerScore = Math.floor(Math.random() * 20) + 25; // 25-45
+          const loserScore = Math.floor(Math.random() * 15) + 10; // 10-25
+
+          await supabase
+            .from("tournament_matches")
+            .update({
+              status: "completed",
+              winner_id: winner,
+              player1_score: winner === match.player1_id ? winnerScore : loserScore,
+              player2_score: winner === match.player2_id ? winnerScore : loserScore,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", match.id);
+
+          console.log(`Bot maçı tamamlandı: ${match.id}`);
+        }
       }
-    } else {
-      message = '😢 Maalesef elendiniz.';
-    }
 
-    // Custom modal/toast göster
-    const modalDiv = document.createElement('div');
-    modalDiv.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4';
-    modalDiv.innerHTML = `
+      console.log(`Round ${round} bot maçları tamamlandı`);
+    } catch (error) {
+      console.error("Bot maçları tamamlama hatası:", error);
+    }
+  };
+
+  // YENİ FONKSİYON: Turnuva bitiş kartını göster
+  const showTournamentEndCard = async (
+    isWinner: boolean,
+    userScore: number,
+    opponentScore: number,
+    tournamentId: string,
+  ) => {
+    try {
+      // Mevcut turu ve durumu kontrol et
+      const { data: tournament } = await supabase
+        .from("tournaments")
+        .select("current_round, status")
+        .eq("id", tournamentId)
+        .single();
+
+      if (!tournament) {
+        navigate("/tournament");
+        return;
+      }
+
+      let message = "";
+      let buttonText = "Turnuva Sayfasına Dön";
+
+      if (isWinner) {
+        if (tournament.current_round === 1) {
+          message = "🎉 Tebrikler! Yarı finale çıkmaya hak kazandınız.";
+        } else if (tournament.current_round === 2) {
+          message = "🔥 Muhteşem! Finale hak kazandınız.";
+        } else if (tournament.current_round === 3) {
+          message = "👑 Tebrikler! TURNUVA ŞAMPİYONU OLDUNUZ!";
+          buttonText = "Ana Sayfaya Dön";
+        }
+      } else {
+        message = "😢 Maalesef elendiniz.";
+      }
+
+      // Custom modal/toast göster
+      const modalDiv = document.createElement("div");
+      modalDiv.className = "fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4";
+      modalDiv.innerHTML = `
       <div class="bg-white rounded-lg p-6 max-w-md w-full text-center shadow-2xl">
-        <div class="text-2xl mb-4">${isWinner ? '🏆' : '😢'}</div>
+        <div class="text-2xl mb-4">${isWinner ? "🏆" : "😢"}</div>
         <h3 class="text-lg font-bold mb-4">${message}</h3>
         <div class="text-sm text-gray-600 mb-6">
           Skor: ${userScore} - ${opponentScore}
@@ -1150,800 +1337,1023 @@ const showTournamentEndCard = async (isWinner: boolean, userScore: number, oppon
         </button>
       </div>
     `;
-    
-    document.body.appendChild(modalDiv);
 
-    // Button event listener
-    const tournamentBtn = modalDiv.querySelector('#tournament-btn');
-    
-    if (tournamentBtn) {
-      tournamentBtn.addEventListener('click', () => {
-        document.body.removeChild(modalDiv);
+      document.body.appendChild(modalDiv);
+
+      // Button event listener
+      const tournamentBtn = modalDiv.querySelector("#tournament-btn");
+
+      if (tournamentBtn) {
+        tournamentBtn.addEventListener("click", () => {
+          document.body.removeChild(modalDiv);
+          // Her durumda bracket sayfasına yönlendir - şampiyonluk kartı burada gösterilecek
+          navigate(`/tournament-bracket/${tournamentId}`);
+        });
+      }
+
+      // Otomatik yönlendirme (3 saniye sonra)
+      setTimeout(() => {
+        if (document.body.contains(modalDiv)) {
+          document.body.removeChild(modalDiv);
+        }
         // Her durumda bracket sayfasına yönlendir - şampiyonluk kartı burada gösterilecek
         navigate(`/tournament-bracket/${tournamentId}`);
-      });
+      }, 3000);
+    } catch (error) {
+      console.error("❌ Turnuva bitiş kartı hatası:", error);
+      navigate("/tournament");
     }
+  };
 
-    // Otomatik yönlendirme (3 saniye sonra)
-    setTimeout(() => {
-      if (document.body.contains(modalDiv)) {
-        document.body.removeChild(modalDiv);
-      }
-      // Her durumda bracket sayfasına yönlendir - şampiyonluk kartı burada gösterilecek
-      navigate(`/tournament-bracket/${tournamentId}`);
-    }, 3000);
-
-  } catch (error) {
-    console.error('❌ Turnuva bitiş kartı hatası:', error);
-    navigate('/tournament');
-  }
-};
-  
   const updatePlayerStatistics = async (
     userId: string,
     gameScore: number,
-    words: Array<{word: string, score: number}>,
-    isWinner: boolean
+    words: Array<{ word: string; score: number }>,
+    isWinner: boolean,
   ) => {
     try {
-      console.log('📊 Oyun istatistikleri güncelleniyor:', { userId, gameScore, words: words.length, isWinner });
-    
-      const gameDuration = gameType === 'timed' ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
-    
-      console.log('📞 RPC çağrısı yapılıyor:', {
+      console.log("📊 Oyun istatistikleri güncelleniyor:", { userId, gameScore, words: words.length, isWinner });
+
+      const gameDuration = gameType === "timed" ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
+
+      console.log("📞 RPC çağrısı yapılıyor:", {
         p_user_id: userId,
         p_score: gameScore,
         p_words: words,
         p_is_winner: isWinner,
-        p_game_duration: gameDuration
+        p_game_duration: gameDuration,
       });
-  
+
       // TypeScript hatasını önlemek için (any) cast
-      const { data, error } = await (supabase.rpc as any)('update_game_stats', {
+      const { data, error } = await (supabase.rpc as any)("update_game_stats", {
         p_user_id: userId,
         p_score: gameScore,
         p_words: words,
         p_is_winner: isWinner,
-        p_game_duration: gameDuration
+        p_game_duration: gameDuration,
       });
-    
-      console.log('📊 RPC sonucu:', { data, error });
-  
+
+      console.log("📊 RPC sonucu:", { data, error });
+
       if (error) {
-        console.error('❌ RPC hatası:', error);
+        console.error("❌ RPC hatası:", error);
       } else {
-        console.log('✅ Oyun istatistikleri güncellendi');
+        console.log("✅ Oyun istatistikleri güncellendi");
       }
     } catch (error) {
-      console.error('❌ İstatistik güncelleme hatası:', error);
+      console.error("❌ İstatistik güncelleme hatası:", error);
     }
   };
 
   const checkBadges = async (userId: string, wordsCount?: number) => {
     try {
-      console.log('🏆 Rozet kontrolü yapılıyor:', userId);
-  
+      console.log("🏆 Rozet kontrolü yapılıyor:", userId);
+
       // Önce oyun modu sayacını güncelle
       if (gameMode && user?.id === userId) {
         const modeColumnMap: Record<string, string> = {
-          'vs-computer': 'vs_bot_games',
-          'private-room': 'private_room_games',
-          'random-match': 'random_match_games',
-          'random-match-timed': 'random_match_games',
-          'random-match-score': 'random_match_games'
+          "vs-computer": "vs_bot_games",
+          "private-room": "private_room_games",
+          "random-match": "random_match_games",
+          "random-match-timed": "random_match_games",
+          "random-match-score": "random_match_games",
         };
 
         const column = modeColumnMap[gameMode];
         if (column) {
           // Önce mevcut değeri al
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select(column)
-            .eq('id', userId)
-            .single();
+          const { data: profile } = await supabase.from("profiles").select(column).eq("id", userId).single();
 
           const currentValue = (profile as any)?.[column] || 0;
 
           const { error: modeError } = await supabase
-            .from('profiles')
-            .update({ 
-              [column]: currentValue + 1
+            .from("profiles")
+            .update({
+              [column]: currentValue + 1,
             })
-            .eq('id', userId);
+            .eq("id", userId);
 
           if (modeError) {
-            console.error('Oyun modu sayacı güncellenemedi:', modeError);
+            console.error("Oyun modu sayacı güncellenemedi:", modeError);
           }
         }
       }
-  
+
       // YENİ fonksiyon adını kullan - void döndürüyor artık
-      const { error } = await supabase.rpc('check_and_award_badges_simple', {
-        p_user_id: userId
+      const { error } = await supabase.rpc("check_and_award_badges_simple", {
+        p_user_id: userId,
       });
-  
+
       if (error) {
-        console.error('❌ Rozet kontrolü hatası:', error);
+        console.error("❌ Rozet kontrolü hatası:", error);
       }
-  
-      console.log('✅ Rozet kontrolü tamamlandı');
+
+      console.log("✅ Rozet kontrolü tamamlandı");
     } catch (error) {
-      console.error('❌ Rozet kontrolü hatası:', error);
+      console.error("❌ Rozet kontrolü hatası:", error);
     }
   };
 
-
   // Oyun biti fonksiyonunu güncelle
-const handleGameEnd = async () => {
-  console.log('🏁 handleGameEnd çağrıldı!');
-  console.log('🎮 gameMode:', gameMode, 'tournamentMatch:', !!tournamentMatch);
-  
-  const finalUserScore = playerScoreRef.current;
-  const finalOpponentScore = opponentScoreRef.current;
+  const handleGameEnd = async () => {
+    console.log("🏁 handleGameEnd çağrıldı!");
+    console.log("🎮 gameMode:", gameMode, "tournamentMatch:", !!tournamentMatch);
 
-  // ✅ TURNUVA KONTROLÜ - tournamentMatch var mı?
-  if (gameMode === 'tournament' && tournamentMatch && user) {
-    console.log('🏆 Tournament handleTournamentGameEnd çağrılacak!');
-    
-    // Hemen çağır
-    handleTournamentGameEnd(finalUserScore, finalOpponentScore);
-    return; // Erken çık
-  }
+    const finalUserScore = playerScoreRef.current;
+    const finalOpponentScore = opponentScoreRef.current;
 
-  // vs-computer modunda istatistik güncelle
-  if (user) {
-    if (statsUpdatedRef.current) {
-      console.log('⏭️ Skipping duplicate stats update (handleGameEnd)');
-    } else {
-      statsUpdatedRef.current = true;
-      const gameDuration = gameType === 'timed' ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
-      
-      const { data, error } = await (supabase.rpc as any)('update_game_stats', {
-        p_user_id: user.id,
-        p_score: finalUserScore,
-        p_words: playerWordsWithScores,
-        p_is_winner: finalUserScore > finalOpponentScore,
-        p_game_duration: gameDuration,
-        p_first_word_time: firstWordTime
+    // ✅ TURNUVA KONTROLÜ - tournamentMatch var mı?
+    if (gameMode === "tournament" && tournamentMatch && user) {
+      console.log("🏆 Tournament handleTournamentGameEnd çağrılacak!");
+
+      // Hemen çağır
+      handleTournamentGameEnd(finalUserScore, finalOpponentScore);
+      return; // Erken çık
+    }
+
+    // vs-computer modunda istatistik güncelle
+    if (user) {
+      if (statsUpdatedRef.current) {
+        console.log("⏭️ Skipping duplicate stats update (handleGameEnd)");
+      } else {
+        statsUpdatedRef.current = true;
+        const gameDuration = gameType === "timed" ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
+
+        const { data, error } = await (supabase.rpc as any)("update_game_stats", {
+          p_user_id: user.id,
+          p_score: finalUserScore,
+          p_words: playerWordsWithScores,
+          p_is_winner: finalUserScore > finalOpponentScore,
+          p_game_duration: gameDuration,
+          p_first_word_time: firstWordTime,
+        });
+
+        if (error) {
+          console.error("İstatistik güncelleme hatası:", error);
+        } else {
+          console.log("İstatistikler güncellendi - gameMode:", gameMode);
+          await forceRefreshProfile?.();
+        }
+      }
+    }
+
+    // Normal oyun sonu
+    setGameEnded(true);
+    setShowResults(true);
+  };
+
+  // 🔧 5. GamePage.tsx - Turnuva modu rakip belirleme düzeltmesi
+  useEffect(() => {
+    if (gameMode === "tournament" && tournamentMatch) {
+      const userIdString = String(user?.id);
+      const opponentId =
+        String(tournamentMatch.player1_id) === userIdString ? tournamentMatch.player2_id : tournamentMatch.player1_id;
+
+      console.log("🎯 Turnuva rakip analizi:", {
+        matchId: tournamentMatch.id,
+        player1: String(tournamentMatch.player1_id).slice(-8),
+        player2: String(tournamentMatch.player2_id).slice(-8),
+        currentUser: userIdString.slice(-8),
+        opponentId: String(opponentId).slice(-8),
       });
-      
-      if (error) {
-        console.error('İstatistik güncelleme hatası:', error);
+
+      if (!opponentId) {
+        setIsAIOpponent(true);
+        setOpponentName("Bekleniyor...");
+      } else if (String(opponentId).startsWith("bot_")) {
+        setIsAIOpponent(true);
+        const seed = Array.from(String(opponentId)).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+        setOpponentName(generateBotName(seed));
       } else {
-        console.log('İstatistikler güncellendi - gameMode:', gameMode);
-        await forceRefreshProfile?.();
+        setIsAIOpponent(false);
+        const realOpponent = participants.find((p) => String(p.user_id) === String(opponentId));
+        if (realOpponent && (realOpponent as any).profiles?.username) {
+          setOpponentName((realOpponent as any).profiles.username);
+        } else {
+          setOpponentName("Turnuva Oyuncusu");
+        }
       }
     }
-  }
+  }, [gameMode, tournamentMatch, user?.id, participants]);
 
-  // Normal oyun sonu
-  setGameEnded(true);
-  setShowResults(true);
-};
-
-// 🔧 5. GamePage.tsx - Turnuva modu rakip belirleme düzeltmesi
-useEffect(() => {
-  if (gameMode === 'tournament' && tournamentMatch) {
-    const userIdString = String(user?.id);
-    const opponentId = String(tournamentMatch.player1_id) === userIdString ? 
-      tournamentMatch.player2_id : 
-      tournamentMatch.player1_id;
-  
-    console.log('🎯 Turnuva rakip analizi:', {
-      matchId: tournamentMatch.id,
-      player1: String(tournamentMatch.player1_id).slice(-8),
-      player2: String(tournamentMatch.player2_id).slice(-8),
-      currentUser: userIdString.slice(-8),
-      opponentId: String(opponentId).slice(-8)
-    });
-
-    if (!opponentId) {
-      setIsAIOpponent(true);
-      setOpponentName('Bekleniyor...');
-    } else if (String(opponentId).startsWith('bot_')) {
-      setIsAIOpponent(true);
-      const seed = Array.from(String(opponentId)).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-      setOpponentName(generateBotName(seed));
-    } else {
-      setIsAIOpponent(false);
-      const realOpponent = participants.find(p => String(p.user_id) === String(opponentId));
-      if (realOpponent && (realOpponent as any).profiles?.username) {
-        setOpponentName((realOpponent as any).profiles.username);
-      } else {
-        setOpponentName('Turnuva Oyuncusu');
-      }
-    }
-  }
-}, [gameMode, tournamentMatch, user?.id, participants]);
-
-
-  
   // Rakip ismini göster - turnuva için
-const getOpponentDisplayName = () => {
-  if (gameMode === 'tournament' && tournamentMatch) {
-    const opponentId = tournamentMatch.player1_id === user?.id ? 
-      tournamentMatch.player2_id : 
-      tournamentMatch.player1_id;
-  
-    if (!opponentId || String(opponentId).startsWith('bot_')) {
-      const seed = Array.from(String(opponentId || 'bot')).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-      return generateBotName(seed);
-    }
-    
-    // Eğer state'te belirlenmiş bir rakip adı varsa onu kullan
-    if (opponentName && opponentName.trim().length > 0) {
-      return opponentName;
-    }
-    
-    const realOpponent = participants.find(p => 
-      String(p.user_id) === String(opponentId) && 
-      !p.is_bot && 
-      p.user_id !== null
-    );
-    
-    if (realOpponent && (realOpponent as any).profiles?.username) {
-      return (realOpponent as any).profiles.username;
-    }
-    
-    return 'Turnuva Rakibi';
-  }
+  const getOpponentDisplayName = () => {
+    if (gameMode === "tournament" && tournamentMatch) {
+      const opponentId =
+        tournamentMatch.player1_id === user?.id ? tournamentMatch.player2_id : tournamentMatch.player1_id;
 
-  // Diğer modlar için fallback
-  switch (gameMode) {
-    case 'vs-computer':
-      return 'Bilgisayar';
-    case 'private-room':
-      return 'Arkadaş';
-    case 'random-match':
-      return 'Rakip';
-    default:
-      return 'AI Rakip';
-  }
-};
+      if (!opponentId || String(opponentId).startsWith("bot_")) {
+        const seed = Array.from(String(opponentId || "bot")).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+        return generateBotName(seed);
+      }
 
+      // Eğer state'te belirlenmiş bir rakip adı varsa onu kullan
+      if (opponentName && opponentName.trim().length > 0) {
+        return opponentName;
+      }
+
+      const realOpponent = participants.find(
+        (p) => String(p.user_id) === String(opponentId) && !p.is_bot && p.user_id !== null,
+      );
+
+      if (realOpponent && (realOpponent as any).profiles?.username) {
+        return (realOpponent as any).profiles.username;
+      }
+
+      return "Turnuva Rakibi";
+    }
+
+    // Diğer modlar için fallback
+    switch (gameMode) {
+      case "vs-computer":
+        return "Bilgisayar";
+      case "private-room":
+        return "Arkadaş";
+      case "random-match":
+        return "Rakip";
+      default:
+        return "AI Rakip";
+    }
+  };
 
   // Turnuva modunda geri dönüş engelle
-const handleBackToMenu = async () => {
-  // Turnuva modunda özel çıkış dialog'u göster
-  if (gameMode === 'tournament') {
-    setShowTournamentExitDialog(true);
-    return;
-  }
-  
-  // Diğer modlar için normal akış
-  const isRealActiveGame = gameStarted && 
-                          !gameEnded && 
-                          participants.length >= 2 && 
-                          participants.some(p => !p.is_bot && p.user_id !== user?.id);
-  
-  if (isRealActiveGame) {
-    setShowExitDialog(true);
-    return;
-  }
-  
-  if (currentRoom) {
-    await leaveRoom();
-  }
-  
-  // Oyundan çıkarken matchmaking state'ini de temizle
-  window.dispatchEvent(new CustomEvent('cleanupMatchmaking'));
-  
-  navigate('/');
-};
-
-// Random match için grid'i URL'den al ve game room oluştur
-useEffect(() => {
-  const initializeRandomMatch = async () => {
-    if (gameMode !== 'random-match') return;
-    if (!user?.id) return;
-    if (randomMatchInitRef.current) return;
-    randomMatchInitRef.current = true;
-    
-    console.log('🎲 Random match initialization başlıyor');
-    
-    const urlParams = new URLSearchParams(window.location.search);
-    const roomId = urlParams.get('room');
-    const type = urlParams.get('type') as 'timed' | 'score';
-    
-    if (!roomId || !type) {
-      console.error('❌ Random match için room ID veya type eksik');
-      navigate('/');
+  const handleBackToMenu = async () => {
+    // Turnuva modunda özel çıkış dialog'u göster
+    if (gameMode === "tournament") {
+      setShowTournamentExitDialog(true);
       return;
     }
-    
-    try {
-      // 🎮 Nakama match ID formatı kontrol et (UUID)
-      const isNakamaMatch = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(roomId);
-      
-      if (isNakamaMatch) {
-        console.log('🎮 Nakama match detected:', roomId);
-        console.log('✅ Skipping Supabase matchmaking_rooms lookup');
-        
-        // Nakama match için direkt grid oluştur
-        const gridToUse = generateRandomGrid();
+
+    // Diğer modlar için normal akış
+    const isRealActiveGame =
+      gameStarted &&
+      !gameEnded &&
+      participants.length >= 2 &&
+      participants.some((p) => !p.is_bot && p.user_id !== user?.id);
+
+    if (isRealActiveGame) {
+      setShowExitDialog(true);
+      return;
+    }
+
+    if (currentRoom) {
+      await leaveRoom();
+    }
+
+    // Oyundan çıkarken matchmaking state'ini de temizle
+    window.dispatchEvent(new CustomEvent("cleanupMatchmaking"));
+
+    navigate("/");
+  };
+
+  // Random match için grid'i URL'den al ve game room oluştur
+  useEffect(() => {
+    const initializeRandomMatch = async () => {
+      if (gameMode !== "random-match") return;
+      if (!user?.id) return;
+      if (randomMatchInitRef.current) return;
+      randomMatchInitRef.current = true;
+
+      console.log("🎲 Random match initialization başlıyor");
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const roomId = urlParams.get("room");
+      const type = urlParams.get("type") as "timed" | "score";
+
+      if (!roomId || !type) {
+        console.error("❌ Random match için room ID veya type eksik");
+        navigate("/");
+        return;
+      }
+
+      try {
+        // 🎮 Nakama match ID formatı kontrol et (UUID)
+        const isNakamaMatch = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(roomId);
+
+        if (isNakamaMatch) {
+          console.log("🎮 Nakama match detected:", roomId);
+          console.log("✅ Skipping Supabase matchmaking_rooms lookup");
+
+          // Nakama match için direkt grid oluştur
+          const gridToUse = generateRandomGrid();
+          setGameGrid(gridToUse);
+
+          // 🔥 ÖNEMLİ: joinRoom çağır ki participants yüklensin (küçük gecikmeli yeniden dene)
+          console.log("🔗 Joining Nakama game room:", roomId);
+          let success = false;
+          for (let attempt = 1; attempt <= 6; attempt++) {
+            success = await joinRoom(roomId);
+            if (success) break;
+            console.warn(`⏳ Join retry ${attempt}/6 - oda hazır değil olabilir`);
+            await new Promise((resolve) => setTimeout(resolve, 250));
+          }
+
+          if (!success) {
+            console.error("❌ Nakama room'a katılamadı (tüm denemeler başarısız)");
+            toast({
+              title: "Bağlantı Hatası",
+              description: "Oyun odasına bağlanılamadı",
+              variant: "destructive",
+            });
+            navigate("/");
+            return;
+          }
+
+          console.log("✅ Nakama room'a katıldı, participants yüklenecek");
+          return; // Supabase matchmaking_rooms işlemlerini atla
+        }
+
+        // Eski Supabase sistemi için devam et
+        console.log("📊 Supabase matchmaking room aranıyor:", roomId);
+
+        const { data: matchmakingRoom, error: matchError } = await supabase
+          .from("matchmaking_rooms")
+          .select("*")
+          .eq("id", roomId)
+          .single();
+
+        if (matchError || !matchmakingRoom) {
+          console.error("❌ Matchmaking room bulunamadı:", matchError);
+          toast({
+            title: "Oda Hatası",
+            description: "Eşleşme odasına ulaşılamadı",
+            variant: "destructive",
+          });
+          navigate("/");
+          return;
+        }
+
+        console.log("✅ Matchmaking room bulundu:", matchmakingRoom.id);
+
+        // Grid'i al
+        let gridToUse: string[][] = generateRandomGrid();
+
+        if (matchmakingRoom.room_data && typeof matchmakingRoom.room_data === "object") {
+          const roomDataObj = matchmakingRoom.room_data as any;
+          if (roomDataObj.game_grid && Array.isArray(roomDataObj.game_grid)) {
+            console.log("📊 Matchmaking room grid alındı");
+
+            const grid = [];
+            for (let i = 0; i < 4; i++) {
+              const row = [];
+              for (let j = 0; j < 4; j++) {
+                row.push(roomDataObj.game_grid[i * 4 + j] || "A");
+              }
+              grid.push(row);
+            }
+            gridToUse = grid;
+          }
+        }
+
         setGameGrid(gridToUse);
-        
-        // 🔥 ÖNEMLİ: joinRoom çağır ki participants yüklensin (küçük gecikmeli yeniden dene)
-        console.log('🔗 Joining Nakama game room:', roomId);
+
+        // Game room oluştur veya bul
+        const { data: existingRoom } = await supabase
+          .from("game_rooms")
+          .select("*")
+          .eq("id", roomId)
+          .eq("status", "waiting")
+          .single();
+
+        let gameRoomId = roomId;
+
+        if (!existingRoom) {
+          const flatGrid = gridToUse.flat();
+
+          const { data: newRoom, error: createError } = await supabase
+            .from("game_rooms")
+            .insert({
+              id: roomId,
+              host_id: user.id,
+              game_mode: type,
+              status: "waiting",
+              max_players: 2,
+              time_limit: type === "timed" ? 120 : 0,
+              max_score: type === "score" ? 100 : 0,
+              current_grid: flatGrid,
+            })
+            .select()
+            .single();
+
+          if (createError) {
+            console.error("❌ Game room oluşturulamadı:", createError);
+            toast({
+              title: "Oda Hatası",
+              description: "Oyun odası oluşturulamadı",
+              variant: "destructive",
+            });
+            navigate("/");
+            return;
+          }
+
+          console.log("✅ Game room oluşturuldu:", newRoom.id);
+        }
+
+        // Küçük gecikmeli yeniden dene (eventual consistency için)
         let success = false;
         for (let attempt = 1; attempt <= 6; attempt++) {
-          success = await joinRoom(roomId);
+          success = await joinRoom(gameRoomId);
           if (success) break;
-          console.warn(`⏳ Join retry ${attempt}/6 - oda hazır değil olabilir`);
-          await new Promise(resolve => setTimeout(resolve, 250));
+          console.warn(`⏳ Random match join retry ${attempt}/6`);
+          await new Promise((resolve) => setTimeout(resolve, 250));
         }
-        
-        if (!success) {
-          console.error('❌ Nakama room\'a katılamadı (tüm denemeler başarısız)');
+        if (success) {
+          console.log("✅ Random match room'a katıldı");
+        } else {
+          console.error("❌ Random match room'a katılamadı (tüm denemeler başarısız)");
           toast({
             title: "Bağlantı Hatası",
             description: "Oyun odasına bağlanılamadı",
             variant: "destructive",
           });
-          navigate('/');
-          return;
-        }
-        
-        console.log('✅ Nakama room\'a katıldı, participants yüklenecek');
-        return; // Supabase matchmaking_rooms işlemlerini atla
-      }
-      
-      // Eski Supabase sistemi için devam et
-      console.log('📊 Supabase matchmaking room aranıyor:', roomId);
-      
-      const { data: matchmakingRoom, error: matchError } = await supabase
-        .from('matchmaking_rooms')
-        .select('*')
-        .eq('id', roomId)
-        .single();
-
-      if (matchError || !matchmakingRoom) {
-        console.error('❌ Matchmaking room bulunamadı:', matchError);
-        toast({
-          title: "Oda Hatası",
-          description: "Eşleşme odasına ulaşılamadı",
-          variant: "destructive",
-        });
-        navigate('/');
-        return;
-      }
-
-      console.log('✅ Matchmaking room bulundu:', matchmakingRoom.id);
-      
-      // Grid'i al
-      let gridToUse: string[][] = generateRandomGrid();
-      
-      if (matchmakingRoom.room_data && typeof matchmakingRoom.room_data === 'object') {
-        const roomDataObj = matchmakingRoom.room_data as any;
-        if (roomDataObj.game_grid && Array.isArray(roomDataObj.game_grid)) {
-          console.log('📊 Matchmaking room grid alındı');
-          
-          const grid = [];
-          for (let i = 0; i < 4; i++) {
-            const row = [];
-            for (let j = 0; j < 4; j++) {
-              row.push(roomDataObj.game_grid[i * 4 + j] || 'A');
-            }
-            grid.push(row);
-          }
-          gridToUse = grid;
-        }
-      }
-      
-      setGameGrid(gridToUse);
-      
-      // Game room oluştur veya bul
-      const { data: existingRoom } = await supabase
-        .from('game_rooms')
-        .select('*')
-        .eq('id', roomId)
-        .eq('status', 'waiting')
-        .single();
-
-      let gameRoomId = roomId;
-      
-      if (!existingRoom) {
-        const flatGrid = gridToUse.flat();
-        
-        const { data: newRoom, error: createError } = await supabase
-          .from('game_rooms')
-          .insert({
-            id: roomId,
-            host_id: user.id,
-            game_mode: type,
-            status: 'waiting',
-            max_players: 2,
-            time_limit: type === 'timed' ? 120 : 0,
-            max_score: type === 'score' ? 100 : 0,
-            current_grid: flatGrid
-          })
-          .select()
-          .single();
-
-        if (createError) {
-          console.error('❌ Game room oluşturulamadı:', createError);
-          toast({
-            title: "Oda Hatası", 
-            description: "Oyun odası oluşturulamadı",
-            variant: "destructive",
-          });
-          navigate('/');
-          return;
-        }
-        
-        console.log('✅ Game room oluşturuldu:', newRoom.id);
-      }
-      
-      // Küçük gecikmeli yeniden dene (eventual consistency için)
-      let success = false;
-      for (let attempt = 1; attempt <= 6; attempt++) {
-        success = await joinRoom(gameRoomId);
-        if (success) break;
-        console.warn(`⏳ Random match join retry ${attempt}/6`);
-        await new Promise(resolve => setTimeout(resolve, 250));
-      }
-      if (success) {
-        console.log('✅ Random match room\'a katıldı');
-      } else {
-        console.error('❌ Random match room\'a katılamadı (tüm denemeler başarısız)');
-        toast({
-          title: "Bağlantı Hatası", 
-          description: "Oyun odasına bağlanılamadı",
-          variant: "destructive",
-        });
-        navigate('/');
-      }
-    } catch (error) {
-      console.error('❌ Random match initialization hatası:', error);
-      navigate('/');
-    }
-  };
-
-  initializeRandomMatch();
-}, [gameMode, user?.id, joinRoom, navigate, toast, setGameGrid, generateRandomGrid]);
-
-// Initialize private room from URL params
-useEffect(() => {
-  const init = async () => {
-    if (gameMode !== 'private-room') return;
-    if (!user?.id) return;
-
-    const roomParam = searchParams.get('room');
-    const type = searchParams.get('type') as 'timed' | 'score';
-
-    // Aynı oda için tekrar init etme, oda değiştiyse init'i tekrar çalıştır
-    if (privateRoomInitRef.current && lastInitializedRoomRef.current === roomParam) return;
-    privateRoomInitRef.current = true;
-    lastInitializedRoomRef.current = roomParam || null;
-
-    if (!roomParam || !type) {
-      console.error('❌ Private room için room veya type eksik');
-      navigate('/');
-      return;
-    }
-
-    // room param kod (room_code) olabilir; UUID değilse ID'yi lookup yap
-    let roomId = roomParam;
-    if (!isUuid(roomParam)) {
-      const getIdByCode = async (code: string, attempts = 8, delayMs = 250): Promise<string | null> => {
-        for (let i = 0; i < attempts; i++) {
-          const { data } = await supabase
-            .from('game_rooms')
-            .select('id')
-            .eq('room_code', code)
-            .maybeSingle();
-          if (data?.id) return data.id;
-          await new Promise(r => setTimeout(r, delayMs));
-        }
-        return null;
-      };
-      const resolvedId = await getIdByCode(roomParam);
-      if (!resolvedId) {
-        toast({ title: 'Bağlantı Hatası', description: 'Oda bulunamadı', variant: 'destructive' });
-        navigate('/');
-        return;
-      }
-      roomId = resolvedId;
-    }
-
-    // Yeni oda açıldığında rematch ve disconnect bayraklarını temizle
-    setRematchRequested(false);
-    setWaitingForRematchResponse(false);
-    disconnectHandledRef.current = false;
-
-    console.log('🎯 Loading private room data:', shortId(roomId));
-    
-    // Grid'i yükle
-    const { data: roomData } = await supabase
-      .from('game_rooms')
-      .select('current_grid')
-      .eq('id', roomId)
-      .single();
-    
-    if (roomData?.current_grid) {
-      console.log('📊 Private room grid yüklendi');
-      const grid = [];
-      for (let i = 0; i < 4; i++) {
-        const row = [];
-        for (let j = 0; j < 4; j++) {
-          row.push(roomData.current_grid[i * 4 + j] || 'A');
-        }
-        grid.push(row);
-      }
-      setGameGrid(grid);
-    }
-    
-    // Küçük gecikmeli yeniden dene
-    let joined = false;
-    for (let attempt = 1; attempt <= 6; attempt++) {
-      joined = await joinRoom(roomId);
-      if (joined) break;
-      console.warn(`⏳ Join retry ${attempt}/6`);
-      await new Promise(resolve => setTimeout(resolve, 250));
-    }
-    if (!joined) {
-      toast({ title: 'Bağlantı Hatası', description: 'Oyun odasına bağlanılamadı', variant: 'destructive' });
-      navigate('/');
-      return;
-    }
-  };
-  init();
-}, [gameMode, user?.id, joinRoom, navigate, searchParams, toast, setGameGrid]);
-
-// Tournament match bilgisini al - SADECE gameMode 'tournament' ise
-useEffect(() => {
-  const initializeTournamentMatch = async () => {
-    // SADECE tournament modunda çalışsın
-    if (gameMode !== 'tournament') return;
-    
-    const urlParams = new URLSearchParams(window.location.search);
-    const matchId = urlParams.get('match');
-    const tournamentId = urlParams.get('tournament');
-    
-    console.log('🎯 URL parametreleri:', { matchId, tournamentId });
-    
-    if (matchId) {
-      // 🛡️ TURNUVA MAÇI KORUMASI: Bu maç daha önce tamamlandıysa tekrar oynama
-      const completedKey = `tournament_match_completed_${matchId}`;
-      const completed = localStorage.getItem(completedKey);
-      if (completed) {
-        const data = JSON.parse(completed);
-        console.warn('⚠️ Bu turnuva maçı zaten tamamlanmış:', data);
-        toast({
-          title: "⚠️ Maç Zaten Bitti",
-          description: "Bu maç daha önce tamamlandı. Lütfen bir sonraki tura geçin.",
-          variant: "destructive"
-        });
-        setTimeout(() => navigate('/tournament'), 2000);
-        return;
-      }
-      
-      try {
-        // Maç bilgilerini al
-        const { data: matchData, error } = await supabase
-          .from('tournament_matches')
-          .select('*')
-          .eq('id', matchId)
-          .single();
-
-        if (error) {
-          console.error('Maç bilgisi alınamadı:', error);
-          return;
-        }
-
-        if (matchData) {
-          // Maç zaten completed ise tekrar oynama
-          if (matchData.status === 'completed') {
-            console.warn('⚠️ Bu maç zaten tamamlanmış (DB):', matchData);
-            toast({
-              title: "⚠️ Maç Zaten Bitti",
-              description: "Bu maç daha önce tamamlandı.",
-              variant: "destructive"
-            });
-            setTimeout(() => navigate('/tournament'), 2000);
-            return;
-          }
-          
-          console.log('✅ Turnuva maçı yüklendi:', matchData.id);
-          setTournamentMatch(matchData);
-          
-          // 🎯 SERVER-SIDE COUNTDOWN: Turnuva maçı için countdown başlat
-          const { data: countdownTime, error: countdownError } = await supabase.rpc('start_tournament_countdown', {
-            p_match_id: matchId
-          });
-          
-          if (!countdownError && countdownTime) {
-            console.log('🎯 Tournament countdown başlatıldı:', countdownTime);
-            setCountdownServerTime(countdownTime);
-          }
-          
-          // Maç durumunu güncelle
-          await supabase
-            .from('tournament_matches')
-            .update({
-              status: 'pending', // pending olsun ki auto_start_countdown_finished_games fonksiyonu başlatsın
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', matchId);
+          navigate("/");
         }
       } catch (error) {
-        console.error('Turnuva maçı başlatma hatası:', error);
+        console.error("❌ Random match initialization hatası:", error);
+        navigate("/");
       }
-    } else if (tournamentId && user) {
-      // Match ID yoksa, kullanıcının maçını bul
-      console.log('🔍 Kullanıcı maçı aranıyor tournament için...');
-      
-      const { data: userMatch } = await supabase
-        .from('tournament_matches')
-        .select('*')
-        .eq('tournament_id', tournamentId)
-        .or(`player1_id.eq.${user.id},player2_id.eq.${user.id}`)
-        .eq('status', 'in_progress')
-        .single();
-        
-      if (userMatch) {
-        console.log('✅ Kullanıcı maçı bulundu:', userMatch.id);
-        setTournamentMatch(userMatch);
-        
-        // URL'yi güncelle
-        window.history.replaceState(
-          null, 
-          '', 
-          `/game?match=${userMatch.id}&tournament=${tournamentId}`
-        );
-      }
-    }
-  };
+    };
 
-  initializeTournamentMatch();
-}, [gameMode, user?.id]);
-  
+    initializeRandomMatch();
+  }, [gameMode, user?.id, joinRoom, navigate, toast, setGameGrid, generateRandomGrid]);
+
+  // Initialize private room from URL params
+  useEffect(() => {
+    const init = async () => {
+      if (gameMode !== "private-room") return;
+      if (!user?.id) return;
+
+      const roomParam = searchParams.get("room");
+      const type = searchParams.get("type") as "timed" | "score";
+
+      // Aynı oda için tekrar init etme, oda değiştiyse init'i tekrar çalıştır
+      if (privateRoomInitRef.current && lastInitializedRoomRef.current === roomParam) return;
+      privateRoomInitRef.current = true;
+      lastInitializedRoomRef.current = roomParam || null;
+
+      if (!roomParam || !type) {
+        console.error("❌ Private room için room veya type eksik");
+        navigate("/");
+        return;
+      }
+
+      // room param kod (room_code) olabilir; UUID değilse ID'yi lookup yap
+      let roomId = roomParam;
+      if (!isUuid(roomParam)) {
+        const getIdByCode = async (code: string, attempts = 8, delayMs = 250): Promise<string | null> => {
+          for (let i = 0; i < attempts; i++) {
+            const { data } = await supabase.from("game_rooms").select("id").eq("room_code", code).maybeSingle();
+            if (data?.id) return data.id;
+            await new Promise((r) => setTimeout(r, delayMs));
+          }
+          return null;
+        };
+        const resolvedId = await getIdByCode(roomParam);
+        if (!resolvedId) {
+          toast({ title: "Bağlantı Hatası", description: "Oda bulunamadı", variant: "destructive" });
+          navigate("/");
+          return;
+        }
+        roomId = resolvedId;
+      }
+
+      // Yeni oda açıldığında rematch ve disconnect bayraklarını temizle
+      setRematchRequested(false);
+      setWaitingForRematchResponse(false);
+      disconnectHandledRef.current = false;
+
+      console.log("🎯 Loading private room data:", shortId(roomId));
+
+      // Grid'i yükle
+      const { data: roomData } = await supabase.from("game_rooms").select("current_grid").eq("id", roomId).single();
+
+      if (roomData?.current_grid) {
+        console.log("📊 Private room grid yüklendi");
+        const grid = [];
+        for (let i = 0; i < 4; i++) {
+          const row = [];
+          for (let j = 0; j < 4; j++) {
+            row.push(roomData.current_grid[i * 4 + j] || "A");
+          }
+          grid.push(row);
+        }
+        setGameGrid(grid);
+      }
+
+      // Küçük gecikmeli yeniden dene
+      let joined = false;
+      for (let attempt = 1; attempt <= 6; attempt++) {
+        joined = await joinRoom(roomId);
+        if (joined) break;
+        console.warn(`⏳ Join retry ${attempt}/6`);
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+      if (!joined) {
+        toast({ title: "Bağlantı Hatası", description: "Oyun odasına bağlanılamadı", variant: "destructive" });
+        navigate("/");
+        return;
+      }
+    };
+    init();
+  }, [gameMode, user?.id, joinRoom, navigate, searchParams, toast, setGameGrid]);
+
+  // Tournament match bilgisini al - SADECE gameMode 'tournament' ise
+  useEffect(() => {
+    const initializeTournamentMatch = async () => {
+      // SADECE tournament modunda çalışsın
+      if (gameMode !== "tournament") return;
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const matchId = urlParams.get("match");
+      const tournamentId = urlParams.get("tournament");
+
+      console.log("🎯 URL parametreleri:", { matchId, tournamentId });
+
+      if (matchId) {
+        // 🛡️ TURNUVA MAÇI KORUMASI: Bu maç daha önce tamamlandıysa tekrar oynama
+        const completedKey = `tournament_match_completed_${matchId}`;
+        const completed = localStorage.getItem(completedKey);
+        if (completed) {
+          const data = JSON.parse(completed);
+          console.warn("⚠️ Bu turnuva maçı zaten tamamlanmış:", data);
+          toast({
+            title: "⚠️ Maç Zaten Bitti",
+            description: "Bu maç daha önce tamamlandı. Lütfen bir sonraki tura geçin.",
+            variant: "destructive",
+          });
+          setTimeout(() => navigate("/tournament"), 2000);
+          return;
+        }
+
+        try {
+          // Maç bilgilerini al
+          const { data: matchData, error } = await supabase
+            .from("tournament_matches")
+            .select("*")
+            .eq("id", matchId)
+            .single();
+
+          if (error) {
+            console.error("Maç bilgisi alınamadı:", error);
+            return;
+          }
+
+          if (matchData) {
+            // Maç zaten completed ise tekrar oynama
+            if (matchData.status === "completed") {
+              console.warn("⚠️ Bu maç zaten tamamlanmış (DB):", matchData);
+              toast({
+                title: "⚠️ Maç Zaten Bitti",
+                description: "Bu maç daha önce tamamlandı.",
+                variant: "destructive",
+              });
+              setTimeout(() => navigate("/tournament"), 2000);
+              return;
+            }
+
+            console.log("✅ Turnuva maçı yüklendi:", matchData.id);
+            setTournamentMatch(matchData);
+
+            // 🎯 SERVER-SIDE COUNTDOWN: Turnuva maçı için countdown başlat
+            const { data: countdownTime, error: countdownError } = await supabase.rpc("start_tournament_countdown", {
+              p_match_id: matchId,
+            });
+
+            if (!countdownError && countdownTime) {
+              console.log("🎯 Tournament countdown başlatıldı:", countdownTime);
+              setCountdownServerTime(countdownTime);
+            }
+
+            // Maç durumunu güncelle
+            await supabase
+              .from("tournament_matches")
+              .update({
+                status: "pending", // pending olsun ki auto_start_countdown_finished_games fonksiyonu başlatsın
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", matchId);
+          }
+        } catch (error) {
+          console.error("Turnuva maçı başlatma hatası:", error);
+        }
+      } else if (tournamentId && user) {
+        // Match ID yoksa, kullanıcının maçını bul
+        console.log("🔍 Kullanıcı maçı aranıyor tournament için...");
+
+        const { data: userMatch } = await supabase
+          .from("tournament_matches")
+          .select("*")
+          .eq("tournament_id", tournamentId)
+          .or(`player1_id.eq.${user.id},player2_id.eq.${user.id}`)
+          .eq("status", "in_progress")
+          .single();
+
+        if (userMatch) {
+          console.log("✅ Kullanıcı maçı bulundu:", userMatch.id);
+          setTournamentMatch(userMatch);
+
+          // URL'yi güncelle
+          window.history.replaceState(null, "", `/game?match=${userMatch.id}&tournament=${tournamentId}`);
+        }
+      }
+    };
+
+    initializeTournamentMatch();
+  }, [gameMode, user?.id]);
+
   // JOKER FONKSİYONLARI
 
   // 1. Değiştir Jokeri - 5 harf değiştir (3 sesli, 2 sessiz)
   const useDegisTirJoker = async () => {
-  if (jokers.degistir <= 0 || isJokerActive) return;
+    if (jokers.degistir <= 0 || isJokerActive) return;
 
-  playSpecialSound('/degistir.mp3');
-  
-  setIsJokerActive(true);
-  setGridSyncPaused(true);
-  
-  const vowels = ['A', 'E', 'İ', 'I', 'O', 'U', 'Ü', 'Ö'];
-  const consonants = ['B', 'C', 'Ç', 'D', 'F', 'G', 'Ğ', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'R', 'S', 'Ş', 'T', 'V', 'Y', 'Z'];
-  
-  const newGrid = [...gameGrid.map(row => [...row])];
-  
-  // Rastgele 5 pozisyon seç
-  const positions: {row: number, col: number}[] = [];
-  while (positions.length < 5) {
-    const row = Math.floor(Math.random() * 4);
-    const col = Math.floor(Math.random() * 4);
-    if (!positions.some(p => p.row === row && p.col === col)) {
-      positions.push({ row, col });
+    playSpecialSound("/degistir.mp3");
+
+    setIsJokerActive(true);
+    setGridSyncPaused(true);
+
+    const vowels = ["A", "E", "İ", "I", "O", "U", "Ü", "Ö"];
+    const consonants = [
+      "B",
+      "C",
+      "Ç",
+      "D",
+      "F",
+      "G",
+      "Ğ",
+      "H",
+      "J",
+      "K",
+      "L",
+      "M",
+      "N",
+      "P",
+      "R",
+      "S",
+      "Ş",
+      "T",
+      "V",
+      "Y",
+      "Z",
+    ];
+
+    const newGrid = [...gameGrid.map((row) => [...row])];
+
+    // Rastgele 5 pozisyon seç
+    const positions: { row: number; col: number }[] = [];
+    while (positions.length < 5) {
+      const row = Math.floor(Math.random() * 4);
+      const col = Math.floor(Math.random() * 4);
+      if (!positions.some((p) => p.row === row && p.col === col)) {
+        positions.push({ row, col });
+      }
     }
-  }
-  
-  // İlk 3 pozisyona sesli harf
-  for (let i = 0; i < 3; i++) {
-    const randomVowel = vowels[Math.floor(Math.random() * vowels.length)];
-    newGrid[positions[i].row][positions[i].col] = randomVowel;
-  }
-  
-  // Son 2 pozisyona sessiz harf
-  for (let i = 3; i < 5; i++) {
-    const randomConsonant = consonants[Math.floor(Math.random() * consonants.length)];
-    newGrid[positions[i].row][positions[i].col] = randomConsonant;
-  }
 
-  setHighlightedLetters(positions);
-  setGameGrid(newGrid);
-  
-  // ⚠️ Server'a grid gönderme - sadece lokal değişiklik
-  console.log('🎯 Değiştir jokeri - sadece lokal grid değişikliği');
-  
-  const jokerUsed = await useJoker('degistir');
-  if (!jokerUsed) {
-    console.error('❌ Değiştir joker kullanılamadı!');
-    setIsJokerActive(false);
-    setGridSyncPaused(false);
-    return;
-  }
-  
-  setTimeout(() => {
-    setHighlightedLetters([]);
-    setIsJokerActive(false);
-    // Grid sync'i sürekli kapalı tut - değiştir jokeri lokal kalmalı
-  }, 1000);
-  
-  setSelectedLetters([]);
-  setCurrentWord('');
-  
-  playSound('correctWord');
-};
+    // İlk 3 pozisyona sesli harf
+    for (let i = 0; i < 3; i++) {
+      const randomVowel = vowels[Math.floor(Math.random() * vowels.length)];
+      newGrid[positions[i].row][positions[i].col] = randomVowel;
+    }
 
+    // Son 2 pozisyona sessiz harf
+    for (let i = 3; i < 5; i++) {
+      const randomConsonant = consonants[Math.floor(Math.random() * consonants.length)];
+      newGrid[positions[i].row][positions[i].col] = randomConsonant;
+    }
 
-// 2. Fısılda Jokeri - Sözlükteki orijinal haliyle göster (çevirme yapma!)
-const useFisildaJoker = async () => {
-  if (jokers.fisilida <= 0 || isJokerActive) return;
+    setHighlightedLetters(positions);
+    setGameGrid(newGrid);
 
-  playSpecialSound('/fisilda.mp3');
-  
-  setIsJokerActive(true);
-  
-  const possibleWords = [
-    'KEDİ', 'MASA', 'ARABA', 'OKUL', 'KİTAP', 'DENİZ', 'AĞAÇ', 'ÇİÇEK',
-    'DOSTLUK', 'GÜNEŞ', 'YILDIZ', 'BULUT', 'RÜZGAR', 'ATEŞ', 'TOPRAK',
-    'SEVGİ', 'MUTLULUK', 'UMUT', 'HAYAL', 'RENKLER', 'MÜZİK', 'DANS', 'ŞARKI',
-    'OYUN', 'SPOR', 'FUTBOL', 'BASKETBOL', 'TENİS', 'YÜZME', 'KOŞU', 'BİSİKLET',
-    'YEMEK', 'EKMEK', 'PEYNİR', 'DOMATES', 'SALATA', 'ÇORBA', 'MEYVE',
-    'ELMA', 'ARMUT', 'ÇİLEK', 'KIRAZ', 'ÜZÜM', 'PORTAKAL', 'MANGO',
-    'SEBZE', 'HAVUÇ', 'PATLICAN', 'BİBER', 'SOĞAN', 'SARIMSAK', 'PATATES'
-  ];
-  
-  const availableLetters = gameGrid.flat();
-  const letterCount: { [key: string]: number } = {};
-  
-  availableLetters.forEach(letter => {
-    letterCount[letter] = (letterCount[letter] || 0) + 1;
-  });
-  
-  // Önce wordlist'ten kontrol et (eğer yüklenmişse)
-  let validWords = [];
-  
-  if (wordlistLoaded) {
-    // Wordlist'ten kelimeleri ORİJİNAL HALİYLE al (çevirme yapma!)
-    const wordArray = Array.from(wordlist).map(word => word.toLocaleUpperCase('tr-TR').trim());
-    validWords = wordArray.filter(word => {
-      if (usedWords.has(word)) return false;
-      
-      const wordLetterCount: { [key: string]: number } = {};
-      for (const letter of word) {
-        wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
-      }
-      
-      for (const [letter, needed] of Object.entries(wordLetterCount)) {
-        if ((letterCount[letter] || 0) < needed) {
-          return false;
+    // ⚠️ Server'a grid gönderme - sadece lokal değişiklik
+    console.log("🎯 Değiştir jokeri - sadece lokal grid değişikliği");
+
+    const jokerUsed = await useJoker("degistir");
+    if (!jokerUsed) {
+      console.error("❌ Değiştir joker kullanılamadı!");
+      setIsJokerActive(false);
+      setGridSyncPaused(false);
+      return;
+    }
+
+    setTimeout(() => {
+      setHighlightedLetters([]);
+      setIsJokerActive(false);
+      // Grid sync'i sürekli kapalı tut - değiştir jokeri lokal kalmalı
+    }, 1000);
+
+    setSelectedLetters([]);
+    setCurrentWord("");
+
+    playSound("correctWord");
+  };
+
+  // 2. Fısılda Jokeri - Sözlükteki orijinal haliyle göster (çevirme yapma!)
+  const useFisildaJoker = async () => {
+    if (jokers.fisilida <= 0 || isJokerActive) return;
+
+    playSpecialSound("/fisilda.mp3");
+
+    setIsJokerActive(true);
+
+    const possibleWords = [
+      "KEDİ",
+      "MASA",
+      "ARABA",
+      "OKUL",
+      "KİTAP",
+      "DENİZ",
+      "AĞAÇ",
+      "ÇİÇEK",
+      "DOSTLUK",
+      "GÜNEŞ",
+      "YILDIZ",
+      "BULUT",
+      "RÜZGAR",
+      "ATEŞ",
+      "TOPRAK",
+      "SEVGİ",
+      "MUTLULUK",
+      "UMUT",
+      "HAYAL",
+      "RENKLER",
+      "MÜZİK",
+      "DANS",
+      "ŞARKI",
+      "OYUN",
+      "SPOR",
+      "FUTBOL",
+      "BASKETBOL",
+      "TENİS",
+      "YÜZME",
+      "KOŞU",
+      "BİSİKLET",
+      "YEMEK",
+      "EKMEK",
+      "PEYNİR",
+      "DOMATES",
+      "SALATA",
+      "ÇORBA",
+      "MEYVE",
+      "ELMA",
+      "ARMUT",
+      "ÇİLEK",
+      "KIRAZ",
+      "ÜZÜM",
+      "PORTAKAL",
+      "MANGO",
+      "SEBZE",
+      "HAVUÇ",
+      "PATLICAN",
+      "BİBER",
+      "SOĞAN",
+      "SARIMSAK",
+      "PATATES",
+    ];
+
+    const availableLetters = gameGrid.flat();
+    const letterCount: { [key: string]: number } = {};
+
+    availableLetters.forEach((letter) => {
+      letterCount[letter] = (letterCount[letter] || 0) + 1;
+    });
+
+    // Önce wordlist'ten kontrol et (eğer yüklenmişse)
+    let validWords = [];
+
+    if (wordlistLoaded) {
+      // Wordlist'ten kelimeleri ORİJİNAL HALİYLE al (çevirme yapma!)
+      const wordArray = Array.from(wordlist).map((word) => word.toLocaleUpperCase("tr-TR").trim());
+      validWords = wordArray.filter((word) => {
+        if (usedWords.has(word)) return false;
+
+        const wordLetterCount: { [key: string]: number } = {};
+        for (const letter of word) {
+          wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
+        }
+
+        for (const [letter, needed] of Object.entries(wordLetterCount)) {
+          if ((letterCount[letter] || 0) < needed) {
+            return false;
+          }
+        }
+        return true;
+      });
+    } else {
+      // Fallback: önceden tanımlı kelimeler
+      validWords = possibleWords.filter((word) => {
+        if (usedWords.has(word.toLocaleUpperCase("tr-TR"))) return false;
+
+        const wordLetterCount: { [key: string]: number } = {};
+        for (const letter of word) {
+          wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
+        }
+
+        for (const [letter, needed] of Object.entries(wordLetterCount)) {
+          if ((letterCount[letter] || 0) < needed) {
+            return false;
+          }
+        }
+        return true;
+      });
+    }
+
+    if (validWords.length > 0) {
+      // Kelime bulundu
+      const selectedWord = validWords[Math.floor(Math.random() * validWords.length)];
+
+      // Kelime sırasına göre harfleri bul - HER HARF İÇİN FARKLI POZİSYON
+      const wordPositions: { row: number; col: number }[] = [];
+      const usedPositions: { row: number; col: number }[] = [];
+
+      // ONDALIK için: O-N-D-A-L-I-K sırasıyla (sözlükteki haliyle)
+      for (const letter of selectedWord) {
+        let letterFound = false;
+        for (let row = 0; row < 4; row++) {
+          for (let col = 0; col < 4; col++) {
+            if (gameGrid[row][col] === letter && !usedPositions.some((p) => p.row === row && p.col === col)) {
+              wordPositions.push({ row, col });
+              usedPositions.push({ row, col });
+              letterFound = true;
+              break;
+            }
+          }
+          if (letterFound) break;
         }
       }
-      return true;
-    });
-  } else {
-    // Fallback: önceden tanımlı kelimeler
-    validWords = possibleWords.filter(word => {
-      if (usedWords.has(word.toLocaleUpperCase('tr-TR'))) return false;
-      
-      const wordLetterCount: { [key: string]: number } = {};
-      for (const letter of word) {
-        wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
+
+      console.log(`💡 Fısılda: "${selectedWord}" kelimesi (sözlük hali) için ${wordPositions.length} pozisyon bulundu`);
+
+      // Kelime sırasına göre harfleri sırayla yak
+      for (let i = 0; i < wordPositions.length; i++) {
+        setTimeout(() => {
+          setHighlightedLetters([wordPositions[i]]);
+          playSound("letterSelect");
+
+          setTimeout(() => {
+            setHighlightedLetters([]);
+          }, 400);
+        }, i * 500);
       }
-      
-      for (const [letter, needed] of Object.entries(wordLetterCount)) {
-        if ((letterCount[letter] || 0) < needed) {
-          return false;
+
+      setTimeout(
+        () => {
+          setIsJokerActive(false);
+        },
+        wordPositions.length * 500 + 800,
+      );
+
+      // SADECE BAŞARILI DURUMDA JOKER SAYISINI AZALT
+      const jokerUsed = await useJoker("fisilida");
+      if (!jokerUsed) {
+        console.error("❌ Fısılda joker kullanılamadı!");
+        setIsJokerActive(false);
+        return;
+      }
+    } else {
+      // Kelime bulunamadı
+      setIsJokerActive(false);
+
+      toast({
+        title: "💡 Fısılda Jokeri",
+        description:
+          "Şu an kulağına fısıldayacağım bir kelime aklıma gelmedi. Eğer değiştir jokeri ile yeni harfler alırsan belki bir şeyler bulabilirim! 🤔",
+        duration: 4000,
+      });
+    }
+  };
+
+  // 3. Sen Yaz Jokeri - Otomatik kelime üret ve gönder
+  const useSenYazJoker = async () => {
+    if (jokers.senYaz <= 0 || isJokerActive) return;
+
+    playSpecialSound("/senyaz.mp3");
+
+    setIsJokerActive(true);
+
+    const possibleWords = [
+      "KEDİ",
+      "MASA",
+      "ARABA",
+      "OKUL",
+      "KİTAP",
+      "DENİZ",
+      "AĞAÇ",
+      "ÇİÇEK",
+      "DOSTLUK",
+      "GÜNEŞ",
+      "YILDIZ",
+      "BULUT",
+      "RÜZGAR",
+      "ATEŞ",
+      "TOPRAK",
+      "SEVGİ",
+      "MUTLULUK",
+      "UMUT",
+      "HAYAL",
+      "RENKLER",
+      "MÜZİK",
+      "DANS",
+      "ŞARKI",
+      "OYUN",
+      "SPOR",
+      "FUTBOL",
+      "BASKETBOL",
+      "TENİS",
+      "YÜZME",
+      "KOŞU",
+      "BİSİKLET",
+    ];
+
+    const availableLetters = gameGrid.flat();
+    const letterCount: { [key: string]: number } = {};
+
+    availableLetters.forEach((letter) => {
+      letterCount[letter] = (letterCount[letter] || 0) + 1;
+    });
+
+    // Önce wordlist'ten kontrol et (eğer yüklenmişse)
+    let validWords = [];
+
+    if (wordlistLoaded) {
+      // Wordlist'ten mevcut harflerle yapılabilecek kelimeleri bul
+      const wordArray = Array.from(wordlist);
+      validWords = wordArray.filter((word) => {
+        if (usedWords.has(word)) return false;
+
+        const wordLetterCount: { [key: string]: number } = {};
+        for (const letter of word) {
+          wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
         }
-      }
-      return true;
-    });
-  }
-  
-  if (validWords.length > 0) {
-    // Kelime bulundu
+
+        for (const [letter, needed] of Object.entries(wordLetterCount)) {
+          if ((letterCount[letter] || 0) < needed) {
+            return false;
+          }
+        }
+        return true;
+      });
+    } else {
+      // Fallback: önceden tanımlı kelimeler
+      validWords = possibleWords.filter((word) => {
+        if (usedWords.has(word.toLocaleUpperCase("tr-TR"))) return false;
+
+        const wordLetterCount: { [key: string]: number } = {};
+        for (const letter of word) {
+          wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
+        }
+
+        for (const [letter, needed] of Object.entries(wordLetterCount)) {
+          if ((letterCount[letter] || 0) < needed) {
+            return false;
+          }
+        }
+        return true;
+      });
+    }
+
+    // ÖNCE KELİME VAR MI DİYE KONTROL ET
+    if (validWords.length === 0) {
+      // Kelime bulunamadı - joker sayısını AZALTMA!
+      setIsJokerActive(false);
+
+      toast({
+        title: "✍️ Sen Yaz Jokeri",
+        description: "Düşünüyorum ama henüz bulamadım. İstersen harfleri değiştir öyle deneyelim! 🤯",
+        duration: 4000,
+      });
+
+      return; // Fonksiyondan çık, joker azaltma
+    }
+
+    // Kelime var, şimdi işlemi dene
     const selectedWord = validWords[Math.floor(Math.random() * validWords.length)];
-    
-    // Kelime sırasına göre harfleri bul - HER HARF İÇİN FARKLI POZİSYON
-    const wordPositions: {row: number, col: number}[] = [];
-    const usedPositions: {row: number, col: number}[] = [];
-    
-    // ONDALIK için: O-N-D-A-L-I-K sırasıyla (sözlükteki haliyle)
+    const normalizedSelectedWord = selectedWord.toLocaleUpperCase("tr-TR");
+
+    // ÇİFTE KONTROL: Bu kelime gerçekten kullanılmamış mı?
+    if (usedWords.has(normalizedSelectedWord)) {
+      console.log("⚠️ Sen Yaz Jokeri: Seçilen kelime zaten kullanılmış:", selectedWord);
+      setIsJokerActive(false);
+
+      toast({
+        title: "✍️ Sen Yaz Jokeri",
+        description: "Düşünüyorum ama henüz bulamadım. İstersen harfleri değiştir öyle deneyelim! 🤯",
+        duration: 4000,
+      });
+
+      return; // Fonksiyondan çık, joker azaltma
+    }
+
+    // Harflerin pozisyonlarını bul
+    const wordPositions: { letter: string; row: number; col: number }[] = [];
+    const usedPositions: { row: number; col: number }[] = [];
+    let canFormWord = true;
+
     for (const letter of selectedWord) {
       let letterFound = false;
       for (let row = 0; row < 4; row++) {
         for (let col = 0; col < 4; col++) {
-          if (gameGrid[row][col] === letter && 
-              !usedPositions.some(p => p.row === row && p.col === col)) {
-            wordPositions.push({ row, col });
+          if (gameGrid[row][col] === letter && !usedPositions.some((p) => p.row === row && p.col === col)) {
+            wordPositions.push({ letter, row, col });
             usedPositions.push({ row, col });
             letterFound = true;
             break;
@@ -1951,378 +2361,225 @@ const useFisildaJoker = async () => {
         }
         if (letterFound) break;
       }
+
+      if (!letterFound) {
+        canFormWord = false;
+        break;
+      }
     }
-    
-    console.log(`💡 Fısılda: "${selectedWord}" kelimesi (sözlük hali) için ${wordPositions.length} pozisyon bulundu`);
-    
-    // Kelime sırasına göre harfleri sırayla yak
-    for (let i = 0; i < wordPositions.length; i++) {
-      setTimeout(() => {
-        setHighlightedLetters([wordPositions[i]]);
-        playSound('letterSelect');
-        
-        setTimeout(() => {
-          setHighlightedLetters([]);
-        }, 400);
-      }, i * 500);
-    }
-    
-    setTimeout(() => {
+
+    // Eğer kelimeyi oluşturamıyorsak
+    if (!canFormWord || wordPositions.length !== selectedWord.length) {
+      console.log("⚠️ Sen Yaz Jokeri: Kelime ızgarada oluşturulamıyor:", selectedWord);
       setIsJokerActive(false);
-    }, wordPositions.length * 500 + 800);
-    
-    // SADECE BAŞARILI DURUMDA JOKER SAYISINI AZALT
-    const jokerUsed = await useJoker('fisilida');
-    if (!jokerUsed) {
-      console.error('❌ Fısılda joker kullanılamadı!');
-      setIsJokerActive(false);
-      return;
-    }
-    
-  } else {
-    // Kelime bulunamadı
-    setIsJokerActive(false);
-    
-    toast({
-      title: '💡 Fısılda Jokeri',
-      description: 'Şu an kulağına fısıldayacağım bir kelime aklıma gelmedi. Eğer değiştir jokeri ile yeni harfler alırsan belki bir şeyler bulabilirim! 🤔',
-      duration: 4000,
-    });
-  }
-};
 
-  // 3. Sen Yaz Jokeri - Otomatik kelime üret ve gönder
-const useSenYazJoker = async () => {
-  if (jokers.senYaz <= 0 || isJokerActive) return;
-
-  playSpecialSound('/senyaz.mp3');
-  
-  setIsJokerActive(true);
-  
-  const possibleWords = [
-    'KEDİ', 'MASA', 'ARABA', 'OKUL', 'KİTAP', 'DENİZ', 'AĞAÇ', 'ÇİÇEK',
-    'DOSTLUK', 'GÜNEŞ', 'YILDIZ', 'BULUT', 'RÜZGAR', 'ATEŞ', 'TOPRAK',
-    'SEVGİ', 'MUTLULUK', 'UMUT', 'HAYAL', 'RENKLER', 'MÜZİK', 'DANS', 'ŞARKI',
-    'OYUN', 'SPOR', 'FUTBOL', 'BASKETBOL', 'TENİS', 'YÜZME', 'KOŞU', 'BİSİKLET'
-  ];
-  
-  const availableLetters = gameGrid.flat();
-  const letterCount: { [key: string]: number } = {};
-  
-  availableLetters.forEach(letter => {
-    letterCount[letter] = (letterCount[letter] || 0) + 1;
-  });
-  
-  // Önce wordlist'ten kontrol et (eğer yüklenmişse)
-  let validWords = [];
-  
-  if (wordlistLoaded) {
-    // Wordlist'ten mevcut harflerle yapılabilecek kelimeleri bul
-    const wordArray = Array.from(wordlist);
-    validWords = wordArray.filter(word => {
-      if (usedWords.has(word)) return false;
-      
-      const wordLetterCount: { [key: string]: number } = {};
-      for (const letter of word) {
-        wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
-      }
-      
-      for (const [letter, needed] of Object.entries(wordLetterCount)) {
-        if ((letterCount[letter] || 0) < needed) {
-          return false;
-        }
-      }
-      return true;
-    });
-  } else {
-    // Fallback: önceden tanımlı kelimeler
-    validWords = possibleWords.filter(word => {
-      if (usedWords.has(word.toLocaleUpperCase('tr-TR'))) return false;
-      
-      const wordLetterCount: { [key: string]: number } = {};
-      for (const letter of word) {
-        wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
-      }
-      
-      for (const [letter, needed] of Object.entries(wordLetterCount)) {
-        if ((letterCount[letter] || 0) < needed) {
-          return false;
-        }
-      }
-      return true;
-    });
-  }
-  
-  // ÖNCE KELİME VAR MI DİYE KONTROL ET
-  if (validWords.length === 0) {
-    // Kelime bulunamadı - joker sayısını AZALTMA!
-    setIsJokerActive(false);
-    
-    toast({
-      title: '✍️ Sen Yaz Jokeri',
-      description: 'Düşünüyorum ama henüz bulamadım. İstersen harfleri değiştir öyle deneyelim! 🤯',
-      duration: 4000,
-    });
-    
-    return; // Fonksiyondan çık, joker azaltma
-  }
-  
-  // Kelime var, şimdi işlemi dene
-  const selectedWord = validWords[Math.floor(Math.random() * validWords.length)];
-  const normalizedSelectedWord = selectedWord.toLocaleUpperCase('tr-TR');
-  
-  // ÇİFTE KONTROL: Bu kelime gerçekten kullanılmamış mı?
-  if (usedWords.has(normalizedSelectedWord)) {
-    console.log('⚠️ Sen Yaz Jokeri: Seçilen kelime zaten kullanılmış:', selectedWord);
-    setIsJokerActive(false);
-    
-    toast({
-      title: '✍️ Sen Yaz Jokeri',
-      description: 'Düşünüyorum ama henüz bulamadım. İstersen harfleri değiştir öyle deneyelim! 🤯',
-      duration: 4000,
-    });
-    
-    return; // Fonksiyondan çık, joker azaltma
-  }
-  
-  // Harflerin pozisyonlarını bul
-  const wordPositions: {letter: string, row: number, col: number}[] = [];
-  const usedPositions: {row: number, col: number}[] = [];
-  let canFormWord = true;
-  
-  for (const letter of selectedWord) {
-    let letterFound = false;
-    for (let row = 0; row < 4; row++) {
-      for (let col = 0; col < 4; col++) {
-        if (gameGrid[row][col] === letter && 
-            !usedPositions.some(p => p.row === row && p.col === col)) {
-          wordPositions.push({ letter, row, col });
-          usedPositions.push({ row, col });
-          letterFound = true;
-          break;
-        }
-      }
-      if (letterFound) break;
-    }
-    
-    if (!letterFound) {
-      canFormWord = false;
-      break;
-    }
-  }
-  
-  // Eğer kelimeyi oluşturamıyorsak
-  if (!canFormWord || wordPositions.length !== selectedWord.length) {
-    console.log('⚠️ Sen Yaz Jokeri: Kelime ızgarada oluşturulamıyor:', selectedWord);
-    setIsJokerActive(false);
-    
-    toast({
-      title: '✍️ Sen Yaz Jokeri',
-      description: 'Düşünüyorum ama henüz bulamadım. İstersen harfleri değiştir öyle deneyelim! 🤯',
-      duration: 4000,
-    });
-    
-    return; // Fonksiyondan çık, joker azaltma
-  }
-  
-  // Her şey tamam, şimdi kelimeyi yaz
-  setCurrentWord(selectedWord);
-  setSelectedLetters(wordPositions);
-  
-  setTimeout(async () => {
-    let jokerSuccess = false;
-    
-    try {
-      const normalizedWord = selectedWord.toLocaleUpperCase('tr-TR');
-      
-      // Son kontrol: Kelime hala kullanılmamış mı?
-      if (!usedWords.has(normalizedWord)) {
-        const result = validateWordLocal(selectedWord);
-        
-        if (result.isValid) {
-          const newUsedWords = new Set([...usedWords, normalizedWord]);
-          setUsedWords(newUsedWords);
-          
-          playSound('correctWord');
-          const newScore = playerScore + result.points;
-          setPlayerScore(newScore);
-          
-          // Calculate first word time (in seconds)
-          const wordTimestamp = Date.now();
-          if (firstWordTime === null && gameStartTime > 0) {
-            const timeToFirstWord = Math.floor((wordTimestamp - gameStartTime) / 1000);
-            setFirstWordTime(timeToFirstWord);
-            console.log('⚡ İlk kelime süresi:', timeToFirstWord, 'saniye');
-          }
-          
-          setPlayerWords(prev => [...prev, selectedWord]);
-          setPlayerWordsWithScores(prev => [...prev, { word: selectedWord, score: result.points, timestamp: wordTimestamp }]);
-          
-          triggerWordEffects();
-          
-          if (currentRoom) {
-            await updateScore(newScore);
-          }
-          
-          jokerSuccess = true; // İşlem başarılı
-          console.log('✅ Sen Yaz Jokeri başarılı:', selectedWord, 'Puan:', result.points);
-        } else {
-          console.log('❌ Sen Yaz Jokeri: Kelime geçersiz:', selectedWord);
-        }
-      } else {
-        console.log('❌ Sen Yaz Jokeri: Kelime zaten kullanılmış:', selectedWord);
-      }
-    } catch (error) {
-      console.error('❌ Sen Yaz Jokeri hatası:', error);
-    }
-    
-    setCurrentWord('');
-    setSelectedLetters([]);
-    setIsJokerActive(false);
-    
-    // SADECE GERÇEKTEN BAŞARILI OLDUĞUNDA JOKER SAYISINI AZALT
-    if (jokerSuccess) {
-      const jokerUsed = await useJoker('senYaz');
-      if (jokerUsed) {
-        console.log('🎯 Sen Yaz Jokeri harcanı!');
-      } else {
-        console.error('❌ Sen Yaz joker kullanılamadı!');
-      }
-      console.log('🎯 Sen Yaz Jokeri harcanı!');
-    } else {
-      console.log('💾 Sen Yaz Jokeri korundu (işlem başarısız)!');
-    }
-  }, 1500);
-};
-  // Sync grid with room data and fetch avatars
- useEffect(() => {
-  const fetchAvatars = async () => {
-    if (!user) return;
-  
-    const { data: playerData } = await supabase
-      .from('profiles')
-      .select('avatar_url')
-      .eq('id', user.id)
-      .maybeSingle();
-  
-    if (playerData?.avatar_url) {
-      setPlayerAvatar(playerData.avatar_url);
-    }
-
-    // Private room ve tournament modlarında rakip bilgilerini al
-    if ((gameMode === 'private-room' || gameMode === 'tournament') && participants.length >= 2) {
-      console.log('👥 Multi-player mode - participants kontrol ediliyor:', participants.length);
-      
-      const opponent = participants.find(p => {
-        // Tournament modunda string ID'ler kullanılıyor
-        if (gameMode === 'tournament') {
-          return p.user_id !== user.id && !p.is_bot;
-        }
-        // Private room modunda UUID'ler kullanılıyor
-        return p.user_id !== user.id && !p.is_bot;
+      toast({
+        title: "✍️ Sen Yaz Jokeri",
+        description: "Düşünüyorum ama henüz bulamadım. İstersen harfleri değiştir öyle deneyelim! 🤯",
+        duration: 4000,
       });
-      
-      if (opponent) {
-        console.log('👤 Gerçek rakip bulundu:', {
-          userId: typeof opponent.user_id === 'string' ? opponent.user_id.slice(-8) : opponent.user_id,
-          username: (opponent as any).profiles?.username,
-          avatar: (opponent as any).profiles?.avatar_url
-        });
-        
-        // Tournament modunda profil bilgilerini fetch et
-        if (gameMode === 'tournament' && opponent.user_id) {
-          const { data: opponentProfile } = await supabase
-            .from('profiles')
-            .select('avatar_url, username')
-            .eq('id', opponent.user_id)
-            .maybeSingle();
-          
-          if (opponentProfile) {
-            if (opponentProfile.avatar_url) {
-              setOpponentAvatar(opponentProfile.avatar_url);
+
+      return; // Fonksiyondan çık, joker azaltma
+    }
+
+    // Her şey tamam, şimdi kelimeyi yaz
+    setCurrentWord(selectedWord);
+    setSelectedLetters(wordPositions);
+
+    setTimeout(async () => {
+      let jokerSuccess = false;
+
+      try {
+        const normalizedWord = selectedWord.toLocaleUpperCase("tr-TR");
+
+        // Son kontrol: Kelime hala kullanılmamış mı?
+        if (!usedWords.has(normalizedWord)) {
+          const result = validateWordLocal(selectedWord);
+
+          if (result.isValid) {
+            const newUsedWords = new Set([...usedWords, normalizedWord]);
+            setUsedWords(newUsedWords);
+
+            playSound("correctWord");
+            const newScore = playerScore + result.points;
+            setPlayerScore(newScore);
+
+            // Calculate first word time (in seconds)
+            const wordTimestamp = Date.now();
+            if (firstWordTime === null && gameStartTime > 0) {
+              const timeToFirstWord = Math.floor((wordTimestamp - gameStartTime) / 1000);
+              setFirstWordTime(timeToFirstWord);
+              console.log("⚡ İlk kelime süresi:", timeToFirstWord, "saniye");
             }
-            if (opponentProfile.username) {
-              setOpponentName(opponentProfile.username);
+
+            setPlayerWords((prev) => [...prev, selectedWord]);
+            setPlayerWordsWithScores((prev) => [
+              ...prev,
+              { word: selectedWord, score: result.points, timestamp: wordTimestamp },
+            ]);
+
+            triggerWordEffects();
+
+            if (currentRoom) {
+              await updateScore(newScore);
             }
+
+            jokerSuccess = true; // İşlem başarılı
+            console.log("✅ Sen Yaz Jokeri başarılı:", selectedWord, "Puan:", result.points);
+          } else {
+            console.log("❌ Sen Yaz Jokeri: Kelime geçersiz:", selectedWord);
           }
         } else {
-          // Private room modunda mevcut mantığı kullan
-          if ((opponent as any).profiles?.avatar_url) {
-            setOpponentAvatar((opponent as any).profiles.avatar_url);
-          }
-          
-          if ((opponent as any).profiles?.username) {
-            setOpponentName((opponent as any).profiles.username);
-          }
+          console.log("❌ Sen Yaz Jokeri: Kelime zaten kullanılmış:", selectedWord);
         }
-        
-        // ❌ setOpponentScore KALDIRILDI - skorlar artık direkt participants'tan okunuyor
-        // Bu gereksiz güncelleme titreme yapıyordu
+      } catch (error) {
+        console.error("❌ Sen Yaz Jokeri hatası:", error);
+      }
+
+      setCurrentWord("");
+      setSelectedLetters([]);
+      setIsJokerActive(false);
+
+      // SADECE GERÇEKTEN BAŞARILI OLDUĞUNDA JOKER SAYISINI AZALT
+      if (jokerSuccess) {
+        const jokerUsed = await useJoker("senYaz");
+        if (jokerUsed) {
+          console.log("🎯 Sen Yaz Jokeri harcanı!");
+        } else {
+          console.error("❌ Sen Yaz joker kullanılamadı!");
+        }
+        console.log("🎯 Sen Yaz Jokeri harcanı!");
+      } else {
+        console.log("💾 Sen Yaz Jokeri korundu (işlem başarısız)!");
+      }
+    }, 1500);
+  };
+  // Sync grid with room data and fetch avatars
+  useEffect(() => {
+    const fetchAvatars = async () => {
+      if (!user) return;
+
+      const { data: playerData } = await supabase.from("profiles").select("avatar_url").eq("id", user.id).maybeSingle();
+
+      if (playerData?.avatar_url) {
+        setPlayerAvatar(playerData.avatar_url);
+      }
+
+      // Private room ve tournament modlarında rakip bilgilerini al
+      if ((gameMode === "private-room" || gameMode === "tournament") && participants.length >= 2) {
+        console.log("👥 Multi-player mode - participants kontrol ediliyor:", participants.length);
+
+        const opponent = participants.find((p) => {
+          // Tournament modunda string ID'ler kullanılıyor
+          if (gameMode === "tournament") {
+            return p.user_id !== user.id && !p.is_bot;
+          }
+          // Private room modunda UUID'ler kullanılıyor
+          return p.user_id !== user.id && !p.is_bot;
+        });
+
+        if (opponent) {
+          console.log("👤 Gerçek rakip bulundu:", {
+            userId: typeof opponent.user_id === "string" ? opponent.user_id.slice(-8) : opponent.user_id,
+            username: (opponent as any).profiles?.username,
+            avatar: (opponent as any).profiles?.avatar_url,
+          });
+
+          // Tournament modunda profil bilgilerini fetch et
+          if (gameMode === "tournament" && opponent.user_id) {
+            const { data: opponentProfile } = await supabase
+              .from("profiles")
+              .select("avatar_url, username")
+              .eq("id", opponent.user_id)
+              .maybeSingle();
+
+            if (opponentProfile) {
+              if (opponentProfile.avatar_url) {
+                setOpponentAvatar(opponentProfile.avatar_url);
+              }
+              if (opponentProfile.username) {
+                setOpponentName(opponentProfile.username);
+              }
+            }
+          } else {
+            // Private room modunda mevcut mantığı kullan
+            if ((opponent as any).profiles?.avatar_url) {
+              setOpponentAvatar((opponent as any).profiles.avatar_url);
+            }
+
+            if ((opponent as any).profiles?.username) {
+              setOpponentName((opponent as any).profiles.username);
+            }
+          }
+
+          // ❌ setOpponentScore KALDIRILDI - skorlar artık direkt participants'tan okunuyor
+          // Bu gereksiz güncelleme titreme yapıyordu
+        }
+      }
+
+      // ❌ random-match için ayrı güncelleme kaldırıldı
+    };
+
+    fetchAvatars();
+  }, [user?.id, participants, gameMode, gameEnded]);
+
+  // 🎯 MP modlarında skoru participants'tan senkronize et (tek kaynak) - 0'a düşmeyi engelle
+  useEffect(() => {
+    if (gameMode !== "private-room" && gameMode !== "random-match") return;
+    if (!user) return;
+
+    const me = participants.find((p) => String(p.user_id) === String(user.id));
+    const opp = participants.find((p) => p.user_id && String(p.user_id) !== String(user.id) && !p.is_bot);
+
+    // 🛡️ Rakip skoru - SADECE geçerli ve artan bir skor varsa güncelle (0'a düşmeyi engelle)
+    if (opp && typeof (opp as any).score === "number") {
+      const newOppScore = (opp as any).score;
+      // Oyun başladıysa ve yeni skor mevcut skordan küçükse güncelleme (reset dışında)
+      if (gameStarted && newOppScore < opponentScore && opponentScore > 0) {
+        console.log("⚠️ Rakip skoru düşüyor, güncelleme atlandı:", opponentScore, "-x->", newOppScore);
+        return;
+      }
+      if (newOppScore !== opponentScore) {
+        console.log("🎯 Participants sync -> opponent score:", opponentScore, "->", newOppScore);
+        setOpponentScore(newOppScore);
       }
     }
-    
-    // ❌ random-match için ayrı güncelleme kaldırıldı
-  };
 
-  fetchAvatars();
-}, [user?.id, participants, gameMode, gameEnded]);
-
-// 🎯 MP modlarında skoru participants'tan senkronize et (tek kaynak) - 0'a düşmeyi engelle
-useEffect(() => {
-  if (gameMode !== 'private-room' && gameMode !== 'random-match') return;
-  if (!user) return;
-
-  const me = participants.find(p => String(p.user_id) === String(user.id));
-  const opp = participants.find(p => p.user_id && String(p.user_id) !== String(user.id) && !p.is_bot);
-
-  // 🛡️ Rakip skoru - SADECE geçerli ve artan bir skor varsa güncelle (0'a düşmeyi engelle)
-  if (opp && typeof (opp as any).score === 'number') {
-    const newOppScore = (opp as any).score;
-    // Oyun başladıysa ve yeni skor mevcut skordan küçükse güncelleme (reset dışında)
-    if (gameStarted && newOppScore < opponentScore && opponentScore > 0) {
-      console.log('⚠️ Rakip skoru düşüyor, güncelleme atlandı:', opponentScore, '-x->', newOppScore);
-      return;
+    // 🛡️ Kendi skorunu da aynı mantıkla senkronize et
+    if (me && typeof (me as any).score === "number") {
+      const newMyScore = (me as any).score;
+      if (gameStarted && newMyScore < playerScore && playerScore > 0) {
+        console.log("⚠️ Kendi skorum düşüyor, güncelleme atlandı:", playerScore, "-x->", newMyScore);
+        return;
+      }
+      if (newMyScore !== playerScore) {
+        console.log("🎯 Participants sync -> player score:", playerScore, "->", newMyScore);
+        setPlayerScore(newMyScore);
+      }
     }
-    if (newOppScore !== opponentScore) {
-      console.log('🎯 Participants sync -> opponent score:', opponentScore, '->', newOppScore);
-      setOpponentScore(newOppScore);
-    }
-  }
-
-  // 🛡️ Kendi skorunu da aynı mantıkla senkronize et
-  if (me && typeof (me as any).score === 'number') {
-    const newMyScore = (me as any).score;
-    if (gameStarted && newMyScore < playerScore && playerScore > 0) {
-      console.log('⚠️ Kendi skorum düşüyor, güncelleme atlandı:', playerScore, '-x->', newMyScore);
-      return;
-    }
-    if (newMyScore !== playerScore) {
-      console.log('🎯 Participants sync -> player score:', playerScore, '->', newMyScore);
-      setPlayerScore(newMyScore);
-    }
-  }
-}, [participants, gameMode, user?.id, gameStarted, opponentScore, playerScore]);
+  }, [participants, gameMode, user?.id, gameStarted, opponentScore, playerScore]);
 
   // Load wordlist from public/wordlist.txt
   useEffect(() => {
     const loadWordlist = async () => {
       try {
-        console.log('📖 Loading wordlist from public/wordlist.txt...');
-        const response = await fetch('/wordlist.txt');
+        console.log("📖 Loading wordlist from public/wordlist.txt...");
+        const response = await fetch("/wordlist.txt");
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const text = await response.text();
-        const words = text.split('\n')
-          .map(word => word.trim().toLocaleUpperCase('tr-TR'))
-          .filter(word => word.length >= 3); // Minimum 3 harf
-        
+        const words = text
+          .split("\n")
+          .map((word) => word.trim().toLocaleUpperCase("tr-TR"))
+          .filter((word) => word.length >= 3); // Minimum 3 harf
+
         const wordSet = new Set(words);
         setWordlist(wordSet);
         setWordlistLoaded(true);
         console.log(`✅ Wordlist loaded (TR): ${wordSet.size} words`);
       } catch (error) {
-        console.error('❌ Failed to load wordlist:', error);
+        console.error("❌ Failed to load wordlist:", error);
         setWordlistLoaded(false);
       }
     };
@@ -2331,875 +2588,903 @@ useEffect(() => {
   }, []);
 
   // Turkish locale uppercase helper
-  const toTRUpper = (s: string): string => s.toLocaleUpperCase('tr-TR').trim();
+  const toTRUpper = (s: string): string => s.toLocaleUpperCase("tr-TR").trim();
 
   // Local word validation - Sözlükteki kelimeleri Türkçe'ye çevir
-const validateWordLocal = useCallback((word: string): { isValid: boolean; points: number; message: string } => {
-  const upperWord = toTRUpper(word);
-  
-  console.log('🔍 Word validation (exact TR match):', {
-    originalWord: word,
-    upperWord,
-    globalUsedCount: globalUsedWords.size,
-    isUsed: globalUsedWords.has(upperWord)
-  });
-  
-  if (upperWord.length < 3) {
-    return { isValid: false, points: 0, message: 'Kelime en az 3 harf olmalıdır' };
-  }
+  const validateWordLocal = useCallback(
+    (word: string): { isValid: boolean; points: number; message: string } => {
+      const upperWord = toTRUpper(word);
 
-  const turkishPattern = /^[A-ZÇĞIİÖŞÜ]+$/;
-  if (!turkishPattern.test(upperWord)) {
-    return { isValid: false, points: 0, message: 'Sadece Türkçe harfler kullanabilirsiniz' };
-  }
+      console.log("🔍 Word validation (exact TR match):", {
+        originalWord: word,
+        upperWord,
+        globalUsedCount: globalUsedWords.size,
+        isUsed: globalUsedWords.has(upperWord),
+      });
 
-  if (wordlistLoaded) {
-    const wordExists = wordlist.has(upperWord);
-    if (!wordExists) {
-      return { isValid: false, points: 0, message: 'Bu kelime sözlükte bulunamadı' };
-    }
-  } else {
-    return { isValid: false, points: 0, message: 'Sözlük yüklenemedi.' };
-  }
+      if (upperWord.length < 3) {
+        return { isValid: false, points: 0, message: "Kelime en az 3 harf olmalıdır" };
+      }
 
-  const calculatePoints = (w: string): number => {
-    const basePoints = w.length * 2;
-    let rareLetterBonus = 0;
-    const rareLetters = ['J', 'Z', 'Ğ', 'Ü', 'Ö', 'Ç', 'Ş'];
-    for (const letter of w) {
-      if (rareLetters.includes(letter)) rareLetterBonus += 3;
-    }
-    return Math.max(basePoints + rareLetterBonus, 5);
-  };
+      const turkishPattern = /^[A-ZÇĞIİÖŞÜ]+$/;
+      if (!turkishPattern.test(upperWord)) {
+        return { isValid: false, points: 0, message: "Sadece Türkçe harfler kullanabilirsiniz" };
+      }
 
-  const points = calculatePoints(upperWord);
-  
-  return { isValid: true, points, message: 'Geçerli kelime' };
-}, [wordlist, wordlistLoaded, globalUsedWords]);
-  
+      if (wordlistLoaded) {
+        const wordExists = wordlist.has(upperWord);
+        if (!wordExists) {
+          return { isValid: false, points: 0, message: "Bu kelime sözlükte bulunamadı" };
+        }
+      } else {
+        return { isValid: false, points: 0, message: "Sözlük yüklenemedi." };
+      }
+
+      const calculatePoints = (w: string): number => {
+        const basePoints = w.length * 2;
+        let rareLetterBonus = 0;
+        const rareLetters = ["J", "Z", "Ğ", "Ü", "Ö", "Ç", "Ş"];
+        for (const letter of w) {
+          if (rareLetters.includes(letter)) rareLetterBonus += 3;
+        }
+        return Math.max(basePoints + rareLetterBonus, 5);
+      };
+
+      const points = calculatePoints(upperWord);
+
+      return { isValid: true, points, message: "Geçerli kelime" };
+    },
+    [wordlist, wordlistLoaded, globalUsedWords],
+  );
+
   useEffect(() => {
     const initializeGame = async () => {
       fadeOutBackgroundMusic(1500);
-      
-      console.log('GamePage isPremium:', isPremium);
-      
+
+      console.log("GamePage isPremium:", isPremium);
+
       if (!isPremium) {
-        console.log('User is not premium, consuming credit...');
+        console.log("User is not premium, consuming credit...");
         const creditConsumed = await consumeCredit();
-        console.log('Credit consumed result:', creditConsumed);
+        console.log("Credit consumed result:", creditConsumed);
         if (!creditConsumed) {
           toast({
-            title: 'Yetersiz Hak',
-            description: 'Oyun oynamak için yeterli hakkınız yok. Market\'ten hak satın alabilirsiniz.',
-            variant: 'destructive',
+            title: "Yetersiz Hak",
+            description: "Oyun oynamak için yeterli hakkınız yok. Market'ten hak satın alabilirsiniz.",
+            variant: "destructive",
           });
-          navigate('/market');
+          navigate("/market");
           return;
         }
       } else {
-        console.log('User is premium, skipping credit consumption');
+        console.log("User is premium, skipping credit consumption");
       }
     };
-    
+
     initializeGame();
-    
+
     return () => {
       fadeInBackgroundMusic(1000);
     };
   }, []);
 
   // Load tournament match data from URL parameters
-useEffect(() => {
-  const loadTournamentData = async () => {
-    const tournamentId = searchParams.get('tournament');
-    const matchId = searchParams.get('match');
-    
-    if (!tournamentId || !matchId || !user || gameMode !== 'tournament') return;
-    
-    console.log('🏆 Loading tournament match data:', { tournamentId, matchId });
-    
-    try {
-      // Load match data
-      const { data: matchData } = await supabase
-        .from('tournament_matches')
-        .select('*')
-        .eq('id', matchId)
-        .single();
-      
-      if (matchData) {
-        console.log('🏆 Tournament match loaded:', matchData.id);
-        setTournamentMatch(matchData);
-        
-        // 🎯 Eğer countdown_started_at varsa hemen countdown başlat
-        if (matchData.countdown_started_at && !showCountdown && !gameStarted) {
-          console.log('🎯 Tournament countdown başlatılıyor (initial load):', matchData.countdown_started_at);
-          setCountdownServerTime(matchData.countdown_started_at);
-          setShowCountdown(true);
-        }
-      }
-      
-      // Load tournament participants (profiles ayrı sorgu ile eklenecek)
-      const { data: participantsData } = await supabase
-        .from('tournament_participants')
-        .select('*')
-        .eq('tournament_id', tournamentId);
-        
-      if (participantsData) {
-        console.log('👥 Tournament participants loaded:', participantsData.length);
+  useEffect(() => {
+    const loadTournamentData = async () => {
+      const tournamentId = searchParams.get("tournament");
+      const matchId = searchParams.get("match");
 
-        // Profil bilgilerini ayrı çek (user_id text olduğu için FK yok)
-        const userIds = participantsData
-          .filter(p => !p.is_bot && p.user_id && /^[0-9a-fA-F-]{8}-[0-9a-fA-F-]{4}-[0-9a-fA-F-]{4}-[0-9a-fA-F-]{4}-[0-9a-fA-F-]{12}$/.test(String(p.user_id)))
-          .map(p => String(p.user_id));
+      if (!tournamentId || !matchId || !user || gameMode !== "tournament") return;
 
-        let profileMap: Record<string, { username: string | null; avatar_url: string | null }> = {};
-        if (userIds.length > 0) {
-          const { data: profilesData } = await supabase
-            .from('profiles')
-            .select('id, username, avatar_url')
-            .in('id', userIds);
+      console.log("🏆 Loading tournament match data:", { tournamentId, matchId });
 
-          if (profilesData) {
-            profilesData.forEach(pr => {
-              profileMap[pr.id as string] = { username: pr.username, avatar_url: pr.avatar_url };
-            });
+      try {
+        // Load match data
+        const { data: matchData } = await supabase.from("tournament_matches").select("*").eq("id", matchId).single();
+
+        if (matchData) {
+          console.log("🏆 Tournament match loaded:", matchData.id);
+          setTournamentMatch(matchData);
+
+          // 🎯 Eğer countdown_started_at varsa hemen countdown başlat
+          if (matchData.countdown_started_at && !showCountdown && !gameStarted) {
+            console.log("🎯 Tournament countdown başlatılıyor (initial load):", matchData.countdown_started_at);
+            setCountdownServerTime(matchData.countdown_started_at);
+            setShowCountdown(true);
           }
         }
-        
-        if (matchData) {
-          // Filter participants for this match ve profilleri ekle
-          const matchParticipants = participantsData
-            .filter(p => p.user_id === matchData.player1_id || p.user_id === matchData.player2_id)
-            .map(p => ({
-              id: p.id,
-              room_id: searchParams.get('room'),
-              user_id: p.user_id,
-              score: 0,
-              joined_at: p.joined_at,
-              is_bot: p.is_bot,
-              profiles: p.user_id ? profileMap[String(p.user_id)] : undefined
-            }));
-          
-          console.log('🔄 Setting tournament participants:', matchParticipants.length);
-          setTournamentParticipants(matchParticipants);
-        }
-      }
-      
-    } catch (error) {
-      console.error('❌ Error loading tournament data:', error);
-    }
-  };
-  
-  loadTournamentData();
-}, [gameMode, searchParams, user]);
 
-// Load random match room data from URL parameters
-useEffect(() => {
-  if (randomMatchInitRef.current) return;
-  randomMatchInitRef.current = true;
-  const loadRandomMatchData = async () => {
-    const roomId = searchParams.get('room');
-    
-    if (!roomId || !user || gameMode !== 'random-match') return;
-    
-    console.log('🎯 Loading random match room data:', roomId);
-    
-    try {
-      // Önce game_rooms tablosunu kontrol et (özel odalar için)
-      const { data: existingGameRoom } = await supabase
-        .from('game_rooms')
-        .select('*')
-        .eq('id', roomId)
-        .in('status', ['waiting', 'active'])
-        .maybeSingle();
-      
-      if (existingGameRoom) {
-        console.log('🏠 Private/Game room found:', existingGameRoom.id);
-        
-        // Join existing room using GameContext function
-        // Küçük gecikmeli yeniden dene
-        let joined = false;
-        for (let attempt = 1; attempt <= 6; attempt++) {
-          joined = await joinRoom(roomId);
-          if (joined) break;
-          console.warn(`⏳ Existing room join retry ${attempt}/6`);
-          await new Promise(resolve => setTimeout(resolve, 250));
+        // Load tournament participants (profiles ayrı sorgu ile eklenecek)
+        const { data: participantsData } = await supabase
+          .from("tournament_participants")
+          .select("*")
+          .eq("tournament_id", tournamentId);
+
+        if (participantsData) {
+          console.log("👥 Tournament participants loaded:", participantsData.length);
+
+          // Profil bilgilerini ayrı çek (user_id text olduğu için FK yok)
+          const userIds = participantsData
+            .filter(
+              (p) =>
+                !p.is_bot &&
+                p.user_id &&
+                /^[0-9a-fA-F-]{8}-[0-9a-fA-F-]{4}-[0-9a-fA-F-]{4}-[0-9a-fA-F-]{4}-[0-9a-fA-F-]{12}$/.test(
+                  String(p.user_id),
+                ),
+            )
+            .map((p) => String(p.user_id));
+
+          let profileMap: Record<string, { username: string | null; avatar_url: string | null }> = {};
+          if (userIds.length > 0) {
+            const { data: profilesData } = await supabase
+              .from("profiles")
+              .select("id, username, avatar_url")
+              .in("id", userIds);
+
+            if (profilesData) {
+              profilesData.forEach((pr) => {
+                profileMap[pr.id as string] = { username: pr.username, avatar_url: pr.avatar_url };
+              });
+            }
+          }
+
+          if (matchData) {
+            // Filter participants for this match ve profilleri ekle
+            const matchParticipants = participantsData
+              .filter((p) => p.user_id === matchData.player1_id || p.user_id === matchData.player2_id)
+              .map((p) => ({
+                id: p.id,
+                room_id: searchParams.get("room"),
+                user_id: p.user_id,
+                score: 0,
+                joined_at: p.joined_at,
+                is_bot: p.is_bot,
+                profiles: p.user_id ? profileMap[String(p.user_id)] : undefined,
+              }));
+
+            console.log("🔄 Setting tournament participants:", matchParticipants.length);
+            setTournamentParticipants(matchParticipants);
+          }
         }
-        if (!joined) {
-          console.error('❌ Failed to join existing room (tüm denemeler başarısız)');
-          toast({
-            title: 'Bağlantı Hatası',
-            description: 'Oyun odasına bağlanılamadı',
-            variant: 'destructive',
-          });
-          navigate('/');
-          return;
-        }
-        
-        console.log('✅ Joined existing game room');
-        return;
+      } catch (error) {
+        console.error("❌ Error loading tournament data:", error);
       }
-      
-      // Eğer game_rooms'da yoksa matchmaking_rooms'a bak
-      const { data: matchmakingRoom } = await supabase
-        .from('matchmaking_rooms')
-        .select('*')
-        .eq('id', roomId)
-        .maybeSingle();
-      
-      if (!matchmakingRoom) {
-        console.error('❌ Room not found in either table:', roomId);
-        toast({
-          title: 'Hata',
-          description: 'Oyun odası bulunamadı',
-          variant: 'destructive',
-        });
-        navigate('/');
-        return;
-      }
-      
-      console.log('🏠 Matchmaking room found:', matchmakingRoom);
-      
-      // Check if game room already exists for this matchmaking room
-      const { data: existingRoom } = await supabase
-        .from('game_rooms')
-        .select('*')
-        .eq('room_code', roomId)
-        .in('status', ['waiting','active'])
-        .maybeSingle();
-      
-      if (existingRoom) {
-        console.log('🏠 Existing game room found, joining:', existingRoom.id);
-        
-        // Join existing room using GameContext function
-        const joined = await joinRoom(roomId);
-        if (!joined) {
-          console.error('❌ Failed to join existing room');
-          navigate('/');
-          return;
-        }
-      } else {
-        console.log('🏗️ Creating new game room...');
-        const gameRoom = await createRoom(`random-match-${gameType}`, roomId);
-        
-        if (!gameRoom) {
-          console.error('❌ Failed to create game room');
-          navigate('/');
-          return;
-        }
-        
-        console.log('✅ Game room created successfully');
-        
-        // Participants'ın yüklenmesini bekle
-        let retries = 0;
-        const maxRetries = 10;
-        const checkParticipants = () => {
-          if (participants.length >= 2) {
-            console.log('✅ Participants loaded, game ready to start');
+    };
+
+    loadTournamentData();
+  }, [gameMode, searchParams, user]);
+
+  // Load random match room data from URL parameters
+  useEffect(() => {
+    if (randomMatchInitRef.current) return;
+    randomMatchInitRef.current = true;
+    const loadRandomMatchData = async () => {
+      const roomId = searchParams.get("room");
+
+      if (!roomId || !user || gameMode !== "random-match") return;
+
+      console.log("🎯 Loading random match room data:", roomId);
+
+      try {
+        // Önce game_rooms tablosunu kontrol et (özel odalar için)
+        const { data: existingGameRoom } = await supabase
+          .from("game_rooms")
+          .select("*")
+          .eq("id", roomId)
+          .in("status", ["waiting", "active"])
+          .maybeSingle();
+
+        if (existingGameRoom) {
+          console.log("🏠 Private/Game room found:", existingGameRoom.id);
+
+          // Join existing room using GameContext function
+          // Küçük gecikmeli yeniden dene
+          let joined = false;
+          for (let attempt = 1; attempt <= 6; attempt++) {
+            joined = await joinRoom(roomId);
+            if (joined) break;
+            console.warn(`⏳ Existing room join retry ${attempt}/6`);
+            await new Promise((resolve) => setTimeout(resolve, 250));
+          }
+          if (!joined) {
+            console.error("❌ Failed to join existing room (tüm denemeler başarısız)");
+            toast({
+              title: "Bağlantı Hatası",
+              description: "Oyun odasına bağlanılamadı",
+              variant: "destructive",
+            });
+            navigate("/");
             return;
           }
-          
-          retries++;
-          if (retries < maxRetries) {
-            console.log(`⏳ Waiting for participants... (${retries}/${maxRetries})`);
-            setTimeout(checkParticipants, 500);
-          } else {
-            console.log('⚠️ Timeout waiting for participants');
-          }
-        };
-        
-        checkParticipants();
-        
-        console.log('✅ Game room created:', gameRoom.id);
-      }
-      
-      // Add AI opponent if needed (context will handle participant checking)
-      setTimeout(async () => {
-        // Resolve game room id reliably using room_code -> game_rooms lookup
-        const { data: gameRoomRow } = await supabase
-          .from('game_rooms')
-          .select('id')
-          .eq('room_code', roomId)
-          .in('status', ['waiting','active'])
-          .maybeSingle();
-        const resolvedRoomId = gameRoomRow?.id || currentRoom?.id || null;
-        if (!resolvedRoomId) {
-          console.warn('⚠️ Could not resolve game room id for participants check');
+
+          console.log("✅ Joined existing game room");
           return;
         }
-        const { data: participants } = await supabase
-          .from('game_participants')
-          .select('*')
-          .eq('room_id', resolvedRoomId);
-        
-        console.log('👥 Current participants after room setup:', participants?.length || 0);
-        
-        // Random-match'te bot ekleme - KALDIRILDI! Sadece gerçek oyuncular
-        // if (participants && participants.length === 1) {
-        //   console.log('🤖 Adding AI opponent...');
-        //   await addAIOpponent();
-        // }
-      }, 1000);
-      
-    } catch (error) {
-      console.error('❌ Error loading random match data:', error);
-      navigate('/');
-    }
-  };
-  
-  loadRandomMatchData();
-}, [gameMode, searchParams, user, createRoom, addAIOpponent, navigate, gameType]);
+
+        // Eğer game_rooms'da yoksa matchmaking_rooms'a bak
+        const { data: matchmakingRoom } = await supabase
+          .from("matchmaking_rooms")
+          .select("*")
+          .eq("id", roomId)
+          .maybeSingle();
+
+        if (!matchmakingRoom) {
+          console.error("❌ Room not found in either table:", roomId);
+          toast({
+            title: "Hata",
+            description: "Oyun odası bulunamadı",
+            variant: "destructive",
+          });
+          navigate("/");
+          return;
+        }
+
+        console.log("🏠 Matchmaking room found:", matchmakingRoom);
+
+        // Check if game room already exists for this matchmaking room
+        const { data: existingRoom } = await supabase
+          .from("game_rooms")
+          .select("*")
+          .eq("room_code", roomId)
+          .in("status", ["waiting", "active"])
+          .maybeSingle();
+
+        if (existingRoom) {
+          console.log("🏠 Existing game room found, joining:", existingRoom.id);
+
+          // Join existing room using GameContext function
+          const joined = await joinRoom(roomId);
+          if (!joined) {
+            console.error("❌ Failed to join existing room");
+            navigate("/");
+            return;
+          }
+        } else {
+          console.log("🏗️ Creating new game room...");
+          const gameRoom = await createRoom(`random-match-${gameType}`, roomId);
+
+          if (!gameRoom) {
+            console.error("❌ Failed to create game room");
+            navigate("/");
+            return;
+          }
+
+          console.log("✅ Game room created successfully");
+
+          // Participants'ın yüklenmesini bekle
+          let retries = 0;
+          const maxRetries = 10;
+          const checkParticipants = () => {
+            if (participants.length >= 2) {
+              console.log("✅ Participants loaded, game ready to start");
+              return;
+            }
+
+            retries++;
+            if (retries < maxRetries) {
+              console.log(`⏳ Waiting for participants... (${retries}/${maxRetries})`);
+              setTimeout(checkParticipants, 500);
+            } else {
+              console.log("⚠️ Timeout waiting for participants");
+            }
+          };
+
+          checkParticipants();
+
+          console.log("✅ Game room created:", gameRoom.id);
+        }
+
+        // Add AI opponent if needed (context will handle participant checking)
+        setTimeout(async () => {
+          // Resolve game room id reliably using room_code -> game_rooms lookup
+          const { data: gameRoomRow } = await supabase
+            .from("game_rooms")
+            .select("id")
+            .eq("room_code", roomId)
+            .in("status", ["waiting", "active"])
+            .maybeSingle();
+          const resolvedRoomId = gameRoomRow?.id || currentRoom?.id || null;
+          if (!resolvedRoomId) {
+            console.warn("⚠️ Could not resolve game room id for participants check");
+            return;
+          }
+          const { data: participants } = await supabase
+            .from("game_participants")
+            .select("*")
+            .eq("room_id", resolvedRoomId);
+
+          console.log("👥 Current participants after room setup:", participants?.length || 0);
+
+          // Random-match'te bot ekleme - KALDIRILDI! Sadece gerçek oyuncular
+          // if (participants && participants.length === 1) {
+          //   console.log('🤖 Adding AI opponent...');
+          //   await addAIOpponent();
+          // }
+        }, 1000);
+      } catch (error) {
+        console.error("❌ Error loading random match data:", error);
+        navigate("/");
+      }
+    };
+
+    loadRandomMatchData();
+  }, [gameMode, searchParams, user, createRoom, addAIOpponent, navigate, gameType]);
 
   // Check for winner and apply end game bonuses
 
+  const checkWinnerWithScores = useCallback(
+    async (currentPlayerScore: number, currentOpponentScore: number) => {
+      if (gameEnded || winner !== null) return;
 
-const checkWinnerWithScores = useCallback(async (currentPlayerScore: number, currentOpponentScore: number) => {
-  if (gameEnded || winner !== null) return;
+      console.log("🏆 Checking winner with scores - Player:", currentPlayerScore, "Opponent:", currentOpponentScore);
 
-  console.log('🏆 Checking winner with scores - Player:', currentPlayerScore, 'Opponent:', currentOpponentScore);
+      let gameResult: "player" | "opponent" | "tie";
+      let bonusPoints = 0;
 
-  let gameResult: 'player' | 'opponent' | 'tie';
-  let bonusPoints = 0;
+      // TURNUVA MODUNDA BERABERLIK ENGELLEMESİ - GÜÇLENDİRİLMİŞ
+      if (gameMode === "tournament") {
+        console.log("🏆 Tournament mode - strict winner determination:", { currentPlayerScore, currentOpponentScore });
+        if (currentPlayerScore === currentOpponentScore) {
+          console.log("⚖️ Turnuva beraberlik durumu - güçlü tiebreaker uygulanıyor");
 
-  // TURNUVA MODUNDA BERABERLIK ENGELLEMESİ - GÜÇLENDİRİLMİŞ
-  if (gameMode === 'tournament') {
-    console.log('🏆 Tournament mode - strict winner determination:', { currentPlayerScore, currentOpponentScore });
-    if (currentPlayerScore === currentOpponentScore) {
-      console.log('⚖️ Turnuva beraberlik durumu - güçlü tiebreaker uygulanıyor');
-      
-      // ÖNCE: Bot hiç oynamadıysa oyuncu kazansın
-      if (currentPlayerScore === 0 && currentOpponentScore === 0) {
-        console.log('🤖 Bot hiç oynamadı, oyuncu otomatik kazandı');
-        currentPlayerScore = 10; // Oyuncuya minimum puan ver
-      } else {
-        // SONRA: Normal tiebreaker kuralları
-        const playerWordCount = playerWordsWithScores.length;
-        const opponentWordCount = opponentWordsWithScores.length;
-        
-        if (playerWordCount > opponentWordCount) {
-          console.log('🎯 Tiebreaker: Player kazandı (daha çok kelime)');
-          currentPlayerScore += 5;
-        } else if (opponentWordCount > playerWordCount) {
-          console.log('🎯 Tiebreaker: Opponent kazandı (daha çok kelime)');  
-          currentOpponentScore += 5;
-        } else {
-          // Kelime sayısı eşit, en uzun kelime kontrolü
-          const playerLongestWord = Math.max(...playerWordsWithScores.map(w => w.word.length), 0);
-          const opponentLongestWord = Math.max(...opponentWordsWithScores.map(w => w.word.length), 0);
-          
-          if (playerLongestWord > opponentLongestWord) {
-            console.log('🎯 Tiebreaker: Player kazandı (daha uzun kelime)');
-            currentPlayerScore += 3;
-          } else if (opponentLongestWord > playerLongestWord) {
-            console.log('🎯 Tiebreaker: Opponent kazandı (daha uzun kelime)');
-            currentOpponentScore += 3;
+          // ÖNCE: Bot hiç oynamadıysa oyuncu kazansın
+          if (currentPlayerScore === 0 && currentOpponentScore === 0) {
+            console.log("🤖 Bot hiç oynamadı, oyuncu otomatik kazandı");
+            currentPlayerScore = 10; // Oyuncuya minimum puan ver
           } else {
-            // En yüksek puanlı kelime kontrolü
-            const playerHighestScore = Math.max(...playerWordsWithScores.map(w => w.score), 0);
-            const opponentHighestScore = Math.max(...opponentWordsWithScores.map(w => w.score), 0);
-            
-            if (playerHighestScore > opponentHighestScore) {
-              console.log('🎯 Tiebreaker: Player kazandı (daha yüksek puanlı kelime)');
-              currentPlayerScore += 2;
+            // SONRA: Normal tiebreaker kuralları
+            const playerWordCount = playerWordsWithScores.length;
+            const opponentWordCount = opponentWordsWithScores.length;
+
+            if (playerWordCount > opponentWordCount) {
+              console.log("🎯 Tiebreaker: Player kazandı (daha çok kelime)");
+              currentPlayerScore += 5;
+            } else if (opponentWordCount > playerWordCount) {
+              console.log("🎯 Tiebreaker: Opponent kazandı (daha çok kelime)");
+              currentOpponentScore += 5;
             } else {
-              // SON ÇARE: Oyuncuya avantaj ver (turnuvada beraberlik olmasın)
-              console.log('🎯 Tiebreaker: Player kazandı (son çare kuralı)');
-              currentPlayerScore += 1;
+              // Kelime sayısı eşit, en uzun kelime kontrolü
+              const playerLongestWord = Math.max(...playerWordsWithScores.map((w) => w.word.length), 0);
+              const opponentLongestWord = Math.max(...opponentWordsWithScores.map((w) => w.word.length), 0);
+
+              if (playerLongestWord > opponentLongestWord) {
+                console.log("🎯 Tiebreaker: Player kazandı (daha uzun kelime)");
+                currentPlayerScore += 3;
+              } else if (opponentLongestWord > playerLongestWord) {
+                console.log("🎯 Tiebreaker: Opponent kazandı (daha uzun kelime)");
+                currentOpponentScore += 3;
+              } else {
+                // En yüksek puanlı kelime kontrolü
+                const playerHighestScore = Math.max(...playerWordsWithScores.map((w) => w.score), 0);
+                const opponentHighestScore = Math.max(...opponentWordsWithScores.map((w) => w.score), 0);
+
+                if (playerHighestScore > opponentHighestScore) {
+                  console.log("🎯 Tiebreaker: Player kazandı (daha yüksek puanlı kelime)");
+                  currentPlayerScore += 2;
+                } else {
+                  // SON ÇARE: Oyuncuya avantaj ver (turnuvada beraberlik olmasın)
+                  console.log("🎯 Tiebreaker: Player kazandı (son çare kuralı)");
+                  currentPlayerScore += 1;
+                }
+              }
             }
           }
+
+          console.log("🎯 Tiebreaker sonrası skorlar - Player:", currentPlayerScore, "Opponent:", currentOpponentScore);
         }
       }
-      
-      console.log('🎯 Tiebreaker sonrası skorlar - Player:', currentPlayerScore, 'Opponent:', currentOpponentScore);
-    }
-  }
 
-  // Final winner determination
-  if (currentPlayerScore > currentOpponentScore) {
-    gameResult = 'player';
-    bonusPoints = 50;
-    setWinner('player');
-    playSound('gameWin');
-    setTimeout(() => playCelebrationSound(), 500);
-    console.log('🏆 Player wins! Score:', currentPlayerScore, 'vs', currentOpponentScore);
-  } else if (currentPlayerScore < currentOpponentScore) {
-    gameResult = 'opponent';
-    setWinner('opponent');
-    playSound('gameLose');
-    setTimeout(() => playGameLoseSound(), 500);
-    console.log('🏆 Opponent wins! Score:', currentOpponentScore, 'vs', currentPlayerScore);
-  } else {
-    // Normal modlarda beraberlik olabilir, ama turnuvada buraya gelmemeli
-    gameResult = 'tie';
-    bonusPoints = 25;
-    setWinner('tie');
-    console.log('🏆 It\'s a tie! Both scores:', currentPlayerScore);
-  }
+      // Final winner determination
+      if (currentPlayerScore > currentOpponentScore) {
+        gameResult = "player";
+        bonusPoints = 50;
+        setWinner("player");
+        playSound("gameWin");
+        setTimeout(() => playCelebrationSound(), 500);
+        console.log("🏆 Player wins! Score:", currentPlayerScore, "vs", currentOpponentScore);
+      } else if (currentPlayerScore < currentOpponentScore) {
+        gameResult = "opponent";
+        setWinner("opponent");
+        playSound("gameLose");
+        setTimeout(() => playGameLoseSound(), 500);
+        console.log("🏆 Opponent wins! Score:", currentOpponentScore, "vs", currentPlayerScore);
+      } else {
+        // Normal modlarda beraberlik olabilir, ama turnuvada buraya gelmemeli
+        gameResult = "tie";
+        bonusPoints = 25;
+        setWinner("tie");
+        console.log("🏆 It's a tie! Both scores:", currentPlayerScore);
+      }
 
-  // İstatistik güncelleme (vs-computer için)
-  if (user && gameMode === 'vs-computer') {
-    if (statsUpdatedRef.current) {
-      console.log('⏭️ Skipping duplicate stats update (effect)');
-    } else {
-      statsUpdatedRef.current = true;
-      console.log('📊 checkWinnerWithScores - İstatistik güncelleniyor...');
-    
-      try {
-        const gameDuration = gameType === 'timed' ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
-      
-        const { data, error } = await (supabase.rpc as any)('update_game_stats', {
-          p_user_id: user.id,
-          p_score: currentPlayerScore,
-          p_words: playerWordsWithScores,
-          p_is_winner: gameResult === 'player',
-          p_game_duration: gameDuration
-        });
-      
-        if (error) {
-          console.error('❌ İstatistik güncelleme hatası:', error);
+      // İstatistik güncelleme (vs-computer için)
+      if (user && gameMode === "vs-computer") {
+        if (statsUpdatedRef.current) {
+          console.log("⏭️ Skipping duplicate stats update (effect)");
         } else {
-          console.log('✅ İstatistikler başarıyla güncellendi!');
-          await forceRefreshProfile?.();
-        }
+          statsUpdatedRef.current = true;
+          console.log("📊 checkWinnerWithScores - İstatistik güncelleniyor...");
 
-        // ➕ En uzun kelime ve en yüksek puanlı kelime istatistiklerini (vs-computer) güncelle - RPC sonucu ne olursa olsun çalıştır
-        try {
-          const longest = playerWordsWithScores.reduce<{ word: string; score: number } | null>((acc, w) => {
-            return !acc || w.word.length >= acc.word.length ? w : acc;
-          }, null);
-          const bestScore = playerWordsWithScores.reduce<{ word: string; score: number } | null>((acc, w) => {
-            return !acc || w.score > acc.score ? w : acc;
-          }, null);
+          try {
+            const gameDuration = gameType === "timed" ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
 
-          if (user && (longest || bestScore)) {
-            const { data: cur } = await supabase
-              .from('profiles')
-              .select('longest_word_length, highest_word_score')
-              .eq('id', user.id)
-              .maybeSingle();
+            const { data, error } = await (supabase.rpc as any)("update_game_stats", {
+              p_user_id: user.id,
+              p_score: currentPlayerScore,
+              p_words: playerWordsWithScores,
+              p_is_winner: gameResult === "player",
+              p_game_duration: gameDuration,
+            });
 
-            const updates: Record<string, any> = {};
-            if (longest) {
-              const len = longest.word.length;
-              if (!cur || (cur.longest_word_length ?? 0) <= len) {
-                updates.longest_word = longest.word;
-                updates.longest_word_length = len;
+            if (error) {
+              console.error("❌ İstatistik güncelleme hatası:", error);
+            } else {
+              console.log("✅ İstatistikler başarıyla güncellendi!");
+              await forceRefreshProfile?.();
+            }
+
+            // ➕ En uzun kelime ve en yüksek puanlı kelime istatistiklerini (vs-computer) güncelle - RPC sonucu ne olursa olsun çalıştır
+            try {
+              const longest = playerWordsWithScores.reduce<{ word: string; score: number } | null>((acc, w) => {
+                return !acc || w.word.length >= acc.word.length ? w : acc;
+              }, null);
+              const bestScore = playerWordsWithScores.reduce<{ word: string; score: number } | null>((acc, w) => {
+                return !acc || w.score > acc.score ? w : acc;
+              }, null);
+
+              if (user && (longest || bestScore)) {
+                const { data: cur } = await supabase
+                  .from("profiles")
+                  .select("longest_word_length, highest_word_score")
+                  .eq("id", user.id)
+                  .maybeSingle();
+
+                const updates: Record<string, any> = {};
+                if (longest) {
+                  const len = longest.word.length;
+                  if (!cur || (cur.longest_word_length ?? 0) <= len) {
+                    updates.longest_word = longest.word;
+                    updates.longest_word_length = len;
+                  }
+                }
+                if (bestScore) {
+                  if (!cur || (cur.highest_word_score ?? 0) < bestScore.score) {
+                    updates.highest_word = bestScore.word;
+                    updates.highest_word_score = bestScore.score;
+                  }
+                }
+
+                if (Object.keys(updates).length > 0) {
+                  await supabase.from("profiles").update(updates).eq("id", user.id);
+                }
               }
-            }
-            if (bestScore) {
-              if (!cur || (cur.highest_word_score ?? 0) < bestScore.score) {
-                updates.highest_word = bestScore.word;
-                updates.highest_word_score = bestScore.score;
-              }
+            } catch (e) {
+              console.warn("⚠️ Profil kelime istatistikleri güncellenemedi:", e);
             }
 
-            if (Object.keys(updates).length > 0) {
-              await supabase.from('profiles').update(updates).eq('id', user.id);
-            }
+            // Rozet kontrolü
+            setTimeout(() => {
+              checkBadges(user.id, playerWordsWithScores.length);
+            }, 500);
+          } catch (error) {
+            console.error("❌ İstatistik güncelleme hatası:", error);
           }
-        } catch (e) {
-          console.warn('⚠️ Profil kelime istatistikleri güncellenemedi:', e);
         }
-
-        // Rozet kontrolü
-        setTimeout(() => {
-          checkBadges(user.id, playerWordsWithScores.length);
-        }, 500);
-      } catch (error) {
-        console.error('❌ İstatistik güncelleme hatası:', error);
       }
-    }
-  }
 
-  // Apply end game bonus for player
-  if (user && bonusPoints > 0) {
-    const { data: currentProfile } = await supabase
-      .from('profiles')
-      .select('total_score')
-      .eq('id', user.id)
-      .single();
+      // Apply end game bonus for player
+      if (user && bonusPoints > 0) {
+        const { data: currentProfile } = await supabase
+          .from("profiles")
+          .select("total_score")
+          .eq("id", user.id)
+          .single();
 
-    const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
+        const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
 
-    await supabase
-      .from('profiles')
-      .update({ total_score: newTotalScore })
-      .eq('id', user.id);
+        await supabase.from("profiles").update({ total_score: newTotalScore }).eq("id", user.id);
 
-    setTimeout(() => {
-      toast({
-        title: gameResult === 'player' ? 'Kazanma Bonusu!' : 'Beraberlik Bonusu!',
-        description: `+${bonusPoints} bonus EXP kazandınız!`,
-        duration: 2000,
-      });
-    }, 1000);
-  }
+        setTimeout(() => {
+          toast({
+            title: gameResult === "player" ? "Kazanma Bonusu!" : "Beraberlik Bonusu!",
+            description: `+${bonusPoints} bonus EXP kazandınız!`,
+            duration: 2000,
+          });
+        }, 1000);
+      }
 
-  // End the game and cleanup room (for multiplayer modes)
-  if (currentRoom && (gameMode === 'random-match' || gameMode === 'private-room')) {
-    setTimeout(async () => {
-      const playerStats = user ? {
-        userId: user.id,
-        score: currentPlayerScore,
-        words: playerWordsWithScores,
-        isWinner: gameResult === 'player'
-      } : undefined;
-    
-      const opponentParticipant = participants.find(p => p.user_id !== user?.id && !p.is_bot);
-      const opponentStats = opponentParticipant?.user_id ? {
-        userId: opponentParticipant.user_id,
-        score: currentOpponentScore,
-        words: opponentWordsWithScores,
-        isWinner: gameResult === 'opponent'
-      } : undefined;
-    
-      await endGame(playerStats, opponentStats);
-    }, 3000);
-  }
+      // End the game and cleanup room (for multiplayer modes)
+      if (currentRoom) {
+        setTimeout(async () => {
+          const playerStats = user
+            ? {
+                userId: user.id,
+                score: currentPlayerScore,
+                words: playerWordsWithScores,
+                isWinner: gameResult === "player",
+              }
+            : undefined;
 
-  // Final skorları kaydet (reset'ten etkilenmemesi için)
-  setFinalPlayerScore(currentPlayerScore);
-  setFinalOpponentScore(currentOpponentScore);
+          // vs-computer için bot stats eklemeye gerek yok, sadece player stats yeterli
+          const opponentParticipant = participants.find((p) => p.user_id !== user?.id && !p.is_bot);
+          const opponentStats = opponentParticipant?.user_id
+            ? {
+                userId: opponentParticipant.user_id,
+                score: currentOpponentScore,
+                words: opponentWordsWithScores,
+                isWinner: gameResult === "opponent",
+              }
+            : undefined;
 
-  // Sonuç ekranını göster
-  console.log('🎯 Setting showResults to true - rematch UI should appear');
-  setShowResults(true);
-}, [gameEnded, winner, user, currentRoom, gameMode, endGame, playSound, playCelebrationSound, playGameLoseSound, toast, participants, playerWordsWithScores, opponentWordsWithScores, gameStartTime, gameType]);
+          await endGame(playerStats, opponentStats);
+        }, 3000);
+      }
+
+      // Final skorları kaydet (reset'ten etkilenmemesi için)
+      setFinalPlayerScore(currentPlayerScore);
+      setFinalOpponentScore(currentOpponentScore);
+
+      // Sonuç ekranını göster
+      console.log("🎯 Setting showResults to true - rematch UI should appear");
+      setShowResults(true);
+    },
+    [
+      gameEnded,
+      winner,
+      user,
+      currentRoom,
+      gameMode,
+      endGame,
+      playSound,
+      playCelebrationSound,
+      playGameLoseSound,
+      toast,
+      participants,
+      playerWordsWithScores,
+      opponentWordsWithScores,
+      gameStartTime,
+      gameType,
+    ],
+  );
 
   // 🏆 TURNUVA MAÇLARI İÇİN REAL-TIME SCORE SYNC + COUNTDOWN SYNC
   useEffect(() => {
-    if (gameMode !== 'tournament' || !tournamentMatch || !user) return;
+    if (gameMode !== "tournament" || !tournamentMatch || !user) return;
 
-    console.log('🔄 Turnuva maçı real-time subscription başlatılıyor:', tournamentMatch.id);
-    
+    console.log("🔄 Turnuva maçı real-time subscription başlatılıyor:", tournamentMatch.id);
+
     const channel = supabase
       .channel(`tournament-match-${tournamentMatch.id}`)
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'tournament_matches',
-          filter: `id=eq.${tournamentMatch.id}`
+          event: "UPDATE",
+          schema: "public",
+          table: "tournament_matches",
+          filter: `id=eq.${tournamentMatch.id}`,
         },
         (payload) => {
-          console.log('🏆 Turnuva maçı güncellendi:', payload);
+          console.log("🏆 Turnuva maçı güncellendi:", payload);
           const newData = payload.new as any;
-          
+
           // 🎯 SERVER-SIDE COUNTDOWN SYNC
           if (newData.countdown_started_at && !showCountdown && !gameStarted) {
-            console.log('🎯 Tournament countdown başlatılıyor (server-sync):', newData.countdown_started_at);
+            console.log("🎯 Tournament countdown başlatılıyor (server-sync):", newData.countdown_started_at);
             setCountdownServerTime(newData.countdown_started_at);
             setShowCountdown(true);
           }
-          
+
           // Karşı oyuncunun skorunu güncelle
           const isPlayer1 = tournamentMatch.player1_id === user.id;
           const opponentScore = isPlayer1 ? newData.player2_score : newData.player1_score;
-          
+
           if (opponentScore !== undefined && !gameEnded) {
-            console.log('🔄 Rakip skoru real-time güncellemesi:', opponentScore);
+            console.log("🔄 Rakip skoru real-time güncellemesi:", opponentScore);
             setOpponentScore(opponentScore);
           }
-        }
+        },
       )
       .subscribe();
 
     return () => {
-      console.log('🔌 Turnuva maçı subscription temizleniyor');
+      console.log("🔌 Turnuva maçı subscription temizleniyor");
       supabase.removeChannel(channel);
     };
   }, [gameMode, tournamentMatch, user, gameEnded, showCountdown, gameStarted]);
 
   // 🎮 NORMAL OYUNLAR (RANDOM-MATCH, PRIVATE-ROOM) İÇİN COUNTDOWN SYNC
   useEffect(() => {
-    if (gameMode === 'tournament' || gameMode === 'vs-computer') return;
+    if (gameMode === "tournament" || gameMode === "vs-computer") return;
     if (!currentRoom || !user) return;
     if (showCountdown || gameStarted) return; // Zaten countdown başlamışsa tekrar başlatma
 
-    console.log('🔄 Game room countdown subscription başlatılıyor:', shortId(currentRoom?.id));
-    
+    console.log("🔄 Game room countdown subscription başlatılıyor:", shortId(currentRoom?.id));
+
     const channel = supabase
       .channel(`game-room-countdown-${currentRoom.id}`)
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'game_rooms',
-          filter: `id=eq.${currentRoom.id}`
+          event: "UPDATE",
+          schema: "public",
+          table: "game_rooms",
+          filter: `id=eq.${currentRoom.id}`,
         },
         (payload) => {
-          console.log('🎮 Game room güncellendi:', payload);
+          console.log("🎮 Game room güncellendi:", payload);
           const newData = payload.new as any;
-          
+
           // 🎯 SERVER-SIDE COUNTDOWN SYNC - sadece henüz başlamamışsa
           if (newData.countdown_started_at && !showCountdown && !gameStarted) {
-            console.log('🎯 Game room countdown başlatılıyor (server-sync):', newData.countdown_started_at);
+            console.log("🎯 Game room countdown başlatılıyor (server-sync):", newData.countdown_started_at);
             setCountdownServerTime(newData.countdown_started_at);
             setShowCountdown(true);
           }
-        }
+        },
       )
       .subscribe();
 
     return () => {
-      console.log('🔌 Game room countdown subscription temizleniyor');
+      console.log("🔌 Game room countdown subscription temizleniyor");
       supabase.removeChannel(channel);
     };
   }, [gameMode, currentRoom?.id, user, showCountdown, gameStarted]);
 
-const handleTournamentExit = async () => {
-  if (!user || !tournamentMatch) return;
+  const handleTournamentExit = async () => {
+    if (!user || !tournamentMatch) return;
 
-  console.log('🚪 Turnuva maçından ayrılıyor:', user.id, 'Tournament:', tournamentMatch.tournament_id);
+    console.log("🚪 Turnuva maçından ayrılıyor:", user.id, "Tournament:", tournamentMatch.tournament_id);
 
-  try {
-    // Rakibi belirle
-    let opponentId = tournamentMatch.player1_id === user.id ? 
-      tournamentMatch.player2_id : 
-      tournamentMatch.player1_id;
-    
-    console.log('🎯 Rakip ID:', opponentId);
+    try {
+      // Rakibi belirle
+      let opponentId = tournamentMatch.player1_id === user.id ? tournamentMatch.player2_id : tournamentMatch.player1_id;
 
-    // Turnuva maçından ayrılma cezası uygula (-500 puan)
-    if (currentRoom?.id) {
-      const { error: penaltyError } = await supabase.rpc('apply_disconnect_penalty', {
-        p_offender_id: user.id,
-        p_room_id: currentRoom.id
-      });
+      console.log("🎯 Rakip ID:", opponentId);
 
-      if (penaltyError) {
-        console.error('❌ Ceza uygulanamadı:', penaltyError);
-      } else {
-        console.log('⚖️ Turnuva ayrılma cezası uygulandı: -500 puan');
-      }
-    }
-
-    // Eğer rakip bot değilse, puan ekle ve bildirim gönder
-    if (opponentId && !opponentId.startsWith('bot_')) {
-      opponentId = opponentId.trim();
-      
-      // Karşı oyuncunun profile skorunu güncelle
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('total_score')
-        .eq('id', opponentId)
-        .single();
-      
-      if (profileError) {
-        console.error('❌ Profile data alınamadı:', profileError);
-      } else if (profile) {
-        console.log('📊 Profile mevcut skor:', profile.total_score);
-        
-        const { error: profileUpdateError } = await supabase
-          .from('profiles')
-          .update({
-            total_score: (profile.total_score || 0) + 500
-          })
-          .eq('id', opponentId);
-        
-        if (profileUpdateError) {
-          console.error('❌ Profile skoru güncellenemedi:', profileUpdateError);
-        } else {
-          console.log('✅ Rakibe profiles\'da +500 puan eklendi');
-        }
-      }
-      
-      // RAKIBE BİLDİRİM GÖNDER
-      console.log('📢 Rakibe bildirim gönderiliyor:', opponentId);
-      const { error: notificationError } = await supabase
-        .from('notifications')
-        .insert({
-          user_id: opponentId,
-          type: 'tournament_opponent_left',
-          message: `Rakibiniz turnuva maçından ayrıldı ve +500 puan kazandınız!`,
-          related_id: tournamentMatch.id,
-          is_read: false
+      // Turnuva maçından ayrılma cezası uygula (-500 puan)
+      if (currentRoom?.id) {
+        const { error: penaltyError } = await supabase.rpc("apply_disconnect_penalty", {
+          p_offender_id: user.id,
+          p_room_id: currentRoom.id,
         });
 
-      if (notificationError) {
-        console.error('❌ Rakibe bildirim gönderilemedi:', notificationError);
-      } else {
-        console.log('✅ Rakibe bildirim başarıyla gönderildi');
+        if (penaltyError) {
+          console.error("❌ Ceza uygulanamadı:", penaltyError);
+        } else {
+          console.log("⚖️ Turnuva ayrılma cezası uygulandı: -500 puan");
+        }
       }
-    } else {
-      console.log('🤖 Rakip bot, puan ve bildirim gönderilmiyor');
-    }
 
-    // Maçı tamamla (çıkan kişi 0 puan alır, rakip 500 puan alır)
-    const isUserPlayer1 = tournamentMatch.player1_id === user.id;
-    const winnerId = tournamentMatch.player1_id === user.id ? 
-      tournamentMatch.player2_id : 
-      tournamentMatch.player1_id;
-    
-    await supabase
-      .from('tournament_matches')
-      .update({
-        status: 'completed',
-        winner_id: winnerId || 'forfeit',
-        player1_score: isUserPlayer1 ? 0 : 500,
-        player2_score: isUserPlayer1 ? 500 : 0,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', tournamentMatch.id);
+      // Eğer rakip bot değilse, puan ekle ve bildirim gönder
+      if (opponentId && !opponentId.startsWith("bot_")) {
+        opponentId = opponentId.trim();
 
-    // ✅ TURNUVA KATILIMCISINI SİL (kritik - yoksa yeni turnuvaya katılamaz)
-    console.log('🗑️ tournament_participants kaydı siliniyor...');
-    const { error: participantDeleteError } = await supabase
-      .from('tournament_participants')
-      .delete()
-      .eq('tournament_id', tournamentMatch.tournament_id)
-      .eq('user_id', user.id);
-
-    if (participantDeleteError) {
-      console.error('❌ Tournament participant silinemedi:', participantDeleteError);
-    } else {
-      console.log('✅ Tournament participant başarıyla silindi');
-    }
-
-    toast({
-      title: "🏆 Turnuva Cezası",
-      description: "Turnuva maçından ayrıldığınız için -500 puan cezası aldınız.",
-      variant: "destructive",
-      duration: 4000,
-    });
-
-    setShowTournamentExitDialog(false);
-    
-    // GameContext'i temizle
-    leaveRoom();
-    
-    navigate('/tournament');
-
-  } catch (error) {
-    console.error('Çıkış hatası:', error);
-    
-    // Hata durumunda da turnuva kaydını temizle
-    try {
-      await supabase
-        .from('tournament_participants')
-        .delete()
-        .eq('tournament_id', tournamentMatch.tournament_id)
-        .eq('user_id', user.id);
-    } catch (cleanupError) {
-      console.error('Cleanup hatası:', cleanupError);
-    }
-    
-    leaveRoom();
-    navigate('/tournament');
-  }
-};
-  
-  // Timer effect - start only when match truly starts and guard early-finish
-useEffect(() => {
-  const isMp = gameMode === 'random-match' || gameMode === 'private-room';
-  const haveTwoRealPlayers = participants.filter(p => !p.is_bot).length >= 2;
-  const roomActive = currentRoom?.status === 'active';
-  const canStart = (
-    gameType === 'timed' &&
-    gameStarted &&
-    !gameEnded &&
-    !timerRef.current &&
-    (!isMp || (roomActive && haveTwoRealPlayers && !!currentRoom?.started_at))
-  );
-
-  if (!canStart) return;
-
-  console.log('⏱️ Timer BAŞLATILIYOR - Tek sefer, time:', timeLeftRef.current);
-  
-  let syncInterval: NodeJS.Timeout | null = null;
-  
-  // For tournament matches, sync timer with database using countdown_started_at
-  if (gameMode === 'tournament' && tournamentMatch) {
-    const syncTimer = async () => {
-      try {
-        // Maç countdown_started_at zamanını kontrol et
-        const { data: matchData } = await supabase
-          .from('tournament_matches')
-          .select('countdown_started_at, status')
-          .eq('id', tournamentMatch.id)
+        // Karşı oyuncunun profile skorunu güncelle
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("total_score")
+          .eq("id", opponentId)
           .single();
-          
-        if (matchData && matchData.status === 'in_progress' && matchData.countdown_started_at) {
-          // ✅ SERVER-SIDE COUNTDOWN ZAMANI KULLAN
-          if (!serverMatchStartRef.current) {
-            // Countdown 5 saniye, oyun başlangıcı = countdown_started_at + 5 saniye
-            const countdownStart = new Date(matchData.countdown_started_at).getTime();
-            serverMatchStartRef.current = countdownStart + 5000; // 5 saniye sonra başlar
-            console.log('📌 Tournament match start time (countdown_started_at + 5s):', new Date(serverMatchStartRef.current).toISOString());
-          }
-          
-          const matchStartTime = serverMatchStartRef.current!;
-          const currentTime = Date.now() + serverTimeOffset;
-          const elapsedSeconds = Math.floor((currentTime - matchStartTime) / 1000);
-          const remainingTime = Math.max(0, 120 - elapsedSeconds);
-          
-          // İlk 3 saniye sadece countdown bittiğinde sync yap (titreme önleme)
-          if (countdownCompletedAtRef.current && Date.now() - countdownCompletedAtRef.current < 3000) {
-            console.log('⏸️ Skipping sync - countdown just completed');
-            return;
-          }
-          
-          // 1 saniyeden fazla fark varsa sync et
-          if (Math.abs(timeLeftRef.current - remainingTime) > 1) {
-            timeLeftRef.current = remainingTime;
-            setDisplayTime(remainingTime);
-            console.log('🔄 Timer synced to:', remainingTime, 'seconds (server-side)');
+
+        if (profileError) {
+          console.error("❌ Profile data alınamadı:", profileError);
+        } else if (profile) {
+          console.log("📊 Profile mevcut skor:", profile.total_score);
+
+          const { error: profileUpdateError } = await supabase
+            .from("profiles")
+            .update({
+              total_score: (profile.total_score || 0) + 500,
+            })
+            .eq("id", opponentId);
+
+          if (profileUpdateError) {
+            console.error("❌ Profile skoru güncellenemedi:", profileUpdateError);
+          } else {
+            console.log("✅ Rakibe profiles'da +500 puan eklendi");
           }
         }
-      } catch (error) {
-        console.error('Timer sync error:', error);
-      }
-    };
-    
-    // Initial sync - ama countdown bitiminden 2 saniye sonra
-    setTimeout(() => syncTimer(), 2000);
-    
-    // Sync every 2 seconds for precise tournament timer (1 saniye yerine 2 saniye - daha az agresif)
-    syncInterval = setInterval(syncTimer, 2000);
-  }
-  
-  timerRef.current = setInterval(() => {
-    timeLeftRef.current -= 1;
-    setDisplayTime(timeLeftRef.current);
-    
-    if (timeLeftRef.current <= 0) {
-      // 🛡️ Early-finish guard for fresh matches
-      const startedAtTs = currentRoom?.started_at ? new Date(currentRoom.started_at).getTime() : null;
-      if (isMp && startedAtTs && Date.now() - startedAtTs < 3000) {
-        const bump = 5;
-        timeLeftRef.current = bump;
-        setDisplayTime(bump);
-        console.log('🛡️ Early-finish guard: bumped time to', bump);
-        return;
+
+        // RAKIBE BİLDİRİM GÖNDER
+        console.log("📢 Rakibe bildirim gönderiliyor:", opponentId);
+        const { error: notificationError } = await supabase.from("notifications").insert({
+          user_id: opponentId,
+          type: "tournament_opponent_left",
+          message: `Rakibiniz turnuva maçından ayrıldı ve +500 puan kazandınız!`,
+          related_id: tournamentMatch.id,
+          is_read: false,
+        });
+
+        if (notificationError) {
+          console.error("❌ Rakibe bildirim gönderilemedi:", notificationError);
+        } else {
+          console.log("✅ Rakibe bildirim başarıyla gönderildi");
+        }
+      } else {
+        console.log("🤖 Rakip bot, puan ve bildirim gönderilmiyor");
       }
 
-      clearInterval(timerRef.current!);
-      if (syncInterval) clearInterval(syncInterval);
-      timerRef.current = null;
-      
-      console.log('⏰ Süre bitti! Final skorlar');
-      handleGameEnd();
-      setTimeout(() => {
-        setGameEnded(true);
-        checkWinnerWithScores(playerScoreRef.current, opponentScoreRef.current);
-      }, 50);
-    }
-  }, 1000);
-  
-  return () => {
-    // Cleanup intervals
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    if (syncInterval) {
-      clearInterval(syncInterval);
+      // Maçı tamamla (çıkan kişi 0 puan alır, rakip 500 puan alır)
+      const isUserPlayer1 = tournamentMatch.player1_id === user.id;
+      const winnerId = tournamentMatch.player1_id === user.id ? tournamentMatch.player2_id : tournamentMatch.player1_id;
+
+      await supabase
+        .from("tournament_matches")
+        .update({
+          status: "completed",
+          winner_id: winnerId || "forfeit",
+          player1_score: isUserPlayer1 ? 0 : 500,
+          player2_score: isUserPlayer1 ? 500 : 0,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", tournamentMatch.id);
+
+      // ✅ TURNUVA KATILIMCISINI SİL (kritik - yoksa yeni turnuvaya katılamaz)
+      console.log("🗑️ tournament_participants kaydı siliniyor...");
+      const { error: participantDeleteError } = await supabase
+        .from("tournament_participants")
+        .delete()
+        .eq("tournament_id", tournamentMatch.tournament_id)
+        .eq("user_id", user.id);
+
+      if (participantDeleteError) {
+        console.error("❌ Tournament participant silinemedi:", participantDeleteError);
+      } else {
+        console.log("✅ Tournament participant başarıyla silindi");
+      }
+
+      toast({
+        title: "🏆 Turnuva Cezası",
+        description: "Turnuva maçından ayrıldığınız için -500 puan cezası aldınız.",
+        variant: "destructive",
+        duration: 4000,
+      });
+
+      setShowTournamentExitDialog(false);
+
+      // GameContext'i temizle
+      leaveRoom();
+
+      navigate("/tournament");
+    } catch (error) {
+      console.error("Çıkış hatası:", error);
+
+      // Hata durumunda da turnuva kaydını temizle
+      try {
+        await supabase
+          .from("tournament_participants")
+          .delete()
+          .eq("tournament_id", tournamentMatch.tournament_id)
+          .eq("user_id", user.id);
+      } catch (cleanupError) {
+        console.error("Cleanup hatası:", cleanupError);
+      }
+
+      leaveRoom();
+      navigate("/tournament");
     }
   };
-}, [gameStarted, gameEnded, gameType, gameMode, tournamentMatch, participants.length, currentRoom?.status, currentRoom?.started_at]);
-  
+
+  // Timer effect - start only when match truly starts and guard early-finish
+  useEffect(() => {
+    const isMp = gameMode === "random-match" || gameMode === "private-room";
+    const haveTwoRealPlayers = participants.filter((p) => !p.is_bot).length >= 2;
+    const roomActive = currentRoom?.status === "active";
+    const canStart =
+      gameType === "timed" &&
+      gameStarted &&
+      !gameEnded &&
+      !timerRef.current &&
+      (!isMp || (roomActive && haveTwoRealPlayers && !!currentRoom?.started_at));
+
+    if (!canStart) return;
+
+    console.log("⏱️ Timer BAŞLATILIYOR - Tek sefer, time:", timeLeftRef.current);
+
+    let syncInterval: NodeJS.Timeout | null = null;
+
+    // For tournament matches, sync timer with database using countdown_started_at
+    if (gameMode === "tournament" && tournamentMatch) {
+      const syncTimer = async () => {
+        try {
+          // Maç countdown_started_at zamanını kontrol et
+          const { data: matchData } = await supabase
+            .from("tournament_matches")
+            .select("countdown_started_at, status")
+            .eq("id", tournamentMatch.id)
+            .single();
+
+          if (matchData && matchData.status === "in_progress" && matchData.countdown_started_at) {
+            // ✅ SERVER-SIDE COUNTDOWN ZAMANI KULLAN
+            if (!serverMatchStartRef.current) {
+              // Countdown 5 saniye, oyun başlangıcı = countdown_started_at + 5 saniye
+              const countdownStart = new Date(matchData.countdown_started_at).getTime();
+              serverMatchStartRef.current = countdownStart + 5000; // 5 saniye sonra başlar
+              console.log(
+                "📌 Tournament match start time (countdown_started_at + 5s):",
+                new Date(serverMatchStartRef.current).toISOString(),
+              );
+            }
+
+            const matchStartTime = serverMatchStartRef.current!;
+            const currentTime = Date.now() + serverTimeOffset;
+            const elapsedSeconds = Math.floor((currentTime - matchStartTime) / 1000);
+            const remainingTime = Math.max(0, 120 - elapsedSeconds);
+
+            // İlk 3 saniye sadece countdown bittiğinde sync yap (titreme önleme)
+            if (countdownCompletedAtRef.current && Date.now() - countdownCompletedAtRef.current < 3000) {
+              console.log("⏸️ Skipping sync - countdown just completed");
+              return;
+            }
+
+            // 1 saniyeden fazla fark varsa sync et
+            if (Math.abs(timeLeftRef.current - remainingTime) > 1) {
+              timeLeftRef.current = remainingTime;
+              setDisplayTime(remainingTime);
+              console.log("🔄 Timer synced to:", remainingTime, "seconds (server-side)");
+            }
+          }
+        } catch (error) {
+          console.error("Timer sync error:", error);
+        }
+      };
+
+      // Initial sync - ama countdown bitiminden 2 saniye sonra
+      setTimeout(() => syncTimer(), 2000);
+
+      // Sync every 2 seconds for precise tournament timer (1 saniye yerine 2 saniye - daha az agresif)
+      syncInterval = setInterval(syncTimer, 2000);
+    }
+
+    timerRef.current = setInterval(() => {
+      timeLeftRef.current -= 1;
+      setDisplayTime(timeLeftRef.current);
+
+      if (timeLeftRef.current <= 0) {
+        // 🛡️ Early-finish guard for fresh matches
+        const startedAtTs = currentRoom?.started_at ? new Date(currentRoom.started_at).getTime() : null;
+        if (isMp && startedAtTs && Date.now() - startedAtTs < 3000) {
+          const bump = 5;
+          timeLeftRef.current = bump;
+          setDisplayTime(bump);
+          console.log("🛡️ Early-finish guard: bumped time to", bump);
+          return;
+        }
+
+        clearInterval(timerRef.current!);
+        if (syncInterval) clearInterval(syncInterval);
+        timerRef.current = null;
+
+        console.log("⏰ Süre bitti! Final skorlar");
+        handleGameEnd();
+        setTimeout(() => {
+          setGameEnded(true);
+          checkWinnerWithScores(playerScoreRef.current, opponentScoreRef.current);
+        }, 50);
+      }
+    }, 1000);
+
+    return () => {
+      // Cleanup intervals
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      if (syncInterval) {
+        clearInterval(syncInterval);
+      }
+    };
+  }, [
+    gameStarted,
+    gameEnded,
+    gameType,
+    gameMode,
+    tournamentMatch,
+    participants.length,
+    currentRoom?.status,
+    currentRoom?.started_at,
+  ]);
+
   // ❌ KALDIRILDI: currentRoom'dan skor güncellemesi artık gereksiz
   // GameContext'teki participants zaten real-time güncel tutuluyor
   // Bu ekstra güncelleme titreme yapıyordu
@@ -3211,15 +3496,15 @@ useEffect(() => {
   // Timer sync for private-room and random-match games using server started_at
   const startedAtRef = useRef<string | null>(null);
   const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   useEffect(() => {
-    if (gameType !== 'timed' || !gameStarted || gameEnded) return;
-    if (gameMode !== 'private-room' && gameMode !== 'random-match') return;
+    if (gameType !== "timed" || !gameStarted || gameEnded) return;
+    if (gameMode !== "private-room" && gameMode !== "random-match") return;
     if (!currentRoom?.started_at) return;
 
     // Eğer started_at değişmemişse, sync'i yeniden başlatma
     if (startedAtRef.current === currentRoom.started_at) return;
-    
+
     // İlk kez veya değiştiyse kaydet
     startedAtRef.current = currentRoom.started_at;
 
@@ -3232,10 +3517,10 @@ useEffect(() => {
     const syncTimer = () => {
       // İlk 3 saniye countdown bitiminden sonra sync'i duraklat (titreme önleme)
       if (countdownCompletedAtRef.current && Date.now() - countdownCompletedAtRef.current < 3000) {
-        console.log('⏸️ Skipping sync - countdown just completed');
+        console.log("⏸️ Skipping sync - countdown just completed");
         return;
       }
-      
+
       // Başlangıçta (geri sayımdan hemen sonra) 2:00'dan başlamayı koru
       if (Date.now() < syncSuppressUntilRef.current) {
         return;
@@ -3248,7 +3533,7 @@ useEffect(() => {
       if (Date.now() - startTs < 3000 && remaining <= 0) {
         remaining = 5;
       }
-      
+
       // 🛡️ 2 saniye toleransla senkronize et - küçük farklara müdahale etme
       if (Math.abs(timeLeftRef.current - remaining) > 2) {
         console.log(`🔄 ${gameMode} timer syncing - current: ${timeLeftRef.current}s, server: ${remaining}s`);
@@ -3257,8 +3542,8 @@ useEffect(() => {
       }
     };
 
-    console.log('⏱️ Timer sync başlatılıyor - mode:', gameMode, 'started_at:', currentRoom.started_at);
-    
+    console.log("⏱️ Timer sync başlatılıyor - mode:", gameMode, "started_at:", currentRoom.started_at);
+
     // İlk sync'i 2 saniye geciktir (countdown bitiminden sonra)
     setTimeout(() => syncTimer(), 2000);
     syncIntervalRef.current = setInterval(syncTimer, 2000); // 2 saniyede bir sync (daha az agresif)
@@ -3270,7 +3555,7 @@ useEffect(() => {
       }
     };
   }, [gameType, gameMode, gameStarted, gameEnded, currentRoom?.started_at, currentRoom?.time_limit]);
-  
+
   // started_at değiştiğinde ref'i resetle
   useEffect(() => {
     if (!currentRoom?.started_at) {
@@ -3280,26 +3565,26 @@ useEffect(() => {
 
   // Focus/blur event handler
   useEffect(() => {
-    if (gameType !== 'timed' || !gameStarted || gameEnded) return;
+    if (gameType !== "timed" || !gameStarted || gameEnded) return;
 
     // Focus/blur olaylarında hiçbir şey yapma - sadece timer devam etsin
     const handleFocus = () => {
-      console.log('📱 Sayfa focus aldı - timer devam ediyor');
-    };
-    
-    const handleBlur = () => {
-      console.log('📱 Sayfa focus kaybetti - timer devam ediyor'); 
+      console.log("📱 Sayfa focus aldı - timer devam ediyor");
     };
 
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('blur', handleBlur);
-    
+    const handleBlur = () => {
+      console.log("📱 Sayfa focus kaybetti - timer devam ediyor");
+    };
+
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("blur", handleBlur);
+
     return () => {
-      window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('blur', handleBlur);
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("blur", handleBlur);
     };
   }, [gameType, gameStarted, gameEnded]);
-  
+
   // Timer useEffect'inden SONRA ekleyin
   useEffect(() => {
     if (gameStarted && !gameEnded) {
@@ -3307,11 +3592,9 @@ useEffect(() => {
     }
   }, [gameStarted, gameEnded]);
 
-  
-
   // Check win conditions based on game type
   useEffect(() => {
-    if (gameType === 'score') {
+    if (gameType === "score") {
       // Score mode: first to reach max_score wins
       const maxScore = currentRoom?.max_score || 500;
       if (playerScore >= maxScore || opponentScore >= maxScore) {
@@ -3322,541 +3605,650 @@ useEffect(() => {
   }, [playerScore, opponentScore, checkWinnerWithScores, gameType, currentRoom?.max_score]);
 
   // Check if playing with AI (unified logic for all modes)
-const isPlayingWithAI = useCallback(() => {
-  const aiStatus = (() => {
-    switch (gameMode) {
-      case 'vs-computer':
-        return true;
-      case 'tournament': {
-        if (tournamentMatch) {
-          const opponentId = tournamentMatch.player1_id === user?.id ? 
-            tournamentMatch.player2_id : 
-            tournamentMatch.player1_id;
-          
-          // Bot kontrolü - daha kapsamlı
-          const isBot = !opponentId || 
-                       opponentId === null || 
-                       opponentId === undefined ||
-                       opponentId.startsWith('bot_') ||
-                       opponentId === 'bot';
-                       
-          console.log('🤖 Tournament AI Check:', {
-            matchId: tournamentMatch.id.slice(-8),
-            opponentId: opponentId?.slice(-8) || 'NULL',
-            isBot,
-            player1: tournamentMatch.player1_id?.slice(-8),
-            player2: tournamentMatch.player2_id?.slice(-8),
-            currentUser: user?.id?.slice(-8)
-          });
-          
-          return isBot;
-        }
-        return false;
-      }
-      case 'private-room':
-        return participants.length < 2;
-      case 'random-match':
-        const hasAI = participants.some(p => p.is_bot);
-        const hasRealOpponent = participants.filter(p => !p.is_bot).length >= 2;
-        return hasAI && !hasRealOpponent;
-      default:
-        return false;
-    }
-  })();
-  
-  console.log('🤖 AI Status Final - Mode:', gameMode, 'PlayingWithAI:', aiStatus);
-  return aiStatus;
-}, [gameMode, participants, tournamentMatch, user?.id]);
+  const isPlayingWithAI = useCallback(() => {
+    const aiStatus = (() => {
+      switch (gameMode) {
+        case "vs-computer":
+          return true;
+        case "tournament": {
+          if (tournamentMatch) {
+            const opponentId =
+              tournamentMatch.player1_id === user?.id ? tournamentMatch.player2_id : tournamentMatch.player1_id;
 
+            // Bot kontrolü - daha kapsamlı
+            const isBot =
+              !opponentId ||
+              opponentId === null ||
+              opponentId === undefined ||
+              opponentId.startsWith("bot_") ||
+              opponentId === "bot";
+
+            console.log("🤖 Tournament AI Check:", {
+              matchId: tournamentMatch.id.slice(-8),
+              opponentId: opponentId?.slice(-8) || "NULL",
+              isBot,
+              player1: tournamentMatch.player1_id?.slice(-8),
+              player2: tournamentMatch.player2_id?.slice(-8),
+              currentUser: user?.id?.slice(-8),
+            });
+
+            return isBot;
+          }
+          return false;
+        }
+        case "private-room":
+          return participants.length < 2;
+        case "random-match":
+          const hasAI = participants.some((p) => p.is_bot);
+          const hasRealOpponent = participants.filter((p) => !p.is_bot).length >= 2;
+          return hasAI && !hasRealOpponent;
+        default:
+          return false;
+      }
+    })();
+
+    console.log("🤖 AI Status Final - Mode:", gameMode, "PlayingWithAI:", aiStatus);
+    return aiStatus;
+  }, [gameMode, participants, tournamentMatch, user?.id]);
 
   // Real-time kelime senkronizasyonu
-useEffect(() => {
-  if (!currentRoom?.id || !user) return;
+  useEffect(() => {
+    if (!currentRoom?.id || !user) return;
 
-  console.log('🔄 === WORD SYNC BAŞLADI ===');
-  console.log('🔄 Room ID:', shortId(currentRoom?.id));
+    console.log("🔄 === WORD SYNC BAŞLADI ===");
+    console.log("🔄 Room ID:", shortId(currentRoom?.id));
+
+    const syncUsedWords = async () => {
+      if (syncingRef.current) {
+        console.log("🔄 Sync already in progress, skipping");
+        return;
+      }
+
+      syncingRef.current = true;
+
+      try {
+        if (gameMode === "vs-computer") {
+          console.log("🤖 vs-computer mode: Not loading previous words, starting fresh");
+          setGlobalUsedWords(new Set());
+          setUsedWords(new Set());
+          return;
+        }
+
+        const { data: roomWords } = await supabase
+          .from("game_words")
+          .select("word, player_id")
+          .eq("room_id", currentRoom.id);
+
+        if (roomWords) {
+          const allWordsSet = new Set(roomWords.map((w) => w.word.toLocaleUpperCase("tr-TR")));
+          const myWordsSet = new Set(
+            roomWords.filter((w) => w.player_id === user.id).map((w) => w.word.toLocaleUpperCase("tr-TR")),
+          );
+
+          console.log("🔄 Syncing - All words:", allWordsSet.size, "My words:", myWordsSet.size);
+          setGlobalUsedWords(allWordsSet);
+          setUsedWords(myWordsSet);
+        }
+      } catch (error) {
+        console.error("❌ Word sync error:", error);
+      } finally {
+        syncingRef.current = false;
+      }
+    };
+
+    const initialSyncTimer = setTimeout(syncUsedWords, 500);
+
+    const wordChannel = supabase
+      .channel(`mobile-words-${currentRoom.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "game_words",
+          filter: `room_id=eq.${currentRoom.id}`,
+        },
+        (payload) => {
+          console.log("📱 Mobile real-time word:", payload.new?.word, "from player:", payload.new?.player_id);
+
+          if (payload.new?.word && !syncingRef.current && payload.new?.player_id !== user.id) {
+            const newWord = payload.new.word.toLocaleUpperCase("tr-TR");
+
+            setTimeout(() => {
+              setGlobalUsedWords((prev) => new Set([...prev, newWord]));
+            }, 100);
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      clearTimeout(initialSyncTimer);
+      console.log("📱 Mobile word sync cleanup");
+      supabase.removeChannel(wordChannel);
+    };
+  }, [currentRoom?.id, user?.id, gameMode]);
+
+  // Turnuva real-time senkronizasyonu
+  useEffect(() => {
+    if (gameMode !== "tournament" || !tournamentMatch) return;
+
+    console.log("🏆 Turnuva real-time senkronizasyon başlatıldı");
+
+    // Tournament match değişikliklerini dinle
+    const tournamentChannel = supabase
+      .channel(`tournament-match-${tournamentMatch.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "tournament_matches",
+          filter: `id=eq.${tournamentMatch.id}`,
+        },
+        (payload) => {
+          console.log("🔄 Tournament match güncellendi:", payload.new);
+
+          // Rakip skorunu real-time güncelle - DÜZELTME
+          const newMatch = payload.new as any;
+          if (user) {
+            const isPlayer1 = String(newMatch.player1_id) === String(user.id);
+            const newOpponentScore = isPlayer1 ? newMatch.player2_score : newMatch.player1_score;
+            const newPlayerScore = isPlayer1 ? newMatch.player1_score : newMatch.player2_score;
+
+            console.log("🔄 Real-time tournament sync:", {
+              isPlayer1,
+              newPlayerScore,
+              newOpponentScore,
+              currentPlayerScore: playerScore,
+              currentOpponentScore: opponentScore,
+            });
+
+            if (newOpponentScore !== undefined && newOpponentScore !== opponentScore) {
+              console.log("🔄 Rakip skoru güncellendi:", opponentScore, "->", newOpponentScore);
+              setOpponentScore(newOpponentScore);
+            }
+
+            // Kendi skorumuzu da güncelle (eğer başka yerden geliyorsa)
+            if (newPlayerScore !== undefined && newPlayerScore !== playerScore) {
+              console.log("🔄 Kendi skorumuz güncellendi:", playerScore, "->", newPlayerScore);
+              setPlayerScore(newPlayerScore);
+            }
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      console.log("🏆 Turnuva real-time temizliği");
+      supabase.removeChannel(tournamentChannel);
+    };
+  }, [gameMode, tournamentMatch?.id, user?.id, opponentScore]);
+
+  // İlk sync
+  useEffect(() => {
+    if (!currentRoom) return;
+
+    const initialSyncTimer = setTimeout(syncUsedWords, 500);
+
+    // Real-time word changes dinle
+    const wordChannel = supabase
+      .channel(`mobile-words-${currentRoom.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "game_words",
+          filter: `room_id=eq.${currentRoom.id}`,
+        },
+        (payload) => {
+          console.log("📱 Mobile real-time word:", payload.new?.word, "from player:", payload.new?.player_id);
+
+          // Don't process words from the current user to prevent duplicate validation
+          if (payload.new?.word && !syncingRef.current && payload.new?.player_id !== user?.id) {
+            const newWord = payload.new.word.toLocaleUpperCase("tr-TR");
+
+            // Debounced update - only for other players' words
+            setTimeout(() => {
+              setGlobalUsedWords((prev) => new Set([...prev, newWord]));
+              // Do NOT add to setUsedWords here; keep my words separate
+            }, 100);
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      clearTimeout(initialSyncTimer);
+      console.log("📱 Mobile word sync cleanup");
+      supabase.removeChannel(wordChannel);
+    };
+  }, [currentRoom?.id, user?.id]);
 
   const syncUsedWords = async () => {
-    if (syncingRef.current) {
-      console.log('🔄 Sync already in progress, skipping');
-      return;
-    }
-    
+    if (syncingRef.current) return;
+
     syncingRef.current = true;
-    
+
     try {
-      if (gameMode === 'vs-computer') {
-        console.log('🤖 vs-computer mode: Not loading previous words, starting fresh');
+      if (gameMode === "vs-computer") {
         setGlobalUsedWords(new Set());
         setUsedWords(new Set());
         return;
       }
 
       const { data: roomWords } = await supabase
-        .from('game_words')
-        .select('word, player_id')
-        .eq('room_id', currentRoom.id);
+        .from("game_words")
+        .select("word, player_id")
+        .eq("room_id", currentRoom.id);
 
       if (roomWords) {
-        const allWordsSet = new Set(roomWords.map(w => w.word.toLocaleUpperCase('tr-TR')));
+        const allWordsSet = new Set(roomWords.map((w) => w.word.toLocaleUpperCase("tr-TR")));
         const myWordsSet = new Set(
-          roomWords
-            .filter(w => w.player_id === user.id)
-            .map(w => w.word.toLocaleUpperCase('tr-TR'))
+          roomWords.filter((w) => w.player_id === user?.id).map((w) => w.word.toLocaleUpperCase("tr-TR")),
         );
-        
-        console.log('🔄 Syncing - All words:', allWordsSet.size, 'My words:', myWordsSet.size);
+
         setGlobalUsedWords(allWordsSet);
         setUsedWords(myWordsSet);
       }
     } catch (error) {
-      console.error('❌ Word sync error:', error);
+      console.error("❌ Word sync error:", error);
     } finally {
       syncingRef.current = false;
     }
   };
 
-  const initialSyncTimer = setTimeout(syncUsedWords, 500);
-
-  const wordChannel = supabase
-    .channel(`mobile-words-${currentRoom.id}`)
-    .on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'game_words',
-      filter: `room_id=eq.${currentRoom.id}`
-    }, (payload) => {
-      console.log('📱 Mobile real-time word:', payload.new?.word, 'from player:', payload.new?.player_id);
-      
-      if (payload.new?.word && !syncingRef.current && payload.new?.player_id !== user.id) {
-        const newWord = payload.new.word.toLocaleUpperCase('tr-TR');
-        
-        setTimeout(() => {
-          setGlobalUsedWords(prev => new Set([...prev, newWord]));
-        }, 100);
-      }
-    })
-    .subscribe();
-
-  return () => {
-    clearTimeout(initialSyncTimer);
-    console.log('📱 Mobile word sync cleanup');
-    supabase.removeChannel(wordChannel);
-  };
-}, [currentRoom?.id, user?.id, gameMode]);
-  
-  // Turnuva real-time senkronizasyonu
-useEffect(() => {
-  if (gameMode !== 'tournament' || !tournamentMatch) return;
-
-  console.log('🏆 Turnuva real-time senkronizasyon başlatıldı');
-
-  // Tournament match değişikliklerini dinle
-  const tournamentChannel = supabase
-    .channel(`tournament-match-${tournamentMatch.id}`)
-    .on('postgres_changes', {
-      event: 'UPDATE',
-      schema: 'public',
-      table: 'tournament_matches',
-      filter: `id=eq.${tournamentMatch.id}`
-    }, (payload) => {
-      console.log('🔄 Tournament match güncellendi:', payload.new);
-      
-      // Rakip skorunu real-time güncelle - DÜZELTME
-      const newMatch = payload.new as any;
-      if (user) {
-        const isPlayer1 = String(newMatch.player1_id) === String(user.id);
-        const newOpponentScore = isPlayer1 ? newMatch.player2_score : newMatch.player1_score;
-        const newPlayerScore = isPlayer1 ? newMatch.player1_score : newMatch.player2_score;
-        
-        console.log('🔄 Real-time tournament sync:', {
-          isPlayer1,
-          newPlayerScore,
-          newOpponentScore,
-          currentPlayerScore: playerScore,
-          currentOpponentScore: opponentScore
-        });
-        
-        if (newOpponentScore !== undefined && newOpponentScore !== opponentScore) {
-          console.log('🔄 Rakip skoru güncellendi:', opponentScore, '->', newOpponentScore);
-          setOpponentScore(newOpponentScore);
-        }
-        
-        // Kendi skorumuzu da güncelle (eğer başka yerden geliyorsa)
-        if (newPlayerScore !== undefined && newPlayerScore !== playerScore) {
-          console.log('🔄 Kendi skorumuz güncellendi:', playerScore, '->', newPlayerScore);
-          setPlayerScore(newPlayerScore);
-        }
-      }
-    })
-    .subscribe();
-
-  return () => {
-    console.log('🏆 Turnuva real-time temizliği');
-    supabase.removeChannel(tournamentChannel);
-  };
-}, [gameMode, tournamentMatch?.id, user?.id, opponentScore]);
-
-  // İlk sync
- useEffect(() => {
-  if (!currentRoom) return;
-
-  const initialSyncTimer = setTimeout(syncUsedWords, 500);
-
-  // Real-time word changes dinle
-  const wordChannel = supabase
-    .channel(`mobile-words-${currentRoom.id}`)
-    .on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'game_words',
-      filter: `room_id=eq.${currentRoom.id}`
-    }, (payload) => {
-      console.log('📱 Mobile real-time word:', payload.new?.word, 'from player:', payload.new?.player_id);
-      
-      // Don't process words from the current user to prevent duplicate validation
-      if (payload.new?.word && !syncingRef.current && payload.new?.player_id !== user?.id) {
-        const newWord = payload.new.word.toLocaleUpperCase('tr-TR');
-        
-        // Debounced update - only for other players' words
-        setTimeout(() => {
-          setGlobalUsedWords(prev => new Set([...prev, newWord]));
-          // Do NOT add to setUsedWords here; keep my words separate
-        }, 100);
-      }
-    })
-    .subscribe();
-
-  return () => {
-    clearTimeout(initialSyncTimer);
-    console.log('📱 Mobile word sync cleanup');
-    supabase.removeChannel(wordChannel);
-  };
-}, [currentRoom?.id, user?.id]);
-
-const syncUsedWords = async () => {
-  if (syncingRef.current) return;
-  
-  syncingRef.current = true;
-  
-  try {
-    if (gameMode === 'vs-computer') {
-      setGlobalUsedWords(new Set());
-      setUsedWords(new Set());
-      return;
-    }
-
-    const { data: roomWords } = await supabase
-      .from('game_words')
-      .select('word, player_id')
-      .eq('room_id', currentRoom.id);
-
-    if (roomWords) {
-      const allWordsSet = new Set(roomWords.map(w => w.word.toLocaleUpperCase('tr-TR')));
-      const myWordsSet = new Set(
-        roomWords
-          .filter(w => w.player_id === user?.id)
-          .map(w => w.word.toLocaleUpperCase('tr-TR'))
-      );
-      
-      setGlobalUsedWords(allWordsSet);
-      setUsedWords(myWordsSet);
-    }
-  } catch (error) {
-    console.error('❌ Word sync error:', error);
-  } finally {
-    syncingRef.current = false;
-  }
-};
-
-// Tournament activity tracking (removed - not needed for core functionality)
+  // Tournament activity tracking (removed - not needed for core functionality)
 
   // AI continuous play effect - unified for all modes when playing with AI
-useEffect(() => {
-  const aiPlaying = isPlayingWithAI();
-  
-  if (!aiPlaying || !gameStarted || gameEnded || !user) {
-    console.log('🤖 AI not playing:', { aiPlaying, gameStarted, gameEnded, gameMode });
-    return;
-  }
+  useEffect(() => {
+    const aiPlaying = isPlayingWithAI();
 
-  console.log('🤖 Starting AI play interval for game mode:', gameMode);
-
-  const aiPlayInterval = setInterval(() => {
-    const timeSincePlayerAction = Date.now() - lastPlayerAction;
-    const minDelayAfterPlayerAction = 1500;
-    
-    if (timeSincePlayerAction < minDelayAfterPlayerAction) {
-      console.log('🤖 Waiting for player action cooldown');
+    if (!aiPlaying || !gameStarted || gameEnded || !user) {
+      console.log("🤖 AI not playing:", { aiPlaying, gameStarted, gameEnded, gameMode });
       return;
     }
-    
-    // AI kelime seçimi
-    const selectAIWord = async () => {
-      try {
-        const potentialWords = [
-          'KEDİ', 'MASA', 'ARABA', 'OKUL', 'KİTAP', 'DENİZ', 'AĞAÇ', 'ÇİÇEK', 
-          'DOSTLUK', 'GÜNEŞ', 'YILDIZ', 'BULUT', 'RÜZGAR', 'ATEŞ', 'TOPRAK',
-          'SEVGİ', 'MUTLULUK', 'UMUT', 'HAYAL', 'RENKLER', 'MÜZİK', 'DANS', 'ŞARKI',
-          'OYUN', 'SPOR', 'FUTBOL', 'BASKETBOL', 'TENİS', 'YÜZME', 'KOŞU', 'BİSİKLET',
-          'YEMEK', 'EKMEK', 'PEYNİR', 'DOMATES', 'SALATA', 'ÇORBA', 'MEYVE',
-          'ELMA', 'ARMUT', 'ÇİLEK', 'KIRAZ', 'ÜZÜM', 'PORTAKAL', 'MANGO',
-          'SEBZE', 'HAVUÇ', 'PATLICAN', 'BİBER', 'SOĞAN', 'SARIMSAK', 'PATATES',
-          'KALE', 'KÖPEK', 'KUŞU', 'BALINA', 'ASLAN', 'KAPLAN', 'FİL',
-          'SÜT', 'KOLA', 'ÇAY', 'KAHVE', 'ŞEKER', 'TUZ', 'YAĞLI', 'EKŞİ',
-          'EV', 'KAPI', 'PENCERE', 'ODA', 'SALON', 'MUTFAK', 'BANYO', 'YATAK'
-        ];
-        
-        const shuffledWords = potentialWords.sort(() => Math.random() - 0.5);
-        let wordUsed = false;
-        
-        for (const word of shuffledWords) {
-          const normalizedWord = word.toLocaleUpperCase('tr-TR');
-          
-          // Global kullanılmış kelimeler kontrolü - tüm oyuncuların kelimelerini kontrol et
-          if (!globalUsedWords.has(normalizedWord)) {
-            // Rastgele puan (daha dengeli)
-            const points = Math.floor(Math.random() * 15) + 8; // 8-22 puan
-            
-            console.log(`🤖 AI used word in ${gameMode}: ${word} with ${points} points (Total opponents: ${opponentScore + points})`);
-            
-            // Score güncelleme
-            const newOpponentScore = opponentScore + points;
-            setOpponentScore(newOpponentScore);
-            setOpponentWords(prev => [...prev, word]);
-            setOpponentWordsWithScores(prev => [...prev, { word, score: points }]);
-            
-            // Ses efekti
-            playSound('correctWord');
-            
-            // Global kullanılmış kelimeler listesine ekle
-            setGlobalUsedWords(prev => new Set([...prev, normalizedWord]));
-            
-            // Turnuva modunda Supabase'i de güncelle
-            if (gameMode === 'tournament' && tournamentMatch && user) {
-              const isPlayer1 = tournamentMatch.player1_id === user.id;
-              const updateField = isPlayer1 ? 'player2_score' : 'player1_score';
-              
-              try {
-                await supabase
-                  .from('tournament_matches')
-                  .update({
-                    [updateField]: newOpponentScore,
-                    updated_at: new Date().toISOString()
-                  })
-                  .eq('id', tournamentMatch.id);
-                
-                console.log('🏆 Tournament bot score updated in DB:', newOpponentScore);
-              } catch (error) {
-                console.error('❌ Bot tournament score update error:', error);
+
+    console.log("🤖 Starting AI play interval for game mode:", gameMode);
+
+    const aiPlayInterval = setInterval(
+      () => {
+        const timeSincePlayerAction = Date.now() - lastPlayerAction;
+        const minDelayAfterPlayerAction = 1500;
+
+        if (timeSincePlayerAction < minDelayAfterPlayerAction) {
+          console.log("🤖 Waiting for player action cooldown");
+          return;
+        }
+
+        // AI kelime seçimi
+        const selectAIWord = async () => {
+          try {
+            const potentialWords = [
+              "KEDİ",
+              "MASA",
+              "ARABA",
+              "OKUL",
+              "KİTAP",
+              "DENİZ",
+              "AĞAÇ",
+              "ÇİÇEK",
+              "DOSTLUK",
+              "GÜNEŞ",
+              "YILDIZ",
+              "BULUT",
+              "RÜZGAR",
+              "ATEŞ",
+              "TOPRAK",
+              "SEVGİ",
+              "MUTLULUK",
+              "UMUT",
+              "HAYAL",
+              "RENKLER",
+              "MÜZİK",
+              "DANS",
+              "ŞARKI",
+              "OYUN",
+              "SPOR",
+              "FUTBOL",
+              "BASKETBOL",
+              "TENİS",
+              "YÜZME",
+              "KOŞU",
+              "BİSİKLET",
+              "YEMEK",
+              "EKMEK",
+              "PEYNİR",
+              "DOMATES",
+              "SALATA",
+              "ÇORBA",
+              "MEYVE",
+              "ELMA",
+              "ARMUT",
+              "ÇİLEK",
+              "KIRAZ",
+              "ÜZÜM",
+              "PORTAKAL",
+              "MANGO",
+              "SEBZE",
+              "HAVUÇ",
+              "PATLICAN",
+              "BİBER",
+              "SOĞAN",
+              "SARIMSAK",
+              "PATATES",
+              "KALE",
+              "KÖPEK",
+              "KUŞU",
+              "BALINA",
+              "ASLAN",
+              "KAPLAN",
+              "FİL",
+              "SÜT",
+              "KOLA",
+              "ÇAY",
+              "KAHVE",
+              "ŞEKER",
+              "TUZ",
+              "YAĞLI",
+              "EKŞİ",
+              "EV",
+              "KAPI",
+              "PENCERE",
+              "ODA",
+              "SALON",
+              "MUTFAK",
+              "BANYO",
+              "YATAK",
+            ];
+
+            const shuffledWords = potentialWords.sort(() => Math.random() - 0.5);
+            let wordUsed = false;
+
+            for (const word of shuffledWords) {
+              const normalizedWord = word.toLocaleUpperCase("tr-TR");
+
+              // Global kullanılmış kelimeler kontrolü - tüm oyuncuların kelimelerini kontrol et
+              if (!globalUsedWords.has(normalizedWord)) {
+                // Rastgele puan (daha dengeli)
+                const points = Math.floor(Math.random() * 15) + 8; // 8-22 puan
+
+                console.log(
+                  `🤖 AI used word in ${gameMode}: ${word} with ${points} points (Total opponents: ${opponentScore + points})`,
+                );
+
+                // Score güncelleme
+                const newOpponentScore = opponentScore + points;
+                setOpponentScore(newOpponentScore);
+                setOpponentWords((prev) => [...prev, word]);
+                setOpponentWordsWithScores((prev) => [...prev, { word, score: points }]);
+
+                // Ses efekti
+                playSound("correctWord");
+
+                // Global kullanılmış kelimeler listesine ekle
+                setGlobalUsedWords((prev) => new Set([...prev, normalizedWord]));
+
+                // Turnuva modunda Supabase'i de güncelle
+                if (gameMode === "tournament" && tournamentMatch && user) {
+                  const isPlayer1 = tournamentMatch.player1_id === user.id;
+                  const updateField = isPlayer1 ? "player2_score" : "player1_score";
+
+                  try {
+                    await supabase
+                      .from("tournament_matches")
+                      .update({
+                        [updateField]: newOpponentScore,
+                        updated_at: new Date().toISOString(),
+                      })
+                      .eq("id", tournamentMatch.id);
+
+                    console.log("🏆 Tournament bot score updated in DB:", newOpponentScore);
+                  } catch (error) {
+                    console.error("❌ Bot tournament score update error:", error);
+                  }
+                }
+
+                wordUsed = true;
+                break;
               }
             }
-            
-            wordUsed = true;
-            break;
-          }
-        }
-        
-        // Kelime bulunamazsa küçük puan ver
-        if (!wordUsed) {
-          const fallbackPoints = Math.floor(Math.random() * 6) + 3; // 3-8 puan
-          const newScore = opponentScore + fallbackPoints;
-          setOpponentScore(newScore);
-          console.log(`🤖 AI couldn't find unused word, got fallback ${fallbackPoints} points (Total: ${newScore})`);
-          
-          // Turnuva modunda fallback için de DB güncelle
-          if (gameMode === 'tournament' && tournamentMatch && user) {
-            const isPlayer1 = tournamentMatch.player1_id === user.id;
-            const updateField = isPlayer1 ? 'player2_score' : 'player1_score';
-            
-            try {
-              await supabase
-                .from('tournament_matches')
-                .update({
-                  [updateField]: newScore,
-                  updated_at: new Date().toISOString()
-                })
-                .eq('id', tournamentMatch.id);
-            } catch (error) {
-              console.error('❌ Bot fallback score update error:', error);
+
+            // Kelime bulunamazsa küçük puan ver
+            if (!wordUsed) {
+              const fallbackPoints = Math.floor(Math.random() * 6) + 3; // 3-8 puan
+              const newScore = opponentScore + fallbackPoints;
+              setOpponentScore(newScore);
+              console.log(
+                `🤖 AI couldn't find unused word, got fallback ${fallbackPoints} points (Total: ${newScore})`,
+              );
+
+              // Turnuva modunda fallback için de DB güncelle
+              if (gameMode === "tournament" && tournamentMatch && user) {
+                const isPlayer1 = tournamentMatch.player1_id === user.id;
+                const updateField = isPlayer1 ? "player2_score" : "player1_score";
+
+                try {
+                  await supabase
+                    .from("tournament_matches")
+                    .update({
+                      [updateField]: newScore,
+                      updated_at: new Date().toISOString(),
+                    })
+                    .eq("id", tournamentMatch.id);
+                } catch (error) {
+                  console.error("❌ Bot fallback score update error:", error);
+                }
+              }
             }
+          } catch (error) {
+            console.error("🤖 AI word selection error:", error);
+            // Hata durumunda da küçük puan ver
+            const errorPoints = Math.floor(Math.random() * 5) + 2;
+            setOpponentScore((prev) => prev + errorPoints);
+            console.log(`🤖 AI error, got ${errorPoints} points`);
+          }
+        };
+
+        selectAIWord();
+      },
+      2500 + Math.random() * 3000,
+    );
+
+    return () => {
+      console.log("🤖 Stopping AI play interval for game mode:", gameMode);
+      clearInterval(aiPlayInterval);
+    };
+  }, [
+    gameStarted,
+    gameEnded,
+    gameMode,
+    user?.id,
+    isPlayingWithAI,
+    globalUsedWords,
+    tournamentMatch?.id,
+    opponentScore,
+    lastPlayerAction,
+    playSound,
+  ]);
+
+  // lastPlayerAction'ı başlat
+  useEffect(() => {
+    if (gameStarted && !gameEnded) {
+      setLastPlayerAction(Date.now());
+    }
+  }, [gameStarted, gameEnded]);
+
+  // 🤖 vs-computer modunda otomatik countdown başlatma
+  useEffect(() => {
+    if (gameMode === "vs-computer" && !gameStarted && !showCountdown && !gameEnded) {
+      console.log("🤖 vs-computer mode - countdown başlatılıyor");
+      setWaitingForPlayer(false);
+
+      // vs-computer modunda server countdown'a gerek yok, direkt başlat
+      setCountdownServerTime(new Date().toISOString());
+      setShowCountdown(true);
+      setGameStarted(false);
+    }
+  }, [gameMode, gameStarted, showCountdown, gameEnded]);
+
+  // 🎯 Countdown event listener (tüm modlar için)
+  useEffect(() => {
+    const handleCountdownStart = (event: CustomEvent) => {
+      const { serverTime } = event.detail;
+      console.log("⏰ Countdown event alındı:", serverTime);
+      setCountdownServerTime(serverTime);
+      setShowCountdown(true);
+      setGameStarted(false);
+    };
+
+    window.addEventListener("countdownStarted", handleCountdownStart as EventListener);
+
+    return () => {
+      window.removeEventListener("countdownStarted", handleCountdownStart as EventListener);
+    };
+  }, []);
+
+  // ⏱️ Initial server countdown sync for private/random
+  useEffect(() => {
+    if (
+      (gameMode === "private-room" || gameMode === "random-match") &&
+      currentRoom?.countdown_started_at &&
+      !showCountdown &&
+      !gameStarted
+    ) {
+      console.log("⏰ Initial countdown sync from room state:", currentRoom.countdown_started_at);
+      setCountdownServerTime(currentRoom.countdown_started_at);
+      setShowCountdown(true);
+      setGameStarted(false);
+    }
+  }, [gameMode, currentRoom?.countdown_started_at, showCountdown, gameStarted]);
+
+  // 🔍 Countdown eksiklik kontrolü: Eğer 2 oyuncu var ama countdown başlamamışsa kontrol et
+  useEffect(() => {
+    if (gameMode !== "private-room" && gameMode !== "random-match") return;
+    if (showCountdown || gameStarted) return; // Zaten countdown varsa veya oyun başlamışsa skip
+    if (countdownCheckDoneRef.current) return; // Tek seferlik kontrol
+
+    const realPlayers = participants.filter((p) => !p.is_bot && p.user_id !== null);
+    if (realPlayers.length < 2) return; // Henüz 2 oyuncu yok
+
+    // 🎯 2 oyuncu var ama countdown yok - sunucudan kontrol et
+    const checkCountdown = async () => {
+      if (!currentRoom?.id) return;
+      try {
+        console.log("🔍 Countdown kontrol ediliyor - 2 oyuncu var ama countdown başlamamış olabilir");
+        const { data } = await supabase
+          .from("game_rooms")
+          .select("countdown_started_at, status")
+          .eq("id", currentRoom.id)
+          .single();
+
+        if (data?.countdown_started_at) {
+          console.log("✅ Sunucuda countdown var, senkronize ediliyor:", data.countdown_started_at);
+          setCountdownServerTime(data.countdown_started_at);
+          setShowCountdown(true);
+          countdownCheckDoneRef.current = true;
+        } else {
+          // Eğer gerçekten 2 oyuncu varsa, sunucu tarafında countdown'u başlatmayı dene (idempotent)
+          if (realPlayers.length >= 2) {
+            console.log("⚠️ Sunucuda countdown yok - RPC ile başlatılıyor...");
+            const { data: startedAt, error: rpcErr } = await supabase.rpc("start_game_countdown", {
+              p_room_id: currentRoom.id,
+            });
+            if (rpcErr) {
+              console.warn("RPC countdown başlatma hatası:", rpcErr);
+            } else if (startedAt) {
+              console.log("⏰ Countdown RPC ile başlatıldı:", startedAt);
+              setCountdownServerTime(startedAt);
+              setShowCountdown(true);
+              countdownCheckDoneRef.current = true;
+            }
+          } else {
+            console.log("⚠️ Sunucuda countdown yok - beklenmeyen durum");
           }
         }
-        
       } catch (error) {
-        console.error('🤖 AI word selection error:', error);
-        // Hata durumunda da küçük puan ver
-        const errorPoints = Math.floor(Math.random() * 5) + 2;
-        setOpponentScore(prev => prev + errorPoints);
-        console.log(`🤖 AI error, got ${errorPoints} points`);
+        console.error("❌ Countdown kontrol hatası:", error);
       }
     };
 
-    selectAIWord();
-  }, 2500 + Math.random() * 3000);
+    // 1 saniye gecikme ile kontrol et (realtime subscription'dan sonra)
+    const timer = setTimeout(checkCountdown, 1000);
+    return () => clearTimeout(timer);
+  }, [gameMode, participants, showCountdown, gameStarted, currentRoom?.id]);
 
-  return () => {
-    console.log('🤖 Stopping AI play interval for game mode:', gameMode);
-    clearInterval(aiPlayInterval);
-  };
-}, [gameStarted, gameEnded, gameMode, user?.id, isPlayingWithAI, globalUsedWords, tournamentMatch?.id, opponentScore, lastPlayerAction, playSound]);
+  // Multiplayer (private-room & random-match) waiting/start logic
+  useEffect(() => {
+    if (gameMode === "private-room" || gameMode === "random-match") {
+      const realPlayers = participants.filter((p) => !p.is_bot && p.user_id !== null);
+      const roomActive = currentRoom?.status === "active";
+      const aiPlaying = isPlayingWithAI();
 
-// lastPlayerAction'ı başlat
-useEffect(() => {
-  if (gameStarted && !gameEnded) {
-    setLastPlayerAction(Date.now());
-  }
-}, [gameStarted, gameEnded]);
+      if (roomActive && (realPlayers.length >= 2 || aiPlaying)) {
+        console.log("✅ Oyun başlıyor! Koşul:", { realPlayers: realPlayers.length, aiPlaying });
+        setWaitingForPlayer(false);
 
-// 🤖 vs-computer modunda otomatik countdown başlatma
-useEffect(() => {
-  if (gameMode === 'vs-computer' && !gameStarted && !showCountdown && !gameEnded) {
-    console.log('🤖 vs-computer mode - countdown başlatılıyor');
-    setWaitingForPlayer(false);
-    
-    // vs-computer modunda server countdown'a gerek yok, direkt başlat
-    setCountdownServerTime(new Date().toISOString());
-    setShowCountdown(true);
-    setGameStarted(false);
-  }
-}, [gameMode, gameStarted, showCountdown, gameEnded]);
+        // 🎯 Countdown GameContext tarafından başlatılıyor - burada duplike kod yok!
 
-// 🎯 Countdown event listener (tüm modlar için)
-useEffect(() => {
-  const handleCountdownStart = (event: CustomEvent) => {
-    const { serverTime } = event.detail;
-    console.log('⏰ Countdown event alındı:', serverTime);
-    setCountdownServerTime(serverTime);
-    setShowCountdown(true);
-    setGameStarted(false);
-  };
-
-  window.addEventListener('countdownStarted', handleCountdownStart as EventListener);
-  
-  return () => {
-    window.removeEventListener('countdownStarted', handleCountdownStart as EventListener);
-  };
-}, []);
-
-// ⏱️ Initial server countdown sync for private/random
-useEffect(() => {
-  if ((gameMode === 'private-room' || gameMode === 'random-match') && currentRoom?.countdown_started_at && !showCountdown && !gameStarted) {
-    console.log('⏰ Initial countdown sync from room state:', currentRoom.countdown_started_at);
-    setCountdownServerTime(currentRoom.countdown_started_at);
-    setShowCountdown(true);
-    setGameStarted(false);
-  }
-}, [gameMode, currentRoom?.countdown_started_at, showCountdown, gameStarted]);
-
-// 🔍 Countdown eksiklik kontrolü: Eğer 2 oyuncu var ama countdown başlamamışsa kontrol et
-useEffect(() => {
-  if (gameMode !== 'private-room' && gameMode !== 'random-match') return;
-  if (showCountdown || gameStarted) return; // Zaten countdown varsa veya oyun başlamışsa skip
-  if (countdownCheckDoneRef.current) return; // Tek seferlik kontrol
-  
-  const realPlayers = participants.filter(p => !p.is_bot && p.user_id !== null);
-  if (realPlayers.length < 2) return; // Henüz 2 oyuncu yok
-  
-  // 🎯 2 oyuncu var ama countdown yok - sunucudan kontrol et
-  const checkCountdown = async () => {
-    if (!currentRoom?.id) return;
-    try {
-      console.log('🔍 Countdown kontrol ediliyor - 2 oyuncu var ama countdown başlamamış olabilir');
-      const { data } = await supabase
-        .from('game_rooms')
-        .select('countdown_started_at, status')
-        .eq('id', currentRoom.id)
-        .single();
-
-      if (data?.countdown_started_at) {
-        console.log('✅ Sunucuda countdown var, senkronize ediliyor:', data.countdown_started_at);
-        setCountdownServerTime(data.countdown_started_at);
-        setShowCountdown(true);
-        countdownCheckDoneRef.current = true;
-      } else {
-        // Eğer gerçekten 2 oyuncu varsa, sunucu tarafında countdown'u başlatmayı dene (idempotent)
-        if (realPlayers.length >= 2) {
-          console.log('⚠️ Sunucuda countdown yok - RPC ile başlatılıyor...');
-          const { data: startedAt, error: rpcErr } = await supabase.rpc('start_game_countdown', { p_room_id: currentRoom.id });
-          if (rpcErr) {
-            console.warn('RPC countdown başlatma hatası:', rpcErr);
-          } else if (startedAt) {
-            console.log('⏰ Countdown RPC ile başlatıldı:', startedAt);
-            setCountdownServerTime(startedAt);
-            setShowCountdown(true);
-            countdownCheckDoneRef.current = true;
-          }
-        } else {
-          console.log('⚠️ Sunucuda countdown yok - beklenmeyen durum');
+        if (!hasShownStartMessage) {
+          setHasShownStartMessage(true);
+          const modeLabel = gameMode === "private-room" ? "Özel Oda" : "Rastgele Eşleşme";
+          toast({
+            title: `🎮 ${modeLabel} Başladı!`,
+            description: `${gameType === "score" ? "Puanlı" : "Süreli"} oyun başladı!`,
+            duration: 2000,
+          });
         }
+      } else {
+        setWaitingForPlayer(true);
+        // Oyun başlamadan önce beklemeye dönerse tekrar geri sayım hakkı tanı
+        if (!gameStarted) {
+          gameHasStartedRef.current = false;
+        }
+        setHasShownStartMessage(false);
       }
-    } catch (error) {
-      console.error('❌ Countdown kontrol hatası:', error);
     }
-  };
-  
-  // 1 saniye gecikme ile kontrol et (realtime subscription'dan sonra)
-  const timer = setTimeout(checkCountdown, 1000);
-  return () => clearTimeout(timer);
-}, [gameMode, participants, showCountdown, gameStarted, currentRoom?.id]);
+  }, [
+    participants,
+    gameMode,
+    hasShownStartMessage,
+    gameType,
+    toast,
+    currentRoom?.status,
+    gameStarted,
+    showCountdown,
+    isPlayingWithAI,
+  ]);
 
-// Multiplayer (private-room & random-match) waiting/start logic
-useEffect(() => {
-  if (gameMode === 'private-room' || gameMode === 'random-match') {
-    const realPlayers = participants.filter(p => !p.is_bot && p.user_id !== null);
-    const roomActive = currentRoom?.status === 'active';
-    const aiPlaying = isPlayingWithAI();
-  
-    if (roomActive && (realPlayers.length >= 2 || aiPlaying)) {
-      console.log('✅ Oyun başlıyor! Koşul:', { realPlayers: realPlayers.length, aiPlaying });
-      setWaitingForPlayer(false);
-
-      // 🎯 Countdown GameContext tarafından başlatılıyor - burada duplike kod yok!
-      
-      if (!hasShownStartMessage) {
-        setHasShownStartMessage(true);
-        const modeLabel = gameMode === 'private-room' ? 'Özel Oda' : 'Rastgele Eşleşme';
-        toast({
-          title: `🎮 ${modeLabel} Başladı!`,
-          description: `${gameType === 'score' ? 'Puanlı' : 'Süreli'} oyun başladı!`,
-          duration: 2000,
-        });
-      }
-    } else {
-      setWaitingForPlayer(true);
-      // Oyun başlamadan önce beklemeye dönerse tekrar geri sayım hakkı tanı
-      if (!gameStarted) {
-        gameHasStartedRef.current = false;
-      }
-      setHasShownStartMessage(false);
-    }
-  }
-}, [participants, gameMode, hasShownStartMessage, gameType, toast, currentRoom?.status, gameStarted, showCountdown, isPlayingWithAI]);
-
-// Lightweight sender-side rematch status listener (no navigation)
-useEffect(() => {
-  if (!user || !waitingForRematchResponse) return;
-  const channel = supabase
-    .channel(`rematch-sender-${user.id}`)
-    .on('postgres_changes', {
-      event: 'UPDATE',
-      schema: 'public',
-      table: 'rematch_requests',
-      filter: `from_user_id=eq.${user.id}`
-    }, (payload) => {
-      const req = payload.new as any;
-      if (req?.status === 'accepted' || req?.status === 'rejected') {
-        setWaitingForRematchResponse(false);
-        setRematchRequested(false);
-        disconnectHandledRef.current = false;
-      }
-    })
-    .subscribe();
-  return () => {
-    supabase.removeChannel(channel);
-  };
-}, [user?.id, waitingForRematchResponse]);
-
+  // Lightweight sender-side rematch status listener (no navigation)
+  useEffect(() => {
+    if (!user || !waitingForRematchResponse) return;
+    const channel = supabase
+      .channel(`rematch-sender-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "rematch_requests",
+          filter: `from_user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const req = payload.new as any;
+          if (req?.status === "accepted" || req?.status === "rejected") {
+            setWaitingForRematchResponse(false);
+            setRematchRequested(false);
+            disconnectHandledRef.current = false;
+          }
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, waitingForRematchResponse]);
 
   // Touch olayları için optimize edilmiş handler
   const handleLetterTouch = (letter: string, row: number, col: number, event: React.TouchEvent) => {
@@ -3865,7 +4257,7 @@ useEffect(() => {
     handleLetterClick(letter, row, col);
   };
 
-  // Mouse olayları için optimize edilmiş handler  
+  // Mouse olayları için optimize edilmiş handler
   const handleLetterMouse = (letter: string, row: number, col: number, event: React.MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
@@ -3873,1338 +4265,1351 @@ useEffect(() => {
   };
 
   // Handle letter click
-  const handleLetterClick = useCallback((letter: string, row: number, col: number) => {
-  if (gameEnded || waitingForPlayer || isJokerActive) return;
+  const handleLetterClick = useCallback(
+    (letter: string, row: number, col: number) => {
+      if (gameEnded || waitingForPlayer || isJokerActive) return;
 
-  const now = Date.now();
-    // 150ms debounce (mobil için daha uzun)
-    if (now - lastClickTime < 150) return;
-    setLastClickTime(now);
+      const now = Date.now();
+      // 150ms debounce (mobil için daha uzun)
+      if (now - lastClickTime < 150) return;
+      setLastClickTime(now);
 
-    // Haptic feedback (mobil cihazlarda titreşim)
-    if ('vibrate' in navigator) {
-      navigator.vibrate(50);
-    }
+      // Haptic feedback (mobil cihazlarda titreşim)
+      if ("vibrate" in navigator) {
+        navigator.vibrate(50);
+      }
 
-    playSound('letterSelect');
-  
-    const isSelected = selectedLetters.some(s => s.row === row && s.col === col);
-  
-    if (isSelected) {
-      const newSelected = selectedLetters.filter(s => !(s.row === row && s.col === col));
-      setSelectedLetters(newSelected);
-      setCurrentWord(newSelected.map(s => s.letter).join(''));
-    } else {
-      const newSelected = [...selectedLetters, { letter, row, col }];
-      setSelectedLetters(newSelected);
-      setCurrentWord(newSelected.map(s => s.letter).join(''));
-    }
-  }, [gameEnded, waitingForPlayer, isJokerActive, lastClickTime, selectedLetters, playSound]);
+      playSound("letterSelect");
+
+      const isSelected = selectedLetters.some((s) => s.row === row && s.col === col);
+
+      if (isSelected) {
+        const newSelected = selectedLetters.filter((s) => !(s.row === row && s.col === col));
+        setSelectedLetters(newSelected);
+        setCurrentWord(newSelected.map((s) => s.letter).join(""));
+      } else {
+        const newSelected = [...selectedLetters, { letter, row, col }];
+        setSelectedLetters(newSelected);
+        setCurrentWord(newSelected.map((s) => s.letter).join(""));
+      }
+    },
+    [gameEnded, waitingForPlayer, isJokerActive, lastClickTime, selectedLetters, playSound],
+  );
 
   // Clear current word
   const clearWord = () => {
     setSelectedLetters([]);
-    setCurrentWord('');
+    setCurrentWord("");
   };
 
   // Custom toast fonksiyonu
   const showCustomToast = (title: string, description: string) => {
-  const toastDiv = document.createElement('div');
-  toastDiv.className = 'fixed bg-red-500 text-white p-3 rounded-lg shadow-lg z-50 transition-transform duration-300 left-1/2';
-  toastDiv.style.bottom = '0px'; // Alttan başla
-  toastDiv.style.transform = 'translateX(-50%) translateY(100%)'; // Ortala ve aşağıda gizle
-  toastDiv.innerHTML = '<div class="font-bold">' + title + '</div><div class="text-sm">' + description + '</div>';
-  
-  document.body.appendChild(toastDiv);
-  
-  // Kartın yüksekliğini al
-  const cardHeight = toastDiv.offsetHeight;
-  
-  // Yukarı çık (kart yüksekliği kadar)
-  setTimeout(() => {
-    toastDiv.style.transform = 'translateX(-50%) translateY(-' + cardHeight + 'px)';
-  }, 50);
-  
-  // 2 saniye sonra aşağı in
-  setTimeout(() => {
-    toastDiv.style.transform = 'translateX(-50%) translateY(100%)';
+    const toastDiv = document.createElement("div");
+    toastDiv.className =
+      "fixed bg-red-500 text-white p-3 rounded-lg shadow-lg z-50 transition-transform duration-300 left-1/2";
+    toastDiv.style.bottom = "0px"; // Alttan başla
+    toastDiv.style.transform = "translateX(-50%) translateY(100%)"; // Ortala ve aşağıda gizle
+    toastDiv.innerHTML = '<div class="font-bold">' + title + '</div><div class="text-sm">' + description + "</div>";
+
+    document.body.appendChild(toastDiv);
+
+    // Kartın yüksekliğini al
+    const cardHeight = toastDiv.offsetHeight;
+
+    // Yukarı çık (kart yüksekliği kadar)
     setTimeout(() => {
-      if (document.body.contains(toastDiv)) {
-        document.body.removeChild(toastDiv);
+      toastDiv.style.transform = "translateX(-50%) translateY(-" + cardHeight + "px)";
+    }, 50);
+
+    // 2 saniye sonra aşağı in
+    setTimeout(() => {
+      toastDiv.style.transform = "translateX(-50%) translateY(100%)";
+      setTimeout(() => {
+        if (document.body.contains(toastDiv)) {
+          document.body.removeChild(toastDiv);
+        }
+      }, 300);
+    }, 1000);
+  };
+
+  // Submit word - Using local wordlist validation
+  const submitWord = async () => {
+    if (waitingForPlayer || isJokerActive) return;
+
+    // Prevent accidental double-taps/duplicate submissions (mobile)
+    if (submissionLockRef.current) {
+      console.log("⏳ Submission locked - ignoring duplicate tap");
+      return;
+    }
+    submissionLockRef.current = true;
+
+    setLastPlayerAction(Date.now());
+
+    try {
+      // Tournament activity tracking removed for simplicity
+
+      if (currentWord.length < 3) {
+        showCustomToast("Geçersiz Kelime", "");
+        return;
       }
-    }, 300);
-  }, 1000);
-};
 
-// Submit word - Using local wordlist validation
-const submitWord = async () => {
-  if (waitingForPlayer || isJokerActive) return;
-  
-  // Prevent accidental double-taps/duplicate submissions (mobile)
-  if (submissionLockRef.current) {
-    console.log('⏳ Submission locked - ignoring duplicate tap');
-    return;
-  }
-  submissionLockRef.current = true;
-  
-  setLastPlayerAction(Date.now());
-  
-  try {
+      const normalizedWord = currentWord.toLocaleUpperCase("tr-TR");
 
-    // Tournament activity tracking removed for simplicity
-    
-    if (currentWord.length < 3) {
-      showCustomToast('Geçersiz Kelime','');
-      return;
-    }
-  
-    const normalizedWord = currentWord.toLocaleUpperCase('tr-TR');
-  
-    // Ignore rapid duplicate submission of the same word (e.g., double tap)
-    if (recentSubmissionsRef.current.has(normalizedWord)) {
-      console.log('⏳ Ignoring rapid duplicate submission for:', normalizedWord);
-      return;
-    }
-    recentSubmissionsRef.current.add(normalizedWord);
-    setTimeout(() => {
-      recentSubmissionsRef.current.delete(normalizedWord);
-    }, 800);
-  
-    // Mobile word check
-    console.log('📱 Mobile word check:', {
-      word: normalizedWord,
-      localUsedSize: usedWords.size,
-      globalUsedSize: globalUsedWords.size,
-      isInLocal: usedWords.has(normalizedWord),
-      isInGlobal: globalUsedWords.has(normalizedWord),
-      currentUsedWords: Array.from(usedWords),
-      currentGlobalWords: Array.from(globalUsedWords)
-    });
-  
-    // SADECE KENDİ KELİMELERİMİ KONTROL ET - rakibin kelimelerini değil!
-    if (usedWords.has(normalizedWord)) {
-      console.log('❌ Mobile: Word already used by me!', {
-        foundInMyList: usedWords.has(normalizedWord),
-        myWords: Array.from(usedWords),
-        allGlobalWords: Array.from(globalUsedWords)
+      // Ignore rapid duplicate submission of the same word (e.g., double tap)
+      if (recentSubmissionsRef.current.has(normalizedWord)) {
+        console.log("⏳ Ignoring rapid duplicate submission for:", normalizedWord);
+        return;
+      }
+      recentSubmissionsRef.current.add(normalizedWord);
+      setTimeout(() => {
+        recentSubmissionsRef.current.delete(normalizedWord);
+      }, 800);
+
+      // Mobile word check
+      console.log("📱 Mobile word check:", {
+        word: normalizedWord,
+        localUsedSize: usedWords.size,
+        globalUsedSize: globalUsedWords.size,
+        isInLocal: usedWords.has(normalizedWord),
+        isInGlobal: globalUsedWords.has(normalizedWord),
+        currentUsedWords: Array.from(usedWords),
+        currentGlobalWords: Array.from(globalUsedWords),
       });
-      showCustomToast('Kelime Zaten Kullanıldı','');
-      playSound('wrongWord');
-      clearWord();
-      return;
-    }
 
-    // LOCAL WORDLIST VALIDATION
-    const result = validateWordLocal(currentWord);
-    
-    if (!result.isValid) {
-      playSound('wrongWord');
-      showCustomToast('Geçersiz Kelime','');
-      clearWord();
-      return;
-    }
-
-    console.log('✅ Mobile: Word accepted:', currentWord, 'Points:', result.points);
-    
-    // Database'e kelimeyi kaydet (sadece multiplayer modlarda)
-    if (currentRoom && user && (gameMode === 'private-room' || gameMode === 'random-match')) {
-      try {
-        await supabase
-          .from('game_words')
-          .insert({
-            room_id: currentRoom.id,
-            player_id: user.id,
-            word: normalizedWord,
-            points: result.points
-          });
-        
-        console.log('✅ Mobile: Word saved to database:', normalizedWord);
-        await forceRefreshProfile?.();
-      } catch (error) {
-        console.error('❌ Mobile: Database word save error:', error);
-        showCustomToast('Kelime kaydedilemedi','');
+      // SADECE KENDİ KELİMELERİMİ KONTROL ET - rakibin kelimelerini değil!
+      if (usedWords.has(normalizedWord)) {
+        console.log("❌ Mobile: Word already used by me!", {
+          foundInMyList: usedWords.has(normalizedWord),
+          myWords: Array.from(usedWords),
+          allGlobalWords: Array.from(globalUsedWords),
+        });
+        showCustomToast("Kelime Zaten Kullanıldı", "");
+        playSound("wrongWord");
         clearWord();
         return;
       }
-    }
 
-    // Profilde en uzun kelimeyi anında güncelle (tüm modlar)
-    if (user) {
-      try {
-        const newLen = normalizedWord.length;
-        const currentLen = (profile?.longest_word_length ?? 0);
-        if (newLen >= currentLen) {
-          await supabase
-            .from('profiles')
-            .update({ longest_word: normalizedWord, longest_word_length: newLen })
-            .eq('id', user.id);
+      // LOCAL WORDLIST VALIDATION
+      const result = validateWordLocal(currentWord);
+
+      if (!result.isValid) {
+        playSound("wrongWord");
+        showCustomToast("Geçersiz Kelime", "");
+        clearWord();
+        return;
+      }
+
+      console.log("✅ Mobile: Word accepted:", currentWord, "Points:", result.points);
+
+      // Database'e kelimeyi kaydet (sadece multiplayer modlarda)
+      if (currentRoom && user && (gameMode === "private-room" || gameMode === "random-match")) {
+        try {
+          await supabase.from("game_words").insert({
+            room_id: currentRoom.id,
+            player_id: user.id,
+            word: normalizedWord,
+            points: result.points,
+          });
+
+          console.log("✅ Mobile: Word saved to database:", normalizedWord);
           await forceRefreshProfile?.();
+        } catch (error) {
+          console.error("❌ Mobile: Database word save error:", error);
+          showCustomToast("Kelime kaydedilemedi", "");
+          clearWord();
+          return;
         }
-      } catch (e) {
-        console.warn('⚠️ Profil en uzun kelime güncellemesi başarısız:', e);
       }
-    }
 
-    // SADECE KENDİ LİSTEME EKLE - global'a ekleme, o real-time olarak gelecek
-    setUsedWords(prev => new Set([...prev, normalizedWord]));
-    console.log('✅ Mobile: Word added to local sets after validation:', normalizedWord);
-
-    // Ses efektleri ve puan hesaplama
-    playSound('correctWord');
-    const newScore = playerScore + result.points;
-    setPlayerScore(newScore);
-    
-    // Calculate first word time (in seconds)
-    const wordTimestamp = Date.now();
-    if (firstWordTime === null && gameStartTime > 0) {
-      const timeToFirstWord = Math.floor((wordTimestamp - gameStartTime) / 1000);
-      setFirstWordTime(timeToFirstWord);
-      console.log('⚡ İlk kelime süresi:', timeToFirstWord, 'saniye');
-    }
-    
-    setPlayerWords(prev => [...prev, currentWord]);
-    setPlayerWordsWithScores(prev => [...prev, { word: currentWord, score: result.points, timestamp: wordTimestamp }]);
-
-    const wordLength = currentWord.length;
-
-    // Ses efektleri triggerWordEffects içinde çalınacak - dublicate removed
-    
-    triggerWordEffects();
-    
-    if (currentRoom) {
-      await updateScore(newScore);
-    }
-
-    // 🔥 YENİ: Turnuva modunda gerçek rakip puanını güncelle
-    if (gameMode === 'tournament' && tournamentMatch && user) {
-      try {
-        const isPlayer1 = tournamentMatch.player1_id === user.id;
-        
-        await supabase
-          .from('tournament_matches')
-          .update({
-            [isPlayer1 ? 'player1_score' : 'player2_score']: newScore,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', tournamentMatch.id);
-        
-        console.log('🏆 Turnuva skoru güncellendi:', newScore);
-      } catch (error) {
-        console.error('❌ Turnuva skor güncellenme hatası:', error);
-      }
-    }
-
-    // Total score güncelleme (vs-computer modunda)
-    if (user && gameMode === 'vs-computer') {
-      const { data: currentProfile } = await supabase
-        .from('profiles')
-        .select('total_score')
-        .eq('id', user.id)
-        .single();
-
-      const calculateLevel = (totalScore: number) => {
-        const baseExp = 1000;
-        const expIncreasePerLevel = 100;
-        
-        let level = 1;
-        let totalExpNeeded = 0;
-        let currentLevelExp = baseExp;
-
-        while (totalScore >= totalExpNeeded + currentLevelExp) {
-          totalExpNeeded += currentLevelExp;
-          level++;
-          currentLevelExp = baseExp + (level - 1) * expIncreasePerLevel;
+      // Profilde en uzun kelimeyi anında güncelle (tüm modlar)
+      if (user) {
+        try {
+          const newLen = normalizedWord.length;
+          const currentLen = profile?.longest_word_length ?? 0;
+          if (newLen >= currentLen) {
+            await supabase
+              .from("profiles")
+              .update({ longest_word: normalizedWord, longest_word_length: newLen })
+              .eq("id", user.id);
+            await forceRefreshProfile?.();
+          }
+        } catch (e) {
+          console.warn("⚠️ Profil en uzun kelime güncellemesi başarısız:", e);
         }
+      }
 
-        return level;
-      };
+      // SADECE KENDİ LİSTEME EKLE - global'a ekleme, o real-time olarak gelecek
+      setUsedWords((prev) => new Set([...prev, normalizedWord]));
+      console.log("✅ Mobile: Word added to local sets after validation:", normalizedWord);
 
-      const currentLevel = calculateLevel(currentProfile?.total_score || 0);
-      const levelMultiplier = 1 + (currentLevel - 1) * 0.1;
-      const bonusPoints = Math.floor(result.points * levelMultiplier);
-      
-      const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
-      
-      await supabase
-        .from('profiles')
-        .update({ total_score: newTotalScore })
-        .eq('id', user.id);
+      // Ses efektleri ve puan hesaplama
+      playSound("correctWord");
+      const newScore = playerScore + result.points;
+      setPlayerScore(newScore);
+
+      // Calculate first word time (in seconds)
+      const wordTimestamp = Date.now();
+      if (firstWordTime === null && gameStartTime > 0) {
+        const timeToFirstWord = Math.floor((wordTimestamp - gameStartTime) / 1000);
+        setFirstWordTime(timeToFirstWord);
+        console.log("⚡ İlk kelime süresi:", timeToFirstWord, "saniye");
+      }
+
+      setPlayerWords((prev) => [...prev, currentWord]);
+      setPlayerWordsWithScores((prev) => [
+        ...prev,
+        { word: currentWord, score: result.points, timestamp: wordTimestamp },
+      ]);
+
+      const wordLength = currentWord.length;
+
+      // Ses efektleri triggerWordEffects içinde çalınacak - dublicate removed
+
+      triggerWordEffects();
+
+      if (currentRoom) {
+        await updateScore(newScore);
+      }
+
+      // 🔥 YENİ: Turnuva modunda gerçek rakip puanını güncelle
+      if (gameMode === "tournament" && tournamentMatch && user) {
+        try {
+          const isPlayer1 = tournamentMatch.player1_id === user.id;
+
+          await supabase
+            .from("tournament_matches")
+            .update({
+              [isPlayer1 ? "player1_score" : "player2_score"]: newScore,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", tournamentMatch.id);
+
+          console.log("🏆 Turnuva skoru güncellendi:", newScore);
+        } catch (error) {
+          console.error("❌ Turnuva skor güncellenme hatası:", error);
+        }
+      }
+
+      // Total score güncelleme (vs-computer modunda)
+      if (user && gameMode === "vs-computer") {
+        const { data: currentProfile } = await supabase
+          .from("profiles")
+          .select("total_score")
+          .eq("id", user.id)
+          .single();
+
+        const calculateLevel = (totalScore: number) => {
+          const baseExp = 1000;
+          const expIncreasePerLevel = 100;
+
+          let level = 1;
+          let totalExpNeeded = 0;
+          let currentLevelExp = baseExp;
+
+          while (totalScore >= totalExpNeeded + currentLevelExp) {
+            totalExpNeeded += currentLevelExp;
+            level++;
+            currentLevelExp = baseExp + (level - 1) * expIncreasePerLevel;
+          }
+
+          return level;
+        };
+
+        const currentLevel = calculateLevel(currentProfile?.total_score || 0);
+        const levelMultiplier = 1 + (currentLevel - 1) * 0.1;
+        const bonusPoints = Math.floor(result.points * levelMultiplier);
+
+        const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
+
+        await supabase.from("profiles").update({ total_score: newTotalScore }).eq("id", user.id);
+      }
+
+      clearWord();
+    } finally {
+      submissionLockRef.current = false;
     }
-
-    clearWord();
-  } finally {
-    submissionLockRef.current = false;
-  }
-};
+  };
 
   // Trigger word effects (confetti/fireworks) if purchased
-const triggerWordEffects = () => {
-  console.log('🎵 WORD EFFECTS TRIGGERED:', currentWord.length);
-  if (!(settings?.effects_enabled ?? true)) return;
-  
-  const hasConfetti = hasPurchased('effect_confetti') && (settings?.confetti_effect_enabled ?? true);
-  const hasFireworks = hasPurchased('effect_fireworks') && (settings?.fireworks_effect_enabled ?? true);
-  
-  // Kelime uzunluğuna göre ses çal
-  if (currentWord.length === 4) {
-    playSpecialSound('/yes.mp3');
-  } else if (currentWord.length === 5) {
-    playSpecialSound('/wow2.mp3');
-  } else if (currentWord.length >= 6) {
-    playSpecialSound('/yahoo.mp3');
-  }
-  
-  if (hasConfetti && hasFireworks) {
-    if (Math.random() > 0.5) {
+  const triggerWordEffects = () => {
+    console.log("🎵 WORD EFFECTS TRIGGERED:", currentWord.length);
+    if (!(settings?.effects_enabled ?? true)) return;
+
+    const hasConfetti = hasPurchased("effect_confetti") && (settings?.confetti_effect_enabled ?? true);
+    const hasFireworks = hasPurchased("effect_fireworks") && (settings?.fireworks_effect_enabled ?? true);
+
+    // Kelime uzunluğuna göre ses çal
+    if (currentWord.length === 4) {
+      playSpecialSound("/yes.mp3");
+    } else if (currentWord.length === 5) {
+      playSpecialSound("/wow2.mp3");
+    } else if (currentWord.length >= 6) {
+      playSpecialSound("/yahoo.mp3");
+    }
+
+    if (hasConfetti && hasFireworks) {
+      if (Math.random() > 0.5) {
+        createConfettiEffect();
+      } else {
+        createFireworksEffect();
+      }
+    } else if (hasConfetti) {
       createConfettiEffect();
-    } else {
+    } else if (hasFireworks) {
       createFireworksEffect();
     }
-  } else if (hasConfetti) {
-    createConfettiEffect();
-  } else if (hasFireworks) {
-    createFireworksEffect();
-  }
-};
+  };
 
   // Create confetti effect - Enhanced version
-const createConfettiEffect = () => {
-  const confettiContainer = document.createElement('div');
-  confettiContainer.className = 'fixed inset-0 pointer-events-none z-50';
-  document.body.appendChild(confettiContainer);
+  const createConfettiEffect = () => {
+    const confettiContainer = document.createElement("div");
+    confettiContainer.className = "fixed inset-0 pointer-events-none z-50";
+    document.body.appendChild(confettiContainer);
 
-  // Daha çok konfeti, farklı boyutlar ve şekiller
-  for (let i = 0; i < 50; i++) {
-    const confetti = document.createElement('div');
-    
-    // Rastgele şekil seç
-    const shapes = ['circle', 'square', 'triangle'];
-    const shape = shapes[Math.floor(Math.random() * shapes.length)];
-    
-    // Rastgele boyut
-    const size = Math.random() * 8 + 4; // 4-12px
-    
-    confetti.className = `absolute animate-[confetti_${2 + Math.random() * 2}s_ease-out_forwards] confetti-${shape}`;
-    confetti.style.width = `${size}px`;
-    confetti.style.height = `${size}px`;
-    confetti.style.left = `${Math.random() * 100}%`;
-    confetti.style.top = `-10px`;
-    
-    // Rastgele renk
-    const colors = [
-      '#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', 
-      '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8',
-      '#F7DC6F', '#BB8FCE', '#85C1E9', '#F8C471'
-    ];
-    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-    
-    // Rastgele animasyon gecikmesi
-    confetti.style.animationDelay = `${Math.random() * 0.5}s`;
-    
-    // Rastgele rotasyon
-    confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
-    
-    confettiContainer.appendChild(confetti);
-  }
+    // Daha çok konfeti, farklı boyutlar ve şekiller
+    for (let i = 0; i < 50; i++) {
+      const confetti = document.createElement("div");
 
-  // Parlama efekti ekle
-  const sparkle = document.createElement('div');
-  sparkle.className = 'fixed inset-0 pointer-events-none z-40';
-  sparkle.style.background = 'radial-gradient(circle, rgba(255,215,0,0.3) 0%, transparent 70%)';
-  sparkle.style.animation = 'sparkle-burst 1s ease-out forwards';
-  document.body.appendChild(sparkle);
+      // Rastgele şekil seç
+      const shapes = ["circle", "square", "triangle"];
+      const shape = shapes[Math.floor(Math.random() * shapes.length)];
 
-  setTimeout(() => {
-    document.body.removeChild(confettiContainer);
-    if (document.body.contains(sparkle)) {
-      document.body.removeChild(sparkle);
+      // Rastgele boyut
+      const size = Math.random() * 8 + 4; // 4-12px
+
+      confetti.className = `absolute animate-[confetti_${2 + Math.random() * 2}s_ease-out_forwards] confetti-${shape}`;
+      confetti.style.width = `${size}px`;
+      confetti.style.height = `${size}px`;
+      confetti.style.left = `${Math.random() * 100}%`;
+      confetti.style.top = `-10px`;
+
+      // Rastgele renk
+      const colors = [
+        "#FFD700",
+        "#FF6B6B",
+        "#4ECDC4",
+        "#45B7D1",
+        "#96CEB4",
+        "#FFEAA7",
+        "#DDA0DD",
+        "#98D8C8",
+        "#F7DC6F",
+        "#BB8FCE",
+        "#85C1E9",
+        "#F8C471",
+      ];
+      confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+
+      // Rastgele animasyon gecikmesi
+      confetti.style.animationDelay = `${Math.random() * 0.5}s`;
+
+      // Rastgele rotasyon
+      confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+
+      confettiContainer.appendChild(confetti);
     }
-  }, 4000);
-};
 
-// Create fireworks effect - Enhanced version  
-const createFireworksEffect = () => {
-  const fireworksContainer = document.createElement('div');
-  fireworksContainer.className = 'fixed inset-0 pointer-events-none z-50';
-  document.body.appendChild(fireworksContainer);
+    // Parlama efekti ekle
+    const sparkle = document.createElement("div");
+    sparkle.className = "fixed inset-0 pointer-events-none z-40";
+    sparkle.style.background = "radial-gradient(circle, rgba(255,215,0,0.3) 0%, transparent 70%)";
+    sparkle.style.animation = "sparkle-burst 1s ease-out forwards";
+    document.body.appendChild(sparkle);
 
-  // Çoklu patlamalar - DAHA FAZLA VE DAHA BÜYÜK
-  for (let burst = 0; burst < 8; burst++) { // 5 → 8
     setTimeout(() => {
-      // Rastgele pozisyon - DAHA MERKEZDE
-      const centerX = Math.random() * (window.innerWidth - 400) + 200; // Daha merkezi
-      const centerY = Math.random() * (window.innerHeight - 400) + 200; // Daha merkezi
-
-      // Ana patlama - DAHA ÇOK PARÇACIK
-      for (let i = 0; i < 30; i++) { // 20 → 30
-        const firework = document.createElement('div');
-        const colors = [
-          '#FFD700', '#FF1493', '#00CED1', '#32CD32', 
-          '#FF69B4', '#1E90FF', '#FFA500', '#DA70D6',
-          '#FF6347', '#40E0D0', '#ADFF2F', '#FF4500'
-        ];
-        
-        firework.className = 'firework-particle';
-        firework.style.position = 'absolute';
-        firework.style.width = `${Math.random() * 10 + 6}px`; // 3-9px → 6-16px
-        firework.style.height = `${Math.random() * 10 + 6}px`; // DAHA BÜYÜK
-        firework.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-        firework.style.borderRadius = '50%';
-        firework.style.left = `${centerX}px`;
-        firework.style.top = `${centerY}px`;
-        firework.style.boxShadow = `0 0 20px ${colors[Math.floor(Math.random() * colors.length)]}`; // 10px → 20px DAHA PARLI
-        
-        const angle = (i / 30) * 2 * Math.PI; // 20 → 30
-        const distance = 120 + Math.random() * 200; // 80-200 → 120-320 DAHA UZAK
-        const duration = 1.5 + Math.random() * 1; // 1-1.5s → 1.5-2.5s DAHA YAVAS
-        
-        firework.style.animation = `firework-burst ${duration}s ease-out forwards`;
-        firework.style.setProperty('--end-x', `${Math.cos(angle) * distance}px`);
-        firework.style.setProperty('--end-y', `${Math.sin(angle) * distance}px`);
-        
-        fireworksContainer.appendChild(firework);
+      document.body.removeChild(confettiContainer);
+      if (document.body.contains(sparkle)) {
+        document.body.removeChild(sparkle);
       }
+    }, 4000);
+  };
 
-      // İkincil parçacıklar - DAHA ÇOK
-      for (let j = 0; j < 25; j++) { // 15 → 25
-        setTimeout(() => {
-          const secondaryParticle = document.createElement('div');
-          secondaryParticle.className = 'firework-secondary';
-          secondaryParticle.style.position = 'absolute';
-          secondaryParticle.style.width = '4px'; // 2px → 4px
-          secondaryParticle.style.height = '4px'; // 2px → 4px
-          secondaryParticle.style.backgroundColor = '#FFF';
-          secondaryParticle.style.borderRadius = '50%';
-          secondaryParticle.style.boxShadow = '0 0 10px #FFF'; // PARLAMA EKLE
-          secondaryParticle.style.left = `${centerX + (Math.random() - 0.5) * 80}px`; // 40 → 80
-          secondaryParticle.style.top = `${centerY + (Math.random() - 0.5) * 80}px`; // 40 → 80
-          secondaryParticle.style.animation = 'secondary-sparkle 1.2s ease-out forwards'; // 0.8s → 1.2s
-          
-          fireworksContainer.appendChild(secondaryParticle);
-        }, j * 30); // 50ms → 30ms DAHA HIZLI
-      }
-      
-    }, burst * 300); // 400ms → 300ms DAHA SIKIŞIK
-  }
+  // Create fireworks effect - Enhanced version
+  const createFireworksEffect = () => {
+    const fireworksContainer = document.createElement("div");
+    fireworksContainer.className = "fixed inset-0 pointer-events-none z-50";
+    document.body.appendChild(fireworksContainer);
 
-  setTimeout(() => {
-    document.body.removeChild(fireworksContainer);
-  }, 4000); // 3000ms → 4000ms DAHA UZUN
-};
+    // Çoklu patlamalar - DAHA FAZLA VE DAHA BÜYÜK
+    for (let burst = 0; burst < 8; burst++) {
+      // 5 → 8
+      setTimeout(() => {
+        // Rastgele pozisyon - DAHA MERKEZDE
+        const centerX = Math.random() * (window.innerWidth - 400) + 200; // Daha merkezi
+        const centerY = Math.random() * (window.innerHeight - 400) + 200; // Daha merkezi
+
+        // Ana patlama - DAHA ÇOK PARÇACIK
+        for (let i = 0; i < 30; i++) {
+          // 20 → 30
+          const firework = document.createElement("div");
+          const colors = [
+            "#FFD700",
+            "#FF1493",
+            "#00CED1",
+            "#32CD32",
+            "#FF69B4",
+            "#1E90FF",
+            "#FFA500",
+            "#DA70D6",
+            "#FF6347",
+            "#40E0D0",
+            "#ADFF2F",
+            "#FF4500",
+          ];
+
+          firework.className = "firework-particle";
+          firework.style.position = "absolute";
+          firework.style.width = `${Math.random() * 10 + 6}px`; // 3-9px → 6-16px
+          firework.style.height = `${Math.random() * 10 + 6}px`; // DAHA BÜYÜK
+          firework.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+          firework.style.borderRadius = "50%";
+          firework.style.left = `${centerX}px`;
+          firework.style.top = `${centerY}px`;
+          firework.style.boxShadow = `0 0 20px ${colors[Math.floor(Math.random() * colors.length)]}`; // 10px → 20px DAHA PARLI
+
+          const angle = (i / 30) * 2 * Math.PI; // 20 → 30
+          const distance = 120 + Math.random() * 200; // 80-200 → 120-320 DAHA UZAK
+          const duration = 1.5 + Math.random() * 1; // 1-1.5s → 1.5-2.5s DAHA YAVAS
+
+          firework.style.animation = `firework-burst ${duration}s ease-out forwards`;
+          firework.style.setProperty("--end-x", `${Math.cos(angle) * distance}px`);
+          firework.style.setProperty("--end-y", `${Math.sin(angle) * distance}px`);
+
+          fireworksContainer.appendChild(firework);
+        }
+
+        // İkincil parçacıklar - DAHA ÇOK
+        for (let j = 0; j < 25; j++) {
+          // 15 → 25
+          setTimeout(() => {
+            const secondaryParticle = document.createElement("div");
+            secondaryParticle.className = "firework-secondary";
+            secondaryParticle.style.position = "absolute";
+            secondaryParticle.style.width = "4px"; // 2px → 4px
+            secondaryParticle.style.height = "4px"; // 2px → 4px
+            secondaryParticle.style.backgroundColor = "#FFF";
+            secondaryParticle.style.borderRadius = "50%";
+            secondaryParticle.style.boxShadow = "0 0 10px #FFF"; // PARLAMA EKLE
+            secondaryParticle.style.left = `${centerX + (Math.random() - 0.5) * 80}px`; // 40 → 80
+            secondaryParticle.style.top = `${centerY + (Math.random() - 0.5) * 80}px`; // 40 → 80
+            secondaryParticle.style.animation = "secondary-sparkle 1.2s ease-out forwards"; // 0.8s → 1.2s
+
+            fireworksContainer.appendChild(secondaryParticle);
+          }, j * 30); // 50ms → 30ms DAHA HIZLI
+        }
+      }, burst * 300); // 400ms → 300ms DAHA SIKIŞIK
+    }
+
+    setTimeout(() => {
+      document.body.removeChild(fireworksContainer);
+    }, 4000); // 3000ms → 4000ms DAHA UZUN
+  };
 
   // Format time
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
-  
+
   // Get opponent info based on game mode with avatar
   const getOpponentInfo = () => {
-    
     // Tournament mode için özel opponent isim mantığı
-    if (gameMode === 'tournament' && tournamentMatch) {
-      const opponentId = tournamentMatch.player1_id === user?.id 
-        ? tournamentMatch.player2_id 
-        : tournamentMatch.player1_id;
-      
-      if (!opponentId || String(opponentId).startsWith('bot_')) {
-        const seed = Array.from(String(opponentId || 'bot')).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+    if (gameMode === "tournament" && tournamentMatch) {
+      const opponentId =
+        tournamentMatch.player1_id === user?.id ? tournamentMatch.player2_id : tournamentMatch.player1_id;
+
+      if (!opponentId || String(opponentId).startsWith("bot_")) {
+        const seed = Array.from(String(opponentId || "bot")).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
         return { name: generateBotName(seed), icon: Trophy, avatar: null };
       }
-      
-      const realOpponent = participants.find(p => 
-        p.user_id === opponentId && 
-        !p.is_bot && 
-        p.user_id !== null
-      );
-      
+
+      const realOpponent = participants.find((p) => p.user_id === opponentId && !p.is_bot && p.user_id !== null);
+
       if (realOpponent && realOpponent.profiles?.username) {
-        return { 
-          name: realOpponent.profiles.username, 
-          icon: Trophy, 
-          avatar: realOpponent.profiles.avatar_url || null 
+        return {
+          name: realOpponent.profiles.username,
+          icon: Trophy,
+          avatar: realOpponent.profiles.avatar_url || null,
         };
       }
-      
-      return { name: 'Turnuva Rakibi', icon: Trophy, avatar: null };
+
+      return { name: "Turnuva Rakibi", icon: Trophy, avatar: null };
     }
 
-  const realOpponent = participants.find(p => 
-    !p.is_bot && 
-    String(p.user_id) !== String(user?.id) && 
-    p.user_id !== null
-  );
+    const realOpponent = participants.find(
+      (p) => !p.is_bot && String(p.user_id) !== String(user?.id) && p.user_id !== null,
+    );
 
-  // Gerçek rakip varsa onun bilgilerini kullan
-  if (realOpponent && (realOpponent as any).profiles) {
-    return { 
-      name: (realOpponent as any).profiles.username || 'Oyuncu', 
-      icon: User, 
-      avatar: (realOpponent as any).profiles.avatar_url 
-    };
-  }
-    
+    // Gerçek rakip varsa onun bilgilerini kullan
+    if (realOpponent && (realOpponent as any).profiles) {
+      return {
+        name: (realOpponent as any).profiles.username || "Oyuncu",
+        icon: User,
+        avatar: (realOpponent as any).profiles.avatar_url,
+      };
+    }
+
     switch (gameMode) {
-      case 'vs-computer':
-        return { name: 'Bilgisayar', icon: Bot, avatar: null };
-      case 'private-room':
+      case "vs-computer":
+        return { name: "Bilgisayar", icon: Bot, avatar: null };
+      case "private-room":
         if (participants.length >= 2) {
-          const opponent = participants.find(p => p.user_id !== user?.id);
+          const opponent = participants.find((p) => p.user_id !== user?.id);
           if (opponent && (opponent as any).profiles?.avatar_url) {
-            return { 
-              name: (opponent as any).profiles.username || 'Arkadaş', 
-              icon: User, 
-              avatar: (opponent as any).profiles.avatar_url 
+            return {
+              name: (opponent as any).profiles.username || "Arkadaş",
+              icon: User,
+              avatar: (opponent as any).profiles.avatar_url,
             };
           }
         }
-        return { name: 'Arkadaş', icon: User, avatar: opponentAvatar };
-      case 'random-match':
-      case 'private-room':
+        return { name: "Arkadaş", icon: User, avatar: opponentAvatar };
+      case "random-match":
+      case "private-room":
         if (participants.length >= 2) {
-          const opponent = participants.find(p => String(p.user_id) !== String(user?.id));
+          const opponent = participants.find((p) => String(p.user_id) !== String(user?.id));
           if (opponent && (opponent as any).profiles?.username) {
-            console.log('✅ Rakip bilgisi gösteriliyor:', (opponent as any).profiles.username);
-            return { 
-              name: (opponent as any).profiles.username, 
-              icon: User, 
-              avatar: (opponent as any).profiles?.avatar_url || null 
+            console.log("✅ Rakip bilgisi gösteriliyor:", (opponent as any).profiles.username);
+            return {
+              name: (opponent as any).profiles.username,
+              icon: User,
+              avatar: (opponent as any).profiles?.avatar_url || null,
             };
           }
         }
         // 🛡️ Oyun başladıysa veya countdown gösteriliyorsa SON BİLİNEN rakibi göster
-        if ((gameStarted || showCountdown) && opponentName && opponentName !== 'Rakip Aranıyor...') {
-          console.log('🛡️ Oyun başladı - son bilinen rakip:', opponentName);
-          return { 
-            name: opponentName, 
-            icon: User, 
-            avatar: opponentAvatar 
+        if ((gameStarted || showCountdown) && opponentName && opponentName !== "Rakip Aranıyor...") {
+          console.log("🛡️ Oyun başladı - son bilinen rakip:", opponentName);
+          return {
+            name: opponentName,
+            icon: User,
+            avatar: opponentAvatar,
           };
         }
         // Henüz başlamadıysa ama state'te rakip varsa göster
-        if (opponentName && opponentName !== 'Rakip Aranıyor...') {
-          console.log('📝 State\'ten rakip:', opponentName);
-          return { 
-            name: opponentName, 
-            icon: User, 
-            avatar: opponentAvatar 
+        if (opponentName && opponentName !== "Rakip Aranıyor...") {
+          console.log("📝 State'ten rakip:", opponentName);
+          return {
+            name: opponentName,
+            icon: User,
+            avatar: opponentAvatar,
           };
         }
-        console.log('⏳ Henüz rakip yok, aranıyor...');
-        return { name: 'Rakip Aranıyor...', icon: User, avatar: null };
+        console.log("⏳ Henüz rakip yok, aranıyor...");
+        return { name: "Rakip Aranıyor...", icon: User, avatar: null };
       default:
-        return { name: 'Rakip', icon: User, avatar: null };
+        return { name: "Rakip", icon: User, avatar: null };
     }
   };
 
   // GamePage.tsx'teki oyun sonu ekranını şu şekilde düzelt:
 
-if (gameEnded) {
-  return (
-    <div className="min-h-screen flex items-center justify-center p-4 game-grid relative overflow-hidden">
-      {/* Victory animations */}
-      {winner === 'player' && (
-        <div className="absolute inset-0 pointer-events-none">
-          {[...Array(50)].map((_, i) => (
-            <div
-              key={i}
-              className={`absolute w-3 h-3 rounded-full animate-[confetti_3s_ease-out_infinite] ${
-                i % 4 === 0 ? 'bg-yellow-400' :
-                i % 4 === 1 ? 'bg-red-400' :
-                i % 4 === 2 ? 'bg-blue-400' : 'bg-green-400'
-              }`}
-              style={{
-                left: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 3}s`,
-                transform: `rotate(${Math.random() * 360}deg)`
-              }}
-            />
-          ))}
-        </div>
-      )}
-      {winner === 'opponent' && (
-        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-          <div className="animate-[sadFace_2s_ease-in-out_infinite] text-9xl opacity-20">
-            😢
+  if (gameEnded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 game-grid relative overflow-hidden">
+        {/* Victory animations */}
+        {winner === "player" && (
+          <div className="absolute inset-0 pointer-events-none">
+            {[...Array(50)].map((_, i) => (
+              <div
+                key={i}
+                className={`absolute w-3 h-3 rounded-full animate-[confetti_3s_ease-out_infinite] ${
+                  i % 4 === 0
+                    ? "bg-yellow-400"
+                    : i % 4 === 1
+                      ? "bg-red-400"
+                      : i % 4 === 2
+                        ? "bg-blue-400"
+                        : "bg-green-400"
+                }`}
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 3}s`,
+                  transform: `rotate(${Math.random() * 360}deg)`,
+                }}
+              />
+            ))}
           </div>
-        </div>
-      )}
-      
-      <Card className="w-full max-w-md text-center relative z-10">
-        <CardContent className="p-6">
-          <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-            {winner === 'player' && (
-              <img 
-                src="/sevinc.gif" 
-                alt="Sevinç" 
-                className="w-16 h-16 object-contain"
-              />
-            )}
-            {winner === 'opponent' && (
-              <img 
-                src="/uzgun.gif" 
-                alt="Üzgün" 
-                className="w-16 h-16 object-contain"
-              />
-            )}
-            {winner === 'tie' && (
-              <img 
-                src="/sabit.gif" 
-                alt="Beraberlik" 
-                className="w-16 h-16 object-contain"
-              />
-            )}
+        )}
+        {winner === "opponent" && (
+          <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+            <div className="animate-[sadFace_2s_ease-in-out_infinite] text-9xl opacity-20">😢</div>
           </div>
+        )}
 
-          {/* Başlık */}
-          <h2 className={`text-2xl font-bold mb-2 ${
-            winner === 'player' ? 'text-yellow-600 animate-pulse' : 'text-gray-600'
-          }`}>
-            {gameMode === 'tournament' ? (
-              winner === 'player' ? 'Maçı Kazandınız!' : 
-              winner === 'opponent' ? 'Elendiniz!' : 'Beraberlik!'
-            ) : (
-              winner === 'player' ? 'Kazandınız!' :
-              winner === 'opponent' ? 'Kaybettiniz!' : 'Beraberlik!'
-            )}
-          </h2>
-          
-          {/* Skorlar */}
-          <div className="space-y-2 mb-6">
-            <div className="flex justify-between">
-              <span>Sizin Puanınız:</span>
-              <span className="font-bold">{finalPlayerScore || playerScore}</span>
+        <Card className="w-full max-w-md text-center relative z-10">
+          <CardContent className="p-6">
+            <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+              {winner === "player" && <img src="/sevinc.gif" alt="Sevinç" className="w-16 h-16 object-contain" />}
+              {winner === "opponent" && <img src="/uzgun.gif" alt="Üzgün" className="w-16 h-16 object-contain" />}
+              {winner === "tie" && <img src="/sabit.gif" alt="Beraberlik" className="w-16 h-16 object-contain" />}
             </div>
-            <div className="flex justify-between">
-              <span>Rakip:</span>
-              <span className="font-bold">{finalOpponentScore || opponentScore}</span>
-            </div>
-          </div>
-          
-          {/* Turnuva için otomatik yönlendirme mesajı */}
-          {gameMode === 'tournament' && winner === 'player' && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-              <p className="text-yellow-800 text-sm font-medium">
-                🏆 Turnuva sayfasına yönlendirildiniz!
-                 </p>
-                 <div className="mt-2">
-                <div className="text-yellow-600">
-               Sonraki tur için bekleyiniz
+
+            {/* Başlık */}
+            <h2
+              className={`text-2xl font-bold mb-2 ${
+                winner === "player" ? "text-yellow-600 animate-pulse" : "text-gray-600"
+              }`}
+            >
+              {gameMode === "tournament"
+                ? winner === "player"
+                  ? "Maçı Kazandınız!"
+                  : winner === "opponent"
+                    ? "Elendiniz!"
+                    : "Beraberlik!"
+                : winner === "player"
+                  ? "Kazandınız!"
+                  : winner === "opponent"
+                    ? "Kaybettiniz!"
+                    : "Beraberlik!"}
+            </h2>
+
+            {/* Skorlar */}
+            <div className="space-y-2 mb-6">
+              <div className="flex justify-between">
+                <span>Sizin Puanınız:</span>
+                <span className="font-bold">{finalPlayerScore || playerScore}</span>
               </div>
-             </div>
-           </div>
-          )}
-          
-          {/* Butonlar - Sadece manuel durumlar için */}
-          <div className="space-y-2">
-            {gameMode === 'tournament' ? (
-              <>
-                {winner === 'opponent' && (
-                  <Button 
-                    variant="outline" 
+              <div className="flex justify-between">
+                <span>Rakip:</span>
+                <span className="font-bold">{finalOpponentScore || opponentScore}</span>
+              </div>
+            </div>
+
+            {/* Turnuva için otomatik yönlendirme mesajı */}
+            {gameMode === "tournament" && winner === "player" && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                <p className="text-yellow-800 text-sm font-medium">🏆 Turnuva sayfasına yönlendirildiniz!</p>
+                <div className="mt-2">
+                  <div className="text-yellow-600">Sonraki tur için bekleyiniz</div>
+                </div>
+              </div>
+            )}
+
+            {/* Butonlar - Sadece manuel durumlar için */}
+            <div className="space-y-2">
+              {gameMode === "tournament" ? (
+                <>
+                  {winner === "opponent" && (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        playSound("buttonClick");
+                        navigate("/tournament");
+                      }}
+                      className="w-full"
+                    >
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      Turnuva Listesi
+                    </Button>
+                  )}
+                  {winner === "player" && (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        console.log("🚀 Manuel yönlendirme denemesi...");
+
+                        // ✅ URL'den tournament ID al
+                        const tournamentId = searchParams.get("tournament");
+
+                        if (!tournamentId) {
+                          console.error("❌ tournament ID URL parameter missing");
+                          navigate("/tournament");
+                          return;
+                        }
+
+                        console.log("🏆 Tournament ID from URL:", tournamentId);
+
+                        // ✅ React Router ile Yönlendirme
+                        navigate(`/tournament-bracket/${tournamentId}`);
+                      }}
+                      className="w-full"
+                    >
+                      <Trophy className="w-4 h-4 mr-2" />
+                      Turnuva Sayfasına Git
+                    </Button>
+                  )}
+                </>
+              ) : gameMode === "private-room" || gameMode === "random-match" ? (
+                // ✅ ÖZEL ODA VE RASTGELE EŞLEŞME BUTONLARI - YENİ
+                <div className="space-y-2">
+                  {/* Disconnect durumunda rematch butonu gösterme */}
+                  {!disconnectWin && !rematchRequested && !waitingForRematchResponse && (
+                    <Button
+                      onClick={() => {
+                        playSound("buttonClick");
+                        requestRematch();
+                      }}
+                      className="w-full bg-green-500 hover:bg-green-600"
+                    >
+                      🔄 Tekrar Oyna İste
+                    </Button>
+                  )}
+
+                  {waitingForRematchResponse && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <div className="flex items-center justify-center space-x-2">
+                        <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                        <span className="text-blue-800 font-medium">Rakibinizin yanıtı bekleniyor...</span>
+                      </div>
+                      <p className="text-blue-600 text-xs text-center mt-2">
+                        30 saniye içinde yanıt vermezse istek iptal olacak
+                      </p>
+                    </div>
+                  )}
+
+                  <Button
                     onClick={() => {
-                      playSound('buttonClick');
-                      navigate('/tournament');
-                    }} 
+                      playSound("buttonClick");
+                      // Oyun bitiminde matchmaking state'ini temizle ve odayı banla
+                      if (currentRoom?.id) {
+                        matchBanlist.add(currentRoom.id);
+                        console.log("🚫 Oda banlist'e eklendi:", shortId(currentRoom?.id));
+                      }
+                      window.dispatchEvent(new CustomEvent("cleanupMatchmaking"));
+                      navigate("/");
+                    }}
+                    variant="outline"
                     className="w-full"
                   >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Turnuva Listesi
+                    Ana Menüye Dön
                   </Button>
-                )}
-                {winner === 'player' && (
-  <Button
-  variant="outline"
-  onClick={() => {
-    console.log('🚀 Manuel yönlendirme denemesi...');
-    
-    // ✅ URL'den tournament ID al
-    const tournamentId = searchParams.get('tournament');
-    
-    if (!tournamentId) {
-      console.error('❌ tournament ID URL parameter missing');
-      navigate('/tournament');
-      return;
+                </div>
+              ) : (
+                // Normal mod butonları
+                <>
+                  <Button
+                    onClick={() => {
+                      playSound("buttonClick");
+                      // Oyun bitiminde matchmaking state'ini temizle ve odayı banla
+                      if (currentRoom?.id) {
+                        matchBanlist.add(currentRoom.id);
+                        console.log("🚫 Oda banlist'e eklendi:", shortId(currentRoom?.id));
+                      }
+                      window.dispatchEvent(new CustomEvent("cleanupMatchmaking"));
+                      navigate("/");
+                    }}
+                    className="w-full"
+                  >
+                    Ana Menüye Dön
+                  </Button>
+                  {!disconnectWin && (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        playSound("buttonClick");
+                        resetGameForRematch();
+                        setGameGrid(generateRandomGrid());
+                        setSelectedLetters([]);
+                        setCurrentWord("");
+                        setUsedWords(new Set());
+                        setPlayerWords([]);
+                        setOpponentWords([]);
+                        setPlayerWordsWithScores([]);
+                        setOpponentWordsWithScores([]);
+                        setPlayerScore(0);
+                        setOpponentScore(0);
+                        timeLeftRef.current = gameType === "timed" ? 120 : 0;
+                        setDisplayTime(timeLeftRef.current);
+                        setCountdownServerTime(new Date().toISOString());
+                        setShowCountdown(true);
+                        setGameStarted(false);
+                        setGameEnded(false);
+                        setWinner(null);
+                        setTimeWarningPlayed(false);
+                        // Jokerler artık envanter sisteminden geliyor
+                        setSelectedJoker(null);
+                        setHighlightedLetters([]);
+                        setIsJokerActive(false);
+                      }}
+                      className="w-full"
+                    >
+                      Tekrar Oyna
+                    </Button>
+                  )}
+                </>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Tekrar oyun isteği dialog'u */}
+        <AlertDialog open={!!currentRematchRequest} onOpenChange={() => setCurrentRematchRequest(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>🔄 Tekrar Oyun İsteği</AlertDialogTitle>
+              <AlertDialogDescription>Rakibiniz tekrar oynamak istiyor. Kabul ediyor musunuz?</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel
+                onClick={async () => {
+                  if (currentRematchRequest) {
+                    await respondRematchRequest(currentRematchRequest.id, false);
+                  }
+                }}
+              >
+                Hayır
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={async () => {
+                  if (currentRematchRequest) {
+                    await respondRematchRequest(currentRematchRequest.id, true);
+                  }
+                }}
+              >
+                Evet, Tekrar Oyna
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    );
+  }
+
+  const opponent = getOpponentInfo();
+
+  const handleCountdownComplete = () => {
+    setShowCountdown(false);
+    countdownCompletedAtRef.current = Date.now();
+
+    const isMp = gameMode === "private-room" || gameMode === "random-match";
+
+    // Single-player/tournament: start locally from full time
+    if (!isMp && gameType === "timed") {
+      const initial = currentRoom?.time_limit || 120;
+      timeLeftRef.current = initial;
+      setDisplayTime(initial);
     }
 
-    console.log('🏆 Tournament ID from URL:', tournamentId);
-    
-    // ✅ React Router ile Yönlendirme
-    navigate(`/tournament-bracket/${tournamentId}`);
-  }} 
-  className="w-full"
->
-  <Trophy className="w-4 h-4 mr-2" />
-  Turnuva Sayfasına Git
-</Button>
-)}
-              </>
-            ) : gameMode === 'private-room' || gameMode === 'random-match' ? (
-    // ✅ ÖZEL ODA VE RASTGELE EŞLEŞME BUTONLARI - YENİ
-    <div className="space-y-2">
-      {/* Disconnect durumunda rematch butonu gösterme */}
-      {!disconnectWin && !rematchRequested && !waitingForRematchResponse && (
-        <Button 
-          onClick={() => {
-            playSound('buttonClick');
-            requestRematch();
-          }}
-          className="w-full bg-green-500 hover:bg-green-600"
-        >
-          🔄 Tekrar Oyna İste
-        </Button>
-      )}
-      
-      {waitingForRematchResponse && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-center justify-center space-x-2">
-            <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
-            <span className="text-blue-800 font-medium">
-              Rakibinizin yanıtı bekleniyor...
-            </span>
-          </div>
-          <p className="text-blue-600 text-xs text-center mt-2">
-            30 saniye içinde yanıt vermezse istek iptal olacak
-          </p>
-        </div>
-      )}
-      
-      <Button onClick={() => {
-        playSound('buttonClick');
-        // Oyun bitiminde matchmaking state'ini temizle ve odayı banla
-        if (currentRoom?.id) {
-          matchBanlist.add(currentRoom.id);
-          console.log('🚫 Oda banlist\'e eklendi:', shortId(currentRoom?.id));
+    // Multiplayer: set authoritative server start time exactly once
+    if (isMp && currentRoom?.id) {
+      (async () => {
+        try {
+          await supabase
+            .from("game_rooms")
+            .update({ started_at: new Date().toISOString(), status: "active" })
+            .is("started_at", null)
+            .eq("id", currentRoom.id);
+        } catch (e) {
+          console.error("started_at set failed:", e);
         }
-        window.dispatchEvent(new CustomEvent('cleanupMatchmaking'));
-        navigate('/');
-      }} variant="outline" className="w-full">
-        Ana Menüye Dön
-      </Button>
-    </div>
-  ) : (
-              // Normal mod butonları
-              <>
-                <Button onClick={() => {
-                  playSound('buttonClick');
-                  // Oyun bitiminde matchmaking state'ini temizle ve odayı banla
-                  if (currentRoom?.id) {
-                    matchBanlist.add(currentRoom.id);
-                    console.log('🚫 Oda banlist\'e eklendi:', shortId(currentRoom?.id));
-                  }
-                  window.dispatchEvent(new CustomEvent('cleanupMatchmaking'));
-                  navigate('/');
-                }} className="w-full">
-                  Ana Menüye Dön
-                </Button>
-                {!disconnectWin && (
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      playSound('buttonClick');
-                      resetGameForRematch();
-                      setGameGrid(generateRandomGrid());
-                      setSelectedLetters([]);
-                      setCurrentWord('');
-                      setUsedWords(new Set());
-                      setPlayerWords([]);
-                      setOpponentWords([]);
-                      setPlayerWordsWithScores([]);
-                      setOpponentWordsWithScores([]);
-                      setPlayerScore(0);
-                      setOpponentScore(0);
-                      timeLeftRef.current = gameType === 'timed' ? 120 : 0;
-                      setDisplayTime(timeLeftRef.current);
-                      setCountdownServerTime(new Date().toISOString());
-                      setShowCountdown(true);
-                      setGameStarted(false);
-                      setGameEnded(false);
-                      setWinner(null);
-                      setTimeWarningPlayed(false);
-                      // Jokerler artık envanter sisteminden geliyor
-                      setSelectedJoker(null);
-                      setHighlightedLetters([]);
-                      setIsJokerActive(false);
-                    }} 
-                    className="w-full"
-                  >
-                    Tekrar Oyna
-                  </Button>
-                )}
-              </>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      })();
+    }
 
-      {/* Tekrar oyun isteği dialog'u */}
+    setGameStarted(true);
+    gameHasStartedRef.current = true;
+
+    // Bastırmayı sadece multiplayer'da uygula (ilk 3sn ekstra sync yok)
+    if (isMp) {
+      syncSuppressUntilRef.current = Date.now() + 3000; // 3sn
+    }
+  };
+
+  return (
+    <>
+      {showCountdown && (
+        <GameCountdown
+          onComplete={handleCountdownComplete}
+          serverStartTime={countdownServerTime}
+          serverTimeOffset={serverTimeOffset}
+        />
+      )}
+      <div
+        className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 relative overflow-hidden letters-background"
+        style={{
+          paddingTop: "calc(env(safe-area-inset-top, 8px) + 1rem)",
+          paddingBottom: "env(safe-area-inset-bottom, 8px)",
+          paddingLeft: "env(safe-area-inset-left, 4px)",
+          paddingRight: "env(safe-area-inset-right, 4px)",
+        }}
+      >
+        <div className="h-full flex flex-col px-2 relative z-15">
+          {/* Header - GÜNCELLENMIŞ */}
+          <div className="flex items-center justify-between py-2 shrink-0">
+            {/* Sol taraf - Geri butonu */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs px-2 py-1 h-8"
+              onClick={(e) => {
+                console.log("🚪 Çıkış butonuna tıklandı - gameMode:", gameMode);
+                e.preventDefault();
+                e.stopPropagation();
+                handleBackToMenu();
+              }}
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Çıkış
+            </Button>
+
+            {/* Orta kısım - Timer veya hedef + Turnuva bilgisi */}
+            {gameType === "timed" ? (
+              <div className="flex flex-col items-center space-y-2">
+                {/* 🏆 TURNUVA BİLGİSİ EKLENDİ */}
+                {gameMode === "tournament" && tournamentMatch && (
+                  <div className="text-xs text-yellow-600 font-medium mb-1">
+                    {tournamentMatch.round === 1
+                      ? "Çeyrek Final"
+                      : tournamentMatch.round === 2
+                        ? "Yarı Final"
+                        : "Final"}{" "}
+                    - Maç {tournamentMatch.match_number}
+                  </div>
+                )}
+
+                <div
+                  className={`flex items-center space-x-2 transition-all duration-300 ${
+                    displayTime <= 15 ? "animate-pulse text-red-500" : "text-foreground"
+                  }`}
+                >
+                  <span
+                    className={`text-lg transition-all duration-300 inline-block ${
+                      displayTime <= 15 ? "animate-pulse text-red-500" : ""
+                    }`}
+                    style={{
+                      animation:
+                        displayTime <= 15
+                          ? "pulse 1s infinite, hourglassFlip 2s ease-in-out infinite"
+                          : "hourglassFlip 4s ease-in-out infinite",
+                    }}
+                  >
+                    ⏳
+                  </span>
+                  <span
+                    className={`font-mono text-lg font-bold transition-all duration-300 ${
+                      displayTime <= 15 ? "text-red-500 scale-110" : ""
+                    }`}
+                  >
+                    {formatTime(displayTime)}
+                  </span>
+                </div>
+                <div className="w-32 h-1 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-1000 ease-out ${
+                      displayTime <= 15
+                        ? "bg-red-500 animate-pulse"
+                        : displayTime <= 30
+                          ? "bg-orange-500"
+                          : "bg-green-500"
+                    }`}
+                    style={{ width: `${(displayTime / 120) * 100}%` }}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center space-y-1">
+                {/* 🏆 TURNUVA BİLGİSİ EKLENDİ */}
+                {gameMode === "tournament" && tournamentMatch && (
+                  <div className="text-xs text-yellow-600 font-medium">
+                    {tournamentMatch.round === 1
+                      ? "Çeyrek Final"
+                      : tournamentMatch.round === 2
+                        ? "Yarı Final"
+                        : "Final"}{" "}
+                    - Maç {tournamentMatch.match_number}
+                  </div>
+                )}
+
+                <div className="flex items-center space-x-2">
+                  <Target className="w-4 h-4" />
+                  <span className="text-sm font-medium">500 Puana Kadar</span>
+                </div>
+              </div>
+            )}
+
+            {/* Sağ taraf - Rakip bilgisi */}
+            <div className="w-16 text-right">
+              {gameMode === "tournament" && (
+                <div className="text-xs text-muted-foreground">vs {getOpponentDisplayName()}</div>
+              )}
+            </div>
+          </div>
+          {/* Header bitiş */}
+
+          {/* 🏆 TURNUVA UYARI KARTI EKLENDİ */}
+          {gameMode === "tournament" && (
+            <div className="mb-4">
+              <Card className="border-yellow-200 bg-yellow-50">
+                <CardContent className="p-3">
+                  <div className="flex items-center space-x-2">
+                    <Trophy className="w-4 h-4 text-yellow-600" />
+                    <span className="text-xs font-medium text-yellow-800">
+                      Turnuva maçı! Kazanırsan sonraki tura geçeceksin.
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Scores */}
+          <div className="grid grid-cols-2 gap-4">
+            <Card className="silver-gradient border border-gray-300 shadow-lg">
+              <CardContent className="p-4 text-center relative overflow-hidden">
+                <Avatar className="w-16 h-16 mx-auto mb-2">
+                  <AvatarImage src={playerAvatar || user?.user_metadata?.avatar_url} alt="Profile" />
+                  <AvatarFallback>
+                    <User className="w-8 h-8 text-gray-600" />
+                  </AvatarFallback>
+                </Avatar>
+                <p className="text-sm text-gray-700 font-bold font-bungee">Siz</p>
+                <p className="text-2xl font-bold text-gray-700">{playerScore}</p>
+                {gameType === "score" && <Progress value={(playerScore / 500) * 100} className="mt-2 bg-white/60" />}
+              </CardContent>
+            </Card>
+            <Card className="silver-gradient border border-gray-300 shadow-lg">
+              <CardContent className="p-4 text-center relative overflow-hidden">
+                <Avatar className="w-16 h-16 mx-auto mb-2 bg-transparent">
+                  <AvatarImage src={opponent.avatar} alt="Opponent" />
+                  <AvatarFallback>
+                    <opponent.icon className="w-8 h-8 text-gray-600" />
+                  </AvatarFallback>
+                </Avatar>
+                <p className="text-sm text-gray-700 font-bold font-bungee">{opponent.name}</p>
+                <p className="text-2xl font-bold text-gray-700">{opponentScore}</p>
+                {gameType === "score" && <Progress value={(opponentScore / 500) * 100} className="mt-2 bg-white/60" />}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Joker Panel - EN ÖNEMLİ KISIM! */}
+          <Card className="bg-gradient-to-r from-amber-50 to-orange-100 border-amber-200 shadow-md">
+            <CardContent className="p-2">
+              <div className="flex justify-between items-center">
+                <h3 className="text-sm font-bold text-purple-800 mb-2">🎭 Jokerler</h3>
+              </div>
+              <div className="grid grid-cols-3 gap-1">
+                <Button
+                  variant={selectedJoker === "degistir" ? "default" : "outline"}
+                  size="sm"
+                  className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-green-100 to-emerald-200 hover:from-green-200 hover:to-emerald-300 border-green-300"
+                  onTouchStart={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    useDegisTirJoker();
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    useDegisTirJoker();
+                  }}
+                  disabled={jokers.degistir <= 0 || isJokerActive}
+                  style={{
+                    touchAction: "manipulation",
+                    WebkitTapHighlightColor: "transparent",
+                  }}
+                >
+                  <Shuffle className="w-3 h-3 mb-0.5" />
+                  <span className="text-xs">Değiştir</span>
+                  <Badge
+                    variant="secondary"
+                    className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center"
+                  >
+                    {jokers.degistir}
+                  </Badge>
+                </Button>
+
+                <Button
+                  variant={selectedJoker === "fisilida" ? "default" : "outline"}
+                  size="sm"
+                  className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-blue-100 to-cyan-200 hover:from-blue-200 hover:to-cyan-300 border-blue-300"
+                  onTouchStart={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    useFisildaJoker();
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    useFisildaJoker();
+                  }}
+                  disabled={jokers.fisilida <= 0 || isJokerActive}
+                  style={{
+                    touchAction: "manipulation",
+                    WebkitTapHighlightColor: "transparent",
+                  }}
+                >
+                  <Lightbulb className="w-4 h-4 mb-1" />
+                  <span className="text-xs">Fısılda</span>
+                  <Badge
+                    variant="secondary"
+                    className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center"
+                  >
+                    {jokers.fisilida}
+                  </Badge>
+                </Button>
+
+                <Button
+                  variant={selectedJoker === "senYaz" ? "default" : "outline"}
+                  size="sm"
+                  className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-purple-100 to-violet-200 hover:from-purple-200 hover:to-violet-300 border-purple-300"
+                  onTouchStart={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    useSenYazJoker();
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    useSenYazJoker();
+                  }}
+                  disabled={jokers.senYaz <= 0 || isJokerActive}
+                  style={{
+                    touchAction: "manipulation",
+                    WebkitTapHighlightColor: "transparent",
+                  }}
+                >
+                  <PenTool className="w-4 h-4 mb-1" />
+                  <span className="text-xs">Sen Yaz</span>
+                  <Badge
+                    variant="secondary"
+                    className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center"
+                  >
+                    {jokers.senYaz}
+                  </Badge>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Current Word Input */}
+          <Card className="game-grid border-0">
+            <CardContent className="p-2">
+              <div className="flex items-center space-x-2">
+                <Input
+                  value={currentWord}
+                  readOnly
+                  placeholder="~Kelime Üret~"
+                  className={`text-lg font-mono text-center bg-white/20 backdrop-blur-sm border-white/30 text-white placeholder:text-white/70 font-bold h-8 ${
+                    isJokerActive ? "typing-animation" : ""
+                  }`}
+                />
+                <Badge
+                  variant="secondary"
+                  className="bg-white/20 text-white text-sm px-2 py-0.5 min-w-8 h-8 flex items-center justify-center"
+                >
+                  {currentWord.length}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Game Grid */}
+          <Card className="game-grid border-0 mb-2 flex-1">
+            <CardContent className="p-3 h-full flex items-center justify-center">
+              <div className="grid grid-cols-4 gap-2 w-full max-w-xs">
+                {gameGrid.map((row, rowIndex) =>
+                  row.map((letter, colIndex) => {
+                    const isSelected = selectedLetters.some((s) => s.row === rowIndex && s.col === colIndex);
+                    const isHighlighted = highlightedLetters.some((h) => h.row === rowIndex && h.col === colIndex);
+                    const selectionOrder = selectedLetters.findIndex((s) => s.row === rowIndex && s.col === colIndex);
+                    return (
+                      <Button
+                        key={`${rowIndex}-${colIndex}`}
+                        className={`letter-button h-12 text-lg font-bold relative transition-all duration-300 ${
+                          isSelected ? "selected" : ""
+                        } ${isHighlighted ? "letter-glow-highlight" : ""}`}
+                        onTouchStart={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleLetterClick(letter, rowIndex, colIndex);
+                        }}
+                        onClick={(e) => {
+                          // Sadece touch event olmadığında çalışsın (çift tetiklemeyi engeller)
+                          if (e.nativeEvent && "touches" in e.nativeEvent) return;
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleLetterClick(letter, rowIndex, colIndex);
+                        }}
+                        style={{
+                          touchAction: "manipulation",
+                          WebkitTapHighlightColor: "transparent",
+                          WebkitTouchCallout: "none",
+                          WebkitUserSelect: "none",
+                          userSelect: "none",
+                        }}
+                      >
+                        {letter}
+                        {isSelected && selectionOrder >= 0 && (
+                          <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold border-2 border-white">
+                            {selectionOrder + 1}
+                          </span>
+                        )}
+                      </Button>
+                    );
+                  }),
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Action Buttons */}
+          <div className="grid grid-cols-2 gap-2 shrink-0">
+            <Button
+              variant="outline"
+              onTouchStart={(e) => {
+                e.preventDefault();
+                clearWord();
+              }}
+              onClick={(e) => {
+                e.preventDefault();
+                clearWord();
+              }}
+              className="h-12"
+              disabled={selectedLetters.length === 0 || isJokerActive}
+              style={{ touchAction: "manipulation" }}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Sil
+            </Button>
+
+            <Button
+              onTouchStart={(e) => {
+                e.preventDefault();
+                submitTouchTsRef.current = Date.now();
+                playSound("buttonClick");
+                submitWord();
+              }}
+              onClick={(e) => {
+                e.preventDefault();
+                // Dokunmatik cihazlarda çift tetiklemeyi önle
+                if (Date.now() - submitTouchTsRef.current < 500) return;
+                playSound("buttonClick");
+                submitWord();
+              }}
+              className="h-12"
+              disabled={currentWord.length < 3 || isValidating || isJokerActive}
+              style={{ touchAction: "manipulation" }}
+            >
+              <Send className="w-4 h-4 mr-2" />
+              {isValidating ? "Kontrol Ediliyor..." : "Gönder"}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Exit Confirmation Dialog */}
+      <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
+        <AlertDialogContent className="max-w-sm mx-auto">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-center">⚠️ Aktif Oyun Uyarısı</AlertDialogTitle>
+            <AlertDialogDescription className="text-center">
+              Şu an aktif bir oyun oynuyorsun!
+              <br />
+              <br />
+              Oyundan çıkarsan <span className="font-bold text-destructive">ceza alacaksın</span> ve rakibin kazanacak.
+              <br />
+              <br />
+              <span className="text-muted-foreground text-sm">Emin misin?</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col space-y-2 sm:flex-col sm:space-y-2 sm:space-x-0">
+            <AlertDialogAction
+              onClick={async () => {
+                setShowExitDialog(false);
+                if (currentRoom) {
+                  await leaveRoom();
+                }
+                navigate("/");
+              }}
+              className="w-full bg-destructive hover:bg-destructive/90"
+            >
+              🚪 Evet, Çıkış Yap
+            </AlertDialogAction>
+            <AlertDialogCancel className="w-full">🎮 Hayır, Oyuna Devam Et</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Tournament Exit Dialog */}
+      <AlertDialog open={showTournamentExitDialog} onOpenChange={setShowTournamentExitDialog}>
+        <AlertDialogContent className="max-w-sm mx-auto">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-center">⚠️ Turnuva Maçı Uyarısı</AlertDialogTitle>
+            <AlertDialogDescription className="text-center">
+              Turnuva maçından ayrılırsan:
+              <br />
+              <br />• <span className="font-bold text-destructive">Maçı kaybedersin</span>
+              <br />• <span className="font-bold text-yellow-600">Rakip kazanır</span>
+              <br />• <span className="font-bold text-blue-600">Turnuvadan elenirsin</span>
+              <br />
+              <br />
+              <span className="text-muted-foreground text-sm">Emin misin?</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col space-y-2 sm:flex-col sm:space-y-2 sm:space-x-0">
+            <AlertDialogAction
+              onClick={async () => {
+                setShowTournamentExitDialog(false);
+                await handleTournamentExit();
+                // navigate('/'); satırını kaldır - handleTournamentExit içinde zaten parent'e bildirim yapılıyor
+              }}
+              className="w-full bg-destructive hover:bg-destructive/90"
+            >
+              Evet, Ayrıl
+            </AlertDialogAction>
+            <AlertDialogCancel className="w-full">🏆 Hayır, Maça Devam Et</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Tekrar oyun isteği dialog'u - BURAYA DA EKLE */}
       <AlertDialog open={!!currentRematchRequest} onOpenChange={() => setCurrentRematchRequest(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>🔄 Tekrar Oyun İsteği</AlertDialogTitle>
-            <AlertDialogDescription>
-              Rakibiniz tekrar oynamak istiyor. Kabul ediyor musunuz?
-            </AlertDialogDescription>
+            <AlertDialogDescription>Rakibiniz tekrar oynamak istiyor. Kabul ediyor musunuz?</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={async () => {
-              if (currentRematchRequest) {
-                await respondRematchRequest(currentRematchRequest.id, false);
-              }
-            }}>
+            <AlertDialogCancel
+              onClick={async () => {
+                if (currentRematchRequest) {
+                  await respondRematchRequest(currentRematchRequest.id, false);
+                }
+              }}
+            >
               Hayır
             </AlertDialogCancel>
-            <AlertDialogAction onClick={async () => {
-              if (currentRematchRequest) {
-                await respondRematchRequest(currentRematchRequest.id, true);
-              }
-            }}>
+            <AlertDialogAction
+              onClick={async () => {
+                if (currentRematchRequest) {
+                  await respondRematchRequest(currentRematchRequest.id, true);
+                  if (currentRematchRequest.room_code) {
+                    const success = await joinRoom(currentRematchRequest.room_code);
+                    if (success) {
+                      console.log("✅ Rematch odaya katıldı, oyun sayfasına yönlendiriliyor");
+                      // Oyun durumunu tamamen sıfırla
+                      resetGameForRematch();
+                      // Yeni oyun başlatması için küçük gecikme
+                      setTimeout(async () => {
+                        // 🎯 SERVER-SIDE COUNTDOWN
+                        if (currentRoom?.id) {
+                          try {
+                            const { data, error } = await supabase.rpc("start_game_countdown", {
+                              p_room_id: currentRoom.id,
+                            });
+                            if (!error && data) {
+                              setCountdownServerTime(data);
+                            }
+                          } catch (err) {
+                            console.error("Countdown error:", err);
+                          }
+                        }
+                        setShowCountdown(true);
+                      }, 500);
+                    }
+                  }
+                }
+              }}
+            >
               Evet, Tekrar Oyna
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
-}
-
-
-const opponent = getOpponentInfo();
-
-const handleCountdownComplete = () => {
-  setShowCountdown(false);
-  countdownCompletedAtRef.current = Date.now();
-
-  const isMp = gameMode === 'private-room' || gameMode === 'random-match';
-
-  // Single-player/tournament: start locally from full time
-  if (!isMp && gameType === 'timed') {
-    const initial = currentRoom?.time_limit || 120;
-    timeLeftRef.current = initial;
-    setDisplayTime(initial);
-  }
-
-  // Multiplayer: set authoritative server start time exactly once
-  if (isMp && currentRoom?.id) {
-    (async () => {
-      try {
-        await supabase
-          .from('game_rooms')
-          .update({ started_at: new Date().toISOString(), status: 'active' })
-          .is('started_at', null)
-          .eq('id', currentRoom.id);
-      } catch (e) {
-        console.error('started_at set failed:', e);
-      }
-    })();
-  }
-
-  setGameStarted(true);
-  gameHasStartedRef.current = true;
-
-  // Bastırmayı sadece multiplayer'da uygula (ilk 3sn ekstra sync yok)
-  if (isMp) {
-    syncSuppressUntilRef.current = Date.now() + 3000; // 3sn
-  }
-};
-
-return (
-  <>
-    {showCountdown && (
-      <GameCountdown 
-        onComplete={handleCountdownComplete}
-        serverStartTime={countdownServerTime}
-        serverTimeOffset={serverTimeOffset}
-      />
-    )}
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 relative overflow-hidden letters-background"
-         style={{ 
-           paddingTop: 'calc(env(safe-area-inset-top, 8px) + 1rem)', 
-           paddingBottom: 'env(safe-area-inset-bottom, 8px)',
-           paddingLeft: 'env(safe-area-inset-left, 4px)',
-           paddingRight: 'env(safe-area-inset-right, 4px)'
-         }}>
-      <div className="h-full flex flex-col px-2 relative z-15">
-        
-        {/* Header - GÜNCELLENMIŞ */}
-        <div className="flex items-center justify-between py-2 shrink-0">
-          {/* Sol taraf - Geri butonu */}
-          <Button 
-             variant="outline" 
-             size="sm" 
-             className="text-xs px-2 py-1 h-8" 
-             onClick={(e) => {
-               console.log('🚪 Çıkış butonuna tıklandı - gameMode:', gameMode);
-               e.preventDefault();
-               e.stopPropagation();
-              handleBackToMenu();
-           }}
-       >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-          Çıkış
-        </Button>
-
-          {/* Orta kısım - Timer veya hedef + Turnuva bilgisi */}
-          {gameType === 'timed' ? (
-            <div className="flex flex-col items-center space-y-2">
-              {/* 🏆 TURNUVA BİLGİSİ EKLENDİ */}
-              {gameMode === 'tournament' && tournamentMatch && (
-                <div className="text-xs text-yellow-600 font-medium mb-1">
-                  {tournamentMatch.round === 1 ? 'Çeyrek Final' :
-                   tournamentMatch.round === 2 ? 'Yarı Final' : 'Final'} - 
-                  Maç {tournamentMatch.match_number}
-                </div>
-              )}
-              
-              <div className={`flex items-center space-x-2 transition-all duration-300 ${
-                displayTime <= 15 ? 'animate-pulse text-red-500' : 'text-foreground'
-              }`}>
-                <span className={`text-lg transition-all duration-300 inline-block ${
-                  displayTime <= 15 ? 'animate-pulse text-red-500' : ''
-                }`} style={{
-                  animation: displayTime <= 15 ? 'pulse 1s infinite, hourglassFlip 2s ease-in-out infinite' : 'hourglassFlip 4s ease-in-out infinite'
-                }}>⏳</span>
-                <span className={`font-mono text-lg font-bold transition-all duration-300 ${
-                  displayTime <= 15 ? 'text-red-500 scale-110' : ''
-                }`}>
-                  {formatTime(displayTime)}
-                </span>
-              </div>
-              <div className="w-32 h-1 bg-muted rounded-full overflow-hidden">
-                <div 
-                  className={`h-full transition-all duration-1000 ease-out ${
-                    displayTime <= 15 ? 'bg-red-500 animate-pulse' :
-                    displayTime <= 30 ? 'bg-orange-500' : 'bg-green-500'
-                  }`}
-                  style={{ width: `${(displayTime / 120) * 100}%` }}
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center space-y-1">
-              {/* 🏆 TURNUVA BİLGİSİ EKLENDİ */}
-              {gameMode === 'tournament' && tournamentMatch && (
-                <div className="text-xs text-yellow-600 font-medium">
-                  {tournamentMatch.round === 1 ? 'Çeyrek Final' :
-                   tournamentMatch.round === 2 ? 'Yarı Final' : 'Final'} - 
-                  Maç {tournamentMatch.match_number}
-                </div>
-              )}
-              
-              <div className="flex items-center space-x-2">
-                <Target className="w-4 h-4" />
-                <span className="text-sm font-medium">500 Puana Kadar</span>
-              </div>
-            </div>
-          )}
-
-          {/* Sağ taraf - Rakip bilgisi */}
-          <div className="w-16 text-right">
-            {gameMode === 'tournament' && (
-              <div className="text-xs text-muted-foreground">
-                vs {getOpponentDisplayName()}
-              </div>
-            )}
-          </div>
-        </div>
-        {/* Header bitiş */}
-
-        {/* 🏆 TURNUVA UYARI KARTI EKLENDİ */}
-        {gameMode === 'tournament' && (
-          <div className="mb-4">
-            <Card className="border-yellow-200 bg-yellow-50">
-              <CardContent className="p-3">
-                <div className="flex items-center space-x-2">
-                  <Trophy className="w-4 h-4 text-yellow-600" />
-                  <span className="text-xs font-medium text-yellow-800">
-                    Turnuva maçı! Kazanırsan sonraki tura geçeceksin.
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-
-        {/* Scores */}
-        <div className="grid grid-cols-2 gap-4">
-          <Card className="silver-gradient border border-gray-300 shadow-lg">
-            <CardContent className="p-4 text-center relative overflow-hidden">
-              <Avatar className="w-16 h-16 mx-auto mb-2">
-                <AvatarImage 
-                  src={playerAvatar || user?.user_metadata?.avatar_url} 
-                  alt="Profile"
-                />
-                <AvatarFallback>
-                  <User className="w-8 h-8 text-gray-600" />
-                </AvatarFallback>
-              </Avatar>
-              <p className="text-sm text-gray-700 font-bold font-bungee">
-                Siz
-              </p>
-              <p className="text-2xl font-bold text-gray-700">{playerScore}</p>
-              {gameType === 'score' && (
-                <Progress 
-                  value={(playerScore / 500) * 100} 
-                  className="mt-2 bg-white/60" 
-                />
-              )}
-            </CardContent>
-          </Card>
-          <Card className="silver-gradient border border-gray-300 shadow-lg">
-            <CardContent className="p-4 text-center relative overflow-hidden">
-              <Avatar className="w-16 h-16 mx-auto mb-2 bg-transparent">
-                <AvatarImage 
-                  src={opponent.avatar} 
-                  alt="Opponent"
-                />
-                <AvatarFallback>
-                  <opponent.icon className="w-8 h-8 text-gray-600" />
-                </AvatarFallback>
-              </Avatar>
-              <p className="text-sm text-gray-700 font-bold font-bungee">
-                {opponent.name}
-              </p>
-              <p className="text-2xl font-bold text-gray-700">{opponentScore}</p>
-              {gameType === 'score' && (
-                <Progress 
-                  value={(opponentScore / 500) * 100} 
-                  className="mt-2 bg-white/60" 
-                />
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Joker Panel - EN ÖNEMLİ KISIM! */}
-        <Card className="bg-gradient-to-r from-amber-50 to-orange-100 border-amber-200 shadow-md">
-          <CardContent className="p-2">
-            <div className="flex justify-between items-center">
-              <h3 className="text-sm font-bold text-purple-800 mb-2">🎭 Jokerler</h3>
-            </div>
-            <div className="grid grid-cols-3 gap-1">
-              <Button
-                variant={selectedJoker === 'degistir' ? 'default' : 'outline'}
-                size="sm"
-                className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-green-100 to-emerald-200 hover:from-green-200 hover:to-emerald-300 border-green-300"
-                onTouchStart={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  useDegisTirJoker();
-                }}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  useDegisTirJoker();
-                }}
-                disabled={jokers.degistir <= 0 || isJokerActive}
-                style={{
-                  touchAction: 'manipulation',
-                  WebkitTapHighlightColor: 'transparent'
-                }}
-              >
-                <Shuffle className="w-3 h-3 mb-0.5" />
-                <span className="text-xs">Değiştir</span>
-                <Badge variant="secondary" className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center">
-                  {jokers.degistir}
-                </Badge>
-              </Button>
-
-              <Button
-                variant={selectedJoker === 'fisilida' ? 'default' : 'outline'}
-                size="sm"
-                className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-blue-100 to-cyan-200 hover:from-blue-200 hover:to-cyan-300 border-blue-300"
-                onTouchStart={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  useFisildaJoker();
-                }}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  useFisildaJoker();
-                }}
-                disabled={jokers.fisilida <= 0 || isJokerActive}
-                style={{
-                  touchAction: 'manipulation',
-                  WebkitTapHighlightColor: 'transparent'
-                }}
-              >
-                <Lightbulb className="w-4 h-4 mb-1" />
-                <span className="text-xs">Fısılda</span>
-                <Badge variant="secondary" className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center">
-                  {jokers.fisilida}
-                </Badge>
-              </Button>
-
-              <Button
-                variant={selectedJoker === 'senYaz' ? 'default' : 'outline'}
-                size="sm"
-                className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-purple-100 to-violet-200 hover:from-purple-200 hover:to-violet-300 border-purple-300"
-                onTouchStart={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  useSenYazJoker();
-                }}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  useSenYazJoker();
-                }}
-                disabled={jokers.senYaz <= 0 || isJokerActive}
-                style={{
-                  touchAction: 'manipulation',
-                  WebkitTapHighlightColor: 'transparent'
-                }}
-              >
-                <PenTool className="w-4 h-4 mb-1" />
-                <span className="text-xs">Sen Yaz</span>
-                <Badge variant="secondary" className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center">
-                  {jokers.senYaz}
-                </Badge>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Current Word Input */}
-        <Card className="game-grid border-0">
-          <CardContent className="p-2">
-            <div className="flex items-center space-x-2">
-              <Input 
-                value={currentWord} 
-                readOnly 
-                placeholder="~Kelime Üret~"
-                className={`text-lg font-mono text-center bg-white/20 backdrop-blur-sm border-white/30 text-white placeholder:text-white/70 font-bold h-8 ${
-                  isJokerActive ? 'typing-animation' : ''
-                }`}
-              />
-              <Badge variant="secondary" className="bg-white/20 text-white text-sm px-2 py-0.5 min-w-8 h-8 flex items-center justify-center">
-                {currentWord.length}
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Game Grid */}
-        <Card className="game-grid border-0 mb-2 flex-1">
-          <CardContent className="p-3 h-full flex items-center justify-center">
-            <div className="grid grid-cols-4 gap-2 w-full max-w-xs">
-              {gameGrid.map((row, rowIndex) =>
-                row.map((letter, colIndex) => {
-                  const isSelected = selectedLetters.some(s => s.row === rowIndex && s.col === colIndex);
-                  const isHighlighted = highlightedLetters.some(h => h.row === rowIndex && h.col === colIndex);
-                  const selectionOrder = selectedLetters.findIndex(s => s.row === rowIndex && s.col === colIndex);
-                  return (
-                    <Button
-                      key={`${rowIndex}-${colIndex}`}
-                      className={`letter-button h-12 text-lg font-bold relative transition-all duration-300 ${
-                        isSelected ? 'selected' : ''
-                      } ${
-                        isHighlighted ? 'letter-glow-highlight' : ''
-                      }`}
-                      onTouchStart={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleLetterClick(letter, rowIndex, colIndex);
-                      }}
-                      onClick={(e) => {
-                        // Sadece touch event olmadığında çalışsın (çift tetiklemeyi engeller)
-                        if (e.nativeEvent && 'touches' in e.nativeEvent) return;
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleLetterClick(letter, rowIndex, colIndex);
-                      }}
-                      style={{
-                        touchAction: 'manipulation',
-                        WebkitTapHighlightColor: 'transparent',
-                        WebkitTouchCallout: 'none',
-                        WebkitUserSelect: 'none',
-                        userSelect: 'none'
-                      }}
-                    >
-                      {letter}
-                      {isSelected && selectionOrder >= 0 && (
-                        <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold border-2 border-white">
-                          {selectionOrder + 1}
-                        </span>
-                      )}
-                    </Button>
-                  );
-                })
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-2 shrink-0">
-          <Button 
-            variant="outline" 
-            onTouchStart={(e) => {
-              e.preventDefault();
-              clearWord();
-            }}
-            onClick={(e) => {
-              e.preventDefault();
-              clearWord();
-            }}
-            className="h-12"
-            disabled={selectedLetters.length === 0 || isJokerActive}
-            style={{ touchAction: 'manipulation' }}
-          >
-            <Trash2 className="w-4 h-4 mr-2" />
-            Sil
-          </Button>
-          
-          <Button 
-            onTouchStart={(e) => {
-              e.preventDefault();
-              submitTouchTsRef.current = Date.now();
-              playSound('buttonClick');
-              submitWord();
-            }}
-            onClick={(e) => {
-              e.preventDefault();
-              // Dokunmatik cihazlarda çift tetiklemeyi önle
-              if (Date.now() - submitTouchTsRef.current < 500) return;
-              playSound('buttonClick');
-              submitWord();
-            }}
-            className="h-12"
-            disabled={currentWord.length < 3 || isValidating || isJokerActive}
-            style={{ touchAction: 'manipulation' }}
-          >
-            <Send className="w-4 h-4 mr-2" />
-            {isValidating ? 'Kontrol Ediliyor...' : 'Gönder'}
-          </Button>
-        </div>
-      </div>
-    </div>
-
-    {/* Exit Confirmation Dialog */}
-    <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
-      <AlertDialogContent className="max-w-sm mx-auto">
-        <AlertDialogHeader>
-          <AlertDialogTitle className="text-center">⚠️ Aktif Oyun Uyarısı</AlertDialogTitle>
-          <AlertDialogDescription className="text-center">
-            Şu an aktif bir oyun oynuyorsun! 
-            <br /><br />
-            Oyundan çıkarsan <span className="font-bold text-destructive">ceza alacaksın</span> ve rakibin kazanacak.
-            <br /><br />
-            <span className="text-muted-foreground text-sm">Emin misin?</span>
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter className="flex-col space-y-2 sm:flex-col sm:space-y-2 sm:space-x-0">
-          <AlertDialogAction 
-            onClick={async () => {
-              setShowExitDialog(false);
-              if (currentRoom) {
-                await leaveRoom();
-              }
-              navigate('/');
-            }}
-            className="w-full bg-destructive hover:bg-destructive/90"
-          >
-            🚪 Evet, Çıkış Yap
-          </AlertDialogAction>
-          <AlertDialogCancel className="w-full">
-            🎮 Hayır, Oyuna Devam Et
-          </AlertDialogCancel>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-
-    {/* Tournament Exit Dialog */}
-    <AlertDialog open={showTournamentExitDialog} onOpenChange={setShowTournamentExitDialog}>
-      <AlertDialogContent className="max-w-sm mx-auto">
-        <AlertDialogHeader>
-          <AlertDialogTitle className="text-center">⚠️ Turnuva Maçı Uyarısı</AlertDialogTitle>
-          <AlertDialogDescription className="text-center">
-            Turnuva maçından ayrılırsan:
-            <br /><br />
-            • <span className="font-bold text-destructive">Maçı kaybedersin</span>
-            <br />
-            • <span className="font-bold text-yellow-600">Rakip kazanır</span>
-            <br />
-            • <span className="font-bold text-blue-600">Turnuvadan elenirsin</span>
-            <br /><br />
-            <span className="text-muted-foreground text-sm">Emin misin?</span>
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter className="flex-col space-y-2 sm:flex-col sm:space-y-2 sm:space-x-0">
-          <AlertDialogAction 
-            onClick={async () => {
-              setShowTournamentExitDialog(false);
-              await handleTournamentExit();
-    // navigate('/'); satırını kaldır - handleTournamentExit içinde zaten parent'e bildirim yapılıyor
-           }}
-            className="w-full bg-destructive hover:bg-destructive/90"
-           >
-         Evet, Ayrıl
-       </AlertDialogAction>
-          <AlertDialogCancel className="w-full">
-            🏆 Hayır, Maça Devam Et
-          </AlertDialogCancel>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-
-    {/* Tekrar oyun isteği dialog'u - BURAYA DA EKLE */}
-    <AlertDialog open={!!currentRematchRequest} onOpenChange={() => setCurrentRematchRequest(null)}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>🔄 Tekrar Oyun İsteği</AlertDialogTitle>
-          <AlertDialogDescription>
-            Rakibiniz tekrar oynamak istiyor. Kabul ediyor musunuz?
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel onClick={async () => {
-            if (currentRematchRequest) {
-              await respondRematchRequest(currentRematchRequest.id, false);
-            }
-          }}>
-            Hayır
-          </AlertDialogCancel>
-          <AlertDialogAction onClick={async () => {
-            if (currentRematchRequest) {
-              await respondRematchRequest(currentRematchRequest.id, true);
-              if (currentRematchRequest.room_code) {
-                const success = await joinRoom(currentRematchRequest.room_code);
-                if (success) {
-                  console.log('✅ Rematch odaya katıldı, oyun sayfasına yönlendiriliyor');
-                  // Oyun durumunu tamamen sıfırla
-                  resetGameForRematch();
-                  // Yeni oyun başlatması için küçük gecikme
-                  setTimeout(async () => {
-                    // 🎯 SERVER-SIDE COUNTDOWN
-                    if (currentRoom?.id) {
-                      try {
-                        const { data, error } = await supabase.rpc('start_game_countdown', {
-                          p_room_id: currentRoom.id
-                        });
-                        if (!error && data) {
-                          setCountdownServerTime(data);
-                        }
-                      } catch (err) {
-                        console.error('Countdown error:', err);
-                      }
-                    }
-                    setShowCountdown(true);
-                  }, 500);
-                }
-              }
-            }
-          }}>
-            Evet, Tekrar Oyna
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  </>
-);
 };
 
 export default GamePage;
