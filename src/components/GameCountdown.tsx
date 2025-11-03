@@ -132,14 +132,14 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
   if (count === 0 && !showStart) return null;
 
   return (
-    <div className={cn("fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm", className)}>
+    <div className={cn("fixed inset-0 z-50 flex items-center justify-center bg-black/60", className)}>
       {/* 3D Animated Number/Text */}
       <div className="relative">
         {/* Glow effect */}
         <div
           className={cn(
-            "absolute inset-0 blur-3xl transition-all duration-300",
-            isVisible ? "opacity-100 scale-110" : "opacity-0 scale-50",
+            "absolute inset-0 blur-xl transition-all duration-300",
+            isVisible ? "opacity-70 scale-110" : "opacity-0 scale-50",
             showStart
               ? "bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500"
               : "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500",
@@ -178,13 +178,13 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
         <div
           className={cn(
             "absolute inset-0 text-[180px] font-black transition-all duration-300 -z-10",
-            "opacity-40",
+            "opacity-30",
             isVisible ? "scale-100" : "scale-0",
           )}
           style={{
-            transform: "translate(8px, 8px)",
+            transform: "translate(6px, 6px)",
             color: "#000",
-            filter: "blur(4px)",
+            filter: "blur(2px)",
           }}
         >
           {showStart ? "BAŞLA!" : count}
@@ -194,13 +194,13 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
         <div
           className={cn(
             "absolute inset-0 text-[180px] font-black transition-all duration-300 -z-20",
-            "opacity-20",
+            "opacity-15",
             isVisible ? "scale-100" : "scale-0",
           )}
           style={{
-            transform: "translate(16px, 16px)",
+            transform: "translate(12px, 12px)",
             color: "#000",
-            filter: "blur(8px)",
+            filter: "blur(3px)",
           }}
         >
           {showStart ? "BAŞLA!" : count}
@@ -209,9 +209,9 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
         {/* Particles effect */}
         {isVisible && (
           <>
-            <div className="absolute -top-20 -left-20 w-40 h-40 bg-gradient-to-br from-purple-500/30 to-pink-500/30 rounded-full blur-2xl animate-pulse" />
+            <div className="absolute -top-20 -left-20 w-32 h-32 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full blur-xl animate-pulse" />
             <div
-              className="absolute -bottom-20 -right-20 w-40 h-40 bg-gradient-to-br from-blue-500/30 to-cyan-500/30 rounded-full blur-2xl animate-pulse"
+              className="absolute -bottom-20 -right-20 w-32 h-32 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-full blur-xl animate-pulse"
               style={{ animationDelay: "0.5s" }}
             />
           </>
