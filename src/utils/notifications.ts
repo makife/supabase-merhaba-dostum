@@ -1,7 +1,5 @@
 // utils/notifications.ts - Console log versiyonu (TypeScript hatasız)
 import { supabase } from "@/integrations/supabase/client";
-import { Capacitor } from "@capacitor/core";
-import { PushNotifications } from "@capacitor/push-notifications";
 
 // Mention bildirimi - Veritabanı kaydı ile
 export const sendMentionNotification = async (
@@ -70,7 +68,7 @@ export const sendMessageNotification = async (userId: string, senderUsername: st
       timestamp: new Date().toLocaleString("tr-TR"),
     });
 
-    // Browser bildirimi göster
+    // Browser bildirimi göster - sadece mesaj, URL yok
     showBrowserNotification("💬 Yeni Özel Mesaj", notificationMessage);
 
     return true;
@@ -184,42 +182,10 @@ export const getUserNotifications = async (userId: string, limit = 20) => {
 
 // Browser notification göster
 export const showBrowserNotification = (title: string, message: string) => {
-  // Tarayıcı bildirim izni kontrolü
-  if ("Notification" in window) {
-    if (Notification.permission === "granted") {
-      new Notification(title, {
-        body: message,
-        icon: "/favicon.ico",
-        badge: "/favicon.ico",
-      });
-    } else if (Notification.permission === "default") {
-      // İzin iste
-      Notification.requestPermission().then((permission) => {
-        if (permission === "granted") {
-          new Notification(title, {
-            body: message,
-            icon: "/favicon.ico",
-            badge: "/favicon.ico",
-          });
-        }
-      });
-    }
-  }
-
-  // Mobil cihazlar için Capacitor Push Notifications
-  if (typeof Capacitor !== "undefined" && Capacitor.isNativePlatform()) {
-    PushNotifications.requestPermissions().then((result) => {
-      if (result.receive === "granted") {
-        PushNotifications.createChannel({
-          id: "chat-notifications",
-          name: "Chat Notifications",
-          description: "Notifications for mentions and private messages",
-          importance: 5,
-          vibration: true,
-        }).then(() => {
-          PushNotifications.register();
-        });
-      }
+  if ("Notification" in window && Notification.permission === "granted") {
+    new Notification(title, {
+      body: message,
+      icon: "/favicon.ico",
     });
   }
 };
