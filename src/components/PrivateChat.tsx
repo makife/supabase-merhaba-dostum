@@ -1,5 +1,5 @@
 // PrivateChat.tsx - Real-time düzeltmeleri
-import { sendMessageNotification } from "@/utils/notifications";
+import { sendMessageNotification, setActivePrivateChat, removeActivePrivateChat } from "@/utils/notifications";
 import { useUser } from "@/contexts/UserContext";
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -51,6 +51,41 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
   } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { refreshUnreadCounts } = useChatNotifications();
+
+  // 🔴🟢 AKTİF SOHBET TAKİBİ - Component mount/unmount
+  useEffect(() => {
+    if (!chatId) return;
+
+    console.log("🟢 PrivateChat mounted - Aktif sohbet eklendi:", chatId);
+    setActivePrivateChat(chatId);
+
+    // Component unmount olduğunda temizlik
+    return () => {
+      console.log("🔴 PrivateChat unmounted - Aktif sohbet kaldırıldı:", chatId);
+      removeActivePrivateChat(chatId);
+    };
+  }, [chatId]);
+
+  // 🎯 SAYFA DEĞİŞİKLİĞİ TAKİBİ - URL değiştiğinde de çalışsın
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        // Sayfa tekrar görünür olduğunda sohbeti aktif yap
+        console.log("🟢 Sayfa görünür - Aktif sohbet:", chatId);
+        setActivePrivateChat(chatId);
+      } else {
+        // Sayfa gizlendiğinde sohbeti pasif yap
+        console.log("🔴 Sayfa gizlendi - Aktif sohbet kaldırıldı:", chatId);
+        removeActivePrivateChat(chatId);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [chatId]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -240,7 +275,7 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
       playSound("buttonClick");
       refreshUnreadCounts();
 
-      // 🔔 BİLDİRİM GÖNDER
+      // 🔔 BİLDİRİM GÖNDER - Artık akıllı bildirim sistemi var
       await sendMessageNotification(
         otherUserId, // Alıcının ID'si
         profile?.username || "Anonim", // Gönderenin kullanıcı adı
@@ -292,6 +327,27 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
   return (
     <>
       <div className="w-full h-full flex flex-col bg-background">
+        {/* Header - Back button ve kullanıcı bilgisi */}
+        <div className="flex items-center space-x-3 p-4 border-b bg-card">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              console.log("🔙 Back butonuna basıldı - Sohbet kapatılıyor:", chatId);
+              removeActivePrivateChat(chatId); // Manuel olarak da kaldır
+              onBack();
+            }}
+            className="flex-shrink-0"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <UserAvatar username={otherUser.username} avatarUrl={otherUser.avatar_url} size="sm" />
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-sm truncate">{otherUser.username}</h3>
+            <p className="text-xs text-muted-foreground">Özel sohbet</p>
+          </div>
+        </div>
+
         <ScrollArea className="flex-1 p-4 overflow-hidden">
           <div className="space-y-4">
             {messages.map((message) => (
