@@ -179,11 +179,7 @@ export function useChatNotifications() {
               title: "📢 Senden bahsedildi!",
               description: newNotification.message,
               duration: 5000,
-              action: (
-                <Button variant="outline" size="sm" onClick={() => navigate("/chat")}>
-                  Mesaja Git
-                </Button>
-              ),
+              // Buton kaldırıldı - sayfa yenileme sorununu önlemek için
             });
           }
 
@@ -192,7 +188,7 @@ export function useChatNotifications() {
               title: "💬 Yeni Özel Mesaj",
               description: newNotification.message,
               duration: 5000,
-              // Oku butonu kaldırıldı - sadece bilgilendirme
+              // Buton kaldırıldı
             });
           }
 
@@ -205,7 +201,7 @@ export function useChatNotifications() {
     return () => {
       supabase.removeChannel(notificationChannel);
     };
-  }, [user?.id, navigate]);
+  }, [user?.id]);
 
   const totalNotifications = unreadCount + globalMentionCount;
 
