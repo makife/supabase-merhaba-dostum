@@ -5,7 +5,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { PushNotifications } from "@capacitor/push-notifications";
 import { Capacitor } from "@capacitor/core";
-import { useNavigate } from "react-router-dom";
 
 interface NotificationContextType {
   unreadCount: number;
@@ -29,11 +28,7 @@ interface NotificationProviderProps {
 export const NotificationProvider = ({ children }: NotificationProviderProps) => {
   const { unreadCount } = useChatNotifications();
   const { user } = useAuth();
-  const navigate = useNavigate();
 
-  // 🔔 Bildirim sistemi - sadece dinleme modu (izin kullanıcı tarafından verilmeli)
-
-  // 🔔 Supabase bildirimleri dinle
   useEffect(() => {
     if (!user) return;
 
@@ -60,27 +55,24 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
                 });
               }
 
-              // Mention bildirimi
+              // Mention bildirimi - Sadece Git butonu
               if (notification.type === "mention") {
                 toast.info(notification.message, {
                   duration: 5000,
                   icon: "📢",
                   action: {
                     label: "Git",
-                    onClick: () => navigate("/chat"),
+                    onClick: () => (window.location.href = "/chat"),
                   },
                 });
               }
 
-              // Özel mesaj bildirimi
+              // Özel mesaj bildirimi - Butonsuz
               if (notification.type === "message") {
                 toast.info(notification.message, {
                   duration: 5000,
                   icon: "💬",
-                  action: {
-                    label: "Oku",
-                    onClick: () => navigate("/private-chat"),
-                  },
+                  // Oku butonu kaldırıldı
                 });
               }
             } catch (err) {
@@ -100,7 +92,7 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
     } catch (err) {
       console.error("Bildirim kanalı oluşturulurken hata:", err);
     }
-  }, [user, navigate]);
+  }, [user]);
 
   const markAsRead = async (notificationId: string) => {
     try {
