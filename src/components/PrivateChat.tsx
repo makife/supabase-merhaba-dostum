@@ -11,10 +11,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Send, ArrowLeft, Flag } from "lucide-react";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { ReportMessageDialog } from "@/components/ReportMessageDialog";
 import { toast } from "sonner";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface PrivateMessage {
   id: string;
@@ -325,101 +326,98 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
   };
 
   return (
-    <>
+    <div className="w-full h-full flex flex-col bg-background">
+      {/* Header - Back button ve kullanıcı bilgisi */}
       <div className="flex items-center space-x-3 p-4 border-b bg-card">
-  <Button
-    variant="ghost"
-    size="sm"
-    onClick={() => {
-      console.log("🔙 Back butonuna basıldı - Sohbet kapatılıyor:", chatId);
-      removeActivePrivateChat(chatId);
-      onBack();
-    }}
-    className="flex-shrink-0"
-  >
-    <ArrowLeft className="w-4 h-4" />
-  </Button>
-  
-  {/* Alternatif Avatar kullanımı */}
-  <Avatar className="w-8 h-8">
-    <AvatarImage 
-      src={otherUser.avatar_url} 
-      alt={otherUser.username}
-    />
-    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-      {otherUser.username?.charAt(0)?.toUpperCase() || 'U'}
-    </AvatarFallback>
-  </Avatar>
-  
-  <div className="flex-1 min-w-0">
-    <h3 className="font-semibold text-sm truncate">{otherUser.username}</h3>
-    <p className="text-xs text-muted-foreground">Özel sohbet</p>
-  </div>
-</div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            console.log("🔙 Back butonuna basıldı - Sohbet kapatılıyor:", chatId);
+            removeActivePrivateChat(chatId); // Manuel olarak da kaldır
+            onBack();
+          }}
+          className="flex-shrink-0"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </Button>
 
-        <ScrollArea className="flex-1 p-4 overflow-hidden">
-          <div className="space-y-4">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`group flex ${message.sender_id === user?.id ? "justify-end" : "justify-start"}`}
-              >
-                <div className="flex items-end space-x-2 max-w-[70%]">
-                  {message.sender_id !== user?.id && (
-                    <button
-                      onClick={() => handleReportMessage(message.id, message.sender_id)}
-                      className="opacity-70 group-hover:opacity-100 transition-opacity p-1 hover:bg-orange-100 rounded mb-1 flex-shrink-0"
-                      title="Mesajı bildir"
-                    >
-                      <Flag className="w-3 h-3 text-orange-500" />
-                    </button>
-                  )}
+        {/* Avatar - UserAvatar yerine direkt Avatar kullanıyoruz */}
+        <Avatar className="w-8 h-8">
+          <AvatarImage src={otherUser.avatar_url} alt={otherUser.username} />
+          <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+            {otherUser.username?.charAt(0)?.toUpperCase() || "U"}
+          </AvatarFallback>
+        </Avatar>
 
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-sm truncate">{otherUser.username}</h3>
+          <p className="text-xs text-muted-foreground">Özel sohbet</p>
+        </div>
+      </div>
+
+      <ScrollArea className="flex-1 p-4 overflow-hidden">
+        <div className="space-y-4">
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={`group flex ${message.sender_id === user?.id ? "justify-end" : "justify-start"}`}
+            >
+              <div className="flex items-end space-x-2 max-w-[70%]">
+                {message.sender_id !== user?.id && (
+                  <button
+                    onClick={() => handleReportMessage(message.id, message.sender_id)}
+                    className="opacity-70 group-hover:opacity-100 transition-opacity p-1 hover:bg-orange-100 rounded mb-1 flex-shrink-0"
+                    title="Mesajı bildir"
+                  >
+                    <Flag className="w-3 h-3 text-orange-500" />
+                  </button>
+                )}
+
+                <div
+                  className={`p-3 rounded-lg ${
+                    message.sender_id === user?.id ? "bg-primary text-primary-foreground" : "bg-muted"
+                  }`}
+                >
+                  <div className="break-words text-sm">{message.message}</div>
                   <div
-                    className={`p-3 rounded-lg ${
-                      message.sender_id === user?.id ? "bg-primary text-primary-foreground" : "bg-muted"
+                    className={`text-xs mt-1 ${
+                      message.sender_id === user?.id ? "text-primary-foreground/70" : "text-muted-foreground"
                     }`}
                   >
-                    <div className="break-words text-sm">{message.message}</div>
-                    <div
-                      className={`text-xs mt-1 ${
-                        message.sender_id === user?.id ? "text-primary-foreground/70" : "text-muted-foreground"
-                      }`}
-                    >
-                      {formatTime(message.created_at)}
-                    </div>
+                    {formatTime(message.created_at)}
                   </div>
                 </div>
               </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
-        </ScrollArea>
-
-        <Separator />
-
-        <div className="p-4 bg-background">
-          <div className="flex space-x-2">
-            <Input
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Mesajınızı yazın..."
-              maxLength={500}
-              disabled={isLoading}
-              className="flex-1"
-            />
-            <Button
-              onClick={sendMessage}
-              disabled={!newMessage.trim() || isLoading}
-              size="sm"
-              className="px-3 flex-shrink-0"
-            >
-              <Send className="w-4 h-4" />
-            </Button>
-          </div>
-          <div className="text-xs text-muted-foreground mt-1 text-right">{newMessage.length}/500</div>
+            </div>
+          ))}
+          <div ref={messagesEndRef} />
         </div>
+      </ScrollArea>
+
+      <Separator />
+
+      <div className="p-4 bg-background">
+        <div className="flex space-x-2">
+          <Input
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Mesajınızı yazın..."
+            maxLength={500}
+            disabled={isLoading}
+            className="flex-1"
+          />
+          <Button
+            onClick={sendMessage}
+            disabled={!newMessage.trim() || isLoading}
+            size="sm"
+            className="px-3 flex-shrink-0"
+          >
+            <Send className="w-4 h-4" />
+          </Button>
+        </div>
+        <div className="text-xs text-muted-foreground mt-1 text-right">{newMessage.length}/500</div>
       </div>
 
       {/* Report Dialog */}
@@ -436,6 +434,6 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
           reportedUsername={reportingMessage.username}
         />
       )}
-    </>
+    </div>
   );
 }
