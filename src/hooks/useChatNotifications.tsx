@@ -180,7 +180,7 @@ export function useChatNotifications() {
               description: newNotification.message,
               duration: 5000,
               action: (
-                <Button variant="outline" size="sm" onClick={() => navigate("/chat")}>
+                <Button variant="outline" size="sm" onClick={() => navigate("/chat", { replace: true })}>
                   Mesaja Git
                 </Button>
               ),
@@ -193,7 +193,7 @@ export function useChatNotifications() {
               description: newNotification.message,
               duration: 5000,
               action: (
-                <Button variant="outline" size="sm" onClick={() => navigate("/private-chat")}>
+                <Button variant="outline" size="sm" onClick={() => navigate("/private-chat", { replace: true })}>
                   Mesajları Gör
                 </Button>
               ),
