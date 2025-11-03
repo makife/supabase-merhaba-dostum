@@ -341,7 +341,13 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
           >
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <UserAvatar username={otherUser.username} avatarUrl={otherUser.avatar_url} size="sm" />
+          <UserAvatar
+            user={{
+              username: otherUser.username,
+              avatar_url: otherUser.avatar_url,
+            }}
+            size="sm"
+          />
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-sm truncate">{otherUser.username}</h3>
             <p className="text-xs text-muted-foreground">Özel sohbet</p>
