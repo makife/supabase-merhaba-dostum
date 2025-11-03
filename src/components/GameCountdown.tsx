@@ -132,102 +132,59 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
   if (count === 0 && !showStart) return null;
 
   return (
-    <div className={cn("fixed inset-0 z-50 flex items-center justify-center bg-black/60", className)}>
+    <div className={cn("fixed inset-0 z-50 flex items-center justify-center bg-black/50", className)}>
       {/* 3D Animated Number/Text */}
       <div className="relative">
         {/* Glow effect */}
         <div
           className={cn(
-            "absolute inset-0 blur-xl transition-all duration-300",
-            isVisible ? "opacity-70 scale-110" : "opacity-0 scale-50",
+            "absolute inset-0 blur-2xl transition-all duration-500",
+            isVisible ? "opacity-60" : "opacity-0",
             showStart
-              ? "bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500"
-              : "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500",
+              ? "bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400"
+              : "bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400",
           )}
         />
 
         {/* Main 3D Text */}
         <div
           className={cn(
-            "relative text-[180px] font-black transition-all duration-300",
+            "relative text-[200px] font-black transition-all duration-500 ease-out",
             "drop-shadow-2xl",
-            isVisible ? "scale-100 opacity-100 rotate-0" : "scale-0 opacity-0 rotate-180",
-            showStart && "animate-bounce",
+            isVisible ? "translate-y-0 opacity-100 scale-100" : "translate-y-[200px] opacity-0 scale-75",
           )}
           style={{
             background: showStart
-              ? "linear-gradient(135deg, #10b981 0%, #34d399 25%, #6ee7b7 50%, #34d399 75%, #10b981 100%)"
-              : "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 25%, #ec4899 50%, #8b5cf6 75%, #3b82f6 100%)",
-            backgroundSize: "200% 200%",
-            animation: showStart
-              ? "gradient 2s ease infinite, pulse 0.5s ease-in-out infinite"
-              : "gradient 3s ease infinite",
+              ? "linear-gradient(135deg, #22c55e 0%, #10b981 50%, #14b8a6 100%)"
+              : "linear-gradient(135deg, #3b82f6 0%, #a855f7 50%, #ec4899 100%)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",
-            textShadow: showStart
-              ? "0 0 40px rgba(16, 185, 129, 0.8), 0 0 80px rgba(52, 211, 153, 0.6), 0 10px 30px rgba(0, 0, 0, 0.5)"
-              : "0 0 40px rgba(139, 92, 246, 0.8), 0 0 80px rgba(236, 72, 153, 0.6), 0 10px 30px rgba(0, 0, 0, 0.5)",
-            filter: "drop-shadow(0 20px 40px rgba(0, 0, 0, 0.4))",
+            textShadow: "0 10px 40px rgba(0, 0, 0, 0.3)",
+            filter: "drop-shadow(0 0 60px rgba(139, 92, 246, 0.5))",
+            letterSpacing: "-0.02em",
           }}
         >
           {showStart ? "BAŞLA!" : count}
         </div>
 
-        {/* 3D Shadow layers */}
+        {/* 3D Shadow layer */}
         <div
           className={cn(
-            "absolute inset-0 text-[180px] font-black transition-all duration-300 -z-10",
-            "opacity-30",
-            isVisible ? "scale-100" : "scale-0",
+            "absolute inset-0 text-[200px] font-black transition-all duration-500 ease-out -z-10",
+            "opacity-40",
+            isVisible ? "translate-y-0 scale-100" : "translate-y-[200px] scale-75",
           )}
           style={{
-            transform: "translate(6px, 6px)",
-            color: "#000",
+            transform: isVisible ? "translate(4px, 4px)" : "translate(4px, 204px)",
+            color: "#1a1a1a",
             filter: "blur(2px)",
+            letterSpacing: "-0.02em",
           }}
         >
           {showStart ? "BAŞLA!" : count}
         </div>
-
-        {/* Second shadow layer */}
-        <div
-          className={cn(
-            "absolute inset-0 text-[180px] font-black transition-all duration-300 -z-20",
-            "opacity-15",
-            isVisible ? "scale-100" : "scale-0",
-          )}
-          style={{
-            transform: "translate(12px, 12px)",
-            color: "#000",
-            filter: "blur(3px)",
-          }}
-        >
-          {showStart ? "BAŞLA!" : count}
-        </div>
-
-        {/* Particles effect */}
-        {isVisible && (
-          <>
-            <div className="absolute -top-20 -left-20 w-32 h-32 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full blur-xl animate-pulse" />
-            <div
-              className="absolute -bottom-20 -right-20 w-32 h-32 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-full blur-xl animate-pulse"
-              style={{ animationDelay: "0.5s" }}
-            />
-          </>
-        )}
       </div>
-
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-        @keyframes gradient {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-      `,
-        }}
-      />
     </div>
   );
 };
