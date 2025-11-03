@@ -1,19 +1,20 @@
 // PrivateChat.tsx - Real-time düzeltmeleri
-
-import { useState, useEffect, useRef } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { useSounds } from '@/hooks/useSounds';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Card } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Send, ArrowLeft, Flag } from 'lucide-react';
-import { UserAvatar } from '@/components/UserAvatar';
-import { ReportMessageDialog } from '@/components/ReportMessageDialog';
-import { toast } from 'sonner';
-import { useChatNotifications } from '@/hooks/useChatNotifications';
+import { sendMessageNotification } from "@/utils/notifications";
+import { useUser } from "@/contexts/UserContext";
+import { useState, useEffect, useRef } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useSounds } from "@/hooks/useSounds";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Send, ArrowLeft, Flag } from "lucide-react";
+import { UserAvatar } from "@/components/UserAvatar";
+import { ReportMessageDialog } from "@/components/ReportMessageDialog";
+import { toast } from "sonner";
+import { useChatNotifications } from "@/hooks/useChatNotifications";
 
 interface PrivateMessage {
   id: string;
@@ -37,9 +38,10 @@ interface PrivateChatProps {
 
 export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
   const { user } = useAuth();
+  const { profile } = useUser();
   const { playSound } = useSounds();
   const [messages, setMessages] = useState<PrivateMessage[]>([]);
-  const [newMessage, setNewMessage] = useState('');
+  const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [reportingMessage, setReportingMessage] = useState<{
@@ -60,44 +62,44 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
 
   const fetchMessages = async () => {
     try {
-      console.log('📥 Fetching private messages for chatId:', chatId);
-      
+      console.log("📥 Fetching private messages for chatId:", chatId);
+
       const { data, error } = await supabase
-        .from('private_messages')
-        .select('*')
-        .eq('chat_id', chatId)
-        .order('created_at', { ascending: true });
+        .from("private_messages")
+        .select("*")
+        .eq("chat_id", chatId)
+        .order("created_at", { ascending: true });
 
       if (error) throw error;
-      
+
       setMessages(data || []);
       console.log(`✅ Loaded ${data?.length || 0} private messages`);
-      
+
       // Mesajları okundu olarak işaretle
       await markMessagesAsRead();
     } catch (error) {
-      console.error('❌ Error fetching private messages:', error);
+      console.error("❌ Error fetching private messages:", error);
     }
   };
 
   const markMessagesAsRead = async () => {
     if (!user?.id) return;
-    
+
     try {
       const { error } = await supabase
-        .from('private_messages')
+        .from("private_messages")
         .update({ is_read: true })
-        .eq('chat_id', chatId)
-        .eq('recipient_id', user.id)
-        .eq('is_read', false);
+        .eq("chat_id", chatId)
+        .eq("recipient_id", user.id)
+        .eq("is_read", false);
 
       if (error) {
-        console.error('Error marking messages as read:', error);
+        console.error("Error marking messages as read:", error);
       } else {
         refreshUnreadCounts();
       }
     } catch (error) {
-      console.error('Error in markMessagesAsRead:', error);
+      console.error("Error in markMessagesAsRead:", error);
     }
   };
 
@@ -105,88 +107,84 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
   useEffect(() => {
     if (!chatId || !user?.id) return;
 
-    console.log('🔄 Setting up Private Chat real-time subscription for:', chatId);
+    console.log("🔄 Setting up Private Chat real-time subscription for:", chatId);
 
     // İlk mesajları yükle
     fetchMessages();
 
     // Real-time subscription kur - DAHA KISA CHANNEL ADI
-    const channelName = `private-${chatId.replace('chat_', '').substring(0, 20)}`; // Kısalt
-    
+    const channelName = `private-${chatId.replace("chat_", "").substring(0, 20)}`; // Kısalt
+
     const channel = supabase
       .channel(channelName, {
         config: {
           broadcast: { self: false },
-        }
+        },
       })
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'private_messages',
-          filter: `chat_id=eq.${chatId}`
+          event: "INSERT",
+          schema: "public",
+          table: "private_messages",
+          filter: `chat_id=eq.${chatId}`,
         },
         (payload) => {
-          console.log('📨 New private message received:', payload.new);
-          
+          console.log("📨 New private message received:", payload.new);
+
           const newMessage = payload.new as PrivateMessage;
-          
-          setMessages(prev => {
+
+          setMessages((prev) => {
             // Duplicate kontrolü
-            const exists = prev.some(msg => msg.id === newMessage.id);
+            const exists = prev.some((msg) => msg.id === newMessage.id);
             if (exists) {
-              console.log('⚠️ Private message already exists, skipping');
+              console.log("⚠️ Private message already exists, skipping");
               return prev;
             }
-            
-            console.log('✅ Adding new private message to state');
-            return [...prev, newMessage].sort((a, b) => 
-              new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+
+            console.log("✅ Adding new private message to state");
+            return [...prev, newMessage].sort(
+              (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
             );
           });
-          
+
           // Sadece başkalarından gelen mesajlar için ses çal
           if (newMessage.sender_id !== user?.id) {
-            playSound('correctWord');
+            playSound("correctWord");
             // Mesajı okundu olarak işaretle
             setTimeout(markMessagesAsRead, 1000);
           }
-          
+
           // Unread count'u güncelle
           refreshUnreadCounts();
-        }
+        },
       )
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'private_messages',
-          filter: `chat_id=eq.${chatId}`
+          event: "UPDATE",
+          schema: "public",
+          table: "private_messages",
+          filter: `chat_id=eq.${chatId}`,
         },
         (payload) => {
-          console.log('📝 Private message updated:', payload.new);
-          
-          setMessages(prev => prev.map(msg => 
-            msg.id === payload.new.id 
-              ? { ...msg, ...payload.new } 
-              : msg
-          ));
-        }
+          console.log("📝 Private message updated:", payload.new);
+
+          setMessages((prev) => prev.map((msg) => (msg.id === payload.new.id ? { ...msg, ...payload.new } : msg)));
+        },
       )
       .subscribe((status) => {
-        console.log('📡 Private subscription status:', status);
-        
-        if (status === 'SUBSCRIBED') {
-          console.log('✅ Private chat subscription active');
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ Private channel error detected');
+        console.log("📡 Private subscription status:", status);
+
+        if (status === "SUBSCRIBED") {
+          console.log("✅ Private chat subscription active");
+        } else if (status === "CHANNEL_ERROR") {
+          console.error("❌ Private channel error detected");
         }
       });
 
     return () => {
-      console.log('🧹 Cleaning up private real-time channel');
+      console.log("🧹 Cleaning up private real-time channel");
       supabase.removeChannel(channel);
     };
   }, [chatId, user?.id]);
@@ -195,11 +193,13 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
     if (!newMessage.trim() || !user || !chatId) return;
 
     const trimmedMessage = newMessage.trim();
-    
+
     // Chat ID'den other user ID'yi çıkar
-    const otherUserId = chatId.replace('chat_', '')
-      .split('_')
-      .find(id => id !== user.id) || otherUser.id;
+    const otherUserId =
+      chatId
+        .replace("chat_", "")
+        .split("_")
+        .find((id) => id !== user.id) || otherUser.id;
 
     // OPTIMISTIC UPDATE - Mesajı hemen göster
     const tempMessage: PrivateMessage = {
@@ -209,56 +209,59 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
       recipient_id: otherUserId,
       message: trimmedMessage,
       created_at: new Date().toISOString(),
-      is_read: false
+      is_read: false,
     };
 
-    setMessages(prev => [...prev, tempMessage]);
-    setNewMessage('');
+    setMessages((prev) => [...prev, tempMessage]);
+    setNewMessage("");
     setIsLoading(true);
-    
+
     try {
-      console.log('📤 Sending private message...');
-      
+      console.log("📤 Sending private message...");
+
       const { data: insertData, error } = await supabase
-        .from('private_messages')
+        .from("private_messages")
         .insert({
           chat_id: chatId,
           sender_id: user.id,
           recipient_id: otherUserId,
-          message: trimmedMessage
+          message: trimmedMessage,
         })
         .select()
         .single();
 
       if (error) throw error;
-      
-      console.log('✅ Private message sent successfully');
+
+      console.log("✅ Private message sent successfully");
 
       // Temp mesajı gerçek mesajla değiştir
-      setMessages(prev => prev.map(msg => 
-        msg.id === tempMessage.id 
-          ? { ...insertData }
-          : msg
-      ));
-      
-      playSound('buttonClick');
+      setMessages((prev) => prev.map((msg) => (msg.id === tempMessage.id ? { ...insertData } : msg)));
+
+      playSound("buttonClick");
       refreshUnreadCounts();
-      
+
+      // 🔔 BİLDİRİM GÖNDER
+      await sendMessageNotification(
+        otherUserId, // Alıcının ID'si
+        profile?.username || "Anonim", // Gönderenin kullanıcı adı
+        chatId, // Chat ID
+      );
+      console.log("✅ Notification sent to:", otherUser.username);
     } catch (error) {
-      console.error('❌ Error sending private message:', error);
-      
+      console.error("❌ Error sending private message:", error);
+
       // Hata durumunda temp mesajı kaldır
-      setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
+      setMessages((prev) => prev.filter((msg) => msg.id !== tempMessage.id));
       setNewMessage(trimmedMessage); // Mesajı geri koy
-      
-      toast.error('Mesaj gönderilirken hata oluştu');
+
+      toast.error("Mesaj gönderilirken hata oluştu");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
     }
@@ -266,12 +269,12 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
 
   const handleReportMessage = (messageId: string, senderId: string) => {
     if (!user) {
-      toast.error('Rapor göndermek için giriş yapmalısınız');
+      toast.error("Rapor göndermek için giriş yapmalısınız");
       return;
     }
-    
+
     if (senderId === user.id) {
-      toast.info('Kendi mesajınızı raporlayamazsınız');
+      toast.info("Kendi mesajınızı raporlayamazsınız");
       return;
     }
 
@@ -280,9 +283,9 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
   };
 
   const formatTime = (timestamp: string) => {
-    return new Date(timestamp).toLocaleTimeString('tr-TR', {
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(timestamp).toLocaleTimeString("tr-TR", {
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -294,7 +297,7 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={`group flex ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
+                className={`group flex ${message.sender_id === user?.id ? "justify-end" : "justify-start"}`}
               >
                 <div className="flex items-end space-x-2 max-w-[70%]">
                   {message.sender_id !== user?.id && (
@@ -306,22 +309,18 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
                       <Flag className="w-3 h-3 text-orange-500" />
                     </button>
                   )}
-                  
+
                   <div
                     className={`p-3 rounded-lg ${
-                      message.sender_id === user?.id
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted'
+                      message.sender_id === user?.id ? "bg-primary text-primary-foreground" : "bg-muted"
                     }`}
                   >
-                    <div className="break-words text-sm">
-                      {message.message}
-                    </div>
-                    <div className={`text-xs mt-1 ${
-                      message.sender_id === user?.id
-                        ? 'text-primary-foreground/70'
-                        : 'text-muted-foreground'
-                    }`}>
+                    <div className="break-words text-sm">{message.message}</div>
+                    <div
+                      className={`text-xs mt-1 ${
+                        message.sender_id === user?.id ? "text-primary-foreground/70" : "text-muted-foreground"
+                      }`}
+                    >
                       {formatTime(message.created_at)}
                     </div>
                   </div>
@@ -354,9 +353,7 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
               <Send className="w-4 h-4" />
             </Button>
           </div>
-          <div className="text-xs text-muted-foreground mt-1 text-right">
-            {newMessage.length}/500
-          </div>
+          <div className="text-xs text-muted-foreground mt-1 text-right">{newMessage.length}/500</div>
         </div>
       </div>
 
