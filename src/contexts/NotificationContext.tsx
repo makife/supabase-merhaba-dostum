@@ -1,11 +1,10 @@
-import { createContext, useContext, ReactNode, useEffect } from "react";
+import { createContext, useContext, ReactNode, useEffect, useRef } from "react";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { PushNotifications } from "@capacitor/push-notifications";
 import { Capacitor } from "@capacitor/core";
-import { useNavigate } from "react-router-dom";
 
 interface NotificationContextType {
   unreadCount: number;
@@ -29,10 +28,13 @@ interface NotificationProviderProps {
 export const NotificationProvider = ({ children }: NotificationProviderProps) => {
   const { unreadCount } = useChatNotifications();
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const shownNotifications = useRef<Set<string>>(new Set()); // ← Gösterilen bildirimleri takip et
 
   useEffect(() => {
     if (!user) return;
+
+    // Sayfa yenilendiğinde temizle
+    shownNotifications.current.clear();
 
     try {
       const channel = supabase
@@ -49,6 +51,14 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
             try {
               const notification = payload.new as any;
 
+              // Aynı bildirimi birden fazla göstermeyi önle
+              const notificationKey = `${notification.id}_${notification.created_at}`;
+              if (shownNotifications.current.has(notificationKey)) {
+                return; // Bu bildirim zaten gösterildi
+              }
+
+              shownNotifications.current.add(notificationKey);
+
               // Rozet bildirimi
               if (notification.type === "badge_earned") {
                 toast.success(notification.message, {
@@ -57,14 +67,14 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
                 });
               }
 
-              // Mention bildirimi - Butonsuz (sayfa yenileme sorununu önlemek için)
+              // Mention bildirimi
               if (notification.type === "mention") {
                 toast.info(`📢 ${notification.message}`, {
                   duration: 5000,
                 });
               }
 
-              // Özel mesaj bildirimi - Butonsuz
+              // Özel mesaj bildirimi
               if (notification.type === "message") {
                 toast.info(`💬 ${notification.message}`, {
                   duration: 5000,
@@ -87,7 +97,7 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
     } catch (err) {
       console.error("Bildirim kanalı oluşturulurken hata:", err);
     }
-  }, [user]); // navigate'i kaldırdık çünkü artık buton yok
+  }, [user]);
 
   const markAsRead = async (notificationId: string) => {
     try {
