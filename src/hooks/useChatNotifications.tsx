@@ -34,7 +34,6 @@ export function useChatNotifications() {
     if (!user?.id || !profile?.username) return 0;
 
     try {
-      // notifications tablosundan mention bildirimlerini kontrol et
       const { data } = await supabase
         .from("notifications")
         .select("id")
@@ -72,7 +71,6 @@ export function useChatNotifications() {
   const markGlobalMessagesAsRead = async () => {
     if (!user?.id) return;
 
-    // Mention notification'larını read olarak işaretle
     await supabase
       .from("notifications")
       .update({ is_read: true })
@@ -80,7 +78,6 @@ export function useChatNotifications() {
       .eq("type", "mention")
       .eq("is_read", false);
 
-    // Global chat mention sayacını sıfırla
     setGlobalMentionCount(0);
   };
 
@@ -91,7 +88,7 @@ export function useChatNotifications() {
     setGlobalMentionCount(mentionCount);
   };
 
-  // NOT: Rematch kabul/ret fonksiyonları App.tsx'e taşındı (global dinleyici için)
+  // SADECE sayaç güncelleme için - bildirim gösterme YOK
   useEffect(() => {
     if (!user?.id) return;
 
@@ -122,7 +119,7 @@ export function useChatNotifications() {
           if (!notif) return;
 
           if (notif.type === "mention") {
-            refreshUnreadCounts();
+            refreshUnreadCounts(); // Sadece sayacı güncelle
           }
 
           // Turnuva rakip ayrıldı bildirimi
@@ -133,8 +130,6 @@ export function useChatNotifications() {
               duration: 6000,
             });
           }
-
-          // NOT: Rematch toast'ları App.tsx'te gösteriliyor (global)
         },
       )
       .on(
@@ -153,55 +148,6 @@ export function useChatNotifications() {
       supabase.removeChannel(channel);
     };
   }, [user?.id, profile?.username]);
-
-  // useChatNotifications.tsx dosyasına şu useEffect'i ekleyin:
-
-  useEffect(() => {
-    if (!user?.id) return;
-
-    // Real-time bildirim dinleyicisi
-    const notificationChannel = supabase
-      .channel("real-time-notifications")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          const newNotification: any = payload.new;
-
-          // Anında toast bildirimi göster
-          if (newNotification.type === "mention") {
-            toast({
-              title: "📢 Senden bahsedildi!",
-              description: newNotification.message,
-              duration: 5000,
-              // Buton kaldırıldı - sayfa yenileme sorununu önlemek için
-            });
-          }
-
-          if (newNotification.type === "message") {
-            toast({
-              title: "💬 Yeni Özel Mesaj",
-              description: newNotification.message,
-              duration: 5000,
-              // Buton kaldırıldı
-            });
-          }
-
-          // Sayacı güncelle
-          refreshUnreadCounts();
-        },
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(notificationChannel);
-    };
-  }, [user?.id]);
 
   const totalNotifications = unreadCount + globalMentionCount;
 
