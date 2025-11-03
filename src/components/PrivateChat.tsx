@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Send, ArrowLeft, Flag } from "lucide-react";
-import { UserAvatar } from "@/components/UserAvatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ReportMessageDialog } from "@/components/ReportMessageDialog";
 import { toast } from "sonner";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
@@ -332,7 +332,7 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
     size="sm"
     onClick={() => {
       console.log("🔙 Back butonuna basıldı - Sohbet kapatılıyor:", chatId);
-      removeActivePrivateChat(chatId); // Manuel olarak da kaldır
+      removeActivePrivateChat(chatId);
       onBack();
     }}
     className="flex-shrink-0"
@@ -340,12 +340,16 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
     <ArrowLeft className="w-4 h-4" />
   </Button>
   
-  {/* UserAvatar'ı düzgün şekilde kullan */}
-  <UserAvatar
-    username={otherUser.username}
-    avatarUrl={otherUser.avatar_url}
-    size="sm"
-  />
+  {/* Alternatif Avatar kullanımı */}
+  <Avatar className="w-8 h-8">
+    <AvatarImage 
+      src={otherUser.avatar_url} 
+      alt={otherUser.username}
+    />
+    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+      {otherUser.username?.charAt(0)?.toUpperCase() || 'U'}
+    </AvatarFallback>
+  </Avatar>
   
   <div className="flex-1 min-w-0">
     <h3 className="font-semibold text-sm truncate">{otherUser.username}</h3>
