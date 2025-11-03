@@ -13,6 +13,7 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
   const [isVisible, setIsVisible] = useState(false);
   const [showStart, setShowStart] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
+  const [animKey, setAnimKey] = useState(0); // Animasyonu yeniden tetiklemek için
 
   // Ses dosyaları için ref'ler
   const countdownAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -28,7 +29,7 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
     // Ses dosyalarını preload et
     if (countdownAudioRef.current) {
       countdownAudioRef.current.preload = "auto";
-      countdownAudioRef.current.volume = 0.7; // Ses seviyesi ayarla
+      countdownAudioRef.current.volume = 0.7;
     }
     if (startAudioRef.current) {
       startAudioRef.current.preload = "auto";
@@ -52,7 +53,6 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
   const playCountdownSound = async (currentCount: number) => {
     if (countdownAudioRef.current && lastPlayedCountRef.current !== currentCount) {
       try {
-        // Önceki sesi durdur
         countdownAudioRef.current.pause();
         countdownAudioRef.current.currentTime = 0;
         await countdownAudioRef.current.play();
@@ -73,7 +73,6 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
         hasPlayedStartRef.current = true;
         console.log("🔊 Başla sesi çalıyor");
 
-        // Ses bittiğinde event dinle
         startAudioRef.current.onended = () => {
           console.log("🔊 Başla sesi bitti");
         };
@@ -83,13 +82,12 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
     }
   };
 
-  // 🎯 SERVER-SIDE COUNTDOWN SYNC (SADECE)
+  // 🎯 SERVER-SIDE COUNTDOWN SYNC
   useEffect(() => {
     if (!serverStartTime) {
       return;
     }
 
-    // Calculate countdown based on server timestamp
     const startTime = new Date(serverStartTime).getTime();
     setHasStarted(true);
     setIsVisible(true);
@@ -102,10 +100,12 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
       if (remaining > 0) {
         if (remaining !== count) {
           setCount(remaining);
+          setAnimKey((prev) => prev + 1); // Yeni animasyon tetikle
           playCountdownSound(remaining);
         }
       } else if (remaining === 0 && !showStart) {
         setCount(0);
+        setAnimKey((prev) => prev + 1); // BAŞLA için animasyon
         playStartSound();
         setShowStart(true);
         setTimeout(() => {
@@ -121,25 +121,20 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
     const interval = setInterval(updateCountdown, 100);
 
     return () => clearInterval(interval);
-  }, [serverStartTime, serverTimeOffset, onComplete]);
-
-  // ❌ CLIENT-SIDE FALLBACK KALDIRILDI - Sadece server-side sync kullanıyoruz
-  // Bu sayede tüm oyuncular tamamen senkronize oluyor
+  }, [serverStartTime, serverTimeOffset, onComplete, count, showStart]);
 
   // Henüz başlamamışsa hiçbir şey gösterme
   if (!hasStarted) return null;
-
   if (count === 0 && !showStart) return null;
 
   return (
     <div className={cn("fixed inset-0 z-50 flex items-center justify-center bg-black/50", className)}>
       {/* 3D Animated Number/Text */}
-      <div className="relative">
+      <div key={animKey} className="relative animate-slide-up">
         {/* Glow effect */}
         <div
           className={cn(
-            "absolute inset-0 blur-2xl transition-all duration-500",
-            isVisible ? "opacity-60" : "opacity-0",
+            "absolute inset-0 blur-2xl animate-fade-in",
             showStart
               ? "bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400"
               : "bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400",
@@ -148,11 +143,7 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
 
         {/* Main 3D Text */}
         <div
-          className={cn(
-            "relative text-[200px] font-black transition-all duration-500 ease-out",
-            "drop-shadow-2xl",
-            isVisible ? "translate-y-0 opacity-100 scale-100" : "translate-y-[200px] opacity-0 scale-75",
-          )}
+          className="relative text-[200px] font-black drop-shadow-2xl"
           style={{
             background: showStart
               ? "linear-gradient(135deg, #22c55e 0%, #10b981 50%, #14b8a6 100%)"
@@ -170,13 +161,9 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
 
         {/* 3D Shadow layer */}
         <div
-          className={cn(
-            "absolute inset-0 text-[200px] font-black transition-all duration-500 ease-out -z-10",
-            "opacity-40",
-            isVisible ? "translate-y-0 scale-100" : "translate-y-[200px] scale-75",
-          )}
+          className="absolute inset-0 text-[200px] font-black opacity-40 -z-10"
           style={{
-            transform: isVisible ? "translate(4px, 4px)" : "translate(4px, 204px)",
+            transform: "translate(4px, 4px)",
             color: "#1a1a1a",
             filter: "blur(2px)",
             letterSpacing: "-0.02em",
@@ -185,6 +172,43 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
           {showStart ? "BAŞLA!" : count}
         </div>
       </div>
+
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+        @keyframes slideUp {
+          0% {
+            transform: translateY(100vh);
+            opacity: 0;
+          }
+          50% {
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+        
+        @keyframes fadeIn {
+          0% {
+            opacity: 0;
+          }
+          100% {
+            opacity: 0.6;
+          }
+        }
+        
+        .animate-slide-up {
+          animation: slideUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        .animate-fade-in {
+          animation: fadeIn 0.6s ease-out;
+        }
+      `,
+        }}
+      />
     </div>
   );
 };
