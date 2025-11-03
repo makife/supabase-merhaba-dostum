@@ -147,7 +147,7 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
             "relative font-black drop-shadow-2xl",
             showStart
               ? "text-[80px] sm:text-[120px] md:text-[160px] lg:text-[200px]"
-              : "text-[120px] sm:text-[180px] md:text-[240px] lg:text-[280px]",
+              : "text-[150px] sm:text-[200px] md:text-[240px] lg:text-[280px]",
           )}
           style={{
             background: showStart
