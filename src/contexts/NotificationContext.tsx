@@ -1,10 +1,10 @@
-import { createContext, useContext, ReactNode, useEffect } from 'react';
-import { useChatNotifications } from '@/hooks/useChatNotifications';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
-import { PushNotifications } from '@capacitor/push-notifications';
-import { Capacitor } from '@capacitor/core';
+import { createContext, useContext, ReactNode, useEffect } from "react";
+import { useChatNotifications } from "@/hooks/useChatNotifications";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+import { PushNotifications } from "@capacitor/push-notifications";
+import { Capacitor } from "@capacitor/core";
 
 interface NotificationContextType {
   unreadCount: number;
@@ -16,7 +16,7 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 export const useNotifications = () => {
   const context = useContext(NotificationContext);
   if (!context) {
-    throw new Error('useNotifications must be used within a NotificationProvider');
+    throw new Error("useNotifications must be used within a NotificationProvider");
   }
   return context;
 };
@@ -37,28 +37,54 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
 
     try {
       const channel = supabase
-        .channel('badge-notifications')
+        .channel("comprehensive-notifications")
         .on(
-          'postgres_changes',
+          "postgres_changes",
           {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'notifications',
-            filter: `user_id=eq.${user.id}`
+            event: "INSERT",
+            schema: "public",
+            table: "notifications",
+            filter: `user_id=eq.${user.id}`,
           },
           (payload) => {
             try {
               const notification = payload.new as any;
-              if (notification.type === 'badge_earned') {
+
+              // Rozet bildirimi
+              if (notification.type === "badge_earned") {
                 toast.success(notification.message, {
                   duration: 5000,
-                  icon: '🏆'
+                  icon: "🏆",
+                });
+              }
+
+              // Mention bildirimi
+              if (notification.type === "mention") {
+                toast.info(notification.message, {
+                  duration: 5000,
+                  icon: "📢",
+                  action: {
+                    label: "Git",
+                    onClick: () => (window.location.href = "/chat"),
+                  },
+                });
+              }
+
+              // Özel mesaj bildirimi
+              if (notification.type === "message") {
+                toast.info(notification.message, {
+                  duration: 5000,
+                  icon: "💬",
+                  action: {
+                    label: "Oku",
+                    onClick: () => (window.location.href = "/private-chat"),
+                  },
                 });
               }
             } catch (err) {
-              console.error('Bildirim işlenirken hata:', err);
+              console.error("Bildirim işlenirken hata:", err);
             }
-          }
+          },
         )
         .subscribe();
 
@@ -66,28 +92,21 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
         try {
           supabase.removeChannel(channel);
         } catch (err) {
-          console.error('Channel kapatılırken hata:', err);
+          console.error("Channel kapatılırken hata:", err);
         }
       };
     } catch (err) {
-      console.error('Bildirim kanalı oluşturulurken hata:', err);
+      console.error("Bildirim kanalı oluşturulurken hata:", err);
     }
   }, [user]);
 
   const markAsRead = async (notificationId: string) => {
     try {
-      await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('id', notificationId);
+      await supabase.from("notifications").update({ is_read: true }).eq("id", notificationId);
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      console.error("Error marking notification as read:", error);
     }
   };
 
-  return (
-    <NotificationContext.Provider value={{ unreadCount, markAsRead }}>
-      {children}
-    </NotificationContext.Provider>
-  );
+  return <NotificationContext.Provider value={{ unreadCount, markAsRead }}>{children}</NotificationContext.Provider>;
 };
