@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { PushNotifications } from "@capacitor/push-notifications";
 import { Capacitor } from "@capacitor/core";
+import { useNavigate } from "react-router-dom";
 
 interface NotificationContextType {
   unreadCount: number;
@@ -28,6 +29,7 @@ interface NotificationProviderProps {
 export const NotificationProvider = ({ children }: NotificationProviderProps) => {
   const { unreadCount } = useChatNotifications();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!user) return;
@@ -55,16 +57,12 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
                 });
               }
 
-              // Mention bildirimi - Sadece Git butonu
+              // Mention bildirimi - Custom toast
               if (notification.type === "mention") {
-                toast.info(notification.message, {
-                  duration: 5000,
-                  icon: "📢",
-                  action: {
-                    label: "Git",
-                    onClick: () => (window.location.href = "/chat"),
-                  },
-                });
+                toast.custom(
+                  () => <MentionToast message={notification.message} onNavigate={() => navigate("/chat")} />,
+                  { duration: 5000 },
+                );
               }
 
               // Özel mesaj bildirimi - Butonsuz
@@ -72,7 +70,6 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
                 toast.info(notification.message, {
                   duration: 5000,
                   icon: "💬",
-                  // Oku butonu kaldırıldı
                 });
               }
             } catch (err) {
@@ -92,7 +89,7 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
     } catch (err) {
       console.error("Bildirim kanalı oluşturulurken hata:", err);
     }
-  }, [user]);
+  }, [user, navigate]);
 
   const markAsRead = async (notificationId: string) => {
     try {
