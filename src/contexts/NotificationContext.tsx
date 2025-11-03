@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { PushNotifications } from "@capacitor/push-notifications";
 import { Capacitor } from "@capacitor/core";
+import { useNavigate } from "react-router-dom";
 
 interface NotificationContextType {
   unreadCount: number;
@@ -28,6 +29,7 @@ interface NotificationProviderProps {
 export const NotificationProvider = ({ children }: NotificationProviderProps) => {
   const { unreadCount } = useChatNotifications();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // 🔔 Bildirim sistemi - sadece dinleme modu (izin kullanıcı tarafından verilmeli)
 
@@ -65,7 +67,7 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
                   icon: "📢",
                   action: {
                     label: "Git",
-                    onClick: () => (window.location.href = "/chat"),
+                    onClick: () => navigate("/chat"),
                   },
                 });
               }
@@ -77,7 +79,7 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
                   icon: "💬",
                   action: {
                     label: "Oku",
-                    onClick: () => (window.location.href = "/private-chat"),
+                    onClick: () => navigate("/private-chat"),
                   },
                 });
               }
@@ -98,7 +100,7 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
     } catch (err) {
       console.error("Bildirim kanalı oluşturulurken hata:", err);
     }
-  }, [user]);
+  }, [user, navigate]);
 
   const markAsRead = async (notificationId: string) => {
     try {
