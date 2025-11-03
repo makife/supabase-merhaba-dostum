@@ -9,10 +9,12 @@ export const sendMentionNotification = async (
   messageId?: string,
 ) => {
   try {
+    const notificationMessage = `${senderUsername} seni bir mesajda etiketledi: "${message.substring(0, 50)}${message.length > 50 ? "..." : ""}"`;
+
     const { error } = await supabase.from("notifications").insert({
       user_id: userId,
       type: "mention",
-      message: `${senderUsername} seni bir mesajda etiketledi: "${message.substring(0, 50)}${message.length > 50 ? "..." : ""}"`,
+      message: notificationMessage,
       related_id: messageId,
       is_read: false,
     });
@@ -30,6 +32,9 @@ export const sendMentionNotification = async (
       timestamp: new Date().toLocaleString("tr-TR"),
     });
 
+    // Browser bildirimi göster
+    showBrowserNotification("📢 Senden bahsedildi!", notificationMessage);
+
     return true;
   } catch (error) {
     console.error("Error sending mention notification:", error);
@@ -40,10 +45,12 @@ export const sendMentionNotification = async (
 // Özel mesaj bildirimi - Veritabanı kaydı ile
 export const sendMessageNotification = async (userId: string, senderUsername: string, chatId: string) => {
   try {
+    const notificationMessage = `${senderUsername} sana özel mesaj gönderdi`;
+
     const { error } = await supabase.from("notifications").insert({
       user_id: userId,
       type: "message",
-      message: `${senderUsername} sana özel mesaj gönderdi`,
+      message: notificationMessage,
       related_id: chatId,
       is_read: false,
     });
@@ -60,6 +67,9 @@ export const sendMessageNotification = async (userId: string, senderUsername: st
       type: "message",
       timestamp: new Date().toLocaleString("tr-TR"),
     });
+
+    // Browser bildirimi göster
+    showBrowserNotification("💬 Yeni Özel Mesaj", notificationMessage);
 
     return true;
   } catch (error) {
@@ -172,10 +182,42 @@ export const getUserNotifications = async (userId: string, limit = 20) => {
 
 // Browser notification göster
 export const showBrowserNotification = (title: string, message: string) => {
-  if ("Notification" in window && Notification.permission === "granted") {
-    new Notification(title, {
-      body: message,
-      icon: "/favicon.ico",
+  // Tarayıcı bildirim izni kontrolü
+  if ("Notification" in window) {
+    if (Notification.permission === "granted") {
+      new Notification(title, {
+        body: message,
+        icon: "/favicon.ico",
+        badge: "/favicon.ico",
+      });
+    } else if (Notification.permission === "default") {
+      // İzin iste
+      Notification.requestPermission().then((permission) => {
+        if (permission === "granted") {
+          new Notification(title, {
+            body: message,
+            icon: "/favicon.ico",
+            badge: "/favicon.ico",
+          });
+        }
+      });
+    }
+  }
+
+  // Mobil cihazlar için Capacitor Push Notifications
+  if (typeof Capacitor !== "undefined" && Capacitor.isNativePlatform()) {
+    PushNotifications.requestPermissions().then((result) => {
+      if (result.receive === "granted") {
+        PushNotifications.createChannel({
+          id: "chat-notifications",
+          name: "Chat Notifications",
+          description: "Notifications for mentions and private messages",
+          importance: 5,
+          vibration: true,
+        }).then(() => {
+          PushNotifications.register();
+        });
+      }
     });
   }
 };
