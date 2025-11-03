@@ -143,7 +143,12 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
 
         {/* Main 3D Text */}
         <div
-          className="relative text-[80px] sm:text-[120px] md:text-[160px] lg:text-[200px] font-black drop-shadow-2xl"
+          className={cn(
+            "relative font-black drop-shadow-2xl",
+            showStart
+              ? "text-[80px] sm:text-[120px] md:text-[160px] lg:text-[200px]"
+              : "text-[120px] sm:text-[180px] md:text-[240px] lg:text-[280px]",
+          )}
           style={{
             background: showStart
               ? "linear-gradient(135deg, #22c55e 0%, #10b981 50%, #14b8a6 100%)"
@@ -161,7 +166,12 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
 
         {/* 3D Shadow layer */}
         <div
-          className="absolute inset-0 text-[80px] sm:text-[120px] md:text-[160px] lg:text-[200px] font-black opacity-40 -z-10"
+          className={cn(
+            "absolute inset-0 font-black opacity-40 -z-10",
+            showStart
+              ? "text-[80px] sm:text-[120px] md:text-[160px] lg:text-[200px]"
+              : "text-[120px] sm:text-[180px] md:text-[240px] lg:text-[280px]",
+          )}
           style={{
             transform: "translate(4px, 4px)",
             color: "#1a1a1a",
