@@ -256,51 +256,6 @@ const HomePage = () => {
     fetchUserProfile();
   }, [user]);
 
-  // Yeni bildirimleri kontrol et ve göster
-  useEffect(() => {
-    const checkNotifications = async () => {
-      if (!user) return;
-
-      const { data: notifications, error } = await supabase
-        .from("notifications")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("is_read", false)
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Bildirim kontrolü hatası:", error);
-        return;
-      }
-
-      // Her okunmamış bildirimi göster
-      notifications?.forEach((notification: any) => {
-        if (notification.type === "ban") {
-          toast.error(notification.message, {
-            duration: 10000,
-          });
-        } else if (notification.type === "ban_lifted") {
-          toast.success(notification.message, {
-            duration: 7000,
-          });
-        } else {
-          toast.info(notification.message, {
-            duration: 5000,
-          });
-        }
-
-        // Bildirimi okundu olarak işaretle
-        supabase
-          .from("notifications")
-          .update({ is_read: true })
-          .eq("id", notification.id)
-          .then(() => {});
-      });
-    };
-
-    checkNotifications();
-  }, [user]);
-
   const [showAvatarView, setShowAvatarView] = useState(false);
 
   const handleAvatarClick = () => {
@@ -932,7 +887,7 @@ const HomePage = () => {
                   className={`cursor-pointer border-0 overflow-hidden ${mode.gradient}`}
                   onClick={() => {
                     playSound("buttonClick");
-                    
+
                     // Kredi kontrolü - premium değilse ve kredi yoksa
                     if (!isPremium && (profile?.game_credits || 0) + (profile?.bonus_credits || 0) <= 0) {
                       toast.error("Yetersiz oyun hakkı!", {
@@ -941,7 +896,7 @@ const HomePage = () => {
                       });
                       return;
                     }
-                    
+
                     if (mode.id === "tournament") {
                       navigate("/tournament");
                     } else {
