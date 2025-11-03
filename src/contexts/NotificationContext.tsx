@@ -57,19 +57,17 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
                 });
               }
 
-              // Mention bildirimi - Custom toast
+              // Mention bildirimi - Butonsuz (sayfa yenileme sorununu önlemek için)
               if (notification.type === "mention") {
-                toast.custom(
-                  () => <MentionToast message={notification.message} onNavigate={() => navigate("/chat")} />,
-                  { duration: 5000 },
-                );
+                toast.info(`📢 ${notification.message}`, {
+                  duration: 5000,
+                });
               }
 
               // Özel mesaj bildirimi - Butonsuz
               if (notification.type === "message") {
-                toast.info(notification.message, {
+                toast.info(`💬 ${notification.message}`, {
                   duration: 5000,
-                  icon: "💬",
                 });
               }
             } catch (err) {
@@ -89,7 +87,7 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
     } catch (err) {
       console.error("Bildirim kanalı oluşturulurken hata:", err);
     }
-  }, [user, navigate]);
+  }, [user]); // navigate'i kaldırdık çünkü artık buton yok
 
   const markAsRead = async (notificationId: string) => {
     try {
