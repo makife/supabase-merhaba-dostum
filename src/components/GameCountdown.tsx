@@ -218,12 +218,16 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
         )}
       </div>
 
-      <style jsx>{`
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
         @keyframes gradient {
           0%, 100% { background-position: 0% 50%; }
           50% { background-position: 100% 50%; }
         }
-      `}</style>
+      `,
+        }}
+      />
     </div>
   );
 };
