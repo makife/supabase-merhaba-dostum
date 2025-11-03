@@ -174,39 +174,25 @@ export function useChatNotifications() {
           const newNotification: any = payload.new;
 
           // Anında toast bildirimi göster
-          if (newNotification.type === "message") {
-            const chatId = newNotification.related_id; // related_id'den chat ID'sini al
-            toast({
-              title: "💬 Yeni Özel Mesaj",
-              description: newNotification.message,
-              duration: 5000,
-              action: (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate(`/private-chat/${chatId}`, { replace: true })}
-                >
-                  Mesajı Oku
-                </Button>
-              ),
-            });
-          }
-
           if (newNotification.type === "mention") {
-            const messageId = newNotification.related_id; // related_id'den message ID'sini al
             toast({
               title: "📢 Senden bahsedildi!",
               description: newNotification.message,
               duration: 5000,
               action: (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate(`/chat?highlight=${messageId}`, { replace: true })}
-                >
+                <Button variant="outline" size="sm" onClick={() => navigate("/chat")}>
                   Mesaja Git
                 </Button>
               ),
+            });
+          }
+
+          if (newNotification.type === "message") {
+            toast({
+              title: "💬 Yeni Özel Mesaj",
+              description: newNotification.message,
+              duration: 5000,
+              // Oku butonu kaldırıldı - sadece bilgilendirme
             });
           }
 
