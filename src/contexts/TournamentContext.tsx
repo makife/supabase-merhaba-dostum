@@ -225,6 +225,32 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
       const isCreator = tournament?.creator_id === user.id;
       const isWaiting = tournament?.status === "waiting";
 
+      // If creator is leaving a waiting tournament, transfer ownership FIRST
+      if (isCreator && isWaiting) {
+        const { data: remainingParticipants } = await supabase
+          .from("tournament_participants")
+          .select("user_id, is_bot")
+          .eq("tournament_id", tournamentId)
+          .eq("is_bot", false)
+          .neq("user_id", user.id); // Exclude current user
+
+        // Find first real player to become new creator
+        const newCreator = remainingParticipants?.[0];
+        
+        if (newCreator?.user_id) {
+          const { error: updateError } = await supabase
+            .from("tournaments")
+            .update({ creator_id: newCreator.user_id })
+            .eq("id", tournamentId);
+
+          if (updateError) {
+            console.error("Kuruculuk aktarma hatası:", updateError);
+          } else {
+            console.log("✅ Kuruculuk aktarıldı:", newCreator.user_id);
+          }
+        }
+      }
+
       // Optimistic update: remove myself immediately
       setParticipants((prev) => prev.filter((p) => String(p.user_id) !== String(user.id)));
 
@@ -235,25 +261,6 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
         .eq("user_id", user.id);
 
       if (error) throw error;
-
-      // If creator is leaving a waiting tournament, transfer ownership
-      if (isCreator && isWaiting) {
-        const { data: remainingParticipants } = await supabase
-          .from("tournament_participants")
-          .select("user_id, is_bot")
-          .eq("tournament_id", tournamentId)
-          .eq("is_bot", false);
-
-        // Find first real player to become new creator
-        const newCreator = remainingParticipants?.[0];
-        
-        if (newCreator) {
-          await supabase
-            .from("tournaments")
-            .update({ creator_id: newCreator.user_id })
-            .eq("id", tournamentId);
-        }
-      }
 
       // Refresh details to stay in sync (also covers other derived state)
       await fetchTournamentDetails(tournamentId);
