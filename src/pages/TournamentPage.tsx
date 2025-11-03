@@ -6,16 +6,28 @@ import { Home, Trophy, Users, Plus } from "lucide-react";
 import { TournamentCard } from "@/components/TournamentCard";
 import { useTournamentContext } from "@/contexts/TournamentContext";
 import { getRealPlayerCount } from "@/utils/tournamentHelpers";
+import { useUser } from "@/contexts/UserContext";
+import { toast } from "sonner";
 
 const TournamentPage = () => {
   const navigate = useNavigate();
   const { tournaments, loading, createTournament, joinTournament, fetchTournaments } = useTournamentContext();
+  const { profile, isPremium } = useUser();
 
   useEffect(() => {
     fetchTournaments();
   }, []);
 
   const handleCreateTournament = async () => {
+    // Kredi kontrolü
+    if (!isPremium && (profile?.game_credits || 0) + (profile?.bonus_credits || 0) <= 0) {
+      toast.error("Yetersiz oyun hakkı!", {
+        description: "Turnuva oluşturmak için hak satın alın veya dolmasını bekleyin.",
+        duration: 4000,
+      });
+      return;
+    }
+    
     const tournamentId = await createTournament();
     if (tournamentId) {
       navigate(`/tournament-waiting/${tournamentId}`);
@@ -23,6 +35,15 @@ const TournamentPage = () => {
   };
 
   const handleJoinTournament = async (tournamentId: string) => {
+    // Kredi kontrolü
+    if (!isPremium && (profile?.game_credits || 0) + (profile?.bonus_credits || 0) <= 0) {
+      toast.error("Yetersiz oyun hakkı!", {
+        description: "Turnuvaya katılmak için hak satın alın veya dolmasını bekleyin.",
+        duration: 4000,
+      });
+      return;
+    }
+    
     const success = await joinTournament(tournamentId);
     if (success) {
       navigate(`/tournament-waiting/${tournamentId}`);

@@ -932,6 +932,16 @@ const HomePage = () => {
                   className={`cursor-pointer border-0 overflow-hidden ${mode.gradient}`}
                   onClick={() => {
                     playSound("buttonClick");
+                    
+                    // Kredi kontrolü - premium değilse ve kredi yoksa
+                    if (!isPremium && (profile?.game_credits || 0) + (profile?.bonus_credits || 0) <= 0) {
+                      toast.error("Yetersiz oyun hakkı!", {
+                        description: "Oyun oynamak için hak satın alın veya dolmasını bekleyin.",
+                        duration: 4000,
+                      });
+                      return;
+                    }
+                    
                     if (mode.id === "tournament") {
                       navigate("/tournament");
                     } else {

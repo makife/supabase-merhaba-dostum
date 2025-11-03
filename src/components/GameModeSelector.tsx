@@ -6,6 +6,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Clock, Target, Trophy, Bot, Users, Zap, X } from 'lucide-react';
 import { useSounds } from '@/hooks/useSounds';
+import { useUser } from '@/contexts/UserContext';
+import { toast } from 'sonner';
 
 interface GameModeSelectorProps {
   mode: string;
@@ -16,6 +18,7 @@ interface GameModeSelectorProps {
 const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => {
   const [selectedType, setSelectedType] = useState<'timed' | 'score'>('timed');
   const { playSound } = useSounds();
+  const { profile, isPremium } = useUser();
 
   const getModeInfo = () => {
     switch (mode) {
@@ -169,6 +172,17 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
               İptal
             </Button>
             <Button onClick={() => {
+              playSound('buttonClick');
+              
+              // Kredi kontrolü
+              if (!isPremium && (profile?.game_credits || 0) + (profile?.bonus_credits || 0) <= 0) {
+                toast.error("Yetersiz oyun hakkı!", {
+                  description: "Oyun oynamak için hak satın alın veya dolmasını bekleyin.",
+                  duration: 4000,
+                });
+                return;
+              }
+              
               onStart(selectedType);
             }} className="flex-1">
               Oyunu Başlat

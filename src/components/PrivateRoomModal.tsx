@@ -22,6 +22,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { nakamaService } from "@/services/nakamaService";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUser } from "@/contexts/UserContext";
+import { toast as sonnerToast } from "sonner";
 
 interface PrivateRoomModalProps {
   onClose: () => void;
@@ -45,6 +47,7 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
   const { playSound } = useSounds();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { profile, isPremium } = useUser();
 
   const generateRoomCode = () => {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -56,6 +59,15 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
   };
 
   const handleCreateRoom = async () => {
+    // Kredi kontrolü
+    if (!isPremium && (profile?.game_credits || 0) + (profile?.bonus_credits || 0) <= 0) {
+      sonnerToast.error("Yetersiz oyun hakkı!", {
+        description: "Özel oda oluşturmak için hak satın alın veya dolmasını bekleyin.",
+        duration: 4000,
+      });
+      return;
+    }
+    
     setLoading(true);
     playSound("buttonClick");
 
@@ -249,6 +261,15 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
         title: "Hata",
         description: "Oda kodu girin",
         variant: "destructive",
+      });
+      return;
+    }
+
+    // Kredi kontrolü
+    if (!isPremium && (profile?.game_credits || 0) + (profile?.bonus_credits || 0) <= 0) {
+      sonnerToast.error("Yetersiz oyun hakkı!", {
+        description: "Odaya katılmak için hak satın alın veya dolmasını bekleyin.",
+        duration: 4000,
       });
       return;
     }
