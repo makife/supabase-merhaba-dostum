@@ -215,6 +215,16 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
     try {
       setLoading(true);
 
+      // Check if user is the creator
+      const { data: tournament } = await supabase
+        .from("tournaments")
+        .select("creator_id, status")
+        .eq("id", tournamentId)
+        .single();
+
+      const isCreator = tournament?.creator_id === user.id;
+      const isWaiting = tournament?.status === "waiting";
+
       // Optimistic update: remove myself immediately
       setParticipants((prev) => prev.filter((p) => String(p.user_id) !== String(user.id)));
 
@@ -225,6 +235,25 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
         .eq("user_id", user.id);
 
       if (error) throw error;
+
+      // If creator is leaving a waiting tournament, transfer ownership
+      if (isCreator && isWaiting) {
+        const { data: remainingParticipants } = await supabase
+          .from("tournament_participants")
+          .select("user_id, is_bot")
+          .eq("tournament_id", tournamentId)
+          .eq("is_bot", false);
+
+        // Find first real player to become new creator
+        const newCreator = remainingParticipants?.[0];
+        
+        if (newCreator) {
+          await supabase
+            .from("tournaments")
+            .update({ creator_id: newCreator.user_id })
+            .eq("id", tournamentId);
+        }
+      }
 
       // Refresh details to stay in sync (also covers other derived state)
       await fetchTournamentDetails(tournamentId);
