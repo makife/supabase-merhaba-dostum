@@ -134,10 +134,10 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
         {/* Glow effect */}
         <div
           className={cn(
-            "absolute inset-0 blur-2xl animate-fade-in",
+            "absolute inset-0 blur-3xl animate-fade-in",
             showStart
-              ? "bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400"
-              : "bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400",
+              ? "bg-gradient-to-r from-green-300 via-emerald-300 to-teal-300"
+              : "bg-gradient-to-r from-blue-300 via-purple-300 to-pink-300",
           )}
         />
 
@@ -147,17 +147,19 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
             "relative font-black drop-shadow-2xl",
             showStart
               ? "text-[80px] sm:text-[120px] md:text-[160px] lg:text-[200px]"
-              : "text-[150px] sm:text-[200px] md:text-[240px] lg:text-[280px]",
+              : "text-[120px] sm:text-[180px] md:text-[240px] lg:text-[280px]",
           )}
           style={{
             background: showStart
-              ? "linear-gradient(135deg, #22c55e 0%, #10b981 50%, #14b8a6 100%)"
-              : "linear-gradient(135deg, #3b82f6 0%, #a855f7 50%, #ec4899 100%)",
+              ? "linear-gradient(135deg, #4ade80 0%, #22c55e 50%, #2dd4bf 100%)"
+              : "linear-gradient(135deg, #60a5fa 0%, #c084fc 50%, #f472b6 100%)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",
             textShadow: "0 10px 40px rgba(0, 0, 0, 0.3)",
-            filter: "drop-shadow(0 0 60px rgba(139, 92, 246, 0.5))",
+            filter: showStart
+              ? "drop-shadow(0 0 80px rgba(34, 197, 94, 0.8)) drop-shadow(0 0 40px rgba(45, 212, 191, 0.6))"
+              : "drop-shadow(0 0 80px rgba(192, 132, 252, 0.8)) drop-shadow(0 0 40px rgba(244, 114, 182, 0.6))",
             letterSpacing: "-0.02em",
           }}
         >
@@ -170,7 +172,7 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
             "absolute inset-0 font-black opacity-40 -z-10",
             showStart
               ? "text-[80px] sm:text-[120px] md:text-[160px] lg:text-[200px]"
-              : "text-[140px] sm:text-[200px] md:text-[240px] lg:text-[280px]",
+              : "text-[120px] sm:text-[180px] md:text-[240px] lg:text-[280px]",
           )}
           style={{
             transform: "translate(4px, 4px)",
@@ -205,7 +207,7 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
             opacity: 0;
           }
           100% {
-            opacity: 0.6;
+            opacity: 0.8;
           }
         }
         
