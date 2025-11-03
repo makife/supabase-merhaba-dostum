@@ -170,7 +170,7 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
             "absolute inset-0 font-black opacity-40 -z-10",
             showStart
               ? "text-[80px] sm:text-[120px] md:text-[160px] lg:text-[200px]"
-              : "text-[120px] sm:text-[180px] md:text-[240px] lg:text-[280px]",
+              : "text-[140px] sm:text-[200px] md:text-[240px] lg:text-[280px]",
           )}
           style={{
             transform: "translate(4px, 4px)",
