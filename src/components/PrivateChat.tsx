@@ -326,33 +326,32 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
 
   return (
     <>
-      <div className="w-full h-full flex flex-col bg-background">
-        {/* Header - Back button ve kullanıcı bilgisi */}
-        <div className="flex items-center space-x-3 p-4 border-b bg-card">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              console.log("🔙 Back butonuna basıldı - Sohbet kapatılıyor:", chatId);
-              removeActivePrivateChat(chatId); // Manuel olarak da kaldır
-              onBack();
-            }}
-            className="flex-shrink-0"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <UserAvatar
-            user={{
-              username: otherUser.username,
-              avatar_url: otherUser.avatar_url,
-            }}
-            size="sm"
-          />
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-sm truncate">{otherUser.username}</h3>
-            <p className="text-xs text-muted-foreground">Özel sohbet</p>
-          </div>
-        </div>
+      <div className="flex items-center space-x-3 p-4 border-b bg-card">
+  <Button
+    variant="ghost"
+    size="sm"
+    onClick={() => {
+      console.log("🔙 Back butonuna basıldı - Sohbet kapatılıyor:", chatId);
+      removeActivePrivateChat(chatId); // Manuel olarak da kaldır
+      onBack();
+    }}
+    className="flex-shrink-0"
+  >
+    <ArrowLeft className="w-4 h-4" />
+  </Button>
+  
+  {/* UserAvatar'ı düzgün şekilde kullan */}
+  <UserAvatar
+    username={otherUser.username}
+    avatarUrl={otherUser.avatar_url}
+    size="sm"
+  />
+  
+  <div className="flex-1 min-w-0">
+    <h3 className="font-semibold text-sm truncate">{otherUser.username}</h3>
+    <p className="text-xs text-muted-foreground">Özel sohbet</p>
+  </div>
+</div>
 
         <ScrollArea className="flex-1 p-4 overflow-hidden">
           <div className="space-y-4">
