@@ -1,6 +1,26 @@
 // utils/notifications.ts - Console log versiyonu (TypeScript hatasız)
 import { supabase } from "@/integrations/supabase/client";
 
+// Aktif sohbet state'ini takip etmek için global bir değişken
+let activePrivateChats: Set<string> = new Set();
+
+// Aktif sohbeti kaydetmek için fonksiyon
+export const setActivePrivateChat = (chatId: string) => {
+  activePrivateChats.add(chatId);
+  console.log("🔵 Aktif sohbet eklendi:", chatId, Array.from(activePrivateChats));
+};
+
+// Aktif sohbeti kaldırmak için fonksiyon
+export const removeActivePrivateChat = (chatId: string) => {
+  activePrivateChats.delete(chatId);
+  console.log("🔴 Aktif sohbet kaldırıldı:", chatId, Array.from(activePrivateChats));
+};
+
+// Tüm aktif sohbetleri getir (debug için)
+export const getActivePrivateChats = () => {
+  return Array.from(activePrivateChats);
+};
+
 // Mention bildirimi - Veritabanı kaydı ile
 export const sendMentionNotification = async (
   userId: string,
