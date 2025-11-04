@@ -49,7 +49,7 @@ interface MatchmakingProviderProps {
 export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ children, onMatchFound }) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  
+
   const [isSearching, setIsSearching] = useState(false);
   const [currentRoom, setCurrentRoom] = useState<MatchmakingRoom | null>(null);
   const [searchProgress, setSearchProgress] = useState(0);
@@ -57,31 +57,30 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   const [currentGameType, setCurrentGameType] = useState<"timed" | "score">("timed");
   const [searchChannel, setSearchChannel] = useState<any>(null);
   const progressIntervalRef = React.useRef<number | null>(null);
-  
+
   // Arka plan yönetimi - matchmaking devam ediyor mu kontrol et
   const matchmakingStateRef = React.useRef({ isSearching: false, foundMatch: false });
-  
+
   useAppState(
     () => {
       // Arka plana gitti
-      console.log('📱 Uygulama arka plana gitti');
+      console.log("📱 Uygulama arka plana gitti");
       if (isSearching) {
-        console.log('🔍 Matchmaking arka planda devam ediyor...');
+        console.log("🔍 Matchmaking arka planda devam ediyor...");
         matchmakingStateRef.current.isSearching = true;
       }
     },
     () => {
       // Ön plana geldi
-      console.log('📱 Uygulama ön plana geldi');
+      console.log("📱 Uygulama ön plana geldi");
       if (matchmakingStateRef.current.foundMatch) {
-        console.log('✅ Arka planda eşleşme bulundu!');
-        toast({ title: "Eşleşme Bulundu!", description: "Oyun başlıyor..." });
+        console.log("✅ Arka planda eşleşme bulundu!");
         matchmakingStateRef.current.foundMatch = false;
       }
       matchmakingStateRef.current.isSearching = false;
-    }
+    },
   );
-  
+
   const clearProgressTimer = () => {
     if (progressIntervalRef.current) {
       clearInterval(progressIntervalRef.current);
@@ -156,7 +155,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   // Arama başlat - Default olarak Nakama kullan
   const startSearch = async (gameType: "timed" | "score") => {
     if (!user) return;
-    
+
     // Not: restart durumunda isSearching kontrolü yapma
     // cleanup zaten çağrılmış olacak
 
@@ -200,7 +199,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       console.log("🆔 Device ID:", deviceId);
       await nakamaService.authenticate(deviceId);
       console.log("✅ Nakama authenticated with device:", deviceId);
-      
+
       console.log("🔌 Creating Nakama socket...");
       const socket = await nakamaService.createSocket();
       console.log("✅ Nakama socket created");
@@ -238,7 +237,9 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
           // Eğer bu match ID banlıysa, hemen ayrıl ve yeni aramayı başlat
           if (matchBanlist.has(cleanMatchId)) {
             console.warn("Banned/ended match detected, restarting search:", cleanMatchId);
-            try { await (socket as any).leaveMatch(cleanMatchId); } catch {}
+            try {
+              await (socket as any).leaveMatch(cleanMatchId);
+            } catch {}
             toast({ title: "Eski oda engellendi", description: "Yeni eşleşme aranıyor..." });
             clearProgressTimer();
             restartSearch(gameType);
@@ -406,17 +407,17 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
           // Ensure current user is participant in this Nakama room (idempotent)
           try {
             const { error: participantErr } = await supabase
-              .from('game_participants')
+              .from("game_participants")
               .insert({ room_id: cleanMatchId, user_id: user.id, score: 0, is_bot: false });
-            if (participantErr && participantErr.code !== '23505') {
-              console.warn('Participant insert error:', participantErr);
+            if (participantErr && participantErr.code !== "23505") {
+              console.warn("Participant insert error:", participantErr);
             } else if (!participantErr) {
-              console.log('👤 Participant inserted for current user');
+              console.log("👤 Participant inserted for current user");
             } else {
-              console.log('👤 Participant already exists for current user');
+              console.log("👤 Participant already exists for current user");
             }
           } catch (piErr) {
-            console.warn('Participant insert exception:', piErr);
+            console.warn("Participant insert exception:", piErr);
           }
 
           setNakamaMatch({
@@ -436,16 +437,12 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
           });
 
           // Skor/oda birikmesini önlemek için reset kaldırıldı - countdown ve katılımcı tutarlılığı için
-          console.log('⏭️ Room reset skipped to preserve participants and countdown state');
+          console.log("⏭️ Room reset skipped to preserve participants and countdown state");
 
           // ✅ Supabase tutarlılığını bekle - oda görünene kadar kısa süre dene
           try {
             for (let i = 1; i <= 20; i++) {
-              const { data } = await supabase
-                .from('game_rooms')
-                .select('id')
-                .eq('id', cleanMatchId)
-                .maybeSingle();
+              const { data } = await supabase.from("game_rooms").select("id").eq("id", cleanMatchId).maybeSingle();
               if (data?.id) {
                 console.log(`🟢 Room visible on Supabase after ${i} tries`);
                 break;
@@ -453,22 +450,24 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
               await new Promise((r) => setTimeout(r, 150));
             }
           } catch (visErr) {
-            console.warn('Room visibility wait error:', visErr);
+            console.warn("Room visibility wait error:", visErr);
           }
 
           // ⏱️ Countdown başlat - Nakama eşleşmesi = 2 oyuncu = direkt başla
           try {
-            console.log('⏰ Nakama eşleşmesi tamamlandı, countdown başlatılıyor...');
-            const { data: countdownTime, error: rpcError } = await supabase.rpc('start_game_countdown', { p_room_id: cleanMatchId });
+            console.log("⏰ Nakama eşleşmesi tamamlandı, countdown başlatılıyor...");
+            const { data: countdownTime, error: rpcError } = await supabase.rpc("start_game_countdown", {
+              p_room_id: cleanMatchId,
+            });
             if (rpcError) {
-              console.warn('⚠️ Countdown RPC error:', rpcError);
+              console.warn("⚠️ Countdown RPC error:", rpcError);
             } else if (countdownTime) {
-              console.log('✅ Countdown başlatıldı:', countdownTime);
+              console.log("✅ Countdown başlatıldı:", countdownTime);
               // UI'ya anında haber ver
-              window.dispatchEvent(new CustomEvent('countdownStarted', { detail: { serverTime: countdownTime } }));
+              window.dispatchEvent(new CustomEvent("countdownStarted", { detail: { serverTime: countdownTime } }));
             }
           } catch (e) {
-            console.warn('Countdown start error:', e);
+            console.warn("Countdown start error:", e);
           }
 
           console.log("🎯 Match ready. Navigating via onMatchFound callback.");
@@ -529,20 +528,20 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   // Tekrar arama yap
   const restartSearch = async (gameType: "timed" | "score") => {
     console.log("🔄 Tekrar arama başlatılıyor...");
-    
+
     try {
       // Timeout flag'ini temizle
       setSearchTimeout(false);
-      
+
       // Önce tüm aktif işlemleri temizle
       await cleanup();
-      
+
       // State'lerin tamamen temizlenmesi için kısa gecikme
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
       // Yeni arama başlat
       await startSearch(gameType);
-      
+
       console.log("✅ Yeni arama başlatıldı");
     } catch (error) {
       console.error("Restart search error:", error);
@@ -570,10 +569,10 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       cleanup();
     };
 
-    window.addEventListener('cleanupMatchmaking', handleCleanup);
-    
+    window.addEventListener("cleanupMatchmaking", handleCleanup);
+
     return () => {
-      window.removeEventListener('cleanupMatchmaking', handleCleanup);
+      window.removeEventListener("cleanupMatchmaking", handleCleanup);
     };
   }, []);
 
@@ -592,9 +591,5 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
     onMatchFound,
   };
 
-  return (
-    <MatchmakingContext.Provider value={value}>
-      {children}
-    </MatchmakingContext.Provider>
-  );
+  return <MatchmakingContext.Provider value={value}>{children}</MatchmakingContext.Provider>;
 };
