@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { PushNotifications } from "@capacitor/push-notifications";
 import { Capacitor } from "@capacitor/core";
+import { useNavigate } from "react-router-dom";
 
 interface NotificationContextType {
   unreadCount: number;
@@ -28,6 +29,7 @@ interface NotificationProviderProps {
 export const NotificationProvider = ({ children }: NotificationProviderProps) => {
   const { unreadCount } = useChatNotifications();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const shownNotifications = useRef<Set<string>>(new Set()); // ← Gösterilen bildirimleri takip et
 
   useEffect(() => {
@@ -71,6 +73,10 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
               if (notification.type === "mention") {
                 toast.info(`📢 ${notification.message}`, {
                   duration: 5000,
+                  action: {
+                    label: "Git",
+                    onClick: () => navigate("/chat"),
+                  },
                 });
               }
 
@@ -78,6 +84,10 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
               if (notification.type === "message") {
                 toast.info(`💬 ${notification.message}`, {
                   duration: 5000,
+                  action: {
+                    label: "Git",
+                    onClick: () => navigate("/chat"),
+                  },
                 });
               }
             } catch (err) {
