@@ -431,11 +431,6 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
           setIsSearching(false);
           clearProgressTimer();
 
-          toast({
-            title: "Eslesme Bulundu!",
-            description: "Oyun basliyor...",
-          });
-
           // Skor/oda birikmesini önlemek için reset kaldırıldı - countdown ve katılımcı tutarlılığı için
           console.log("⏭️ Room reset skipped to preserve participants and countdown state");
 
