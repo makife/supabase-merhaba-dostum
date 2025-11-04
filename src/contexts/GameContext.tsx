@@ -1934,60 +1934,135 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       .on("presence", { event: "leave" }, async ({ key }) => {
         console.log("🚪 Presence leave event:", key);
 
+        // ⚠️ CRITICAL FIX: Mevcut state'i capture et
+        const currentRoomId = currentRoom?.id;
+        const currentRoomStatus = currentRoom?.status;
+        const currentUserId = user?.id;
+
+        if (!currentRoomId || !currentUserId) {
+          console.log("⚠️ Room veya user bilgisi yok, ignore ediliyor");
+          return;
+        }
+
+        // Grace period kontrolü
         if (Date.now() < presenceGraceUntil) {
           console.log("⏳ Grace period - ignoring presence leave");
           return;
         }
 
-        if (currentRoom.status === "active" && key !== user?.id) {
-          console.log("⏱️ Bağlantı kopması kontrolü başlıyor, 3 saniye bekleniyor...");
+        // ⚠️ SADECE AKTİF OYUNLARDA ve RAKİP AYRILDIYSA
+        if (currentRoomStatus === "active" && key !== currentUserId) {
+          console.log("⏱️ Rakip bağlantı kopması kontrolü başlıyor...");
 
+          // 3 saniye bekle, belki geri gelir
           setTimeout(async () => {
-            const state = presenceChannel.presenceState() as Record<string, Array<{ user_id?: string }>>;
-            const otherPlayers = Object.values(state)
-              .flat()
-              .filter((p: any) => p.user_id && p.user_id !== user?.id);
+            try {
+              // ⚠️ ÖNEMLİ: Oda state'ini DB'den TEKRAR kontrol et
+              const { data: freshRoom, error: roomError } = await supabase
+                .from("game_rooms")
+                .select("status, game_mode, player1_id, player2_id")
+                .eq("id", currentRoomId)
+                .single();
 
-            const { count: realCount } = await supabase
-              .from("game_participants")
-              .select("user_id", { count: "exact", head: true } as any)
-              .eq("room_id", currentRoom.id)
-              .eq("is_bot", false);
-
-            if (currentRoom.status === "active" && (otherPlayers.length === 0 || (realCount ?? 0) <= 1)) {
-              console.log("🏆 Gerçek rakip yok - kazandın! (presence+DB doğrulandı)");
-
-              if (typeof key === "string") {
-                console.log("⚖️ Disconnect penalty uygulanıyor. Offender:", key.slice(-8));
-                await applyDisconnectPenalty(key, currentRoom.id);
+              if (roomError || !freshRoom) {
+                console.error("❌ Oda bilgisi alınamadı:", roomError);
+                return;
               }
 
-              if (applyWinBonus && user?.id) {
-                await applyWinBonus(user?.id, 50);
+              // Oda artık aktif değilse işlem yapma
+              if (freshRoom.status !== "active") {
+                console.log("🔄 Oda artık aktif değil, ignore ediliyor");
+                return;
               }
 
-              toast({
-                title: "🏆 Kazandınız!",
-                description: "Rakip bağlantısı koptu. +50 puan!",
-                duration: 4000,
+              // Presence state'ini kontrol et - belki geri geldi
+              const state = presenceChannel.presenceState() as Record<string, Array<{ user_id?: string }>>;
+              const otherPlayers = Object.values(state)
+                .flat()
+                .filter((p: any) => p.user_id && p.user_id !== currentUserId);
+
+              // DB'den participant kontrolü
+              const { data: participants, error: partsError } = await supabase
+                .from("game_participants")
+                .select("user_id, is_bot")
+                .eq("room_id", currentRoomId)
+                .eq("is_bot", false);
+
+              if (partsError) {
+                console.error("❌ Katılımcı bilgisi alınamadı:", partsError);
+                return;
+              }
+
+              const realPlayerCount = participants?.length || 0;
+              const isOpponentStillGone = otherPlayers.length === 0;
+
+              console.log("🔍 Disconnect kontrolü:", {
+                roomStatus: freshRoom.status,
+                otherPlayersCount: otherPlayers.length,
+                realPlayerCount,
+                isOpponentStillGone,
               });
 
-              await supabase
-                .from("game_rooms")
-                .update({
-                  status: "finished",
-                  winner_id: user?.id || null,
-                  finished_at: new Date().toISOString(),
-                })
-                .eq("id", currentRoom.id);
+              // ⚠️ KRİTİK KOŞUL: Rakip gerçekten gitti mi?
+              const shouldTriggerDisconnect =
+                freshRoom.status === "active" && isOpponentStillGone && realPlayerCount <= 1; // Sadece sen kaldıysan
 
-              window.dispatchEvent(
-                new CustomEvent("playerDisconnected", {
-                  detail: { winner: "player", reason: "connection_lost", roomId: currentRoom.id },
-                }),
-              );
+              if (shouldTriggerDisconnect) {
+                console.log("🏆 Rakip gerçekten gitti - kazandınız!");
+
+                // 1. Disconnect penalty uygula
+                if (typeof key === "string") {
+                  console.log("⚖️ Disconnect penalty uygulanıyor:", key.slice(-8));
+                  await applyDisconnectPenalty(key, currentRoomId);
+                }
+
+                // 2. Bonus puan ver
+                if (applyWinBonus && currentUserId) {
+                  await applyWinBonus(currentUserId, 50);
+                }
+
+                // 3. Odayı finished yap ama STATE'İ SIFIRLAMA!
+                const { error: updateError } = await supabase
+                  .from("game_rooms")
+                  .update({
+                    status: "finished",
+                    winner_id: currentUserId,
+                    finished_at: new Date().toISOString(),
+                  })
+                  .eq("id", currentRoomId);
+
+                if (updateError) {
+                  console.error("❌ Oda güncelleme hatası:", updateError);
+                  return;
+                }
+
+                // 4. Sadece bildirim göster, OYUNU KİLİTLEME!
+                toast({
+                  title: "🏆 Kazandınız!",
+                  description: "Rakip bağlantısı koptu. +50 puan!",
+                  duration: 4000,
+                });
+
+                // 5. Event gönder ki oyun component'i kendi handle etsin
+                window.dispatchEvent(
+                  new CustomEvent("opponentDisconnected", {
+                    detail: {
+                      roomId: currentRoomId,
+                      winnerId: currentUserId,
+                    },
+                  }),
+                );
+
+                console.log("✅ Rakip disconnect başarıyla handle edildi");
+              } else {
+                console.log("🔄 Rakip geri geldi veya durum değişti, ignore ediliyor");
+              }
+            } catch (error) {
+              console.error("❌ Presence leave kontrol hatası:", error);
             }
-          }, 3000);
+          }, 3000); // 3 saniye bekle
+        } else {
+          console.log("🔄 Aktif oyun değil veya kendin ayrıldın, ignore ediliyor");
         }
       })
       .subscribe(async (status) => {
