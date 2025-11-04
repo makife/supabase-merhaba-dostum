@@ -2009,14 +2009,14 @@ const GamePage = ({
       }
     }
 
-    // İlk 2 pozisyona sesli harf
-    for (let i = 0; i < 2; i++) {
+    // İlk 3 pozisyona sesli harf
+    for (let i = 0; i < 3; i++) {
       const randomVowel = vowels[Math.floor(Math.random() * vowels.length)];
       newGrid[positions[i].row][positions[i].col] = randomVowel;
     }
 
-    // Son 3 pozisyona sessiz harf
-    for (let i = 2; i < 5; i++) {
+    // Son 2 pozisyona sessiz harf
+    for (let i = 3; i < 5; i++) {
       const randomConsonant = consonants[Math.floor(Math.random() * consonants.length)];
       newGrid[positions[i].row][positions[i].col] = randomConsonant;
     }
@@ -2031,17 +2031,14 @@ const GamePage = ({
     if (!jokerUsed) {
       console.error("❌ Değiştir joker kullanılamadı!");
       setIsJokerActive(false);
-      setGridSyncPaused(true);
+      setGridSyncPaused(false);
       return;
     }
 
     setTimeout(() => {
       setHighlightedLetters([]);
       setIsJokerActive(false);
-      setTimeout(() => {
-        setGridSyncPaused(false);
-        console.log("🔄 Grid sync tekrar aktif edildi");
-      }, 3000);
+      // Grid sync'i sürekli kapalı tut - değiştir jokeri lokal kalmalı
     }, 1000);
 
     setSelectedLetters([]);
@@ -3614,15 +3611,26 @@ const GamePage = ({
 
   // Check win conditions based on game type
   useEffect(() => {
-    if (gameType === "score") {
-      // Score mode: first to reach max_score wins
+    if (gameType === "score" && gameStarted && !gameEnded) {
       const maxScore = currentRoom?.max_score || 500;
-      if (playerScore >= maxScore || opponentScore >= maxScore) {
+
+      // ⬇️ SADECE 0'dan büyük skorları kontrol et ve minimum skor eşiği ekle
+      const shouldEndGame =
+        (playerScore >= maxScore && playerScore > 10) || (opponentScore >= maxScore && opponentScore > 10);
+
+      if (shouldEndGame) {
+        console.log("🏁 Score mode game end triggered:", {
+          playerScore,
+          opponentScore,
+          maxScore,
+          gameStarted,
+          gameEnded,
+        });
         setGameEnded(true);
         checkWinnerWithScores(playerScore, opponentScore);
       }
     }
-  }, [playerScore, opponentScore, checkWinnerWithScores, gameType, currentRoom?.max_score]);
+  }, [playerScore, opponentScore, checkWinnerWithScores, gameType, currentRoom?.max_score, gameStarted, gameEnded]);
 
   // Check if playing with AI (unified logic for all modes)
   const isPlayingWithAI = useCallback(() => {
