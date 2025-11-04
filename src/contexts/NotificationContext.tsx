@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { PushNotifications } from "@capacitor/push-notifications";
 import { Capacitor } from "@capacitor/core";
 import { useNavigate } from "react-router-dom";
+import { getActivePrivateChats } from "@/utils/notifications";
 
 interface NotificationContextType {
   unreadCount: number;
@@ -82,8 +83,16 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
 
               // Özel mesaj bildirimi - related_id'den userId çıkar
               if (notification.type === "message" && notification.related_id) {
-                // chatId formatı: chat_userId1_userId2
                 const chatId = notification.related_id;
+                
+                // Eğer kullanıcı bu chat'i açmışsa toast gösterme
+                const activeChats = getActivePrivateChats();
+                if (activeChats.includes(chatId)) {
+                  console.log("🚫 TOAST GÖSTERİLMEDİ - Sohbet açık:", chatId);
+                  return;
+                }
+                
+                // chatId formatı: chat_userId1_userId2
                 const userIds = chatId.replace("chat_", "").split("_");
                 const otherUserId = userIds.find((id: string) => id !== user?.id);
                 

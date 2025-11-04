@@ -62,21 +62,9 @@ export const sendMentionNotification = async (
   }
 };
 
-// Özel mesaj bildirimi - Veritabanı kaydı ile
+// Özel mesaj bildirimi - Her zaman veritabanına kaydet
 export const sendMessageNotification = async (userId: string, senderUsername: string, chatId: string) => {
   try {
-    // Eğer alıcı bu sohbeti aktif olarak açmışsa bildirim gönderme
-    if (activePrivateChats.has(chatId)) {
-      console.log("🚫 BİLDİRİM GÖNDERİLMEDİ - Alıcı sohbeti açık:", {
-        to: userId,
-        from: senderUsername,
-        chatId: chatId,
-        reason: "Aktif sohbet açık",
-        timestamp: new Date().toLocaleString("tr-TR"),
-      });
-      return false;
-    }
-
     const notificationMessage = `${senderUsername} sana özel mesaj gönderdi`;
 
     const { error } = await supabase.from("notifications").insert({
@@ -99,9 +87,6 @@ export const sendMessageNotification = async (userId: string, senderUsername: st
       type: "message",
       timestamp: new Date().toLocaleString("tr-TR"),
     });
-
-    // Browser bildirimi göster - sadece mesaj, URL yok
-    showBrowserNotification("💬 Yeni Özel Mesaj", notificationMessage);
 
     return true;
   } catch (error) {
