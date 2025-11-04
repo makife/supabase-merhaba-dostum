@@ -2009,14 +2009,14 @@ const GamePage = ({
       }
     }
 
-    // İlk 3 pozisyona sesli harf
-    for (let i = 0; i < 3; i++) {
+    // İlk 2 pozisyona sesli harf
+    for (let i = 0; i < 2; i++) {
       const randomVowel = vowels[Math.floor(Math.random() * vowels.length)];
       newGrid[positions[i].row][positions[i].col] = randomVowel;
     }
 
-    // Son 2 pozisyona sessiz harf
-    for (let i = 3; i < 5; i++) {
+    // Son 3 pozisyona sessiz harf
+    for (let i = 2; i < 5; i++) {
       const randomConsonant = consonants[Math.floor(Math.random() * consonants.length)];
       newGrid[positions[i].row][positions[i].col] = randomConsonant;
     }
@@ -2031,14 +2031,17 @@ const GamePage = ({
     if (!jokerUsed) {
       console.error("❌ Değiştir joker kullanılamadı!");
       setIsJokerActive(false);
-      setGridSyncPaused(false);
+      setGridSyncPaused(true);
       return;
     }
 
     setTimeout(() => {
       setHighlightedLetters([]);
       setIsJokerActive(false);
-      // Grid sync'i sürekli kapalı tut - değiştir jokeri lokal kalmalı
+      setTimeout(() => {
+        setGridSyncPaused(false);
+        console.log("🔄 Grid sync tekrar aktif edildi");
+      }, 3000);
     }, 1000);
 
     setSelectedLetters([]);
