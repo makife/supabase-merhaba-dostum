@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowLeft, Users, MessageCircle, Hash, Home, Dot, Mail, UserX, UserCheck } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { GlobalChat } from "@/components/GlobalChat";
 import { PrivateChat } from "@/components/PrivateChat";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -26,6 +26,7 @@ interface SelectedUser {
 
 export default function ChatPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { profile, onlineUsers, isUserOnline } = useUser();
 
@@ -133,6 +134,32 @@ export default function ChatPage() {
       fetchUnreadCounts();
     }
   }, [viewMode, user?.id]);
+
+  // URL'den openPrivateChat parametresini kontrol et
+  useEffect(() => {
+    const openPrivateChatUserId = searchParams.get("openPrivateChat");
+    if (openPrivateChatUserId && user?.id) {
+      // Kullanıcı bilgisini al ve özel mesajı aç
+      const openChatFromNotification = async () => {
+        try {
+          const { data: targetUserData, error } = await supabase
+            .from("profiles")
+            .select("id, username, avatar_url")
+            .eq("id", openPrivateChatUserId)
+            .single();
+
+          if (!error && targetUserData) {
+            await startPrivateChat(targetUserData);
+            // URL parametresini temizle
+            setSearchParams({});
+          }
+        } catch (err) {
+          console.error("Error opening private chat from notification:", err);
+        }
+      };
+      openChatFromNotification();
+    }
+  }, [searchParams, user?.id]);
 
   const handleBackToMenu = () => {
     playSound("buttonClick");

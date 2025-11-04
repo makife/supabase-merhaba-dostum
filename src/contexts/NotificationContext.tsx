@@ -80,13 +80,18 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
                 });
               }
 
-              // Özel mesaj bildirimi
-              if (notification.type === "message") {
+              // Özel mesaj bildirimi - related_id'den userId çıkar
+              if (notification.type === "message" && notification.related_id) {
+                // chatId formatı: chat_userId1_userId2
+                const chatId = notification.related_id;
+                const userIds = chatId.replace("chat_", "").split("_");
+                const otherUserId = userIds.find((id: string) => id !== user?.id);
+                
                 toast.info(`💬 ${notification.message}`, {
                   duration: 5000,
                   action: {
                     label: "Git",
-                    onClick: () => navigate("/chat"),
+                    onClick: () => navigate(`/chat?openPrivateChat=${otherUserId}`),
                   },
                 });
               }
