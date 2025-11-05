@@ -580,6 +580,7 @@ const HomePage = () => {
               <div className="flex gap-3 pb-2" style={{ minWidth: "max-content" }}>
                 {/* Günlük Çark */}
                 <div
+                  data-daily-wheel
                   className="bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px]"
                   onClick={() => navigate("/wheel")}
                 >
@@ -645,6 +646,7 @@ const HomePage = () => {
 
                 {/* Hafıza Oyunu */}
                 <div
+                  data-mini-games
                   className={`rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-500 ease-in-out min-w-[200px] ${
                     canPlayMemory
                       ? "bg-gradient-to-r from-purple-500 to-pink-500"
