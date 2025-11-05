@@ -24,7 +24,6 @@ import { useMatchmaking } from "@/contexts/NewMatchmakingContext";
 import { nakamaService } from "@/services/nakamaService";
 import { useUserRole } from "@/hooks/useUserRole";
 import { AvatarViewDialog } from "@/components/AvatarViewDialog";
-import { OnboardingTour } from '@/components/OnboardingTour';
 
 import {
   Bot,
@@ -580,7 +579,6 @@ const HomePage = () => {
               <div className="flex gap-3 pb-2" style={{ minWidth: "max-content" }}>
                 {/* Günlük Çark */}
                 <div
-                  data-daily-wheel
                   className="bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px]"
                   onClick={() => navigate("/wheel")}
                 >
@@ -646,7 +644,6 @@ const HomePage = () => {
 
                 {/* Hafıza Oyunu */}
                 <div
-                  data-mini-games
                   className={`rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-500 ease-in-out min-w-[200px] ${
                     canPlayMemory
                       ? "bg-gradient-to-r from-purple-500 to-pink-500"
@@ -1055,51 +1052,6 @@ const HomePage = () => {
             />
           </div>
         )}
-
-        <OnboardingTour
-  steps={[
-    { 
-      target: ".floating-menu", 
-      title: "Hızlı Menü", 
-      description: "Buradan profil, market, ayarlar ve diğer tüm sayfalara hızlıca ulaşabilirsin",
-      position: "top"
-    },
-    { 
-      target: "[data-daily-wheel]", 
-      title: "Günlük Çark", 
-      description: "Her gün ücretsiz çevirebileceğin şans çarkı ile joker ve oyun hakkı kazanabilirsin",
-      position: "top"
-    },
-    { 
-      target: "[data-mini-games]", 
-      title: "Mini Oyunlar", 
-      description: "Kelime hafızası, puzzle, yılan oyunu gibi eğlenceli mini oyunlarla pratik yap",
-      position: "top"
-    },
-    { 
-      target: "[data-game-mode='vs-computer']", 
-      title: "Ana Oyun Modları", 
-      description: "Bilgisayara karşı, özel oda, rastgele eşleşme ve turnuva modlarıyla oyna",
-      position: "top"
-    }
-  ]}
-  onComplete={() => {
-    // Mevcut VS Computer butonunu tetikle
-    const vsComputerButton = document.querySelector('[data-game-mode="vs-computer"]') as HTMLElement;
-    if (vsComputerButton) {
-      vsComputerButton.click();
-    }
-  }}
-  onSkip={() => {
-    console.log("Onboarding atlandı");
-  }}
-  finalStep={{
-    title: "Harika! 🎉",
-    description: "Artık oyunun tüm özelliklerini biliyorsun! Bilgisayara karşı pratik bir oyunla başlayalım mı?",
-    skipText: "Atla",
-    actionText: "Hemen Oyna!"
-  }}
-/>
 
         {/* Floating Menu */}
         <FloatingMenu />

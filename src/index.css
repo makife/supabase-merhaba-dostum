@@ -2339,19 +2339,3 @@ body.is-capacitor.hide-bars::before {
 }
 
 /* ===== PUZZLE GAME STYLES END ===== */
-
-/* globals.css'ye ekle */
-.onboarding-highlight {
-  position: relative;
-  z-index: 999 !important;
-}
-
-/* Animasyonlar */
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(234, 179, 8, 0.4); }
-  50% { box-shadow: 0 0 30px rgba(234, 179, 8, 0.8); }
-}
-
-.onboarding-highlight {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
