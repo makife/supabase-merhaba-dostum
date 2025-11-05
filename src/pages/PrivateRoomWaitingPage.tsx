@@ -48,6 +48,35 @@ const PrivateRoomWaitingPage = () => {
 
     let unsubscribed = false;
 
+    // Ensure current user is participant (handles rare failed inserts)
+    const ensureSelfParticipant = async () => {
+      if (!roomId || !user?.id) return;
+      try {
+        const { data: existing } = await supabase
+          .from("game_participants")
+          .select("id")
+          .eq("room_id", roomId)
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (!existing) {
+          await supabase.from("game_participants").insert({
+            room_id: roomId,
+            user_id: user.id,
+            score: 0,
+            is_bot: false,
+          });
+          console.log("✅ Self participant inserted for room", roomId);
+        }
+      } catch (e: any) {
+        // Ignore duplicate
+        if (e?.code !== "23505") {
+          console.warn("ensureSelfParticipant warning:", e);
+        }
+      }
+    };
+
+    ensureSelfParticipant();
+
     const checkAndNavigate = async () => {
       const { data: parts } = await supabase
         .from("game_participants")

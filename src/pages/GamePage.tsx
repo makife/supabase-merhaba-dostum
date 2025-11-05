@@ -1641,11 +1641,11 @@ const GamePage = ({
           // 🔥 ÖNEMLİ: joinRoom çağır ki participants yüklensin (küçük gecikmeli yeniden dene)
           console.log("🔗 Joining Nakama game room:", roomId);
           let success = false;
-          for (let attempt = 1; attempt <= 6; attempt++) {
+          for (let attempt = 1; attempt <= 20; attempt++) {
             success = await joinRoom(roomId);
             if (success) break;
-            console.warn(`⏳ Join retry ${attempt}/6 - oda hazır değil olabilir`);
-            await new Promise((resolve) => setTimeout(resolve, 250));
+            console.warn(`⏳ Join retry ${attempt}/20 - oda hazır değil olabilir`);
+            await new Promise((resolve) => setTimeout(resolve, 300));
           }
 
           if (!success) {
@@ -1842,11 +1842,11 @@ const GamePage = ({
 
       // Küçük gecikmeli yeniden dene
       let joined = false;
-      for (let attempt = 1; attempt <= 6; attempt++) {
+      for (let attempt = 1; attempt <= 20; attempt++) {
         joined = await joinRoom(roomId);
         if (joined) break;
-        console.warn(`⏳ Join retry ${attempt}/6`);
-        await new Promise((resolve) => setTimeout(resolve, 250));
+        console.warn(`⏳ Join retry ${attempt}/20`);
+        await new Promise((resolve) => setTimeout(resolve, 300));
       }
       if (!joined) {
         toast({ title: "Bağlantı Hatası", description: "Oyun odasına bağlanılamadı", variant: "destructive" });
@@ -2781,11 +2781,11 @@ const GamePage = ({
           // Join existing room using GameContext function
           // Küçük gecikmeli yeniden dene
           let joined = false;
-          for (let attempt = 1; attempt <= 6; attempt++) {
+          for (let attempt = 1; attempt <= 20; attempt++) {
             joined = await joinRoom(roomId);
             if (joined) break;
-            console.warn(`⏳ Existing room join retry ${attempt}/6`);
-            await new Promise((resolve) => setTimeout(resolve, 250));
+            console.warn(`⏳ Existing room join retry ${attempt}/20`);
+            await new Promise((resolve) => setTimeout(resolve, 300));
           }
           if (!joined) {
             console.error("❌ Failed to join existing room (tüm denemeler başarısız)");
