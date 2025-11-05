@@ -24,6 +24,7 @@ import { useMatchmaking } from "@/contexts/NewMatchmakingContext";
 import { nakamaService } from "@/services/nakamaService";
 import { useUserRole } from "@/hooks/useUserRole";
 import { AvatarViewDialog } from "@/components/AvatarViewDialog";
+import { OnboardingTour } from '@/components/OnboardingTour';
 
 import {
   Bot,
@@ -1052,6 +1053,51 @@ const HomePage = () => {
             />
           </div>
         )}
+
+        <OnboardingTour
+  steps={[
+    { 
+      target: ".floating-menu", 
+      title: "Hızlı Menü", 
+      description: "Buradan profil, market, ayarlar ve diğer tüm sayfalara hızlıca ulaşabilirsin",
+      position: "top"
+    },
+    { 
+      target: "[data-daily-wheel]", 
+      title: "Günlük Çark", 
+      description: "Her gün ücretsiz çevirebileceğin şans çarkı ile joker ve oyun hakkı kazanabilirsin",
+      position: "top"
+    },
+    { 
+      target: "[data-mini-games]", 
+      title: "Mini Oyunlar", 
+      description: "Kelime hafızası, puzzle, yılan oyunu gibi eğlenceli mini oyunlarla pratik yap",
+      position: "top"
+    },
+    { 
+      target: "[data-game-mode='vs-computer']", 
+      title: "Ana Oyun Modları", 
+      description: "Bilgisayara karşı, özel oda, rastgele eşleşme ve turnuva modlarıyla oyna",
+      position: "top"
+    }
+  ]}
+  onComplete={() => {
+    // Mevcut VS Computer butonunu tetikle
+    const vsComputerButton = document.querySelector('[data-game-mode="vs-computer"]') as HTMLElement;
+    if (vsComputerButton) {
+      vsComputerButton.click();
+    }
+  }}
+  onSkip={() => {
+    console.log("Onboarding atlandı");
+  }}
+  finalStep={{
+    title: "Harika! 🎉",
+    description: "Artık oyunun tüm özelliklerini biliyorsun! Bilgisayara karşı pratik bir oyunla başlayalım mı?",
+    skipText: "Atla",
+    actionText: "Hemen Oyna!"
+  }}
+/>
 
         {/* Floating Menu */}
         <FloatingMenu />
