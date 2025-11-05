@@ -4225,12 +4225,15 @@ const GamePage = ({
           const modeLabel = gameMode === "private-room" ? "Özel Oda" : "Rastgele Eşleşme";
         }
       } else {
-        setWaitingForPlayer(true);
-        // Oyun başlamadan önce beklemeye dönerse tekrar geri sayım hakkı tanı
+        // PRESENCE GLITCH GUARD: Oyun başladıysa geçici ayrılmaları görmezden gel, grid kilitlenmesin
         if (!gameStarted) {
+          setWaitingForPlayer(true);
+          // Oyun başlamadan önce beklemeye dönerse tekrar geri sayım hakkı tanı
           gameHasStartedRef.current = false;
+          setHasShownStartMessage(false);
+        } else {
+          console.log("⏳ Geçici oyuncu ayrılığı (presence) tespit edildi, oynanabilirliği koruyoruz");
         }
-        setHasShownStartMessage(false);
       }
     }
   }, [
