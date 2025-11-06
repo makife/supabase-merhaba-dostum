@@ -172,12 +172,6 @@ const WheelPage = () => {
             Geri
           </Button>
 
-          <h1 className="text-2xl font-bold text-center flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-yellow-500" />
-            Şans Çarkı
-            <Sparkles className="w-6 h-6 text-yellow-500" />
-          </h1>
-
           <div className="w-20"></div>
         </div>
 
