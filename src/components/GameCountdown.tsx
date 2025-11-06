@@ -108,7 +108,7 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
       } else if (remaining === 0) {
         setCount(0);
         setAnimKey((k) => k + 1);
-        
+
         if (!hasPlayedStartRef.current) {
           playStartSound();
           setShowStart(true);
@@ -132,60 +132,39 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
   if (!hasStarted) return null;
   if (count === 0 && !showStart) return null;
 
- return (
-  <div
-    className={cn(
-      "fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm",
-      className
-    )}
-  >
-    {/* Animated Number/Text */}
-    <div className="relative">
-      <div
-        className={cn(
-          "relative font-black drop-shadow-2xl transition-all duration-300",
-          showStart
-            ? "text-[80px] sm:text-[120px] md:text-[160px] lg:text-[200px]"
-            : "text-[120px] sm:text-[180px] md:text-[240px] lg:text-[280px]"
-        )}
-        style={{
-          background: showStart
-            ? "linear-gradient(135deg, #00ffcc 0%, #00e676 40%, #a6ff00 100%)"
-            : "linear-gradient(135deg, #00c6ff 0%, #0072ff 50%, #7a00ff 100%)",
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
-          backgroundClip: "text",
-          color: "transparent",
-          textShadow: showStart
-            ? "0 0 20px rgba(0,255,204,0.5), 0 0 40px rgba(0,255,204,0.3), 0 0 60px rgba(166,255,0,0.2)"
-            : "0 0 25px rgba(0,114,255,0.5), 0 0 50px rgba(0,114,255,0.3), 0 0 75px rgba(122,0,255,0.2)",
-          filter: showStart
-            ? "drop-shadow(0 0 10px rgba(0,255,204,0.4)) brightness(1.1)"
-            : "drop-shadow(0 0 15px rgba(0,114,255,0.4)) brightness(1.05)",
-          letterSpacing: showStart ? "-0.02em" : "-0.03em",
-          transform: showStart ? "scale(1.05)" : "scale(1)",
-          transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
-        }}
-      >
-        {showStart ? "BAŞLA!" : count}
-      </div>
-      
-      {/* Parlama efekti için ek overlay */}
-      <div
-        className={cn(
-          "absolute inset-0 transition-opacity duration-500",
-          showStart ? "opacity-60" : "opacity-40"
-        )}
-        style={{
-          background: showStart
-            ? "radial-gradient(circle at center, rgba(0,255,204,0.3) 0%, transparent 70%)"
-            : "radial-gradient(circle at center, rgba(0,114,255,0.3) 0%, transparent 70%)",
-          mixBlendMode: "overlay",
-          borderRadius: "50%",
-          transform: "scale(1.5)",
-        }}
-      />
+  return (
+    <div className={cn("fixed inset-0 z-50 flex items-center justify-center bg-black/50", className)}>
+      {" "}
+      {/* Animated Number/Text - Simplified to prevent jitter */}{" "}
+      <div className="relative">
+        {" "}
+        {/* Main Text - No animation key to prevent re-render jitter */}{" "}
+        <div
+          className={cn(
+            "relative font-black drop-shadow-2xl transition-all duration-300",
+            showStart
+              ? "text-[80px] sm:text-[120px] md:text-[160px] lg:text-[200px]"
+              : "text-[120px] sm:text-[180px] md:text-[240px] lg:text-[280px]",
+          )}
+          style={{
+            background: showStart
+              ? "linear-gradient(135deg, #4ade80 0%, #22c55e 50%, #2dd4bf 100%)"
+              : "linear-gradient(135deg, #60a5fa 0%, #c084fc 50%, #f472b6 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+            textShadow: "0 10px 40px rgba(0, 0, 0, 0.3)",
+            filter: showStart
+              ? "drop-shadow(0 0 80px rgba(34, 197, 94, 0.8)) drop-shadow(0 0 40px rgba(45, 212, 191, 0.6))"
+              : "drop-shadow(0 0 80px rgba(192, 132, 252, 0.8)) drop-shadow(0 0 40px rgba(244, 114, 182, 0.6))",
+            letterSpacing: "-0.02em",
+          }}
+        >
+          {" "}
+          {showStart ? "BAŞLA!" : count}{" "}
+        </div>{" "}
+      </div>{" "}
     </div>
-  </div>
-);
+  );
+};
 export default GameCountdown;
