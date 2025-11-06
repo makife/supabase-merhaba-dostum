@@ -372,7 +372,7 @@ export const useSounds = () => {
     }
   }, [soundsEnabled, getActiveSoundPack]);
 
-  const playtieSound = useCallback(() => {
+  const playTieSound = useCallback(() => {
     if (!soundsEnabled) return;
 
     const activePack = getActiveSoundPack();
@@ -422,7 +422,7 @@ export const useSounds = () => {
     playTimeWarningSequence,
     playCelebrationSound,
     playGameLoseSound,
-    playtieSound,
+    playTieSound,
     playSpecialSound,
     soundsEnabled,
     setSoundsEnabled: updateSoundsEnabled,
