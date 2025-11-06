@@ -133,38 +133,52 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
   if (count === 0 && !showStart) return null;
 
   return (
-    <div className={cn("fixed inset-0 z-50 flex items-center justify-center bg-black/50", className)}>
-      {" "}
-      {/* Animated Number/Text - Simplified to prevent jitter */}{" "}
-      <div className="relative">
-        {" "}
-        {/* Main Text - No animation key to prevent re-render jitter */}{" "}
-        <div
-          className={cn(
-            "relative font-black drop-shadow-2xl transition-all duration-300",
-            showStart
-              ? "text-[80px] sm:text-[120px] md:text-[160px] lg:text-[200px]"
-              : "text-[120px] sm:text-[180px] md:text-[240px] lg:text-[280px]",
-          )}
-          style={{
-            background: showStart
-              ? "linear-gradient(135deg, #4ade80 0%, #22c55e 50%, #2dd4bf 100%)"
-              : "linear-gradient(135deg, #60a5fa 0%, #c084fc 50%, #f472b6 100%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
-            textShadow: "0 10px 40px rgba(0, 0, 0, 0.3)",
-            filter: showStart
-              ? "drop-shadow(0 0 80px rgba(34, 197, 94, 0.8)) drop-shadow(0 0 40px rgba(45, 212, 191, 0.6))"
-              : "drop-shadow(0 0 80px rgba(192, 132, 252, 0.8)) drop-shadow(0 0 40px rgba(244, 114, 182, 0.6))",
-            letterSpacing: "-0.02em",
-          }}
-        >
-          {" "}
-          {showStart ? "BAŞLA!" : count}{" "}
-        </div>{" "}
-      </div>{" "}
+  <div className={cn("fixed inset-0 z-50 flex items-center justify-center bg-black/50", className)}>
+    <div className="relative">
+      {/* Main Text */}
+      <div
+        className={cn(
+          "relative font-black drop-shadow-2xl transition-all duration-300",
+          showStart 
+            ? "text-[80px] sm:text-[120px] md:text-[160px] lg:text-[200px]" 
+            : "text-[120px] sm:text-[180px] md:text-[240px] lg:text-[280px]"
+        )}
+        style={{
+          background: showStart 
+            ? "linear-gradient(135deg, #ff6b6b 0%, #ffa500 25%, #ffd700 50%, #90ee90 75%, #87ceeb 100%)" 
+            : "linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4ecdc4 100%)",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          backgroundClip: "text",
+          backgroundSize: "200% 200%",
+          animation: "gradientShift 3s ease infinite",
+          textShadow: "0 10px 40px rgba(0, 0, 0, 0.4)",
+          filter: showStart 
+            ? "drop-shadow(0 0 80px rgba(255, 107, 107, 0.8)) drop-shadow(0 0 40px rgba(255, 215, 0, 0.6))" 
+            : "drop-shadow(0 0 80px rgba(102, 126, 234, 0.8)) drop-shadow(0 0 40px rgba(244, 143, 177, 0.6))",
+          letterSpacing: "-0.02em",
+          opacity: showStart ? 1 : 0.95,
+          transform: showStart ? "scale(1.05)" : "scale(1)",
+        }}
+      >
+        {showStart ? "BAŞLA!" : count}
+      </div>
+      
+      {/* Ek parlaklık efekti */}
+      <div
+        className={cn(
+          "absolute inset-0 transition-all duration-300",
+          showStart ? "opacity-100" : "opacity-70"
+        )}
+        style={{
+          background: showStart 
+            ? "radial-gradient(circle at center, rgba(255,255,255,0.3) 0%, transparent 70%)" 
+            : "radial-gradient(circle at center, rgba(255,255,255,0.2) 0%, transparent 70%)",
+          mixBlendMode: "overlay",
+          filter: "blur(10px)",
+        }}
+      />
     </div>
-  );
-};
+  </div>
+);
 export default GameCountdown;
