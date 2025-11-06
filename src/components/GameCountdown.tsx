@@ -125,52 +125,51 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
   if (!hasStarted) return null;
   if (count === 0 && !showStart) return null;
 
-  return (
-    <div className={cn("fixed inset-0 z-50 flex items-center justify-center bg-black/50", className)}>
-      <div className="relative">
-        {/* Main Text */}
-        <div
-          className={cn(
-            "relative font-black drop-shadow-2xl transition-all duration-300",
-            showStart
-              ? "text-[80px] sm:text-[120px] md:text-[160px] lg:text-[200px]"
-              : "text-[120px] sm:text-[180px] md:text-[240px] lg:text-[280px]",
-          )}
-          style={{
-            background: showStart
-              ? "linear-gradient(135deg, #ff6b6b 0%, #ffa500 25%, #ffd700 50%, #90ee90 75%, #87ceeb 100%)"
-              : "linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4ecdc4 100%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
-            backgroundSize: "200% 200%",
-            animation: "gradientShift 3s ease infinite",
-            textShadow: "0 10px 40px rgba(0, 0, 0, 0.4)",
-            filter: showStart
-              ? "drop-shadow(0 0 80px rgba(255, 107, 107, 0.8)) drop-shadow(0 0 40px rgba(255, 215, 0, 0.6))"
-              : "drop-shadow(0 0 80px rgba(102, 126, 234, 0.8)) drop-shadow(0 0 40px rgba(244, 143, 177, 0.6))",
-            letterSpacing: "-0.02em",
-            opacity: showStart ? 1 : 0.95,
-            transform: showStart ? "scale(1.05)" : "scale(1)",
-          }}
-        >
-          {showStart ? "BAŞLA!" : count}
-        </div>
-
-        {/* Ek parlaklık efekti */}
-        <div
-          className={cn("absolute inset-0 transition-all duration-300", showStart ? "opacity-100" : "opacity-70")}
-          style={{
-            background: showStart
-              ? "radial-gradient(circle at center, rgba(255,255,255,0.3) 0%, transparent 70%)"
-              : "radial-gradient(circle at center, rgba(255,255,255,0.2) 0%, transparent 70%)",
-            mixBlendMode: "overlay",
-            filter: "blur(10px)",
-          }}
-        />
+return (
+  <div className={cn("fixed inset-0 z-50 flex items-center justify-center bg-black/50", className)}>
+    <div className="relative">
+      {/* Main Text */}
+      <div
+        className={cn(
+          "relative font-black drop-shadow-2xl transition-all duration-300 text-center whitespace-nowrap",
+          showStart 
+            ? "text-[60px] sm:text-[80px] md:text-[100px] lg:text-[120px] leading-none" // BAŞLA! için daha küçük font
+            : "text-[120px] sm:text-[180px] md:text-[240px] lg:text-[280px] leading-none" // Rakamlar için büyük font
+        )}
+        style={{
+          background: showStart 
+            ? "linear-gradient(135deg, #ff0000 0%, #ff6b00 50%, #ffd000 100%)" 
+            : "linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          backgroundClip: "text",
+          textShadow: showStart 
+            ? "0 0 40px rgba(255, 255, 0, 0.8), 0 0 80px rgba(255, 165, 0, 0.6)" 
+            : "0 10px 40px rgba(0, 0, 0, 0.4)",
+          filter: showStart 
+            ? "drop-shadow(0 0 30px rgba(255, 255, 0, 0.9))" 
+            : "drop-shadow(0 0 30px rgba(102, 126, 234, 0.8))",
+          letterSpacing: showStart ? "0.1em" : "-0.02em", // BAŞLA! için daha fazla harf aralığı
+          opacity: 1,
+          transform: showStart ? "scale(1)" : "scale(1)", // Scale'i normale çektim
+          fontWeight: "900",
+          minWidth: showStart ? "300px" : "auto", // BAŞLA! için minimum genişlik
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {showStart ? "BAŞLA!" : count}
       </div>
+      
+      {/* Debug için ekstra overlay */}
+      {showStart && (
+        <div className="absolute top-4 left-4 bg-red-500 text-white p-2 text-sm rounded z-50">
+          DEBUG: BAŞLA! aktif - count: {count}
+        </div>
+      )}
     </div>
-  );
-};
+  </div>
+);
 
 export default GameCountdown;
