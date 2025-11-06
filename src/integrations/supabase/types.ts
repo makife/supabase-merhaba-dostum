@@ -550,6 +550,30 @@ export type Database = {
         }
         Relationships: []
       }
+      memory_game_plays: {
+        Row: {
+          created_at: string | null
+          id: string
+          played_at: string | null
+          score: number | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          played_at?: string | null
+          score?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          played_at?: string | null
+          score?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       message_reactions: {
         Row: {
           created_at: string
@@ -1522,6 +1546,7 @@ export type Database = {
           penalty: number
         }[]
       }
+      auto_set_users_offline: { Args: never; Returns: undefined }
       auto_start_countdown_finished_games: { Args: never; Returns: undefined }
       award_badge_with_notification: {
         Args: { p_badge_id: string; p_badge_name: string; p_user_id: string }
@@ -1617,21 +1642,7 @@ export type Database = {
           p_type: string
           p_user_id: string
         }
-        Returns: {
-          created_at: string | null
-          id: string
-          is_read: boolean | null
-          message: string
-          related_id: string | null
-          type: string
-          user_id: string | null
-        }
-        SetofOptions: {
-          from: "*"
-          to: "notifications"
-          isOneToOne: true
-          isSetofReturn: false
-        }
+        Returns: string
       }
       create_tournament_matches: {
         Args: { p_round: number; p_tournament_id: string }
