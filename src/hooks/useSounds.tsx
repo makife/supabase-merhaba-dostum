@@ -57,6 +57,7 @@ export const useSounds = () => {
         letterSelect: "generated",
         celebration: "/sounds/default/kutlama.mp3",
         gameLoseSound: "/sounds/default/kaybetme.mp3",
+        tieSound: "/sounds/default/beraberlik.mp3",
       },
     },
     nature: {
@@ -72,6 +73,7 @@ export const useSounds = () => {
         letterSelect: "generated",
         celebration: "/sounds/default/kutlama.mp3",
         gameLoseSound: "/sounds/default/kaybetme.mp3",
+        tieSound: "/sounds/default/beraberlik.mp3",
       },
     },
   });
@@ -162,7 +164,7 @@ export const useSounds = () => {
       const soundPath = activePack.sounds[key as keyof SoundConfig];
       if (typeof soundPath === "string" && !soundPath.startsWith("generated")) {
         try {
-          audioCache.current.set(key, createAudioPool(soundPath, 2));
+          audioCache.current.set(key, createAudioPool(soundPath, 3));
         } catch (error) {
           console.warn(`Failed to load sound ${key}:`, error);
         }
@@ -420,6 +422,7 @@ export const useSounds = () => {
     playTimeWarningSequence,
     playCelebrationSound,
     playGameLoseSound,
+    playtieSound,
     playSpecialSound,
     soundsEnabled,
     setSoundsEnabled: updateSoundsEnabled,
