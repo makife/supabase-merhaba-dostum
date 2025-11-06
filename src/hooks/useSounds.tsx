@@ -11,6 +11,7 @@ interface SoundConfig {
   letterSelect: string;
   celebration: string;
   gameLoseSound: string;
+  tieSound: string;
 }
 
 interface SoundPack {
