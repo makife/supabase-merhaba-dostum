@@ -125,29 +125,52 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
   if (!hasStarted) return null;
   if (count === 0 && !showStart) return null;
 
-return (
-return (
-  <div className={cn("fixed inset-0 z-50 flex items-center justify-center bg-black/50", className)}>
-    <div className="relative">
-      <div
-        className={cn(
-          "font-black text-center transition-all duration-500",
-          showStart 
-            ? "text-[70px] sm:text-[90px] md:text-[110px] lg:text-[130px] text-yellow-300 animate-pulse" 
-            : "text-[120px] sm:text-[180px] md:text-[240px] lg:text-[280px] text-cyan-400"
-        )}
-        style={{
-          textShadow: showStart 
-            ? "0 0 30px #ffff00, 0 0 60px #ffaa00" 
-            : "0 0 30px #00ffff, 0 0 60px #0088ff",
-          opacity: 1,
-          lineHeight: 1,
-          fontWeight: 900,
-        }}
-      >
-        {showStart ? "BAŞLA!" : count}
+  return (
+    <div className={cn("fixed inset-0 z-50 flex items-center justify-center bg-black/50", className)}>
+      <div className="relative">
+        {/* Main Text */}
+        <div
+          className={cn(
+            "relative font-black drop-shadow-2xl transition-all duration-300",
+            showStart
+              ? "text-[80px] sm:text-[120px] md:text-[160px] lg:text-[200px]"
+              : "text-[120px] sm:text-[180px] md:text-[240px] lg:text-[280px]",
+          )}
+          style={{
+            background: showStart
+              ? "linear-gradient(135deg, #ff6b6b 0%, #ffa500 25%, #ffd700 50%, #90ee90 75%, #87ceeb 100%)"
+              : "linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4ecdc4 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+            backgroundSize: "200% 200%",
+            animation: "gradientShift 3s ease infinite",
+            textShadow: "0 10px 40px rgba(0, 0, 0, 0.4)",
+            filter: showStart
+              ? "drop-shadow(0 0 80px rgba(255, 107, 107, 0.8)) drop-shadow(0 0 40px rgba(255, 215, 0, 0.6))"
+              : "drop-shadow(0 0 80px rgba(102, 126, 234, 0.8)) drop-shadow(0 0 40px rgba(244, 143, 177, 0.6))",
+            letterSpacing: "-0.02em",
+            opacity: showStart ? 1 : 0.95,
+            transform: showStart ? "scale(1.05)" : "scale(1)",
+          }}
+        >
+          {showStart ? "BAŞLA!" : count}
+        </div>
+
+        {/* Ek parlaklık efekti */}
+        <div
+          className={cn("absolute inset-0 transition-all duration-300", showStart ? "opacity-100" : "opacity-70")}
+          style={{
+            background: showStart
+              ? "radial-gradient(circle at center, rgba(255,255,255,0.3) 0%, transparent 70%)"
+              : "radial-gradient(circle at center, rgba(255,255,255,0.2) 0%, transparent 70%)",
+            mixBlendMode: "overlay",
+            filter: "blur(10px)",
+          }}
+        />
       </div>
     </div>
-  </div>
-);
+  );
+};
+
 export default GameCountdown;
