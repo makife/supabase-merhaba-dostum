@@ -82,7 +82,7 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
     }
   };
 
-  // 🎯 SERVER-SIDE COUNTDOWN SYNC
+  // 🎯 SERVER-SIDE COUNTDOWN SYNC - Tüm oyuncular için senkronize
   useEffect(() => {
     if (!serverStartTime) {
       return;
@@ -98,22 +98,27 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
       const remaining = Math.max(0, 5 - elapsed);
 
       if (remaining > 0) {
-        if (remaining !== count) {
-          setCount(remaining);
-          setAnimKey((prev) => prev + 1); // Yeni animasyon tetikle
-          playCountdownSound(remaining);
-        }
-      } else if (remaining === 0 && !showStart) {
+        setCount((prev) => {
+          if (prev !== remaining) {
+            playCountdownSound(remaining);
+            setAnimKey((k) => k + 1);
+          }
+          return remaining;
+        });
+      } else if (remaining === 0) {
         setCount(0);
-        setAnimKey((prev) => prev + 1); // BAŞLA için animasyon
-        playStartSound();
-        setShowStart(true);
-        setTimeout(() => {
-          setIsVisible(false);
+        setAnimKey((k) => k + 1);
+        
+        if (!hasPlayedStartRef.current) {
+          playStartSound();
+          setShowStart(true);
           setTimeout(() => {
-            onComplete();
-          }, 200);
-        }, 1000);
+            setIsVisible(false);
+            setTimeout(() => {
+              onComplete();
+            }, 200);
+          }, 1000);
+        }
       }
     };
 
@@ -121,7 +126,7 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
     const interval = setInterval(updateCountdown, 100);
 
     return () => clearInterval(interval);
-  }, [serverStartTime, serverTimeOffset, onComplete, count, showStart]);
+  }, [serverStartTime, serverTimeOffset, onComplete]);
 
   // Henüz başlamamışsa hiçbir şey gösterme
   if (!hasStarted) return null;

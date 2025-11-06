@@ -4108,16 +4108,36 @@ const GamePage = ({
     }
   }, [gameStarted, gameEnded]);
 
-  // 🤖 vs-computer modunda otomatik countdown başlatma
+  // 🤖 vs-computer modunda otomatik countdown başlatma - SERVER TIME KULLAN
   useEffect(() => {
     if (gameMode === "vs-computer" && !gameStarted && !showCountdown && !gameEnded) {
       console.log("🤖 vs-computer mode - countdown başlatılıyor");
       setWaitingForPlayer(false);
 
-      // vs-computer modunda server countdown'a gerek yok, direkt başlat
-      setCountdownServerTime(new Date().toISOString());
-      setShowCountdown(true);
-      setGameStarted(false);
+      // Server time kullan (senkronizasyon için)
+      const startCountdown = async () => {
+        try {
+          const { data: serverTime, error } = await supabase.rpc('get_server_time' as any);
+          if (!error && serverTime) {
+            setCountdownServerTime(serverTime as string);
+            setShowCountdown(true);
+            setGameStarted(false);
+            console.log("✅ vs-computer countdown server time ile başlatıldı:", serverTime);
+          } else {
+            // Fallback: Client time
+            setCountdownServerTime(new Date().toISOString());
+            setShowCountdown(true);
+            setGameStarted(false);
+          }
+        } catch (err) {
+          console.error("Server time alınamadı, fallback kullanılıyor:", err);
+          setCountdownServerTime(new Date().toISOString());
+          setShowCountdown(true);
+          setGameStarted(false);
+        }
+      };
+      
+      startCountdown();
     }
   }, [gameMode, gameStarted, showCountdown, gameEnded]);
 
