@@ -2975,26 +2975,62 @@ const GamePage = ({
         }
       }
 
-      // Final winner determination
-      if (currentPlayerScore > currentOpponentScore) {
-        gameResult = "player";
-        bonusPoints = 50;
-        setWinner("player");
-        playSound("gameWin");
-        setTimeout(() => playCelebrationSound(), 500);
-        console.log("🏆 Player wins! Score:", currentPlayerScore, "vs", currentOpponentScore);
-      } else if (currentPlayerScore < currentOpponentScore) {
-        gameResult = "opponent";
-        setWinner("opponent");
-        playSound("gameLose");
-        setTimeout(() => playGameLoseSound(), 500);
-        console.log("🏆 Opponent wins! Score:", currentOpponentScore, "vs", currentPlayerScore);
+      // Final winner determination - Multiplayer ve vs-computer için ayrı mantık
+      if (gameMode === "vs-computer") {
+        // vs-computer için mevcut mantık
+        if (currentPlayerScore > currentOpponentScore) {
+          gameResult = "player";
+          bonusPoints = 50;
+          setWinner("player");
+          playSound("gameWin");
+          setTimeout(() => playCelebrationSound(), 500);
+          console.log("🏆 Player wins! Score:", currentPlayerScore, "vs", currentOpponentScore);
+        } else if (currentPlayerScore < currentOpponentScore) {
+          gameResult = "opponent";
+          setWinner("opponent");
+          playSound("gameLose");
+          setTimeout(() => playGameLoseSound(), 500);
+          console.log("🏆 Opponent wins! Score:", currentOpponentScore, "vs", currentPlayerScore);
+        } else {
+          gameResult = "tie";
+          bonusPoints = 25;
+          setWinner("tie");
+          console.log("🏆 It's a tie! Both scores:", currentPlayerScore);
+        }
       } else {
-        // Normal modlarda beraberlik olabilir, ama turnuvada buraya gelmemeli
-        gameResult = "tie";
-        bonusPoints = 25;
-        setWinner("tie");
-        console.log("🏆 It's a tie! Both scores:", currentPlayerScore);
+        // Multiplayer - Her oyuncunun kendi skorunu kontrol et
+        const myParticipant = participants.find(p => p.user_id === user?.id);
+        const opponentParticipant = participants.find(p => p.user_id !== user?.id && !p.is_bot);
+        
+        const myScore = myParticipant?.score || 0;
+        const opponentScore = opponentParticipant?.score || 0;
+        
+        console.log('🏆 Multiplayer kazanan kontrolü:', { myScore, opponentScore });
+        
+        if (myScore > opponentScore) {
+          gameResult = "player";
+          bonusPoints = 50;
+          setWinner("player");
+          playSound("gameWin");
+          setTimeout(() => playCelebrationSound(), 500);
+          console.log("🏆 Player wins! My score:", myScore, "vs opponent:", opponentScore);
+        } else if (myScore < opponentScore) {
+          gameResult = "opponent";
+          setWinner("opponent");
+          playSound("gameLose");
+          setTimeout(() => playGameLoseSound(), 500);
+          console.log("🏆 Opponent wins! Opponent score:", opponentScore, "vs my score:", myScore);
+        } else {
+          // Beraberlik olsa bile turnuvada buraya gelmemeli
+          gameResult = gameMode === "tournament" ? "player" : "tie";
+          bonusPoints = 25;
+          setWinner(gameMode === "tournament" ? "player" : "tie");
+          if (gameMode === "tournament") {
+            playSound("gameWin");
+            setTimeout(() => playCelebrationSound(), 500);
+          }
+          console.log("🏆 Tie or tournament fallback! Both scores:", myScore);
+        }
       }
 
       // İstatistik güncelleme (vs-computer için)

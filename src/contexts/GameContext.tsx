@@ -1531,13 +1531,21 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       // Matchmaking state'ini temizle
       window.dispatchEvent(new CustomEvent("cleanupMatchmaking"));
 
-      // State temizle
+      // State temizle - RoomAutoNavigator'ın yönlendirmesini engellemek için hemen temizle
       setCurrentRoom(null);
       setParticipants([]);
+      setLastOpponent(null);
+      setCurrentRematchRequest(null);
 
-      console.log("✅ Oyundan çıkış tamamlandı");
+      console.log("✅ Oyundan çıkış tamamlandı - state cleared");
     } catch (error) {
       console.error("❌ Oyundan çıkış hatası:", error);
+      // Hata olsa bile state'i temizle
+      setCurrentRoom(null);
+      setParticipants([]);
+      setLastOpponent(null);
+      setCurrentRematchRequest(null);
+      
       toast({
         title: "Hata",
         description: "Oyundan çıkış sırasında bir hata oluştu",

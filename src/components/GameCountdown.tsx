@@ -134,22 +134,12 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
 
   return (
     <div className={cn("fixed inset-0 z-50 flex items-center justify-center bg-black/50", className)}>
-      {/* 3D Animated Number/Text */}
-      <div key={animKey} className="relative animate-slide-up">
-        {/* Glow effect */}
+      {/* Animated Number/Text - Simplified to prevent jitter */}
+      <div className="relative">
+        {/* Main Text - No animation key to prevent re-render jitter */}
         <div
           className={cn(
-            "absolute inset-0 blur-3xl animate-fade-in",
-            showStart
-              ? "bg-gradient-to-r from-green-300 via-emerald-300 to-teal-300"
-              : "bg-gradient-to-r from-blue-300 via-purple-300 to-pink-300",
-          )}
-        />
-
-        {/* Main 3D Text */}
-        <div
-          className={cn(
-            "relative font-black drop-shadow-2xl",
+            "relative font-black drop-shadow-2xl transition-all duration-300",
             showStart
               ? "text-[80px] sm:text-[120px] md:text-[160px] lg:text-[200px]"
               : "text-[120px] sm:text-[180px] md:text-[240px] lg:text-[280px]",
@@ -171,61 +161,7 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
           {showStart ? "BAŞLA!" : count}
         </div>
 
-        {/* 3D Shadow layer */}
-        <div
-          className={cn(
-            "absolute inset-0 font-black opacity-40 -z-10",
-            showStart
-              ? "text-[80px] sm:text-[120px] md:text-[160px] lg:text-[200px]"
-              : "text-[120px] sm:text-[180px] md:text-[240px] lg:text-[280px]",
-          )}
-          style={{
-            transform: "translate(4px, 4px)",
-            color: "#1a1a1a",
-            filter: "blur(2px)",
-            letterSpacing: "-0.02em",
-          }}
-        >
-          {showStart ? "BAŞLA!" : count}
-        </div>
       </div>
-
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-        @keyframes slideUp {
-          0% {
-            transform: translateY(100vh);
-            opacity: 0;
-          }
-          50% {
-            opacity: 1;
-          }
-          100% {
-            transform: translateY(0);
-            opacity: 1;
-          }
-        }
-        
-        @keyframes fadeIn {
-          0% {
-            opacity: 0;
-          }
-          100% {
-            opacity: 0.8;
-          }
-        }
-        
-        .animate-slide-up {
-          animation: slideUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        
-        .animate-fade-in {
-          animation: fadeIn 0.6s ease-out;
-        }
-      `,
-        }}
-      />
     </div>
   );
 };
