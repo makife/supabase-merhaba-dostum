@@ -126,50 +126,28 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
   if (count === 0 && !showStart) return null;
 
 return (
+return (
   <div className={cn("fixed inset-0 z-50 flex items-center justify-center bg-black/50", className)}>
     <div className="relative">
-      {/* Main Text */}
       <div
         className={cn(
-          "relative font-black drop-shadow-2xl transition-all duration-300 text-center whitespace-nowrap",
+          "font-black text-center transition-all duration-500",
           showStart 
-            ? "text-[60px] sm:text-[80px] md:text-[100px] lg:text-[120px] leading-none" // BAŞLA! için daha küçük font
-            : "text-[120px] sm:text-[180px] md:text-[240px] lg:text-[280px] leading-none" // Rakamlar için büyük font
+            ? "text-[70px] sm:text-[90px] md:text-[110px] lg:text-[130px] text-yellow-300 animate-pulse" 
+            : "text-[120px] sm:text-[180px] md:text-[240px] lg:text-[280px] text-cyan-400"
         )}
         style={{
-          background: showStart 
-            ? "linear-gradient(135deg, #ff0000 0%, #ff6b00 50%, #ffd000 100%)" 
-            : "linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)",
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
-          backgroundClip: "text",
           textShadow: showStart 
-            ? "0 0 40px rgba(255, 255, 0, 0.8), 0 0 80px rgba(255, 165, 0, 0.6)" 
-            : "0 10px 40px rgba(0, 0, 0, 0.4)",
-          filter: showStart 
-            ? "drop-shadow(0 0 30px rgba(255, 255, 0, 0.9))" 
-            : "drop-shadow(0 0 30px rgba(102, 126, 234, 0.8))",
-          letterSpacing: showStart ? "0.1em" : "-0.02em", // BAŞLA! için daha fazla harf aralığı
+            ? "0 0 30px #ffff00, 0 0 60px #ffaa00" 
+            : "0 0 30px #00ffff, 0 0 60px #0088ff",
           opacity: 1,
-          transform: showStart ? "scale(1)" : "scale(1)", // Scale'i normale çektim
-          fontWeight: "900",
-          minWidth: showStart ? "300px" : "auto", // BAŞLA! için minimum genişlik
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          lineHeight: 1,
+          fontWeight: 900,
         }}
       >
         {showStart ? "BAŞLA!" : count}
       </div>
-      
-      {/* Debug için ekstra overlay */}
-      {showStart && (
-        <div className="absolute top-4 left-4 bg-red-500 text-white p-2 text-sm rounded z-50">
-          DEBUG: BAŞLA! aktif - count: {count}
-        </div>
-      )}
     </div>
   </div>
 );
-
 export default GameCountdown;
