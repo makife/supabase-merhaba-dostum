@@ -45,12 +45,12 @@ All colors MUST be HSL.
     --game-warning: 45 100% 60%;
     --game-grid: 48 80% 95%;
     --game-letter: 0 0% 100%;
-    
+
     /* Gradyanlar */
     --gradient-primary: linear-gradient(135deg, hsl(260 84% 57%), hsl(280 65% 60%));
     --gradient-game: linear-gradient(45deg, hsl(45 100% 70%), hsl(55 90% 65%), hsl(40 85% 60%));
     --gradient-light: linear-gradient(135deg, hsl(140 50% 85%), hsl(200 50% 85%));
-    
+
     /* Gölgeler */
     --shadow-game: 0 10px 30px -10px hsl(260 84% 57% / 0.3);
     --shadow-card: 0 4px 20px hsl(270 20% 90% / 0.5);
@@ -93,7 +93,7 @@ All colors MUST be HSL.
     --border: 270 15% 18%;
     --input: 270 15% 18%;
     --ring: 260 84% 57%;
-    
+
     /* Dark oyun renkleri */
     --game-primary: 260 84% 57%;
     --game-secondary: 280 65% 60%;
@@ -101,12 +101,12 @@ All colors MUST be HSL.
     --game-warning: 45 100% 60%;
     --game-grid: 270 15% 15%;
     --game-letter: 270 15% 12%;
-    
+
     /* Dark gradyanlar */
     --gradient-primary: linear-gradient(135deg, hsl(260 84% 57%), hsl(280 65% 60%));
     --gradient-game: linear-gradient(45deg, hsl(260 84% 57%), hsl(280 65% 60%), hsl(300 50% 65%));
     --gradient-light: linear-gradient(135deg, hsl(140 50% 75%), hsl(200 50% 75%));
-    
+
     /* Dark gölgeler */
     --shadow-game: 0 10px 30px -10px hsl(260 84% 57% / 0.5);
     --shadow-card: 0 4px 20px hsl(270 15% 9% / 0.8);
@@ -127,7 +127,13 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground font-sans;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    font-family:
+      "Inter",
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      "Roboto",
+      sans-serif;
     /* Mobile optimizations */
     overscroll-behavior: none;
     overscroll-behavior-y: none;
@@ -140,7 +146,7 @@ All colors MUST be HSL.
     -webkit-touch-callout: none;
     -webkit-tap-highlight-color: transparent;
   }
-  
+
   /* Prevent context menu on long press */
   body * {
     -webkit-touch-callout: none;
@@ -149,9 +155,11 @@ All colors MUST be HSL.
     -ms-user-select: none;
     user-select: none;
   }
-  
+
   /* Allow text selection only for input fields */
-  input, textarea, [contenteditable="true"] {
+  input,
+  textarea,
+  [contenteditable="true"] {
     -webkit-user-select: text !important;
     -moz-user-select: text !important;
     -ms-user-select: text !important;
@@ -163,19 +171,19 @@ All colors MUST be HSL.
   .safe-area-top {
     padding-top: env(safe-area-inset-top);
   }
-  
+
   .safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom);
   }
-  
+
   .safe-area-left {
     padding-left: env(safe-area-inset-left);
   }
-  
+
   .safe-area-right {
     padding-right: env(safe-area-inset-right);
   }
-  
+
   .safe-area-full {
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
@@ -189,18 +197,19 @@ All colors MUST be HSL.
     min-height: 100dvh; /* Dynamic viewport height for mobile */
     overscroll-behavior: none;
   }
-  
+
   /* Prevent elastic scroll behavior */
-  html, body {
+  html,
+  body {
     overscroll-behavior: none;
     overscroll-behavior-y: none;
   }
-  
+
   /* Native mobile optimizations */
   .touch-manipulation {
     touch-action: manipulation;
   }
-  
+
   /* Disable text selection on game elements */
   .no-select {
     -webkit-user-select: none;
@@ -210,7 +219,7 @@ All colors MUST be HSL.
     -webkit-touch-callout: none;
     -webkit-tap-highlight-color: transparent;
   }
-  
+
   /* Mobile navigation bar auto-hide */
   @media (max-width: 768px) {
     .mobile-fullscreen {
@@ -219,7 +228,7 @@ All colors MUST be HSL.
       overflow: hidden;
     }
   }
-  
+
   /* Native mobile game optimizations */
   .native-game-layout {
     height: 100vh;
@@ -241,7 +250,7 @@ All colors MUST be HSL.
     background: transparent !important;
     -webkit-appearance: none !important;
   }
-  
+
   body.native-platform,
   html.is-native,
   html.is-native body,
@@ -252,7 +261,7 @@ All colors MUST be HSL.
     overscroll-behavior: none !important;
     touch-action: manipulation !important;
   }
-  
+
   /* Performance optimizations for native - scoped to opted-in elements only */
   body.native-platform .gpu-accelerated {
     -webkit-backface-visibility: hidden;
@@ -267,7 +276,7 @@ All colors MUST be HSL.
       padding-left: max(1rem, env(safe-area-inset-left));
       padding-right: max(1rem, env(safe-area-inset-right));
     }
-    
+
     /* Native platform safe area - ensures equal padding from all edges */
     html.is-native .native-safe-container {
       padding-top: max(1rem, env(safe-area-inset-top)) !important;
@@ -276,65 +285,76 @@ All colors MUST be HSL.
       padding-right: max(1rem, env(safe-area-inset-right)) !important;
     }
   }
-  
+
   /* 🎬 PREMIUM ANIMATIONS COLLECTION 🎬 */
   .bounce-in {
     animation: bounceIn 0.3s ease-out;
   }
-  
+
   .slide-up {
     animation: slideUp 0.3s ease-out;
   }
-  
+
   .letter-pop {
     animation: letterPop 0.2s ease-out;
   }
 
   /* Premium theme animations */
   @keyframes golden-glow {
-    0%, 100% { 
-      filter: drop-shadow(0 0 10px hsl(45 100% 60% / 0.5)); 
+    0%,
+    100% {
+      filter: drop-shadow(0 0 10px hsl(45 100% 60% / 0.5));
     }
-    50% { 
-      filter: drop-shadow(0 0 20px hsl(45 100% 60% / 0.8)) drop-shadow(0 0 30px hsl(45 100% 50% / 0.4)); 
+    50% {
+      filter: drop-shadow(0 0 20px hsl(45 100% 60% / 0.8)) drop-shadow(0 0 30px hsl(45 100% 50% / 0.4));
     }
   }
 
   @keyframes ocean-waves {
-    0%, 100% { 
-      box-shadow: 0 0 20px hsl(190 95% 65% / 0.3), 0 0 40px hsl(180 100% 70% / 0.2);
+    0%,
+    100% {
+      box-shadow:
+        0 0 20px hsl(190 95% 65% / 0.3),
+        0 0 40px hsl(180 100% 70% / 0.2);
     }
-    50% { 
-      box-shadow: 0 0 30px hsl(190 95% 65% / 0.5), 0 0 60px hsl(180 100% 70% / 0.3);
+    50% {
+      box-shadow:
+        0 0 30px hsl(190 95% 65% / 0.5),
+        0 0 60px hsl(180 100% 70% / 0.3);
     }
   }
 
   @keyframes sunset-shimmer {
-    0%, 100% { 
+    0%,
+    100% {
       background-position: 0% 50%;
     }
-    50% { 
+    50% {
       background-position: 100% 50%;
     }
   }
 
   @keyframes forest-breath {
-    0%, 100% { 
+    0%,
+    100% {
       filter: brightness(1) saturate(1);
     }
-    50% { 
+    50% {
       filter: brightness(1.1) saturate(1.2);
     }
   }
 
   @keyframes retro-pulse {
-    0%, 100% { 
+    0%,
+    100% {
       transform: scale(1);
       box-shadow: 0 0 20px hsl(270 85% 55% / 0.3);
     }
-    50% { 
+    50% {
       transform: scale(1.02);
-      box-shadow: 0 0 30px hsl(270 85% 55% / 0.5), 0 0 40px hsl(300 75% 65% / 0.3);
+      box-shadow:
+        0 0 30px hsl(270 85% 55% / 0.5),
+        0 0 40px hsl(300 75% 65% / 0.3);
     }
   }
 
@@ -382,14 +402,14 @@ All colors MUST be HSL.
   --input: 200 25% 18%;
   --ring: 190 95% 65%;
   --radius: 1rem;
-  
+
   /* Ocean premium effects */
   --gradient-primary: linear-gradient(135deg, hsl(190 95% 65%), hsl(210 85% 55%), hsl(180 100% 70%));
   --gradient-secondary: linear-gradient(45deg, hsl(200 70% 45%), hsl(190 80% 60%));
   --gradient-card: linear-gradient(145deg, hsl(220 40% 8%) 0%, hsl(210 35% 10%) 100%);
   --shadow-ocean: 0 20px 40px -15px hsl(190 95% 65% / 0.4), 0 0 20px hsl(180 100% 70% / 0.2);
   --glow-primary: 0 0 30px hsl(190 95% 65% / 0.6);
-  
+
   /* Ocean game colors */
   --game-primary: 190 95% 65%;
   --game-secondary: 180 100% 70%;
@@ -421,14 +441,14 @@ All colors MUST be HSL.
   --input: 25 30% 22%;
   --ring: 25 100% 70%;
   --radius: 1rem;
-  
+
   /* Sunset luxury effects */
   --gradient-primary: linear-gradient(135deg, hsl(25 100% 70%), hsl(340 90% 75%), hsl(20 95% 65%));
   --gradient-secondary: linear-gradient(45deg, hsl(30 80% 50%), hsl(340 85% 70%));
   --gradient-card: linear-gradient(145deg, hsl(20 45% 10%) 0%, hsl(25 40% 12%) 100%);
   --shadow-sunset: 0 20px 40px -15px hsl(25 100% 70% / 0.4), 0 0 25px hsl(340 90% 75% / 0.3);
   --glow-primary: 0 0 35px hsl(25 100% 70% / 0.7);
-  
+
   /* Sunset game colors */
   --game-primary: 25 100% 70%;
   --game-secondary: 340 90% 75%;
@@ -460,14 +480,14 @@ All colors MUST be HSL.
   --input: 140 25% 20%;
   --ring: 130 75% 60%;
   --radius: 1rem;
-  
+
   /* Forest mystical effects */
   --gradient-primary: linear-gradient(135deg, hsl(130 75% 60%), hsl(80 70% 65%), hsl(120 80% 55%));
   --gradient-secondary: linear-gradient(45deg, hsl(140 60% 40%), hsl(80 65% 60%));
   --gradient-card: linear-gradient(145deg, hsl(140 35% 8%) 0%, hsl(135 30% 10%) 100%);
   --shadow-forest: 0 20px 40px -15px hsl(130 75% 60% / 0.4), 0 0 20px hsl(80 70% 65% / 0.3);
   --glow-primary: 0 0 30px hsl(130 75% 60% / 0.6);
-  
+
   /* Forest game colors */
   --game-primary: 130 75% 60%;
   --game-secondary: 80 70% 65%;
@@ -499,14 +519,14 @@ All colors MUST be HSL.
   --input: 280 20% 85%;
   --ring: 270 85% 55%;
   --radius: 1.2rem;
-  
+
   /* Retro gaming effects */
   --gradient-primary: linear-gradient(135deg, hsl(270 85% 55%), hsl(300 75% 65%), hsl(280 80% 60%));
   --gradient-secondary: linear-gradient(45deg, hsl(280 60% 70%), hsl(300 70% 75%));
   --gradient-card: linear-gradient(145deg, hsl(280 30% 98%) 0%, hsl(275 25% 95%) 100%);
   --shadow-retro: 0 15px 35px -10px hsl(270 85% 55% / 0.3), 0 0 20px hsl(300 75% 65% / 0.2);
   --glow-primary: 0 0 25px hsl(270 85% 55% / 0.5);
-  
+
   /* Retro game colors */
   --game-primary: 270 85% 55%;
   --game-secondary: 300 75% 65%;
@@ -587,7 +607,9 @@ All colors MUST be HSL.
 .theme-forest .btn-primary:hover,
 .theme-classic .btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: var(--glow-primary), 0 10px 20px -5px hsl(var(--primary) / 0.4);
+  box-shadow:
+    var(--glow-primary),
+    0 10px 20px -5px hsl(var(--primary) / 0.4);
 }
 
 .avatar-frame-avatar_floral_roses,
@@ -609,8 +631,8 @@ All colors MUST be HSL.
 .avatar-frame-avatar_wavy_black {
   position: relative;
   display: inline-block;
-  width: 120px;   /* Çerçeve boyutu */
-  height: 120px;  /* Çerçeve boyutu */
+  width: 120px; /* Çerçeve boyutu */
+  height: 120px; /* Çerçeve boyutu */
 }
 
 /* Avatar resmi - çerçevenin ortasına yerleşir */
@@ -635,37 +657,37 @@ All colors MUST be HSL.
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 70px;   /* Avatar boyutu - çerçeveden küçük */
-  height: 70px;  /* Avatar boyutu - çerçeveden küçük */
+  width: 70px; /* Avatar boyutu - çerçeveden küçük */
+  height: 70px; /* Avatar boyutu - çerçeveden küçük */
   border-radius: 50%;
   object-fit: cover;
-  z-index: 1;    /* Avatar altta */
+  z-index: 1; /* Avatar altta */
 }
 
 /* Çerçeve overlay - en üstte, tam boyut */
 .avatar-frame-avatar_floral_roses::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('/lovable-uploads/a717e6dc-c468-4e17-9e40-e2a47817aed6.png');
+  background-image: url("/lovable-uploads/a717e6dc-c468-4e17-9e40-e2a47817aed6.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
-  z-index: 10;   /* Çerçeve en üstte */
+  z-index: 10; /* Çerçeve en üstte */
   pointer-events: none;
 }
 
 .avatar-frame-avatar_blue_berries::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('/lovable-uploads/9224e301-b3e4-47ba-9be4-b9a4fd4694a5.png');
+  background-image: url("/lovable-uploads/9224e301-b3e4-47ba-9be4-b9a4fd4694a5.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -674,13 +696,13 @@ All colors MUST be HSL.
 }
 
 .avatar-frame-avatar_gold_simple::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('/lovable-uploads/aa2df12c-9aa3-49c0-a78e-4a946ad9c396.png');
+  background-image: url("/lovable-uploads/aa2df12c-9aa3-49c0-a78e-4a946ad9c396.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -690,13 +712,13 @@ All colors MUST be HSL.
 }
 
 .avatar-frame-avatar_floral_wreath::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('/lovable-uploads/eea94c24-3141-4496-ab48-9911ecfd1400.png');
+  background-image: url("/lovable-uploads/eea94c24-3141-4496-ab48-9911ecfd1400.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -705,13 +727,13 @@ All colors MUST be HSL.
 }
 
 .avatar-frame-avatar_purple_flowers::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('/lovable-uploads/1b6aaacc-0774-46f0-9aed-58be7383877a.png');
+  background-image: url("/lovable-uploads/1b6aaacc-0774-46f0-9aed-58be7383877a.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -720,13 +742,13 @@ All colors MUST be HSL.
 }
 
 .avatar-frame-avatar_pink_flowers::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('/lovable-uploads/4a19df44-882d-4bf3-b557-2986fd9ea69e.png');
+  background-image: url("/lovable-uploads/4a19df44-882d-4bf3-b557-2986fd9ea69e.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -735,13 +757,13 @@ All colors MUST be HSL.
 }
 
 .avatar-frame-avatar_antique_bronze::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('/lovable-uploads/227894f5-629e-46a5-88d7-2d8df2460fa2.png');
+  background-image: url("/lovable-uploads/227894f5-629e-46a5-88d7-2d8df2460fa2.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -750,13 +772,13 @@ All colors MUST be HSL.
 }
 
 .avatar-frame-avatar_green_patrick::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('/lovable-uploads/d9551411-6a1a-4199-b99e-a0ff5defbf4e.png');
+  background-image: url("/lovable-uploads/d9551411-6a1a-4199-b99e-a0ff5defbf4e.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -765,13 +787,13 @@ All colors MUST be HSL.
 }
 
 .avatar-frame-avatar_heart_roses::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('/lovable-uploads/ff7b6503-a976-4eb1-87d0-2373423fc6e5.png');
+  background-image: url("/lovable-uploads/ff7b6503-a976-4eb1-87d0-2373423fc6e5.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -780,13 +802,13 @@ All colors MUST be HSL.
 }
 
 .avatar-frame-avatar_christmas_lights::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('/lovable-uploads/2e9f15c2-49f4-461f-997e-84c4682368c6.png');
+  background-image: url("/lovable-uploads/2e9f15c2-49f4-461f-997e-84c4682368c6.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -796,13 +818,13 @@ All colors MUST be HSL.
 }
 
 .avatar-frame-avatar_ornate_gold::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('/lovable-uploads/9ed9fbb7-3aa3-4185-96c5-d118e2067712.png');
+  background-image: url("/lovable-uploads/9ed9fbb7-3aa3-4185-96c5-d118e2067712.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -812,13 +834,13 @@ All colors MUST be HSL.
 }
 
 .avatar-frame-avatar_party_balloons::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('/lovable-uploads/afa305fa-30a5-496f-8af0-029aa71047a3.png');
+  background-image: url("/lovable-uploads/afa305fa-30a5-496f-8af0-029aa71047a3.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -827,13 +849,13 @@ All colors MUST be HSL.
 }
 
 .avatar-frame-avatar_christmas_tree::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('/lovable-uploads/b2d1b581-c29f-43e4-b354-2889ce0621b1.png');
+  background-image: url("/lovable-uploads/b2d1b581-c29f-43e4-b354-2889ce0621b1.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -842,13 +864,13 @@ All colors MUST be HSL.
 }
 
 .avatar-frame-avatar_ornate_black::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('/lovable-uploads/5b932686-4cbb-44bb-8aa0-d9172ae54764.png');
+  background-image: url("/lovable-uploads/5b932686-4cbb-44bb-8aa0-d9172ae54764.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -857,13 +879,13 @@ All colors MUST be HSL.
 }
 
 .avatar-frame-avatar_black_floral::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('/lovable-uploads/53623185-5b73-4dd2-bc2b-1af5b94f321a.png');
+  background-image: url("/lovable-uploads/53623185-5b73-4dd2-bc2b-1af5b94f321a.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -872,13 +894,13 @@ All colors MUST be HSL.
 }
 
 .avatar-frame-avatar_golden_stars::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('/lovable-uploads/ff8a7b50-41b9-461a-bd0b-0e166b281ef3.png');
+  background-image: url("/lovable-uploads/ff8a7b50-41b9-461a-bd0b-0e166b281ef3.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -887,13 +909,13 @@ All colors MUST be HSL.
 }
 
 .avatar-frame-avatar_wavy_black::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('/lovable-uploads/309c658e-e0d1-423a-80d6-9b012943f30d.png');
+  background-image: url("/lovable-uploads/309c658e-e0d1-423a-80d6-9b012943f30d.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -903,55 +925,104 @@ All colors MUST be HSL.
 
 /* Çerçeve animasyonları - Yeni eklenen */
 @keyframes luxury-glow {
-  from { filter: drop-shadow(0 0 15px #ffd700) brightness(1); }
-  to { filter: drop-shadow(0 0 25px #ffd700) brightness(1.2); }
+  from {
+    filter: drop-shadow(0 0 15px #ffd700) brightness(1);
+  }
+  to {
+    filter: drop-shadow(0 0 25px #ffd700) brightness(1.2);
+  }
 }
 
 @keyframes twinkle {
-  0%, 100% { filter: brightness(1); }
-  50% { filter: brightness(1.3) drop-shadow(0 0 15px #ff6b6b); }
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.3) drop-shadow(0 0 15px #ff6b6b);
+  }
 }
 
 @keyframes gold-glow {
-  from { box-shadow: 0 0 15px rgba(255, 215, 0, 0.5); }
-  to { box-shadow: 0 0 25px rgba(255, 215, 0, 0.8); }
+  from {
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+  }
+  to {
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.8);
+  }
 }
 
 @keyframes silver-glow {
-  from { box-shadow: 0 0 15px rgba(192, 192, 192, 0.5); }
-  to { box-shadow: 0 0 25px rgba(192, 192, 192, 0.8); }
+  from {
+    box-shadow: 0 0 15px rgba(192, 192, 192, 0.5);
+  }
+  to {
+    box-shadow: 0 0 25px rgba(192, 192, 192, 0.8);
+  }
 }
 
 @keyframes diamond-glow {
-  from { box-shadow: 0 0 20px rgba(185, 242, 255, 0.7); }
-  to { box-shadow: 0 0 30px rgba(185, 242, 255, 1); }
+  from {
+    box-shadow: 0 0 20px rgba(185, 242, 255, 0.7);
+  }
+  to {
+    box-shadow: 0 0 30px rgba(185, 242, 255, 1);
+  }
 }
 
 @keyframes premium-glow {
-  from { box-shadow: 0 0 20px hsl(var(--primary) / 0.6); }
-  to { box-shadow: 0 0 30px hsl(var(--primary) / 0.9); }
+  from {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.6);
+  }
+  to {
+    box-shadow: 0 0 30px hsl(var(--primary) / 0.9);
+  }
 }
 
 @keyframes rainbow-rotate {
-  0% { filter: hue-rotate(0deg); }
-  100% { filter: hue-rotate(360deg); }
+  0% {
+    filter: hue-rotate(0deg);
+  }
+  100% {
+    filter: hue-rotate(360deg);
+  }
 }
 
 @keyframes bounceIn {
-  0% { transform: scale(0.9); opacity: 0; }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
-  0% { transform: translateY(20px); opacity: 0; }
-  100% { transform: translateY(0); opacity: 1; }
+  0% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 @keyframes letterPop {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* Oyun stilleri */
@@ -1035,10 +1106,9 @@ All colors MUST be HSL.
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
-
-
 @keyframes sadFace {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1) rotate(-3deg);
   }
   50% {
@@ -1075,7 +1145,7 @@ All colors MUST be HSL.
 }
 
 .joker-button::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
@@ -1130,7 +1200,8 @@ All colors MUST be HSL.
 }
 
 @keyframes pulse-gold {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7);
   }
   50% {
@@ -1152,11 +1223,14 @@ All colors MUST be HSL.
   overflow: hidden;
   white-space: nowrap;
   border-right: 2px solid #4ade80;
-  animation: typing-effect 1.5s steps(40, end), blink-caret 0.75s step-end infinite;
+  animation:
+    typing-effect 1.5s steps(40, end),
+    blink-caret 0.75s step-end infinite;
 }
 
 @keyframes blink-caret {
-  from, to {
+  from,
+  to {
     border-color: transparent;
   }
   50% {
@@ -1166,7 +1240,8 @@ All colors MUST be HSL.
 
 /* Değiştir Joker - Shuffle Animation */
 @keyframes shuffle-grid {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1) rotate(0deg);
   }
   25% {
@@ -1206,11 +1281,14 @@ All colors MUST be HSL.
 
 /* Joker Activation Glow */
 @keyframes joker-glow {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 5px rgba(139, 69, 19, 0.3);
   }
   50% {
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 30px rgba(255, 215, 0, 0.4);
+    box-shadow:
+      0 0 20px rgba(255, 215, 0, 0.8),
+      0 0 30px rgba(255, 215, 0, 0.4);
   }
 }
 
@@ -1237,7 +1315,8 @@ All colors MUST be HSL.
 
 /* Sparkle Effect for Jokers */
 @keyframes sparkle {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0;
     transform: scale(0);
   }
@@ -1256,14 +1335,34 @@ All colors MUST be HSL.
   animation: sparkle 1s infinite;
 }
 
-.sparkle:nth-child(1) { top: 20%; left: 20%; animation-delay: 0s; }
-.sparkle:nth-child(2) { top: 80%; left: 80%; animation-delay: 0.2s; }
-.sparkle:nth-child(3) { top: 60%; left: 20%; animation-delay: 0.4s; }
-.sparkle:nth-child(4) { top: 20%; left: 80%; animation-delay: 0.6s; }
+.sparkle:nth-child(1) {
+  top: 20%;
+  left: 20%;
+  animation-delay: 0s;
+}
+.sparkle:nth-child(2) {
+  top: 80%;
+  left: 80%;
+  animation-delay: 0.2s;
+}
+.sparkle:nth-child(3) {
+  top: 60%;
+  left: 20%;
+  animation-delay: 0.4s;
+}
+.sparkle:nth-child(4) {
+  top: 20%;
+  left: 80%;
+  animation-delay: 0.6s;
+}
 
 /* Joker Badge Bounce */
 @keyframes badge-bounce {
-  0%, 20%, 50%, 80%, 100% {
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
     transform: translateY(0);
   }
   40% {
@@ -1280,7 +1379,8 @@ All colors MUST be HSL.
 
 /* Floating Animation for Joker Panel */
 @keyframes float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0);
   }
   50% {
@@ -1338,7 +1438,7 @@ All colors MUST be HSL.
 }
 
 .game-grid::before {
-  content: '';
+  content: "";
   position: absolute;
   top: -5px;
   left: -5px;
@@ -1353,7 +1453,8 @@ All colors MUST be HSL.
 }
 
 @keyframes gradient-shift {
-  0%, 100% {
+  0%,
+  100% {
     background-position: 0% 50%;
   }
   50% {
@@ -1367,12 +1468,12 @@ All colors MUST be HSL.
   .joker-panel {
     padding: 12px;
   }
-  
+
   .joker-button {
     padding: 8px;
     font-size: 10px;
   }
-  
+
   .sparkle {
     width: 3px;
     height: 3px;
@@ -1521,11 +1622,21 @@ All colors MUST be HSL.
 }
 
 @keyframes hourglassFlip {
-  0% { transform: rotate(0deg); }
-  20% { transform: rotate(180deg); }
-  50% { transform: rotate(180deg); }
-  70% { transform: rotate(360deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  20% {
+    transform: rotate(180deg);
+  }
+  50% {
+    transform: rotate(180deg);
+  }
+  70% {
+    transform: rotate(360deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .firework-particle {
@@ -1570,7 +1681,7 @@ All colors MUST be HSL.
   opacity: 0.6 !important;
 }
 
-  /* Çıkış butonu siyah gradient */
+/* Çıkış butonu siyah gradient */
 .text-xs.px-2.py-1.h-8 {
   background: linear-gradient(135deg, hsl(220 15% 25%), hsl(210 20% 30%), hsl(200 10% 20%)) !important;
   border-color: hsl(220 15% 25%) !important;
@@ -1623,27 +1734,31 @@ All colors MUST be HSL.
 
 /* Profil kartları - Çok renkli soft gradient */
 .silver-gradient {
-  background: linear-gradient(135deg, 
-    hsl(330 70% 90%) 0%, 
-    hsl(300 60% 85%) 15%, 
-    hsl(270 65% 88%) 30%, 
-    hsl(240 70% 90%) 45%, 
-    hsl(210 65% 88%) 60%, 
-    hsl(180 60% 85%) 75%, 
-    hsl(150 65% 88%) 90%, 
-    hsl(120 70% 90%) 100%) !important;
+  background: linear-gradient(
+    135deg,
+    hsl(330 70% 90%) 0%,
+    hsl(300 60% 85%) 15%,
+    hsl(270 65% 88%) 30%,
+    hsl(240 70% 90%) 45%,
+    hsl(210 65% 88%) 60%,
+    hsl(180 60% 85%) 75%,
+    hsl(150 65% 88%) 90%,
+    hsl(120 70% 90%) 100%
+  ) !important;
 }
 
 .silver-gradient:hover {
-  background: linear-gradient(135deg, 
-    hsl(330 75% 92%) 0%, 
-    hsl(300 65% 87%) 15%, 
-    hsl(270 70% 90%) 30%, 
-    hsl(240 75% 92%) 45%, 
-    hsl(210 70% 90%) 60%, 
-    hsl(180 65% 87%) 75%, 
-    hsl(150 70% 90%) 90%, 
-    hsl(120 75% 92%) 100%) !important;
+  background: linear-gradient(
+    135deg,
+    hsl(330 75% 92%) 0%,
+    hsl(300 65% 87%) 15%,
+    hsl(270 70% 90%) 30%,
+    hsl(240 75% 92%) 45%,
+    hsl(210 70% 90%) 60%,
+    hsl(180 65% 87%) 75%,
+    hsl(150 70% 90%) 90%,
+    hsl(120 75% 92%) 100%
+  ) !important;
   box-shadow: 0 6px 20px rgba(200, 160, 255, 0.3) !important;
   transform: translateY(-1px) !important;
 }
@@ -1651,7 +1766,7 @@ All colors MUST be HSL.
 /* Input field yazı rengi siyah */
 .game-grid input {
   color: #000000 !important;
-  text-shadow: 
+  text-shadow:
     0 0 5px #00ffff,
     0 0 10px #00ffff,
     0 0 15px #00ffff,
@@ -1665,7 +1780,7 @@ All colors MUST be HSL.
 
 .game-grid input::placeholder {
   color: rgba(0, 0, 0, 0.7) !important;
-  text-shadow: 
+  text-shadow:
     0 0 3px #00ffff,
     0 0 6px #00ffff,
     0 0 9px #00ffff,
@@ -1681,8 +1796,8 @@ All colors MUST be HSL.
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: url('/arkaplans.jpg') center/cover no-repeat;
-  font-family: 'Arial', sans-serif;
+  background: url("/arkaplans.jpg") center/cover no-repeat;
+  font-family: "Arial", sans-serif;
   overflow: hidden;
   z-index: 9999;
 }
@@ -1736,7 +1851,7 @@ All colors MUST be HSL.
 
 .progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, #FF6B6B, #4ECDC4, #45B7D1, #96CEB4);
+  background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
   border-radius: 20px;
   transition: width 0.6s ease;
   box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
@@ -1744,19 +1859,23 @@ All colors MUST be HSL.
 }
 
 .progress-bar::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
   animation: shimmer 2s infinite;
 }
 
 @keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 /* Loading text */
@@ -1780,16 +1899,16 @@ All colors MUST be HSL.
     padding: 15px 20px;
     max-width: 95%;
   }
-  
+
   .tip-text {
     font-size: 1rem;
   }
-  
+
   .loading-container {
     bottom: 60px;
     width: 95%;
   }
-  
+
   .loading-text {
     font-size: 1.1rem;
     padding: 12px 20px;
@@ -1801,11 +1920,11 @@ All colors MUST be HSL.
     top: 20px;
     padding: 12px 15px;
   }
-  
+
   .tip-text {
     font-size: 0.9rem;
   }
-  
+
   .loading-text {
     font-size: 1rem;
     padding: 10px 15px;
@@ -1816,11 +1935,11 @@ All colors MUST be HSL.
   .backface-hidden {
     backface-visibility: hidden;
   }
-  
+
   .transform-style-preserve-3d {
     transform-style: preserve-3d;
   }
-  
+
   .rotate-y-180 {
     transform: rotateY(180deg);
   }
@@ -1828,10 +1947,11 @@ All colors MUST be HSL.
 
 /* globals.css veya index.css'e ekle */
 @keyframes pulse-glow {
-  0%, 100% { 
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
   }
-  70% { 
+  70% {
     box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
   }
 }
@@ -1842,25 +1962,47 @@ All colors MUST be HSL.
 
 /* ===== LOADING SCREEN STYLES END ===== */
 
-
 /* Eğer daha dramatik efekt istersen, class name'i değiştir */
 .letter-fire-highlight {
-  animation: letter-fire-highlight 1.0s ease-in-out;
+  animation: letter-fire-highlight 1s ease-in-out;
 }
 
 @layer utilities {
   /* Hide both native and Radix scrollbars within any .no-scrollbar container */
-  .no-scrollbar [data-radix-scroll-area-viewport] { -ms-overflow-style: none; scrollbar-width: none; }
-  .no-scrollbar [data-radix-scroll-area-viewport]::-webkit-scrollbar { display: none; }
-  .no-scrollbar [data-radix-scroll-area-scrollbar] { display: none !important; }
-  
+  .no-scrollbar [data-radix-scroll-area-viewport] {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar [data-radix-scroll-area-viewport]::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar [data-radix-scroll-area-scrollbar] {
+    display: none !important;
+  }
+
   /* Globally hide scrollbars on native builds (Capacitor iOS/Android) */
-  .is-native, .is-native body { -ms-overflow-style: none; scrollbar-width: none; }
-  .is-native::-webkit-scrollbar, .is-native body::-webkit-scrollbar { display: none; }
-  .is-native *::-webkit-scrollbar { display: none !important; }
-  .is-native [data-radix-scroll-area-scrollbar] { display: none !important; }
-  .is-native [data-radix-scroll-area-viewport] { -ms-overflow-style: none; scrollbar-width: none; }
-  .is-native [data-radix-scroll-area-viewport]::-webkit-scrollbar { display: none; }
+  .is-native,
+  .is-native body {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .is-native::-webkit-scrollbar,
+  .is-native body::-webkit-scrollbar {
+    display: none;
+  }
+  .is-native *::-webkit-scrollbar {
+    display: none !important;
+  }
+  .is-native [data-radix-scroll-area-scrollbar] {
+    display: none !important;
+  }
+  .is-native [data-radix-scroll-area-viewport] {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .is-native [data-radix-scroll-area-viewport]::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* ===== PUZZLE GAME STYLES ===== */
@@ -1895,7 +2037,7 @@ All colors MUST be HSL.
 }
 
 .puzzle-game-container::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -1964,11 +2106,14 @@ All colors MUST be HSL.
 }
 
 @keyframes pulse-hint {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
   }
   50% {
-    box-shadow: 0 4px 15px rgba(0, 212, 255, 0.6), 0 0 20px rgba(255, 255, 255, 0.3);
+    box-shadow:
+      0 4px 15px rgba(0, 212, 255, 0.6),
+      0 0 20px rgba(255, 255, 255, 0.3);
   }
 }
 
@@ -2003,8 +2148,12 @@ All colors MUST be HSL.
 }
 
 @keyframes pulse-danger {
-  from { opacity: 1; }
-  to { opacity: 0.7; }
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.7;
+  }
 }
 
 /* Puzzle Status Messages */
@@ -2186,26 +2335,26 @@ All colors MUST be HSL.
     padding: 1rem;
     margin: 0.5rem;
   }
-  
+
   .puzzle-board {
     padding: 0.75rem;
   }
-  
+
   .puzzle-tile {
     font-size: 1.1rem;
     border-radius: 8px;
   }
-  
+
   .puzzle-controls {
     flex-direction: column;
     gap: 0.5rem;
   }
-  
+
   .puzzle-difficulty {
     flex-direction: column;
     gap: 0.5rem;
   }
-  
+
   .puzzle-stats {
     flex-direction: column;
     gap: 0.5rem;
@@ -2215,9 +2364,15 @@ All colors MUST be HSL.
 
 /* Puzzle Success Animation */
 @keyframes puzzle-success {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .puzzle-success-animation {
@@ -2245,18 +2400,24 @@ All colors MUST be HSL.
 }
 /* Scrollbar gizleme */
 .scrollbar-hide {
-  -ms-overflow-style: none;  /* Internet Explorer 10+ */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+  scrollbar-width: none; /* Firefox */
 }
 .scrollbar-hide::-webkit-scrollbar {
-  display: none;  /* Safari and Chrome */
+  display: none; /* Safari and Chrome */
 }
 
 /* Puzzle Tile Slide Animation */
 @keyframes tile-slide {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .puzzle-tile-slide {
@@ -2264,8 +2425,13 @@ All colors MUST be HSL.
 }
 
 @keyframes sequentialPulse {
-  0%, 90% { opacity: 0.9; }
-  10% { opacity: 0.3; }
+  0%,
+  90% {
+    opacity: 0.9;
+  }
+  10% {
+    opacity: 0.3;
+  }
 }
 .sequential-pulse {
   animation: sequentialPulse 2.7s infinite;
@@ -2282,7 +2448,7 @@ body.is-capacitor {
 
 /* Status bar overlay */
 body.is-capacitor::before {
-  content: '';
+  content: "";
   position: fixed;
   top: 0;
   left: 0;
@@ -2296,7 +2462,7 @@ body.is-capacitor::before {
 
 /* Navigation bar overlay */
 body.is-capacitor::after {
-  content: '';
+  content: "";
   position: fixed;
   bottom: 0;
   left: 0;
@@ -2315,7 +2481,7 @@ body.is-capacitor.hide-bars::before {
 }
 
 .letters-background::before {
-  content: 'A A B CA B C Ç D E A B C Ç D EA B C Ç D E F G Ğ H I İ A B C Ç D E F G Ğ H I İ J K L J K L  F G ĞA B C Ç D E F G Ğ H I İ J K L  H I İ J K L F G Ğ H I İ J K L  Ç D E F G Ğ H I İ J K L B C Ç D E F G Ğ H I İ J K L M N O Ö P R S Ş T U Ü V Y Z A B C Ç D E F G Ğ H I İ J K L M N O Ö P R S Ş T U Ü V Y Z K E L İ M E C İ A R A B A O K U L D E N İ Z A Ğ A Ç Ç İ Ç E K S E V G İ M U T L U L U K K E L İ M E C İ A R A B A O K U L D E N İ Z A Ğ A Ç Ç İ Ç E K S E V G İ M U T L U L U K A B C Ç D E F G Ğ H I İ J K L M N O Ö P R S Ş T U Ü V Y Z';
+  content: "A A B CA B C Ç D E A B C Ç D EA B C Ç D E F G Ğ H I İ A B C Ç D E F G Ğ H I İ J K L J K L  F G ĞA B C Ç D E F G Ğ H I İ J K L  H I İ J K L F G Ğ H I İ J K L  Ç D E F G Ğ H I İ J K L B C Ç D E F G Ğ H I İ J K L M N O Ö P R S Ş T U Ü V Y Z A B C Ç D E F G Ğ H I İ J K L M N O Ö P R S Ş T U Ü V Y Z K E L İ M E C İ A R A B A O K U L D E N İ Z A Ğ A Ç Ç İ Ç E K S E V G İ M U T L U L U K K E L İ M E C İ A R A B A O K U L D E N İ Z A Ğ A Ç Ç İ Ç E K S E V G İ M U T L U L U K A B C Ç D E F G Ğ H I İ J K L M N O Ö P R S Ş T U Ü V Y Z";
   position: absolute;
   top: 0;
   left: 0;
@@ -2339,3 +2505,15 @@ body.is-capacitor.hide-bars::before {
 }
 
 /* ===== PUZZLE GAME STYLES END ===== */
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
