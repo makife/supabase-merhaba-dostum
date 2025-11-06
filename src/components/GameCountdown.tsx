@@ -98,6 +98,8 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
     setHasStarted(true);
     setIsVisible(true);
 
+    playCountdownSound(5);
+
     const updateCountdown = () => {
       const now = Date.now() + serverTimeOffset;
       const elapsed = Math.floor((now - startTime) / 1000);
