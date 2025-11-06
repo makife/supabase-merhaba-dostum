@@ -157,7 +157,7 @@ export const useSounds = () => {
     audioCache.current.clear();
 
     // Sadece özel ses dosyalarını yükle (kutlama, kaybetme, arka plan müziği)
-    const specialSounds = ["celebration", "gameLoseSound"];
+    const specialSounds = ["celebration", "gameLoseSound", "tieSound"];
     specialSounds.forEach((key) => {
       const soundPath = activePack.sounds[key as keyof SoundConfig];
       if (typeof soundPath === "string" && !soundPath.startsWith("generated")) {
@@ -367,6 +367,23 @@ export const useSounds = () => {
       });
     } catch (error) {
       console.warn("Could not load game lose sound:", error);
+    }
+  }, [soundsEnabled, getActiveSoundPack]);
+
+  const playtieSound = useCallback(() => {
+    if (!soundsEnabled) return;
+
+    const activePack = getActiveSoundPack();
+    const soundPath = activePack.sounds.tieSound;
+
+    try {
+      const audio = new Audio(soundPath);
+      audio.volume = 0.6;
+      audio.play().catch((error) => {
+        console.warn("Could not play game tie sound:", error);
+      });
+    } catch (error) {
+      console.warn("Could not load game tie sound:", error);
     }
   }, [soundsEnabled, getActiveSoundPack]);
 
