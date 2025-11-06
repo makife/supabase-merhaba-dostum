@@ -143,6 +143,7 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",
+            color: "transparent", // Bu satırı ekleyin
             backgroundSize: "200% 200%",
             animation: "gradientShift 3s ease infinite",
             textShadow: "0 10px 40px rgba(0, 0, 0, 0.4)",
