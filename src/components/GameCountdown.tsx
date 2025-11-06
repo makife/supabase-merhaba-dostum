@@ -131,19 +131,12 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
         {/* Main Text */}
         <div
           className={cn(
-            "relative font-black drop-shadow-2xl transition-all duration-300",
+            "relative font-black drop-shadow-2xl transition-all duration-300 bg-gradient-to-r bg-clip-text text-transparent",
             showStart
-              ? "text-[80px] sm:text-[120px] md:text-[160px] lg:text-[200px]"
-              : "text-[120px] sm:text-[180px] md:text-[240px] lg:text-[280px]",
+              ? "text-[80px] sm:text-[120px] md:text-[160px] lg:text-[200px] from-red-400 via-orange-300 to-blue-400"
+              : "text-[120px] sm:text-[180px] md:text-[240px] lg:text-[280px] from-purple-400 via-pink-400 to-cyan-400",
           )}
           style={{
-            background: showStart
-              ? "linear-gradient(135deg, #ff6b6b 0%, #ffa500 25%, #ffd700 50%, #90ee90 75%, #87ceeb 100%)"
-              : "linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4ecdc4 100%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
-            color: "transparent", // Bu satırı ekleyin
             backgroundSize: "200% 200%",
             animation: "gradientShift 3s ease infinite",
             textShadow: "0 10px 40px rgba(0, 0, 0, 0.4)",
