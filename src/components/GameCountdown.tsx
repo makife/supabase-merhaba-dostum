@@ -125,53 +125,29 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
   if (!hasStarted) return null;
   if (count === 0 && !showStart) return null;
 
- return (
+return (
   <div className={cn("fixed inset-0 z-50 flex items-center justify-center bg-black/50", className)}>
     <div className="relative">
-      {/* Main Text - Gradient animasyonu kaldırıldı, daha basit ve net */}
+      {/* EN BASİT ÇÖZÜM - Gradient olmadan */}
       <div
         className={cn(
-          "relative font-black drop-shadow-2xl transition-all duration-300",
+          "relative font-black transition-all duration-300",
           showStart 
-            ? "text-[80px] sm:text-[120px] md:text-[160px] lg:text-[200px] text-white" 
-            : "text-[120px] sm:text-[180px] md:text-[240px] lg:text-[280px]"
+            ? "text-[80px] sm:text-[120px] md:text-[160px] lg:text-[200px] text-yellow-400" 
+            : "text-[120px] sm:text-[180px] md:text-[240px] lg:text-[280px] text-blue-400"
         )}
         style={{
-          // BAŞLA! yazısı için SAD ve NET renkler
-          background: showStart 
-            ? "linear-gradient(135deg, #ff0000 0%, #ff6b00 50%, #ffd000 100%)" // Kırmızı, Turuncu, Sarı
-            : "linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)", // Sayılar için mor tonları
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
-          backgroundClip: "text",
           textShadow: showStart 
-            ? "0 0 40px rgba(255, 255, 0, 0.8), 0 0 80px rgba(255, 165, 0, 0.6)" // Parlak sarı gölge
-            : "0 10px 40px rgba(0, 0, 0, 0.4)",
-          filter: showStart 
-            ? "drop-shadow(0 0 30px rgba(255, 255, 0, 0.9))" // Sarı parlaklık
-            : "drop-shadow(0 0 30px rgba(102, 126, 234, 0.8))",
-          letterSpacing: showStart ? "0.05em" : "-0.02em",
-          opacity: 1, // HER ZAMAN tam opak
+            ? "0 0 40px #ff0, 0 0 80px #ff0, 0 0 120px #ff0" // Sarı neon efekti
+            : "0 0 40px #00f, 0 0 80px #00f",
+          filter: showStart ? "drop-shadow(0 0 20px #ff0)" : "drop-shadow(0 0 20px #00f)",
+          opacity: 1,
           transform: showStart ? "scale(1.1)" : "scale(1)",
           fontWeight: "900",
-          lineHeight: "1",
         }}
       >
         {showStart ? "BAŞLA!" : count}
       </div>
-      
-      {/* BAŞLA! yazısı için ekstra parlaklık efekti */}
-      {showStart && (
-        <div
-          className="absolute inset-0 animate-pulse"
-          style={{
-            background: "radial-gradient(circle at center, rgba(255,255,0,0.4) 0%, transparent 70%)",
-            mixBlendMode: "screen",
-            filter: "blur(20px)",
-            transform: "scale(1.2)",
-          }}
-        />
-      )}
     </div>
   </div>
 );
