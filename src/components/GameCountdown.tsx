@@ -135,7 +135,7 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
  return (
   <div
     className={cn(
-      "fixed inset-0 z-50 flex items-center justify-center bg-black/50",
+      "fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm",
       className
     )}
   >
@@ -157,18 +157,35 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
           backgroundClip: "text",
           color: "transparent",
           textShadow: showStart
-            ? "0 0 20px rgba(0,255,204,0.9), 0 0 50px rgba(166,255,0,0.6)"
-            : "0 0 25px rgba(0,114,255,0.9), 0 0 60px rgba(122,0,255,0.7)",
+            ? "0 0 20px rgba(0,255,204,0.5), 0 0 40px rgba(0,255,204,0.3), 0 0 60px rgba(166,255,0,0.2)"
+            : "0 0 25px rgba(0,114,255,0.5), 0 0 50px rgba(0,114,255,0.3), 0 0 75px rgba(122,0,255,0.2)",
           filter: showStart
-            ? "drop-shadow(0 0 40px rgba(0,255,204,0.6))"
-            : "drop-shadow(0 0 50px rgba(0,114,255,0.5))",
-          letterSpacing: "-0.02em",
+            ? "drop-shadow(0 0 10px rgba(0,255,204,0.4)) brightness(1.1)"
+            : "drop-shadow(0 0 15px rgba(0,114,255,0.4)) brightness(1.05)",
+          letterSpacing: showStart ? "-0.02em" : "-0.03em",
+          transform: showStart ? "scale(1.05)" : "scale(1)",
+          transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
         }}
       >
         {showStart ? "BAŞLA!" : count}
       </div>
+      
+      {/* Parlama efekti için ek overlay */}
+      <div
+        className={cn(
+          "absolute inset-0 transition-opacity duration-500",
+          showStart ? "opacity-60" : "opacity-40"
+        )}
+        style={{
+          background: showStart
+            ? "radial-gradient(circle at center, rgba(0,255,204,0.3) 0%, transparent 70%)"
+            : "radial-gradient(circle at center, rgba(0,114,255,0.3) 0%, transparent 70%)",
+          mixBlendMode: "overlay",
+          borderRadius: "50%",
+          transform: "scale(1.5)",
+        }}
+      />
     </div>
   </div>
 );
-
 export default GameCountdown;
