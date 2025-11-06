@@ -77,6 +77,18 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
     }
   };
 
+  // Sayı-dosya eşleştirmesi
+  const getImageForCount = (num: number): string => {
+    const imageMap: { [key: number]: string } = {
+      1: "/bir.png",
+      2: "/iki.png",
+      3: "/uc.png",
+      4: "/dort.png",
+      5: "/bes.png",
+    };
+    return imageMap[num] || "";
+  };
+
   useEffect(() => {
     if (!serverStartTime) {
       return;
@@ -128,32 +140,33 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
   return (
     <div className={cn("fixed inset-0 z-50 flex items-center justify-center bg-black/50", className)}>
       <div className="relative">
-        {/* Main Text */}
-        <div
+        {/* PNG Görsel */}
+        <img
+          key={animKey}
+          src={showStart ? "/basla.png" : getImageForCount(count)}
+          alt={showStart ? "Başla" : `${count}`}
           className={cn(
-            "relative font-black drop-shadow-2xl transition-all duration-300 bg-gradient-to-r bg-clip-text text-transparent",
-            showStart
-              ? "text-[80px] sm:text-[120px] md:text-[160px] lg:text-[200px] from-red-400 via-orange-300 to-blue-400"
-              : "text-[120px] sm:text-[180px] md:text-[240px] lg:text-[280px] from-purple-400 via-pink-400 to-cyan-400",
+            "transition-all duration-300 object-contain",
+            "w-[280px] h-[280px]",
+            "sm:w-[360px] sm:h-[360px]",
+            "md:w-[420px] md:h-[420px]",
+            "lg:w-[480px] lg:h-[480px]",
+            showStart ? "scale-110" : "scale-100",
           )}
           style={{
-            backgroundSize: "200% 200%",
-            animation: "gradientShift 3s ease infinite",
-            textShadow: "0 10px 40px rgba(0, 0, 0, 0.4)",
             filter: showStart
-              ? "drop-shadow(0 0 80px rgba(255, 107, 107, 0.8)) drop-shadow(0 0 40px rgba(255, 215, 0, 0.6))"
-              : "drop-shadow(0 0 80px rgba(102, 126, 234, 0.8)) drop-shadow(0 0 40px rgba(244, 143, 177, 0.6))",
-            letterSpacing: "-0.02em",
-            opacity: showStart ? 1 : 0.95,
-            transform: showStart ? "scale(1.05)" : "scale(1)",
+              ? "drop-shadow(0 0 60px rgba(255, 107, 107, 0.9)) drop-shadow(0 0 30px rgba(255, 215, 0, 0.7))"
+              : "drop-shadow(0 0 60px rgba(102, 126, 234, 0.9)) drop-shadow(0 0 30px rgba(244, 143, 177, 0.7))",
+            animation: "pulse 0.3s ease-out",
           }}
-        >
-          {showStart ? "BAŞLA!" : count}
-        </div>
+        />
 
         {/* Ek parlaklık efekti */}
         <div
-          className={cn("absolute inset-0 transition-all duration-300", showStart ? "opacity-100" : "opacity-70")}
+          className={cn(
+            "absolute inset-0 transition-all duration-300 pointer-events-none",
+            showStart ? "opacity-100" : "opacity-70",
+          )}
           style={{
             background: showStart
               ? "radial-gradient(circle at center, rgba(255,255,255,0.3) 0%, transparent 70%)"
