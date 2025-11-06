@@ -128,22 +128,23 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
 return (
   <div className={cn("fixed inset-0 z-50 flex items-center justify-center bg-black/50", className)}>
     <div className="relative">
-      {/* EN BASİT ÇÖZÜM - Gradient olmadan */}
       <div
         className={cn(
           "relative font-black transition-all duration-300",
           showStart 
-            ? "text-[80px] sm:text-[120px] md:text-[160px] lg:text-[200px] text-yellow-400" 
-            : "text-[120px] sm:text-[180px] md:text-[240px] lg:text-[280px] text-blue-400"
+            ? "text-[80px] sm:text-[120px] md:text-[160px] lg:text-[200px] text-transparent" 
+            : "text-[120px] sm:text-[180px] md:text-[240px] lg:text-[280px] text-transparent"
         )}
         style={{
+          // Gradient background yerine solid color deneyelim
+          color: showStart ? "#ffd700" : "#3b82f6", // Altın sarısı ve mavi
+          WebkitTextFillColor: showStart ? "#ffd700" : "#3b82f6",
           textShadow: showStart 
-            ? "0 0 40px #ff0, 0 0 80px #ff0, 0 0 120px #ff0" // Sarı neon efekti
-            : "0 0 40px #00f, 0 0 80px #00f",
-          filter: showStart ? "drop-shadow(0 0 20px #ff0)" : "drop-shadow(0 0 20px #00f)",
+            ? "0 0 20px #ff0, 0 0 40px #ff0, 0 0 60px #ff0" 
+            : "0 0 20px #3b82f6, 0 0 40px #3b82f6",
+          filter: "drop-shadow(0 0 10px rgba(0,0,0,0.5))",
           opacity: 1,
           transform: showStart ? "scale(1.1)" : "scale(1)",
-          fontWeight: "900",
         }}
       >
         {showStart ? "BAŞLA!" : count}
