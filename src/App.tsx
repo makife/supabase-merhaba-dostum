@@ -559,14 +559,14 @@ const App = () => {
                 <MusicProvider>
                   <MatchmakingProvider>
                     <GameProvider>
-                      <GlobalRematchListener />
-                      <RoomAutoNavigator />
-                      <TournamentProvider>
-                        <NotificationProvider>
-                          <AppRoutes />
-                        </NotificationProvider>
-                      </TournamentProvider>
-                    </GameProvider>
+-                       <GlobalRematchListener />
+                        <RoomAutoNavigator />
+                        <TournamentProvider>
+                          <NotificationProvider>
+                            <AppRoutes />
+                          </NotificationProvider>
+                        </TournamentProvider>
+                      </GameProvider>
                   </MatchmakingProvider>
                 </MusicProvider>
               </ThemeProvider>

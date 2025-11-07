@@ -677,6 +677,8 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
           // Önce bekleme sayfasına yönlendir; iki oyuncu hazır olunca oyun sayfasına geçer
           const type = roomRow?.game_mode?.includes("score") ? "score" : "timed";
+          // Rematch öncesi tüm realtime kanallarını temizle (çakışmaları önlemek için)
+          realtimeManager.forceCleanupAll();
           setTimeout(
             () => navigate(`/private-room-waiting?code=${request.room_code}&roomId=${roomRow.id}&gameType=${type}`),
             0,
