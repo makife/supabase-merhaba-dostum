@@ -24,6 +24,7 @@ import { useMatchmaking } from "@/contexts/NewMatchmakingContext";
 import { nakamaService } from "@/services/nakamaService";
 import { useUserRole } from "@/hooks/useUserRole";
 import { AvatarViewDialog } from "@/components/AvatarViewDialog";
+import { OnboardingTutorial } from "@/components/OnboardingTutorial";
 
 import {
   Bot,
@@ -323,6 +324,10 @@ const HomePage = () => {
   ];
 
   return (
+    <>
+      {/* Onboarding Tutorial */}
+      <OnboardingTutorial />
+      
     <div className="min-h-screen bg-gradient-to-br from-background to-muted px-4 pt-4 pb-2 native-safe-container">
       <div className="max-w-4xl mx-auto space-y-3">
         {/* Birleştirilmiş Header ve Level Progress */}
@@ -579,6 +584,7 @@ const HomePage = () => {
               <div className="flex gap-3 pb-2" style={{ minWidth: "max-content" }}>
                 {/* Günlük Çark */}
                 <div
+                  data-onboarding="daily-wheel"
                   className="bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px]"
                   onClick={() => navigate("/wheel")}
                 >
@@ -644,6 +650,7 @@ const HomePage = () => {
 
                 {/* Hafıza Oyunu */}
                 <div
+                  data-onboarding="mini-games"
                   className={`rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-500 ease-in-out min-w-[200px] ${
                     canPlayMemory
                       ? "bg-gradient-to-r from-purple-500 to-pink-500"
@@ -879,7 +886,7 @@ const HomePage = () => {
             </div>
           </div>
 
-          <div className="h-80 overflow-y-auto scrollbar-hide">
+          <div className="h-80 overflow-y-auto scrollbar-hide" data-onboarding="game-modes">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-2">
               {gameModesConfig.map((mode) => (
                 <Card
@@ -1054,7 +1061,9 @@ const HomePage = () => {
         )}
 
         {/* Floating Menu */}
-        <FloatingMenu />
+        <div data-onboarding="floating-menu">
+          <FloatingMenu />
+        </div>
 
         {/* Avatar View Dialog */}
         <AvatarViewDialog
@@ -1064,7 +1073,8 @@ const HomePage = () => {
           username={profile?.username || user?.user_metadata?.username || user?.email?.split("@")[0] || "Oyuncu"}
         />
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 
