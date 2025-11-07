@@ -134,7 +134,7 @@ const GamePage = ({
   }, [gameMode, propsParticipants, gameParticipants, tournamentParticipants]);
 
   const { validateWord, isValidating } = useWordValidation();
-  const { playSound, playTimeWarningSequence, playCelebrationSound, playGameLoseSound, playSpecialSound } = useSounds();
+  const { playSound, playTimeWarningSequence, playCelebrationSound, playGameLoseSound, playTieSound, playSpecialSound } = useSounds();
   const { jokers: jokerInventory, useJoker, loadJokers } = useJokerInventory();
   const { fadeOutBackgroundMusic, fadeInBackgroundMusic } = useMusic();
   const [searchParams] = useSearchParams();
@@ -2995,41 +2995,46 @@ const GamePage = ({
           gameResult = "tie";
           bonusPoints = 25;
           setWinner("tie");
+          playSound("gameLose"); // Nötr ses
+          setTimeout(() => playTieSound(), 500);
           console.log("🏆 It's a tie! Both scores:", currentPlayerScore);
         }
       } else {
-        // Multiplayer - Her oyuncunun kendi skorunu kontrol et
-        const myParticipant = participants.find(p => p.user_id === user?.id);
-        const opponentParticipant = participants.find(p => p.user_id !== user?.id && !p.is_bot);
+        // Multiplayer - currentPlayerScore ve currentOpponentScore kullan
+        console.log('🏆 Multiplayer kazanan kontrolü:', { 
+          currentPlayerScore, 
+          currentOpponentScore,
+          gameMode 
+        });
         
-        const myScore = myParticipant?.score || 0;
-        const opponentScore = opponentParticipant?.score || 0;
-        
-        console.log('🏆 Multiplayer kazanan kontrolü:', { myScore, opponentScore });
-        
-        if (myScore > opponentScore) {
+        if (currentPlayerScore > currentOpponentScore) {
           gameResult = "player";
           bonusPoints = 50;
           setWinner("player");
           playSound("gameWin");
           setTimeout(() => playCelebrationSound(), 500);
-          console.log("🏆 Player wins! My score:", myScore, "vs opponent:", opponentScore);
-        } else if (myScore < opponentScore) {
+          console.log("🏆 Player wins! Score:", currentPlayerScore, "vs", currentOpponentScore);
+        } else if (currentPlayerScore < currentOpponentScore) {
           gameResult = "opponent";
           setWinner("opponent");
           playSound("gameLose");
           setTimeout(() => playGameLoseSound(), 500);
-          console.log("🏆 Opponent wins! Opponent score:", opponentScore, "vs my score:", myScore);
+          console.log("🏆 Opponent wins! Score:", currentOpponentScore, "vs", currentPlayerScore);
         } else {
-          // Beraberlik olsa bile turnuvada buraya gelmemeli
+          // Beraberlik - turnuvada buraya gelmemeli (tiebreaker devreye girer)
           gameResult = gameMode === "tournament" ? "player" : "tie";
           bonusPoints = 25;
           setWinner(gameMode === "tournament" ? "player" : "tie");
+          
           if (gameMode === "tournament") {
             playSound("gameWin");
             setTimeout(() => playCelebrationSound(), 500);
+          } else {
+            // Normal modlarda beraberlik sesi çal
+            playSound("gameLose"); // Nötr ses
+            setTimeout(() => playTieSound(), 500);
           }
-          console.log("🏆 Tie or tournament fallback! Both scores:", myScore);
+          console.log("🏆 Tie! Both scores:", currentPlayerScore);
         }
       }
 
@@ -3191,6 +3196,7 @@ const GamePage = ({
       playSound,
       playCelebrationSound,
       playGameLoseSound,
+      playTieSound,
       toast,
       participants,
       playerWordsWithScores,
