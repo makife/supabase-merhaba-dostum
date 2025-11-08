@@ -130,7 +130,7 @@ export const OnboardingTutorial = () => {
             width: highlightPosition.width + 16,
             height: highlightPosition.height + 16,
             border: "3px solid hsl(var(--primary))",
-            borderRadius: "12px",
+            borderRadius: currentStepData.id === "floating-menu" ? "50%" : "12px",
             boxShadow: "0 0 0 4px hsl(var(--primary) / 0.3), 0 0 20px hsl(var(--primary) / 0.5)",
           }}
         />

@@ -328,7 +328,7 @@ export function FloatingMenu() {
       </div>
 
       {/* Main toggle button - Fixed position */}
-      <div className="fixed bottom-4 right-4">
+      <div className="fixed bottom-4 right-4" data-onboarding="floating-menu">
         <Button
           onClick={handleToggle}
           className={`group relative overflow-hidden w-[84px] h-[84px] rounded-full border-2 border-white shadow-2xl 

@@ -270,6 +270,17 @@ const HomePage = () => {
     }
   }, [nakamaMatch?.matchId, showMatchmaking]);
 
+  // Demo oyun başlatma event listener
+  useEffect(() => {
+    const handleStartDemoGame = () => {
+      console.log("🎮 Starting demo game...");
+      navigate("/game/vs-computer?type=timed&demo=true");
+    };
+
+    window.addEventListener("startDemoGame", handleStartDemoGame);
+    return () => window.removeEventListener("startDemoGame", handleStartDemoGame);
+  }, [navigate]);
+
   const handleMatchFound = (roomId: string) => {
     console.log("🎯 Match found! Room ID:", roomId);
     setShowMatchmaking(false);
