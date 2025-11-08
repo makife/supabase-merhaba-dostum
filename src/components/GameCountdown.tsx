@@ -21,8 +21,10 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
   const hasPlayedStartRef = useRef<boolean>(false);
 
   useEffect(() => {
-    countdownAudioRef.current = new Audio("/gerisayim.mp3");
-    startAudioRef.current = new Audio("/basla.mp3");
+    // Geri sayım için geriSayimKlik.mp3
+    countdownAudioRef.current = new Audio("/geriSayimKlik.mp3");
+    // Başla için geriSayimBasla.mp3
+    startAudioRef.current = new Audio("/geriSayimBasla.mp3");
 
     if (countdownAudioRef.current) {
       countdownAudioRef.current.preload = "auto";
@@ -52,9 +54,9 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
         countdownAudioRef.current.currentTime = 0;
         await countdownAudioRef.current.play();
         lastPlayedCountRef.current = currentCount;
-        console.log("🔊 Geri sayım sesi çalıyor:", currentCount);
+        console.log("🔊 Geri sayım klik sesi çalıyor:", currentCount);
       } catch (error) {
-        console.warn("Geri sayım sesi çalamadı:", error);
+        console.warn("Geri sayım klik sesi çalamadı:", error);
       }
     }
   };
