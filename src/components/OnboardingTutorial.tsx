@@ -36,41 +36,89 @@ export const OnboardingTutorial = () => {
 
     const position = currentStepData.position || "bottom";
     const padding = 16;
+    const cardWidth = 360; // max-w-md yaklaşık genişliği
+    const cardHeight = 200; // tahmini card yüksekliği
+    
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    let style: any = {};
 
     switch (position) {
       case "top":
-        return {
-          top: highlightPosition.top - 200 - padding,
+        style = {
+          top: Math.max(padding, highlightPosition.top - cardHeight - padding),
           left: highlightPosition.left + highlightPosition.width / 2,
           transform: "translateX(-50%)",
         };
+        // Viewport dışına taşma kontrolü
+        if (style.top < padding) style.top = highlightPosition.bottom + padding;
+        break;
       case "bottom":
-        return {
+        style = {
           top: highlightPosition.bottom + padding,
           left: highlightPosition.left + highlightPosition.width / 2,
           transform: "translateX(-50%)",
         };
+        // Viewport dışına taşma kontrolü
+        if (style.top + cardHeight > viewportHeight - padding) {
+          style.top = Math.max(padding, highlightPosition.top - cardHeight - padding);
+        }
+        break;
       case "left":
-        return {
+        style = {
           top: highlightPosition.top + highlightPosition.height / 2,
-          left: highlightPosition.left - 350 - padding,
+          left: Math.max(padding, highlightPosition.left - cardWidth - padding),
           transform: "translateY(-50%)",
         };
+        // Viewport dışına taşma kontrolü
+        if (style.left < padding) style = {
+          top: highlightPosition.bottom + padding,
+          left: highlightPosition.left + highlightPosition.width / 2,
+          transform: "translateX(-50%)",
+        };
+        break;
       case "right":
-        return {
+        style = {
           top: highlightPosition.top + highlightPosition.height / 2,
           left: highlightPosition.right + padding,
           transform: "translateY(-50%)",
         };
+        // Viewport dışına taşma kontrolü
+        if (style.left + cardWidth > viewportWidth - padding) {
+          style = {
+            top: highlightPosition.bottom + padding,
+            left: highlightPosition.left + highlightPosition.width / 2,
+            transform: "translateX(-50%)",
+          };
+        }
+        break;
       default:
         return {};
     }
+
+    // Sol-sağ taşma kontrolü
+    const effectiveLeft = style.transform?.includes("translateX(-50%)") 
+      ? style.left - cardWidth / 2 
+      : style.left;
+    
+    if (effectiveLeft < padding) {
+      style.left = cardWidth / 2 + padding;
+    } else if (effectiveLeft + cardWidth > viewportWidth - padding) {
+      style.left = viewportWidth - cardWidth / 2 - padding;
+    }
+
+    return style;
   };
 
   return (
     <>
-      {/* Dark overlay */}
-      <div className="fixed inset-0 bg-black/60 z-[9998] animate-fade-in" onClick={skipOnboarding} />
+      {/* Dark overlay - body overflow'u da kontrol et */}
+      <div 
+        className="fixed inset-0 bg-black/60 z-[9998] animate-fade-in" 
+        onClick={skipOnboarding}
+        style={{ position: 'fixed' }}
+      />
 
       {/* Highlight overlay - clickable background'u keser */}
       {highlightPosition && (

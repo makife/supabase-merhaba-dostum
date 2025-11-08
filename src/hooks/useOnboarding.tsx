@@ -13,12 +13,15 @@ export const useOnboarding = () => {
   const [currentStep, setCurrentStep] = useState(0);
 
   const ONBOARDING_KEY = "kelimeci-onboarding-completed";
+  const PERMISSIONS_KEY = "kelimeci-permissions-completed";
 
   useEffect(() => {
-    // İlk açılışta onboarding'i göster
+    // İlk açılışta onboarding'i göster - ancak permission onboarding'den sonra
     const hasSeenOnboarding = localStorage.getItem(ONBOARDING_KEY);
-    if (!hasSeenOnboarding) {
-      // 500ms gecikme ile göster (sayfa tamamen yüklendikten sonra)
+    const hasCompletedPermissions = localStorage.getItem(PERMISSIONS_KEY);
+    
+    if (!hasSeenOnboarding && hasCompletedPermissions) {
+      // 500ms gecikme ile göster (permission dialog kapandıktan sonra)
       setTimeout(() => {
         setShowOnboarding(true);
       }, 500);

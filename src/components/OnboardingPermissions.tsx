@@ -189,8 +189,8 @@ export const OnboardingPermissions = ({ open, onComplete }: OnboardingPermission
       // İzinleri iste
       await requestPermissions();
       
-      // Onboarding tamamlandı olarak işaretle
-      localStorage.setItem('kelimeci-onboarding-completed', 'true');
+      // Permission onboarding tamamlandı olarak işaretle
+      localStorage.setItem('kelimeci-permissions-completed', 'true');
       
       // Bildirim ayarını kaydet
       const settings = JSON.parse(localStorage.getItem('kelimeci-settings') || '{}');
@@ -203,7 +203,7 @@ export const OnboardingPermissions = ({ open, onComplete }: OnboardingPermission
   };
 
   const handleSkip = () => {
-    localStorage.setItem('kelimeci-onboarding-completed', 'true');
+    localStorage.setItem('kelimeci-permissions-completed', 'true');
     toast.info('Kurulumu atladınız. İzinleri ayarlardan verebilirsiniz.');
     onComplete();
   };
