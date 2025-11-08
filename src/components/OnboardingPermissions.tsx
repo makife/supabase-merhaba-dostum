@@ -187,15 +187,17 @@ export const OnboardingPermissions = ({ open, onComplete }: OnboardingPermission
       setCurrentStep(1);
     } else if (currentStep === 1) {
       // İzinleri iste
-      await requestPermissions();
+      const granted = await requestPermissions();
       
       // Permission onboarding tamamlandı olarak işaretle
       localStorage.setItem('kelimeci-permissions-completed', 'true');
       
-      // Bildirim ayarını kaydet
+      // Bildirim ayarını kaydet - granted.notifications değerini kullan
       const settings = JSON.parse(localStorage.getItem('kelimeci-settings') || '{}');
-      settings.notifications = permissionsGranted.notifications;
+      settings.notifications = granted.notifications;
       localStorage.setItem('kelimeci-settings', JSON.stringify(settings));
+      
+      console.log('✅ Onboarding tamamlandı - Bildirimler:', granted.notifications);
       
       toast.success('Kurulum tamamlandı! Hoş geldiniz 🎉');
       onComplete();

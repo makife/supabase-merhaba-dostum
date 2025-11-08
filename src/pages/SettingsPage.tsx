@@ -64,6 +64,8 @@ const SettingsPage = () => {
   // Load settings from localStorage and set initial values
   useEffect(() => {
     const savedSettings = localStorage.getItem("kelimeci-settings");
+    const permissionsCompleted = localStorage.getItem("kelimeci-permissions-completed");
+    
     if (savedSettings) {
       const settings = JSON.parse(savedSettings);
       setNotifications(settings.notifications ?? false);
@@ -77,6 +79,16 @@ const SettingsPage = () => {
         theme,
         language: settings.language ?? "tr",
       };
+    } else if (permissionsCompleted && isPermissionGranted) {
+      // Eğer izin onboarding'i tamamlanmışsa ve izin verildiyse, notifications'ı true yap
+      setNotifications(true);
+      initialSettingsRef.current = {
+        notifications: true,
+        sounds: soundsEnabled,
+        music: musicEnabled,
+        theme,
+        language: "tr",
+      };
     } else {
       // Store initial settings even if no saved settings exist
       initialSettingsRef.current = {
@@ -87,7 +99,7 @@ const SettingsPage = () => {
         language: "tr",
       };
     }
-  }, [soundsEnabled, musicEnabled, theme]);
+  }, [soundsEnabled, musicEnabled, theme, isPermissionGranted]);
 
   // Auto-save when settings change
   useEffect(() => {
@@ -129,26 +141,44 @@ const SettingsPage = () => {
   }, [notifications, soundsEnabled, musicEnabled, theme, language, playSound, toast]);
 
   const handleNotificationChange = async (checked: boolean) => {
-    setNotifications(checked);
+    try {
+      setNotifications(checked);
 
-    if (checked) {
-      // Mobile veya web bildirim izinlerini iste
-      if (isMobile) {
-        await requestPermissions();
-      } else if ("Notification" in window) {
-        const permission = await Notification.requestPermission();
-        if (permission === "granted") {
-          toast({
-            title: "Bildirimler Aktif",
-            description: "Oyun bildirimleri başarıyla aktif edildi",
-          });
+      if (checked) {
+        // Mobile veya web bildirim izinlerini iste
+        if (isMobile) {
+          await requestPermissions();
+        } else if ("Notification" in window) {
+          const permission = await Notification.requestPermission();
+          if (permission === "granted") {
+            toast({
+              title: "Bildirimler Aktif",
+              description: "Oyun bildirimleri başarıyla aktif edildi",
+            });
+          } else {
+            toast({
+              title: "İzin Reddedildi",
+              description: "Bildirim izni reddedildi. Tarayıcı ayarlarından izin verebilirsiniz.",
+              variant: "destructive",
+            });
+            setNotifications(false);
+            return;
+          }
         }
-      }
 
-      // Test bildirimi göster
-      setTimeout(() => {
-        showLocalNotification("Bildirimler Aktif", "Kelimeci bildirimleriniz aktif edildi!");
-      }, 2000);
+        // Test bildirimi göster
+        setTimeout(() => {
+          showLocalNotification("Bildirimler Aktif", "Kelimeci bildirimleriniz aktif edildi!");
+        }, 2000);
+      }
+    } catch (error) {
+      console.error("Bildirim ayarı hatası:", error);
+      toast({
+        title: "Hata",
+        description: "Bildirim ayarları güncellenirken bir hata oluştu",
+        variant: "destructive",
+      });
+      setNotifications(false);
     }
   };
 
