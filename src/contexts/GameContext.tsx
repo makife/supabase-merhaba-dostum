@@ -180,6 +180,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
   const isClosingRoomRef = useRef(false);
   const lastCountdownAtRef = useRef<string | null>(null);
+  const sendingRematchRef = useRef(false); // 🛡️ Concurrent rematch guard
 
   const toggleNakama = () => {
     setUseNakama(!useNakama);
@@ -311,54 +312,61 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         throw new Error("Kullanıcı bulunamadı");
       }
 
-      console.log("🔔 sendRematchRequest çağrıldı:", {
-        roomCode: _roomCode,
-        gameType,
-        userId: String(user.id).slice(-8),
-        participantCount: participants.length,
-        participants: participants.map((p) => ({
-          userId: p.user_id?.slice(-8),
-          isBot: p.is_bot,
-        })),
-      });
-
-      // Rakip bul: Önce aktif participants, yoksa lastOpponent, o da yoksa currentRoom player alanları
-      let opponent = participants.find((p) => !p.is_bot && p.user_id !== user.id);
-      if (!opponent && lastOpponent) {
-        console.log("⚠️ Participants'ta rakip yok, lastOpponent kullanılıyor");
-        opponent = lastOpponent;
+      // 🛡️ CONCURRENT GUARD: Aynı anda birden fazla rematch isteği gönderilmesini önle
+      if (sendingRematchRef.current) {
+        console.warn("⚠️ Rematch zaten gönderiliyor, duplicate request engellendi");
+        return;
       }
-      if (!opponent && currentRoom) {
-        const candidate = currentRoom.player1_id === user.id ? currentRoom.player2_id : currentRoom.player1_id;
-        if (candidate) {
-          console.log("🧭 Fallback: currentRoom üzerinden rakip bulundu");
-          opponent = {
-            id: "",
-            room_id: currentRoom.id,
-            user_id: candidate,
-            score: 0,
-            is_bot: false,
-            joined_at: "",
-          } as any;
-        }
-      }
-
-      if (!opponent || !opponent.user_id) {
-        console.error("❌ Rakip bulunamadı!", {
-          participantsLength: participants.length,
-          hasLastOpponent: !!lastOpponent,
-        });
-        throw new Error("Rakip bulunamadı");
-      }
-
-      console.log("🔄 Tekrar oyun isteği gönderiliyor:", {
-        from: String(user.id).slice(-8),
-        to: String(opponent.user_id || "").slice(-8),
-        gameType,
-        currentMode: currentRoom?.game_mode,
-      });
+      sendingRematchRef.current = true;
 
       try {
+        console.log("🔔 sendRematchRequest çağrıldı:", {
+          roomCode: _roomCode,
+          gameType,
+          userId: String(user.id).slice(-8),
+          participantCount: participants.length,
+          participants: participants.map((p) => ({
+            userId: p.user_id?.slice(-8),
+            isBot: p.is_bot,
+          })),
+        });
+
+        // Rakip bul: Önce aktif participants, yoksa lastOpponent, o da yoksa currentRoom player alanları
+        let opponent = participants.find((p) => !p.is_bot && p.user_id !== user.id);
+        if (!opponent && lastOpponent) {
+          console.log("⚠️ Participants'ta rakip yok, lastOpponent kullanılıyor");
+          opponent = lastOpponent;
+        }
+        if (!opponent && currentRoom) {
+          const candidate = currentRoom.player1_id === user.id ? currentRoom.player2_id : currentRoom.player1_id;
+          if (candidate) {
+            console.log("🧭 Fallback: currentRoom üzerinden rakip bulundu");
+            opponent = {
+              id: "",
+              room_id: currentRoom.id,
+              user_id: candidate,
+              score: 0,
+              is_bot: false,
+              joined_at: "",
+            } as any;
+          }
+        }
+
+        if (!opponent || !opponent.user_id) {
+          console.error("❌ Rakip bulunamadı!", {
+            participantsLength: participants.length,
+            hasLastOpponent: !!lastOpponent,
+          });
+          throw new Error("Rakip bulunamadı");
+        }
+
+        console.log("🔄 Tekrar oyun isteği gönderiliyor:", {
+          from: String(user.id).slice(-8),
+          to: String(opponent.user_id || "").slice(-8),
+          gameType,
+          currentMode: currentRoom?.game_mode,
+        });
+
         // Her rematch için yeni ve boş bir oda oluştur
         const code = generateRoomCode();
 
@@ -368,106 +376,34 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
         // Rastgele grid üret
         const letterPool = [
-          "A",
-          "A",
-          "A",
-          "A",
-          "A",
-          "A",
-          "A",
-          "A",
-          "E",
-          "E",
-          "E",
-          "E",
-          "E",
-          "E",
-          "E",
-          "İ",
-          "İ",
-          "İ",
-          "İ",
-          "İ",
-          "İ",
-          "I",
-          "I",
-          "I",
-          "I",
-          "I",
-          "O",
-          "O",
-          "O",
-          "O",
-          "O",
-          "U",
-          "U",
-          "U",
-          "U",
-          "Ü",
-          "Ü",
-          "Ü",
-          "Ö",
-          "Ö",
-          "Ö",
-          "L",
-          "L",
-          "L",
-          "L",
-          "L",
-          "N",
-          "N",
-          "N",
-          "N",
-          "N",
-          "R",
-          "R",
-          "R",
-          "R",
-          "R",
-          "K",
-          "K",
-          "K",
-          "K",
-          "M",
-          "M",
-          "M",
-          "M",
-          "T",
-          "T",
-          "T",
-          "T",
-          "S",
-          "S",
-          "S",
-          "S",
-          "D",
-          "D",
-          "D",
-          "Y",
-          "Y",
-          "Y",
-          "B",
-          "B",
-          "B",
-          "C",
-          "C",
-          "Ç",
-          "Ç",
-          "F",
-          "F",
-          "G",
-          "G",
-          "Ğ",
-          "Ğ",
-          "H",
-          "H",
+          "A","A","A","A","A","A","A","A",
+          "E","E","E","E","E","E","E",
+          "İ","İ","İ","İ","İ","İ",
+          "I","I","I","I","I",
+          "O","O","O","O","O",
+          "U","U","U","U",
+          "Ü","Ü","Ü",
+          "Ö","Ö","Ö",
+          "L","L","L","L","L",
+          "N","N","N","N","N",
+          "R","R","R","R","R",
+          "K","K","K","K",
+          "M","M","M","M",
+          "T","T","T","T",
+          "S","S","S","S",
+          "D","D","D",
+          "Y","Y","Y",
+          "B","B","B",
+          "C","C",
+          "Ç","Ç",
+          "F","F",
+          "G","G",
+          "Ğ","Ğ",
+          "H","H",
           "J",
-          "P",
-          "P",
-          "Ş",
-          "Ş",
-          "V",
-          "V",
+          "P","P",
+          "Ş","Ş",
+          "V","V",
           "Z",
         ];
         const grid: string[][] = [];
@@ -597,6 +533,11 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       } catch (error) {
         console.error("❌ Tekrar oyun isteği hatası:", error);
         throw error;
+      } finally {
+        // 🛡️ Guard'ı 2 saniye sonra kaldır (double-click'leri engelle ama timeout sonrası tekrar izin ver)
+        setTimeout(() => {
+          sendingRematchRef.current = false;
+        }, 2000);
       }
     },
     [user, participants, lastOpponent, currentRoom, toast, setCurrentRoom],
@@ -2377,11 +2318,13 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   ]);
 
   // 🎯 OPTIMIZED Rematch listener (RealtimeManager ile) - GLOBAL (her zaman aktif)
+  // 🔄 REMATCH SUBSCRIPTION - with duplicate guards
   useEffect(() => {
     if (!user) return;
 
     console.log("🔄 Rematch realtime listener kuruluyor... User:", String(user.id).slice(-8));
     const timeoutMap = new Map<string, NodeJS.Timeout>();
+    const processedRequestIds = new Set<string>(); // 🛡️ Duplicate guard
 
     // Bana gelen istekler
     const incomingChannel = realtimeManager.subscribe(
@@ -2391,6 +2334,13 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       (payload) => {
         if (payload.eventType === "INSERT") {
           const request = payload.new as RematchRequest;
+          
+          // 🛡️ DUPLICATE GUARD: Aynı request ID'yi 2 kez işleme
+          if (processedRequestIds.has(request.id)) {
+            console.log("⚠️ Duplicate rematch request ignored:", request.id);
+            return;
+          }
+          
           console.log("📨 Rematch isteği alındı:", {
             requestId: request.id,
             from: request.from_user_id?.slice(-8),
@@ -2400,6 +2350,9 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           });
 
           if (request.status === "pending" && request.to_user_id === user.id) {
+            // Mark as processed
+            processedRequestIds.add(request.id);
+            
             console.log("✅ Rematch dialog açılıyor");
             setCurrentRematchRequest(request);
             toast({
@@ -2460,6 +2413,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
               });
 
               timeoutMap.delete(request.id);
+              processedRequestIds.delete(request.id); // Cleanup
             }, 30000);
 
             timeoutMap.set(request.id, timeoutId);
@@ -2478,6 +2432,14 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       (payload) => {
         if (payload.eventType === "UPDATE") {
           const request = payload.new as RematchRequest;
+          
+          // 🛡️ DUPLICATE GUARD: Aynı yanıtı 2 kez işleme
+          if (processedRequestIds.has(`response-${request.id}`)) {
+            console.log("⚠️ Duplicate response ignored:", request.id);
+            return;
+          }
+          processedRequestIds.add(`response-${request.id}`);
+          
           console.log("📬 Gönderdiğim istek yanıtlandı:", request);
 
           const timeoutId = timeoutMap.get(request.id);
@@ -2502,6 +2464,12 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           }
 
           setCurrentRematchRequest(null);
+          
+          // Cleanup after delay
+          setTimeout(() => {
+            processedRequestIds.delete(request.id);
+            processedRequestIds.delete(`response-${request.id}`);
+          }, 5000);
         }
       },
     );
@@ -2510,6 +2478,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       console.log("🔌 Rematch listener kapatılıyor...");
       timeoutMap.forEach((timeout) => clearTimeout(timeout));
       timeoutMap.clear();
+      processedRequestIds.clear(); // Cleanup guard set
 
       if (incomingChannel) {
         realtimeManager.unsubscribe(`rematch_requests-to_user_id=eq.${user.id}`, user.id);
@@ -2518,7 +2487,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         realtimeManager.unsubscribe(`rematch_requests-from_user_id=eq.${user.id}`, user.id);
       }
     };
-  }, [user?.id, setCurrentRematchRequest, toast, navigate, respondRematchRequest]);
+  }, [user?.id, respondRematchRequest, toast, navigate]);
 
   // ❌ PRIVATE ROOM POLLING KALDIRILDI - Realtime subscription yeterli
 
