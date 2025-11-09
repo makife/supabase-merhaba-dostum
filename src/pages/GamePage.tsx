@@ -604,6 +604,11 @@ const GamePage = ({
   const [displayTime, setDisplayTime] = useState<number>(timeLeftRef.current);
   const [showCountdown, setShowCountdown] = useState(false);
   const [countdownServerTime, setCountdownServerTime] = useState<string | null>(null);
+  
+  // Add small buffer to server countdown start to absorb network jitter (rematch sync)
+  const COUNTDOWN_BUFFER_MS = 2500;
+  const withBuffer = (iso: string | null) => (iso ? new Date(new Date(iso).getTime() + COUNTDOWN_BUFFER_MS).toISOString() : null);
+
   const [gameStarted, setGameStarted] = useState(false);
   const countdownCheckDoneRef = useRef(false);
   const [waitingForPlayer, setWaitingForPlayer] = useState(false);
@@ -4187,8 +4192,8 @@ const GamePage = ({
   useEffect(() => {
     const handleCountdownStart = (event: CustomEvent) => {
       const { serverTime } = event.detail;
-      console.log("⏰ Countdown event alındı:", serverTime);
-      setCountdownServerTime(serverTime);
+      console.log("⏰ Countdown event alındı:", serverTime, "→ buffered:", withBuffer(serverTime));
+      setCountdownServerTime(withBuffer(serverTime));
       setShowCountdown(true);
       setGameStarted(false);
     };
@@ -4208,8 +4213,8 @@ const GamePage = ({
       !showCountdown &&
       !gameStarted
     ) {
-      console.log("⏰ Initial countdown sync from room state:", currentRoom.countdown_started_at);
-      setCountdownServerTime(currentRoom.countdown_started_at);
+      console.log("⏰ Initial countdown sync from room state:", currentRoom.countdown_started_at, "→ buffered:", withBuffer(currentRoom.countdown_started_at));
+      setCountdownServerTime(withBuffer(currentRoom.countdown_started_at));
       setShowCountdown(true);
       setGameStarted(false);
     }
@@ -4236,8 +4241,8 @@ const GamePage = ({
           .single();
 
         if (data?.countdown_started_at) {
-          console.log("✅ Sunucuda countdown var, senkronize ediliyor:", data.countdown_started_at);
-          setCountdownServerTime(data.countdown_started_at);
+          console.log("✅ Sunucuda countdown var, senkronize ediliyor:", data.countdown_started_at, "→ buffered:", withBuffer(data.countdown_started_at));
+          setCountdownServerTime(withBuffer(data.countdown_started_at));
           setShowCountdown(true);
           countdownCheckDoneRef.current = true;
         } else {
@@ -4250,8 +4255,8 @@ const GamePage = ({
             if (rpcErr) {
               console.warn("RPC countdown başlatma hatası:", rpcErr);
             } else if (startedAt) {
-              console.log("⏰ Countdown RPC ile başlatıldı:", startedAt);
-              setCountdownServerTime(startedAt);
+              console.log("⏰ Countdown RPC ile başlatıldı:", startedAt, "→ buffered:", withBuffer(startedAt));
+              setCountdownServerTime(withBuffer(startedAt));
               setShowCountdown(true);
               countdownCheckDoneRef.current = true;
             }
