@@ -52,6 +52,7 @@ import { useNavigate } from "react-router-dom";
 import { useAppState } from "@/hooks/useAppState";
 import { realtimeManager } from "@/utils/realtimeManager";
 import { OnboardingPermissions } from "@/components/OnboardingPermissions";
+import { useToast } from "@/hooks/use-toast";
 
 const queryClient = new QueryClient();
 
@@ -337,8 +338,126 @@ const AppRoutes = () => {
   );
 };
 
-// GlobalRematchListener kaldırıldı: Rematch dinleme ve yönlendirme artık GameContext içinde merkezi olarak yönetiliyor.
+const GlobalRematchListener = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { respondRematchRequest } = useGame();
+  const { toast } = useToast();
+  const [processedRequests, setProcessedRequests] = useState<Set<string>>(new Set());
 
+  useEffect(() => {
+    if (!user?.id) return;
+
+    console.log("🎮 GlobalRematchListener: Initializing for user:", user.id);
+
+    const channel = supabase
+      .channel("global-rematch-listener")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "rematch_requests",
+          filter: `receiver_id=eq.${user.id}`,
+        },
+        async (payload) => {
+          const request = payload.new as any;
+          console.log("🔔 GlobalRematchListener: New rematch request received:", request);
+
+          // Duplicate guard
+          if (processedRequests.has(request.id)) {
+            console.log("⏭️ Already processed request:", request.id);
+            return;
+          }
+
+          setProcessedRequests((prev) => new Set([...prev, request.id]));
+
+          // Fetch sender profile
+          const { data: senderProfile } = await supabase
+            .from("profiles")
+            .select("username, avatar_url")
+            .eq("id", request.sender_id)
+            .single();
+
+          const senderName = senderProfile?.username || "Bilinmeyen oyuncu";
+
+          toast({
+            title: "🔄 Rematch İsteği",
+            description: `${senderName} yeniden maç istiyor!`,
+            action: (
+              <div className="flex gap-2">
+                <ToastAction
+                  altText="Kabul Et"
+                  onClick={async () => {
+                    console.log("✅ Accepting rematch:", request.id);
+                    await respondRematchRequest(request.id, true);
+                    navigate(`/game/random-match?roomId=${request.room_id}`);
+                  }}
+                >
+                  Kabul Et
+                </ToastAction>
+                <ToastAction
+                  altText="Reddet"
+                  onClick={async () => {
+                    console.log("❌ Rejecting rematch:", request.id);
+                    await respondRematchRequest(request.id, false);
+                  }}
+                >
+                  Reddet
+                </ToastAction>
+              </div>
+            ),
+            duration: 30000,
+          });
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "rematch_requests",
+          filter: `sender_id=eq.${user.id}`,
+        },
+        async (payload) => {
+          const request = payload.new as any;
+          console.log("📬 GlobalRematchListener: Rematch response received:", request);
+
+          const responseKey = `response-${request.id}`;
+          if (processedRequests.has(responseKey)) {
+            console.log("⏭️ Already processed response:", responseKey);
+            return;
+          }
+
+          setProcessedRequests((prev) => new Set([...prev, responseKey]));
+
+          if (request.status === "accepted") {
+            console.log("✅ Rematch accepted, navigating to game:", request.room_id);
+            navigate(`/game/random-match?roomId=${request.room_id}`);
+            toast({
+              title: "✅ Rematch Kabul Edildi",
+              description: "Oyun başlıyor...",
+            });
+          } else if (request.status === "rejected") {
+            console.log("❌ Rematch rejected");
+            toast({
+              title: "❌ Rematch Reddedildi",
+              description: "Oyuncu rematch isteğini reddetti.",
+              variant: "destructive",
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log("🧹 GlobalRematchListener: Cleaning up");
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, navigate, respondRematchRequest, toast, processedRequests]);
+
+  return null;
+};
 
 const App = () => {
   // Native immersive bars (Android): show on edge-swipe for 3s, then auto-hide
@@ -375,7 +494,7 @@ const App = () => {
                 <MusicProvider>
                   <MatchmakingProvider>
                     <GameProvider>
-
+                        <GlobalRematchListener />
                         <RoomAutoNavigator />
                         <TournamentProvider>
                           <NotificationProvider>
