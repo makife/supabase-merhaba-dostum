@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
 
 interface GameCountdownProps {
@@ -8,52 +8,12 @@ interface GameCountdownProps {
   serverTimeOffset?: number;
 }
 
-/** --------------------------------------------------------------
- *  Tüm görselleri (sayılar + basla) ve sesleri önceden yükleyen
- *  yardımcı fonksiyon
- *  -------------------------------------------------------------- */
-const preloadAssets = async (): Promise<void> => {
-  // ---------- Görseller ----------
-  const imagePaths = [
-    "/bir.png",
-    "/iki.png",
-    "/uc.png",
-    "/dort.png",
-    "/bes.png",
-    "/basla.png",
-  ];
-
-  const imagePromises = imagePaths.map((src) => {
-    return new Promise<void>((resolve, reject) => {
-      const img = new Image();
-      img.src = src;
-      img.onload = () => resolve();
-      img.onerror = () => reject(new Error(`Görsel yüklenemedi: ${src}`));
-    });
-  });
-
-  // ---------- Sesler ----------
-  const audioPaths = ["/gerisayim.mp3", "/basla.mp3"];
-  const audioPromises = audioPaths.map((src) => {
-    return new Promise<void>((resolve, reject) => {
-      const audio = new Audio(src);
-      audio.preload = "auto";
-      audio.volume = 0.7;
-      audio.oncanplaythrough = () => resolve();
-      audio.onerror = () => reject(new Error(`Ses yüklenemedi: ${src}`));
-    });
-  });
-
-  await Promise.all([...imagePromises, ...audioPromises]);
-};
-
 const GameCountdown = ({
   onComplete,
   className,
   serverStartTime,
   serverTimeOffset = 0,
 }: GameCountdownProps) => {
-  /* ---------- State ---------- */
   const [count, setCount] = useState(5);
   const [isVisible, setIsVisible] = useState(false);
   const [showStart, setShowStart] = useState(false);
@@ -61,105 +21,119 @@ const GameCountdown = ({
   const [animKey, setAnimKey] = useState(0);
   const [preloadComplete, setPreloadComplete] = useState(false);
 
-  /* ---------- Refs ---------- */
   const countdownAudioRef = useRef<HTMLAudioElement | null>(null);
   const startAudioRef = useRef<HTMLAudioElement | null>(null);
   const lastPlayedCountRef = useRef<number>(-1);
   const hasPlayedStartRef = useRef<boolean>(false);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const startTimeRef = useRef<number>(0);
 
-  /* ---------- Preload (görsel + ses) ---------- */
+  // === 1. PRELOAD (Görsel + Ses + AudioContext) ===
   useEffect(() => {
     let cancelled = false;
 
-    preloadAssets()
-      .then(() => {
-        if (!cancelled) {
-          // Audio nesnelerini burada tekrar oluştur (preload sırasında zaten yüklendi)
-          countdownAudioRef.current = new Audio("/gerisayim.mp3");
-          startAudioRef.current = new Audio("/basla.mp3");
+    const preload = async () => {
+      // AudioContext'i erkenden oluştur (mobile unlock için)
+      try {
+        audioContextRef.current = new AudioContext();
+      } catch (e) {
+        console.log("AudioContext erken oluşturulamadı, sonra deneriz");
+      }
 
-          if (countdownAudioRef.current) {
-            countdownAudioRef.current.preload = "auto";
-            countdownAudioRef.current.volume = 0.7;
+      // Görseller
+      const images = ["/bir.png", "/iki.png", "/uc.png", "/dort.png", "/bes.png", "/basla.png"];
+      const imgPromises = images.map(src => 
+        new Promise<void>((res, rej) => {
+          const img = new Image();
+          img.src = src;
+          img.onload = () => res();
+          img.onerror = () => rej(new Error(`Image: ${src}`));
+        })
+      );
+
+      // Sesler (decodeAudioData ile tam preload)
+      const sounds = ["/gerisayim.mp3", "/basla.mp3"];
+      const soundPromises = sounds.map(src => 
+        new Promise<void>((res, rej) => {
+          fetch(src)
+            .then(r => r.arrayBuffer())
+            .then(buffer => {
+              if (audioContextRef.current) {
+                audioContextRef.current.decodeAudioData(buffer, () => res(), rej);
+              } else {
+                res();
+              }
+            })
+            .catch(rej);
+        })
+      );
+
+      await Promise.all([...imgPromises, ...soundPromises]);
+      
+      if (!cancelled) {
+        // Audio elementleri hazırla
+        countdownAudioRef.current = new Audio("/gerisayim.mp3");
+        startAudioRef.current = new Audio("/basla.mp3");
+        [countdownAudioRef.current, startAudioRef.current]?.forEach(a => {
+          if (a) {
+            a.preload = "auto";
+            a.volume = 0.7;
+            a.load(); // Force reload
           }
-          if (startAudioRef.current) {
-            startAudioRef.current.preload = "auto";
-            startAudioRef.current.volume = 0.7;
-          }
-
-          setPreloadComplete(true);
-        }
-      })
-      .catch((err) => {
-        console.error("Asset preload hatası:", err);
-        // Hata olsa bile devam et (kullanıcı deneyimini kesmemek için)
-        if (!cancelled) setPreloadComplete(true);
-      });
-
-    return () => {
-      cancelled = true;
-      // Cleanup audio
-      [countdownAudioRef.current, startAudioRef.current].forEach((a) => {
-        if (a) {
-          a.pause();
-          a.src = "";
-        }
-      });
+        });
+        setPreloadComplete(true);
+      }
     };
+
+    preload().catch(e => {
+      console.error("Preload error:", e);
+      setPreloadComplete(true); // Devam et
+    });
+
+    return () => { cancelled = true; };
   }, []);
 
-  /* ---------- Ses çalma fonksiyonları ---------- */
-  const playCountdownSound = async (currentCount: number) => {
-    if (
-      countdownAudioRef.current &&
-      lastPlayedCountRef.current !== currentCount
-    ) {
+  // === 2. MOBILE AUDIO UNLOCK (Sessiz - Otomatik) ===
+  const ensureAudioUnlocked = useCallback(async () => {
+    if (audioContextRef.current?.state === 'running') return true;
+
+    // 1. AudioContext resume
+    if (audioContextRef.current) {
+      await audioContextRef.current.resume().catch(() => {});
+    }
+
+    // 2. HTML5 Audio unlock (çok kısa sessiz ses)
+    try {
+      const unlock = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=");
+      unlock.volume = 0.0;
+      await unlock.play();
+      unlock.pause();
+    } catch (e) {}
+
+    // 3. Test sesi (gerçekten unlocked mı?)
+    if (countdownAudioRef.current) {
       try {
+        await countdownAudioRef.current.play();
         countdownAudioRef.current.pause();
         countdownAudioRef.current.currentTime = 0;
-        await countdownAudioRef.current.play();
-        lastPlayedCountRef.current = currentCount;
-        console.log("Geri sayım klik sesi çalıyor:", currentCount);
-      } catch (e) {
-        console.warn("Geri sayım sesi çalamadı:", e);
-      }
+      } catch (e) {}
     }
-  };
 
-  const playStartSound = async () => {
-    if (startAudioRef.current && !hasPlayedStartRef.current) {
-      try {
-        startAudioRef.current.pause();
-        startAudioRef.current.currentTime = 0;
-        await startAudioRef.current.play();
-        hasPlayedStartRef.current = true;
-        console.log("Başla sesi çalıyor");
-      } catch (e) {
-        console.warn("Başla sesi çalamadı:", e);
-      }
-    }
-  };
+    return audioContextRef.current?.state === 'running';
+  }, []);
 
-  /* ---------- Görsel eşleştirme ---------- */
-  const getImageForCount = (num: number): string => {
-    const map: Record<number, string> = {
-      1: "/bir.png",
-      2: "/iki.png",
-      3: "/uc.png",
-      4: "/dort.png",
-      5: "/bes.png",
-    };
-    return map[num] ?? "";
-  };
-
-  /* ---------- Geri sayım mantığı ---------- */
+  // === 3. SERVER TIME GERİ SAYIM (HER ŞEY OTOMATİK) ===
   useEffect(() => {
     if (!serverStartTime || !preloadComplete) return;
 
     const startTime = new Date(serverStartTime).getTime();
+    startTimeRef.current = startTime;
+    
+    // Audio unlock'u başlat (arka planda)
+    ensureAudioUnlocked();
+
     setHasStarted(true);
     setIsVisible(true);
-    playCountdownSound(5);
 
     const updateCountdown = () => {
       const now = Date.now() + serverTimeOffset;
@@ -169,7 +143,15 @@ const GameCountdown = ({
       if (remaining > 0) {
         setCount((prev) => {
           if (prev !== remaining) {
-            playCountdownSound(remaining);
+            // 5. saniye dahil TÜM sesler ZORLA çal
+            if (countdownAudioRef.current && lastPlayedCountRef.current !== remaining) {
+              countdownAudioRef.current.currentTime = 0;
+              countdownAudioRef.current.play().catch(e => {
+                console.log(`Ses ${remaining} başarısız:`, e);
+              });
+              lastPlayedCountRef.current = remaining;
+              console.log(`${remaining} sesi çalındı`);
+            }
             setAnimKey((k) => k + 1);
           }
           return remaining;
@@ -177,9 +159,16 @@ const GameCountdown = ({
       } else if (remaining === 0 && !hasPlayedStartRef.current) {
         setCount(0);
         setAnimKey((k) => k + 1);
-        playStartSound();
+        
+        // Başla sesi
+        if (startAudioRef.current) {
+          startAudioRef.current.currentTime = 0;
+          startAudioRef.current.play().catch(e => console.log("Başla sesi hatası:", e));
+          hasPlayedStartRef.current = true;
+        }
+        
         setShowStart(true);
-
+        
         setTimeout(() => {
           setIsVisible(false);
           setTimeout(onComplete, 200);
@@ -187,31 +176,31 @@ const GameCountdown = ({
       }
     };
 
+    // Hemen başla + 100ms interval (hassas timing)
     updateCountdown();
     const interval = setInterval(updateCountdown, 100);
 
     return () => clearInterval(interval);
-  }, [
-    serverStartTime,
-    serverTimeOffset,
-    onComplete,
-    preloadComplete,
-  ]);
+  }, [serverStartTime, serverTimeOffset, onComplete, preloadComplete]);
 
-  /* ---------- Erken render koruması ---------- */
+  // === RENDER (Sadece sayım sırasında görünür) ===
   if (!hasStarted || !preloadComplete) return null;
   if (count === 0 && !showStart) return null;
 
-  /* ---------- JSX ---------- */
+  const getImageForCount = (num: number): string => {
+    const imageMap: Record<number, string> = {
+      1: "/bir.png",
+      2: "/iki.png", 
+      3: "/uc.png",
+      4: "/dort.png",
+      5: "/bes.png",
+    };
+    return imageMap[num] || "";
+  };
+
   return (
-    <div
-      className={cn(
-        "fixed inset-0 z-50 flex items-center justify-center bg-black/50",
-        className
-      )}
-    >
+    <div className={cn("fixed inset-0 z-50 flex items-center justify-center bg-black/50", className)}>
       <div className="relative">
-        {/* PNG Görsel */}
         <img
           key={animKey}
           src={showStart ? "/basla.png" : getImageForCount(count)}
@@ -222,21 +211,19 @@ const GameCountdown = ({
             "sm:w-[360px] sm:h-[360px]",
             "md:w-[420px] md:h-[420px]",
             "lg:w-[480px] lg:h-[480px]",
-            showStart ? "scale-110" : "scale-100"
+            showStart ? "scale-110" : "scale-100",
           )}
           style={{
             filter: showStart
-              ? "drop-shadow(0 0 60px rgba(255,107,107,0.9)) drop-shadow(0 0 30px rgba(255,215,0,0.7))"
-              : "drop-shadow(0 0 60px rgba(102,126,234,0.9)) drop-shadow(0 0 30px rgba(244,143,177,0.7))",
+              ? "drop-shadow(0 0 60px rgba(255, 107, 107, 0.9)) drop-shadow(0 0 30px rgba(255, 215, 0, 0.7))"
+              : "drop-shadow(0 0 60px rgba(102, 126, 234, 0.9)) drop-shadow(0 0 30px rgba(244, 143, 177, 0.7))",
             animation: "pulse 0.3s ease-out",
           }}
         />
-
-        {/* Parlaklık efekti */}
         <div
           className={cn(
             "absolute inset-0 transition-all duration-300 pointer-events-none",
-            showStart ? "opacity-100" : "opacity-70"
+            showStart ? "opacity-100" : "opacity-70",
           )}
           style={{
             background: showStart
