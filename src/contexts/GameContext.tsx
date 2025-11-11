@@ -1522,9 +1522,10 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           console.log("ℹ️ Skor sadece participants tablosunda güncellendi (player1/2 eşleşmesi daha atanmadı).");
         }
 
-        // Local state'i de güncelle
-        const updatedParticipants = participants.map((p) => (p.user_id === user.id ? { ...p, score } : p));
-        setParticipants(updatedParticipants);
+        // Local state'i de güncelle - FUNCTIONAL UPDATE (race condition fix)
+        setParticipants((prevParticipants) => 
+          prevParticipants.map((p) => (p.user_id === user.id ? { ...p, score } : p))
+        );
 
         const fieldLabel = isP1 ? "player1_score" : isP2 ? "player2_score" : "participants_only";
         console.log("🔄 Skor güncellendi:", score, "Field:", fieldLabel);
