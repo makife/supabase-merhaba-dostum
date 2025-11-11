@@ -22,9 +22,9 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
 
   useEffect(() => {
     // Geri sayım için geriSayimKlik.mp3
-    countdownAudioRef.current = new Audio("/geriSayimKlik.mp3");
+    countdownAudioRef.current = new Audio("/gerisayim.mp3");
     // Başla için geriSayimBasla.mp3
-    startAudioRef.current = new Audio("/geriSayimBasla.mp3");
+    startAudioRef.current = new Audio("/baslaa.mp3");
 
     if (countdownAudioRef.current) {
       countdownAudioRef.current.preload = "auto";
