@@ -4360,7 +4360,7 @@ const GamePage = ({
   // Handle letter click
   const handleLetterClick = useCallback(
     (letter: string, row: number, col: number) => {
-      if (gameEnded || waitingForPlayer || isJokerActive) return;
+      if (gameEnded || (waitingForPlayer && !gameStarted) || isJokerActive) return;
 
       const now = Date.now();
       // 150ms debounce (mobil için daha uzun)
@@ -4427,7 +4427,7 @@ const GamePage = ({
 
   // Submit word - Using local wordlist validation
   const submitWord = async () => {
-    if (waitingForPlayer || isJokerActive) return;
+    if ((waitingForPlayer && !gameStarted) || isJokerActive) return;
 
     // Prevent accidental double-taps/duplicate submissions (mobile)
     if (submissionLockRef.current) {
@@ -4871,14 +4871,11 @@ const GamePage = ({
             };
           }
         }
-        // 🛡️ Oyun başladıysa veya countdown gösteriliyorsa SON BİLİNEN rakibi göster
-        if ((gameStarted || showCountdown) && opponentName && opponentName !== "Rakip Aranıyor...") {
-          console.log("🛡️ Oyun başladı - son bilinen rakip:", opponentName);
-          return {
-            name: opponentName,
-            icon: User,
-            avatar: opponentAvatar,
-          };
+        // Oyun başladıysa veya geri sayım varsa: asla "Rakip Aranıyor..."a dönme
+        if (gameStarted || showCountdown) {
+          const name = opponentName && opponentName !== "Rakip Aranıyor..." ? opponentName : "Rakip";
+          console.log("🛡️ Oyun başladı - fallback rakip:", name);
+          return { name, icon: User, avatar: opponentAvatar };
         }
         // Henüz başlamadıysa ama state'te rakip varsa göster
         if (opponentName && opponentName !== "Rakip Aranıyor...") {
