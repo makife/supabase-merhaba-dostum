@@ -11,22 +11,50 @@ export interface OnboardingStep {
 export const useOnboarding = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const ONBOARDING_KEY = "kelimeci-onboarding-completed";
   const PERMISSIONS_KEY = "kelimeci-permissions-completed";
 
   useEffect(() => {
-    // İlk açılışta onboarding'i göster - ancak permission onboarding'den sonra
-    const hasSeenOnboarding = localStorage.getItem(ONBOARDING_KEY);
-    const hasCompletedPermissions = localStorage.getItem(PERMISSIONS_KEY);
-    
-    if (!hasSeenOnboarding && hasCompletedPermissions) {
-      // 500ms gecikme ile göster (permission dialog kapandıktan sonra)
-      setTimeout(() => {
-        setShowOnboarding(true);
-      }, 500);
-    }
-  }, []);
+    // İzinler tamamlanmasını dinle
+    const checkAndShowOnboarding = () => {
+      const hasSeenOnboarding = localStorage.getItem(ONBOARDING_KEY);
+      const hasCompletedPermissions = localStorage.getItem(PERMISSIONS_KEY);
+      
+      if (!hasSeenOnboarding && hasCompletedPermissions && !isInitialized) {
+        // Target elementlerin render olmasını bekle
+        setTimeout(() => {
+          const firstTarget = document.querySelector(steps[0]?.targetSelector || 'body');
+          setShowOnboarding(true);
+          setIsInitialized(true);
+        }, 500);
+      }
+    };
+
+    // İlk kontrol
+    checkAndShowOnboarding();
+
+    // Storage değişikliklerini dinle (KVKK onayı kaydedildiğinde)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === PERMISSIONS_KEY && e.newValue === 'true') {
+        checkAndShowOnboarding();
+      }
+    };
+
+    // Custom event dinle (aynı sekmede değişiklikler için)
+    const handlePermissionComplete = () => {
+      checkAndShowOnboarding();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('permissionsCompleted', handlePermissionComplete);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('permissionsCompleted', handlePermissionComplete);
+    };
+  }, [isInitialized]);
 
   const steps: OnboardingStep[] = [
     {
@@ -96,6 +124,7 @@ export const useOnboarding = () => {
   const resetOnboarding = () => {
     localStorage.removeItem(ONBOARDING_KEY);
     setCurrentStep(0);
+    setIsInitialized(false);
     setShowOnboarding(true);
   };
 
