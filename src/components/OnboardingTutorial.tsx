@@ -115,31 +115,67 @@ export const OnboardingTutorial = () => {
     <>
       {/* Dark overlay - body overflow'u da kontrol et */}
       <div 
-        className="fixed inset-0 bg-black/60 z-[9998] animate-fade-in" 
+        className="fixed inset-0 bg-black/60 z-[9998]" 
         onClick={skipOnboarding}
         style={{ position: 'fixed' }}
       />
 
-      {/* Highlight overlay - clickable background'u keser */}
+      {/* Highlight overlay - tüm elementler için ışık parlaması efekti */}
       {highlightPosition && (
         <div
-          className="fixed z-[9999] pointer-events-none animate-pulse"
+          className="fixed z-[9999] pointer-events-none"
           style={{
-            top: highlightPosition.top - 8,
-            left: highlightPosition.left - 8,
-            width: highlightPosition.width + 16,
-            height: highlightPosition.height + 16,
-            border: "3px solid hsl(var(--primary))",
-            borderRadius: currentStepData.id === "floating-menu" ? "50%" : "12px",
-            boxShadow: "0 0 0 4px hsl(var(--primary) / 0.3), 0 0 20px hsl(var(--primary) / 0.5)",
+            top: highlightPosition.top + highlightPosition.height / 2,
+            left: highlightPosition.left + highlightPosition.width / 2,
+            transform: "translate(-50%, -50%)",
           }}
-        />
+        >
+          {/* Ana parlama */}
+          <div 
+            className="absolute inset-0"
+            style={{
+              width: highlightPosition.width + 80,
+              height: highlightPosition.height + 80,
+              background: "radial-gradient(circle, hsl(var(--primary) / 0.4) 0%, hsl(var(--primary) / 0.2) 30%, transparent 70%)",
+              filter: "blur(20px)",
+              transform: "translate(-50%, -50%)",
+              left: "50%",
+              top: "50%",
+            }}
+          />
+          {/* İkincil parlama */}
+          <div 
+            className="absolute inset-0"
+            style={{
+              width: highlightPosition.width + 120,
+              height: highlightPosition.height + 120,
+              background: "radial-gradient(circle, hsl(var(--primary) / 0.3) 0%, hsl(var(--primary) / 0.1) 20%, transparent 50%)",
+              filter: "blur(30px)",
+              transform: "translate(-50%, -50%)",
+              left: "50%",
+              top: "50%",
+            }}
+          />
+          {/* Dış hale */}
+          <div 
+            className="absolute inset-0"
+            style={{
+              width: highlightPosition.width + 160,
+              height: highlightPosition.height + 160,
+              background: "radial-gradient(circle, hsl(var(--primary) / 0.15) 0%, transparent 40%)",
+              filter: "blur(40px)",
+              transform: "translate(-50%, -50%)",
+              left: "50%",
+              top: "50%",
+            }}
+          />
+        </div>
       )}
 
       {/* Tutorial card */}
       <Card
         className={cn(
-          "fixed z-[10000] w-[90vw] max-w-md animate-scale-in shadow-2xl",
+          "fixed z-[10000] w-[90vw] max-w-md shadow-2xl",
           highlightPosition ? "absolute" : "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
         )}
         style={highlightPosition ? getCardPosition() : {}}
