@@ -2517,3 +2517,15 @@ body.is-capacitor.hide-bars::before {
     background-position: 0% 50%;
   }
 }
+
+.progress-percentage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-weight: bold;
+  font-size: 14px;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+  z-index: 2;
+}
