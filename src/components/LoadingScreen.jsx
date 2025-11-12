@@ -116,7 +116,7 @@ const LoadingScreen = ({ onLoadingComplete }) => {
             <div className="tip-text">{currentTip}</div>
           </div>
           
-          <div className="loading-container">
+         <div className="loading-container">
             <div className="progress-bar-container">
               <div 
                 className="progress-bar" 
@@ -127,6 +127,7 @@ const LoadingScreen = ({ onLoadingComplete }) => {
                     'linear-gradient(90deg, #FF6B6B, #4ECDC4, #45B7D1, #96CEB4)'
                 }}
               ></div>
+              <div className="progress-percentage">%{progress}</div>
             </div>
             <div className="loading-text" style={{
               color: isComplete ? '#4ade80' : 'white'
