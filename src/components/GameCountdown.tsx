@@ -119,7 +119,7 @@ const GameCountdown = ({
       } catch (e) {}
     }
 
-    return audioContextRef.current?.state === 'running';
+    return audioContextRef.current?.state !== 'suspended' && audioContextRef.current?.state !== 'closed';
   }, []);
 
   // === 3. SERVER TIME GERİ SAYIM (HER ŞEY OTOMATİK) ===

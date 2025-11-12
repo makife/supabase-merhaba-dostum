@@ -497,6 +497,30 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           throw error;
         }
 
+        // 🔔 Bildirim gönder
+        try {
+          const { data: userProfile } = await supabase
+            .from("profiles")
+            .select("username")
+            .eq("id", user.id)
+            .single();
+
+          const username = userProfile?.username || "Bir oyuncu";
+          
+          console.log("📤 Rematch bildirimi gönderiliyor:", {
+            to: String(opponent.user_id).slice(-8),
+            from: username,
+            roomCode: code,
+            gameType,
+          });
+
+          // notifications.ts'ten import edilmeli
+          const { sendRematchNotification } = await import("@/utils/notifications");
+          await sendRematchNotification(opponent.user_id, username, code, gameType);
+        } catch (notifError) {
+          console.error("⚠️ Bildirim gönderilemedi (oyun devam edecek):", notifError);
+        }
+
         console.log("✅ Rematch request başarıyla oluşturuldu:", {
           requestId: data.id,
           room: code,
