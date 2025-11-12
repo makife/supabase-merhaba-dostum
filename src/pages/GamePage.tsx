@@ -2626,7 +2626,14 @@ const GamePage = ({
       }
 
       const calculatePoints = (w: string): number => {
-        const basePoints = w.length * 2;
+        // 🎯 MOD BAZLI PUANLAMA: vs-computer daha düşük, multiplayer daha yüksek
+        let multiplier = 2; // vs-computer için default
+        
+        if (gameMode === "random-match" || gameMode === "private-room" || gameMode === "tournament") {
+          multiplier = 3; // Multiplayer modlar için %50 daha fazla
+        }
+        
+        const basePoints = w.length * multiplier;
         let rareLetterBonus = 0;
         const rareLetters = ["J", "Z", "Ğ", "Ü", "Ö", "Ç", "Ş"];
         for (const letter of w) {
