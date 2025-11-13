@@ -113,17 +113,17 @@ export const OnboardingTutorial = () => {
 
   return (
     <>
-      {/* Dark overlay - body overflow'u da kontrol et */}
+      {/* Dark overlay */}
       <div 
-        className="fixed inset-0 bg-black/60 z-[9998] animate-fade-in" 
+        className="fixed inset-0 bg-black/60 z-[9998]" 
         onClick={skipOnboarding}
         style={{ position: 'fixed' }}
       />
 
-      {/* Highlight overlay - clickable background'u keser */}
+      {/* Highlight overlay */}
       {highlightPosition && (
         <div
-          className="fixed z-[9999] pointer-events-none animate-pulse"
+          className="fixed z-[9999] pointer-events-none"
           style={{
             top: highlightPosition.top - 8,
             left: highlightPosition.left - 8,
@@ -139,33 +139,33 @@ export const OnboardingTutorial = () => {
       {/* Tutorial card */}
       <Card
         className={cn(
-          "fixed z-[10000] w-[90vw] max-w-md animate-scale-in shadow-2xl",
+          "fixed z-[10000] w-[85vw] max-w-sm shadow-2xl",
           highlightPosition ? "absolute" : "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
         )}
         style={highlightPosition ? getCardPosition() : {}}
       >
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <CardTitle className="text-xl mb-2">{currentStepData.title}</CardTitle>
-              <CardDescription className="text-base">{currentStepData.description}</CardDescription>
+        <CardHeader className="p-4">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <CardTitle className="text-lg mb-1 leading-tight">{currentStepData.title}</CardTitle>
+              <CardDescription className="text-sm leading-snug">{currentStepData.description}</CardDescription>
             </div>
-            <Button variant="ghost" size="icon" onClick={skipOnboarding} className="shrink-0 ml-2">
-              <X className="h-5 w-5" />
+            <Button variant="ghost" size="icon" onClick={skipOnboarding} className="shrink-0 h-8 w-8">
+              <X className="h-4 w-4" />
             </Button>
           </div>
         </CardHeader>
 
-        <CardContent>
-          <div className="flex items-center justify-between gap-3">
+        <CardContent className="p-4 pt-0">
+          <div className="flex items-center justify-between gap-2">
             {/* Progress indicators */}
-            <div className="flex gap-1.5">
+            <div className="flex gap-1">
               {steps.map((_, index) => (
                 <div
                   key={index}
                   className={cn(
-                    "h-2 rounded-full transition-all",
-                    index === currentStep ? "w-8 bg-primary" : "w-2 bg-muted",
+                    "h-1.5 rounded-full transition-all",
+                    index === currentStep ? "w-6 bg-primary" : "w-1.5 bg-muted",
                   )}
                 />
               ))}
@@ -174,20 +174,20 @@ export const OnboardingTutorial = () => {
             {/* Action buttons */}
             <div className="flex gap-2">
               {!isLastStep && (
-                <Button variant="outline" size="sm" onClick={skipOnboarding}>
+                <Button variant="outline" size="sm" onClick={skipOnboarding} className="h-8 px-3 text-xs">
                   Atla
                 </Button>
               )}
               
               {isLastStep ? (
-                <Button size="sm" onClick={startDemoGame} className="gap-2">
-                  <PlayCircle className="h-4 w-4" />
+                <Button size="sm" onClick={startDemoGame} className="gap-1.5 h-8 px-3 text-xs">
+                  <PlayCircle className="h-3.5 w-3.5" />
                   Başla
                 </Button>
               ) : (
-                <Button size="sm" onClick={nextStep} className="gap-2">
+                <Button size="sm" onClick={nextStep} className="gap-1.5 h-8 px-3 text-xs">
                   İleri
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="h-3.5 w-3.5" />
                 </Button>
               )}
             </div>

@@ -25,33 +25,25 @@ export const useOnboarding = () => {
       if (!hasSeenOnboarding && hasCompletedPermissions && !isInitialized) {
         // Target elementlerin render olmasını bekle
         setTimeout(() => {
-          const firstTarget = document.querySelector(steps[0]?.targetSelector || 'body');
           setShowOnboarding(true);
           setIsInitialized(true);
-        }, 500);
+        }, 800);
       }
     };
 
     // İlk kontrol
     checkAndShowOnboarding();
 
-    // Storage değişikliklerini dinle (KVKK onayı kaydedildiğinde)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === PERMISSIONS_KEY && e.newValue === 'true') {
-        checkAndShowOnboarding();
-      }
-    };
-
     // Custom event dinle (aynı sekmede değişiklikler için)
     const handlePermissionComplete = () => {
-      checkAndShowOnboarding();
+      setTimeout(() => {
+        checkAndShowOnboarding();
+      }, 100);
     };
 
-    window.addEventListener('storage', handleStorageChange);
     window.addEventListener('permissionsCompleted', handlePermissionComplete);
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('permissionsCompleted', handlePermissionComplete);
     };
   }, [isInitialized]);

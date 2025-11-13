@@ -199,6 +199,9 @@ export const OnboardingPermissions = ({ open, onComplete }: OnboardingPermission
       
       console.log('✅ Onboarding tamamlandı - Bildirimler:', granted.notifications);
       
+      // Custom event dispatch et - onboarding tutorial'ı başlatmak için
+      window.dispatchEvent(new Event('permissionsCompleted'));
+      
       toast.success('Kurulum tamamlandı! Hoş geldiniz 🎉');
       onComplete();
     }
