@@ -117,17 +117,34 @@ const LoadingScreen = ({ onLoadingComplete }) => {
           </div>
           
          <div className="loading-container">
-            <div className="progress-bar-container">
+            <div className="progress-bar-container" style={{
+              position: 'relative',
+              height: '40px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
               <div 
                 className="progress-bar" 
                 style={{ 
                   width: `${progress}%`,
+                  height: '100%',
                   background: isComplete ? 
                     'linear-gradient(90deg, #4ade80, #22c55e, #16a34a)' : 
                     'linear-gradient(90deg, #FF6B6B, #4ECDC4, #45B7D1, #96CEB4)'
                 }}
               ></div>
-              <div className="progress-percentage">%{progress}</div>
+              <div style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                color: 'white',
+                fontWeight: 'bold',
+                fontSize: '16px',
+                textShadow: '0 0 4px rgba(0, 0, 0, 0.8)',
+                zIndex: 2
+              }}>%{progress}</div>
             </div>
             <div className="loading-text" style={{
               color: isComplete ? '#4ade80' : 'white'
