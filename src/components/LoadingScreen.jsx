@@ -109,11 +109,15 @@ const LoadingScreen = ({ onLoadingComplete }) => {
           left: 0,
           width: '100vw',
           height: '100vh',
+          backgroundColor: 'black',
           zIndex: 1000
         }}>
           <img 
             src="/ergan.jpg" 
-            alt="Ergan" 
+            alt="Ergan"
+            loading="eager"
+            fetchpriority="high"
+            decoding="sync"
             style={{
               width: '100%',
               height: '100%',
