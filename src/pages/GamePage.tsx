@@ -623,6 +623,7 @@ const GamePage = ({
   }, [gameEnded]);
   const [winner, setWinner] = useState<"player" | "opponent" | "tie" | null>(null);
   const [disconnectWin, setDisconnectWin] = useState(false);
+  const [buttonsEnabled, setButtonsEnabled] = useState(false);
   //
   const [hasShownStartMessage, setHasShownStartMessage] = useState(false);
   const [lastPlayerAction, setLastPlayerAction] = useState<number>(0);
@@ -664,6 +665,8 @@ const GamePage = ({
       if (eventWinner === "opponent") {
         console.log("😢 Ben oyundan ayrıldım veya kaybettim");
         setWinner("opponent");
+        setButtonsEnabled(false);
+        setTimeout(() => setButtonsEnabled(true), 1000);
         setGameEnded(true);
         setShowResults(true);
         if (timerRef.current) {
@@ -691,6 +694,8 @@ const GamePage = ({
       console.log("🚪 Rakip oyundan ayrıldı eventi alındı");
       setDisconnectWin(true);
       setWinner("player");
+      setButtonsEnabled(false);
+      setTimeout(() => setButtonsEnabled(true), 1000);
       setGameEnded(true);
       setShowResults(true);
 
@@ -914,11 +919,15 @@ const GamePage = ({
 
       if (winnerId === user.id) {
         setWinner("player");
+        setButtonsEnabled(false);
+        setTimeout(() => setButtonsEnabled(true), 1000);
         playSound("gameWin");
         setTimeout(() => playCelebrationSound(), 500);
         console.log("✅ User WINS - Setting winner to player");
       } else {
         setWinner("opponent");
+        setButtonsEnabled(false);
+        setTimeout(() => setButtonsEnabled(true), 1000);
         playSound("gameLose");
         setTimeout(() => playGameLoseSound(), 500);
         console.log("❌ User LOSES - Setting winner to opponent");
@@ -2945,12 +2954,16 @@ const GamePage = ({
           gameResult = "player";
           bonusPoints = 50;
           setWinner("player");
+          setButtonsEnabled(false);
+          setTimeout(() => setButtonsEnabled(true), 1000);
           playSound("gameWin");
           setTimeout(() => playCelebrationSound(), 500);
           console.log("🏆 Player wins! Score:", currentPlayerScore, "vs", currentOpponentScore);
         } else if (currentPlayerScore < currentOpponentScore) {
           gameResult = "opponent";
           setWinner("opponent");
+          setButtonsEnabled(false);
+          setTimeout(() => setButtonsEnabled(true), 1000);
           playSound("gameLose");
           setTimeout(() => playGameLoseSound(), 500);
           console.log("🏆 Opponent wins! Score:", currentOpponentScore, "vs", currentPlayerScore);
@@ -2958,6 +2971,8 @@ const GamePage = ({
           gameResult = "tie";
           bonusPoints = 25;
           setWinner("tie");
+          setButtonsEnabled(false);
+          setTimeout(() => setButtonsEnabled(true), 1000);
           playSound("gameLose"); // Nötr ses
           setTimeout(() => playTieSound(), 500);
           console.log("🏆 It's a tie! Both scores:", currentPlayerScore);
@@ -2974,12 +2989,16 @@ const GamePage = ({
           gameResult = "player";
           bonusPoints = 50;
           setWinner("player");
+          setButtonsEnabled(false);
+          setTimeout(() => setButtonsEnabled(true), 1000);
           playSound("gameWin");
           setTimeout(() => playCelebrationSound(), 500);
           console.log("🏆 Player wins! Score:", currentPlayerScore, "vs", currentOpponentScore);
         } else if (currentPlayerScore < currentOpponentScore) {
           gameResult = "opponent";
           setWinner("opponent");
+          setButtonsEnabled(false);
+          setTimeout(() => setButtonsEnabled(true), 1000);
           playSound("gameLose");
           setTimeout(() => playGameLoseSound(), 500);
           console.log("🏆 Opponent wins! Score:", currentOpponentScore, "vs", currentPlayerScore);
@@ -2988,6 +3007,8 @@ const GamePage = ({
           gameResult = gameMode === "tournament" ? "player" : "tie";
           bonusPoints = 25;
           setWinner(gameMode === "tournament" ? "player" : "tie");
+          setButtonsEnabled(false);
+          setTimeout(() => setButtonsEnabled(true), 1000);
           
           if (gameMode === "tournament") {
             playSound("gameWin");
@@ -4942,6 +4963,7 @@ const GamePage = ({
                   {winner === "opponent" && (
                     <Button
                       variant="outline"
+                      disabled={!buttonsEnabled}
                       onClick={() => {
                         playSound("buttonClick");
                         navigate("/tournament");
@@ -4955,6 +4977,7 @@ const GamePage = ({
                   {winner === "player" && (
                     <Button
                       variant="outline"
+                      disabled={!buttonsEnabled}
                       onClick={() => {
                         console.log("🚀 Manuel yönlendirme denemesi...");
 
@@ -4985,6 +5008,7 @@ const GamePage = ({
                   {/* Disconnect durumunda rematch butonu gösterme */}
                   {!disconnectWin && !rematchRequested && !waitingForRematchResponse && (
                     <Button
+                      disabled={!buttonsEnabled}
                       onClick={() => {
                         playSound("buttonClick");
                         requestRematch();
@@ -5008,6 +5032,7 @@ const GamePage = ({
                   )}
 
                   <Button
+                    disabled={!buttonsEnabled}
                     onClick={() => {
                       playSound("buttonClick");
                       // Oyun bitiminde matchmaking state'ini temizle ve odayı banla
@@ -5028,6 +5053,7 @@ const GamePage = ({
                 // Normal mod butonları
                 <>
                   <Button
+                    disabled={!buttonsEnabled}
                     onClick={() => {
                       playSound("buttonClick");
                       // Oyun bitiminde matchmaking state'ini temizle ve odayı banla
@@ -5045,6 +5071,7 @@ const GamePage = ({
                   {!disconnectWin && (
                     <Button
                       variant="outline"
+                      disabled={!buttonsEnabled}
                       onClick={() => {
                         playSound("buttonClick");
                         resetGameForRematch();
@@ -5065,6 +5092,7 @@ const GamePage = ({
                         setGameStarted(false);
                         setGameEnded(false);
                         setWinner(null);
+                        setButtonsEnabled(false);
                         setTimeWarningPlayed(false);
                         // Jokerler artık envanter sisteminden geliyor
                         setSelectedJoker(null);
