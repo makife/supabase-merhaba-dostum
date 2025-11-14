@@ -447,7 +447,6 @@ const SnakeGame = () => {
             height: GRID_SIZE * 15,
             backdropFilter: "blur(10px)",
             boxShadow: "inset 0 0 20px rgba(0, 0, 0, 0.2)",
-            boxSizing: "border-box",
             overflow: "hidden",
           }}
           onTouchStart={handleTouchStart}
@@ -459,10 +458,10 @@ const SnakeGame = () => {
               key={index}
               style={{
                 position: "absolute",
-                left: segment.x * 15 + 1,
-                top: segment.y * 15 + 1,
-                width: 13,
-                height: 13,
+                left: segment.x * 15,
+                top: segment.y * 15,
+                width: 14,
+                height: 14,
                 borderRadius: index === 0 ? "50%" : "4px",
                 background:
                   index === 0 ? "linear-gradient(45deg, #10b981, #34d399)" : "linear-gradient(45deg, #059669, #10b981)",
@@ -479,14 +478,14 @@ const SnakeGame = () => {
           <div
             style={{
               position: "absolute",
-              left: food.x * 15 + 1,
-              top: food.y * 15 + 1,
-              width: 13,
-              height: 13,
+              left: food.x * 15,
+              top: food.y * 15,
+              width: 14,
+              height: 14,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: "11px",
+              fontSize: "12px",
               animation: "bounce 1.5s infinite",
               filter: "drop-shadow(0 0 8px rgba(255, 255, 255, 0.6))",
             }}
