@@ -254,11 +254,11 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     if (!user) return;
     
     try {
-      const previousTotal = getTotalCredits();
+      const previousTotal = previousCreditsRef.current || getTotalCredits();
       await supabase.rpc('check_and_refresh_credits', { user_id: user.id });
       await refreshProfile(true);
       
-      // Hak artışı kontrolü ve bildirim
+      // Hak artışı kontrolü ve bildirim - sadece gerçek artış varsa göster
       const newTotal = getTotalCredits();
       if (newTotal > previousTotal && isPermissionGranted) {
         const creditsGained = newTotal - previousTotal;
@@ -267,6 +267,9 @@ export const UserProvider = ({ children }: UserProviderProps) => {
           `+${creditsGained} oyun hakkı kazandınız! Toplam: ${newTotal}/5`
         );
       }
+      
+      // Güncellenen değeri sakla
+      previousCreditsRef.current = newTotal;
     } catch (error) {
       console.error('Error checking credits:', error);
     }
