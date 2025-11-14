@@ -1796,7 +1796,7 @@ All colors MUST be HSL.
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: url("/arkaplans.jpg") center/cover no-repeat;
+  background: #000;
   font-family: "Arial", sans-serif;
   overflow: hidden;
   z-index: 9999;
