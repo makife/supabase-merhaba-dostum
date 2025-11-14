@@ -116,8 +116,8 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
                     onClick: () => {
                       // Bildirimi okundu olarak işaretle
                       markAsRead(notification.id);
-                      // Oyuna katıl
-                      navigate(`/game/${roomCode}?mode=private-room`);
+                      // Bekleme sayfasına yönlendir (sayfa otomatik olarak roomId ve gameType'ı bulur)
+                      navigate(`/private-room-waiting?code=${roomCode}`);
                     },
                   },
                 });
