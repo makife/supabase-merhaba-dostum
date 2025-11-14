@@ -114,7 +114,7 @@ const HomePage = () => {
   const [showMatchmaking, setShowMatchmaking] = useState(false);
   const [matchmakingGameType, setMatchmakingGameType] = useState<"timed" | "score">("timed");
   const [matchmakingKey, setMatchmakingKey] = useState<number>(0);
-  const [userAvatar, setUserAvatar] = useState<string>("");
+  //
   const [timeUntilNextCredit, setTimeUntilNextCredit] = useState<string>("");
   const { canPlay: canPlayMemory, timeUntilNextPlay } = useMemoryGame();
   const { startSearch, useNakama, isSearching, searchProgress, cancelSearch, nakamaMatch } = useMatchmaking();
@@ -242,20 +242,6 @@ const HomePage = () => {
     checkDailyReset();
   }, [user, profile?.last_daily_reset]);
 
-  // Fetch user profile data including avatar
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (!user) return;
-
-      const { data } = await supabase.from("profiles").select("avatar_url").eq("id", user.id).maybeSingle();
-
-      if (data?.avatar_url) {
-        setUserAvatar(data.avatar_url);
-      }
-    };
-
-    fetchUserProfile();
-  }, [user]);
 
   const [showAvatarView, setShowAvatarView] = useState(false);
 
@@ -375,7 +361,7 @@ const HomePage = () => {
                   <div className="relative cursor-pointer group flex-shrink-0" onClick={handleAvatarClick}>
                     <Avatar className="w-14 h-14 ring-2 ring-white/50 shadow-lg transition-all duration-500 ease-in-out">
                       <AvatarImage
-                        src={userAvatar || user?.user_metadata?.avatar_url}
+                        src={profile?.avatar_url || user?.user_metadata?.avatar_url}
                         alt="Profile"
                         className="transition-opacity duration-500 ease-in-out"
                         loading="eager"
@@ -1080,7 +1066,7 @@ const HomePage = () => {
         <AvatarViewDialog
           open={showAvatarView}
           onOpenChange={setShowAvatarView}
-          avatarUrl={userAvatar || user?.user_metadata?.avatar_url || ""}
+          avatarUrl={profile?.avatar_url || user?.user_metadata?.avatar_url || ""}
           username={profile?.username || user?.user_metadata?.username || user?.email?.split("@")[0] || "Oyuncu"}
         />
       </div>
