@@ -32,6 +32,7 @@ import {
 
 const ProfilePage = () => {
   const { user } = useAuth();
+  const { profile } = useUser();
   const navigate = useNavigate();
   const location = useLocation();
   const { jokers } = useJokerInventory();
@@ -43,9 +44,9 @@ const ProfilePage = () => {
   const [editedUsername, setEditedUsername] = useState('');
   const [showAvatarOptions, setShowAvatarOptions] = useState(false);
   const [showBadgesDialog, setShowBadgesDialog] = useState(false);
+  const [viewedProfile, setViewedProfile] = useState<{ avatar_url?: string | null } | null>(null);
   const [profileData, setProfileData] = useState({
     username: user?.email?.split('@')[0] || 'Oyuncu',
-    avatar_url: '',
     totalGames: 0,
     wins: 0,
     losses: 0,
@@ -195,11 +196,12 @@ const ProfilePage = () => {
       if (data) {
         const levelData = calculateLevel(data.total_score || 0);
         const username = data.username || (user?.email?.split('@')[0] || 'Oyuncu');
+        
+        setViewedProfile({ avatar_url: data.avatar_url });
             
         setProfileData(prev => ({
           ...prev,
           username: username,
-          avatar_url: data.avatar_url || '',
           totalGames: data.total_games || 0,
           wins: data.wins || 0,
           losses: data.losses || 0,
@@ -609,7 +611,10 @@ const ProfilePage = () => {
                   onClick={handleAvatarClick}
                 >
                   <Avatar className="w-20 h-20 ring-2 ring-primary/20">
-                    <AvatarImage src={profileData.avatar_url} alt={profileData.username} />
+                    <AvatarImage 
+                      src={(isOwnProfile ? profile?.avatar_url : viewedProfile?.avatar_url) || ''} 
+                      alt={profileData.username} 
+                    />
                     <AvatarFallback className="text-2xl">
                       {profileData.username.charAt(0).toUpperCase()}
                     </AvatarFallback>

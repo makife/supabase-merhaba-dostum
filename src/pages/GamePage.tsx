@@ -623,8 +623,7 @@ const GamePage = ({
   }, [gameEnded]);
   const [winner, setWinner] = useState<"player" | "opponent" | "tie" | null>(null);
   const [disconnectWin, setDisconnectWin] = useState(false);
-  const [playerAvatar, setPlayerAvatar] = useState<string>("");
-  const [opponentAvatar, setOpponentAvatar] = useState<string>("");
+  //
   const [hasShownStartMessage, setHasShownStartMessage] = useState(false);
   const [lastPlayerAction, setLastPlayerAction] = useState<number>(0);
   const [matchmakingTimeout, setMatchmakingTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -2462,72 +2461,23 @@ const GamePage = ({
   };
   // Sync grid with room data and fetch avatars
   useEffect(() => {
-    const fetchAvatars = async () => {
+    const syncWithRoom = () => {
       if (!user) return;
 
-      const { data: playerData } = await supabase.from("profiles").select("avatar_url").eq("id", user.id).maybeSingle();
-
-      if (playerData?.avatar_url) {
-        setPlayerAvatar(playerData.avatar_url);
-      }
-
-      // Private room ve tournament modlarında rakip bilgilerini al
+      // Rakip bilgilerini al
       if ((gameMode === "private-room" || gameMode === "tournament") && participants.length >= 2) {
-        console.log("👥 Multi-player mode - participants kontrol ediliyor:", participants.length);
-
-        const opponent = participants.find((p) => {
-          // Tournament modunda string ID'ler kullanılıyor
-          if (gameMode === "tournament") {
-            return p.user_id !== user.id && !p.is_bot;
-          }
-          // Private room modunda UUID'ler kullanılıyor
-          return p.user_id !== user.id && !p.is_bot;
-        });
-
+        const opponent = participants.find((p) => p.user_id !== user.id && !p.is_bot);
+        
         if (opponent) {
-          console.log("👤 Gerçek rakip bulundu:", {
-            userId: typeof opponent.user_id === "string" ? opponent.user_id.slice(-8) : opponent.user_id,
-            username: (opponent as any).profiles?.username,
-            avatar: (opponent as any).profiles?.avatar_url,
-          });
-
-          // Tournament modunda profil bilgilerini fetch et
-          if (gameMode === "tournament" && opponent.user_id) {
-            const { data: opponentProfile } = await supabase
-              .from("profiles")
-              .select("avatar_url, username")
-              .eq("id", opponent.user_id)
-              .maybeSingle();
-
-            if (opponentProfile) {
-              if (opponentProfile.avatar_url) {
-                setOpponentAvatar(opponentProfile.avatar_url);
-              }
-              if (opponentProfile.username) {
-                setOpponentName(opponentProfile.username);
-              }
-            }
-          } else {
-            // Private room modunda mevcut mantığı kullan
-            if ((opponent as any).profiles?.avatar_url) {
-              setOpponentAvatar((opponent as any).profiles.avatar_url);
-            }
-
-            if ((opponent as any).profiles?.username) {
-              setOpponentName((opponent as any).profiles.username);
-            }
+          if ((opponent as any).profiles?.username) {
+            setOpponentName((opponent as any).profiles.username);
           }
-
-          // ❌ setOpponentScore KALDIRILDI - skorlar artık direkt participants'tan okunuyor
-          // Bu gereksiz güncelleme titreme yapıyordu
         }
       }
-
-      // ❌ random-match için ayrı güncelleme kaldırıldı
     };
 
-    fetchAvatars();
-  }, [user?.id, participants, gameMode, gameEnded]);
+    syncWithRoom();
+  }, [participants, user, gameMode]);
 
   // 🎯 MP modlarında skoru participants'tan senkronize et (tek kaynak) - 0'a düşmeyi engelle
   useEffect(() => {
@@ -4865,7 +4815,7 @@ const GamePage = ({
             };
           }
         }
-        return { name: "Arkadaş", icon: User, avatar: opponentAvatar };
+        return { name: "Arkadaş", icon: User, avatar: (opponent as any).profiles?.avatar_url || null };
       case "random-match":
       case "private-room":
         if (participants.length >= 2) {
@@ -4883,7 +4833,7 @@ const GamePage = ({
         if (gameStarted || showCountdown) {
           const name = opponentName && opponentName !== "Rakip Aranıyor..." ? opponentName : "Rakip";
           console.log("🛡️ Oyun başladı - fallback rakip:", name);
-          return { name, icon: User, avatar: opponentAvatar };
+          return { name, icon: User, avatar: (opponent as any).profiles?.avatar_url || null };
         }
         // Henüz başlamadıysa ama state'te rakip varsa göster
         if (opponentName && opponentName !== "Rakip Aranıyor...") {
@@ -4891,7 +4841,7 @@ const GamePage = ({
           return {
             name: opponentName,
             icon: User,
-            avatar: opponentAvatar,
+            avatar: (participants.find(p => String(p.user_id) !== String(user?.id)) as any)?.profiles?.avatar_url || null,
           };
         }
         console.log("⏳ Henüz rakip yok, aranıyor...");
@@ -5346,7 +5296,7 @@ const GamePage = ({
             <Card className="silver-gradient border border-gray-300 shadow-lg">
               <CardContent className="p-4 text-center relative overflow-hidden">
                 <Avatar className="w-16 h-16 mx-auto mb-2">
-                  <AvatarImage src={playerAvatar || user?.user_metadata?.avatar_url} alt="Profile" />
+                  <AvatarImage src={profile?.avatar_url || user?.user_metadata?.avatar_url} alt="Profile" />
                   <AvatarFallback>
                     <User className="w-8 h-8 text-gray-600" />
                   </AvatarFallback>
