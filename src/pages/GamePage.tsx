@@ -1491,6 +1491,7 @@ const GamePage = ({
           p_is_winner: finalUserScore > finalOpponentScore,
           p_game_duration: gameDuration,
           p_first_word_time: firstWordTime,
+          p_game_mode: gameMode, // 🎯 Oyun modu eklendi
         });
 
         if (error) {
