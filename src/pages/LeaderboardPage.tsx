@@ -190,6 +190,31 @@ const LeaderboardPage = () => {
     loadData();
   }, [user]);
 
+  // Aktif sekme değiştiğinde ilgili listeyi tazele
+  useEffect(() => {
+    const refetchActive = async () => {
+      if (activeTab === 'all-time') await fetchAllTimeLeaders();
+      if (activeTab === 'weekly') await fetchWeeklyLeaders();
+      if (activeTab === 'monthly') await fetchMonthlyLeaders();
+    };
+    refetchActive();
+  }, [activeTab]);
+
+  // Sayfa tekrar görünür olduğunda tüm verileri tazele (oyun sonrası geri dönünce güncellensin)
+  useEffect(() => {
+    const onVisible = async () => {
+      if (document.visibilityState === 'visible') {
+        await Promise.all([
+          fetchAllTimeLeaders(),
+          fetchWeeklyLeaders(),
+          fetchMonthlyLeaders()
+        ]);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, []);
+
   const getRankIcon = (rank: number) => {
     switch (rank) {
       case 1:
