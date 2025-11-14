@@ -87,7 +87,25 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   const refreshProfile = async (forceRefresh = false) => {
     if (!user) {
       setProfile(null);
+      localStorage.removeItem('cached_profile');
       return;
+    }
+
+    // Check cache first if not forcing refresh
+    if (!forceRefresh) {
+      const cachedProfile = localStorage.getItem('cached_profile');
+      if (cachedProfile) {
+        try {
+          const parsed = JSON.parse(cachedProfile);
+          if (parsed.id === user.id && parsed.timestamp > Date.now() - 300000) { // 5 min cache
+            setProfile(parsed.data);
+            setLoading(false);
+            return;
+          }
+        } catch (e) {
+          console.error('Cache parse error:', e);
+        }
+      }
     }
 
     setLoading(true);
@@ -103,6 +121,13 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         await checkAndResetDailyStats(data);
         console.log('Profile refreshed:', data);
         setProfile(data);
+        
+        // Cache profile data with avatar_url
+        localStorage.setItem('cached_profile', JSON.stringify({
+          id: user.id,
+          data: data,
+          timestamp: Date.now()
+        }));
       }
     } catch (error) {
       console.error('Error loading profile:', error);
