@@ -84,6 +84,35 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   const previousCreditsRef = useRef<number>(0);
   const { showLocalNotification, isPermissionGranted } = useMobileNotifications();
 
+  // Hydrate profile from cache immediately on user change to avoid avatar flicker
+  useEffect(() => {
+    if (!user) {
+      setProfile(null);
+      return;
+    }
+
+    const cached = localStorage.getItem('cached_profile');
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (parsed.id === user.id) {
+          setProfile((prev) => prev ?? parsed.data);
+          // Preload avatar image to ensure instant display
+          if (parsed.data?.avatar_url) {
+            const img = new Image();
+            img.src = parsed.data.avatar_url;
+          }
+        }
+      } catch (e) {
+        console.error('Cache hydrate parse error:', e);
+      }
+    }
+
+    // Kick an async refresh in the background
+    refreshProfile(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
   const refreshProfile = async (forceRefresh = false) => {
     if (!user) {
       setProfile(null);
