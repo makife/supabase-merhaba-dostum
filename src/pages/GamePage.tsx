@@ -4854,7 +4854,8 @@ const GamePage = ({
         if (gameStarted || showCountdown) {
           const name = opponentName && opponentName !== "Rakip Aranıyor..." ? opponentName : "Rakip";
           console.log("🛡️ Oyun başladı - fallback rakip:", name);
-          return { name, icon: User, avatar: (opponent as any).profiles?.avatar_url || null };
+          const fallbackOpponent = participants.find(p => String(p.user_id) !== String(user?.id));
+          return { name, icon: User, avatar: (fallbackOpponent as any)?.profiles?.avatar_url || null };
         }
         // Henüz başlamadıysa ama state'te rakip varsa göster
         if (opponentName && opponentName !== "Rakip Aranıyor...") {
