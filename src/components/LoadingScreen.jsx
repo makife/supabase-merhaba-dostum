@@ -6,8 +6,10 @@ const LoadingScreen = ({ onLoadingComplete }) => {
   const [progress, setProgress] = useState(0);
   const [loadingText, setLoadingText] = useState('Oyun hazırlanıyor...');
   const [isComplete, setIsComplete] = useState(false);
+  // Force ergan to show first - başlangıçta mutlaka ergan göster
   const [showErganImage, setShowErganImage] = useState(true);
   const [showLoading, setShowLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const loadingSteps = [
     { text: 'Oyun hazırlanıyor...', progress: 0 },
@@ -41,7 +43,15 @@ const LoadingScreen = ({ onLoadingComplete }) => {
     loadTips();
   }, []);
 
+  // Component mount olduğunda çalış
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    // Mounted olana kadar timer'ları başlatma
+    if (!mounted) return;
+
     // Ergan görselini 3 saniye göster
     const erganTimer = setTimeout(() => {
       setShowErganImage(false);
@@ -87,11 +97,12 @@ const LoadingScreen = ({ onLoadingComplete }) => {
       clearTimeout(erganTimer);
       clearTimeout(loadingTimer);
     };
-  }, [onLoadingComplete]);
+  }, [mounted, onLoadingComplete]);
 
+  // İlk render'da her zaman ergan göster
   return (
     <div className="loading-screen">
-      {showErganImage ? (
+      {(showErganImage || !mounted) ? (
         <div className="ergan-image-container" style={{
           position: 'fixed',
           top: 0,
