@@ -4836,7 +4836,7 @@ const GamePage = ({
             };
           }
         }
-        return { name: "Arkadaş", icon: User, avatar: (opponent as any).profiles?.avatar_url || null };
+        return { name: "Arkadaş", icon: User, avatar: null };
       case "random-match":
       case "private-room":
         if (participants.length >= 2) {
