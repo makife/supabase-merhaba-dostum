@@ -514,9 +514,24 @@ export const GameProvider = ({ children }: GameProviderProps) => {
             gameType,
           });
 
-          // notifications.ts'ten import edilmeli
+          // DB notification kaydet
           const { sendRematchNotification } = await import("@/utils/notifications");
           await sendRematchNotification(opponent.user_id, username, code, gameType);
+
+          // Push notification gönder (mobil için)
+          const gameTypeText = gameType === "timed" ? "Zamana Karşı" : "Skora Karşı";
+          await supabase.functions.invoke("send-push-notification", {
+            body: {
+              userId: opponent.user_id,
+              title: "🔄 Rematch İsteği",
+              body: `${username} tekrar oyun istiyor! (${gameTypeText})`,
+              data: {
+                type: "rematch",
+                roomCode: code,
+                gameType: gameType,
+              },
+            },
+          });
         } catch (notifError) {
           console.error("⚠️ Bildirim gönderilemedi (oyun devam edecek):", notifError);
         }
