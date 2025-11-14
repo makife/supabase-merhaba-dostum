@@ -104,6 +104,24 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
                   },
                 });
               }
+
+              // Oyun daveti bildirimi
+              if (notification.type === "invite" && notification.related_id) {
+                const roomCode = notification.related_id;
+                
+                toast.info(`🎮 ${notification.message}`, {
+                  duration: 8000,
+                  action: {
+                    label: "Katıl",
+                    onClick: () => {
+                      // Bildirimi okundu olarak işaretle
+                      markAsRead(notification.id);
+                      // Oyuna katıl
+                      navigate(`/game/${roomCode}?mode=private-room`);
+                    },
+                  },
+                });
+              }
             } catch (err) {
               console.error("Bildirim işlenirken hata:", err);
             }

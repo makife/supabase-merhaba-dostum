@@ -98,6 +98,26 @@ export const sendMessageNotification = async (userId: string, senderUsername: st
 // Oyun daveti bildirimi
 export const sendGameInviteNotification = async (receiverId: string, senderUsername: string, roomCode: string) => {
   try {
+    // Aynı room için yakın zamanda bildirim gönderilmiş mi kontrol et (5 saniye içinde)
+    const fiveSecondsAgo = new Date(Date.now() - 5000).toISOString();
+    const { data: recentNotifications } = await supabase
+      .from("notifications")
+      .select("id")
+      .eq("user_id", receiverId)
+      .eq("type", "invite")
+      .eq("related_id", roomCode)
+      .gte("created_at", fiveSecondsAgo)
+      .limit(1);
+
+    if (recentNotifications && recentNotifications.length > 0) {
+      console.log("🚫 DUPLICATE GAME INVITE PREVENTED:", {
+        to: receiverId,
+        from: senderUsername,
+        roomCode: roomCode,
+      });
+      return true; // Zaten gönderilmiş, hata sayılmasın
+    }
+
     const { error } = await supabase.rpc("create_notification", {
       p_user_id: receiverId,
       p_type: "invite",
@@ -133,6 +153,26 @@ export const sendRematchNotification = async (
   gameType: string,
 ) => {
   try {
+    // Aynı room için yakın zamanda bildirim gönderilmiş mi kontrol et (5 saniye içinde)
+    const fiveSecondsAgo = new Date(Date.now() - 5000).toISOString();
+    const { data: recentNotifications } = await supabase
+      .from("notifications")
+      .select("id")
+      .eq("user_id", receiverId)
+      .eq("type", "invite")
+      .eq("related_id", roomCode)
+      .gte("created_at", fiveSecondsAgo)
+      .limit(1);
+
+    if (recentNotifications && recentNotifications.length > 0) {
+      console.log("🚫 DUPLICATE REMATCH PREVENTED:", {
+        to: receiverId,
+        from: senderUsername,
+        roomCode: roomCode,
+      });
+      return true; // Zaten gönderilmiş, hata sayılmasın
+    }
+
     const gameTypeText = gameType === "timed" ? "Zamana Karşı" : "Skora Karşı";
 
     const { error } = await supabase.rpc("create_notification", {
