@@ -201,10 +201,13 @@ export const useUserPurchases = () => {
         const currentCredits = profile?.game_credits || 0;
         const currentBonus = profile?.bonus_credits || 0;
         
-        // Krediler 5'i aşarsa bonus krediye ekle
-        const totalCurrentCredits = currentCredits + item.value;
-        const newGameCredits = Math.min(5, totalCurrentCredits);
-        const newBonusCredits = currentBonus + Math.max(0, totalCurrentCredits - 5);
+        // Toplam mevcut krediye yeni kredileri ekle
+        const currentTotal = currentCredits + currentBonus;
+        const newTotal = currentTotal + item.value;
+        
+        // 5'e kadar game_credits'e, kalanı bonus_credits'e ekle
+        const newGameCredits = Math.min(5, newTotal);
+        const newBonusCredits = Math.max(0, newTotal - 5);
 
         const { error } = await supabase
           .from('profiles')
