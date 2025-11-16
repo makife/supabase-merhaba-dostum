@@ -2707,15 +2707,19 @@ const GamePage = ({
               // Rakip hazırlanıyor animasyonu başlat
               setPreparingOpponent('preparing');
               
-              // Buffer bitiminden 1.5sn önce "Oyuncu Hazır!" göster
+              // Buffer bitiminden 2sn önce "Oyuncu Hazır!" göster
               setTimeout(() => {
                 setPreparingOpponent('ready');
+              }, Math.max(0, timeDiff - 2000));
+              
+              // Buffer bitiminden 1.5sn önce animasyonu temizle
+              setTimeout(() => {
+                setPreparingOpponent(null);
               }, Math.max(0, timeDiff - 1500));
               
               // Buffer bitiminde countdown başlat
               setTimeout(() => {
                 console.log("🎯 Tournament countdown başlıyor");
-                setPreparingOpponent(null);
                 setCountdownServerTime(matchData.countdown_started_at);
                 setShowCountdown(true);
               }, timeDiff);
@@ -3294,15 +3298,19 @@ const GamePage = ({
               // Rakip hazırlanıyor animasyonu başlat
               setPreparingOpponent('preparing');
               
-              // Buffer bitiminden 1.5sn önce "Oyuncu Hazır!" göster
+              // Buffer bitiminden 2sn önce "Oyuncu Hazır!" göster
               setTimeout(() => {
                 setPreparingOpponent('ready');
+              }, Math.max(0, timeDiff - 2000));
+              
+              // Buffer bitiminden 1.5sn önce animasyonu temizle
+              setTimeout(() => {
+                setPreparingOpponent(null);
               }, Math.max(0, timeDiff - 1500));
               
               // Buffer bitiminde countdown başlat
               setTimeout(() => {
                 console.log("🎯 Tournament countdown başlıyor (server-sync)");
-                setPreparingOpponent(null);
                 setCountdownServerTime(newData.countdown_started_at);
                 setShowCountdown(true);
               }, timeDiff);
@@ -4240,15 +4248,18 @@ const GamePage = ({
       // Rakip hazırlanıyor animasyonu başlat (5 saniyelik buffer)
       setPreparingOpponent('preparing');
       
-      // 3.5 saniye sonra "Oyuncu Hazır!" göster (geri sayıma 1.5sn kala)
+      // 3 saniye sonra "Oyuncu Hazır!" göster (geri sayıma 2sn kala)
       setTimeout(() => {
         setPreparingOpponent('ready');
-      }, 3500);
+      }, 3000);
       
-      // 5 saniye sonra countdown başlat (direkt 5'ten başlar)
+      // 3.5 saniye sonra animasyonu temizle (geri sayıma 1.5sn kala bitmiş olsun)
       setTimeout(() => {
         setPreparingOpponent(null);
-        setCountdownServerTime(new Date().toISOString());
+      }, 3500);
+      
+      // 5 saniye sonra countdown başlat
+      setTimeout(() => {
         setShowCountdown(true);
       }, 5000);
       
@@ -4302,15 +4313,19 @@ const GamePage = ({
         // Rakip hazırlanıyor animasyonu başlat
         setPreparingOpponent('preparing');
         
-        // Buffer bitiminden 1.5sn önce "Oyuncu Hazır!" göster
+        // Buffer bitiminden 2sn önce "Oyuncu Hazır!" göster
         const readyTimer = setTimeout(() => {
           setPreparingOpponent('ready');
+        }, Math.max(0, timeDiff - 2000));
+        
+        // Buffer bitiminden 1.5sn önce animasyonu temizle
+        const clearTimer = setTimeout(() => {
+          setPreparingOpponent(null);
         }, Math.max(0, timeDiff - 1500));
         
         // Buffer bitiminde countdown başlat
         const delayTimer = setTimeout(() => {
           console.log("⏰ Countdown başlıyor (gecikme sonrası)");
-          setPreparingOpponent(null);
           setCountdownServerTime(withBuffer(currentRoom.countdown_started_at));
           setShowCountdown(true);
           setGameStarted(false);
@@ -5219,8 +5234,7 @@ const GamePage = ({
                         setOpponentScore(0);
                         timeLeftRef.current = gameType === "timed" ? 120 : 0;
                         setDisplayTime(timeLeftRef.current);
-                        setCountdownServerTime(new Date().toISOString());
-                        setShowCountdown(true);
+        setCountdownServerTime(new Date().toISOString());
                         setGameStarted(false);
                         setGameEnded(false);
                         setWinner(null);
