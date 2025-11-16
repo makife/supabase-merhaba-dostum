@@ -235,7 +235,8 @@ const MarketPage = () => {
         variant: 'default',
       });
 
-      await refreshProfile();
+      // Force refresh to bypass cache and show updated credits immediately
+      await refreshProfile(true);
     } catch (error) {
       console.error('Purchase error:', error);
       toast({
