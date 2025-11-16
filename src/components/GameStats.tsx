@@ -21,6 +21,7 @@ interface GameStatsProps {
   gameStarted: boolean;
   gameEnded: boolean;
   winner: 'player' | 'opponent' | 'tie' | null;
+  preparingOpponent?: 'preparing' | 'ready' | null;
   className?: string;
 }
 
@@ -38,6 +39,7 @@ const GameStats = memo<GameStatsProps>(({
   gameStarted,
   gameEnded,
   winner,
+  preparingOpponent,
   className
 }) => {
   
