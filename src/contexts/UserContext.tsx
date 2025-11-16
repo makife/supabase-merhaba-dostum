@@ -82,6 +82,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   const [loading, setLoading] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
   const previousCreditsRef = useRef<number>(0);
+  const lastNotificationRef = useRef<{ amount: number; timestamp: number } | null>(null);
   const { showLocalNotification, isPermissionGranted } = useMobileNotifications();
 
   // Hydrate profile from cache immediately on user change to avoid avatar flicker
@@ -262,10 +263,21 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       const newTotal = getTotalCredits();
       if (newTotal > previousTotal && isPermissionGranted) {
         const creditsGained = newTotal - previousTotal;
-        showLocalNotification(
-          '🎮 Hak Doldu!',
-          `+${creditsGained} oyun hakkı kazandınız! Toplam: ${newTotal}/5`
-        );
+        const now = Date.now();
+        
+        // Aynı miktar için 10 saniye içinde tekrar bildirim gösterme
+        const lastNotif = lastNotificationRef.current;
+        const shouldShowNotification = !lastNotif || 
+          lastNotif.amount !== creditsGained || 
+          (now - lastNotif.timestamp) > 10000;
+        
+        if (shouldShowNotification) {
+          showLocalNotification(
+            '🎮 Hak Doldu!',
+            `+${creditsGained} oyun hakkı kazandınız! Toplam: ${newTotal}/5`
+          );
+          lastNotificationRef.current = { amount: creditsGained, timestamp: now };
+        }
       }
       
       // Güncellenen değeri sakla
@@ -460,7 +472,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   useEffect(() => {
     if (user) {
       refreshProfile(true);
-      checkAndRefreshCredits();
+      // checkAndRefreshCredits() - Çift çağrıyı önle, interval zaten yapacak
     } else {
       setProfile(null);
     }
