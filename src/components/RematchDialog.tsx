@@ -17,6 +17,7 @@ interface RematchDialogProps {
   onReject: () => void;
   senderName: string;
   senderAvatar?: string | null;
+  hasEnoughCredits?: boolean;
 }
 
 export const RematchDialog = ({
@@ -25,6 +26,7 @@ export const RematchDialog = ({
   onReject,
   senderName,
   senderAvatar,
+  hasEnoughCredits = true,
 }: RematchDialogProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -74,6 +76,16 @@ export const RematchDialog = ({
             <p className="text-sm text-muted-foreground">
               Aynı rakibinle yeniden karşılaşmak ister misiniz?
             </p>
+            {!hasEnoughCredits && (
+              <div className="mt-3 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                <p className="text-sm text-destructive font-medium">
+                  ⚠️ Yetersiz Hak
+                </p>
+                <p className="text-xs text-destructive/80 mt-1">
+                  Oyunu kabul etmek için yeterli hakkınız bulunmamaktadır.
+                </p>
+              </div>
+            )}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="flex-row gap-2 sm:gap-2">
@@ -87,10 +99,10 @@ export const RematchDialog = ({
           </Button>
           <Button
             onClick={handleAccept}
-            disabled={isProcessing}
-            className="flex-1 bg-primary hover:bg-primary/90"
+            disabled={isProcessing || !hasEnoughCredits}
+            className="flex-1 bg-primary hover:bg-primary/90 disabled:opacity-50"
           >
-            {isProcessing ? "Yükleniyor..." : "Kabul Et"}
+            {isProcessing ? "Yükleniyor..." : !hasEnoughCredits ? "Yetersiz Hak" : "Kabul Et"}
           </Button>
         </DialogFooter>
       </DialogContent>
