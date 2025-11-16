@@ -112,8 +112,6 @@ const GamePage = ({
     leaveRoom,
     sendRematchRequest,
     respondRematchRequest,
-    currentRematchRequest,
-    setCurrentRematchRequest,
     joinRoom,
     createRoom,
     addAIOpponent,
@@ -5329,35 +5327,6 @@ const GamePage = ({
           </CardContent>
         </Card>
 
-        {/* Tekrar oyun isteği dialog'u */}
-        <AlertDialog open={!!currentRematchRequest} onOpenChange={() => setCurrentRematchRequest(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>🔄 Tekrar Oyun İsteği</AlertDialogTitle>
-              <AlertDialogDescription>Rakibiniz tekrar oynamak istiyor. Kabul ediyor musunuz?</AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel
-                onClick={async () => {
-                  if (currentRematchRequest) {
-                    await respondRematchRequest(currentRematchRequest.id, false);
-                  }
-                }}
-              >
-                Hayır
-              </AlertDialogCancel>
-              <AlertDialogAction
-                onClick={async () => {
-                  if (currentRematchRequest) {
-                    await respondRematchRequest(currentRematchRequest.id, true);
-                  }
-                }}
-              >
-                Evet, Tekrar Oyna
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </div>
     );
   }
@@ -5872,60 +5841,6 @@ const GamePage = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Tekrar oyun isteği dialog'u - BURAYA DA EKLE */}
-      <AlertDialog open={!!currentRematchRequest} onOpenChange={() => setCurrentRematchRequest(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>🔄 Tekrar Oyun İsteği</AlertDialogTitle>
-            <AlertDialogDescription>Rakibiniz tekrar oynamak istiyor. Kabul ediyor musunuz?</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel
-              onClick={async () => {
-                if (currentRematchRequest) {
-                  await respondRematchRequest(currentRematchRequest.id, false);
-                }
-              }}
-            >
-              Hayır
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={async () => {
-                if (currentRematchRequest) {
-                  await respondRematchRequest(currentRematchRequest.id, true);
-                  if (currentRematchRequest.room_code) {
-                    const success = await joinRoom(currentRematchRequest.room_code);
-                    if (success) {
-                      console.log("✅ Rematch odaya katıldı, oyun sayfasına yönlendiriliyor");
-                      // Oyun durumunu tamamen sıfırla
-                      resetGameForRematch();
-                      // Yeni oyun başlatması için küçük gecikme
-                      setTimeout(async () => {
-                        // 🎯 SERVER-SIDE COUNTDOWN
-                        if (currentRoom?.id) {
-                          try {
-                            const { data, error } = await supabase.rpc("start_game_countdown", {
-                              p_room_id: currentRoom.id,
-                            });
-                            if (!error && data) {
-                              setCountdownServerTime(data);
-                            }
-                          } catch (err) {
-                            console.error("Countdown error:", err);
-                          }
-                        }
-                        setShowCountdown(true);
-                      }, 500);
-                    }
-                  }
-                }
-              }}
-            >
-              Evet, Tekrar Oyna
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 };

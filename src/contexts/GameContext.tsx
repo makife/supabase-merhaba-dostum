@@ -68,8 +68,6 @@ interface GameContextType {
   createRoom: (gameMode: string, roomCode?: string) => Promise<GameRoom | null>;
   sendRematchRequest: (roomCode: string, gameType: "timed" | "score") => Promise<void>;
   respondRematchRequest: (requestId: string, accepted: boolean) => Promise<void>;
-  currentRematchRequest: RematchRequest | null;
-  setCurrentRematchRequest: (request: RematchRequest | null) => void; // BU SATIRI EKLEYİN
   joinRoom: (roomCode: string) => Promise<boolean>;
   findRandomMatch: (gameType: "timed" | "score") => Promise<boolean>;
   addAIOpponent: () => Promise<void>;
@@ -176,7 +174,6 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   const [lastOpponent, setLastOpponent] = useState<GameParticipant | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [useNakama, setUseNakama] = useState(false);
-  const [currentRematchRequest, setCurrentRematchRequest] = useState<RematchRequest | null>(null);
 
   const isClosingRoomRef = useRef(false);
   const lastCountdownAtRef = useRef<string | null>(null);
@@ -670,8 +667,6 @@ export const GameProvider = ({ children }: GameProviderProps) => {
             100,
           );
         }
-
-        setCurrentRematchRequest(null);
       } catch (error) {
         console.error("❌ Tekrar oyun yanıt hatası:", error);
         toast({
@@ -681,7 +676,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         });
       }
     },
-    [user, setCurrentRematchRequest, navigate, toast],
+    [user, navigate, toast],
   );
 
   // Helper function to determine game mode
@@ -1523,7 +1518,6 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       setCurrentRoom(null);
       setParticipants([]);
       setLastOpponent(null);
-      setCurrentRematchRequest(null);
 
       console.log("✅ Oyundan çıkış tamamlandı - state cleared");
     } catch (error) {
@@ -1532,7 +1526,6 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       setCurrentRoom(null);
       setParticipants([]);
       setLastOpponent(null);
-      setCurrentRematchRequest(null);
       
       toast({
         title: "Hata",
@@ -2363,177 +2356,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     getGameModeFromRoom,
   ]);
 
-  // 🎯 OPTIMIZED Rematch listener (RealtimeManager ile) - GLOBAL (her zaman aktif)
-  // 🔄 REMATCH SUBSCRIPTION - with duplicate guards
-  useEffect(() => {
-    if (!user) return;
-
-    console.log("🔄 Rematch realtime listener kuruluyor... User:", String(user.id).slice(-8));
-    const timeoutMap = new Map<string, NodeJS.Timeout>();
-    const processedRequestIds = new Set<string>(); // 🛡️ Duplicate guard
-
-    // Bana gelen istekler
-    const incomingChannel = realtimeManager.subscribe(
-      "rematch_requests",
-      user.id,
-      `to_user_id=eq.${user.id}`,
-      (payload) => {
-        if (payload.eventType === "INSERT") {
-          const request = payload.new as RematchRequest;
-          
-          // 🛡️ DUPLICATE GUARD: Aynı request ID'yi 2 kez işleme
-          if (processedRequestIds.has(request.id)) {
-            console.log("⚠️ Duplicate rematch request ignored:", request.id);
-            return;
-          }
-          
-          console.log("📨 Rematch isteği alındı:", {
-            requestId: request.id,
-            from: request.from_user_id?.slice(-8),
-            to: request.to_user_id?.slice(-8),
-            myId: String(user.id).slice(-8),
-            status: request.status,
-          });
-
-          if (request.status === "pending" && request.to_user_id === user.id) {
-            // Mark as processed
-            processedRequestIds.add(request.id);
-            
-            console.log("✅ Rematch dialog açılıyor");
-            setCurrentRematchRequest(request);
-            toast({
-              title: "🔄 Tekrar Oyun İsteği",
-              description: "Rakibiniz tekrar oyun istiyor! 30 saniye içinde yanıt verin.",
-              duration: 10000,
-              action: (
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      const t = timeoutMap.get(request.id);
-                      if (t) {
-                        clearTimeout(t);
-                        timeoutMap.delete(request.id);
-                      }
-                      respondRematchRequest(request.id, true);
-                    }}
-                  >
-                    Kabul
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      const t = timeoutMap.get(request.id);
-                      if (t) {
-                        clearTimeout(t);
-                        timeoutMap.delete(request.id);
-                      }
-                      respondRematchRequest(request.id, false);
-                    }}
-                  >
-                    Reddet
-                  </Button>
-                </div>
-              ) as any,
-            });
-
-            const timeoutId = setTimeout(async () => {
-              console.log("⏰ Rematch timeout - istek iptal ediliyor:", request.id);
-
-              await supabase
-                .from("rematch_requests")
-                .update({
-                  status: "rejected",
-                  responded_at: new Date().toISOString(),
-                })
-                .eq("id", request.id);
-
-              setCurrentRematchRequest(null);
-
-              toast({
-                title: "⏰ Süre Doldu",
-                description: "Tekrar oyun isteği zaman aşımına uğradı.",
-                variant: "destructive",
-                duration: 3000,
-              });
-
-              timeoutMap.delete(request.id);
-              processedRequestIds.delete(request.id); // Cleanup
-            }, 30000);
-
-            timeoutMap.set(request.id, timeoutId);
-          } else {
-            console.log("⚠️ Rematch isteği göz ardı edildi - pending değil veya bana yönelik değil");
-          }
-        }
-      },
-    );
-
-    // Benim gönderdiğim isteklerin yanıtları
-    const outgoingChannel = realtimeManager.subscribe(
-      "rematch_requests",
-      user.id,
-      `from_user_id=eq.${user.id}`,
-      (payload) => {
-        if (payload.eventType === "UPDATE") {
-          const request = payload.new as RematchRequest;
-          
-          // 🛡️ DUPLICATE GUARD: Aynı yanıtı 2 kez işleme
-          if (processedRequestIds.has(`response-${request.id}`)) {
-            console.log("⚠️ Duplicate response ignored:", request.id);
-            return;
-          }
-          processedRequestIds.add(`response-${request.id}`);
-          
-          console.log("📬 Gönderdiğim istek yanıtlandı:", request);
-
-          const timeoutId = timeoutMap.get(request.id);
-          if (timeoutId) {
-            clearTimeout(timeoutId);
-            timeoutMap.delete(request.id);
-          }
-
-          if (request.status === "accepted") {
-            toast({
-              title: "✅ İstek Kabul Edildi!",
-              description: "Rakibiniz tekrar oyunu kabul etti, oyun başlıyor...",
-              duration: 3000,
-            });
-            // ✅ Navigation App.tsx'teki GlobalRematchListener tarafından yapılıyor
-          } else if (request.status === "rejected") {
-            toast({
-              title: "❌ İstek Reddedildi",
-              description: "Rakibiniz tekrar oyunu reddetti.",
-              duration: 3000,
-            });
-          }
-
-          setCurrentRematchRequest(null);
-          
-          // Cleanup after delay
-          setTimeout(() => {
-            processedRequestIds.delete(request.id);
-            processedRequestIds.delete(`response-${request.id}`);
-          }, 5000);
-        }
-      },
-    );
-
-    return () => {
-      console.log("🔌 Rematch listener kapatılıyor...");
-      timeoutMap.forEach((timeout) => clearTimeout(timeout));
-      timeoutMap.clear();
-      processedRequestIds.clear(); // Cleanup guard set
-
-      if (incomingChannel) {
-        realtimeManager.unsubscribe(`rematch_requests-to_user_id=eq.${user.id}`, user.id);
-      }
-      if (outgoingChannel) {
-        realtimeManager.unsubscribe(`rematch_requests-from_user_id=eq.${user.id}`, user.id);
-      }
-    };
-  }, [user?.id, respondRematchRequest, toast, navigate]);
+  // 🎯 Rematch listener removed - now handled by GlobalRematchListener in App.tsx
 
   // ❌ PRIVATE ROOM POLLING KALDIRILDI - Realtime subscription yeterli
 
@@ -2577,8 +2400,6 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         createRoom,
         sendRematchRequest,
         respondRematchRequest,
-        currentRematchRequest,
-        setCurrentRematchRequest,
         joinRoom,
         findRandomMatch,
         addAIOpponent,
