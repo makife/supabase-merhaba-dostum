@@ -4166,21 +4166,20 @@ const GamePage = ({
       console.log("🤖 vs-computer mode - countdown hazırlanıyor (7s buffer ile)");
       setWaitingForPlayer(false);
       
-      // Rakip hazırlanıyor animasyonu başlat
+      // Rakip hazırlanıyor animasyonu başlat (5 saniyelik buffer)
       setPreparingOpponent('preparing');
       
-      // 5 saniye sonra "Oyuncu Hazır!" göster
+      // 4.5 saniye sonra "Oyuncu Hazır!" göster
       setTimeout(() => {
         setPreparingOpponent('ready');
-      }, 5000);
+      }, 4500);
       
-      // 7 saniye sonra countdown başlat
+      // 5 saniye sonra countdown başlat (direkt 5'ten başlar)
       setTimeout(() => {
         setPreparingOpponent(null);
-        const futureTime = new Date(Date.now() + 5000).toISOString();
-        setCountdownServerTime(futureTime);
+        setCountdownServerTime(new Date().toISOString());
         setShowCountdown(true);
-      }, 7000);
+      }, 5000);
       
       setGameStarted(false);
     }
