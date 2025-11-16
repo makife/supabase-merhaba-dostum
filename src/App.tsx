@@ -8,7 +8,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { GameProvider, useGame } from "@/contexts/GameContext";
 import { MusicProvider } from "@/contexts/MusicContext";
-import { UserProvider } from "@/contexts/UserContext";
+import { UserProvider, useUser } from "@/contexts/UserContext";
 import { MatchmakingProvider } from "@/contexts/NewMatchmakingContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { TournamentProvider } from "@/contexts/TournamentContext";
@@ -342,6 +342,7 @@ const AppRoutes = () => {
 const GlobalRematchListener = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { profile } = useUser();
   const { respondRematchRequest } = useGame();
   const { toast } = useToast();
   const [processedRequests, setProcessedRequests] = useState<Set<string>>(new Set());
@@ -471,6 +472,8 @@ const GlobalRematchListener = () => {
     setRematchRequest(null);
   };
 
+  const hasEnoughCredits = (profile?.game_credits ?? 0) >= 1;
+
   return (
     <RematchDialog
       open={!!rematchRequest}
@@ -478,6 +481,7 @@ const GlobalRematchListener = () => {
       onReject={handleReject}
       senderName={rematchRequest?.senderName || ""}
       senderAvatar={rematchRequest?.senderAvatar}
+      hasEnoughCredits={hasEnoughCredits}
     />
   );
 };
