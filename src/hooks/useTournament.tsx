@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useTournamentContext } from "@/contexts/TournamentContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { calculateServerOffset } from "@/utils/serverTimeSync";
 
 export const useTournament = (tournamentId?: string) => {
   const { user } = useAuth();
@@ -19,17 +20,14 @@ export const useTournament = (tournamentId?: string) => {
   const expiresAtRef = useRef<string | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Get server time offset once on mount
+  // Get server time offset once on mount - Seviye 1 optimizasyonlu
   useEffect(() => {
-    const fetchServerTime = async () => {
-      const { data, error } = await supabase.rpc('get_server_time' as any);
-      if (!error && data) {
-        const serverTime = new Date(data as string).getTime();
-        const clientTime = Date.now();
-        setServerTimeOffset(serverTime - clientTime);
-      }
+    const initializeServerSync = async () => {
+      const offset = await calculateServerOffset();
+      setServerTimeOffset(offset);
+      console.log("⏰ Tournament hook server time offset:", offset, "ms");
     };
-    fetchServerTime();
+    initializeServerSync();
   }, []);
 
   // Calculate countdown - only reset when expires_at actually changes

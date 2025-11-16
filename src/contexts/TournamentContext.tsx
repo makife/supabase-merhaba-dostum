@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Tournament, TournamentParticipant, TournamentMatch } from "@/types/tournament";
 import { toast } from "@/components/ui/use-toast";
 import { nakamaService } from "@/services/nakamaService";
+import { calculateServerOffset } from "@/utils/serverTimeSync";
 
 interface TournamentContextType {
   // State
@@ -53,17 +54,14 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
   const [loading, setLoading] = useState(false);
   const [serverTimeOffset, setServerTimeOffset] = useState(0);
 
-  // Get server time offset once on mount
+  // Get server time offset once on mount - Seviye 1 optimizasyonlu
   useEffect(() => {
-    const fetchServerTime = async () => {
-      const { data, error } = await supabase.rpc("get_server_time" as any);
-      if (!error && data) {
-        const serverTime = new Date(data as string).getTime();
-        const clientTime = Date.now();
-        setServerTimeOffset(serverTime - clientTime);
-      }
+    const initializeServerSync = async () => {
+      const offset = await calculateServerOffset();
+      setServerTimeOffset(offset);
+      console.log("⏰ Tournament server time offset:", offset, "ms");
     };
-    fetchServerTime();
+    initializeServerSync();
   }, []);
 
   // Cleanup function

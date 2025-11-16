@@ -28,6 +28,7 @@ import { useJokerInventory } from "@/hooks/useJokerInventory";
 import { useUserPurchases } from "@/hooks/useUserPurchases";
 import { useNativeGameplay } from "@/hooks/useNativeGameplay";
 import { supabase } from "@/integrations/supabase/client";
+import { calculateServerOffset, startDriftMonitoring } from "@/utils/serverTimeSync";
 import GameCountdown from "@/components/GameCountdown";
 import {
   ArrowLeft,
@@ -633,22 +634,46 @@ const GamePage = ({
   const [rematchRequested, setRematchRequested] = useState(false);
   const [waitingForRematchResponse, setWaitingForRematchResponse] = useState(false);
 
-  // Server time offset'i fetch et (turnuva senkronizasyonu için kritik)
+  // Server time offset'i fetch et - Seviye 1 & 2 optimizasyonlu
   useEffect(() => {
-    const fetchServerTime = async () => {
+    const initializeServerSync = async () => {
       try {
-        const { data, error } = await supabase.rpc("get_server_time");
-        if (!error && data) {
-          const offset = new Date(data).getTime() - Date.now();
-          setServerTimeOffset(offset);
-          console.log("⏰ Server time offset:", offset, "ms");
-        }
+        // Seviye 1: Multiple samples + RTT compensation
+        const offset = await calculateServerOffset();
+        setServerTimeOffset(offset);
+        console.log("⏰ Server time offset initialized:", offset, "ms");
       } catch (err) {
-        console.error("Server time fetch error:", err);
+        console.error("Server time sync error:", err);
       }
     };
-    fetchServerTime();
+    
+    initializeServerSync();
   }, []);
+
+  // Seviye 2: Drift detection (her 30 saniyede kontrol)
+  useEffect(() => {
+    if (!gameStarted) return;
+    
+    const driftInterval = startDriftMonitoring(
+      () => serverTimeOffset,
+      (newOffset, drift) => {
+        setServerTimeOffset(newOffset);
+        console.log(`🔄 Clock re-synced due to drift: ${drift}ms`);
+        
+        toast({
+          title: "⏰ Zaman Senkronizasyonu",
+          description: `Saat farkı düzeltildi (${Math.round(drift)}ms)`,
+          duration: 2000,
+        });
+      },
+      30000 // 30 saniye
+    );
+    
+    return () => {
+      clearInterval(driftInterval);
+      console.log("🔄 Drift monitoring stopped");
+    };
+  }, [gameStarted, serverTimeOffset]);
 
   // Rakip ayrıldığında işlem yap
   useEffect(() => {
