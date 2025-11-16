@@ -605,6 +605,7 @@ const GamePage = ({
   const [displayTime, setDisplayTime] = useState<number>(timeLeftRef.current);
   const [showCountdown, setShowCountdown] = useState(false);
   const [countdownServerTime, setCountdownServerTime] = useState<string | null>(null);
+  const [preparingOpponent, setPreparingOpponent] = useState<'preparing' | 'ready' | null>(null);
   
   // Add small buffer to server countdown start to absorb network jitter (rematch sync)
   const COUNTDOWN_BUFFER_MS = 2500;
@@ -4162,17 +4163,24 @@ const GamePage = ({
   // 🤖 vs-computer modunda otomatik countdown başlatma - CLIENT TIME KULLAN
   useEffect(() => {
     if (gameMode === "vs-computer" && !gameStarted && !showCountdown && !gameEnded) {
-      console.log("🤖 vs-computer mode - countdown hazırlanıyor (5s buffer)");
+      console.log("🤖 vs-computer mode - countdown hazırlanıyor (7s buffer ile)");
       setWaitingForPlayer(false);
       
-      // 5 saniye ileride bir start time belirle
-      const futureTime = new Date(Date.now() + 5000).toISOString();
-      setCountdownServerTime(futureTime);
+      // Rakip hazırlanıyor animasyonu başlat
+      setPreparingOpponent('preparing');
       
-      // 5 saniye sonra countdown'u göster (o zaman tam 5'ten başlar)
+      // 5 saniye sonra "Oyuncu Hazır!" göster
       setTimeout(() => {
-        setShowCountdown(true);
+        setPreparingOpponent('ready');
       }, 5000);
+      
+      // 7 saniye sonra countdown başlat
+      setTimeout(() => {
+        setPreparingOpponent(null);
+        const futureTime = new Date(Date.now() + 5000).toISOString();
+        setCountdownServerTime(futureTime);
+        setShowCountdown(true);
+      }, 7000);
       
       setGameStarted(false);
     }
@@ -5348,15 +5356,47 @@ const GamePage = ({
             </Card>
             <Card className="silver-gradient border border-gray-300 shadow-lg">
               <CardContent className="p-4 text-center relative overflow-hidden">
-                <Avatar className="w-16 h-16 mx-auto mb-2 bg-transparent">
-                  <AvatarImage src={opponent.avatar} alt="Opponent" />
-                  <AvatarFallback>
-                    <opponent.icon className="w-8 h-8 text-gray-600" />
-                  </AvatarFallback>
-                </Avatar>
-                <p className="text-sm text-gray-700 font-bold font-bungee">{opponent.name}</p>
-                <p className="text-2xl font-bold text-gray-700">{opponentScore}</p>
-                {gameType === "score" && <Progress value={(opponentScore / 500) * 100} className="mt-2 bg-white/60" />}
+                {preparingOpponent ? (
+                  <div className="flex flex-col items-center justify-center gap-3 min-h-[140px]">
+                    <Avatar className="w-16 h-16 mx-auto bg-transparent">
+                      <AvatarImage src={opponent.avatar} alt="Opponent" />
+                      <AvatarFallback>
+                        <opponent.icon className="w-8 h-8 text-gray-600" />
+                      </AvatarFallback>
+                    </Avatar>
+                    
+                    {preparingOpponent === 'preparing' ? (
+                      <div className="text-center animate-pulse">
+                        <p className="text-sm font-bold text-gray-700">
+                          Oyuncu Hazırlanıyor...
+                        </p>
+                        <div className="flex gap-1 justify-center mt-2">
+                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center">
+                        <Badge variant="default" className="text-sm font-semibold animate-pulse bg-green-500">
+                          ✓ Oyuncu Hazır!
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    <Avatar className="w-16 h-16 mx-auto mb-2 bg-transparent">
+                      <AvatarImage src={opponent.avatar} alt="Opponent" />
+                      <AvatarFallback>
+                        <opponent.icon className="w-8 h-8 text-gray-600" />
+                      </AvatarFallback>
+                    </Avatar>
+                    <p className="text-sm text-gray-700 font-bold font-bungee">{opponent.name}</p>
+                    <p className="text-2xl font-bold text-gray-700">{opponentScore}</p>
+                    {gameType === "score" && <Progress value={(opponentScore / 500) * 100} className="mt-2 bg-white/60" />}
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>
