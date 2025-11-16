@@ -4260,6 +4260,7 @@ const GamePage = ({
       
       // 5 saniye sonra countdown başlat
       setTimeout(() => {
+        setCountdownServerTime(new Date().toISOString());
         setShowCountdown(true);
       }, 5000);
       
