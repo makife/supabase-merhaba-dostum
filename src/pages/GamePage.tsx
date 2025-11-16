@@ -608,8 +608,8 @@ const GamePage = ({
   const [countdownServerTime, setCountdownServerTime] = useState<string | null>(null);
   const [preparingOpponent, setPreparingOpponent] = useState<'preparing' | 'ready' | null>(null);
   
-  // Add small buffer to server countdown start to absorb network jitter (rematch sync)
-  const COUNTDOWN_BUFFER_MS = 2500;
+  // 5 saniyelik sabit buffer - tüm modlarda oyuncular senkronize başlaması için
+  const COUNTDOWN_BUFFER_MS = 5000;
   const withBuffer = (iso: string | null) => (iso ? new Date(new Date(iso).getTime() + COUNTDOWN_BUFFER_MS).toISOString() : null);
 
   const [gameStarted, setGameStarted] = useState(false);
@@ -2689,13 +2689,15 @@ const GamePage = ({
           if (matchData.countdown_started_at && !showCountdown && !gameStarted) {
             console.log("🎯 Tournament countdown başlatılıyor (initial load):", matchData.countdown_started_at);
             
-            const countdownStartTime = new Date(matchData.countdown_started_at).getTime();
+            // 5 saniyelik buffer ekle - tüm modlarda senkronize başlama
+            const bufferedCountdownStart = new Date(matchData.countdown_started_at).getTime() + COUNTDOWN_BUFFER_MS;
             const now = Date.now();
             const serverNow = now + serverTimeOffset;
-            const timeDiff = countdownStartTime - serverNow;
+            const timeDiff = bufferedCountdownStart - serverNow;
             
             console.log("🎯 Tournament countdown timing:", {
-              countdownStartTime: new Date(countdownStartTime).toISOString(),
+              originalStart: new Date(matchData.countdown_started_at).toISOString(),
+              bufferedStart: new Date(bufferedCountdownStart).toISOString(),
               serverNow: new Date(serverNow).toISOString(),
               timeDiff,
               willStartIn: Math.max(0, timeDiff)
@@ -2720,13 +2722,13 @@ const GamePage = ({
               // Buffer bitiminde countdown başlat
               setTimeout(() => {
                 console.log("🎯 Tournament countdown başlıyor");
-                setCountdownServerTime(matchData.countdown_started_at);
+                setCountdownServerTime(withBuffer(matchData.countdown_started_at));
                 setShowCountdown(true);
               }, timeDiff);
             } else {
               console.log("🎯 Tournament countdown hemen başlıyor");
               setPreparingOpponent(null);
-              setCountdownServerTime(matchData.countdown_started_at);
+              setCountdownServerTime(withBuffer(matchData.countdown_started_at));
               setShowCountdown(true);
             }
           }
@@ -3280,13 +3282,15 @@ const GamePage = ({
           if (newData.countdown_started_at && !showCountdown && !gameStarted) {
             console.log("🎯 Tournament countdown başlatılıyor (server-sync):", newData.countdown_started_at);
             
-            const countdownStartTime = new Date(newData.countdown_started_at).getTime();
+            // 5 saniyelik buffer ekle - tüm modlarda senkronize başlama
+            const bufferedCountdownStart = new Date(newData.countdown_started_at).getTime() + COUNTDOWN_BUFFER_MS;
             const now = Date.now();
             const serverNow = now + serverTimeOffset;
-            const timeDiff = countdownStartTime - serverNow;
+            const timeDiff = bufferedCountdownStart - serverNow;
             
             console.log("🎯 Tournament countdown timing (server-sync):", {
-              countdownStartTime: new Date(countdownStartTime).toISOString(),
+              originalStart: new Date(newData.countdown_started_at).toISOString(),
+              bufferedStart: new Date(bufferedCountdownStart).toISOString(),
               serverNow: new Date(serverNow).toISOString(),
               timeDiff,
               willStartIn: Math.max(0, timeDiff)
@@ -3311,13 +3315,13 @@ const GamePage = ({
               // Buffer bitiminde countdown başlat
               setTimeout(() => {
                 console.log("🎯 Tournament countdown başlıyor (server-sync)");
-                setCountdownServerTime(newData.countdown_started_at);
+                setCountdownServerTime(withBuffer(newData.countdown_started_at));
                 setShowCountdown(true);
               }, timeDiff);
             } else {
               console.log("🎯 Tournament countdown hemen başlıyor (server-sync)");
               setPreparingOpponent(null);
-              setCountdownServerTime(newData.countdown_started_at);
+              setCountdownServerTime(withBuffer(newData.countdown_started_at));
               setShowCountdown(true);
             }
           }
