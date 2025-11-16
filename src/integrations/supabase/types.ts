@@ -1895,17 +1895,29 @@ export type Database = {
       }
       test_game_completion: { Args: { p_user_id: string }; Returns: undefined }
       trigger_global_storage_clear: { Args: never; Returns: undefined }
-      update_daily_leaderboard: {
-        Args: {
-          p_avatar_url: string
-          p_best_word?: string
-          p_best_word_score?: number
-          p_game_score: number
-          p_user_id: string
-          p_username: string
-        }
-        Returns: undefined
-      }
+      update_daily_leaderboard:
+        | {
+            Args: {
+              p_avatar_url: string
+              p_best_word?: string
+              p_best_word_score?: number
+              p_game_score: number
+              p_user_id: string
+              p_username: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_avatar_url: string
+              p_best_word?: string
+              p_best_word_score?: number
+              p_game_score: number
+              p_user_id: string
+              p_username: string
+            }
+            Returns: undefined
+          }
       update_daily_stats: {
         Args: {
           p_game_won?: boolean
@@ -1940,6 +1952,18 @@ export type Database = {
             Args: {
               p_first_word_time?: number
               p_game_duration?: number
+              p_is_winner?: boolean
+              p_score: number
+              p_user_id: string
+              p_words: Json
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_first_word_time?: number
+              p_game_duration?: number
+              p_game_mode?: string
               p_is_winner?: boolean
               p_score: number
               p_user_id: string
