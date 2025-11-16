@@ -3369,8 +3369,23 @@ const GamePage = ({
           // 🎯 SERVER-SIDE COUNTDOWN SYNC - sadece henüz başlamamışsa
           if (newData.countdown_started_at && !showCountdown && !gameStarted) {
             console.log("🎯 Game room countdown başlatılıyor (server-sync):", newData.countdown_started_at);
-            setCountdownServerTime(newData.countdown_started_at);
-            setShowCountdown(true);
+            const bufferedStartTime = new Date(newData.countdown_started_at).getTime() + COUNTDOWN_BUFFER_MS;
+            const serverNow = Date.now() + serverTimeOffset;
+            const timeDiff = bufferedStartTime - serverNow;
+
+            if (timeDiff > 1000) {
+              setPreparingOpponent('preparing');
+              setTimeout(() => setPreparingOpponent('ready'), Math.max(0, timeDiff - 2000));
+              setTimeout(() => setPreparingOpponent(null), Math.max(0, timeDiff - 1500));
+              setTimeout(() => {
+                setCountdownServerTime(withBuffer(newData.countdown_started_at));
+                setShowCountdown(true);
+              }, timeDiff);
+            } else {
+              setPreparingOpponent(null);
+              setCountdownServerTime(withBuffer(newData.countdown_started_at));
+              setShowCountdown(true);
+            }
           }
         },
       )
@@ -4277,9 +4292,30 @@ const GamePage = ({
     const handleCountdownStart = (event: CustomEvent) => {
       const { serverTime } = event.detail;
       console.log("⏰ Countdown event alındı:", serverTime, "→ buffered:", withBuffer(serverTime));
-      setCountdownServerTime(withBuffer(serverTime));
-      setShowCountdown(true);
-      setGameStarted(false);
+      // 5sn sabit buffer + hazırlık animasyonu (tüm modlar)
+      const bufferedStartTime = new Date(serverTime).getTime() + COUNTDOWN_BUFFER_MS;
+      const serverNow = Date.now() + serverTimeOffset;
+      const timeDiff = bufferedStartTime - serverNow;
+
+      if (timeDiff > 1000) {
+        // Rakip hazırlanıyor akışı
+        setPreparingOpponent('preparing');
+        setTimeout(() => setPreparingOpponent('ready'), Math.max(0, timeDiff - 2000));
+        setTimeout(() => setPreparingOpponent(null), Math.max(0, timeDiff - 1500));
+
+        // Buffer bitiminde countdown'u başlat
+        setTimeout(() => {
+          setCountdownServerTime(withBuffer(serverTime));
+          setShowCountdown(true);
+          setGameStarted(false);
+        }, timeDiff);
+      } else {
+        // Gecikme yoksa hemen başlat
+        setPreparingOpponent(null);
+        setCountdownServerTime(withBuffer(serverTime));
+        setShowCountdown(true);
+        setGameStarted(false);
+      }
     };
 
     window.addEventListener("countdownStarted", handleCountdownStart as EventListener);
@@ -4370,30 +4406,62 @@ const GamePage = ({
           .eq("id", currentRoom.id)
           .single();
 
-        if (data?.countdown_started_at) {
-          console.log("✅ Sunucuda countdown var, senkronize ediliyor:", data.countdown_started_at, "→ buffered:", withBuffer(data.countdown_started_at));
-          setCountdownServerTime(withBuffer(data.countdown_started_at));
-          setShowCountdown(true);
-          countdownCheckDoneRef.current = true;
-        } else {
-          // Eğer gerçekten 2 oyuncu varsa, sunucu tarafında countdown'u başlatmayı dene (idempotent)
-          if (realPlayers.length >= 2) {
-            console.log("⚠️ Sunucuda countdown yok - RPC ile başlatılıyor...");
-            const { data: startedAt, error: rpcErr } = await supabase.rpc("start_game_countdown", {
-              p_room_id: currentRoom.id,
-            });
-            if (rpcErr) {
-              console.warn("RPC countdown başlatma hatası:", rpcErr);
-            } else if (startedAt) {
-              console.log("⏰ Countdown RPC ile başlatıldı:", startedAt, "→ buffered:", withBuffer(startedAt));
-              setCountdownServerTime(withBuffer(startedAt));
+          if (data?.countdown_started_at) {
+            const bufferedStartTime = new Date(data.countdown_started_at).getTime() + COUNTDOWN_BUFFER_MS;
+            const serverNow = Date.now() + serverTimeOffset;
+            const timeDiff = bufferedStartTime - serverNow;
+            console.log("✅ Sunucuda countdown var, senkronize ediliyor (buffered):", { original: data.countdown_started_at, buffered: new Date(bufferedStartTime).toISOString(), timeDiff });
+
+            if (timeDiff > 1000) {
+              setPreparingOpponent('preparing');
+              setTimeout(() => setPreparingOpponent('ready'), Math.max(0, timeDiff - 2000));
+              setTimeout(() => setPreparingOpponent(null), Math.max(0, timeDiff - 1500));
+              setTimeout(() => {
+                setCountdownServerTime(withBuffer(data.countdown_started_at));
+                setShowCountdown(true);
+                countdownCheckDoneRef.current = true;
+              }, timeDiff);
+            } else {
+              setPreparingOpponent(null);
+              setCountdownServerTime(withBuffer(data.countdown_started_at));
               setShowCountdown(true);
               countdownCheckDoneRef.current = true;
             }
           } else {
-            console.log("⚠️ Sunucuda countdown yok - beklenmeyen durum");
+            // Eğer gerçekten 2 oyuncu varsa, sunucu tarafında countdown'u başlatmayı dene (idempotent)
+            if (realPlayers.length >= 2) {
+              console.log("⚠️ Sunucuda countdown yok - RPC ile başlatılıyor...");
+              const { data: startedAt, error: rpcErr } = await supabase.rpc("start_game_countdown", {
+                p_room_id: currentRoom.id,
+              });
+              if (rpcErr) {
+                console.warn("RPC countdown başlatma hatası:", rpcErr);
+              } else if (startedAt) {
+                const bufferedStartTime = new Date(startedAt).getTime() + COUNTDOWN_BUFFER_MS;
+                const serverNow = Date.now() + serverTimeOffset;
+                const timeDiff = bufferedStartTime - serverNow;
+                console.log("⏰ Countdown RPC ile başlatıldı (buffered):", { original: startedAt, buffered: new Date(bufferedStartTime).toISOString(), timeDiff });
+
+                if (timeDiff > 1000) {
+                  setPreparingOpponent('preparing');
+                  setTimeout(() => setPreparingOpponent('ready'), Math.max(0, timeDiff - 2000));
+                  setTimeout(() => setPreparingOpponent(null), Math.max(0, timeDiff - 1500));
+                  setTimeout(() => {
+                    setCountdownServerTime(withBuffer(startedAt));
+                    setShowCountdown(true);
+                    countdownCheckDoneRef.current = true;
+                  }, timeDiff);
+                } else {
+                  setPreparingOpponent(null);
+                  setCountdownServerTime(withBuffer(startedAt));
+                  setShowCountdown(true);
+                  countdownCheckDoneRef.current = true;
+                }
+              }
+            } else {
+              console.log("⚠️ Sunucuda countdown yok - beklenmeyen durum");
+            }
           }
-        }
       } catch (error) {
         console.error("❌ Countdown kontrol hatası:", error);
       }
