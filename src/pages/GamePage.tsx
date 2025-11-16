@@ -5575,7 +5575,7 @@ const GamePage = ({
                     e.stopPropagation();
                     useDegisTirJoker();
                   }}
-                  disabled={jokers.degistir <= 0 || isJokerActive}
+                  disabled={jokers.degistir <= 0 || isJokerActive || !gameStarted}
                   style={{
                     touchAction: "manipulation",
                     WebkitTapHighlightColor: "transparent",
@@ -5605,7 +5605,7 @@ const GamePage = ({
                     e.stopPropagation();
                     useFisildaJoker();
                   }}
-                  disabled={jokers.fisilida <= 0 || isJokerActive}
+                  disabled={jokers.fisilida <= 0 || isJokerActive || !gameStarted}
                   style={{
                     touchAction: "manipulation",
                     WebkitTapHighlightColor: "transparent",
@@ -5635,7 +5635,7 @@ const GamePage = ({
                     e.stopPropagation();
                     useSenYazJoker();
                   }}
-                  disabled={jokers.senYaz <= 0 || isJokerActive}
+                  disabled={jokers.senYaz <= 0 || isJokerActive || !gameStarted}
                   style={{
                     touchAction: "manipulation",
                     WebkitTapHighlightColor: "transparent",
@@ -5691,17 +5691,17 @@ const GamePage = ({
                         className={`letter-button h-12 text-lg font-bold relative transition-all duration-300 ${
                           isSelected ? "selected" : ""
                         } ${isHighlighted ? "letter-glow-highlight" : ""} ${
-                          preparingOpponent ? "opacity-50 cursor-not-allowed" : ""
+                          !gameStarted ? "opacity-50 cursor-not-allowed" : ""
                         }`}
-                        disabled={!!preparingOpponent}
+                        disabled={!gameStarted}
                         onTouchStart={(e) => {
-                          if (preparingOpponent) return;
+                          if (!gameStarted) return;
                           e.preventDefault();
                           e.stopPropagation();
                           handleLetterClick(letter, rowIndex, colIndex);
                         }}
                         onClick={(e) => {
-                          if (preparingOpponent) return;
+                          if (!gameStarted) return;
                           // Sadece touch event olmadığında çalışsın (çift tetiklemeyi engeller)
                           if (e.nativeEvent && "touches" in e.nativeEvent) return;
                           e.preventDefault();
@@ -5714,7 +5714,7 @@ const GamePage = ({
                           WebkitTouchCallout: "none",
                           WebkitUserSelect: "none",
                           userSelect: "none",
-                          pointerEvents: preparingOpponent ? "none" : "auto",
+                          pointerEvents: !gameStarted ? "none" : "auto",
                         }}
                       >
                         {letter}
@@ -5736,17 +5736,17 @@ const GamePage = ({
             <Button
               variant="outline"
               onTouchStart={(e) => {
-                if (preparingOpponent) return;
+                if (!gameStarted) return;
                 e.preventDefault();
                 clearWord();
               }}
               onClick={(e) => {
-                if (preparingOpponent) return;
+                if (!gameStarted) return;
                 e.preventDefault();
                 clearWord();
               }}
               className="h-12"
-              disabled={selectedLetters.length === 0 || isJokerActive || !!preparingOpponent}
+              disabled={selectedLetters.length === 0 || isJokerActive || !gameStarted}
               style={{ touchAction: "manipulation" }}
             >
               <Trash2 className="w-4 h-4 mr-2" />
@@ -5755,14 +5755,14 @@ const GamePage = ({
 
             <Button
               onTouchStart={(e) => {
-                if (preparingOpponent) return;
+                if (!gameStarted) return;
                 e.preventDefault();
                 submitTouchTsRef.current = Date.now();
                 playSound("buttonClick");
                 submitWord();
               }}
               onClick={(e) => {
-                if (preparingOpponent) return;
+                if (!gameStarted) return;
                 e.preventDefault();
                 // Dokunmatik cihazlarda çift tetiklemeyi önle
                 if (Date.now() - submitTouchTsRef.current < 500) return;
@@ -5770,7 +5770,7 @@ const GamePage = ({
                 submitWord();
               }}
               className="h-12"
-              disabled={currentWord.length < 3 || isValidating || isJokerActive || !!preparingOpponent}
+              disabled={currentWord.length < 3 || isValidating || isJokerActive || !gameStarted}
               style={{ touchAction: "manipulation" }}
             >
               <Send className="w-4 h-4 mr-2" />
