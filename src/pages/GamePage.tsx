@@ -2707,10 +2707,10 @@ const GamePage = ({
               // Rakip hazırlanıyor animasyonu başlat
               setPreparingOpponent('preparing');
               
-              // Buffer bitiminden 500ms önce "Oyuncu Hazır!" göster
+              // Buffer bitiminden 1.5sn önce "Oyuncu Hazır!" göster
               setTimeout(() => {
                 setPreparingOpponent('ready');
-              }, Math.max(0, timeDiff - 500));
+              }, Math.max(0, timeDiff - 1500));
               
               // Buffer bitiminde countdown başlat
               setTimeout(() => {
@@ -3294,10 +3294,10 @@ const GamePage = ({
               // Rakip hazırlanıyor animasyonu başlat
               setPreparingOpponent('preparing');
               
-              // Buffer bitiminden 500ms önce "Oyuncu Hazır!" göster
+              // Buffer bitiminden 1.5sn önce "Oyuncu Hazır!" göster
               setTimeout(() => {
                 setPreparingOpponent('ready');
-              }, Math.max(0, timeDiff - 500));
+              }, Math.max(0, timeDiff - 1500));
               
               // Buffer bitiminde countdown başlat
               setTimeout(() => {
@@ -4240,10 +4240,10 @@ const GamePage = ({
       // Rakip hazırlanıyor animasyonu başlat (5 saniyelik buffer)
       setPreparingOpponent('preparing');
       
-      // 4.5 saniye sonra "Oyuncu Hazır!" göster
+      // 3.5 saniye sonra "Oyuncu Hazır!" göster (geri sayıma 1.5sn kala)
       setTimeout(() => {
         setPreparingOpponent('ready');
-      }, 4500);
+      }, 3500);
       
       // 5 saniye sonra countdown başlat (direkt 5'ten başlar)
       setTimeout(() => {
@@ -4302,10 +4302,10 @@ const GamePage = ({
         // Rakip hazırlanıyor animasyonu başlat
         setPreparingOpponent('preparing');
         
-        // Buffer bitiminden 500ms önce "Oyuncu Hazır!" göster
+        // Buffer bitiminden 1.5sn önce "Oyuncu Hazır!" göster
         const readyTimer = setTimeout(() => {
           setPreparingOpponent('ready');
-        }, Math.max(0, timeDiff - 500));
+        }, Math.max(0, timeDiff - 1500));
         
         // Buffer bitiminde countdown başlat
         const delayTimer = setTimeout(() => {
