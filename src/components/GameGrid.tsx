@@ -11,6 +11,7 @@ interface GameGridProps {
   onLetterClick: (row: number, col: number, letter: string) => void;
   currentWord: string;
   className?: string;
+  disabled?: boolean;
 }
 
 const GameGrid = memo<GameGridProps>(({ 
@@ -20,7 +21,8 @@ const GameGrid = memo<GameGridProps>(({
   isJokerActive,
   onLetterClick, 
   currentWord,
-  className 
+  className,
+  disabled = false
 }) => {
   
   // Memoized helper functions
@@ -44,13 +46,14 @@ const GameGrid = memo<GameGridProps>(({
       "active:scale-95 hover:scale-105",
       // Mobile-first shadow and effects
       "shadow-lg hover:shadow-xl",
+      disabled && "opacity-50 cursor-not-allowed pointer-events-none",
       selected
         ? "bg-primary text-primary-foreground border-primary shadow-xl scale-105 shadow-primary/30"
         : highlighted && isJokerActive
         ? "bg-yellow-200 border-yellow-400 text-yellow-800 animate-pulse shadow-yellow-400/50"
         : "bg-card border-border hover:border-primary/50 hover:bg-accent shadow-md hover:shadow-lg"
     );
-  }, [isLetterSelected, isLetterHighlighted, isJokerActive]);
+  }, [isLetterSelected, isLetterHighlighted, isJokerActive, disabled]);
 
   // Native mobile optimized grid rendering
   const renderedGrid = useMemo(() => {
@@ -70,9 +73,9 @@ const GameGrid = memo<GameGridProps>(({
                   navigator.vibrate(50);
                 }
               }}
-              onClick={() => onLetterClick(rowIndex, colIndex, letter)}
+              onClick={() => !disabled && onLetterClick(rowIndex, colIndex, letter)}
               className={buttonClass}
-              disabled={!letter} // Empty letters are disabled
+              disabled={!letter || disabled} // Empty letters or grid disabled
               style={{
                 // Native optimization: Prevent text selection and zoom
                 WebkitUserSelect: 'none',

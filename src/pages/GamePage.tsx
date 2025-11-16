@@ -5690,13 +5690,18 @@ const GamePage = ({
                         key={`${rowIndex}-${colIndex}`}
                         className={`letter-button h-12 text-lg font-bold relative transition-all duration-300 ${
                           isSelected ? "selected" : ""
-                        } ${isHighlighted ? "letter-glow-highlight" : ""}`}
+                        } ${isHighlighted ? "letter-glow-highlight" : ""} ${
+                          preparingOpponent ? "opacity-50 cursor-not-allowed" : ""
+                        }`}
+                        disabled={!!preparingOpponent}
                         onTouchStart={(e) => {
+                          if (preparingOpponent) return;
                           e.preventDefault();
                           e.stopPropagation();
                           handleLetterClick(letter, rowIndex, colIndex);
                         }}
                         onClick={(e) => {
+                          if (preparingOpponent) return;
                           // Sadece touch event olmadığında çalışsın (çift tetiklemeyi engeller)
                           if (e.nativeEvent && "touches" in e.nativeEvent) return;
                           e.preventDefault();
@@ -5709,6 +5714,7 @@ const GamePage = ({
                           WebkitTouchCallout: "none",
                           WebkitUserSelect: "none",
                           userSelect: "none",
+                          pointerEvents: preparingOpponent ? "none" : "auto",
                         }}
                       >
                         {letter}
@@ -5730,15 +5736,17 @@ const GamePage = ({
             <Button
               variant="outline"
               onTouchStart={(e) => {
+                if (preparingOpponent) return;
                 e.preventDefault();
                 clearWord();
               }}
               onClick={(e) => {
+                if (preparingOpponent) return;
                 e.preventDefault();
                 clearWord();
               }}
               className="h-12"
-              disabled={selectedLetters.length === 0 || isJokerActive}
+              disabled={selectedLetters.length === 0 || isJokerActive || !!preparingOpponent}
               style={{ touchAction: "manipulation" }}
             >
               <Trash2 className="w-4 h-4 mr-2" />
@@ -5747,12 +5755,14 @@ const GamePage = ({
 
             <Button
               onTouchStart={(e) => {
+                if (preparingOpponent) return;
                 e.preventDefault();
                 submitTouchTsRef.current = Date.now();
                 playSound("buttonClick");
                 submitWord();
               }}
               onClick={(e) => {
+                if (preparingOpponent) return;
                 e.preventDefault();
                 // Dokunmatik cihazlarda çift tetiklemeyi önle
                 if (Date.now() - submitTouchTsRef.current < 500) return;
@@ -5760,7 +5770,7 @@ const GamePage = ({
                 submitWord();
               }}
               className="h-12"
-              disabled={currentWord.length < 3 || isValidating || isJokerActive}
+              disabled={currentWord.length < 3 || isValidating || isJokerActive || !!preparingOpponent}
               style={{ touchAction: "manipulation" }}
             >
               <Send className="w-4 h-4 mr-2" />
