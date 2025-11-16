@@ -5483,15 +5483,20 @@ const GamePage = ({
             </Card>
             <Card className="silver-gradient border border-gray-300 shadow-lg">
               <CardContent className="p-4 text-center relative overflow-hidden">
-                {preparingOpponent ? (
-                  <div className="flex flex-col items-center justify-center gap-3 min-h-[140px]">
-                    <Avatar className="w-16 h-16 mx-auto bg-transparent">
-                      <AvatarImage src={opponent.avatar} alt="Opponent" />
-                      <AvatarFallback>
-                        <opponent.icon className="w-8 h-8 text-gray-600" />
-                      </AvatarFallback>
-                    </Avatar>
-                    
+                {/* Normal kart içeriği - her zaman göster */}
+                <Avatar className="w-16 h-16 mx-auto mb-2 bg-transparent">
+                  <AvatarImage src={opponent.avatar} alt="Opponent" />
+                  <AvatarFallback>
+                    <opponent.icon className="w-8 h-8 text-gray-600" />
+                  </AvatarFallback>
+                </Avatar>
+                <p className="text-sm text-gray-700 font-bold font-bungee">{opponent.name}</p>
+                <p className="text-2xl font-bold text-gray-700">{opponentScore}</p>
+                {gameType === "score" && <Progress value={(opponentScore / 500) * 100} className="mt-2 bg-white/60" />}
+                
+                {/* Hazırlık overlay - absolute positioned */}
+                {preparingOpponent && (
+                  <div className="absolute inset-0 bg-silver-gradient/95 backdrop-blur-sm flex items-center justify-center">
                     {preparingOpponent === 'preparing' ? (
                       <div className="text-center animate-pulse">
                         <p className="text-sm font-bold text-gray-700">
@@ -5504,25 +5509,11 @@ const GamePage = ({
                         </div>
                       </div>
                     ) : (
-                      <div className="text-center">
-                        <Badge variant="default" className="text-sm font-semibold animate-pulse bg-green-500">
-                          ✓ Oyuncu Hazır!
-                        </Badge>
-                      </div>
+                      <Badge variant="default" className="text-sm font-semibold animate-pulse bg-green-500">
+                        ✓ Oyuncu Hazır!
+                      </Badge>
                     )}
                   </div>
-                ) : (
-                  <>
-                    <Avatar className="w-16 h-16 mx-auto mb-2 bg-transparent">
-                      <AvatarImage src={opponent.avatar} alt="Opponent" />
-                      <AvatarFallback>
-                        <opponent.icon className="w-8 h-8 text-gray-600" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <p className="text-sm text-gray-700 font-bold font-bungee">{opponent.name}</p>
-                    <p className="text-2xl font-bold text-gray-700">{opponentScore}</p>
-                    {gameType === "score" && <Progress value={(opponentScore / 500) * 100} className="mt-2 bg-white/60" />}
-                  </>
                 )}
               </CardContent>
             </Card>
