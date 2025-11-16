@@ -48,6 +48,7 @@ import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import RoomAutoNavigator from "@/components/RoomAutoNavigator";
 import { ToastAction } from "@/components/ui/toast";
+import { RematchDialog } from "@/components/RematchDialog";
 import { useNavigate } from "react-router-dom";
 import { useAppState } from "@/hooks/useAppState";
 import { realtimeManager } from "@/utils/realtimeManager";
@@ -344,6 +345,13 @@ const GlobalRematchListener = () => {
   const { respondRematchRequest } = useGame();
   const { toast } = useToast();
   const [processedRequests, setProcessedRequests] = useState<Set<string>>(new Set());
+  const [rematchRequest, setRematchRequest] = useState<{
+    id: string;
+    senderId: string;
+    senderName: string;
+    senderAvatar: string | null;
+    roomId: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -358,7 +366,7 @@ const GlobalRematchListener = () => {
           event: "INSERT",
           schema: "public",
           table: "rematch_requests",
-          filter: `receiver_id=eq.${user.id}`,
+          filter: `to_user_id=eq.${user.id}`,
         },
         async (payload) => {
           const request = payload.new as any;
@@ -376,38 +384,19 @@ const GlobalRematchListener = () => {
           const { data: senderProfile } = await supabase
             .from("profiles")
             .select("username, avatar_url")
-            .eq("id", request.sender_id)
+            .eq("id", request.from_user_id)
             .single();
 
           const senderName = senderProfile?.username || "Bilinmeyen oyuncu";
+          const senderAvatar = senderProfile?.avatar_url || null;
 
-          toast({
-            title: "🔄 Rematch İsteği",
-            description: `${senderName} yeniden maç istiyor!`,
-            action: (
-              <div className="flex gap-2">
-                <ToastAction
-                  altText="Kabul Et"
-                  onClick={async () => {
-                    console.log("✅ Accepting rematch:", request.id);
-                    await respondRematchRequest(request.id, true);
-                    navigate(`/game/random-match?roomId=${request.room_id}`);
-                  }}
-                >
-                  Kabul Et
-                </ToastAction>
-                <ToastAction
-                  altText="Reddet"
-                  onClick={async () => {
-                    console.log("❌ Rejecting rematch:", request.id);
-                    await respondRematchRequest(request.id, false);
-                  }}
-                >
-                  Reddet
-                </ToastAction>
-              </div>
-            ),
-            duration: 30000,
+          // Dialog'u aç
+          setRematchRequest({
+            id: request.id,
+            senderId: request.from_user_id,
+            senderName,
+            senderAvatar,
+            roomId: request.room_code,
           });
         }
       )
@@ -417,7 +406,7 @@ const GlobalRematchListener = () => {
           event: "UPDATE",
           schema: "public",
           table: "rematch_requests",
-          filter: `sender_id=eq.${user.id}`,
+          filter: `from_user_id=eq.${user.id}`,
         },
         async (payload) => {
           const request = payload.new as any;
@@ -432,12 +421,22 @@ const GlobalRematchListener = () => {
           setProcessedRequests((prev) => new Set([...prev, responseKey]));
 
           if (request.status === "accepted") {
-            console.log("✅ Rematch accepted, navigating to game:", request.room_id);
-            navigate(`/game/random-match?roomId=${request.room_id}`);
+            console.log("✅ Rematch accepted, navigating to game:", request.room_code);
             toast({
               title: "✅ Rematch Kabul Edildi",
               description: "Oyun başlıyor...",
             });
+            // Odayı bul ve yönlendir
+            const { data: roomRow } = await supabase
+              .from("game_rooms")
+              .select("id, game_mode")
+              .eq("room_code", request.room_code)
+              .maybeSingle();
+
+            if (roomRow) {
+              const type = roomRow.game_mode?.includes("score") ? "score" : "timed";
+              navigate(`/private-room-waiting?code=${request.room_code}&roomId=${roomRow.id}&gameType=${type}`);
+            }
           } else if (request.status === "rejected") {
             console.log("❌ Rematch rejected");
             toast({
@@ -456,7 +455,31 @@ const GlobalRematchListener = () => {
     };
   }, [user?.id, navigate, respondRematchRequest, toast, processedRequests]);
 
-  return null;
+  const handleAccept = async () => {
+    if (!rematchRequest) return;
+    
+    console.log("✅ Accepting rematch:", rematchRequest.id);
+    await respondRematchRequest(rematchRequest.id, true);
+    setRematchRequest(null);
+  };
+
+  const handleReject = async () => {
+    if (!rematchRequest) return;
+    
+    console.log("❌ Rejecting rematch:", rematchRequest.id);
+    await respondRematchRequest(rematchRequest.id, false);
+    setRematchRequest(null);
+  };
+
+  return (
+    <RematchDialog
+      open={!!rematchRequest}
+      onAccept={handleAccept}
+      onReject={handleReject}
+      senderName={rematchRequest?.senderName || ""}
+      senderAvatar={rematchRequest?.senderAvatar}
+    />
+  );
 };
 
 const App = () => {

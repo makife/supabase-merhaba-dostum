@@ -611,16 +611,12 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         console.log("✅ Tekrar oyun isteğine yanıt verildi:", accepted);
 
         if (accepted) {
-          // Mevcut rematch odasına gir ve o sayfayı açmadan önce güvenli şekilde katılımı garantile
+          // Kabul eden oyuncu için odayı hazırla
           if (!request.room_code) {
             console.error("❌ Rematch request room_code eksik");
             toast({ title: "Hata", description: "Rematch odası bulunamadı", variant: "destructive" });
             return;
           }
-          console.log("🎮 Rematch kabul edildi, mevcut oda açılıyor", {
-            roomCode: request.room_code,
-            gameType: request.game_type,
-          });
 
           // Oda ID'sini room_code üzerinden bul
           const { data: roomRow } = await supabase
@@ -634,7 +630,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
             return;
           }
 
-          // Katılımcı olarak ekli değilsek ekle (yeni eşleşme gibi davran)
+          // Katılımcı olarak ekli değilsek ekle
           try {
             const { data: existing } = await supabase
               .from("game_participants")
@@ -644,24 +640,34 @@ export const GameProvider = ({ children }: GameProviderProps) => {
               .maybeSingle();
 
             if (!existing) {
+              console.log("➕ Katılımcı ekleniyor:", { roomId: roomRow.id, userId: user.id });
               await supabase.from("game_participants").insert({
                 room_id: roomRow.id,
                 user_id: user.id,
                 score: 0,
                 is_bot: false,
               });
+            } else {
+              console.log("✓ Katılımcı zaten mevcut");
             }
           } catch (e) {
             console.warn("Katılımcı ekleme sırasında uyarı:", e);
           }
 
-          // Önce bekleme sayfasına yönlendir; iki oyuncu hazır olunca oyun sayfasına geçer
-          const type = roomRow?.game_mode?.includes("score") ? "score" : "timed";
-          // Rematch öncesi tüm realtime kanallarını temizle (çakışmaları önlemek için)
+          // Realtime temizliği
           realtimeManager.forceCleanupAll();
+
+          // Bekleme sayfasına yönlendir
+          const type = roomRow.game_mode?.includes("score") ? "score" : "timed";
+          console.log("🎮 Rematch kabul edildi, yönlendiriliyor:", {
+            code: request.room_code,
+            roomId: roomRow.id,
+            type,
+          });
+
           setTimeout(
             () => navigate(`/private-room-waiting?code=${request.room_code}&roomId=${roomRow.id}&gameType=${type}`),
-            0,
+            100,
           );
         }
 
@@ -675,7 +681,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         });
       }
     },
-    [user, setCurrentRematchRequest, navigate, setCurrentRoom, setParticipants, toast],
+    [user, setCurrentRematchRequest, navigate, toast],
   );
 
   // Helper function to determine game mode
