@@ -4162,11 +4162,11 @@ const GamePage = ({
   // 🤖 vs-computer modunda otomatik countdown başlatma - CLIENT TIME KULLAN
   useEffect(() => {
     if (gameMode === "vs-computer" && !gameStarted && !showCountdown && !gameEnded) {
-      console.log("🤖 vs-computer mode - countdown başlatılıyor (client time)");
+      console.log("🤖 vs-computer mode - countdown başlatılıyor (client time + 5s buffer)");
       setWaitingForPlayer(false);
       
-      // Client time kullan (single player için server sync gerekmez)
-      setCountdownServerTime(new Date().toISOString());
+      // Client time + 5s buffer (component mount gecikmesi için)
+      setCountdownServerTime(new Date(Date.now() + 5000).toISOString());
       setShowCountdown(true);
       setGameStarted(false);
     }
