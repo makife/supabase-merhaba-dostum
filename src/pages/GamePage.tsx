@@ -46,6 +46,7 @@ import {
 } from "lucide-react";
 import { generateBotName } from "@/utils/tournamentHelpers";
 import { matchBanlist } from "@/utils/matchBanlist";
+import robotAvatar from "@/assets/robot-avatar.png";
 
 // Safe helpers
 const shortId = (v?: string | null) => (v ? String(v).slice(-8) : "NULL");
@@ -4954,7 +4955,7 @@ const GamePage = ({
 
     switch (gameMode) {
       case "vs-computer":
-        return { name: "Bilgisayar", icon: Bot, avatar: null };
+        return { name: "Bilgisayar", icon: Bot, avatar: robotAvatar };
       case "private-room":
         if (participants.length >= 2) {
           const opponent = participants.find((p) => p.user_id !== user?.id);
