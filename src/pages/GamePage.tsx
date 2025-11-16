@@ -4162,12 +4162,18 @@ const GamePage = ({
   // 🤖 vs-computer modunda otomatik countdown başlatma - CLIENT TIME KULLAN
   useEffect(() => {
     if (gameMode === "vs-computer" && !gameStarted && !showCountdown && !gameEnded) {
-      console.log("🤖 vs-computer mode - countdown başlatılıyor (client time + 5s buffer)");
+      console.log("🤖 vs-computer mode - countdown hazırlanıyor (5s buffer)");
       setWaitingForPlayer(false);
       
-      // Client time + 5s buffer (component mount gecikmesi için)
-      setCountdownServerTime(new Date(Date.now() + 5000).toISOString());
-      setShowCountdown(true);
+      // 5 saniye ileride bir start time belirle
+      const futureTime = new Date(Date.now() + 5000).toISOString();
+      setCountdownServerTime(futureTime);
+      
+      // 5 saniye sonra countdown'u göster (o zaman tam 5'ten başlar)
+      setTimeout(() => {
+        setShowCountdown(true);
+      }, 5000);
+      
       setGameStarted(false);
     }
   }, [gameMode, gameStarted, showCountdown, gameEnded]);
