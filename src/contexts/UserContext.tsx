@@ -83,6 +83,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
   const previousCreditsRef = useRef<number>(0);
   const lastNotificationRef = useRef<{ amount: number; timestamp: number } | null>(null);
+  const isRefreshingCreditsRef = useRef(false);
+  const lastNotifiedTotalRef = useRef<number>(0);
   const { showLocalNotification, isPermissionGranted } = useMobileNotifications();
 
   // Hydrate profile from cache immediately on user change to avoid avatar flicker
@@ -253,24 +255,46 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
   const checkAndRefreshCredits = async () => {
     if (!user) return;
+
+    if (isRefreshingCreditsRef.current) {
+      console.log('checkAndRefreshCredits: skipped (in progress)');
+      return;
+    }
+    isRefreshingCreditsRef.current = true;
     
     try {
-      const previousTotal = previousCreditsRef.current || getTotalCredits();
+      const baseline = previousCreditsRef.current || getTotalCredits();
+
       await supabase.rpc('check_and_refresh_credits', { user_id: user.id });
-      await refreshProfile(true);
-      
-      // Hak artışı kontrolü ve bildirim - sadece gerçek artış varsa göster
-      const newTotal = getTotalCredits();
-      if (newTotal > previousTotal && isPermissionGranted) {
-        const creditsGained = newTotal - previousTotal;
+
+      // Fetch fresh credits directly to avoid stale state after refreshProfile
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('game_credits, bonus_credits')
+        .eq('id', user.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching fresh credits:', error);
+        return;
+      }
+
+      const newTotal = (data?.game_credits ?? 0) + (data?.bonus_credits ?? 0);
+
+      // Prevent duplicate notifications: only notify when we exceed the highest known total
+      const lastNotified = lastNotifiedTotalRef.current || 0;
+      const threshold = Math.max(baseline, lastNotified);
+
+      if (newTotal > threshold && isPermissionGranted) {
+        const creditsGained = newTotal - threshold;
         const now = Date.now();
-        
-        // Aynı miktar için 10 saniye içinde tekrar bildirim gösterme
+
         const lastNotif = lastNotificationRef.current;
-        const shouldShowNotification = !lastNotif || 
-          lastNotif.amount !== creditsGained || 
+        const shouldShowNotification =
+          !lastNotif ||
+          lastNotif.amount !== creditsGained ||
           (now - lastNotif.timestamp) > 10000;
-        
+
         if (shouldShowNotification) {
           showLocalNotification(
             '🎮 Hak Doldu!',
@@ -278,12 +302,19 @@ export const UserProvider = ({ children }: UserProviderProps) => {
           );
           lastNotificationRef.current = { amount: creditsGained, timestamp: now };
         }
+
+        lastNotifiedTotalRef.current = newTotal;
       }
-      
-      // Güncellenen değeri sakla
+
+      // Persist latest totals for next run
       previousCreditsRef.current = newTotal;
+
+      // Refresh profile quietly in the background to keep UI in sync
+      refreshProfile(false);
     } catch (error) {
       console.error('Error checking credits:', error);
+    } finally {
+      isRefreshingCreditsRef.current = false;
     }
   };
 
