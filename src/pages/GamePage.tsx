@@ -659,12 +659,6 @@ const GamePage = ({
       (newOffset, drift) => {
         setServerTimeOffset(newOffset);
         console.log(`🔄 Clock re-synced due to drift: ${drift}ms`);
-        
-        toast({
-          title: "⏰ Zaman Senkronizasyonu",
-          description: `Saat farkı düzeltildi (${Math.round(drift)}ms)`,
-          duration: 2000,
-        });
       },
       30000 // 30 saniye
     );
