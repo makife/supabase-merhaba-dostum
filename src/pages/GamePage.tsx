@@ -673,7 +673,7 @@ const GamePage = ({
       clearInterval(driftInterval);
       console.log("🔄 Drift monitoring stopped");
     };
-  }, [gameStarted, serverTimeOffset]);
+  }, [gameStarted, toast]); // serverTimeOffset'i dependency'den çıkardık (callback içinde güncel değer okunuyor)
 
   // Rakip ayrıldığında işlem yap
   useEffect(() => {
