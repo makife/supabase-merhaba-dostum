@@ -871,30 +871,9 @@ const GamePage = ({
       const isPlayer1 = String(tournamentMatch.player1_id) === String(user.id);
       const opponentId = isPlayer1 ? tournamentMatch.player2_id : tournamentMatch.player1_id;
 
-      // BERABERLİK DURUMUNDA: Rastgele kazanan belirle ve ona 1 puan ekle
-      let finalUserScore = userScore;
-      let finalOpponentScore = opponentScore;
-      let winnerId: string;
-
-      if (userScore === opponentScore) {
-        console.log("⚖️ BERABERLIK! Rastgele kazanan belirleniyor...");
-        const userWinsOnTie = Math.random() < 0.5;
-        if (userWinsOnTie) {
-          finalUserScore += 1;
-          winnerId = user.id;
-          console.log("✅ Kullanıcı beraberliği kazandı (+1 puan)");
-        } else {
-          finalOpponentScore += 1;
-          winnerId = opponentId as string;
-          console.log("❌ Rakip beraberliği kazandı (+1 puan)");
-        }
-      } else {
-        winnerId = userScore > opponentScore ? user.id : (opponentId as string);
-      }
-
       // Skorları doğru oyunculara ata
-      const player1Score = isPlayer1 ? finalUserScore : finalOpponentScore;
-      const player2Score = isPlayer1 ? finalOpponentScore : finalUserScore;
+      const player1Score = isPlayer1 ? userScore : opponentScore;
+      const player2Score = isPlayer1 ? opponentScore : userScore;
 
       console.log("🏆 Tournament match completion:", {
         matchId: tournamentMatch.id,
@@ -902,13 +881,46 @@ const GamePage = ({
         isPlayer1,
         player1Score,
         player2Score,
-        winnerId,
         originalUserScore: userScore,
         originalOpponentScore: opponentScore,
-        finalUserScore,
-        finalOpponentScore,
-        wasTie: userScore === opponentScore,
       });
+
+      // Önce backend'e maç sonucunu gönder - Backend beraberlikte kazananı belirleyecek
+      const { data: updateResult, error: updateError } = await supabase.rpc(
+        "complete_tournament_match_with_advance",
+        {
+          p_match_id: tournamentMatch.id,
+          p_player1_score: player1Score,
+          p_player2_score: player2Score,
+          p_winner_id: userScore > opponentScore ? user.id : opponentScore > userScore ? (opponentId as string) : null,
+        }
+      );
+
+      if (updateError) {
+        console.error("❌ Maç tamamlama hatası:", updateError);
+        return;
+      }
+
+      console.log("✅ Backend maç tamamlama sonucu:", updateResult);
+
+      // Backend'den gelen güncellenmiş maç bilgisini al
+      const { data: updatedMatch, error: matchError } = await supabase
+        .from("tournament_matches")
+        .select("*")
+        .eq("id", tournamentMatch.id)
+        .single();
+
+      if (matchError || !updatedMatch) {
+        console.error("❌ Güncellenmiş maç bilgisi alınamadı:", matchError);
+        return;
+      }
+
+      console.log("📊 Backend'den gelen güncel maç bilgisi:", updatedMatch);
+
+      // Backend'in belirlediği kazananı kullan
+      const winnerId = updatedMatch.winner_id;
+      const finalUserScore = isPlayer1 ? updatedMatch.player1_score : updatedMatch.player2_score;
+      const finalOpponentScore = isPlayer1 ? updatedMatch.player2_score : updatedMatch.player1_score;
 
       // ✅ Bu maçı tamamlanmış olarak işaretle (tekrar oynamayı engelle)
       const completedMatchKey = `tournament_match_completed_${tournamentMatch.id}`;
@@ -922,13 +934,13 @@ const GamePage = ({
         }),
       );
 
-      // ✅ Frontend state'ini GÜNCEL skorlarla güncelle
+      // ✅ Frontend state'ini backend'den gelen skorlarla güncelle
       setPlayerScore(finalUserScore);
       setOpponentScore(finalOpponentScore);
       setGameEnded(true);
       setShowResults(true);
 
-      // ✅ Frontend kazanan belirleme - DOĞRU MANTIK
+      // ✅ Frontend kazanan belirleme - Backend'in kararını kullan
       console.log("🎯 Tournament winner determination:", {
         finalUserScore,
         finalOpponentScore,
@@ -951,18 +963,6 @@ const GamePage = ({
         setTimeout(() => playGameLoseSound(), 500);
         console.log("❌ User LOSES - Setting winner to opponent");
       }
-
-      // Mevcut maçı tamamla
-      await supabase
-        .from("tournament_matches")
-        .update({
-          status: "completed",
-          player1_score: player1Score,
-          player2_score: player2Score,
-          winner_id: winnerId,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", tournamentMatch.id);
 
       console.log("✅ Turnuva maçı tamamlandı");
 
