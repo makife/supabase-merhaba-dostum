@@ -1960,14 +1960,28 @@ const GamePage = ({
             console.log("✅ Turnuva maçı yüklendi:", matchData.id);
             setTournamentMatch(matchData);
 
-            // 🎯 SERVER-SIDE COUNTDOWN: Turnuva maçı için countdown başlat
-            const { data: countdownTime, error: countdownError } = await supabase.rpc("start_tournament_countdown", {
-              p_match_id: matchId,
-            });
+            // 🎯 SERVER-SIDE COUNTDOWN: Turnuva maçı için countdown başlat (idempotent)
+            if (matchData.countdown_started_at) {
+              // Zaten başlatılmışsa RPC çağrısı yapma; mevcut zamanı kullan
+              console.log("⏭️ Countdown zaten başlatılmış, mevcut zaman kullanılacak:", matchData.countdown_started_at);
+              setCountdownServerTime(withBuffer(matchData.countdown_started_at));
+              setShowCountdown(true);
+            } else if (user && matchData.player1_id === user.id) {
+              // Sadece player1 RPC çağrısını yapar; diğer oyuncu realtime ile senkron olur
+              const { data: countdownTime, error: countdownError } = await supabase.rpc(
+                "start_tournament_countdown",
+                {
+                  p_match_id: matchId,
+                },
+              );
 
-            if (!countdownError && countdownTime) {
-              console.log("🎯 Tournament countdown başlatıldı:", countdownTime);
-              setCountdownServerTime(countdownTime);
+              if (!countdownError && countdownTime) {
+                console.log("🎯 Tournament countdown başlatıldı:", countdownTime);
+                setCountdownServerTime(withBuffer(countdownTime as string));
+                setShowCountdown(true);
+              } else if (countdownError) {
+                console.error("⛔ Countdown başlatma hatası:", countdownError);
+              }
             }
 
             // Maç durumunu güncelle
