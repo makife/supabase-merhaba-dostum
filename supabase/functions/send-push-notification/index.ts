@@ -7,7 +7,8 @@ const corsHeaders = {
 }
 
 interface PushNotificationRequest {
-  receiverId: string
+  receiverId?: string
+  userId?: string  // Backward compatibility
   title: string
   body: string
   data?: Record<string, any>
@@ -205,17 +206,20 @@ serve(async (req) => {
       );
     }
 
-    const { receiverId, title, body, data }: PushNotificationRequest = await req.json()
+    const requestBody: PushNotificationRequest = await req.json()
+    const receiverId = requestBody.receiverId || requestBody.userId
 
-    if (!receiverId || !title || !body) {
+    if (!receiverId || !requestBody.title || !requestBody.body) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: receiverId, title, body' }),
+        JSON.stringify({ error: 'Missing required fields: receiverId (or userId), title, body' }),
         {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       )
     }
+
+    const { title, body, data } = requestBody
 
     // Get receiver's push token from database
     const { data: profileData, error: profileError } = await supabaseClient
