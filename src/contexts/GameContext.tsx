@@ -519,7 +519,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           const gameTypeText = gameType === "timed" ? "Zamana Karşı" : "Skora Karşı";
           await supabase.functions.invoke("send-push-notification", {
             body: {
-              userId: opponent.user_id,
+              receiverId: opponent.user_id,
               title: "🔄 Rematch İsteği",
               body: `${username} tekrar oyun istiyor! (${gameTypeText})`,
               data: {
