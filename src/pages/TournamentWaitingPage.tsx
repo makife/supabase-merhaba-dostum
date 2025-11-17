@@ -61,18 +61,9 @@ const TournamentWaitingPage = () => {
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <Button
-            onClick={() => navigate("/tournament")}
-            variant="outline"
-            className="text-white border-white/30 hover:bg-white/20 bg-white/10"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Geri
-          </Button>
-
           <h1 className="text-2xl font-bold text-white">{currentTournament.name}</h1>
 
-          <Button onClick={handleLeave} variant="destructive" size="sm">
+          <Button onClick={handleLeave} variant="destructive" size="lg">
             Ayrıl
           </Button>
         </div>
