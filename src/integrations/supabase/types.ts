@@ -962,6 +962,35 @@ export type Database = {
         }
         Relationships: []
       }
+      rematch_opt_outs: {
+        Row: {
+          created_at: string
+          opt_out_until: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          opt_out_until: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          opt_out_until?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rematch_opt_outs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rematch_requests: {
         Row: {
           created_at: string | null

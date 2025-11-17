@@ -5253,12 +5253,15 @@ const GamePage = ({
                         console.log("🚫 Oda banlist'e eklendi:", shortId(currentRoom?.id));
                       }
                       
-                      // Kullanıcının presence'ını güncelle (oyunu terk ettiğini göster)
+                      // Kullanıcının rematch opt-out kaydını oluştur/güncelle (5 dakika geçerli)
                       if (user?.id) {
                         await supabase
-                          .from("user_presence")
-                          .update({ last_seen: new Date(Date.now() - 60000).toISOString() }) // 1 dakika öncesi
-                          .eq("user_id", user.id);
+                          .from("rematch_opt_outs")
+                          .upsert({
+                            user_id: user.id,
+                            opt_out_until: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 dakika sonrası
+                            updated_at: new Date().toISOString()
+                          });
                       }
                       
                       window.dispatchEvent(new CustomEvent("cleanupMatchmaking"));
@@ -5283,15 +5286,15 @@ const GamePage = ({
                         console.log("🚫 Oda banlist'e eklendi:", shortId(currentRoom?.id));
                       }
                       
-                      // Kullanıcının presence'ını güncelle (oyunu terk ettiğini göster)
+                      // Kullanıcının rematch opt-out kaydını oluştur/güncelle (5 dakika geçerli)
                       if (user?.id) {
                         await supabase
-                          .from("user_presence")
-                          .update({ 
-                            is_online: false,
-                            last_seen: new Date().toISOString()
-                          })
-                          .eq("user_id", user.id);
+                          .from("rematch_opt_outs")
+                          .upsert({
+                            user_id: user.id,
+                            opt_out_until: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 dakika sonrası
+                            updated_at: new Date().toISOString()
+                          });
                       }
                       
                       window.dispatchEvent(new CustomEvent("cleanupMatchmaking"));

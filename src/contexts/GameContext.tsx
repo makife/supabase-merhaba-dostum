@@ -357,15 +357,15 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           throw new Error("Rakip bulunamadı");
         }
 
-        // 🚫 KONTROL: Rakibin hala oyun sayfasında olup olmadığını kontrol et
-        const { data: opponentPresence } = await supabase
-          .from("user_presence")
-          .select("is_online")
+        // 🚫 KONTROL: Rakibin rematch opt-out yapıp yapmadığını kontrol et
+        const { data: optOut } = await supabase
+          .from("rematch_opt_outs")
+          .select("opt_out_until")
           .eq("user_id", opponent.user_id)
-          .single();
+          .maybeSingle();
 
-        // Eğer rakip offline olarak işaretlenmişse, rematch gönderme
-        if (opponentPresence && opponentPresence.is_online === false) {
+        // Eğer rakip opt-out yapmışsa ve süre dolmamışsa, rematch gönderme
+        if (optOut && new Date(optOut.opt_out_until) > new Date()) {
           console.warn("⚠️ Rakip oyunu terk etmiş, rematch gönderilmiyor");
           throw new Error("Rakibiniz oyunu terk etti");
         }
