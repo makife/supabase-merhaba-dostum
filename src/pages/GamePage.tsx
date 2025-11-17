@@ -5245,13 +5245,22 @@ const GamePage = ({
 
                   <Button
                     disabled={!buttonsEnabled}
-                    onClick={() => {
+                    onClick={async () => {
                       playSound("buttonClick");
                       // Oyun bitiminde matchmaking state'ini temizle ve odayı banla
                       if (currentRoom?.id) {
                         matchBanlist.add(currentRoom.id);
                         console.log("🚫 Oda banlist'e eklendi:", shortId(currentRoom?.id));
                       }
+                      
+                      // Kullanıcının presence'ını güncelle (oyunu terk ettiğini göster)
+                      if (user?.id) {
+                        await supabase
+                          .from("user_presence")
+                          .update({ last_seen: new Date(Date.now() - 60000).toISOString() }) // 1 dakika öncesi
+                          .eq("user_id", user.id);
+                      }
+                      
                       window.dispatchEvent(new CustomEvent("cleanupMatchmaking"));
                       navigate("/");
                     }}
@@ -5266,13 +5275,22 @@ const GamePage = ({
                 <>
                   <Button
                     disabled={!buttonsEnabled}
-                    onClick={() => {
+                    onClick={async () => {
                       playSound("buttonClick");
                       // Oyun bitiminde matchmaking state'ini temizle ve odayı banla
                       if (currentRoom?.id) {
                         matchBanlist.add(currentRoom.id);
                         console.log("🚫 Oda banlist'e eklendi:", shortId(currentRoom?.id));
                       }
+                      
+                      // Kullanıcının presence'ını güncelle (oyunu terk ettiğini göster)
+                      if (user?.id) {
+                        await supabase
+                          .from("user_presence")
+                          .update({ last_seen: new Date(Date.now() - 60000).toISOString() }) // 1 dakika öncesi
+                          .eq("user_id", user.id);
+                      }
+                      
                       window.dispatchEvent(new CustomEvent("cleanupMatchmaking"));
                       navigate("/");
                     }}
