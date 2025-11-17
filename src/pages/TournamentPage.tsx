@@ -27,7 +27,7 @@ const TournamentPage = () => {
       });
       return;
     }
-    
+
     const tournamentId = await createTournament();
     if (tournamentId) {
       navigate(`/tournament-waiting/${tournamentId}`);
@@ -43,7 +43,7 @@ const TournamentPage = () => {
       });
       return;
     }
-    
+
     const success = await joinTournament(tournamentId);
     if (success) {
       navigate(`/tournament-waiting/${tournamentId}`);
@@ -62,6 +62,18 @@ const TournamentPage = () => {
           >
             <Home className="w-4 h-4 mr-2" />
             Ana Sayfa
+          </Button>
+        </div>
+
+        {/* Yenile butonu - SAĞ ÜST KÖŞE */}
+        <div className="absolute top-4 right-4">
+          <Button
+            onClick={fetchTournaments}
+            variant="outline"
+            size="sm"
+            className="text-white border-white/30 hover:bg-white/10"
+          >
+            Yenile
           </Button>
         </div>
 
@@ -94,17 +106,7 @@ const TournamentPage = () => {
       {/* Scroll edilebilir içerik */}
       <div className="flex-1 overflow-y-auto px-4 pb-4">
         <div className="max-w-4xl mx-auto space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-white">Aktif Turnuvalar</h2>
-            <Button
-              onClick={fetchTournaments}
-              variant="outline"
-              size="sm"
-              className="text-purple border-amber/30 hover:bg-white/10"
-            >
-              Yenile
-            </Button>
-          </div>
+          <h2 className="text-2xl font-bold text-white">Aktif Turnuvalar</h2>
 
           {loading ? (
             <Card className="bg-white/10 backdrop-blur-md border-white/20">
