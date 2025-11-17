@@ -1597,6 +1597,10 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
+      check_and_advance_tournament_round: {
+        Args: { p_current_round: number; p_tournament_id: string }
+        Returns: undefined
+      }
       check_and_award_badges: { Args: { p_user_id: string }; Returns: Json[] }
       check_and_award_badges_simple: {
         Args: { p_user_id: string }
@@ -1651,15 +1655,25 @@ export type Database = {
         }
         Returns: Json
       }
-      complete_tournament_match_with_advance: {
-        Args: {
-          p_match_id: string
-          p_player1_score: number
-          p_player2_score: number
-          p_winner_id: string
-        }
-        Returns: Json
-      }
+      complete_tournament_match_with_advance:
+        | {
+            Args: {
+              p_match_id: string
+              p_player1_score: number
+              p_player2_score: number
+              p_winner_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_match_id: string
+              p_player1_score: number
+              p_player2_score: number
+              p_winner_id: string
+            }
+            Returns: Json
+          }
       create_matches_for_active_tournament: {
         Args: { p_tournament_id: string }
         Returns: Json
@@ -1678,6 +1692,16 @@ export type Database = {
         Returns: undefined
       }
       delete_user_account: { Args: never; Returns: undefined }
+      determine_tournament_winner_with_tiebreaker: {
+        Args: {
+          p_match_id: string
+          p_player1_id: string
+          p_player1_score: number
+          p_player2_id: string
+          p_player2_score: number
+        }
+        Returns: string
+      }
       export_user_data: { Args: never; Returns: Json }
       generate_random_grid: { Args: never; Returns: Json }
       get_avatar_url: { Args: { user_id: string }; Returns: string }
