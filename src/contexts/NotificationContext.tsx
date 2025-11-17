@@ -84,41 +84,23 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
               // Özel mesaj bildirimi - related_id'den userId çıkar
               if (notification.type === "message" && notification.related_id) {
                 const chatId = notification.related_id;
-                
+
                 // Eğer kullanıcı bu chat'i açmışsa toast gösterme
                 const activeChats = getActivePrivateChats();
                 if (activeChats.includes(chatId)) {
                   console.log("🚫 TOAST GÖSTERİLMEDİ - Sohbet açık:", chatId);
                   return;
                 }
-                
+
                 // chatId formatı: chat_userId1_userId2
                 const userIds = chatId.replace("chat_", "").split("_");
                 const otherUserId = userIds.find((id: string) => id !== user?.id);
-                
+
                 toast.info(`💬 ${notification.message}`, {
                   duration: 5000,
                   action: {
                     label: "Git",
                     onClick: () => navigate(`/chat?openPrivateChat=${otherUserId}`),
-                  },
-                });
-              }
-
-              // Oyun daveti bildirimi
-              if (notification.type === "invite" && notification.related_id) {
-                const roomCode = notification.related_id;
-                
-                toast.info(`🎮 ${notification.message}`, {
-                  duration: 8000,
-                  action: {
-                    label: "Katıl",
-                    onClick: () => {
-                      // Bildirimi okundu olarak işaretle
-                      markAsRead(notification.id);
-                      // Bekleme sayfasına yönlendir (sayfa otomatik olarak roomId ve gameType'ı bulur)
-                      navigate(`/private-room-waiting?code=${roomCode}`);
-                    },
                   },
                 });
               }
