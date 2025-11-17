@@ -27,6 +27,7 @@ const GameCountdown = ({
   const hasPlayedStartRef = useRef<boolean>(false);
   const audioContextRef = useRef<AudioContext | null>(null);
   const startTimeRef = useRef<number>(0);
+  const countdownLockRef = useRef<boolean>(false); // 🔒 Tek-seferlik countdown kilidi
 
   // === 1. PRELOAD (Görsel + Ses + AudioContext) ===
   useEffect(() => {
@@ -125,6 +126,15 @@ const GameCountdown = ({
   // === 3. SERVER TIME GERİ SAYIM (HER ŞEY OTOMATİK) ===
   useEffect(() => {
     if (!serverStartTime || !preloadComplete) return;
+    
+    // 🔒 Countdown zaten başlamışsa tekrar başlatma
+    if (countdownLockRef.current) {
+      console.log("⚠️ Countdown zaten başlamış - duplicate trigger engellendi");
+      return;
+    }
+    
+    countdownLockRef.current = true;
+    console.log("🔒 Countdown kilidi aktif edildi");
 
     const startTime = new Date(serverStartTime).getTime();
     startTimeRef.current = startTime;
@@ -171,7 +181,11 @@ const GameCountdown = ({
         
         setTimeout(() => {
           setIsVisible(false);
-          setTimeout(onComplete, 200);
+          setTimeout(() => {
+            onComplete();
+            // Countdown tamamlandı, kilidi kaldır (rematch için)
+            countdownLockRef.current = false;
+          }, 200);
         }, 1000);
       }
     };
@@ -180,7 +194,11 @@ const GameCountdown = ({
     updateCountdown();
     const interval = setInterval(updateCountdown, 100);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      // Component unmount olduğunda kilidi kaldır
+      countdownLockRef.current = false;
+    };
   }, [serverStartTime, serverTimeOffset, onComplete, preloadComplete]);
 
   // === RENDER (Sadece sayım sırasında görünür) ===
