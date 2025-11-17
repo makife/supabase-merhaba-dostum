@@ -2954,57 +2954,10 @@ const GamePage = ({
       let gameResult: "player" | "opponent" | "tie";
       let bonusPoints = 0;
 
-      // TURNUVA MODUNDA BERABERLIK ENGELLEMESİ - GÜÇLENDİRİLMİŞ
+      // Tournament: rely on backend for winner, avoid client-side decision
       if (gameMode === "tournament") {
-        console.log("🏆 Tournament mode - strict winner determination:", { currentPlayerScore, currentOpponentScore });
-        if (currentPlayerScore === currentOpponentScore) {
-          console.log("⚖️ Turnuva beraberlik durumu - güçlü tiebreaker uygulanıyor");
-
-          // ÖNCE: Bot hiç oynamadıysa oyuncu kazansın
-          if (currentPlayerScore === 0 && currentOpponentScore === 0) {
-            console.log("🤖 Bot hiç oynamadı, oyuncu otomatik kazandı");
-            currentPlayerScore = 10; // Oyuncuya minimum puan ver
-          } else {
-            // SONRA: Normal tiebreaker kuralları
-            const playerWordCount = playerWordsWithScores.length;
-            const opponentWordCount = opponentWordsWithScores.length;
-
-            if (playerWordCount > opponentWordCount) {
-              console.log("🎯 Tiebreaker: Player kazandı (daha çok kelime)");
-              currentPlayerScore += 5;
-            } else if (opponentWordCount > playerWordCount) {
-              console.log("🎯 Tiebreaker: Opponent kazandı (daha çok kelime)");
-              currentOpponentScore += 5;
-            } else {
-              // Kelime sayısı eşit, en uzun kelime kontrolü
-              const playerLongestWord = Math.max(...playerWordsWithScores.map((w) => w.word.length), 0);
-              const opponentLongestWord = Math.max(...opponentWordsWithScores.map((w) => w.word.length), 0);
-
-              if (playerLongestWord > opponentLongestWord) {
-                console.log("🎯 Tiebreaker: Player kazandı (daha uzun kelime)");
-                currentPlayerScore += 3;
-              } else if (opponentLongestWord > playerLongestWord) {
-                console.log("🎯 Tiebreaker: Opponent kazandı (daha uzun kelime)");
-                currentOpponentScore += 3;
-              } else {
-                // En yüksek puanlı kelime kontrolü
-                const playerHighestScore = Math.max(...playerWordsWithScores.map((w) => w.score), 0);
-                const opponentHighestScore = Math.max(...opponentWordsWithScores.map((w) => w.score), 0);
-
-                if (playerHighestScore > opponentHighestScore) {
-                  console.log("🎯 Tiebreaker: Player kazandı (daha yüksek puanlı kelime)");
-                  currentPlayerScore += 2;
-                } else {
-                  // SON ÇARE: Oyuncuya avantaj ver (turnuvada beraberlik olmasın)
-                  console.log("🎯 Tiebreaker: Player kazandı (son çare kuralı)");
-                  currentPlayerScore += 1;
-                }
-              }
-            }
-          }
-
-          console.log("🎯 Tiebreaker sonrası skorlar - Player:", currentPlayerScore, "Opponent:", currentOpponentScore);
-        }
+        console.log("🏆 Tournament mode - winner is determined by backend; skipping local checkWinnerWithScores");
+        return;
       }
 
       // Final winner determination - Multiplayer ve vs-computer için ayrı mantık
