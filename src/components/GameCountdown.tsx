@@ -181,7 +181,7 @@ const GameCountdown = ({
     const interval = setInterval(updateCountdown, 100);
 
     return () => clearInterval(interval);
-  }, [serverStartTime, serverTimeOffset, onComplete, preloadComplete]);
+  }, [serverStartTime, onComplete, preloadComplete]);
 
   // === RENDER (Sadece sayım sırasında görünür) ===
   if (!hasStarted || !preloadComplete) return null;
