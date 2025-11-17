@@ -892,7 +892,12 @@ const GamePage = ({
           p_match_id: tournamentMatch.id,
           p_player1_score: player1Score,
           p_player2_score: player2Score,
-          p_winner_id: userScore > opponentScore ? user.id : opponentScore > userScore ? (opponentId as string) : null,
+          // Backend'in determine_tournament_winner_with_tiebreaker fonksiyonunu kullanmasına izin ver
+          p_winner_id: player1Score > player2Score 
+            ? tournamentMatch.player1_id 
+            : player2Score > player1Score 
+              ? tournamentMatch.player2_id 
+              : null, // null gönder ki backend tiebreaker çalıştırsın
         }
       );
 
@@ -3016,21 +3021,14 @@ const GamePage = ({
           setTimeout(() => playGameLoseSound(), 500);
           console.log("🏆 Opponent wins! Score:", currentOpponentScore, "vs", currentPlayerScore);
         } else {
-          // Beraberlik - turnuvada buraya gelmemeli (tiebreaker devreye girer)
-          gameResult = gameMode === "tournament" ? "player" : "tie";
+          // Beraberlik (tournament mode buraya gelmez, zaten backend'de handle edilir)
+          gameResult = "tie";
           bonusPoints = 25;
-          setWinner(gameMode === "tournament" ? "player" : "tie");
+          setWinner("tie");
           setButtonsEnabled(false);
           setTimeout(() => setButtonsEnabled(true), 1000);
-          
-          if (gameMode === "tournament") {
-            playSound("gameWin");
-            setTimeout(() => playCelebrationSound(), 500);
-          } else {
-            // Normal modlarda beraberlik sesi çal
-            playSound("gameLose"); // Nötr ses
-            setTimeout(() => playTieSound(), 500);
-          }
+          playSound("gameLose"); // Nötr ses
+          setTimeout(() => playTieSound(), 500);
           console.log("🏆 Tie! Both scores:", currentPlayerScore);
         }
       }
