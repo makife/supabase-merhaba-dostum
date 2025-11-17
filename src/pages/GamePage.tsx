@@ -5287,7 +5287,10 @@ const GamePage = ({
                       if (user?.id) {
                         await supabase
                           .from("user_presence")
-                          .update({ last_seen: new Date(Date.now() - 60000).toISOString() }) // 1 dakika öncesi
+                          .update({ 
+                            is_online: false,
+                            last_seen: new Date().toISOString()
+                          })
                           .eq("user_id", user.id);
                       }
                       
