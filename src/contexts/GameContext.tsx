@@ -360,20 +360,14 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         // 🚫 KONTROL: Rakibin hala oyun sayfasında olup olmadığını kontrol et
         const { data: opponentPresence } = await supabase
           .from("user_presence")
-          .select("last_seen")
+          .select("is_online")
           .eq("user_id", opponent.user_id)
           .single();
 
-        // Eğer rakip son 10 saniye içinde aktif değilse, rematch gönderme
-        if (opponentPresence?.last_seen) {
-          const lastSeenTime = new Date(opponentPresence.last_seen).getTime();
-          const now = Date.now();
-          const timeDiff = now - lastSeenTime;
-          
-          if (timeDiff > 10000) { // 10 saniyeden fazla inaktif
-            console.warn("⚠️ Rakip oyunu terk etmiş, rematch gönderilmiyor");
-            throw new Error("Rakibiniz oyunu terk etti");
-          }
+        // Eğer rakip offline olarak işaretlenmişse, rematch gönderme
+        if (opponentPresence && opponentPresence.is_online === false) {
+          console.warn("⚠️ Rakip oyunu terk etmiş, rematch gönderilmiyor");
+          throw new Error("Rakibiniz oyunu terk etti");
         }
 
         console.log("🔄 Tekrar oyun isteği gönderiliyor:", {
