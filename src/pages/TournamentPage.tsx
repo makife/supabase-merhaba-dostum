@@ -65,18 +65,6 @@ const TournamentPage = () => {
           </Button>
         </div>
 
-        {/* Yenile butonu - SAĞ ÜST KÖŞE */}
-        <div className="absolute top-4 right-4">
-          <Button
-            onClick={fetchTournaments}
-            variant="outline"
-            size="sm"
-            className="text-white border-white/30 hover:bg-white/10"
-          >
-            Yenile
-          </Button>
-        </div>
-
         <div className="max-w-4xl mx-auto pt-12">
           {/* Başlık */}
           <div className="text-center mb-8">
@@ -98,6 +86,18 @@ const TournamentPage = () => {
                 {loading ? "Oluşturuluyor..." : "Yeni Turnuva Oluştur"}
               </Button>
               <p className="text-gray-300 text-sm mt-2">Kendi turnuvanı oluştur ve arkadaşlarını davet et!</p>
+
+              {/* Yenile butonu */}
+              <div className="mt-4">
+                <Button
+                  onClick={fetchTournaments}
+                  variant="outline"
+                  size="sm"
+                  className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white border-0"
+                >
+                  Yenile
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
