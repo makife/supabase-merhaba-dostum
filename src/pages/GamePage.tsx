@@ -854,6 +854,7 @@ const GamePage = ({
     // Oda değiştiğinde fallback bayrağını sıfırla
     disconnectHandledRef.current = false;
     gameHasStartedRef.current = false;
+    countdownCheckDoneRef.current = false; // Countdown kontrolünü de sıfırla
   }, [currentRoom?.id]);
 
   const [isAIOpponent, setIsAIOpponent] = useState(false);
@@ -945,7 +946,7 @@ const GamePage = ({
       setGameEnded(true);
       setShowResults(true);
 
-      // ✅ Frontend kazanan belirleme - Backend'in kararını kullan
+      // ✅ Frontend kazanan belirleme - SADECE backend winner_id kullan (tie asla yok)
       console.log("🎯 Tournament winner determination:", {
         finalUserScore,
         finalOpponentScore,
@@ -953,23 +954,23 @@ const GamePage = ({
         userIsWinner: winnerId === user.id,
       });
 
-      if (winnerId === user.id) {
-        setWinner("player");
-        setButtonsEnabled(false);
-        setTimeout(() => setButtonsEnabled(true), 1000);
+      const userIsWinner = winnerId === user.id;
+      
+      setWinner(userIsWinner ? "player" : "opponent");
+      setButtonsEnabled(false);
+      setTimeout(() => setButtonsEnabled(true), 1000);
+      
+      if (userIsWinner) {
         playSound("gameWin");
         setTimeout(() => playCelebrationSound(), 500);
         console.log("✅ User WINS - Setting winner to player");
       } else {
-        setWinner("opponent");
-        setButtonsEnabled(false);
-        setTimeout(() => setButtonsEnabled(true), 1000);
         playSound("gameLose");
         setTimeout(() => playGameLoseSound(), 500);
         console.log("❌ User LOSES - Setting winner to opponent");
       }
 
-      console.log("✅ Turnuva maçı tamamlandı");
+      console.log("✅ Turnuva maçı tamamlandı, winner:", userIsWinner ? "player" : "opponent");
 
       // Aynı turdaki TÜM maçları kontrol et
       const { data: allRoundMatches } = await supabase
@@ -982,6 +983,7 @@ const GamePage = ({
 
       const allMatchesCompleted = allRoundMatches?.every((match) => match.status === "completed");
 
+      // 🎯 MUTLAKA YÖNLENDİRME YAP (kazanan/kaybeden fark etmez)
       if (allMatchesCompleted) {
         console.log(`🏆 Tüm ${tournamentMatch.round}. tur maçları tamamlandı!`);
 
@@ -993,8 +995,10 @@ const GamePage = ({
           console.error("advance_tournament_round error:", advanceErr);
         }
 
-        // Turnuva sayfasına yönlendir
+        // Her durumda bracket sayfasına yönlendir
+        console.log("🔄 3 saniye sonra bracket sayfasına yönlendirilecek");
         setTimeout(() => {
+          console.log("🔄 Bracket sayfasına yönlendiriliyor...");
           navigate(`/tournament-bracket/${tournamentMatch.tournament_id}`);
         }, 3000);
       } else {
@@ -1002,12 +1006,15 @@ const GamePage = ({
           `⏳ Diğer maçlar devam ediyor. Tamamlanan: ${allRoundMatches?.filter((m) => m.status === "completed").length}/${allRoundMatches?.length}`,
         );
 
-        // Kaybeden oyuncu ana turnuva sayfasına, kazanan bracket sayfasına yönlendir
-        const redirectDelay = userScore > opponentScore ? 3000 : 2000;
-        const redirectPath =
-          userScore > opponentScore ? `/tournament-bracket/${tournamentMatch.tournament_id}` : "/tournament";
+        // Backend winner_id'ye göre yönlendirme (tie asla yok)
+        const redirectDelay = 3000;
+        const redirectPath = winnerId === user.id 
+          ? `/tournament-bracket/${tournamentMatch.tournament_id}` 
+          : "/tournament";
 
+        console.log(`🔄 ${redirectDelay / 1000} saniye sonra ${redirectPath}'e yönlendirilecek`);
         setTimeout(() => {
+          console.log("🔄 Yönlendiriliyor...");
           navigate(redirectPath);
         }, redirectDelay);
       }
@@ -1066,6 +1073,7 @@ const GamePage = ({
   const resetGameForRematch = () => {
     // Disconnect kontrolü yeniden aktif et
     disconnectHandledRef.current = false;
+    countdownCheckDoneRef.current = false; // Countdown kontrolünü sıfırla
 
     // Oyunu sıfırla
     setGameGrid(generateRandomGrid());
@@ -2682,8 +2690,8 @@ const GamePage = ({
           console.log("🏆 Tournament match loaded:", matchData.id);
           setTournamentMatch(matchData);
 
-          // 🎯 Eğer countdown_started_at varsa countdown hazırlığını başlat
-          if (matchData.countdown_started_at && !showCountdown && !gameStarted) {
+          // 🎯 Eğer countdown_started_at varsa VE daha önce başlatılmamışsa countdown hazırlığını başlat
+          if (matchData.countdown_started_at && !showCountdown && !gameStarted && !countdownServerTime) {
             console.log("🎯 Tournament countdown başlatılıyor (initial load):", matchData.countdown_started_at);
             
             // 5 saniyelik buffer ekle - tüm modlarda senkronize başlama
@@ -3221,8 +3229,8 @@ const GamePage = ({
           console.log("🏆 Turnuva maçı güncellendi:", payload);
           const newData = payload.new as any;
 
-          // 🎯 SERVER-SIDE COUNTDOWN SYNC
-          if (newData.countdown_started_at && !showCountdown && !gameStarted) {
+          // 🎯 SERVER-SIDE COUNTDOWN SYNC - Sadece countdown daha önce başlatılmamışsa
+          if (newData.countdown_started_at && !showCountdown && !gameStarted && !countdownServerTime) {
             console.log("🎯 Tournament countdown başlatılıyor (server-sync):", newData.countdown_started_at);
             
             // 5 saniyelik buffer ekle - tüm modlarda senkronize başlama
@@ -3309,8 +3317,8 @@ const GamePage = ({
           console.log("🎮 Game room güncellendi:", payload);
           const newData = payload.new as any;
 
-          // 🎯 SERVER-SIDE COUNTDOWN SYNC - sadece henüz başlamamışsa
-          if (newData.countdown_started_at && !showCountdown && !gameStarted) {
+          // 🎯 SERVER-SIDE COUNTDOWN SYNC - sadece henüz başlamamışsa VE daha önce başlatılmamışsa
+          if (newData.countdown_started_at && !showCountdown && !gameStarted && !countdownServerTime) {
             console.log("🎯 Game room countdown başlatılıyor (server-sync):", newData.countdown_started_at);
             const bufferedStartTime = new Date(newData.countdown_started_at).getTime() + COUNTDOWN_BUFFER_MS;
             const serverNow = Date.now() + serverTimeOffset;
@@ -4233,6 +4241,12 @@ const GamePage = ({
   // 🎯 Countdown event listener (tüm modlar için)
   useEffect(() => {
     const handleCountdownStart = (event: CustomEvent) => {
+      // Zaten countdown başlamışsa tekrar başlatma
+      if (showCountdown || countdownServerTime) {
+        console.log("⚠️ Countdown zaten aktif - event ignored");
+        return;
+      }
+      
       const { serverTime } = event.detail;
       console.log("⏰ Countdown event alındı:", serverTime, "→ buffered:", withBuffer(serverTime));
       // 5sn sabit buffer + hazırlık animasyonu (tüm modlar)
@@ -4274,7 +4288,8 @@ const GamePage = ({
       (gameMode === "private-room" || gameMode === "random-match") &&
       currentRoom?.countdown_started_at &&
       !showCountdown &&
-      !gameStarted
+      !gameStarted &&
+      !countdownServerTime // Daha önce başlatılmamış olmalı
     ) {
       console.log("⏰ Initial countdown sync from room state:", currentRoom.countdown_started_at);
       
@@ -4332,7 +4347,7 @@ const GamePage = ({
   // 🔍 Countdown eksiklik kontrolü: Eğer 2 oyuncu var ama countdown başlamamışsa kontrol et
   useEffect(() => {
     if (gameMode !== "private-room" && gameMode !== "random-match") return;
-    if (showCountdown || gameStarted) return; // Zaten countdown varsa veya oyun başlamışsa skip
+    if (showCountdown || gameStarted || countdownServerTime) return; // Zaten countdown varsa skip
     if (countdownCheckDoneRef.current) return; // Tek seferlik kontrol
 
     const realPlayers = participants.filter((p) => !p.is_bot && p.user_id !== null);
