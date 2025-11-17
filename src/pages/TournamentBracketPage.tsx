@@ -20,6 +20,7 @@ const TournamentBracketPage = () => {
   const [countdown, setCountdown] = useState(10);
   const [showChampion, setShowChampion] = useState(false);
   const [showEliminated, setShowEliminated] = useState(false);
+  const [showDraw, setShowDraw] = useState(false);
   const [navigatedToGame, setNavigatedToGame] = useState(false);
   const countdownGuard = useRef<{ round: number | null; active: boolean; anchorTs: number | null }>({
     round: null,
@@ -369,7 +370,18 @@ const TournamentBracketPage = () => {
 
     // Final maçı tamamlandı mı kontrol et
     const finalMatch = matches.find((m) => m.round === 3 && m.status === "completed");
-    if (!finalMatch || !finalMatch.winner_id) return;
+    if (!finalMatch) return;
+
+    // Beraberlik kontrolü
+    const isDraw = finalMatch.player1_score === finalMatch.player2_score && !finalMatch.winner_id;
+    const isUserInFinal = finalMatch.player1_id === user.id || finalMatch.player2_id === user.id;
+
+    if (isDraw && isUserInFinal && !showDraw) {
+      setShowDraw(true);
+      return;
+    }
+
+    if (!finalMatch.winner_id) return;
 
     const championId = finalMatch.winner_id;
 
@@ -377,14 +389,10 @@ const TournamentBracketPage = () => {
     if (championId === user.id && !showChampion) {
       setShowChampion(true);
       playSpecialSound("/sampiyon.mp3", 0.8);
-    } else if (
-      (finalMatch.player1_id === user.id || finalMatch.player2_id === user.id) &&
-      championId !== user.id &&
-      !showEliminated
-    ) {
+    } else if (isUserInFinal && championId !== user.id && !showEliminated) {
       setShowEliminated(true);
     }
-  }, [matches, tournamentId, currentTournament, user, playSpecialSound, showChampion, showEliminated]);
+  }, [matches, tournamentId, currentTournament, user, playSpecialSound, showChampion, showEliminated, showDraw]);
 
   // REMOVED: Duplicate round advancement logic moved to checkAndAdvanceRound
 
@@ -515,6 +523,15 @@ const TournamentBracketPage = () => {
     }, 10000);
     return () => clearTimeout(timer);
   }, [showEliminated, navigate]);
+
+  // Beraberlik ekranında 10 saniye sonra otomatik listeye dön
+  useEffect(() => {
+    if (!showDraw) return;
+    const timer = setTimeout(() => {
+      navigate("/tournament");
+    }, 10000);
+    return () => clearTimeout(timer);
+  }, [showDraw, navigate]);
 
   if (!currentTournament) {
     return (
@@ -731,6 +748,27 @@ const TournamentBracketPage = () => {
           <Crown className="w-24 h-24 text-yellow-200 mx-auto mb-6 animate-bounce" />
           <h1 className="text-6xl font-bold text-white mb-4">Şampiyon!</h1>
           <h2 className="text-3xl text-yellow-200 mb-8">{championName || "Bilinmeyen"}</h2>
+          <p className="text-white text-lg mb-6">10 saniye sonra turnuva listesine döneceksiniz...</p>
+
+          <Button
+            onClick={() => navigate("/tournament")}
+            className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-bold py-3 px-6 rounded-full"
+          >
+            <Trophy className="w-5 h-5 mr-2" />
+            Turnuva Listesi
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (showDraw) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-yellow-600 to-orange-600 p-4 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-24 h-24 text-yellow-200 mx-auto mb-6 text-6xl">🤝</div>
+          <h1 className="text-6xl font-bold text-white mb-4">Berabere!</h1>
+          <h2 className="text-3xl text-yellow-200 mb-8">Final maçı berabere bitti</h2>
           <p className="text-white text-lg mb-6">10 saniye sonra turnuva listesine döneceksiniz...</p>
 
           <Button
