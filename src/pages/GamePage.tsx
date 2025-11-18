@@ -886,19 +886,45 @@ const GamePage = ({
         originalOpponentScore: opponentScore,
       });
 
-      // Önce backend'e maç sonucunu gönder - Backend beraberlikte kazananı belirleyecek
+      // Beraberlik durumunda önce backend tie-breaker ile kazananı belirle
+      let determinedWinnerId: string | null = null;
+      
+      if (player1Score === player2Score) {
+        console.log("⚖️ Beraberlik tespit edildi, backend tie-breaker çalıştırılıyor...");
+        
+        const { data: tieResult, error: tieError } = await supabase.rpc(
+          "determine_tournament_winner_with_tiebreaker",
+          {
+            p_match_id: tournamentMatch.id,
+            p_player1_id: tournamentMatch.player1_id,
+            p_player2_id: tournamentMatch.player2_id,
+            p_player1_score: player1Score,
+            p_player2_score: player2Score,
+          }
+        );
+
+        if (tieError) {
+          console.error("❌ Tie-breaker hatası:", tieError);
+          return;
+        }
+
+        determinedWinnerId = tieResult as string;
+        console.log("✅ Tie-breaker kazananı:", determinedWinnerId);
+      } else {
+        // Normal kazanan belirleme
+        determinedWinnerId = player1Score > player2Score 
+          ? tournamentMatch.player1_id 
+          : tournamentMatch.player2_id;
+      }
+
+      // Backend'e maç sonucunu ve belirlenmiş kazananı gönder
       const { data: updateResult, error: updateError } = await supabase.rpc(
         "complete_tournament_match_with_advance",
         {
           p_match_id: tournamentMatch.id,
           p_player1_score: player1Score,
           p_player2_score: player2Score,
-          // Backend'in determine_tournament_winner_with_tiebreaker fonksiyonunu kullanmasına izin ver
-          p_winner_id: player1Score > player2Score 
-            ? tournamentMatch.player1_id 
-            : player2Score > player1Score 
-              ? tournamentMatch.player2_id 
-              : null, // null gönder ki backend tiebreaker çalıştırsın
+          p_winner_id: determinedWinnerId!, // Artık kesinlikle bir winner_id var
         }
       );
 
@@ -5104,7 +5130,7 @@ const GamePage = ({
             <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
               {winner === "player" && <img src="/sevinc.gif" alt="Sevinç" className="w-16 h-16 object-contain" />}
               {winner === "opponent" && <img src="/uzgun.gif" alt="Üzgün" className="w-16 h-16 object-contain" />}
-              {winner === "tie" && <img src="/sabit.gif" alt="Beraberlik" className="w-16 h-16 object-contain" />}
+              {winner === "tie" && gameMode !== "tournament" && <img src="/sabit.gif" alt="Beraberlik" className="w-16 h-16 object-contain" />}
             </div>
 
             {/* Başlık */}
@@ -5116,9 +5142,7 @@ const GamePage = ({
               {gameMode === "tournament"
                 ? winner === "player"
                   ? "Maçı Kazandınız!"
-                  : winner === "opponent"
-                    ? "Elendiniz!"
-                    : "Beraberlik!"
+                  : "Elendiniz!"
                 : winner === "player"
                   ? "Kazandınız!"
                   : winner === "opponent"
