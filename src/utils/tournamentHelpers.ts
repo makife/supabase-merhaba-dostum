@@ -1,9 +1,9 @@
-import { TournamentParticipant, TournamentMatch } from '@/types/tournament';
+import { TournamentParticipant, TournamentMatch } from "@/types/tournament";
 
 export const formatTournamentTime = (seconds: number): string => {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
 };
 
 export const calculateTimeRemaining = (expiresAt: string, serverTimeOffset: number = 0): number => {
@@ -13,15 +13,15 @@ export const calculateTimeRemaining = (expiresAt: string, serverTimeOffset: numb
 };
 
 export const getRealPlayerCount = (participants: TournamentParticipant[]): number => {
-  return participants.filter(p => !p.is_bot).length;
+  return participants.filter((p) => !p.is_bot).length;
 };
 
 export const getBotCount = (participants: TournamentParticipant[]): number => {
-  return participants.filter(p => p.is_bot).length;
+  return participants.filter((p) => p.is_bot).length;
 };
 
 export const isUserInTournament = (participants: TournamentParticipant[], userId: string): boolean => {
-  return participants.some(p => p.user_id === userId && !p.is_bot);
+  return participants.some((p) => p.user_id === userId && !p.is_bot);
 };
 
 export const getTournamentStatusMessage = (realPlayerCount: number) => {
@@ -29,82 +29,139 @@ export const getTournamentStatusMessage = (realPlayerCount: number) => {
     return {
       text: "En az 2 oyuncu gerekli",
       color: "text-red-400",
-      emoji: "⚠️"
+      emoji: "⚠️",
     };
   }
-  
+
   if (realPlayerCount >= 8) {
     return {
       text: "TAM KADRO! 8 oyunculu turnuva",
-      color: "text-yellow-400", 
-      emoji: "🔥"
+      color: "text-yellow-400",
+      emoji: "🔥",
     };
   }
-  
+
   if (realPlayerCount >= 4) {
     return {
       text: "Yeterli oyuncu var, harika bir turnuva olacak!",
       color: "text-green-400",
-      emoji: "✅"
+      emoji: "✅",
     };
   }
-  
+
   return {
-    text: `${8 - realPlayerCount} eksik oyuncu botlarla doldurulacak`,
+    text: `${8 - realPlayerCount} eksik oyuncu bekleniyor`,
     color: "text-gray-300",
-    emoji: "🤖"
+    emoji: "🤖",
   };
 };
 
 export const organizeMatchesByRound = (matches: TournamentMatch[]) => {
   const rounds: { [key: number]: TournamentMatch[] } = {};
-  
-  matches.forEach(match => {
+
+  matches.forEach((match) => {
     if (!rounds[match.round]) {
       rounds[match.round] = [];
     }
     rounds[match.round].push(match);
   });
-  
+
   // Sort matches within each round
-  Object.keys(rounds).forEach(round => {
+  Object.keys(rounds).forEach((round) => {
     rounds[parseInt(round)].sort((a, b) => a.match_number - b.match_number);
   });
-  
+
   return rounds;
 };
 
 export const getRoundName = (round: number): string => {
   switch (round) {
-    case 1: return 'Çeyrek Final';
-    case 2: return 'Yarı Final';
-    case 3: return 'Final';
-    default: return `${round}. Tur`;
+    case 1:
+      return "Çeyrek Final";
+    case 2:
+      return "Yarı Final";
+    case 3:
+      return "Final";
+    default:
+      return `${round}. Tur`;
   }
 };
 
 export const getMatchStatus = (match: TournamentMatch): string => {
   switch (match.status) {
-    case 'pending': return 'Bekliyor';
-    case 'in_progress': return 'Oynanıyor';
-    case 'completed': return 'Tamamlandı';
-    default: return 'Bilinmiyor';
+    case "pending":
+      return "Bekliyor";
+    case "in_progress":
+      return "Oynanıyor";
+    case "completed":
+      return "Tamamlandı";
+    default:
+      return "Bilinmiyor";
   }
 };
 
 export const generateBotName = (index: number): string => {
   const turkishNames = [
-    'ahmet', 'mehmet', 'ayşe', 'fatma', 'ali', 'veli', 'zeynep', 'elif',
-    'mustafa', 'emre', 'can', 'ece', 'selin', 'burak', 'deniz', 'yusuf',
-    'merve', 'özge', 'berk', 'arda', 'sude', 'efe', 'ada', 'emir',
-    'defne', 'kaan', 'ilayda', 'mert', 'asya', 'kerem', 'nisa', 'bora',
-    'irem', 'doruk', 'ela', 'eren', 'nehir', 'alp', 'maya', 'ege',
-    'eylül', 'tunç', 'lara', 'uras', 'derin', 'çağlar', 'pelin', 'koray',
-    'damla', 'tolga', 'su', 'onur', 'ceren', 'umut', 'begüm', 'barış'
+    "ahmet",
+    "mehmet",
+    "ayşe",
+    "fatma",
+    "ali",
+    "veli",
+    "zeynep",
+    "elif",
+    "mustafa",
+    "emre",
+    "can",
+    "ece",
+    "selin",
+    "burak",
+    "deniz",
+    "yusuf",
+    "merve",
+    "özge",
+    "berk",
+    "arda",
+    "sude",
+    "efe",
+    "ada",
+    "emir",
+    "defne",
+    "kaan",
+    "ilayda",
+    "mert",
+    "asya",
+    "kerem",
+    "nisa",
+    "bora",
+    "irem",
+    "doruk",
+    "ela",
+    "eren",
+    "nehir",
+    "alp",
+    "maya",
+    "ege",
+    "eylül",
+    "tunç",
+    "lara",
+    "uras",
+    "derin",
+    "çağlar",
+    "pelin",
+    "koray",
+    "damla",
+    "tolga",
+    "su",
+    "onur",
+    "ceren",
+    "umut",
+    "begüm",
+    "barış",
   ];
 
   // Seeded RNG (deterministic) using index
-  let seed = (index >>> 0) || 0;
+  let seed = index >>> 0 || 0;
   const next = (mod: number) => {
     seed = (seed * 1664525 + 1013904223) >>> 0; // LCG
     return seed % mod;
@@ -116,17 +173,17 @@ export const generateBotName = (index: number): string => {
 
   const baseName = turkishNames[nameIndex];
   const num4 = 1000 + next(9000); // 4-digit
-  const num2 = 10 + next(90);     // 2-digit
-  const num3 = 100 + next(900);   // 3-digit
+  const num2 = 10 + next(90); // 2-digit
+  const num3 = 100 + next(900); // 3-digit
 
   const decorations = [
     (name: string) => name + String(num4),
-    (name: string) => name + '_',
-    (name: string) => '_' + name,
-    (name: string) => '_' + name + '_',
+    (name: string) => name + "_",
+    (name: string) => "_" + name,
+    (name: string) => "_" + name + "_",
     (name: string) => name + name.charAt(name.length - 1).repeat(2),
     (name: string) => name.charAt(0) + name.slice(1) + String(num2),
-    (name: string) => name + '.' + String(next(100)),
+    (name: string) => name + "." + String(next(100)),
     (name: string) => name.charAt(0).toUpperCase() + name.slice(1) + String(num3),
     (name: string) => name,
   ];
