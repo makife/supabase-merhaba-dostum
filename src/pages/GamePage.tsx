@@ -615,7 +615,7 @@ const GamePage = ({
   const [waitingForPlayer, setWaitingForPlayer] = useState(false);
   const [gameEnded, setGameEnded] = useState(false);
   const statsUpdatedRef = useRef(false);
-
+  const attemptedAutoCompleteRef = useRef(false);
   // Reset duplicate stats guard when game resets
   useEffect(() => {
     if (!gameEnded) {
@@ -1050,6 +1050,88 @@ const GamePage = ({
       console.error("Turnuva maç bitiş hatası:", error);
     }
   };
+
+  // Turnuva sonucu beklerken: winner belirlenene kadar nötr ekran + polling + fail-safe redirect
+  useEffect(() => {
+    if (gameMode !== "tournament" || !tournamentMatch || !gameEnded) return;
+    if (winner !== null) return; // Zaten belirlendi
+
+    let cancelled = false;
+    const startedAt = Date.now();
+
+    const poll = async () => {
+      if (cancelled) return;
+      try {
+        const { data, error } = await supabase
+          .from("tournament_matches")
+          .select("winner_id,status,player1_id,player2_id,player1_score,player2_score")
+          .eq("id", tournamentMatch.id)
+          .single();
+
+        if (!error && data) {
+          if (data.winner_id) {
+            if (cancelled) return;
+            setWinner(String(data.winner_id) === String(user?.id) ? "player" : "opponent");
+            setTimeout(() => navigate(`/tournament-bracket/${tournamentMatch.tournament_id}`), 3000);
+            return; // Polling durur (cleanup dönecek)
+          }
+
+          // Winner yoksa ve henüz tamamlanmamışsa bir kere backend'e tamamlama denemesi yap
+          if (Date.now() - startedAt > 2000 && !attemptedAutoCompleteRef.current) {
+            attemptedAutoCompleteRef.current = true;
+            const isPlayer1 = String(tournamentMatch.player1_id) === String(user?.id);
+            const p1 = data.player1_score ?? (isPlayer1 ? playerScoreRef.current : opponentScoreRef.current);
+            const p2 = data.player2_score ?? (isPlayer1 ? opponentScoreRef.current : playerScoreRef.current);
+
+            let decidedWinner: string | null = null;
+            if (p1 === p2) {
+              const { data: tieData, error: tieErr } = await supabase.rpc(
+                "determine_tournament_winner_with_tiebreaker",
+                {
+                  p_match_id: tournamentMatch.id,
+                  p_player1_id: tournamentMatch.player1_id,
+                  p_player2_id: tournamentMatch.player2_id,
+                  p_player1_score: p1,
+                  p_player2_score: p2,
+                }
+              );
+              if (!tieErr && tieData) decidedWinner = tieData as string;
+            } else {
+              decidedWinner = p1 > p2 ? (data.player1_id ?? tournamentMatch.player1_id) : (data.player2_id ?? tournamentMatch.player2_id);
+            }
+
+            if (decidedWinner) {
+              await supabase.rpc("complete_tournament_match_with_advance", {
+                p_match_id: tournamentMatch.id,
+                p_player1_score: p1,
+                p_player2_score: p2,
+                p_winner_id: decidedWinner,
+              });
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Winner polling error", e);
+      }
+
+      if (!cancelled) setTimeout(poll, 1000);
+    };
+
+    // Başlat
+    poll();
+
+    // 6sn fail-safe yönlendirme
+    const fail = setTimeout(() => {
+      if (!cancelled) {
+        navigate(`/tournament-bracket/${tournamentMatch.tournament_id}`);
+      }
+    }, 6000);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(fail);
+    };
+  }, [gameMode, gameEnded, tournamentMatch?.id, winner, user?.id]);
 
   const requestRematch = async () => {
     if (!user) {
@@ -5133,6 +5215,9 @@ const GamePage = ({
               {winner === "player" && <img src="/sevinc.gif" alt="Sevinç" className="w-16 h-16 object-contain" />}
               {winner === "opponent" && <img src="/uzgun.gif" alt="Üzgün" className="w-16 h-16 object-contain" />}
               {winner === "tie" && gameMode !== "tournament" && <img src="/sabit.gif" alt="Beraberlik" className="w-16 h-16 object-contain" />}
+              {gameMode === "tournament" && !winner && (
+                <Loader2 className="w-8 h-8 animate-spin text-gray-500" aria-label="Sonuç belirleniyor" />
+              )}
             </div>
 
             {/* Başlık */}
@@ -5144,7 +5229,9 @@ const GamePage = ({
               {gameMode === "tournament"
                 ? winner === "player"
                   ? "Maçı Kazandınız!"
-                  : "Elendiniz!"
+                  : winner === "opponent"
+                    ? "Elendiniz!"
+                    : "Sonuç belirleniyor..."
                 : winner === "player"
                   ? "Kazandınız!"
                   : winner === "opponent"
