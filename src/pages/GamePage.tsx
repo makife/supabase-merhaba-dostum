@@ -950,7 +950,11 @@ const GamePage = ({
       console.log("📊 Backend'den gelen güncel maç bilgisi:", updatedMatch);
 
       // Backend'in belirlediği kazananı kullan
-      const winnerId = updatedMatch.winner_id;
+      const winnerIdRaw = updatedMatch.winner_id;
+      const winnerId = winnerIdRaw || determinedWinnerId;
+      if (!winnerIdRaw && determinedWinnerId) {
+        console.warn("⚠️ winner_id DB'de boş; local tie-breaker kazananı kullanılacak:", determinedWinnerId);
+      }
       const finalUserScore = isPlayer1 ? updatedMatch.player1_score : updatedMatch.player2_score;
       const finalOpponentScore = isPlayer1 ? updatedMatch.player2_score : updatedMatch.player1_score;
 
@@ -1034,9 +1038,7 @@ const GamePage = ({
 
         // Backend winner_id'ye göre yönlendirme (tie asla yok)
         const redirectDelay = 3000;
-        const redirectPath = winnerId === user.id 
-          ? `/tournament-bracket/${tournamentMatch.tournament_id}` 
-          : "/tournament";
+        const redirectPath = `/tournament-bracket/${tournamentMatch.tournament_id}`;
 
         console.log(`🔄 ${redirectDelay / 1000} saniye sonra ${redirectPath}'e yönlendirilecek`);
         setTimeout(() => {
