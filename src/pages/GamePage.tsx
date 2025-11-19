@@ -3872,12 +3872,21 @@ const GamePage = ({
           maxScore,
           gameStarted,
           gameEnded,
+          gameMode,
         });
         setGameEnded(true);
-        checkWinnerWithScores(playerScore, opponentScore);
+        
+        // Tournament mode için handleGameEnd çağır (handleTournamentGameEnd içerir)
+        if (gameMode === "tournament") {
+          console.log("🏆 Tournament score mode - handleGameEnd çağrılıyor");
+          handleGameEnd();
+        } else {
+          // Diğer modlar için normal akış
+          checkWinnerWithScores(playerScore, opponentScore);
+        }
       }
     }
-  }, [playerScore, opponentScore, checkWinnerWithScores, gameType, currentRoom?.max_score, gameStarted, gameEnded]);
+  }, [playerScore, opponentScore, checkWinnerWithScores, gameType, currentRoom?.max_score, gameStarted, gameEnded, gameMode, handleGameEnd]);
 
   // Check if playing with AI (unified logic for all modes)
   const isPlayingWithAI = useCallback(() => {
