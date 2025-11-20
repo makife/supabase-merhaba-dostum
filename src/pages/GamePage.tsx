@@ -2074,13 +2074,13 @@ const GamePage = ({
           if (matchData) {
             // Maç zaten completed ise tekrar oynama
             if (matchData.status === "completed") {
-              console.warn("⚠️ Bu maç zaten tamamlanmış (DB):", matchData);
+              console.warn("⛔ Bu maç zaten veritabanında 'completed' olarak işaretlenmiş.");
               toast({
-                title: "⚠️ Maç Zaten Bitti",
-                description: "Bu maç daha önce tamamlandı.",
-                variant: "destructive",
+                title: "Maç Tamamlandı",
+                description: "Bu maç zaten oynandı. Turnuva sayfasına yönlendiriliyorsunuz.",
               });
-              setTimeout(() => navigate("/tournament"), 2000);
+              // Bracket sayfasına zorla yönlendir
+              setTimeout(() => navigate(`/tournament-bracket/${tournamentId}`), 1000);
               return;
             }
 
