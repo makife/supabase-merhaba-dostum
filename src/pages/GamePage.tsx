@@ -3353,6 +3353,8 @@ const GamePage = ({
   );
 
   // 🏆 TURNUVA MAÇLARI İÇİN REAL-TIME SCORE SYNC + COUNTDOWN SYNC
+  // DÜZELTME: Bağımlılık dizisinden opponentScore, gameEnded, showCountdown çıkarıldı.
+  // Bu sayede bağlantı kopup durmayacak.
   useEffect(() => {
     if (gameMode !== "tournament" || !tournamentMatch || !user) return;
 
@@ -3369,78 +3371,86 @@ const GamePage = ({
           filter: `id=eq.${tournamentMatch.id}`,
         },
         (payload) => {
-          console.log("🏆 Turnuva maçı güncellendi:", payload);
           const newData = payload.new as any;
 
+          // Match state'ini güncelle
           setTournamentMatch(newData);
 
-          // 🎯 Countdown Kontrolü
-          if (newData.countdown_started_at && !showCountdown && !gameStarted && !countdownServerTime) {
-            console.log("🎯 Tournament countdown tetiklendi:", newData.countdown_started_at);
+          // ------------------------------------------------------------
+          // 🎯 1. COUNTDOWN MANTIĞI (14sn Sorunu Düzeltmesi)
+          // ------------------------------------------------------------
+          // Not: showCountdown ref veya state kontrolünü burada yapmıyoruz,
+          // çünkü useEffect dependency'si boş olduğu için stale closure olabilir.
+          // Bunun yerine tarih kontrolü yapıyoruz.
 
-            // 1. Sunucudan gelen "Countdown Başlangıç Zamanı"
-            const serverCountdownStart = new Date(newData.countdown_started_at).getTime();
+          if (newData.countdown_started_at) {
+            const serverStartMs = new Date(newData.countdown_started_at).getTime();
+            const targetGameStartMs = serverStartMs + 5000; // Sadece 5 saniye ekle
 
-            // 2. Hedeflenen OYUN BAŞLAMA zamanı (Countdown start + 5 saniye buffer)
-            const targetGameStartTime = serverCountdownStart + 5000;
-
-            // 3. Hesaplamalar
             const now = Date.now();
-            const currentServerTime = now + serverTimeOffset;
-            const timeUntilStart = targetGameStartTime - currentServerTime;
+            const estimatedServerTime = now + serverTimeOffset;
+            const diff = targetGameStartMs - estimatedServerTime;
 
-            console.log("⏰ Zamanlama:", {
-              serverStart: new Date(serverCountdownStart).toISOString(),
-              targetGameStart: new Date(targetGameStartTime).toISOString(),
-              diff: timeUntilStart,
-            });
+            // Eğer countdown daha önce başlatılmadıysa veya süre bitmediyse
+            // Bu kontrolü state dışı bir mekanizmayla (örn: tarih farkıyla) yapıyoruz
+            if (diff > 0 && diff < 60000) {
+              // Makul bir süre içindeyse (örn: 1 dakikadan az)
+              // Sadece 1 kere set etmek için basit bir check
+              setCountdownServerTime((prev) => {
+                if (!prev) {
+                  console.log("🎯 Countdown Hedef Zamanı Ayarlandı:", new Date(targetGameStartMs).toISOString());
+                  console.log("⏰ Kalan Süre (ms):", diff);
 
-            // Eğer süre geçmişse veya çok az kalmışsa direkt başlat
-            if (timeUntilStart <= 100) {
-              setShowCountdown(false);
-              setGameStarted(true);
-              return;
+                  setShowCountdown(true);
+
+                  // Animasyonlar
+                  if (diff > 1500) {
+                    setPreparingOpponent("preparing");
+                    setTimeout(() => setPreparingOpponent("ready"), diff - 1500);
+                    setTimeout(() => setPreparingOpponent(null), diff - 500);
+                  }
+
+                  // GameCountdown'a DIRECT ISO string gönderiyoruz.
+                  // ÖNEMLİ: GameCountdown içinde tekrar offset veya buffer EKLEMEYİN.
+                  return new Date(targetGameStartMs).toISOString();
+                }
+                return prev;
+              });
             }
-
-            // Animasyonlar (Eğer 1.5 saniyeden fazla varsa)
-            if (timeUntilStart > 1500) {
-              setPreparingOpponent("preparing");
-
-              // "Hazır" yazısı için zamanlama
-              const readyDelay = timeUntilStart - 1500;
-              setTimeout(() => {
-                if (!gameStarted) setPreparingOpponent("ready");
-              }, readyDelay);
-
-              // Animasyonu temizle
-              setTimeout(() => {
-                if (!gameStarted) setPreparingOpponent(null);
-              }, timeUntilStart - 500);
-            }
-
-            // DÜZELTME: GameCountdown bileşenine direkt hedef zamanı veriyoruz.
-            setCountdownServerTime(new Date(targetGameStartTime).toISOString());
-            setShowCountdown(true);
           }
 
-          // --- DÜZELTİLDİ: BURADAKİ FAZLA KAPATMA PARANTEZİ '}' KALDIRILDI ---
+          // ------------------------------------------------------------
+          // 🎯 2. SKOR SENKRONİZASYONU (Skor Gitmeme Sorunu Düzeltmesi)
+          // ------------------------------------------------------------
+          const currentUserId = user.id; // useEffect scope'undaki user.id
+          const isPlayer1 = newData.player1_id === currentUserId;
 
-          // Karşı oyuncunun skorunu güncelle (Callback fonksiyonu içinde kalmalı)
-          const isPlayer1 = tournamentMatch.player1_id === user.id;
-          const opponentScore = isPlayer1 ? newData.player2_score : newData.player1_score;
+          // Rakibin yeni skoru ne?
+          const newOpponentScore = isPlayer1 ? newData.player2_score : newData.player1_score;
 
-          // Kendi skorunuz veya rakip skoru değiştiyse güncelle
-          if (opponentScore !== undefined && !gameEnded) {
-            // Sadece artış varsa veya null değilse güncelle (titremeyi önle)
-            setOpponentScore((prev) => {
-              if (opponentScore > prev) {
-                console.log("🔄 Rakip skoru arttı:", prev, "->", opponentScore);
-                return opponentScore;
+          // Kendi yeni skorum ne? (Opsiyonel sync)
+          const newPlayerScore = isPlayer1 ? newData.player1_score : newData.player2_score;
+
+          // State update fonksiyonu kullanıyoruz (Dependency array'e girmesin diye)
+          if (typeof newOpponentScore === "number") {
+            setOpponentScore((prevScore) => {
+              // Sadece skor değiştiyse güncelle
+              if (newOpponentScore !== prevScore) {
+                console.log(`🔄 Rakip Skoru Güncellendi: ${prevScore} -> ${newOpponentScore}`);
+                return newOpponentScore;
               }
+              return prevScore;
+            });
+          }
+
+          // Kendi skorunu da senkronize et (eğer db'den farklıysa)
+          if (typeof newPlayerScore === "number") {
+            setPlayerScore((prev) => {
+              if (newPlayerScore > prev) return newPlayerScore;
               return prev;
             });
           }
-        }, // <--- CALLBACK BURADA KAPANIYOR
+        },
       )
       .subscribe();
 
@@ -3448,7 +3458,9 @@ const GamePage = ({
       console.log("🔌 Turnuva maçı subscription temizleniyor");
       supabase.removeChannel(channel);
     };
-  }, [gameMode, tournamentMatch, user, gameEnded, showCountdown, gameStarted, serverTimeOffset]);
+    // ⚠️ DİKKAT: Dependency array SADECE bunlar olmalı.
+    // opponentScore veya showCountdown buraya eklenirse loop oluşur veya bağlantı kopar.
+  }, [gameMode, tournamentMatch?.id, user?.id, serverTimeOffset]);
 
   // 🎮 NORMAL OYUNLAR (RANDOM-MATCH, PRIVATE-ROOM) İÇİN COUNTDOWN SYNC
   useEffect(() => {
