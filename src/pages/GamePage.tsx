@@ -134,7 +134,14 @@ const GamePage = ({
   }, [gameMode, propsParticipants, gameParticipants, tournamentParticipants]);
 
   const { validateWord, isValidating } = useWordValidation();
-  const { playSound, playTimeWarningSequence, playCelebrationSound, playGameLoseSound, playTieSound, playSpecialSound } = useSounds();
+  const {
+    playSound,
+    playTimeWarningSequence,
+    playCelebrationSound,
+    playGameLoseSound,
+    playTieSound,
+    playSpecialSound,
+  } = useSounds();
   const { jokers: jokerInventory, useJoker, loadJokers } = useJokerInventory();
   const { fadeOutBackgroundMusic, fadeInBackgroundMusic } = useMusic();
   const [searchParams] = useSearchParams();
@@ -604,11 +611,12 @@ const GamePage = ({
   const [displayTime, setDisplayTime] = useState<number>(timeLeftRef.current);
   const [showCountdown, setShowCountdown] = useState(false);
   const [countdownServerTime, setCountdownServerTime] = useState<string | null>(null);
-  const [preparingOpponent, setPreparingOpponent] = useState<'preparing' | 'ready' | null>(null);
-  
+  const [preparingOpponent, setPreparingOpponent] = useState<"preparing" | "ready" | null>(null);
+
   // 5 saniyelik sabit buffer - tüm modlarda oyuncular senkronize başlaması için
   const COUNTDOWN_BUFFER_MS = 5000;
-  const withBuffer = (iso: string | null) => (iso ? new Date(new Date(iso).getTime() + COUNTDOWN_BUFFER_MS).toISOString() : null);
+  const withBuffer = (iso: string | null) =>
+    iso ? new Date(new Date(iso).getTime() + COUNTDOWN_BUFFER_MS).toISOString() : null;
 
   const [gameStarted, setGameStarted] = useState(false);
   const countdownCheckDoneRef = useRef(false);
@@ -646,23 +654,23 @@ const GamePage = ({
         console.error("Server time sync error:", err);
       }
     };
-    
+
     initializeServerSync();
   }, []);
 
   // Seviye 2: Drift detection (her 30 saniyede kontrol)
   useEffect(() => {
     if (!gameStarted) return;
-    
+
     const driftInterval = startDriftMonitoring(
       () => serverTimeOffset,
       (newOffset, drift) => {
         setServerTimeOffset(newOffset);
         console.log(`🔄 Clock re-synced due to drift: ${drift}ms`);
       },
-      30000 // 30 saniye
+      30000, // 30 saniye
     );
-    
+
     return () => {
       clearInterval(driftInterval);
       console.log("🔄 Drift monitoring stopped");
@@ -888,16 +896,14 @@ const GamePage = ({
 
       // Beraberlik durumunda önce backend tie-breaker ile kazananı belirle
       let determinedWinnerId: string | null = null;
-      
+
       if (player1Score === player2Score) {
         console.log("🤝 Beraberlik durumu - tie-breaker kriterleri uygulanıyor");
 
         // 0-0 beraberlik: Rastgele kazanan seç
         if (player1Score === 0 && player2Score === 0) {
           console.log("🎲 0-0 beraberlik - rastgele kazanan seçiliyor");
-          determinedWinnerId = Math.random() < 0.5 
-            ? tournamentMatch.player1_id 
-            : tournamentMatch.player2_id;
+          determinedWinnerId = Math.random() < 0.5 ? tournamentMatch.player1_id : tournamentMatch.player2_id;
           console.log("✅ Rastgele seçilen kazanan:", determinedWinnerId);
         } else {
           // 0'dan farklı beraberlik: Backend tie-breaker RPC çağır
@@ -910,15 +916,13 @@ const GamePage = ({
               p_player2_id: tournamentMatch.player2_id,
               p_player1_score: player1Score,
               p_player2_score: player2Score,
-            }
+            },
           );
 
           if (tieError) {
             console.error("❌ Tie-breaker hatası:", tieError);
             // Fallback: Rastgele seç
-            determinedWinnerId = Math.random() < 0.5 
-              ? tournamentMatch.player1_id 
-              : tournamentMatch.player2_id;
+            determinedWinnerId = Math.random() < 0.5 ? tournamentMatch.player1_id : tournamentMatch.player2_id;
             console.log("⚠️ Tie-breaker hatası, rastgele seçildi:", determinedWinnerId);
           } else {
             determinedWinnerId = tieResult as string;
@@ -927,21 +931,16 @@ const GamePage = ({
         }
       } else {
         // Normal kazanan belirleme
-        determinedWinnerId = player1Score > player2Score 
-          ? tournamentMatch.player1_id 
-          : tournamentMatch.player2_id;
+        determinedWinnerId = player1Score > player2Score ? tournamentMatch.player1_id : tournamentMatch.player2_id;
       }
 
       // Backend'e maç sonucunu ve belirlenmiş kazananı gönder
-      const { data: updateResult, error: updateError } = await supabase.rpc(
-        "complete_tournament_match_with_advance",
-        {
-          p_match_id: tournamentMatch.id,
-          p_player1_score: player1Score,
-          p_player2_score: player2Score,
-          p_winner_id: determinedWinnerId!, // Artık kesinlikle bir winner_id var
-        }
-      );
+      const { data: updateResult, error: updateError } = await supabase.rpc("complete_tournament_match_with_advance", {
+        p_match_id: tournamentMatch.id,
+        p_player1_score: player1Score,
+        p_player2_score: player2Score,
+        p_winner_id: determinedWinnerId!, // Artık kesinlikle bir winner_id var
+      });
 
       if (updateError) {
         console.error("❌ Maç tamamlama hatası:", updateError);
@@ -1000,11 +999,11 @@ const GamePage = ({
       });
 
       const userIsWinner = winnerId === user.id;
-      
+
       setWinner(userIsWinner ? "player" : "opponent");
       setButtonsEnabled(false);
       setTimeout(() => setButtonsEnabled(true), 1000);
-      
+
       if (userIsWinner) {
         playSound("gameWin");
         setTimeout(() => playCelebrationSound(), 500);
@@ -1108,11 +1107,14 @@ const GamePage = ({
                   p_player2_id: tournamentMatch.player2_id,
                   p_player1_score: p1,
                   p_player2_score: p2,
-                }
+                },
               );
               if (!tieErr && tieData) decidedWinner = tieData as string;
             } else {
-              decidedWinner = p1 > p2 ? (data.player1_id ?? tournamentMatch.player1_id) : (data.player2_id ?? tournamentMatch.player2_id);
+              decidedWinner =
+                p1 > p2
+                  ? (data.player1_id ?? tournamentMatch.player1_id)
+                  : (data.player2_id ?? tournamentMatch.player2_id);
             }
 
             if (decidedWinner) {
@@ -2093,12 +2095,9 @@ const GamePage = ({
               setShowCountdown(true);
             } else if (user && matchData.player1_id === user.id) {
               // Sadece player1 RPC çağrısını yapar; diğer oyuncu realtime ile senkron olur
-              const { data: countdownTime, error: countdownError } = await supabase.rpc(
-                "start_tournament_countdown",
-                {
-                  p_match_id: matchId,
-                },
-              );
+              const { data: countdownTime, error: countdownError } = await supabase.rpc("start_tournament_countdown", {
+                p_match_id: matchId,
+              });
 
               if (!countdownError && countdownTime) {
                 console.log("🎯 Tournament countdown başlatıldı:", countdownTime);
@@ -2647,7 +2646,7 @@ const GamePage = ({
       // Rakip bilgilerini al
       if ((gameMode === "private-room" || gameMode === "tournament") && participants.length >= 2) {
         const opponent = participants.find((p) => p.user_id !== user.id && !p.is_bot);
-        
+
         if (opponent) {
           if ((opponent as any).profiles?.username) {
             setOpponentName((opponent as any).profiles.username);
@@ -2759,11 +2758,11 @@ const GamePage = ({
       const calculatePoints = (w: string): number => {
         // 🎯 MOD BAZLI PUANLAMA: vs-computer daha düşük, multiplayer daha yüksek
         let multiplier = 2; // vs-computer için default
-        
+
         if (gameMode === "random-match" || gameMode === "private-room" || gameMode === "tournament") {
           multiplier = 3; // Multiplayer modlar için %50 daha fazla
         }
-        
+
         const basePoints = w.length * multiplier;
         let rareLetterBonus = 0;
         const rareLetters = ["J", "Z", "Ğ", "Ü", "Ö", "Ç", "Ş"];
@@ -2832,38 +2831,40 @@ const GamePage = ({
           // 🎯 Eğer countdown_started_at varsa VE daha önce başlatılmamışsa countdown hazırlığını başlat
           if (matchData.countdown_started_at && !showCountdown && !gameStarted && !countdownServerTime) {
             console.log("🎯 Tournament countdown başlatılıyor (initial load):", matchData.countdown_started_at);
-            
+
             // countdown_started_at server'dan geliyor, buffer time EKLEYECEĞİZ
             const serverCountdownTime = new Date(matchData.countdown_started_at).getTime();
             const bufferedCountdownStart = serverCountdownTime + COUNTDOWN_BUFFER_MS; // 5000ms buffer
             const now = Date.now();
             const serverNow = now + serverTimeOffset;
             const timeUntilBuffer = bufferedCountdownStart - serverNow;
-            
+
             console.log("🎯 Tournament countdown timing (initial load):", {
               serverCountdownTime: new Date(serverCountdownTime).toISOString(),
               bufferedCountdownStart: new Date(bufferedCountdownStart).toISOString(),
               serverNow: new Date(serverNow).toISOString(),
               timeUntilBuffer,
-              bufferMs: COUNTDOWN_BUFFER_MS
+              bufferMs: COUNTDOWN_BUFFER_MS,
             });
 
             if (timeUntilBuffer > 100) {
-              console.log(`🎯 Tournament countdown buffer ${Math.ceil(timeUntilBuffer / 1000)} saniye sonra başlayacak (initial load)`);
-              
+              console.log(
+                `🎯 Tournament countdown buffer ${Math.ceil(timeUntilBuffer / 1000)} saniye sonra başlayacak (initial load)`,
+              );
+
               // 0-3500ms: "Oyuncu Hazırlanıyor" animasyonu
-              setPreparingOpponent('preparing');
-              
+              setPreparingOpponent("preparing");
+
               // 3500ms'de "Oyuncu Hazır!" göster (500ms süre)
               setTimeout(() => {
-                if (!gameStarted) setPreparingOpponent('ready');
+                if (!gameStarted) setPreparingOpponent("ready");
               }, 3500);
-              
+
               // 4000ms'de animasyonu temizle (1000ms boşluk)
               setTimeout(() => {
                 if (!gameStarted) setPreparingOpponent(null);
               }, 4000);
-              
+
               // Buffer bitiminde (5000ms) countdown başlat
               setTimeout(() => {
                 if (!gameStarted) {
@@ -3147,12 +3148,12 @@ const GamePage = ({
         }
       } else {
         // Multiplayer - currentPlayerScore ve currentOpponentScore kullan
-        console.log('🏆 Multiplayer kazanan kontrolü:', { 
-          currentPlayerScore, 
+        console.log("🏆 Multiplayer kazanan kontrolü:", {
+          currentPlayerScore,
           currentOpponentScore,
-          gameMode 
+          gameMode,
         });
-        
+
         if (currentPlayerScore > currentOpponentScore) {
           gameResult = "player";
           bonusPoints = 50;
@@ -3351,7 +3352,7 @@ const GamePage = ({
     ],
   );
 
- // 🏆 TURNUVA MAÇLARI İÇİN REAL-TIME SCORE SYNC + COUNTDOWN SYNC
+  // 🏆 TURNUVA MAÇLARI İÇİN REAL-TIME SCORE SYNC + COUNTDOWN SYNC
   useEffect(() => {
     if (gameMode !== "tournament" || !tournamentMatch || !user) return;
 
@@ -3379,19 +3380,19 @@ const GamePage = ({
 
             // 1. Sunucudan gelen "Countdown Başlangıç Zamanı"
             const serverCountdownStart = new Date(newData.countdown_started_at).getTime();
-            
+
             // 2. Hedeflenen OYUN BAŞLAMA zamanı (Countdown start + 5 saniye buffer)
             const targetGameStartTime = serverCountdownStart + 5000;
-            
+
             // 3. Hesaplamalar
             const now = Date.now();
             const currentServerTime = now + serverTimeOffset;
             const timeUntilStart = targetGameStartTime - currentServerTime;
 
             console.log("⏰ Zamanlama:", {
-               serverStart: new Date(serverCountdownStart).toISOString(),
-               targetGameStart: new Date(targetGameStartTime).toISOString(),
-               diff: timeUntilStart
+              serverStart: new Date(serverCountdownStart).toISOString(),
+              targetGameStart: new Date(targetGameStartTime).toISOString(),
+              diff: timeUntilStart,
             });
 
             // Eğer süre geçmişse veya çok az kalmışsa direkt başlat
@@ -3403,27 +3404,27 @@ const GamePage = ({
 
             // Animasyonlar (Eğer 1.5 saniyeden fazla varsa)
             if (timeUntilStart > 1500) {
-                setPreparingOpponent('preparing');
-                
-                // "Hazır" yazısı için zamanlama
-                const readyDelay = timeUntilStart - 1500;
-                setTimeout(() => {
-                    if (!gameStarted) setPreparingOpponent('ready');
-                }, readyDelay);
+              setPreparingOpponent("preparing");
 
-                // Animasyonu temizle
-                setTimeout(() => {
-                    if (!gameStarted) setPreparingOpponent(null);
-                }, timeUntilStart - 500);
+              // "Hazır" yazısı için zamanlama
+              const readyDelay = timeUntilStart - 1500;
+              setTimeout(() => {
+                if (!gameStarted) setPreparingOpponent("ready");
+              }, readyDelay);
+
+              // Animasyonu temizle
+              setTimeout(() => {
+                if (!gameStarted) setPreparingOpponent(null);
+              }, timeUntilStart - 500);
             }
 
             // DÜZELTME: GameCountdown bileşenine direkt hedef zamanı veriyoruz.
             setCountdownServerTime(new Date(targetGameStartTime).toISOString());
             setShowCountdown(true);
-          } 
+          }
 
           // --- DÜZELTİLDİ: BURADAKİ FAZLA KAPATMA PARANTEZİ '}' KALDIRILDI ---
-          
+
           // Karşı oyuncunun skorunu güncelle (Callback fonksiyonu içinde kalmalı)
           const isPlayer1 = tournamentMatch.player1_id === user.id;
           const opponentScore = isPlayer1 ? newData.player2_score : newData.player1_score;
@@ -3432,14 +3433,14 @@ const GamePage = ({
           if (opponentScore !== undefined && !gameEnded) {
             // Sadece artış varsa veya null değilse güncelle (titremeyi önle)
             setOpponentScore((prev) => {
-                 if (opponentScore > prev) {
-                    console.log("🔄 Rakip skoru arttı:", prev, "->", opponentScore);
-                    return opponentScore;
-                 }
-                 return prev;
+              if (opponentScore > prev) {
+                console.log("🔄 Rakip skoru arttı:", prev, "->", opponentScore);
+                return opponentScore;
+              }
+              return prev;
             });
           }
-        } // <--- CALLBACK BURADA KAPANIYOR
+        }, // <--- CALLBACK BURADA KAPANIYOR
       )
       .subscribe();
 
@@ -3473,55 +3474,31 @@ const GamePage = ({
 
           // 🎯 SERVER-SIDE COUNTDOWN SYNC - sadece henüz başlamamışsa VE daha önce başlatılmamışsa
           if (newData.countdown_started_at && !showCountdown && !gameStarted && !countdownServerTime) {
-  console.log("🎯 Tournament countdown tetiklendi:", newData.countdown_started_at);
+            console.log("🎯 Game room countdown başlatılıyor (server-sync):", newData.countdown_started_at);
+            const bufferedStartTime = new Date(newData.countdown_started_at).getTime() + COUNTDOWN_BUFFER_MS;
+            const serverNow = Date.now() + serverTimeOffset;
+            const timeDiff = bufferedStartTime - serverNow;
 
-  // 1. Sunucunun belirlediği başlangıç zamanını al
-  const serverStartTime = new Date(newData.countdown_started_at).getTime();
-  
-  // 2. Hedeflenen OYUN BAŞLAMA zamanı (Countdown start + 5 saniye buffer)
-  const targetGameStartTime = serverStartTime + 5000;
-  
-  // 3. Şu anki sunucu zamanını hesapla
-  const now = Date.now();
-  const currentServerTime = now + serverTimeOffset;
-  
-  // 4. Ne kadar süre kaldığını hesapla
-  const timeUntilStart = targetGameStartTime - currentServerTime;
+            if (timeDiff > 1000) {
+              // 0-3500ms: "Oyuncu Hazırlanıyor" animasyonu
+              setPreparingOpponent("preparing");
 
-  console.log("⏰ Zamanlama:", {
-    serverStart: new Date(serverStartTime).toISOString(),
-    targetGameStart: new Date(targetGameStartTime).toISOString(),
-    diff: timeUntilStart
-  });
+              // 3500ms'de "Oyuncu Hazır!" göster (500ms süre)
+              setTimeout(() => setPreparingOpponent("ready"), 3500);
 
-  // Eğer süre çoktan geçtiyse (örn: sayfa yenilendi), direkt başlat
-  if (timeUntilStart <= 0) {
-    setShowCountdown(false);
-    setGameStarted(true);
-    return;
-  }
+              // 4000ms'de animasyonu temizle (1000ms boşluk)
+              setTimeout(() => setPreparingOpponent(null), 4000);
 
-  // Animasyon ve Countdown Mantığı
-  if (timeUntilStart > 1500) { // En az 1.5 saniye varsa animasyon göster
-    setPreparingOpponent('preparing');
-    
-    // "Hazır" yazısı oyun başlamadan 1.5 sn önce çıksın
-    const readyDelay = timeUntilStart - 1500;
-    setTimeout(() => {
-        if (!gameStarted) setPreparingOpponent('ready');
-    }, readyDelay);
-
-    // Animasyonu oyun başlamadan 500ms önce kaldır
-    setTimeout(() => {
-        if (!gameStarted) setPreparingOpponent(null);
-    }, timeUntilStart - 500);
-  }
-
-  // GameCountdown bileşenine HEDEF zamanı gönderiyoruz
-  // GameCountdown bileşeniniz muhtemelen "şu zamana kadar say" mantığıyla çalışmalı
-  setCountdownServerTime(new Date(targetGameStartTime).toISOString());
-  setShowCountdown(true);
-}
+              // 5000ms (buffer bitimi) countdown başlat
+              setTimeout(() => {
+                setCountdownServerTime(withBuffer(newData.countdown_started_at));
+                setShowCountdown(true);
+              }, timeDiff);
+            } else {
+              setPreparingOpponent(null);
+              setCountdownServerTime(withBuffer(newData.countdown_started_at));
+              setShowCountdown(true);
+            }
           }
         },
       )
@@ -3914,17 +3891,17 @@ const GamePage = ({
           gameMode,
         });
         setGameEnded(true);
-        
+
         // Tournament mode için skorları güncelle ve handleGameEnd çağır
         if (gameMode === "tournament" && tournamentMatch) {
           console.log("🏆 Tournament score mode - skorlar güncelleniyor ve maç sonlandırılıyor");
-          
+
           // Önce skorları veritabanına kaydet ve status'u completed yap
           const isPlayer1 = tournamentMatch.player1_id === user?.id;
           const updateData = isPlayer1
-            ? { player1_score: playerScore, player2_score: opponentScore, status: 'completed' }
-            : { player1_score: opponentScore, player2_score: playerScore, status: 'completed' };
-          
+            ? { player1_score: playerScore, player2_score: opponentScore, status: "completed" }
+            : { player1_score: opponentScore, player2_score: playerScore, status: "completed" };
+
           supabase
             .from("tournament_matches")
             .update(updateData)
@@ -3944,7 +3921,17 @@ const GamePage = ({
         }
       }
     }
-  }, [playerScore, opponentScore, checkWinnerWithScores, gameType, currentRoom?.max_score, gameStarted, gameEnded, gameMode, handleGameEnd]);
+  }, [
+    playerScore,
+    opponentScore,
+    checkWinnerWithScores,
+    gameType,
+    currentRoom?.max_score,
+    gameStarted,
+    gameEnded,
+    gameMode,
+    handleGameEnd,
+  ]);
 
   // Check if playing with AI (unified logic for all modes)
   const isPlayingWithAI = useCallback(() => {
@@ -4427,26 +4414,26 @@ const GamePage = ({
     if (gameMode === "vs-computer" && !gameStarted && !showCountdown && !gameEnded) {
       console.log("🤖 vs-computer mode - countdown hazırlanıyor (7s buffer ile)");
       setWaitingForPlayer(false);
-      
+
       // Rakip hazırlanıyor animasyonu başlat (5 saniyelik buffer)
-      setPreparingOpponent('preparing');
-      
+      setPreparingOpponent("preparing");
+
       // 3 saniye sonra "Oyuncu Hazır!" göster (geri sayıma 2sn kala)
       setTimeout(() => {
-        setPreparingOpponent('ready');
+        setPreparingOpponent("ready");
       }, 3000);
-      
+
       // 3.5 saniye sonra animasyonu temizle (geri sayıma 1.5sn kala bitmiş olsun)
       setTimeout(() => {
         setPreparingOpponent(null);
       }, 3500);
-      
+
       // 5 saniye sonra countdown başlat
       setTimeout(() => {
         setCountdownServerTime(new Date().toISOString());
         setShowCountdown(true);
       }, 5000);
-      
+
       setGameStarted(false);
     }
   }, [gameMode, gameStarted, showCountdown, gameEnded]);
@@ -4459,7 +4446,7 @@ const GamePage = ({
         console.log("⚠️ Countdown zaten aktif - event ignored");
         return;
       }
-      
+
       const { serverTime } = event.detail;
       console.log("⏰ Countdown event alındı:", serverTime, "→ buffered:", withBuffer(serverTime));
       // 5sn sabit buffer + hazırlık animasyonu (tüm modlar)
@@ -4469,16 +4456,16 @@ const GamePage = ({
 
       if (timeDiff > 1000) {
         console.log(`⏰ Countdown ${Math.ceil(timeDiff / 1000)} saniye sonra başlayacak`);
-        
+
         // 0-3500ms: "Oyuncu Hazırlanıyor" animasyonu
-        setPreparingOpponent('preparing');
-        
+        setPreparingOpponent("preparing");
+
         // 3500ms'de "Oyuncu Hazır!" göster (500ms süre)
-        setTimeout(() => setPreparingOpponent('ready'), 3500);
-        
+        setTimeout(() => setPreparingOpponent("ready"), 3500);
+
         // 4000ms'de animasyonu temizle (1000ms boşluk)
         setTimeout(() => setPreparingOpponent(null), 4000);
-        
+
         // 5000ms (buffer bitimi) countdown başlat
         setTimeout(() => {
           setCountdownServerTime(withBuffer(serverTime));
@@ -4511,36 +4498,36 @@ const GamePage = ({
       !countdownServerTime // Daha önce başlatılmamış olmalı
     ) {
       console.log("⏰ Initial countdown sync from room state:", currentRoom.countdown_started_at);
-      
+
       // Buffer eklenmiş başlangıç zamanını hesapla
       const bufferedStartTime = new Date(currentRoom.countdown_started_at).getTime() + COUNTDOWN_BUFFER_MS;
       const now = Date.now();
       const serverNow = now + serverTimeOffset;
       const timeDiff = bufferedStartTime - serverNow;
-      
+
       console.log("⏰ Countdown timing:", {
         startTime: new Date(bufferedStartTime).toISOString(),
         serverNow: new Date(serverNow).toISOString(),
         timeDiff,
-        willStartIn: Math.max(0, timeDiff)
+        willStartIn: Math.max(0, timeDiff),
       });
 
       if (timeDiff > 1000) {
         console.log(`⏰ Countdown ${Math.ceil(timeDiff / 1000)} saniye sonra başlayacak (initial sync)`);
-        
+
         // 0-3500ms: "Oyuncu Hazırlanıyor" animasyonu
-        setPreparingOpponent('preparing');
-        
+        setPreparingOpponent("preparing");
+
         // 3500ms'de "Oyuncu Hazır!" göster (500ms süre)
         const readyTimer = setTimeout(() => {
-          setPreparingOpponent('ready');
+          setPreparingOpponent("ready");
         }, 3500);
-        
+
         // 4000ms'de animasyonu temizle (1000ms boşluk)
         const clearTimer = setTimeout(() => {
           setPreparingOpponent(null);
         }, 4000);
-        
+
         // 5000ms (buffer bitimi) countdown başlat
         const delayTimer = setTimeout(() => {
           console.log("⏰ Countdown başlıyor (initial sync)");
@@ -4584,78 +4571,86 @@ const GamePage = ({
           .eq("id", currentRoom.id)
           .single();
 
-          if (data?.countdown_started_at) {
-            const bufferedStartTime = new Date(data.countdown_started_at).getTime() + COUNTDOWN_BUFFER_MS;
-            const serverNow = Date.now() + serverTimeOffset;
-            const timeDiff = bufferedStartTime - serverNow;
-            console.log("✅ Sunucuda countdown var, senkronize ediliyor (buffered):", { original: data.countdown_started_at, buffered: new Date(bufferedStartTime).toISOString(), timeDiff });
+        if (data?.countdown_started_at) {
+          const bufferedStartTime = new Date(data.countdown_started_at).getTime() + COUNTDOWN_BUFFER_MS;
+          const serverNow = Date.now() + serverTimeOffset;
+          const timeDiff = bufferedStartTime - serverNow;
+          console.log("✅ Sunucuda countdown var, senkronize ediliyor (buffered):", {
+            original: data.countdown_started_at,
+            buffered: new Date(bufferedStartTime).toISOString(),
+            timeDiff,
+          });
 
-            if (timeDiff > 1000) {
-              // 0-3500ms: "Oyuncu Hazırlanıyor" animasyonu
-              setPreparingOpponent('preparing');
-              
-              // 3500ms'de "Oyuncu Hazır!" göster (500ms süre)
-              setTimeout(() => setPreparingOpponent('ready'), 3500);
-              
-              // 4000ms'de animasyonu temizle (1000ms boşluk)
-              setTimeout(() => setPreparingOpponent(null), 4000);
-              
-              // 5000ms (buffer bitimi) countdown başlat
-              setTimeout(() => {
-                setCountdownServerTime(withBuffer(data.countdown_started_at));
-                setShowCountdown(true);
-                countdownCheckDoneRef.current = true;
-              }, timeDiff);
-            } else {
-              setPreparingOpponent(null);
+          if (timeDiff > 1000) {
+            // 0-3500ms: "Oyuncu Hazırlanıyor" animasyonu
+            setPreparingOpponent("preparing");
+
+            // 3500ms'de "Oyuncu Hazır!" göster (500ms süre)
+            setTimeout(() => setPreparingOpponent("ready"), 3500);
+
+            // 4000ms'de animasyonu temizle (1000ms boşluk)
+            setTimeout(() => setPreparingOpponent(null), 4000);
+
+            // 5000ms (buffer bitimi) countdown başlat
+            setTimeout(() => {
               setCountdownServerTime(withBuffer(data.countdown_started_at));
               setShowCountdown(true);
               countdownCheckDoneRef.current = true;
-            }
+            }, timeDiff);
           } else {
-            // Eğer gerçekten 2 oyuncu varsa, sunucu tarafında countdown'u başlatmayı dene (idempotent)
-            if (realPlayers.length >= 2) {
-              console.log("⚠️ Sunucuda countdown yok - RPC ile başlatılıyor...");
-              const { data: startedAt, error: rpcErr } = await supabase.rpc("start_game_countdown", {
-                p_room_id: currentRoom.id,
+            setPreparingOpponent(null);
+            setCountdownServerTime(withBuffer(data.countdown_started_at));
+            setShowCountdown(true);
+            countdownCheckDoneRef.current = true;
+          }
+        } else {
+          // Eğer gerçekten 2 oyuncu varsa, sunucu tarafında countdown'u başlatmayı dene (idempotent)
+          if (realPlayers.length >= 2) {
+            console.log("⚠️ Sunucuda countdown yok - RPC ile başlatılıyor...");
+            const { data: startedAt, error: rpcErr } = await supabase.rpc("start_game_countdown", {
+              p_room_id: currentRoom.id,
+            });
+            if (rpcErr) {
+              console.warn("RPC countdown başlatma hatası:", rpcErr);
+            } else if (startedAt) {
+              const bufferedStartTime = new Date(startedAt).getTime() + COUNTDOWN_BUFFER_MS;
+              const serverNow = Date.now() + serverTimeOffset;
+              const timeDiff = bufferedStartTime - serverNow;
+              console.log("⏰ Countdown RPC ile başlatıldı (buffered):", {
+                original: startedAt,
+                buffered: new Date(bufferedStartTime).toISOString(),
+                timeDiff,
               });
-              if (rpcErr) {
-                console.warn("RPC countdown başlatma hatası:", rpcErr);
-              } else if (startedAt) {
-                const bufferedStartTime = new Date(startedAt).getTime() + COUNTDOWN_BUFFER_MS;
-                const serverNow = Date.now() + serverTimeOffset;
-                const timeDiff = bufferedStartTime - serverNow;
-                console.log("⏰ Countdown RPC ile başlatıldı (buffered):", { original: startedAt, buffered: new Date(bufferedStartTime).toISOString(), timeDiff });
 
-                if (timeDiff > 1000) {
-                  console.log(`⏰ Countdown ${Math.ceil(timeDiff / 1000)} saniye sonra başlayacak (RPC)`);
-                  
-                  // 0-3500ms: "Oyuncu Hazırlanıyor" animasyonu
-                  setPreparingOpponent('preparing');
-                  
-                  // 3500ms'de "Oyuncu Hazır!" göster (500ms süre)
-                  setTimeout(() => setPreparingOpponent('ready'), 3500);
-                  
-                  // 4000ms'de animasyonu temizle (1000ms boşluk)
-                  setTimeout(() => setPreparingOpponent(null), 4000);
-                  
-                  // 5000ms (buffer bitimi) countdown başlat
-                  setTimeout(() => {
-                    setCountdownServerTime(withBuffer(startedAt));
-                    setShowCountdown(true);
-                    countdownCheckDoneRef.current = true;
-                  }, timeDiff);
-                } else {
-                  setPreparingOpponent(null);
+              if (timeDiff > 1000) {
+                console.log(`⏰ Countdown ${Math.ceil(timeDiff / 1000)} saniye sonra başlayacak (RPC)`);
+
+                // 0-3500ms: "Oyuncu Hazırlanıyor" animasyonu
+                setPreparingOpponent("preparing");
+
+                // 3500ms'de "Oyuncu Hazır!" göster (500ms süre)
+                setTimeout(() => setPreparingOpponent("ready"), 3500);
+
+                // 4000ms'de animasyonu temizle (1000ms boşluk)
+                setTimeout(() => setPreparingOpponent(null), 4000);
+
+                // 5000ms (buffer bitimi) countdown başlat
+                setTimeout(() => {
                   setCountdownServerTime(withBuffer(startedAt));
                   setShowCountdown(true);
                   countdownCheckDoneRef.current = true;
-                }
+                }, timeDiff);
+              } else {
+                setPreparingOpponent(null);
+                setCountdownServerTime(withBuffer(startedAt));
+                setShowCountdown(true);
+                countdownCheckDoneRef.current = true;
               }
-            } else {
-              console.log("⚠️ Sunucuda countdown yok - beklenmeyen durum");
             }
+          } else {
+            console.log("⚠️ Sunucuda countdown yok - beklenmeyen durum");
           }
+        }
       } catch (error) {
         console.error("❌ Countdown kontrol hatası:", error);
       }
@@ -5267,7 +5262,7 @@ const GamePage = ({
         if (gameStarted || showCountdown) {
           const name = opponentName && opponentName !== "Rakip Aranıyor..." ? opponentName : "Rakip";
           console.log("🛡️ Oyun başladı - fallback rakip:", name);
-          const fallbackOpponent = participants.find(p => String(p.user_id) !== String(user?.id));
+          const fallbackOpponent = participants.find((p) => String(p.user_id) !== String(user?.id));
           return { name, icon: User, avatar: (fallbackOpponent as any)?.profiles?.avatar_url || null };
         }
         // Henüz başlamadıysa ama state'te rakip varsa göster
@@ -5276,7 +5271,8 @@ const GamePage = ({
           return {
             name: opponentName,
             icon: User,
-            avatar: (participants.find(p => String(p.user_id) !== String(user?.id)) as any)?.profiles?.avatar_url || null,
+            avatar:
+              (participants.find((p) => String(p.user_id) !== String(user?.id)) as any)?.profiles?.avatar_url || null,
           };
         }
         console.log("⏳ Henüz rakip yok, aranıyor...");
@@ -5326,7 +5322,9 @@ const GamePage = ({
             <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
               {winner === "player" && <img src="/sevinc.gif" alt="Sevinç" className="w-16 h-16 object-contain" />}
               {winner === "opponent" && <img src="/uzgun.gif" alt="Üzgün" className="w-16 h-16 object-contain" />}
-              {winner === "tie" && gameMode !== "tournament" && <img src="/sabit.gif" alt="Beraberlik" className="w-16 h-16 object-contain" />}
+              {winner === "tie" && gameMode !== "tournament" && (
+                <img src="/sabit.gif" alt="Beraberlik" className="w-16 h-16 object-contain" />
+              )}
               {gameMode === "tournament" && !winner && (
                 <Loader2 className="w-8 h-8 animate-spin text-gray-500" aria-label="Sonuç belirleniyor" />
               )}
@@ -5457,18 +5455,16 @@ const GamePage = ({
                         matchBanlist.add(currentRoom.id);
                         console.log("🚫 Oda banlist'e eklendi:", shortId(currentRoom?.id));
                       }
-                      
+
                       // Kullanıcının rematch opt-out kaydını oluştur/güncelle (5 dakika geçerli)
                       if (user?.id) {
-                        await supabase
-                          .from("rematch_opt_outs")
-                          .upsert({
-                            user_id: user.id,
-                            opt_out_until: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 dakika sonrası
-                            updated_at: new Date().toISOString()
-                          });
+                        await supabase.from("rematch_opt_outs").upsert({
+                          user_id: user.id,
+                          opt_out_until: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 dakika sonrası
+                          updated_at: new Date().toISOString(),
+                        });
                       }
-                      
+
                       window.dispatchEvent(new CustomEvent("cleanupMatchmaking"));
                       navigate("/");
                     }}
@@ -5490,18 +5486,16 @@ const GamePage = ({
                         matchBanlist.add(currentRoom.id);
                         console.log("🚫 Oda banlist'e eklendi:", shortId(currentRoom?.id));
                       }
-                      
+
                       // Kullanıcının rematch opt-out kaydını oluştur/güncelle (5 dakika geçerli)
                       if (user?.id) {
-                        await supabase
-                          .from("rematch_opt_outs")
-                          .upsert({
-                            user_id: user.id,
-                            opt_out_until: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 dakika sonrası
-                            updated_at: new Date().toISOString()
-                          });
+                        await supabase.from("rematch_opt_outs").upsert({
+                          user_id: user.id,
+                          opt_out_until: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 dakika sonrası
+                          updated_at: new Date().toISOString(),
+                        });
                       }
-                      
+
                       window.dispatchEvent(new CustomEvent("cleanupMatchmaking"));
                       navigate("/");
                     }}
@@ -5528,7 +5522,7 @@ const GamePage = ({
                         setOpponentScore(0);
                         timeLeftRef.current = gameType === "timed" ? 120 : 0;
                         setDisplayTime(timeLeftRef.current);
-        setCountdownServerTime(new Date().toISOString());
+                        setCountdownServerTime(new Date().toISOString());
                         setGameStarted(false);
                         setGameEnded(false);
                         setWinner(null);
@@ -5549,7 +5543,6 @@ const GamePage = ({
             </div>
           </CardContent>
         </Card>
-
       </div>
     );
   }
@@ -5757,19 +5750,26 @@ const GamePage = ({
                 <p className="text-sm text-gray-700 font-bold font-bungee">{opponent.name}</p>
                 <p className="text-2xl font-bold text-gray-700">{opponentScore}</p>
                 {gameType === "score" && <Progress value={(opponentScore / 500) * 100} className="mt-2 bg-white/60" />}
-                
+
                 {/* Hazırlık overlay - absolute positioned */}
                 {preparingOpponent && (
                   <div className="absolute inset-0 bg-silver-gradient/95 backdrop-blur-sm flex items-center justify-center">
-                    {preparingOpponent === 'preparing' ? (
+                    {preparingOpponent === "preparing" ? (
                       <div className="text-center animate-pulse">
-                        <p className="text-sm font-bold text-gray-700">
-                          Oyuncu Hazırlanıyor...
-                        </p>
+                        <p className="text-sm font-bold text-gray-700">Oyuncu Hazırlanıyor...</p>
                         <div className="flex gap-1 justify-center mt-2">
-                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                          <div
+                            className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                            style={{ animationDelay: "0ms" }}
+                          ></div>
+                          <div
+                            className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                            style={{ animationDelay: "150ms" }}
+                          ></div>
+                          <div
+                            className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                            style={{ animationDelay: "300ms" }}
+                          ></div>
                         </div>
                       </div>
                     ) : (
@@ -6073,7 +6073,6 @@ const GamePage = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
     </>
   );
 };
