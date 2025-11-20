@@ -3375,53 +3375,55 @@ const GamePage = ({
 
           // 🎯 Eğer countdown_started_at güncellenirse ve daha önce başlatılmamışsa countdown hazırlığını başlat
           if (newData.countdown_started_at && !showCountdown && !gameStarted && !countdownServerTime) {
-            console.log("🎯 Tournament countdown başlatılıyor (realtime update):", newData.countdown_started_at);
-            
-            // countdown_started_at server'dan geliyor, buffer time EKLEYECEĞİZ
-            const serverCountdownTime = new Date(newData.countdown_started_at).getTime();
-            const bufferedCountdownStart = serverCountdownTime + COUNTDOWN_BUFFER_MS; // 5000ms buffer
-            const now = Date.now();
-            const serverNow = now + serverTimeOffset;
-            const timeUntilBuffer = bufferedCountdownStart - serverNow;
-            
-            console.log("🎯 Tournament countdown timing (realtime update):", {
-              serverCountdownTime: new Date(serverCountdownTime).toISOString(),
-              bufferedCountdownStart: new Date(bufferedCountdownStart).toISOString(),
-              serverNow: new Date(serverNow).toISOString(),
-              timeUntilBuffer,
-              bufferMs: COUNTDOWN_BUFFER_MS
-            });
+  console.log("🎯 Tournament countdown tetiklendi:", newData.countdown_started_at);
 
-            if (timeUntilBuffer > 100) {
-              console.log(`🎯 Tournament countdown buffer ${Math.ceil(timeUntilBuffer / 1000)} saniye sonra başlayacak (realtime update)`);
-              
-              // 0-3500ms: "Oyuncu Hazırlanıyor" animasyonu
-              setPreparingOpponent('preparing');
-              
-              // 3500ms'de "Oyuncu Hazır!" göster (500ms süre)
-              setTimeout(() => {
-                if (!gameStarted) setPreparingOpponent('ready');
-              }, 3500);
-              
-              // 4000ms'de animasyonu temizle (1000ms boşluk)
-              setTimeout(() => {
-                if (!gameStarted) setPreparingOpponent(null);
-              }, 4000);
-              
-              // Buffer bitiminde (5000ms) countdown başlat
-              setTimeout(() => {
-                if (!gameStarted) {
-                  console.log("🎯 Tournament countdown başlıyor (realtime update)");
-                  setCountdownServerTime(new Date(bufferedCountdownStart).toISOString());
-                  setShowCountdown(true);
-                }
-              }, timeUntilBuffer);
-            } else {
-              console.log("🎯 Tournament countdown hemen başlıyor (realtime update)");
-              setPreparingOpponent(null);
-              setCountdownServerTime(new Date(bufferedCountdownStart).toISOString());
-              setShowCountdown(true);
-            }
+  // 1. Sunucunun belirlediği başlangıç zamanını al
+  const serverStartTime = new Date(newData.countdown_started_at).getTime();
+  
+  // 2. Hedeflenen OYUN BAŞLAMA zamanı (Countdown start + 5 saniye buffer)
+  const targetGameStartTime = serverStartTime + 5000;
+  
+  // 3. Şu anki sunucu zamanını hesapla
+  const now = Date.now();
+  const currentServerTime = now + serverTimeOffset;
+  
+  // 4. Ne kadar süre kaldığını hesapla
+  const timeUntilStart = targetGameStartTime - currentServerTime;
+
+  console.log("⏰ Zamanlama:", {
+    serverStart: new Date(serverStartTime).toISOString(),
+    targetGameStart: new Date(targetGameStartTime).toISOString(),
+    diff: timeUntilStart
+  });
+
+  // Eğer süre çoktan geçtiyse (örn: sayfa yenilendi), direkt başlat
+  if (timeUntilStart <= 0) {
+    setShowCountdown(false);
+    setGameStarted(true);
+    return;
+  }
+
+  // Animasyon ve Countdown Mantığı
+  if (timeUntilStart > 1500) { // En az 1.5 saniye varsa animasyon göster
+    setPreparingOpponent('preparing');
+    
+    // "Hazır" yazısı oyun başlamadan 1.5 sn önce çıksın
+    const readyDelay = timeUntilStart - 1500;
+    setTimeout(() => {
+        if (!gameStarted) setPreparingOpponent('ready');
+    }, readyDelay);
+
+    // Animasyonu oyun başlamadan 500ms önce kaldır
+    setTimeout(() => {
+        if (!gameStarted) setPreparingOpponent(null);
+    }, timeUntilStart - 500);
+  }
+
+  // GameCountdown bileşenine HEDEF zamanı gönderiyoruz
+  // GameCountdown bileşeniniz muhtemelen "şu zamana kadar say" mantığıyla çalışmalı
+  setCountdownServerTime(new Date(targetGameStartTime).toISOString());
+  setShowCountdown(true);
+}
           }
 
           // Karşı oyuncunun skorunu güncelle
@@ -3466,31 +3468,55 @@ const GamePage = ({
 
           // 🎯 SERVER-SIDE COUNTDOWN SYNC - sadece henüz başlamamışsa VE daha önce başlatılmamışsa
           if (newData.countdown_started_at && !showCountdown && !gameStarted && !countdownServerTime) {
-            console.log("🎯 Game room countdown başlatılıyor (server-sync):", newData.countdown_started_at);
-            const bufferedStartTime = new Date(newData.countdown_started_at).getTime() + COUNTDOWN_BUFFER_MS;
-            const serverNow = Date.now() + serverTimeOffset;
-            const timeDiff = bufferedStartTime - serverNow;
+  console.log("🎯 Tournament countdown tetiklendi:", newData.countdown_started_at);
 
-            if (timeDiff > 1000) {
-              // 0-3500ms: "Oyuncu Hazırlanıyor" animasyonu
-              setPreparingOpponent('preparing');
-              
-              // 3500ms'de "Oyuncu Hazır!" göster (500ms süre)
-              setTimeout(() => setPreparingOpponent('ready'), 3500);
-              
-              // 4000ms'de animasyonu temizle (1000ms boşluk)
-              setTimeout(() => setPreparingOpponent(null), 4000);
-              
-              // 5000ms (buffer bitimi) countdown başlat
-              setTimeout(() => {
-                setCountdownServerTime(withBuffer(newData.countdown_started_at));
-                setShowCountdown(true);
-              }, timeDiff);
-            } else {
-              setPreparingOpponent(null);
-              setCountdownServerTime(withBuffer(newData.countdown_started_at));
-              setShowCountdown(true);
-            }
+  // 1. Sunucunun belirlediği başlangıç zamanını al
+  const serverStartTime = new Date(newData.countdown_started_at).getTime();
+  
+  // 2. Hedeflenen OYUN BAŞLAMA zamanı (Countdown start + 5 saniye buffer)
+  const targetGameStartTime = serverStartTime + 5000;
+  
+  // 3. Şu anki sunucu zamanını hesapla
+  const now = Date.now();
+  const currentServerTime = now + serverTimeOffset;
+  
+  // 4. Ne kadar süre kaldığını hesapla
+  const timeUntilStart = targetGameStartTime - currentServerTime;
+
+  console.log("⏰ Zamanlama:", {
+    serverStart: new Date(serverStartTime).toISOString(),
+    targetGameStart: new Date(targetGameStartTime).toISOString(),
+    diff: timeUntilStart
+  });
+
+  // Eğer süre çoktan geçtiyse (örn: sayfa yenilendi), direkt başlat
+  if (timeUntilStart <= 0) {
+    setShowCountdown(false);
+    setGameStarted(true);
+    return;
+  }
+
+  // Animasyon ve Countdown Mantığı
+  if (timeUntilStart > 1500) { // En az 1.5 saniye varsa animasyon göster
+    setPreparingOpponent('preparing');
+    
+    // "Hazır" yazısı oyun başlamadan 1.5 sn önce çıksın
+    const readyDelay = timeUntilStart - 1500;
+    setTimeout(() => {
+        if (!gameStarted) setPreparingOpponent('ready');
+    }, readyDelay);
+
+    // Animasyonu oyun başlamadan 500ms önce kaldır
+    setTimeout(() => {
+        if (!gameStarted) setPreparingOpponent(null);
+    }, timeUntilStart - 500);
+  }
+
+  // GameCountdown bileşenine HEDEF zamanı gönderiyoruz
+  // GameCountdown bileşeniniz muhtemelen "şu zamana kadar say" mantığıyla çalışmalı
+  setCountdownServerTime(new Date(targetGameStartTime).toISOString());
+  setShowCountdown(true);
+}
           }
         },
       )
