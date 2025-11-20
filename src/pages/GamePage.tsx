@@ -2833,45 +2833,49 @@ const GamePage = ({
           if (matchData.countdown_started_at && !showCountdown && !gameStarted && !countdownServerTime) {
             console.log("🎯 Tournament countdown başlatılıyor (initial load):", matchData.countdown_started_at);
             
-            // countdown_started_at ZATEN buffer time içeriyor, tekrar ekleme!
-            const countdownStartTime = new Date(matchData.countdown_started_at).getTime();
+            // countdown_started_at server'dan geliyor, buffer time EKLEYECEĞİZ
+            const serverCountdownTime = new Date(matchData.countdown_started_at).getTime();
+            const bufferedCountdownStart = serverCountdownTime + COUNTDOWN_BUFFER_MS; // 5000ms buffer
             const now = Date.now();
             const serverNow = now + serverTimeOffset;
-            const timeDiff = countdownStartTime - serverNow;
+            const timeUntilBuffer = bufferedCountdownStart - serverNow;
             
             console.log("🎯 Tournament countdown timing (initial load):", {
-              countdownStart: new Date(countdownStartTime).toISOString(),
+              serverCountdownTime: new Date(serverCountdownTime).toISOString(),
+              bufferedCountdownStart: new Date(bufferedCountdownStart).toISOString(),
               serverNow: new Date(serverNow).toISOString(),
-              timeDiff,
-              willStartIn: Math.max(0, timeDiff)
+              timeUntilBuffer,
+              bufferMs: COUNTDOWN_BUFFER_MS
             });
 
-            if (timeDiff > 1000) {
-              console.log(`🎯 Tournament countdown ${Math.ceil(timeDiff / 1000)} saniye sonra başlayacak (initial load)`);
+            if (timeUntilBuffer > 100) {
+              console.log(`🎯 Tournament countdown buffer ${Math.ceil(timeUntilBuffer / 1000)} saniye sonra başlayacak (initial load)`);
               
               // 0-3500ms: "Oyuncu Hazırlanıyor" animasyonu
               setPreparingOpponent('preparing');
               
               // 3500ms'de "Oyuncu Hazır!" göster (500ms süre)
               setTimeout(() => {
-                setPreparingOpponent('ready');
+                if (!gameStarted) setPreparingOpponent('ready');
               }, 3500);
               
               // 4000ms'de animasyonu temizle (1000ms boşluk)
               setTimeout(() => {
-                setPreparingOpponent(null);
+                if (!gameStarted) setPreparingOpponent(null);
               }, 4000);
               
-              // 5000ms (buffer bitimi) countdown başlat
+              // Buffer bitiminde (5000ms) countdown başlat
               setTimeout(() => {
-                console.log("🎯 Tournament countdown başlıyor (initial load)");
-                setCountdownServerTime(matchData.countdown_started_at);
-                setShowCountdown(true);
-              }, timeDiff);
+                if (!gameStarted) {
+                  console.log("🎯 Tournament countdown başlıyor (initial load)");
+                  setCountdownServerTime(new Date(bufferedCountdownStart).toISOString());
+                  setShowCountdown(true);
+                }
+              }, timeUntilBuffer);
             } else {
               console.log("🎯 Tournament countdown hemen başlıyor (initial load)");
               setPreparingOpponent(null);
-              setCountdownServerTime(matchData.countdown_started_at);
+              setCountdownServerTime(new Date(bufferedCountdownStart).toISOString());
               setShowCountdown(true);
             }
           }
@@ -3367,49 +3371,55 @@ const GamePage = ({
           console.log("🏆 Turnuva maçı güncellendi:", payload);
           const newData = payload.new as any;
 
-          // 🎯 SERVER-SIDE COUNTDOWN SYNC - Sadece countdown daha önce başlatılmamışsa
+          setTournamentMatch(newData);
+
+          // 🎯 Eğer countdown_started_at güncellenirse ve daha önce başlatılmamışsa countdown hazırlığını başlat
           if (newData.countdown_started_at && !showCountdown && !gameStarted && !countdownServerTime) {
-            console.log("🎯 Tournament countdown başlatılıyor (server-sync):", newData.countdown_started_at);
+            console.log("🎯 Tournament countdown başlatılıyor (realtime update):", newData.countdown_started_at);
             
-            // countdown_started_at ZATEN buffer time içeriyor, tekrar ekleme!
-            const countdownStartTime = new Date(newData.countdown_started_at).getTime();
+            // countdown_started_at server'dan geliyor, buffer time EKLEYECEĞİZ
+            const serverCountdownTime = new Date(newData.countdown_started_at).getTime();
+            const bufferedCountdownStart = serverCountdownTime + COUNTDOWN_BUFFER_MS; // 5000ms buffer
             const now = Date.now();
             const serverNow = now + serverTimeOffset;
-            const timeDiff = countdownStartTime - serverNow;
+            const timeUntilBuffer = bufferedCountdownStart - serverNow;
             
-            console.log("🎯 Tournament countdown timing (server-sync):", {
-              countdownStart: new Date(countdownStartTime).toISOString(),
+            console.log("🎯 Tournament countdown timing (realtime update):", {
+              serverCountdownTime: new Date(serverCountdownTime).toISOString(),
+              bufferedCountdownStart: new Date(bufferedCountdownStart).toISOString(),
               serverNow: new Date(serverNow).toISOString(),
-              timeDiff,
-              willStartIn: Math.max(0, timeDiff)
+              timeUntilBuffer,
+              bufferMs: COUNTDOWN_BUFFER_MS
             });
 
-            if (timeDiff > 1000) {
-              console.log(`🎯 Tournament countdown ${Math.ceil(timeDiff / 1000)} saniye sonra başlayacak (server-sync)`);
+            if (timeUntilBuffer > 100) {
+              console.log(`🎯 Tournament countdown buffer ${Math.ceil(timeUntilBuffer / 1000)} saniye sonra başlayacak (realtime update)`);
               
               // 0-3500ms: "Oyuncu Hazırlanıyor" animasyonu
               setPreparingOpponent('preparing');
               
               // 3500ms'de "Oyuncu Hazır!" göster (500ms süre)
               setTimeout(() => {
-                setPreparingOpponent('ready');
+                if (!gameStarted) setPreparingOpponent('ready');
               }, 3500);
               
               // 4000ms'de animasyonu temizle (1000ms boşluk)
               setTimeout(() => {
-                setPreparingOpponent(null);
+                if (!gameStarted) setPreparingOpponent(null);
               }, 4000);
               
-              // 5000ms (buffer bitimi) countdown başlat
+              // Buffer bitiminde (5000ms) countdown başlat
               setTimeout(() => {
-                console.log("🎯 Tournament countdown başlıyor (server-sync)");
-                setCountdownServerTime(newData.countdown_started_at);
-                setShowCountdown(true);
-              }, timeDiff);
+                if (!gameStarted) {
+                  console.log("🎯 Tournament countdown başlıyor (realtime update)");
+                  setCountdownServerTime(new Date(bufferedCountdownStart).toISOString());
+                  setShowCountdown(true);
+                }
+              }, timeUntilBuffer);
             } else {
-              console.log("🎯 Tournament countdown hemen başlıyor (server-sync)");
+              console.log("🎯 Tournament countdown hemen başlıyor (realtime update)");
               setPreparingOpponent(null);
-              setCountdownServerTime(newData.countdown_started_at);
+              setCountdownServerTime(new Date(bufferedCountdownStart).toISOString());
               setShowCountdown(true);
             }
           }
@@ -3878,18 +3888,23 @@ const GamePage = ({
         if (gameMode === "tournament" && tournamentMatch) {
           console.log("🏆 Tournament score mode - skorlar güncelleniyor ve maç sonlandırılıyor");
           
-          // Önce skorları veritabanına kaydet
+          // Önce skorları veritabanına kaydet ve status'u completed yap
           const isPlayer1 = tournamentMatch.player1_id === user?.id;
           const updateData = isPlayer1
-            ? { player1_score: playerScore, player2_score: opponentScore }
-            : { player1_score: opponentScore, player2_score: playerScore };
+            ? { player1_score: playerScore, player2_score: opponentScore, status: 'completed' }
+            : { player1_score: opponentScore, player2_score: playerScore, status: 'completed' };
           
           supabase
             .from("tournament_matches")
             .update(updateData)
             .eq("id", tournamentMatch.id)
-            .then(() => {
-              console.log("🏆 Skorlar güncellendi, handleGameEnd çağrılıyor");
+            .then(({ error }) => {
+              if (error) {
+                console.error("❌ Tournament skorları güncellenemedi:", error);
+              } else {
+                console.log("✅ Tournament skorları güncellendi, handleGameEnd çağrılıyor");
+              }
+              // Hata olsa da olmasa da handleGameEnd çağır
               handleGameEnd();
             });
         } else {
