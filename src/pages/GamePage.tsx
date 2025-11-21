@@ -2087,26 +2087,8 @@ const GamePage = ({
             console.log("✅ Turnuva maçı yüklendi:", matchData.id);
             setTournamentMatch(matchData);
 
-            // 🎯 SERVER-SIDE COUNTDOWN: Turnuva maçı için countdown başlat (idempotent)
-            if (matchData.countdown_started_at) {
-              // Zaten başlatılmışsa RPC çağrısı yapma; mevcut zamanı kullan
-              console.log("⏭️ Countdown zaten başlatılmış, mevcut zaman kullanılacak:", matchData.countdown_started_at);
-              setCountdownServerTime(withBuffer(matchData.countdown_started_at));
-              setShowCountdown(true);
-            } else if (user && matchData.player1_id === user.id) {
-              // Sadece player1 RPC çağrısını yapar; diğer oyuncu realtime ile senkron olur
-              const { data: countdownTime, error: countdownError } = await supabase.rpc("start_tournament_countdown", {
-                p_match_id: matchId,
-              });
-
-              if (!countdownError && countdownTime) {
-                console.log("🎯 Tournament countdown başlatıldı:", countdownTime);
-                setCountdownServerTime(withBuffer(countdownTime as string));
-                setShowCountdown(true);
-              } else if (countdownError) {
-                console.error("⛔ Countdown başlatma hatası:", countdownError);
-              }
-            }
+            // 🎯 Countdown mantığı satır 2831-2857'de (loadTournamentMatch useEffect'inde) idare ediliyor
+            // Orada animasyonlarla birlikte düzgün başlatılacak
 
             // Maç durumunu güncelle
             await supabase
@@ -2828,48 +2810,29 @@ const GamePage = ({
           console.log("🏆 Tournament match loaded:", matchData.id);
           setTournamentMatch(matchData);
 
-          // 🎯 Eğer countdown_started_at varsa VE daha önce başlatılmamışsa countdown hazırlığını başlat
+          // 🎯 SERVER-SIDE COUNTDOWN SYNC - Random-match/Private-room ile tamamen aynı mantık
           if (matchData.countdown_started_at && !showCountdown && !gameStarted && !countdownServerTime) {
             console.log("🎯 Tournament countdown başlatılıyor (initial load):", matchData.countdown_started_at);
-
-            // Random-match/private-room ile aynı mantık: countdown_started_at + 5000ms = oyun başlangıç zamanı
             const bufferedStartTime = new Date(matchData.countdown_started_at).getTime() + COUNTDOWN_BUFFER_MS;
-            const now = Date.now();
-            const serverNow = now + serverTimeOffset;
+            const serverNow = Date.now() + serverTimeOffset;
             const timeDiff = bufferedStartTime - serverNow;
 
-            console.log("🎯 Tournament countdown timing (initial load):", {
-              startTime: new Date(bufferedStartTime).toISOString(),
-              serverNow: new Date(serverNow).toISOString(),
-              timeDiff,
-              willStartIn: Math.max(0, timeDiff),
-            });
-
             if (timeDiff > 1000) {
-              console.log(`🎯 Tournament countdown ${Math.ceil(timeDiff / 1000)} saniye sonra başlayacak (initial load)`);
-
-              // 0-3500ms: "Oyuncu Hazırlanıyor" animasyonu (SABİT)
+              // 0-3500ms: "Oyuncu Hazırlanıyor" animasyonu
               setPreparingOpponent("preparing");
 
-              // 3500ms'de "Oyuncu Hazır!" göster (500ms süre) (SABİT)
-              setTimeout(() => {
-                setPreparingOpponent("ready");
-              }, 3500);
+              // 3500ms'de "Oyuncu Hazır!" göster (500ms süre)
+              setTimeout(() => setPreparingOpponent("ready"), 3500);
 
-              // 4000ms'de animasyonu temizle (1000ms boşluk) (SABİT)
-              setTimeout(() => {
-                setPreparingOpponent(null);
-              }, 4000);
+              // 4000ms'de animasyonu temizle (1000ms boşluk)
+              setTimeout(() => setPreparingOpponent(null), 4000);
 
-              // 5000ms (buffer bitimi) countdown başlat (SABİT)
+              // 5000ms (buffer bitimi) countdown başlat
               setTimeout(() => {
-                console.log("🎯 Tournament countdown başlıyor (initial load)");
                 setCountdownServerTime(withBuffer(matchData.countdown_started_at));
                 setShowCountdown(true);
               }, timeDiff);
             } else {
-              // Gecikme yoksa hemen başlat
-              console.log("🎯 Tournament countdown hemen başlıyor (initial load)");
               setPreparingOpponent(null);
               setCountdownServerTime(withBuffer(matchData.countdown_started_at));
               setShowCountdown(true);
@@ -3372,47 +3335,30 @@ const GamePage = ({
           setTournamentMatch(newData);
 
           // ------------------------------------------------------------
-          // 🎯 1. COUNTDOWN MANTIĞI (Random-match/Private-room ile aynı mantık)
+          // 🎯 1. COUNTDOWN MANTIĞI (Random-match/Private-room ile tamamen aynı mantık)
           // ------------------------------------------------------------
-          if (newData.countdown_started_at) {
+          if (newData.countdown_started_at && !showCountdown && !gameStarted && !countdownServerTime) {
+            console.log("🎯 Tournament countdown başlatılıyor (real-time):", newData.countdown_started_at);
             const bufferedStartTime = new Date(newData.countdown_started_at).getTime() + COUNTDOWN_BUFFER_MS;
-            const now = Date.now();
-            const serverNow = now + serverTimeOffset;
+            const serverNow = Date.now() + serverTimeOffset;
             const timeDiff = bufferedStartTime - serverNow;
 
-            console.log("🎯 Tournament countdown timing (real-time):", {
-              startTime: new Date(bufferedStartTime).toISOString(),
-              serverNow: new Date(serverNow).toISOString(),
-              timeDiff,
-              willStartIn: Math.max(0, timeDiff),
-            });
-
-            // Sadece henüz başlamamışsa countdown başlat
-            if (timeDiff > 1000 && !showCountdown && !countdownServerTime) {
-              console.log(`🎯 Tournament countdown ${Math.ceil(timeDiff / 1000)} saniye sonra başlayacak (real-time)`);
-
-              // 0-3500ms: "Oyuncu Hazırlanıyor" animasyonu (SABİT)
+            if (timeDiff > 1000) {
+              // 0-3500ms: "Oyuncu Hazırlanıyor" animasyonu
               setPreparingOpponent("preparing");
 
-              // 3500ms'de "Oyuncu Hazır!" göster (500ms süre) (SABİT)
-              setTimeout(() => {
-                setPreparingOpponent("ready");
-              }, 3500);
+              // 3500ms'de "Oyuncu Hazır!" göster (500ms süre)
+              setTimeout(() => setPreparingOpponent("ready"), 3500);
 
-              // 4000ms'de animasyonu temizle (1000ms boşluk) (SABİT)
-              setTimeout(() => {
-                setPreparingOpponent(null);
-              }, 4000);
+              // 4000ms'de animasyonu temizle (1000ms boşluk)
+              setTimeout(() => setPreparingOpponent(null), 4000);
 
-              // 5000ms (buffer bitimi) countdown başlat (SABİT)
+              // 5000ms (buffer bitimi) countdown başlat
               setTimeout(() => {
-                console.log("🎯 Tournament countdown başlıyor (real-time)");
                 setCountdownServerTime(withBuffer(newData.countdown_started_at));
                 setShowCountdown(true);
               }, timeDiff);
-            } else if (timeDiff <= 1000 && !showCountdown && !countdownServerTime) {
-              // Gecikme yoksa hemen başlat
-              console.log("🎯 Tournament countdown hemen başlıyor (real-time)");
+            } else {
               setPreparingOpponent(null);
               setCountdownServerTime(withBuffer(newData.countdown_started_at));
               setShowCountdown(true);
