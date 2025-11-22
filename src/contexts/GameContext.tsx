@@ -1854,52 +1854,9 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     }
   }, [participants, currentRoom, closeFullRoom]);
 
-  // 🎯 ROOM UPDATE SUBSCRIPTION - Countdown senkronizasyonu için
-  useEffect(() => {
-    if (!currentRoom || !user) return;
-
-    console.log("📡 Room update subscription kuruluy or (countdown senkronizasyonu)");
-    
-    const channel = supabase
-      .channel(`room-updates-${currentRoom.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "game_rooms",
-          filter: `id=eq.${currentRoom.id}`,
-        },
-        (payload) => {
-          console.log("📡 Room update alındı:", payload.new);
-          
-          // countdown_started_at set edildiyse event dispatch et
-          if (payload.new.countdown_started_at && !lastCountdownAtRef.current) {
-            console.log("✅ Countdown timestamp alındı (senkronize):", payload.new.countdown_started_at);
-            lastCountdownAtRef.current = payload.new.countdown_started_at;
-            
-            // CurrentRoom'u güncelle
-            setCurrentRoom((prev) => {
-              if (!prev || prev.id !== currentRoom.id) return prev;
-              return { ...prev, countdown_started_at: payload.new.countdown_started_at } as GameRoom;
-            });
-            
-            // Event dispatch et
-            window.dispatchEvent(
-              new CustomEvent("countdownStarted", { 
-                detail: { serverTime: payload.new.countdown_started_at } 
-              })
-            );
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      console.log("📡 Room update subscription temizleniyor");
-      supabase.removeChannel(channel);
-    };
-  }, [currentRoom?.id, user]);
+  // 🎯 ROOM UPDATE SUBSCRIPTION - KALDIRILDI
+  // Countdown logic tamamen GamePage.tsx'te yönetiliyor
+  // Bu subscription duplicate countdown'a neden oluyordu
 
   // 🎯 OPTIMIZED Real-time subscriptions with RealtimeManager + Presence
   useEffect(() => {

@@ -162,6 +162,7 @@ const GamePage = ({
   const serverMatchStartRef = useRef<number | null>(null);
   const syncSuppressUntilRef = useRef<number>(0);
   const countdownCompletedAtRef = useRef<number | null>(null);
+  const countdownLockRef = useRef<boolean>(false); // 🔒 Countdown duplicate trigger koruması
   // Touch/click double-fire koruması: Gönder butonu için son touch zaman damgası
   const submitTouchTsRef = useRef(0);
 
@@ -1172,6 +1173,8 @@ const GamePage = ({
     setRematchRequested(false);
     setWaitingForRematchResponse(false);
     setFinalPlayerScore(0);
+    // 🔒 Countdown lock'u resetle
+    countdownLockRef.current = false;
     setFinalOpponentScore(0);
     // Joker state'leri artık hook'tan geldiği için sıfırlama yok
     setSelectedJoker(null);
@@ -4349,6 +4352,12 @@ const GamePage = ({
   useEffect(() => {
     const handleCountdownStart = (event: CustomEvent) => {
       // Zaten countdown başlamışsa tekrar başlatma
+      // 🔒 Lock kontrol et
+      if (countdownLockRef.current) {
+        console.log("⚠️ Countdown lock aktif - duplicate engellendi (event)");
+        return;
+      }
+
       if (showCountdown || countdownServerTime) {
         console.log("⚠️ Countdown zaten aktif - event ignored");
         return;
@@ -4356,6 +4365,11 @@ const GamePage = ({
 
       const { serverTime } = event.detail;
       console.log("⏰ Countdown event alındı:", serverTime, "→ buffered:", withBuffer(serverTime));
+      
+      // 🔒 Lock'u aktif et
+      countdownLockRef.current = true;
+      console.log("🔒 Countdown lock aktif edildi (event)");
+
       // 5sn sabit buffer + hazırlık animasyonu (tüm modlar)
       const bufferedStartTime = new Date(serverTime).getTime() + COUNTDOWN_BUFFER_MS;
       const serverNow = Date.now() + serverTimeOffset;
@@ -4404,6 +4418,12 @@ const GamePage = ({
       !gameStarted &&
       !countdownServerTime // Daha önce başlatılmamış olmalı
     ) {
+      // 🔒 Countdown zaten başlatılmışsa duplicate engelle
+      if (countdownLockRef.current) {
+        console.log("⚠️ Countdown lock aktif - duplicate trigger engellendi (initial sync)");
+        return;
+      }
+
       console.log("⏰ Initial countdown sync from room state:", currentRoom.countdown_started_at);
 
       // Buffer eklenmiş başlangıç zamanını hesapla
@@ -4421,6 +4441,10 @@ const GamePage = ({
 
       if (timeDiff > 1000) {
         console.log(`⏰ Countdown ${Math.ceil(timeDiff / 1000)} saniye sonra başlayacak (initial sync)`);
+
+        // 🔒 Lock'u hemen aktif et
+        countdownLockRef.current = true;
+        console.log("🔒 Countdown lock aktif edildi (initial sync)");
 
         // 0-3500ms: "Oyuncu Hazırlanıyor" animasyonu
         setPreparingOpponent("preparing");
@@ -4450,6 +4474,8 @@ const GamePage = ({
         };
       } else {
         console.log("⏰ Countdown hemen başlıyor");
+        countdownLockRef.current = true;
+        console.log("🔒 Countdown lock aktif edildi (initial sync - immediate)");
         setPreparingOpponent(null);
         setCountdownServerTime(withBuffer(currentRoom.countdown_started_at));
         setShowCountdown(true);
@@ -4463,6 +4489,7 @@ const GamePage = ({
     if (gameMode !== "private-room" && gameMode !== "random-match") return;
     if (showCountdown || gameStarted || countdownServerTime) return; // Zaten countdown varsa skip
     if (countdownCheckDoneRef.current) return; // Tek seferlik kontrol
+    if (countdownLockRef.current) return; // 🔒 Lock aktifse skip
 
     const realPlayers = participants.filter((p) => !p.is_bot && p.user_id !== null);
     if (realPlayers.length < 2) return; // Henüz 2 oyuncu yok
@@ -4479,6 +4506,12 @@ const GamePage = ({
           .single();
 
         if (data?.countdown_started_at) {
+          // 🔒 Lock kontrol et
+          if (countdownLockRef.current) {
+            console.log("⚠️ Countdown lock aktif - duplicate engellendi (check)");
+            return;
+          }
+
           const bufferedStartTime = new Date(data.countdown_started_at).getTime() + COUNTDOWN_BUFFER_MS;
           const serverNow = Date.now() + serverTimeOffset;
           const timeDiff = bufferedStartTime - serverNow;
@@ -4487,6 +4520,10 @@ const GamePage = ({
             buffered: new Date(bufferedStartTime).toISOString(),
             timeDiff,
           });
+
+          // 🔒 Lock'u aktif et
+          countdownLockRef.current = true;
+          console.log("🔒 Countdown lock aktif edildi (check)");
 
           if (timeDiff > 1000) {
             // 0-3500ms: "Oyuncu Hazırlanıyor" animasyonu
@@ -4520,6 +4557,12 @@ const GamePage = ({
             if (rpcErr) {
               console.warn("RPC countdown başlatma hatası:", rpcErr);
             } else if (startedAt) {
+              // 🔒 Lock kontrol et
+              if (countdownLockRef.current) {
+                console.log("⚠️ Countdown lock aktif - duplicate engellendi (RPC)");
+                return;
+              }
+
               const bufferedStartTime = new Date(startedAt).getTime() + COUNTDOWN_BUFFER_MS;
               const serverNow = Date.now() + serverTimeOffset;
               const timeDiff = bufferedStartTime - serverNow;
@@ -4528,6 +4571,10 @@ const GamePage = ({
                 buffered: new Date(bufferedStartTime).toISOString(),
                 timeDiff,
               });
+
+              // 🔒 Lock'u aktif et
+              countdownLockRef.current = true;
+              console.log("🔒 Countdown lock aktif edildi (RPC)");
 
               if (timeDiff > 1000) {
                 console.log(`⏰ Countdown ${Math.ceil(timeDiff / 1000)} saniye sonra başlayacak (RPC)`);
