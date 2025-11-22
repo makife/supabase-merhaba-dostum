@@ -519,7 +519,13 @@ const App = () => {
             <UserProvider>
               <ThemeProvider>
                 <MusicProvider>
-                  <MatchmakingProvider>
+                  <MatchmakingProvider
+                    onMatchFound={(roomId) => {
+                      console.log("✅ Eşleşme bulundu, oyun sayfasına yönlendiriliyor:", roomId);
+                      // Navigate to game page
+                      window.location.href = `/game/random-match?room=${roomId}`;
+                    }}
+                  >
                     <GameProvider>
                         <GlobalRematchListener />
                         <RoomAutoNavigator />
