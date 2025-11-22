@@ -3335,9 +3335,12 @@ const GamePage = ({
           setTournamentMatch(newData);
 
           // ------------------------------------------------------------
-          // 🎯 1. COUNTDOWN MANTIĞI (Random-match/Private-room ile tamamen aynı mantık)
+          // 🎯 1. COUNTDOWN MANTIĞI - SADECE OYUN BAŞLAMADIYSA
           // ------------------------------------------------------------
-          if (newData.countdown_started_at && !showCountdown && !gameStarted && !countdownServerTime) {
+          // ⚠️ OYUN BAŞLADIYSA COUNTDOWN'U TEKRAR BAŞLATMA
+          if (gameStarted || showCountdown) {
+            console.log("⚠️ Oyun zaten aktif - countdown sync atlandı");
+          } else if (newData.countdown_started_at && !countdownServerTime) {
             console.log("🎯 Tournament countdown başlatılıyor (real-time):", newData.countdown_started_at);
             const bufferedStartTime = new Date(newData.countdown_started_at).getTime() + COUNTDOWN_BUFFER_MS;
             const serverNow = Date.now() + serverTimeOffset;
@@ -3366,21 +3369,25 @@ const GamePage = ({
           }
 
           // ------------------------------------------------------------
-          // 🎯 2. SKOR SENKRONİZASYONU (Skor Gitmeme Sorunu Düzeltmesi)
+          // 🎯 2. SKOR SENKRONİZASYONU - SADECE OYUN AKTİFKEN
           // ------------------------------------------------------------
-          const currentUserId = user.id; // useEffect scope'undaki user.id
+          if (!gameStarted) {
+            console.log("⚠️ Oyun henüz başlamadı - skor sync atlandı");
+            return;
+          }
+
+          const currentUserId = user.id;
           const isPlayer1 = newData.player1_id === currentUserId;
 
-          // Rakibin yeni skoru ne?
+          // Rakibin yeni skoru
           const newOpponentScore = isPlayer1 ? newData.player2_score : newData.player1_score;
 
-          // Kendi yeni skorum ne? (Opsiyonel sync)
+          // Kendi yeni skorum
           const newPlayerScore = isPlayer1 ? newData.player1_score : newData.player2_score;
 
-          // State update fonksiyonu kullanıyoruz (Dependency array'e girmesin diye)
+          // Sadece oyun aktifken skor senkronizasyonu yap
           if (typeof newOpponentScore === "number") {
             setOpponentScore((prevScore) => {
-              // Sadece skor değiştiyse güncelle
               if (newOpponentScore !== prevScore) {
                 console.log(`🔄 Rakip Skoru Güncellendi: ${prevScore} -> ${newOpponentScore}`);
                 return newOpponentScore;
@@ -3389,7 +3396,6 @@ const GamePage = ({
             });
           }
 
-          // Kendi skorunu da senkronize et (eğer db'den farklıysa)
           if (typeof newPlayerScore === "number") {
             setPlayerScore((prev) => {
               if (newPlayerScore > prev) return newPlayerScore;
@@ -3404,9 +3410,9 @@ const GamePage = ({
       console.log("🔌 Turnuva maçı subscription temizleniyor");
       supabase.removeChannel(channel);
     };
-    // ⚠️ DİKKAT: Dependency array SADECE bunlar olmalı.
-    // opponentScore veya showCountdown buraya eklenirse loop oluşur veya bağlantı kopar.
-  }, [gameMode, tournamentMatch?.id, user?.id, serverTimeOffset]);
+    // ⚠️ DİKKAT: gameStarted ve showCountdown dependency'ye eklendi
+    // Oyun başladığında countdown tekrar başlamaması için gerekli
+  }, [gameMode, tournamentMatch?.id, user?.id, serverTimeOffset, gameStarted, showCountdown]);
 
   // 🎮 NORMAL OYUNLAR (RANDOM-MATCH, PRIVATE-ROOM) İÇİN COUNTDOWN SYNC
   useEffect(() => {
