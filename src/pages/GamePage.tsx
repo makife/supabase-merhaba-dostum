@@ -3583,7 +3583,7 @@ const GamePage = ({
       gameStarted &&
       !gameEnded &&
       !timerRef.current &&
-      (!isMp || (roomActive && haveTwoRealPlayers && !!currentRoom?.started_at));
+      (!isMp || (roomActive && haveTwoRealPlayers));
 
     if (!canStart) return;
 
@@ -3723,16 +3723,11 @@ const GamePage = ({
     }
 
     const syncTimer = () => {
-      // İlk 3 saniye countdown bitiminden sonra sync'i duraklat (titreme önleme)
-      if (countdownCompletedAtRef.current && Date.now() - countdownCompletedAtRef.current < 3000) {
-        console.log("⏸️ Skipping sync - countdown just completed");
-        return;
-      }
-
-      // Başlangıçta (geri sayımdan hemen sonra) 2:00'dan başlamayı koru
+      // Short suppress to prevent jitter right after countdown
       if (Date.now() < syncSuppressUntilRef.current) {
         return;
       }
+      
       const startTs = new Date(currentRoom.started_at!).getTime();
       const elapsed = Math.floor((Date.now() + serverTimeOffset - startTs) / 1000);
       let remaining = Math.max(0, (currentRoom.time_limit || 120) - elapsed);
@@ -3742,8 +3737,8 @@ const GamePage = ({
         remaining = 5;
       }
 
-      // 🛡️ 2 saniye toleransla senkronize et - küçük farklara müdahale etme
-      if (Math.abs(timeLeftRef.current - remaining) > 2) {
+      // 🛡️ 1 saniye toleransla senkronize et
+      if (Math.abs(timeLeftRef.current - remaining) > 1) {
         console.log(`🔄 ${gameMode} timer syncing - current: ${timeLeftRef.current}s, server: ${remaining}s`);
         timeLeftRef.current = remaining;
         setDisplayTime(remaining);
@@ -3752,9 +3747,9 @@ const GamePage = ({
 
     console.log("⏱️ Timer sync başlatılıyor - mode:", gameMode, "started_at:", currentRoom.started_at);
 
-    // İlk sync'i 2 saniye geciktir (countdown bitiminden sonra)
-    setTimeout(() => syncTimer(), 2000);
-    syncIntervalRef.current = setInterval(syncTimer, 2000); // 2 saniyede bir sync (daha az agresif)
+    // Start syncing immediately after 1s suppress period ends
+    setTimeout(() => syncTimer(), 1500);
+    syncIntervalRef.current = setInterval(syncTimer, 1500);
 
     return () => {
       if (syncIntervalRef.current) {
@@ -5509,34 +5504,36 @@ const GamePage = ({
 
     const isMp = gameMode === "private-room" || gameMode === "random-match";
 
-    // Single-player/tournament: start locally from full time
-    if (!isMp && gameType === "timed") {
-      const initial = currentRoom?.time_limit || 120;
-      timeLeftRef.current = initial;
-      setDisplayTime(initial);
-    }
+    // Initialize timer to full time for all modes
+    const initial = currentRoom?.time_limit || 120;
+    timeLeftRef.current = initial;
+    setDisplayTime(initial);
 
     // Multiplayer: set authoritative server start time exactly once
     if (isMp && currentRoom?.id) {
+      const serverStartTime = new Date().toISOString();
       (async () => {
         try {
           await supabase
             .from("game_rooms")
-            .update({ started_at: new Date().toISOString(), status: "active" })
+            .update({ started_at: serverStartTime, status: "active" })
             .is("started_at", null)
             .eq("id", currentRoom.id);
+          
+          console.log("✅ Server started_at set:", serverStartTime);
         } catch (e) {
           console.error("started_at set failed:", e);
         }
       })();
     }
 
+    // Start game immediately - don't wait for started_at
     setGameStarted(true);
     gameHasStartedRef.current = true;
 
-    // Bastırmayı sadece multiplayer'da uygula (ilk 3sn ekstra sync yok)
+    // Short suppress for multiplayer (only 1s to prevent initial jitter)
     if (isMp) {
-      syncSuppressUntilRef.current = Date.now() + 3000; // 3sn
+      syncSuppressUntilRef.current = Date.now() + 1000;
     }
   };
 
