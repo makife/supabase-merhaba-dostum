@@ -3977,6 +3977,55 @@ const GamePage = ({
     };
   }, [currentRoom?.id, user?.id, syncUsedWords]);
 
+  // 🔥 MERKEZİ OYUN BAŞLATMA FONKSİYONU
+  const startCountdownSequence = useCallback(
+    (targetStartTimeIso: string) => {
+      // Eğer zaten kilitliyse veya oyun başladıysa veya geri sayım zaten varsa dur
+      if (countdownLockRef.current || gameStarted || showCountdown) {
+        console.log("⚠️ Start sequence blocked:", { locked: countdownLockRef.current, gameStarted, showCountdown });
+        return;
+      }
+
+      console.log("🚀 Start sequence TRIGGERED for:", targetStartTimeIso);
+      countdownLockRef.current = true; // Kilitle
+
+      const now = Date.now() + serverTimeOffset;
+      const targetTime = new Date(targetStartTimeIso).getTime();
+
+      // Buffer süresi (Countdown başlamadan önceki bekleme süresi)
+      // 5000ms (5 saniye) buffer ekliyoruz.
+      // targetStartTimeIso: Countdown'ın 3-2-1 diye saymaya başlayacağı an.
+      // Biz ondan önceki "Hazırlanıyor" animasyonunu yönetiyoruz.
+
+      // Animasyonları Başlat
+      setPreparingOpponent("preparing"); // "Hazırlanıyor..."
+
+      // 3.5 saniye sonra "Hazır!" de
+      setTimeout(() => {
+        setPreparingOpponent("ready");
+      }, 3500);
+
+      // 4.0 saniye sonra yazıyı kaldır
+      setTimeout(() => {
+        setPreparingOpponent(null);
+      }, 4000);
+
+      // 5.0 saniye sonra Geri Sayım (3-2-1) bileşenini göster
+      // Eğer bufferlı zaman geldiyse
+      const timeUntilCountdown = Math.max(0, targetTime - now);
+
+      console.log(`⏰ Countdown ${timeUntilCountdown}ms sonra başlayacak`);
+
+      setTimeout(() => {
+        console.log("⏰ SHOW COUNTDOWN TRUE YAPILIYOR");
+        setCountdownServerTime(targetStartTimeIso);
+        setShowCountdown(true);
+        setGameStarted(false); // Emin olmak için false yap
+      }, timeUntilCountdown);
+    },
+    [gameStarted, showCountdown, serverTimeOffset],
+  );
+
   // Turnuva real-time senkronizasyonu
   useEffect(() => {
     if (gameMode !== "tournament" || !tournamentMatch) return;
