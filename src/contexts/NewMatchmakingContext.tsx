@@ -186,8 +186,9 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
           if (rpcError) {
             console.error("❌ Countdown RPC error:", rpcError);
           } else if (countdownTime) {
-            console.log("✅ Countdown başlatıldı (Player 1):", countdownTime);
-            window.dispatchEvent(new CustomEvent("countdownStarted", { detail: { serverTime: countdownTime } }));
+            console.log("✅ Countdown başlatıldı (Player 1) - real-time subscription event'i bekleyeceğiz");
+            // ❌ KALDIRILDI: window.dispatchEvent burada yapılmıyor
+            // Çünkü real-time subscription zaten yapacak (line 334)
           }
           
           setCurrentRoom({
