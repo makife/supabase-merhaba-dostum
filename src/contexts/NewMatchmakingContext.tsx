@@ -132,6 +132,9 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       setSearchProgress(0);
       setSearchTimeout(false);
       setCurrentGameType(gameType);
+      
+      // Store current game type globally for App.tsx callback
+      (window as any).__currentMatchmakingType = gameType;
 
       console.log("🔍 Supabase Realtime matchmaking başlatıldı:", gameType);
       startProgressTimer();

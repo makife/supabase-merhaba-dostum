@@ -522,8 +522,10 @@ const App = () => {
                   <MatchmakingProvider
                     onMatchFound={(roomId) => {
                       console.log("✅ Eşleşme bulundu, oyun sayfasına yönlendiriliyor:", roomId);
-                      // Navigate to game page
-                      window.location.href = `/game/random-match?room=${roomId}`;
+                      // Get current matchmaking type from MatchmakingContext
+                      const currentGameType = (window as any).__currentMatchmakingType || 'timed';
+                      // Use window location to navigate (React Router navigation won't work here)
+                      window.location.href = `/game/random-match?room=${roomId}&type=${currentGameType}`;
                     }}
                   >
                     <GameProvider>
