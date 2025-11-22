@@ -4254,34 +4254,21 @@ const GamePage = ({
     }
   }, [gameStarted, gameEnded]);
 
-  // 🤖 vs-computer modunda otomatik countdown başlatma - CLIENT TIME KULLAN
+  // 🤖 VS-COMPUTER BAŞLATICI (DÜZELTİLMİŞ)
   useEffect(() => {
-    if (gameMode === "vs-computer" && !gameStarted && !showCountdown && !gameEnded) {
-      console.log("🤖 vs-computer mode - countdown hazırlanıyor (7s buffer ile)");
-      setWaitingForPlayer(false);
+    if (gameMode !== "vs-computer") return;
+    if (gameStarted || showCountdown || countdownLockRef.current) return;
 
-      // Rakip hazırlanıyor animasyonu başlat (5 saniyelik buffer)
-      setPreparingOpponent("preparing");
+    // Sadece bir kere çalışsın diye küçük bir timeout ile tetikliyoruz
+    const timer = setTimeout(() => {
+      // Şu anki zamana 5 saniye ekle (Buffer için)
+      const localStartTime = new Date(Date.now() + 5000).toISOString();
+      startCountdownSequence(localStartTime);
+      setWaitingForPlayer(false); // Bekleniyor yazısını kaldır
+    }, 1000);
 
-      // 3 saniye sonra "Oyuncu Hazır!" göster (geri sayıma 2sn kala)
-      setTimeout(() => {
-        setPreparingOpponent("ready");
-      }, 3000);
-
-      // 3.5 saniye sonra animasyonu temizle (geri sayıma 1.5sn kala bitmiş olsun)
-      setTimeout(() => {
-        setPreparingOpponent(null);
-      }, 3500);
-
-      // 5 saniye sonra countdown başlat
-      setTimeout(() => {
-        setCountdownServerTime(new Date().toISOString());
-        setShowCountdown(true);
-      }, 5000);
-
-      setGameStarted(false);
-    }
-  }, [gameMode, gameStarted, showCountdown, gameEnded]);
+    return () => clearTimeout(timer);
+  }, [gameMode, startCountdownSequence, gameStarted, showCountdown]);
 
   // 🎯 Countdown event listener (tüm modlar için)
   useEffect(() => {
