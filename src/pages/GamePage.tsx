@@ -1751,12 +1751,13 @@ const GamePage = ({
 
       console.log("🎲 Random match initialization başlıyor");
 
-      const urlParams = new URLSearchParams(window.location.search);
-      const roomId = urlParams.get("room");
-      const type = urlParams.get("type") as "timed" | "score";
+      const roomId = searchParams.get("room");
+      const type = searchParams.get("type") as "timed" | "score";
+
+      console.log("📍 URL Parameters - room:", roomId, "type:", type);
 
       if (!roomId || !type) {
-        console.error("❌ Random match için room ID veya type eksik");
+        console.error("❌ Random match için room ID veya type eksik", { roomId, type });
         navigate("/");
         return;
       }
@@ -1910,7 +1911,7 @@ const GamePage = ({
     };
 
     initializeRandomMatch();
-  }, [gameMode, user?.id, joinRoom, navigate, toast, setGameGrid, generateRandomGrid]);
+  }, [gameMode, user?.id, joinRoom, navigate, toast, setGameGrid, generateRandomGrid, searchParams]);
 
   // Initialize private room from URL params
   useEffect(() => {
