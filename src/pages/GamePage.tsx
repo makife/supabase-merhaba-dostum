@@ -1078,54 +1078,15 @@ const GamePage = ({
       try {
         const { data, error } = await supabase
           .from("tournament_matches")
-          .select("winner_id,status,player1_id,player2_id,player1_score,player2_score")
+          .select("winner_id,status")
           .eq("id", tournamentMatch.id)
-          .single();
+          .maybeSingle();
 
-        if (!error && data) {
-          if (data.winner_id) {
-            if (cancelled) return;
-            setWinner(String(data.winner_id) === String(user?.id) ? "player" : "opponent");
-            setTimeout(() => navigate(`/tournament-bracket/${tournamentMatch.tournament_id}`), 3000);
-            return; // Polling durur (cleanup dönecek)
-          }
-
-          // Winner yoksa ve henüz tamamlanmamışsa bir kere backend'e tamamlama denemesi yap
-          if (Date.now() - startedAt > 2000 && !attemptedAutoCompleteRef.current) {
-            attemptedAutoCompleteRef.current = true;
-            const isPlayer1 = String(tournamentMatch.player1_id) === String(user?.id);
-            const p1 = data.player1_score ?? (isPlayer1 ? playerScoreRef.current : opponentScoreRef.current);
-            const p2 = data.player2_score ?? (isPlayer1 ? opponentScoreRef.current : playerScoreRef.current);
-
-            let decidedWinner: string | null = null;
-            if (p1 === p2) {
-              const { data: tieData, error: tieErr } = await supabase.rpc(
-                "determine_tournament_winner_with_tiebreaker",
-                {
-                  p_match_id: tournamentMatch.id,
-                  p_player1_id: tournamentMatch.player1_id,
-                  p_player2_id: tournamentMatch.player2_id,
-                  p_player1_score: p1,
-                  p_player2_score: p2,
-                },
-              );
-              if (!tieErr && tieData) decidedWinner = tieData as string;
-            } else {
-              decidedWinner =
-                p1 > p2
-                  ? (data.player1_id ?? tournamentMatch.player1_id)
-                  : (data.player2_id ?? tournamentMatch.player2_id);
-            }
-
-            if (decidedWinner) {
-              await supabase.rpc("complete_tournament_match_with_advance", {
-                p_match_id: tournamentMatch.id,
-                p_player1_score: p1,
-                p_player2_score: p2,
-                p_winner_id: decidedWinner,
-              });
-            }
-          }
+        if (!error && data?.winner_id) {
+          if (cancelled) return;
+          console.log("✅ Winner polling'den alındı:", data.winner_id);
+          setWinner(String(data.winner_id) === String(user?.id) ? "player" : "opponent");
+          setTimeout(() => navigate(`/tournament-bracket/${tournamentMatch.tournament_id}`), 3000);
         }
       } catch (e) {
         console.warn("Winner polling error", e);
@@ -1137,18 +1098,19 @@ const GamePage = ({
     // Başlat
     poll();
 
-    // 6sn fail-safe yönlendirme
+    // 10sn fail-safe yönlendirme
     const fail = setTimeout(() => {
       if (!cancelled) {
+        console.log("⏰ Fail-safe timeout - turnuva sayfasına yönlendiriliyor");
         navigate(`/tournament-bracket/${tournamentMatch.tournament_id}`);
       }
-    }, 6000);
+    }, 10000);
 
     return () => {
       cancelled = true;
       clearTimeout(fail);
     };
-  }, [gameMode, gameEnded, tournamentMatch?.id, winner, user?.id]);
+  }, [gameMode, gameEnded, tournamentMatch?.id, winner, user?.id, navigate]);
 
   const requestRematch = async () => {
     if (!user) {
@@ -2807,7 +2769,15 @@ const GamePage = ({
         const { data: matchData } = await supabase.from("tournament_matches").select("*").eq("id", matchId).single();
 
         if (matchData) {
-          console.log("🏆 Tournament match loaded:", matchData.id);
+          console.log("🏆 Tournament match loaded:", matchData);
+          
+          // ✅ TAMAMLANMIŞ MAÇI TEKRAR BAŞLATMA
+          if (matchData.status === "completed") {
+            console.log("⚠️ Bu maç zaten tamamlanmış, yönlendiriliyor:", matchData.id);
+            navigate(`/tournament-bracket/${tournamentId}`);
+            return;
+          }
+          
           setTournamentMatch(matchData);
 
           // 🎯 SERVER-SIDE COUNTDOWN SYNC - Random-match/Private-room ile tamamen aynı mantık
@@ -3330,6 +3300,12 @@ const GamePage = ({
         },
         (payload) => {
           const newData = payload.new as any;
+
+          // ✅ TAMAMLANMIŞ MAÇI TEKRAR BAŞLATMA
+          if (newData.status === "completed") {
+            console.log("⚠️ Maç tamamlandı real-time event - restart önleniyor:", newData.id);
+            return;
+          }
 
           // Match state'ini güncelle
           setTournamentMatch(newData);
@@ -3856,29 +3832,11 @@ const GamePage = ({
         });
         setGameEnded(true);
 
-        // Tournament mode için skorları güncelle ve handleGameEnd çağır
+        // Tournament mode için SADECE handleGameEnd çağır (skor kaydetmeyi handleTournamentMatchEnd yapacak)
         if (gameMode === "tournament" && tournamentMatch) {
-          console.log("🏆 Tournament score mode - skorlar güncelleniyor ve maç sonlandırılıyor");
-
-          // Önce skorları veritabanına kaydet ve status'u completed yap
-          const isPlayer1 = tournamentMatch.player1_id === user?.id;
-          const updateData = isPlayer1
-            ? { player1_score: playerScore, player2_score: opponentScore, status: "completed" }
-            : { player1_score: opponentScore, player2_score: playerScore, status: "completed" };
-
-          supabase
-            .from("tournament_matches")
-            .update(updateData)
-            .eq("id", tournamentMatch.id)
-            .then(({ error }) => {
-              if (error) {
-                console.error("❌ Tournament skorları güncellenemedi:", error);
-              } else {
-                console.log("✅ Tournament skorları güncellendi, handleGameEnd çağrılıyor");
-              }
-              // Hata olsa da olmasa da handleGameEnd çağır
-              handleGameEnd();
-            });
+          console.log("🏆 Tournament score mode - handleGameEnd çağrılıyor");
+          setGameEnded(true);
+          handleGameEnd();
         } else {
           // Diğer modlar için normal akış
           checkWinnerWithScores(playerScore, opponentScore);
