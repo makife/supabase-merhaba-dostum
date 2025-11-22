@@ -4566,7 +4566,7 @@ const GamePage = ({
     // 1 saniye gecikme ile kontrol et (realtime subscription'dan sonra)
     const timer = setTimeout(checkCountdown, 1000);
     return () => clearTimeout(timer);
-  }, [gameMode, participants, showCountdown, gameStarted, currentRoom?.id]);
+  }, [gameMode, participants.length, showCountdown, gameStarted, currentRoom?.id]);
 
   // Multiplayer (private-room & random-match) waiting/start logic
   useEffect(() => {
@@ -5113,11 +5113,11 @@ const GamePage = ({
 
       const realOpponent = participants.find((p) => p.user_id === opponentId && !p.is_bot && p.user_id !== null);
 
-      if (realOpponent && realOpponent.profiles?.username) {
+      if (realOpponent) {
         return {
-          name: realOpponent.profiles.username,
+          name: realOpponent.profiles?.username || "Rakip",
           icon: Trophy,
-          avatar: realOpponent.profiles.avatar_url || null,
+          avatar: realOpponent.profiles?.avatar_url || null,
         };
       }
 
@@ -5129,11 +5129,11 @@ const GamePage = ({
     );
 
     // Gerçek rakip varsa onun bilgilerini kullan
-    if (realOpponent && (realOpponent as any).profiles) {
+    if (realOpponent) {
       return {
-        name: (realOpponent as any).profiles.username || "Oyuncu",
+        name: (realOpponent as any).profiles?.username || "Oyuncu",
         icon: User,
-        avatar: (realOpponent as any).profiles.avatar_url,
+        avatar: (realOpponent as any).profiles?.avatar_url || null,
       };
     }
 
