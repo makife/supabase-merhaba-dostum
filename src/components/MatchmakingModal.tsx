@@ -8,7 +8,7 @@ import { useSounds } from '@/hooks/useSounds';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useNakamaMatchmaking } from '@/hooks/useNakamaMatchmaking';
+
 
 interface MatchmakingModalProps {
   onClose: () => void;
@@ -19,10 +19,8 @@ interface MatchmakingModalProps {
 const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalProps) => {
   const [searchProgress, setSearchProgress] = useState(0);
   const [searchStatus, setSearchStatus] = useState<'searching' | 'ai-fallback' | 'found'>('searching');
-  const [countdown, setCountdown] = useState(20); // 15 → 20 saniye
+  const [countdown, setCountdown] = useState(20);
   const { findRandomMatch, addAIOpponent, currentRoom, participants } = useGame();
-  const { useNakama } = useGame(); // Nakama toggle'ı al
-  const nakamaMatch = useNakamaMatchmaking(); // Nakama hook'u
   const { playSound } = useSounds();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -223,20 +221,7 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
       try {
         console.log('🔍 findRandomMatch çağrılıyor...');
         
-        let matchFound;
-        if (useNakama) {
-          console.log("🎯 Using Nakama matchmaking");
-          try {
-            await nakamaMatch.findMatch(gameType);
-            matchFound = nakamaMatch.matchFound;
-          } catch (error) {
-            console.log("❌ Nakama failed, fallback to Supabase");
-            matchFound = await findRandomMatch(gameType);
-          }
-        } else {
-          console.log("📊 Using Supabase matchmaking");
-          matchFound = await findRandomMatch(gameType);
-        }
+        const matchFound = await findRandomMatch(gameType);
         console.log('🔍 findRandomMatch result:', matchFound);
         
         if (matchFound) {
