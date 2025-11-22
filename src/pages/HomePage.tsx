@@ -117,7 +117,7 @@ const HomePage = () => {
   //
   const [timeUntilNextCredit, setTimeUntilNextCredit] = useState<string>("");
   const { canPlay: canPlayMemory, timeUntilNextPlay } = useMemoryGame();
-  const { startSearch, useNakama, isSearching, searchProgress, cancelSearch, nakamaMatch } = useMatchmaking();
+  const { startSearch, isSearching, searchProgress, cancelSearch } = useMatchmaking();
   const [greeting, setGreeting] = useState(() => {
     const sessionGreeting = sessionStorage.getItem('sessionGreeting');
     if (sessionGreeting) return sessionGreeting;
@@ -255,12 +255,6 @@ const HomePage = () => {
     setShowAvatarView(true);
   };
 
-  // Nakama match bulunduğunda otomatik yönlendir
-  useEffect(() => {
-    if (nakamaMatch?.matchId && showMatchmaking) {
-      handleMatchFound(nakamaMatch.matchId);
-    }
-  }, [nakamaMatch?.matchId, showMatchmaking]);
 
   // Demo oyun başlatma event listener
   useEffect(() => {
