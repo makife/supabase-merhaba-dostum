@@ -176,10 +176,19 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
         if (participantError && participantError.code !== "23505") {
           console.error("❌ Katılımcı ekleme hatası:", participantError);
         } else {
-          console.log("✅ Odaya katıldı!");
+          console.log("✅ Odaya katıldı! Countdown başlatılıyor...");
           
-          // Player 2'nin realtime subscription'ını bekle - countdown'u o başlatacak
-          // Biz sadece join oluyoruz, countdown oda sahibinin subscription'ında başlayacak
+          // Countdown başlat (Player 1)
+          const { data: countdownTime, error: rpcError } = await supabase.rpc("start_game_countdown", {
+            p_room_id: targetRoom.id,
+          });
+
+          if (rpcError) {
+            console.error("❌ Countdown RPC error:", rpcError);
+          } else if (countdownTime) {
+            console.log("✅ Countdown başlatıldı (Player 1):", countdownTime);
+            window.dispatchEvent(new CustomEvent("countdownStarted", { detail: { serverTime: countdownTime } }));
+          }
           
           setCurrentRoom({
             id: targetRoom.id,
@@ -283,28 +292,41 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
 
             // Farklı oyuncu ve bot değilse
             if (!payload.new.is_bot && payload.new.user_id !== user.id && payload.new.user_id !== null) {
-              console.log("🎉 2. oyuncu odaya katıldı!");
+              console.log("🎉 2. oyuncu odaya katıldı! (Player 2 - oda sahibi tespit etti)");
 
-              // Countdown başlat
-              const { data: countdownTime, error: rpcError } = await supabase.rpc("start_game_countdown", {
-                p_room_id: newRoomId,
-              });
-
-              if (rpcError) {
-                console.warn("⚠️ Countdown RPC error:", rpcError);
-              } else if (countdownTime) {
-                console.log("✅ Countdown başlatıldı:", countdownTime);
-                window.dispatchEvent(new CustomEvent("countdownStarted", { detail: { serverTime: countdownTime } }));
-              }
+              // SADECE countdown bilgisini dinle, navigate için bekle
+              // Countdown Player 1 tarafından başlatıldı, biz sadece tespit ediyoruz
+              console.log("⏳ Player 1 countdown başlattı, realtime'dan bekliyoruz...");
 
               clearProgressTimer();
               setSearchProgress(100);
               setIsSearching(false);
               
-              // Channel'ı kapat
-              supabase.removeChannel(channel);
-              setSearchChannel(null);
+              // Channel'ı KAPATMA - room update için açık tutuyoruz
+              console.log("📡 Participant subscription tamamlandı, room update dinleniyor...");
 
+              // Navigate etmeden önce countdown_started_at'ın set edilmesini bekle
+              // Bu bilgi room update realtime'ından gelecek
+            }
+          }
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "game_rooms",
+            filter: `id=eq.${newRoomId}`,
+          },
+          async (payload) => {
+            console.log("📡 Room update tespit edildi:", payload);
+            
+            // countdown_started_at set edildiyse navigate yap
+            if (payload.new.countdown_started_at) {
+              console.log("✅ Countdown timestamp alındı, navigate ediliyor...", payload.new.countdown_started_at);
+              window.dispatchEvent(new CustomEvent("countdownStarted", { detail: { serverTime: payload.new.countdown_started_at } }));
+              
+              // Her iki oyuncu da aynı anda navigate olacak
               onMatchFound?.(newRoomId);
             }
           }
@@ -312,7 +334,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
         .subscribe();
 
       setSearchChannel(channel);
-      console.log("📡 Realtime subscription aktif");
+      console.log("📡 Realtime subscription aktif (participants + room updates)");
 
     } catch (error) {
       console.error("❌ Matchmaking hatası:", error);
