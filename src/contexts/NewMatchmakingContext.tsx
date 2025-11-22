@@ -198,6 +198,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
           });
 
           clearProgressTimer();
+          setSearchProgress(100);
           setIsSearching(false);
           onMatchFound?.(targetRoom.id);
           return;
@@ -303,6 +304,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
               }
 
               clearProgressTimer();
+              setSearchProgress(100);
               setIsSearching(false);
               
               // Channel'ı kapat
