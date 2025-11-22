@@ -118,7 +118,13 @@ const HomePage = () => {
   const [timeUntilNextCredit, setTimeUntilNextCredit] = useState<string>("");
   const { canPlay: canPlayMemory, timeUntilNextPlay } = useMemoryGame();
   const { startSearch, useNakama, isSearching, searchProgress, cancelSearch, nakamaMatch } = useMatchmaking();
-  const [greeting, setGreeting] = useState(getRandomGreeting());
+  const [greeting, setGreeting] = useState(() => {
+    const sessionGreeting = sessionStorage.getItem('sessionGreeting');
+    if (sessionGreeting) return sessionGreeting;
+    const newGreeting = getRandomGreeting();
+    sessionStorage.setItem('sessionGreeting', newGreeting);
+    return newGreeting;
+  });
 
   // Level hesaplama fonksiyonu
   const calculateLevel = (totalScore: number) => {
