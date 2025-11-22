@@ -145,6 +145,10 @@ const GamePage = ({
   const { jokers: jokerInventory, useJoker, loadJokers } = useJokerInventory();
   const { fadeOutBackgroundMusic, fadeInBackgroundMusic } = useMusic();
   const [searchParams] = useSearchParams();
+  const [urlGameType] = useState<"timed" | "score">(() => {
+    const type = searchParams.get("type") as "timed" | "score";
+    return type || "timed";
+  });
   const [lastClickTime, setLastClickTime] = useState(0);
   const [isNavigating, setIsNavigating] = useState(false);
   const cleanupRef = useRef<(() => void)[]>([]);
@@ -182,34 +186,16 @@ const GamePage = ({
   const getGameType = useCallback((): "timed" | "score" => {
     // TURNUVA MODU HER ZAMAN SÜRELİ!
     if (gameMode === "tournament") {
-      console.log("🏆 Tournament mode: FORCED to timed");
       return "timed";
     }
 
     if (gameMode === "vs-computer") {
-      const urlType = (searchParams.get("type") as "timed" | "score") || "timed";
-      console.log("🤖 vs-computer mode type:", urlType);
-      return urlType;
+      return urlGameType;
     }
 
-    // RANDOM MATCH için öncelikle matchmaking room datasını kontrol et
+    // RANDOM MATCH için öncelikle URL type'ı kullan
     if (gameMode === "random-match") {
-      // URL'den gelen type parametresini kontrol et (matchmaking'den gelir)
-      const urlType = searchParams.get("type") as "timed" | "score";
-      if (urlType) {
-        console.log("🎯 Random match URL type:", urlType);
-        return urlType;
-      }
-
-      // Fallback: Room datasından çıkar
-      if (currentRoom?.time_limit && currentRoom.time_limit > 0) {
-        console.log("⏱️ Room timed mode detected");
-        return "timed";
-      }
-      if (currentRoom?.max_score && currentRoom.max_score > 0) {
-        console.log("🎯 Room score mode detected");
-        return "score";
-      }
+      return urlGameType;
     }
 
     // Diğer modlar için mevcut mantık
@@ -218,10 +204,8 @@ const GamePage = ({
       else return "timed";
     }
 
-    const urlType = (searchParams.get("type") as "timed" | "score") || "timed";
-    console.log("🔧 Fallback type:", urlType);
-    return urlType;
-  }, [gameMode, currentRoom?.game_mode, currentRoom?.time_limit, currentRoom?.max_score, searchParams]);
+    return urlGameType;
+  }, [gameMode, currentRoom?.game_mode, urlGameType]);
 
   const gameType = getGameType();
   const [timeWarningPlayed, setTimeWarningPlayed] = useState(false);
