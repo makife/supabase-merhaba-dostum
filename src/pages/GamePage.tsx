@@ -3885,60 +3885,53 @@ const GamePage = ({
     return aiStatus;
   }, [gameMode, participants, tournamentMatch, user?.id]);
 
-  // Kelimeleri veritabanından çekip senkronize eden fonksiyon
-  const syncUsedWords = useCallback(async () => {
-    // Eğer oda yoksa veya zaten senkronizasyon yapılıyorsa dur
-    if (!currentRoom?.id || syncingRef.current) return;
-
-    syncingRef.current = true;
-
-    try {
-      // VS Computer modunda veritabanı kullanılmaz, listeleri temizle
-      if (gameMode === "vs-computer") {
-        console.log("🤖 vs-computer mode: Not loading previous words, starting fresh");
-        setGlobalUsedWords(new Set());
-        setUsedWords(new Set());
-        return;
-      }
-
-      // Supabase'den kelimeleri çek
-      const { data: roomWords } = await supabase
-        .from("game_words")
-        .select("word, player_id")
-        .eq("room_id", currentRoom.id);
-
-      if (roomWords) {
-        const allWordsSet = new Set(roomWords.map((w) => w.word.toLocaleUpperCase("tr-TR")));
-
-        // Kendi kelimelerimi ayır (user?.id güvenliği ile)
-        const myWordsSet = new Set(
-          roomWords.filter((w) => w.player_id === user?.id).map((w) => w.word.toLocaleUpperCase("tr-TR")),
-        );
-
-        console.log("🔄 Syncing - All words:", allWordsSet.size, "My words:", myWordsSet.size);
-        setGlobalUsedWords(allWordsSet);
-        setUsedWords(myWordsSet);
-      }
-    } catch (error) {
-      console.error("❌ Word sync error:", error);
-    } finally {
-      syncingRef.current = false;
-    }
-  }, [currentRoom?.id, user?.id, gameMode]);
-
-  // Real-time kelime senkronizasyonu ve abonelik (Tek useEffect)
+  // Real-time kelime senkronizasyonu
   useEffect(() => {
     if (!currentRoom?.id || !user) return;
 
     console.log("🔄 === WORD SYNC BAŞLADI ===");
     console.log("🔄 Room ID:", shortId(currentRoom?.id));
 
-    // 1. İlk açılışta mevcut kelimeleri çek
-    const initialSyncTimer = setTimeout(() => {
-      syncUsedWords();
-    }, 500);
+    const syncUsedWords = async () => {
+      if (syncingRef.current) {
+        console.log("🔄 Sync already in progress, skipping");
+        return;
+      }
 
-    // 2. Real-time değişiklikleri dinle
+      syncingRef.current = true;
+
+      try {
+        if (gameMode === "vs-computer") {
+          console.log("🤖 vs-computer mode: Not loading previous words, starting fresh");
+          setGlobalUsedWords(new Set());
+          setUsedWords(new Set());
+          return;
+        }
+
+        const { data: roomWords } = await supabase
+          .from("game_words")
+          .select("word, player_id")
+          .eq("room_id", currentRoom.id);
+
+        if (roomWords) {
+          const allWordsSet = new Set(roomWords.map((w) => w.word.toLocaleUpperCase("tr-TR")));
+          const myWordsSet = new Set(
+            roomWords.filter((w) => w.player_id === user.id).map((w) => w.word.toLocaleUpperCase("tr-TR")),
+          );
+
+          console.log("🔄 Syncing - All words:", allWordsSet.size, "My words:", myWordsSet.size);
+          setGlobalUsedWords(allWordsSet);
+          setUsedWords(myWordsSet);
+        }
+      } catch (error) {
+        console.error("❌ Word sync error:", error);
+      } finally {
+        syncingRef.current = false;
+      }
+    };
+
+    const initialSyncTimer = setTimeout(syncUsedWords, 500);
+
     const wordChannel = supabase
       .channel(`mobile-words-${currentRoom.id}`)
       .on(
@@ -3950,81 +3943,25 @@ const GamePage = ({
           filter: `room_id=eq.${currentRoom.id}`,
         },
         (payload) => {
-          const newRecord = payload.new;
-          console.log("📱 Mobile real-time word:", newRecord?.word, "from:", newRecord?.player_id);
+          console.log("📱 Mobile real-time word:", payload.new?.word, "from player:", payload.new?.player_id);
 
-          // Sadece BAŞKA bir oyuncudan geldiyse listeye ekle
-          // (Kendi eklediğim kelimeyi zaten lokalde eklemiştim, tekrar eklemeye gerek yok)
-          if (newRecord?.word && !syncingRef.current && newRecord.player_id !== user.id) {
-            const newWord = newRecord.word.toLocaleUpperCase("tr-TR");
+          if (payload.new?.word && !syncingRef.current && payload.new?.player_id !== user.id) {
+            const newWord = payload.new.word.toLocaleUpperCase("tr-TR");
 
-            // State update (debounce gerekmez)
-            setGlobalUsedWords((prev) => {
-              const updated = new Set(prev);
-              updated.add(newWord);
-              return updated;
-            });
+            setTimeout(() => {
+              setGlobalUsedWords((prev) => new Set([...prev, newWord]));
+            }, 100);
           }
         },
       )
       .subscribe();
 
-    // Temizlik (Cleanup)
     return () => {
       clearTimeout(initialSyncTimer);
-      console.log("🔌 Removing word subscription");
+      console.log("📱 Mobile word sync cleanup");
       supabase.removeChannel(wordChannel);
     };
-  }, [currentRoom?.id, user?.id, syncUsedWords]);
-
-  // 🔥 MERKEZİ OYUN BAŞLATMA FONKSİYONU
-  const startCountdownSequence = useCallback(
-    (targetStartTimeIso: string) => {
-      // Eğer zaten kilitliyse veya oyun başladıysa veya geri sayım zaten varsa dur
-      if (countdownLockRef.current || gameStarted || showCountdown) {
-        console.log("⚠️ Start sequence blocked:", { locked: countdownLockRef.current, gameStarted, showCountdown });
-        return;
-      }
-
-      console.log("🚀 Start sequence TRIGGERED for:", targetStartTimeIso);
-      countdownLockRef.current = true; // Kilitle
-
-      const now = Date.now() + serverTimeOffset;
-      const targetTime = new Date(targetStartTimeIso).getTime();
-
-      // Buffer süresi (Countdown başlamadan önceki bekleme süresi)
-      // 5000ms (5 saniye) buffer ekliyoruz.
-      // targetStartTimeIso: Countdown'ın 3-2-1 diye saymaya başlayacağı an.
-      // Biz ondan önceki "Hazırlanıyor" animasyonunu yönetiyoruz.
-
-      // Animasyonları Başlat
-      setPreparingOpponent("preparing"); // "Hazırlanıyor..."
-
-      // 3.5 saniye sonra "Hazır!" de
-      setTimeout(() => {
-        setPreparingOpponent("ready");
-      }, 3500);
-
-      // 4.0 saniye sonra yazıyı kaldır
-      setTimeout(() => {
-        setPreparingOpponent(null);
-      }, 4000);
-
-      // 5.0 saniye sonra Geri Sayım (3-2-1) bileşenini göster
-      // Eğer bufferlı zaman geldiyse
-      const timeUntilCountdown = Math.max(0, targetTime - now);
-
-      console.log(`⏰ Countdown ${timeUntilCountdown}ms sonra başlayacak`);
-
-      setTimeout(() => {
-        console.log("⏰ SHOW COUNTDOWN TRUE YAPILIYOR");
-        setCountdownServerTime(targetStartTimeIso);
-        setShowCountdown(true);
-        setGameStarted(false); // Emin olmak için false yap
-      }, timeUntilCountdown);
-    },
-    [gameStarted, showCountdown, serverTimeOffset],
-  );
+  }, [currentRoom?.id, user?.id, gameMode]);
 
   // Turnuva real-time senkronizasyonu
   useEffect(() => {
@@ -4081,6 +4018,80 @@ const GamePage = ({
       supabase.removeChannel(tournamentChannel);
     };
   }, [gameMode, tournamentMatch?.id, user?.id, opponentScore]);
+
+  // İlk sync
+  useEffect(() => {
+    if (!currentRoom) return;
+
+    const initialSyncTimer = setTimeout(syncUsedWords, 500);
+
+    // Real-time word changes dinle
+    const wordChannel = supabase
+      .channel(`mobile-words-${currentRoom.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "game_words",
+          filter: `room_id=eq.${currentRoom.id}`,
+        },
+        (payload) => {
+          console.log("📱 Mobile real-time word:", payload.new?.word, "from player:", payload.new?.player_id);
+
+          // Don't process words from the current user to prevent duplicate validation
+          if (payload.new?.word && !syncingRef.current && payload.new?.player_id !== user?.id) {
+            const newWord = payload.new.word.toLocaleUpperCase("tr-TR");
+
+            // Debounced update - only for other players' words
+            setTimeout(() => {
+              setGlobalUsedWords((prev) => new Set([...prev, newWord]));
+              // Do NOT add to setUsedWords here; keep my words separate
+            }, 100);
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      clearTimeout(initialSyncTimer);
+      console.log("📱 Mobile word sync cleanup");
+      supabase.removeChannel(wordChannel);
+    };
+  }, [currentRoom?.id, user?.id]);
+
+  const syncUsedWords = async () => {
+    if (syncingRef.current) return;
+
+    syncingRef.current = true;
+
+    try {
+      if (gameMode === "vs-computer") {
+        setGlobalUsedWords(new Set());
+        setUsedWords(new Set());
+        return;
+      }
+
+      const { data: roomWords } = await supabase
+        .from("game_words")
+        .select("word, player_id")
+        .eq("room_id", currentRoom.id);
+
+      if (roomWords) {
+        const allWordsSet = new Set(roomWords.map((w) => w.word.toLocaleUpperCase("tr-TR")));
+        const myWordsSet = new Set(
+          roomWords.filter((w) => w.player_id === user?.id).map((w) => w.word.toLocaleUpperCase("tr-TR")),
+        );
+
+        setGlobalUsedWords(allWordsSet);
+        setUsedWords(myWordsSet);
+      }
+    } catch (error) {
+      console.error("❌ Word sync error:", error);
+    } finally {
+      syncingRef.current = false;
+    }
+  };
 
   // Tournament activity tracking (removed - not needed for core functionality)
 
@@ -4303,21 +4314,34 @@ const GamePage = ({
     }
   }, [gameStarted, gameEnded]);
 
-  // 🤖 VS-COMPUTER BAŞLATICI (DÜZELTİLMİŞ)
+  // 🤖 vs-computer modunda otomatik countdown başlatma - CLIENT TIME KULLAN
   useEffect(() => {
-    if (gameMode !== "vs-computer") return;
-    if (gameStarted || showCountdown || countdownLockRef.current) return;
+    if (gameMode === "vs-computer" && !gameStarted && !showCountdown && !gameEnded) {
+      console.log("🤖 vs-computer mode - countdown hazırlanıyor (7s buffer ile)");
+      setWaitingForPlayer(false);
 
-    // Sadece bir kere çalışsın diye küçük bir timeout ile tetikliyoruz
-    const timer = setTimeout(() => {
-      // Şu anki zamana 5 saniye ekle (Buffer için)
-      const localStartTime = new Date(Date.now() + 5000).toISOString();
-      startCountdownSequence(localStartTime);
-      setWaitingForPlayer(false); // Bekleniyor yazısını kaldır
-    }, 1000);
+      // Rakip hazırlanıyor animasyonu başlat (5 saniyelik buffer)
+      setPreparingOpponent("preparing");
 
-    return () => clearTimeout(timer);
-  }, [gameMode, startCountdownSequence, gameStarted, showCountdown]);
+      // 3 saniye sonra "Oyuncu Hazır!" göster (geri sayıma 2sn kala)
+      setTimeout(() => {
+        setPreparingOpponent("ready");
+      }, 3000);
+
+      // 3.5 saniye sonra animasyonu temizle (geri sayıma 1.5sn kala bitmiş olsun)
+      setTimeout(() => {
+        setPreparingOpponent(null);
+      }, 3500);
+
+      // 5 saniye sonra countdown başlat
+      setTimeout(() => {
+        setCountdownServerTime(new Date().toISOString());
+        setShowCountdown(true);
+      }, 5000);
+
+      setGameStarted(false);
+    }
+  }, [gameMode, gameStarted, showCountdown, gameEnded]);
 
   // 🎯 Countdown event listener (tüm modlar için)
   useEffect(() => {
