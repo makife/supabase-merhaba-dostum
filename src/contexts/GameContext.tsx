@@ -837,7 +837,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     }
   }, []);
 
-  // Close full room
+  // Close full room - SADECE RPC çağır, real-time subscription countdown'u dispatch edecek
   const closeFullRoom = useCallback(async (roomId: string) => {
     try {
       if (isClosingRoomRef.current) {
@@ -846,8 +846,6 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       isClosingRoomRef.current = true;
 
       console.log("🔒 Oda kapatılıyor (dolu):", String(roomId).slice(-8));
-
-      const startedAt = new Date().toISOString();
 
       // Odaya katılan gerçek oyuncuları sırayla al (ilk giren player1)
       const { data: realPlayers } = await supabase
@@ -860,52 +858,29 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       const player1Id = realPlayers?.[0]?.user_id || null;
       const player2Id = realPlayers?.[1]?.user_id || null;
 
-      // 🎯 SERVER-SIDE COUNTDOWN başlat
+      // Player bilgilerini set et
+      await supabase
+        .from("game_rooms")
+        .update({
+          status: "active",
+          player1_id: player1Id,
+          player2_id: player2Id,
+        })
+        .eq("id", roomId);
+
+      // 🎯 SERVER-SIDE COUNTDOWN başlat - Real-time subscription yakalayacak
       const { data: countdownTime, error: rpcError } = await supabase.rpc("start_game_countdown", {
         p_room_id: roomId,
       });
 
-      const serverTime = rpcError ? startedAt : countdownTime;
-
       if (rpcError) {
-        console.warn("⚠️ RPC countdown hatası, fallback kullanılıyor:", rpcError);
-        // Fallback: Manuel DB update
-        await supabase
-          .from("game_rooms")
-          .update({
-            status: "active",
-            countdown_started_at: startedAt,
-            player1_id: player1Id,
-            player2_id: player2Id,
-          })
-          .eq("id", roomId)
-          .is("countdown_started_at", null);
+        console.error("❌ RPC countdown hatası:", rpcError);
       } else {
         console.log("✅ Server-side countdown başlatıldı:", countdownTime);
-        await supabase
-          .from("game_rooms")
-          .update({
-            status: "active",
-            player1_id: player1Id,
-            player2_id: player2Id,
-          })
-          .eq("id", roomId)
-          .is("countdown_started_at", null);
+        // Real-time subscription countdown_started_at değişikliğini yakalayıp event dispatch edecek
       }
 
-      // 🎯 KRITIK: Lokal state'i HEMEN güncelle + countdown zamanını set et
-      setCurrentRoom((prev) => {
-        if (!prev || prev.id !== roomId) return prev;
-        return {
-          ...prev,
-          status: "active",
-          countdown_started_at: serverTime,
-          player1_id: player1Id,
-          player2_id: player2Id,
-        } as GameRoom;
-      });
-
-      console.log("✅ Oda kapatıldı ve countdown başlatıldı");
+      console.log("✅ Oda kapatma işlemi tamamlandı (countdown real-time'dan gelecek)");
     } catch (error) {
       console.error("❌ Oda kapatma hatası:", error);
     } finally {
@@ -1177,7 +1152,8 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           console.log("👥 Private room oyuncu sayısı:", playerCount);
 
           if (playerCount >= 2) {
-            // İkinci oyuncu join oldu, countdown'ı güvenli şekilde başlat (RPC olmadan)
+            // İkinci oyuncu join oldu, countdown'ı güvenli şekilde başlat
+            // closeFullRoom countdown başlatacak, real-time subscription yakalayacak
             try {
               await closeFullRoom(room.id);
             } catch (countdownError) {
@@ -1854,6 +1830,53 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     }
   }, [participants, currentRoom, closeFullRoom]);
 
+  // 🎯 ROOM UPDATE SUBSCRIPTION - Countdown senkronizasyonu için
+  useEffect(() => {
+    if (!currentRoom || !user) return;
+
+    console.log("📡 Room update subscription kuruluy or (countdown senkronizasyonu)");
+    
+    const channel = supabase
+      .channel(`room-updates-${currentRoom.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "game_rooms",
+          filter: `id=eq.${currentRoom.id}`,
+        },
+        (payload) => {
+          console.log("📡 Room update alındı:", payload.new);
+          
+          // countdown_started_at set edildiyse event dispatch et
+          if (payload.new.countdown_started_at && !lastCountdownAtRef.current) {
+            console.log("✅ Countdown timestamp alındı (senkronize):", payload.new.countdown_started_at);
+            lastCountdownAtRef.current = payload.new.countdown_started_at;
+            
+            // CurrentRoom'u güncelle
+            setCurrentRoom((prev) => {
+              if (!prev || prev.id !== currentRoom.id) return prev;
+              return { ...prev, countdown_started_at: payload.new.countdown_started_at } as GameRoom;
+            });
+            
+            // Event dispatch et
+            window.dispatchEvent(
+              new CustomEvent("countdownStarted", { 
+                detail: { serverTime: payload.new.countdown_started_at } 
+              })
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log("📡 Room update subscription temizleniyor");
+      supabase.removeChannel(channel);
+    };
+  }, [currentRoom?.id, user]);
+
   // 🎯 OPTIMIZED Real-time subscriptions with RealtimeManager + Presence
   useEffect(() => {
     if (!currentRoom || !user) {
@@ -1869,8 +1892,6 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
     console.log("🔗 Setting up optimized real-time for room:", String(currentRoom.id).slice(-8));
     setIsConnected(true);
-    // Init countdown guard with current room state to avoid duplicate dispatches
-    lastCountdownAtRef.current = currentRoom.countdown_started_at ?? null;
     const pendingTimers: NodeJS.Timeout[] = [];
 
     // Participants'ı fetch et
