@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { GameProvider, useGame } from "@/contexts/GameContext";
@@ -49,13 +49,30 @@ import { Button } from "@/components/ui/button";
 import RoomAutoNavigator from "@/components/RoomAutoNavigator";
 import { ToastAction } from "@/components/ui/toast";
 import { RematchDialog } from "@/components/RematchDialog";
-import { useNavigate } from "react-router-dom";
 import { useAppState } from "@/hooks/useAppState";
 import { realtimeManager } from "@/utils/realtimeManager";
 import { OnboardingPermissions } from "@/components/OnboardingPermissions";
 import { useToast } from "@/hooks/use-toast";
 
 const queryClient = new QueryClient();
+
+// Wrapper component to use useNavigate inside Router context
+const MatchmakingWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const navigate = useNavigate();
+  
+  return (
+    <MatchmakingProvider
+      onMatchFound={(roomId) => {
+        console.log("✅ Eşleşme bulundu, oyun sayfasına yönlendiriliyor:", roomId);
+        const currentGameType = (window as any).__currentMatchmakingType || 'timed';
+        // Use React Router navigate for instant navigation
+        navigate(`/game/random-match?room=${roomId}&type=${currentGameType}`);
+      }}
+    >
+      {children}
+    </MatchmakingProvider>
+  );
+};
 
 const AppRoutes = () => {
   const { user, loading } = useAuth();
@@ -519,15 +536,7 @@ const App = () => {
             <UserProvider>
               <ThemeProvider>
                 <MusicProvider>
-                  <MatchmakingProvider
-                    onMatchFound={(roomId) => {
-                      console.log("✅ Eşleşme bulundu, oyun sayfasına yönlendiriliyor:", roomId);
-                      // Get current matchmaking type from MatchmakingContext
-                      const currentGameType = (window as any).__currentMatchmakingType || 'timed';
-                      // Use window location to navigate (React Router navigation won't work here)
-                      window.location.href = `/game/random-match?room=${roomId}&type=${currentGameType}`;
-                    }}
-                  >
+                  <MatchmakingWrapper>
                     <GameProvider>
                         <GlobalRematchListener />
                         <RoomAutoNavigator />
@@ -537,7 +546,7 @@ const App = () => {
                           </NotificationProvider>
                         </TournamentProvider>
                       </GameProvider>
-                  </MatchmakingProvider>
+                  </MatchmakingWrapper>
                 </MusicProvider>
               </ThemeProvider>
             </UserProvider>
