@@ -20,14 +20,14 @@ import { useGame } from "@/contexts/GameContext";
 import { useSounds } from "@/hooks/useSounds";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { nakamaService } from "@/services/nakamaService";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import { toast as sonnerToast } from "sonner";
 
 interface PrivateRoomModalProps {
   onClose: () => void;
-  onStartGame: (nakamaMatchId: string, gameType: "timed" | "score") => void;
+  onStartGame: (roomId: string, gameType: "timed" | "score") => void;
 }
 
 import { useNavigate } from "react-router-dom";
@@ -41,8 +41,7 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
   const [copied, setCopied] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [joinedMatchId, setJoinedMatchId] = useState<string>("");
-
-  const [nakamaRoomId, setNakamaRoomId] = useState("");
+  const [createdRoomId, setCreatedRoomId] = useState<string>("");
   const { createRoom, joinRoom, leaveRoom, currentRoom, participants } = useGame();
   const { playSound } = useSounds();
   const { toast } = useToast();
@@ -74,18 +73,16 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
     try {
       if (!user) return;
 
-      console.log("🏠 Creating Nakama private room:", gameType);
-      await nakamaService.authenticate(user.id);
-      await nakamaService.createSocket();
-      const roomId = await nakamaService.createPrivateRoom(gameType);
-
-      // 6 haneli temiz kod üret
+      console.log("🏠 Özel oda oluşturuluyor (Supabase Realtime):", gameType);
+      
+      // UUID room ID oluştur
+      const roomId = crypto.randomUUID();
       const shortCode = generateRoomCode();
 
-      setNakamaRoomId(roomId);
+      setCreatedRoomId(roomId);
       setRoomCode(shortCode);
 
-      // Kodu, gerçek room ID'yi ve gameType'ı localStorage'a kaydet
+      // Kodu ve gameType'ı localStorage'a kaydet
       localStorage.setItem(`room_${shortCode}`, roomId);
       localStorage.setItem(`room_type_${shortCode}`, gameType);
 
@@ -218,7 +215,8 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
         id: roomId,
         room_code: shortCode,
         host_id: user.id,
-        game_mode: gameType,
+        game_mode: `private-room`,
+        game_type_new: gameType,
         status: "waiting",
         max_players: 2,
         time_limit: gameType === "timed" ? 120 : 0,
@@ -292,32 +290,38 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
         }
       }
 
-      console.log("🚪 Joining Nakama private room:", actualRoomId);
-      await nakamaService.authenticate(user.id);
-      await nakamaService.createSocket();
+      console.log("🚪 Özel odaya katılınıyor (Supabase):", actualRoomId);
 
-      // Nakama'ya katıl ve gerçek match ID'yi al
-      const realMatchId = await nakamaService.joinPrivateRoom(actualRoomId);
+      // Supabase'de room'un varlığını kontrol et
+      const { data: room, error: roomError } = await supabase
+        .from("game_rooms")
+        .select("*")
+        .eq("id", actualRoomId)
+        .maybeSingle();
 
-      setJoinedMatchId(realMatchId);
-
-      // Supabase'de room'un varlığını kontrol et ve participant ekle
-      const { data: room } = await supabase.from("game_rooms").select("*").eq("id", realMatchId).single();
-
-      if (room) {
-        // Participant olarak ekle
-        await supabase.from("game_participants").insert({
-          room_id: realMatchId,
-          user_id: user.id,
-        });
+      if (roomError || !room) {
+        throw new Error("Oda bulunamadı");
       }
 
-      // gameType'ı localStorage'dan al
+      // Participant olarak ekle
+      const { error: participantError } = await supabase
+        .from("game_participants")
+        .insert({
+          room_id: actualRoomId,
+          user_id: user.id,
+        });
+
+      if (participantError && participantError.code !== "23505") {
+        throw new Error("Odaya katılım başarısız");
+      }
+
+      setJoinedMatchId(actualRoomId);
+
       const savedGameType =
-        (localStorage.getItem(`room_type_${joinCode.toUpperCase()}`) as "timed" | "score") || "timed";
+        (localStorage.getItem(`room_type_${joinCode.toUpperCase()}`) as "timed" | "score") || room.game_type_new || "timed";
 
       // Mor temalı bekleme sayfasına yönlendir
-      navigate(`/private-room-waiting?code=${joinCode.toUpperCase()}&roomId=${realMatchId}&gameType=${savedGameType}`);
+      navigate(`/private-room-waiting?code=${joinCode.toUpperCase()}&roomId=${actualRoomId}&gameType=${savedGameType}`);
       onClose();
     } catch (error: any) {
       console.error("Error joining room:", error);
