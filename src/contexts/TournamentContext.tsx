@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tournament, TournamentParticipant, TournamentMatch } from "@/types/tournament";
 import { toast } from "@/components/ui/use-toast";
-import { nakamaService } from "@/services/nakamaService";
 import { calculateServerOffset } from "@/utils/serverTimeSync";
 
 interface TournamentContextType {
@@ -17,9 +16,7 @@ interface TournamentContextType {
 
   // Actions
   createTournament: () => Promise<string | null>;
-  createNakamaTournament: (name: string) => Promise<string | null>;
   joinTournament: (tournamentId: string) => Promise<boolean>;
-  joinNakamaTournament: (tournamentId: string) => Promise<boolean>;
   leaveTournament: (tournamentId: string) => Promise<boolean>;
   startTournament: (tournamentId: string) => Promise<boolean>;
   fetchTournaments: () => Promise<void>;
@@ -108,7 +105,7 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
   };
 
   // Create tournament - Supabase
-  const createNakamaTournament = async (name: string): Promise<string | null> => {
+  const createTournament = async (): Promise<string | null> => {
     if (!user) return null;
 
     try {
@@ -119,12 +116,13 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
       const expiresAt = new Date((serverTime as string) || new Date());
       expiresAt.setSeconds(expiresAt.getSeconds() + 30);
 
+      const tournamentName = `Turnuva ${new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}`;
+
       // Supabase'de turnuva oluştur
       const { data: tournament, error } = await supabase
         .from("tournaments")
         .insert({
-          creator_id: user.id,
-          name: name,
+          name: tournamentName,
           status: "waiting",
           game_type: "timed",
           max_participants: 8,
@@ -162,7 +160,7 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
   };
 
   // Join tournament - Supabase
-  const joinNakamaTournament = async (tournamentId: string): Promise<boolean> => {
+  const joinTournament = async (tournamentId: string): Promise<boolean> => {
     if (!user) return false;
 
     try {
@@ -190,20 +188,6 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
     } finally {
       setLoading(false);
     }
-  };
-
-  // Create new tournament - Nakama only
-  const createTournament = async (): Promise<string | null> => {
-    if (!user) return null;
-    return await createNakamaTournament(
-      `Turnuva ${new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}`,
-    );
-  };
-
-  // Join tournament - Nakama only
-  const joinTournament = async (tournamentId: string): Promise<boolean> => {
-    if (!user) return false;
-    return await joinNakamaTournament(tournamentId);
   };
 
   // Leave tournament
@@ -667,9 +651,7 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
     loading,
     serverTimeOffset,
     createTournament,
-    createNakamaTournament,
     joinTournament,
-    joinNakamaTournament,
     leaveTournament,
     startTournament,
     fetchTournaments,

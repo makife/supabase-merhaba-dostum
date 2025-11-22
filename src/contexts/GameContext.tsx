@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthContext";
 import { useUser } from "./UserContext";
 import { useToast } from "@/hooks/use-toast";
-import { useNakamaMatchmaking } from "@/hooks/useNakamaMatchmaking";
+
 import { useNavigate } from "react-router-dom";
 import { realtimeManager } from "@/utils/realtimeManager";
 import { matchBanlist } from "@/utils/matchBanlist";
@@ -96,8 +96,6 @@ interface GameContextType {
   ) => Promise<void>;
   checkBadges: (userId: string, wordsCount?: number) => Promise<void>;
   isConnected: boolean;
-  useNakama: boolean;
-  toggleNakama: () => void;
 }
 
 interface RealtimePayload {
@@ -173,15 +171,10 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   const [participants, setParticipants] = useState<GameParticipant[]>([]);
   const [lastOpponent, setLastOpponent] = useState<GameParticipant | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [useNakama, setUseNakama] = useState(false);
 
   const isClosingRoomRef = useRef(false);
   const lastCountdownAtRef = useRef<string | null>(null);
-  const sendingRematchRef = useRef(false); // 🛡️ Concurrent rematch guard
-
-  const toggleNakama = () => {
-    setUseNakama(!useNakama);
-  };
+  const sendingRematchRef = useRef(false);
 
   // Generate random grid
   const generateRandomGrid = (): string[][] => {
@@ -2423,8 +2416,6 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         updatePlayerStatistics,
         checkBadges,
         isConnected,
-        useNakama,
-        toggleNakama,
       }}
     >
       {children}
