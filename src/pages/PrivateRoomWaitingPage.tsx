@@ -88,12 +88,27 @@ const PrivateRoomWaitingPage = () => {
         // Odanın game_mode'unu al ve doğru type parametresiyle yönlendir
         const { data: room } = await supabase
           .from("game_rooms")
-          .select("game_mode")
+          .select("game_mode, game_type_new")
           .eq("id", roomId)
           .single();
         
-        const type = room?.game_mode?.includes('score') ? 'score' : 'timed';
+        const type = room?.game_type_new || (room?.game_mode?.includes('score') ? 'score' : 'timed');
         const basePath = room?.game_mode?.includes('random-match') ? '/game/random-match' : '/game/private-room';
+        
+        console.log('🎮 2. oyuncu katıldı, countdown başlatılıyor...', { roomId, type });
+        
+        // Countdown başlat
+        const { data: countdownTime, error: rpcError } = await supabase.rpc("start_game_countdown", {
+          p_room_id: roomId,
+        });
+        
+        if (rpcError) {
+          console.warn("⚠️ Countdown RPC error:", rpcError);
+        } else if (countdownTime) {
+          console.log("✅ Countdown başlatıldı:", countdownTime);
+          window.dispatchEvent(new CustomEvent("countdownStarted", { detail: { serverTime: countdownTime } }));
+        }
+        
         console.log('🎮 Oyun sayfasına yönlendiriliyor', { type, gameMode: room?.game_mode, target: `${basePath}?room=${roomId}&type=${type}` });
         navigate(`${basePath}?room=${roomId}&type=${type}`);
       }

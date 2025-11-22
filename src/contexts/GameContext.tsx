@@ -1066,26 +1066,24 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           .from("game_rooms")
           .select("*")
           .eq("id", roomCode)
-          .in("status", ["waiting", "active"])
           .maybeSingle();
 
         if (roomById) {
           room = roomById;
-          console.log("✅ Oda ID ile bulundu:", String(room.id).slice(-8));
+          console.log("✅ Oda ID ile bulundu:", String(room.id).slice(-8), "Status:", room.status);
         } else {
           // ID ile bulunamazsa room_code ile ara
           const { data: roomByCode, error: errorByCode } = await supabase
             .from("game_rooms")
             .select("*")
             .eq("room_code", roomCode)
-            .in("status", ["waiting", "active"])
             .maybeSingle();
 
           room = roomByCode;
           roomError = errorByCode;
 
           if (room) {
-            console.log("✅ Oda room_code ile bulundu:", String(room.id).slice(-8));
+            console.log("✅ Oda room_code ile bulundu:", String(room.id).slice(-8), "Status:", room.status);
           }
         }
 
