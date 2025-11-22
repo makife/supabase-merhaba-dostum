@@ -292,16 +292,21 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
 
       console.log("🚪 Özel odaya katılınıyor (Supabase):", actualRoomId);
 
-      // Supabase'de room'un varlığını kontrol et
+      // Supabase'de room'un varlığını kontrol et - room_code ile ara
       const { data: room, error: roomError } = await supabase
         .from("game_rooms")
         .select("*")
-        .eq("id", actualRoomId)
+        .eq("room_code", joinCode.toUpperCase())
+        .eq("status", "waiting")
         .maybeSingle();
 
       if (roomError || !room) {
-        throw new Error("Oda bulunamadı");
+        console.error("Oda arama hatası:", roomError);
+        throw new Error("Oda bulunamadı veya oda dolu");
       }
+
+      // Gerçek room ID'yi güncelle
+      actualRoomId = room.id;
 
       // Participant olarak ekle
       const { error: participantError } = await supabase

@@ -140,10 +140,11 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       console.log("🔍 Boş oda aranıyor...");
       const { data: existingRooms, error: searchError } = await supabase
         .from("game_rooms")
-        .select("id, status, current_grid, host_id")
-        .eq("game_mode", `random-match-${gameType}`)
+        .select("id, status, current_grid, host_id, game_type_new")
+        .eq("game_mode", "random-match")
+        .eq("game_type_new", gameType)
         .eq("status", "waiting")
-        .lt("created_at", new Date(Date.now() + 60000).toISOString())
+        .gt("created_at", new Date(Date.now() - 60000).toISOString())
         .order("created_at", { ascending: true })
         .limit(10);
 
@@ -229,7 +230,8 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
         id: newRoomId,
         room_code: newRoomId,
         host_id: user.id,
-        game_mode: `random-match-${gameType}`,
+        game_mode: "random-match",
+        game_type_new: gameType,
         status: "waiting",
         max_players: 2,
         time_limit: gameType === "timed" ? 120 : 0,
