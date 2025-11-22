@@ -2758,14 +2758,14 @@ const GamePage = ({
 
         if (matchData) {
           console.log("🏆 Tournament match loaded:", matchData);
-          
+
           // ✅ TAMAMLANMIŞ MAÇI TEKRAR BAŞLATMA
           if (matchData.status === "completed") {
             console.log("⚠️ Bu maç zaten tamamlanmış, yönlendiriliyor:", matchData.id);
             navigate(`/tournament-bracket/${tournamentId}`);
             return;
           }
-          
+
           setTournamentMatch(matchData);
 
           // 🎯 SERVER-SIDE COUNTDOWN SYNC - Random-match/Private-room ile tamamen aynı mantık
@@ -3727,7 +3727,7 @@ const GamePage = ({
       if (Date.now() < syncSuppressUntilRef.current) {
         return;
       }
-      
+
       const startTs = new Date(currentRoom.started_at!).getTime();
       const elapsed = Math.floor((Date.now() + serverTimeOffset - startTs) / 1000);
       let remaining = Math.max(0, (currentRoom.time_limit || 120) - elapsed);
@@ -3885,53 +3885,60 @@ const GamePage = ({
     return aiStatus;
   }, [gameMode, participants, tournamentMatch, user?.id]);
 
-  // Real-time kelime senkronizasyonu
+  // Kelimeleri veritabanından çekip senkronize eden fonksiyon
+  const syncUsedWords = useCallback(async () => {
+    // Eğer oda yoksa veya zaten senkronizasyon yapılıyorsa dur
+    if (!currentRoom?.id || syncingRef.current) return;
+
+    syncingRef.current = true;
+
+    try {
+      // VS Computer modunda veritabanı kullanılmaz, listeleri temizle
+      if (gameMode === "vs-computer") {
+        console.log("🤖 vs-computer mode: Not loading previous words, starting fresh");
+        setGlobalUsedWords(new Set());
+        setUsedWords(new Set());
+        return;
+      }
+
+      // Supabase'den kelimeleri çek
+      const { data: roomWords } = await supabase
+        .from("game_words")
+        .select("word, player_id")
+        .eq("room_id", currentRoom.id);
+
+      if (roomWords) {
+        const allWordsSet = new Set(roomWords.map((w) => w.word.toLocaleUpperCase("tr-TR")));
+
+        // Kendi kelimelerimi ayır (user?.id güvenliği ile)
+        const myWordsSet = new Set(
+          roomWords.filter((w) => w.player_id === user?.id).map((w) => w.word.toLocaleUpperCase("tr-TR")),
+        );
+
+        console.log("🔄 Syncing - All words:", allWordsSet.size, "My words:", myWordsSet.size);
+        setGlobalUsedWords(allWordsSet);
+        setUsedWords(myWordsSet);
+      }
+    } catch (error) {
+      console.error("❌ Word sync error:", error);
+    } finally {
+      syncingRef.current = false;
+    }
+  }, [currentRoom?.id, user?.id, gameMode]);
+
+  // Real-time kelime senkronizasyonu ve abonelik (Tek useEffect)
   useEffect(() => {
     if (!currentRoom?.id || !user) return;
 
     console.log("🔄 === WORD SYNC BAŞLADI ===");
     console.log("🔄 Room ID:", shortId(currentRoom?.id));
 
-    const syncUsedWords = async () => {
-      if (syncingRef.current) {
-        console.log("🔄 Sync already in progress, skipping");
-        return;
-      }
+    // 1. İlk açılışta mevcut kelimeleri çek
+    const initialSyncTimer = setTimeout(() => {
+      syncUsedWords();
+    }, 500);
 
-      syncingRef.current = true;
-
-      try {
-        if (gameMode === "vs-computer") {
-          console.log("🤖 vs-computer mode: Not loading previous words, starting fresh");
-          setGlobalUsedWords(new Set());
-          setUsedWords(new Set());
-          return;
-        }
-
-        const { data: roomWords } = await supabase
-          .from("game_words")
-          .select("word, player_id")
-          .eq("room_id", currentRoom.id);
-
-        if (roomWords) {
-          const allWordsSet = new Set(roomWords.map((w) => w.word.toLocaleUpperCase("tr-TR")));
-          const myWordsSet = new Set(
-            roomWords.filter((w) => w.player_id === user.id).map((w) => w.word.toLocaleUpperCase("tr-TR")),
-          );
-
-          console.log("🔄 Syncing - All words:", allWordsSet.size, "My words:", myWordsSet.size);
-          setGlobalUsedWords(allWordsSet);
-          setUsedWords(myWordsSet);
-        }
-      } catch (error) {
-        console.error("❌ Word sync error:", error);
-      } finally {
-        syncingRef.current = false;
-      }
-    };
-
-    const initialSyncTimer = setTimeout(syncUsedWords, 500);
-
+    // 2. Real-time değişiklikleri dinle
     const wordChannel = supabase
       .channel(`mobile-words-${currentRoom.id}`)
       .on(
@@ -3943,25 +3950,32 @@ const GamePage = ({
           filter: `room_id=eq.${currentRoom.id}`,
         },
         (payload) => {
-          console.log("📱 Mobile real-time word:", payload.new?.word, "from player:", payload.new?.player_id);
+          const newRecord = payload.new;
+          console.log("📱 Mobile real-time word:", newRecord?.word, "from:", newRecord?.player_id);
 
-          if (payload.new?.word && !syncingRef.current && payload.new?.player_id !== user.id) {
-            const newWord = payload.new.word.toLocaleUpperCase("tr-TR");
+          // Sadece BAŞKA bir oyuncudan geldiyse listeye ekle
+          // (Kendi eklediğim kelimeyi zaten lokalde eklemiştim, tekrar eklemeye gerek yok)
+          if (newRecord?.word && !syncingRef.current && newRecord.player_id !== user.id) {
+            const newWord = newRecord.word.toLocaleUpperCase("tr-TR");
 
-            setTimeout(() => {
-              setGlobalUsedWords((prev) => new Set([...prev, newWord]));
-            }, 100);
+            // State update (debounce gerekmez)
+            setGlobalUsedWords((prev) => {
+              const updated = new Set(prev);
+              updated.add(newWord);
+              return updated;
+            });
           }
         },
       )
       .subscribe();
 
+    // Temizlik (Cleanup)
     return () => {
       clearTimeout(initialSyncTimer);
-      console.log("📱 Mobile word sync cleanup");
+      console.log("🔌 Removing word subscription");
       supabase.removeChannel(wordChannel);
     };
-  }, [currentRoom?.id, user?.id, gameMode]);
+  }, [currentRoom?.id, user?.id, syncUsedWords]);
 
   // Turnuva real-time senkronizasyonu
   useEffect(() => {
@@ -4018,80 +4032,6 @@ const GamePage = ({
       supabase.removeChannel(tournamentChannel);
     };
   }, [gameMode, tournamentMatch?.id, user?.id, opponentScore]);
-
-  // İlk sync
-  useEffect(() => {
-    if (!currentRoom) return;
-
-    const initialSyncTimer = setTimeout(syncUsedWords, 500);
-
-    // Real-time word changes dinle
-    const wordChannel = supabase
-      .channel(`mobile-words-${currentRoom.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "game_words",
-          filter: `room_id=eq.${currentRoom.id}`,
-        },
-        (payload) => {
-          console.log("📱 Mobile real-time word:", payload.new?.word, "from player:", payload.new?.player_id);
-
-          // Don't process words from the current user to prevent duplicate validation
-          if (payload.new?.word && !syncingRef.current && payload.new?.player_id !== user?.id) {
-            const newWord = payload.new.word.toLocaleUpperCase("tr-TR");
-
-            // Debounced update - only for other players' words
-            setTimeout(() => {
-              setGlobalUsedWords((prev) => new Set([...prev, newWord]));
-              // Do NOT add to setUsedWords here; keep my words separate
-            }, 100);
-          }
-        },
-      )
-      .subscribe();
-
-    return () => {
-      clearTimeout(initialSyncTimer);
-      console.log("📱 Mobile word sync cleanup");
-      supabase.removeChannel(wordChannel);
-    };
-  }, [currentRoom?.id, user?.id]);
-
-  const syncUsedWords = async () => {
-    if (syncingRef.current) return;
-
-    syncingRef.current = true;
-
-    try {
-      if (gameMode === "vs-computer") {
-        setGlobalUsedWords(new Set());
-        setUsedWords(new Set());
-        return;
-      }
-
-      const { data: roomWords } = await supabase
-        .from("game_words")
-        .select("word, player_id")
-        .eq("room_id", currentRoom.id);
-
-      if (roomWords) {
-        const allWordsSet = new Set(roomWords.map((w) => w.word.toLocaleUpperCase("tr-TR")));
-        const myWordsSet = new Set(
-          roomWords.filter((w) => w.player_id === user?.id).map((w) => w.word.toLocaleUpperCase("tr-TR")),
-        );
-
-        setGlobalUsedWords(allWordsSet);
-        setUsedWords(myWordsSet);
-      }
-    } catch (error) {
-      console.error("❌ Word sync error:", error);
-    } finally {
-      syncingRef.current = false;
-    }
-  };
 
   // Tournament activity tracking (removed - not needed for core functionality)
 
@@ -4360,7 +4300,7 @@ const GamePage = ({
 
       const { serverTime } = event.detail;
       console.log("⏰ Countdown event alındı:", serverTime, "→ buffered:", withBuffer(serverTime));
-      
+
       // 🔒 Lock'u aktif et
       countdownLockRef.current = true;
       console.log("🔒 Countdown lock aktif edildi (event)");
@@ -5519,7 +5459,7 @@ const GamePage = ({
             .update({ started_at: serverStartTime, status: "active" })
             .is("started_at", null)
             .eq("id", currentRoom.id);
-          
+
           console.log("✅ Server started_at set:", serverStartTime);
         } catch (e) {
           console.error("started_at set failed:", e);
