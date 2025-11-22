@@ -324,9 +324,16 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
             // countdown_started_at set edildiyse navigate yap
             if (payload.new.countdown_started_at) {
               console.log("✅ Countdown timestamp alındı, navigate ediliyor...", payload.new.countdown_started_at);
+              
+              // ÖNCE channel'ı kapat - duplicate tetiklemeyi önle
+              supabase.removeChannel(channel);
+              setSearchChannel(null);
+              console.log("📡 Room update subscription kapatıldı (duplicate önleme)");
+              
+              // Event dispatch et
               window.dispatchEvent(new CustomEvent("countdownStarted", { detail: { serverTime: payload.new.countdown_started_at } }));
               
-              // Her iki oyuncu da aynı anda navigate olacak
+              // Son olarak navigate
               onMatchFound?.(newRoomId);
             }
           }
