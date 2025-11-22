@@ -176,20 +176,11 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
         if (participantError && participantError.code !== "23505") {
           console.error("❌ Katılımcı ekleme hatası:", participantError);
         } else {
-          console.log("✅ Odaya katıldı, oyun başlatılıyor...");
+          console.log("✅ Odaya katıldı!");
           
-          // Countdown başlat
-          const { data: countdownTime, error: rpcError } = await supabase.rpc("start_game_countdown", {
-            p_room_id: targetRoom.id,
-          });
+          // Player 2'nin realtime subscription'ını bekle - countdown'u o başlatacak
+          // Biz sadece join oluyoruz, countdown oda sahibinin subscription'ında başlayacak
           
-          if (rpcError) {
-            console.warn("⚠️ Countdown RPC error:", rpcError);
-          } else if (countdownTime) {
-            console.log("✅ Countdown başlatıldı:", countdownTime);
-            window.dispatchEvent(new CustomEvent("countdownStarted", { detail: { serverTime: countdownTime } }));
-          }
-
           setCurrentRoom({
             id: targetRoom.id,
             game_type: gameType,
