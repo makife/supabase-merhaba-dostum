@@ -199,6 +199,61 @@ const MarketPage = () => {
     }
   };
 
+  const watchAdForJoker = async () => {
+    if (!user) return;
+
+    try {
+      await loadRewardedAd();
+      await showRewardedAd();
+      
+      // Rastgele joker seç
+      const jokerTypes = ['degistir', 'fisilida', 'senyaz'];
+      const randomJoker = jokerTypes[Math.floor(Math.random() * jokerTypes.length)];
+      
+      // Mevcut joker miktarını kontrol et
+      const { data: existingItem } = await supabase
+        .from('user_inventory')
+        .select('quantity')
+        .eq('user_id', user.id)
+        .eq('item_type', randomJoker)
+        .single();
+
+      // Joker'ı inventory'e ekle veya miktarı artır
+      const { error } = await supabase
+        .from('user_inventory')
+        .upsert({
+          user_id: user.id,
+          item_type: randomJoker,
+          quantity: (existingItem?.quantity || 0) + 1
+        }, {
+          onConflict: 'user_id,item_type'
+        });
+
+      if (error) throw error;
+
+      const jokerNames: Record<string, string> = {
+        degistir: 'Değiştir',
+        fisilida: 'Fısılda',
+        senyaz: 'Sen Yaz'
+      };
+      
+      toast({
+        title: 'Tebrikler! 🎉',
+        description: `+1 ${jokerNames[randomJoker]} jokeri kazandınız!`,
+        variant: 'default',
+      });
+      
+      refreshProfile();
+    } catch (error) {
+      console.error('Ad error:', error);
+      toast({
+        title: 'Reklam hatası',
+        description: 'Reklam gösterilemedi. Lütfen tekrar deneyin.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handlePurchase = async (item: MarketItem) => {
     if (!user) {
       toast({
@@ -416,21 +471,32 @@ return (
           <CardHeader>
             <CardTitle className="flex items-center">
               <Gift className="w-5 h-5 mr-2" />
-              Ücretsiz Kredi Kazan
+              Ücretsiz Ödül Kazan
             </CardTitle>
             <CardDescription>
-              Reklam izleyerek ücretsiz oyun kredisi kazanabilirsiniz
+              Reklam izleyerek ücretsiz kredi veya joker kazanabilirsiniz
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button 
-              onClick={watchAdForCredits}
-              disabled={isAdLoading || !isAdReady}
-              className="w-full"
-            >
-              <Gamepad2 className="w-4 h-4 mr-2" />
-              {isAdLoading ? 'Reklam yükleniyor...' : 'Reklam İzle (+1 Kredi)'}
-            </Button>
+            <div className="grid grid-cols-2 gap-3">
+              <Button 
+                onClick={watchAdForCredits}
+                disabled={isAdLoading || !isAdReady}
+                className="w-full"
+              >
+                <Gamepad2 className="w-4 h-4 mr-2" />
+                Reklam İzle<br />+1 Hak
+              </Button>
+              <Button 
+                onClick={watchAdForJoker}
+                disabled={isAdLoading || !isAdReady}
+                className="w-full"
+                variant="secondary"
+              >
+                <Star className="w-4 h-4 mr-2" />
+                Reklam İzle<br />+1 Joker
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
