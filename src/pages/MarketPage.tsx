@@ -431,7 +431,7 @@ const MarketPage = () => {
                 <p className="text-lg opacity-90">Özel paketler ve premium özelliklerle daha keyifli oyna</p>
               </div>
               <div className="absolute inset-0 bg-black/10" />
-              <img src="/marketimaj.png" alt="Market" className="absolute right-0 top-0 h-full w-auto opacity-70" />
+              <img src="/marketimaj.png" alt="Market" className="absolute right-0 top-0 h-full w-auto opacity-90" />
             </div>
           </div>
         </div>
