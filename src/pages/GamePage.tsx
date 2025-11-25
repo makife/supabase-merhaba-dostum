@@ -4433,7 +4433,7 @@ const GamePage = ({
       currentRoom?.countdown_started_at &&
       !showCountdown &&
       !gameStarted &&
-      !countdownServerTime // Daha önce başlatılmamış olmalı
+      !countdownServerTime
     ) {
       // 🔒 Countdown zaten başlatılmışsa duplicate engelle
       if (countdownLockRef.current) {
@@ -4443,7 +4443,7 @@ const GamePage = ({
 
       console.log("⏰ Initial countdown sync from room state:", currentRoom.countdown_started_at);
 
-      // RPC zaten buffer eklemiş, direkt countdown zamanını kullan
+      // Server zamanını hesapla
       const countdownStartTime = new Date(currentRoom.countdown_started_at).getTime();
       const now = Date.now();
       const serverNow = now + serverTimeOffset;
@@ -4456,70 +4456,74 @@ const GamePage = ({
         willStartIn: Math.max(0, timeDiff),
       });
 
-      // 🔒 Lock'u hemen aktif et
+      // 🔒 Lock'u aktif et
       countdownLockRef.current = true;
       console.log("🔒 Countdown lock aktif edildi (initial sync)");
 
+      // Basit mantık: Her durumda hemen animasyonları başlat
+      // Eğer 5+ saniye var ise son 5 saniyede göster, değilse hemen göster
+      
       if (timeDiff > 5000) {
-        // Countdown'a 5+ saniye var, son 5 saniyede animasyonları göster
-        console.log(`⏰ Countdown ${Math.ceil(timeDiff / 1000)} saniye sonra başlayacak, animasyonlar son 5 saniyede gösterilecek`);
+        // 5+ saniye var, son 5 saniyeyi bekle
+        const waitTime = timeDiff - 5000;
+        console.log(`⏰ ${Math.ceil(timeDiff / 1000)}s kaldı, son 5 saniyede animasyonlar başlayacak`);
         
         const waitTimer = setTimeout(() => {
-          // Şimdi 5 saniye kaldı, animasyonları başlat
+          // Şimdi tam 5 saniye kaldı, animasyonları başlat
           setPreparingOpponent("preparing");
           
-          setTimeout(() => setPreparingOpponent("ready"), 3500);
-          setTimeout(() => setPreparingOpponent(null), 4000);
-          setTimeout(() => {
-            console.log("⏰ Countdown başlıyor (initial sync)");
+          const t1 = setTimeout(() => setPreparingOpponent("ready"), 3500);
+          const t2 = setTimeout(() => setPreparingOpponent(null), 4000);
+          const t3 = setTimeout(() => {
+            console.log("⏰ Countdown başlatılıyor");
             setCountdownServerTime(currentRoom.countdown_started_at);
             setShowCountdown(true);
             setGameStarted(false);
           }, 5000);
-        }, timeDiff - 5000);
+          
+          return () => {
+            clearTimeout(t1);
+            clearTimeout(t2);
+            clearTimeout(t3);
+          };
+        }, waitTime);
 
-        return () => {
-          clearTimeout(waitTimer);
-        };
-      } else if (timeDiff > 1000) {
-        // 1-5 saniye arası, hemen animasyonları başlat
-        console.log(`⏰ Countdown ${Math.ceil(timeDiff / 1000)} saniye sonra başlayacak (initial sync)`);
-
-        // Animasyonları countdown zamanına göre ayarla
-        const prepDuration = Math.max(0, timeDiff - 1500); // Son 1.5 saniye önce bitir
-        const clearDuration = Math.max(0, timeDiff - 1000); // Son 1 saniye önce temizle
+        return () => clearTimeout(waitTimer);
+      } else if (timeDiff > 500) {
+        // 0.5-5 saniye arası, hemen animasyonları başlat
+        console.log(`⏰ ${Math.ceil(timeDiff / 1000)}s kaldı, animasyonlar hemen başlıyor`);
         
         setPreparingOpponent("preparing");
-
-        const readyTimer = setTimeout(() => {
-          setPreparingOpponent("ready");
-        }, prepDuration);
-
-        const clearTimer = setTimeout(() => {
-          setPreparingOpponent(null);
-        }, clearDuration);
-
-        const delayTimer = setTimeout(() => {
-          console.log("⏰ Countdown başlıyor (initial sync)");
+        
+        // Animasyon sürelerini kalan süreye göre ayarla
+        // preparing: %70 süre, ready: %10 süre, blank: %20 süre
+        const prepTime = Math.floor(timeDiff * 0.7);
+        const readyTime = prepTime + Math.floor(timeDiff * 0.1);
+        
+        const t1 = setTimeout(() => setPreparingOpponent("ready"), prepTime);
+        const t2 = setTimeout(() => setPreparingOpponent(null), readyTime);
+        const t3 = setTimeout(() => {
+          console.log("⏰ Countdown başlatılıyor");
           setCountdownServerTime(currentRoom.countdown_started_at);
           setShowCountdown(true);
           setGameStarted(false);
         }, timeDiff);
 
         return () => {
-          clearTimeout(readyTimer);
-          clearTimeout(clearTimer);
-          clearTimeout(delayTimer);
+          clearTimeout(t1);
+          clearTimeout(t2);
+          clearTimeout(t3);
         };
       } else {
-        console.log("⏰ Countdown hemen başlıyor");
+        // Çok az süre kaldı, direkt countdown başlat
+        console.log("⏰ Countdown hemen başlıyor (süre çok az)");
         setPreparingOpponent(null);
         setCountdownServerTime(currentRoom.countdown_started_at);
         setShowCountdown(true);
         setGameStarted(false);
       }
     }
-  }, [gameMode, currentRoom?.countdown_started_at, showCountdown, gameStarted, serverTimeOffset]);
+  }, [gameMode, currentRoom?.countdown_started_at, showCountdown, gameStarted, serverTimeOffset, countdownServerTime]);
 
   // 🔍 Countdown eksiklik kontrolü: Eğer 2 oyuncu var ama countdown başlamamışsa kontrol et
   useEffect(() => {
