@@ -440,12 +440,18 @@ const MarketPage = () => {
         <div className="max-w-6xl mx-auto p-4 space-y-6">
           {/* User Status */}
           {user && (
-            <Card className="bg-gradient-to-r from-card to-muted/50 border-primary/20">
+            <Card
+              className={`${
+                isPremium
+                  ? "bg-gradient-to-br from-yellow-500/15 via-orange-500/15 to-amber-500/15 border-yellow-500/40"
+                  : "bg-gradient-to-br from-blue-500/15 via-cyan-500/15 to-teal-500/15 border-blue-500/40"
+              }`}
+            >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
-                    <div className={`p-2 rounded-lg ${isPremium ? "bg-yellow-500/20" : "bg-muted"}`}>
-                      <Crown className={`w-5 h-5 ${isPremium ? "text-yellow-500" : "text-muted-foreground"}`} />
+                    <div className={`p-2 rounded-lg ${isPremium ? "bg-yellow-500/20" : "bg-blue-500/20"}`}>
+                      <Crown className={`w-5 h-5 ${isPremium ? "text-yellow-500" : "text-blue-500"}`} />
                     </div>
                     <div>
                       <p className="font-semibold">{isPremium ? "Premium Üye" : "Ücretsiz Üye"}</p>
