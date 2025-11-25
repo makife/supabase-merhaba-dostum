@@ -391,12 +391,8 @@ const MarketPage = () => {
   return (
     <div className="flex flex-col h-screen bg-gradient-to-br from-background to-muted/50">
       {/* Tente Image - Fixed at top */}
-      <img 
-        src="/tente.png" 
-        alt="Tente" 
-        className="fixed top-0 left-0 w-full h-auto z-50 pointer-events-none"
-      />
-      
+      <img src="/tente.png" alt="Tente" className="fixed top-0 left-0 w-full h-auto z-50 pointer-events-none" />
+
       {/* Fixed Header - Positioned below tente */}
       <div className="sticky top-0 z-10 bg-green-50/95 backdrop-blur-sm border-b border-green-200 p-3 pt-6 mt-[60px]">
         <div className="max-w-6xl mx-auto">
@@ -432,7 +428,7 @@ const MarketPage = () => {
               <div className="w-16" />
             </div>
             {/* Hero Section */}
-            <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary to-accent p-6 text-primary-foreground">
+            <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary to-accent p-4 text-primary-foreground">
               <div className="relative z-10">
                 <h2 className="text-3xl font-bold mb-2">Oyun Deneyimini Geliştir!</h2>
                 <p className="text-lg opacity-100">Özel paketler ve premium özelliklerle daha keyifli oyna</p>
