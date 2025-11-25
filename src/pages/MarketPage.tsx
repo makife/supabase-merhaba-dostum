@@ -470,17 +470,25 @@ const MarketPage = () => {
 
           {/* Reklam İzle Bölümü */}
           {user && window.Capacitor && (
-            <Card>
+            <Card className="bg-gradient-to-br from-green-500/15 via-emerald-500/15 to-teal-500/15 border-green-500/40">
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <Gift className="w-5 h-5 mr-2" />
+                  <div className="p-2 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-lg mr-2">
+                    <Gift className="w-5 h-5 text-green-600" />
+                  </div>
                   Ücretsiz Ödül Kazan
                 </CardTitle>
-                <CardDescription>Reklam izleyerek ücretsiz kredi veya joker kazanabilirsiniz</CardDescription>
+                <CardDescription className="text-foreground/70">
+                  Reklam izleyerek ücretsiz kredi veya joker kazanabilirsiniz
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-3">
-                  <Button onClick={watchAdForCredits} disabled={isAdLoading || !isAdReady} className="w-full">
+                  <Button
+                    onClick={watchAdForCredits}
+                    disabled={isAdLoading || !isAdReady}
+                    className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white border-0"
+                  >
                     <Gamepad2 className="w-4 h-4 mr-2" />
                     Reklam İzle
                     <br />
@@ -489,8 +497,7 @@ const MarketPage = () => {
                   <Button
                     onClick={watchAdForJoker}
                     disabled={isAdLoading || !isAdReady}
-                    className="w-full"
-                    variant="secondary"
+                    className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0"
                   >
                     <Star className="w-4 h-4 mr-2" />
                     Reklam İzle
