@@ -390,6 +390,13 @@ const MarketPage = () => {
 
   return (
     <div className="flex flex-col h-screen bg-gradient-to-br from-background to-muted/50">
+      {/* Tente Image - Fixed at top */}
+      <img 
+        src="/tente.png" 
+        alt="Tente" 
+        className="fixed top-0 left-0 w-full z-50 pointer-events-none"
+      />
+      
       {/* Fixed Header */}
       <div className="sticky top-0 z-10 bg-green-50/95 backdrop-blur-sm border-b border-green-200 p-3 pt-6">
         <div className="max-w-6xl mx-auto">
