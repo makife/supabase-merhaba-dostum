@@ -394,11 +394,11 @@ const MarketPage = () => {
       <img 
         src="/tente.png" 
         alt="Tente" 
-        className="fixed top-0 left-0 w-full z-50 pointer-events-none"
+        className="fixed top-0 left-0 w-full h-auto z-50 pointer-events-none"
       />
       
-      {/* Fixed Header */}
-      <div className="sticky top-0 z-10 bg-green-50/95 backdrop-blur-sm border-b border-green-200 p-3 pt-6">
+      {/* Fixed Header - Positioned below tente */}
+      <div className="sticky top-0 z-10 bg-green-50/95 backdrop-blur-sm border-b border-green-200 p-3 pt-6 mt-[60px]">
         <div className="max-w-6xl mx-auto">
           <div className="space-y-4">
             {" "}
