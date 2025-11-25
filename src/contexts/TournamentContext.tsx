@@ -279,6 +279,30 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
 
       if (error) throw error;
 
+      // Fetch created matches
+      const { data: matches } = await supabase
+        .from("tournament_matches")
+        .select("id")
+        .eq("tournament_id", tournamentId)
+        .eq("round", 1);
+
+      // Start countdown for all first round matches
+      if (matches && matches.length > 0) {
+        console.log("🏆 Starting countdown for", matches.length, "matches");
+        await Promise.all(
+          matches.map(async (match) => {
+            try {
+              await supabase.rpc("start_tournament_countdown", {
+                p_match_id: match.id,
+              });
+              console.log("✅ Countdown started for match:", match.id);
+            } catch (err) {
+              console.error("❌ Failed to start countdown for match:", match.id, err);
+            }
+          })
+        );
+      }
+
       await fetchTournaments();
       await fetchTournamentDetails(tournamentId);
 
