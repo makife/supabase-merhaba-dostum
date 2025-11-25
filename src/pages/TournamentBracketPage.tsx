@@ -108,8 +108,17 @@ const TournamentBracketPage = () => {
   useEffect(() => {
     if (tournamentId) {
       fetchTournamentDetails(tournamentId);
+      // Yeni turnuva veya bracket sayfasına döndüğünde navigation guard'ı resetle
+      setNavigatedToGame(false);
     }
   }, [tournamentId]);
+  
+  // Yeni tur başladığında navigation guard'ı resetle
+  useEffect(() => {
+    if (currentTournament?.current_round) {
+      setNavigatedToGame(false);
+    }
+  }, [currentTournament?.current_round]);
 
   const startAllMatches = async (forceRound?: number) => {
     if (!tournamentId) return;
@@ -442,6 +451,19 @@ const TournamentBracketPage = () => {
           }
           // Geri sayım tamamlandı -> hedef turdaki tüm pending maçları başlat (yalnızca bir kez)
           startAllMatches(targetRound);
+          
+          // Kullanıcının bu turdaki maçını bul ve otomatik olarak oyun sayfasına yönlendir
+          const userMatch = targetRoundPending.find(
+            (m) => m.player1_id === user?.id || m.player2_id === user?.id
+          );
+          
+          if (userMatch && !navigatedToGame) {
+            console.log("🎮 Kullanıcının maçı başlatılıyor, oyun sayfasına yönlendiriliyor:", userMatch.id);
+            setNavigatedToGame(true);
+            setTimeout(() => {
+              navigate(`/game/${userMatch.id}?mode=tournament&tournamentId=${tournamentId}`);
+            }, 2000); // 2 saniye gecikme ile (maçlar başlatıldıktan sonra)
+          }
           countdownGuard.current = { active: false, round: null, anchorTs: null };
         }
       };
