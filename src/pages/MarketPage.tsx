@@ -511,12 +511,12 @@ const MarketPage = () => {
 
           {/* Satın Alımları Geri Yükle */}
           {user && window.Capacitor && (
-            <Card>
+            <Card className="bg-gradient-to-br from-blue-500/15 via-indigo-500/15 to-violet-500/15 border-blue-500/40">
               <CardContent className="p-4">
                 <Button
                   onClick={restoreSubscriptions}
                   variant="outline"
-                  className="w-full"
+                  className="w-full bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border-blue-500/50 hover:from-blue-500/20 hover:to-indigo-500/20 hover:border-blue-500/70 transition-all"
                   disabled={isSubscriptionLoading}
                 >
                   Satın Alımları Geri Yükle
