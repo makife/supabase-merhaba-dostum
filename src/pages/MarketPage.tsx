@@ -428,7 +428,7 @@ const MarketPage = () => {
             <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary to-accent p-6 text-primary-foreground">
               <div className="relative z-10">
                 <h2 className="text-3xl font-bold mb-2">Oyun Deneyimini Geliştir!</h2>
-                <p className="text-lg opacity-90">Özel paketler ve premium özelliklerle daha keyifli oyna</p>
+                <p className="text-lg opacity-100">Özel paketler ve premium özelliklerle daha keyifli oyna</p>
               </div>
               <div className="absolute inset-0 bg-black/10" />
               <img src="/marketimaj.png" alt="Market" className="absolute right-0 top-0 h-full w-auto opacity-90" />
