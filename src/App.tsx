@@ -184,6 +184,15 @@ const AppRoutes = () => {
         />
 
         <Route
+          path="/game/:matchId"
+          element={
+            <ProtectedRoute>
+              <GamePage gameMode="tournament" />
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
           path="/game"
           element={
             <ProtectedRoute>
