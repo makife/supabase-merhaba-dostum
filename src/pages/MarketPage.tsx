@@ -428,7 +428,7 @@ const MarketPage = () => {
               <div className="w-16" />
             </div>
             {/* Hero Section */}
-            <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary to-accent p-4 text-primary-foreground">
+            <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary to-accent p-3 text-primary-foreground">
               <div className="relative z-10">
                 <h2 className="text-3xl font-bold mb-2">Oyun Deneyimini Geliştir!</h2>
                 <p className="text-lg opacity-100">Özel paketler ve premium özelliklerle daha keyifli oyna</p>
