@@ -265,51 +265,43 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     try {
       const baseline = previousCreditsRef.current || getTotalCredits();
 
+      // Just call RPC, let real-time subscription handle profile updates
       await supabase.rpc('check_and_refresh_credits', { user_id: user.id });
 
-      // Fetch fresh credits directly to avoid stale state after refreshProfile
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('game_credits, bonus_credits')
-        .eq('id', user.id)
-        .single();
+      // Wait a moment for real-time to deliver the update
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      if (error) {
-        console.error('Error fetching fresh credits:', error);
-        return;
-      }
+      const newTotal = getTotalCredits();
 
-      const newTotal = (data?.game_credits ?? 0) + (data?.bonus_credits ?? 0);
-
-      // Prevent duplicate notifications: only notify when we exceed the highest known total
+      // Only notify if credits actually increased and enough time has passed
       const lastNotified = lastNotifiedTotalRef.current || 0;
-      const threshold = Math.max(baseline, lastNotified);
-
-      if (newTotal > threshold && isPermissionGranted) {
-        const creditsGained = newTotal - threshold;
+      
+      if (newTotal > baseline && newTotal > lastNotified && isPermissionGranted) {
+        const creditsGained = newTotal - baseline;
         const now = Date.now();
 
         const lastNotif = lastNotificationRef.current;
+        // Require at least 60 seconds between notifications to prevent spam
         const shouldShowNotification =
           !lastNotif ||
-          lastNotif.amount !== creditsGained ||
-          (now - lastNotif.timestamp) > 10000;
+          (now - lastNotif.timestamp) > 60000;
 
         if (shouldShowNotification) {
+          console.log(`📢 Showing credit notification: +${creditsGained} credits (${baseline} -> ${newTotal})`);
           showLocalNotification(
             '🎮 Hak Doldu!',
             `+${creditsGained} oyun hakkı kazandınız! Toplam: ${newTotal}/5`
           );
           lastNotificationRef.current = { amount: creditsGained, timestamp: now };
+          lastNotifiedTotalRef.current = newTotal;
+        } else {
+          console.log(`🔇 Notification throttled: ${(now - lastNotif.timestamp) / 1000}s since last`);
         }
-
-        lastNotifiedTotalRef.current = newTotal;
       }
 
       // Persist latest totals for next run
       previousCreditsRef.current = newTotal;
 
-      // ❌ refreshProfile kaldırıldı - Real-time subscription zaten profili güncelleyecek
     } catch (error) {
       console.error('Error checking credits:', error);
     } finally {
