@@ -414,7 +414,7 @@ const MarketPage = () => {
               <div className="relative inline-block">
                 {/* Market Text Image */}
                 <img
-                  src="/tente.png"
+                  src="/marketText.png"
                   alt="Market Text"
                   className="relative z-10 px-6 py-3 h-12 w-auto object-contain"
                 />
