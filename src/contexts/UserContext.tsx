@@ -420,7 +420,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     }
   };
 
-  // User presence management
+  // User presence management - REALTIME ONLY (NO POLLING)
   useEffect(() => {
     if (!user?.id) return;
 
@@ -477,10 +477,12 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       }
     };
 
+    // İlk presence güncellemesi
     updatePresence();
     fetchOnlineUsers();
     
-    const interval = setInterval(updatePresence, 4000); // 4 saniyede bir güncelle
+    // ❌ POLLING KALDIRILDI - Sadece realtime subscription kullan
+    // Diğer kullanıcıların presence'ını realtime dinle
     const channel = supabase.channel('presence_changes').on('postgres_changes', {
       event: '*', 
       schema: 'public', 
@@ -491,7 +493,6 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      clearInterval(interval);
       supabase.removeChannel(channel);
       setUserOffline();
       window.removeEventListener('beforeunload', handleBeforeUnload);
@@ -509,19 +510,36 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     }
   }, [user]);
 
-  // Credit check interval - Her 1 dakikada bir kontrol et
+  // Credit check - REALTIME ONLY (NO POLLING)
   useEffect(() => {
     if (!user || isPremium) return;
     
     // İlk kontrolü hemen yap
     checkAndRefreshCredits();
     
-    // 1 dakikada bir kontrol et (hak dolumu 15dk'da olsa bile 1dk'da kontrol daha responsive)
-    const interval = setInterval(() => {
-      checkAndRefreshCredits();
-    }, 60 * 1000); // 1 dakika
+    // ❌ POLLING KALDIRILDI - Sadece realtime subscription kullan
+    // profiles tablosundaki last_credit_refresh değişikliklerini dinle
+    const channel = supabase
+      .channel(`credit-refresh-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('💳 Credit değişikliği tespit edildi:', payload);
+          // Backend'de RPC çağrıldığında otomatik güncelleme gelecek
+          refreshProfile(false);
+        }
+      )
+      .subscribe();
 
-    return () => clearInterval(interval);
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user, isPremium]);
 
   // ENHANCED Real-time profile subscription - Deduplication fix
