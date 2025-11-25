@@ -3617,11 +3617,33 @@ const GamePage = ({
         }
       };
 
-      // Initial sync - ama countdown bitiminden 2 saniye sonra
-      setTimeout(() => syncTimer(), 2000);
-
-      // Sync every 2 seconds for precise tournament timer (1 saniye yerine 2 saniye - daha az agresif)
-      syncInterval = setInterval(syncTimer, 2000);
+      // ❌ POLLING KALDIRILDI - Realtime subscription kullan
+      // İlk sync
+      syncTimer();
+      
+      // game_rooms tablosundaki started_at değişikliklerini realtime dinle
+      const syncChannel = supabase
+        .channel(`game-timer-sync-${currentRoom.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'game_rooms',
+            filter: `id=eq.${currentRoom.id}`,
+          },
+          (payload: any) => {
+            console.log('⏰ Timer sync event received:', payload);
+            // started_at değiştiyse timer'ı sync et
+            if (payload.new?.started_at) {
+              syncTimer();
+            }
+          }
+        )
+        .subscribe();
+      
+      // Cleanup için channel referansını sakla
+      syncInterval = syncChannel as any;
     }
 
     timerRef.current = setInterval(() => {
@@ -3640,7 +3662,12 @@ const GamePage = ({
         }
 
         clearInterval(timerRef.current!);
-        if (syncInterval) clearInterval(syncInterval);
+        if (syncInterval) {
+          // Realtime channel'ı kapat
+          if (typeof syncInterval === 'object' && 'unsubscribe' in syncInterval) {
+            supabase.removeChannel(syncInterval as any);
+          }
+        }
         timerRef.current = null;
 
         console.log("⏰ Süre bitti! Final skorlar");
