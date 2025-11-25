@@ -470,7 +470,7 @@ const MarketPage = () => {
 
           {/* Reklam İzle Bölümü */}
           {user && window.Capacitor && (
-            <Card className="bg-gradient-to-br from-green-500/15 via-emerald-500/15 to-teal-500/15 border-green-500/40">
+            <Card className="bg-gradient-to-br from-lime-500/15 via-yellow-500/15 to-orange-500/15 border-lime-500/40">
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <div className="p-2 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-lg mr-2">
