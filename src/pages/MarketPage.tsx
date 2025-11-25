@@ -447,7 +447,7 @@ const MarketPage = () => {
                     <div className={`p-2 rounded-lg ${isPremium ? "bg-yellow-500/20" : "bg-muted"}`}>
                       <Crown className={`w-5 h-5 ${isPremium ? "text-yellow-500" : "text-muted-foreground"}`} />
                     </div>
-                    <div className="bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-orange-500/20 p-3 rounded-lg">
+                    <div>
                       <p className="font-semibold">{isPremium ? "Premium Üye" : "Ücretsiz Üye"}</p>
                       <p className="text-sm text-muted-foreground">
                         Oyun Hakkı: {(profile?.game_credits || 0) + (profile?.bonus_credits || 0)}/5
