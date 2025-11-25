@@ -412,17 +412,12 @@ const MarketPage = () => {
               </Button>
 
               <div className="relative inline-block">
-                {/* Stroke Background */}
+                {/* Market Text Image */}
                 <img
-                  src="/stroke.png"
-                  alt="Stroke Background"
-                  className="absolute inset-0 w-full h-full object-contain opacity-50"
+                  src="/marketText.png"
+                  alt="Market Text"
+                  className="relative z-10 px-6 py-3 h-12 w-auto object-contain"
                 />
-                {/* Market Title */}
-                <h1 className="text-3xl font-bold flex items-center text-green-600 relative z-10 px-6 py-3">
-                  <ShoppingCart className="w-6 h-6 mr-3 text-green-500" />
-                  Market
-                </h1>
               </div>
 
               <div className="w-16" />
