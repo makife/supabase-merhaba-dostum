@@ -443,8 +443,8 @@ const MarketPage = () => {
             <Card
               className={`${
                 isPremium
-                  ? "bg-gradient-to-br from-yellow-500/15 via-orange-500/15 to-amber-500/15 border-yellow-500/40"
-                  : "bg-gradient-to-br from-blue-500/15 via-cyan-500/15 to-teal-500/15 border-blue-500/40"
+                  ? "bg-gradient-to-br from-yellow-500/25 via-orange-500/25 to-amber-500/25 border-yellow-500/40"
+                  : "bg-gradient-to-br from-blue-500/25 via-cyan-500/25 to-teal-500/25 border-blue-500/40"
               }`}
             >
               <CardContent className="p-4">
