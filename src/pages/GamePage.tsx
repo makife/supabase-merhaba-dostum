@@ -4505,7 +4505,7 @@ const GamePage = ({
 
       return () => {
         timers.forEach(timer => clearTimeout(timer));
-        countdownLockRef.current = false;
+        // Lock'u resetleme - bir kez countdown başladıktan sonra duplicate önlemek için aktif kalmalı
       };
     }
   }, [gameMode, currentRoom?.countdown_started_at, showCountdown, gameStarted, serverTimeOffset, countdownServerTime]);
