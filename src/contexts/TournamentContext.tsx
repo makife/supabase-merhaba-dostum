@@ -123,6 +123,7 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
         .from("tournaments")
         .insert({
           name: tournamentName,
+          creator_id: user.id,
           status: "waiting",
           game_type: "timed",
           max_participants: 8,
