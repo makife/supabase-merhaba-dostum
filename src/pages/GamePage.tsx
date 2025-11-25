@@ -855,6 +855,10 @@ const GamePage = ({
   const handleTournamentGameEnd = async (userScore: number, opponentScore: number) => {
     if (!user || !tournamentMatch) return;
 
+    // ✅ Önce oyun sonu state'lerini set et
+    setGameEnded(true);
+    setShowResults(true);
+
     try {
       // Kullanıcının hangi oyuncu olduğunu belirle
       const isPlayer1 = String(tournamentMatch.player1_id) === String(user.id);
@@ -914,6 +918,22 @@ const GamePage = ({
         determinedWinnerId = player1Score > player2Score ? tournamentMatch.player1_id : tournamentMatch.player2_id;
       }
 
+      // ✅ Winner'ı HEMEN belirle ve state'i güncelle
+      const userIsWinner = determinedWinnerId === user.id;
+      setWinner(userIsWinner ? "player" : "opponent");
+      setButtonsEnabled(false);
+      setTimeout(() => setButtonsEnabled(true), 1000);
+
+      if (userIsWinner) {
+        playSound("gameWin");
+        setTimeout(() => playCelebrationSound(), 500);
+        console.log("✅ User WINS - Setting winner to player");
+      } else {
+        playSound("gameLose");
+        setTimeout(() => playGameLoseSound(), 500);
+        console.log("❌ User LOSES - Setting winner to opponent");
+      }
+
       // Backend'e maç sonucunu ve belirlenmiş kazananı gönder
       const { data: updateResult, error: updateError } = await supabase.rpc("complete_tournament_match_with_advance", {
         p_match_id: tournamentMatch.id,
@@ -924,6 +944,10 @@ const GamePage = ({
 
       if (updateError) {
         console.error("❌ Maç tamamlama hatası:", updateError);
+        // Hata olsa bile winner zaten belirlendi, 3 saniye sonra yönlendir
+        setTimeout(() => {
+          navigate(`/tournament-bracket/${tournamentMatch.tournament_id}`);
+        }, 3000);
         return;
       }
 
@@ -938,6 +962,10 @@ const GamePage = ({
 
       if (matchError || !updatedMatch) {
         console.error("❌ Güncellenmiş maç bilgisi alınamadı:", matchError);
+        // Winner zaten belirlendi, 3 saniye sonra yönlendir
+        setTimeout(() => {
+          navigate(`/tournament-bracket/${tournamentMatch.tournament_id}`);
+        }, 3000);
         return;
       }
 
@@ -967,32 +995,6 @@ const GamePage = ({
       // ✅ Frontend state'ini backend'den gelen skorlarla güncelle
       setPlayerScore(finalUserScore);
       setOpponentScore(finalOpponentScore);
-      setGameEnded(true);
-      setShowResults(true);
-
-      // ✅ Frontend kazanan belirleme - SADECE backend winner_id kullan (tie asla yok)
-      console.log("🎯 Tournament winner determination:", {
-        finalUserScore,
-        finalOpponentScore,
-        winnerId,
-        userIsWinner: winnerId === user.id,
-      });
-
-      const userIsWinner = winnerId === user.id;
-
-      setWinner(userIsWinner ? "player" : "opponent");
-      setButtonsEnabled(false);
-      setTimeout(() => setButtonsEnabled(true), 1000);
-
-      if (userIsWinner) {
-        playSound("gameWin");
-        setTimeout(() => playCelebrationSound(), 500);
-        console.log("✅ User WINS - Setting winner to player");
-      } else {
-        playSound("gameLose");
-        setTimeout(() => playGameLoseSound(), 500);
-        console.log("❌ User LOSES - Setting winner to opponent");
-      }
 
       console.log("✅ Turnuva maçı tamamlandı, winner:", userIsWinner ? "player" : "opponent");
 
@@ -1042,55 +1044,22 @@ const GamePage = ({
       }
     } catch (error) {
       console.error("Turnuva maç bitiş hatası:", error);
+      // Hata durumunda bile winner'ı fallback ile belirle
+      const isPlayer1 = String(tournamentMatch?.player1_id) === String(user?.id);
+      const player1Score = isPlayer1 ? userScore : opponentScore;
+      const player2Score = isPlayer1 ? opponentScore : userScore;
+      const fallbackWinner = player1Score >= player2Score ? tournamentMatch?.player1_id : tournamentMatch?.player2_id;
+      setWinner(fallbackWinner === user?.id ? "player" : "opponent");
+      
+      // 3 saniye sonra yönlendir
+      setTimeout(() => {
+        navigate(`/tournament-bracket/${tournamentMatch?.tournament_id}`);
+      }, 3000);
     }
   };
 
-  // Turnuva sonucu beklerken: winner belirlenene kadar nötr ekran + polling + fail-safe redirect
-  useEffect(() => {
-    if (gameMode !== "tournament" || !tournamentMatch || !gameEnded) return;
-    if (winner !== null) return; // Zaten belirlendi
-
-    let cancelled = false;
-    const startedAt = Date.now();
-
-    const poll = async () => {
-      if (cancelled) return;
-      try {
-        const { data, error } = await supabase
-          .from("tournament_matches")
-          .select("winner_id,status")
-          .eq("id", tournamentMatch.id)
-          .maybeSingle();
-
-        if (!error && data?.winner_id) {
-          if (cancelled) return;
-          console.log("✅ Winner polling'den alındı:", data.winner_id);
-          setWinner(String(data.winner_id) === String(user?.id) ? "player" : "opponent");
-          setTimeout(() => navigate(`/tournament-bracket/${tournamentMatch.tournament_id}`), 3000);
-        }
-      } catch (e) {
-        console.warn("Winner polling error", e);
-      }
-
-      if (!cancelled) setTimeout(poll, 1000);
-    };
-
-    // Başlat
-    poll();
-
-    // 10sn fail-safe yönlendirme
-    const fail = setTimeout(() => {
-      if (!cancelled) {
-        console.log("⏰ Fail-safe timeout - turnuva sayfasına yönlendiriliyor");
-        navigate(`/tournament-bracket/${tournamentMatch.tournament_id}`);
-      }
-    }, 10000);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(fail);
-    };
-  }, [gameMode, gameEnded, tournamentMatch?.id, winner, user?.id, navigate]);
+  // ❌ KALDIRILDI: Gereksiz polling - winner zaten handleTournamentGameEnd içinde doğru şekilde belirleniyor
+  // Bu polling sadece "Skor hesaplanıyor..." mesajı gösterip gereksiz gecikmeye neden oluyordu
 
   const requestRematch = async () => {
     if (!user) {
