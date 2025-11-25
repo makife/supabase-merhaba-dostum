@@ -18,7 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation, useParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useGame } from "@/contexts/GameContext";
 import { useMusic } from "@/contexts/MusicContext";
@@ -145,6 +145,7 @@ const GamePage = ({
   const { jokers: jokerInventory, useJoker, loadJokers } = useJokerInventory();
   const { fadeOutBackgroundMusic, fadeInBackgroundMusic } = useMusic();
   const [searchParams] = useSearchParams();
+  const { matchId: urlMatchId } = useParams<{ matchId?: string }>();
   const [urlGameType] = useState<"timed" | "score">(() => {
     const type = searchParams.get("type") as "timed" | "score";
     return type || "timed";
@@ -2710,11 +2711,12 @@ const GamePage = ({
   useEffect(() => {
     const loadTournamentData = async () => {
       const tournamentId = searchParams.get("tournament");
-      const matchId = searchParams.get("match");
+      // Match ID path parametresinden veya query parametresinden gelebilir
+      const matchId = urlMatchId || searchParams.get("match");
 
-      if (!tournamentId || !matchId || !user || gameMode !== "tournament") return;
-
-      console.log("🏆 Loading tournament match data:", { tournamentId, matchId });
+      if (!matchId || !user || gameMode !== "tournament") return;
+      
+      console.log("🏆 Loading tournament match data:", { tournamentId, matchId, source: urlMatchId ? 'path' : 'query' });
 
       try {
         // Load match data
@@ -2722,11 +2724,14 @@ const GamePage = ({
 
         if (matchData) {
           console.log("🏆 Tournament match loaded:", matchData);
+          
+          // Tournament ID'yi match data'sından al (URL'de yoksa)
+          const finalTournamentId = tournamentId || matchData.tournament_id;
 
           // ✅ TAMAMLANMIŞ MAÇI TEKRAR BAŞLATMA
           if (matchData.status === "completed") {
             console.log("⚠️ Bu maç zaten tamamlanmış, yönlendiriliyor:", matchData.id);
-            navigate(`/tournament-bracket/${tournamentId}`);
+            navigate(`/tournament-bracket/${finalTournamentId}`);
             return;
           }
 
@@ -2769,13 +2774,17 @@ const GamePage = ({
         }
 
         // Load tournament participants (profiles ayrı sorgu ile eklenecek)
-        const { data: participantsData } = await supabase
-          .from("tournament_participants")
-          .select("*")
-          .eq("tournament_id", tournamentId);
+        // Tournament ID'yi match data'sından alabildiğimiz için finalTournamentId kullan
+        if (matchData?.tournament_id || tournamentId) {
+          const finalTournamentId = tournamentId || matchData.tournament_id;
+          
+          const { data: participantsData } = await supabase
+            .from("tournament_participants")
+            .select("*")
+            .eq("tournament_id", finalTournamentId);
 
-        if (participantsData) {
-          console.log("👥 Tournament participants loaded:", participantsData.length);
+          if (participantsData) {
+            console.log("👥 Tournament participants loaded:", participantsData.length);
 
           // Profil bilgilerini ayrı çek (user_id text olduğu için FK yok)
           const userIds = participantsData
@@ -2820,6 +2829,7 @@ const GamePage = ({
             console.log("🔄 Setting tournament participants:", matchParticipants.length);
             setTournamentParticipants(matchParticipants);
           }
+          }
         }
       } catch (error) {
         console.error("❌ Error loading tournament data:", error);
@@ -2827,7 +2837,7 @@ const GamePage = ({
     };
 
     loadTournamentData();
-  }, [gameMode, searchParams, user]);
+  }, [gameMode, searchParams, user, urlMatchId]);
 
   // Load random match room data from URL parameters
   useEffect(() => {
