@@ -4827,8 +4827,6 @@ const GamePage = ({
     setLastPlayerAction(Date.now());
 
     try {
-      // Tournament activity tracking removed for simplicity
-
       if (currentWord.length < 3) {
         showCustomToast("Geçersiz Kelime", "");
         return;
@@ -4846,31 +4844,16 @@ const GamePage = ({
         recentSubmissionsRef.current.delete(normalizedWord);
       }, 800);
 
-      // Mobile word check
-      console.log("📱 Mobile word check:", {
-        word: normalizedWord,
-        localUsedSize: usedWords.size,
-        globalUsedSize: globalUsedWords.size,
-        isInLocal: usedWords.has(normalizedWord),
-        isInGlobal: globalUsedWords.has(normalizedWord),
-        currentUsedWords: Array.from(usedWords),
-        currentGlobalWords: Array.from(globalUsedWords),
-      });
-
       // SADECE KENDİ KELİMELERİMİ KONTROL ET - rakibin kelimelerini değil!
       if (usedWords.has(normalizedWord)) {
-        console.log("❌ Mobile: Word already used by me!", {
-          foundInMyList: usedWords.has(normalizedWord),
-          myWords: Array.from(usedWords),
-          allGlobalWords: Array.from(globalUsedWords),
-        });
+        console.log("❌ Word already used by me!");
         showCustomToast("Kelime Zaten Kullanıldı", "");
         playSound("wrongWord");
         clearWord();
         return;
       }
 
-      // LOCAL WORDLIST VALIDATION
+      // LOCAL WORDLIST VALIDATION (CLIENT-SIDE, HIZLI)
       const result = validateWordLocal(currentWord);
 
       if (!result.isValid) {
@@ -4880,50 +4863,15 @@ const GamePage = ({
         return;
       }
 
-      console.log("✅ Mobile: Word accepted:", currentWord, "Points:", result.points);
+      console.log("✅ Word accepted:", currentWord, "Points:", result.points);
 
-      // Database'e kelimeyi kaydet (sadece multiplayer modlarda)
-      if (currentRoom && user && (gameMode === "private-room" || gameMode === "random-match")) {
-        try {
-          await supabase.from("game_words").insert({
-            room_id: currentRoom.id,
-            player_id: user.id,
-            word: normalizedWord,
-            points: result.points,
-          });
-
-          console.log("✅ Mobile: Word saved to database:", normalizedWord);
-          await forceRefreshProfile?.();
-        } catch (error) {
-          console.error("❌ Mobile: Database word save error:", error);
-          showCustomToast("Kelime kaydedilemedi", "");
-          clearWord();
-          return;
-        }
-      }
-
-      // Profilde en uzun kelimeyi anında güncelle (tüm modlar)
-      if (user) {
-        try {
-          const newLen = normalizedWord.length;
-          const currentLen = profile?.longest_word_length ?? 0;
-          if (newLen >= currentLen) {
-            await supabase
-              .from("profiles")
-              .update({ longest_word: normalizedWord, longest_word_length: newLen })
-              .eq("id", user.id);
-            await forceRefreshProfile?.();
-          }
-        } catch (e) {
-          console.warn("⚠️ Profil en uzun kelime güncellemesi başarısız:", e);
-        }
-      }
+      // ✅ HEMEN GRİD'İ TEMİZLE VE UI'I GÜNCELLE (KULLANICI BEKLEMESİN)
+      clearWord();
 
       // SADECE KENDİ LİSTEME EKLE - global'a ekleme, o real-time olarak gelecek
       setUsedWords((prev) => new Set([...prev, normalizedWord]));
-      console.log("✅ Mobile: Word added to local sets after validation:", normalizedWord);
 
-      // Ses efektleri ve puan hesaplama
+      // Ses efektleri ve puan hesaplama HEMEN
       playSound("correctWord");
       const newScore = playerScore + result.points;
       setPlayerScore(newScore);
@@ -4942,70 +4890,111 @@ const GamePage = ({
         { word: currentWord, score: result.points, timestamp: wordTimestamp },
       ]);
 
-      const wordLength = currentWord.length;
-
-      // Ses efektleri triggerWordEffects içinde çalınacak - dublicate removed
-
       triggerWordEffects();
 
-      if (currentRoom) {
-        await updateScore(newScore);
+      // 🔥 DATABASE İŞLEMLERİNİ ARKA PLANDA YAP (fire-and-forget, kullanıcı beklemesin)
+      
+      // Database'e kelime kaydet (sadece multiplayer modlarda) - ASYNC, AWAIT'LEME
+      if (currentRoom && user && (gameMode === "private-room" || gameMode === "random-match")) {
+        supabase.from("game_words").insert({
+          room_id: currentRoom.id,
+          player_id: user.id,
+          word: normalizedWord,
+          points: result.points,
+        }).then((response) => {
+          if (response.error) {
+            console.error("❌ Database word save error:", response.error);
+          } else {
+            console.log("✅ Word saved to database:", normalizedWord);
+            forceRefreshProfile?.();
+          }
+        });
       }
 
-      // 🔥 YENİ: Turnuva modunda gerçek rakip puanını güncelle
-      if (gameMode === "tournament" && tournamentMatch && user) {
-        try {
-          const isPlayer1 = tournamentMatch.player1_id === user.id;
-
-          await supabase
-            .from("tournament_matches")
-            .update({
-              [isPlayer1 ? "player1_score" : "player2_score"]: newScore,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", tournamentMatch.id);
-
-          console.log("🏆 Turnuva skoru güncellendi:", newScore);
-        } catch (error) {
-          console.error("❌ Turnuva skor güncellenme hatası:", error);
+      // Profilde en uzun kelimeyi güncelle (tüm modlar) - ASYNC, AWAIT'LEME
+      if (user) {
+        const newLen = normalizedWord.length;
+        const currentLen = profile?.longest_word_length ?? 0;
+        if (newLen >= currentLen) {
+          supabase
+            .from("profiles")
+            .update({ longest_word: normalizedWord, longest_word_length: newLen })
+            .eq("id", user.id)
+            .then((response) => {
+              if (response.error) {
+                console.warn("⚠️ Profil en uzun kelime güncellemesi başarısız:", response.error);
+              } else {
+                forceRefreshProfile?.();
+              }
+            });
         }
       }
 
-      // Total score güncelleme (vs-computer modunda)
+      // Room score güncelleme - ASYNC, AWAIT'LEME
+      if (currentRoom) {
+        updateScore(newScore);
+      }
+
+      // Turnuva skoru güncelleme - ASYNC, AWAIT'LEME
+      if (gameMode === "tournament" && tournamentMatch && user) {
+        const isPlayer1 = tournamentMatch.player1_id === user.id;
+        supabase
+          .from("tournament_matches")
+          .update({
+            [isPlayer1 ? "player1_score" : "player2_score"]: newScore,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", tournamentMatch.id)
+          .then((response) => {
+            if (response.error) {
+              console.error("❌ Turnuva skor güncellenme hatası:", response.error);
+            } else {
+              console.log("🏆 Turnuva skoru güncellendi:", newScore);
+            }
+          });
+      }
+
+      // Total score güncelleme (vs-computer modunda) - ASYNC, AWAIT'LEME
       if (user && gameMode === "vs-computer") {
-        const { data: currentProfile } = await supabase
+        supabase
           .from("profiles")
           .select("total_score")
           .eq("id", user.id)
-          .single();
+          .single()
+          .then((response) => {
+            if (response.error) {
+              console.error("❌ Total score fetch error:", response.error);
+              return;
+            }
+            
+            const currentProfile = response.data;
+            const calculateLevel = (totalScore: number) => {
+              const baseExp = 1000;
+              const expIncreasePerLevel = 100;
+              let level = 1;
+              let totalExpNeeded = 0;
+              let currentLevelExp = baseExp;
+              while (totalScore >= totalExpNeeded + currentLevelExp) {
+                totalExpNeeded += currentLevelExp;
+                level++;
+                currentLevelExp = baseExp + (level - 1) * expIncreasePerLevel;
+              }
+              return level;
+            };
 
-        const calculateLevel = (totalScore: number) => {
-          const baseExp = 1000;
-          const expIncreasePerLevel = 100;
+            const currentLevel = calculateLevel(currentProfile?.total_score || 0);
+            const levelMultiplier = 1 + (currentLevel - 1) * 0.1;
+            const bonusPoints = Math.floor(result.points * levelMultiplier);
+            const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
 
-          let level = 1;
-          let totalExpNeeded = 0;
-          let currentLevelExp = baseExp;
-
-          while (totalScore >= totalExpNeeded + currentLevelExp) {
-            totalExpNeeded += currentLevelExp;
-            level++;
-            currentLevelExp = baseExp + (level - 1) * expIncreasePerLevel;
-          }
-
-          return level;
-        };
-
-        const currentLevel = calculateLevel(currentProfile?.total_score || 0);
-        const levelMultiplier = 1 + (currentLevel - 1) * 0.1;
-        const bonusPoints = Math.floor(result.points * levelMultiplier);
-
-        const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
-
-        await supabase.from("profiles").update({ total_score: newTotalScore }).eq("id", user.id);
+            supabase.from("profiles").update({ total_score: newTotalScore }).eq("id", user.id)
+              .then((updateResponse) => {
+                if (updateResponse.error) {
+                  console.error("❌ Total score update error:", updateResponse.error);
+                }
+              });
+          });
       }
-
-      clearWord();
     } finally {
       submissionLockRef.current = false;
     }
