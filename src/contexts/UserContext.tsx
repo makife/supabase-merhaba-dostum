@@ -309,8 +309,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       // Persist latest totals for next run
       previousCreditsRef.current = newTotal;
 
-      // Refresh profile quietly in the background to keep UI in sync
-      refreshProfile(false);
+      // ❌ refreshProfile kaldırıldı - Real-time subscription zaten profili güncelleyecek
     } catch (error) {
       console.error('Error checking credits:', error);
     } finally {
@@ -517,29 +516,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     // İlk kontrolü hemen yap
     checkAndRefreshCredits();
     
-    // ❌ POLLING KALDIRILDI - Sadece realtime subscription kullan
-    // profiles tablosundaki last_credit_refresh değişikliklerini dinle
-    const channel = supabase
-      .channel(`credit-refresh-${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'profiles',
-          filter: `id=eq.${user.id}`,
-        },
-        (payload) => {
-          console.log('💳 Credit değişikliği tespit edildi:', payload);
-          // Backend'de RPC çağrıldığında otomatik güncelleme gelecek
-          refreshProfile(false);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    // ❌ Credit refresh subscription kaldırıldı - Profile subscription zaten tüm güncellemeleri yakalıyor
+    // Bu subscription sonsuz döngüye neden oluyordu
   }, [user, isPremium]);
 
   // ENHANCED Real-time profile subscription - Deduplication fix
