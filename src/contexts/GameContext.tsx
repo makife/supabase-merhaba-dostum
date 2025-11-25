@@ -463,11 +463,13 @@ export const GameProvider = ({ children }: GameProviderProps) => {
             // Profilleri async yükle (non-blocking)
             const userIds = parts.map(p => p.user_id).filter(Boolean);
             if (userIds.length > 0) {
-              supabase
-                .from("profiles")
-                .select("id, username, avatar_url")
-                .in("id", userIds)
-                .then(({ data: profiles }) => {
+              (async () => {
+                try {
+                  const { data: profiles } = await supabase
+                    .from("profiles")
+                    .select("id, username, avatar_url")
+                    .in("id", userIds);
+                  
                   if (profiles) {
                     setParticipants(prev => 
                       prev.map(p => ({
@@ -476,7 +478,10 @@ export const GameProvider = ({ children }: GameProviderProps) => {
                       }))
                     );
                   }
-                });
+                } catch (err) {
+                  console.error("⚠️ Profile fetch error (non-critical):", err);
+                }
+              })();
             }
           }
         } catch {}
@@ -912,20 +917,16 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     }
   }, []);
 
-  // Fetch participants
+  // Fetch participants - OPTIMIZED: basic info first, profiles async
   const fetchParticipants = useCallback(
-    debounce(async (roomId: string) => {
+    async (roomId: string) => {
       try {
         console.log("📥 Fetching participants for room:", String(roomId).slice(-8));
 
-        const { data, error } = await supabase
+        // STEP 1: Fetch basic participant info immediately (no profiles)
+        const { data: basicData, error } = await supabase
           .from("game_participants")
-          .select(
-            `
-          *,
-          profiles:user_id (username, avatar_url)
-        `,
-          )
+          .select("*")
           .eq("room_id", roomId);
 
         if (error) {
@@ -933,29 +934,62 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           return;
         }
 
-        if (data) {
-          // RoomId'den game mode'u al ve buna göre dedupe et
-          const { data: roomData } = await supabase.from("game_rooms").select("game_mode").eq("id", roomId).single();
+        if (!basicData || basicData.length === 0) {
+          console.log("⚠️ No participants found");
+          return;
+        }
 
-          const gameMode = roomData?.game_mode || "unknown";
-          const dedupedData = dedupeParticipants(data as GameParticipant[], gameMode);
+        // Get game mode for deduplication
+        const { data: roomData } = await supabase.from("game_rooms").select("game_mode").eq("id", roomId).single();
+        const gameMode = roomData?.game_mode || "unknown";
 
-          console.log("✅ Participants güncellenecek:", {
-            count: dedupedData.length,
-            gameMode: gameMode,
-            details: dedupedData.map((p) => ({
-              id: p.user_id?.slice(-8) || "null",
-              isBot: p.is_bot,
-              username: (p as any).profiles?.username || "No name",
-            })),
-          });
+        // STEP 2: Immediately set participants with basic info (enables countdown to start)
+        const dedupedBasic = dedupeParticipants(basicData as GameParticipant[], gameMode);
+        setParticipants(dedupedBasic);
+        
+        console.log("✅ Basic participants loaded:", {
+          count: dedupedBasic.length,
+          gameMode: gameMode,
+        });
 
-          setParticipants(dedupedData);
+        // STEP 3: Async load profiles without blocking
+        const userIds = basicData.map(p => p.user_id).filter(Boolean);
+        if (userIds.length > 0) {
+          (async () => {
+            try {
+              const { data: profiles } = await supabase
+                .from("profiles")
+                .select("id, username, avatar_url")
+                .in("id", userIds);
+              
+              if (profiles) {
+                setParticipants(prev => {
+                  const updated = prev.map(p => ({
+                    ...p,
+                    profiles: profiles.find(prof => prof.id === p.user_id) || (p as any).profiles || null
+                  }));
+                  const dedupedUpdated = dedupeParticipants(updated as GameParticipant[], gameMode);
+                  
+                  console.log("✅ Profiles loaded:", {
+                    details: dedupedUpdated.map((p) => ({
+                      id: p.user_id?.slice(-8) || "null",
+                      isBot: p.is_bot,
+                      username: (p as any).profiles?.username || "No name",
+                    })),
+                  });
+                  
+                  return dedupedUpdated;
+                });
+              }
+            } catch (err) {
+              console.error("⚠️ Profile fetch error (non-critical):", err);
+            }
+          })();
         }
       } catch (error) {
         console.error("❌ fetchParticipants error:", error);
       }
-    }, 300), // 300ms debounce
+    },
     [],
   );
 
@@ -1028,10 +1062,8 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           console.log("✅ Participant created:", participantData.id);
           setCurrentRoom(room);
 
-          // Hemen participants fetch et
-          setTimeout(() => {
-            fetchParticipants(room.id);
-          }, 300);
+          // Immediate fetch - no timeout needed with optimized fetch
+          fetchParticipants(room.id);
 
           console.log("🏠 === ROOM CREATE DEBUG BİTTİ ===");
           return room;
@@ -1163,6 +1195,9 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         console.log("✅ Odaya katılım başarılı");
         setCurrentRoom(room);
 
+        // Immediate fetch before countdown
+        await fetchParticipants(room.id);
+
         // 🎯 PRIVATE ROOM İÇİN COUNTDOWN BAŞLATMA
         // Eğer ikinci oyuncu join olduysa countdown başlat
         if (room.game_mode.includes("private-room")) {
@@ -1190,11 +1225,6 @@ export const GameProvider = ({ children }: GameProviderProps) => {
             });
           }
         }
-
-        // ✅ ÖNEMLI: Hemen participants'ı fetch et
-        setTimeout(() => {
-          fetchParticipants(room.id);
-        }, 500);
 
         return true;
       } catch (error: any) {
@@ -1269,11 +1299,8 @@ export const GameProvider = ({ children }: GameProviderProps) => {
               console.log("⚠️ Zaten bu odada katılımcısınız, oda güncelleniyor");
               setCurrentRoom(targetRoom);
 
-              // ✅ RASTGELE OYUN FIX: HEMEN participants'ı fetch et
-              setTimeout(() => {
-                console.log("🔄 RASTGELE OYUN: Participants fetch ediliyor...");
-                fetchParticipants(targetRoom.id);
-              }, 200);
+              // Immediate fetch - no timeout
+              await fetchParticipants(targetRoom.id);
 
               return true;
             }
@@ -1318,11 +1345,8 @@ export const GameProvider = ({ children }: GameProviderProps) => {
               // ✅ ÖNEMLI: Oda zaten bir ızgara var, onu kullan
               setCurrentRoom(targetRoom);
 
-              // ✅ RASTGELE OYUN FIX: HEMEN participants'ı fetch et
-              setTimeout(() => {
-                console.log("🔄 RASTGELE OYUN: Katılım sonrası participants fetch ediliyor...");
-                fetchParticipants(targetRoom.id);
-              }, 300);
+              // Immediate fetch before countdown
+              await fetchParticipants(targetRoom.id);
 
               return true;
             }
@@ -1365,11 +1389,8 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
         setCurrentRoom(newRoom);
 
-        // ✅ RASTGELE OYUN FIX: Host olarak oda oluşturduktan sonra participants'ı fetch et
-        setTimeout(() => {
-          console.log("🔄 RASTGELE OYUN: Host oda oluşturma sonrası participants fetch ediliyor...");
-          fetchParticipants(newRoom.id);
-        }, 500);
+        // Immediate fetch - no timeout
+        fetchParticipants(newRoom.id);
 
         console.log("🆕 Yeni oda oluşturuldu:", String(newRoom.id).slice(-8));
         console.log("👤 Host kendini katılımcı olarak ekledi:", String(user.id).slice(-8));
