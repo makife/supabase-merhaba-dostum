@@ -183,8 +183,6 @@ const GameCountdown = ({
           setIsVisible(false);
           setTimeout(() => {
             onComplete();
-            // Countdown tamamlandı, kilidi kaldır (rematch için)
-            countdownLockRef.current = false;
           }, 200);
         }, 1000);
       }
