@@ -134,7 +134,7 @@ const GameCountdown = ({
     }
     
     countdownLockRef.current = true;
-    console.log("🔒 Countdown kilidi aktif edildi");
+    console.log("🔒 Countdown kilidi aktif edildi", { serverStartTime });
 
     const startTime = new Date(serverStartTime).getTime();
     startTimeRef.current = startTime;
