@@ -163,7 +163,6 @@ const GamePage = ({
   const serverMatchStartRef = useRef<number | null>(null);
   const syncSuppressUntilRef = useRef<number>(0);
   const countdownCompletedAtRef = useRef<number | null>(null);
-  const countdownLockRef = useRef<boolean>(false); // 🔒 Countdown duplicate trigger koruması
   // Touch/click double-fire koruması: Gönder butonu için son touch zaman damgası
   const submitTouchTsRef = useRef(0);
 
@@ -1138,8 +1137,6 @@ const GamePage = ({
     setRematchRequested(false);
     setWaitingForRematchResponse(false);
     setFinalPlayerScore(0);
-    // 🔒 Countdown lock'u resetle
-    countdownLockRef.current = false;
     setFinalOpponentScore(0);
     // Joker state'leri artık hook'tan geldiği için sıfırlama yok
     setSelectedJoker(null);
@@ -4363,13 +4360,6 @@ const GamePage = ({
   // 🎯 Countdown event listener (tüm modlar için)
   useEffect(() => {
     const handleCountdownStart = (event: CustomEvent) => {
-      // Zaten countdown başlamışsa tekrar başlatma
-      // 🔒 Lock kontrol et
-      if (countdownLockRef.current) {
-        console.log("⚠️ Countdown lock aktif - duplicate engellendi (event)");
-        return;
-      }
-
       if (showCountdown || countdownServerTime) {
         console.log("⚠️ Countdown zaten aktif - event ignored");
         return;
@@ -4377,10 +4367,6 @@ const GamePage = ({
 
       const { serverTime } = event.detail;
       console.log("⏰ Countdown event alındı:", serverTime);
-
-      // 🔒 Lock'u aktif et
-      countdownLockRef.current = true;
-      console.log("🔒 Countdown lock aktif edildi (event)");
 
       // RPC zaten buffer eklemiş, direkt countdown zamanını kullan
       const countdownStartTime = new Date(serverTime).getTime();
@@ -4441,12 +4427,6 @@ const GamePage = ({
       !gameStarted &&
       !countdownServerTime
     ) {
-      // 🔒 Countdown zaten başlatılmışsa duplicate engelle
-      if (countdownLockRef.current) {
-        console.log("⚠️ Countdown lock aktif - duplicate trigger engellendi (initial sync)");
-        return;
-      }
-
       console.log("⏰ Initial countdown sync from room state:", currentRoom.countdown_started_at);
 
       // Server zamanını hesapla
@@ -4462,13 +4442,16 @@ const GamePage = ({
         willStartIn: Math.max(0, timeDiff),
       });
 
-      // 🔒 Lock'u aktif et
-      countdownLockRef.current = true;
-      console.log("🔒 Countdown lock aktif edildi (initial sync)");
-
       const timers: NodeJS.Timeout[] = [];
       
-      if (timeDiff > 5000) {
+      // Eğer countdown zamanı geçmişse veya çok yakınsa direkt başlat
+      if (timeDiff <= 0) {
+        console.log("⏰ Countdown zamanı geçmiş, direkt başlatılıyor");
+        setPreparingOpponent(null);
+        setCountdownServerTime(currentRoom.countdown_started_at);
+        setShowCountdown(true);
+        setGameStarted(false);
+      } else if (timeDiff > 5000) {
         // 5+ saniye var, son 5 saniyeyi bekle
         const waitTime = timeDiff - 5000;
         console.log(`⏰ ${Math.ceil(timeDiff / 1000)}s kaldı, son 5 saniyede animasyonlar başlayacak`);
@@ -4515,7 +4498,6 @@ const GamePage = ({
 
       return () => {
         timers.forEach(timer => clearTimeout(timer));
-        // Lock'u resetleme - bir kez countdown başladıktan sonra duplicate önlemek için aktif kalmalı
       };
     }
   }, [gameMode, currentRoom?.countdown_started_at, showCountdown, gameStarted, serverTimeOffset, countdownServerTime]);
@@ -4525,7 +4507,6 @@ const GamePage = ({
     if (gameMode !== "private-room" && gameMode !== "random-match") return;
     if (showCountdown || gameStarted || countdownServerTime) return; // Zaten countdown varsa skip
     if (countdownCheckDoneRef.current) return; // Tek seferlik kontrol
-    if (countdownLockRef.current) return; // 🔒 Lock aktifse skip
 
     const realPlayers = participants.filter((p) => !p.is_bot && p.user_id !== null);
     if (realPlayers.length < 2) return; // Henüz 2 oyuncu yok
@@ -4542,12 +4523,6 @@ const GamePage = ({
           .single();
 
         if (data?.countdown_started_at) {
-          // 🔒 Lock kontrol et
-          if (countdownLockRef.current) {
-            console.log("⚠️ Countdown lock aktif - duplicate engellendi (check)");
-            return;
-          }
-
           const countdownStartTime = new Date(data.countdown_started_at).getTime();
           const serverNow = Date.now() + serverTimeOffset;
           const timeDiff = countdownStartTime - serverNow;
@@ -4555,10 +4530,6 @@ const GamePage = ({
             timestamp: data.countdown_started_at,
             timeDiff,
           });
-
-          // 🔒 Lock'u aktif et
-          countdownLockRef.current = true;
-          console.log("🔒 Countdown lock aktif edildi (check)");
 
           if (timeDiff > 5000) {
             setTimeout(() => {
@@ -4598,12 +4569,6 @@ const GamePage = ({
             if (rpcErr) {
               console.warn("RPC countdown başlatma hatası:", rpcErr);
             } else if (startedAt) {
-              // 🔒 Lock kontrol et
-              if (countdownLockRef.current) {
-                console.log("⚠️ Countdown lock aktif - duplicate engellendi (RPC)");
-                return;
-              }
-
               const countdownStartTime = new Date(startedAt).getTime();
               const serverNow = Date.now() + serverTimeOffset;
               const timeDiff = countdownStartTime - serverNow;
@@ -4611,10 +4576,6 @@ const GamePage = ({
                 timestamp: startedAt,
                 timeDiff,
               });
-
-              // 🔒 Lock'u aktif et
-              countdownLockRef.current = true;
-              console.log("🔒 Countdown lock aktif edildi (RPC)");
 
               if (timeDiff > 5000) {
                 console.log(`⏰ Countdown ${Math.ceil(timeDiff / 1000)} saniye sonra, animasyonlar son 5 saniyede (RPC)`);
