@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSounds } from '@/hooks/useSounds';
+import { useMusic } from '@/contexts/MusicContext';
 import { Button } from '@/components/ui/button';
 import { useChatNotifications } from '@/hooks/useChatNotifications';
 import { toast } from 'sonner';
@@ -102,6 +103,7 @@ export function FloatingMenu() {
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
   const { playSound } = useSounds();
+  const { musicEnabled, setMusicEnabled } = useMusic();
   const { totalNotifications } = useChatNotifications();
   const { isModerator, loading: roleLoading } = useUserRole();
 
@@ -171,6 +173,50 @@ export function FloatingMenu() {
       <div className={`absolute bottom-24 right-0 flex flex-col items-end space-y-3 transition-all duration-300 ${
         isOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
       }`}>
+        {/* Music Toggle - En üstte */}
+        <div
+          className={`flex items-center space-x-3 transform transition-all duration-300 ${
+            isOpen 
+              ? 'translate-x-0 scale-100' 
+              : 'translate-x-8 scale-75'
+          }`}
+          style={{ 
+            transitionDelay: isOpen ? '0ms' : `${(menuItems.length + 3) * 40}ms` 
+          }}
+        >
+          <div className="flex items-center space-x-2 bg-black/80 backdrop-blur-md rounded-full px-3 py-1.5 border border-white/20 shadow-xl">
+            <span 
+              className="text-sm font-semibold text-white whitespace-nowrap pointer-events-none select-none tracking-wide"
+              style={{ 
+                fontFamily: '"Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif',
+                textShadow: '0 1px 3px rgba(0,0,0,0.8), 0 0 6px rgba(255,255,255,0.1)' 
+              }}
+            >
+              {musicEnabled ? 'Ses Açık' : 'Ses Kapalı'}
+            </span>
+            
+            <Button
+              onClick={() => {
+                setMusicEnabled(!musicEnabled);
+                playSound('buttonClick');
+              }}
+              className={`group relative overflow-hidden ${
+                musicEnabled
+                  ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700'
+                  : 'bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700'
+              } text-white border-2 border-white shadow-lg hover:shadow-xl transform hover:scale-105 
+              transition-all duration-200 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0`}
+            >
+              <div className="absolute inset-0 bg-white/20 scale-0 group-hover:scale-100 transition-transform duration-300 rounded-full" />
+              <img 
+                src="/murekkepikon.png" 
+                alt="Ses" 
+                className={`w-5 h-5 relative z-10 ${!musicEnabled && 'opacity-50'}`}
+              />
+            </Button>
+          </div>
+        </div>
+
         {/* Regular menu items */}
         {menuItems.map((item, index) => (
           <div
@@ -181,7 +227,7 @@ export function FloatingMenu() {
                 : 'translate-x-8 scale-75'
             }`}
             style={{ 
-              transitionDelay: isOpen ? `${index * 60}ms` : `${(menuItems.length + 2 - index) * 40}ms` 
+              transitionDelay: isOpen ? `${(index + 1) * 60}ms` : `${(menuItems.length + 2 - index) * 40}ms`
             }}
           >
             {/* Label with beautiful styling */}
@@ -222,7 +268,7 @@ export function FloatingMenu() {
                 : 'translate-x-8 scale-75'
             }`}
             style={{ 
-              transitionDelay: isOpen ? `${menuItems.length * 60}ms` : `${(3 - menuItems.length) * 40}ms` 
+              transitionDelay: isOpen ? `${(menuItems.length + 1) * 60}ms` : `${(3 - menuItems.length) * 40}ms`
             }}
           >
             <div className="flex items-center space-x-2 bg-black/80 backdrop-blur-md rounded-full px-3 py-1.5 border border-white/20 shadow-xl">
@@ -257,7 +303,7 @@ export function FloatingMenu() {
               : 'translate-x-8 scale-75'
           }`}
           style={{ 
-            transitionDelay: isOpen ? `${(menuItems.length + (isModerator ? 1 : 0)) * 60}ms` : `${(2 - menuItems.length) * 40}ms` 
+            transitionDelay: isOpen ? `${(menuItems.length + 1 + (isModerator ? 1 : 0)) * 60}ms` : `${(2 - menuItems.length) * 40}ms`
           }}
         >
           <div className="flex items-center space-x-2 bg-black/80 backdrop-blur-md rounded-full px-3 py-1.5 border border-white/20 shadow-xl">
@@ -300,7 +346,7 @@ export function FloatingMenu() {
               : 'translate-x-8 scale-75'
           }`}
           style={{ 
-            transitionDelay: isOpen ? `${(menuItems.length + 1 + (isModerator ? 1 : 0)) * 60}ms` : `${(1 - menuItems.length) * 40}ms` 
+            transitionDelay: isOpen ? `${(menuItems.length + 2 + (isModerator ? 1 : 0)) * 60}ms` : `${(1 - menuItems.length) * 40}ms`
           }}
         >
           <div className="flex items-center space-x-2 bg-black/80 backdrop-blur-md rounded-full px-3 py-1.5 border border-white/20 shadow-xl">
