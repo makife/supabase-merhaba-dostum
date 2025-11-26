@@ -416,7 +416,7 @@ const MarketPage = () => {
                 <img
                   src="/marketYazi.png"
                   alt="Market Text"
-                  className="relative z-10 px-6 py-3 h-20 w-auto object-contain"
+                  className="relative z-10 px-6 py-3 h-40 w-auto object-contain"
                 />
               </div>
 
