@@ -152,7 +152,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
         const profileData = {
           ...data,
-          ink_count: data.ink_count ?? 0,
+          ink_count: (data as any).ink_count ?? 0,
         };
 
         setProfile(profileData);
