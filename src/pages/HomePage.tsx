@@ -374,7 +374,7 @@ const HomePage = () => {
                       </div>
 
                       {/* Mürekkep Sayısı */}
-                      <div className="bg-gradient-to-r from-purple-500/90 to-indigo-500/90 backdrop-blur-sm px-3 py-1 rounded-full border-2 border-white/30 shadow-lg min-w-[60px] flex items-center justify-center">
+                      <div className="bg-gradient-to-r from-purple-500/90 to-indigo-500/90 backdrop-blur-sm px-3 py-0.5 rounded-full border-2 border-white/30 shadow-lg min-w-[60px] flex items-center justify-center">
                         <span className="text-sm font-bold text-white drop-shadow-md">{profile?.ink_count || 0}</span>
                       </div>
                     </div>
