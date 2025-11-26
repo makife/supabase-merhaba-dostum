@@ -353,21 +353,35 @@ const HomePage = () => {
                   </div>
 
                   {/* Sağ taraf - Murekkep İkonu ve Premium badge */}
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {/* Murekkep İkonu */}
-                    <div className="relative group cursor-pointer">
-                      <img
-                        src="/murekkepikon.png"
-                        alt="Mürekkep"
-                        className="w-12 h-12 object-contain transition-transform duration-300 group-hover:scale-110 drop-shadow-lg"
-                      />
-                      {/* Hover efekti için opsiyonel glow */}
-                      <div className="absolute inset-0 bg-purple-500/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                    {/* Mürekkep İkonu ve Sayı */}
+                    <div className="flex flex-col items-center gap-1">
+                      {/* İkon */}
+                      <div
+                        className="relative group cursor-pointer"
+                        onClick={() => {
+                          playSound("buttonClick");
+                          navigate("/market");
+                        }}
+                      >
+                        <img
+                          src="/murekkepikon.png"
+                          alt="Mürekkep"
+                          className="w-10 h-10 object-contain transition-transform duration-300 group-hover:scale-110 drop-shadow-lg"
+                        />
+                        {/* Hover efekti için opsiyonel glow */}
+                        <div className="absolute inset-0 bg-purple-500/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      </div>
+
+                      {/* Mürekkep Sayısı */}
+                      <div className="bg-gradient-to-r from-purple-500/90 to-indigo-500/90 backdrop-blur-sm px-3 py-1 rounded-full border-2 border-white/30 shadow-lg min-w-[60px] flex items-center justify-center">
+                        <span className="text-sm font-bold text-white drop-shadow-md">{profile?.ink_count || 0}</span>
+                      </div>
                     </div>
 
                     {/* Premium Badge */}
                     {isPremium && (
-                      <div className="flex items-center space-x-1">
+                      <div className="flex items-center space-x-1 mt-1">
                         <Crown className="w-4 h-4 text-yellow-500" />
                         <span className="text-xs text-yellow-500 font-semibold">Premium</span>
                       </div>
