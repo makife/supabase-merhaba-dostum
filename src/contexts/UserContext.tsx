@@ -18,6 +18,7 @@ interface UserProfile {
   last_credit_refresh: string | null;
   total_score: number;
   created_at: string;
+  ink_count: number;
   // Yeni eklenen alanlar:
   daily_games?: number;
   win_streak?: number;
@@ -28,7 +29,6 @@ interface UserProfile {
   favorite_letter?: string;
   total_play_time?: number;
   last_daily_reset?: string;
-  ink_count: number;
   // Diğer mevcut alanlar:
   total_games?: number;
   wins?: number;
@@ -99,7 +99,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       try {
         const parsed = JSON.parse(cached);
         if (parsed.id === user.id) {
-          setProfile((prev) => prev ?? parsed.data);
+          setProfile((prev) => prev ?? { ...parsed.data, ink_count: parsed.data.ink_count ?? 0 });
           // Preload avatar image to ensure instant display
           if (parsed.data?.avatar_url) {
             const img = new Image();
@@ -131,7 +131,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
           const parsed = JSON.parse(cachedProfile);
           if (parsed.id === user.id && parsed.timestamp > Date.now() - 300000) {
             // 5 min cache
-            setProfile(parsed.data);
+            setProfile({ ...parsed.data, ink_count: parsed.data.ink_count ?? 0 });
             setLoading(false);
             return;
           }
@@ -149,14 +149,20 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         // Check if daily reset is needed
         await checkAndResetDailyStats(data);
         console.log("Profile refreshed:", data);
-        setProfile(data);
+
+        const profileData = {
+          ...data,
+          ink_count: data.ink_count ?? 0,
+        };
+
+        setProfile(profileData);
 
         // Cache profile data with avatar_url
         localStorage.setItem(
           "cached_profile",
           JSON.stringify({
             id: user.id,
-            data: data,
+            data: profileData,
             timestamp: Date.now(),
           }),
         );
@@ -218,7 +224,11 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
   const updateCredits = (newCredits: number) => {
     if (profile) {
-      const updatedProfile = { ...profile, game_credits: newCredits };
+      const updatedProfile = {
+        ...profile,
+        game_credits: newCredits,
+        ink_count: profile.ink_count ?? 0,
+      };
       setProfile(updatedProfile);
       console.log("Credits updated locally:", updatedProfile);
     }
@@ -248,6 +258,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         ...profile,
         game_credits: newBase,
         bonus_credits: newTotalBonus,
+        ink_count: profile.ink_count ?? 0,
       };
       setProfile(updatedProfile);
       console.log("Bonus credits added:", updatedProfile);
@@ -366,6 +377,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         game_credits: newGameCredits,
         bonus_credits: newBonusCredits,
         last_credit_refresh: new Date().toISOString(),
+        ink_count: profile.ink_count ?? 0,
       };
       setProfile(updatedProfile);
       console.log("Credit consumed:", updatedProfile);
@@ -554,13 +566,17 @@ export const UserProvider = ({ children }: UserProviderProps) => {
           console.log("🎯 Profile updated via real-time:", payload.new);
           if (payload.new) {
             // Immediately update the profile state
-            const newProfile = payload.new as UserProfile;
+            const newProfile = {
+              ...(payload.new as UserProfile),
+              ink_count: (payload.new as any).ink_count ?? 0,
+            };
             console.log("📊 Profile stats updated:", {
               total_score: newProfile.total_score,
               wins: newProfile.wins,
               losses: newProfile.losses,
               game_credits: newProfile.game_credits,
               bonus_credits: newProfile.bonus_credits,
+              ink_count: newProfile.ink_count,
             });
 
             setProfile(newProfile);
