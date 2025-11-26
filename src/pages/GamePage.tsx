@@ -4360,8 +4360,8 @@ const GamePage = ({
   // 🎯 Countdown event listener (tüm modlar için)
   useEffect(() => {
     const handleCountdownStart = (event: CustomEvent) => {
-      if (showCountdown || countdownServerTime) {
-        console.log("⚠️ Countdown zaten aktif - event ignored");
+      if (showCountdown || countdownServerTime || gameStarted) {
+        console.log("⚠️ Countdown zaten aktif veya oyun başladı - event ignored");
         return;
       }
 
@@ -4416,7 +4416,7 @@ const GamePage = ({
     return () => {
       window.removeEventListener("countdownStarted", handleCountdownStart as EventListener);
     };
-  }, []);
+  }, [showCountdown, countdownServerTime, gameStarted]);
 
   // ⏱️ Initial server countdown sync for private/random
   useEffect(() => {
@@ -4505,7 +4505,7 @@ const GamePage = ({
   // 🔍 Countdown eksiklik kontrolü: Eğer 2 oyuncu var ama countdown başlamamışsa kontrol et
   useEffect(() => {
     if (gameMode !== "private-room" && gameMode !== "random-match") return;
-    if (showCountdown || gameStarted || countdownServerTime) return; // Zaten countdown varsa skip
+    if (showCountdown || gameStarted || countdownServerTime || gameHasStartedRef.current) return; // Zaten countdown varsa veya oyun başladıysa skip
     if (countdownCheckDoneRef.current) return; // Tek seferlik kontrol
 
     const realPlayers = participants.filter((p) => !p.is_bot && p.user_id !== null);
