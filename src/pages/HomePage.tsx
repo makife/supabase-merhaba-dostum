@@ -36,8 +36,6 @@ import {
   Crown,
   Zap,
   Camera,
-  Volume2,
-  VolumeX,
   Gift,
   Sparkles,
   RotateCcw,
@@ -330,27 +328,6 @@ const HomePage = () => {
         {/* Birleştirilmiş Header ve Level Progress */}
         <Card className="border-0 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/10 shadow-2xl relative overflow-hidden">
           <HeaderAnimation />
-
-          {/* Müzik Toggle */}
-          <Button
-            variant="outline"
-            size="sm"
-            className={`absolute top-3 right-3 z-20 w-10 h-10 rounded-full backdrop-blur-md border-2 transition-all duration-300 hover:scale-105 shadow-lg ${
-              musicEnabled
-                ? "bg-gradient-to-r from-primary/10 to-accent/10 hover:from-primary/20 hover:to-accent/20 border-primary/30 hover:border-primary/50"
-                : "bg-gradient-to-r from-muted/20 to-muted/30 hover:from-muted/30 hover:to-muted/40 border-muted-foreground/20 hover:border-muted-foreground/30"
-            }`}
-            onClick={() => {
-              setMusicEnabled(!musicEnabled);
-              playSound("buttonClick");
-            }}
-          >
-            {musicEnabled ? (
-              <Volume2 className="w-5 h-5 text-primary font-bold" />
-            ) : (
-              <VolumeX className="w-5 h-5 text-destructive font-bold" />
-            )}
-          </Button>
 
           <CardContent className="p-4 relative z-10">
             {/* Mobil optimized layout */}
