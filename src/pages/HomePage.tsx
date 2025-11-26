@@ -357,7 +357,7 @@ const HomePage = () => {
                     {/* Murekkep İkonu */}
                     <div className="relative group cursor-pointer">
                       <img
-                        src="/lovable-uploads/murekkepikon.png"
+                        src="/murekkepikon.png"
                         alt="Mürekkep"
                         className="w-12 h-12 object-contain transition-transform duration-300 group-hover:scale-110 drop-shadow-lg"
                       />
