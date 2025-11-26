@@ -194,10 +194,15 @@ const GameCountdown = ({
 
     return () => {
       clearInterval(interval);
-      // Component unmount olduğunda kilidi kaldır
-      countdownLockRef.current = false;
     };
   }, [serverStartTime, serverTimeOffset, onComplete, preloadComplete]);
+
+  // Sadece component unmount olduğunda lock'u kaldır
+  useEffect(() => {
+    return () => {
+      countdownLockRef.current = false;
+    };
+  }, []);
 
   // === RENDER (Sadece sayım sırasında görünür) ===
   if (!hasStarted || !preloadComplete) return null;
