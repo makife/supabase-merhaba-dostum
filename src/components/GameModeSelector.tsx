@@ -85,9 +85,9 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
   };
 
   return (
-    // Ana Overlay (Arka plan karartma)
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] animate-in fade-in duration-200">
-      {/* Kartın Kendisi - Glassmorphism */}
+    // Ana Overlay
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] animate-in fade-in duration-300">
+      {/* Kartın Kendisi */}
       <div
         className={`relative w-full max-w-lg bg-zinc-950/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] ${theme.shadow}`}
       >
@@ -98,7 +98,6 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
 
         {/* --- HEADER --- */}
         <div className="relative pt-8 pb-4 px-6 text-center z-10">
-          {/* Kapat Butonu */}
           <button
             onClick={() => {
               playSound("buttonClick");
@@ -109,7 +108,6 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
             <X className="w-5 h-5" />
           </button>
 
-          {/* Büyük İkon */}
           <div
             className={`w-20 h-20 mx-auto bg-gradient-to-br ${theme.gradient} rounded-2xl flex items-center justify-center shadow-lg transform rotate-3 mb-4 border border-white/20`}
           >
@@ -121,7 +119,8 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
         </div>
 
         {/* --- CONTENT (SEÇİM ALANI) --- */}
-        <div className="p-6 space-y-4 overflow-y-auto z-10">
+        {/* ANIMASYON BURAYA EKLENDİ: animate-in slide-in-from-left-8 */}
+        <div className="p-6 space-y-4 overflow-y-auto z-10 animate-in slide-in-from-left-8 fade-in duration-500">
           <div className="grid grid-cols-2 gap-4">
             {/* Seçenek 1: Zamana Karşı */}
             <button
@@ -206,7 +205,8 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
         </div>
 
         {/* --- FOOTER (BAŞLAT BUTONU) --- */}
-        <div className="p-6 pt-0 z-10 mt-auto">
+        {/* Buraya da slide-in-from-bottom ekleyerek alttan gelmesini sağladık */}
+        <div className="p-6 pt-0 z-10 mt-auto animate-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both">
           <div className="mb-4 flex items-center justify-center gap-2 text-xs text-zinc-500">
             <Shield className="w-3 h-3" />
             <span>Adil eşleştirme sistemi aktif</span>
