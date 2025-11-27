@@ -15,14 +15,21 @@ const RoomAutoNavigator = () => {
     const roomId = currentRoom?.id;
     if (!roomId) return;
 
-    // Ana sayfadaysak bile otomatik yönlendirmeye izin ver (rematch senaryolarında gerekli)
-    // Önceden burası engelliyordu ve oyun sayfası açılmıyordu
+    // Tournament sayfalarındayken yönlendirme yapma
+    if (location.pathname.includes('tournament')) {
+      return;
+    }
 
+    const gameMode = currentRoom?.game_mode || '';
+    
+    // Tournament modundaki odalar için yönlendirme yapma
+    if (gameMode === 'tournament') {
+      return;
+    }
 
     // Aynı odaya tekrar tekrar yönlendirme yapmayalım
     if (lastNavigatedRoomRef.current === roomId) return;
 
-    const gameMode = currentRoom?.game_mode || '';
     const isRandom = gameMode.includes('random-match');
     const basePath = isRandom ? '/game/random-match' : '/game/private-room';
 
