@@ -15,8 +15,9 @@ const RoomAutoNavigator = () => {
     const roomId = currentRoom?.id;
     if (!roomId) return;
 
-    // Tournament sayfalarındayken yönlendirme yapma
-    if (location.pathname.includes('tournament')) {
+    // Tournament sayfalarındayken veya tournament query param varsa yönlendirme yapma
+    const searchParams = new URLSearchParams(location.search);
+    if (location.pathname.includes('tournament') || searchParams.has('tournament')) {
       return;
     }
 
