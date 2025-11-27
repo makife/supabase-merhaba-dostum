@@ -866,7 +866,7 @@ const HomePage = () => {
                 {gameModesConfig.map((mode) => (
                   <Card
                     key={mode.id}
-                    // Yükseklik (h-48) veriyoruz ki resimler güzel görünsün. 
+                    // Yükseklik (h-48) veriyoruz ki resimler güzel görünsün.
                     // Gradientleri sildik, hover efekti ekledik.
                     className="cursor-pointer border-0 overflow-hidden relative h-48 group hover:shadow-xl transition-all duration-300"
                     onClick={() => {
@@ -894,13 +894,14 @@ const HomePage = () => {
                       alt={mode.title}
                       className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
-                    
+
                     {/* Opsiyonel: Eğer resim yüklenmezse veya erişilebilirlik için görünmez başlık */}
                     <span className="sr-only">{mode.title}</span>
                   </Card>
                 ))}
               </div>
             </div>
+          </div>
 
           {/* Game Mode Selector Modal */}
           {selectedMode && selectedMode === "private-room" ? (
