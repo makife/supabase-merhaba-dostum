@@ -520,7 +520,9 @@ const GamePage = ({
   // Turnuva maçı yüklendiğinde grid'i senkronize et
   useEffect(() => {
     if (gameMode === "tournament" && tournamentMatch?.id) {
-      setGameGrid(generateTournamentGrid(tournamentMatch.id));
+      const grid = generateTournamentGrid(tournamentMatch.id);
+      console.log("🎯 Tournament grid set from match ID:", tournamentMatch.id, "Preview:", grid[0]);
+      setGameGrid(grid);
     }
   }, [gameMode, tournamentMatch?.id, generateTournamentGrid]);
 
@@ -1634,6 +1636,11 @@ const GamePage = ({
       // Eğer state'te belirlenmiş bir rakip adı varsa onu kullan
       if (opponentName && opponentName.trim().length > 0) {
         return opponentName;
+      }
+
+      // Participants yüklenmediyse fallback
+      if (!participants || participants.length === 0) {
+        return "Rakip";
       }
 
       const realOpponent = participants.find(
@@ -5152,6 +5159,11 @@ const GamePage = ({
       if (!opponentId || String(opponentId).startsWith("bot_")) {
         const seed = Array.from(String(opponentId || "bot")).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
         return { name: generateBotName(seed), icon: Trophy, avatar: null };
+      }
+
+      // Participants yüklenmediyse fallback
+      if (!participants || participants.length === 0) {
+        return { name: "Rakip", icon: Trophy, avatar: null };
       }
 
       const realOpponent = participants.find((p) => p.user_id === opponentId && !p.is_bot && p.user_id !== null);
