@@ -268,37 +268,25 @@ const HomePage = () => {
     {
       id: "vs-computer",
       title: "Yapay Zekaya Karşı",
-      description: "AI rakibine karşı pratik yap",
-      icon: Bot,
-      color: "bg-blue-500",
-      gradient: "bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700",
+      cardImage: "/bilgisayarKart.png", // Yeni resim
       route: "/game/vs-computer",
     },
     {
       id: "private-room",
       title: "Özel Oda",
-      description: "Arkadaşınla özel oda oluştur",
-      icon: Users,
-      color: "bg-green-500",
-      gradient: "bg-gradient-to-br from-green-500 via-emerald-600 to-green-700",
+      cardImage: "/ozelKart.png", // Yeni resim
       route: "/game/private-room",
     },
     {
       id: "random-match",
       title: "Rastgele Rakip",
-      description: "Rastgele oyuncu ile eşleş",
-      icon: Zap,
-      color: "bg-purple-500",
-      gradient: "bg-gradient-to-br from-purple-500 via-violet-600 to-purple-700",
+      cardImage: "/rastgeleKart.png", // Yeni resim
       route: "/game/random-match",
     },
     {
       id: "tournament",
       title: "Turnuva",
-      description: "8 kişilik turnuvaya katıl",
-      icon: Trophy,
-      color: "bg-yellow-500",
-      gradient: "bg-gradient-to-br from-yellow-500 via-orange-500 to-yellow-600",
+      cardImage: "/turnuvaKart.png", // Yeni resim
       route: "/tournament",
     },
   ];
