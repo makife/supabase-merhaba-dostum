@@ -315,7 +315,7 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
   return (
     <>
       <Dialog open={true} onOpenChange={() => handleClose()}>
-        <DialogContent className="sm:max-w-lg bg-zinc-950/90 backdrop-blur-xl border border-green-500/20 text-white shadow-[0_0_50px_rgba(16,185,129,0.2)] p-0 overflow-hidden gap-0">
+        <DialogContent className="sm:max-w-lg bg-zinc-950/90 backdrop-blur-xl border border-green-500/20 text-white shadow-[0_0_50px_rgba(16,185,129,0.2)] p-0 overflow-hidden gap-0 [&>button]:hidden">
           {/* Dekoratif Yeşil Işık */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-48 bg-gradient-to-b from-green-600 via-emerald-500 to-transparent opacity-20 blur-3xl pointer-events-none" />
 
