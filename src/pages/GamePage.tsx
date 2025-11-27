@@ -3635,7 +3635,31 @@ const GamePage = ({
       // İlk sync
       syncTimer();
       
-      // game_rooms tablosundaki started_at değişikliklerini realtime dinle
+      // game_rooms tablosundaki started_at değişikliklerini realtime dinle (sadece tournament için geçerli)
+      const syncChannel = supabase
+        .channel(`tournament-timer-sync-${tournamentMatch.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'tournament_matches',
+            filter: `id=eq.${tournamentMatch.id}`,
+          },
+          (payload: any) => {
+            console.log('⏰ Tournament timer sync event received:', payload);
+            // countdown_started_at değiştiyse timer'ı sync et
+            if (payload.new?.countdown_started_at) {
+              syncTimer();
+            }
+          }
+        )
+        .subscribe();
+      
+      // Cleanup için channel referansını sakla
+      syncInterval = syncChannel as any;
+    } else if (isMp && currentRoom) {
+      // Random-match ve private-room için game_rooms realtime sync
       const syncChannel = supabase
         .channel(`game-timer-sync-${currentRoom.id}`)
         .on(
@@ -3648,9 +3672,18 @@ const GamePage = ({
           },
           (payload: any) => {
             console.log('⏰ Timer sync event received:', payload);
-            // started_at değiştiyse timer'ı sync et
+            // started_at değiştiyse timer'ı re-calculate et
             if (payload.new?.started_at) {
-              syncTimer();
+              const startedAt = new Date(payload.new.started_at).getTime();
+              const currentTime = Date.now() + serverTimeOffset;
+              const elapsedSeconds = Math.floor((currentTime - startedAt) / 1000);
+              const remainingTime = Math.max(0, timeLeftRef.current - elapsedSeconds);
+              
+              if (Math.abs(timeLeftRef.current - remainingTime) > 1) {
+                timeLeftRef.current = remainingTime;
+                setDisplayTime(remainingTime);
+                console.log('🔄 Timer synced to:', remainingTime, 'seconds');
+              }
             }
           }
         )
