@@ -170,6 +170,15 @@ export const useSounds = () => {
         }
       }
     });
+    
+    // ✅ Özel sesler için audio pool oluştur (yes, wow, yahoo) - gecikme düzeltmesi
+    try {
+      audioCache.current.set('special_yes' as any, createAudioPool('/yes.mp3', 5));
+      audioCache.current.set('special_wow' as any, createAudioPool('/wow2.mp3', 5));
+      audioCache.current.set('special_yahoo' as any, createAudioPool('/yahoo.mp3', 5));
+    } catch (error) {
+      console.warn('Failed to load special sound pools:', error);
+    }
   }, [soundPack, getActiveSoundPack, createAudioPool]);
 
   // DÜZELTME: Generated sound fonksiyonlarını useCallback ile stabilize et
@@ -395,6 +404,28 @@ export const useSounds = () => {
       if (!soundsEnabled) return;
 
       try {
+        // ✅ Pool'dan ses çal (gecikme ve yarım çalma sorunu düzeltildi)
+        let cacheKey: string | null = null;
+        if (soundFile.includes('yes.mp3')) cacheKey = 'special_yes';
+        else if (soundFile.includes('wow2.mp3')) cacheKey = 'special_wow';
+        else if (soundFile.includes('yahoo.mp3')) cacheKey = 'special_yahoo';
+        
+        if (cacheKey) {
+          const audioPool = audioCache.current.get(cacheKey as any);
+          if (audioPool && audioPool.length > 0) {
+            const availableAudio = getAvailableAudio(audioPool);
+            if (availableAudio) {
+              availableAudio.volume = volume;
+              availableAudio.currentTime = 0;
+              availableAudio.play().catch((error) => {
+                console.warn(`Could not play special sound ${soundFile}:`, error);
+              });
+              return;
+            }
+          }
+        }
+        
+        // Fallback: pool bulunamazsa eski yöntem
         const audio = new Audio(soundFile);
         audio.volume = volume;
         audio.currentTime = 0;
@@ -405,7 +436,7 @@ export const useSounds = () => {
         console.warn(`Could not load special sound ${soundFile}:`, error);
       }
     },
-    [soundsEnabled],
+    [soundsEnabled, getAvailableAudio],
   );
 
   // DÜZELTME: setSoundsEnabled fonksiyonunu stabilize et
