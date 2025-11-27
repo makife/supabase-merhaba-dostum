@@ -4798,10 +4798,11 @@ const GamePage = ({
   };
 
   // Custom toast fonksiyonu
-  const showCustomToast = (title: string, description: string) => {
+  const showCustomToast = (title: string, description: string, color: 'red' | 'green' = 'red') => {
     const toastDiv = document.createElement("div");
+    const bgColor = color === 'green' ? 'bg-green-500' : 'bg-red-500';
     toastDiv.className =
-      "fixed bg-red-500 text-white p-3 rounded-lg shadow-lg z-50 transition-transform duration-300 left-1/2";
+      `fixed ${bgColor} text-white p-3 rounded-lg shadow-lg z-50 transition-transform duration-300 left-1/2`;
     toastDiv.style.bottom = "0px"; // Alttan başla
     toastDiv.style.transform = "translateX(-50%) translateY(100%)"; // Ortala ve aşağıda gizle
     toastDiv.innerHTML = '<div class="font-bold">' + title + '</div><div class="text-sm">' + description + "</div>";
@@ -4881,9 +4882,10 @@ const GamePage = ({
 
       console.log("✅ Word accepted:", currentWord, "Points:", result.points);
 
-      // ✅ Flash yeşil
+      // ✅ Flash yeşil ve yeşil toast göster
       setInputFlash('success');
       setTimeout(() => setInputFlash(null), 600);
+      showCustomToast(normalizedWord, "", 'green');
 
       // ✅ HEMEN GRİD'İ TEMİZLE VE UI'I GÜNCELLE (KULLANICI BEKLEMESİN)
       clearWord();
