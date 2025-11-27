@@ -17,14 +17,18 @@ const RoomAutoNavigator = () => {
 
     // Tournament sayfalarındayken veya tournament query param varsa yönlendirme yapma
     const searchParams = new URLSearchParams(location.search);
-    if (location.pathname.includes('tournament') || searchParams.has('tournament')) {
+    const isTournamentPage = location.pathname.includes('tournament') || searchParams.has('tournament');
+    
+    if (isTournamentPage) {
+      console.log('🚫 RoomAutoNavigator: Tournament sayfasında, yönlendirme yapılmıyor');
       return;
     }
 
     const gameMode = currentRoom?.game_mode || '';
     
     // Tournament modundaki odalar için yönlendirme yapma
-    if (gameMode === 'tournament') {
+    if (gameMode === 'tournament' || gameMode.includes('tournament')) {
+      console.log('🚫 RoomAutoNavigator: Tournament mode, yönlendirme yapılmıyor');
       return;
     }
 

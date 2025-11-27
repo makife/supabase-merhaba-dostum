@@ -1012,6 +1012,10 @@ const GamePage = ({
 
       const allMatchesCompleted = allRoundMatches?.every((match) => match.status === "completed");
 
+      // ✅ Turnuva odasını temizle (RoomAutoNavigator'ın tekrar yönlendirmesini engelle)
+      console.log("🧹 Turnuva maçı bitti, currentRoom temizleniyor...");
+      leaveRoom();
+
       // 🎯 MUTLAKA YÖNLENDİRME YAP (kazanan/kaybeden fark etmez)
       if (allMatchesCompleted) {
         console.log(`🏆 Tüm ${tournamentMatch.round}. tur maçları tamamlandı!`);
