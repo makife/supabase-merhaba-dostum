@@ -1,11 +1,8 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Users, Plus, LogIn, Copy, Check, Clock, Trophy, Target, AlertTriangle } from "lucide-react";
+import { Users, Clock, Trophy, Play, LogIn, X, Hash, AlertTriangle, Copy, Check } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,29 +17,27 @@ import { useGame } from "@/contexts/GameContext";
 import { useSounds } from "@/hooks/useSounds";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import { toast as sonnerToast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
 
 interface PrivateRoomModalProps {
   onClose: () => void;
   onStartGame: (roomId: string, gameType: "timed" | "score") => void;
 }
 
-import { useNavigate } from "react-router-dom";
-
 const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<"create" | "join">("create");
   const [roomCode, setRoomCode] = useState("");
   const [joinCode, setJoinCode] = useState("");
   const [gameType, setGameType] = useState<"timed" | "score">("timed");
   const [loading, setLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
-  const [joinedMatchId, setJoinedMatchId] = useState<string>("");
-  const [createdRoomId, setCreatedRoomId] = useState<string>("");
-  const { createRoom, joinRoom, leaveRoom, currentRoom, participants } = useGame();
+
+  const { currentRoom, participants, leaveRoom } = useGame(); // createRoom ve joinRoom'u manuel yapıyoruz
   const { playSound } = useSounds();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -66,7 +61,7 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
       });
       return;
     }
-    
+
     setLoading(true);
     playSound("buttonClick");
 
@@ -74,28 +69,24 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
       if (!user) return;
 
       console.log("🏠 Özel oda oluşturuluyor (Supabase Realtime):", gameType);
-      
-      // UUID room ID oluştur
+
       const roomId = crypto.randomUUID();
       const shortCode = generateRoomCode();
 
-      setCreatedRoomId(roomId);
       setRoomCode(shortCode);
 
       // Kodu ve gameType'ı localStorage'a kaydet
       localStorage.setItem(`room_${shortCode}`, roomId);
       localStorage.setItem(`room_type_${shortCode}`, gameType);
 
-      // Deterministik grid oluştur
+      // Deterministik grid oluştur (Senin orijinal kodun)
       const generateGridFromSeed = (seed: string): string[] => {
         const seedNum = parseInt(seed.replace(/[^0-9]/g, "").slice(0, 10)) || Date.now();
         let currentSeed = seedNum;
-
         const seededRandom = () => {
           currentSeed = (currentSeed * 1664525 + 1013904223) % 4294967296;
           return currentSeed / 4294967296;
         };
-
         const letterPool = [
           "A",
           "A",
@@ -210,7 +201,7 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
 
       const gridArray = generateGridFromSeed(roomId);
 
-      // Supabase'e game_room kaydı oluştur
+      // Supabase işlemleri
       const { error: roomError } = await supabase.from("game_rooms").insert({
         id: roomId,
         room_code: shortCode,
@@ -226,9 +217,9 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
 
       if (roomError && !roomError.message?.includes("duplicate")) {
         console.error("Room insert failed:", roomError);
+        throw roomError;
       }
 
-      // Host olarak participant ekle
       const { error: participantError } = await supabase.from("game_participants").insert({
         room_id: roomId,
         user_id: user.id,
@@ -238,7 +229,6 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
         console.error("Participant insert failed:", participantError);
       }
 
-      // Mor temalı bekleme sayfasına yönlendir
       navigate(`/private-room-waiting?code=${shortCode}&roomId=${roomId}&gameType=${gameType}`);
       onClose();
     } catch (error: any) {
@@ -255,15 +245,10 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
 
   const handleJoinRoom = async () => {
     if (!joinCode.trim()) {
-      toast({
-        title: "Hata",
-        description: "Oda kodu girin",
-        variant: "destructive",
-      });
+      toast({ title: "Hata", description: "Oda kodu girin", variant: "destructive" });
       return;
     }
 
-    // Kredi kontrolü
     if (!isPremium && (profile?.game_credits || 0) + (profile?.bonus_credits || 0) <= 0) {
       sonnerToast.error("Yetersiz oyun hakkı!", {
         description: "Odaya katılmak için hak satın alın veya dolmasını bekleyin.",
@@ -277,22 +262,13 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
 
     try {
       if (!user) return;
-
-      // 6 haneli kod mu yoksa tam ID mi kontrol et
       let actualRoomId = joinCode.trim();
 
       if (joinCode.length === 6) {
-        // Kısa kod ise localStorage'dan gerçek ID'yi al
         const storedRoomId = localStorage.getItem(`room_${joinCode.toUpperCase()}`);
-        if (storedRoomId) {
-          actualRoomId = storedRoomId;
-          console.log("🔑 Short code resolved to:", actualRoomId);
-        }
+        if (storedRoomId) actualRoomId = storedRoomId;
       }
 
-      console.log("🚪 Özel odaya katılınıyor (Supabase):", actualRoomId);
-
-      // Supabase'de room'un varlığını kontrol et - room_code ile ara
       const { data: room, error: roomError } = await supabase
         .from("game_rooms")
         .select("*")
@@ -300,263 +276,239 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
         .eq("status", "waiting")
         .maybeSingle();
 
-      if (roomError || !room) {
-        console.error("Oda arama hatası:", roomError);
-        throw new Error("Oda bulunamadı veya oda dolu");
-      }
+      if (roomError || !room) throw new Error("Oda bulunamadı veya oda dolu");
 
-      // Gerçek room ID'yi güncelle
       actualRoomId = room.id;
 
-      // Participant olarak ekle
-      const { error: participantError } = await supabase
-        .from("game_participants")
-        .insert({
-          room_id: actualRoomId,
-          user_id: user.id,
-        });
+      const { error: participantError } = await supabase.from("game_participants").insert({
+        room_id: actualRoomId,
+        user_id: user.id,
+      });
 
-      if (participantError && participantError.code !== "23505") {
-        throw new Error("Odaya katılım başarısız");
-      }
-
-      setJoinedMatchId(actualRoomId);
+      if (participantError && participantError.code !== "23505") throw new Error("Odaya katılım başarısız");
 
       const savedGameType =
-        (localStorage.getItem(`room_type_${joinCode.toUpperCase()}`) as "timed" | "score") || room.game_type_new || "timed";
+        (localStorage.getItem(`room_type_${joinCode.toUpperCase()}`) as "timed" | "score") ||
+        room.game_type_new ||
+        "timed";
 
-      // Mor temalı bekleme sayfasına yönlendir
       navigate(`/private-room-waiting?code=${joinCode.toUpperCase()}&roomId=${actualRoomId}&gameType=${savedGameType}`);
       onClose();
     } catch (error: any) {
       console.error("Error joining room:", error);
-      toast({
-        title: "Hata",
-        description: error.message || "Odaya katılamadı",
-        variant: "destructive",
-      });
+      toast({ title: "Hata", description: error.message || "Odaya katılamadı", variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
 
-  const copyRoomCode = async () => {
-    if (roomCode) {
-      try {
-        await navigator.clipboard.writeText(roomCode);
-        setCopied(true);
-        playSound("buttonClick");
-        toast({
-          title: "Kopyalandı!",
-          description: "Oda kodu panoya kopyalandı",
-        });
-        setTimeout(() => setCopied(false), 2000);
-      } catch (error) {
-        console.error("Error copying to clipboard:", error);
-      }
+  // Kapatma işlemi (Oda varsa uyarı ver)
+  const handleClose = () => {
+    playSound("buttonClick");
+    if (currentRoom && participants.length > 1) {
+      setShowExitDialog(true);
+    } else {
+      onClose();
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-md border-primary/20">
-        <CardHeader className="text-center space-y-4 pb-4">
-          <div className="flex flex-col items-center gap-3">
-            <div className="h-16 w-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
-              <Users className="h-8 w-8 text-primary" />
+    <>
+      <Dialog open={true} onOpenChange={() => handleClose()}>
+        <DialogContent className="sm:max-w-lg bg-zinc-950/90 backdrop-blur-xl border border-green-500/20 text-white shadow-[0_0_50px_rgba(16,185,129,0.2)] p-0 overflow-hidden gap-0">
+          {/* Dekoratif Yeşil Işık */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-48 bg-gradient-to-b from-green-600 via-emerald-500 to-transparent opacity-20 blur-3xl pointer-events-none" />
+
+          {/* --- HEADER --- */}
+          <div className="relative pt-6 pb-4 px-6 text-center z-10">
+            <button
+              onClick={handleClose}
+              className="absolute top-4 right-4 p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="w-16 h-16 mx-auto bg-gradient-to-br from-green-500 to-emerald-700 rounded-2xl flex items-center justify-center shadow-lg transform -rotate-3 mb-3 border border-white/20">
+              <Users className="w-8 h-8 text-white drop-shadow-md" />
             </div>
-            <div>
-              <CardTitle className="text-xl">Özel Oda</CardTitle>
-              <CardDescription>Arkadaşınla özel oyun oluştur</CardDescription>
+
+            <h2 className="text-2xl font-black uppercase tracking-wider text-white drop-shadow-lg">ÖZEL ODA</h2>
+            <p className="text-white/60 text-sm font-medium">Arkadaşınla kozlarını paylaş</p>
+          </div>
+
+          {/* --- TABS --- */}
+          <div className="px-6 pb-2 z-10">
+            <div className="grid grid-cols-2 p-1 bg-black/40 rounded-xl border border-white/10">
+              <button
+                onClick={() => {
+                  playSound("buttonClick");
+                  setActiveTab("create");
+                }}
+                className={`py-2 text-sm font-bold rounded-lg transition-all duration-300 ${
+                  activeTab === "create" ? "bg-green-600 text-white shadow-lg" : "text-zinc-500 hover:text-white"
+                }`}
+              >
+                ODA KUR
+              </button>
+              <button
+                onClick={() => {
+                  playSound("buttonClick");
+                  setActiveTab("join");
+                }}
+                className={`py-2 text-sm font-bold rounded-lg transition-all duration-300 ${
+                  activeTab === "join" ? "bg-emerald-600 text-white shadow-lg" : "text-zinc-500 hover:text-white"
+                }`}
+              >
+                ODAYA KATIL
+              </button>
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="create" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="create" className="flex items-center gap-2">
-                <Plus className="w-4 h-4" />
-                Oda Oluştur
-              </TabsTrigger>
-              <TabsTrigger value="join" className="flex items-center gap-2">
-                <LogIn className="w-4 h-4" />
-                Odaya Katıl
-              </TabsTrigger>
-            </TabsList>
 
-            <TabsContent value="create" className="space-y-4 mt-4">
-              {!roomCode && (
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-semibold mb-3 text-center">Oyun Türü Seçin</h3>
-                    <RadioGroup
-                      value={gameType}
-                      onValueChange={(value) => {
-                        playSound("buttonClick");
-                        setGameType(value as "timed" | "score");
-                      }}
+          {/* --- İÇERİK --- */}
+          <div className="p-6 pt-4 z-10 min-h-[300px]">
+            {/* ODA KURMA SEKMESİ */}
+            {activeTab === "create" && (
+              <div className="space-y-4 animate-in slide-in-from-left-4 duration-300">
+                <p className="text-xs text-center text-zinc-400 mb-2 font-medium uppercase tracking-widest">
+                  Oyun Modunu Seç
+                </p>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => {
+                      playSound("buttonClick");
+                      setGameType("timed");
+                    }}
+                    className={`relative flex flex-col items-center p-3 rounded-xl border-2 transition-all duration-200 h-36 justify-center gap-2
+                                ${
+                                  gameType === "timed"
+                                    ? "border-green-500 bg-green-500/10 shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+                                    : "border-white/5 bg-white/5 hover:bg-white/10"
+                                }
+                            `}
+                  >
+                    <div
+                      className={`p-2 rounded-full ${gameType === "timed" ? "bg-green-500 text-white" : "bg-zinc-800 text-zinc-500"}`}
                     >
-                      <div className="space-y-3">
-                        <Label
-                          className={`relative flex items-center space-x-3 p-3 rounded-lg border-2 cursor-pointer transition-all duration-300 ${
-                            gameType === "timed"
-                              ? "border-primary bg-primary/10"
-                              : "border-muted hover:border-primary/50"
-                          }`}
-                        >
-                          <RadioGroupItem value="timed" className="sr-only" />
-                          <div
-                            className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 ${
-                              gameType === "timed"
-                                ? "bg-primary text-primary-foreground"
-                                : "bg-muted text-muted-foreground"
-                            }`}
-                          >
-                            <Clock className="w-5 h-5" />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                              <span className="font-semibold">Zamana Karşı</span>
-                              {gameType === "timed" && (
-                                <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center">
-                                  <div className="w-1.5 h-1.5 bg-primary-foreground rounded-full"></div>
-                                </div>
-                              )}
-                            </div>
-                            <p className="text-xs text-muted-foreground">2 dakika içinde en yüksek puanı hedefle</p>
-                          </div>
-                        </Label>
+                      <Clock className="w-5 h-5" />
+                    </div>
+                    <span className={`font-bold ${gameType === "timed" ? "text-white" : "text-zinc-400"}`}>
+                      Zamana Karşı
+                    </span>
+                    <span className="text-[10px] text-zinc-500 text-center px-1">2 dk süre, maksimum kelime</span>
+                  </button>
 
-                        <Label
-                          className={`relative flex items-center space-x-3 p-3 rounded-lg border-2 cursor-pointer transition-all duration-300 ${
-                            gameType === "score"
-                              ? "border-primary bg-primary/10"
-                              : "border-muted hover:border-primary/50"
-                          }`}
-                        >
-                          <RadioGroupItem value="score" className="sr-only" />
-                          <div
-                            className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 ${
-                              gameType === "score"
-                                ? "bg-primary text-primary-foreground"
-                                : "bg-muted text-muted-foreground"
-                            }`}
-                          >
-                            <Trophy className="w-5 h-5" />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                              <span className="font-semibold">Puanlı</span>
-                              {gameType === "score" && (
-                                <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center">
-                                  <div className="w-1.5 h-1.5 bg-primary-foreground rounded-full"></div>
-                                </div>
-                              )}
-                            </div>
-                            <p className="text-xs text-muted-foreground">500 puana ilk ulaşan kazanır</p>
-                          </div>
-                        </Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
+                  <button
+                    onClick={() => {
+                      playSound("buttonClick");
+                      setGameType("score");
+                    }}
+                    className={`relative flex flex-col items-center p-3 rounded-xl border-2 transition-all duration-200 h-36 justify-center gap-2
+                                ${
+                                  gameType === "score"
+                                    ? "border-emerald-500 bg-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+                                    : "border-white/5 bg-white/5 hover:bg-white/10"
+                                }
+                            `}
+                  >
+                    <div
+                      className={`p-2 rounded-full ${gameType === "score" ? "bg-emerald-500 text-white" : "bg-zinc-800 text-zinc-500"}`}
+                    >
+                      <Trophy className="w-5 h-5" />
+                    </div>
+                    <span className={`font-bold ${gameType === "score" ? "text-white" : "text-zinc-400"}`}>
+                      Skor Modu
+                    </span>
+                    <span className="text-[10px] text-zinc-500 text-center px-1">500 puana ulaşan kazanır</span>
+                  </button>
                 </div>
-              )}
 
-              <div className="text-center space-y-4">
-                <p className="text-sm text-muted-foreground">Yeni bir özel oda oluşturun ve arkadaşınızla paylaşın</p>
-
-                <Button onClick={handleCreateRoom} disabled={loading} className="w-full" size="lg">
-                  {loading ? "Oda Oluşturuluyor..." : "Oda Oluştur"}
+                <Button
+                  onClick={handleCreateRoom}
+                  disabled={loading}
+                  className="w-full py-6 mt-4 text-lg font-bold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white shadow-lg border-0"
+                >
+                  {loading ? (
+                    <span className="animate-pulse">Oda Hazırlanıyor...</span>
+                  ) : (
+                    <>
+                      <Play className="w-5 h-5 mr-2 fill-current" /> ODAYI OLUŞTUR
+                    </>
+                  )}
                 </Button>
               </div>
-            </TabsContent>
+            )}
 
-            <TabsContent value="join" className="space-y-4 mt-4">
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="joinCode">Oda Kodu</Label>
+            {/* ODAYA KATILMA SEKMESİ */}
+            {activeTab === "join" && (
+              <div className="space-y-6 py-4 animate-in slide-in-from-right-4 duration-300">
+                <div className="text-center space-y-2">
+                  <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-2 border border-white/10">
+                    <Hash className="w-6 h-6 text-zinc-400" />
+                  </div>
+                  <h3 className="text-white font-bold">Davet Kodunu Gir</h3>
+                  <p className="text-sm text-zinc-500 px-4">Arkadaşının sana gönderdiği 6 haneli kodu aşağıya yaz.</p>
+                </div>
+
+                <div className="relative group">
                   <Input
-                    id="joinCode"
-                    placeholder="6 haneli kodu girin (örn: A4K7B2)"
                     value={joinCode}
                     onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                    placeholder="Örn: A4K7B2"
                     maxLength={6}
-                    className="mt-1 text-center font-mono text-lg tracking-wider uppercase"
+                    className="bg-black/30 border-green-500/30 text-white text-center h-16 text-2xl font-mono tracking-[0.5em] focus-visible:ring-green-500 placeholder:text-zinc-700 placeholder:tracking-normal placeholder:text-sm uppercase"
                   />
                 </div>
 
-                <Button onClick={handleJoinRoom} disabled={loading || !joinCode.trim()} className="w-full" size="lg">
-                  {loading ? "Odaya Katılıyor..." : "Odaya Katıl"}
+                <Button
+                  onClick={handleJoinRoom}
+                  disabled={loading || joinCode.length < 3}
+                  className="w-full py-6 text-lg font-bold bg-zinc-800 hover:bg-zinc-700 text-white border border-white/10"
+                >
+                  {loading ? "Bağlanılıyor..." : "ODAYA GİRİŞ YAP"} <LogIn className="w-5 h-5 ml-2" />
                 </Button>
-
-                <p className="text-sm text-muted-foreground text-center">
-                  Arkadaşınızdan aldığınız 6 haneli kodu girin
-                </p>
               </div>
-            </TabsContent>
-          </Tabs>
-
-          <div className="flex justify-center mt-6">
-            <Button
-              variant="outline"
-              onClick={() => {
-                playSound("buttonClick");
-                if (currentRoom && participants.length > 1) {
-                  setShowExitDialog(true);
-                } else {
-                  onClose();
-                }
-              }}
-              className="w-full"
-            >
-              {currentRoom && participants.length > 1 ? "Çıkış" : "İptal"}
-            </Button>
+            )}
           </div>
+        </DialogContent>
+      </Dialog>
 
-          <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
-            <AlertDialogContent className="max-w-sm">
-              <AlertDialogHeader className="text-center">
-                <div className="mx-auto w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mb-4">
-                  <AlertTriangle className="w-6 h-6 text-amber-600" />
-                </div>
-                <AlertDialogTitle className="text-lg font-semibold text-center">
-                  Odadan Çıkmak İstiyorsun?
-                </AlertDialogTitle>
-                <AlertDialogDescription className="text-center text-muted-foreground">
-                  Odadan çıkarsan arkadaşın tek başına kalacak.
-                  <br />
-                  Emin misin?
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter className="flex-col space-y-2 sm:space-y-0 sm:flex-row sm:space-x-2">
-                <AlertDialogCancel
-                  onClick={() => setShowExitDialog(false)}
-                  className="w-full sm:w-auto order-2 sm:order-1"
-                >
-                  Vazgeç
-                </AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={async () => {
-                    playSound("buttonClick");
-                    await leaveRoom();
-                    setShowExitDialog(false);
-                    onClose();
-                    toast({
-                      title: "✋ Odadan Çıktın",
-                      description: "Arkadaşın devam edebilir.",
-                      duration: 2000,
-                    });
-                  }}
-                  className="w-full sm:w-auto bg-red-500 hover:bg-red-600 order-1 sm:order-2"
-                >
-                  Evet, Çık
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </CardContent>
-      </Card>
-    </div>
+      {/* ÇIKIŞ UYARI MODALI */}
+      <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
+        <AlertDialogContent className="bg-zinc-950 border border-white/10 text-white">
+          <AlertDialogHeader className="text-center">
+            <div className="mx-auto w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center mb-4">
+              <AlertTriangle className="w-6 h-6 text-red-500" />
+            </div>
+            <AlertDialogTitle className="text-lg font-semibold text-center text-white">
+              Odadan Çıkmak İstiyorsun?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-center text-zinc-400">
+              Odadan çıkarsan işlem iptal edilecek.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col space-y-2 sm:space-y-0 sm:flex-row sm:space-x-2">
+            <AlertDialogCancel
+              onClick={() => setShowExitDialog(false)}
+              className="bg-transparent border-white/10 text-white hover:bg-white/5 hover:text-white"
+            >
+              Vazgeç
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                playSound("buttonClick");
+                await leaveRoom();
+                setShowExitDialog(false);
+                onClose();
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white border-0"
+            >
+              Evet, Çık
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 
