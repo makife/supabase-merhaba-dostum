@@ -1,195 +1,232 @@
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { Clock, Target, Trophy, Bot, Users, Zap, X } from 'lucide-react';
-import { useSounds } from '@/hooks/useSounds';
-import { useUser } from '@/contexts/UserContext';
-import { toast } from 'sonner';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Clock, Target, Trophy, Bot, Users, Zap, X, Shield, Play } from "lucide-react";
+import { useSounds } from "@/hooks/useSounds";
+import { useUser } from "@/contexts/UserContext";
+import { toast } from "sonner";
 
 interface GameModeSelectorProps {
   mode: string;
-  onStart: (gameType: 'timed' | 'score') => void;
+  onStart: (gameType: "timed" | "score") => void;
   onClose: () => void;
 }
 
 const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => {
-  const [selectedType, setSelectedType] = useState<'timed' | 'score'>('timed');
+  const [selectedType, setSelectedType] = useState<"timed" | "score">("timed");
   const { playSound } = useSounds();
   const { profile, isPremium } = useUser();
 
-  const getModeInfo = () => {
+  // Modlara göre renk ve tema ayarları
+  const getTheme = () => {
     switch (mode) {
-      case 'vs-computer':
+      case "vs-computer":
         return {
-          title: 'Yapay Zekaya Karşı',
-          description: 'AI rakibine karşı pratik yap',
+          title: "Yapay Zekaya Karşı",
+          gradient: "from-blue-600 via-cyan-500 to-blue-600",
+          bgGlow: "bg-blue-500/10",
+          border: "border-blue-500/50",
+          text: "text-blue-400",
           icon: Bot,
-          color: 'bg-blue-500'
+          ring: "ring-blue-500",
+          shadow: "shadow-blue-500/20",
         };
-      case 'private-room':
+      case "private-room":
         return {
-          title: 'Özel Oda',
-          description: 'Arkadaşınla özel oda oluştur',
+          title: "Özel Oda Kur",
+          gradient: "from-green-600 via-emerald-500 to-green-600",
+          bgGlow: "bg-green-500/10",
+          border: "border-green-500/50",
+          text: "text-green-400",
           icon: Users,
-          color: 'bg-green-500'
+          ring: "ring-green-500",
+          shadow: "shadow-green-500/20",
         };
-      case 'random-match':
+      case "random-match":
         return {
-          title: 'Rastgele Rakip',
-          description: 'Rastgele oyuncu ile eşleş',
+          title: "Rastgele Rakip",
+          gradient: "from-purple-600 via-pink-500 to-purple-600",
+          bgGlow: "bg-purple-500/10",
+          border: "border-purple-500/50",
+          text: "text-purple-400",
           icon: Zap,
-          color: 'bg-purple-500'
+          ring: "ring-purple-500",
+          shadow: "shadow-purple-500/20",
         };
-      default:
+      default: // Turnuva veya varsayılan
         return {
-          title: 'Oyun Modu',
-          description: 'Oyun modunu seç',
-          icon: Target,
-          color: 'bg-gray-500'
+          title: "Oyun Modu",
+          gradient: "from-yellow-600 via-orange-500 to-yellow-600",
+          bgGlow: "bg-yellow-500/10",
+          border: "border-yellow-500/50",
+          text: "text-yellow-400",
+          icon: Trophy,
+          ring: "ring-yellow-500",
+          shadow: "shadow-yellow-500/20",
         };
     }
   };
 
-  const modeInfo = getModeInfo();
+  const theme = getTheme();
+
+  const handleStart = () => {
+    playSound("buttonClick");
+
+    // Kredi kontrolü
+    if (!isPremium && (profile?.game_credits || 0) + (profile?.bonus_credits || 0) <= 0) {
+      toast.error("Yetersiz oyun hakkı!", {
+        description: "Oyun oynamak için hak satın alın veya dolmasını bekleyin.",
+        duration: 4000,
+      });
+      return;
+    }
+
+    onStart(selectedType);
+  };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className={`w-10 h-10 ${modeInfo.color} rounded-lg flex items-center justify-center`}>
-                <modeInfo.icon className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <CardTitle>{modeInfo.title}</CardTitle>
-                <CardDescription>{modeInfo.description}</CardDescription>
-              </div>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
+    // Ana Overlay (Arka plan karartma)
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] animate-in fade-in duration-200">
+      {/* Kartın Kendisi - Glassmorphism */}
+      <div
+        className={`relative w-full max-w-lg bg-zinc-950/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] ${theme.shadow}`}
+      >
+        {/* Dekoratif Arka Plan Işığı */}
+        <div
+          className={`absolute top-0 left-1/2 -translate-x-1/2 w-full h-48 bg-gradient-to-b ${theme.gradient} opacity-20 blur-3xl pointer-events-none`}
+        />
+
+        {/* --- HEADER --- */}
+        <div className="relative pt-8 pb-4 px-6 text-center z-10">
+          {/* Kapat Butonu */}
+          <button
+            onClick={() => {
+              playSound("buttonClick");
+              onClose();
+            }}
+            className="absolute top-4 right-4 p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+
+          {/* Büyük İkon */}
+          <div
+            className={`w-20 h-20 mx-auto bg-gradient-to-br ${theme.gradient} rounded-2xl flex items-center justify-center shadow-lg transform rotate-3 mb-4 border border-white/20`}
+          >
+            <theme.icon className="w-10 h-10 text-white drop-shadow-md" />
+          </div>
+
+          <h2 className="text-2xl font-black uppercase tracking-wider text-white drop-shadow-lg">{theme.title}</h2>
+          <p className="text-white/60 text-sm font-medium mt-1">Mücadele türünü seç ve başla</p>
+        </div>
+
+        {/* --- CONTENT (SEÇİM ALANI) --- */}
+        <div className="p-6 space-y-4 overflow-y-auto z-10">
+          <div className="grid grid-cols-2 gap-4">
+            {/* Seçenek 1: Zamana Karşı */}
+            <button
               onClick={() => {
-                playSound('buttonClick');
-                onClose();
+                playSound("buttonClick");
+                setSelectedType("timed");
               }}
+              className={`relative group flex flex-col items-center p-4 rounded-xl border-2 transition-all duration-300 h-44 justify-between
+                        ${
+                          selectedType === "timed"
+                            ? `${theme.border} ${theme.bgGlow} shadow-[0_0_20px_rgba(0,0,0,0.3)] scale-[1.02]`
+                            : "border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/20"
+                        }
+                    `}
             >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div>
-            <h3 className="font-semibold mb-3 text-center">Oyun Türü Seçin</h3>
-            <RadioGroup value={selectedType} onValueChange={(value) => {
-              playSound('buttonClick');
-              setSelectedType(value as 'timed' | 'score');
-            }}>
-              <div className="space-y-4">
-                {/* Zamana Karşı */}
-                <Label className={`relative flex items-center space-x-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 hover:scale-[1.02] ${
-                  selectedType === 'timed' 
-                    ? 'border-blue-500 bg-gradient-to-r from-blue-50 to-cyan-50 shadow-lg shadow-blue-200/50' 
-                    : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/30'
-                }`}>
-                  <RadioGroupItem value="timed" className="sr-only" />
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${
-                    selectedType === 'timed' 
-                      ? 'bg-gradient-to-br from-blue-500 to-cyan-500 shadow-lg' 
-                      : 'bg-gray-100'
-                  }`}>
-                    <Clock className={`w-6 h-6 ${selectedType === 'timed' ? 'text-white' : 'text-gray-600'}`} />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-lg">Zamana Karşı</span>
-                      {selectedType === 'timed' && (
-                        <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center animate-scale-in">
-                          <div className="w-2 h-2 bg-white rounded-full"></div>
-                        </div>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">2 dakika içinde en yüksek puanı hedefle</p>
-                    <div className="flex space-x-2 mt-3">
-                      <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800 border-blue-200">
-                        <Clock className="w-3 h-3 mr-1" />
-                        2 Dakika
-                      </Badge>
-                      <Badge variant="secondary" className="text-xs bg-cyan-100 text-cyan-800 border-cyan-200">
-                        <Target className="w-3 h-3 mr-1" />
-                        Sınırsız Puan
-                      </Badge>
-                    </div>
-                  </div>
-                </Label>
-
-                {/* Puana Karşı */}
-                <Label className={`relative flex items-center space-x-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 hover:scale-[1.02] ${
-                  selectedType === 'score' 
-                    ? 'border-amber-500 bg-gradient-to-r from-amber-50 to-orange-50 shadow-lg shadow-amber-200/50' 
-                    : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/30'
-                }`}>
-                  <RadioGroupItem value="score" className="sr-only" />
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${
-                    selectedType === 'score' 
-                      ? 'bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg' 
-                      : 'bg-gray-100'
-                  }`}>
-                    <Trophy className={`w-6 h-6 ${selectedType === 'score' ? 'text-white' : 'text-gray-600'}`} />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-lg">Puanlı</span>
-                      {selectedType === 'score' && (
-                        <div className="w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center animate-scale-in">
-                          <div className="w-2 h-2 bg-white rounded-full"></div>
-                        </div>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">500 puana ilk ulaşan kazanır</p>
-                    <div className="flex space-x-2 mt-3">
-                      <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 border-amber-200">
-                        <Trophy className="w-3 h-3 mr-1" />
-                        500 Puan
-                      </Badge>
-                      <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-800 border-orange-200">
-                        <Clock className="w-3 h-3 mr-1" />
-                        Sınırsız Süre
-                      </Badge>
-                    </div>
-                  </div>
-                </Label>
+              <div
+                className={`p-3 rounded-full ${selectedType === "timed" ? `bg-gradient-to-r ${theme.gradient}` : "bg-zinc-800"}`}
+              >
+                <Clock className={`w-6 h-6 ${selectedType === "timed" ? "text-white" : "text-zinc-500"}`} />
               </div>
-            </RadioGroup>
+
+              <div className="text-center">
+                <span
+                  className={`block font-bold text-lg ${selectedType === "timed" ? "text-white" : "text-zinc-400"}`}
+                >
+                  Zamana Karşı
+                </span>
+                <span className="text-xs text-zinc-500 mt-1 block px-2">2 Dakika içinde maksimum kelime bul</span>
+              </div>
+
+              <Badge variant="outline" className="border-white/10 text-zinc-400 text-[10px] bg-black/20">
+                ⚡ En Popüler
+              </Badge>
+
+              {selectedType === "timed" && (
+                <div
+                  className={`absolute inset-0 border-2 ${theme.border} rounded-xl blur-[2px] pointer-events-none`}
+                />
+              )}
+            </button>
+
+            {/* Seçenek 2: Puanlı */}
+            <button
+              onClick={() => {
+                playSound("buttonClick");
+                setSelectedType("score");
+              }}
+              className={`relative group flex flex-col items-center p-4 rounded-xl border-2 transition-all duration-300 h-44 justify-between
+                        ${
+                          selectedType === "score"
+                            ? `${theme.border} ${theme.bgGlow} shadow-[0_0_20px_rgba(0,0,0,0.3)] scale-[1.02]`
+                            : "border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/20"
+                        }
+                    `}
+            >
+              <div
+                className={`p-3 rounded-full ${selectedType === "score" ? `bg-gradient-to-r ${theme.gradient}` : "bg-zinc-800"}`}
+              >
+                <Target className={`w-6 h-6 ${selectedType === "score" ? "text-white" : "text-zinc-500"}`} />
+              </div>
+
+              <div className="text-center">
+                <span
+                  className={`block font-bold text-lg ${selectedType === "score" ? "text-white" : "text-zinc-400"}`}
+                >
+                  Skor Modu
+                </span>
+                <span className="text-xs text-zinc-500 mt-1 block px-2">500 Puana ulaşan ilk kişi kazanır</span>
+              </div>
+
+              <Badge variant="outline" className="border-white/10 text-zinc-400 text-[10px] bg-black/20">
+                🎯 Stratejik
+              </Badge>
+
+              {selectedType === "score" && (
+                <div
+                  className={`absolute inset-0 border-2 ${theme.border} rounded-xl blur-[2px] pointer-events-none`}
+                />
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* --- FOOTER (BAŞLAT BUTONU) --- */}
+        <div className="p-6 pt-0 z-10 mt-auto">
+          <div className="mb-4 flex items-center justify-center gap-2 text-xs text-zinc-500">
+            <Shield className="w-3 h-3" />
+            <span>Adil eşleştirme sistemi aktif</span>
           </div>
 
+          <Button
+            onClick={handleStart}
+            className={`w-full py-6 text-lg font-bold uppercase tracking-wider text-white shadow-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]
+                    bg-gradient-to-r ${theme.gradient} hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
+                `}
+          >
+            <Play className="w-5 h-5 mr-2 fill-current" />
+            OYUNU BAŞLAT
+          </Button>
 
-          <div className="flex space-x-3">
-            <Button variant="outline" onClick={onClose} className="flex-1">
-              İptal
-            </Button>
-            <Button onClick={() => {
-              playSound('buttonClick');
-              
-              // Kredi kontrolü
-              if (!isPremium && (profile?.game_credits || 0) + (profile?.bonus_credits || 0) <= 0) {
-                toast.error("Yetersiz oyun hakkı!", {
-                  description: "Oyun oynamak için hak satın alın veya dolmasını bekleyin.",
-                  duration: 4000,
-                });
-                return;
-              }
-              
-              onStart(selectedType);
-            }} className="flex-1">
-              Oyunu Başlat
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          <button onClick={onClose} className="w-full mt-3 text-sm text-zinc-500 hover:text-white transition-colors">
+            Vazgeç
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
