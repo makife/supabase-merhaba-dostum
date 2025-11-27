@@ -860,6 +860,7 @@ const GamePage = ({
     // ✅ Önce oyun sonu state'lerini set et
     setGameEnded(true);
     setShowResults(true);
+    setButtonsEnabled(false); // Butonları devre dışı bırak
 
     try {
       // Kullanıcının hangi oyuncu olduğunu belirle
@@ -1023,19 +1024,19 @@ const GamePage = ({
           console.error("advance_tournament_round error:", advanceErr);
         }
 
-        // Her durumda bracket sayfasına yönlendir
-        console.log("🔄 3 saniye sonra bracket sayfasına yönlendirilecek");
+        // Her durumda bracket sayfasına yönlendir (hızlandırıldı: 1.5 saniye)
+        console.log("🔄 1.5 saniye sonra bracket sayfasına yönlendirilecek");
         setTimeout(() => {
           console.log("🔄 Bracket sayfasına yönlendiriliyor...");
           navigate(`/tournament-bracket/${tournamentMatch.tournament_id}`);
-        }, 3000);
+        }, 1500);
       } else {
         console.log(
           `⏳ Diğer maçlar devam ediyor. Tamamlanan: ${allRoundMatches?.filter((m) => m.status === "completed").length}/${allRoundMatches?.length}`,
         );
 
-        // Backend winner_id'ye göre yönlendirme (tie asla yok)
-        const redirectDelay = 3000;
+        // Backend winner_id'ye göre yönlendirme (hızlandırıldı: 1.5 saniye)
+        const redirectDelay = 1500;
         const redirectPath = `/tournament-bracket/${tournamentMatch.tournament_id}`;
 
         console.log(`🔄 ${redirectDelay / 1000} saniye sonra ${redirectPath}'e yönlendirilecek`);
@@ -3718,11 +3719,19 @@ const GamePage = ({
         timerRef.current = null;
 
         console.log("⏰ Süre bitti! Final skorlar");
-        handleGameEnd();
-        setTimeout(() => {
+        
+        // Tournament modunda direkt handleGameEnd çağır (gameEnded hemen true olacak)
+        if (gameMode === "tournament") {
           setGameEnded(true);
-          checkWinnerWithScores(playerScoreRef.current, opponentScoreRef.current);
-        }, 50);
+          handleGameEnd();
+        } else {
+          // Diğer modlar için gecikme ile
+          handleGameEnd();
+          setTimeout(() => {
+            setGameEnded(true);
+            checkWinnerWithScores(playerScoreRef.current, opponentScoreRef.current);
+          }, 50);
+        }
       }
     }, 1000);
 
