@@ -866,13 +866,12 @@ const HomePage = () => {
                 {gameModesConfig.map((mode) => (
                   <Card
                     key={mode.id}
-                    // Yükseklik (h-48) veriyoruz ki resimler güzel görünsün.
-                    // Gradientleri sildik, hover efekti ekledik.
-                    className="cursor-pointer border-0 overflow-hidden relative h-48 group hover:shadow-xl transition-all duration-300"
+                    // DEĞİŞİKLİK 1: h-48'i sildik. Yerine 'aspect-video' veya 'aspect-[2/1]' ekledik.
+                    // Bu sayede kart her zaman 16:9 oranını korur, asla bozulmaz.
+                    className="cursor-pointer border-0 overflow-hidden relative w-full aspect-video group hover:shadow-xl transition-all duration-300 bg-muted/20"
                     onClick={() => {
+                      // ... (Tıklama kodları aynı kalacak) ...
                       playSound("buttonClick");
-
-                      // Kredi kontrolü (Aynen koruyoruz)
                       if (!isPremium && (profile?.game_credits || 0) + (profile?.bonus_credits || 0) <= 0) {
                         toast.error("Yetersiz oyun hakkı!", {
                           description: "Oyun oynamak için hak satın alın veya dolmasını bekleyin.",
@@ -880,7 +879,6 @@ const HomePage = () => {
                         });
                         return;
                       }
-
                       if (mode.id === "tournament") {
                         navigate("/tournament");
                       } else {
@@ -888,14 +886,19 @@ const HomePage = () => {
                       }
                     }}
                   >
-                    {/* Kart İçeriği: Sadece Resim */}
+                    {/* DEĞİŞİKLİK 2: Performans iyileştirmeleri */}
                     <img
                       src={mode.cardImage}
                       alt={mode.title}
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      loading="eager" // Tarayıcıya "bunu hemen yükle" der.
+                      fetchPriority="high" // Yükleme önceliğini artırır.
+                      decoding="async" // Sayfanın donmasını engeller.
+                      className="absolute inset-0 w-full h-full object-fill md:object-cover transition-transform duration-500 group-hover:scale-105"
                     />
 
-                    {/* Opsiyonel: Eğer resim yüklenmezse veya erişilebilirlik için görünmez başlık */}
+                    {/* Yüklenirken boş görünmemesi için iskelet (opsiyonel güvenlik) */}
+                    <div className="absolute inset-0 -z-10 bg-gray-200 animate-pulse" />
+
                     <span className="sr-only">{mode.title}</span>
                   </Card>
                 ))}
