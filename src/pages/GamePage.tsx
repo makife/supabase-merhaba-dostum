@@ -573,6 +573,7 @@ const GamePage = ({
 
   const [selectedLetters, setSelectedLetters] = useState<{ letter: string; row: number; col: number }[]>([]);
   const [currentWord, setCurrentWord] = useState("");
+  const [inputFlash, setInputFlash] = useState<'success' | 'error' | null>(null);
   const [usedWords, setUsedWords] = useState<Set<string>>(new Set());
   const [playerWords, setPlayerWords] = useState<string[]>([]);
   const [opponentWords, setOpponentWords] = useState<string[]>([]);
@@ -4872,11 +4873,17 @@ const GamePage = ({
       if (!result.isValid) {
         playSound("wrongWord");
         showCustomToast("Geçersiz Kelime", "");
+        setInputFlash('error');
+        setTimeout(() => setInputFlash(null), 600);
         clearWord();
         return;
       }
 
       console.log("✅ Word accepted:", currentWord, "Points:", result.points);
+
+      // ✅ Flash yeşil
+      setInputFlash('success');
+      setTimeout(() => setInputFlash(null), 600);
 
       // ✅ HEMEN GRİD'İ TEMİZLE VE UI'I GÜNCELLE (KULLANICI BEKLEMESİN)
       clearWord();
@@ -5901,8 +5908,14 @@ const GamePage = ({
                   value={currentWord}
                   readOnly
                   placeholder="~Kelime Üret~"
-                  className={`text-lg font-mono text-center bg-white/20 backdrop-blur-sm border-white/30 text-white placeholder:text-white/70 font-bold h-8 ${
+                  className={`text-lg font-mono text-center bg-white/20 backdrop-blur-sm text-white placeholder:text-white/70 font-bold h-8 transition-all duration-200 ${
                     isJokerActive ? "typing-animation" : ""
+                  } ${
+                    inputFlash === 'success' 
+                      ? 'border-2 border-green-400 shadow-[0_0_12px_rgba(74,222,128,0.6)]' 
+                      : inputFlash === 'error' 
+                      ? 'border-2 border-red-400 shadow-[0_0_12px_rgba(248,113,113,0.6)]' 
+                      : 'border-white/30'
                   }`}
                 />
                 <Badge
