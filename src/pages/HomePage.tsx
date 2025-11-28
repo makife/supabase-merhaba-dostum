@@ -268,25 +268,25 @@ const HomePage = () => {
     {
       id: "vs-computer",
       title: "Yapay Zekaya Karşı",
-      cardImage: "/bilgisayarKart.png", // Yeni resim
+      icon: Bot, // İkon geri geldi
       route: "/game/vs-computer",
     },
     {
       id: "private-room",
       title: "Özel Oda",
-      cardImage: "/ozelKart.png", // Yeni resim
+      icon: Users, // İkon geri geldi
       route: "/game/private-room",
     },
     {
       id: "random-match",
       title: "Rastgele Rakip",
-      cardImage: "/rastgeleKart.png", // Yeni resim
+      icon: Zap, // İkon geri geldi
       route: "/game/random-match",
     },
     {
       id: "tournament",
       title: "Turnuva",
-      cardImage: "/turnuvaKart.png", // Yeni resim
+      icon: Trophy, // İkon geri geldi
       route: "/tournament",
     },
   ];
@@ -848,39 +848,174 @@ const HomePage = () => {
               </div>
             </div>
 
-            <div className="h-80 overflow-y-auto scrollbar-hide" data-onboarding="game-modes">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-2">
-                {gameModesConfig.map((mode) => (
-                  <Card
-                    key={mode.id}
-                    // DEĞİŞİKLİK BURADA:
-                    // 1. aspect-[21/9]: Sinematik geniş oran.
-                    // 2. min-h-[140px]: Mobilde çok fazla küçülüp tıklamayı zorlaştırmaması için güvenlik önlemi.
-                    className="cursor-pointer border-0 overflow-hidden relative w-full aspect-[21/9] min-h-[140px] group hover:shadow-xl transition-all duration-300 bg-muted/20"
-                    onClick={() => {
-                      // ... (Tıklama kodları ve mantık aynı kalacak) ...
-                      playSound("buttonClick");
-                      // ... kredi kontrolleri vs ...
-                      if (mode.id === "tournament") {
-                        navigate("/tournament");
-                      } else {
-                        setSelectedMode(mode.id);
-                      }
-                    }}
-                  >
-                    <img
-                      src={mode.cardImage}
-                      alt={mode.title}
-                      loading="eager"
-                      fetchPriority="high"
-                      decoding="async"
-                      // object-cover: Resmi 21:9 kutuya doldurur, fazlalıkları keser.
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
+            {/* --- YENİ OYUN MODU KARTLARI (CSS & SVG ONLY) --- */}
+            <div className="h-auto pb-4" data-onboarding="game-modes">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {gameModesConfig.map((mode) => {
+                  // Her moda özel renk teması tanımlıyoruz
+                  const getModeStyles = (id: string) => {
+                    switch (id) {
+                      case "vs-computer":
+                        return {
+                          gradient: "from-cyan-500 to-blue-600",
+                          bg: "bg-blue-950/40",
+                          border: "border-blue-500/30 group-hover:border-blue-400",
+                          text: "text-blue-400",
+                          glow: "group-hover:shadow-[0_0_30px_-5px_rgba(59,130,246,0.5)]",
+                          iconBg: "bg-blue-500/20",
+                        };
+                      case "private-room":
+                        return {
+                          gradient: "from-emerald-400 to-green-600",
+                          bg: "bg-emerald-950/40",
+                          border: "border-emerald-500/30 group-hover:border-emerald-400",
+                          text: "text-emerald-400",
+                          glow: "group-hover:shadow-[0_0_30px_-5px_rgba(16,185,129,0.5)]",
+                          iconBg: "bg-emerald-500/20",
+                        };
+                      case "random-match":
+                        return {
+                          gradient: "from-purple-400 to-pink-600",
+                          bg: "bg-purple-950/40",
+                          border: "border-purple-500/30 group-hover:border-purple-400",
+                          text: "text-purple-400",
+                          glow: "group-hover:shadow-[0_0_30px_-5px_rgba(168,85,247,0.5)]",
+                          iconBg: "bg-purple-500/20",
+                        };
+                      case "tournament":
+                        return {
+                          gradient: "from-amber-300 to-orange-500",
+                          bg: "bg-orange-950/40",
+                          border: "border-amber-500/30 group-hover:border-amber-400",
+                          text: "text-amber-400",
+                          glow: "group-hover:shadow-[0_0_30px_-5px_rgba(245,158,11,0.5)]",
+                          iconBg: "bg-amber-500/20",
+                        };
+                      default:
+                        return {
+                          gradient: "from-gray-500 to-zinc-600",
+                          bg: "bg-zinc-900",
+                          border: "border-white/10",
+                          text: "text-gray-400",
+                          glow: "",
+                          iconBg: "bg-white/10",
+                        };
+                    }
+                  };
 
-                    <span className="sr-only">{mode.title}</span>
-                  </Card>
-                ))}
+                  const styles = getModeStyles(mode.id);
+
+                  return (
+                    <Card
+                      key={mode.id}
+                      className={`group relative h-36 overflow-hidden cursor-pointer transition-all duration-500 
+                        ${styles.bg} ${styles.border} ${styles.glow} border backdrop-blur-md hover:-translate-y-1`}
+                      onClick={() => {
+                        playSound("buttonClick");
+
+                        // Kredi Kontrolü
+                        if (!isPremium && (profile?.game_credits || 0) + (profile?.bonus_credits || 0) <= 0) {
+                          toast.error("Yetersiz oyun hakkı!", {
+                            description: "Oyun oynamak için hak satın alın veya dolmasını bekleyin.",
+                            duration: 4000,
+                          });
+                          return;
+                        }
+
+                        if (mode.id === "tournament") {
+                          navigate("/tournament");
+                        } else {
+                          setSelectedMode(mode.id);
+                        }
+                      }}
+                    >
+                      {/* 1. KATMAN: Arka Plan Dokusu (Noktalı Pattern) */}
+                      <div
+                        className="absolute inset-0 opacity-[0.07]"
+                        style={{
+                          backgroundImage: "radial-gradient(circle, #ffffff 1px, transparent 1px)",
+                          backgroundSize: "16px 16px",
+                        }}
+                      />
+
+                      {/* 2. KATMAN: Dekoratif Dev İkon (Sağ Arka) */}
+                      {/* İkonun kartın dışına taşmasını ve dönmesini sağlayan efekt */}
+                      <div
+                        className={`absolute -right-8 -bottom-8 opacity-[0.15] transition-transform duration-700 group-hover:scale-110 group-hover:-rotate-12 group-hover:opacity-30`}
+                      >
+                        <mode.icon className={`w-40 h-40 ${styles.text}`} />
+                      </div>
+
+                      {/* 3. KATMAN: İçerik */}
+                      <div className="relative z-10 h-full flex flex-col justify-between p-5">
+                        {/* Üst Kısım: İkon ve Başlık */}
+                        <div className="flex items-start gap-4">
+                          {/* İkon Kutusu */}
+                          <div
+                            className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg border border-white/5 ${styles.iconBg} backdrop-blur-sm group-hover:scale-110 transition-transform duration-300`}
+                          >
+                            <mode.icon className="w-6 h-6 text-white drop-shadow-md" />
+                          </div>
+
+                          <div>
+                            <h3 className="text-lg font-black text-white uppercase tracking-wide drop-shadow-md font-exo">
+                              {mode.title}
+                            </h3>
+                            <p className="text-xs text-white/60 font-medium mt-0.5 line-clamp-1">
+                              {mode.id === "vs-computer"
+                                ? "Çevrimdışı pratik yap"
+                                : mode.id === "private-room"
+                                  ? "Arkadaşını davet et"
+                                  : mode.id === "random-match"
+                                    ? "Gerçek rakiplerle yarış"
+                                    : "Büyük ödülü kazan"}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Alt Kısım: Etiket ve Buton Görünümlü Action */}
+                        <div className="flex items-center justify-between mt-auto pl-1">
+                          {/* Sol Etiket */}
+                          <div>
+                            {mode.id === "tournament" ? (
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] font-bold bg-amber-500/10 text-amber-200 border-amber-500/20 px-2 h-5"
+                              >
+                                ÖDÜLLÜ
+                              </Badge>
+                            ) : (
+                              <div
+                                className={`text-[10px] font-bold uppercase tracking-widest opacity-50 ${styles.text}`}
+                              >
+                                {mode.id === "vs-computer" ? "EĞİTİM MODU" : "ONLINE"}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Sağ Aksiyon (Play Butonu Görünümlü) */}
+                          <div
+                            className={`flex items-center gap-2 text-xs font-bold uppercase tracking-wider group-hover:translate-x-1 transition-transform duration-300 ${styles.text}`}
+                          >
+                            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                              BAŞLA
+                            </span>
+                            <div
+                              className={`w-8 h-8 rounded-full border border-current flex items-center justify-center ${styles.iconBg} group-hover:bg-white/10`}
+                            >
+                              <Play className="w-3 h-3 fill-current" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 4. KATMAN: Alt Parlak Çizgi (Progress bar gibi) */}
+                      <div
+                        className={`absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r ${styles.gradient} opacity-40 group-hover:opacity-100 group-hover:h-[4px] transition-all duration-300`}
+                      />
+                    </Card>
+                  );
+                })}
               </div>
             </div>
           </div>
