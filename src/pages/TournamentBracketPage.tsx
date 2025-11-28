@@ -344,10 +344,8 @@ const TournamentBracketPage = () => {
         if (result && typeof result === "object" && "success" in result && result.success) {
           console.log(`🎯 Successfully advanced to round ${round + 1}`);
 
-          // Yeni tur oluşturuldu; verileri yenile (maçlar 10 sn sonra başlayacak)
-          setTimeout(() => {
-            fetchTournamentDetails(tournamentId!);
-          }, 2000);
+          // Yeni tur oluşturuldu; verileri hemen yenile - countdown otomatik başlayacak
+          fetchTournamentDetails(tournamentId!);
         } else {
           console.error("❌ Failed to advance tournament round:", result);
         }
@@ -415,6 +413,26 @@ const TournamentBracketPage = () => {
     }
   }, [matches, currentTournament, tournamentId]);
 
+  // Yeni round oluşturulduğunda pending maçları tespit et ve countdown'u tetikle
+  useEffect(() => {
+    if (!currentTournament || currentTournament.status !== "in_progress") return;
+    if (matches.length === 0) return;
+
+    const currentRound = currentTournament.current_round;
+    if (!currentRound) return;
+
+    // Mevcut round'da pending maçlar var mı kontrol et
+    const pendingMatches = matches.filter(
+      (m) => m.round === currentRound && m.status === "pending" && m.player1_id && m.player2_id
+    );
+
+    if (pendingMatches.length > 0) {
+      console.log(`🎯 Round ${currentRound} için ${pendingMatches.length} pending maç bulundu`);
+      console.log(`⏰ 10 saniyelik countdown başlatılacak, sonra maçlar başlayacak`);
+      // Countdown effect'i otomatik tetiklenecek (lines 436-518)
+    }
+  }, [currentTournament?.current_round, matches]);
+
   // Countdown for match start (senkronize, DB zamanına göre)
   useEffect(() => {
     if (!currentTournament || currentTournament.status !== "in_progress") return;
@@ -470,6 +488,7 @@ const TournamentBracketPage = () => {
             clearInterval(countdownIntervalRef.current);
             countdownIntervalRef.current = null;
           }
+          console.log(`🚀 Countdown tamamlandı! Round ${targetRound} maçları başlatılıyor...`);
           // Geri sayım tamamlandı -> hedef turdaki tüm pending maçları başlat (yalnızca bir kez)
           startAllMatches(targetRound);
           
@@ -830,7 +849,10 @@ const TournamentBracketPage = () => {
           <Card className="mb-6 bg-white/10 backdrop-blur-md border-white/20">
             <CardContent className="p-4 text-center">
               <Clock className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
-              <p className="text-white font-bold">Maçlar başlıyor: {countdown}s</p>
+              <p className="text-white font-bold text-lg">
+                {nextPendingRound === 1 ? "Çeyrek Final" : nextPendingRound === 2 ? "Yarı Final" : "Final"} başlıyor...
+              </p>
+              <p className="text-white/90 text-xl font-black mt-1">{countdown} saniye</p>
             </CardContent>
           </Card>
         )}
