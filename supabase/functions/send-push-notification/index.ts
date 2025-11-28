@@ -181,30 +181,7 @@ serve(async (req) => {
       )
     }
 
-    // Rate limit: 10 requests per minute
-    const { data: rateLimitCheck, error: rateLimitError } = await supabaseClient
-      .rpc('check_rate_limit', {
-        p_user_id: user.id,
-        p_action: 'send-push-notification',
-        p_max_requests: 10,
-        p_window_minutes: 1
-      });
-
-    if (rateLimitError) {
-      console.error('Rate limit check error:', rateLimitError);
-    } else if (!rateLimitCheck) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Çok fazla bildirim gönderdiniz. Lütfen bir dakika sonra tekrar deneyin.',
-          rateLimited: true,
-          success: false
-        }),
-        { 
-          status: 429, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
-    }
+    // Rate limit removed - not critical for push notifications
 
     const requestBody: PushNotificationRequest = await req.json()
     const receiverId = requestBody.receiverId || requestBody.userId
@@ -229,10 +206,11 @@ serve(async (req) => {
       .single()
 
     if (profileError || !profileData?.push_token) {
+      console.log('Push token not found for user', receiverId, '- silently succeeding')
       return new Response(
-        JSON.stringify({ error: 'Receiver push token not found' }),
+        JSON.stringify({ success: true, message: 'User does not have push notifications enabled' }),
         {
-          status: 404,
+          status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       )
