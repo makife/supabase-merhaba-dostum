@@ -26,7 +26,21 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { AvatarViewDialog } from "@/components/AvatarViewDialog";
 import { OnboardingTutorial } from "@/components/OnboardingTutorial";
 
-import { Bot, Users, Trophy, Clock, Target, User, Crown, Zap, Camera, Gift, Sparkles, RotateCcw } from "lucide-react";
+import {
+  Bot,
+  Users,
+  Trophy,
+  Clock,
+  Target,
+  User,
+  Crown,
+  Zap,
+  Camera,
+  Gift,
+  Sparkles,
+  RotateCcw,
+  Play,
+} from "lucide-react";
 
 // Pozitif selamlama mesajları
 const greetingMessages = [
