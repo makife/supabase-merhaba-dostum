@@ -1019,17 +1019,9 @@ const GamePage = ({
 
       // 🎯 MUTLAKA YÖNLENDİRME YAP (kazanan/kaybeden fark etmez)
       if (allMatchesCompleted) {
-        console.log(`🏆 Tüm ${tournamentMatch.round}. tur maçları tamamlandı!`);
+        console.log(`🏆 Tüm ${tournamentMatch.round}. tur maçları tamamlandı! Round advancement bracket sayfasında yapılacak.`);
 
-        // Centralize advancement on server to avoid duplicate semi-finals/finals
-        const { error: advanceErr } = await supabase.rpc("advance_tournament_round", {
-          p_tournament_id: tournamentMatch.tournament_id,
-        });
-        if (advanceErr) {
-          console.error("advance_tournament_round error:", advanceErr);
-        }
-
-        // Her durumda bracket sayfasına yönlendir (hızlandırıldı: 1.5 saniye)
+        // Bracket sayfasına yönlendir - advancement orada gerçekleşecek
         console.log("🔄 1.5 saniye sonra bracket sayfasına yönlendirilecek");
         setTimeout(() => {
           console.log("🔄 Bracket sayfasına yönlendiriliyor...");
