@@ -392,7 +392,28 @@ const TournamentBracketPage = () => {
     }
   }, [matches, tournamentId, currentTournament, user, playSpecialSound, showChampion, showEliminated]);
 
-  // REMOVED: Duplicate round advancement logic moved to checkAndAdvanceRound
+  // Matches güncellendiğinde round advancement kontrolü yap
+  useEffect(() => {
+    if (!tournamentId || !currentTournament || currentTournament.status !== "in_progress") return;
+    if (matches.length === 0) return;
+
+    const currentRound = currentTournament.current_round;
+    if (!currentRound) return;
+
+    // Mevcut round'daki maçları kontrol et
+    const currentRoundMatches = matches.filter((m) => m.round === currentRound);
+    if (currentRoundMatches.length === 0) return;
+
+    const allCompleted = currentRoundMatches.every((m) => m.status === "completed");
+    
+    if (allCompleted && currentRound < 3) {
+      console.log(`🔄 Round ${currentRound} tamamlandı, advancement kontrolü yapılıyor...`);
+      // Biraz gecikme ekle - tüm maç skorlarının DB'ye yazılmasını bekle
+      setTimeout(() => {
+        checkAndAdvanceRound(currentRound);
+      }, 1000);
+    }
+  }, [matches, currentTournament, tournamentId]);
 
   // Countdown for match start (senkronize, DB zamanına göre)
   useEffect(() => {
