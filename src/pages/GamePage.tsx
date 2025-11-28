@@ -1117,6 +1117,13 @@ const GamePage = ({
 
   // 4. resetGameForRematch fonksiyonunu ekleyin:
   const resetGameForRematch = () => {
+    // Clear existing timer first
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+      console.log("🧹 Timer cleared for rematch");
+    }
+    
     // Disconnect kontrolü yeniden aktif et
     disconnectHandledRef.current = false;
     countdownCheckDoneRef.current = false; // Countdown kontrolünü sıfırla
@@ -5572,6 +5579,13 @@ const GamePage = ({
 
     const isMp = gameMode === "private-room" || gameMode === "random-match";
 
+    // Clear any existing timer before reinitializing
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+      console.log("🧹 Cleared existing timer before countdown complete");
+    }
+    
     // Initialize timer to full time for all modes
     const initial = currentRoom?.time_limit || 120;
     timeLeftRef.current = initial;
