@@ -1013,8 +1013,13 @@ const GamePage = ({
 
       const allMatchesCompleted = allRoundMatches?.every((match) => match.status === "completed");
 
-      // ✅ Turnuva odasını temizle (RoomAutoNavigator'ın tekrar yönlendirmesini engelle)
-      console.log("🧹 Turnuva maçı bitti, currentRoom temizleniyor...");
+      // ✅ Turnuva state'ini tamamen temizle (eski maç state'i yeni tura karışmasın)
+      console.log("🧹 Turnuva maçı bitti, state temizleniyor...");
+      setTournamentMatch(null); // ⚠️ KRİTİK: Eski match state'i temizle
+      setPlayerScore(0);
+      setOpponentScore(0);
+      setGameStarted(false);
+      setGameEnded(false);
       leaveRoom();
 
       // 🎯 MUTLAKA YÖNLENDİRME YAP (kazanan/kaybeden fark etmez)
