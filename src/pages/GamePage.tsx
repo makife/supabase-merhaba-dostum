@@ -47,6 +47,7 @@ import {
 import { generateBotName } from "@/utils/tournamentHelpers";
 import { matchBanlist } from "@/utils/matchBanlist";
 import robotAvatar from "@/assets/robot-avatar.png";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Safe helpers
 const shortId = (v?: string | null) => (v ? String(v).slice(-8) : "NULL");
@@ -104,6 +105,7 @@ const GamePage = ({
   const { hasPurchased, settings } = useUserPurchases();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const {
     currentRoom,
     updateScore,
@@ -123,6 +125,9 @@ const GamePage = ({
 
   // Tournament participant state
   const [tournamentParticipants, setTournamentParticipants] = useState<any[]>([]);
+
+  // ⚠️ KRİTİK: Optimistic update flag - maç bitişinde race condition'ı önle
+  const [isMatchFinishing, setIsMatchFinishing] = useState(false);
 
   const participants = useMemo(() => {
     if (gameMode === "tournament") {
@@ -1032,6 +1037,19 @@ const GamePage = ({
         }
       });
 
+      // ⏳ KRİTİK: Winner_id propagation için bekle
+      console.log("⏳ Waiting for winner_id to propagate in database...");
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // 🔍 Winner_id'yi doğrula
+      const { data: finalMatch } = await supabase
+        .from("tournament_matches")
+        .select("winner_id")
+        .eq("id", tournamentMatch.id)
+        .single();
+      
+      console.log("✅ Winner confirmed in DB:", finalMatch?.winner_id?.slice(-8));
+
       // 🎯 MUTLAKA YÖNLENDİRME YAP (kazanan/kaybeden fark etmez)
       if (allMatchesCompleted) {
         console.log(`🏆 Tüm ${tournamentMatch.round}. tur maçları tamamlandı! Round advancement bracket sayfasında yapılacak.`);
@@ -1143,6 +1161,9 @@ const GamePage = ({
     serverMatchStartRef.current = null;
     countdownCompletedAtRef.current = null;
     startedAtRef.current = null;
+    
+    // ⚠️ KRİTİK: Optimistic update flag'ini sıfırla
+    setIsMatchFinishing(false);
     
     // Disconnect kontrolü yeniden aktif et
     disconnectHandledRef.current = false;
@@ -3786,6 +3807,14 @@ const GamePage = ({
         
         // ⚠️ KRİTİK: Tournament modunda maç durumunu HEMEN 'completed' olarak işaretle
         if (gameMode === "tournament" && tournamentMatch) {
+          console.log("🔒 OPTIMISTIC: Setting isMatchFinishing flag to prevent re-render");
+          setIsMatchFinishing(true); // ⚠️ KRİTİK: Lokal kilit - UI render'ı durdur
+          
+          console.log("🗑️ OPTIMISTIC: Invalidating React Query cache for tournament matches");
+          // React Query cache'ini hemen temizle
+          queryClient.invalidateQueries({ queryKey: ["tournament_matches"] });
+          queryClient.invalidateQueries({ queryKey: ["active_match"] });
+          
           console.log("🔒 IMMEDIATE: Marking tournament match as completed in DB");
           
           // Senkron olarak maç durumunu güncelle (await kullanma - async olmadan devam et)
@@ -5702,6 +5731,24 @@ const GamePage = ({
 
   return (
     <>
+      {/* ⚠️ KRİTİK GUARD: Maç bitişi sırasında render'ı engelle */}
+      {isMatchFinishing && gameMode === "tournament" && (
+        <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center">
+          <Card className="max-w-sm mx-auto">
+            <CardContent className="p-6 text-center">
+              <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin text-primary" />
+              <p className="text-lg font-semibold mb-2">Maç Tamamlanıyor...</p>
+              <p className="text-sm text-muted-foreground">
+                Sonuçlar hesaplanıyor ve turnuva bracket'i güncelleniyor.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+      
+      {/* Normal oyun render'ı - sadece isMatchFinishing false ise göster */}
+      {(!isMatchFinishing || gameMode !== "tournament") && (
+        <>
       {showCountdown && (
         <GameCountdown
           onComplete={handleCountdownComplete}
@@ -6193,6 +6240,8 @@ const GamePage = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+        </>
+      )}
     </>
   );
 };
