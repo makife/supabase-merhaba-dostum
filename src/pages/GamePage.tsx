@@ -2798,8 +2798,8 @@ const GamePage = ({
             return;
           }
           
-          // ⚠️ KRİTİK: Maç durumu değişikliklerini dinle
-          console.log("📡 Setting up match status listener for match:", matchId);
+          // ⚠️ KRİTİK: STRICT Status Listener - Maç tamamlandığında HEMEN yönlendir
+          console.log("📡 Setting up STRICT match status listener for match:", matchId);
           const statusChannel = supabase
             .channel(`tournament-match-status-${matchId}`)
             .on(
@@ -2812,14 +2812,32 @@ const GamePage = ({
               },
               (payload) => {
                 console.log("📡 Match status update received:", payload.new);
-                if (payload.new && (payload.new as any).status === 'completed') {
-                  console.log("🚫 Match marked as completed, redirecting to bracket");
+                const newStatus = (payload.new as any)?.status;
+                
+                // 🚨 STRICT: Status 'completed' ise HEMEN unmount ve yönlendir
+                if (newStatus === 'completed') {
+                  console.log("🚫 STRICT: Match status changed to COMPLETED - forcing unmount and redirect");
+                  
+                  // Optimistic flag set et
+                  setIsMatchFinishing(true);
+                  
+                  // Cache invalidate
+                  queryClient.invalidateQueries({ queryKey: ["tournament_matches"] });
+                  queryClient.invalidateQueries({ queryKey: ["active_match"] });
+                  
+                  // Listener kapat
+                  supabase.removeChannel(statusChannel);
+                  
+                  // Toast göster
                   toast({
                     title: "Maç Tamamlandı",
                     description: "Turnuva sayfasına yönlendiriliyorsunuz.",
                   });
-                  supabase.removeChannel(statusChannel);
-                  navigate(`/tournament-bracket/${finalTournamentId}`);
+                  
+                  // HEMEN yönlendir - local state dinleme
+                  setTimeout(() => {
+                    navigate(`/tournament-bracket/${finalTournamentId}`, { replace: true });
+                  }, 500);
                 }
               }
             )
@@ -3779,71 +3797,118 @@ const GamePage = ({
       syncInterval = syncChannel as any;
     }
 
-    timerRef.current = setInterval(() => {
-      timeLeftRef.current -= 1;
-      setDisplayTime(timeLeftRef.current);
-
-      if (timeLeftRef.current <= 0) {
-        // 🛡️ Early-finish guard for fresh matches
-        const startedAtTs = currentRoom?.started_at ? new Date(currentRoom.started_at).getTime() : null;
-        if (isMp && startedAtTs && Date.now() - startedAtTs < 3000) {
-          const bump = 5;
-          timeLeftRef.current = bump;
-          setDisplayTime(bump);
-          console.log("🛡️ Early-finish guard: bumped time to", bump);
-          return;
-        }
-
-        clearInterval(timerRef.current!);
-        if (syncInterval) {
-          // Realtime channel'ı kapat
-          if (typeof syncInterval === 'object' && 'unsubscribe' in syncInterval) {
-            supabase.removeChannel(syncInterval as any);
-          }
-        }
-        timerRef.current = null;
-
-        console.log("⏰ Süre bitti! Final skorlar");
+    // ⏱️ TIMESTAMP-BASED TIMER - Prevents jumps and glitches
+    console.log("⏱️ Starting TIMESTAMP-BASED timer (no more setInterval decrement)");
+    
+    let endsAtTimestamp: number | null = null;
+    
+    // Fetch ends_at from database
+    const initializeTimer = async () => {
+      try {
+        let endsAtString: string | null = null;
         
-        // ⚠️ KRİTİK: Tournament modunda maç durumunu HEMEN 'completed' olarak işaretle
         if (gameMode === "tournament" && tournamentMatch) {
-          console.log("🔒 OPTIMISTIC: Setting isMatchFinishing flag to prevent re-render");
-          setIsMatchFinishing(true); // ⚠️ KRİTİK: Lokal kilit - UI render'ı durdur
-          
-          console.log("🗑️ OPTIMISTIC: Invalidating React Query cache for tournament matches");
-          // React Query cache'ini hemen temizle
-          queryClient.invalidateQueries({ queryKey: ["tournament_matches"] });
-          queryClient.invalidateQueries({ queryKey: ["active_match"] });
-          
-          console.log("🔒 IMMEDIATE: Marking tournament match as completed in DB");
-          
-          // Senkron olarak maç durumunu güncelle (await kullanma - async olmadan devam et)
-          supabase
+          const { data } = await supabase
             .from("tournament_matches")
-            .update({ status: "completed" })
+            .select("ends_at")
             .eq("id", tournamentMatch.id)
-            .then(({ error }) => {
-              if (error) {
-                console.error("❌ Failed to mark match as completed:", error);
-              } else {
-                console.log("✅ Match immediately marked as completed in DB");
-              }
-            });
-          
-          // State'i hemen temizle (eski maç state'i yeni tura karışmasın)
-          console.log("🧹 IMMEDIATE: Clearing tournament match state");
-          setGameEnded(true);
-          handleGameEnd();
-        } else {
-          // Diğer modlar için gecikme ile
-          handleGameEnd();
-          setTimeout(() => {
-            setGameEnded(true);
-            checkWinnerWithScores(playerScoreRef.current, opponentScoreRef.current);
-          }, 50);
+            .single();
+          endsAtString = data?.ends_at || null;
+          console.log("⏱️ Tournament match ends_at from DB:", endsAtString);
+        } else if (currentRoom) {
+          const { data } = await supabase
+            .from("game_rooms")
+            .select("ends_at")
+            .eq("id", currentRoom.id)
+            .single();
+          endsAtString = data?.ends_at || null;
+          console.log("⏱️ Game room ends_at from DB:", endsAtString);
         }
+        
+        if (endsAtString) {
+          endsAtTimestamp = new Date(endsAtString).getTime();
+        } else {
+          // Fallback: calculate ends_at as started_at + 120s
+          console.warn("⚠️ No ends_at found, calculating from started_at");
+          const startTime = currentRoom?.started_at 
+            ? new Date(currentRoom.started_at).getTime() 
+            : (serverMatchStartRef.current || Date.now());
+          endsAtTimestamp = startTime + 120 * 1000;
+        }
+        
+        console.log("⏱️ Timer will end at:", new Date(endsAtTimestamp).toISOString());
+        
+        // Update timer every second based on TIMESTAMP CALCULATION
+        timerRef.current = setInterval(() => {
+          if (!endsAtTimestamp) return;
+          
+          const now = Date.now() + serverTimeOffset;
+          const remainingMs = Math.max(0, endsAtTimestamp - now);
+          const remainingSeconds = Math.floor(remainingMs / 1000);
+          
+          timeLeftRef.current = remainingSeconds;
+          setDisplayTime(remainingSeconds);
+          
+          if (remainingSeconds <= 0) {
+            console.log("⏰ TIMESTAMP TIMER: Time reached 0 - ending game");
+            
+            // Clear interval immediately
+            if (timerRef.current) {
+              clearInterval(timerRef.current);
+              timerRef.current = null;
+            }
+            
+            // Clear sync channel
+            if (syncInterval) {
+              if (typeof syncInterval === 'object' && 'unsubscribe' in syncInterval) {
+                supabase.removeChannel(syncInterval as any);
+              }
+            }
+            
+            // ⚠️ KRİTİK: Tournament modunda STRICT completion
+            if (gameMode === "tournament" && tournamentMatch) {
+              console.log("🔒 STRICT: Setting isMatchFinishing flag");
+              setIsMatchFinishing(true);
+              
+              console.log("🗑️ STRICT: Invalidating cache");
+              queryClient.invalidateQueries({ queryKey: ["tournament_matches"] });
+              queryClient.invalidateQueries({ queryKey: ["active_match"] });
+              
+              console.log("🔒 STRICT: Marking match as completed");
+              supabase
+                .from("tournament_matches")
+                .update({ status: "completed" })
+                .eq("id", tournamentMatch.id)
+                .then(({ error }) => {
+                  if (error) {
+                    console.error("❌ Failed to mark match as completed:", error);
+                  } else {
+                    console.log("✅ Match marked as completed - server trigger will auto-promote winner");
+                  }
+                });
+              
+              setGameEnded(true);
+              handleGameEnd();
+            } else {
+              // Other game modes
+              handleGameEnd();
+              setTimeout(() => {
+                setGameEnded(true);
+                checkWinnerWithScores(playerScoreRef.current, opponentScoreRef.current);
+              }, 50);
+            }
+          }
+        }, 1000);
+        
+      } catch (error) {
+        console.error("❌ Timer initialization error:", error);
+        // Fallback to 120s timer
+        endsAtTimestamp = Date.now() + 120 * 1000;
+        console.log("⚠️ Using fallback 120s timer");
       }
-    }, 1000);
+    };
+    
+    initializeTimer();
 
     return () => {
       // Cleanup intervals
