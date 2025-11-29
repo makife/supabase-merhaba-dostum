@@ -32,6 +32,12 @@ const RoomAutoNavigator = () => {
       return;
     }
 
+    // ⚠️ KRİTİK: Bitmiş (finished) odalara yönlendirme yapma
+    if (currentRoom?.status === 'finished') {
+      console.log('🚫 RoomAutoNavigator: Room status is finished, skipping navigation');
+      return;
+    }
+
     // Aynı odaya tekrar tekrar yönlendirme yapmayalım
     if (lastNavigatedRoomRef.current === roomId) return;
 

@@ -1021,6 +1021,16 @@ const GamePage = ({
       setGameStarted(false);
       setGameEnded(false);
       leaveRoom();
+      
+      // ⚠️ KRİTİK: Tüm real-time subscriptionları kapat
+      console.log("📡 Unsubscribing from all channels for completed tournament match");
+      const channels = supabase.getChannels();
+      channels.forEach((channel) => {
+        if (channel.topic.includes(tournamentMatch.id)) {
+          console.log("🔌 Unsubscribing from channel:", channel.topic);
+          supabase.removeChannel(channel);
+        }
+      });
 
       // 🎯 MUTLAKA YÖNLENDİRME YAP (kazanan/kaybeden fark etmez)
       if (allMatchesCompleted) {
@@ -2755,12 +2765,44 @@ const GamePage = ({
           // Tournament ID'yi match data'sından al (URL'de yoksa)
           const finalTournamentId = tournamentId || matchData.tournament_id;
 
-          // ✅ TAMAMLANMIŞ MAÇI TEKRAR BAŞLATMA
+          // ⚠️ KRİTİK: TAMAMLANMIŞ MAÇI TEKRAR BAŞLATMA
           if (matchData.status === "completed") {
-            console.log("⚠️ Bu maç zaten tamamlanmış, yönlendiriliyor:", matchData.id);
+            console.log("🚫 Bu maç zaten tamamlanmış, bracket sayfasına yönlendiriliyor:", matchData.id);
+            toast({
+              title: "Maç Tamamlandı",
+              description: "Bu maç zaten oynanmış, turnuva sayfasına yönlendiriliyorsunuz.",
+              variant: "default",
+            });
             navigate(`/tournament-bracket/${finalTournamentId}`);
             return;
           }
+          
+          // ⚠️ KRİTİK: Maç durumu değişikliklerini dinle
+          console.log("📡 Setting up match status listener for match:", matchId);
+          const statusChannel = supabase
+            .channel(`tournament-match-status-${matchId}`)
+            .on(
+              'postgres_changes',
+              {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'tournament_matches',
+                filter: `id=eq.${matchId}`,
+              },
+              (payload) => {
+                console.log("📡 Match status update received:", payload.new);
+                if (payload.new && (payload.new as any).status === 'completed') {
+                  console.log("🚫 Match marked as completed, redirecting to bracket");
+                  toast({
+                    title: "Maç Tamamlandı",
+                    description: "Turnuva sayfasına yönlendiriliyorsunuz.",
+                  });
+                  supabase.removeChannel(statusChannel);
+                  navigate(`/tournament-bracket/${finalTournamentId}`);
+                }
+              }
+            )
+            .subscribe();
 
           setTournamentMatch(matchData);
 
@@ -3742,8 +3784,25 @@ const GamePage = ({
 
         console.log("⏰ Süre bitti! Final skorlar");
         
-        // Tournament modunda direkt handleGameEnd çağır (gameEnded hemen true olacak)
-        if (gameMode === "tournament") {
+        // ⚠️ KRİTİK: Tournament modunda maç durumunu HEMEN 'completed' olarak işaretle
+        if (gameMode === "tournament" && tournamentMatch) {
+          console.log("🔒 IMMEDIATE: Marking tournament match as completed in DB");
+          
+          // Senkron olarak maç durumunu güncelle (await kullanma - async olmadan devam et)
+          supabase
+            .from("tournament_matches")
+            .update({ status: "completed" })
+            .eq("id", tournamentMatch.id)
+            .then(({ error }) => {
+              if (error) {
+                console.error("❌ Failed to mark match as completed:", error);
+              } else {
+                console.log("✅ Match immediately marked as completed in DB");
+              }
+            });
+          
+          // State'i hemen temizle (eski maç state'i yeni tura karışmasın)
+          console.log("🧹 IMMEDIATE: Clearing tournament match state");
           setGameEnded(true);
           handleGameEnd();
         } else {

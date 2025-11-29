@@ -568,16 +568,22 @@ const TournamentBracketPage = () => {
           startAllMatches(targetRound);
           
           // Kullanıcının bu turdaki maçını bul ve otomatik olarak oyun sayfasına yönlendir
+          // ⚠️ KRİTİK: SADECE 'pending' veya 'in_progress' durumundaki maçlara yönlendir
           const userMatch = targetRoundPending.find(
-            (m) => m.player1_id === user?.id || m.player2_id === user?.id
+            (m) => 
+              (m.player1_id === user?.id || m.player2_id === user?.id) &&
+              (m.status === "pending" || m.status === "in_progress")
           );
           
           if (userMatch && !navigatedToGame) {
             console.log("🎮 Kullanıcının maçı başlatılıyor, oyun sayfasına yönlendiriliyor:", userMatch.id);
+            console.log("📊 Match status:", userMatch.status);
             setNavigatedToGame(true);
             setTimeout(() => {
               navigate(`/game/${userMatch.id}?mode=tournament&tournamentId=${tournamentId}`);
             }, 2000); // 2 saniye gecikme ile (maçlar başlatıldıktan sonra)
+          } else if (!userMatch) {
+            console.log("⚠️ Kullanıcı için uygun maç bulunamadı (pending/in_progress statüsünde)");
           }
           countdownGuard.current = { active: false, round: null, anchorTs: null };
         }
