@@ -1109,12 +1109,25 @@ const GamePage = ({
 
   // 4. resetGameForRematch fonksiyonunu ekleyin:
   const resetGameForRematch = () => {
-    // Clear existing timer first
+    console.log("🔄 resetGameForRematch: Başlatılıyor");
+    
+    // Clear existing timers and intervals
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
-      console.log("🧹 Timer cleared for rematch");
+      console.log("✅ Main timer cleared for rematch");
     }
+    
+    if (syncIntervalRef.current) {
+      clearInterval(syncIntervalRef.current);
+      syncIntervalRef.current = null;
+      console.log("✅ Sync interval cleared for rematch");
+    }
+    
+    // Reset server time tracking
+    serverMatchStartRef.current = null;
+    countdownCompletedAtRef.current = null;
+    startedAtRef.current = null;
     
     // Disconnect kontrolü yeniden aktif et
     disconnectHandledRef.current = false;
@@ -3741,12 +3754,20 @@ const GamePage = ({
 
     return () => {
       // Cleanup intervals
+      console.log("🧹 Timer useEffect cleanup - clearing intervals");
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
+        console.log("✅ Timer cleared in cleanup");
       }
       if (syncInterval) {
-        clearInterval(syncInterval);
+        // Realtime channel'ı kapat
+        if (typeof syncInterval === 'object' && 'unsubscribe' in syncInterval) {
+          supabase.removeChannel(syncInterval as any);
+          console.log("✅ Sync channel unsubscribed in cleanup");
+        } else {
+          clearInterval(syncInterval);
+        }
       }
     };
   }, [
@@ -3758,6 +3779,7 @@ const GamePage = ({
     participants.length,
     currentRoom?.status,
     currentRoom?.started_at,
+    currentRoom?.id, // ⚠️ CRITICAL: Room ID değişince (rematch) cleanup tetiklenir
   ]);
 
   // ❌ KALDIRILDI: currentRoom'dan skor güncellemesi artık gereksiz
@@ -3816,15 +3838,18 @@ const GamePage = ({
 
     // Start syncing immediately after 1s suppress period ends
     setTimeout(() => syncTimer(), 1500);
+    console.log("🕒 Scheduled sync interval started (1.5s)");
     syncIntervalRef.current = setInterval(syncTimer, 1500);
 
     return () => {
+      console.log("🧹 Sync interval cleanup triggered");
       if (syncIntervalRef.current) {
         clearInterval(syncIntervalRef.current);
         syncIntervalRef.current = null;
+        console.log("✅ Sync interval cleared");
       }
     };
-  }, [gameType, gameMode, gameStarted, gameEnded, currentRoom?.started_at, currentRoom?.time_limit]);
+  }, [gameType, gameMode, gameStarted, gameEnded, currentRoom?.started_at, currentRoom?.time_limit, currentRoom?.id]);
 
   // started_at değiştiğinde ref'i resetle
   useEffect(() => {
