@@ -278,6 +278,7 @@ export type Database = {
           countdown_started_at: string | null
           created_at: string | null
           current_grid: string[] | null
+          ends_at: string | null
           finished_at: string | null
           game_duration: number | null
           game_mode: string
@@ -302,6 +303,7 @@ export type Database = {
           countdown_started_at?: string | null
           created_at?: string | null
           current_grid?: string[] | null
+          ends_at?: string | null
           finished_at?: string | null
           game_duration?: number | null
           game_mode: string
@@ -326,6 +328,7 @@ export type Database = {
           countdown_started_at?: string | null
           created_at?: string | null
           current_grid?: string[] | null
+          ends_at?: string | null
           finished_at?: string | null
           game_duration?: number | null
           game_mode?: string
@@ -1073,6 +1076,7 @@ export type Database = {
         Row: {
           countdown_started_at: string | null
           created_at: string | null
+          ends_at: string | null
           id: string
           match_number: number
           player1_id: string | null
@@ -1088,6 +1092,7 @@ export type Database = {
         Insert: {
           countdown_started_at?: string | null
           created_at?: string | null
+          ends_at?: string | null
           id?: string
           match_number: number
           player1_id?: string | null
@@ -1103,6 +1108,7 @@ export type Database = {
         Update: {
           countdown_started_at?: string | null
           created_at?: string | null
+          ends_at?: string | null
           id?: string
           match_number?: number
           player1_id?: string | null
