@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import { useSounds } from "@/hooks/useSounds";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card"; // Sadeleştirdim
+import { Card, CardContent } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import PrivateRoomModal from "@/components/PrivateRoomModal";
@@ -16,14 +16,17 @@ import { SlotMatchmaking } from "@/components/SlotMatchmaking";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { useJokerInventory } from "@/hooks/useJokerInventory";
-import { Brain, Grid3X3, Zap, Trophy, User, Crown, Gift, Play, Gamepad2, Ghost, Activity } from "lucide-react"; // Yeni ikonlar ekledim
+// İkon setini genişlettik
+import { 
+  Brain, Grid3X3, Zap, Trophy, User, Crown, Gift, Play, 
+  Gamepad2, Ghost, Activity, Target, Flame, Ticket 
+} from "lucide-react";
 import { useMemoryGame } from "@/hooks/useMemoryGame";
 import { useMatchmaking } from "@/contexts/NewMatchmakingContext";
 import { AvatarViewDialog } from "@/components/AvatarViewDialog";
 import { OnboardingTutorial } from "@/components/OnboardingTutorial";
 
-// --- SABİT DEĞERLER VE YARDIMCI FONKSİYONLAR ---
-
+// --- SABİT DEĞERLER ---
 const greetingMessages = [
   "Harika görünüyorsun! 🌟", "Bugün şanslı gününüz! 🍀", "Kazanmaya hazır mısın? 🎯",
   "Şampiyon geri döndü! 👑", "Enerjin bulaşıcı! 🎭", "Bugün efsanesin! 🦄",
@@ -31,22 +34,16 @@ const greetingMessages = [
 
 const getRandomGreeting = () => greetingMessages[Math.floor(Math.random() * greetingMessages.length)];
 
-const isGiftPremium = (profile: any) => {
-  if (!profile?.premium_until) return false;
-  const premiumUntil = new Date(profile.premium_until);
-  const createdAt = new Date(profile.created_at);
-  const daysDiff = Math.ceil((premiumUntil.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
-  return daysDiff >= 6 && daysDiff <= 8 && premiumUntil > new Date();
-};
-
 const HomePage = () => {
-  // --- HOOKS & STATE ---
+  // --- HOOKS ---
   const { user } = useAuth();
   const { profile, isPremium, refreshProfile } = useUser();
   const navigate = useNavigate();
   const { playSound } = useSounds();
   const { startBackgroundMusic } = useMusic();
   const { jokers } = useJokerInventory();
+  
+  // State Yönetimi
   const [selectedMode, setSelectedMode] = useState<string | null>(null);
   const [showMatchmaking, setShowMatchmaking] = useState(false);
   const [matchmakingGameType, setMatchmakingGameType] = useState<"timed" | "score">("timed");
@@ -55,16 +52,8 @@ const HomePage = () => {
   const { canPlay: canPlayMemory, timeUntilNextPlay } = useMemoryGame();
   const { startSearch, isSearching, searchProgress, cancelSearch } = useMatchmaking();
   const [showAvatarView, setShowAvatarView] = useState(false);
-  
-  const [greeting] = useState(() => {
-    const sessionGreeting = sessionStorage.getItem("sessionGreeting");
-    if (sessionGreeting) return sessionGreeting;
-    const newGreeting = getRandomGreeting();
-    sessionStorage.setItem("sessionGreeting", newGreeting);
-    return newGreeting;
-  });
 
-  // --- HESAPLAMA FONKSİYONLARI ---
+  // --- HESAPLAMALAR ---
   const calculateLevel = (totalScore: number) => {
     const baseExp = 1000;
     const expIncreasePerLevel = 100;
@@ -76,9 +65,7 @@ const HomePage = () => {
       level++;
       currentLevelExp = baseExp + (level - 1) * expIncreasePerLevel;
     }
-    const experience = totalScore - totalExpNeeded;
-    const nextLevelExp = currentLevelExp;
-    return { level, experience, nextLevelExp };
+    return { level, experience: totalScore - totalExpNeeded, nextLevelExp: currentLevelExp };
   };
 
   const calculateTimeUntilNextCredit = () => {
@@ -87,25 +74,21 @@ const HomePage = () => {
       return;
     }
     const now = new Date();
-    const lastRefresh = new Date(profile.last_credit_refresh);
-    const nextRefresh = new Date(lastRefresh.getTime() + 15 * 60 * 1000);
+    const nextRefresh = new Date(new Date(profile.last_credit_refresh).getTime() + 15 * 60 * 1000);
     if (now >= nextRefresh) {
       setTimeUntilNextCredit("");
       return;
     }
     const timeDiff = nextRefresh.getTime() - now.getTime();
-    const minutes = Math.floor(timeDiff / (1000 * 60));
-    const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
-    setTimeUntilNextCredit(`${minutes}:${seconds.toString().padStart(2, "0")}`);
+    setTimeUntilNextCredit(`${Math.floor(timeDiff / 60000)}:${Math.floor((timeDiff % 60000) / 1000).toString().padStart(2, "0")}`);
   };
 
+  // --- KREDİ YENİLEME ---
   const refreshCredits = async () => {
-    if (!user || isPremium) return;
-    const currentCredits = profile?.game_credits || 0;
-    if (currentCredits >= 5) return;
+    if (!user || isPremium || (profile?.game_credits || 0) >= 5) return;
     try {
       const { error } = await supabase.from("profiles").update({
-          game_credits: Math.min(currentCredits + 1, 5),
+          game_credits: Math.min((profile?.game_credits || 0) + 1, 5),
           last_credit_refresh: new Date().toISOString(),
         }).eq("id", user.id);
       if (!error) {
@@ -113,7 +96,7 @@ const HomePage = () => {
         toast.success(`🎮 +1 Kredi eklendi!`);
         playSound("buttonClick");
       }
-    } catch (error) { console.error(error); }
+    } catch (e) { console.error(e); }
   };
 
   // --- EFFECTS ---
@@ -123,13 +106,10 @@ const HomePage = () => {
       const interval = setInterval(() => {
         calculateTimeUntilNextCredit();
         if (profile?.last_credit_refresh && !isPremium && profile.game_credits < 5) {
-          const now = new Date();
-          const lastRefresh = new Date(profile.last_credit_refresh);
-          const nextRefresh = new Date(lastRefresh.getTime() + 15 * 60 * 1000);
-          if (now >= nextRefresh) {
-            refreshCredits();
-            setTimeout(() => refreshProfile(), 500);
-          }
+           if (new Date() >= new Date(new Date(profile.last_credit_refresh).getTime() + 15 * 60 * 1000)) {
+             refreshCredits();
+             setTimeout(refreshProfile, 500);
+           }
         }
       }, 1000);
       return () => clearInterval(interval);
@@ -138,283 +118,247 @@ const HomePage = () => {
 
   useEffect(() => { startBackgroundMusic(); }, [startBackgroundMusic]);
 
-  useEffect(() => {
-    const checkDailyReset = async () => {
-      if (!user || !profile) return;
-      const now = new Date();
-      const lastReset = profile.last_daily_reset ? new Date(profile.last_daily_reset) : null;
-      const today = now.toISOString().split("T")[0];
-      if (!lastReset || lastReset.toISOString().split("T")[0] !== today) {
-        await refreshProfile();
-      }
-    };
-    checkDailyReset();
-  }, [user, profile?.last_daily_reset]);
+  // --- VERİ HAZIRLIĞI ---
+  const levelInfo = calculateLevel(profile?.total_score || 0);
 
-  useEffect(() => {
-    const handleStartDemoGame = () => navigate("/game/vs-computer?type=timed&demo=true");
-    window.addEventListener("startDemoGame", handleStartDemoGame);
-    return () => window.removeEventListener("startDemoGame", handleStartDemoGame);
-  }, [navigate]);
-
-  // --- KONFIGÜRASYONLAR ---
-  
-  // Ana Oyun Modları (Büyük Kartlar)
+  // Ana Oyunlar
   const mainGameModes = [
     {
       id: "vs-computer",
       title: "YZ'ye Karşı",
-      desc: "Yapay zekayı yenebilir misin?",
-      image: "/bilgisayarKart.png", // Veya soyut bir AI görseli
+      desc: "Zekanı test et",
+      image: "/bilgisayarKart.png",
       route: "/game/vs-computer",
-      color: "from-blue-600 to-indigo-900"
-    },
-    {
-      id: "private-room",
-      title: "Özel Oda",
-      desc: "Arkadaşlarınla kapış.",
-      image: "/ozelKart.png",
-      route: "/game/private-room",
-      color: "from-purple-600 to-fuchsia-900"
     },
     {
       id: "random-match",
       title: "Rastgele Rakip",
-      desc: "Dünyadan biriyle eşleş.",
+      desc: "Online düello",
       image: "/rastgeleKart.png",
       route: "/game/random-match",
-      color: "from-orange-600 to-red-900"
+    },
+    {
+      id: "private-room",
+      title: "Özel Oda",
+      desc: "Arkadaşlarınla oyna",
+      image: "/ozelKart.png",
+      route: "/game/private-room",
     },
     {
       id: "tournament",
       title: "Turnuva",
-      desc: "Büyük ödül için yarış.",
+      desc: "Büyük ödüller",
       image: "/turnuvaKart.png",
       route: "/tournament",
-      color: "from-emerald-600 to-teal-900"
     },
   ];
 
-  // Diğer Mini Oyunlar (Alt Liste - Clean)
+  // Mini Oyunlar (Hafıza buraya taşındı)
   const arcadeGames = [
-    { id: "morles", title: "Morles", route: "/morles-game", icon: <Grid3X3 className="w-5 h-5"/>, color: "bg-cyan-500" },
-    { id: "reactor", title: "Reaktör", route: "/reactor-runner", icon: <Activity className="w-5 h-5"/>, color: "bg-green-500" },
-    { id: "snake", title: "Yılan", route: "/snake-game", icon: <Gamepad2 className="w-5 h-5"/>, color: "bg-pink-500" },
-    { id: "ghost", title: "Adım", route: "/grid-simon-says", icon: <Ghost className="w-5 h-5"/>, color: "bg-indigo-500" },
+    { id: "memory", title: "Hafıza", route: "/memory-game", icon: <Brain className="w-5 h-5"/>, color: "text-pink-400", special: !canPlayMemory },
+    { id: "morles", title: "Morles", route: "/morles-game", icon: <Grid3X3 className="w-5 h-5"/>, color: "text-cyan-400" },
+    { id: "reactor", title: "Reaktör", route: "/reactor-runner", icon: <Activity className="w-5 h-5"/>, color: "text-green-400" },
+    { id: "snake", title: "Yılan", route: "/snake-game", icon: <Gamepad2 className="w-5 h-5"/>, color: "text-yellow-400" },
+    { id: "ghost", title: "Adım", route: "/grid-simon-says", icon: <Ghost className="w-5 h-5"/>, color: "text-indigo-400" },
   ];
 
-  const levelInfo = calculateLevel(profile?.total_score || 0);
-
-  // --- RENDER ---
   return (
     <>
       <OnboardingTutorial />
 
-      {/* BACKGROUND: Koyu, modern, premium zemin */}
-      <div className="min-h-screen bg-[#0a0a0f] text-slate-100 pb-24 native-safe-container selection:bg-purple-500/30">
+      <div className="min-h-screen bg-[#0a0a0f] text-slate-100 pb-24 native-safe-container">
         
-        {/* HEADER SECTION */}
-        <div className="relative pt-6 px-4 pb-8 bg-gradient-to-b from-[#1a1a24] to-[#0a0a0f] rounded-b-[2.5rem] shadow-2xl border-b border-white/5">
-          <div className="max-w-md mx-auto space-y-5">
+        {/* --- FIXED HEADER (SABİT ÜST PANEL) --- */}
+        <div className="sticky top-0 z-50 bg-[#0a0a0f]/95 backdrop-blur-md border-b border-white/5 shadow-2xl transition-all">
+          <div className="px-4 py-3 max-w-md mx-auto">
             
-            {/* Üst Bar: Avatar & İsim & Puan */}
-            <div className="flex items-center gap-4">
+            {/* Üst Satır: Avatar ve Temel Bilgiler */}
+            <div className="flex items-center gap-3 mb-3">
               <div 
-                className="relative group cursor-pointer" 
+                className="relative cursor-pointer flex-shrink-0" 
                 onClick={() => setShowAvatarView(true)}
               >
-                {/* Avatar Glow */}
-                <div className="absolute -inset-0.5 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full blur opacity-60 group-hover:opacity-100 transition duration-500"></div>
-                <Avatar className="w-16 h-16 border-2 border-[#1a1a24] relative">
+                <Avatar className="w-12 h-12 border border-white/10 ring-2 ring-purple-500/20">
                   <AvatarImage src={profile?.avatar_url || user?.user_metadata?.avatar_url} className="object-cover" />
-                  <AvatarFallback className="bg-slate-800 text-white font-bold">
-                    <User className="w-6 h-6" />
-                  </AvatarFallback>
+                  <AvatarFallback className="bg-slate-800"><User className="w-5 h-5" /></AvatarFallback>
                 </Avatar>
-                {/* Premium Rozeti */}
                 {isPremium && (
-                  <div className="absolute -top-1 -right-1 bg-yellow-500 rounded-full p-1 border border-[#1a1a24]">
-                    <Crown className="w-3 h-3 text-white fill-current" />
-                  </div>
+                   <div className="absolute -top-1 -right-1 bg-yellow-500 rounded-full p-0.5 border border-black"><Crown className="w-2.5 h-2.5 text-white" /></div>
                 )}
               </div>
 
-              <div className="flex-1 min-w-0 space-y-1">
-                <div className="flex items-center justify-between">
-                  <h1 className="text-xl font-black tracking-tight text-white font-bungee">KELİMELE</h1>
-                  <div className="flex items-center gap-2 bg-white/5 px-3 py-1 rounded-full border border-white/5">
-                    <Trophy className="w-3.5 h-3.5 text-yellow-400" />
-                    <span className="text-xs font-bold text-yellow-100/90">
-                      {(profile?.total_score || 0).toLocaleString()}
-                    </span>
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-center">
+                   <h1 className="text-lg font-black text-white font-bungee tracking-wide truncate">
+                     {profile?.username || "Misafir"}
+                   </h1>
+                   <div className="flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded text-[10px] font-mono border border-white/5">
+                      <Trophy className="w-3 h-3 text-yellow-500" />
+                      <span>{profile?.total_score?.toLocaleString() || 0}</span>
+                   </div>
+                </div>
+
+                {/* Level Progress */}
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-[10px] font-bold text-purple-400 w-8">Lv.{levelInfo.level}</span>
+                  <div className="h-1.5 flex-1 bg-slate-800 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-purple-600 to-pink-500" 
+                      style={{ width: `${(levelInfo.experience / levelInfo.nextLevelExp) * 100}%` }}
+                    />
                   </div>
-                </div>
-                <p className="text-sm text-slate-400 font-medium truncate">
-                  {profile?.username || user?.email?.split("@")[0]}
-                </p>
-                {/* Level Progress Bar - İnce ve Şık */}
-                <div className="relative h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-                  <div 
-                    className="absolute top-0 left-0 h-full bg-gradient-to-r from-purple-600 to-pink-500"
-                    style={{ width: `${(levelInfo.experience / levelInfo.nextLevelExp) * 100}%` }}
-                  />
-                </div>
-                <div className="flex justify-between text-[10px] text-slate-500 font-mono mt-0.5">
-                  <span>Lvl {levelInfo.level}</span>
-                  <span>{levelInfo.nextLevelExp - levelInfo.experience} XP Kaldı</span>
                 </div>
               </div>
             </div>
 
-            {/* Stats Bar: Enerji & Jokerler */}
-            <div className="grid grid-cols-2 gap-3">
-               {/* Enerji */}
-               <div className="bg-[#13131a] rounded-xl p-3 border border-white/5 flex flex-col justify-center">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs text-slate-400 font-medium flex items-center gap-1">
-                      <Zap className="w-3 h-3 text-purple-400" /> Enerji
+            {/* Alt Satır: İstatistikler ve Enerji (GRID YAPISI) */}
+            <div className="grid grid-cols-12 gap-2">
+              
+              {/* Sol: Enerji Paneli (Geniş) */}
+              <div className="col-span-7 bg-[#15151e] rounded-lg p-1.5 flex flex-col justify-center border border-white/5">
+                 <div className="flex justify-between items-center mb-1">
+                    <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1">
+                       <Zap className="w-3 h-3 text-amber-400" /> Enerji
                     </span>
-                    <span className="text-xs font-bold text-white">
+                    <span className="text-[10px] font-mono text-white">
                       {Math.min((profile?.game_credits || 0), 5)}/5
                     </span>
-                  </div>
-                  <div className="flex gap-1">
+                 </div>
+                 <div className="flex gap-0.5">
                     {[0,1,2,3,4].map(i => (
-                      <div key={i} className={`h-1.5 flex-1 rounded-full transition-all ${
-                        i < (profile?.game_credits || 0) 
-                        ? 'bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]' 
-                        : 'bg-slate-800'
+                      <div key={i} className={`h-1 flex-1 rounded-full ${
+                        i < (profile?.game_credits || 0) ? 'bg-amber-400' : 'bg-slate-800'
                       }`} />
                     ))}
-                  </div>
-                  {timeUntilNextCredit && (
-                     <p className="text-[10px] text-slate-500 mt-1 text-right">{timeUntilNextCredit}</p>
-                  )}
-               </div>
+                 </div>
+                 {timeUntilNextCredit && (
+                   <div className="text-[9px] text-amber-500/80 text-right mt-0.5 font-mono">{timeUntilNextCredit}</div>
+                 )}
+              </div>
 
-               {/* Jokerler (Basitleştirilmiş Görünüm) */}
-               <div className="bg-[#13131a] rounded-xl p-2 border border-white/5 flex items-center justify-between px-4">
-                  <div className="text-center">
-                    <div className="text-lg">🔄</div>
-                    <div className="text-[10px] font-bold text-slate-300">x{jokers.degistir}</div>
-                  </div>
-                  <div className="w-px h-8 bg-white/5"></div>
-                  <div className="text-center">
-                    <div className="text-lg">🗣️</div>
-                    <div className="text-[10px] font-bold text-slate-300">x{jokers.fisilida}</div>
-                  </div>
-                  <div className="w-px h-8 bg-white/5"></div>
-                  <div className="text-center">
-                    <div className="text-lg">✍️</div>
-                    <div className="text-[10px] font-bold text-slate-300">x{jokers.senYaz}</div>
-                  </div>
-               </div>
+              {/* Sağ: İstatistikler (Günlük & Seri) */}
+              <div className="col-span-5 flex gap-2">
+                 <div className="flex-1 bg-[#15151e] rounded-lg flex flex-col items-center justify-center border border-white/5">
+                    <div className="flex items-center gap-1">
+                       <Target className="w-3 h-3 text-blue-400" />
+                       <span className="text-xs font-bold text-white">{profile?.daily_games || 0}</span>
+                    </div>
+                    <span className="text-[8px] text-slate-500">Günlük</span>
+                 </div>
+                 <div className="flex-1 bg-[#15151e] rounded-lg flex flex-col items-center justify-center border border-white/5">
+                    <div className="flex items-center gap-1">
+                       <Flame className="w-3 h-3 text-orange-500" />
+                       <span className="text-xs font-bold text-white">{profile?.win_streak || 0}</span>
+                    </div>
+                    <span className="text-[8px] text-slate-500">Seri</span>
+                 </div>
+              </div>
+
             </div>
           </div>
         </div>
 
-        {/* CONTENT AREA */}
-        <div className="max-w-md mx-auto px-4 -mt-4 relative z-10 space-y-6">
+        {/* --- SCROLLABLE CONTENT --- */}
+        <div className="max-w-md mx-auto px-4 pt-4 space-y-6">
 
-          {/* MAIN ACTIONS (Yan Yana İki Büyük Buton) */}
-          <div className="grid grid-cols-2 gap-4">
-            <button
-              onClick={() => navigate("/wheel")}
-              className="group relative overflow-hidden rounded-2xl bg-[#1E1E2E] border border-purple-500/20 p-4 h-24 flex flex-col items-center justify-center gap-2 hover:border-purple-500/50 transition-all active:scale-95 shadow-lg shadow-black/20"
-            >
-               <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 to-transparent group-hover:from-purple-600/20 transition-all" />
-               <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center group-hover:bg-purple-500 group-hover:text-white transition-colors text-purple-400">
-                  <Gift className="w-4 h-4" />
-               </div>
-               <span className="text-sm font-bold text-white relative z-10">Günlük Çark</span>
-            </button>
-
-            <button
-              onClick={() => navigate("/memory-game")}
-              className={`group relative overflow-hidden rounded-2xl bg-[#1E1E2E] border p-4 h-24 flex flex-col items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-black/20
-                ${canPlayMemory ? 'border-purple-500/20 hover:border-purple-500/50' : 'border-slate-800 opacity-70'}
-              `}
-            >
-               <div className="absolute inset-0 bg-gradient-to-br from-pink-600/10 to-transparent group-hover:from-pink-600/20 transition-all" />
-               <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors
-                  ${canPlayMemory ? 'bg-pink-500/20 text-pink-400 group-hover:bg-pink-500 group-hover:text-white' : 'bg-slate-800 text-slate-500'}
-               `}>
-                  <Brain className="w-4 h-4" />
-               </div>
-               <span className="text-sm font-bold text-white relative z-10">Hafıza</span>
-               {!canPlayMemory && (
-                 <span className="text-[10px] text-slate-500 absolute bottom-1">{timeUntilNextPlay}</span>
-               )}
-            </button>
-          </div>
-
-          {/* GAME MODES (Overlay Style Cards) */}
-          <div className="space-y-4">
-             <div className="flex items-center gap-2 mb-2 px-1">
-                <Gamepad2 className="w-4 h-4 text-purple-500" />
-                <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wider">Oyun Modları</h2>
-             </div>
+          {/* 1. GÜNLÜK ÇARK BANNER (Geniş ve Dikkat Çekici) */}
+          <div 
+            onClick={() => navigate("/wheel")}
+            className="w-full relative h-20 bg-gradient-to-r from-orange-600 to-amber-600 rounded-xl overflow-hidden cursor-pointer shadow-lg shadow-orange-900/20 group border border-orange-400/20"
+          >
+             {/* Arka Plan Deseni */}
+             <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white to-transparent scale-150" />
              
-             <div className="grid gap-4">
-                {mainGameModes.map((mode) => (
-                   <div 
-                      key={mode.id}
-                      onClick={() => {
-                        playSound("buttonClick");
-                        if(mode.id === "tournament") navigate("/tournament");
-                        else setSelectedMode(mode.id);
-                      }}
-                      className="relative h-32 w-full rounded-2xl overflow-hidden cursor-pointer group shadow-lg"
-                    >
-                      {/* Arkaplan Resmi */}
-                      <img 
-                        src={mode.image} 
-                        alt={mode.title}
-                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                      />
-                      {/* Karanlık Perde */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-transparent" />
-                      
-                      {/* İçerik */}
-                      <div className="absolute inset-0 p-5 flex flex-col justify-center items-start">
-                        <h3 className="text-xl font-black text-white font-bungee tracking-wide drop-shadow-lg">
-                           {mode.title}
-                        </h3>
-                        <p className="text-xs text-slate-300 font-medium mb-3 max-w-[150px]">
-                           {mode.desc}
-                        </p>
-                        <Button 
-                          size="sm" 
-                          className="bg-orange-500 hover:bg-orange-600 text-white border-none rounded-full px-4 h-8 text-xs font-bold shadow-lg shadow-orange-500/20 group-hover:scale-105 transition-transform"
-                        >
-                          <Play className="w-3 h-3 mr-1 fill-current" /> OYNA
-                        </Button>
-                      </div>
-                   </div>
-                ))}
+             <div className="absolute inset-0 flex items-center justify-between px-6">
+                <div className="flex flex-col z-10">
+                   <h3 className="text-lg font-black italic text-white tracking-wider drop-shadow-md">GÜNLÜK ÇARK</h3>
+                   <span className="text-xs font-medium text-orange-100 bg-black/20 px-2 py-0.5 rounded w-fit">
+                     Ödülünü Topla!
+                   </span>
+                </div>
+                {/* Dönen Çark İkonu Animasyonu */}
+                <div className="relative w-14 h-14 group-hover:scale-110 transition-transform duration-500">
+                   <div className="absolute inset-0 bg-white/20 blur-xl rounded-full" />
+                   <Ticket className="w-full h-full text-white drop-shadow-lg rotate-12 group-hover:rotate-45 transition-transform duration-700" />
+                </div>
              </div>
           </div>
 
-          {/* ARCADE (Mini Games Horizontal Scroll) */}
-          <div className="pb-4">
-            <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 px-1">Atari Salonu</h2>
-            <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
-              {arcadeGames.map((game) => (
-                <div 
-                  key={game.id}
-                  onClick={() => navigate(game.route)}
-                  className="flex-shrink-0 w-20 flex flex-col items-center gap-2 cursor-pointer group"
-                >
-                  <div className="w-14 h-14 rounded-2xl bg-[#1E1E2E] border border-white/5 flex items-center justify-center group-hover:border-purple-500/50 transition-colors shadow-lg">
-                    <div className={`text-slate-400 group-hover:text-white transition-colors`}>
-                      {game.icon}
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-medium text-slate-400 group-hover:text-purple-400 text-center">
-                    {game.title}
-                  </span>
+          {/* 2. JOKER ENVANTERİ (İnce Şerit) */}
+          <div className="bg-[#15151e] rounded-lg py-2 px-4 border border-white/5 flex justify-between items-center">
+             <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Jokerlerin</div>
+             <div className="flex gap-4">
+                <div className="flex items-center gap-1.5 text-xs text-slate-300">
+                   <span>🔄</span> <span className="font-bold text-white">{jokers.degistir}</span>
                 </div>
-              ))}
+                <div className="flex items-center gap-1.5 text-xs text-slate-300">
+                   <span>🗣️</span> <span className="font-bold text-white">{jokers.fisilida}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-slate-300">
+                   <span>✍️</span> <span className="font-bold text-white">{jokers.senYaz}</span>
+                </div>
+             </div>
+          </div>
+
+          {/* 3. ANA OYUN MODLARI (Izgara) */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+               <Gamepad2 className="w-4 h-4 text-purple-500" />
+               <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wider">Arenalar</h2>
+            </div>
+            <div className="grid grid-cols-1 gap-3">
+               {/* İlk iki oyun yan yana değil, alt alta daha büyük ve sinematik olsun dedin */}
+               {mainGameModes.map((mode) => (
+                  <div 
+                    key={mode.id}
+                    onClick={() => {
+                      playSound("buttonClick");
+                      if(mode.id === "tournament") navigate("/tournament");
+                      else setSelectedMode(mode.id);
+                    }}
+                    className="relative h-24 w-full rounded-xl overflow-hidden cursor-pointer group border border-white/5 hover:border-purple-500/40 transition-all"
+                  >
+                     <img src={mode.image} alt={mode.title} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity" />
+                     <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 to-transparent" />
+                     <div className="absolute inset-0 p-4 flex flex-col justify-center">
+                        <h3 className="text-lg font-bold text-white">{mode.title}</h3>
+                        <p className="text-xs text-slate-400">{mode.desc}</p>
+                     </div>
+                     <div className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/10 p-2 rounded-full backdrop-blur-sm group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                        <Play className="w-4 h-4 fill-current" />
+                     </div>
+                  </div>
+               ))}
+            </div>
+          </div>
+
+          {/* 4. MİNİ OYUNLAR (Yatay Kaydırma - Hafıza burada) */}
+          <div className="pb-6">
+             <div className="flex items-center gap-2 mb-3">
+               <Ghost className="w-4 h-4 text-pink-500" />
+               <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wider">Mini Oyunlar</h2>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-3">
+               {arcadeGames.map((game) => (
+                  <div 
+                    key={game.id}
+                    onClick={() => navigate(game.route)}
+                    className={`aspect-square rounded-xl bg-[#15151e] border border-white/5 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-[#1e1e2a] hover:border-white/10 transition-all relative overflow-hidden group`}
+                  >
+                     {/* Hafıza oyunu cooldown kontrolü */}
+                     {game.id === "memory" && !canPlayMemory && (
+                        <div className="absolute inset-0 bg-black/60 z-10 flex items-center justify-center backdrop-blur-[1px]">
+                           <span className="text-[10px] font-bold text-white">{timeUntilNextPlay}</span>
+                        </div>
+                     )}
+                     
+                     <div className={`${game.color} p-2 rounded-full bg-white/5 group-hover:scale-110 transition-transform`}>
+                        {game.icon}
+                     </div>
+                     <span className="text-[10px] font-bold text-slate-400">{game.title}</span>
+                  </div>
+               ))}
             </div>
           </div>
 
