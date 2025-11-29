@@ -602,9 +602,20 @@ const GamePage = ({
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const timeLeftRef = useRef<number>(gameType === "timed" ? 120 : 0);
   const [displayTime, setDisplayTime] = useState<number>(timeLeftRef.current);
+  const isMountedRef = useRef<boolean>(true); // ⚠️ Track if component is mounted
   const [showCountdown, setShowCountdown] = useState(false);
   const [countdownServerTime, setCountdownServerTime] = useState<string | null>(null);
   const [preparingOpponent, setPreparingOpponent] = useState<"preparing" | "ready" | null>(null);
+
+  // ⚠️ CRITICAL: Track component mount status to prevent ghost timer updates
+  useEffect(() => {
+    isMountedRef.current = true;
+    console.log("✅ GamePage mounted - isMounted = true");
+    return () => {
+      isMountedRef.current = false;
+      console.log("❌ GamePage unmounting - isMounted = false");
+    };
+  }, []);
 
   const [gameStarted, setGameStarted] = useState(false);
   const countdownCheckDoneRef = useRef(false);
@@ -3726,8 +3737,10 @@ const GamePage = ({
             // 1 saniyeden fazla fark varsa sync et
             if (Math.abs(timeLeftRef.current - remainingTime) > 1) {
               timeLeftRef.current = remainingTime;
-              setDisplayTime(remainingTime);
-              console.log("🔄 Timer synced to:", remainingTime, "seconds (server-side)");
+              if (isMountedRef.current) {
+                setDisplayTime(remainingTime);
+                console.log("🔄 Timer synced to:", remainingTime, "seconds (server-side)");
+              }
             }
           }
         } catch (error) {
@@ -3785,8 +3798,10 @@ const GamePage = ({
               
               if (Math.abs(timeLeftRef.current - remainingTime) > 1) {
                 timeLeftRef.current = remainingTime;
-                setDisplayTime(remainingTime);
-                console.log('🔄 Timer synced to:', remainingTime, 'seconds');
+                if (isMountedRef.current) {
+                  setDisplayTime(remainingTime);
+                  console.log('🔄 Timer synced to:', remainingTime, 'seconds');
+                }
               }
             }
           }
@@ -3847,7 +3862,9 @@ const GamePage = ({
           const remainingSeconds = Math.floor(remainingMs / 1000);
           
           timeLeftRef.current = remainingSeconds;
-          setDisplayTime(remainingSeconds);
+          if (isMountedRef.current) {
+            setDisplayTime(remainingSeconds);
+          }
           
           if (remainingSeconds <= 0) {
             console.log("⏰ TIMESTAMP TIMER: Time reached 0 - ending game");
@@ -3988,7 +4005,9 @@ const GamePage = ({
       if (Math.abs(timeLeftRef.current - remaining) > 1) {
         console.log(`🔄 ${gameMode} timer syncing - current: ${timeLeftRef.current}s, server: ${remaining}s`);
         timeLeftRef.current = remaining;
-        setDisplayTime(remaining);
+        if (isMountedRef.current) {
+          setDisplayTime(remaining);
+        }
       }
     };
 
@@ -5816,12 +5835,14 @@ const GamePage = ({
         <>
       {showCountdown && (
         <GameCountdown
+          key={currentRoom?.id || tournamentMatch?.id || "countdown"}
           onComplete={handleCountdownComplete}
           serverStartTime={countdownServerTime}
           serverTimeOffset={serverTimeOffset}
         />
       )}
       <div
+        key={currentRoom?.id || tournamentMatch?.id || "game-container"}
         className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 relative overflow-hidden letters-background"
         style={{
           paddingTop: "calc(env(safe-area-inset-top, 8px) + 1rem)",
