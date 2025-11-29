@@ -34,67 +34,83 @@ const TournamentBracketPage = () => {
   // Çeyrek finallerin kazananları oluşur oluşmaz yarı final slotlarını doldur;
   // Yarı finaller tamamlanınca final slotlarını doldur (hemen)
   useEffect(() => {
-    if (!tournamentId) return;
+    if (!tournamentId || !currentTournament) return;
 
     const populate = async () => {
       try {
+        const currentRound = currentTournament.current_round;
+        
+        // ⚠️ KRİTİK: Sadece mevcut round'un bir üstündeki pending maçları güncelle
         // QF -> SF
-        const qf = matches.filter((m) => m.round === 1);
-        if (qf.length >= 4) {
-          const w1 = qf.find((m) => m.match_number === 1)?.winner_id;
-          const w2 = qf.find((m) => m.match_number === 2)?.winner_id;
-          const w3 = qf.find((m) => m.match_number === 3)?.winner_id;
-          const w4 = qf.find((m) => m.match_number === 4)?.winner_id;
+        if (currentRound >= 1) {
+          const qf = matches.filter((m) => m.round === 1 && m.status === "completed");
+          if (qf.length >= 4) {
+            const w1 = qf.find((m) => m.match_number === 1)?.winner_id;
+            const w2 = qf.find((m) => m.match_number === 2)?.winner_id;
+            const w3 = qf.find((m) => m.match_number === 3)?.winner_id;
+            const w4 = qf.find((m) => m.match_number === 4)?.winner_id;
 
-          const sf1 = matches.find((m) => m.round === 2 && m.match_number === 1);
-          const sf2 = matches.find((m) => m.round === 2 && m.match_number === 2);
+            console.log("🏆 QF winners:", { w1: w1?.slice(-8), w2: w2?.slice(-8), w3: w3?.slice(-8), w4: w4?.slice(-8) });
 
-          if (w1 && w2 && sf1 && (sf1.player1_id !== w1 || sf1.player2_id !== w2)) {
-            await supabase
-              .from("tournament_matches")
-              .update({
-                player1_id: w1,
-                player2_id: w2,
-                status: sf1.status === "in_progress" || sf1.status === "completed" ? sf1.status : "pending",
-                updated_at: new Date().toISOString(),
-              })
-              .eq("tournament_id", tournamentId)
-              .eq("round", 2)
-              .eq("match_number", 1);
-          }
-          if (w3 && w4 && sf2 && (sf2.player1_id !== w3 || sf2.player2_id !== w4)) {
-            await supabase
-              .from("tournament_matches")
-              .update({
-                player1_id: w3,
-                player2_id: w4,
-                status: sf2.status === "in_progress" || sf2.status === "completed" ? sf2.status : "pending",
-                updated_at: new Date().toISOString(),
-              })
-              .eq("tournament_id", tournamentId)
-              .eq("round", 2)
-              .eq("match_number", 2);
+            const sf1 = matches.find((m) => m.round === 2 && m.match_number === 1);
+            const sf2 = matches.find((m) => m.round === 2 && m.match_number === 2);
+
+            // SF maçları varsa ve pending durumundaysa güncelle
+            if (w1 && w2 && sf1 && sf1.status === "pending" && (sf1.player1_id !== w1 || sf1.player2_id !== w2)) {
+              console.log(`🔄 SF1 güncelleniyor: ${w1.slice(-8)} vs ${w2.slice(-8)}`);
+              await supabase
+                .from("tournament_matches")
+                .update({
+                  player1_id: w1,
+                  player2_id: w2,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq("tournament_id", tournamentId)
+                .eq("round", 2)
+                .eq("match_number", 1)
+                .eq("status", "pending"); // Sadece pending olanları güncelle
+            }
+            if (w3 && w4 && sf2 && sf2.status === "pending" && (sf2.player1_id !== w3 || sf2.player2_id !== w4)) {
+              console.log(`🔄 SF2 güncelleniyor: ${w3.slice(-8)} vs ${w4.slice(-8)}`);
+              await supabase
+                .from("tournament_matches")
+                .update({
+                  player1_id: w3,
+                  player2_id: w4,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq("tournament_id", tournamentId)
+                .eq("round", 2)
+                .eq("match_number", 2)
+                .eq("status", "pending"); // Sadece pending olanları güncelle
+            }
           }
         }
 
         // SF -> Final
-        const sf = matches.filter((m) => m.round === 2);
-        const f = matches.find((m) => m.round === 3 && m.match_number === 1);
-        if (sf.length >= 2 && f) {
-          const sfw1 = sf.find((m) => m.match_number === 1)?.winner_id;
-          const sfw2 = sf.find((m) => m.match_number === 2)?.winner_id;
-          if (sfw1 && sfw2 && (f.player1_id !== sfw1 || f.player2_id !== sfw2)) {
-            await supabase
-              .from("tournament_matches")
-              .update({
-                player1_id: sfw1,
-                player2_id: sfw2,
-                status: f.status === "in_progress" || f.status === "completed" ? f.status : "pending",
-                updated_at: new Date().toISOString(),
-              })
-              .eq("tournament_id", tournamentId)
-              .eq("round", 3)
-              .eq("match_number", 1);
+        if (currentRound >= 2) {
+          const sf = matches.filter((m) => m.round === 2 && m.status === "completed");
+          const f = matches.find((m) => m.round === 3 && m.match_number === 1);
+          if (sf.length >= 2 && f && f.status === "pending") {
+            const sfw1 = sf.find((m) => m.match_number === 1)?.winner_id;
+            const sfw2 = sf.find((m) => m.match_number === 2)?.winner_id;
+            
+            console.log("🏆 SF winners:", { sfw1: sfw1?.slice(-8), sfw2: sfw2?.slice(-8) });
+            
+            if (sfw1 && sfw2 && (f.player1_id !== sfw1 || f.player2_id !== sfw2)) {
+              console.log(`🔄 Final güncelleniyor: ${sfw1.slice(-8)} vs ${sfw2.slice(-8)}`);
+              await supabase
+                .from("tournament_matches")
+                .update({
+                  player1_id: sfw1,
+                  player2_id: sfw2,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq("tournament_id", tournamentId)
+                .eq("round", 3)
+                .eq("match_number", 1)
+                .eq("status", "pending"); // Sadece pending olanları güncelle
+            }
           }
         }
       } catch (err) {
@@ -103,7 +119,7 @@ const TournamentBracketPage = () => {
     };
 
     populate();
-  }, [matches, tournamentId]);
+  }, [matches, tournamentId, currentTournament?.current_round]);
 
   useEffect(() => {
     if (tournamentId) {
@@ -296,6 +312,19 @@ const TournamentBracketPage = () => {
       );
 
       const allCompleted = roundMatches.every((m) => m.status === "completed");
+      
+      // ⚠️ KRİTİK: Eski round'un maçlarının statusunu garantili olarak completed yap
+      if (allCompleted) {
+        console.log(`✅ Tüm maçlar tamamlandı, status'leri garantili olarak "completed" yapılıyor`);
+        await supabase
+          .from("tournament_matches")
+          .update({ 
+            status: "completed",
+            updated_at: new Date().toISOString() 
+          })
+          .eq("tournament_id", tournamentId)
+          .eq("round", round);
+      }
       const hasRealPlayerMatches = roundMatches.some((m) => {
         const player1IsBot = botMap.get(m.player1_id) || m.player1_id?.startsWith("bot_") || false;
         const player2IsBot = botMap.get(m.player2_id) || m.player2_id?.startsWith("bot_") || false;
@@ -334,6 +363,13 @@ const TournamentBracketPage = () => {
 
         console.log(`✅ Round ${round} completed, advancing to round ${round + 1}`);
 
+        // 🧹 Eski round'daki tüm countdown state'lerini temizle
+        await supabase
+          .from("tournament_matches")
+          .update({ countdown_started_at: null })
+          .eq("tournament_id", tournamentId)
+          .eq("round", round);
+
         // Tüm maçlar tamamlandıysa advance fonksiyonunu çağır
         const { data: result, error } = await supabase.rpc("advance_tournament_round", {
           p_tournament_id: tournamentId,
@@ -343,6 +379,18 @@ const TournamentBracketPage = () => {
 
         if (result && typeof result === "object" && "success" in result && result.success) {
           console.log(`🎯 Successfully advanced to round ${round + 1}`);
+          
+          // 🧹 Yeni round'un matches'lerini kontrol et ve doğrula
+          const { data: newRoundMatches } = await supabase
+            .from("tournament_matches")
+            .select("*")
+            .eq("tournament_id", tournamentId)
+            .eq("round", round + 1);
+          
+          console.log(`🎯 Yeni round ${round + 1} matches:`, newRoundMatches?.length, "maç");
+          newRoundMatches?.forEach((m, i) => {
+            console.log(`  - Match ${i + 1}: ${m.player1_id?.slice(-8)} vs ${m.player2_id?.slice(-8)}, status: ${m.status}`);
+          });
 
           // Yeni tur oluşturuldu; verileri hemen yenile - countdown otomatik başlayacak
           fetchTournamentDetails(tournamentId!);
@@ -406,6 +454,13 @@ const TournamentBracketPage = () => {
     
     if (allCompleted && currentRound < 3) {
       console.log(`🔄 Round ${currentRound} tamamlandı, advancement kontrolü yapılıyor...`);
+      console.log(`📊 Tamamlanan maçlar:`, currentRoundMatches.map(m => ({
+        match: m.match_number,
+        winner: m.winner_id?.slice(-8),
+        status: m.status,
+        scores: `${m.player1_score}-${m.player2_score}`
+      })));
+      
       // Biraz gecikme ekle - tüm maç skorlarının DB'ye yazılmasını bekle
       setTimeout(() => {
         checkAndAdvanceRound(currentRound);
@@ -421,13 +476,33 @@ const TournamentBracketPage = () => {
     const currentRound = currentTournament.current_round;
     if (!currentRound) return;
 
-    // Mevcut round'da pending maçlar var mı kontrol et
+    // ⚠️ KRİTİK: SADECE mevcut round'daki pending maçları al
     const pendingMatches = matches.filter(
       (m) => m.round === currentRound && m.status === "pending" && m.player1_id && m.player2_id
     );
+    
+    // Eski round'ların maçlarını filtrele (completed veya in_progress olmamalı pending durumda)
+    const oldRoundPendingMatches = matches.filter(
+      (m) => m.round < currentRound && m.status === "pending"
+    );
+    
+    if (oldRoundPendingMatches.length > 0) {
+      console.warn(`⚠️ Eski round'larda ${oldRoundPendingMatches.length} pending maç tespit edildi, temizleniyor...`);
+      oldRoundPendingMatches.forEach(async (m) => {
+        await supabase
+          .from("tournament_matches")
+          .update({ status: "completed" })
+          .eq("id", m.id);
+      });
+    }
 
     if (pendingMatches.length > 0) {
       console.log(`🎯 Round ${currentRound} için ${pendingMatches.length} pending maç bulundu`);
+      console.log(`📋 Pending maçlar:`, pendingMatches.map(m => ({
+        match: m.match_number,
+        player1: m.player1_id?.slice(-8),
+        player2: m.player2_id?.slice(-8)
+      })));
       console.log(`⏰ 10 saniyelik countdown başlatılacak, sonra maçlar başlayacak`);
       // Countdown effect'i otomatik tetiklenecek (lines 436-518)
     }
