@@ -3784,42 +3784,10 @@ const GamePage = ({
       
       // Cleanup için channel referansını sakla
       syncInterval = syncChannel as any;
-    } else if (isMp && currentRoom) {
-      // Random-match ve private-room için game_rooms realtime sync
-      const syncChannel = supabase
-        .channel(`game-timer-sync-${currentRoom.id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'game_rooms',
-            filter: `id=eq.${currentRoom.id}`,
-          },
-          (payload: any) => {
-            console.log('⏰ Timer sync event received:', payload);
-            // started_at değiştiyse timer'ı re-calculate et
-            if (payload.new?.started_at) {
-              const startedAt = new Date(payload.new.started_at).getTime();
-              const currentTime = Date.now() + serverTimeOffset;
-              const elapsedSeconds = Math.floor((currentTime - startedAt) / 1000);
-              const remainingTime = Math.max(0, timeLeftRef.current - elapsedSeconds);
-              
-              if (Math.abs(timeLeftRef.current - remainingTime) > 1) {
-                timeLeftRef.current = remainingTime;
-                if (isMountedRef.current) {
-                  setDisplayTime(remainingTime);
-                  console.log('🔄 Timer synced to:', remainingTime, 'seconds');
-                }
-              }
-            }
-          }
-        )
-        .subscribe();
-      
-      // Cleanup için channel referansını sakla
-      syncInterval = syncChannel as any;
     }
+    
+    // ⚠️ Gereksiz game_rooms timer sync subscription kaldırıldı
+    // Timestamp-based timer zaten ends_at'i database'den okuyor, started_at sync'e gerek yok
 
     // ⏱️ TIMESTAMP-BASED TIMER - Prevents jumps and glitches
     console.log("⏱️ Starting TIMESTAMP-BASED timer (no more setInterval decrement)");
