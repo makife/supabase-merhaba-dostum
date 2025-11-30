@@ -3697,6 +3697,13 @@ const GamePage = ({
     if (!canStart) return;
 
     console.log("⏱️ Timer BAŞLATILIYOR - Tek sefer, time:", timeLeftRef.current);
+    
+    // 🔒 REMATCH FIX: Clear any existing timer immediately before starting new one
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+      console.log("✅ Existing timer cleared before initializing new one (rematch fix)");
+    }
 
     let syncInterval: NodeJS.Timeout | null = null;
 
@@ -3815,10 +3822,17 @@ const GamePage = ({
     // ⏱️ TIMESTAMP-BASED TIMER - Prevents jumps and glitches
     console.log("⏱️ Starting TIMESTAMP-BASED timer (no more setInterval decrement)");
     
-    let endsAtTimestamp: number | null = null;
+    // 🔒 REMATCH FIX: Use ref instead of closure variable to prevent stale timestamp
+    const endsAtTimestampRef = useRef<number | null>(null);
     
     // Fetch ends_at from database
     const initializeTimer = async () => {
+      // 🔒 REMATCH FIX: Reset display to initial time immediately
+      if (isMountedRef.current) {
+        setDisplayTime(120);
+        console.log("⏱️ Display time reset to 120 before fetching ends_at");
+      }
+      
       try {
         let endsAtString: string | null = null;
         
@@ -3841,24 +3855,24 @@ const GamePage = ({
         }
         
         if (endsAtString) {
-          endsAtTimestamp = new Date(endsAtString).getTime();
+          endsAtTimestampRef.current = new Date(endsAtString).getTime();
         } else {
           // Fallback: calculate ends_at as started_at + 120s
           console.warn("⚠️ No ends_at found, calculating from started_at");
           const startTime = currentRoom?.started_at 
             ? new Date(currentRoom.started_at).getTime() 
             : (serverMatchStartRef.current || Date.now());
-          endsAtTimestamp = startTime + 120 * 1000;
+          endsAtTimestampRef.current = startTime + 120 * 1000;
         }
         
-        console.log("⏱️ Timer will end at:", new Date(endsAtTimestamp).toISOString());
+        console.log("⏱️ Timer will end at:", new Date(endsAtTimestampRef.current).toISOString());
         
         // Update timer every second based on TIMESTAMP CALCULATION
         timerRef.current = setInterval(() => {
-          if (!endsAtTimestamp) return;
+          if (!endsAtTimestampRef.current) return;
           
           const now = Date.now() + serverTimeOffset;
-          const remainingMs = Math.max(0, endsAtTimestamp - now);
+          const remainingMs = Math.max(0, endsAtTimestampRef.current - now);
           const remainingSeconds = Math.floor(remainingMs / 1000);
           
           timeLeftRef.current = remainingSeconds;
@@ -3920,7 +3934,7 @@ const GamePage = ({
       } catch (error) {
         console.error("❌ Timer initialization error:", error);
         // Fallback to 120s timer
-        endsAtTimestamp = Date.now() + 120 * 1000;
+        endsAtTimestampRef.current = Date.now() + 120 * 1000;
         console.log("⚠️ Using fallback 120s timer");
       }
     };
