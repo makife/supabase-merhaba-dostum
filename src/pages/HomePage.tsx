@@ -268,25 +268,37 @@ const HomePage = () => {
     {
       id: "vs-computer",
       title: "Yapay Zekaya Karşı",
-      cardImage: "/bilgisayarKart.png", // Yeni resim
+      description: "AI rakibine karşı pratik yap",
+      icon: Bot,
+      color: "bg-blue-500",
+      gradient: "bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700",
       route: "/game/vs-computer",
     },
     {
       id: "private-room",
       title: "Özel Oda",
-      cardImage: "/ozelKart.png", // Yeni resim
+      description: "Arkadaşınla özel oda oluştur",
+      icon: Users,
+      color: "bg-green-500",
+      gradient: "bg-gradient-to-br from-green-500 via-emerald-600 to-green-700",
       route: "/game/private-room",
     },
     {
       id: "random-match",
       title: "Rastgele Rakip",
-      cardImage: "/rastgeleKart.png", // Yeni resim
+      description: "Rastgele oyuncu ile eşleş",
+      icon: Zap,
+      color: "bg-purple-500",
+      gradient: "bg-gradient-to-br from-purple-500 via-violet-600 to-purple-700",
       route: "/game/random-match",
     },
     {
       id: "tournament",
       title: "Turnuva",
-      cardImage: "/turnuvaKart.png", // Yeni resim
+      description: "8 kişilik turnuvaya katıl",
+      icon: Trophy,
+      color: "bg-yellow-500",
+      gradient: "bg-gradient-to-br from-yellow-500 via-orange-500 to-yellow-600",
       route: "/tournament",
     },
   ];
@@ -299,28 +311,8 @@ const HomePage = () => {
       <div className="min-h-screen bg-gradient-to-br from-background to-muted px-4 pt-4 pb-2 native-safe-container">
         <div className="max-w-4xl mx-auto space-y-3">
           {/* Birleştirilmiş Header ve Level Progress */}
-          {/* Birleştirilmiş Header ve Level Progress - YENİ TASARIM */}
-          <Card className="border-0 shadow-2xl relative overflow-hidden group">
-            {/* 1. KATMAN: Arka Plan Görseli */}
-            {/* Buraya 'headerBack.png' adında hafif koyu, soyut bir görsel koyarsan efsane durur. */}
-            <div className="absolute inset-0 z-0">
-              <img
-                src="/headerBack.png" // Bunu public klasörüne eklemelisin, yoksa gradient görünür.
-                alt="Background"
-                className="w-full h-full object-cover opacity-100"
-                onError={(e) => {
-                  // Eğer resim yoksa şık bir gradient gösterir
-                  e.currentTarget.style.display = "none";
-                }}
-              />
-              {/* Görselin üzerine gelen karartma perdesi (Yazılar okunsun diye) */}
-              <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-black/80 backdrop-blur-[2px]" />
-            </div>
-
-            {/* Header Animasyonu (Varsa görselin üstünde kalsın) */}
-            <div className="relative z-0 opacity-50 mix-blend-overlay">
-              <HeaderAnimation />
-            </div>
+          <Card className="border-0 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/10 shadow-2xl relative overflow-hidden">
+            <HeaderAnimation />
 
             <CardContent className="p-4 relative z-10">
               {/* Mobil optimized layout */}
@@ -328,85 +320,88 @@ const HomePage = () => {
                 {/* Üst satır - Avatar ve Kelimeci başlığı */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <div className="relative cursor-pointer group/avatar flex-shrink-0" onClick={handleAvatarClick}>
-                      {/* Avatar etrafına parlak halka efekti */}
-                      <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full blur opacity-75 group-hover/avatar:opacity-100 transition duration-500"></div>
-                      <Avatar className="w-14 h-14 ring-2 ring-white/90 shadow-2xl relative">
+                    <div className="relative cursor-pointer group flex-shrink-0" onClick={handleAvatarClick}>
+                      <Avatar className="w-14 h-14 ring-2 ring-white/50 shadow-lg transition-all duration-500 ease-in-out">
                         <AvatarImage
                           src={profile?.avatar_url || user?.user_metadata?.avatar_url}
                           alt="Profile"
-                          className="object-cover"
+                          className="transition-opacity duration-500 ease-in-out"
                           loading="eager"
                         />
-                        <AvatarFallback className="bg-zinc-900 text-white font-bold border-2 border-white/20">
+                        <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-sm font-bold transition-all duration-500 ease-in-out">
                           <User className="w-6 h-6" />
                         </AvatarFallback>
                       </Avatar>
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      {/* Başlık artık daha parlak ve beyaz ağırlıklı */}
                       <h1
-                        className="text-xl font-bold font-bungee tracking-wider uppercase text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
+                        className="text-xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent drop-shadow-lg"
                         style={{
-                          textShadow: "0 0 20px rgba(168, 85, 247, 0.5)",
+                          textShadow:
+                            "1px 1px 0px hsl(var(--primary)), 2px 2px 0px rgba(0,0,0,0.3), 0 0 15px hsl(var(--primary) / 0.5)",
+                          WebkitTextStroke: "0.5px hsl(var(--border))",
                         }}
                       >
                         KELİMELE
                       </h1>
-                      <p className="text-xs text-white/90 font-medium tracking-wide">{greeting}</p>
-                      <p className="text-sm font-bold text-white truncate drop-shadow-md">
+                      <p className="text-xs text-muted-foreground">{greeting}</p>
+                      <p className="text-sm font-semibold text-foreground truncate">
                         {profile?.username || user?.user_metadata?.username || user?.email?.split("@")[0]}
                       </p>
                     </div>
                   </div>
 
-                  {/* Sağ taraf - Mürekkep ve Premium */}
+                  {/* Sağ taraf - Murekkep İkonu ve Premium badge */}
                   <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                    {/* Mürekkep İkonu ve Sayı */}
                     <div className="flex flex-col items-center gap-1">
+                      {/* İkon */}
                       <div
-                        className="relative group cursor-pointer transform hover:scale-110 transition-transform duration-200"
+                        className="relative group cursor-pointer"
                         onClick={() => {
                           playSound("buttonClick");
                           navigate("/market");
                         }}
                       >
-                        {/* Mürekkep ikonu arkasına glow */}
-                        <div className="absolute inset-0 bg-purple-500 rounded-full blur-md opacity-50" />
                         <img
                           src="/murekkepikon.png"
                           alt="Mürekkep"
-                          className="w-10 h-10 object-contain relative z-10 drop-shadow-xl"
+                          className="w-10 h-10 object-contain transition-transform duration-300 group-hover:scale-110 drop-shadow-lg"
                         />
+                        {/* Hover efekti için opsiyonel glow */}
+                        <div className="absolute inset-0 bg-purple-500/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                       </div>
 
-                      <div className="bg-black/60 backdrop-blur-md px-3 py-0.5 rounded-full border border-white/10 shadow-xl min-w-[60px] flex items-center justify-center">
-                        <span className="text-sm font-bold text-white">{profile?.ink_count || 0}</span>
+                      {/* Mürekkep Sayısı */}
+                      <div className="bg-gradient-to-r from-purple-500/90 to-indigo-500/90 backdrop-blur-sm px-3 py-0 rounded-full border-2 border-white/30 shadow-lg min-w-[60px] flex items-center justify-center">
+                        <span className="text-sm font-bold text-white drop-shadow-md">{profile?.ink_count || 0}</span>
                       </div>
                     </div>
 
+                    {/* Premium Badge */}
                     {isPremium && (
-                      <div className="bg-yellow-500/20 backdrop-blur-sm px-2 py-0.5 rounded flex items-center gap-1 border border-yellow-500/30">
-                        <Crown className="w-3 h-3 text-yellow-400" />
-                        <span className="text-[10px] text-yellow-100 font-bold uppercase tracking-wider">Premıum</span>
+                      <div className="flex items-center space-x-1 mt-1">
+                        <Crown className="w-4 h-4 text-yellow-500" />
+                        <span className="text-xs text-yellow-500 font-semibold">Premium</span>
                       </div>
                     )}
                   </div>
                 </div>
               </div>
 
-              {/* Seviye Paneli - Glassmorphism Tasarımı */}
-              <div className="bg-black/40 backdrop-blur-md rounded-xl p-3 border border-white/10 shadow-lg mt-3 group-hover:border-white/20 transition-colors duration-300">
+              {/* Seviye progress - Real-time güncellemeler için profile state'ini direkt kullan */}
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 shadow-inner">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2">
-                    <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-600 rounded-lg flex items-center justify-center shadow-lg flex-shrink-0 border border-white/20">
+                    <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg flex-shrink-0">
                       <Trophy className="w-4 h-4 text-white" />
                     </div>
                     <div className="min-w-0">
-                      <h3 className="text-sm font-bold text-white">
+                      <h3 className="text-sm font-bold text-foreground">
                         Seviye {calculateLevel(profile?.total_score || 0).level}
                       </h3>
-                      <p className="text-xs text-white/60 truncate font-mono">
+                      <p className="text-xs text-muted-foreground truncate">
                         {calculateLevel(profile?.total_score || 0).experience} /{" "}
                         {calculateLevel(profile?.total_score || 0).nextLevelExp} EXP
                       </p>
@@ -414,20 +409,31 @@ const HomePage = () => {
                   </div>
 
                   <div className="text-right flex-shrink-0">
-                    <div className="text-base font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400">
+                    <div className="text-base font-bold text-primary">
                       {(profile?.total_score || 0) > 9999
                         ? `${Math.floor((profile?.total_score || 0) / 1000)}k`
                         : (profile?.total_score || 0).toLocaleString()}
                     </div>
-                    <div className="text-[10px] text-white/50 uppercase tracking-widest">Puan</div>
+                    <div className="text-xs text-muted-foreground">Puan</div>
                   </div>
                 </div>
 
-                {/* Progress bar */}
+                {/* Progress bar - Real-time güncellemeler */}
                 <div className="space-y-1">
-                  <div className="w-full bg-black/50 rounded-full h-2 overflow-hidden border border-white/5">
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>İlerleme</span>
+                    <span>
+                      %
+                      {Math.round(
+                        (calculateLevel(profile?.total_score || 0).experience /
+                          calculateLevel(profile?.total_score || 0).nextLevelExp) *
+                          100,
+                      )}
+                    </span>
+                  </div>
+                  <div className="w-full bg-black/20 rounded-full h-2 overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 rounded-full shadow-[0_0_10px_rgba(245,158,11,0.5)]"
+                      className="h-full bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 rounded-full transition-all duration-1000 ease-out shadow-lg"
                       style={{
                         width: `${(calculateLevel(profile?.total_score || 0).experience / calculateLevel(profile?.total_score || 0).nextLevelExp) * 100}%`,
                       }}
@@ -436,35 +442,55 @@ const HomePage = () => {
                 </div>
               </div>
 
-              {/* Alt Kısım - Haklar ve Jokerler */}
-              <div className="space-y-2 mt-3 pt-2 border-t border-white/10">
+              {/* Alt kısım - Hak barı ve istatistikler */}
+              <div className="space-y-2 mt-2 pt-2 border-t border-white/20">
+                {/* Hak barı - Real-time güncellemeler */}
                 {!isPremium && (
                   <div className="space-y-1">
                     <div className="flex justify-between items-center">
-                      <span className="text-xs text-white/70 font-medium">Oyun Enerjisi</span>
+                      <span className="text-xs text-muted-foreground">Oyun Hakları</span>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-white">
+                        <span className="text-xs font-medium text-foreground">
                           {(profile?.game_credits || 0) + (profile?.bonus_credits || 0)}/5
                         </span>
                         {timeUntilNextCredit && profile?.game_credits < 5 && (
-                          <span className="text-[10px] font-mono text-orange-300 bg-orange-500/20 px-1.5 py-0.5 rounded border border-orange-500/30">
-                            {timeUntilNextCredit}
+                          <span className="text-xs text-orange-500 bg-orange-100 px-2 py-1 rounded-full">
+                            +1 {timeUntilNextCredit}
                           </span>
                         )}
                       </div>
                     </div>
-                    {/* Enerji Barları - Daha parlak */}
-                    <div className="flex gap-1 h-1.5 w-full">
+                    <div className="flex gap-1 h-2 w-full">
                       {Array.from({ length: 5 }, (_, i) => {
                         const isActive = i < (profile?.game_credits || 0);
+                        let segmentColor = "bg-black/20";
+
+                        if (isActive) {
+                          switch (i + 1) {
+                            case 1:
+                              segmentColor = "bg-red-500";
+                              break;
+                            case 2:
+                              segmentColor = "bg-red-400";
+                              break;
+                            case 3:
+                              segmentColor = "bg-orange-500";
+                              break;
+                            case 4:
+                              segmentColor = "bg-green-400";
+                              break;
+                            case 5:
+                              segmentColor = "bg-green-500";
+                              break;
+                            default:
+                              segmentColor = "bg-black/20";
+                          }
+                        }
+
                         return (
                           <div
                             key={i}
-                            className={`flex-1 rounded-full transition-all duration-500 ${
-                              isActive
-                                ? "bg-gradient-to-r from-green-400 to-emerald-600 shadow-[0_0_8px_rgba(52,211,153,0.6)]"
-                                : "bg-white/10"
-                            }`}
+                            className={`flex-1 rounded-full transition-all duration-500 ease-out shadow-sm ${segmentColor}`}
                           />
                         );
                       })}
@@ -472,39 +498,38 @@ const HomePage = () => {
                   </div>
                 )}
 
-                {/* İstatistikler */}
-                <div className="flex flex-wrap gap-2 justify-center py-1">
-                  <div className="bg-black/30 text-white/90 border border-white/10 px-2 py-1 rounded text-[10px] flex items-center backdrop-blur-sm">
-                    <Target className="w-3 h-3 mr-1 text-blue-400" />
-                    Günlük: {profile?.daily_games || 0}
-                  </div>
-                  <div className="bg-black/30 text-white/90 border border-white/10 px-2 py-1 rounded text-[10px] flex items-center backdrop-blur-sm">
-                    <Zap className="w-3 h-3 mr-1 text-yellow-400" />
-                    Seri: {profile?.win_streak || 0}
-                  </div>
+                {/* İstatistik badge'leri - Real-time güncellemeler */}
+                <div className="flex flex-wrap gap-2 justify-center">
+                  <Badge variant="secondary" className="bg-white/20 text-foreground border-white/30 text-xs">
+                    <Target className="w-3 h-3 mr-1" />
+                    Günlük Oyun: {profile?.daily_games || 0}/∞
+                  </Badge>
+                  <Badge variant="secondary" className="bg-white/20 text-foreground border-white/30 text-xs">
+                    <Zap className="w-3 h-3 mr-1" />
+                    Günlük Seri: {profile?.win_streak || 0}/∞
+                  </Badge>
                 </div>
 
-                {/* Joker Envanteri - Yarı saydam panel */}
-                <div className="bg-white/5 backdrop-blur-sm rounded-lg p-2 border border-white/5 flex justify-between items-center">
-                  {/* Jokerler buraya aynı mantıkla eklenebilir, ikonları biraz parlatabiliriz */}
-                  <div className="flex gap-3 text-xs w-full justify-around">
-                    <div className="flex flex-col items-center gap-0.5">
-                      <span className="text-lg grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all">
-                        5️⃣
-                      </span>
-                      <span className="font-bold text-white text-[10px]">x{jokers.degistir}</span>
+                {/* Joker Envanteri */}
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 mt-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-bold text-foreground">🃏 Jokerlerim</h4>
+                  </div>
+                  <div className="flex gap-2 text-xs">
+                    <div className="bg-white/10 rounded-lg p-2 flex items-center gap-1">
+                      <span>5️⃣</span>
+                      <span className="font-medium">Değiştir</span>
+                      <span className="font-semibold">×{jokers.degistir}</span>
                     </div>
-                    <div className="flex flex-col items-center gap-0.5">
-                      <span className="text-lg grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all">
-                        🗣️
-                      </span>
-                      <span className="font-bold text-white text-[10px]">x{jokers.fisilida}</span>
+                    <div className="bg-white/10 rounded-lg p-2 flex items-center gap-1">
+                      <span>🗣️</span>
+                      <span className="font-medium">Fısılda</span>
+                      <span className="font-semibold">×{jokers.fisilida}</span>
                     </div>
-                    <div className="flex flex-col items-center gap-0.5">
-                      <span className="text-lg grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all">
-                        ✍️
-                      </span>
-                      <span className="font-bold text-white text-[10px]">x{jokers.senYaz}</span>
+                    <div className="bg-white/10 rounded-lg p-2 flex items-center gap-1">
+                      <span>✍️</span>
+                      <span className="font-medium">Sen Yaz</span>
+                      <span className="font-semibold">×{jokers.senYaz}</span>
                     </div>
                   </div>
                 </div>
@@ -853,14 +878,19 @@ const HomePage = () => {
                 {gameModesConfig.map((mode) => (
                   <Card
                     key={mode.id}
-                    // DEĞİŞİKLİK BURADA:
-                    // 1. aspect-[21/9]: Sinematik geniş oran.
-                    // 2. min-h-[140px]: Mobilde çok fazla küçülüp tıklamayı zorlaştırmaması için güvenlik önlemi.
-                    className="cursor-pointer border-0 overflow-hidden relative w-full aspect-[21/9] min-h-[140px] group hover:shadow-xl transition-all duration-300 bg-muted/20"
+                    className={`cursor-pointer border-0 overflow-hidden ${mode.gradient}`}
                     onClick={() => {
-                      // ... (Tıklama kodları ve mantık aynı kalacak) ...
                       playSound("buttonClick");
-                      // ... kredi kontrolleri vs ...
+
+                      // Kredi kontrolü - premium değilse ve kredi yoksa
+                      if (!isPremium && (profile?.game_credits || 0) + (profile?.bonus_credits || 0) <= 0) {
+                        toast.error("Yetersiz oyun hakkı!", {
+                          description: "Oyun oynamak için hak satın alın veya dolmasını bekleyin.",
+                          duration: 4000,
+                        });
+                        return;
+                      }
+
                       if (mode.id === "tournament") {
                         navigate("/tournament");
                       } else {
@@ -868,16 +898,81 @@ const HomePage = () => {
                       }
                     }}
                   >
-                    <img
-                      src={mode.cardImage}
-                      alt={mode.title}
-                      loading="eager"
-                      decoding="async"
-                      // object-cover: Resmi 21:9 kutuya doldurur, fazlalıkları keser.
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-
-                    <span className="sr-only">{mode.title}</span>
+                    <CardHeader className="pb-2 pt-3 relative">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center border border-white/30">
+                            <mode.icon className="w-4 h-4 text-white" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-base text-white drop-shadow-lg">{mode.title}</CardTitle>
+                            <CardDescription className="text-white/80 font-medium text-sm">
+                              {mode.description}
+                            </CardDescription>
+                          </div>
+                        </div>
+                        {mode.id === "vs-computer" && (
+                          <img
+                            src="/lovable-uploads/8008dff7-7ead-48e2-b47e-fde31770af08.png"
+                            alt="Computer player"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 w-48 h-36 object-contain opacity-60"
+                          />
+                        )}
+                        {mode.id === "private-room" && (
+                          <img
+                            src="/lovable-uploads/e5d22948-34db-460d-adff-dc6284efcf50.png"
+                            alt="Private room"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 w-48 h-36 object-contain opacity-60"
+                          />
+                        )}
+                        {mode.id === "random-match" && (
+                          <img
+                            src="/lovable-uploads/a91ec87e-aaac-47fa-93fa-22e1f0270999.png"
+                            alt="Random match"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 w-48 h-36 object-contain opacity-60"
+                          />
+                        )}
+                        {mode.id === "tournament" && (
+                          <img
+                            src="/lovable-uploads/70bff2fc-4ab0-4705-b1f1-d3cf41bbc7b5.png"
+                            alt="Tournament"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 w-48 h-36 object-contain opacity-60"
+                          />
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0 pb-3">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <Badge
+                          variant="secondary"
+                          className="text-xs bg-white/20 text-white border-white/30 hover:bg-white/30"
+                        >
+                          <Clock className="w-3 h-3 mr-1" />2 Dakika
+                        </Badge>
+                        <Badge
+                          variant="secondary"
+                          className="text-xs bg-white/20 text-white border-white/30 hover:bg-white/30"
+                        >
+                          <Target className="w-3 h-3 mr-1" />
+                          500 Puan
+                        </Badge>
+                      </div>
+                      <Button
+                        className="w-full bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50 backdrop-blur-sm font-semibold"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          playSound("buttonClick");
+                          if (mode.id === "tournament") {
+                            navigate("/tournament");
+                          } else {
+                            setSelectedMode(mode.id);
+                          }
+                        }}
+                      >
+                        {mode.id === "tournament" ? "Giriş Yap" : "Oyuna Başla"}
+                      </Button>
+                    </CardContent>
                   </Card>
                 ))}
               </div>
