@@ -603,6 +603,7 @@ const GamePage = ({
   const timeLeftRef = useRef<number>(gameType === "timed" ? 120 : 0);
   const [displayTime, setDisplayTime] = useState<number>(timeLeftRef.current);
   const isMountedRef = useRef<boolean>(true); // ⚠️ Track if component is mounted
+  const endsAtTimestampRef = useRef<number | null>(null); // 🔒 REMATCH FIX: Timestamp ref for timer
   const [showCountdown, setShowCountdown] = useState(false);
   const [countdownServerTime, setCountdownServerTime] = useState<string | null>(null);
   const [preparingOpponent, setPreparingOpponent] = useState<"preparing" | "ready" | null>(null);
@@ -3821,9 +3822,6 @@ const GamePage = ({
 
     // ⏱️ TIMESTAMP-BASED TIMER - Prevents jumps and glitches
     console.log("⏱️ Starting TIMESTAMP-BASED timer (no more setInterval decrement)");
-    
-    // 🔒 REMATCH FIX: Use ref instead of closure variable to prevent stale timestamp
-    const endsAtTimestampRef = useRef<number | null>(null);
     
     // Fetch ends_at from database
     const initializeTimer = async () => {
