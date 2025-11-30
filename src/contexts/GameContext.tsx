@@ -1800,21 +1800,10 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           }
         }
 
+        // ⚠️ Rakip için game session kaydı YAPMA - RLS ihlali!
+        // Her oyuncu kendi client'ından kendi session'ını kaydeder
         if (opponentStats && !participants.find((p) => p.user_id === opponentStats.userId && p.is_bot)) {
-          const { error: sessionError } = await supabase.from("game_sessions").insert({
-            user_id: opponentStats.userId,
-            score: opponentStats.score,
-            words_count: opponentStats.words.length,
-            game_duration: gameDuration,
-            is_winner: opponentStats.isWinner,
-            game_mode: currentRoom.game_mode,
-          });
-
-          if (sessionError) {
-            console.error("❌ Opponent game session kayıt hatası:", sessionError);
-          } else {
-            console.log("✅ Opponent game session kaydedildi:", opponentStats.userId.slice(-8));
-          }
+          console.log("ℹ️ Opponent will save their own session:", opponentStats.userId.slice(-8));
         }
 
         // Wait a moment for triggers to process
