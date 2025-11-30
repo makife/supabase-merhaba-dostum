@@ -872,7 +872,6 @@ const HomePage = () => {
                       src={mode.cardImage}
                       alt={mode.title}
                       loading="eager"
-                      fetchPriority="high"
                       decoding="async"
                       // object-cover: Resmi 21:9 kutuya doldurur, fazlalıkları keser.
                       className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
