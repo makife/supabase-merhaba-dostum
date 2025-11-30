@@ -205,7 +205,7 @@ const GameCountdown = ({
   }, []);
 
   // === RENDER (Sadece sayım sırasında görünür) ===
-  if (!hasStarted || !preloadComplete) return null;
+  if (!hasStarted || !preloadComplete || !isVisible) return null;
   if (count === 0 && !showStart) return null;
 
   const getImageForCount = (num: number): string => {
