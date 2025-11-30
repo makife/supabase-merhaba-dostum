@@ -622,12 +622,16 @@ const GamePage = ({
   const countdownCheckDoneRef = useRef(false);
   const [waitingForPlayer, setWaitingForPlayer] = useState(false);
   const [gameEnded, setGameEnded] = useState(false);
+  const gameEndedRef = useRef(false); // 🔒 Ref for synchronous guard in timer
   const statsUpdatedRef = useRef(false);
   const attemptedAutoCompleteRef = useRef(false);
   // Reset duplicate stats guard when game resets
   useEffect(() => {
     if (!gameEnded) {
       statsUpdatedRef.current = false;
+      gameEndedRef.current = false; // 🔒 Reset ref too
+    } else {
+      gameEndedRef.current = true; // 🔒 Sync ref with state
     }
   }, [gameEnded]);
   const [winner, setWinner] = useState<"player" | "opponent" | "tie" | null>(null);
@@ -1200,6 +1204,7 @@ const GamePage = ({
     setShowCountdown(false);
     setGameStarted(false);
     setGameEnded(false);
+    gameEndedRef.current = false; // 🔒 Reset ref too
     setWinner(null);
     setShowResults(false); // ⚠️ KRİTİK: Skor kartını kapat
     setTimeWarningPlayed(false);
@@ -3789,6 +3794,12 @@ const GamePage = ({
     // ⚠️ Gereksiz game_rooms timer sync subscription kaldırıldı
     // Timestamp-based timer zaten ends_at'i database'den okuyor, started_at sync'e gerek yok
 
+    // ⚠️ GUARD: Oyun bittiyse timer başlatma
+    if (gameEnded) {
+      console.log("🛑 Timer başlatılmadı - oyun zaten bitti");
+      return;
+    }
+
     // ⏱️ TIMESTAMP-BASED TIMER - Prevents jumps and glitches
     console.log("⏱️ Starting TIMESTAMP-BASED timer (no more setInterval decrement)");
     
@@ -3847,8 +3858,9 @@ const GamePage = ({
             setDisplayTime(remainingSeconds);
           }
           
-          if (remainingSeconds <= 0) {
+          if (remainingSeconds <= 0 && !gameEndedRef.current) {
             console.log("⏰ TIMESTAMP TIMER: Time reached 0 - ending game");
+            gameEndedRef.current = true; // 🔒 Guard: Prevent multiple triggers
             
             // Clear interval immediately
             if (timerRef.current) {
