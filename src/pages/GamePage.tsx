@@ -1201,6 +1201,7 @@ const GamePage = ({
     setGameStarted(false);
     setGameEnded(false);
     setWinner(null);
+    setShowResults(false); // ⚠️ KRİTİK: Skor kartını kapat
     setTimeWarningPlayed(false);
     setRematchRequested(false);
     setWaitingForRematchResponse(false);
@@ -5740,28 +5741,10 @@ const GamePage = ({
                       onClick={() => {
                         playSound("buttonClick");
                         resetGameForRematch();
-                        setGameGrid(generateRandomGrid());
-                        setSelectedLetters([]);
-                        setCurrentWord("");
-                        setUsedWords(new Set());
-                        setPlayerWords([]);
-                        setOpponentWords([]);
-                        setPlayerWordsWithScores([]);
-                        setOpponentWordsWithScores([]);
-                        setPlayerScore(0);
-                        setOpponentScore(0);
-                        timeLeftRef.current = gameType === "timed" ? 120 : 0;
-                        setDisplayTime(timeLeftRef.current);
+                        // resetGameForRematch zaten gerekli tüm state'leri sıfırlıyor
+                        // Duplicate state update'leri kaldırıldı
                         setCountdownServerTime(new Date().toISOString());
-                        setGameStarted(false);
-                        setGameEnded(false);
-                        setWinner(null);
                         setButtonsEnabled(false);
-                        setTimeWarningPlayed(false);
-                        // Jokerler artık envanter sisteminden geliyor
-                        setSelectedJoker(null);
-                        setHighlightedLetters([]);
-                        setIsJokerActive(false);
                       }}
                       className="w-full"
                     >
