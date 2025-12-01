@@ -578,7 +578,8 @@ const GamePage = ({
   }, [currentRoom?.id]);
 
   const [selectedLetters, setSelectedLetters] = useState<{ letter: string; row: number; col: number }[]>([]);
-  const [currentWord, setCurrentWord] = useState("");
+  // currentWord artık derived value - selectedLetters'dan otomatik hesaplanır
+  const currentWord = useMemo(() => selectedLetters.map((s) => s.letter).join(""), [selectedLetters]);
   const [inputFlash, setInputFlash] = useState<"success" | "error" | null>(null);
   const [usedWords, setUsedWords] = useState<Set<string>>(new Set());
   const [playerWords, setPlayerWords] = useState<string[]>([]);
@@ -1196,7 +1197,7 @@ const GamePage = ({
     // Oyunu sıfırla
     setGameGrid(generateRandomGrid());
     setSelectedLetters([]);
-    setCurrentWord("");
+    // currentWord artık derived value, manuel set'e gerek yok
     setUsedWords(new Set());
     setGlobalUsedWords(new Set());
     setPlayerWords([]);
@@ -2207,7 +2208,7 @@ const GamePage = ({
     }, 1000);
 
     setSelectedLetters([]);
-    setCurrentWord("");
+    // currentWord artık derived value, manuel set'e gerek yok
 
     playSound("correctWord");
   };
@@ -2547,8 +2548,7 @@ const GamePage = ({
       return; // Fonksiyondan çık, joker azaltma
     }
 
-    // Her şey tamam, şimdi kelimeyi yaz
-    setCurrentWord(selectedWord);
+    // Her şey tamam, şimdi kelimeyi yaz (currentWord derived value olduğundan sadece selectedLetters set ediyoruz)
     setSelectedLetters(wordPositions);
 
     setTimeout(async () => {
@@ -2601,7 +2601,7 @@ const GamePage = ({
         console.error("❌ Sen Yaz Jokeri hatası:", error);
       }
 
-      setCurrentWord("");
+      // currentWord artık derived value, manuel set'e gerek yok
       setSelectedLetters([]);
       setIsJokerActive(false);
 
@@ -4989,15 +4989,15 @@ const GamePage = ({
 
       const isSelected = selectedLetters.some((s) => s.row === row && s.col === col);
 
-      if (isSelected) {
-        const newSelected = selectedLetters.filter((s) => !(s.row === row && s.col === col));
-        setSelectedLetters(newSelected);
-        setCurrentWord(newSelected.map((s) => s.letter).join(""));
-      } else {
-        const newSelected = [...selectedLetters, { letter, row, col }];
-        setSelectedLetters(newSelected);
-        setCurrentWord(newSelected.map((s) => s.letter).join(""));
-      }
+    if (isSelected) {
+      const newSelected = selectedLetters.filter((s) => !(s.row === row && s.col === col));
+      setSelectedLetters(newSelected);
+      // currentWord artık derived value, otomatik güncellenecek
+    } else {
+      const newSelected = [...selectedLetters, { letter, row, col }];
+      setSelectedLetters(newSelected);
+      // currentWord artık derived value, otomatik güncellenecek
+    }
     },
     [gameEnded, waitingForPlayer, isJokerActive, lastClickTime, selectedLetters, playSound],
   );
@@ -5005,7 +5005,7 @@ const GamePage = ({
   // Clear current word
   const clearWord = () => {
     setSelectedLetters([]);
-    setCurrentWord("");
+    // currentWord artık derived value, otomatik temizlenecek
   };
 
   // Custom toast fonksiyonu
