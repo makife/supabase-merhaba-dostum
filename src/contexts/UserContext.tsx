@@ -536,13 +536,13 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     // Bu subscription sonsuz döngüye neden oluyordu
   }, [user, isPremium]);
 
-  // ENHANCED Real-time profile subscription - Deduplication fix
+  // ENHANCED Real-time profile subscription - Only update if data changed
   useEffect(() => {
     if (!user) return;
 
     console.log("🔄 Setting up real-time profile subscription for user:", user.id);
 
-    let isProcessing = false;
+    const lastUpdateRef = { timestamp: 0, data: "" };
 
     const channel = supabase
       .channel(`profile-realtime-${user.id}`)
@@ -555,43 +555,46 @@ export const UserProvider = ({ children }: UserProviderProps) => {
           filter: `id=eq.${user.id}`,
         },
         (payload) => {
-          // Prevent duplicate processing
-          if (isProcessing) {
-            console.log("🚫 Skipping duplicate profile update");
+          if (!payload.new) return;
+
+          const now = Date.now();
+          const dataHash = JSON.stringify({
+            game_credits: (payload.new as any).game_credits,
+            bonus_credits: (payload.new as any).bonus_credits,
+            total_score: (payload.new as any).total_score,
+            wins: (payload.new as any).wins,
+            losses: (payload.new as any).losses,
+          });
+
+          // Ignore if same data within 2 seconds
+          if (now - lastUpdateRef.timestamp < 2000 && dataHash === lastUpdateRef.data) {
+            console.log("🚫 Ignoring duplicate profile update (same data)");
             return;
           }
 
-          isProcessing = true;
+          lastUpdateRef.timestamp = now;
+          lastUpdateRef.data = dataHash;
 
           console.log("🎯 Profile updated via real-time:", payload.new);
-          if (payload.new) {
-            // Immediately update the profile state
-            const newProfile = {
-              ...(payload.new as UserProfile),
-              ink_count: (payload.new as any).ink_count ?? 0,
-            };
-            console.log("📊 Profile stats updated:", {
-              total_score: newProfile.total_score,
-              wins: newProfile.wins,
-              losses: newProfile.losses,
-              game_credits: newProfile.game_credits,
-              bonus_credits: newProfile.bonus_credits,
-              ink_count: newProfile.ink_count,
-            });
 
-            setProfile(newProfile);
-            setLoading(false);
-          }
+          const newProfile = {
+            ...(payload.new as UserProfile),
+            ink_count: (payload.new as any).ink_count ?? 0,
+          };
 
-          // Reset processing flag after a short delay
-          setTimeout(() => {
-            isProcessing = false;
-          }, 500);
+          console.log("📊 Profile stats updated:", {
+            total_score: newProfile.total_score,
+            wins: newProfile.wins,
+            losses: newProfile.losses,
+            game_credits: newProfile.game_credits,
+            bonus_credits: newProfile.bonus_credits,
+            ink_count: newProfile.ink_count,
+          });
+
+          setProfile(newProfile);
         },
       )
-      .subscribe((status) => {
-        console.log("📡 Real-time subscription status:", status);
-      });
+      .subscribe();
 
     return () => {
       console.log("🔌 Cleaning up profile subscription");
