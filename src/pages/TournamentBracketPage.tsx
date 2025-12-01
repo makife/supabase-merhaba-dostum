@@ -519,11 +519,30 @@ const TournamentBracketPage = () => {
       return isInProgress && (isPlayer1 || isPlayer2);
     });
 
-    // SADECE countdown 0 ise oyuna yönlendir
+    // SADECE countdown 0 ise oyuna yönlendir - ama önce DB'den fresh status kontrol et
     if (myInProgressMatch && countdown === 0) {
-      console.log("✅ Found user match and countdown finished, navigating:", myInProgressMatch.id.slice(-8));
-      setNavigatedToGame(true);
-      navigate(`/game?match=${myInProgressMatch.id}&tournament=${tournamentId}`);
+      console.log("🔍 Verifying match status before navigation:", myInProgressMatch.id.slice(-8));
+      
+      // Fresh status check to prevent redirect loop
+      supabase
+        .from("tournament_matches")
+        .select("status")
+        .eq("id", myInProgressMatch.id)
+        .single()
+        .then(({ data, error }) => {
+          if (error) {
+            console.error("❌ Error checking match status:", error);
+            return;
+          }
+          
+          if (data?.status === "in_progress") {
+            console.log("✅ Match confirmed in_progress, navigating:", myInProgressMatch.id.slice(-8));
+            setNavigatedToGame(true);
+            navigate(`/game?match=${myInProgressMatch.id}&tournament=${tournamentId}`);
+          } else {
+            console.log("🚫 Match no longer in_progress, skipping navigation. Current status:", data?.status);
+          }
+        });
     }
   }, [matches, user, navigatedToGame, tournamentId, navigate, countdown]);
 
