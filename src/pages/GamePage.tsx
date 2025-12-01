@@ -959,13 +959,16 @@ const GamePage = ({
         console.log("❌ User LOSES - Setting winner to opponent");
       }
 
-      // Backend'e maç sonucunu ve belirlenmiş kazananı gönder
-      const { data: updateResult, error: updateError } = await supabase.rpc("complete_tournament_match_with_advance", {
-        p_match_id: tournamentMatch.id,
-        p_player1_score: player1Score,
-        p_player2_score: player2Score,
-        p_winner_id: determinedWinnerId!, // Artık kesinlikle bir winner_id var
-      });
+      // Backend'e maç sonucunu ve belirlenmiş kazananı gönder (doğrudan update)
+      const { error: updateError } = await supabase
+        .from("tournament_matches")
+        .update({
+          status: "completed",
+          player1_score: player1Score,
+          player2_score: player2Score,
+          winner_id: determinedWinnerId!, // Kesin winner_id
+        })
+        .eq("id", tournamentMatch.id);
 
       if (updateError) {
         console.error("❌ Maç tamamlama hatası:", updateError);
@@ -976,7 +979,9 @@ const GamePage = ({
         return;
       }
 
-      console.log("✅ Backend maç tamamlama sonucu:", updateResult);
+      console.log("✅ Maç başarıyla tamamlandı - backend trigger winner'ı promote edecek");
+
+      console.log("✅ Maç başarıyla tamamlandı - backend trigger winner'ı promote edecek");
 
       // Backend'den gelen güncellenmiş maç bilgisini al
       const { data: updatedMatch, error: matchError } = await supabase
