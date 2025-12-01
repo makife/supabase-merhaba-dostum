@@ -145,6 +145,9 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
 
       if (participantError) throw participantError;
 
+      // 300ms bekle - participant'ın DB'ye yazılmasını garanti et
+      await new Promise(resolve => setTimeout(resolve, 300));
+
       await fetchTournaments();
       return tournament.id;
     } catch (error: any) {
