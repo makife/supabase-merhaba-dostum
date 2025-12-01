@@ -6133,50 +6133,51 @@ const GamePage = ({
               <Card className="game-grid border-0">
                 <CardContent className="p-2">
                   <div className="flex items-center justify-center space-x-2 w-full">
-                    {/* Input Görünümlü Konteyner */}
+                    {/* Input Konteyneri: Daha opak beyaz arka plan (Okunabilirlik için) */}
                     <div
-                      className={`flex items-center justify-center h-12 w-full rounded-md bg-white/20 backdrop-blur-sm transition-all duration-200 px-3 relative overflow-hidden ${
+                      className={`flex items-center justify-center h-14 w-full rounded-xl bg-white/80 backdrop-blur-md transition-all duration-200 px-3 relative overflow-hidden shadow-inner ${
                         isJokerActive ? "typing-animation" : ""
                       } ${
                         inputFlash === "success"
-                          ? "border-2 border-green-400 shadow-[0_0_12px_rgba(74,222,128,0.6)]"
+                          ? "border-2 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.6)]"
                           : inputFlash === "error"
-                            ? "border-2 border-red-400 shadow-[0_0_12px_rgba(248,113,113,0.6)]"
-                            : "border border-white/30"
+                            ? "border-2 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.6)]"
+                            : "border-2 border-slate-200/50"
                       }`}
                     >
-                      {/* Placeholder Metni */}
+                      {/* Placeholder: Koyu gri ve daha belirgin */}
                       {selectedLetters.length === 0 && !isJokerActive && (
-                        <span className="text-white/70 font-bold font-mono text-lg animate-pulse select-none">
-                          ~Kelime Üret~
+                        <span className="text-slate-400 font-bold font-mono text-lg animate-pulse select-none tracking-widest uppercase opacity-70">
+                          K E L İ M E
                         </span>
                       )}
 
-                      {/* Seçilen Harfler (Animasyonlu) */}
+                      {/* Seçilen Harfler */}
                       <div className="flex gap-1 items-center justify-center z-10">
-                        <AnimatePresence mode="popLayout">
-                          {selectedLetters.map((item) => (
-                            <motion.span
-                              key={`input-${item.row}-${item.col}`}
-                              layoutId={`letter-${item.row}-${item.col}`} // Grid'deki ID ile eşleşiyor
-                              initial={{ opacity: 0, y: 20, scale: 0.5 }}
-                              animate={{ opacity: 1, y: 0, scale: 1 }}
-                              exit={{ opacity: 0, scale: 0, transition: { duration: 0.1 } }}
-                              transition={{
-                                type: "spring",
-                                stiffness: 400,
-                                damping: 25,
-                              }}
-                              className="text-2xl font-mono font-bold text-white drop-shadow-md select-none"
-                            >
-                              {item.letter}
-                            </motion.span>
-                          ))}
-                        </AnimatePresence>
+                        {/* AnimatePresence KALDIRILDI -> Titremeyi çözer */}
+                        {selectedLetters.map((item) => (
+                          <motion.span
+                            key={`input-${item.row}-${item.col}`}
+                            layoutId={`letter-${item.row}-${item.col}`} // Uçuş efekti buradan gelir
+                            layout // Harfler silinince diğerlerinin kaymasını sağlar
+                            initial={{ opacity: 0, scale: 0.5 }} // Sadece uçuş başarısız olursa fallback
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{
+                              type: "spring",
+                              stiffness: 500, // Daha sert yay (daha hızlı tepki)
+                              damping: 30, // Daha az salınım
+                              mass: 0.8, // Daha hafif his
+                            }}
+                            // STİL: Simsiyah, kalın ve hafif gölgeli (Neon/Mürekkep etkisi)
+                            className="text-3xl font-mono font-extrabold text-slate-900 drop-shadow-sm select-none"
+                          >
+                            {item.letter}
+                          </motion.span>
+                        ))}
 
-                        {/* Eğer Joker/Klavye ile yazılıyorsa manuel input desteği için (Opsiyonel, şu anki yapıda selectedLetters kullanıyorsun) */}
+                        {/* Joker veya manuel yazım için */}
                         {currentWord.length > selectedLetters.length && (
-                          <span className="text-2xl font-mono font-bold text-white drop-shadow-md">
+                          <span className="text-3xl font-mono font-extrabold text-slate-900 drop-shadow-sm">
                             {currentWord.slice(selectedLetters.length)}
                           </span>
                         )}
@@ -6185,7 +6186,7 @@ const GamePage = ({
 
                     <Badge
                       variant="secondary"
-                      className="bg-white/20 text-white text-sm px-2 py-0.5 min-w-8 h-8 flex items-center justify-center shrink-0"
+                      className="bg-slate-800 text-white text-base font-bold px-3 py-1 min-w-10 h-10 flex items-center justify-center shrink-0 rounded-lg shadow-md border border-slate-600"
                     >
                       {currentWord.length}
                     </Badge>
