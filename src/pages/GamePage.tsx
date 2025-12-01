@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   AlertDialog,
@@ -5811,586 +5811,595 @@ const GamePage = ({
   };
 
   return (
-    <>
-      {/* ⚠️ KRİTİK GUARD: Maç bitişi sırasında render'ı engelle */}
-      {isMatchFinishing && gameMode === "tournament" && (
-        <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center">
-          <Card className="max-w-sm mx-auto">
-            <CardContent className="p-6 text-center">
-              <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin text-primary" />
-              <p className="text-lg font-semibold mb-2">Maç Tamamlanıyor...</p>
-              <p className="text-sm text-muted-foreground">Sonuçlar hesaplanıyor ve turnuva bracket'i güncelleniyor.</p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+    <LayoutGroup>
+      <>
+        {/* ⚠️ KRİTİK GUARD: Maç bitişi sırasında render'ı engelle */}
+        {isMatchFinishing && gameMode === "tournament" && (
+          <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center">
+            <Card className="max-w-sm mx-auto">
+              <CardContent className="p-6 text-center">
+                <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin text-primary" />
+                <p className="text-lg font-semibold mb-2">Maç Tamamlanıyor...</p>
+                <p className="text-sm text-muted-foreground">
+                  Sonuçlar hesaplanıyor ve turnuva bracket'i güncelleniyor.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
-      {/* Normal oyun render'ı - sadece isMatchFinishing false ise göster */}
-      {(!isMatchFinishing || gameMode !== "tournament") && (
-        <>
-          {showCountdown && (
-            <GameCountdown
-              key={currentRoom?.id || tournamentMatch?.id || "countdown"}
-              onComplete={handleCountdownComplete}
-              serverStartTime={countdownServerTime}
-              serverTimeOffset={serverTimeOffset}
-            />
-          )}
-          <div
-            key={currentRoom?.id || tournamentMatch?.id || "game-container"}
-            className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 relative overflow-hidden letters-background"
-            style={{
-              paddingTop: "calc(env(safe-area-inset-top, 8px) + 1rem)",
-              paddingBottom: "env(safe-area-inset-bottom, 8px)",
-              paddingLeft: "env(safe-area-inset-left, 4px)",
-              paddingRight: "env(safe-area-inset-right, 4px)",
-            }}
-          >
-            <div className="h-full flex flex-col px-2 relative z-15">
-              {/* Header - GÜNCELLENMIŞ */}
-              <div className="flex items-center justify-between py-2 shrink-0">
-                {/* Sol taraf - Geri butonu */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-xs px-2 py-1 h-8"
-                  onClick={(e) => {
-                    console.log("🚪 Çıkış butonuna tıklandı - gameMode:", gameMode);
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleBackToMenu();
-                  }}
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Çıkış
-                </Button>
+        {/* Normal oyun render'ı - sadece isMatchFinishing false ise göster */}
+        {(!isMatchFinishing || gameMode !== "tournament") && (
+          <>
+            {showCountdown && (
+              <GameCountdown
+                key={currentRoom?.id || tournamentMatch?.id || "countdown"}
+                onComplete={handleCountdownComplete}
+                serverStartTime={countdownServerTime}
+                serverTimeOffset={serverTimeOffset}
+              />
+            )}
+            <div
+              key={currentRoom?.id || tournamentMatch?.id || "game-container"}
+              className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 relative overflow-hidden letters-background"
+              style={{
+                paddingTop: "calc(env(safe-area-inset-top, 8px) + 1rem)",
+                paddingBottom: "env(safe-area-inset-bottom, 8px)",
+                paddingLeft: "env(safe-area-inset-left, 4px)",
+                paddingRight: "env(safe-area-inset-right, 4px)",
+              }}
+            >
+              <div className="h-full flex flex-col px-2 relative z-15">
+                {/* Header - GÜNCELLENMIŞ */}
+                <div className="flex items-center justify-between py-2 shrink-0">
+                  {/* Sol taraf - Geri butonu */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs px-2 py-1 h-8"
+                    onClick={(e) => {
+                      console.log("🚪 Çıkış butonuna tıklandı - gameMode:", gameMode);
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleBackToMenu();
+                    }}
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Çıkış
+                  </Button>
 
-                {/* Orta kısım - Timer veya hedef + Turnuva bilgisi */}
-                {gameType === "timed" ? (
-                  <div className="flex flex-col items-center space-y-2">
-                    {/* 🏆 TURNUVA BİLGİSİ EKLENDİ */}
-                    {gameMode === "tournament" && tournamentMatch && (
-                      <div className="text-xs text-yellow-600 font-medium mb-1">
-                        {tournamentMatch.round === 1
-                          ? "Çeyrek Final"
-                          : tournamentMatch.round === 2
-                            ? "Yarı Final"
-                            : "Final"}{" "}
-                        - Maç {tournamentMatch.match_number}
-                      </div>
-                    )}
+                  {/* Orta kısım - Timer veya hedef + Turnuva bilgisi */}
+                  {gameType === "timed" ? (
+                    <div className="flex flex-col items-center space-y-2">
+                      {/* 🏆 TURNUVA BİLGİSİ EKLENDİ */}
+                      {gameMode === "tournament" && tournamentMatch && (
+                        <div className="text-xs text-yellow-600 font-medium mb-1">
+                          {tournamentMatch.round === 1
+                            ? "Çeyrek Final"
+                            : tournamentMatch.round === 2
+                              ? "Yarı Final"
+                              : "Final"}{" "}
+                          - Maç {tournamentMatch.match_number}
+                        </div>
+                      )}
 
-                    <div
-                      className={`flex items-center space-x-2 transition-all duration-300 ${
-                        displayTime <= 15 ? "animate-pulse text-red-500" : "text-foreground"
-                      }`}
-                    >
-                      <span
-                        className={`text-lg transition-all duration-300 inline-block ${
-                          displayTime <= 15 ? "animate-pulse text-red-500" : ""
-                        }`}
-                        style={{
-                          animation:
-                            displayTime <= 15
-                              ? "pulse 1s infinite, hourglassFlip 2s ease-in-out infinite"
-                              : "hourglassFlip 4s ease-in-out infinite",
-                        }}
-                      >
-                        ⏳
-                      </span>
-                      <span
-                        className={`font-mono text-lg font-bold transition-all duration-300 ${
-                          displayTime <= 15 ? "text-red-500 scale-110" : ""
-                        }`}
-                      >
-                        {formatTime(displayTime)}
-                      </span>
-                    </div>
-                    <div className="w-32 h-1 bg-muted rounded-full overflow-hidden">
                       <div
-                        className={`h-full transition-all duration-1000 ease-out ${
-                          displayTime <= 15
-                            ? "bg-red-500 animate-pulse"
-                            : displayTime <= 30
-                              ? "bg-orange-500"
-                              : "bg-green-500"
+                        className={`flex items-center space-x-2 transition-all duration-300 ${
+                          displayTime <= 15 ? "animate-pulse text-red-500" : "text-foreground"
                         }`}
-                        style={{ width: `${(displayTime / 120) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center space-y-1">
-                    {/* 🏆 TURNUVA BİLGİSİ EKLENDİ */}
-                    {gameMode === "tournament" && tournamentMatch && (
-                      <div className="text-xs text-yellow-600 font-medium">
-                        {tournamentMatch.round === 1
-                          ? "Çeyrek Final"
-                          : tournamentMatch.round === 2
-                            ? "Yarı Final"
-                            : "Final"}{" "}
-                        - Maç {tournamentMatch.match_number}
+                      >
+                        <span
+                          className={`text-lg transition-all duration-300 inline-block ${
+                            displayTime <= 15 ? "animate-pulse text-red-500" : ""
+                          }`}
+                          style={{
+                            animation:
+                              displayTime <= 15
+                                ? "pulse 1s infinite, hourglassFlip 2s ease-in-out infinite"
+                                : "hourglassFlip 4s ease-in-out infinite",
+                          }}
+                        >
+                          ⏳
+                        </span>
+                        <span
+                          className={`font-mono text-lg font-bold transition-all duration-300 ${
+                            displayTime <= 15 ? "text-red-500 scale-110" : ""
+                          }`}
+                        >
+                          {formatTime(displayTime)}
+                        </span>
                       </div>
-                    )}
-
-                    <div className="flex items-center space-x-2">
-                      <Target className="w-4 h-4" />
-                      <span className="text-sm font-medium">500 Puana Kadar</span>
+                      <div className="w-32 h-1 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-1000 ease-out ${
+                            displayTime <= 15
+                              ? "bg-red-500 animate-pulse"
+                              : displayTime <= 30
+                                ? "bg-orange-500"
+                                : "bg-green-500"
+                          }`}
+                          style={{ width: `${(displayTime / 120) * 100}%` }}
+                        />
+                      </div>
                     </div>
+                  ) : (
+                    <div className="flex flex-col items-center space-y-1">
+                      {/* 🏆 TURNUVA BİLGİSİ EKLENDİ */}
+                      {gameMode === "tournament" && tournamentMatch && (
+                        <div className="text-xs text-yellow-600 font-medium">
+                          {tournamentMatch.round === 1
+                            ? "Çeyrek Final"
+                            : tournamentMatch.round === 2
+                              ? "Yarı Final"
+                              : "Final"}{" "}
+                          - Maç {tournamentMatch.match_number}
+                        </div>
+                      )}
+
+                      <div className="flex items-center space-x-2">
+                        <Target className="w-4 h-4" />
+                        <span className="text-sm font-medium">500 Puana Kadar</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Sağ taraf - Rakip bilgisi */}
+                  <div className="w-16 text-right">
+                    {gameMode === "tournament" && (
+                      <div className="text-xs text-muted-foreground">vs {getOpponentDisplayName()}</div>
+                    )}
+                  </div>
+                </div>
+                {/* Header bitiş */}
+
+                {/* 🏆 TURNUVA UYARI KARTI EKLENDİ */}
+                {gameMode === "tournament" && (
+                  <div className="mb-4">
+                    <Card className="border-yellow-200 bg-yellow-50">
+                      <CardContent className="p-3">
+                        <div className="flex items-center space-x-2">
+                          <Trophy className="w-4 h-4 text-yellow-600" />
+                          <span className="text-xs font-medium text-yellow-800">
+                            Turnuva maçı! Kazanırsan sonraki tura geçeceksin.
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
                   </div>
                 )}
 
-                {/* Sağ taraf - Rakip bilgisi */}
-                <div className="w-16 text-right">
-                  {gameMode === "tournament" && (
-                    <div className="text-xs text-muted-foreground">vs {getOpponentDisplayName()}</div>
-                  )}
-                </div>
-              </div>
-              {/* Header bitiş */}
+                {/* Scores */}
+                <div className="grid grid-cols-2 gap-4">
+                  <Card className="silver-gradient border border-gray-300 shadow-lg">
+                    <CardContent className="p-4 text-center relative overflow-hidden">
+                      <Avatar className="w-16 h-16 mx-auto mb-2">
+                        <AvatarImage src={profile?.avatar_url || user?.user_metadata?.avatar_url} alt="Profile" />
+                        <AvatarFallback>
+                          <User className="w-8 h-8 text-gray-600" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <p className="text-sm text-gray-700 font-bold font-bungee">Siz</p>
+                      <p className="text-2xl font-bold text-gray-700">{playerScore}</p>
+                      {gameType === "score" && (
+                        <Progress value={(playerScore / 500) * 100} className="mt-2 bg-white/60" />
+                      )}
+                    </CardContent>
+                  </Card>
+                  <Card className="silver-gradient border border-gray-300 shadow-lg">
+                    <CardContent className="p-4 text-center relative overflow-hidden">
+                      {/* Normal kart içeriği - her zaman göster */}
+                      <Avatar className="w-16 h-16 mx-auto mb-2 bg-transparent">
+                        <AvatarImage src={opponent.avatar} alt="Opponent" />
+                        <AvatarFallback>
+                          <opponent.icon className="w-8 h-8 text-gray-600" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <p className="text-sm text-gray-700 font-bold font-bungee">{opponent.name}</p>
+                      <p className="text-2xl font-bold text-gray-700">{opponentScore}</p>
+                      {gameType === "score" && (
+                        <Progress value={(opponentScore / 500) * 100} className="mt-2 bg-white/60" />
+                      )}
 
-              {/* 🏆 TURNUVA UYARI KARTI EKLENDİ */}
-              {gameMode === "tournament" && (
-                <div className="mb-4">
-                  <Card className="border-yellow-200 bg-yellow-50">
-                    <CardContent className="p-3">
-                      <div className="flex items-center space-x-2">
-                        <Trophy className="w-4 h-4 text-yellow-600" />
-                        <span className="text-xs font-medium text-yellow-800">
-                          Turnuva maçı! Kazanırsan sonraki tura geçeceksin.
-                        </span>
-                      </div>
+                      {/* Hazırlık overlay - absolute positioned */}
+                      {preparingOpponent && (
+                        <div className="absolute inset-0 bg-silver-gradient/95 backdrop-blur-sm flex items-center justify-center">
+                          {preparingOpponent === "preparing" ? (
+                            <div className="text-center animate-pulse">
+                              <p className="text-sm font-bold text-gray-700">Oyuncu Hazırlanıyor...</p>
+                              <div className="flex gap-1 justify-center mt-2">
+                                <div
+                                  className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                                  style={{ animationDelay: "0ms" }}
+                                ></div>
+                                <div
+                                  className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                                  style={{ animationDelay: "150ms" }}
+                                ></div>
+                                <div
+                                  className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                                  style={{ animationDelay: "300ms" }}
+                                ></div>
+                              </div>
+                            </div>
+                          ) : (
+                            <Badge variant="default" className="text-sm font-semibold animate-pulse bg-green-500">
+                              ✓ Oyuncu Hazır!
+                            </Badge>
+                          )}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </div>
-              )}
 
-              {/* Scores */}
-              <div className="grid grid-cols-2 gap-4">
-                <Card className="silver-gradient border border-gray-300 shadow-lg">
-                  <CardContent className="p-4 text-center relative overflow-hidden">
-                    <Avatar className="w-16 h-16 mx-auto mb-2">
-                      <AvatarImage src={profile?.avatar_url || user?.user_metadata?.avatar_url} alt="Profile" />
-                      <AvatarFallback>
-                        <User className="w-8 h-8 text-gray-600" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <p className="text-sm text-gray-700 font-bold font-bungee">Siz</p>
-                    <p className="text-2xl font-bold text-gray-700">{playerScore}</p>
-                    {gameType === "score" && (
-                      <Progress value={(playerScore / 500) * 100} className="mt-2 bg-white/60" />
-                    )}
+                {/* Joker Panel - EN ÖNEMLİ KISIM! */}
+                <Card className="bg-gradient-to-r from-amber-50 to-orange-100 border-amber-200 shadow-md">
+                  <CardContent className="p-2">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-sm font-bold text-purple-800 mb-2">🎭 Jokerler</h3>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1">
+                      <Button
+                        variant={selectedJoker === "degistir" ? "default" : "outline"}
+                        size="sm"
+                        className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-green-100 to-emerald-200 hover:from-green-200 hover:to-emerald-300 border-green-300"
+                        onTouchStart={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          useDegisTirJoker();
+                        }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          useDegisTirJoker();
+                        }}
+                        disabled={jokers.degistir <= 0 || isJokerActive || !gameStarted}
+                        style={{
+                          touchAction: "manipulation",
+                          WebkitTapHighlightColor: "transparent",
+                        }}
+                      >
+                        <Shuffle className="w-3 h-3 mb-0.5" />
+                        <span className="text-xs">Değiştir</span>
+                        <Badge
+                          variant="secondary"
+                          className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center"
+                        >
+                          {jokers.degistir}
+                        </Badge>
+                      </Button>
+
+                      <Button
+                        variant={selectedJoker === "fisilida" ? "default" : "outline"}
+                        size="sm"
+                        className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-blue-100 to-cyan-200 hover:from-blue-200 hover:to-cyan-300 border-blue-300"
+                        onTouchStart={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          useFisildaJoker();
+                        }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          useFisildaJoker();
+                        }}
+                        disabled={jokers.fisilida <= 0 || isJokerActive || !gameStarted}
+                        style={{
+                          touchAction: "manipulation",
+                          WebkitTapHighlightColor: "transparent",
+                        }}
+                      >
+                        <Lightbulb className="w-4 h-4 mb-1" />
+                        <span className="text-xs">Fısılda</span>
+                        <Badge
+                          variant="secondary"
+                          className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center"
+                        >
+                          {jokers.fisilida}
+                        </Badge>
+                      </Button>
+
+                      <Button
+                        variant={selectedJoker === "senYaz" ? "default" : "outline"}
+                        size="sm"
+                        className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-purple-100 to-violet-200 hover:from-purple-200 hover:to-violet-300 border-purple-300"
+                        onTouchStart={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          useSenYazJoker();
+                        }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          useSenYazJoker();
+                        }}
+                        disabled={jokers.senYaz <= 0 || isJokerActive || !gameStarted}
+                        style={{
+                          touchAction: "manipulation",
+                          WebkitTapHighlightColor: "transparent",
+                        }}
+                      >
+                        <PenTool className="w-4 h-4 mb-1" />
+                        <span className="text-xs">Sen Yaz</span>
+                        <Badge
+                          variant="secondary"
+                          className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center"
+                        >
+                          {jokers.senYaz}
+                        </Badge>
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
-                <Card className="silver-gradient border border-gray-300 shadow-lg">
-                  <CardContent className="p-4 text-center relative overflow-hidden">
-                    {/* Normal kart içeriği - her zaman göster */}
-                    <Avatar className="w-16 h-16 mx-auto mb-2 bg-transparent">
-                      <AvatarImage src={opponent.avatar} alt="Opponent" />
-                      <AvatarFallback>
-                        <opponent.icon className="w-8 h-8 text-gray-600" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <p className="text-sm text-gray-700 font-bold font-bungee">{opponent.name}</p>
-                    <p className="text-2xl font-bold text-gray-700">{opponentScore}</p>
-                    {gameType === "score" && (
-                      <Progress value={(opponentScore / 500) * 100} className="mt-2 bg-white/60" />
-                    )}
 
-                    {/* Hazırlık overlay - absolute positioned */}
-                    {preparingOpponent && (
-                      <div className="absolute inset-0 bg-silver-gradient/95 backdrop-blur-sm flex items-center justify-center">
-                        {preparingOpponent === "preparing" ? (
-                          <div className="text-center animate-pulse">
-                            <p className="text-sm font-bold text-gray-700">Oyuncu Hazırlanıyor...</p>
-                            <div className="flex gap-1 justify-center mt-2">
-                              <div
-                                className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                                style={{ animationDelay: "0ms" }}
-                              ></div>
-                              <div
-                                className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                                style={{ animationDelay: "150ms" }}
-                              ></div>
-                              <div
-                                className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                                style={{ animationDelay: "300ms" }}
-                              ></div>
-                            </div>
-                          </div>
-                        ) : (
-                          <Badge variant="default" className="text-sm font-semibold animate-pulse bg-green-500">
-                            ✓ Oyuncu Hazır!
-                          </Badge>
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Joker Panel - EN ÖNEMLİ KISIM! */}
-              <Card className="bg-gradient-to-r from-amber-50 to-orange-100 border-amber-200 shadow-md">
-                <CardContent className="p-2">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-sm font-bold text-purple-800 mb-2">🎭 Jokerler</h3>
-                  </div>
-                  <div className="grid grid-cols-3 gap-1">
-                    <Button
-                      variant={selectedJoker === "degistir" ? "default" : "outline"}
-                      size="sm"
-                      className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-green-100 to-emerald-200 hover:from-green-200 hover:to-emerald-300 border-green-300"
-                      onTouchStart={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        useDegisTirJoker();
-                      }}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        useDegisTirJoker();
-                      }}
-                      disabled={jokers.degistir <= 0 || isJokerActive || !gameStarted}
-                      style={{
-                        touchAction: "manipulation",
-                        WebkitTapHighlightColor: "transparent",
-                      }}
-                    >
-                      <Shuffle className="w-3 h-3 mb-0.5" />
-                      <span className="text-xs">Değiştir</span>
-                      <Badge
-                        variant="secondary"
-                        className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center"
+                {/* Current Word Input - GÜNCELLENMİŞ VERSİYON */}
+                <Card className="game-grid border-0">
+                  <CardContent className="p-2">
+                    <div className="flex items-center justify-center space-x-2 w-full">
+                      {/* Input Konteyneri */}
+                      <div
+                        className={`flex items-center justify-center h-14 w-full rounded-xl bg-white/80 backdrop-blur-md transition-all duration-200 px-3 relative overflow-hidden shadow-inner ${
+                          isJokerActive ? "typing-animation" : ""
+                        } ${
+                          inputFlash === "success"
+                            ? "border-2 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.6)]"
+                            : inputFlash === "error"
+                              ? "border-2 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.6)]"
+                              : "border-2 border-slate-200/50"
+                        }`}
                       >
-                        {jokers.degistir}
-                      </Badge>
-                    </Button>
-
-                    <Button
-                      variant={selectedJoker === "fisilida" ? "default" : "outline"}
-                      size="sm"
-                      className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-blue-100 to-cyan-200 hover:from-blue-200 hover:to-cyan-300 border-blue-300"
-                      onTouchStart={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        useFisildaJoker();
-                      }}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        useFisildaJoker();
-                      }}
-                      disabled={jokers.fisilida <= 0 || isJokerActive || !gameStarted}
-                      style={{
-                        touchAction: "manipulation",
-                        WebkitTapHighlightColor: "transparent",
-                      }}
-                    >
-                      <Lightbulb className="w-4 h-4 mb-1" />
-                      <span className="text-xs">Fısılda</span>
-                      <Badge
-                        variant="secondary"
-                        className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center"
-                      >
-                        {jokers.fisilida}
-                      </Badge>
-                    </Button>
-
-                    <Button
-                      variant={selectedJoker === "senYaz" ? "default" : "outline"}
-                      size="sm"
-                      className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-purple-100 to-violet-200 hover:from-purple-200 hover:to-violet-300 border-purple-300"
-                      onTouchStart={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        useSenYazJoker();
-                      }}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        useSenYazJoker();
-                      }}
-                      disabled={jokers.senYaz <= 0 || isJokerActive || !gameStarted}
-                      style={{
-                        touchAction: "manipulation",
-                        WebkitTapHighlightColor: "transparent",
-                      }}
-                    >
-                      <PenTool className="w-4 h-4 mb-1" />
-                      <span className="text-xs">Sen Yaz</span>
-                      <Badge
-                        variant="secondary"
-                        className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center"
-                      >
-                        {jokers.senYaz}
-                      </Badge>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Current Word Input */}
-              <Card className="game-grid border-0">
-                <CardContent className="p-2">
-                  <div className="flex items-center justify-center space-x-2 w-full">
-                    {/* Input Konteyneri: Daha opak beyaz arka plan (Okunabilirlik için) */}
-                    <div
-                      className={`flex items-center justify-center h-14 w-full rounded-xl bg-white/80 backdrop-blur-md transition-all duration-200 px-3 relative overflow-hidden shadow-inner ${
-                        isJokerActive ? "typing-animation" : ""
-                      } ${
-                        inputFlash === "success"
-                          ? "border-2 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.6)]"
-                          : inputFlash === "error"
-                            ? "border-2 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.6)]"
-                            : "border-2 border-slate-200/50"
-                      }`}
-                    >
-                      {/* Placeholder: Koyu gri ve daha belirgin */}
-                      {selectedLetters.length === 0 && !isJokerActive && (
-                        <span className="text-slate-400 font-bold font-mono text-lg animate-pulse select-none tracking-widest uppercase opacity-70">
-                          K E L İ M E L E
-                        </span>
-                      )}
-
-                      {/* Seçilen Harfler */}
-                      <div className="flex gap-1 items-center justify-center z-10">
-                        {/* AnimatePresence KALDIRILDI -> Titremeyi çözer */}
-                        {selectedLetters.map((item) => (
-                          <motion.span
-                            key={`input-${item.row}-${item.col}`}
-                            layoutId={`letter-${item.row}-${item.col}`} // Uçuş efekti buradan gelir
-                            layout // Harfler silinince diğerlerinin kaymasını sağlar
-                            initial={{ opacity: 0, scale: 0.5 }} // Sadece uçuş başarısız olursa fallback
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{
-                              type: "spring",
-                              stiffness: 500, // Daha sert yay (daha hızlı tepki)
-                              damping: 30, // Daha az salınım
-                              mass: 0.8, // Daha hafif his
-                            }}
-                            // STİL: Simsiyah, kalın ve hafif gölgeli (Neon/Mürekkep etkisi)
-                            className="text-3xl font-mono font-extrabold text-slate-900 drop-shadow-sm select-none"
-                          >
-                            {item.letter}
-                          </motion.span>
-                        ))}
-
-                        {/* Joker veya manuel yazım için */}
-                        {currentWord.length > selectedLetters.length && (
-                          <span className="text-3xl font-mono font-extrabold text-slate-900 drop-shadow-sm">
-                            {currentWord.slice(selectedLetters.length)}
+                        {/* Placeholder */}
+                        {selectedLetters.length === 0 && !isJokerActive && (
+                          <span className="text-slate-400 font-bold font-mono text-lg animate-pulse select-none tracking-widest uppercase opacity-70">
+                            K E L İ M E
                           </span>
                         )}
-                      </div>
-                    </div>
 
-                    <Badge
-                      variant="secondary"
-                      className="bg-slate-800 text-white text-base font-bold px-3 py-1 min-w-10 h-10 flex items-center justify-center shrink-0 rounded-lg shadow-md border border-slate-600"
-                    >
-                      {currentWord.length}
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Game Grid */}
-              <Card className="game-grid border-0 mb-2 flex-1">
-                <CardContent className="p-3 h-full flex items-center justify-center">
-                  <div className="grid grid-cols-4 gap-2 w-full max-w-xs">
-                    {gameGrid.map((row, rowIndex) =>
-                      row.map((letter, colIndex) => {
-                        const isSelected = selectedLetters.some((s) => s.row === rowIndex && s.col === colIndex);
-                        const isHighlighted = highlightedLetters.some((h) => h.row === rowIndex && h.col === colIndex);
-                        const selectionOrder = selectedLetters.findIndex(
-                          (s) => s.row === rowIndex && s.col === colIndex,
-                        );
-                        return (
-                          <Button
-                            key={`${rowIndex}-${colIndex}`}
-                            className={`letter-button h-12 text-lg font-bold relative transition-all duration-300 overflow-visible ${
-                              isSelected ? "selected border-green-400 bg-green-900/40" : ""
-                            } ${isHighlighted ? "letter-glow-highlight" : ""} ${
-                              !gameStarted ? "opacity-50 cursor-not-allowed" : ""
-                            }`}
-                            disabled={!gameStarted}
-                            onTouchStart={(e) => {
-                              if (!gameStarted) return;
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleLetterClick(letter, rowIndex, colIndex);
-                            }}
-                            onClick={(e) => {
-                              if (!gameStarted) return;
-                              if (e.nativeEvent && "touches" in e.nativeEvent) return;
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleLetterClick(letter, rowIndex, colIndex);
-                            }}
-                            style={{
-                              touchAction: "manipulation",
-                              WebkitTapHighlightColor: "transparent",
-                              WebkitTouchCallout: "none",
-                              WebkitUserSelect: "none",
-                              userSelect: "none",
-                              pointerEvents: !gameStarted ? "none" : "auto",
-                            }}
-                          >
-                            {/* 1. KATMAN: HAYALET HARF (Seçilince sönükleşip yerinde kalan) */}
-                            <span
-                              className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200 ${
-                                isSelected ? "opacity-30 text-white/50" : "opacity-0"
-                              }`}
+                        {/* Seçilen Harfler - OPTİMİZE EDİLDİ */}
+                        <div className="flex gap-1 items-center justify-center z-10">
+                          {selectedLetters.map((item) => (
+                            <motion.span
+                              key={`input-${item.row}-${item.col}`}
+                              layoutId={`letter-${item.row}-${item.col}`}
+                              layout="position" // <--- Rapid fire çözümü
+                              initial={{ opacity: 0, scale: 0.8 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{
+                                type: "spring",
+                                stiffness: 700, // Hızlı tepki
+                                damping: 35, // Az sallantı
+                                mass: 0.5, // Hafif
+                              }}
+                              style={{ willChange: "transform" }} // Performans
+                              className="text-3xl font-mono font-extrabold text-slate-900 drop-shadow-sm select-none"
                             >
-                              {letter}
-                            </span>
+                              {item.letter}
+                            </motion.span>
+                          ))}
 
-                            {/* 2. KATMAN: UÇAN HARF (Seçildiği an yukarı ışınlanır) */}
-                            {!isSelected && (
-                              <motion.span
-                                layoutId={`letter-${rowIndex}-${colIndex}`}
-                                className="relative z-10"
-                                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                          {/* Joker veya manuel yazım */}
+                          {currentWord.length > selectedLetters.length && (
+                            <span className="text-3xl font-mono font-extrabold text-slate-900 drop-shadow-sm">
+                              {currentWord.slice(selectedLetters.length)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <Badge
+                        variant="secondary"
+                        className="bg-slate-800 text-white text-base font-bold px-3 py-1 min-w-10 h-10 flex items-center justify-center shrink-0 rounded-lg shadow-md border border-slate-600"
+                      >
+                        {currentWord.length}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Game Grid */}
+                <Card className="game-grid border-0 mb-2 flex-1">
+                  <CardContent className="p-3 h-full flex items-center justify-center">
+                    <div className="grid grid-cols-4 gap-2 w-full max-w-xs">
+                      {gameGrid.map((row, rowIndex) =>
+                        row.map((letter, colIndex) => {
+                          const isSelected = selectedLetters.some((s) => s.row === rowIndex && s.col === colIndex);
+                          const isHighlighted = highlightedLetters.some(
+                            (h) => h.row === rowIndex && h.col === colIndex,
+                          );
+                          const selectionOrder = selectedLetters.findIndex(
+                            (s) => s.row === rowIndex && s.col === colIndex,
+                          );
+                          return (
+                            <Button
+                              key={`${rowIndex}-${colIndex}`}
+                              className={`letter-button h-12 text-lg font-bold relative transition-all duration-300 overflow-visible ${
+                                isSelected ? "selected border-green-400 bg-green-900/40" : ""
+                              } ${isHighlighted ? "letter-glow-highlight" : ""} ${
+                                !gameStarted ? "opacity-50 cursor-not-allowed" : ""
+                              }`}
+                              disabled={!gameStarted}
+                              onTouchStart={(e) => {
+                                if (!gameStarted) return;
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleLetterClick(letter, rowIndex, colIndex);
+                              }}
+                              onClick={(e) => {
+                                if (!gameStarted) return;
+                                if (e.nativeEvent && "touches" in e.nativeEvent) return;
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleLetterClick(letter, rowIndex, colIndex);
+                              }}
+                              style={{
+                                touchAction: "manipulation",
+                                WebkitTapHighlightColor: "transparent",
+                                WebkitTouchCallout: "none",
+                                WebkitUserSelect: "none",
+                                userSelect: "none",
+                                pointerEvents: !gameStarted ? "none" : "auto",
+                              }}
+                            >
+                              {/* 1. KATMAN: HAYALET HARF */}
+                              <span
+                                className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200 ${
+                                  isSelected ? "opacity-30 text-white/50" : "opacity-0"
+                                }`}
                               >
                                 {letter}
-                              </motion.span>
-                            )}
+                              </span>
 
-                            {/* Sıra Numarası */}
-                            {isSelected && selectionOrder >= 0 && (
-                              <motion.span
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                className="absolute -top-2 -right-2 bg-green-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-bold border-2 border-white z-20 shadow-sm"
-                              >
-                                {selectionOrder + 1}
-                              </motion.span>
-                            )}
-                          </Button>
-                        );
-                      }),
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+                              {/* 2. KATMAN: UÇAN HARF */}
+                              {!isSelected && (
+                                <motion.span
+                                  layoutId={`letter-${rowIndex}-${colIndex}`}
+                                  className="relative z-10"
+                                  transition={{
+                                    type: "spring",
+                                    stiffness: 700,
+                                    damping: 35,
+                                    mass: 0.5,
+                                  }}
+                                >
+                                  {letter}
+                                </motion.span>
+                              )}
 
-              {/* Action Buttons */}
-              <div className="grid grid-cols-2 gap-2 shrink-0">
-                <Button
-                  variant="outline"
-                  onTouchStart={(e) => {
-                    if (!gameStarted) return;
-                    e.preventDefault();
-                    clearWord();
-                  }}
-                  onClick={(e) => {
-                    if (!gameStarted) return;
-                    e.preventDefault();
-                    clearWord();
-                  }}
-                  className="h-12"
-                  disabled={selectedLetters.length === 0 || isJokerActive || !gameStarted}
-                  style={{ touchAction: "manipulation" }}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Sil
-                </Button>
+                              {/* Sıra Numarası */}
+                              {isSelected && selectionOrder >= 0 && (
+                                <motion.span
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  className="absolute -top-2 -right-2 bg-green-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-bold border-2 border-white z-20 shadow-sm"
+                                >
+                                  {selectionOrder + 1}
+                                </motion.span>
+                              )}
+                            </Button>
+                          );
+                        }),
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
 
-                <Button
-                  onTouchStart={(e) => {
-                    if (!gameStarted) return;
-                    e.preventDefault();
-                    submitTouchTsRef.current = Date.now();
-                    playSound("buttonClick");
-                    submitWord();
-                  }}
-                  onClick={(e) => {
-                    if (!gameStarted) return;
-                    e.preventDefault();
-                    // Dokunmatik cihazlarda çift tetiklemeyi önle
-                    if (Date.now() - submitTouchTsRef.current < 500) return;
-                    playSound("buttonClick");
-                    submitWord();
-                  }}
-                  className="h-12"
-                  disabled={currentWord.length < 3 || isValidating || isJokerActive || !gameStarted}
-                  style={{ touchAction: "manipulation" }}
-                >
-                  <Send className="w-4 h-4 mr-2" />
-                  {isValidating ? "Kontrol Ediliyor..." : "Gönder"}
-                </Button>
+                {/* Action Buttons */}
+                <div className="grid grid-cols-2 gap-2 shrink-0">
+                  <Button
+                    variant="outline"
+                    onTouchStart={(e) => {
+                      if (!gameStarted) return;
+                      e.preventDefault();
+                      clearWord();
+                    }}
+                    onClick={(e) => {
+                      if (!gameStarted) return;
+                      e.preventDefault();
+                      clearWord();
+                    }}
+                    className="h-12"
+                    disabled={selectedLetters.length === 0 || isJokerActive || !gameStarted}
+                    style={{ touchAction: "manipulation" }}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Sil
+                  </Button>
+
+                  <Button
+                    onTouchStart={(e) => {
+                      if (!gameStarted) return;
+                      e.preventDefault();
+                      submitTouchTsRef.current = Date.now();
+                      playSound("buttonClick");
+                      submitWord();
+                    }}
+                    onClick={(e) => {
+                      if (!gameStarted) return;
+                      e.preventDefault();
+                      // Dokunmatik cihazlarda çift tetiklemeyi önle
+                      if (Date.now() - submitTouchTsRef.current < 500) return;
+                      playSound("buttonClick");
+                      submitWord();
+                    }}
+                    className="h-12"
+                    disabled={currentWord.length < 3 || isValidating || isJokerActive || !gameStarted}
+                    style={{ touchAction: "manipulation" }}
+                  >
+                    <Send className="w-4 h-4 mr-2" />
+                    {isValidating ? "Kontrol Ediliyor..." : "Gönder"}
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Exit Confirmation Dialog */}
-          <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
-            <AlertDialogContent className="max-w-sm mx-auto">
-              <AlertDialogHeader>
-                <AlertDialogTitle className="text-center">⚠️ Aktif Oyun Uyarısı</AlertDialogTitle>
-                <AlertDialogDescription className="text-center">
-                  Şu an aktif bir oyun oynuyorsun!
-                  <br />
-                  <br />
-                  Oyundan çıkarsan <span className="font-bold text-destructive">ceza alacaksın</span> ve rakibin
-                  kazanacak.
-                  <br />
-                  <br />
-                  <span className="text-muted-foreground text-sm">Emin misin?</span>
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter className="flex-col space-y-2 sm:flex-col sm:space-y-2 sm:space-x-0">
-                <AlertDialogAction
-                  onClick={async () => {
-                    setShowExitDialog(false);
-                    if (currentRoom) {
-                      await leaveRoom();
-                    }
-                    navigate("/");
-                  }}
-                  className="w-full bg-destructive hover:bg-destructive/90"
-                >
-                  🚪 Evet, Çıkış Yap
-                </AlertDialogAction>
-                <AlertDialogCancel className="w-full">🎮 Hayır, Oyuna Devam Et</AlertDialogCancel>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+            {/* Exit Confirmation Dialog */}
+            <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
+              <AlertDialogContent className="max-w-sm mx-auto">
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="text-center">⚠️ Aktif Oyun Uyarısı</AlertDialogTitle>
+                  <AlertDialogDescription className="text-center">
+                    Şu an aktif bir oyun oynuyorsun!
+                    <br />
+                    <br />
+                    Oyundan çıkarsan <span className="font-bold text-destructive">ceza alacaksın</span> ve rakibin
+                    kazanacak.
+                    <br />
+                    <br />
+                    <span className="text-muted-foreground text-sm">Emin misin?</span>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter className="flex-col space-y-2 sm:flex-col sm:space-y-2 sm:space-x-0">
+                  <AlertDialogAction
+                    onClick={async () => {
+                      setShowExitDialog(false);
+                      if (currentRoom) {
+                        await leaveRoom();
+                      }
+                      navigate("/");
+                    }}
+                    className="w-full bg-destructive hover:bg-destructive/90"
+                  >
+                    🚪 Evet, Çıkış Yap
+                  </AlertDialogAction>
+                  <AlertDialogCancel className="w-full">🎮 Hayır, Oyuna Devam Et</AlertDialogCancel>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
 
-          {/* Tournament Exit Dialog */}
-          <AlertDialog open={showTournamentExitDialog} onOpenChange={setShowTournamentExitDialog}>
-            <AlertDialogContent className="max-w-sm mx-auto">
-              <AlertDialogHeader>
-                <AlertDialogTitle className="text-center">⚠️ Turnuva Maçı Uyarısı</AlertDialogTitle>
-                <AlertDialogDescription className="text-center">
-                  Turnuva maçından ayrılırsan:
-                  <br />
-                  <br />• <span className="font-bold text-destructive">Maçı kaybedersin</span>
-                  <br />• <span className="font-bold text-yellow-600">Rakip kazanır</span>
-                  <br />• <span className="font-bold text-blue-600">Turnuvadan elenirsin</span>
-                  <br />
-                  <br />
-                  <span className="text-muted-foreground text-sm">Emin misin?</span>
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter className="flex-col space-y-2 sm:flex-col sm:space-y-2 sm:space-x-0">
-                <AlertDialogAction
-                  onClick={async () => {
-                    setShowTournamentExitDialog(false);
-                    await handleTournamentExit();
-                    // navigate('/'); satırını kaldır - handleTournamentExit içinde zaten parent'e bildirim yapılıyor
-                  }}
-                  className="w-full bg-destructive hover:bg-destructive/90"
-                >
-                  Evet, Ayrıl
-                </AlertDialogAction>
-                <AlertDialogCancel className="w-full">🏆 Hayır, Maça Devam Et</AlertDialogCancel>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </>
-      )}
-    </>
+            {/* Tournament Exit Dialog */}
+            <AlertDialog open={showTournamentExitDialog} onOpenChange={setShowTournamentExitDialog}>
+              <AlertDialogContent className="max-w-sm mx-auto">
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="text-center">⚠️ Turnuva Maçı Uyarısı</AlertDialogTitle>
+                  <AlertDialogDescription className="text-center">
+                    Turnuva maçından ayrılırsan:
+                    <br />
+                    <br />• <span className="font-bold text-destructive">Maçı kaybedersin</span>
+                    <br />• <span className="font-bold text-yellow-600">Rakip kazanır</span>
+                    <br />• <span className="font-bold text-blue-600">Turnuvadan elenirsin</span>
+                    <br />
+                    <br />
+                    <span className="text-muted-foreground text-sm">Emin misin?</span>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter className="flex-col space-y-2 sm:flex-col sm:space-y-2 sm:space-x-0">
+                  <AlertDialogAction
+                    onClick={async () => {
+                      setShowTournamentExitDialog(false);
+                      await handleTournamentExit();
+                    }}
+                    className="w-full bg-destructive hover:bg-destructive/90"
+                  >
+                    Evet, Ayrıl
+                  </AlertDialogAction>
+                  <AlertDialogCancel className="w-full">🏆 Hayır, Maça Devam Et</AlertDialogCancel>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </>
+        )}
+      </>
+    </LayoutGroup>
   );
 };
 
