@@ -6151,7 +6151,7 @@ const GamePage = ({
                         {/* Placeholder */}
                         {selectedLetters.length === 0 && !isJokerActive && (
                           <span className="text-slate-400 font-bold font-mono text-lg animate-pulse select-none tracking-widest uppercase opacity-70">
-                            K E L İ M E
+                            K E L İ M E L E
                           </span>
                         )}
 
