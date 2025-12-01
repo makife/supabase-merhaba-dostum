@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+// Yeni Eklenti: Badge'i import etmeyi unutmayın
+import { Badge } from "@/components/ui/badge";
 import { Users, Clock, Trophy, Play, LogIn, X, Hash, AlertTriangle } from "lucide-react";
 import {
   AlertDialog,
@@ -355,9 +357,8 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
           </div>
 
           {/* --- İÇERİK --- */}
-          {/* Yükseklik ve padding ayarları diğer modalla eşitlendi */}
           <div className="p-6 space-y-4 z-10 min-h-[300px]">
-            {/* ODA KURMA SEKMESİ */}
+            {/* ODA KURMA SEKMESİ (GameModeSelector stiline uyarlandı) */}
             {activeTab === "create" && (
               <div className="space-y-4 animate-in slide-in-from-left-8 fade-in duration-500">
                 <p className="text-xs text-center text-zinc-400 font-medium uppercase tracking-widest">
@@ -365,19 +366,19 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
                 </p>
 
                 <div className="grid grid-cols-2 gap-4">
-                  {/* ZAMANA KARŞI - YÜKSEKLİK h-44 OLARAK GÜNCELLENDİ */}
+                  {/* ZAMANA KARŞI */}
                   <button
                     onClick={() => {
                       playSound("buttonClick");
                       setGameType("timed");
                     }}
                     className={`relative group flex flex-col items-center p-4 rounded-xl border-2 transition-all duration-300 h-44 justify-between
-                            ${
-                              gameType === "timed"
-                                ? "border-green-500 bg-green-500/10 shadow-[0_0_15px_rgba(16,185,129,0.3)] scale-[1.02]"
-                                : "border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/20" // hover:border-white/20 eklendi
-                            }
-                        `}
+                                ${
+                                  gameType === "timed"
+                                    ? "border-green-500 bg-green-500/10 shadow-[0_0_15px_rgba(16,185,129,0.3)] scale-[1.02]"
+                                    : "border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/20"
+                                }
+                            `}
                   >
                     <div
                       className={`p-3 rounded-full ${gameType === "timed" ? "bg-gradient-to-r from-green-600 to-emerald-500 text-white" : "bg-zinc-800 text-zinc-500"}`}
@@ -391,34 +392,32 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
                       >
                         Zamana Karşı
                       </span>
-                      {/* Metin güncellendi: GameModeSelector'daki stile daha yakın */}
                       <span className="text-xs text-zinc-500 mt-1 block px-2">2 dakika içinde maksimum kelime bul</span>
                     </div>
 
-                    {/* Badge eklendi (isteğe bağlı ama GameModeSelector'da var) */}
                     <Badge variant="outline" className="border-white/10 text-zinc-400 text-[10px] bg-black/20">
                       ⚡ Standart
                     </Badge>
 
-                    {/* Aktiflik işareti - GameModeSelector'a daha yakın bir stil korundu */}
+                    {/* Aktiflik işareti */}
                     {gameType === "timed" && (
                       <div className="absolute inset-0 border-2 border-green-500 rounded-xl blur-[2px] pointer-events-none" />
                     )}
                   </button>
 
-                  {/* SKOR MODU - YÜKSEKLİK h-44 OLARAK GÜNCELLENDİ */}
+                  {/* SKOR MODU */}
                   <button
                     onClick={() => {
                       playSound("buttonClick");
                       setGameType("score");
                     }}
                     className={`relative group flex flex-col items-center p-4 rounded-xl border-2 transition-all duration-300 h-44 justify-between
-                            ${
-                              gameType === "score"
-                                ? "border-emerald-500 bg-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.3)] scale-[1.02]"
-                                : "border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/20" // hover:border-white/20 eklendi
-                            }
-                        `}
+                                ${
+                                  gameType === "score"
+                                    ? "border-emerald-500 bg-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.3)] scale-[1.02]"
+                                    : "border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/20"
+                                }
+                            `}
                   >
                     <div
                       className={`p-3 rounded-full ${gameType === "score" ? "bg-gradient-to-r from-emerald-600 to-teal-500 text-white" : "bg-zinc-800 text-zinc-500"}`}
@@ -432,23 +431,20 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
                       >
                         Skor Modu
                       </span>
-                      {/* Metin güncellendi: GameModeSelector'daki stile daha yakın */}
                       <span className="text-xs text-zinc-500 mt-1 block px-2">500 puana ulaşan ilk kişi kazanır</span>
                     </div>
 
-                    {/* Badge eklendi (isteğe bağlı ama GameModeSelector'da var) */}
                     <Badge variant="outline" className="border-white/10 text-zinc-400 text-[10px] bg-black/20">
                       🎯 Stratejik
                     </Badge>
 
-                    {/* Aktiflik işareti - GameModeSelector'a daha yakın bir stil korundu */}
+                    {/* Aktiflik işareti */}
                     {gameType === "score" && (
                       <div className="absolute inset-0 border-2 border-emerald-500 rounded-xl blur-[2px] pointer-events-none" />
                     )}
                   </button>
                 </div>
 
-                {/* Butonun stiline GameModeSelector'daki gibi hover efekti eklendi */}
                 <Button
                   onClick={handleCreateRoom}
                   disabled={loading}
@@ -465,7 +461,7 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
               </div>
             )}
 
-            {/* ODAYA KATILMA SEKMESİ */}
+            {/* ODAYA KATILMA SEKMESİ (Orjinal halini korundu) */}
             {activeTab === "join" && (
               <div className="space-y-6 py-4 animate-in slide-in-from-right-8 fade-in duration-500">
                 <div className="text-center space-y-2">
