@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge"; // <-- YENİ EKLENDİ
+import { Badge } from "@/components/ui/badge"; // <-- Gerekli import
 import { Users, Clock, Trophy, Play, LogIn, X, Hash, AlertTriangle } from "lucide-react";
 import {
   AlertDialog,
@@ -83,7 +83,6 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
           return currentSeed / 4294967296;
         };
 
-        // Harf havuzu (Orjinal dosyadan alınmıştır)
         const letterPool = [
           "A",
           "A",
@@ -306,18 +305,33 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
   return (
     <>
       <Dialog open={true} onOpenChange={() => handleClose()}>
-        {/* TAŞMAYI ENGELLEYEN VE TAM EKRAN HİSSİ VEREN YENİ DialogContent STİLİ */}
+        {/* DÜZELTİLMİŞ DialogContent STİLİ: Merkezleme ve boyutlandırma sorununu çözdük */}
         <DialogContent
           className="
-            fixed inset-0 m-0 w-full p-4 flex items-center justify-center 
-            sm:p-0 sm:max-w-lg sm:h-auto sm:rounded-2xl 
+            // Standard Dialog/Modal merkezleme:
+            fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] 
+            
+            // Mobil için kenardan taşmayı önleyen ve dikeyde sınırlayan boyutlar:
+            w-[96%] max-h-[95vh] p-0
+            sm:max-w-lg sm:w-full sm:rounded-xl 
+            
+            // Tema ve efektler:
             bg-zinc-950/90 backdrop-blur-xl border border-green-500/20 text-white 
             shadow-[0_0_50px_rgba(16,185,129,0.2)] overflow-hidden gap-0 
+            
+            // Shadcn/ui animasyonları
+            data-[state=open]:animate-in data-[state=closed]:animate-out 
+            data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 
+            data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 
+            data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] 
+            data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]
+            
+            // Kapanma butonu gizli kalsın
             [&>button]:hidden
           "
         >
-          {/* İç kartı sm ekranlar için max-w-lg ile kısıtlayan ana kapsayıcı */}
-          <div className="w-full max-w-lg bg-zinc-950/90 rounded-2xl overflow-hidden flex flex-col max-h-[95vh] animate-in fade-in duration-300">
+          {/* İçerik kapsayıcısı: dikey sığdırma ve dikey kaydırma için */}
+          <div className="w-full h-full flex flex-col max-h-[95vh] animate-in fade-in duration-300">
             {/* Dekoratif Yeşil Işık */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-48 bg-gradient-to-b from-green-600 via-emerald-500 to-transparent opacity-20 blur-3xl pointer-events-none" />
 
@@ -376,13 +390,12 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
                   </p>
 
                   <div className="grid grid-cols-2 gap-4">
-                    {/* ZAMANA KARŞI */}
+                    {/* ZAMANA KARŞI - GameModeSelector stili uygulandı */}
                     <button
                       onClick={() => {
                         playSound("buttonClick");
                         setGameType("timed");
                       }}
-                      // YÜKSEKLİK h-44 ve diğer GameModeSelector stilleri uygulandı
                       className={`relative group flex flex-col items-center p-4 rounded-xl border-2 transition-all duration-300 h-44 justify-between
                                 ${
                                   gameType === "timed"
@@ -418,13 +431,12 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
                       )}
                     </button>
 
-                    {/* SKOR MODU */}
+                    {/* SKOR MODU - GameModeSelector stili uygulandı */}
                     <button
                       onClick={() => {
                         playSound("buttonClick");
                         setGameType("score");
                       }}
-                      // YÜKSEKLİK h-44 ve diğer GameModeSelector stilleri uygulandı
                       className={`relative group flex flex-col items-center p-4 rounded-xl border-2 transition-all duration-300 h-44 justify-between
                                 ${
                                   gameType === "score"
@@ -462,7 +474,6 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
                   <Button
                     onClick={handleCreateRoom}
                     disabled={loading}
-                    // Buton stiline hover/shadow efekti eklendi
                     className="w-full py-6 mt-2 text-lg font-bold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white shadow-lg border-0 transition-all hover:scale-[1.02] active:scale-[0.98] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)]"
                   >
                     {loading ? (
