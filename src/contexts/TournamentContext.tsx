@@ -177,6 +177,13 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
         is_bot: false,
       });
 
+      // Duplicate key hatası = zaten katılmış, başarılı say
+      if (error && error.code === '23505') {
+        console.log("✅ Kullanıcı zaten turnuvaya katılmış, devam ediliyor");
+        await fetchTournamentDetails(tournamentId);
+        return true;
+      }
+
       if (error) throw error;
 
       await fetchTournamentDetails(tournamentId);
