@@ -6133,7 +6133,7 @@ const GamePage = ({
               <Card className="game-grid border-0">
                 <CardContent className="p-2">
                   <div className="flex items-center justify-center space-x-2 w-full">
-                    {/* Input Görünümlü Div Container */}
+                    {/* Input Görünümlü Konteyner */}
                     <div
                       className={`flex items-center justify-center h-12 w-full rounded-md bg-white/20 backdrop-blur-sm transition-all duration-200 px-3 relative overflow-hidden ${
                         isJokerActive ? "typing-animation" : ""
@@ -6145,29 +6145,41 @@ const GamePage = ({
                             : "border border-white/30"
                       }`}
                     >
-                      {/* Placeholder (Eğer kelime boşsa göster) */}
+                      {/* Placeholder Metni */}
                       {selectedLetters.length === 0 && !isJokerActive && (
-                        <span className="text-white/70 font-bold font-mono text-lg animate-pulse">~Kelime Üret~</span>
+                        <span className="text-white/70 font-bold font-mono text-lg animate-pulse select-none">
+                          ~Kelime Üret~
+                        </span>
                       )}
 
-                      {/* Seçilen Harfler (Uçarak Gelenler) */}
+                      {/* Seçilen Harfler (Animasyonlu) */}
                       <div className="flex gap-1 items-center justify-center z-10">
-                        {selectedLetters.map((item) => (
-                          <motion.span
-                            key={`input-${item.row}-${item.col}`}
-                            layoutId={`letter-${item.row}-${item.col}`} // SİHİRLİ KISIM: Grid ile aynı ID
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.5 }}
-                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                            className="text-2xl font-mono font-bold text-white drop-shadow-md"
-                          >
-                            {item.letter}
-                          </motion.span>
-                        ))}
+                        <AnimatePresence mode="popLayout">
+                          {selectedLetters.map((item) => (
+                            <motion.span
+                              key={`input-${item.row}-${item.col}`}
+                              layoutId={`letter-${item.row}-${item.col}`} // Grid'deki ID ile eşleşiyor
+                              initial={{ opacity: 0, y: 20, scale: 0.5 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0, transition: { duration: 0.1 } }}
+                              transition={{
+                                type: "spring",
+                                stiffness: 400,
+                                damping: 25,
+                              }}
+                              className="text-2xl font-mono font-bold text-white drop-shadow-md select-none"
+                            >
+                              {item.letter}
+                            </motion.span>
+                          ))}
+                        </AnimatePresence>
 
-                        {/* Joker yazıyorsa veya manuel input varsa buraya eklenir (CurrentWord state'i ile senkronize kalması için) */}
-                        {/* Not: Jokerler direkt selectedLetters'ı doldurduğu için yukarıdaki map yeterli olacaktır. */}
+                        {/* Eğer Joker/Klavye ile yazılıyorsa manuel input desteği için (Opsiyonel, şu anki yapıda selectedLetters kullanıyorsun) */}
+                        {currentWord.length > selectedLetters.length && (
+                          <span className="text-2xl font-mono font-bold text-white drop-shadow-md">
+                            {currentWord.slice(selectedLetters.length)}
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -6201,7 +6213,6 @@ const GamePage = ({
                               !gameStarted ? "opacity-50 cursor-not-allowed" : ""
                             }`}
                             disabled={!gameStarted}
-                            // ... onTouchStart ve onClick handler'ları AYNI KALSIN ...
                             onTouchStart={(e) => {
                               if (!gameStarted) return;
                               e.preventDefault();
@@ -6224,26 +6235,27 @@ const GamePage = ({
                               pointerEvents: !gameStarted ? "none" : "auto",
                             }}
                           >
-                            {/* 1. KATMAN: SABİT HAYALET HARF (Izgarada sönük kalan) */}
+                            {/* 1. KATMAN: HAYALET HARF (Seçilince sönükleşip yerinde kalan) */}
                             <span
-                              className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${isSelected ? "opacity-40 text-gray-400" : "opacity-0"}`}
+                              className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200 ${
+                                isSelected ? "opacity-30 text-white/50" : "opacity-0"
+                              }`}
                             >
                               {letter}
                             </span>
 
-                            {/* 2. KATMAN: UÇAN HARF (Seçilince Input'a gider) */}
-                            {/* Sadece seçili DEĞİLSE render et, seçili olduğu an Input'taki motion.span devreye girer */}
+                            {/* 2. KATMAN: UÇAN HARF (Seçildiği an yukarı ışınlanır) */}
                             {!isSelected && (
                               <motion.span
-                                layoutId={`letter-${rowIndex}-${colIndex}`} // SİHİRLİ KISIM
+                                layoutId={`letter-${rowIndex}-${colIndex}`}
                                 className="relative z-10"
-                                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 25 }}
                               >
                                 {letter}
                               </motion.span>
                             )}
 
-                            {/* Sıra Numarası Rozeti */}
+                            {/* Sıra Numarası */}
                             {isSelected && selectionOrder >= 0 && (
                               <motion.span
                                 initial={{ scale: 0 }}
