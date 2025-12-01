@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+// Badge componenti GameModeSelector'da kullanıldığı için buraya da eklenmeli
 import { Badge } from "@/components/ui/badge";
 import { Users, Clock, Trophy, Play, LogIn, X, Hash, AlertTriangle } from "lucide-react";
 import {
@@ -305,17 +306,17 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
   return (
     <>
       <Dialog open={true} onOpenChange={() => handleClose()}>
-        {/* YENİ DialogContent STİLİ: Mobil ve masaüstünde daha geniş, GameModeSelector'a yakın bir kart yapısı */}
+        {/* KRİTİK DÜZELTME: Genişlik (max-w-lg) ve Yuvarlaklık (rounded-2xl) GameModeSelector ile eşleştirildi */}
         <DialogContent
           className="
             // Standard Dialog/Modal merkezleme:
             fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] 
             
-            // Boyutlandırma: Mobil için geniş, masaüstü için maksimum genişlik
+            // Genişlik ve Boyutlandırma: Tamamen GameModeSelector'daki `max-w-lg` ile eşleşti.
             w-[96%] max-h-[95vh] p-0 
-            sm:max-w-xl sm:w-full 
+            sm:max-w-lg sm:w-full 
             
-            // Köşe yuvarlaklığı: GameModeSelector'a yakın, belirgin yuvarlaklık
+            // Köşe yuvarlaklığı: GameModeSelector'daki gibi `rounded-2xl` ayarlandı.
             rounded-2xl 
             
             // Tema ve efektler:
