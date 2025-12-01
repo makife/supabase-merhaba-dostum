@@ -2,8 +2,7 @@ import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-// Yeni Eklenti: Badge'i import etmeyi unutmayın
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge"; // <-- YENİ EKLENDİ
 import { Users, Clock, Trophy, Play, LogIn, X, Hash, AlertTriangle } from "lucide-react";
 import {
   AlertDialog,
@@ -84,7 +83,7 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
           return currentSeed / 4294967296;
         };
 
-        // ⚠️ DİKKAT: Buraya uzun harf havuzunu yapıştırmayı unutma!
+        // Harf havuzu (Orjinal dosyadan alınmıştır)
         const letterPool = [
           "A",
           "A",
@@ -307,190 +306,207 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
   return (
     <>
       <Dialog open={true} onOpenChange={() => handleClose()}>
-        <DialogContent className="sm:max-w-lg w-full bg-zinc-950/90 backdrop-blur-xl border border-green-500/20 text-white shadow-[0_0_50px_rgba(16,185,129,0.2)] p-0 overflow-hidden gap-0 [&>button]:hidden">
-          {/* Dekoratif Yeşil Işık */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-48 bg-gradient-to-b from-green-600 via-emerald-500 to-transparent opacity-20 blur-3xl pointer-events-none" />
+        {/* TAŞMAYI ENGELLEYEN VE TAM EKRAN HİSSİ VEREN YENİ DialogContent STİLİ */}
+        <DialogContent
+          className="
+            fixed inset-0 m-0 w-full p-4 flex items-center justify-center 
+            sm:p-0 sm:max-w-lg sm:h-auto sm:rounded-2xl 
+            bg-zinc-950/90 backdrop-blur-xl border border-green-500/20 text-white 
+            shadow-[0_0_50px_rgba(16,185,129,0.2)] overflow-hidden gap-0 
+            [&>button]:hidden
+          "
+        >
+          {/* İç kartı sm ekranlar için max-w-lg ile kısıtlayan ana kapsayıcı */}
+          <div className="w-full max-w-lg bg-zinc-950/90 rounded-2xl overflow-hidden flex flex-col max-h-[95vh] animate-in fade-in duration-300">
+            {/* Dekoratif Yeşil Işık */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-48 bg-gradient-to-b from-green-600 via-emerald-500 to-transparent opacity-20 blur-3xl pointer-events-none" />
 
-          {/* --- HEADER --- */}
-          <div className="relative pt-8 pb-4 px-6 text-center z-10">
-            <button
-              onClick={handleClose}
-              className="absolute top-4 right-4 p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            {/* --- HEADER --- */}
+            <div className="relative pt-8 pb-4 px-6 text-center z-10">
+              <button
+                onClick={handleClose}
+                className="absolute top-4 right-4 p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
 
-            <div className="w-20 h-20 mx-auto bg-gradient-to-br from-green-500 to-emerald-700 rounded-2xl flex items-center justify-center shadow-lg transform rotate-3 mb-4 border border-white/20">
-              <Users className="w-10 h-10 text-white drop-shadow-md" />
+              <div className="w-20 h-20 mx-auto bg-gradient-to-br from-green-500 to-emerald-700 rounded-2xl flex items-center justify-center shadow-lg transform rotate-3 mb-4 border border-white/20">
+                <Users className="w-10 h-10 text-white drop-shadow-md" />
+              </div>
+
+              <h2 className="text-2xl font-black uppercase tracking-wider text-white drop-shadow-lg">ÖZEL ODA</h2>
+              <p className="text-white/60 text-sm font-medium mt-1">Arkadaşınla kozlarını paylaş</p>
             </div>
 
-            <h2 className="text-2xl font-black uppercase tracking-wider text-white drop-shadow-lg">ÖZEL ODA</h2>
-            <p className="text-white/60 text-sm font-medium mt-1">Arkadaşınla kozlarını paylaş</p>
-          </div>
-
-          {/* --- TABS --- */}
-          <div className="px-6 pb-2 z-10">
-            <div className="grid grid-cols-2 p-1 bg-black/40 rounded-xl border border-white/10">
-              <button
-                onClick={() => {
-                  playSound("buttonClick");
-                  setActiveTab("create");
-                }}
-                className={`py-2 text-sm font-bold rounded-lg transition-all duration-300 ${
-                  activeTab === "create" ? "bg-green-600 text-white shadow-lg" : "text-zinc-500 hover:text-white"
-                }`}
-              >
-                ODA KUR
-              </button>
-              <button
-                onClick={() => {
-                  playSound("buttonClick");
-                  setActiveTab("join");
-                }}
-                className={`py-2 text-sm font-bold rounded-lg transition-all duration-300 ${
-                  activeTab === "join" ? "bg-emerald-600 text-white shadow-lg" : "text-zinc-500 hover:text-white"
-                }`}
-              >
-                ODAYA KATIL
-              </button>
+            {/* --- TABS --- */}
+            <div className="px-6 pb-2 z-10">
+              <div className="grid grid-cols-2 p-1 bg-black/40 rounded-xl border border-white/10">
+                <button
+                  onClick={() => {
+                    playSound("buttonClick");
+                    setActiveTab("create");
+                  }}
+                  className={`py-2 text-sm font-bold rounded-lg transition-all duration-300 ${
+                    activeTab === "create" ? "bg-green-600 text-white shadow-lg" : "text-zinc-500 hover:text-white"
+                  }`}
+                >
+                  ODA KUR
+                </button>
+                <button
+                  onClick={() => {
+                    playSound("buttonClick");
+                    setActiveTab("join");
+                  }}
+                  className={`py-2 text-sm font-bold rounded-lg transition-all duration-300 ${
+                    activeTab === "join" ? "bg-emerald-600 text-white shadow-lg" : "text-zinc-500 hover:text-white"
+                  }`}
+                >
+                  ODAYA KATIL
+                </button>
+              </div>
             </div>
-          </div>
 
-          {/* --- İÇERİK --- */}
-          <div className="p-6 space-y-4 z-10 min-h-[300px]">
-            {/* ODA KURMA SEKMESİ (GameModeSelector stiline uyarlandı) */}
-            {activeTab === "create" && (
-              <div className="space-y-4 animate-in slide-in-from-left-8 fade-in duration-500">
-                <p className="text-xs text-center text-zinc-400 font-medium uppercase tracking-widest">
-                  Oyun Modunu Seç
-                </p>
+            {/* --- İÇERİK --- */}
+            <div className="p-6 space-y-4 z-10 overflow-y-auto">
+              {/* ODA KURMA SEKMESİ (GameModeSelector stiline uyarlandı) */}
+              {activeTab === "create" && (
+                <div className="space-y-4 animate-in slide-in-from-left-8 fade-in duration-500">
+                  <p className="text-xs text-center text-zinc-400 font-medium uppercase tracking-widest">
+                    Oyun Modunu Seç
+                  </p>
 
-                <div className="grid grid-cols-2 gap-4">
-                  {/* ZAMANA KARŞI */}
-                  <button
-                    onClick={() => {
-                      playSound("buttonClick");
-                      setGameType("timed");
-                    }}
-                    className={`relative group flex flex-col items-center p-4 rounded-xl border-2 transition-all duration-300 h-44 justify-between
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* ZAMANA KARŞI */}
+                    <button
+                      onClick={() => {
+                        playSound("buttonClick");
+                        setGameType("timed");
+                      }}
+                      // YÜKSEKLİK h-44 ve diğer GameModeSelector stilleri uygulandı
+                      className={`relative group flex flex-col items-center p-4 rounded-xl border-2 transition-all duration-300 h-44 justify-between
                                 ${
                                   gameType === "timed"
                                     ? "border-green-500 bg-green-500/10 shadow-[0_0_15px_rgba(16,185,129,0.3)] scale-[1.02]"
                                     : "border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/20"
                                 }
                             `}
-                  >
-                    <div
-                      className={`p-3 rounded-full ${gameType === "timed" ? "bg-gradient-to-r from-green-600 to-emerald-500 text-white" : "bg-zinc-800 text-zinc-500"}`}
                     >
-                      <Clock className="w-6 h-6" />
-                    </div>
-
-                    <div className="text-center">
-                      <span
-                        className={`block font-bold text-lg ${gameType === "timed" ? "text-white" : "text-zinc-400"}`}
+                      <div
+                        className={`p-3 rounded-full ${gameType === "timed" ? "bg-gradient-to-r from-green-600 to-emerald-500 text-white" : "bg-zinc-800 text-zinc-500"}`}
                       >
-                        Zamana Karşı
-                      </span>
-                      <span className="text-xs text-zinc-500 mt-1 block px-2">2 dakika içinde maksimum kelime bul</span>
-                    </div>
+                        <Clock className="w-6 h-6" />
+                      </div>
 
-                    <Badge variant="outline" className="border-white/10 text-zinc-400 text-[10px] bg-black/20">
-                      ⚡ Standart
-                    </Badge>
+                      <div className="text-center">
+                        <span
+                          className={`block font-bold text-lg ${gameType === "timed" ? "text-white" : "text-zinc-400"}`}
+                        >
+                          Zamana Karşı
+                        </span>
+                        <span className="text-xs text-zinc-500 mt-1 block px-2">
+                          2 dakika içinde maksimum kelime bul
+                        </span>
+                      </div>
 
-                    {/* Aktiflik işareti */}
-                    {gameType === "timed" && (
-                      <div className="absolute inset-0 border-2 border-green-500 rounded-xl blur-[2px] pointer-events-none" />
-                    )}
-                  </button>
+                      <Badge variant="outline" className="border-white/10 text-zinc-400 text-[10px] bg-black/20">
+                        ⚡ Standart
+                      </Badge>
 
-                  {/* SKOR MODU */}
-                  <button
-                    onClick={() => {
-                      playSound("buttonClick");
-                      setGameType("score");
-                    }}
-                    className={`relative group flex flex-col items-center p-4 rounded-xl border-2 transition-all duration-300 h-44 justify-between
+                      {/* Aktiflik işareti */}
+                      {gameType === "timed" && (
+                        <div className="absolute inset-0 border-2 border-green-500 rounded-xl blur-[2px] pointer-events-none" />
+                      )}
+                    </button>
+
+                    {/* SKOR MODU */}
+                    <button
+                      onClick={() => {
+                        playSound("buttonClick");
+                        setGameType("score");
+                      }}
+                      // YÜKSEKLİK h-44 ve diğer GameModeSelector stilleri uygulandı
+                      className={`relative group flex flex-col items-center p-4 rounded-xl border-2 transition-all duration-300 h-44 justify-between
                                 ${
                                   gameType === "score"
                                     ? "border-emerald-500 bg-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.3)] scale-[1.02]"
                                     : "border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/20"
                                 }
                             `}
-                  >
-                    <div
-                      className={`p-3 rounded-full ${gameType === "score" ? "bg-gradient-to-r from-emerald-600 to-teal-500 text-white" : "bg-zinc-800 text-zinc-500"}`}
                     >
-                      <Trophy className="w-6 h-6" />
-                    </div>
-
-                    <div className="text-center">
-                      <span
-                        className={`block font-bold text-lg ${gameType === "score" ? "text-white" : "text-zinc-400"}`}
+                      <div
+                        className={`p-3 rounded-full ${gameType === "score" ? "bg-gradient-to-r from-emerald-600 to-teal-500 text-white" : "bg-zinc-800 text-zinc-500"}`}
                       >
-                        Skor Modu
-                      </span>
-                      <span className="text-xs text-zinc-500 mt-1 block px-2">500 puana ulaşan ilk kişi kazanır</span>
-                    </div>
+                        <Trophy className="w-6 h-6" />
+                      </div>
 
-                    <Badge variant="outline" className="border-white/10 text-zinc-400 text-[10px] bg-black/20">
-                      🎯 Stratejik
-                    </Badge>
+                      <div className="text-center">
+                        <span
+                          className={`block font-bold text-lg ${gameType === "score" ? "text-white" : "text-zinc-400"}`}
+                        >
+                          Skor Modu
+                        </span>
+                        <span className="text-xs text-zinc-500 mt-1 block px-2">500 puana ulaşan ilk kişi kazanır</span>
+                      </div>
 
-                    {/* Aktiflik işareti */}
-                    {gameType === "score" && (
-                      <div className="absolute inset-0 border-2 border-emerald-500 rounded-xl blur-[2px] pointer-events-none" />
-                    )}
-                  </button>
-                </div>
+                      <Badge variant="outline" className="border-white/10 text-zinc-400 text-[10px] bg-black/20">
+                        🎯 Stratejik
+                      </Badge>
 
-                <Button
-                  onClick={handleCreateRoom}
-                  disabled={loading}
-                  className="w-full py-6 mt-2 text-lg font-bold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white shadow-lg border-0 transition-all hover:scale-[1.02] active:scale-[0.98] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)]"
-                >
-                  {loading ? (
-                    <span className="animate-pulse">Oda Hazırlanıyor...</span>
-                  ) : (
-                    <>
-                      <Play className="w-5 h-5 mr-2 fill-current" /> ODAYI OLUŞTUR
-                    </>
-                  )}
-                </Button>
-              </div>
-            )}
-
-            {/* ODAYA KATILMA SEKMESİ (Orjinal halini korundu) */}
-            {activeTab === "join" && (
-              <div className="space-y-6 py-4 animate-in slide-in-from-right-8 fade-in duration-500">
-                <div className="text-center space-y-2">
-                  <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-2 border border-white/10">
-                    <Hash className="w-6 h-6 text-zinc-400" />
+                      {/* Aktiflik işareti */}
+                      {gameType === "score" && (
+                        <div className="absolute inset-0 border-2 border-emerald-500 rounded-xl blur-[2px] pointer-events-none" />
+                      )}
+                    </button>
                   </div>
-                  <h3 className="text-white font-bold">Davet Kodunu Gir</h3>
-                  <p className="text-sm text-zinc-500 px-4">Arkadaşının sana gönderdiği 6 haneli kodu aşağıya yaz.</p>
-                </div>
 
-                <div className="relative group">
-                  <Input
-                    value={joinCode}
-                    onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                    placeholder="Örn: A4K7B2"
-                    maxLength={6}
-                    className="bg-black/30 border-green-500/30 text-white text-center h-16 text-2xl font-mono tracking-[0.5em] focus-visible:ring-green-500 placeholder:text-zinc-700 placeholder:tracking-normal placeholder:text-sm uppercase transition-all focus:border-green-500 focus:bg-black/50"
-                  />
+                  <Button
+                    onClick={handleCreateRoom}
+                    disabled={loading}
+                    // Buton stiline hover/shadow efekti eklendi
+                    className="w-full py-6 mt-2 text-lg font-bold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white shadow-lg border-0 transition-all hover:scale-[1.02] active:scale-[0.98] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)]"
+                  >
+                    {loading ? (
+                      <span className="animate-pulse">Oda Hazırlanıyor...</span>
+                    ) : (
+                      <>
+                        <Play className="w-5 h-5 mr-2 fill-current" /> ODAYI OLUŞTUR
+                      </>
+                    )}
+                  </Button>
                 </div>
+              )}
 
-                <Button
-                  onClick={handleJoinRoom}
-                  disabled={loading || joinCode.length < 3}
-                  className="w-full py-6 text-lg font-bold bg-zinc-800 hover:bg-zinc-700 text-white border border-white/10 transition-all hover:scale-[1.02]"
-                >
-                  {loading ? "Bağlanılıyor..." : "ODAYA GİRİŞ YAP"} <LogIn className="w-5 h-5 ml-2" />
-                </Button>
-              </div>
-            )}
+              {/* ODAYA KATILMA SEKMESİ */}
+              {activeTab === "join" && (
+                <div className="space-y-6 py-4 animate-in slide-in-from-right-8 fade-in duration-500">
+                  <div className="text-center space-y-2">
+                    <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-2 border border-white/10">
+                      <Hash className="w-6 h-6 text-zinc-400" />
+                    </div>
+                    <h3 className="text-white font-bold">Davet Kodunu Gir</h3>
+                    <p className="text-sm text-zinc-500 px-4">Arkadaşının sana gönderdiği 6 haneli kodu aşağıya yaz.</p>
+                  </div>
+
+                  <div className="relative group">
+                    <Input
+                      value={joinCode}
+                      onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                      placeholder="Örn: A4K7B2"
+                      maxLength={6}
+                      className="bg-black/30 border-green-500/30 text-white text-center h-16 text-2xl font-mono tracking-[0.5em] focus-visible:ring-green-500 placeholder:text-zinc-700 placeholder:tracking-normal placeholder:text-sm uppercase transition-all focus:border-green-500 focus:bg-black/50"
+                    />
+                  </div>
+
+                  <Button
+                    onClick={handleJoinRoom}
+                    disabled={loading || joinCode.length < 3}
+                    className="w-full py-6 text-lg font-bold bg-zinc-800 hover:bg-zinc-700 text-white border border-white/10 transition-all hover:scale-[1.02]"
+                  >
+                    {loading ? "Bağlanılıyor..." : "ODAYA GİRİŞ YAP"} <LogIn className="w-5 h-5 ml-2" />
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
