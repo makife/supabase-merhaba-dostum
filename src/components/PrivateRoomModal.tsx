@@ -372,12 +372,12 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
                       setGameType("timed");
                     }}
                     className={`relative group flex flex-col items-center p-4 rounded-xl border-2 transition-all duration-300 h-44 justify-between
-                                ${
-                                  gameType === "timed"
-                                    ? "border-green-500 bg-green-500/10 shadow-[0_0_15px_rgba(16,185,129,0.3)] scale-[1.02]"
-                                    : "border-white/5 bg-white/5 hover:bg-white/10"
-                                }
-                            `}
+                            ${
+                              gameType === "timed"
+                                ? "border-green-500 bg-green-500/10 shadow-[0_0_15px_rgba(16,185,129,0.3)] scale-[1.02]"
+                                : "border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/20" // hover:border-white/20 eklendi
+                            }
+                        `}
                   >
                     <div
                       className={`p-3 rounded-full ${gameType === "timed" ? "bg-gradient-to-r from-green-600 to-emerald-500 text-white" : "bg-zinc-800 text-zinc-500"}`}
@@ -391,10 +391,16 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
                       >
                         Zamana Karşı
                       </span>
-                      <span className="text-xs text-zinc-500 mt-1 block px-2">2 dakika, maksimum kelime</span>
+                      {/* Metin güncellendi: GameModeSelector'daki stile daha yakın */}
+                      <span className="text-xs text-zinc-500 mt-1 block px-2">2 dakika içinde maksimum kelime bul</span>
                     </div>
 
-                    {/* Aktiflik işareti */}
+                    {/* Badge eklendi (isteğe bağlı ama GameModeSelector'da var) */}
+                    <Badge variant="outline" className="border-white/10 text-zinc-400 text-[10px] bg-black/20">
+                      ⚡ Standart
+                    </Badge>
+
+                    {/* Aktiflik işareti - GameModeSelector'a daha yakın bir stil korundu */}
                     {gameType === "timed" && (
                       <div className="absolute inset-0 border-2 border-green-500 rounded-xl blur-[2px] pointer-events-none" />
                     )}
@@ -407,12 +413,12 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
                       setGameType("score");
                     }}
                     className={`relative group flex flex-col items-center p-4 rounded-xl border-2 transition-all duration-300 h-44 justify-between
-                                ${
-                                  gameType === "score"
-                                    ? "border-emerald-500 bg-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.3)] scale-[1.02]"
-                                    : "border-white/5 bg-white/5 hover:bg-white/10"
-                                }
-                            `}
+                            ${
+                              gameType === "score"
+                                ? "border-emerald-500 bg-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.3)] scale-[1.02]"
+                                : "border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/20" // hover:border-white/20 eklendi
+                            }
+                        `}
                   >
                     <div
                       className={`p-3 rounded-full ${gameType === "score" ? "bg-gradient-to-r from-emerald-600 to-teal-500 text-white" : "bg-zinc-800 text-zinc-500"}`}
@@ -426,20 +432,27 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
                       >
                         Skor Modu
                       </span>
-                      <span className="text-xs text-zinc-500 mt-1 block px-2">500 puana ulaşan kazanır</span>
+                      {/* Metin güncellendi: GameModeSelector'daki stile daha yakın */}
+                      <span className="text-xs text-zinc-500 mt-1 block px-2">500 puana ulaşan ilk kişi kazanır</span>
                     </div>
 
-                    {/* Aktiflik işareti */}
+                    {/* Badge eklendi (isteğe bağlı ama GameModeSelector'da var) */}
+                    <Badge variant="outline" className="border-white/10 text-zinc-400 text-[10px] bg-black/20">
+                      🎯 Stratejik
+                    </Badge>
+
+                    {/* Aktiflik işareti - GameModeSelector'a daha yakın bir stil korundu */}
                     {gameType === "score" && (
                       <div className="absolute inset-0 border-2 border-emerald-500 rounded-xl blur-[2px] pointer-events-none" />
                     )}
                   </button>
                 </div>
 
+                {/* Butonun stiline GameModeSelector'daki gibi hover efekti eklendi */}
                 <Button
                   onClick={handleCreateRoom}
                   disabled={loading}
-                  className="w-full py-6 mt-2 text-lg font-bold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white shadow-lg border-0 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  className="w-full py-6 mt-2 text-lg font-bold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white shadow-lg border-0 transition-all hover:scale-[1.02] active:scale-[0.98] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)]"
                 >
                   {loading ? (
                     <span className="animate-pulse">Oda Hazırlanıyor...</span>
