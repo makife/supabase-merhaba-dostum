@@ -4989,15 +4989,15 @@ const GamePage = ({
 
       const isSelected = selectedLetters.some((s) => s.row === row && s.col === col);
 
-    if (isSelected) {
-      const newSelected = selectedLetters.filter((s) => !(s.row === row && s.col === col));
-      setSelectedLetters(newSelected);
-      // currentWord artık derived value, otomatik güncellenecek
-    } else {
-      const newSelected = [...selectedLetters, { letter, row, col }];
-      setSelectedLetters(newSelected);
-      // currentWord artık derived value, otomatik güncellenecek
-    }
+      if (isSelected) {
+        const newSelected = selectedLetters.filter((s) => !(s.row === row && s.col === col));
+        setSelectedLetters(newSelected);
+        // currentWord artık derived value, otomatik güncellenecek
+      } else {
+        const newSelected = [...selectedLetters, { letter, row, col }];
+        setSelectedLetters(newSelected);
+        // currentWord artık derived value, otomatik güncellenecek
+      }
     },
     [gameEnded, waitingForPlayer, isJokerActive, lastClickTime, selectedLetters, playSound],
   );
@@ -6161,16 +6161,17 @@ const GamePage = ({
                             <motion.span
                               key={`input-${item.row}-${item.col}`}
                               layoutId={`letter-${item.row}-${item.col}`}
-                              layout="position" // <--- Rapid fire çözümü
-                              initial={{ opacity: 0, scale: 0.8 }}
-                              animate={{ opacity: 1, scale: 1 }}
+                              // layout="position" yerine sadece layout kullanmak bazen daha stabildir
+                              layout
+                              // initial ve animate proplarını KALDIRIYORUZ veya opacity: 1 yapıyoruz.
+                              // layoutId zaten harfin grid'den input'a uçmasını sağlar.
                               transition={{
                                 type: "spring",
-                                stiffness: 700, // Hızlı tepki
-                                damping: 35, // Az sallantı
-                                mass: 0.5, // Hafif
+                                stiffness: 700,
+                                damping: 35,
+                                mass: 0.5,
                               }}
-                              style={{ willChange: "transform" }} // Performans
+                              style={{ willChange: "transform" }}
                               className="text-3xl font-mono font-extrabold text-slate-900 drop-shadow-sm select-none"
                             >
                               {item.letter}
