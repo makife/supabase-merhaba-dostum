@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge"; // <-- Gerekli import
+import { Badge } from "@/components/ui/badge";
 import { Users, Clock, Trophy, Play, LogIn, X, Hash, AlertTriangle } from "lucide-react";
 import {
   AlertDialog,
@@ -305,28 +305,29 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
   return (
     <>
       <Dialog open={true} onOpenChange={() => handleClose()}>
-        {/* DÜZELTİLMİŞ DialogContent STİLİ: Merkezleme ve boyutlandırma sorununu çözdük */}
+        {/* YENİ DialogContent STİLİ: Mobil ve masaüstünde daha geniş, GameModeSelector'a yakın bir kart yapısı */}
         <DialogContent
           className="
             // Standard Dialog/Modal merkezleme:
             fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] 
             
-            // Mobil için kenardan taşmayı önleyen ve dikeyde sınırlayan boyutlar:
-            w-[96%] max-h-[95vh] p-0
-            sm:max-w-lg sm:w-full sm:rounded-xl 
+            // Boyutlandırma: Mobil için geniş, masaüstü için maksimum genişlik
+            w-[96%] max-h-[95vh] p-0 
+            sm:max-w-xl sm:w-full 
+            
+            // Köşe yuvarlaklığı: GameModeSelector'a yakın, belirgin yuvarlaklık
+            rounded-2xl 
             
             // Tema ve efektler:
             bg-zinc-950/90 backdrop-blur-xl border border-green-500/20 text-white 
             shadow-[0_0_50px_rgba(16,185,129,0.2)] overflow-hidden gap-0 
             
-            // Shadcn/ui animasyonları
+            // Animasyonlar ve Kapanma butonu:
             data-[state=open]:animate-in data-[state=closed]:animate-out 
             data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 
             data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 
             data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] 
             data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]
-            
-            // Kapanma butonu gizli kalsın
             [&>button]:hidden
           "
         >
