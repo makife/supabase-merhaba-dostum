@@ -229,18 +229,6 @@ const TournamentBracketPage = () => {
 
       const allCompleted = roundMatches.every((m) => m.status === "completed");
       
-      // ⚠️ KRİTİK: Eski round'un maçlarının statusunu garantili olarak completed yap
-      if (allCompleted) {
-        console.log(`✅ Tüm maçlar tamamlandı, status'leri garantili olarak "completed" yapılıyor`);
-        await supabase
-          .from("tournament_matches")
-          .update({ 
-            status: "completed",
-            updated_at: new Date().toISOString() 
-          })
-          .eq("tournament_id", tournamentId)
-          .eq("round", round);
-      }
       const hasRealPlayerMatches = roundMatches.some((m) => {
         const player1IsBot = botMap.get(m.player1_id) || m.player1_id?.startsWith("bot_") || false;
         const player2IsBot = botMap.get(m.player2_id) || m.player2_id?.startsWith("bot_") || false;
@@ -396,21 +384,6 @@ const TournamentBracketPage = () => {
     const pendingMatches = matches.filter(
       (m) => m.round === currentRound && m.status === "pending" && m.player1_id && m.player2_id
     );
-    
-    // Eski round'ların maçlarını filtrele (completed veya in_progress olmamalı pending durumda)
-    const oldRoundPendingMatches = matches.filter(
-      (m) => m.round < currentRound && m.status === "pending"
-    );
-    
-    if (oldRoundPendingMatches.length > 0) {
-      console.warn(`⚠️ Eski round'larda ${oldRoundPendingMatches.length} pending maç tespit edildi, temizleniyor...`);
-      oldRoundPendingMatches.forEach(async (m) => {
-        await supabase
-          .from("tournament_matches")
-          .update({ status: "completed" })
-          .eq("id", m.id);
-      });
-    }
 
     if (pendingMatches.length > 0) {
       console.log(`🎯 Round ${currentRound} için ${pendingMatches.length} pending maç bulundu`);
