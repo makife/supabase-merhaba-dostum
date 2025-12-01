@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { motion, AnimatePresence } from "framer-motion";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   AlertDialog,
@@ -578,7 +579,7 @@ const GamePage = ({
 
   const [selectedLetters, setSelectedLetters] = useState<{ letter: string; row: number; col: number }[]>([]);
   const [currentWord, setCurrentWord] = useState("");
-  const [inputFlash, setInputFlash] = useState<'success' | 'error' | null>(null);
+  const [inputFlash, setInputFlash] = useState<"success" | "error" | null>(null);
   const [usedWords, setUsedWords] = useState<Set<string>>(new Set());
   const [playerWords, setPlayerWords] = useState<string[]>([]);
   const [opponentWords, setOpponentWords] = useState<string[]>([]);
@@ -1047,7 +1048,7 @@ const GamePage = ({
       setGameStarted(false);
       setGameEnded(false);
       leaveRoom();
-      
+
       // ⚠️ KRİTİK: Tüm real-time subscriptionları kapat
       console.log("📡 Unsubscribing from all channels for completed tournament match");
       const channels = supabase.getChannels();
@@ -1060,20 +1061,22 @@ const GamePage = ({
 
       // ⏳ KRİTİK: Winner_id propagation için bekle
       console.log("⏳ Waiting for winner_id to propagate in database...");
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       // 🔍 Winner_id'yi doğrula
       const { data: finalMatch } = await supabase
         .from("tournament_matches")
         .select("winner_id")
         .eq("id", tournamentMatch.id)
         .single();
-      
+
       console.log("✅ Winner confirmed in DB:", finalMatch?.winner_id?.slice(-8));
 
       // 🎯 MUTLAKA YÖNLENDİRME YAP (kazanan/kaybeden fark etmez)
       if (allMatchesCompleted) {
-        console.log(`🏆 Tüm ${tournamentMatch.round}. tur maçları tamamlandı! Round advancement bracket sayfasında yapılacak.`);
+        console.log(
+          `🏆 Tüm ${tournamentMatch.round}. tur maçları tamamlandı! Round advancement bracket sayfasında yapılacak.`,
+        );
 
         // Bracket sayfasına yönlendir - advancement orada gerçekleşecek
         console.log("🔄 1.5 saniye sonra bracket sayfasına yönlendirilecek");
@@ -1104,7 +1107,7 @@ const GamePage = ({
       const player2Score = isPlayer1 ? opponentScore : userScore;
       const fallbackWinner = player1Score >= player2Score ? tournamentMatch?.player1_id : tournamentMatch?.player2_id;
       setWinner(fallbackWinner === user?.id ? "player" : "opponent");
-      
+
       // 3 saniye sonra yönlendir
       setTimeout(() => {
         navigate(`/tournament-bracket/${tournamentMatch?.tournament_id}`);
@@ -1164,28 +1167,28 @@ const GamePage = ({
   // 4. resetGameForRematch fonksiyonunu ekleyin:
   const resetGameForRematch = () => {
     console.log("🔄 resetGameForRematch: Başlatılıyor");
-    
+
     // Clear existing timers and intervals
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
       console.log("✅ Main timer cleared for rematch");
     }
-    
+
     if (syncIntervalRef.current) {
       clearInterval(syncIntervalRef.current);
       syncIntervalRef.current = null;
       console.log("✅ Sync interval cleared for rematch");
     }
-    
+
     // Reset server time tracking
     serverMatchStartRef.current = null;
     countdownCompletedAtRef.current = null;
     startedAtRef.current = null;
-    
+
     // ⚠️ KRİTİK: Optimistic update flag'ini sıfırla
     setIsMatchFinishing(false);
-    
+
     // Disconnect kontrolü yeniden aktif et
     disconnectHandledRef.current = false;
     countdownCheckDoneRef.current = false; // Countdown kontrolünü sıfırla
@@ -2796,8 +2799,12 @@ const GamePage = ({
       const matchId = urlMatchId || searchParams.get("match");
 
       if (!matchId || !user || gameMode !== "tournament") return;
-      
-      console.log("🏆 Loading tournament match data:", { tournamentId, matchId, source: urlMatchId ? 'path' : 'query' });
+
+      console.log("🏆 Loading tournament match data:", {
+        tournamentId,
+        matchId,
+        source: urlMatchId ? "path" : "query",
+      });
 
       try {
         // Load match data
@@ -2805,7 +2812,7 @@ const GamePage = ({
 
         if (matchData) {
           console.log("🏆 Tournament match loaded:", matchData);
-          
+
           // Tournament ID'yi match data'sından al (URL'de yoksa)
           const finalTournamentId = tournamentId || matchData.tournament_id;
 
@@ -2820,49 +2827,49 @@ const GamePage = ({
             navigate(`/tournament-bracket/${finalTournamentId}`);
             return;
           }
-          
+
           // ⚠️ KRİTİK: STRICT Status Listener - Maç tamamlandığında HEMEN yönlendir
           console.log("📡 Setting up STRICT match status listener for match:", matchId);
           const statusChannel = supabase
             .channel(`tournament-match-status-${matchId}`)
             .on(
-              'postgres_changes',
+              "postgres_changes",
               {
-                event: 'UPDATE',
-                schema: 'public',
-                table: 'tournament_matches',
+                event: "UPDATE",
+                schema: "public",
+                table: "tournament_matches",
                 filter: `id=eq.${matchId}`,
               },
               (payload) => {
                 console.log("📡 Match status update received:", payload.new);
                 const newStatus = (payload.new as any)?.status;
-                
+
                 // 🚨 STRICT: Status 'completed' ise HEMEN unmount ve yönlendir
-                if (newStatus === 'completed') {
+                if (newStatus === "completed") {
                   console.log("🚫 STRICT: Match status changed to COMPLETED - forcing unmount and redirect");
-                  
+
                   // Optimistic flag set et
                   setIsMatchFinishing(true);
-                  
+
                   // Cache invalidate
                   queryClient.invalidateQueries({ queryKey: ["tournament_matches"] });
                   queryClient.invalidateQueries({ queryKey: ["active_match"] });
-                  
+
                   // Listener kapat
                   supabase.removeChannel(statusChannel);
-                  
+
                   // Toast göster
                   toast({
                     title: "Maç Tamamlandı",
                     description: "Turnuva sayfasına yönlendiriliyorsunuz.",
                   });
-                  
+
                   // HEMEN yönlendir - local state dinleme
                   setTimeout(() => {
                     navigate(`/tournament-bracket/${finalTournamentId}`, { replace: true });
                   }, 500);
                 }
-              }
+              },
             )
             .subscribe();
 
@@ -2876,7 +2883,9 @@ const GamePage = ({
             const timeDiff = countdownStartTime - serverNow;
 
             if (timeDiff > 5000) {
-              console.log(`🎯 Tournament countdown ${Math.ceil(timeDiff / 1000)} saniye sonra, animasyonlar son 5 saniyede`);
+              console.log(
+                `🎯 Tournament countdown ${Math.ceil(timeDiff / 1000)} saniye sonra, animasyonlar son 5 saniyede`,
+              );
               setTimeout(() => {
                 setPreparingOpponent("preparing");
                 setTimeout(() => setPreparingOpponent("ready"), 3500);
@@ -2908,7 +2917,7 @@ const GamePage = ({
         // Tournament ID'yi match data'sından alabildiğimiz için finalTournamentId kullan
         if (matchData?.tournament_id || tournamentId) {
           const finalTournamentId = tournamentId || matchData.tournament_id;
-          
+
           const { data: participantsData } = await supabase
             .from("tournament_participants")
             .select("*")
@@ -2917,49 +2926,49 @@ const GamePage = ({
           if (participantsData) {
             console.log("👥 Tournament participants loaded:", participantsData.length);
 
-          // Profil bilgilerini ayrı çek (user_id text olduğu için FK yok)
-          const userIds = participantsData
-            .filter(
-              (p) =>
-                !p.is_bot &&
-                p.user_id &&
-                /^[0-9a-fA-F-]{8}-[0-9a-fA-F-]{4}-[0-9a-fA-F-]{4}-[0-9a-fA-F-]{4}-[0-9a-fA-F-]{12}$/.test(
-                  String(p.user_id),
-                ),
-            )
-            .map((p) => String(p.user_id));
+            // Profil bilgilerini ayrı çek (user_id text olduğu için FK yok)
+            const userIds = participantsData
+              .filter(
+                (p) =>
+                  !p.is_bot &&
+                  p.user_id &&
+                  /^[0-9a-fA-F-]{8}-[0-9a-fA-F-]{4}-[0-9a-fA-F-]{4}-[0-9a-fA-F-]{4}-[0-9a-fA-F-]{12}$/.test(
+                    String(p.user_id),
+                  ),
+              )
+              .map((p) => String(p.user_id));
 
-          let profileMap: Record<string, { username: string | null; avatar_url: string | null }> = {};
-          if (userIds.length > 0) {
-            const { data: profilesData } = await supabase
-              .from("profiles")
-              .select("id, username, avatar_url")
-              .in("id", userIds);
+            let profileMap: Record<string, { username: string | null; avatar_url: string | null }> = {};
+            if (userIds.length > 0) {
+              const { data: profilesData } = await supabase
+                .from("profiles")
+                .select("id, username, avatar_url")
+                .in("id", userIds);
 
-            if (profilesData) {
-              profilesData.forEach((pr) => {
-                profileMap[pr.id as string] = { username: pr.username, avatar_url: pr.avatar_url };
-              });
+              if (profilesData) {
+                profilesData.forEach((pr) => {
+                  profileMap[pr.id as string] = { username: pr.username, avatar_url: pr.avatar_url };
+                });
+              }
             }
-          }
 
-          if (matchData) {
-            // Filter participants for this match ve profilleri ekle
-            const matchParticipants = participantsData
-              .filter((p) => p.user_id === matchData.player1_id || p.user_id === matchData.player2_id)
-              .map((p) => ({
-                id: p.id,
-                room_id: searchParams.get("room"),
-                user_id: p.user_id,
-                score: 0,
-                joined_at: p.joined_at,
-                is_bot: p.is_bot,
-                profiles: p.user_id ? profileMap[String(p.user_id)] : undefined,
-              }));
+            if (matchData) {
+              // Filter participants for this match ve profilleri ekle
+              const matchParticipants = participantsData
+                .filter((p) => p.user_id === matchData.player1_id || p.user_id === matchData.player2_id)
+                .map((p) => ({
+                  id: p.id,
+                  room_id: searchParams.get("room"),
+                  user_id: p.user_id,
+                  score: 0,
+                  joined_at: p.joined_at,
+                  is_bot: p.is_bot,
+                  profiles: p.user_id ? profileMap[String(p.user_id)] : undefined,
+                }));
 
-            console.log("🔄 Setting tournament participants:", matchParticipants.length);
-            setTournamentParticipants(matchParticipants);
-          }
+              console.log("🔄 Setting tournament participants:", matchParticipants.length);
+              setTournamentParticipants(matchParticipants);
+            }
           }
         }
       } catch (error) {
@@ -3416,10 +3425,10 @@ const GamePage = ({
           if (gameStarted || showCountdown) {
             console.log("⚠️ Oyun zaten aktif - countdown sync atlandı");
           } else if (newData.countdown_started_at && !countdownServerTime) {
-              console.log("🎯 Tournament countdown başlatılıyor (real-time):", newData.countdown_started_at);
-              const countdownStartTime = new Date(newData.countdown_started_at).getTime();
-              const serverNow = Date.now() + serverTimeOffset;
-              const timeDiff = countdownStartTime - serverNow;
+            console.log("🎯 Tournament countdown başlatılıyor (real-time):", newData.countdown_started_at);
+            const countdownStartTime = new Date(newData.countdown_started_at).getTime();
+            const serverNow = Date.now() + serverTimeOffset;
+            const timeDiff = countdownStartTime - serverNow;
 
             if (timeDiff > 5000) {
               setTimeout(() => {
@@ -3709,7 +3718,7 @@ const GamePage = ({
     if (!canStart) return;
 
     console.log("⏱️ Timer BAŞLATILIYOR - Tek sefer, time:", timeLeftRef.current);
-    
+
     // 🔒 REMATCH FIX: Clear any existing timer immediately before starting new one
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -3770,32 +3779,32 @@ const GamePage = ({
       // ❌ POLLING KALDIRILDI - Realtime subscription kullan
       // İlk sync
       syncTimer();
-      
+
       // game_rooms tablosundaki started_at değişikliklerini realtime dinle (sadece tournament için geçerli)
       const syncChannel = supabase
         .channel(`tournament-timer-sync-${tournamentMatch.id}`)
         .on(
-          'postgres_changes',
+          "postgres_changes",
           {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'tournament_matches',
+            event: "UPDATE",
+            schema: "public",
+            table: "tournament_matches",
             filter: `id=eq.${tournamentMatch.id}`,
           },
           (payload: any) => {
-            console.log('⏰ Tournament timer sync event received:', payload);
+            console.log("⏰ Tournament timer sync event received:", payload);
             // countdown_started_at değiştiyse timer'ı sync et
             if (payload.new?.countdown_started_at) {
               syncTimer();
             }
-          }
+          },
         )
         .subscribe();
-      
+
       // Cleanup için channel referansını sakla
       syncInterval = syncChannel as any;
     }
-    
+
     // ⚠️ Gereksiz game_rooms timer sync subscription kaldırıldı
     // Timestamp-based timer zaten ends_at'i database'den okuyor, started_at sync'e gerek yok
 
@@ -3807,7 +3816,7 @@ const GamePage = ({
 
     // ⏱️ TIMESTAMP-BASED TIMER - Prevents jumps and glitches
     console.log("⏱️ Starting TIMESTAMP-BASED timer (no more setInterval decrement)");
-    
+
     // Fetch ends_at from database
     const initializeTimer = async () => {
       // 🔒 REMATCH FIX: Reset display to initial time immediately
@@ -3815,10 +3824,10 @@ const GamePage = ({
         setDisplayTime(120);
         console.log("⏱️ Display time reset to 120 before fetching ends_at");
       }
-      
+
       try {
         let endsAtString: string | null = null;
-        
+
         if (gameMode === "tournament" && tournamentMatch) {
           const { data } = await supabase
             .from("tournament_matches")
@@ -3828,67 +3837,63 @@ const GamePage = ({
           endsAtString = data?.ends_at || null;
           console.log("⏱️ Tournament match ends_at from DB:", endsAtString);
         } else if (currentRoom) {
-          const { data } = await supabase
-            .from("game_rooms")
-            .select("ends_at")
-            .eq("id", currentRoom.id)
-            .single();
+          const { data } = await supabase.from("game_rooms").select("ends_at").eq("id", currentRoom.id).single();
           endsAtString = data?.ends_at || null;
           console.log("⏱️ Game room ends_at from DB:", endsAtString);
         }
-        
+
         if (endsAtString) {
           endsAtTimestampRef.current = new Date(endsAtString).getTime();
         } else {
           // Fallback: calculate ends_at as started_at + 120s
           console.warn("⚠️ No ends_at found, calculating from started_at");
-          const startTime = currentRoom?.started_at 
-            ? new Date(currentRoom.started_at).getTime() 
-            : (serverMatchStartRef.current || Date.now());
+          const startTime = currentRoom?.started_at
+            ? new Date(currentRoom.started_at).getTime()
+            : serverMatchStartRef.current || Date.now();
           endsAtTimestampRef.current = startTime + 120 * 1000;
         }
-        
+
         console.log("⏱️ Timer will end at:", new Date(endsAtTimestampRef.current).toISOString());
-        
+
         // Update timer every second based on TIMESTAMP CALCULATION
         timerRef.current = setInterval(() => {
           if (!endsAtTimestampRef.current) return;
-          
+
           const now = Date.now() + serverTimeOffset;
           const remainingMs = Math.max(0, endsAtTimestampRef.current - now);
           const remainingSeconds = Math.floor(remainingMs / 1000);
-          
+
           timeLeftRef.current = remainingSeconds;
           if (isMountedRef.current) {
             setDisplayTime(remainingSeconds);
           }
-          
+
           if (remainingSeconds <= 0 && !gameEndedRef.current) {
             console.log("⏰ TIMESTAMP TIMER: Time reached 0 - ending game");
             gameEndedRef.current = true; // 🔒 Guard: Prevent multiple triggers
-            
+
             // Clear interval immediately
             if (timerRef.current) {
               clearInterval(timerRef.current);
               timerRef.current = null;
             }
-            
+
             // Clear sync channel
             if (syncInterval) {
-              if (typeof syncInterval === 'object' && 'unsubscribe' in syncInterval) {
+              if (typeof syncInterval === "object" && "unsubscribe" in syncInterval) {
                 supabase.removeChannel(syncInterval as any);
               }
             }
-            
+
             // ⚠️ KRİTİK: Tournament modunda STRICT completion
             if (gameMode === "tournament" && tournamentMatch) {
               console.log("🔒 STRICT: Setting isMatchFinishing flag");
               setIsMatchFinishing(true);
-              
+
               console.log("🗑️ STRICT: Invalidating cache");
               queryClient.invalidateQueries({ queryKey: ["tournament_matches"] });
               queryClient.invalidateQueries({ queryKey: ["active_match"] });
-              
+
               console.log("🔒 STRICT: Marking match as completed");
               supabase
                 .from("tournament_matches")
@@ -3901,7 +3906,7 @@ const GamePage = ({
                     console.log("✅ Match marked as completed - server trigger will auto-promote winner");
                   }
                 });
-              
+
               setGameEnded(true);
               handleGameEnd();
             } else {
@@ -3914,7 +3919,6 @@ const GamePage = ({
             }
           }
         }, 1000);
-        
       } catch (error) {
         console.error("❌ Timer initialization error:", error);
         // Fallback to 120s timer
@@ -3922,7 +3926,7 @@ const GamePage = ({
         console.log("⚠️ Using fallback 120s timer");
       }
     };
-    
+
     initializeTimer();
 
     return () => {
@@ -3935,7 +3939,7 @@ const GamePage = ({
       }
       if (syncInterval) {
         // Realtime channel'ı kapat
-        if (typeof syncInterval === 'object' && 'unsubscribe' in syncInterval) {
+        if (typeof syncInterval === "object" && "unsubscribe" in syncInterval) {
           supabase.removeChannel(syncInterval as any);
           console.log("✅ Sync channel unsubscribed in cleanup");
         } else {
@@ -4628,8 +4632,10 @@ const GamePage = ({
 
       if (timeDiff > 5000) {
         // Countdown'a 5+ saniye var, son 5 saniyede animasyonları göster
-        console.log(`⏰ Countdown ${Math.ceil(timeDiff / 1000)} saniye sonra başlayacak, animasyonlar son 5 saniyede gösterilecek`);
-        
+        console.log(
+          `⏰ Countdown ${Math.ceil(timeDiff / 1000)} saniye sonra başlayacak, animasyonlar son 5 saniyede gösterilecek`,
+        );
+
         setTimeout(() => {
           setPreparingOpponent("preparing");
           setTimeout(() => setPreparingOpponent("ready"), 3500);
@@ -4646,7 +4652,7 @@ const GamePage = ({
 
         const prepDuration = Math.max(0, timeDiff - 1500);
         const clearDuration = Math.max(0, timeDiff - 1000);
-        
+
         setPreparingOpponent("preparing");
         setTimeout(() => setPreparingOpponent("ready"), prepDuration);
         setTimeout(() => setPreparingOpponent(null), clearDuration);
@@ -4696,7 +4702,7 @@ const GamePage = ({
       });
 
       const timers: NodeJS.Timeout[] = [];
-      
+
       // Eğer countdown zamanı geçmişse veya çok yakınsa direkt başlat
       if (timeDiff <= 0) {
         console.log("⏰ Countdown zamanı geçmiş, direkt başlatılıyor");
@@ -4708,38 +4714,42 @@ const GamePage = ({
         // 5+ saniye var, son 5 saniyeyi bekle
         const waitTime = timeDiff - 5000;
         console.log(`⏰ ${Math.ceil(timeDiff / 1000)}s kaldı, son 5 saniyede animasyonlar başlayacak`);
-        
+
         const waitTimer = setTimeout(() => {
           setPreparingOpponent("preparing");
-          
+
           timers.push(setTimeout(() => setPreparingOpponent("ready"), 3500));
           timers.push(setTimeout(() => setPreparingOpponent(null), 4000));
-          timers.push(setTimeout(() => {
-            console.log("⏰ Countdown başlatılıyor");
-            setCountdownServerTime(currentRoom.countdown_started_at);
-            setShowCountdown(true);
-            setGameStarted(false);
-          }, 5000));
+          timers.push(
+            setTimeout(() => {
+              console.log("⏰ Countdown başlatılıyor");
+              setCountdownServerTime(currentRoom.countdown_started_at);
+              setShowCountdown(true);
+              setGameStarted(false);
+            }, 5000),
+          );
         }, waitTime);
-        
+
         timers.push(waitTimer);
       } else if (timeDiff > 500) {
         // 0.5-5 saniye arası, hemen animasyonları başlat
         console.log(`⏰ ${Math.ceil(timeDiff / 1000)}s kaldı, animasyonlar hemen başlıyor`);
-        
+
         setPreparingOpponent("preparing");
-        
+
         const prepTime = Math.floor(timeDiff * 0.7);
         const readyTime = prepTime + Math.floor(timeDiff * 0.1);
-        
+
         timers.push(setTimeout(() => setPreparingOpponent("ready"), prepTime));
         timers.push(setTimeout(() => setPreparingOpponent(null), readyTime));
-        timers.push(setTimeout(() => {
-          console.log("⏰ Countdown başlatılıyor");
-          setCountdownServerTime(currentRoom.countdown_started_at);
-          setShowCountdown(true);
-          setGameStarted(false);
-        }, timeDiff));
+        timers.push(
+          setTimeout(() => {
+            console.log("⏰ Countdown başlatılıyor");
+            setCountdownServerTime(currentRoom.countdown_started_at);
+            setShowCountdown(true);
+            setGameStarted(false);
+          }, timeDiff),
+        );
       } else {
         // Çok az süre kaldı, direkt countdown başlat
         console.log("⏰ Countdown hemen başlıyor (süre çok az)");
@@ -4750,7 +4760,7 @@ const GamePage = ({
       }
 
       return () => {
-        timers.forEach(timer => clearTimeout(timer));
+        timers.forEach((timer) => clearTimeout(timer));
       };
     }
   }, [gameMode, currentRoom?.countdown_started_at, showCountdown, gameStarted, serverTimeOffset, countdownServerTime]);
@@ -4831,7 +4841,9 @@ const GamePage = ({
               });
 
               if (timeDiff > 5000) {
-                console.log(`⏰ Countdown ${Math.ceil(timeDiff / 1000)} saniye sonra, animasyonlar son 5 saniyede (RPC)`);
+                console.log(
+                  `⏰ Countdown ${Math.ceil(timeDiff / 1000)} saniye sonra, animasyonlar son 5 saniyede (RPC)`,
+                );
                 setTimeout(() => {
                   setPreparingOpponent("preparing");
                   setTimeout(() => setPreparingOpponent("ready"), 3500);
@@ -4997,11 +5009,10 @@ const GamePage = ({
   };
 
   // Custom toast fonksiyonu
-  const showCustomToast = (title: string, description: string, color: 'red' | 'green' = 'red') => {
+  const showCustomToast = (title: string, description: string, color: "red" | "green" = "red") => {
     const toastDiv = document.createElement("div");
-    const bgColor = color === 'green' ? 'bg-green-500' : 'bg-red-500';
-    toastDiv.className =
-      `fixed ${bgColor} text-white p-3 rounded-lg shadow-lg z-50 transition-transform duration-300 left-1/2`;
+    const bgColor = color === "green" ? "bg-green-500" : "bg-red-500";
+    toastDiv.className = `fixed ${bgColor} text-white p-3 rounded-lg shadow-lg z-50 transition-transform duration-300 left-1/2`;
     toastDiv.style.bottom = "0px"; // Alttan başla
     toastDiv.style.transform = "translateX(-50%) translateY(100%)"; // Ortala ve aşağıda gizle
     toastDiv.innerHTML = '<div class="font-bold">' + title + '</div><div class="text-sm">' + description + "</div>";
@@ -5073,7 +5084,7 @@ const GamePage = ({
       if (!result.isValid) {
         playSound("wrongWord");
         showCustomToast("Geçersiz Kelime", "");
-        setInputFlash('error');
+        setInputFlash("error");
         setTimeout(() => setInputFlash(null), 600);
         clearWord();
         return;
@@ -5082,9 +5093,9 @@ const GamePage = ({
       console.log("✅ Word accepted:", currentWord, "Points:", result.points);
 
       // ✅ Flash yeşil ve yeşil toast göster
-      setInputFlash('success');
+      setInputFlash("success");
       setTimeout(() => setInputFlash(null), 600);
-      showCustomToast(normalizedWord, "", 'green');
+      showCustomToast(normalizedWord, "", "green");
 
       // ✅ HEMEN GRİD'İ TEMİZLE VE UI'I GÜNCELLE (KULLANICI BEKLEMESİN)
       clearWord();
@@ -5114,22 +5125,25 @@ const GamePage = ({
       triggerWordEffects();
 
       // 🔥 DATABASE İŞLEMLERİNİ ARKA PLANDA YAP (fire-and-forget, kullanıcı beklemesin)
-      
+
       // Database'e kelime kaydet (sadece multiplayer modlarda) - ASYNC, AWAIT'LEME
       if (currentRoom && user && (gameMode === "private-room" || gameMode === "random-match")) {
-        supabase.from("game_words").insert({
-          room_id: currentRoom.id,
-          player_id: user.id,
-          word: normalizedWord,
-          points: result.points,
-        }).then((response) => {
-          if (response.error) {
-            console.error("❌ Database word save error:", response.error);
-          } else {
-            console.log("✅ Word saved to database:", normalizedWord);
-            forceRefreshProfile?.();
-          }
-        });
+        supabase
+          .from("game_words")
+          .insert({
+            room_id: currentRoom.id,
+            player_id: user.id,
+            word: normalizedWord,
+            points: result.points,
+          })
+          .then((response) => {
+            if (response.error) {
+              console.error("❌ Database word save error:", response.error);
+            } else {
+              console.log("✅ Word saved to database:", normalizedWord);
+              forceRefreshProfile?.();
+            }
+          });
       }
 
       // Profilde en uzun kelimeyi güncelle (tüm modlar) - ASYNC, AWAIT'LEME
@@ -5187,7 +5201,7 @@ const GamePage = ({
               console.error("❌ Total score fetch error:", response.error);
               return;
             }
-            
+
             const currentProfile = response.data;
             const calculateLevel = (totalScore: number) => {
               const baseExp = 1000;
@@ -5208,7 +5222,10 @@ const GamePage = ({
             const bonusPoints = Math.floor(result.points * levelMultiplier);
             const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
 
-            supabase.from("profiles").update({ total_score: newTotalScore }).eq("id", user.id)
+            supabase
+              .from("profiles")
+              .update({ total_score: newTotalScore })
+              .eq("id", user.id)
               .then((updateResponse) => {
                 if (updateResponse.error) {
                   console.error("❌ Total score update error:", updateResponse.error);
@@ -5759,7 +5776,7 @@ const GamePage = ({
       timerRef.current = null;
       console.log("🧹 Cleared existing timer before countdown complete");
     }
-    
+
     // Initialize timer to full time for all modes
     const initial = currentRoom?.time_limit || 120;
     timeLeftRef.current = initial;
@@ -5802,510 +5819,562 @@ const GamePage = ({
             <CardContent className="p-6 text-center">
               <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin text-primary" />
               <p className="text-lg font-semibold mb-2">Maç Tamamlanıyor...</p>
-              <p className="text-sm text-muted-foreground">
-                Sonuçlar hesaplanıyor ve turnuva bracket'i güncelleniyor.
-              </p>
+              <p className="text-sm text-muted-foreground">Sonuçlar hesaplanıyor ve turnuva bracket'i güncelleniyor.</p>
             </CardContent>
           </Card>
         </div>
       )}
-      
+
       {/* Normal oyun render'ı - sadece isMatchFinishing false ise göster */}
       {(!isMatchFinishing || gameMode !== "tournament") && (
         <>
-      {showCountdown && (
-        <GameCountdown
-          key={currentRoom?.id || tournamentMatch?.id || "countdown"}
-          onComplete={handleCountdownComplete}
-          serverStartTime={countdownServerTime}
-          serverTimeOffset={serverTimeOffset}
-        />
-      )}
-      <div
-        key={currentRoom?.id || tournamentMatch?.id || "game-container"}
-        className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 relative overflow-hidden letters-background"
-        style={{
-          paddingTop: "calc(env(safe-area-inset-top, 8px) + 1rem)",
-          paddingBottom: "env(safe-area-inset-bottom, 8px)",
-          paddingLeft: "env(safe-area-inset-left, 4px)",
-          paddingRight: "env(safe-area-inset-right, 4px)",
-        }}
-      >
-        <div className="h-full flex flex-col px-2 relative z-15">
-          {/* Header - GÜNCELLENMIŞ */}
-          <div className="flex items-center justify-between py-2 shrink-0">
-            {/* Sol taraf - Geri butonu */}
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-xs px-2 py-1 h-8"
-              onClick={(e) => {
-                console.log("🚪 Çıkış butonuna tıklandı - gameMode:", gameMode);
-                e.preventDefault();
-                e.stopPropagation();
-                handleBackToMenu();
-              }}
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Çıkış
-            </Button>
-
-            {/* Orta kısım - Timer veya hedef + Turnuva bilgisi */}
-            {gameType === "timed" ? (
-              <div className="flex flex-col items-center space-y-2">
-                {/* 🏆 TURNUVA BİLGİSİ EKLENDİ */}
-                {gameMode === "tournament" && tournamentMatch && (
-                  <div className="text-xs text-yellow-600 font-medium mb-1">
-                    {tournamentMatch.round === 1
-                      ? "Çeyrek Final"
-                      : tournamentMatch.round === 2
-                        ? "Yarı Final"
-                        : "Final"}{" "}
-                    - Maç {tournamentMatch.match_number}
-                  </div>
-                )}
-
-                <div
-                  className={`flex items-center space-x-2 transition-all duration-300 ${
-                    displayTime <= 15 ? "animate-pulse text-red-500" : "text-foreground"
-                  }`}
+          {showCountdown && (
+            <GameCountdown
+              key={currentRoom?.id || tournamentMatch?.id || "countdown"}
+              onComplete={handleCountdownComplete}
+              serverStartTime={countdownServerTime}
+              serverTimeOffset={serverTimeOffset}
+            />
+          )}
+          <div
+            key={currentRoom?.id || tournamentMatch?.id || "game-container"}
+            className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 relative overflow-hidden letters-background"
+            style={{
+              paddingTop: "calc(env(safe-area-inset-top, 8px) + 1rem)",
+              paddingBottom: "env(safe-area-inset-bottom, 8px)",
+              paddingLeft: "env(safe-area-inset-left, 4px)",
+              paddingRight: "env(safe-area-inset-right, 4px)",
+            }}
+          >
+            <div className="h-full flex flex-col px-2 relative z-15">
+              {/* Header - GÜNCELLENMIŞ */}
+              <div className="flex items-center justify-between py-2 shrink-0">
+                {/* Sol taraf - Geri butonu */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs px-2 py-1 h-8"
+                  onClick={(e) => {
+                    console.log("🚪 Çıkış butonuna tıklandı - gameMode:", gameMode);
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleBackToMenu();
+                  }}
                 >
-                  <span
-                    className={`text-lg transition-all duration-300 inline-block ${
-                      displayTime <= 15 ? "animate-pulse text-red-500" : ""
-                    }`}
-                    style={{
-                      animation:
-                        displayTime <= 15
-                          ? "pulse 1s infinite, hourglassFlip 2s ease-in-out infinite"
-                          : "hourglassFlip 4s ease-in-out infinite",
-                    }}
-                  >
-                    ⏳
-                  </span>
-                  <span
-                    className={`font-mono text-lg font-bold transition-all duration-300 ${
-                      displayTime <= 15 ? "text-red-500 scale-110" : ""
-                    }`}
-                  >
-                    {formatTime(displayTime)}
-                  </span>
-                </div>
-                <div className="w-32 h-1 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className={`h-full transition-all duration-1000 ease-out ${
-                      displayTime <= 15
-                        ? "bg-red-500 animate-pulse"
-                        : displayTime <= 30
-                          ? "bg-orange-500"
-                          : "bg-green-500"
-                    }`}
-                    style={{ width: `${(displayTime / 120) * 100}%` }}
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center space-y-1">
-                {/* 🏆 TURNUVA BİLGİSİ EKLENDİ */}
-                {gameMode === "tournament" && tournamentMatch && (
-                  <div className="text-xs text-yellow-600 font-medium">
-                    {tournamentMatch.round === 1
-                      ? "Çeyrek Final"
-                      : tournamentMatch.round === 2
-                        ? "Yarı Final"
-                        : "Final"}{" "}
-                    - Maç {tournamentMatch.match_number}
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Çıkış
+                </Button>
+
+                {/* Orta kısım - Timer veya hedef + Turnuva bilgisi */}
+                {gameType === "timed" ? (
+                  <div className="flex flex-col items-center space-y-2">
+                    {/* 🏆 TURNUVA BİLGİSİ EKLENDİ */}
+                    {gameMode === "tournament" && tournamentMatch && (
+                      <div className="text-xs text-yellow-600 font-medium mb-1">
+                        {tournamentMatch.round === 1
+                          ? "Çeyrek Final"
+                          : tournamentMatch.round === 2
+                            ? "Yarı Final"
+                            : "Final"}{" "}
+                        - Maç {tournamentMatch.match_number}
+                      </div>
+                    )}
+
+                    <div
+                      className={`flex items-center space-x-2 transition-all duration-300 ${
+                        displayTime <= 15 ? "animate-pulse text-red-500" : "text-foreground"
+                      }`}
+                    >
+                      <span
+                        className={`text-lg transition-all duration-300 inline-block ${
+                          displayTime <= 15 ? "animate-pulse text-red-500" : ""
+                        }`}
+                        style={{
+                          animation:
+                            displayTime <= 15
+                              ? "pulse 1s infinite, hourglassFlip 2s ease-in-out infinite"
+                              : "hourglassFlip 4s ease-in-out infinite",
+                        }}
+                      >
+                        ⏳
+                      </span>
+                      <span
+                        className={`font-mono text-lg font-bold transition-all duration-300 ${
+                          displayTime <= 15 ? "text-red-500 scale-110" : ""
+                        }`}
+                      >
+                        {formatTime(displayTime)}
+                      </span>
+                    </div>
+                    <div className="w-32 h-1 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className={`h-full transition-all duration-1000 ease-out ${
+                          displayTime <= 15
+                            ? "bg-red-500 animate-pulse"
+                            : displayTime <= 30
+                              ? "bg-orange-500"
+                              : "bg-green-500"
+                        }`}
+                        style={{ width: `${(displayTime / 120) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center space-y-1">
+                    {/* 🏆 TURNUVA BİLGİSİ EKLENDİ */}
+                    {gameMode === "tournament" && tournamentMatch && (
+                      <div className="text-xs text-yellow-600 font-medium">
+                        {tournamentMatch.round === 1
+                          ? "Çeyrek Final"
+                          : tournamentMatch.round === 2
+                            ? "Yarı Final"
+                            : "Final"}{" "}
+                        - Maç {tournamentMatch.match_number}
+                      </div>
+                    )}
+
+                    <div className="flex items-center space-x-2">
+                      <Target className="w-4 h-4" />
+                      <span className="text-sm font-medium">500 Puana Kadar</span>
+                    </div>
                   </div>
                 )}
 
-                <div className="flex items-center space-x-2">
-                  <Target className="w-4 h-4" />
-                  <span className="text-sm font-medium">500 Puana Kadar</span>
+                {/* Sağ taraf - Rakip bilgisi */}
+                <div className="w-16 text-right">
+                  {gameMode === "tournament" && (
+                    <div className="text-xs text-muted-foreground">vs {getOpponentDisplayName()}</div>
+                  )}
                 </div>
               </div>
-            )}
+              {/* Header bitiş */}
 
-            {/* Sağ taraf - Rakip bilgisi */}
-            <div className="w-16 text-right">
+              {/* 🏆 TURNUVA UYARI KARTI EKLENDİ */}
               {gameMode === "tournament" && (
-                <div className="text-xs text-muted-foreground">vs {getOpponentDisplayName()}</div>
+                <div className="mb-4">
+                  <Card className="border-yellow-200 bg-yellow-50">
+                    <CardContent className="p-3">
+                      <div className="flex items-center space-x-2">
+                        <Trophy className="w-4 h-4 text-yellow-600" />
+                        <span className="text-xs font-medium text-yellow-800">
+                          Turnuva maçı! Kazanırsan sonraki tura geçeceksin.
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
               )}
-            </div>
-          </div>
-          {/* Header bitiş */}
 
-          {/* 🏆 TURNUVA UYARI KARTI EKLENDİ */}
-          {gameMode === "tournament" && (
-            <div className="mb-4">
-              <Card className="border-yellow-200 bg-yellow-50">
-                <CardContent className="p-3">
-                  <div className="flex items-center space-x-2">
-                    <Trophy className="w-4 h-4 text-yellow-600" />
-                    <span className="text-xs font-medium text-yellow-800">
-                      Turnuva maçı! Kazanırsan sonraki tura geçeceksin.
-                    </span>
+              {/* Scores */}
+              <div className="grid grid-cols-2 gap-4">
+                <Card className="silver-gradient border border-gray-300 shadow-lg">
+                  <CardContent className="p-4 text-center relative overflow-hidden">
+                    <Avatar className="w-16 h-16 mx-auto mb-2">
+                      <AvatarImage src={profile?.avatar_url || user?.user_metadata?.avatar_url} alt="Profile" />
+                      <AvatarFallback>
+                        <User className="w-8 h-8 text-gray-600" />
+                      </AvatarFallback>
+                    </Avatar>
+                    <p className="text-sm text-gray-700 font-bold font-bungee">Siz</p>
+                    <p className="text-2xl font-bold text-gray-700">{playerScore}</p>
+                    {gameType === "score" && (
+                      <Progress value={(playerScore / 500) * 100} className="mt-2 bg-white/60" />
+                    )}
+                  </CardContent>
+                </Card>
+                <Card className="silver-gradient border border-gray-300 shadow-lg">
+                  <CardContent className="p-4 text-center relative overflow-hidden">
+                    {/* Normal kart içeriği - her zaman göster */}
+                    <Avatar className="w-16 h-16 mx-auto mb-2 bg-transparent">
+                      <AvatarImage src={opponent.avatar} alt="Opponent" />
+                      <AvatarFallback>
+                        <opponent.icon className="w-8 h-8 text-gray-600" />
+                      </AvatarFallback>
+                    </Avatar>
+                    <p className="text-sm text-gray-700 font-bold font-bungee">{opponent.name}</p>
+                    <p className="text-2xl font-bold text-gray-700">{opponentScore}</p>
+                    {gameType === "score" && (
+                      <Progress value={(opponentScore / 500) * 100} className="mt-2 bg-white/60" />
+                    )}
+
+                    {/* Hazırlık overlay - absolute positioned */}
+                    {preparingOpponent && (
+                      <div className="absolute inset-0 bg-silver-gradient/95 backdrop-blur-sm flex items-center justify-center">
+                        {preparingOpponent === "preparing" ? (
+                          <div className="text-center animate-pulse">
+                            <p className="text-sm font-bold text-gray-700">Oyuncu Hazırlanıyor...</p>
+                            <div className="flex gap-1 justify-center mt-2">
+                              <div
+                                className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                                style={{ animationDelay: "0ms" }}
+                              ></div>
+                              <div
+                                className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                                style={{ animationDelay: "150ms" }}
+                              ></div>
+                              <div
+                                className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                                style={{ animationDelay: "300ms" }}
+                              ></div>
+                            </div>
+                          </div>
+                        ) : (
+                          <Badge variant="default" className="text-sm font-semibold animate-pulse bg-green-500">
+                            ✓ Oyuncu Hazır!
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Joker Panel - EN ÖNEMLİ KISIM! */}
+              <Card className="bg-gradient-to-r from-amber-50 to-orange-100 border-amber-200 shadow-md">
+                <CardContent className="p-2">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-sm font-bold text-purple-800 mb-2">🎭 Jokerler</h3>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1">
+                    <Button
+                      variant={selectedJoker === "degistir" ? "default" : "outline"}
+                      size="sm"
+                      className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-green-100 to-emerald-200 hover:from-green-200 hover:to-emerald-300 border-green-300"
+                      onTouchStart={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        useDegisTirJoker();
+                      }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        useDegisTirJoker();
+                      }}
+                      disabled={jokers.degistir <= 0 || isJokerActive || !gameStarted}
+                      style={{
+                        touchAction: "manipulation",
+                        WebkitTapHighlightColor: "transparent",
+                      }}
+                    >
+                      <Shuffle className="w-3 h-3 mb-0.5" />
+                      <span className="text-xs">Değiştir</span>
+                      <Badge
+                        variant="secondary"
+                        className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center"
+                      >
+                        {jokers.degistir}
+                      </Badge>
+                    </Button>
+
+                    <Button
+                      variant={selectedJoker === "fisilida" ? "default" : "outline"}
+                      size="sm"
+                      className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-blue-100 to-cyan-200 hover:from-blue-200 hover:to-cyan-300 border-blue-300"
+                      onTouchStart={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        useFisildaJoker();
+                      }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        useFisildaJoker();
+                      }}
+                      disabled={jokers.fisilida <= 0 || isJokerActive || !gameStarted}
+                      style={{
+                        touchAction: "manipulation",
+                        WebkitTapHighlightColor: "transparent",
+                      }}
+                    >
+                      <Lightbulb className="w-4 h-4 mb-1" />
+                      <span className="text-xs">Fısılda</span>
+                      <Badge
+                        variant="secondary"
+                        className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center"
+                      >
+                        {jokers.fisilida}
+                      </Badge>
+                    </Button>
+
+                    <Button
+                      variant={selectedJoker === "senYaz" ? "default" : "outline"}
+                      size="sm"
+                      className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-purple-100 to-violet-200 hover:from-purple-200 hover:to-violet-300 border-purple-300"
+                      onTouchStart={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        useSenYazJoker();
+                      }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        useSenYazJoker();
+                      }}
+                      disabled={jokers.senYaz <= 0 || isJokerActive || !gameStarted}
+                      style={{
+                        touchAction: "manipulation",
+                        WebkitTapHighlightColor: "transparent",
+                      }}
+                    >
+                      <PenTool className="w-4 h-4 mb-1" />
+                      <span className="text-xs">Sen Yaz</span>
+                      <Badge
+                        variant="secondary"
+                        className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center"
+                      >
+                        {jokers.senYaz}
+                      </Badge>
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
-            </div>
-          )}
 
-          {/* Scores */}
-          <div className="grid grid-cols-2 gap-4">
-            <Card className="silver-gradient border border-gray-300 shadow-lg">
-              <CardContent className="p-4 text-center relative overflow-hidden">
-                <Avatar className="w-16 h-16 mx-auto mb-2">
-                  <AvatarImage src={profile?.avatar_url || user?.user_metadata?.avatar_url} alt="Profile" />
-                  <AvatarFallback>
-                    <User className="w-8 h-8 text-gray-600" />
-                  </AvatarFallback>
-                </Avatar>
-                <p className="text-sm text-gray-700 font-bold font-bungee">Siz</p>
-                <p className="text-2xl font-bold text-gray-700">{playerScore}</p>
-                {gameType === "score" && <Progress value={(playerScore / 500) * 100} className="mt-2 bg-white/60" />}
-              </CardContent>
-            </Card>
-            <Card className="silver-gradient border border-gray-300 shadow-lg">
-              <CardContent className="p-4 text-center relative overflow-hidden">
-                {/* Normal kart içeriği - her zaman göster */}
-                <Avatar className="w-16 h-16 mx-auto mb-2 bg-transparent">
-                  <AvatarImage src={opponent.avatar} alt="Opponent" />
-                  <AvatarFallback>
-                    <opponent.icon className="w-8 h-8 text-gray-600" />
-                  </AvatarFallback>
-                </Avatar>
-                <p className="text-sm text-gray-700 font-bold font-bungee">{opponent.name}</p>
-                <p className="text-2xl font-bold text-gray-700">{opponentScore}</p>
-                {gameType === "score" && <Progress value={(opponentScore / 500) * 100} className="mt-2 bg-white/60" />}
+              {/* Current Word Input */}
+              <Card className="game-grid border-0">
+                <CardContent className="p-2">
+                  <div className="flex items-center justify-center space-x-2 w-full">
+                    {/* Input Görünümlü Div Container */}
+                    <div
+                      className={`flex items-center justify-center h-12 w-full rounded-md bg-white/20 backdrop-blur-sm transition-all duration-200 px-3 relative overflow-hidden ${
+                        isJokerActive ? "typing-animation" : ""
+                      } ${
+                        inputFlash === "success"
+                          ? "border-2 border-green-400 shadow-[0_0_12px_rgba(74,222,128,0.6)]"
+                          : inputFlash === "error"
+                            ? "border-2 border-red-400 shadow-[0_0_12px_rgba(248,113,113,0.6)]"
+                            : "border border-white/30"
+                      }`}
+                    >
+                      {/* Placeholder (Eğer kelime boşsa göster) */}
+                      {selectedLetters.length === 0 && !isJokerActive && (
+                        <span className="text-white/70 font-bold font-mono text-lg animate-pulse">~Kelime Üret~</span>
+                      )}
 
-                {/* Hazırlık overlay - absolute positioned */}
-                {preparingOpponent && (
-                  <div className="absolute inset-0 bg-silver-gradient/95 backdrop-blur-sm flex items-center justify-center">
-                    {preparingOpponent === "preparing" ? (
-                      <div className="text-center animate-pulse">
-                        <p className="text-sm font-bold text-gray-700">Oyuncu Hazırlanıyor...</p>
-                        <div className="flex gap-1 justify-center mt-2">
-                          <div
-                            className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                            style={{ animationDelay: "0ms" }}
-                          ></div>
-                          <div
-                            className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                            style={{ animationDelay: "150ms" }}
-                          ></div>
-                          <div
-                            className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                            style={{ animationDelay: "300ms" }}
-                          ></div>
-                        </div>
+                      {/* Seçilen Harfler (Uçarak Gelenler) */}
+                      <div className="flex gap-1 items-center justify-center z-10">
+                        {selectedLetters.map((item) => (
+                          <motion.span
+                            key={`input-${item.row}-${item.col}`}
+                            layoutId={`letter-${item.row}-${item.col}`} // SİHİRLİ KISIM: Grid ile aynı ID
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.5 }}
+                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                            className="text-2xl font-mono font-bold text-white drop-shadow-md"
+                          >
+                            {item.letter}
+                          </motion.span>
+                        ))}
+
+                        {/* Joker yazıyorsa veya manuel input varsa buraya eklenir (CurrentWord state'i ile senkronize kalması için) */}
+                        {/* Not: Jokerler direkt selectedLetters'ı doldurduğu için yukarıdaki map yeterli olacaktır. */}
                       </div>
-                    ) : (
-                      <Badge variant="default" className="text-sm font-semibold animate-pulse bg-green-500">
-                        ✓ Oyuncu Hazır!
-                      </Badge>
+                    </div>
+
+                    <Badge
+                      variant="secondary"
+                      className="bg-white/20 text-white text-sm px-2 py-0.5 min-w-8 h-8 flex items-center justify-center shrink-0"
+                    >
+                      {currentWord.length}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Game Grid */}
+              <Card className="game-grid border-0 mb-2 flex-1">
+                <CardContent className="p-3 h-full flex items-center justify-center">
+                  <div className="grid grid-cols-4 gap-2 w-full max-w-xs">
+                    {gameGrid.map((row, rowIndex) =>
+                      row.map((letter, colIndex) => {
+                        const isSelected = selectedLetters.some((s) => s.row === rowIndex && s.col === colIndex);
+                        const isHighlighted = highlightedLetters.some((h) => h.row === rowIndex && h.col === colIndex);
+                        const selectionOrder = selectedLetters.findIndex(
+                          (s) => s.row === rowIndex && s.col === colIndex,
+                        );
+                        return (
+                          <Button
+                            key={`${rowIndex}-${colIndex}`}
+                            className={`letter-button h-12 text-lg font-bold relative transition-all duration-300 overflow-visible ${
+                              isSelected ? "selected border-green-400 bg-green-900/40" : ""
+                            } ${isHighlighted ? "letter-glow-highlight" : ""} ${
+                              !gameStarted ? "opacity-50 cursor-not-allowed" : ""
+                            }`}
+                            disabled={!gameStarted}
+                            // ... onTouchStart ve onClick handler'ları AYNI KALSIN ...
+                            onTouchStart={(e) => {
+                              if (!gameStarted) return;
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleLetterClick(letter, rowIndex, colIndex);
+                            }}
+                            onClick={(e) => {
+                              if (!gameStarted) return;
+                              if (e.nativeEvent && "touches" in e.nativeEvent) return;
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleLetterClick(letter, rowIndex, colIndex);
+                            }}
+                            style={{
+                              touchAction: "manipulation",
+                              WebkitTapHighlightColor: "transparent",
+                              WebkitTouchCallout: "none",
+                              WebkitUserSelect: "none",
+                              userSelect: "none",
+                              pointerEvents: !gameStarted ? "none" : "auto",
+                            }}
+                          >
+                            {/* 1. KATMAN: SABİT HAYALET HARF (Izgarada sönük kalan) */}
+                            <span
+                              className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${isSelected ? "opacity-40 text-gray-400" : "opacity-0"}`}
+                            >
+                              {letter}
+                            </span>
+
+                            {/* 2. KATMAN: UÇAN HARF (Seçilince Input'a gider) */}
+                            {/* Sadece seçili DEĞİLSE render et, seçili olduğu an Input'taki motion.span devreye girer */}
+                            {!isSelected && (
+                              <motion.span
+                                layoutId={`letter-${rowIndex}-${colIndex}`} // SİHİRLİ KISIM
+                                className="relative z-10"
+                                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                              >
+                                {letter}
+                              </motion.span>
+                            )}
+
+                            {/* Sıra Numarası Rozeti */}
+                            {isSelected && selectionOrder >= 0 && (
+                              <motion.span
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                className="absolute -top-2 -right-2 bg-green-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-bold border-2 border-white z-20 shadow-sm"
+                              >
+                                {selectionOrder + 1}
+                              </motion.span>
+                            )}
+                          </Button>
+                        );
+                      }),
                     )}
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+
+              {/* Action Buttons */}
+              <div className="grid grid-cols-2 gap-2 shrink-0">
+                <Button
+                  variant="outline"
+                  onTouchStart={(e) => {
+                    if (!gameStarted) return;
+                    e.preventDefault();
+                    clearWord();
+                  }}
+                  onClick={(e) => {
+                    if (!gameStarted) return;
+                    e.preventDefault();
+                    clearWord();
+                  }}
+                  className="h-12"
+                  disabled={selectedLetters.length === 0 || isJokerActive || !gameStarted}
+                  style={{ touchAction: "manipulation" }}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Sil
+                </Button>
+
+                <Button
+                  onTouchStart={(e) => {
+                    if (!gameStarted) return;
+                    e.preventDefault();
+                    submitTouchTsRef.current = Date.now();
+                    playSound("buttonClick");
+                    submitWord();
+                  }}
+                  onClick={(e) => {
+                    if (!gameStarted) return;
+                    e.preventDefault();
+                    // Dokunmatik cihazlarda çift tetiklemeyi önle
+                    if (Date.now() - submitTouchTsRef.current < 500) return;
+                    playSound("buttonClick");
+                    submitWord();
+                  }}
+                  className="h-12"
+                  disabled={currentWord.length < 3 || isValidating || isJokerActive || !gameStarted}
+                  style={{ touchAction: "manipulation" }}
+                >
+                  <Send className="w-4 h-4 mr-2" />
+                  {isValidating ? "Kontrol Ediliyor..." : "Gönder"}
+                </Button>
+              </div>
+            </div>
           </div>
 
-          {/* Joker Panel - EN ÖNEMLİ KISIM! */}
-          <Card className="bg-gradient-to-r from-amber-50 to-orange-100 border-amber-200 shadow-md">
-            <CardContent className="p-2">
-              <div className="flex justify-between items-center">
-                <h3 className="text-sm font-bold text-purple-800 mb-2">🎭 Jokerler</h3>
-              </div>
-              <div className="grid grid-cols-3 gap-1">
-                <Button
-                  variant={selectedJoker === "degistir" ? "default" : "outline"}
-                  size="sm"
-                  className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-green-100 to-emerald-200 hover:from-green-200 hover:to-emerald-300 border-green-300"
-                  onTouchStart={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    useDegisTirJoker();
+          {/* Exit Confirmation Dialog */}
+          <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
+            <AlertDialogContent className="max-w-sm mx-auto">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-center">⚠️ Aktif Oyun Uyarısı</AlertDialogTitle>
+                <AlertDialogDescription className="text-center">
+                  Şu an aktif bir oyun oynuyorsun!
+                  <br />
+                  <br />
+                  Oyundan çıkarsan <span className="font-bold text-destructive">ceza alacaksın</span> ve rakibin
+                  kazanacak.
+                  <br />
+                  <br />
+                  <span className="text-muted-foreground text-sm">Emin misin?</span>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="flex-col space-y-2 sm:flex-col sm:space-y-2 sm:space-x-0">
+                <AlertDialogAction
+                  onClick={async () => {
+                    setShowExitDialog(false);
+                    if (currentRoom) {
+                      await leaveRoom();
+                    }
+                    navigate("/");
                   }}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    useDegisTirJoker();
-                  }}
-                  disabled={jokers.degistir <= 0 || isJokerActive || !gameStarted}
-                  style={{
-                    touchAction: "manipulation",
-                    WebkitTapHighlightColor: "transparent",
-                  }}
+                  className="w-full bg-destructive hover:bg-destructive/90"
                 >
-                  <Shuffle className="w-3 h-3 mb-0.5" />
-                  <span className="text-xs">Değiştir</span>
-                  <Badge
-                    variant="secondary"
-                    className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center"
-                  >
-                    {jokers.degistir}
-                  </Badge>
-                </Button>
+                  🚪 Evet, Çıkış Yap
+                </AlertDialogAction>
+                <AlertDialogCancel className="w-full">🎮 Hayır, Oyuna Devam Et</AlertDialogCancel>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
-                <Button
-                  variant={selectedJoker === "fisilida" ? "default" : "outline"}
-                  size="sm"
-                  className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-blue-100 to-cyan-200 hover:from-blue-200 hover:to-cyan-300 border-blue-300"
-                  onTouchStart={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    useFisildaJoker();
+          {/* Tournament Exit Dialog */}
+          <AlertDialog open={showTournamentExitDialog} onOpenChange={setShowTournamentExitDialog}>
+            <AlertDialogContent className="max-w-sm mx-auto">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-center">⚠️ Turnuva Maçı Uyarısı</AlertDialogTitle>
+                <AlertDialogDescription className="text-center">
+                  Turnuva maçından ayrılırsan:
+                  <br />
+                  <br />• <span className="font-bold text-destructive">Maçı kaybedersin</span>
+                  <br />• <span className="font-bold text-yellow-600">Rakip kazanır</span>
+                  <br />• <span className="font-bold text-blue-600">Turnuvadan elenirsin</span>
+                  <br />
+                  <br />
+                  <span className="text-muted-foreground text-sm">Emin misin?</span>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="flex-col space-y-2 sm:flex-col sm:space-y-2 sm:space-x-0">
+                <AlertDialogAction
+                  onClick={async () => {
+                    setShowTournamentExitDialog(false);
+                    await handleTournamentExit();
+                    // navigate('/'); satırını kaldır - handleTournamentExit içinde zaten parent'e bildirim yapılıyor
                   }}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    useFisildaJoker();
-                  }}
-                  disabled={jokers.fisilida <= 0 || isJokerActive || !gameStarted}
-                  style={{
-                    touchAction: "manipulation",
-                    WebkitTapHighlightColor: "transparent",
-                  }}
+                  className="w-full bg-destructive hover:bg-destructive/90"
                 >
-                  <Lightbulb className="w-4 h-4 mb-1" />
-                  <span className="text-xs">Fısılda</span>
-                  <Badge
-                    variant="secondary"
-                    className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center"
-                  >
-                    {jokers.fisilida}
-                  </Badge>
-                </Button>
-
-                <Button
-                  variant={selectedJoker === "senYaz" ? "default" : "outline"}
-                  size="sm"
-                  className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-purple-100 to-violet-200 hover:from-purple-200 hover:to-violet-300 border-purple-300"
-                  onTouchStart={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    useSenYazJoker();
-                  }}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    useSenYazJoker();
-                  }}
-                  disabled={jokers.senYaz <= 0 || isJokerActive || !gameStarted}
-                  style={{
-                    touchAction: "manipulation",
-                    WebkitTapHighlightColor: "transparent",
-                  }}
-                >
-                  <PenTool className="w-4 h-4 mb-1" />
-                  <span className="text-xs">Sen Yaz</span>
-                  <Badge
-                    variant="secondary"
-                    className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center"
-                  >
-                    {jokers.senYaz}
-                  </Badge>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Current Word Input */}
-          <Card className="game-grid border-0">
-            <CardContent className="p-2">
-              <div className="flex items-center space-x-2">
-                <Input
-                  value={currentWord}
-                  readOnly
-                  placeholder="~Kelime Üret~"
-                  className={`text-lg font-mono text-center bg-white/20 backdrop-blur-sm text-white placeholder:text-white/70 font-bold h-8 transition-all duration-200 ${
-                    isJokerActive ? "typing-animation" : ""
-                  } ${
-                    inputFlash === 'success' 
-                      ? 'border-2 border-green-400 shadow-[0_0_12px_rgba(74,222,128,0.6)]' 
-                      : inputFlash === 'error' 
-                      ? 'border-2 border-red-400 shadow-[0_0_12px_rgba(248,113,113,0.6)]' 
-                      : 'border-white/30'
-                  }`}
-                />
-                <Badge
-                  variant="secondary"
-                  className="bg-white/20 text-white text-sm px-2 py-0.5 min-w-8 h-8 flex items-center justify-center"
-                >
-                  {currentWord.length}
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Game Grid */}
-          <Card className="game-grid border-0 mb-2 flex-1">
-            <CardContent className="p-3 h-full flex items-center justify-center">
-              <div className="grid grid-cols-4 gap-2 w-full max-w-xs">
-                {gameGrid.map((row, rowIndex) =>
-                  row.map((letter, colIndex) => {
-                    const isSelected = selectedLetters.some((s) => s.row === rowIndex && s.col === colIndex);
-                    const isHighlighted = highlightedLetters.some((h) => h.row === rowIndex && h.col === colIndex);
-                    const selectionOrder = selectedLetters.findIndex((s) => s.row === rowIndex && s.col === colIndex);
-                    return (
-                      <Button
-                        key={`${rowIndex}-${colIndex}`}
-                        className={`letter-button h-12 text-lg font-bold relative transition-all duration-300 ${
-                          isSelected ? "selected" : ""
-                        } ${isHighlighted ? "letter-glow-highlight" : ""} ${
-                          !gameStarted ? "opacity-50 cursor-not-allowed" : ""
-                        }`}
-                        disabled={!gameStarted}
-                        onTouchStart={(e) => {
-                          if (!gameStarted) return;
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleLetterClick(letter, rowIndex, colIndex);
-                        }}
-                        onClick={(e) => {
-                          if (!gameStarted) return;
-                          // Sadece touch event olmadığında çalışsın (çift tetiklemeyi engeller)
-                          if (e.nativeEvent && "touches" in e.nativeEvent) return;
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleLetterClick(letter, rowIndex, colIndex);
-                        }}
-                        style={{
-                          touchAction: "manipulation",
-                          WebkitTapHighlightColor: "transparent",
-                          WebkitTouchCallout: "none",
-                          WebkitUserSelect: "none",
-                          userSelect: "none",
-                          pointerEvents: !gameStarted ? "none" : "auto",
-                        }}
-                      >
-                        {letter}
-                        {isSelected && selectionOrder >= 0 && (
-                          <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold border-2 border-white">
-                            {selectionOrder + 1}
-                          </span>
-                        )}
-                      </Button>
-                    );
-                  }),
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Action Buttons */}
-          <div className="grid grid-cols-2 gap-2 shrink-0">
-            <Button
-              variant="outline"
-              onTouchStart={(e) => {
-                if (!gameStarted) return;
-                e.preventDefault();
-                clearWord();
-              }}
-              onClick={(e) => {
-                if (!gameStarted) return;
-                e.preventDefault();
-                clearWord();
-              }}
-              className="h-12"
-              disabled={selectedLetters.length === 0 || isJokerActive || !gameStarted}
-              style={{ touchAction: "manipulation" }}
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Sil
-            </Button>
-
-            <Button
-              onTouchStart={(e) => {
-                if (!gameStarted) return;
-                e.preventDefault();
-                submitTouchTsRef.current = Date.now();
-                playSound("buttonClick");
-                submitWord();
-              }}
-              onClick={(e) => {
-                if (!gameStarted) return;
-                e.preventDefault();
-                // Dokunmatik cihazlarda çift tetiklemeyi önle
-                if (Date.now() - submitTouchTsRef.current < 500) return;
-                playSound("buttonClick");
-                submitWord();
-              }}
-              className="h-12"
-              disabled={currentWord.length < 3 || isValidating || isJokerActive || !gameStarted}
-              style={{ touchAction: "manipulation" }}
-            >
-              <Send className="w-4 h-4 mr-2" />
-              {isValidating ? "Kontrol Ediliyor..." : "Gönder"}
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Exit Confirmation Dialog */}
-      <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
-        <AlertDialogContent className="max-w-sm mx-auto">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-center">⚠️ Aktif Oyun Uyarısı</AlertDialogTitle>
-            <AlertDialogDescription className="text-center">
-              Şu an aktif bir oyun oynuyorsun!
-              <br />
-              <br />
-              Oyundan çıkarsan <span className="font-bold text-destructive">ceza alacaksın</span> ve rakibin kazanacak.
-              <br />
-              <br />
-              <span className="text-muted-foreground text-sm">Emin misin?</span>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col space-y-2 sm:flex-col sm:space-y-2 sm:space-x-0">
-            <AlertDialogAction
-              onClick={async () => {
-                setShowExitDialog(false);
-                if (currentRoom) {
-                  await leaveRoom();
-                }
-                navigate("/");
-              }}
-              className="w-full bg-destructive hover:bg-destructive/90"
-            >
-              🚪 Evet, Çıkış Yap
-            </AlertDialogAction>
-            <AlertDialogCancel className="w-full">🎮 Hayır, Oyuna Devam Et</AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Tournament Exit Dialog */}
-      <AlertDialog open={showTournamentExitDialog} onOpenChange={setShowTournamentExitDialog}>
-        <AlertDialogContent className="max-w-sm mx-auto">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-center">⚠️ Turnuva Maçı Uyarısı</AlertDialogTitle>
-            <AlertDialogDescription className="text-center">
-              Turnuva maçından ayrılırsan:
-              <br />
-              <br />• <span className="font-bold text-destructive">Maçı kaybedersin</span>
-              <br />• <span className="font-bold text-yellow-600">Rakip kazanır</span>
-              <br />• <span className="font-bold text-blue-600">Turnuvadan elenirsin</span>
-              <br />
-              <br />
-              <span className="text-muted-foreground text-sm">Emin misin?</span>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col space-y-2 sm:flex-col sm:space-y-2 sm:space-x-0">
-            <AlertDialogAction
-              onClick={async () => {
-                setShowTournamentExitDialog(false);
-                await handleTournamentExit();
-                // navigate('/'); satırını kaldır - handleTournamentExit içinde zaten parent'e bildirim yapılıyor
-              }}
-              className="w-full bg-destructive hover:bg-destructive/90"
-            >
-              Evet, Ayrıl
-            </AlertDialogAction>
-            <AlertDialogCancel className="w-full">🏆 Hayır, Maça Devam Et</AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+                  Evet, Ayrıl
+                </AlertDialogAction>
+                <AlertDialogCancel className="w-full">🏆 Hayır, Maça Devam Et</AlertDialogCancel>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </>
       )}
     </>
