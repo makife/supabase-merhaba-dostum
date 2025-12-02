@@ -218,7 +218,7 @@ const TournamentBracketPage = () => {
 
       // Round completion kontrolünü geciktir (gerçek oyuncu maçları bitmesini bekle)
       setTimeout(() => {
-        checkAndAdvanceRound(round);
+        await checkAndAdvanceRound(round);
       }, 2000);
     } catch (error) {
       console.error("Error simulating bot matches:", error);
