@@ -59,13 +59,23 @@ const TournamentBracketPage = () => {
       // Start all pending matches in specified or current round
       const currentRound = forceRound ?? (currentTournament?.current_round || 1);
 
+      console.log(`🎬 Starting matches for round ${currentRound}...`);
+
       // Update all pending matches to in_progress
-      await supabase
+      const { data: updateResult, error: updateError } = await supabase
         .from("tournament_matches")
         .update({ status: "in_progress", updated_at: new Date().toISOString() })
         .eq("tournament_id", tournamentId)
         .eq("round", currentRound)
-        .eq("status", "pending");
+        .eq("status", "pending")
+        .select();
+
+      if (updateError) {
+        console.error("❌ Failed to update matches to in_progress:", updateError);
+        return;
+      }
+
+      console.log(`✅ Updated ${updateResult?.length || 0} matches to in_progress`);
 
       // Simulate bot matches completion
       await simulateBotMatches(currentRound);
@@ -76,6 +86,8 @@ const TournamentBracketPage = () => {
 
   const simulateBotMatches = async (round: number) => {
     try {
+      console.log(`🤖 simulateBotMatches called for round ${round}`);
+
       // Önce tüm katılımcıları al ve bot durumlarını kontrol et
       const { data: participants } = await supabase
         .from("tournament_participants")
@@ -95,14 +107,24 @@ const TournamentBracketPage = () => {
 
       console.log("🗺️ Bot mapping:", Array.from(botMap.entries()));
 
-      const { data: botMatches } = await supabase
+      const { data: botMatches, error: matchError } = await supabase
         .from("tournament_matches")
         .select("*")
         .eq("tournament_id", tournamentId)
         .eq("round", round)
         .eq("status", "in_progress");
 
-      if (!botMatches) return;
+      if (matchError) {
+        console.error("❌ Error fetching in_progress matches:", matchError);
+        return;
+      }
+
+      if (!botMatches || botMatches.length === 0) {
+        console.log("⚠️ No in_progress matches found for round", round);
+        return;
+      }
+
+      console.log(`📋 Found ${botMatches.length} in_progress matches for round ${round}`);
 
       // Process each match
       for (const match of botMatches) {
