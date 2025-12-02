@@ -364,6 +364,25 @@ const TournamentBracketPage = () => {
     }
   }, [matches, tournamentId, currentTournament, user, playSpecialSound, showChampion, showEliminated]);
 
+  // Bot maçlarını otomatik tamamla (bracket page açıldığında)
+  useEffect(() => {
+    if (!tournamentId || !currentTournament || currentTournament.status !== "in_progress") return;
+    if (matches.length === 0) return;
+
+    const currentRound = currentTournament.current_round;
+    if (!currentRound) return;
+
+    // Mevcut round'daki "in_progress" durumunda bot maçları var mı kontrol et
+    const inProgressMatches = matches.filter(
+      (m) => m.round === currentRound && m.status === "in_progress"
+    );
+
+    if (inProgressMatches.length > 0) {
+      console.log(`🤖 Bracket page açıldı - ${inProgressMatches.length} in_progress maç bulundu, bot maçları tamamlanacak`);
+      simulateBotMatches(currentRound);
+    }
+  }, [tournamentId, currentTournament?.status, currentTournament?.current_round, matches.length]);
+
   // Matches güncellendiğinde round advancement kontrolü yap
   useEffect(() => {
     if (!tournamentId || !currentTournament || currentTournament.status !== "in_progress") return;
