@@ -128,13 +128,9 @@ const TournamentBracketPage = () => {
 
       // Process each match
       for (const match of botMatches) {
-        // Bot kontrolü: ID 'bot_' ile başlıyorsa KESİN bottur.
-        // Map'e bakmaya gerek yok, çünkü generateBotName yaparken zaten ID'ye bot_ koyuyorsun.
+        // Bot kontrolü
         const player1IsBot = match.player1_id?.startsWith("bot_") || false;
         const player2IsBot = match.player2_id?.startsWith("bot_") || false;
-
-        // ⚠️ EKSTRA KONTROL: Eğer bir taraf NULL ise ve diğer taraf BOT ise, bunu da bot maçı sayabiliriz (hata toleransı)
-        // Ama şimdilik sadece Bot vs Bot'a odaklanalım.
 
         console.log("🔍 Processing match:", {
           matchId: match.id.slice(-8),
@@ -148,7 +144,7 @@ const TournamentBracketPage = () => {
           console.log("🤖 Both players are bots, AUTO-COMPLETING NOW via RPC/Update");
 
           // Rastgele skorlar
-          const score1 = Math.floor(Math.random() * 50) + 30; // Biraz daha yüksek puanlar
+          const score1 = Math.floor(Math.random() * 50) + 30;
           const score2 = Math.floor(Math.random() * 50) + 30;
 
           // Beraberlik önleme
@@ -175,8 +171,6 @@ const TournamentBracketPage = () => {
           // Gerçek oyuncu varsa: SERVER-SIDE countdown başlat (RPC ile)
           console.log(`👤 Real player match detected, starting server-side countdown via RPC`);
 
-          // Önce match'e room_id ataması gerekiyor, countdown RPC'si room_id bekliyor
-          // Tournament maçları için room_id'yi match_id olarak kullanabiliriz
           await supabase
             .from("tournament_matches")
             .update({
@@ -193,7 +187,6 @@ const TournamentBracketPage = () => {
           if (!rpcError && countdownStart) {
             console.log(`✅ Server-side countdown started for tournament match:`, countdownStart);
 
-            // countdown_started_at'ı server'dan gelen değerle güncelle
             await supabase
               .from("tournament_matches")
               .update({
@@ -203,7 +196,6 @@ const TournamentBracketPage = () => {
               .eq("id", match.id);
           } else {
             console.error("❌ RPC countdown error:", rpcError);
-            // Fallback: Local timestamp kullan
             const fallbackTime = new Date().toISOString();
             await supabase
               .from("tournament_matches")
@@ -216,10 +208,9 @@ const TournamentBracketPage = () => {
         }
       }
 
-      // Round completion kontrolünü geciktir (gerçek oyuncu maçları bitmesini bekle)
-      setTimeout(() => {
-        await checkAndAdvanceRound(round);
-      }, 2000);
+      // ✅ DÜZELTİLEN KISIM: Döngü bittikten sonra beklemeden ve güvenli bir şekilde round kontrolü yap
+      console.log(`🤖 Bot maçları simülasyonu bitti, round kontrolü yapılıyor...`);
+      await checkAndAdvanceRound(round);
     } catch (error) {
       console.error("Error simulating bot matches:", error);
     }
