@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Trophy, Home, Clock, Crown, Users, Loader2 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTournament } from "@/hooks/useTournament";
-import { organizeMatchesByRound, generateBotName } from "@/utils/tournamentHelpers";
+import { organizeMatchesByRound, generateBotName, getMatchStatus } from "@/utils/tournamentHelpers";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSounds } from "@/hooks/useSounds";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,8 +33,22 @@ const TournamentBracketPage = () => {
   }, [tournamentId]);
 
   // =========================================================================
-  // A. LOBİ MANTIĞI (WAITING -> IN_PROGRESS GEÇİŞİ)
+  // ⚠️ DÜZELTME BURADA: useMemo TÜM RETURN'LERDEN ÖNCE OLMAK ZORUNDA
   // =========================================================================
+  const uniqueMatches = useMemo(() => {
+    if (!matches) return []; // Güvenlik kontrolü
+    const map = new Map<string, any>();
+    for (const m of matches) {
+      const key = `${m.round}-${m.match_number}`;
+      map.set(key, m);
+    }
+    return Array.from(map.values());
+  }, [matches]);
+
+  const matchesByRound = organizeMatchesByRound(uniqueMatches);
+  // =========================================================================
+
+  // A. LOBİ MANTIĞI
   useEffect(() => {
     if (!currentTournament || currentTournament.status !== "waiting" || startTriggeredRef.current) return;
 
@@ -46,7 +60,6 @@ const TournamentBracketPage = () => {
       if (diff > 0) {
         setLobbyCountdown(diff);
       } else {
-        // SÜRE BİTTİ! Turnuvayı Başlat (Sadece 1 kez tetikle)
         clearInterval(interval);
         setLobbyCountdown(0);
 
@@ -55,15 +68,13 @@ const TournamentBracketPage = () => {
           setIsStarting(true);
           console.log("🚀 Lobi süresi doldu, turnuva başlatılıyor...");
 
-          // 👇 BURAYI DEĞİŞTİRDİK (as any ekledik)
           supabase.rpc("start_tournament_structure" as any, { p_tournament_id: tournamentId }).then(({ error }) => {
             setIsStarting(false);
             if (error) {
               console.error("Turnuva başlatma hatası:", error);
-              startTriggeredRef.current = false; // Hata olursa tekrar dene
+              startTriggeredRef.current = false;
             } else {
               console.log("✅ Turnuva başarıyla başlatıldı!");
-              // Status değişeceği için fetchTournamentDetails otomatik çağrılacak
             }
           });
         }
@@ -73,20 +84,16 @@ const TournamentBracketPage = () => {
     return () => clearInterval(interval);
   }, [currentTournament, serverTimeOffset, tournamentId]);
 
-  // =========================================================================
-  // B. MAÇ GERİ SAYIM MANTIĞI (IN_PROGRESS -> GAME GEÇİŞİ)
-  // =========================================================================
+  // B. MAÇ GERİ SAYIM MANTIĞI
   useEffect(() => {
     if (!currentTournament || currentTournament.status !== "in_progress") {
       setCountdown(null);
       return;
     }
 
-    // Veritabanındaki hedef zamanı al (next_round_starts_at)
     const targetTimeStr = currentTournament.next_round_starts_at;
 
     if (!targetTimeStr) {
-      // Eğer tarih yoksa ama in_progress ise, belki de maçlar oynanıyordur, sayaç gösterme
       setCountdown(0);
       return;
     }
@@ -100,20 +107,18 @@ const TournamentBracketPage = () => {
         setCountdown(diff);
       } else {
         setCountdown(0);
-        handleAutoNavigation(); // Süre bitti, maça git
+        handleAutoNavigation();
       }
     }, 1000);
 
     return () => clearInterval(interval);
   }, [currentTournament, serverTimeOffset, matches, user]);
 
-  // Yönlendirme Fonksiyonu
   const handleAutoNavigation = () => {
     if (!user || isNavigating || !matches || !currentTournament) return;
 
     const currentRound = currentTournament.current_round;
 
-    // Benim bu turda, henüz tamamlanmamış bir maçım var mı?
     const myMatch = matches.find(
       (m) =>
         m.round === currentRound &&
@@ -129,9 +134,7 @@ const TournamentBracketPage = () => {
     }
   };
 
-  // =========================================================================
   // C. ŞAMPİYONLUK VE ELENME
-  // =========================================================================
   useEffect(() => {
     if (!matches || !user) return;
 
@@ -151,7 +154,7 @@ const TournamentBracketPage = () => {
   }, [matches, user]);
 
   // =========================================================================
-  // D. RENDER
+  // D. RENDER (RETURN BLOKLARI BURADA BAŞLAR)
   // =========================================================================
 
   if (!currentTournament) {
@@ -165,7 +168,7 @@ const TournamentBracketPage = () => {
     );
   }
 
-  // --- LOBİ EKRANI (Bekleme Modu) ---
+  // --- LOBİ EKRANI ---
   if (currentTournament.status === "waiting") {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 to-indigo-900 p-4 flex items-center justify-center">
@@ -206,18 +209,6 @@ const TournamentBracketPage = () => {
     );
   }
 
-  // --- BRACKET GÖRSELLEŞTİRME ---
-  const uniqueMatches = useMemo(() => {
-    const map = new Map<string, any>();
-    for (const m of matches) {
-      const key = `${m.round}-${m.match_number}`;
-      map.set(key, m);
-    }
-    return Array.from(map.values());
-  }, [matches]);
-
-  const matchesByRound = organizeMatchesByRound(uniqueMatches);
-
   // Şampiyon Ekranı
   if (showChampion) {
     return (
@@ -254,10 +245,9 @@ const TournamentBracketPage = () => {
   const MatchCard = ({ match, roundNumber }: { match: any; roundNumber: number }) => {
     const getPlayerDisplay = (playerId: string, playerInfo: any) => {
       if (!playerId) return { name: "...", isBot: false };
-      const isBot = playerInfo?.is_bot || false; // Sadece is_bot'a güveniyoruz
+      const isBot = playerInfo?.is_bot || false;
 
       if (isBot) {
-        // Deterministic Bot Name (UUID'den üret)
         const seed = playerId.charCodeAt(0) + playerId.charCodeAt(playerId.length - 1);
         const name = playerInfo?.username || generateBotName(seed);
         return { name, isBot: true };
@@ -364,14 +354,12 @@ const TournamentBracketPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[1, 2, 3].map((round) => (
             <div key={round} className="space-y-4">
-              {/* Round Başlığı */}
               <div
                 className={`text-center py-3 rounded-xl font-black text-white uppercase tracking-widest bg-white/5 border border-white/10 shadow-lg ${currentTournament.current_round === round ? "ring-2 ring-yellow-500 text-yellow-400 bg-yellow-500/10" : "opacity-40 grayscale"}`}
               >
                 {round === 1 ? "Çeyrek Final" : round === 2 ? "Yarı Final" : "🏆 Final"}
               </div>
 
-              {/* Maçlar */}
               <div className="space-y-4">
                 {matchesByRound[round]?.map((match) => (
                   <MatchCard key={match.id} match={match} roundNumber={round} />
