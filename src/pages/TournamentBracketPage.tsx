@@ -128,35 +128,37 @@ const TournamentBracketPage = () => {
 
       // Process each match
       for (const match of botMatches) {
-        // Bot kontrolü: hem botMap'ten kontrol et hem de ID formatını kontrol et
-        const player1IsBot = botMap.get(match.player1_id) || match.player1_id?.startsWith("bot_") || false;
-        const player2IsBot = botMap.get(match.player2_id) || match.player2_id?.startsWith("bot_") || false;
-        const hasNullPlayer = !match.player1_id || !match.player2_id;
+        // Bot kontrolü: ID 'bot_' ile başlıyorsa KESİN bottur.
+        // Map'e bakmaya gerek yok, çünkü generateBotName yaparken zaten ID'ye bot_ koyuyorsun.
+        const player1IsBot = match.player1_id?.startsWith("bot_") || false;
+        const player2IsBot = match.player2_id?.startsWith("bot_") || false;
+
+        // ⚠️ EKSTRA KONTROL: Eğer bir taraf NULL ise ve diğer taraf BOT ise, bunu da bot maçı sayabiliriz (hata toleransı)
+        // Ama şimdilik sadece Bot vs Bot'a odaklanalım.
 
         console.log("🔍 Processing match:", {
           matchId: match.id.slice(-8),
-          player1: match.player1_id?.slice(-8),
-          player2: match.player2_id?.slice(-8),
-          player1IsBot,
-          player2IsBot,
-          status: match.status,
+          p1: match.player1_id,
+          p2: match.player2_id,
+          isBotVsBot: player1IsBot && player2IsBot,
         });
 
-        // Eğer player eksikse maçı iptal et (4. round sorunu)
-        if (hasNullPlayer) {
-          console.log("⚠️ Match has null player, skipping:", match.id);
-          continue;
-        }
-
         // SADECE her iki oyuncu da bot ise otomatik tamamla
-        // Gerçek oyuncular varsa countdown_started_at set et (server-sync için)
         if (player1IsBot && player2IsBot) {
-          console.log("🤖 Both players are bots, auto-completing match");
-          const player1Score = Math.floor(Math.random() * 50) + 20;
-          const player2Score = Math.floor(Math.random() * 50) + 20;
+          console.log("🤖 Both players are bots, AUTO-COMPLETING NOW via RPC/Update");
+
+          // Rastgele skorlar
+          const score1 = Math.floor(Math.random() * 50) + 30; // Biraz daha yüksek puanlar
+          const score2 = Math.floor(Math.random() * 50) + 30;
+
+          // Beraberlik önleme
+          const player1Score = score1 === score2 ? score1 + 1 : score1;
+          const player2Score = score2;
+
           const winnerId = player1Score > player2Score ? match.player1_id : match.player2_id;
 
-          await supabase
+          // ⚠️ AWAIT kullanarak işlemin bitmesini bekle
+          const { error } = await supabase
             .from("tournament_matches")
             .update({
               status: "completed",
@@ -166,6 +168,9 @@ const TournamentBracketPage = () => {
               updated_at: new Date().toISOString(),
             })
             .eq("id", match.id);
+
+          if (error) console.error("Bot match update failed:", error);
+          else console.log("✅ Bot match completed successfully");
         } else {
           // Gerçek oyuncu varsa: SERVER-SIDE countdown başlat (RPC ile)
           console.log(`👤 Real player match detected, starting server-side countdown via RPC`);
