@@ -2,7 +2,7 @@ export interface Tournament {
   id: string;
   creator_id?: string;
   name: string;
-  status: 'waiting' | 'in_progress' | 'completed' | 'cancelled';
+  status: "waiting" | "in_progress" | "completed" | "cancelled";
   game_type: string;
   max_participants: number;
   current_round: number;
@@ -12,7 +12,8 @@ export interface Tournament {
   updated_at: string;
   expires_at?: string;
   finished_at?: string;
-  
+
+  next_round_starts_at?: string | null;
   // Eski isimler için alias
   max_players?: number;
   current_players?: number;
@@ -40,7 +41,7 @@ export interface TournamentMatch {
   player1_score: number;
   player2_score: number;
   winner_id?: string;
-  status: 'pending' | 'in_progress' | 'completed';
+  status: "pending" | "in_progress" | "completed";
   created_at: string;
   updated_at: string;
   player1?: {
