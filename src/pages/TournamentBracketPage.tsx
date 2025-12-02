@@ -55,7 +55,7 @@ const TournamentBracketPage = () => {
           setIsStarting(true);
           console.log("🚀 Lobi süresi doldu, turnuva başlatılıyor...");
 
-          supabase.rpc("start_tournament_structure", { p_tournament_id: tournamentId }).then(({ error }) => {
+          supabase.rpc("start_tournament_structure" as any, { p_tournament_id: tournamentId }).then(({ error }) => {
             setIsStarting(false);
             if (error) {
               console.error("Turnuva başlatma hatası:", error);
