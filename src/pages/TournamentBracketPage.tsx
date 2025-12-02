@@ -44,7 +44,7 @@ const TournamentBracketPage = () => {
       setNavigatedToGame(false);
     }
   }, [tournamentId]);
-  
+
   // Yeni tur başladığında navigation guard'ı resetle
   useEffect(() => {
     if (currentTournament?.current_round) {
@@ -250,7 +250,7 @@ const TournamentBracketPage = () => {
       );
 
       const allCompleted = roundMatches.every((m) => m.status === "completed");
-      
+
       const hasRealPlayerMatches = roundMatches.some((m) => {
         const player1IsBot = botMap.get(m.player1_id) || m.player1_id?.startsWith("bot_") || false;
         const player2IsBot = botMap.get(m.player2_id) || m.player2_id?.startsWith("bot_") || false;
@@ -305,17 +305,19 @@ const TournamentBracketPage = () => {
 
         if (result && typeof result === "object" && "success" in result && result.success) {
           console.log(`🎯 Successfully advanced to round ${round + 1}`);
-          
+
           // 🧹 Yeni round'un matches'lerini kontrol et ve doğrula
           const { data: newRoundMatches } = await supabase
             .from("tournament_matches")
             .select("*")
             .eq("tournament_id", tournamentId)
             .eq("round", round + 1);
-          
+
           console.log(`🎯 Yeni round ${round + 1} matches:`, newRoundMatches?.length, "maç");
           newRoundMatches?.forEach((m, i) => {
-            console.log(`  - Match ${i + 1}: ${m.player1_id?.slice(-8)} vs ${m.player2_id?.slice(-8)}, status: ${m.status}`);
+            console.log(
+              `  - Match ${i + 1}: ${m.player1_id?.slice(-8)} vs ${m.player2_id?.slice(-8)}, status: ${m.status}`,
+            );
           });
 
           // Yeni tur oluşturuldu; verileri hemen yenile - countdown otomatik başlayacak
@@ -373,26 +375,27 @@ const TournamentBracketPage = () => {
     if (!currentRound) return;
 
     // Mevcut round'daki "in_progress" durumunda maçları kontrol et
-    const inProgressMatches = matches.filter(
-      (m) => m.round === currentRound && m.status === "in_progress"
-    );
+    const inProgressMatches = matches.filter((m) => m.round === currentRound && m.status === "in_progress");
 
     if (inProgressMatches.length > 0) {
-      console.log(`🤖 Bracket page - ${inProgressMatches.length} in_progress maç bulundu`);
-      
-      // En az bir bot maçı var mı kontrol et
+      // Bot maçı var mı?
       const hasBotMatch = inProgressMatches.some((match) => {
         const player1IsBot = match.player1_id?.startsWith("bot_") || false;
         const player2IsBot = match.player2_id?.startsWith("bot_") || false;
+        // İkisi de bot ise VEYA biri bot biri null ise (garanti olsun)
         return player1IsBot && player2IsBot;
       });
-      
+
       if (hasBotMatch) {
-        console.log(`🤖 Bot maçları tespit edildi, otomatik tamamlanacak`);
-        simulateBotMatches(currentRound);
+        console.log(`🤖 Bot maçları tespit edildi, simülasyon başlatılıyor...`);
+        // ⚠️ ÇÖZÜM: Veritabanının güncellenmesi için 1.5 saniye bekle, sonra çalıştır.
+        const timer = setTimeout(() => {
+          simulateBotMatches(currentRound);
+        }, 1500);
+        return () => clearTimeout(timer);
       }
     }
-  }, [tournamentId, currentTournament?.status, currentTournament?.current_round, matches]);
+  }, [tournamentId, currentTournament?.status, currentTournament?.current_round, matches]); // matches dependency'si sayesinde veri her güncellendiğinde tekrar dener
 
   // Matches güncellendiğinde round advancement kontrolü yap
   useEffect(() => {
@@ -407,16 +410,19 @@ const TournamentBracketPage = () => {
     if (currentRoundMatches.length === 0) return;
 
     const allCompleted = currentRoundMatches.every((m) => m.status === "completed");
-    
+
     if (allCompleted && currentRound < 3) {
       console.log(`🔄 Round ${currentRound} tamamlandı, advancement kontrolü yapılıyor...`);
-      console.log(`📊 Tamamlanan maçlar:`, currentRoundMatches.map(m => ({
-        match: m.match_number,
-        winner: m.winner_id?.slice(-8),
-        status: m.status,
-        scores: `${m.player1_score}-${m.player2_score}`
-      })));
-      
+      console.log(
+        `📊 Tamamlanan maçlar:`,
+        currentRoundMatches.map((m) => ({
+          match: m.match_number,
+          winner: m.winner_id?.slice(-8),
+          status: m.status,
+          scores: `${m.player1_score}-${m.player2_score}`,
+        })),
+      );
+
       // Biraz gecikme ekle - tüm maç skorlarının DB'ye yazılmasını bekle
       setTimeout(() => {
         checkAndAdvanceRound(currentRound);
@@ -434,16 +440,19 @@ const TournamentBracketPage = () => {
 
     // ⚠️ KRİTİK: SADECE mevcut round'daki pending maçları al
     const pendingMatches = matches.filter(
-      (m) => m.round === currentRound && m.status === "pending" && m.player1_id && m.player2_id
+      (m) => m.round === currentRound && m.status === "pending" && m.player1_id && m.player2_id,
     );
 
     if (pendingMatches.length > 0) {
       console.log(`🎯 Round ${currentRound} için ${pendingMatches.length} pending maç bulundu`);
-      console.log(`📋 Pending maçlar:`, pendingMatches.map(m => ({
-        match: m.match_number,
-        player1: m.player1_id?.slice(-8),
-        player2: m.player2_id?.slice(-8)
-      })));
+      console.log(
+        `📋 Pending maçlar:`,
+        pendingMatches.map((m) => ({
+          match: m.match_number,
+          player1: m.player1_id?.slice(-8),
+          player2: m.player2_id?.slice(-8),
+        })),
+      );
       console.log(`⏰ 10 saniyelik countdown başlatılacak, sonra maçlar başlayacak`);
       // Countdown effect'i otomatik tetiklenecek (lines 436-518)
     }
@@ -479,7 +488,7 @@ const TournamentBracketPage = () => {
       targetRoundPending
         .map((m) => new Date((m.updated_at || m.created_at) as string).getTime())
         .filter((ts) => !Number.isNaN(ts))
-        .reduce((max, ts) => Math.max(max, ts), 0) || (Date.now() + serverTimeOffset);
+        .reduce((max, ts) => Math.max(max, ts), 0) || Date.now() + serverTimeOffset;
 
     // Eğer anchor ileriye taşındıysa geri sayımı yeniden başlat (çift eşleşme gecikmeleri için)
     const shouldRestart =
@@ -495,7 +504,7 @@ const TournamentBracketPage = () => {
       }
       const tick = () => {
         const anchor = countdownGuard.current.anchorTs ?? latestTs;
-        const elapsed = Math.floor(((Date.now() + serverTimeOffset) - anchor) / 1000);
+        const elapsed = Math.floor((Date.now() + serverTimeOffset - anchor) / 1000);
         const remaining = Math.max(0, 10 - elapsed);
         setCountdown(remaining);
 
@@ -507,15 +516,15 @@ const TournamentBracketPage = () => {
           console.log(`🚀 Countdown tamamlandı! Round ${targetRound} maçları başlatılıyor...`);
           // Geri sayım tamamlandı -> hedef turdaki tüm pending maçları başlat (yalnızca bir kez)
           startAllMatches(targetRound);
-          
+
           // Kullanıcının bu turdaki maçını bul ve otomatik olarak oyun sayfasına yönlendir
           // ⚠️ KRİTİK: SADECE 'pending' veya 'in_progress' durumundaki maçlara yönlendir
           const userMatch = targetRoundPending.find(
-            (m) => 
+            (m) =>
               (m.player1_id === user?.id || m.player2_id === user?.id) &&
-              (m.status === "pending" || m.status === "in_progress")
+              (m.status === "pending" || m.status === "in_progress"),
           );
-          
+
           if (userMatch && !navigatedToGame) {
             console.log("🎮 Kullanıcının maçı başlatılıyor, oyun sayfasına yönlendiriliyor:", userMatch.id);
             console.log("📊 Match status:", userMatch.status);
@@ -574,7 +583,7 @@ const TournamentBracketPage = () => {
     // SADECE countdown 0 ise oyuna yönlendir - ama önce DB'den fresh status kontrol et
     if (myInProgressMatch && countdown === 0) {
       console.log("🔍 Verifying match status before navigation:", myInProgressMatch.id.slice(-8));
-      
+
       // Fresh status check to prevent redirect loop
       supabase
         .from("tournament_matches")
@@ -586,7 +595,7 @@ const TournamentBracketPage = () => {
             console.error("❌ Error checking match status:", error);
             return;
           }
-          
+
           if (data?.status === "in_progress") {
             console.log("✅ Match confirmed in_progress, navigating:", myInProgressMatch.id.slice(-8));
             setNavigatedToGame(true);
