@@ -55,6 +55,7 @@ const TournamentBracketPage = () => {
           setIsStarting(true);
           console.log("🚀 Lobi süresi doldu, turnuva başlatılıyor...");
 
+          // 👇 BURAYI DEĞİŞTİRDİK (as any ekledik)
           supabase.rpc("start_tournament_structure" as any, { p_tournament_id: tournamentId }).then(({ error }) => {
             setIsStarting(false);
             if (error) {
@@ -62,7 +63,7 @@ const TournamentBracketPage = () => {
               startTriggeredRef.current = false; // Hata olursa tekrar dene
             } else {
               console.log("✅ Turnuva başarıyla başlatıldı!");
-              // Status değişeceği için fetchTournamentDetails otomatik çağrılacak (hooks'tan)
+              // Status değişeceği için fetchTournamentDetails otomatik çağrılacak
             }
           });
         }
