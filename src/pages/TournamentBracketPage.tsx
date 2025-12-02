@@ -372,16 +372,27 @@ const TournamentBracketPage = () => {
     const currentRound = currentTournament.current_round;
     if (!currentRound) return;
 
-    // Mevcut round'daki "in_progress" durumunda bot maçları var mı kontrol et
+    // Mevcut round'daki "in_progress" durumunda maçları kontrol et
     const inProgressMatches = matches.filter(
       (m) => m.round === currentRound && m.status === "in_progress"
     );
 
     if (inProgressMatches.length > 0) {
-      console.log(`🤖 Bracket page açıldı - ${inProgressMatches.length} in_progress maç bulundu, bot maçları tamamlanacak`);
-      simulateBotMatches(currentRound);
+      console.log(`🤖 Bracket page - ${inProgressMatches.length} in_progress maç bulundu`);
+      
+      // En az bir bot maçı var mı kontrol et
+      const hasBotMatch = inProgressMatches.some((match) => {
+        const player1IsBot = match.player1_id?.startsWith("bot_") || false;
+        const player2IsBot = match.player2_id?.startsWith("bot_") || false;
+        return player1IsBot && player2IsBot;
+      });
+      
+      if (hasBotMatch) {
+        console.log(`🤖 Bot maçları tespit edildi, otomatik tamamlanacak`);
+        simulateBotMatches(currentRound);
+      }
     }
-  }, [tournamentId, currentTournament?.status, currentTournament?.current_round, matches.length]);
+  }, [tournamentId, currentTournament?.status, currentTournament?.current_round, matches]);
 
   // Matches güncellendiğinde round advancement kontrolü yap
   useEffect(() => {
