@@ -1,45 +1,91 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Trophy, Home, Clock, Crown } from "lucide-react";
+import { Trophy, Home, Clock, Crown, Users, Loader2 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTournament } from "@/hooks/useTournament";
-import { organizeMatchesByRound, getMatchStatus, generateBotName } from "@/utils/tournamentHelpers";
+import { organizeMatchesByRound, generateBotName } from "@/utils/tournamentHelpers";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSounds } from "@/hooks/useSounds";
+import { supabase } from "@/integrations/supabase/client";
 
 const TournamentBracketPage = () => {
   const { tournamentId } = useParams();
   const navigate = useNavigate();
-  // useTournament hook'unun next_round_starts_at verisini çektiğinden emin ol
   const { currentTournament, matches, fetchTournamentDetails, serverTimeOffset } = useTournament(tournamentId);
   const { user } = useAuth();
   const { playSpecialSound } = useSounds();
 
   const [countdown, setCountdown] = useState<number | null>(null);
+  const [lobbyCountdown, setLobbyCountdown] = useState<number | null>(null);
+  const [isStarting, setIsStarting] = useState(false);
   const [showChampion, setShowChampion] = useState(false);
   const [showEliminated, setShowEliminated] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
+  const startTriggeredRef = useRef(false);
 
-  // 1. Verileri sürekli güncel tut (Realtime zaten hook içinde var ama manuel refresh de ekleyelim)
+  // 1. Verileri sürekli güncel tut
   useEffect(() => {
     if (tournamentId) {
       fetchTournamentDetails(tournamentId);
     }
   }, [tournamentId]);
 
-  // 2. OTOMATİK GERİ SAYIM VE YÖNLENDİRME MOTORU (Kalp Atışı)
+  // =========================================================================
+  // A. LOBİ MANTIĞI (WAITING -> IN_PROGRESS GEÇİŞİ)
+  // =========================================================================
+  useEffect(() => {
+    if (!currentTournament || currentTournament.status !== "waiting" || startTriggeredRef.current) return;
+
+    const interval = setInterval(() => {
+      const now = Date.now() + serverTimeOffset;
+      const expiresAt = new Date(currentTournament.expires_at).getTime();
+      const diff = Math.ceil((expiresAt - now) / 1000);
+
+      if (diff > 0) {
+        setLobbyCountdown(diff);
+      } else {
+        // SÜRE BİTTİ! Turnuvayı Başlat (Sadece 1 kez tetikle)
+        clearInterval(interval);
+        setLobbyCountdown(0);
+
+        if (!startTriggeredRef.current) {
+          startTriggeredRef.current = true;
+          setIsStarting(true);
+          console.log("🚀 Lobi süresi doldu, turnuva başlatılıyor...");
+
+          supabase.rpc("start_tournament_structure", { p_tournament_id: tournamentId }).then(({ error }) => {
+            setIsStarting(false);
+            if (error) {
+              console.error("Turnuva başlatma hatası:", error);
+              startTriggeredRef.current = false; // Hata olursa tekrar dene
+            } else {
+              console.log("✅ Turnuva başarıyla başlatıldı!");
+              // Status değişeceği için fetchTournamentDetails otomatik çağrılacak (hooks'tan)
+            }
+          });
+        }
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [currentTournament, serverTimeOffset, tournamentId]);
+
+  // =========================================================================
+  // B. MAÇ GERİ SAYIM MANTIĞI (IN_PROGRESS -> GAME GEÇİŞİ)
+  // =========================================================================
   useEffect(() => {
     if (!currentTournament || currentTournament.status !== "in_progress") {
       setCountdown(null);
       return;
     }
 
-    // Veritabanındaki hedef zamanı al
+    // Veritabanındaki hedef zamanı al (next_round_starts_at)
     const targetTimeStr = currentTournament.next_round_starts_at;
 
     if (!targetTimeStr) {
+      // Eğer tarih yoksa ama in_progress ise, belki de maçlar oynanıyordur, sayaç gösterme
       setCountdown(0);
       return;
     }
@@ -53,14 +99,14 @@ const TournamentBracketPage = () => {
         setCountdown(diff);
       } else {
         setCountdown(0);
-        handleAutoNavigation(); // Süre bitti, yönlendirmeyi dene
+        handleAutoNavigation(); // Süre bitti, maça git
       }
     }, 1000);
 
     return () => clearInterval(interval);
   }, [currentTournament, serverTimeOffset, matches, user]);
 
-  // 3. Yönlendirme Mantığı
+  // Yönlendirme Fonksiyonu
   const handleAutoNavigation = () => {
     if (!user || isNavigating || !matches || !currentTournament) return;
 
@@ -77,20 +123,17 @@ const TournamentBracketPage = () => {
     if (myMatch) {
       console.log(`🚀 Süre doldu! Maç ${myMatch.match_number} için yönlendiriliyor...`);
       setIsNavigating(true);
-
-      // Ses efekti
-      playSpecialSound("/button.mp3"); // Varsa bir başlangıç sesi
-
-      // Yönlendirme
+      playSpecialSound("/button.mp3");
       navigate(`/game?match=${myMatch.id}&tournament=${tournamentId}`);
     }
   };
 
-  // 4. Şampiyonluk ve Elenme Kontrolü
+  // =========================================================================
+  // C. ŞAMPİYONLUK VE ELENME
+  // =========================================================================
   useEffect(() => {
     if (!matches || !user) return;
 
-    // Final maçını bul
     const finalMatch = matches.find((m) => m.round === 3 && m.status === "completed");
 
     if (finalMatch && finalMatch.winner_id) {
@@ -106,7 +149,10 @@ const TournamentBracketPage = () => {
     }
   }, [matches, user]);
 
-  // Yükleniyor durumu
+  // =========================================================================
+  // D. RENDER
+  // =========================================================================
+
   if (!currentTournament) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-900 to-blue-900 p-4 flex items-center justify-center">
@@ -118,12 +164,53 @@ const TournamentBracketPage = () => {
     );
   }
 
-  // Bracket Görselleştirme Yardımcıları
+  // --- LOBİ EKRANI (Bekleme Modu) ---
+  if (currentTournament.status === "waiting") {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-indigo-900 p-4 flex items-center justify-center">
+        <Card className="w-full max-w-md bg-white/10 backdrop-blur-md border-white/20 text-white shadow-2xl">
+          <CardContent className="p-8 text-center space-y-6">
+            <Users className="w-16 h-16 mx-auto text-blue-400 animate-pulse" />
+
+            <div className="space-y-2">
+              <h1 className="text-3xl font-bold">{currentTournament.name}</h1>
+              <p className="text-blue-200">Oyuncular bekleniyor...</p>
+            </div>
+
+            <div className="py-6">
+              <div className="text-6xl font-mono font-black tracking-widest text-yellow-400 drop-shadow-lg">
+                {lobbyCountdown !== null ? lobbyCountdown : "..."}
+              </div>
+              <p className="text-sm text-gray-400 mt-2">saniye sonra başlıyor</p>
+            </div>
+
+            {isStarting && (
+              <div className="flex items-center justify-center gap-2 text-yellow-300">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Turnuva oluşturuluyor...</span>
+              </div>
+            )}
+
+            <div className="bg-black/30 rounded-lg p-4 text-left">
+              <p className="text-sm text-gray-300 mb-2">ℹ️ Bilgi:</p>
+              <ul className="text-xs text-gray-400 space-y-1 list-disc pl-4">
+                <li>Süre bitince boş yerler botlarla dolar.</li>
+                <li>Maçlar otomatik başlar.</li>
+                <li>Turnuva süresince uygulamayı kapatmayın.</li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // --- BRACKET GÖRSELLEŞTİRME ---
   const uniqueMatches = useMemo(() => {
     const map = new Map<string, any>();
     for (const m of matches) {
       const key = `${m.round}-${m.match_number}`;
-      map.set(key, m); // Basitçe en son geleni al, zaten sıralı geliyor
+      map.set(key, m);
     }
     return Array.from(map.values());
   }, [matches]);
@@ -132,12 +219,6 @@ const TournamentBracketPage = () => {
 
   // Şampiyon Ekranı
   if (showChampion) {
-    // ... (Senin mevcut şampiyon kodunla aynı) ...
-    const finalMatch = matches.find((m) => m.round === 3);
-    const championId = finalMatch?.winner_id;
-    // const championName = championId === finalMatch?.player1_id ? finalMatch?.player1?.username : finalMatch?.player2?.username;
-    // Basitleştirilmiş isim bulma (User ID'den profile bakmak gerekebilir, şimdilik basit tuttum)
-
     return (
       <div className="min-h-screen bg-gradient-to-br from-yellow-600 to-orange-600 p-4 flex items-center justify-center">
         <div className="text-center">
@@ -170,22 +251,16 @@ const TournamentBracketPage = () => {
 
   // MatchCard Bileşeni
   const MatchCard = ({ match, roundNumber }: { match: any; roundNumber: number }) => {
-    // Helper: Oyuncu bilgilerini al
     const getPlayerDisplay = (playerId: string, playerInfo: any) => {
-      // Eğer ID yoksa "Bekleniyor"
       if (!playerId) return { name: "...", isBot: false };
-
-      // Bot kontrolü (Database'den gelen is_bot veya ID kontrolü)
-      // Artık UUID kullandığımız için sadece playerInfo.is_bot'a güvenmeliyiz
-      // Ancak eski veriler için fallback olarak 'bot_' kontrolü kalabilir
-      const isBot = playerInfo?.is_bot || playerId.startsWith("bot_");
+      const isBot = playerInfo?.is_bot || false; // Sadece is_bot'a güveniyoruz
 
       if (isBot) {
-        // İsmi playerInfo'dan al yoksa üret
-        const name = playerInfo?.username || generateBotName(playerId.charCodeAt(0));
+        // Deterministic Bot Name (UUID'den üret)
+        const seed = playerId.charCodeAt(0) + playerId.charCodeAt(playerId.length - 1);
+        const name = playerInfo?.username || generateBotName(seed);
         return { name, isBot: true };
       }
-
       return { name: playerInfo?.username || "Oyuncu", isBot: false, avatar: playerInfo?.avatar_url };
     };
 
@@ -193,7 +268,6 @@ const TournamentBracketPage = () => {
     const p2 = getPlayerDisplay(match.player2_id, match.player2);
     const isCompleted = match.status === "completed";
 
-    // Renkler
     const colors = {
       1: "from-purple-900/50 to-blue-900/50 border-purple-500/30",
       2: "from-orange-900/50 to-red-900/50 border-orange-500/30",
@@ -201,50 +275,48 @@ const TournamentBracketPage = () => {
     }[roundNumber];
 
     return (
-      <Card className={`mb-4 backdrop-blur-md bg-gradient-to-br ${colors} border text-white overflow-hidden relative`}>
-        {/* Maç Durumu Badge'i */}
-        <div className="absolute top-2 right-2 text-[10px] px-2 py-0.5 rounded-full bg-black/40">
+      <Card
+        className={`mb-4 backdrop-blur-md bg-gradient-to-br ${colors} border text-white overflow-hidden relative shadow-lg`}
+      >
+        <div className="absolute top-2 right-2 text-[10px] px-2 py-0.5 rounded-full bg-black/40 border border-white/10">
           {match.status === "completed" ? "Bitti" : match.status === "in_progress" ? "Oynanıyor" : "Bekliyor"}
         </div>
 
-        <CardContent className="p-3">
+        <CardContent className="p-3 pt-6">
           {/* Player 1 */}
           <div
-            className={`flex justify-between items-center p-2 rounded ${match.winner_id === match.player1_id ? "bg-green-500/20 border border-green-500/50" : ""}`}
+            className={`flex justify-between items-center p-2 rounded mb-1 transition-colors ${match.winner_id === match.player1_id ? "bg-green-500/20 border border-green-500/50" : "bg-black/20"}`}
           >
             <div className="flex items-center gap-2">
-              <Avatar className="w-6 h-6">
+              <Avatar className="w-6 h-6 border border-white/20">
                 <AvatarImage src={p1.avatar} />
-                <AvatarFallback className="text-black text-xs">{p1.isBot ? "🤖" : "👤"}</AvatarFallback>
+                <AvatarFallback className="text-black text-[10px] bg-white/80">{p1.isBot ? "🤖" : "👤"}</AvatarFallback>
               </Avatar>
               <span
-                className={`text-sm ${match.winner_id === match.player1_id ? "font-bold text-green-300" : "text-gray-200"}`}
+                className={`text-sm truncate max-w-[100px] ${match.winner_id === match.player1_id ? "font-bold text-green-300" : "text-gray-300"}`}
               >
                 {p1.name}
               </span>
             </div>
-            <span className="font-mono font-bold">{isCompleted ? match.player1_score : "-"}</span>
+            <span className="font-mono font-bold text-lg">{isCompleted ? match.player1_score : "-"}</span>
           </div>
-
-          {/* VS */}
-          <div className="text-[10px] text-center text-gray-500 -my-1 relative z-10">VS</div>
 
           {/* Player 2 */}
           <div
-            className={`flex justify-between items-center p-2 rounded ${match.winner_id === match.player2_id ? "bg-green-500/20 border border-green-500/50" : ""}`}
+            className={`flex justify-between items-center p-2 rounded transition-colors ${match.winner_id === match.player2_id ? "bg-green-500/20 border border-green-500/50" : "bg-black/20"}`}
           >
             <div className="flex items-center gap-2">
-              <Avatar className="w-6 h-6">
+              <Avatar className="w-6 h-6 border border-white/20">
                 <AvatarImage src={p2.avatar} />
-                <AvatarFallback className="text-black text-xs">{p2.isBot ? "🤖" : "👤"}</AvatarFallback>
+                <AvatarFallback className="text-black text-[10px] bg-white/80">{p2.isBot ? "🤖" : "👤"}</AvatarFallback>
               </Avatar>
               <span
-                className={`text-sm ${match.winner_id === match.player2_id ? "font-bold text-green-300" : "text-gray-200"}`}
+                className={`text-sm truncate max-w-[100px] ${match.winner_id === match.player2_id ? "font-bold text-green-300" : "text-gray-300"}`}
               >
                 {p2.name}
               </span>
             </div>
-            <span className="font-mono font-bold">{isCompleted ? match.player2_score : "-"}</span>
+            <span className="font-mono font-bold text-lg">{isCompleted ? match.player2_score : "-"}</span>
           </div>
         </CardContent>
       </Card>
@@ -263,26 +335,25 @@ const TournamentBracketPage = () => {
             <h1 className="text-2xl font-bold text-white">{currentTournament.name}</h1>
             <p className="text-gray-400 text-sm">Turnuva Tablosu</p>
           </div>
-          <div className="w-24" /> {/* Spacer */}
+          <div className="w-24" />
         </div>
 
-        {/* ⏰ SENKRONİZE GERİ SAYIM KARTI */}
-        {countdown !== null && countdown > 0 && (
-          <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top-10 fade-in duration-500">
-            <Card className="bg-yellow-500 text-black shadow-[0_0_50px_rgba(234,179,8,0.6)] border-4 border-yellow-300">
-              <CardContent className="p-4 flex items-center gap-4">
-                <Clock className="w-10 h-10 animate-pulse" />
+        {/* ⏰ MAÇ BAŞLANGIÇ GERİ SAYIMI */}
+        {countdown !== null && countdown > 0 && currentTournament.status === "in_progress" && (
+          <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm px-4">
+            <Card className="bg-yellow-500 text-black shadow-[0_0_50px_rgba(234,179,8,0.6)] border-4 border-yellow-300 transform scale-110 animate-pulse">
+              <CardContent className="p-4 flex items-center justify-between">
                 <div>
-                  <p className="font-bold text-sm uppercase opacity-80">
+                  <p className="font-bold text-xs uppercase opacity-80 mb-1">
                     {currentTournament.current_round === 1
                       ? "Çeyrek Final"
                       : currentTournament.current_round === 2
                         ? "Yarı Final"
-                        : "Büyük Final"}{" "}
-                    Başlıyor
+                        : "Büyük Final"}
                   </p>
-                  <p className="text-4xl font-black font-mono tracking-widest">{countdown}</p>
+                  <p className="font-bold text-lg leading-none">MAÇLAR BAŞLIYOR</p>
                 </div>
+                <div className="text-5xl font-black font-mono tracking-tighter">{countdown}</div>
               </CardContent>
             </Card>
           </div>
@@ -294,9 +365,9 @@ const TournamentBracketPage = () => {
             <div key={round} className="space-y-4">
               {/* Round Başlığı */}
               <div
-                className={`text-center py-2 rounded-lg font-bold text-white uppercase tracking-wider bg-white/5 border border-white/10 ${currentTournament.current_round === round ? "ring-2 ring-yellow-500 text-yellow-500 bg-yellow-500/10" : "opacity-50"}`}
+                className={`text-center py-3 rounded-xl font-black text-white uppercase tracking-widest bg-white/5 border border-white/10 shadow-lg ${currentTournament.current_round === round ? "ring-2 ring-yellow-500 text-yellow-400 bg-yellow-500/10" : "opacity-40 grayscale"}`}
               >
-                {round === 1 ? "Çeyrek Final" : round === 2 ? "Yarı Final" : "Final"}
+                {round === 1 ? "Çeyrek Final" : round === 2 ? "Yarı Final" : "🏆 Final"}
               </div>
 
               {/* Maçlar */}
@@ -306,8 +377,8 @@ const TournamentBracketPage = () => {
                 ))}
 
                 {(!matchesByRound[round] || matchesByRound[round].length === 0) && (
-                  <div className="text-center py-8 text-gray-600 italic text-sm border-2 border-dashed border-gray-700 rounded-lg">
-                    Henüz eşleşme yok
+                  <div className="text-center py-12 text-gray-600 italic text-sm border-2 border-dashed border-gray-700 rounded-xl bg-black/20">
+                    Eşleşmeler Bekleniyor...
                   </div>
                 )}
               </div>
