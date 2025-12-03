@@ -313,8 +313,10 @@ const DinoRunner = () => {
         playSound(1000, "square", 0.1);
         setScore((s) => s + 50);
 
-        // State güncelle
+        // HATA BURADAYDI: Sadece state güncelleniyordu, ref geri kalıyordu.
+        // DÜZELTME: Hem State'i hem Ref'i anında güncelliyoruz.
         setCollectedCount((prev) => prev + 1);
+        collectedCountRef.current += 1; // <--- BU SATIRI EKLE
       }
     });
 
