@@ -13,11 +13,13 @@ import {
   ArrowRight as ArrowR,
 } from "lucide-react";
 
-const BOARD_WIDTH = 10;
-const BOARD_HEIGHT = 20;
+// --- DEĞİŞİKLİK 1: IZGARA BOYUTLARI ---
+// Harflerin küçülmesi ve alanın hassaslaşması için boyutları ikiye katladık.
+const BOARD_WIDTH = 20; // Eskiden 10
+const BOARD_HEIGHT = 40; // Eskiden 20
 const EMPTY_CELL = 0;
 
-// SVG ŞEKİLLERİNE GÖRE GÜNCELLENMİŞ BLOKLAR
+// SVG ŞEKİLLERİ (Harfler aynı kalıyor, ızgara büyüdüğü için ekranda küçük görünecekler)
 const BLOCK_PIECES = {
   H: {
     shape: [
@@ -25,11 +27,11 @@ const BLOCK_PIECES = {
       [1, 1, 1],
       [1, 0, 1],
     ],
-    color: "#00f0f0", // Cyan (SVG'den)
+    color: "#00f0f0",
   },
   I: {
-    shape: [[1], [1], [1], [1], [1]], // 5 blok yüksekliğinde
-    color: "#0000f0", // Blue (SVG'den)
+    shape: [[1], [1], [1], [1], [1]],
+    color: "#0000f0",
   },
   L: {
     shape: [
@@ -38,8 +40,8 @@ const BLOCK_PIECES = {
       [1, 0],
       [1, 0],
       [1, 1],
-    ], // 5 blok yüksek, sağ alt çıkıntılı
-    color: "#f0a000", // Orange (SVG'den)
+    ],
+    color: "#f0a000",
   },
   U: {
     shape: [
@@ -47,35 +49,35 @@ const BLOCK_PIECES = {
       [1, 0, 1],
       [1, 1, 1],
     ],
-    color: "#f0f000", // Yellow (SVG'den)
+    color: "#f0f000",
   },
   F: {
     shape: [
       [1, 1],
       [1, 0],
-      [1, 1], // Orta çizgi
+      [1, 1],
       [1, 0],
       [1, 0],
-    ], // 5 blok yüksekliğinde
-    color: "#00f000", // Green (SVG'den)
+    ],
+    color: "#00f000",
   },
   E: {
     shape: [
       [1, 1],
       [1, 0],
-      [1, 1], // Orta çizgi
+      [1, 1],
       [1, 0],
-      [1, 1], // Alt çizgi
-    ], // 5 blok yüksekliğinde
-    color: "#a000f0", // Purple (SVG'den)
+      [1, 1],
+    ],
+    color: "#a000f0",
   },
   O: {
     shape: [
       [1, 1, 1],
       [1, 1, 1],
       [1, 1, 1],
-    ], // 3x3 Büyük Kare (SVG'den)
-    color: "#f00000", // Red (SVG'den)
+    ],
+    color: "#f00000",
   },
   S: {
     shape: [
@@ -84,8 +86,8 @@ const BLOCK_PIECES = {
       [1, 1],
       [0, 1],
       [1, 1],
-    ], // SVG'deki S Harfi yapısı (5 yüksekliğinde kıvrımlı)
-    color: "#00f0f0", // Cyan (SVG'den)
+    ],
+    color: "#00f0f0",
   },
 };
 
@@ -124,7 +126,11 @@ const MorlesGame = () => {
   const [score, setScore] = useState(0);
   const [level, setLevel] = useState(1);
   const [lines, setLines] = useState(0);
-  const [dropTime, setDropTime] = useState(1000);
+
+  // --- DEĞİŞİKLİK 2: BAŞLANGIÇ HIZI ---
+  // Izgara 40 kare olduğu için 1000ms çok yavaş kalır. 500ms ile başlatıyoruz.
+  const [dropTime, setDropTime] = useState(500);
+
   const [highScore, setHighScore] = useState(0);
 
   // Refs
@@ -214,7 +220,8 @@ const MorlesGame = () => {
   const spawnNewPiece = useCallback(() => {
     const piece = nextPiece || createRandomPiece();
     const next = createRandomPiece();
-    // Parçalar artık daha büyük olduğu için başlangıç X pozisyonunu ortalamak önemli
+
+    // BOARD_WIDTH artık 20 olduğu için matematiksel olarak ortalama yine doğru çalışır
     const startX = Math.floor((BOARD_WIDTH - piece.shape[0].length) / 2);
     const startPosition = { x: startX, y: 0 };
 
@@ -259,7 +266,9 @@ const MorlesGame = () => {
         const newLevel = Math.floor(lines / 10) + 1;
         if (newLevel > level) {
           setLevel(newLevel);
-          setDropTime(Math.max(100, 1000 - (newLevel - 1) * 100));
+          // --- DEĞİŞİKLİK 3: SEVİYE HIZI AYARI ---
+          // Başlangıç hızı 500 olduğu için her seviyede 50ms hızlandırıyoruz.
+          setDropTime(Math.max(50, 500 - (newLevel - 1) * 50));
         }
         spawnNewPiece();
       }
@@ -283,11 +292,10 @@ const MorlesGame = () => {
   const rotatePieceAction = useCallback(() => {
     if (!currentPiece || !gameRunning || gameOver) return;
     const rotated = rotatePiece(currentPiece);
-    // Döndürme çarpışması kontrolü (Duvarın içine dönmemesi için basit duvar tekmesi)
     if (!checkCollision(rotated, currentPosition, board)) {
       setCurrentPiece(rotated);
     } else {
-      // Basit Wall Kick: Eğer dönemiyorsa 1 sağa veya 1 sola kaydırıp dene
+      // Wall Kick (Duvar Tekmesi)
       if (!checkCollision(rotated, { ...currentPosition, x: currentPosition.x - 1 }, board)) {
         setCurrentPosition({ ...currentPosition, x: currentPosition.x - 1 });
         setCurrentPiece(rotated);
@@ -316,7 +324,8 @@ const MorlesGame = () => {
     setScore(0);
     setLevel(1);
     setLines(0);
-    setDropTime(1000);
+    // --- DEĞİŞİKLİK 4: RESET HIZI ---
+    setDropTime(500);
   };
 
   // Zamanlayıcı
@@ -380,9 +389,8 @@ const MorlesGame = () => {
   };
 
   const renderNextPieceGrid = () => {
-    // Sonraki parça ızgarasını dinamik hale getirdim çünkü parçalar büyük (5 birim)
     const cells = [];
-    const gridSize = 5; // SVG parçaları büyük olduğu için 5x5 grid
+    const gridSize = 5;
     for (let y = 0; y < gridSize; y++) {
       for (let x = 0; x < gridSize; x++) {
         const isPart = nextPiece && nextPiece.shape[y] && nextPiece.shape[y][x];
@@ -513,7 +521,7 @@ const MorlesGame = () => {
               display: "grid",
               gridTemplateColumns: `repeat(${BOARD_WIDTH}, 1fr)`,
               gridTemplateRows: `repeat(${BOARD_HEIGHT}, 1fr)`,
-              gap: "1px",
+              gap: "0px", // Piksel piksel görünüm için boşluğu sıfırladım veya 1px bırakabilirsin
               width: "100%",
               height: "100%",
             }}
@@ -524,9 +532,10 @@ const MorlesGame = () => {
                   key={`${y}-${x}`}
                   style={{
                     background: cell === EMPTY_CELL ? "transparent" : cell,
-                    border: cell === EMPTY_CELL ? "1px solid rgba(255, 255, 255, 0.05)" : "none",
-                    borderRadius: "2px",
-                    boxShadow: cell !== EMPTY_CELL ? "inset 0 0 4px rgba(0,0,0,0.5)" : "none",
+                    // Boş hücrelerdeki çizgileri kaldırdım veya çok silik yaptım ki görüntü karışmasın
+                    border: cell === EMPTY_CELL ? "1px solid rgba(255, 255, 255, 0.02)" : "none",
+                    borderRadius: "0px", // Kare keskin olsun
+                    boxShadow: cell !== EMPTY_CELL ? "inset 0 0 2px rgba(0,0,0,0.5)" : "none",
                   }}
                 />
               )),
