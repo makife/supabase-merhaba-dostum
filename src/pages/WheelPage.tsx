@@ -40,7 +40,7 @@ const WheelPage = () => {
   const [rotation, setRotation] = useState(0);
   const [lastReward, setLastReward] = useState<WheelReward | null>(null);
   const [transitionDuration, setTransitionDuration] = useState(0);
-  // Daha yumuşak bir yavaşlama için bezier eğrisini güncelledik
+  // Daha doğal bir duruş için bezier eğrisi
   const [timingFunction, setTimingFunction] = useState("cubic-bezier(0.2, 0, 0.1, 1)");
 
   const wheelSegments: WheelReward[] = useMemo(
@@ -85,31 +85,45 @@ const WheelPage = () => {
   const spinWheel = async () => {
     if (!user || !canSpin || isSpinning) return;
 
-    // Sesi çal (8 saniyelik ses)
     playSpecialSound("/carkSesi.mp3", 0.8);
     setIsSpinning(true);
 
     const rewardIndex = Math.floor(Math.random() * wheelSegments.length);
     const reward = wheelSegments[rewardIndex];
 
+    // MATEMATİK DÜZELTMESİ:
+    // 1. Dilim açısı
     const segmentAngle = 360 / wheelSegments.length;
 
-    // 8 Saniye boyunca dönmesi için tur sayısını artırdık.
-    // 8-12 tur arası dönecek (Süreye yayılacağı için aşırı hızlı görünmez)
-    const randomSpins = 8 + Math.random() * 4;
+    // 2. Hedef dilimin merkez açısı (index * açı + yarım açı)
+    // Bu açı, dilimin merkezinin 0 noktasından (saat 12) ne kadar uzakta olduğunu verir.
+    const targetCenterAngle = rewardIndex * segmentAngle + segmentAngle / 2;
 
-    // Mevcut rotasyonun üzerine ekleyerek devam et (geriye sarma yapmasın)
-    // Modulo işlemi kaldırıldı, kümülatif artış sağlanacak.
-    const currentRotation = rotation;
-    const stopAngle =
-      currentRotation + 360 * randomSpins + (360 - rewardIndex * segmentAngle - (currentRotation % 360));
+    // 3. Çarkı kaç derece döndürmeliyiz?
+    // Çark saat yönünde dönüyor. Hedef dilimi saat 12'ye (0 dereceye) getirmek için
+    // 360 - hedef_açı kadar döndürmeliyiz.
+    const requiredRotation = 360 - targetCenterAngle;
 
-    // Animasyon süresi 8000ms (8 saniye) olarak ayarlandı
+    // 4. Mevcut rotasyonun üzerine ekle (Geriye sarma yapmaması için)
+    // Önceki rotasyonun 360 modunu alıp, tam tura tamamlıyoruz, sonra hedefi ekliyoruz.
+    const currentMod = rotation % 360;
+    let distanceToTarget = requiredRotation - currentMod;
+
+    // Eğer hedef açı geride kaldıysa, ileriye doğru bir tam tur ekleyerek git
+    if (distanceToTarget < 0) {
+      distanceToTarget += 360;
+    }
+
+    // 5. Ekstra turlar (8 tam tur)
+    const extraSpins = 360 * 8;
+
+    // 6. Sonuç rotasyonu
+    const finalRotation = rotation + extraSpins + distanceToTarget;
+
     setTransitionDuration(8000);
-    setTimingFunction("cubic-bezier(0.2, 0, 0.1, 1)"); // Uzun süreli yavaşlama
-    setRotation(stopAngle);
+    setTimingFunction("cubic-bezier(0.2, 0, 0.1, 1)");
+    setRotation(finalRotation);
 
-    // 8 Saniye sonra sonucu göster
     setTimeout(async () => {
       setLastReward(reward);
       await saveWheelSpin(reward);
@@ -172,7 +186,7 @@ const WheelPage = () => {
       </div>
 
       <div className="w-full max-w-md z-10 flex flex-col gap-6">
-        {/* Header - SADECE GERİ BUTONU KALDI */}
+        {/* Header - SADECE GERİ BUTONU */}
         <div className="flex items-center justify-start">
           <Button onClick={() => navigate("/")} variant="ghost" className="text-white hover:bg-white/10">
             <ArrowLeft className="w-6 h-6 mr-2" />
