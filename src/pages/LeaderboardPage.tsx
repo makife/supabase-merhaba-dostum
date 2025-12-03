@@ -13,7 +13,7 @@ import {
   Crown,
   Medal,
   Target,
-  Calendar,
+  Calendar,ge
   Users,
   Star,
   TrendingUp,
@@ -367,16 +367,18 @@ const LeaderboardPage = () => {
           <div className="max-w-md mx-auto px-4 py-3 pb-0 space-y-4">
             {/* Header: Geri Butonu ve Başlık */}
             <div className="flex items-center justify-between">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate("/")}
-                className="-ml-2 hover:bg-slate-100 rounded-full"
+              <Button 
+                onClick={() => navigate("/")} 
+                className="bg-white border-2 border-indigo-100 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 rounded-full shadow-sm px-4 h-10 transition-all active:scale-95 font-bold"
               >
-                <ArrowLeft className="w-6 h-6 text-slate-700" />
+                <ArrowLeft className="w-5 h-5 mr-2" />
+                Geri
               </Button>
+              
               <h1 className="text-lg font-bold text-slate-800">Liderlik Tablosu</h1>
-              <div className="w-10" />
+              
+              {/* Başlığı ortalamak için boşluk bırakıcı (Geri butonu ile aynı genişlikte) */}
+              <div className="w-[88px]" /> 
             </div>
 
             {/* Sabit İstatistik Kartı */}
