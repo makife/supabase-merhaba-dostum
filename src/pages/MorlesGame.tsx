@@ -543,7 +543,7 @@ const MorlesGame = () => {
           <ArrowLeft size={24} />
         </button>
         <div style={{ textAlign: "center" }}>
-          <h1 style={{ margin: 0, fontSize: "1.2rem", color: "#ffd700", fontWeight: "bold" }}>ALFABE KULE</h1>
+          <h1 style={{ margin: 0, fontSize: "1.2rem", color: "#ffd700", fontWeight: "bold" }}>HARF KULESİ</h1>
           <span style={{ fontSize: "0.8rem", color: "white", opacity: 0.8 }}>Seviye {level}</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
