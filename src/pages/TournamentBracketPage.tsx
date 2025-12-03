@@ -367,6 +367,9 @@ const TournamentBracketPage = () => {
   }, [matches, tournamentId, currentTournament, user, playSpecialSound, showChampion, showEliminated]);
 
   // Bot maçlarını otomatik tamamla (bracket page açıldığında)
+  // simulateBotMatches fonksiyonu zaten doğru bot kontrolü yapıyor (tournament_participants'tan is_bot flag'ini kontrol ediyor)
+  const botSimulationTriggeredRef = useRef<string | null>(null);
+  
   useEffect(() => {
     if (!tournamentId || !currentTournament || currentTournament.status !== "in_progress") return;
     if (matches.length === 0) return;
@@ -378,19 +381,18 @@ const TournamentBracketPage = () => {
     const inProgressMatches = matches.filter((m) => m.round === currentRound && m.status === "in_progress");
 
     if (inProgressMatches.length > 0) {
-      console.log(`🤖 Bracket page - ${inProgressMatches.length} in_progress maç bulundu`);
-
-      // En az bir bot maçı var mı kontrol et
-      const hasBotMatch = inProgressMatches.some((match) => {
-        const player1IsBot = match.player1_id?.startsWith("bot_") || false;
-        const player2IsBot = match.player2_id?.startsWith("bot_") || false;
-        return player1IsBot && player2IsBot;
-      });
-
-      if (hasBotMatch) {
-        console.log(`🤖 Bot maçları tespit edildi, otomatik tamamlanacak`);
-        simulateBotMatches(currentRound);
+      // Bu round için zaten simülasyon tetiklendi mi kontrol et
+      const roundKey = `${tournamentId}-${currentRound}`;
+      if (botSimulationTriggeredRef.current === roundKey) {
+        return;
       }
+      
+      console.log(`🤖 Bracket page - ${inProgressMatches.length} in_progress maç bulundu, bot maçları kontrol ediliyor...`);
+      botSimulationTriggeredRef.current = roundKey;
+      
+      // simulateBotMatches fonksiyonu içinde zaten doğru bot kontrolü yapılıyor
+      // (tournament_participants tablosundan is_bot flag'i kontrol ediliyor)
+      simulateBotMatches(currentRound);
     }
   }, [tournamentId, currentTournament?.status, currentTournament?.current_round, matches]);
 

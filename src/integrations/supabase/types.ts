@@ -1574,7 +1574,7 @@ export type Database = {
             Args: { p_current_round: number; p_tournament_id: string }
             Returns: Json
           }
-        | { Args: { p_tournament_id: string }; Returns: Json }
+        | { Args: { p_tournament_id: string }; Returns: undefined }
       apply_disconnect_penalty: {
         Args: { p_offender_id: string; p_room_id: string }
         Returns: {
@@ -1685,7 +1685,7 @@ export type Database = {
           }
       create_matches_for_active_tournament: {
         Args: { p_tournament_id: string }
-        Returns: Json
+        Returns: undefined
       }
       create_notification: {
         Args: {
@@ -1945,7 +1945,11 @@ export type Database = {
       }
       start_tournament_countdown: {
         Args: { p_match_id: string }
-        Returns: string
+        Returns: undefined
+      }
+      start_tournament_structure: {
+        Args: { p_tournament_id: string }
+        Returns: undefined
       }
       start_tournament_with_bots: {
         Args: { p_tournament_id: string }
