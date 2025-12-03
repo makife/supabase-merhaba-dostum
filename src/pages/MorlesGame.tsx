@@ -15,8 +15,8 @@ import {
 
 // --- DEĞİŞİKLİK 1: IZGARA BOYUTLARI ---
 // Harflerin küçülmesi ve alanın hassaslaşması için boyutları ikiye katladık.
-const BOARD_WIDTH = 20; // Eskiden 10
-const BOARD_HEIGHT = 40; // Eskiden 20
+const BOARD_WIDTH = 15; // Eskiden 10
+const BOARD_HEIGHT = 30; // Eskiden 20
 const EMPTY_CELL = 0;
 
 // SVG ŞEKİLLERİ (Harfler aynı kalıyor, ızgara büyüdüğü için ekranda küçük görünecekler)
