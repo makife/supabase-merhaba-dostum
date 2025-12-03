@@ -68,7 +68,7 @@ const LeaderboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all-time");
 
-  // --- Veri Çekme Fonksiyonları ---
+  // --- Veri Çekme Fonksiyonları (Aynı) ---
   const fetchAllTimeLeaders = async () => {
     try {
       const { data, error } = await supabase
@@ -101,11 +101,6 @@ const LeaderboardPage = () => {
       }
     } catch (error) {
       console.error("Error fetching all-time leaders:", error);
-      toast({
-        title: "Hata",
-        description: "Genel sıralama yüklenirken hata oluştu",
-        variant: "destructive",
-      });
     }
   };
 
@@ -116,6 +111,7 @@ const LeaderboardPage = () => {
         setWeeklyLeaders([]);
         return;
       }
+
       const weeklyData = Array.isArray(data)
         ? data.map((entry: any, index: number) => ({
             user_id: entry.user_id,
@@ -150,6 +146,7 @@ const LeaderboardPage = () => {
         setMonthlyLeaders([]);
         return;
       }
+
       const monthlyData = Array.isArray(data)
         ? data.map((entry: any, index: number) => ({
             user_id: entry.user_id,
@@ -183,7 +180,6 @@ const LeaderboardPage = () => {
       await Promise.all([fetchAllTimeLeaders(), fetchWeeklyLeaders(), fetchMonthlyLeaders()]);
       setLoading(false);
     };
-
     loadData();
   }, [user]);
 
@@ -206,7 +202,7 @@ const LeaderboardPage = () => {
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, []);
 
-  // --- Görsel Yardımcı Fonksiyonlar ---
+  // --- Görsel Yardımcılar ---
   const getRankStyle = (rank: number) => {
     switch (rank) {
       case 1:
@@ -315,12 +311,12 @@ const LeaderboardPage = () => {
                 <div className="flex items-center gap-3 text-xs text-slate-500">
                   <div className="flex items-center gap-1">
                     <Target className="w-3 h-3 text-blue-500" />
-                    <span className="font-medium text-slate-700">{leader.score} Puan</span>
+                    <span className="font-medium text-slate-700">{leader.score} P</span>
                   </div>
                   {leader.wins > 0 && (
                     <div className="flex items-center gap-1">
                       <Trophy className="w-3 h-3 text-yellow-500" />
-                      <span>{leader.wins} Kazanma</span>
+                      <span>{leader.wins} W</span>
                     </div>
                   )}
                 </div>
@@ -345,17 +341,6 @@ const LeaderboardPage = () => {
     }
   };
 
-  const getTabDescription = (tab: string) => {
-    switch (tab) {
-      case "weekly":
-        return "Bu hafta en yüksek puanı toplayanlar";
-      case "monthly":
-        return "Bu ayın şampiyonları";
-      default:
-        return "Tüm zamanların efsaneleri";
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -370,67 +355,70 @@ const LeaderboardPage = () => {
   const currentStats = getCurrentUserStats();
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
-      {/* Sabit Header */}
-      <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-200 safe-area-pt">
-        <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/")}
-            className="-ml-2 hover:bg-slate-100 rounded-full"
-          >
-            <ArrowLeft className="w-6 h-6 text-slate-700" />
-          </Button>
-          <h1 className="text-lg font-bold text-slate-800">Liderlik Tablosu</h1>
-          <div className="w-10" />
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-md mx-auto w-full p-4 space-y-6">
-          {/* Kendi İstatistik Kartın - Güncellendi */}
-          {currentStats && (
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-4 text-white shadow-lg shadow-blue-500/20 transform transition-all active:scale-[0.99]">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2 bg-white/20 px-2 py-1 rounded-lg backdrop-blur-sm">
-                  <TrendingUp className="w-4 h-4 text-blue-100" />
-                  <span className="text-xs font-bold">Senin Performansın</span>
-                </div>
-                <Badge variant="outline" className="text-[10px] border-white/30 text-blue-50">
-                  {activeTab === "weekly" ? "Haftalık" : activeTab === "monthly" ? "Aylık" : "Genel"}
-                </Badge>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <div className="bg-white/20 w-16 h-16 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/10 flex-shrink-0">
-                  <span className="text-2xl font-black">{currentStats.rank > 0 ? `#${currentStats.rank}` : "-"}</span>
-                </div>
-
-                {/* İstatistik Grid - 3 Kolonlu */}
-                <div className="flex-1 grid grid-cols-3 gap-2">
-                  <div className="bg-black/10 rounded-lg p-2 text-center">
-                    <p className="text-[10px] text-blue-100 uppercase font-bold opacity-70 mb-0.5">Puan</p>
-                    <p className="text-base font-bold">{currentStats.score}</p>
-                  </div>
-                  <div className="bg-black/10 rounded-lg p-2 text-center">
-                    <p className="text-[10px] text-blue-100 uppercase font-bold opacity-70 mb-0.5">Galibiyet</p>
-                    <p className="text-base font-bold">{currentStats.wins}</p>
-                  </div>
-                  <div className="bg-black/10 rounded-lg p-2 text-center">
-                    <p className="text-[10px] text-blue-100 uppercase font-bold opacity-70 mb-0.5">Oyun</p>
-                    <p className="text-base font-bold">{currentStats.games_played}</p>
-                  </div>
-                </div>
-              </div>
+    // Ana Konteyner: Ekran boyutuna sabitlendi ve taşmalar gizlendi
+    <div className="h-screen bg-slate-50 flex flex-col font-sans overflow-hidden">
+      {/* TABS WRAPPER: 
+        Hem sabit üst kısmı hem de kayan alt kısmı kapsıyor.
+        Böylece TabsList (üstte) ve TabsContent (altta) iletişim kurabiliyor.
+      */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+        {/* --- SABİT ÜST KISIM (HEADER + KART + TABLAR) --- */}
+        <div className="z-20 bg-slate-50 border-b border-slate-200 shadow-sm flex-shrink-0">
+          <div className="max-w-md mx-auto px-4 py-3 pb-0 space-y-4">
+            {/* Header: Geri Butonu ve Başlık */}
+            <div className="flex items-center justify-between">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate("/")}
+                className="-ml-2 hover:bg-slate-100 rounded-full"
+              >
+                <ArrowLeft className="w-6 h-6 text-slate-700" />
+              </Button>
+              <h1 className="text-lg font-bold text-slate-800">Liderlik Tablosu</h1>
+              <div className="w-10" />
             </div>
-          )}
 
-          {/* Tablar ve Liste - Güncellendi */}
-          <div className="space-y-4">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              {/* Yüksek ve Renkli Tab Listesi */}
-              <TabsList className="w-full h-14 bg-slate-200/50 p-1.5 rounded-2xl grid grid-cols-3 mb-4 gap-2">
+            {/* Sabit İstatistik Kartı */}
+            {currentStats && (
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-4 text-white shadow-lg shadow-blue-500/20 transform transition-all active:scale-[0.99]">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2 bg-white/20 px-2 py-1 rounded-lg backdrop-blur-sm">
+                    <TrendingUp className="w-4 h-4 text-blue-100" />
+                    <span className="text-xs font-bold">Senin Performansın</span>
+                  </div>
+                  <Badge variant="outline" className="text-[10px] border-white/30 text-blue-50">
+                    {activeTab === "weekly" ? "Haftalık" : activeTab === "monthly" ? "Aylık" : "Genel"}
+                  </Badge>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="bg-white/20 w-16 h-16 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/10 flex-shrink-0">
+                    <span className="text-2xl font-black">{currentStats.rank > 0 ? `#${currentStats.rank}` : "-"}</span>
+                  </div>
+
+                  {/* İstatistik Grid - 3 Kolonlu */}
+                  <div className="flex-1 grid grid-cols-3 gap-2">
+                    <div className="bg-black/10 rounded-lg p-2 text-center">
+                      <p className="text-[10px] text-blue-100 uppercase font-bold opacity-70 mb-0.5">Puan</p>
+                      <p className="text-base font-bold">{currentStats.score}</p>
+                    </div>
+                    <div className="bg-black/10 rounded-lg p-2 text-center">
+                      <p className="text-[10px] text-blue-100 uppercase font-bold opacity-70 mb-0.5">Galibiyet</p>
+                      <p className="text-base font-bold">{currentStats.wins}</p>
+                    </div>
+                    <div className="bg-black/10 rounded-lg p-2 text-center">
+                      <p className="text-[10px] text-blue-100 uppercase font-bold opacity-70 mb-0.5">Oyun</p>
+                      <p className="text-base font-bold">{currentStats.games_played}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Sabit Tab Listesi */}
+            <div className="pb-3">
+              <TabsList className="w-full h-14 bg-slate-200/50 p-1.5 rounded-2xl grid grid-cols-3 gap-2">
                 <TabsTrigger
                   value="all-time"
                   className="h-full rounded-xl text-xs font-bold text-slate-500 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-400 data-[state=active]:to-orange-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
@@ -453,27 +441,25 @@ const LeaderboardPage = () => {
                   Aylık
                 </TabsTrigger>
               </TabsList>
-
-              <div className="flex items-center gap-2 mb-4 px-1">
-                <div
-                  className={`w-1 h-4 rounded-full ${activeTab === "all-time" ? "bg-orange-500" : activeTab === "weekly" ? "bg-emerald-500" : "bg-purple-500"}`}
-                ></div>
-                <p className="text-xs text-slate-500 font-medium">{getTabDescription(activeTab)}</p>
-              </div>
-
-              <TabsContent value="all-time" className="mt-0 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                {renderLeaderboard(allTimeLeaders, false)}
-              </TabsContent>
-              <TabsContent value="weekly" className="mt-0 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                {renderLeaderboard(weeklyLeaders, true)}
-              </TabsContent>
-              <TabsContent value="monthly" className="mt-0 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                {renderLeaderboard(monthlyLeaders, true)}
-              </TabsContent>
-            </Tabs>
+            </div>
           </div>
         </div>
-      </div>
+
+        {/* --- KAYDIRILABİLİR ALT KISIM (LİSTE) --- */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-md mx-auto w-full p-4 pt-2">
+            <TabsContent value="all-time" className="mt-0 animate-in fade-in slide-in-from-bottom-2 duration-500">
+              {renderLeaderboard(allTimeLeaders, false)}
+            </TabsContent>
+            <TabsContent value="weekly" className="mt-0 animate-in fade-in slide-in-from-bottom-2 duration-500">
+              {renderLeaderboard(weeklyLeaders, true)}
+            </TabsContent>
+            <TabsContent value="monthly" className="mt-0 animate-in fade-in slide-in-from-bottom-2 duration-500">
+              {renderLeaderboard(monthlyLeaders, true)}
+            </TabsContent>
+          </div>
+        </div>
+      </Tabs>
     </div>
   );
 };
