@@ -424,10 +424,11 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     }
   };
 
-  // User presence management - REALTIME ONLY (NO POLLING)
+  // User presence management - REALTIME + POLLING HYBRID
   useEffect(() => {
     if (!user?.id) return;
 
+    // 1. Durumunu Güncelle (Ben Buradayım Sinyali)
     const updatePresence = async () => {
       try {
         await supabase.from("user_presence" as any).upsert({
@@ -440,8 +441,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       }
     };
 
+    // 2. Online Olanları Çek (Listeyi Güncelle)
     const fetchOnlineUsers = async () => {
-      // ... (Mevcut kodun aynı kalacak) ...
       try {
         const { data }: any = await supabase
           .from("user_presence" as any)
@@ -456,17 +457,22 @@ export const UserProvider = ({ children }: UserProviderProps) => {
           `,
           )
           .eq("is_online", true)
-          .gte("last_seen", new Date(Date.now() - 45 * 1000).toISOString());
+          .gte("last_seen", new Date(Date.now() - 45 * 1000).toISOString()); // Son 45 saniyede görülenler
 
         if (data) {
-          setOnlineUsers(
-            data.map((item: any) => ({
-              id: item.user_id,
-              username: item.profiles.username || "Unknown",
-              avatar_url: item.profiles.avatar_url,
-              last_seen: item.last_seen,
-            })),
-          );
+          // Gelen veriyi formatla
+          const newUsers = data.map((item: any) => ({
+            id: item.user_id,
+            username: item.profiles.username || "Unknown",
+            avatar_url: item.profiles.avatar_url,
+            last_seen: item.last_seen,
+          }));
+
+          // STATE GÜNCELLEMESİ: Sadece veri değiştiyse set et (Render optimizasyonu)
+          setOnlineUsers((prev) => {
+            const isDifferent = JSON.stringify(prev) !== JSON.stringify(newUsers);
+            return isDifferent ? newUsers : prev;
+          });
         }
       } catch (error) {
         console.error("Error fetching online users:", error);
@@ -478,36 +484,37 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     };
 
     const handleVisibilityChange = () => {
-      if (document.hidden) {
-        // İsteğe bağlı: Tab arka plana atılınca hemen offline yapmak istemiyorsan burayı kaldırabilirsin
-        // setUserOffline();
-      } else {
+      if (!document.hidden) {
         updatePresence();
         fetchOnlineUsers();
       }
     };
 
-    // İlk presence güncellemesi
+    // --- BAŞLATMA ---
     updatePresence();
     fetchOnlineUsers();
 
-    // ✅ YENİ EKLENEN KISIM: HEARTBEAT (KALP ATIŞI)
-    // Her 30 saniyede bir "Ben buradayım" diyerek last_seen'i güncelle
-    const heartbeatInterval = setInterval(() => {
-      updatePresence();
-    }, 30000);
+    // A. HEARTBEAT (GÖNDEREN): Her 30 saniyede bir veritabanına "Ben Online'ım" de.
+    const heartbeatInterval = setInterval(updatePresence, 30000);
 
-    // Realtime subscription
+    // B. POLLING (ALICI): Her 5 saniyede bir "Kimler Online?" diye sor.
+    // Bu, Realtime çalışmasa bile listenin en geç 5 saniye içinde güncellenmesini garanti eder.
+    const pollingInterval = setInterval(fetchOnlineUsers, 5000);
+
+    // C. REALTIME (ANLIK): Veritabanında bir değişiklik olursa ANINDA yakala.
     const channel = supabase
       .channel("presence_changes")
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "*", // INSERT, UPDATE veya DELETE olduğunda
           schema: "public",
           table: "user_presence" as any,
         },
-        fetchOnlineUsers,
+        (payload) => {
+          console.log("🔔 Realtime Presence Change:", payload);
+          fetchOnlineUsers(); // Değişiklik olur olmaz listeyi çek
+        },
       )
       .subscribe();
 
@@ -515,11 +522,10 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      // ✅ Interval'ı temizlemeyi unutma
       clearInterval(heartbeatInterval);
-
+      clearInterval(pollingInterval); // Polling'i temizle
       supabase.removeChannel(channel);
-      setUserOffline();
+      // setUserOffline(); // Sayfa yenilenirken offline yapma, heartbeat timeout halletsin (Tercihen)
       window.removeEventListener("beforeunload", handleBeforeUnload);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
