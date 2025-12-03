@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Volume2, VolumeX } from "lucide-react"; // Ses ikonlarını ekledik
 
 const DinoRunner = () => {
-  // Geri Dönme Fonksiyonu (Daha güvenli)
+  // Geri Dönme Fonksiyonu
   const navigate = () => {
     try {
       if (window.history.length > 1) {
         window.history.back();
       } else {
-        // Eğer geçmiş yoksa direkt ana sayfaya git
         window.location.href = "/";
       }
     } catch (e) {
@@ -20,13 +19,14 @@ const DinoRunner = () => {
   const [gameState, setGameState] = useState("waiting");
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
+  const [isMuted, setIsMuted] = useState(false); // SES DURUMU EKLENDİ
 
   // Render State'leri
   const [dinoY, setDinoY] = useState(0);
   const [dinoRotation, setDinoRotation] = useState(0);
-  const [obstacles, setObstacles] = useState([]);
-  const [letters, setLetters] = useState([]);
-  const [clouds, setClouds] = useState([]);
+  const [obstacles, setObstacles] = useState<any[]>([]);
+  const [letters, setLetters] = useState<any[]>([]);
+  const [clouds, setClouds] = useState<any[]>([]);
   const [groundOffset, setGroundOffset] = useState(0);
 
   // --- KELİME SİSTEMİ ---
@@ -42,21 +42,22 @@ const DinoRunner = () => {
   const dinoRotationRef = useRef(0);
   const velocityRef = useRef(0);
   const speedRef = useRef(4);
-  const obstaclesRef = useRef([]);
-  const lettersRef = useRef([]);
-  const cloudsRef = useRef([]);
+  const obstaclesRef = useRef<any[]>([]);
+  const lettersRef = useRef<any[]>([]);
+  const cloudsRef = useRef<any[]>([]);
   const scoreRef = useRef(0);
 
-  // Logic Ref'leri (Senkronizasyon için)
+  // Logic Ref'leri
   const targetWordRef = useRef("");
   const collectedCountRef = useRef(0);
-  const missedCountRef = useRef(0); // Kaçırılan harfleri saymak için
+  const missedCountRef = useRef(0);
   const spawnIndexRef = useRef(0);
 
   const nextObstacleTimeRef = useRef(0);
   const nextLetterTimeRef = useRef(0);
   const gameLoopRef = useRef<number>();
   const audioContextRef = useRef<AudioContext | null>(null);
+  const isMutedRef = useRef(false); // Ses kontrolü için ref (loop içinde erişim için)
 
   const PRAISE_WORDS = [
     "Mükemmel",
@@ -88,6 +89,7 @@ const DinoRunner = () => {
       audioContextRef.current = new AudioContextClass();
     }
 
+    // Kelime listesi yoksa varsayılanları kullan
     fetch("/wordlist.txt")
       .then((r) => r.text())
       .then((t) =>
@@ -98,21 +100,25 @@ const DinoRunner = () => {
             .filter((w) => w.length > 0),
         ),
       )
-      .catch(() => setWordList(["REAKTÖR", "ATOM", "ENERJİ", "KAHRAMANMARAŞ", "AFYONKARAHİSAR", "ÇEKOSLOVAKYA"])); // Uzun kelime testi için
+      .catch(() => setWordList(["REAKTÖR", "ATOM", "ENERJİ", "KODLAMA", "REACT", "TYPESCRIPT"]));
   }, []);
 
   useEffect(() => {
     targetWordRef.current = targetWord;
   }, [targetWord]);
 
-  // collectedCountRef zaten manuel güncelleniyor ama yine de sync tutalım
+  // Ses durumunu ref ile senkronize et (oyun döngüsü için)
   useEffect(() => {
-    // Sadece reset durumunda state'den ref'e akış olsun, oyun içi ref -> state
+    isMutedRef.current = isMuted;
+  }, [isMuted]);
+
+  useEffect(() => {
     if (collectedCount === 0) collectedCountRef.current = 0;
   }, [collectedCount]);
 
-  const playSound = (freq, type = "sine", vol = 0.1) => {
-    if (!audioContextRef.current) return;
+  // SES FONKSİYONU (Mute kontrolü eklendi)
+  const playSound = (freq: number, type = "sine", vol = 0.1) => {
+    if (isMutedRef.current || !audioContextRef.current) return;
     try {
       const ctx = audioContextRef.current;
       const osc = ctx.createOscillator();
@@ -137,16 +143,15 @@ const DinoRunner = () => {
     setWordNotification(`HEDEF: ${newWord}`);
     setTimeout(() => setWordNotification(""), 2000);
 
-    // Ref Reset
     targetWordRef.current = newWord;
     collectedCountRef.current = 0;
-    missedCountRef.current = 0; // Kaçırılanları sıfırla
+    missedCountRef.current = 0;
     spawnIndexRef.current = 0;
 
     nextLetterTimeRef.current = Date.now() + 1000;
   }, [wordList]);
 
-  const showFeedback = (isSuccess) => {
+  const showFeedback = (isSuccess: boolean) => {
     if (isSuccess) {
       const randomPraise = PRAISE_WORDS[Math.floor(Math.random() * PRAISE_WORDS.length)];
       setFeedback({ text: randomPraise, type: "success" });
@@ -185,20 +190,24 @@ const DinoRunner = () => {
     gameLoopRef.current = requestAnimationFrame(gameLoop);
   };
 
-  const handleJump = (e) => {
+  const handleJump = (e: any) => {
     if (e) {
-      e.preventDefault();
+      // e.preventDefault(); // Mobil scroll'u bozmamak için bazen kapatılabilir ama oyunda kalsın
       e.stopPropagation();
     }
     if (gameStateRef.current !== "playing") {
       startGame();
       return;
     }
-    velocityRef.current = JUMP_FORCE;
-    playSound(600 + Math.random() * 200, "sine");
+    // Havada zıplamayı engelle (Double jump yoksa)
+    if (dinoYRef.current <= 5) {
+      // Sadece yere yakınken zıplasın
+      velocityRef.current = JUMP_FORCE;
+      playSound(600 + Math.random() * 200, "sine");
+    }
   };
 
-  const checkCollision = (rect1, rect2) => {
+  const checkCollision = (rect1: any, rect2: any) => {
     return (
       rect1.x < rect2.x + rect2.width &&
       rect1.x + rect1.width > rect2.x &&
@@ -218,6 +227,7 @@ const DinoRunner = () => {
       dinoYRef.current = 0;
       velocityRef.current = 0;
     }
+    // Tavana çarpma kontrolü (opsiyonel)
     if (dinoYRef.current > GAME_HEIGHT - DINO_HEIGHT) {
       dinoYRef.current = GAME_HEIGHT - DINO_HEIGHT;
       velocityRef.current = -2;
@@ -238,6 +248,7 @@ const DinoRunner = () => {
     obstaclesRef.current = obstaclesRef.current
       .map((obs) => ({ ...obs, x: obs.x - speedRef.current }))
       .filter((obs) => obs.x > -OBSTACLE_WIDTH);
+
     if (Date.now() > nextObstacleTimeRef.current) {
       const types = ["short", "tall", "box"];
       const type = types[Math.floor(Math.random() * types.length)];
@@ -252,6 +263,7 @@ const DinoRunner = () => {
       nextObstacleTimeRef.current = Date.now() + 1000 + Math.random() * 1500;
     }
 
+    // Engel Çarpışma
     for (let obs of obstaclesRef.current) {
       const obsRect = { x: obs.x + 5, y: obs.y, width: obs.width - 10, height: obs.height - 5 };
       if (checkCollision(dinoRect, obsRect)) {
@@ -264,7 +276,7 @@ const DinoRunner = () => {
     }
     setObstacles([...obstaclesRef.current]);
 
-    // 3. Harfler (DÜZELTİLEN MANTIK)
+    // 3. Harfler
     const currentWord = targetWordRef.current;
 
     // Spawn Logic
@@ -279,15 +291,14 @@ const DinoRunner = () => {
         width: LETTER_SIZE,
         height: LETTER_SIZE,
         collected: false,
-        processed: false, // İşlendi mi? (Kaçırıldı veya toplandı)
+        processed: false,
       });
       spawnIndexRef.current++;
       nextLetterTimeRef.current = Date.now() + 800 + Math.random() * 600;
     }
 
-    // Hareket ve Kontrol Döngüsü
+    // Harf Hareketi ve Kontrolü
     lettersRef.current.forEach((letter) => {
-      // Hareket
       letter.x -= speedRef.current;
 
       if (letter.processed) return;
@@ -297,39 +308,38 @@ const DinoRunner = () => {
         const hitBox = { x: letter.x - 15, y: letter.y - 15, width: letter.width + 30, height: letter.height + 30 };
         if (checkCollision(dinoRect, hitBox)) {
           letter.collected = true;
-          letter.processed = true; // Artık işlendi
+          letter.processed = true;
 
           playSound(1000, "square", 0.1);
           setScore((s) => s + 50);
           setCollectedCount((prev) => prev + 1);
-          collectedCountRef.current += 1; // Sync Ref
+          collectedCountRef.current += 1;
         }
       }
 
-      // Kaçırma Kontrolü (Ekrandan çıktı mı?)
+      // Kaçırma Kontrolü
       if (!letter.collected && letter.x < -LETTER_SIZE) {
         letter.processed = true;
-        missedCountRef.current += 1; // Kaçırılanları say
+        missedCountRef.current += 1;
       }
     });
 
-    // Ekrandan çıkanları temizle (processed kontrolüne gerek yok x'e bakmak yeterli render için)
+    // Temizlik: Ekrandan çıkanları VEYA toplananları diziden çıkarabiliriz,
+    // ama React render'ı için 'collected' olanları render etmeyeceğiz.
+    // Logic için ekrandan tamamen çıkanları siliyoruz.
     lettersRef.current = lettersRef.current.filter((l) => l.x > -LETTER_SIZE);
     setLetters([...lettersRef.current]);
 
-    // --- KELİME SONU KONTROLÜ (GÜVENLİ) ---
-    // Toplanan + Kaçırılan sayısı kelime uzunluğuna eşitse tur bitmiştir.
-    // Bu mantık harflerin ekrandan çıkmasını bekler, erken tetiklenmez.
+    // Kelime Sonu Kontrolü
     if (currentWord && collectedCountRef.current + missedCountRef.current >= currentWord.length) {
+      // Son harfin de ekrandan çıktığından veya toplandığından emin olmak için minik bir gecikme iyidir
+      // ama şimdilik direkt bitiriyoruz.
       if (collectedCountRef.current === currentWord.length) {
-        // Hepsi toplandı
         setScore((s) => s + 500);
         showFeedback(true);
       } else {
-        // En az bir tane kaçtı
         showFeedback(false);
       }
-
       pickNewWord();
     }
 
@@ -355,14 +365,13 @@ const DinoRunner = () => {
   }, [gameState]);
 
   useEffect(() => {
-    const handleKey = (e) => {
+    const handleKey = (e: KeyboardEvent) => {
       if (e.code === "Space" || e.code === "ArrowUp") handleJump(e);
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [gameState]);
 
-  // Yazı boyutunu hesaplayan yardımcı fonksiyon
   const getFontSize = () => {
     if (!targetWord) return "26px";
     const len = targetWord.length;
@@ -379,15 +388,20 @@ const DinoRunner = () => {
           <ArrowLeft size={24} />
           <span className="btn-text">GERİ</span>
         </button>
+
         <div className="score-board">
           <div className="score-item">
             <span className="label">PUAN</span>
             <span className="value">{score}</span>
           </div>
-          <div className="score-item">
-            <span className="label">REKOR</span>
-            <span className="value">{highScore}</span>
-          </div>
+          {/* SES BUTONU BURAYA EKLENDİ */}
+          <button
+            onClick={() => setIsMuted(!isMuted)}
+            className="icon-btn"
+            style={{ pointerEvents: "auto", marginLeft: "10px" }}
+          >
+            {isMuted ? <VolumeX size={24} color="#ff4444" /> : <Volume2 size={24} />}
+          </button>
         </div>
       </div>
 
@@ -398,18 +412,21 @@ const DinoRunner = () => {
           </div>
         ))}
 
-        {/* FEEDBACK POPUP */}
         {feedback && <div className={`feedback-popup ${feedback.type}`}>{feedback.text}</div>}
 
-        {letters.map((l) => (
-          <div
-            key={l.id}
-            className="letter-box"
-            style={{ left: l.x, bottom: l.y + GROUND_HEIGHT, width: l.width, height: l.height }}
-          >
-            <div className="letter-inner">{l.char}</div>
-          </div>
-        ))}
+        {/* HARFLER: Collected ise RENDER ETME (null dön) */}
+        {letters.map((l) => {
+          if (l.collected) return null; // <--- İŞTE BU SATIR HARFİ YOK EDİYOR
+          return (
+            <div
+              key={l.id}
+              className="letter-box"
+              style={{ left: l.x, bottom: l.y + GROUND_HEIGHT, width: l.width, height: l.height }}
+            >
+              <div className="letter-inner">{l.char}</div>
+            </div>
+          );
+        })}
 
         {obstacles.map((o) => (
           <div
@@ -438,7 +455,7 @@ const DinoRunner = () => {
 
         <div className="ground" style={{ backgroundPosition: `${-groundOffset}px 0`, height: GROUND_HEIGHT }}></div>
 
-        {/* HUD (KELİME GÖSTERGESİ - DİNAMİK FONT) */}
+        {/* HUD */}
         <div className="hud">
           {wordNotification ? (
             <div className="notification">{wordNotification}</div>
@@ -498,14 +515,14 @@ const DinoRunner = () => {
         .icon-btn:hover { background: rgba(255,255,255,0.2); }
         .btn-text { font-weight: bold; font-size: 14px; }
 
-        .score-board { display: flex; gap: 20px; }
+        .score-board { display: flex; gap: 10px; align-items: center; }
         .score-item { display: flex; flex-direction: column; align-items: flex-end; }
         .score-item .label { font-size: 10px; color: #aaa; font-weight: bold; letter-spacing: 1px; }
         .score-item .value { font-size: 18px; font-weight: bold; font-family: monospace; color: #FFD700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
 
         .game-stage {
             position: relative; width: 100%; height: 350px; background: linear-gradient(180deg, #1a2a6c 0%, #b21f1f 100%);
-            border-radius: 0 0 12px 12px; overflow: hidden; cursor: pointer;
+            border-radius: 0 0 12px 12px; overflow: hidden; cursor: pointer; touch-action: none;
             border: 2px solid rgba(255,255,255,0.1); border-top: none;
         }
 
@@ -525,11 +542,11 @@ const DinoRunner = () => {
             background-image: linear-gradient(90deg, #333 2px, transparent 2px); background-size: 50px 100%;
         }
 
-        .hud { position: absolute; top: 15px; left: 0; width: 100%; display: flex; justify-content: center; pointer-events: none; }
+        .hud { position: absolute; top: 15px; left: 0; width: 100%; display: flex; justify-content: center; pointer-events: none; z-index: 40; }
         .word-display {
             background: rgba(0,0,0,0.7); padding: 8px 16px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.3);
             display: flex; gap: 4px; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-            max-width: 90%; overflow: hidden; /* Taşmayı engelle */
+            max-width: 90%; overflow: hidden;
         }
 
         .char-slot { font-weight: bold; color: #666; text-align: center; font-family: monospace; border-bottom: 2px solid #444; transition: all 0.2s; }
@@ -550,10 +567,10 @@ const DinoRunner = () => {
         @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
 
         .overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 50; backdrop-filter: blur(5px); }
-        .card { background: #222; color: #fff; padding: 30px; border-radius: 20px; text-align: center; border: 1px solid #444; box-shadow: 0 0 50px rgba(0,0,0,0.6); }
+        .card { background: #222; color: #fff; padding: 30px; border-radius: 20px; text-align: center; border: 1px solid #444; box-shadow: 0 0 50px rgba(0,0,0,0.6); width: 80%; max-width: 300px; }
         .start-btn {
             background: linear-gradient(45deg, #FFD700, #FF8C00); border: none; padding: 12px 30px; color: #000; font-weight: 900;
-            font-size: 18px; border-radius: 30px; margin-top: 15px; cursor: pointer; box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); transition: transform 0.1s;
+            font-size: 18px; border-radius: 30px; margin-top: 15px; cursor: pointer; box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); transition: transform 0.1s; width: 100%;
         }
         .start-btn:active { transform: scale(0.95); }
       `}</style>
