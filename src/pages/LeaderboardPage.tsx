@@ -13,7 +13,7 @@ import {
   Crown,
   Medal,
   Target,
-  Calendar,ge
+  Calendar,
   Users,
   Star,
   TrendingUp,
@@ -68,7 +68,7 @@ const LeaderboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all-time");
 
-  // --- Veri Çekme Fonksiyonları (Aynı) ---
+  // --- Veri Çekme Fonksiyonları ---
   const fetchAllTimeLeaders = async () => {
     try {
       const { data, error } = await supabase
@@ -355,30 +355,25 @@ const LeaderboardPage = () => {
   const currentStats = getCurrentUserStats();
 
   return (
-    // Ana Konteyner: Ekran boyutuna sabitlendi ve taşmalar gizlendi
     <div className="h-screen bg-slate-50 flex flex-col font-sans overflow-hidden">
-      {/* TABS WRAPPER: 
-        Hem sabit üst kısmı hem de kayan alt kısmı kapsıyor.
-        Böylece TabsList (üstte) ve TabsContent (altta) iletişim kurabiliyor.
-      */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-        {/* --- SABİT ÜST KISIM (HEADER + KART + TABLAR) --- */}
+        {/* --- SABİT ÜST KISIM --- */}
         <div className="z-20 bg-slate-50 border-b border-slate-200 shadow-sm flex-shrink-0">
           <div className="max-w-md mx-auto px-4 py-3 pb-0 space-y-4">
             {/* Header: Geri Butonu ve Başlık */}
             <div className="flex items-center justify-between">
-              <Button 
-                onClick={() => navigate("/")} 
+              <Button
+                onClick={() => navigate("/")}
                 className="bg-white border-2 border-indigo-100 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 rounded-full shadow-sm px-4 h-10 transition-all active:scale-95 font-bold"
               >
                 <ArrowLeft className="w-5 h-5 mr-2" />
                 Geri
               </Button>
-              
+
               <h1 className="text-lg font-bold text-slate-800">Liderlik Tablosu</h1>
-              
-              {/* Başlığı ortalamak için boşluk bırakıcı (Geri butonu ile aynı genişlikte) */}
-              <div className="w-[88px]" /> 
+
+              {/* Başlığı ortalamak için boşluk bırakıcı */}
+              <div className="w-[88px]" />
             </div>
 
             {/* Sabit İstatistik Kartı */}
@@ -399,7 +394,7 @@ const LeaderboardPage = () => {
                     <span className="text-2xl font-black">{currentStats.rank > 0 ? `#${currentStats.rank}` : "-"}</span>
                   </div>
 
-                  {/* İstatistik Grid - 3 Kolonlu */}
+                  {/* İstatistik Grid */}
                   <div className="flex-1 grid grid-cols-3 gap-2">
                     <div className="bg-black/10 rounded-lg p-2 text-center">
                       <p className="text-[10px] text-blue-100 uppercase font-bold opacity-70 mb-0.5">Puan</p>
@@ -447,7 +442,7 @@ const LeaderboardPage = () => {
           </div>
         </div>
 
-        {/* --- KAYDIRILABİLİR ALT KISIM (LİSTE) --- */}
+        {/* --- KAYDIRILABİLİR ALT KISIM --- */}
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-md mx-auto w-full p-4 pt-2">
             <TabsContent value="all-time" className="mt-0 animate-in fade-in slide-in-from-bottom-2 duration-500">
