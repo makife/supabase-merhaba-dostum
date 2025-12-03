@@ -315,12 +315,12 @@ const LeaderboardPage = () => {
                 <div className="flex items-center gap-3 text-xs text-slate-500">
                   <div className="flex items-center gap-1">
                     <Target className="w-3 h-3 text-blue-500" />
-                    <span className="font-medium text-slate-700">{leader.score} P</span>
+                    <span className="font-medium text-slate-700">{leader.score} Puan</span>
                   </div>
                   {leader.wins > 0 && (
                     <div className="flex items-center gap-1">
                       <Trophy className="w-3 h-3 text-yellow-500" />
-                      <span>{leader.wins} W</span>
+                      <span>{leader.wins} Kazanma</span>
                     </div>
                   )}
                 </div>
