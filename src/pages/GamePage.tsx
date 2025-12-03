@@ -2091,13 +2091,13 @@ const GamePage = ({
             // Orada animasyonlarla birlikte düzgün başlatılacak
 
             // Maç durumunu güncelle
-            /* await supabase
-  .from("tournament_matches")
-  .update({
-    status: "pending", // pending olsun ki auto_start_countdown_finished_games fonksiyonu başlatsın
-    updated_at: new Date().toISOString(),
-  })
-  .eq("id", matchId); */
+            await supabase
+              .from("tournament_matches")
+              .update({
+                status: "pending", // pending olsun ki auto_start_countdown_finished_games fonksiyonu başlatsın
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", matchId);
           }
         } catch (error) {
           console.error("Turnuva maçı başlatma hatası:", error);
