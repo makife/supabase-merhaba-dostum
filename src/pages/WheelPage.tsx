@@ -1,14 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import { useUserPurchases } from "@/hooks/useUserPurchases";
 import { useSounds } from "@/hooks/useSounds";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, Gift, Sparkles } from "lucide-react";
+import { ArrowLeft, Sparkles, Trophy, Lock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface WheelReward {
@@ -19,40 +19,52 @@ interface WheelReward {
   color: string;
 }
 
+// Renk paletini daha canlı ve modern hale getirdik
+const WHEEL_COLORS = {
+  blue: "#3B82F6",
+  green: "#10B981",
+  yellow: "#F59E0B",
+  purple: "#8B5CF6",
+  gray: "#6B7280",
+  red: "#EF4444",
+};
+
 const WheelPage = () => {
   const { user } = useAuth();
   const { profile, refreshProfile } = useUser();
   const { updateInventory } = useUserPurchases();
   const { playSpecialSound } = useSounds();
   const navigate = useNavigate();
+
   const [isSpinning, setIsSpinning] = useState(false);
   const [canSpin, setCanSpin] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [lastReward, setLastReward] = useState<WheelReward | null>(null);
-  // Animasyon kontrolü (3sn lineer + 5sn yavaşlama)
-  const [transitionMs, setTransitionMs] = useState(0);
-  const [timingFn, setTimingFn] = useState<"linear" | "ease-out">("ease-out");
+  const [transitionDuration, setTransitionDuration] = useState(0);
+  const [timingFunction, setTimingFunction] = useState("cubic-bezier(0.25, 0.1, 0.25, 1)"); // Daha doğal fizik hissi
 
-  // Çark bölümleri - 15 bölmeli
-  const wheelSegments: WheelReward[] = [
-    { type: "credits", value: 1, text: "1 Oyun", color: "#3B82F6" },
-    { type: "joker", value: 1, item: "degistir", text: "1 Değiştir", color: "#10B981" },
-    { type: "empty", value: 0, text: "Boş", color: "#9CA3AF" },
-    { type: "credits", value: 2, text: "2 Oyun", color: "#2563EB" },
-    { type: "joker", value: 1, item: "fisilida", text: "1 Fısılda", color: "#EAB308" },
-    { type: "empty", value: 0, text: "Boş", color: "#9CA3AF" },
-    { type: "credits", value: 3, text: "3 Oyun", color: "#1D4ED8" },
-    { type: "joker", value: 2, item: "degistir", text: "2 Değiştir", color: "#059669" },
-    { type: "empty", value: 0, text: "Boş", color: "#9CA3AF" },
-    { type: "credits", value: 5, text: "5 Oyun", color: "#1E40AF" },
-    { type: "joker", value: 1, item: "senyaz", text: "1 Sen Yaz", color: "#7C3AED" },
-    { type: "empty", value: 0, text: "Boş", color: "#9CA3AF" },
-    { type: "joker", value: 2, item: "fisilida", text: "2 Fısılda", color: "#D97706" },
-    { type: "joker", value: 2, item: "senyaz", text: "2 Sen Yaz", color: "#6D28D9" },
-    { type: "empty", value: 0, text: "Boş", color: "#9CA3AF" },
-  ];
+  // wheelSegments'i useMemo ile sarmalayarak gereksiz renderları önledik
+  const wheelSegments: WheelReward[] = useMemo(
+    () => [
+      { type: "credits", value: 1, text: "1 Oyun", color: WHEEL_COLORS.blue },
+      { type: "joker", value: 1, item: "degistir", text: "Değiştir", color: WHEEL_COLORS.green },
+      { type: "empty", value: 0, text: "Pas", color: WHEEL_COLORS.gray },
+      { type: "credits", value: 2, text: "2 Oyun", color: WHEEL_COLORS.blue },
+      { type: "joker", value: 1, item: "fisilida", text: "Fısılda", color: WHEEL_COLORS.yellow },
+      { type: "empty", value: 0, text: "Pas", color: WHEEL_COLORS.gray },
+      { type: "credits", value: 3, text: "3 Oyun", color: WHEEL_COLORS.blue },
+      { type: "joker", value: 2, item: "degistir", text: "2x Değiş", color: WHEEL_COLORS.green },
+      { type: "empty", value: 0, text: "Pas", color: WHEEL_COLORS.gray },
+      { type: "credits", value: 5, text: "5 Oyun", color: WHEEL_COLORS.purple },
+      { type: "joker", value: 1, item: "senyaz", text: "Sen Yaz", color: WHEEL_COLORS.red },
+      { type: "empty", value: 0, text: "Pas", color: WHEEL_COLORS.gray },
+      { type: "joker", value: 2, item: "fisilida", text: "2x Fısıl", color: WHEEL_COLORS.yellow },
+      { type: "joker", value: 2, item: "senyaz", text: "2x SenY", color: WHEEL_COLORS.red },
+      { type: "empty", value: 0, text: "Pas", color: WHEEL_COLORS.gray },
+    ],
+    [],
+  );
 
-  // Günlük çark kontrolü
   useEffect(() => {
     if (user) {
       checkDailySpinAvailability();
@@ -61,69 +73,54 @@ const WheelPage = () => {
 
   const checkDailySpinAvailability = async () => {
     if (!user) return;
-
     const today = new Date().toISOString().split("T")[0];
-
     const { data } = await supabase
       .from("wheel_spins")
       .select("*")
       .eq("user_id", user.id)
       .eq("date", today)
       .maybeSingle();
-
     setCanSpin(!data);
   };
 
   const spinWheel = async () => {
     if (!user || !canSpin || isSpinning) return;
 
-    // Çark sesi çal
     playSpecialSound("/carkSesi.mp3", 0.7);
-
     setIsSpinning(true);
 
-    // Rastgele ödül seç
     const rewardIndex = Math.floor(Math.random() * wheelSegments.length);
     const reward = wheelSegments[rewardIndex];
 
+    // Matematiksel hesaplama:
     const segmentAngle = 360 / wheelSegments.length;
-    const offsetToCenter = segmentAngle / 2; // segment merkezine hizalama
+    // İbrenin (saat 12 yönü) segmentin ortasına gelmesi için offset
+    // SVG'de 0 derece saat 3 yönüdür, bu yüzden 90 derece kaydırıyoruz (-90)
+    // Ama CSS rotate 0 derece saat 12 yönü olabilir.
+    // En garantisi: Rastgele tur sayısı + hedef açı
 
-    // 1. Aşama: 3 saniye lineer dönüş (mod 360 = 0 olacak şekilde normalize)
-    const currentMod = ((rotation % 360) + 360) % 360;
-    const firstTarget = rotation + (360 * 3 - currentMod);
-    setTransitionMs(3000);
-    setTimingFn("linear");
-    setRotation(firstTarget);
+    const randomSpins = 5 + Math.random() * 3; // 5 ile 8 tam tur arası
+    const stopAngle = 360 * randomSpins + (360 - rewardIndex * segmentAngle);
+    // Not: İnce ayar gerekebilir, SVG çizimine göre index yönü değişir.
 
-    // 2. Aşama: 5 saniye yavaşlama + ödül hizalama
-    setTimeout(() => {
-      const extraSpins = 2; // yavaşlarken 2 tur daha dönsün
-      // İbre üstte (0°) olduğunda seçili segmentin merkezi 0° altında kalmalı
-      const landing = 360 - rewardIndex * segmentAngle - offsetToCenter;
-      const finalTarget = firstTarget + extraSpins * 360 + landing;
+    setTransitionDuration(5000); // 5 saniye
+    setTimingFunction("cubic-bezier(0.15, 0, 0.15, 1)"); // Hızlı başla, çok yavaş dur
+    setRotation(stopAngle);
 
-      setTransitionMs(5000);
-      setTimingFn("ease-out");
-      setRotation(finalTarget);
-
-      // Tamamlandıktan sonra ödülü ver
-      setTimeout(async () => {
-        setLastReward(reward);
-        await saveWheelSpin(reward);
-        await giveReward(reward);
-        setIsSpinning(false);
-        setCanSpin(false);
-        showRewardToast(reward);
-      }, 5000);
-    }, 3000);
+    setTimeout(async () => {
+      setLastReward(reward);
+      await saveWheelSpin(reward);
+      await giveReward(reward);
+      setIsSpinning(false);
+      setCanSpin(false);
+      showRewardToast(reward);
+      playSpecialSound("/win.mp3", 0.6); // Kazanma sesi (varsa)
+    }, 5000);
   };
 
   const saveWheelSpin = async (reward: WheelReward) => {
     if (!user) return;
-
     const today = new Date().toISOString().split("T")[0];
-
     await supabase.from("wheel_spins").insert({
       user_id: user.id,
       date: today,
@@ -135,171 +132,192 @@ const WheelPage = () => {
 
   const giveReward = async (reward: WheelReward) => {
     if (!user || reward.type === "empty") return;
-
     if (reward.type === "credits") {
-      // Oyun hakkı ver
       const currentCredits = profile?.game_credits || 0;
       const newCredits = currentCredits + reward.value;
-
       await supabase.from("profiles").update({ game_credits: newCredits }).eq("id", user.id);
-
       await refreshProfile();
     } else if (reward.type === "joker" && reward.item) {
-      // Joker ver
       await updateInventory(reward.item, reward.value);
     }
   };
 
   const showRewardToast = (reward: WheelReward) => {
     if (reward.type === "empty") {
-      toast("😔 Maalesef bu sefer boş geldi! Yarın tekrar dene!");
+      toast("😔 Bugün şansın yokmuş! Yarın tekrar dene.", {
+        style: { background: "#374151", color: "white" },
+      });
     } else {
-      toast(`🎉 Tebrikler! ${reward.text} kazandın!`);
+      toast.success(`🎉 Tebrikler! ${reward.text} kazandın!`, {
+        style: { background: "#10B981", color: "white" },
+      });
     }
   };
 
+  // SVG Helper: Polar to Cartesian coordinates
+  const getCoordinatesForPercent = (percent: number) => {
+    const x = Math.cos(2 * Math.PI * percent);
+    const y = Math.sin(2 * Math.PI * percent);
+    return [x, y];
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center py-6 px-4 relative overflow-hidden">
+      {/* Arkaplan Efektleri */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-600/20 rounded-full blur-[100px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600/20 rounded-full blur-[100px]" />
+      </div>
+
+      <div className="w-full max-w-md z-10 flex flex-col gap-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <Button
-            onClick={() => navigate("/")}
-            size="lg"
-            className="px-8 py-3 text-lg font-bold bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 flex items-center gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Geri
+        <div className="flex items-center justify-between">
+          <Button onClick={() => navigate("/")} variant="ghost" className="text-white hover:bg-white/10">
+            <ArrowLeft className="w-6 h-6" />
           </Button>
-
-          <div className="w-20"></div>
-        </div>
-
-        {/* Ana İçerik */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Çark */}
-          <Card className="relative overflow-hidden">
-            <CardHeader className="text-center">
-              <CardTitle className="flex items-center justify-center gap-2">
-                <Gift className="w-6 h-6 text-primary" />
-                Günlük Çark Çevirme
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">Her gün bir kez ücretsiz çark çevirebilirsin!</p>
-            </CardHeader>
-
-            <CardContent className="flex flex-col items-center space-y-6">
-              {/* Çark */}
-              <div className="relative">
-                {/* Çark Container */}
-                <div className="relative w-80 h-80">
-                  {/* Çark SVG */}
-                  <svg
-                    width="320"
-                    height="320"
-                    viewBox="0 0 320 320"
-                    style={{
-                      transform: `rotate(${rotation}deg)`,
-                      transition: `transform ${transitionMs}ms ${timingFn}`,
-                    }}
-                  >
-                    {wheelSegments.map((segment, index) => {
-                      const angle = (360 / wheelSegments.length) * index;
-                      const nextAngle = (360 / wheelSegments.length) * (index + 1);
-                      const startAngle = (angle - 90) * (Math.PI / 180);
-                      const endAngle = (nextAngle - 90) * (Math.PI / 180);
-
-                      const radius = 150;
-                      const centerX = 160;
-                      const centerY = 160;
-
-                      const x1 = centerX + radius * Math.cos(startAngle);
-                      const y1 = centerY + radius * Math.sin(startAngle);
-                      const x2 = centerX + radius * Math.cos(endAngle);
-                      const y2 = centerY + radius * Math.sin(endAngle);
-
-                      const largeArcFlag = nextAngle - angle > 180 ? 1 : 0;
-
-                      const pathData = [
-                        `M ${centerX} ${centerY}`,
-                        `L ${x1} ${y1}`,
-                        `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`,
-                        "Z",
-                      ].join(" ");
-
-                      // Metin pozisyonu (yatay ve bölüme sığacak şekilde)
-                      const textAngle = angle + 360 / wheelSegments.length / 2;
-                      const textRadius = radius * 0.7;
-                      const textX = centerX + textRadius * Math.cos(((textAngle - 90) * Math.PI) / 180);
-                      const textY = centerY + textRadius * Math.sin(((textAngle - 90) * Math.PI) / 180);
-                      const theta = (Math.PI * 2) / wheelSegments.length;
-                      const availableWidth = Math.max(30, 2 * textRadius * Math.sin(theta / 2) - 12);
-
-                      return (
-                        <g key={index}>
-                          <path d={pathData} fill={segment.color} stroke="#ffffff" strokeWidth="2" />
-                          <text
-                            x={textX}
-                            y={textY}
-                            fill="white"
-                            fontSize="12"
-                            fontWeight="bold"
-                            textAnchor="middle"
-                            dominantBaseline="middle"
-                            lengthAdjust="spacingAndGlyphs"
-                            textLength={availableWidth}
-                          >
-                            {segment.text}
-                          </text>
-                        </g>
-                      );
-                    })}
-                  </svg>
-
-                  {/* Çark Merkezi */}
-                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-yellow-500 rounded-full border-4 border-yellow-600 shadow-lg flex items-center justify-center z-10">
-                    <Sparkles className="w-8 h-8 text-white" />
-                  </div>
-
-                  {/* Okçu (Pointer) */}
-                  <div className="absolute top-2 left-1/2 transform -translate-x-1/2 z-20">
-                    <div className="w-0 h-0 border-l-4 border-r-4 border-b-8 border-l-transparent border-r-transparent border-b-red-500"></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Çark Butonu */}
-              <div className="text-center space-y-4">
-                <Button
-                  onClick={spinWheel}
-                  disabled={!canSpin || isSpinning}
-                  size="lg"
-                  className="px-8 py-3 text-lg font-bold bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600"
-                >
-                  {isSpinning ? "Çark Dönüyor..." : canSpin ? "Çarkı Çevir!" : "Yarın Tekrar Dene"}
-                </Button>
-
-                {!canSpin && !isSpinning && (
-                  <p className="text-sm text-muted-foreground">Bu gün çarkını çevirmişsin! Yarın tekrar gel.</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Ödüller ve Bilgiler */}
-          <div className="space-y-4">
-            {/* Son Kazanım */}
-            {lastReward && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">🎉 Son Kazancın</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Badge style={{ backgroundColor: lastReward.color, color: "white" }}>{lastReward.text}</Badge>
-                </CardContent>
-              </Card>
-            )}
+          <div className="flex flex-col items-end">
+            <span className="text-xs text-gray-400">Toplam Oyun Hakkı</span>
+            <Badge variant="outline" className="border-yellow-500/50 text-yellow-400 text-lg px-3">
+              {profile?.game_credits || 0} ⚡
+            </Badge>
           </div>
         </div>
+
+        {/* Title */}
+        <div className="text-center space-y-2">
+          <h1 className="text-3xl font-black bg-gradient-to-r from-yellow-300 via-orange-400 to-red-500 bg-clip-text text-transparent drop-shadow-sm">
+            ŞANS ÇARKI
+          </h1>
+          <p className="text-sm text-gray-400">Her gün 1 ücretsiz çevirme hakkı!</p>
+        </div>
+
+        {/* Wheel Container */}
+        <div className="relative w-full aspect-square max-w-[360px] mx-auto">
+          {/* Dış Çerçeve (Glow Efekti) */}
+          <div className="absolute inset-2 bg-gradient-to-tr from-yellow-500/20 to-purple-500/20 rounded-full blur-xl animate-pulse"></div>
+
+          {/* Çark Çerçevesi */}
+          <div className="absolute inset-0 rounded-full border-[12px] border-slate-800 shadow-[0_0_20px_rgba(0,0,0,0.5)] bg-slate-900 overflow-hidden relative">
+            {/* Dönen Kısım - GPU Hızlandırma için will-change eklendi */}
+            <div
+              className="w-full h-full"
+              style={{
+                transform: `rotate(${rotation}deg)`,
+                transition: `transform ${transitionDuration}ms ${timingFunction}`,
+                willChange: "transform", // Mobil performans için kritik
+              }}
+            >
+              <svg viewBox="-1 -1 2 2" className="w-full h-full transform -rotate-90">
+                {wheelSegments.map((segment, index) => {
+                  const startPercent = index / wheelSegments.length;
+                  const endPercent = (index + 1) / wheelSegments.length;
+                  const [startX, startY] = getCoordinatesForPercent(startPercent);
+                  const [endX, endY] = getCoordinatesForPercent(endPercent);
+                  const largeArcFlag = endPercent - startPercent > 0.5 ? 1 : 0;
+
+                  // Metin açısı hesaplama
+                  const segmentAngle = 360 / wheelSegments.length;
+                  const rotateAngle = index * segmentAngle + segmentAngle / 2;
+
+                  return (
+                    <g key={index}>
+                      <path
+                        d={`M 0 0 L ${startX} ${startY} A 1 1 0 ${largeArcFlag} 1 ${endX} ${endY} Z`}
+                        fill={segment.color}
+                        stroke="#1e293b"
+                        strokeWidth="0.01"
+                      />
+                      {/* Metin Rotasyonu: Segmentin merkezine göre */}
+                      <text
+                        x="0.65" // Merkeze uzaklık
+                        y="0"
+                        fill="white"
+                        fontSize="0.09" // SVG birimine göre font
+                        fontWeight="bold"
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        transform={`rotate(${rotateAngle} 0 0)`}
+                        style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.8)" }}
+                      >
+                        {segment.text}
+                      </text>
+                    </g>
+                  );
+                })}
+              </svg>
+            </div>
+
+            {/* Merkez Süsleme */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-600 rounded-full shadow-lg border-4 border-slate-900 flex items-center justify-center z-20">
+              <Sparkles className="w-8 h-8 text-white drop-shadow-md" />
+            </div>
+          </div>
+
+          {/* İbre (Pointer) - En üstte sabit */}
+          <div className="absolute top-[-10px] left-1/2 -translate-x-1/2 z-30 filter drop-shadow-lg">
+            <div className="w-8 h-10 bg-red-600 clip-path-polygon-[50%_100%,_0%_0%,_100%_0%] rounded-t-sm border-t-2 border-red-400"></div>
+          </div>
+        </div>
+
+        {/* Action Button & Info */}
+        <div className="flex flex-col items-center gap-4 mt-2">
+          <Button
+            onClick={spinWheel}
+            disabled={!canSpin || isSpinning}
+            size="lg"
+            className={`
+              w-full max-w-xs h-14 text-xl font-bold rounded-2xl shadow-xl transition-all duration-300
+              ${
+                !canSpin
+                  ? "bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed"
+                  : "bg-gradient-to-r from-yellow-400 to-orange-500 hover:scale-105 hover:shadow-orange-500/30 text-slate-900 border-b-4 border-orange-700 active:border-b-0 active:translate-y-1"
+              }
+            `}
+          >
+            {isSpinning ? (
+              <span className="flex items-center gap-2">
+                <span className="animate-spin text-2xl">⚙️</span> Dönüyor...
+              </span>
+            ) : canSpin ? (
+              <span className="flex items-center gap-2">
+                ÇARKI ÇEVİR <Trophy className="w-5 h-5" />
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <Lock className="w-4 h-4" /> YARIN BEKLENİYOR
+              </span>
+            )}
+          </Button>
+
+          {!canSpin && !isSpinning && (
+            <p className="text-xs text-gray-500 bg-slate-900/50 px-3 py-1 rounded-full border border-slate-800">
+              Bir sonraki çevirme hakkı gece 00:00'da yenilenir.
+            </p>
+          )}
+        </div>
+
+        {/* Son Kazanım Kartı - Animasyonlu */}
+        {lastReward && (
+          <Card className="bg-slate-900/60 border-slate-800 backdrop-blur-md animate-in slide-in-from-bottom-4 fade-in duration-700">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-lg shadow-inner"
+                  style={{ backgroundColor: lastReward.color }}
+                >
+                  🎁
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400">Son Kazancın</p>
+                  <p className="font-bold text-white text-lg">{lastReward.text}</p>
+                </div>
+              </div>
+              <Badge variant="secondary" className="bg-white/10 hover:bg-white/20">
+                Eklendi
+              </Badge>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
