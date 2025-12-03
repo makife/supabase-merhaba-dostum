@@ -676,7 +676,7 @@ const HomePage = () => {
                     onClick={() => navigate("/morles-game")}
                   >
                     <div className="flex-1">
-                      <h2 className="text-xl font-semibold text-white font-painter">Morles Oyunu</h2>
+                      <h2 className="text-xl font-semibold text-white font-painter">Harf Kulesi</h2>
                     </div>
                     {/* Mini Morles İkonları - Dikdörtgen + L blok */}
                     <div className="relative w-12 h-12 flex items-center justify-center gap-1">
