@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,20 +20,7 @@ import {
   TrendingUp,
   CalendarRange,
   TrendingDown,
-  Gamepad2,
 } from "lucide-react";
-
-// Renk Sabitleri
-const RANK_COLORS = {
-  first: "bg-yellow-400",
-  second: "bg-gray-300",
-  third: "bg-amber-600",
-  default: "bg-slate-100",
-  textFirst: "text-yellow-700",
-  textSecond: "text-gray-700",
-  textThird: "text-amber-800",
-  textDefault: "text-slate-600",
-};
 
 interface LeaderboardEntry {
   user_id: string;
@@ -68,7 +56,7 @@ const LeaderboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all-time");
 
-  // --- Veri Çekme Fonksiyonları ---
+  // Genel sıralama (tüm zamanlar)
   const fetchAllTimeLeaders = async () => {
     try {
       const { data, error } = await supabase
@@ -90,7 +78,7 @@ const LeaderboardPage = () => {
           best_word: null,
           best_word_score: 0,
           rank: index + 1,
-          change: 0,
+          change: 0, // Genel sıralamada değişim göstermiyoruz ama veri tutarlılığı için
         })) || [];
 
       setAllTimeLeaders(allTimeData);
@@ -101,16 +89,28 @@ const LeaderboardPage = () => {
       }
     } catch (error) {
       console.error("Error fetching all-time leaders:", error);
+      toast({
+        title: "Hata",
+        description: "Genel sıralama yüklenirken hata oluştu",
+        variant: "destructive",
+      });
     }
   };
 
+  // Haftalık sıralama
   const fetchWeeklyLeaders = async () => {
     try {
+      // Tarih argümanı göndermeden (sunucu tarafı geçerli haftayı kullanır)
+      console.log("Haftalık sorgu tarihi: (server default)");
+
       const { data, error } = await supabase.rpc("get_weekly_leaderboard", { limit_count: 100 });
       if (error) {
+        console.error("Weekly leaderboard RPC error:", error);
         setWeeklyLeaders([]);
         return;
       }
+
+      console.log("Haftalık veri geldi:", data);
 
       const weeklyData = Array.isArray(data)
         ? data.map((entry: any, index: number) => ({
@@ -139,13 +139,20 @@ const LeaderboardPage = () => {
     }
   };
 
+  // Aylık sıralama
   const fetchMonthlyLeaders = async () => {
     try {
+      // Tarih argümanı göndermeden (sunucu tarafı geçerli ayı kullanır)
+      console.log("Aylık sorgu tarihi: (server default)");
+
       const { data, error } = await supabase.rpc("get_monthly_leaderboard", { limit_count: 100 });
       if (error) {
+        console.error("Monthly leaderboard RPC error:", error);
         setMonthlyLeaders([]);
         return;
       }
+
+      console.log("Aylık veri geldi:", data);
 
       const monthlyData = Array.isArray(data)
         ? data.map((entry: any, index: number) => ({
@@ -180,9 +187,11 @@ const LeaderboardPage = () => {
       await Promise.all([fetchAllTimeLeaders(), fetchWeeklyLeaders(), fetchMonthlyLeaders()]);
       setLoading(false);
     };
+
     loadData();
   }, [user]);
 
+  // Aktif sekme değiştiğinde ilgili listeyi tazele
   useEffect(() => {
     const refetchActive = async () => {
       if (activeTab === "all-time") await fetchAllTimeLeaders();
@@ -192,6 +201,7 @@ const LeaderboardPage = () => {
     refetchActive();
   }, [activeTab]);
 
+  // Sayfa tekrar görünür olduğunda tüm verileri tazele (oyun sonrası geri dönünce güncellensin)
   useEffect(() => {
     const onVisible = async () => {
       if (document.visibilityState === "visible") {
@@ -202,130 +212,125 @@ const LeaderboardPage = () => {
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, []);
 
-  // --- Görsel Yardımcılar ---
-  const getRankStyle = (rank: number) => {
+  const getRankIcon = (rank: number) => {
     switch (rank) {
       case 1:
-        return {
-          bg: "bg-yellow-50 border-yellow-200",
-          badge: RANK_COLORS.first,
-          icon: <Crown className="w-5 h-5 text-yellow-600 fill-yellow-600" />,
-          text: RANK_COLORS.textFirst,
-        };
+        return <Crown className="w-6 h-6 text-yellow-500" />;
       case 2:
-        return {
-          bg: "bg-gray-50 border-gray-200",
-          badge: RANK_COLORS.second,
-          icon: <Medal className="w-5 h-5 text-gray-500 fill-gray-500" />,
-          text: RANK_COLORS.textSecond,
-        };
+        return <Medal className="w-6 h-6 text-gray-400" />;
       case 3:
-        return {
-          bg: "bg-orange-50 border-orange-200",
-          badge: RANK_COLORS.third,
-          icon: <Medal className="w-5 h-5 text-amber-700 fill-amber-700" />,
-          text: RANK_COLORS.textThird,
-        };
+        return <Medal className="w-6 h-6 text-amber-700" />;
       default:
-        return {
-          bg: "bg-white border-slate-100 hover:bg-slate-50",
-          badge: RANK_COLORS.default,
-          icon: <span className="text-sm font-bold text-slate-500 w-5 text-center">{rank}</span>,
-          text: RANK_COLORS.textDefault,
-        };
+        return (
+          <span className="w-6 h-6 flex items-center justify-center text-sm font-bold text-muted-foreground">
+            #{rank}
+          </span>
+        );
+    }
+  };
+
+  const getRankColor = (rank: number) => {
+    switch (rank) {
+      case 1:
+        return "bg-gradient-to-r from-yellow-400 to-yellow-600 text-white";
+      case 2:
+        return "bg-gradient-to-r from-gray-300 to-gray-500 text-white";
+      case 3:
+        return "bg-gradient-to-r from-amber-700 to-amber-900 text-white";
+      default:
+        return "bg-muted";
     }
   };
 
   const getRankChangeIcon = (change?: number) => {
     if (!change || change === 0) return null;
-    return (
-      <div
-        className={`flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-          change > 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-        }`}
-      >
-        {change > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-        <span>{Math.abs(change)}</span>
-      </div>
-    );
+    if (change > 0) {
+      return (
+        <div className="flex items-center gap-1 bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-bold shadow-sm">
+          <TrendingUp className="w-3.5 h-3.5" />
+          <span>+{change}</span>
+        </div>
+      );
+    } else if (change < 0) {
+      return (
+        <div className="flex items-center gap-1 bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-bold shadow-sm">
+          <TrendingDown className="w-3.5 h-3.5" />
+          <span>{change}</span>
+        </div>
+      );
+    }
+    return null;
   };
 
   const renderLeaderboard = (leaders: LeaderboardEntry[], showChange: boolean = false) => (
-    <div className="space-y-2 pb-20">
+    <div className="space-y-2">
       {leaders.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="bg-slate-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Trophy className="w-10 h-10 text-slate-400" />
-          </div>
-          <h3 className="text-lg font-semibold text-slate-700">Liste Boş</h3>
-          <p className="text-sm text-slate-500">Henüz kimse bu listeye giremedi. İlk sen ol!</p>
+        <div className="text-center py-8 text-muted-foreground">
+          <Trophy className="w-12 h-12 mx-auto mb-3 opacity-50" />
+          <p>Henüz oyun oynayan yok</p>
+          <p className="text-sm">İlk sen ol!</p>
         </div>
       ) : (
-        leaders.map((leader) => {
-          const style = getRankStyle(leader.rank);
-          const isCurrentUser = leader.user_id === user?.id;
-
-          return (
-            <div
-              key={leader.user_id}
-              onClick={() => navigate(`/profile/${leader.user_id}`)}
-              className={`
-                relative flex items-center p-3 rounded-xl border transition-all active:scale-[0.98] cursor-pointer
-                ${style.bg}
-                ${isCurrentUser ? "ring-2 ring-blue-500 ring-offset-2" : ""}
-              `}
-            >
-              <div className="flex-shrink-0 w-8 flex justify-center mr-3">{style.icon}</div>
-
-              <div className="relative mr-3">
-                <Avatar className="w-12 h-12 border-2 border-white shadow-sm">
-                  <AvatarImage src={leader.avatar_url || undefined} />
-                  <AvatarFallback className="bg-slate-200 text-slate-600 font-bold">
-                    {leader.username.charAt(0).toUpperCase()}
-                  </AvatarFallback>
+        leaders.map((leader) => (
+          <Card key={leader.user_id} className={`transition-all hover:shadow-md ${getRankColor(leader.rank)}`}>
+            <CardContent className="p-3">
+              <div className="flex items-center space-x-3">
+                <div className="flex-shrink-0">{getRankIcon(leader.rank)}</div>
+                <Avatar
+                  className="w-10 h-10 flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all"
+                  onClick={() => navigate(`/profile/${leader.user_id}`)}
+                >
+                  <AvatarImage src={leader.avatar_url || undefined} alt={leader.username} />
+                  <AvatarFallback>{leader.username.charAt(0).toUpperCase()}</AvatarFallback>
                 </Avatar>
-                {leader.rank <= 3 && (
-                  <div
-                    className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold text-white shadow-sm ${style.badge}`}
-                  >
-                    {leader.rank}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <h3 className={`font-bold text-sm truncate ${isCurrentUser ? "text-blue-700" : "text-slate-800"}`}>
-                    {leader.username}
-                  </h3>
-                  {isCurrentUser && (
-                    <Badge
-                      variant="secondary"
-                      className="text-[10px] h-4 px-1 bg-blue-100 text-blue-700 hover:bg-blue-100"
-                    >
-                      Sen
-                    </Badge>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-3 text-xs text-slate-500">
-                  <div className="flex items-center gap-1">
-                    <Target className="w-3 h-3 text-blue-500" />
-                    <span className="font-medium text-slate-700">{leader.score} P</span>
-                  </div>
-                  {leader.wins > 0 && (
-                    <div className="flex items-center gap-1">
-                      <Trophy className="w-3 h-3 text-yellow-500" />
-                      <span>{leader.wins} W</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center space-x-2 min-w-0 flex-1">
+                      <h3
+                        className={`font-semibold truncate text-sm cursor-pointer transition-colors ${
+                          leader.rank <= 3 ? "text-white hover:text-blue-200" : "text-foreground hover:text-blue-600"
+                        }`}
+                        onClick={() => navigate(`/profile/${leader.user_id}`)}
+                      >
+                        {leader.username}
+                      </h3>
+                      {leader.user_id === user?.id && (
+                        <Badge className="text-xs px-1.5 py-0 h-4 bg-white/20 text-white border-white/50 flex-shrink-0">
+                          Sen
+                        </Badge>
+                      )}
                     </div>
-                  )}
+                    {showChange && <div className="flex-shrink-0 ml-2">{getRankChangeIcon(leader.change)}</div>}
+                  </div>
+                  <div className="flex items-center space-x-3 text-xs">
+                    <span
+                      className={`flex items-center ${leader.rank <= 3 ? "text-white/80" : "text-muted-foreground"}`}
+                    >
+                      <Target className="w-3 h-3 mr-1" />
+                      {leader.score}
+                    </span>
+                    {leader.games_played > 0 && (
+                      <span
+                        className={`flex items-center ${leader.rank <= 3 ? "text-white/80" : "text-muted-foreground"}`}
+                      >
+                        <Users className="w-3 h-3 mr-1" />
+                        {leader.games_played}
+                      </span>
+                    )}
+                    {leader.wins > 0 && (
+                      <span
+                        className={`flex items-center ${leader.rank <= 3 ? "text-white/80" : "text-muted-foreground"}`}
+                      >
+                        <Star className="w-3 h-3 mr-1" />
+                        {leader.wins}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-
-              <div className="flex flex-col items-end gap-1 ml-2">{showChange && getRankChangeIcon(leader.change)}</div>
-            </div>
-          );
-        })
+            </CardContent>
+          </Card>
+        ))
       )}
     </div>
   );
@@ -341,12 +346,24 @@ const LeaderboardPage = () => {
     }
   };
 
+  const getTabDescription = (tab: string) => {
+    switch (tab) {
+      case "weekly":
+        return "Son 7 günün en iyileri";
+      case "monthly":
+        return "Bu ayın en iyileri";
+      default:
+        return "Tüm zamanların en iyileri";
+    }
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-          <p className="text-sm text-slate-500 font-medium">Sıralama Yükleniyor...</p>
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
+        <div className="max-w-2xl mx-auto">
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
         </div>
       </div>
     );
@@ -355,108 +372,158 @@ const LeaderboardPage = () => {
   const currentStats = getCurrentUserStats();
 
   return (
-    <div className="h-screen bg-slate-50 flex flex-col font-sans overflow-hidden">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-        {/* --- SABİT ÜST KISIM --- */}
-        <div className="z-20 bg-slate-50 border-b border-slate-200 shadow-sm flex-shrink-0">
-          <div className="max-w-md mx-auto px-4 py-3 pb-0 space-y-4">
-            {/* Header: Geri Butonu ve Başlık */}
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted flex flex-col">
+      <div className="max-w-2xl mx-auto w-full">
+        {/* Sabit Header */}
+        <div className="sticky top-0 z-10 bg-yellow-50/95 backdrop-blur-sm border-b border-yellow-200 p-3 pt-6">
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
               <Button
+                variant="outline"
+                size="sm"
                 onClick={() => navigate("/")}
-                className="bg-white border-2 border-indigo-100 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 rounded-full shadow-sm px-4 h-10 transition-all active:scale-95 font-bold"
+                className="text-yellow-600 border-yellow-500/30 hover:bg-yellow-500/20 bg-yellow-500/10"
               >
-                <ArrowLeft className="w-5 h-5 mr-2" />
+                <ArrowLeft className="w-4 h-4 mr-2" />
                 Geri
               </Button>
 
-              <h1 className="text-lg font-bold text-slate-800">Liderlik Tablosu</h1>
+              <div className="relative inline-block">
+                {/* Stroke Background */}
+                <img
+                  src="/stroke.png"
+                  alt="Stroke Background"
+                  className="absolute inset-0 w-full h-full object-contain opacity-50"
+                />
+                {/* Liderlik Title */}
+                <h1 className="text-3xl font-bold flex items-center text-yellow-600 relative z-10 px-6 py-3">
+                  <Trophy className="w-6 h-6 mr-3 text-yellow-500" />
+                  Liderlik
+                </h1>
+              </div>
 
-              {/* Başlığı ortalamak için boşluk bırakıcı */}
-              <div className="w-[88px]" />
+              <div className="w-16" />
             </div>
-
-            {/* Sabit İstatistik Kartı */}
             {currentStats && (
-              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-4 text-white shadow-lg shadow-blue-500/20 transform transition-all active:scale-[0.99]">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2 bg-white/20 px-2 py-1 rounded-lg backdrop-blur-sm">
-                    <TrendingUp className="w-4 h-4 text-blue-100" />
-                    <span className="text-xs font-bold">Senin Performansın</span>
+              <Card className="border-primary">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center justify-between text-base">
+                    <div className="flex items-center">
+                      <TrendingUp className="w-4 h-4 mr-2" />
+                      Senin Performansın
+                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      {activeTab === "weekly" ? "Bu Hafta" : activeTab === "monthly" ? "Bu Ay" : "Genel"}
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="grid grid-cols-2 gap-3 text-center">
+                    <div className="bg-muted/50 rounded-lg p-3">
+                      <div className="text-xl font-bold text-primary">{currentStats.rank || "—"}</div>
+                      <div className="text-xs text-muted-foreground">Sıralama</div>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-3">
+                      <div className="text-xl font-bold text-primary">{currentStats.score}</div>
+                      <div className="text-xs text-muted-foreground">Puan</div>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-3">
+                      <div className="text-xl font-bold text-primary">{currentStats.games_played}</div>
+                      <div className="text-xs text-muted-foreground">Oyun</div>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-3">
+                      <div className="text-xl font-bold text-primary">{currentStats.wins}</div>
+                      <div className="text-xs text-muted-foreground">Galibiyet</div>
+                    </div>
                   </div>
-                  <Badge variant="outline" className="text-[10px] border-white/30 text-blue-50">
-                    {activeTab === "weekly" ? "Haftalık" : activeTab === "monthly" ? "Aylık" : "Genel"}
-                  </Badge>
-                </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+        {/* Scroll edilebilir İçerik */}
+        <div className="flex-1 overflow-y-auto p-3 space-y-4">
+          {/* Liderlik Tabloları */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Liderlik Sıralaması</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-3 h-9 bg-gray-100">
+                  <TabsTrigger
+                    value="all-time"
+                    className="text-xs px-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white hover:bg-blue-100"
+                  >
+                    <Trophy className="w-3 h-3 mr-1" />
+                    <span className="hidden xs:inline">Genel</span>
+                    <span className="xs:hidden">Tümü</span>
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="weekly"
+                    className="text-xs px-2 data-[state=active]:bg-green-500 data-[state=active]:text-white hover:bg-green-100"
+                  >
+                    <Calendar className="w-3 h-3 mr-1" />
+                    <span className="hidden xs:inline">Haftalık</span>
+                    <span className="xs:hidden">Hafta</span>
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="monthly"
+                    className="text-xs px-2 data-[state=active]:bg-purple-500 data-[state=active]:text-white hover:bg-purple-100"
+                  >
+                    <CalendarRange className="w-3 h-3 mr-1" />
+                    <span className="hidden xs:inline">Aylık</span>
+                    <span className="xs:hidden">Ay</span>
+                  </TabsTrigger>
+                </TabsList>
 
-                <div className="flex items-center gap-4">
-                  <div className="bg-white/20 w-16 h-16 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/10 flex-shrink-0">
-                    <span className="text-2xl font-black">{currentStats.rank > 0 ? `#${currentStats.rank}` : "-"}</span>
-                  </div>
+                <TabsContent value="all-time" className="space-y-4">
+                  <CardDescription>{getTabDescription("all-time")}</CardDescription>
+                  {renderLeaderboard(allTimeLeaders, false)}
+                </TabsContent>
 
-                  {/* İstatistik Grid */}
-                  <div className="flex-1 grid grid-cols-3 gap-2">
-                    <div className="bg-black/10 rounded-lg p-2 text-center">
-                      <p className="text-[10px] text-blue-100 uppercase font-bold opacity-70 mb-0.5">Puan</p>
-                      <p className="text-base font-bold">{currentStats.score}</p>
-                    </div>
-                    <div className="bg-black/10 rounded-lg p-2 text-center">
-                      <p className="text-[10px] text-blue-100 uppercase font-bold opacity-70 mb-0.5">Galibiyet</p>
-                      <p className="text-base font-bold">{currentStats.wins}</p>
-                    </div>
-                    <div className="bg-black/10 rounded-lg p-2 text-center">
-                      <p className="text-[10px] text-blue-100 uppercase font-bold opacity-70 mb-0.5">Oyun</p>
-                      <p className="text-base font-bold">{currentStats.games_played}</p>
-                    </div>
-                  </div>
+                <TabsContent value="weekly" className="space-y-4">
+                  <CardDescription>{getTabDescription("weekly")}</CardDescription>
+                  {renderLeaderboard(weeklyLeaders, true)}
+                </TabsContent>
+
+                <TabsContent value="monthly" className="space-y-4">
+                  <CardDescription>{getTabDescription("monthly")}</CardDescription>
+                  {renderLeaderboard(monthlyLeaders, true)}
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+
+          <Card className="border-blue-200 bg-blue-50">
+            <CardContent className="p-4">
+              <div className="flex items-start space-x-3">
+                <Trophy className="w-5 h-5 text-blue-600 mt-0.5" />
+                <div className="text-sm text-blue-800">
+                  <p className="font-medium mb-1">Sıralama Sistemi</p>
+                  <ul className="list-disc list-inside space-y-1 text-blue-700">
+                    <li>
+                      <strong>Genel:</strong> Tüm zamanların toplam puanı
+                    </li>
+                    <li>
+                      <strong>Haftalık:</strong> Son 7 gündeki performans
+                    </li>
+                    <li>
+                      <strong>Aylık:</strong> Bu aydaki performans
+                    </li>
+                    <li>
+                      🏆 <strong>İlk 3:</strong> Özel renkler ve ikonlar
+                    </li>
+                    <li>
+                      📈 <strong>Oklar:</strong> Haftalık ve aylık sıralama değişiklikleri
+                    </li>
+                  </ul>
                 </div>
               </div>
-            )}
-
-            {/* Sabit Tab Listesi */}
-            <div className="pb-3">
-              <TabsList className="w-full h-14 bg-slate-200/50 p-1.5 rounded-2xl grid grid-cols-3 gap-2">
-                <TabsTrigger
-                  value="all-time"
-                  className="h-full rounded-xl text-xs font-bold text-slate-500 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-400 data-[state=active]:to-orange-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
-                >
-                  <Trophy className="w-4 h-4 mb-0.5 block mx-auto xs:inline xs:mr-1 xs:mb-0" />
-                  Genel
-                </TabsTrigger>
-                <TabsTrigger
-                  value="weekly"
-                  className="h-full rounded-xl text-xs font-bold text-slate-500 data-[state=active]:bg-gradient-to-br data-[state=active]:from-emerald-400 data-[state=active]:to-teal-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
-                >
-                  <Calendar className="w-4 h-4 mb-0.5 block mx-auto xs:inline xs:mr-1 xs:mb-0" />
-                  Haftalık
-                </TabsTrigger>
-                <TabsTrigger
-                  value="monthly"
-                  className="h-full rounded-xl text-xs font-bold text-slate-500 data-[state=active]:bg-gradient-to-br data-[state=active]:from-purple-400 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
-                >
-                  <CalendarRange className="w-4 h-4 mb-0.5 block mx-auto xs:inline xs:mr-1 xs:mb-0" />
-                  Aylık
-                </TabsTrigger>
-              </TabsList>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
-
-        {/* --- KAYDIRILABİLİR ALT KISIM --- */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="max-w-md mx-auto w-full p-4 pt-2">
-            <TabsContent value="all-time" className="mt-0 animate-in fade-in slide-in-from-bottom-2 duration-500">
-              {renderLeaderboard(allTimeLeaders, false)}
-            </TabsContent>
-            <TabsContent value="weekly" className="mt-0 animate-in fade-in slide-in-from-bottom-2 duration-500">
-              {renderLeaderboard(weeklyLeaders, true)}
-            </TabsContent>
-            <TabsContent value="monthly" className="mt-0 animate-in fade-in slide-in-from-bottom-2 duration-500">
-              {renderLeaderboard(monthlyLeaders, true)}
-            </TabsContent>
-          </div>
-        </div>
-      </Tabs>
+      </div>
     </div>
   );
 };
