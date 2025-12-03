@@ -19,7 +19,6 @@ interface WheelReward {
   color: string;
 }
 
-// Renk paletini daha canlı ve modern hale getirdik
 const WHEEL_COLORS = {
   blue: "#3B82F6",
   green: "#10B981",
@@ -41,9 +40,9 @@ const WheelPage = () => {
   const [rotation, setRotation] = useState(0);
   const [lastReward, setLastReward] = useState<WheelReward | null>(null);
   const [transitionDuration, setTransitionDuration] = useState(0);
-  const [timingFunction, setTimingFunction] = useState("cubic-bezier(0.25, 0.1, 0.25, 1)"); // Daha doğal fizik hissi
+  // Daha yumuşak bir yavaşlama için bezier eğrisini güncelledik
+  const [timingFunction, setTimingFunction] = useState("cubic-bezier(0.2, 0, 0.1, 1)");
 
-  // wheelSegments'i useMemo ile sarmalayarak gereksiz renderları önledik
   const wheelSegments: WheelReward[] = useMemo(
     () => [
       { type: "credits", value: 1, text: "1 Oyun", color: WHEEL_COLORS.blue },
@@ -86,27 +85,31 @@ const WheelPage = () => {
   const spinWheel = async () => {
     if (!user || !canSpin || isSpinning) return;
 
-    playSpecialSound("/carkSesi.mp3", 0.7);
+    // Sesi çal (8 saniyelik ses)
+    playSpecialSound("/carkSesi.mp3", 0.8);
     setIsSpinning(true);
 
     const rewardIndex = Math.floor(Math.random() * wheelSegments.length);
     const reward = wheelSegments[rewardIndex];
 
-    // Matematiksel hesaplama:
     const segmentAngle = 360 / wheelSegments.length;
-    // İbrenin (saat 12 yönü) segmentin ortasına gelmesi için offset
-    // SVG'de 0 derece saat 3 yönüdür, bu yüzden 90 derece kaydırıyoruz (-90)
-    // Ama CSS rotate 0 derece saat 12 yönü olabilir.
-    // En garantisi: Rastgele tur sayısı + hedef açı
 
-    const randomSpins = 5 + Math.random() * 3; // 5 ile 8 tam tur arası
-    const stopAngle = 360 * randomSpins + (360 - rewardIndex * segmentAngle);
-    // Not: İnce ayar gerekebilir, SVG çizimine göre index yönü değişir.
+    // 8 Saniye boyunca dönmesi için tur sayısını artırdık.
+    // 8-12 tur arası dönecek (Süreye yayılacağı için aşırı hızlı görünmez)
+    const randomSpins = 8 + Math.random() * 4;
 
-    setTransitionDuration(5000); // 5 saniye
-    setTimingFunction("cubic-bezier(0.15, 0, 0.15, 1)"); // Hızlı başla, çok yavaş dur
+    // Mevcut rotasyonun üzerine ekleyerek devam et (geriye sarma yapmasın)
+    // Modulo işlemi kaldırıldı, kümülatif artış sağlanacak.
+    const currentRotation = rotation;
+    const stopAngle =
+      currentRotation + 360 * randomSpins + (360 - rewardIndex * segmentAngle - (currentRotation % 360));
+
+    // Animasyon süresi 8000ms (8 saniye) olarak ayarlandı
+    setTransitionDuration(8000);
+    setTimingFunction("cubic-bezier(0.2, 0, 0.1, 1)"); // Uzun süreli yavaşlama
     setRotation(stopAngle);
 
+    // 8 Saniye sonra sonucu göster
     setTimeout(async () => {
       setLastReward(reward);
       await saveWheelSpin(reward);
@@ -114,8 +117,8 @@ const WheelPage = () => {
       setIsSpinning(false);
       setCanSpin(false);
       showRewardToast(reward);
-      playSpecialSound("/win.mp3", 0.6); // Kazanma sesi (varsa)
-    }, 5000);
+      playSpecialSound("/win.mp3", 0.6);
+    }, 8000);
   };
 
   const saveWheelSpin = async (reward: WheelReward) => {
@@ -154,7 +157,6 @@ const WheelPage = () => {
     }
   };
 
-  // SVG Helper: Polar to Cartesian coordinates
   const getCoordinatesForPercent = (percent: number) => {
     const x = Math.cos(2 * Math.PI * percent);
     const y = Math.sin(2 * Math.PI * percent);
@@ -170,17 +172,12 @@ const WheelPage = () => {
       </div>
 
       <div className="w-full max-w-md z-10 flex flex-col gap-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+        {/* Header - SADECE GERİ BUTONU KALDI */}
+        <div className="flex items-center justify-start">
           <Button onClick={() => navigate("/")} variant="ghost" className="text-white hover:bg-white/10">
-            <ArrowLeft className="w-6 h-6" />
+            <ArrowLeft className="w-6 h-6 mr-2" />
+            Ana Menü
           </Button>
-          <div className="flex flex-col items-end">
-            <span className="text-xs text-gray-400">Toplam Oyun Hakkı</span>
-            <Badge variant="outline" className="border-yellow-500/50 text-yellow-400 text-lg px-3">
-              {profile?.game_credits || 0} ⚡
-            </Badge>
-          </div>
         </div>
 
         {/* Title */}
@@ -198,13 +195,13 @@ const WheelPage = () => {
 
           {/* Çark Çerçevesi */}
           <div className="absolute inset-0 rounded-full border-[12px] border-slate-800 shadow-[0_0_20px_rgba(0,0,0,0.5)] bg-slate-900 overflow-hidden relative">
-            {/* Dönen Kısım - GPU Hızlandırma için will-change eklendi */}
+            {/* Dönen Kısım */}
             <div
               className="w-full h-full"
               style={{
                 transform: `rotate(${rotation}deg)`,
                 transition: `transform ${transitionDuration}ms ${timingFunction}`,
-                willChange: "transform", // Mobil performans için kritik
+                willChange: "transform",
               }}
             >
               <svg viewBox="-1 -1 2 2" className="w-full h-full transform -rotate-90">
@@ -215,7 +212,6 @@ const WheelPage = () => {
                   const [endX, endY] = getCoordinatesForPercent(endPercent);
                   const largeArcFlag = endPercent - startPercent > 0.5 ? 1 : 0;
 
-                  // Metin açısı hesaplama
                   const segmentAngle = 360 / wheelSegments.length;
                   const rotateAngle = index * segmentAngle + segmentAngle / 2;
 
@@ -227,12 +223,11 @@ const WheelPage = () => {
                         stroke="#1e293b"
                         strokeWidth="0.01"
                       />
-                      {/* Metin Rotasyonu: Segmentin merkezine göre */}
                       <text
-                        x="0.65" // Merkeze uzaklık
+                        x="0.65"
                         y="0"
                         fill="white"
-                        fontSize="0.09" // SVG birimine göre font
+                        fontSize="0.09"
                         fontWeight="bold"
                         textAnchor="middle"
                         dominantBaseline="middle"
@@ -276,7 +271,7 @@ const WheelPage = () => {
           >
             {isSpinning ? (
               <span className="flex items-center gap-2">
-                <span className="animate-spin text-2xl">⚙️</span> Dönüyor...
+                <span className="animate-spin text-2xl">⚙️</span> Şansın Dönüyor...
               </span>
             ) : canSpin ? (
               <span className="flex items-center gap-2">
