@@ -1177,6 +1177,7 @@ export type Database = {
           id: string
           max_participants: number | null
           name: string | null
+          next_round_starts_at: string | null
           started_at: string | null
           status: string | null
           timeout_duration: number | null
@@ -1192,6 +1193,7 @@ export type Database = {
           id?: string
           max_participants?: number | null
           name?: string | null
+          next_round_starts_at?: string | null
           started_at?: string | null
           status?: string | null
           timeout_duration?: number | null
@@ -1207,6 +1209,7 @@ export type Database = {
           id?: string
           max_participants?: number | null
           name?: string | null
+          next_round_starts_at?: string | null
           started_at?: string | null
           status?: string | null
           timeout_duration?: number | null
@@ -1574,7 +1577,7 @@ export type Database = {
             Args: { p_current_round: number; p_tournament_id: string }
             Returns: Json
           }
-        | { Args: { p_tournament_id: string }; Returns: undefined }
+        | { Args: { p_tournament_id: string }; Returns: Json }
       apply_disconnect_penalty: {
         Args: { p_offender_id: string; p_room_id: string }
         Returns: {

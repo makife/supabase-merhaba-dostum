@@ -4120,18 +4120,26 @@ const GamePage = ({
             const opponentId =
               tournamentMatch.player1_id === user?.id ? tournamentMatch.player2_id : tournamentMatch.player1_id;
 
-            // Bot kontrolü - daha kapsamlı
+            // Bot kontrolü - tournament_participants tablosundaki is_bot flag'ini kontrol et
+            // Önce participants'ta is_bot flag'ini kontrol et
+            const opponentParticipant = tournamentParticipants.find(
+              (p) => String(p.user_id) === String(opponentId)
+            );
+            
+            // is_bot flag'i true ise veya bot_ prefix'i varsa AI olarak kabul et
             const isBot =
               !opponentId ||
               opponentId === null ||
               opponentId === undefined ||
-              opponentId.startsWith("bot_") ||
+              opponentParticipant?.is_bot === true ||
+              String(opponentId).startsWith("bot_") ||
               opponentId === "bot";
 
             console.log("🤖 Tournament AI Check:", {
               matchId: tournamentMatch.id.slice(-8),
               opponentId: opponentId?.slice(-8) || "NULL",
               isBot,
+              isBotFlag: opponentParticipant?.is_bot,
               player1: tournamentMatch.player1_id?.slice(-8),
               player2: tournamentMatch.player2_id?.slice(-8),
               currentUser: user?.id?.slice(-8),
@@ -4154,7 +4162,7 @@ const GamePage = ({
 
     console.log("🤖 AI Status Final - Mode:", gameMode, "PlayingWithAI:", aiStatus);
     return aiStatus;
-  }, [gameMode, participants, tournamentMatch, user?.id]);
+  }, [gameMode, participants, tournamentMatch, user?.id, tournamentParticipants]);
 
   // Real-time kelime senkronizasyonu
   useEffect(() => {
