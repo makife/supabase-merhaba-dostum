@@ -52,12 +52,12 @@ const WheelPage = () => {
       { type: "joker", value: 1, item: "fisilida", text: "Fısılda", color: WHEEL_COLORS.yellow },
       { type: "empty", value: 0, text: "Pas", color: WHEEL_COLORS.gray },
       { type: "credits", value: 3, text: "3 Oyun", color: WHEEL_COLORS.blue },
-      { type: "joker", value: 2, item: "degistir", text: "2x Değiş", color: WHEEL_COLORS.green },
+      { type: "joker", value: 2, item: "degistir", text: "2x Değiştir", color: WHEEL_COLORS.green },
       { type: "empty", value: 0, text: "Pas", color: WHEEL_COLORS.gray },
       { type: "credits", value: 5, text: "5 Oyun", color: WHEEL_COLORS.purple },
       { type: "joker", value: 1, item: "senyaz", text: "Sen Yaz", color: WHEEL_COLORS.red },
       { type: "empty", value: 0, text: "Pas", color: WHEEL_COLORS.gray },
-      { type: "joker", value: 2, item: "fisilida", text: "2x Fısıl", color: WHEEL_COLORS.yellow },
+      { type: "joker", value: 2, item: "fisilida", text: "2x Fısılda", color: WHEEL_COLORS.yellow },
       { type: "joker", value: 2, item: "senyaz", text: "2x SenYaz", color: WHEEL_COLORS.red },
       { type: "empty", value: 0, text: "Pas", color: WHEEL_COLORS.gray },
     ],
@@ -120,7 +120,7 @@ const WheelPage = () => {
     // 6. Sonuç rotasyonu
     const finalRotation = rotation + extraSpins + distanceToTarget;
 
-    setTransitionDuration(8000);
+    setTransitionDuration(8500);
     setTimingFunction("cubic-bezier(0.2, 0, 0.1, 1)");
     setRotation(finalRotation);
 
@@ -132,7 +132,7 @@ const WheelPage = () => {
       setCanSpin(false);
       showRewardToast(reward);
       playSpecialSound("/win.mp3", 0.6);
-    }, 8000);
+    }, 8500);
   };
 
   const saveWheelSpin = async (reward: WheelReward) => {
