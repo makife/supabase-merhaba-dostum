@@ -139,9 +139,11 @@ const MorlesGame = () => {
 
   // Refs
   const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
-  const moveIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // --- KRİTİK DÜZELTME: Bu Ref her zaman en güncel 'movePiece' fonksiyonunu tutacak ---
+  // --- YENİ REFS: Gecikmeli Hareket İçin ---
+  const moveIntervalRef = useRef<NodeJS.Timeout | null>(null); // Sürekli tekrar eden döngü
+  const moveTimeoutRef = useRef<NodeJS.Timeout | null>(null); // İlk basıştaki bekleme süresi
+
   const movePieceFnRef = useRef<((dir: "left" | "right" | "down") => void) | null>(null);
 
   useEffect(() => {
@@ -297,33 +299,37 @@ const MorlesGame = () => {
     ],
   );
 
-  // --- REFS SENKRONİZASYONU ---
-  // movePiece her değiştiğinde (state güncellendiğinde), Ref'i de güncelliyoruz.
-  // Böylece setInterval hep en taze fonksiyonu kullanıyor.
   useEffect(() => {
     movePieceFnRef.current = movePiece;
   }, [movePiece]);
 
-  // --- HAREKET KONTROLLERİ ---
+  // --- DÜZELTİLMİŞ HAREKET KONTROLLERİ ---
+  // Tek tıkla 1 hareket, basılı tutunca gecikmeli seri hareket
 
   const startMoving = (direction: "left" | "right" | "down") => {
     if (!gameRunning || gameOver) return;
 
-    // İlk basışta hemen hareket etsin
+    // 1. ADIM: Hemen bir kere hareket ettir (Tıklama hissi için)
     if (movePieceFnRef.current) movePieceFnRef.current(direction);
 
-    if (moveIntervalRef.current) clearInterval(moveIntervalRef.current);
+    // Önceki zamanlayıcıları temizle
+    stopMoving();
 
-    // Sonra seri harekete başlasın (80ms daha hızlı ve pürüzsüz hissettirir)
-    moveIntervalRef.current = setInterval(() => {
-      // Burada Ref kullanıyoruz, böylece "stale state" (eski veri) sorununu aşıyoruz
-      if (movePieceFnRef.current) {
-        movePieceFnRef.current(direction);
-      }
-    }, 80);
+    // 2. ADIM: Gecikme koy (Örn: 200ms). Eğer kullanıcı elini çekmezse seri hareket başlar.
+    moveTimeoutRef.current = setTimeout(() => {
+      moveIntervalRef.current = setInterval(() => {
+        if (movePieceFnRef.current) {
+          movePieceFnRef.current(direction);
+        }
+      }, 80); // Seri hareket hızı
+    }, 200); // Basılı tutma algılama süresi
   };
 
   const stopMoving = () => {
+    if (moveTimeoutRef.current) {
+      clearTimeout(moveTimeoutRef.current);
+      moveTimeoutRef.current = null;
+    }
     if (moveIntervalRef.current) {
       clearInterval(moveIntervalRef.current);
       moveIntervalRef.current = null;
@@ -367,11 +373,9 @@ const MorlesGame = () => {
     setDropTime(700);
   };
 
-  // Otomatik düşme döngüsü
   useEffect(() => {
     if (gameRunning && !gameOver) {
       gameLoopRef.current = setInterval(() => {
-        // Burada da Ref kullanımı güvenlidir
         if (movePieceFnRef.current) movePieceFnRef.current("down");
       }, dropTime);
     } else {
@@ -380,7 +384,7 @@ const MorlesGame = () => {
     return () => {
       if (gameLoopRef.current) clearInterval(gameLoopRef.current);
     };
-  }, [gameRunning, gameOver, dropTime]); // dropTime değişirse loop yeniden kurulmalı
+  }, [gameRunning, gameOver, dropTime]);
 
   // Klavye Kontrolleri
   useEffect(() => {
@@ -417,7 +421,7 @@ const MorlesGame = () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [gameOver, gameRunning, rotatePieceAction]); // movePiece bağımlılığını kaldırdık çünkü artık startMoving içinden hallediyoruz
+  }, [gameOver, gameRunning, rotatePieceAction]);
 
   // --- RENDER ---
 
@@ -453,7 +457,8 @@ const MorlesGame = () => {
               height: "10px",
               background: isPart ? nextPiece.color : "transparent",
               opacity: isPart ? 1 : 0.1,
-              border: "1px solid rgba(255,255,255,0.05)",
+              // Küçük önizleme kutusunda da ayrım olsun
+              border: isPart ? "1px solid rgba(0,0,0,0.3)" : "1px solid rgba(255,255,255,0.05)",
             }}
           />,
         );
@@ -486,7 +491,7 @@ const MorlesGame = () => {
     onMouseLeave: stopMoving,
     onTouchStart: (e: React.TouchEvent) => {
       if (!gameRunning || gameOver) return;
-      e.preventDefault(); // Sayfa kaymasını engeller
+      e.preventDefault();
       startMoving(direction);
     },
     onTouchEnd: (e: React.TouchEvent) => {
@@ -590,7 +595,7 @@ const MorlesGame = () => {
               display: "grid",
               gridTemplateColumns: `repeat(${BOARD_WIDTH}, 1fr)`,
               gridTemplateRows: `repeat(${BOARD_HEIGHT}, 1fr)`,
-              gap: "0px",
+              gap: "0px", // Bloklar arasında fiziksel boşluk yerine border kullanıyoruz
               width: "100%",
               height: "100%",
             }}
@@ -601,8 +606,13 @@ const MorlesGame = () => {
                   key={`${y}-${x}`}
                   style={{
                     background: cell === EMPTY_CELL ? "transparent" : (cell as string),
-                    border: cell === EMPTY_CELL ? "1px solid rgba(255, 255, 255, 0.02)" : "none",
-                    borderRadius: "0px",
+                    // --- GÖRSEL DÜZELTME: Blok Ayrımı ---
+                    // Dolu hücrelere siyah yarı saydam çerçeve ekleyerek ayrım sağlıyoruz.
+                    border:
+                      cell === EMPTY_CELL
+                        ? "1px solid rgba(255, 255, 255, 0.03)" // Boş hücreler çok silik
+                        : "1px solid rgba(0, 0, 0, 0.3)", // Dolu hücreler belirgin ayrım
+                    boxSizing: "border-box", // Border'ın kutu boyutunu bozmasını engeller
                   }}
                 />
               )),
