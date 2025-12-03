@@ -13,7 +13,7 @@ import {
   ArrowRight as ArrowR,
 } from "lucide-react";
 
-// --- GÜNCELLEME 1: ÇÖZÜNÜRLÜK AYARI ---
+// --- AYARLAR ---
 const BOARD_WIDTH = 15;
 const BOARD_HEIGHT = 30;
 const EMPTY_CELL = 0;
@@ -139,8 +139,10 @@ const MorlesGame = () => {
 
   // Refs
   const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
-  const dropPieceRef = useRef<(() => void) | null>(null);
   const moveIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // --- KRİTİK DÜZELTME: Bu Ref her zaman en güncel 'movePiece' fonksiyonunu tutacak ---
+  const movePieceFnRef = useRef<((dir: "left" | "right" | "down") => void) | null>(null);
 
   useEffect(() => {
     try {
@@ -295,16 +297,30 @@ const MorlesGame = () => {
     ],
   );
 
+  // --- REFS SENKRONİZASYONU ---
+  // movePiece her değiştiğinde (state güncellendiğinde), Ref'i de güncelliyoruz.
+  // Böylece setInterval hep en taze fonksiyonu kullanıyor.
+  useEffect(() => {
+    movePieceFnRef.current = movePiece;
+  }, [movePiece]);
+
+  // --- HAREKET KONTROLLERİ ---
+
   const startMoving = (direction: "left" | "right" | "down") => {
     if (!gameRunning || gameOver) return;
 
-    movePiece(direction);
+    // İlk basışta hemen hareket etsin
+    if (movePieceFnRef.current) movePieceFnRef.current(direction);
 
     if (moveIntervalRef.current) clearInterval(moveIntervalRef.current);
 
+    // Sonra seri harekete başlasın (80ms daha hızlı ve pürüzsüz hissettirir)
     moveIntervalRef.current = setInterval(() => {
-      movePiece(direction);
-    }, 100);
+      // Burada Ref kullanıyoruz, böylece "stale state" (eski veri) sorununu aşıyoruz
+      if (movePieceFnRef.current) {
+        movePieceFnRef.current(direction);
+      }
+    }, 80);
   };
 
   const stopMoving = () => {
@@ -351,14 +367,12 @@ const MorlesGame = () => {
     setDropTime(700);
   };
 
-  useEffect(() => {
-    dropPieceRef.current = () => movePiece("down");
-  });
-
+  // Otomatik düşme döngüsü
   useEffect(() => {
     if (gameRunning && !gameOver) {
       gameLoopRef.current = setInterval(() => {
-        if (dropPieceRef.current) dropPieceRef.current();
+        // Burada da Ref kullanımı güvenlidir
+        if (movePieceFnRef.current) movePieceFnRef.current("down");
       }, dropTime);
     } else {
       if (gameLoopRef.current) clearInterval(gameLoopRef.current);
@@ -366,7 +380,7 @@ const MorlesGame = () => {
     return () => {
       if (gameLoopRef.current) clearInterval(gameLoopRef.current);
     };
-  }, [gameRunning, gameOver, dropTime]);
+  }, [gameRunning, gameOver, dropTime]); // dropTime değişirse loop yeniden kurulmalı
 
   // Klavye Kontrolleri
   useEffect(() => {
@@ -403,7 +417,7 @@ const MorlesGame = () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [gameOver, gameRunning, movePiece, rotatePieceAction]);
+  }, [gameOver, gameRunning, rotatePieceAction]); // movePiece bağımlılığını kaldırdık çünkü artık startMoving içinden hallediyoruz
 
   // --- RENDER ---
 
@@ -448,8 +462,6 @@ const MorlesGame = () => {
     return cells;
   };
 
-  // --- HATA DÜZELTMESİ BURADA ---
-  // Dönüş tipi 'CSSProperties' olarak ayarlandı ve sorunlu özellikler cast edildi.
   const controlBtnStyle = (colorStart: string, colorEnd: string): CSSProperties => ({
     background: `linear-gradient(135deg, ${colorStart}, ${colorEnd})`,
     border: "2px solid rgba(255,255,255,0.2)",
@@ -463,9 +475,9 @@ const MorlesGame = () => {
     cursor: "pointer",
     width: "65px",
     height: "65px",
-    touchAction: "none" as "none", // Explicit cast
-    userSelect: "none" as "none", // Explicit cast
-    WebkitUserSelect: "none" as "none", // Explicit cast
+    touchAction: "none" as "none",
+    userSelect: "none" as "none",
+    WebkitUserSelect: "none" as "none",
   });
 
   const getMoveEvents = (direction: "left" | "right" | "down") => ({
@@ -473,10 +485,14 @@ const MorlesGame = () => {
     onMouseUp: stopMoving,
     onMouseLeave: stopMoving,
     onTouchStart: (e: React.TouchEvent) => {
-      e.preventDefault();
+      if (!gameRunning || gameOver) return;
+      e.preventDefault(); // Sayfa kaymasını engeller
       startMoving(direction);
     },
-    onTouchEnd: stopMoving,
+    onTouchEnd: (e: React.TouchEvent) => {
+      e.preventDefault();
+      stopMoving();
+    },
   });
 
   return (
