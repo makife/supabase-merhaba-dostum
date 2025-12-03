@@ -44,7 +44,6 @@ const BLOCK_PIECES: Record<string, { shape: number[][]; color: string }> = {
   U: {
     shape: [
       [1, 0, 1],
-      [1, 0, 1],
       [1, 1, 1],
     ],
     color: "#f0f000",
