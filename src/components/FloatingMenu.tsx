@@ -195,7 +195,7 @@ export function FloatingMenu() {
             transitionDelay: isOpen ? "0ms" : `${(menuItems.length + 3) * 40}ms`,
           }}
         >
-          <div className="flex items-center space-x-2 bg-red/80 backdrop-blur-md rounded-full px-3 py-1.5 border border-white/20 shadow-xl">
+          <div className="flex items-center space-x-2 bg-red-600/80 backdrop-blur-md rounded-full px-3 py-1.5 border border-white/20 shadow-xl">
             <span
               className="text-sm font-semibold text-white whitespace-nowrap pointer-events-none select-none tracking-wide"
               style={{
