@@ -441,6 +441,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     };
 
     const fetchOnlineUsers = async () => {
+      // ... (Mevcut kodun aynı kalacak) ...
       try {
         const { data }: any = await supabase
           .from("user_presence" as any)
@@ -455,7 +456,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
           `,
           )
           .eq("is_online", true)
-          .gte("last_seen", new Date(Date.now() - 45 * 1000).toISOString()); // 45 saniye window
+          .gte("last_seen", new Date(Date.now() - 45 * 1000).toISOString());
 
         if (data) {
           setOnlineUsers(
@@ -478,7 +479,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        setUserOffline();
+        // İsteğe bağlı: Tab arka plana atılınca hemen offline yapmak istemiyorsan burayı kaldırabilirsin
+        // setUserOffline();
       } else {
         updatePresence();
         fetchOnlineUsers();
@@ -489,8 +491,13 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     updatePresence();
     fetchOnlineUsers();
 
-    // ❌ POLLING KALDIRILDI - Sadece realtime subscription kullan
-    // Diğer kullanıcıların presence'ını realtime dinle
+    // ✅ YENİ EKLENEN KISIM: HEARTBEAT (KALP ATIŞI)
+    // Her 30 saniyede bir "Ben buradayım" diyerek last_seen'i güncelle
+    const heartbeatInterval = setInterval(() => {
+      updatePresence();
+    }, 30000);
+
+    // Realtime subscription
     const channel = supabase
       .channel("presence_changes")
       .on(
@@ -508,6 +515,9 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
+      // ✅ Interval'ı temizlemeyi unutma
+      clearInterval(heartbeatInterval);
+
       supabase.removeChannel(channel);
       setUserOffline();
       window.removeEventListener("beforeunload", handleBeforeUnload);
