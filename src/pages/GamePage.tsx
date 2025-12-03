@@ -2091,13 +2091,13 @@ const GamePage = ({
             // Orada animasyonlarla birlikte düzgün başlatılacak
 
             // Maç durumunu güncelle
-            await supabase
-              .from("tournament_matches")
-              .update({
-                status: "pending", // pending olsun ki auto_start_countdown_finished_games fonksiyonu başlatsın
-                updated_at: new Date().toISOString(),
-              })
-              .eq("id", matchId);
+            /* await supabase
+  .from("tournament_matches")
+  .update({
+    status: "pending", // pending olsun ki auto_start_countdown_finished_games fonksiyonu başlatsın
+    updated_at: new Date().toISOString(),
+  })
+  .eq("id", matchId); */
           }
         } catch (error) {
           console.error("Turnuva maçı başlatma hatası:", error);
@@ -4122,10 +4122,8 @@ const GamePage = ({
 
             // Bot kontrolü - tournament_participants tablosundaki is_bot flag'ini kontrol et
             // Önce participants'ta is_bot flag'ini kontrol et
-            const opponentParticipant = tournamentParticipants.find(
-              (p) => String(p.user_id) === String(opponentId)
-            );
-            
+            const opponentParticipant = tournamentParticipants.find((p) => String(p.user_id) === String(opponentId));
+
             // is_bot flag'i true ise veya bot_ prefix'i varsa AI olarak kabul et
             const isBot =
               !opponentId ||
