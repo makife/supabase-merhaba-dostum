@@ -6,7 +6,6 @@ const BOARD_HEIGHT = 20;
 const EMPTY_CELL = 0;
 
 // YENİ HARF BLOKLARI (H, U, L, I, O, E, F)
-// Kelime oyunu konseptine uygun canlı renkler
 const BLOCK_PIECES = {
   H: {
     shape: [
@@ -64,8 +63,6 @@ const BLOCK_PIECES = {
 const PIECE_TYPES = Object.keys(BLOCK_PIECES);
 
 const MorlesGame = () => {
-  // --- OYUN MANTIĞI (Önceki koddan korunan temel mantık) ---
-  
   const goBack = () => {
     if (window.history.length > 1) {
       window.history.back();
@@ -86,6 +83,7 @@ const MorlesGame = () => {
     return board;
   };
 
+  // State Definitions
   const [board, setBoard] = useState(createEmptyBoard);
   const [currentPiece, setCurrentPiece] = useState(null);
   const [currentPosition, setCurrentPosition] = useState({ x: 0, y: 0 });
@@ -99,6 +97,7 @@ const MorlesGame = () => {
   const [fastDrop, setFastDrop] = useState(false);
   const [highScore, setHighScore] = useState(0);
   
+  // Refs
   const gameLoopRef = useRef(null);
   const fastDropRef = useRef(null);
   const dropPieceRef = useRef(null);
@@ -112,7 +111,8 @@ const MorlesGame = () => {
     }
   }, []);
 
-  [span_0](start_span)// Parça oluşturma[span_0](end_span)
+  // --- OYUN MANTIĞI ---
+
   const createRandomPiece = useCallback(() => {
     const pieceType = PIECE_TYPES[Math.floor(Math.random() * PIECE_TYPES.length)];
     return {
@@ -124,7 +124,6 @@ const MorlesGame = () => {
 
   const rotatePiece = useCallback((piece) => {
     if (!piece) return null;
-    [span_1](start_span)// Matris döndürme mantığı[span_1](end_span)
     const rotated = piece.shape[0].map((_, index) => piece.shape.map((row) => row[index]).reverse());
     return { ...piece, shape: rotated };
   }, []);
@@ -241,6 +240,30 @@ const MorlesGame = () => {
     }
   }, [currentPiece, gameRunning, gameOver, rotatePiece, checkCollision, currentPosition, board]);
 
+  const pauseGame = () => {
+    setGameRunning(false);
+  };
+
+  const startGame = () => {
+    setGameRunning(true);
+    setGameOver(false);
+    if (!currentPiece) spawnNewPiece();
+  };
+
+  const resetGame = () => {
+    setBoard(createEmptyBoard());
+    setCurrentPiece(null);
+    setCurrentPosition({ x: 0, y: 0 });
+    setNextPiece(null);
+    setGameRunning(false);
+    setGameOver(false);
+    setScore(0);
+    setLevel(1);
+    setLines(0);
+    setDropTime(1000);
+    setFastDrop(false);
+  };
+
   // Timers
   useEffect(() => {
     dropPieceRef.current = () => movePiece("down");
@@ -290,27 +313,7 @@ const MorlesGame = () => {
     };
   }, [gameOver, movePiece, rotatePieceAction, fastDrop]);
 
-  const startGame = () => {
-    setGameRunning(true);
-    setGameOver(false);
-    if (!currentPiece) spawnNewPiece();
-  };
-
-  const resetGame = () => {
-    setBoard(createEmptyBoard());
-    setCurrentPiece(null);
-    setCurrentPosition({ x: 0, y: 0 });
-    setNextPiece(null);
-    setGameRunning(false);
-    setGameOver(false);
-    setScore(0);
-    setLevel(1);
-    setLines(0);
-    setDropTime(1000);
-    setFastDrop(false);
-  };
-
-  // --- RENDER ---
+  // --- RENDER HELPERS ---
   
   const renderBoard = () => {
     let displayBoard = board.map((row) => [...row]);
@@ -330,6 +333,23 @@ const MorlesGame = () => {
     return displayBoard;
   };
 
+  const renderNextPieceGrid = () => {
+    const cells = [];
+    for (let y = 0; y < 4; y++) {
+      for (let x = 0; x < 4; x++) {
+        const isPart = nextPiece && nextPiece.shape[y] && nextPiece.shape[y][x];
+        cells.push(
+          <div key={`n-${y}-${x}`} style={{
+            width: "10px", height: "10px",
+            background: isPart ? nextPiece.color : "transparent",
+            opacity: isPart ? 1 : 0.1
+          }} />
+        );
+      }
+    }
+    return cells;
+  };
+
   // Buton stilleri
   const controlBtnStyle = (colorStart, colorEnd) => ({
     background: `linear-gradient(135deg, ${colorStart}, ${colorEnd})`,
@@ -345,14 +365,14 @@ const MorlesGame = () => {
     transition: "transform 0.1s",
     width: "60px",
     height: "60px",
-    touchAction: "manipulation", // Mobil dokunmatik iyileştirmesi
+    touchAction: "manipulation",
   });
 
   return (
     <div
       style={{
         minHeight: "100vh",
-        background: "linear-gradient(to bottom right, #2c3e50, #4ca1af)", // Daha modern koyu gri-mavi
+        background: "linear-gradient(to bottom right, #2c3e50, #4ca1af)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -362,7 +382,7 @@ const MorlesGame = () => {
         overflow: "hidden"
       }}
     >
-      {/* ÜST BAR: Başlık ve Skorlar */}
+      {/* ÜST BAR */}
       <div style={{
         width: "100%",
         maxWidth: "500px",
@@ -400,7 +420,7 @@ const MorlesGame = () => {
         width: "100%",
         justifyContent: "center",
         flex: 1,
-        maxHeight: "65vh" // Mobilde ekran taşmasını engellemek için
+        maxHeight: "65vh"
       }}>
         {/* SOL: Oyun Tahtası */}
         <div
@@ -414,7 +434,7 @@ const MorlesGame = () => {
             alignItems: "center",
             justifyContent: "center",
             height: "100%",
-            aspectRatio: "1/2" // Tetris oranı
+            aspectRatio: "1/2"
           }}
         >
           <div
@@ -470,22 +490,7 @@ const MorlesGame = () => {
             <div style={{
               display: "grid", gridTemplateColumns: "repeat(4, 10px)", gridTemplateRows: "repeat(4, 10px)", gap: "1px"
             }}>
-              {(() => {
-                  const cells = [];
-                  for (let y = 0; y < 4; y++) {
-                    for (let x = 0; x < 4; x++) {
-                      const isPart = nextPiece && nextPiece.shape[y] && nextPiece.shape[y][x];
-                      cells.push(
-                        <div key={`n-${y}-${x}`} style={{
-                          width: "10px", height: "10px",
-                          background: isPart ? nextPiece.color : "transparent",
-                          opacity: isPart ? 1 : 0.1
-                        }} />
-                      );
-                    }
-                  }
-                  return cells;
-              })()}
+              {renderNextPieceGrid()}
             </div>
           </div>
 
@@ -508,7 +513,7 @@ const MorlesGame = () => {
         </div>
       </div>
 
-      {/* ALT: Mobil Kontroller (Gamepad Düzeni) */}
+      {/* ALT: Mobil Kontroller */}
       <div style={{
         marginTop: "15px",
         width: "100%",
@@ -518,7 +523,6 @@ const MorlesGame = () => {
         alignItems: "flex-end",
         padding: "0 10px"
       }}>
-        {/* Yön Tuşları (Sol/Sağ/Aşağı) */}
         <div style={{display: "flex", gap: "10px", alignItems: "center"}}>
            <button 
              onClick={() => movePiece("left")} disabled={gameOver}
@@ -548,7 +552,6 @@ const MorlesGame = () => {
            </button>
         </div>
 
-        {/* Döndürme Tuşu (Büyük) */}
         <button 
           onClick={rotatePieceAction} disabled={gameOver}
           style={{
@@ -560,11 +563,8 @@ const MorlesGame = () => {
            <RotateCw size={32} />
         </button>
       </div>
-
     </div>
   );
-  
-  function pauseGame() { setGameRunning(false); }
 };
 
 export default MorlesGame;
