@@ -13,13 +13,12 @@ import {
   ArrowRight as ArrowR,
 } from "lucide-react";
 
-// --- DEĞİŞİKLİK 1: IZGARA BOYUTLARI ---
-// Harflerin küçülmesi ve alanın hassaslaşması için boyutları ikiye katladık.
-const BOARD_WIDTH = 15; // Eskiden 10
-const BOARD_HEIGHT = 30; // Eskiden 20
+// --- GÜNCELLEME 1: ÇÖZÜNÜRLÜK AYARI ---
+const BOARD_WIDTH = 15; // İdeal orta yol
+const BOARD_HEIGHT = 30; // İdeal orta yol
 const EMPTY_CELL = 0;
 
-// SVG ŞEKİLLERİ (Harfler aynı kalıyor, ızgara büyüdüğü için ekranda küçük görünecekler)
+// SVG ŞEKİLLERİ (Değişmedi)
 const BLOCK_PIECES = {
   H: {
     shape: [
@@ -29,10 +28,7 @@ const BLOCK_PIECES = {
     ],
     color: "#00f0f0",
   },
-  I: {
-    shape: [[1], [1], [1], [1], [1]],
-    color: "#0000f0",
-  },
+  I: { shape: [[1], [1], [1], [1], [1]], color: "#0000f0" },
   L: {
     shape: [
       [1, 0],
@@ -127,15 +123,16 @@ const MorlesGame = () => {
   const [level, setLevel] = useState(1);
   const [lines, setLines] = useState(0);
 
-  // --- DEĞİŞİKLİK 2: BAŞLANGIÇ HIZI ---
-  // Izgara 40 kare olduğu için 1000ms çok yavaş kalır. 500ms ile başlatıyoruz.
-  const [dropTime, setDropTime] = useState(500);
-
+  // 30 yükseklik için 700ms ideal başlangıç hızıdır
+  const [dropTime, setDropTime] = useState(700);
   const [highScore, setHighScore] = useState(0);
 
   // Refs
   const gameLoopRef = useRef(null);
   const dropPieceRef = useRef(null);
+
+  // --- GÜNCELLEME 2: BASILI TUTMA İÇİN REF ---
+  const moveIntervalRef = useRef(null);
 
   useEffect(() => {
     try {
@@ -220,8 +217,6 @@ const MorlesGame = () => {
   const spawnNewPiece = useCallback(() => {
     const piece = nextPiece || createRandomPiece();
     const next = createRandomPiece();
-
-    // BOARD_WIDTH artık 20 olduğu için matematiksel olarak ortalama yine doğru çalışır
     const startX = Math.floor((BOARD_WIDTH - piece.shape[0].length) / 2);
     const startPosition = { x: startX, y: 0 };
 
@@ -266,9 +261,7 @@ const MorlesGame = () => {
         const newLevel = Math.floor(lines / 10) + 1;
         if (newLevel > level) {
           setLevel(newLevel);
-          // --- DEĞİŞİKLİK 3: SEVİYE HIZI AYARI ---
-          // Başlangıç hızı 500 olduğu için her seviyede 50ms hızlandırıyoruz.
-          setDropTime(Math.max(50, 500 - (newLevel - 1) * 50));
+          setDropTime(Math.max(50, 700 - (newLevel - 1) * 50));
         }
         spawnNewPiece();
       }
@@ -289,13 +282,36 @@ const MorlesGame = () => {
     ],
   );
 
+  // --- GÜNCELLEME 3: SERİ HAREKET FONKSİYONLARI ---
+
+  const startMoving = (direction) => {
+    if (!gameRunning || gameOver) return;
+
+    // İlk hareketi hemen yap
+    movePiece(direction);
+
+    // Varsa eski interval'i temizle
+    if (moveIntervalRef.current) clearInterval(moveIntervalRef.current);
+
+    // Seri hareket döngüsünü başlat (100ms oldukça seri bir hızdır)
+    moveIntervalRef.current = setInterval(() => {
+      movePiece(direction);
+    }, 100);
+  };
+
+  const stopMoving = () => {
+    if (moveIntervalRef.current) {
+      clearInterval(moveIntervalRef.current);
+      moveIntervalRef.current = null;
+    }
+  };
+
   const rotatePieceAction = useCallback(() => {
     if (!currentPiece || !gameRunning || gameOver) return;
     const rotated = rotatePiece(currentPiece);
     if (!checkCollision(rotated, currentPosition, board)) {
       setCurrentPiece(rotated);
     } else {
-      // Wall Kick (Duvar Tekmesi)
       if (!checkCollision(rotated, { ...currentPosition, x: currentPosition.x - 1 }, board)) {
         setCurrentPosition({ ...currentPosition, x: currentPosition.x - 1 });
         setCurrentPiece(rotated);
@@ -324,11 +340,9 @@ const MorlesGame = () => {
     setScore(0);
     setLevel(1);
     setLines(0);
-    // --- DEĞİŞİKLİK 4: RESET HIZI ---
-    setDropTime(500);
+    setDropTime(700);
   };
 
-  // Zamanlayıcı
   useEffect(() => {
     dropPieceRef.current = () => movePiece("down");
   });
@@ -346,17 +360,19 @@ const MorlesGame = () => {
 
   // Klavye Kontrolleri
   useEffect(() => {
-    const handleKeyPress = (e) => {
+    const handleKeyDown = (e) => {
       if (gameOver || !gameRunning) return;
+      if (e.repeat) return; // Klavye tekrarını browser halletsin istemiyoruz, manuel kontrol için
+
       switch (e.key) {
         case "ArrowLeft":
-          movePiece("left");
+          startMoving("left");
           break;
         case "ArrowRight":
-          movePiece("right");
+          startMoving("right");
           break;
         case "ArrowDown":
-          movePiece("down");
+          startMoving("down");
           break;
         case "ArrowUp":
         case " ":
@@ -364,9 +380,20 @@ const MorlesGame = () => {
           break;
       }
     };
-    window.addEventListener("keydown", handleKeyPress);
-    return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [gameOver, gameRunning, movePiece, rotatePieceAction]);
+
+    const handleKeyUp = (e) => {
+      if (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "ArrowDown") {
+        stopMoving();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [gameOver, gameRunning, movePiece, rotatePieceAction]); // Dependency'ler önemli
 
   // --- RENDER ---
 
@@ -424,7 +451,21 @@ const MorlesGame = () => {
     cursor: "pointer",
     width: "65px",
     height: "65px",
-    touchAction: "manipulation",
+    touchAction: "none", // Telefonta kaydırmayı engeller, buton daha iyi tepki verir
+    userSelect: "none",
+    WebkitUserSelect: "none",
+  });
+
+  // Buton Eventlerini kolaylaştırmak için yardımcı obje
+  const getMoveEvents = (direction) => ({
+    onMouseDown: () => startMoving(direction),
+    onMouseUp: stopMoving,
+    onMouseLeave: stopMoving,
+    onTouchStart: (e) => {
+      e.preventDefault();
+      startMoving(direction);
+    }, // Mobilde basılı tutma
+    onTouchEnd: stopMoving,
   });
 
   return (
@@ -440,6 +481,7 @@ const MorlesGame = () => {
         fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
         overflow: "hidden",
         position: "relative",
+        userSelect: "none", // Tüm sayfa seçimini kapatır
       }}
     >
       {/* ÜST BAR */}
@@ -521,7 +563,7 @@ const MorlesGame = () => {
               display: "grid",
               gridTemplateColumns: `repeat(${BOARD_WIDTH}, 1fr)`,
               gridTemplateRows: `repeat(${BOARD_HEIGHT}, 1fr)`,
-              gap: "0px", // Piksel piksel görünüm için boşluğu sıfırladım veya 1px bırakabilirsin
+              gap: "0px",
               width: "100%",
               height: "100%",
             }}
@@ -532,10 +574,8 @@ const MorlesGame = () => {
                   key={`${y}-${x}`}
                   style={{
                     background: cell === EMPTY_CELL ? "transparent" : cell,
-                    // Boş hücrelerdeki çizgileri kaldırdım veya çok silik yaptım ki görüntü karışmasın
                     border: cell === EMPTY_CELL ? "1px solid rgba(255, 255, 255, 0.02)" : "none",
-                    borderRadius: "0px", // Kare keskin olsun
-                    boxShadow: cell !== EMPTY_CELL ? "inset 0 0 2px rgba(0,0,0,0.5)" : "none",
+                    borderRadius: "0px",
                   }}
                 />
               )),
@@ -641,7 +681,7 @@ const MorlesGame = () => {
         </div>
       </div>
 
-      {/* ALT KONTROLLER */}
+      {/* ALT KONTROLLER - GÜNCELLENDİ: BASILI TUTMA ÖZELLİĞİ EKLENDİ */}
       <div
         style={{
           marginTop: "auto",
@@ -657,20 +697,23 @@ const MorlesGame = () => {
       >
         {/* Yön Tuşları */}
         <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
-          <button onClick={() => movePiece("left")} disabled={gameOver} style={controlBtnStyle("#3742fa", "#5352ed")}>
+          {/* SOL */}
+          <button {...getMoveEvents("left")} disabled={gameOver} style={controlBtnStyle("#3742fa", "#5352ed")}>
             <ArrowL size={32} />
           </button>
 
-          <button onClick={() => movePiece("down")} disabled={gameOver} style={controlBtnStyle("#3742fa", "#5352ed")}>
+          {/* AŞAĞI */}
+          <button {...getMoveEvents("down")} disabled={gameOver} style={controlBtnStyle("#3742fa", "#5352ed")}>
             <ArrowDown size={32} />
           </button>
 
-          <button onClick={() => movePiece("right")} disabled={gameOver} style={controlBtnStyle("#3742fa", "#5352ed")}>
+          {/* SAĞ */}
+          <button {...getMoveEvents("right")} disabled={gameOver} style={controlBtnStyle("#3742fa", "#5352ed")}>
             <ArrowR size={32} />
           </button>
         </div>
 
-        {/* Döndürme */}
+        {/* Döndürme (Tek tık yeterli) */}
         <button
           onClick={rotatePieceAction}
           disabled={gameOver}
