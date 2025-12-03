@@ -58,7 +58,7 @@ const WheelPage = () => {
       { type: "joker", value: 1, item: "senyaz", text: "Sen Yaz", color: WHEEL_COLORS.red },
       { type: "empty", value: 0, text: "Pas", color: WHEEL_COLORS.gray },
       { type: "joker", value: 2, item: "fisilida", text: "2x Fısıl", color: WHEEL_COLORS.yellow },
-      { type: "joker", value: 2, item: "senyaz", text: "2x SenY", color: WHEEL_COLORS.red },
+      { type: "joker", value: 2, item: "senyaz", text: "2x SenYaz", color: WHEEL_COLORS.red },
       { type: "empty", value: 0, text: "Pas", color: WHEEL_COLORS.gray },
     ],
     [],
