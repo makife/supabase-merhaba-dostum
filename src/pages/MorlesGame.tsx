@@ -1,13 +1,23 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-// React Router DOM'dan useNavigate'i içe aktarıyoruz (Eğer yüklü değilse aşağıda window.location kullanacağız)
-import { useNavigate } from "react-router-dom"; 
-import { Play, Pause, RotateCcw, Trophy, Target, ArrowLeft, RotateCw, ArrowDown, ArrowLeft as ArrowL, ArrowRight as ArrowR } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import {
+  Play,
+  Pause,
+  RotateCcw,
+  Trophy,
+  Target,
+  ArrowLeft,
+  RotateCw,
+  ArrowDown,
+  ArrowLeft as ArrowL,
+  ArrowRight as ArrowR,
+} from "lucide-react";
 
 const BOARD_WIDTH = 10;
 const BOARD_HEIGHT = 20;
 const EMPTY_CELL = 0;
 
-// HARF BLOKLARI (H, U, L, I, O, E, F)
+// GÜNCELLENMİŞ HARF BLOKLARI (E ve F Düzeltildi)
 const BLOCK_PIECES = {
   H: {
     shape: [
@@ -44,32 +54,32 @@ const BLOCK_PIECES = {
     ],
     color: "#F5FF33", // Sarı
   },
+  // E Harfi (Daha belirgin)
   E: {
     shape: [
       [1, 1, 1],
-      [1, 0, 0],
+      [1, 0, 0], // Orta çizgi (kısa)
       [1, 1, 1],
     ],
-    color: "#B833FF", // Mor
+    color: "#D500F9", // Parlak Mor
   },
+  // F Harfi (Daha belirgin)
   F: {
     shape: [
       [1, 1, 1],
-      [1, 0, 0],
-      [1, 0, 0],
+      [1, 0, 0], // Orta çizgi
+      [1, 0, 0], // Alt taraf boş
     ],
-    color: "#FF33A8", // Pembe
+    color: "#F50057", // Parlak Pembe
   },
 };
 
 const PIECE_TYPES = Object.keys(BLOCK_PIECES);
 
 const MorlesGame = () => {
-  // Geri dönüş için navigate hook'u
   const navigate = useNavigate();
 
   const goBack = () => {
-    // Önce React Router ile deniyoruz, olmazsa window.location ile zorluyoruz
     try {
       navigate("/");
     } catch (e) {
@@ -89,7 +99,7 @@ const MorlesGame = () => {
     return board;
   };
 
-  // State Tanımları
+  // State
   const [board, setBoard] = useState(createEmptyBoard);
   const [currentPiece, setCurrentPiece] = useState(null);
   const [currentPosition, setCurrentPosition] = useState({ x: 0, y: 0 });
@@ -100,12 +110,10 @@ const MorlesGame = () => {
   const [level, setLevel] = useState(1);
   const [lines, setLines] = useState(0);
   const [dropTime, setDropTime] = useState(1000);
-  const [fastDrop, setFastDrop] = useState(false);
   const [highScore, setHighScore] = useState(0);
-  
-  // Referanslar
+
+  // Refs
   const gameLoopRef = useRef(null);
-  const fastDropRef = useRef(null);
   const dropPieceRef = useRef(null);
 
   useEffect(() => {
@@ -130,7 +138,6 @@ const MorlesGame = () => {
 
   const rotatePiece = useCallback((piece) => {
     if (!piece) return null;
-    // Güvenli matris döndürme
     if (!piece.shape || piece.shape.length === 0) return piece;
     const rotated = piece.shape[0].map((_, index) => piece.shape.map((row) => row[index]).reverse());
     return { ...piece, shape: rotated };
@@ -204,7 +211,8 @@ const MorlesGame = () => {
     setNextPiece(next);
   }, [nextPiece, createRandomPiece, checkCollision, board]);
 
-  const movePiece = useCallback((direction) => {
+  const movePiece = useCallback(
+    (direction) => {
       if (!currentPiece || !gameRunning || gameOver) return;
 
       let newPosition = { ...currentPosition };
@@ -215,16 +223,19 @@ const MorlesGame = () => {
       if (!checkCollision(currentPiece, newPosition, board)) {
         setCurrentPosition(newPosition);
       } else if (direction === "down") {
+        // Çarpışma varsa yerleştir
         const newBoard = placePiece(currentPiece, currentPosition, board);
         const { board: clearedBoard, linesCleared } = clearLines(newBoard);
 
         setBoard(clearedBoard);
         setLines((prev) => prev + linesCleared);
         setScore((prev) => {
-          const newScore = prev + (linesCleared * 100 * level);
+          const newScore = prev + linesCleared * 100 * level;
           if (newScore > highScore) {
             setHighScore(newScore);
-            try { localStorage?.setItem("morlesHighScore", newScore.toString()); } catch (e) {}
+            try {
+              localStorage?.setItem("morlesHighScore", newScore.toString());
+            } catch (e) {}
           }
           return newScore;
         });
@@ -237,7 +248,20 @@ const MorlesGame = () => {
         spawnNewPiece();
       }
     },
-    [currentPiece, currentPosition, gameRunning, gameOver, board, checkCollision, placePiece, clearLines, level, lines, highScore, spawnNewPiece]
+    [
+      currentPiece,
+      currentPosition,
+      gameRunning,
+      gameOver,
+      board,
+      checkCollision,
+      placePiece,
+      clearLines,
+      level,
+      lines,
+      highScore,
+      spawnNewPiece,
+    ],
   );
 
   const rotatePieceAction = useCallback(() => {
@@ -248,9 +272,7 @@ const MorlesGame = () => {
     }
   }, [currentPiece, gameRunning, gameOver, rotatePiece, checkCollision, currentPosition, board]);
 
-  const pauseGame = () => {
-    setGameRunning(false);
-  };
+  const pauseGame = () => setGameRunning(false);
 
   const startGame = () => {
     setGameRunning(true);
@@ -269,10 +291,9 @@ const MorlesGame = () => {
     setLevel(1);
     setLines(0);
     setDropTime(1000);
-    setFastDrop(false);
   };
 
-  // Zamanlayıcılar (Timers)
+  // Zamanlayıcı (Oyun Döngüsü)
   useEffect(() => {
     dropPieceRef.current = () => movePiece("down");
   });
@@ -288,41 +309,32 @@ const MorlesGame = () => {
     return () => clearInterval(gameLoopRef.current);
   }, [gameRunning, gameOver, dropTime]);
 
-  useEffect(() => {
-    if (fastDrop && gameRunning && !gameOver) {
-      fastDropRef.current = setInterval(() => {
-        if (dropPieceRef.current) dropPieceRef.current();
-      }, 50);
-    } else {
-      clearInterval(fastDropRef.current);
-    }
-    return () => clearInterval(fastDropRef.current);
-  }, [fastDrop, gameRunning, gameOver]);
-
   // Klavye Kontrolleri
   useEffect(() => {
     const handleKeyPress = (e) => {
-      if (gameOver) return;
+      if (gameOver || !gameRunning) return;
       switch (e.key) {
-        case "ArrowLeft": movePiece("left"); break;
-        case "ArrowRight": movePiece("right"); break;
-        case "ArrowDown": if (!fastDrop) setFastDrop(true); break;
-        case "ArrowUp": case " ": rotatePieceAction(); break;
+        case "ArrowLeft":
+          movePiece("left");
+          break;
+        case "ArrowRight":
+          movePiece("right");
+          break;
+        case "ArrowDown":
+          movePiece("down");
+          break;
+        case "ArrowUp":
+        case " ":
+          rotatePieceAction();
+          break;
       }
     };
-    const handleKeyUp = (e) => {
-      if (e.key === "ArrowDown") setFastDrop(false);
-    };
     window.addEventListener("keydown", handleKeyPress);
-    window.addEventListener("keyup", handleKeyUp);
-    return () => {
-      window.removeEventListener("keydown", handleKeyPress);
-      window.removeEventListener("keyup", handleKeyUp);
-    };
-  }, [gameOver, movePiece, rotatePieceAction, fastDrop]);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, [gameOver, gameRunning, movePiece, rotatePieceAction]);
 
-  // --- RENDER YARDIMCILARI ---
-  
+  // --- RENDER ---
+
   const renderBoard = () => {
     let displayBoard = board.map((row) => [...row]);
     if (currentPiece) {
@@ -347,33 +359,38 @@ const MorlesGame = () => {
       for (let x = 0; x < 4; x++) {
         const isPart = nextPiece && nextPiece.shape[y] && nextPiece.shape[y][x];
         cells.push(
-          <div key={`n-${y}-${x}`} style={{
-            width: "12px", height: "12px",
-            background: isPart ? nextPiece.color : "transparent",
-            opacity: isPart ? 1 : 0.1,
-            border: "1px solid rgba(255,255,255,0.05)"
-          }} />
+          <div
+            key={`n-${y}-${x}`}
+            style={{
+              width: "12px",
+              height: "12px",
+              background: isPart ? nextPiece.color : "transparent",
+              opacity: isPart ? 1 : 0.1,
+              border: "1px solid rgba(255,255,255,0.05)",
+            }}
+          />,
         );
       }
     }
     return cells;
   };
 
+  // Butonlar için ortak stil
   const controlBtnStyle = (colorStart, colorEnd) => ({
     background: `linear-gradient(135deg, ${colorStart}, ${colorEnd})`,
-    border: "none",
+    border: "2px solid rgba(255,255,255,0.2)",
     borderRadius: "15px",
     color: "white",
     padding: "0",
-    boxShadow: "0 4px 6px rgba(0,0,0,0.2)",
+    boxShadow: "0 4px 0px rgba(0,0,0,0.3)", // 3D hissi veren gölge
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     cursor: "pointer",
-    transition: "transform 0.1s",
-    width: "60px",
-    height: "60px",
+    width: "65px",
+    height: "65px",
     touchAction: "manipulation",
+    active: { transform: "translateY(4px)", boxShadow: "none" }, // Basılma efekti (CSS'te handle edilir ama burada mantık basit)
   });
 
   return (
@@ -388,66 +405,68 @@ const MorlesGame = () => {
         padding: "10px",
         fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
         overflow: "hidden",
-        position: "relative" // Sabit konumlandırma için
+        position: "relative",
       }}
     >
       {/* ÜST BAR */}
-      <div style={{
-        width: "100%",
-        maxWidth: "500px",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: "10px",
-        background: "rgba(255,255,255,0.1)",
-        padding: "10px",
-        borderRadius: "16px",
-        backdropFilter: "blur(5px)"
-      }}>
-        <button 
-            onClick={goBack} 
-            style={{
-                background: "rgba(255,255,255,0.2)", 
-                border: "none", 
-                color: "white", 
-                borderRadius: "50%", 
-                width: "40px", 
-                height: "40px", 
-                display: "flex", 
-                alignItems: "center", 
-                justifyContent: "center",
-                cursor: "pointer"
-            }}
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "500px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "10px",
+          background: "rgba(255,255,255,0.1)",
+          padding: "10px",
+          borderRadius: "16px",
+          backdropFilter: "blur(5px)",
+        }}
+      >
+        <button
+          onClick={goBack}
+          style={{
+            background: "rgba(255,255,255,0.2)",
+            border: "none",
+            color: "white",
+            borderRadius: "50%",
+            width: "40px",
+            height: "40px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+          }}
         >
           <ArrowLeft size={24} />
         </button>
-        <div style={{textAlign: "center"}}>
-           <h1 style={{margin: 0, fontSize: "1.2rem", color: "#ffd700", fontWeight: "bold"}}>ALFABE KULE</h1>
-           <span style={{fontSize: "0.8rem", color: "white", opacity: 0.8}}>Seviye {level}</span>
+        <div style={{ textAlign: "center" }}>
+          <h1 style={{ margin: 0, fontSize: "1.2rem", color: "#ffd700", fontWeight: "bold" }}>ALFABE KULE</h1>
+          <span style={{ fontSize: "0.8rem", color: "white", opacity: 0.8 }}>Seviye {level}</span>
         </div>
-        <div style={{display: "flex", flexDirection: "column", alignItems: "flex-end"}}>
-          <div style={{display: "flex", alignItems: "center", gap: "4px", color: "#fff"}}>
-             <Trophy size={14} color="gold"/> <span style={{fontSize: "0.9rem"}}>{highScore}</span>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "#fff" }}>
+            <Trophy size={14} color="gold" /> <span style={{ fontSize: "0.9rem" }}>{highScore}</span>
           </div>
-          <div style={{display: "flex", alignItems: "center", gap: "4px", color: "#fff"}}>
-             <Target size={14} color="#60a5fa"/> <span style={{fontSize: "0.9rem"}}>{score}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "#fff" }}>
+            <Target size={14} color="#60a5fa" /> <span style={{ fontSize: "0.9rem" }}>{score}</span>
           </div>
         </div>
       </div>
 
-      {/* OYUN ALANI VE YAN PANEL */}
-      <div style={{
-        display: "flex",
-        gap: "10px",
-        maxWidth: "500px",
-        width: "100%",
-        justifyContent: "center",
-        flex: 1,
-        // Yükseklik hatasını düzelten kısım:
-        minHeight: "0" 
-      }}>
-        {/* SOL: Oyun Tahtası */}
-        {/* Tahtanın görünmemesini düzelten kapsayıcı */}
+      {/* OYUN ALANI */}
+      <div
+        style={{
+          display: "flex",
+          gap: "10px",
+          maxWidth: "500px",
+          width: "100%",
+          justifyContent: "center",
+          flex: 1,
+          minHeight: "0",
+        }}
+      >
+        {/* Tahta */}
         <div
           style={{
             position: "relative",
@@ -455,13 +474,12 @@ const MorlesGame = () => {
             borderRadius: "12px",
             border: "4px solid rgba(255, 255, 255, 0.2)",
             padding: "4px",
-            // Sabit yükseklik ve en-boy oranı ile görünürlüğü garanti ediyoruz
-            height: "65vh", 
+            height: "60vh", // Biraz küçülttüm ki butonlara yer kalsın
             width: "auto",
-            aspectRatio: "1/2", // 10 birim en / 20 birim boy oranı
+            aspectRatio: "1/2",
             display: "flex",
             alignItems: "center",
-            justifyContent: "center"
+            justifyContent: "center",
           }}
         >
           <div
@@ -480,117 +498,155 @@ const MorlesGame = () => {
                   key={`${y}-${x}`}
                   style={{
                     background: cell === EMPTY_CELL ? "transparent" : cell,
-                    border: cell === EMPTY_CELL ? "1px solid rgba(255, 255, 255, 0.05)" : "none", // Boş hücreleri görünür kılan kenarlık
+                    border: cell === EMPTY_CELL ? "1px solid rgba(255, 255, 255, 0.05)" : "none",
                     borderRadius: "2px",
                     boxShadow: cell !== EMPTY_CELL ? "inset 0 0 4px rgba(0,0,0,0.5)" : "none",
                   }}
                 />
-              ))
+              )),
             )}
           </div>
 
-          {/* Game Over Overlay */}
           {gameOver && (
-            <div style={{
-              position: "absolute", inset: 0, background: "rgba(0,0,0,0.9)", 
-              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-              color: "white", zIndex: 10, borderRadius: "8px"
-            }}>
-              <h2 style={{fontSize: "2rem", color: "#ff4757", margin: "0 0 10px 0"}}>Oyun Bitti!</h2>
-              <p style={{fontSize: "1.2rem", margin: "0 0 20px 0"}}>Skor: {score}</p>
-              <button onClick={resetGame} style={{
-                padding: "12px 24px", background: "#2ed573", border: "none", 
-                borderRadius: "8px", color: "white", fontWeight: "bold", fontSize: "1.1rem", cursor: "pointer"
-              }}>
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                background: "rgba(0,0,0,0.9)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "white",
+                zIndex: 10,
+                borderRadius: "8px",
+              }}
+            >
+              <h2 style={{ fontSize: "2rem", color: "#ff4757", margin: "0 0 10px 0" }}>Oyun Bitti!</h2>
+              <p style={{ fontSize: "1.2rem", margin: "0 0 20px 0" }}>Skor: {score}</p>
+              <button
+                onClick={resetGame}
+                style={{
+                  padding: "12px 24px",
+                  background: "#2ed573",
+                  border: "none",
+                  borderRadius: "8px",
+                  color: "white",
+                  fontWeight: "bold",
+                  fontSize: "1.1rem",
+                  cursor: "pointer",
+                }}
+              >
                 Tekrar Dene
               </button>
             </div>
           )}
         </div>
 
-        {/* SAĞ: Sonraki Parça ve Butonlar */}
-        <div style={{display: "flex", flexDirection: "column", gap: "10px", width: "80px"}}>
-          <div style={{
-             background: "rgba(0,0,0,0.5)", borderRadius: "10px", padding: "8px",
-             display: "flex", flexDirection: "column", alignItems: "center",
-             border: "1px solid rgba(255,255,255,0.1)"
-          }}>
-            <span style={{color: "white", fontSize: "0.7rem", marginBottom: "5px", fontWeight: "bold"}}>SONRAKİ</span>
-            <div style={{
-              display: "grid", gridTemplateColumns: "repeat(4, 12px)", gridTemplateRows: "repeat(4, 12px)", gap: "1px"
-            }}>
+        {/* Sağ Panel */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px", width: "80px" }}>
+          <div
+            style={{
+              background: "rgba(0,0,0,0.5)",
+              borderRadius: "10px",
+              padding: "8px",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              border: "1px solid rgba(255,255,255,0.1)",
+            }}
+          >
+            <span style={{ color: "white", fontSize: "0.7rem", marginBottom: "5px", fontWeight: "bold" }}>SONRAKİ</span>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(4, 12px)",
+                gridTemplateRows: "repeat(4, 12px)",
+                gap: "1px",
+              }}
+            >
               {renderNextPieceGrid()}
             </div>
           </div>
 
-          <div style={{display: "flex", flexDirection: "column", gap: "8px", marginTop: "auto"}}>
-             {!gameRunning && !gameOver && (
-               <button onClick={startGame} style={{...controlBtnStyle("#2ed573", "#7bed9f"), width: "100%", height: "45px", fontSize: "0.9rem"}}>
-                 <Play size={20} />
-               </button>
-             )}
-             {gameRunning && (
-               <button onClick={pauseGame} style={{...controlBtnStyle("#ffa502", "#eccc68"), width: "100%", height: "45px", fontSize: "0.9rem"}}>
-                 <Pause size={20} />
-               </button>
-             )}
-             <button onClick={resetGame} style={{...controlBtnStyle("#ff4757", "#ff6b81"), width: "100%", height: "45px", fontSize: "0.9rem"}}>
-                 <RotateCcw size={20} />
-             </button>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "auto" }}>
+            {!gameRunning && !gameOver && (
+              <button
+                onClick={startGame}
+                style={{
+                  ...controlBtnStyle("#2ed573", "#7bed9f"),
+                  width: "100%",
+                  height: "45px",
+                  borderRadius: "10px",
+                }}
+              >
+                <Play size={24} />
+              </button>
+            )}
+            {gameRunning && (
+              <button
+                onClick={pauseGame}
+                style={{
+                  ...controlBtnStyle("#ffa502", "#eccc68"),
+                  width: "100%",
+                  height: "45px",
+                  borderRadius: "10px",
+                }}
+              >
+                <Pause size={24} />
+              </button>
+            )}
+            <button
+              onClick={resetGame}
+              style={{ ...controlBtnStyle("#ff4757", "#ff6b81"), width: "100%", height: "45px", borderRadius: "10px" }}
+            >
+              <RotateCcw size={24} />
+            </button>
           </div>
         </div>
       </div>
 
-      {/* ALT: Mobil Kontroller */}
-      <div style={{
-        marginTop: "15px",
-        marginBottom: "10px",
-        width: "100%",
-        maxWidth: "400px",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "flex-end",
-        padding: "0 10px",
-        gap: "10px"
-      }}>
-        <div style={{display: "flex", gap: "10px", alignItems: "center"}}>
-           <button 
-             onClick={() => movePiece("left")} disabled={gameOver}
-             style={controlBtnStyle("#3742fa", "#5352ed")}
-             onTouchStart={(e) => { e.preventDefault(); movePiece("left"); }}
-           >
-             <ArrowL size={28}/>
-           </button>
-           
-           <button 
-             disabled={gameOver}
-             onMouseDown={() => setFastDrop(true)}
-             onMouseUp={() => setFastDrop(false)}
-             onTouchStart={(e) => { e.preventDefault(); setFastDrop(true); }}
-             onTouchEnd={(e) => { e.preventDefault(); setFastDrop(false); }}
-             style={controlBtnStyle("#3742fa", "#5352ed")}
-           >
-             <ArrowDown size={28}/>
-           </button>
+      {/* ALT KONTROLLER (Optimize Edilmiş: 1 Tık = 1 Hareket) */}
+      <div
+        style={{
+          marginTop: "auto",
+          marginBottom: "20px",
+          width: "100%",
+          maxWidth: "400px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "0 20px",
+          gap: "15px",
+        }}
+      >
+        {/* Yön Tuşları */}
+        <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
+          <button onClick={() => movePiece("left")} disabled={gameOver} style={controlBtnStyle("#3742fa", "#5352ed")}>
+            <ArrowL size={32} />
+          </button>
 
-           <button 
-             onClick={() => movePiece("right")} disabled={gameOver}
-             style={controlBtnStyle("#3742fa", "#5352ed")}
-             onTouchStart={(e) => { e.preventDefault(); movePiece("right"); }}
-           >
-             <ArrowR size={28}/>
-           </button>
+          <button onClick={() => movePiece("down")} disabled={gameOver} style={controlBtnStyle("#3742fa", "#5352ed")}>
+            <ArrowDown size={32} />
+          </button>
+
+          <button onClick={() => movePiece("right")} disabled={gameOver} style={controlBtnStyle("#3742fa", "#5352ed")}>
+            <ArrowR size={32} />
+          </button>
         </div>
 
-        <button 
-          onClick={rotatePieceAction} disabled={gameOver}
+        {/* Döndürme (Daha Büyük) */}
+        <button
+          onClick={rotatePieceAction}
+          disabled={gameOver}
           style={{
-             ...controlBtnStyle("#ff4757", "#ff6b81"),
-             width: "70px", height: "70px", borderRadius: "50%"
+            ...controlBtnStyle("#ff4757", "#ff6b81"),
+            width: "75px",
+            height: "75px",
+            borderRadius: "50%",
           }}
-          onTouchStart={(e) => { e.preventDefault(); rotatePieceAction(); }}
         >
-           <RotateCw size={32} />
+          <RotateCw size={36} />
         </button>
       </div>
     </div>
