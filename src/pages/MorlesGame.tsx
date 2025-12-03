@@ -18,7 +18,7 @@ const BOARD_WIDTH = 15;
 const BOARD_HEIGHT = 30;
 const EMPTY_CELL = 0;
 
-// SVG ŞEKİLLERİ
+// SVG ŞEKİLLERİ VE YENİ EKLENEN PARÇALAR
 const BLOCK_PIECES: Record<string, { shape: number[][]; color: string }> = {
   H: {
     shape: [
@@ -28,7 +28,9 @@ const BLOCK_PIECES: Record<string, { shape: number[][]; color: string }> = {
     ],
     color: "#00f0f0",
   },
-  I: { shape: [[1], [1], [1], [1], [1]], color: "#0000f0" },
+  I: { shape: [[1], [1], [1], [1], [1]], color: "#0000f0" }, // 5'li Uzun I
+  I3: { shape: [[1], [1], [1]], color: "#0000f0" }, // YENİ: 3 Bloklu I
+  DOT: { shape: [[1]], color: "#a000f0" }, // YENİ: Tek Nokta
   L: {
     shape: [
       [1, 0],
@@ -139,11 +141,8 @@ const MorlesGame = () => {
 
   // Refs
   const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
-
-  // --- YENİ REFS: Gecikmeli Hareket İçin ---
-  const moveIntervalRef = useRef<NodeJS.Timeout | null>(null); // Sürekli tekrar eden döngü
-  const moveTimeoutRef = useRef<NodeJS.Timeout | null>(null); // İlk basıştaki bekleme süresi
-
+  const moveIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const moveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const movePieceFnRef = useRef<((dir: "left" | "right" | "down") => void) | null>(null);
 
   useEffect(() => {
@@ -303,26 +302,23 @@ const MorlesGame = () => {
     movePieceFnRef.current = movePiece;
   }, [movePiece]);
 
-  // --- DÜZELTİLMİŞ HAREKET KONTROLLERİ ---
-  // Tek tıkla 1 hareket, basılı tutunca gecikmeli seri hareket
-
+  // --- HAREKET KONTROLLERİ ---
   const startMoving = (direction: "left" | "right" | "down") => {
     if (!gameRunning || gameOver) return;
 
-    // 1. ADIM: Hemen bir kere hareket ettir (Tıklama hissi için)
+    // 1. Hemen hareket
     if (movePieceFnRef.current) movePieceFnRef.current(direction);
 
-    // Önceki zamanlayıcıları temizle
     stopMoving();
 
-    // 2. ADIM: Gecikme koy (Örn: 200ms). Eğer kullanıcı elini çekmezse seri hareket başlar.
+    // 2. Bekle ve seri harekete geç
     moveTimeoutRef.current = setTimeout(() => {
       moveIntervalRef.current = setInterval(() => {
         if (movePieceFnRef.current) {
           movePieceFnRef.current(direction);
         }
-      }, 80); // Seri hareket hızı
-    }, 200); // Basılı tutma algılama süresi
+      }, 80);
+    }, 200);
   };
 
   const stopMoving = () => {
@@ -457,7 +453,6 @@ const MorlesGame = () => {
               height: "10px",
               background: isPart ? nextPiece.color : "transparent",
               opacity: isPart ? 1 : 0.1,
-              // Küçük önizleme kutusunda da ayrım olsun
               border: isPart ? "1px solid rgba(0,0,0,0.3)" : "1px solid rgba(255,255,255,0.05)",
             }}
           />,
@@ -595,7 +590,7 @@ const MorlesGame = () => {
               display: "grid",
               gridTemplateColumns: `repeat(${BOARD_WIDTH}, 1fr)`,
               gridTemplateRows: `repeat(${BOARD_HEIGHT}, 1fr)`,
-              gap: "0px", // Bloklar arasında fiziksel boşluk yerine border kullanıyoruz
+              gap: "0px",
               width: "100%",
               height: "100%",
             }}
@@ -606,13 +601,10 @@ const MorlesGame = () => {
                   key={`${y}-${x}`}
                   style={{
                     background: cell === EMPTY_CELL ? "transparent" : (cell as string),
-                    // --- GÖRSEL DÜZELTME: Blok Ayrımı ---
-                    // Dolu hücrelere siyah yarı saydam çerçeve ekleyerek ayrım sağlıyoruz.
+                    // Görsel iyileştirme: Parçalar birbirine yapışık ama ayrık görünsün
                     border:
-                      cell === EMPTY_CELL
-                        ? "1px solid rgba(255, 255, 255, 0.03)" // Boş hücreler çok silik
-                        : "1px solid rgba(0, 0, 0, 0.3)", // Dolu hücreler belirgin ayrım
-                    boxSizing: "border-box", // Border'ın kutu boyutunu bozmasını engeller
+                      cell === EMPTY_CELL ? "1px solid rgba(255, 255, 255, 0.03)" : "1px solid rgba(0, 0, 0, 0.3)",
+                    boxSizing: "border-box",
                   }}
                 />
               )),
@@ -655,8 +647,9 @@ const MorlesGame = () => {
           )}
         </div>
 
-        {/* Sağ Panel */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px", width: "80px" }}>
+        {/* SAĞ PANEL (GÜNCELLENDİ) */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "15px", width: "80px" }}>
+          {/* Sonraki Parça Göstergesi */}
           <div
             style={{
               background: "rgba(0,0,0,0.5)",
@@ -681,7 +674,8 @@ const MorlesGame = () => {
             </div>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "auto" }}>
+          {/* KONTROL BUTONLARI (BURAYA TAŞINDI) */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {!gameRunning && !gameOver && (
               <button
                 onClick={startGame}
@@ -718,7 +712,7 @@ const MorlesGame = () => {
         </div>
       </div>
 
-      {/* ALT KONTROLLER */}
+      {/* ALT KONTROLLER (Sadece Yön Tuşları Kaldı) */}
       <div
         style={{
           marginTop: "auto",
@@ -734,17 +728,14 @@ const MorlesGame = () => {
       >
         {/* Yön Tuşları */}
         <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
-          {/* SOL */}
           <button {...getMoveEvents("left")} disabled={gameOver} style={controlBtnStyle("#3742fa", "#5352ed")}>
             <ArrowL size={32} />
           </button>
 
-          {/* AŞAĞI */}
           <button {...getMoveEvents("down")} disabled={gameOver} style={controlBtnStyle("#3742fa", "#5352ed")}>
             <ArrowDown size={32} />
           </button>
 
-          {/* SAĞ */}
           <button {...getMoveEvents("right")} disabled={gameOver} style={controlBtnStyle("#3742fa", "#5352ed")}>
             <ArrowR size={32} />
           </button>
