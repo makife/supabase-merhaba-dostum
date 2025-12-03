@@ -17,7 +17,7 @@ const BOARD_WIDTH = 10;
 const BOARD_HEIGHT = 20;
 const EMPTY_CELL = 0;
 
-// GÜNCELLENMİŞ HARF BLOKLARI (E ve F Düzeltildi)
+// SVG ŞEKİLLERİNE GÖRE GÜNCELLENMİŞ BLOKLAR
 const BLOCK_PIECES = {
   H: {
     shape: [
@@ -25,7 +25,21 @@ const BLOCK_PIECES = {
       [1, 1, 1],
       [1, 0, 1],
     ],
-    color: "#FF5733", // Turuncu
+    color: "#00f0f0", // Cyan (SVG'den)
+  },
+  I: {
+    shape: [[1], [1], [1], [1], [1]], // 5 blok yüksekliğinde
+    color: "#0000f0", // Blue (SVG'den)
+  },
+  L: {
+    shape: [
+      [1, 0],
+      [1, 0],
+      [1, 0],
+      [1, 0],
+      [1, 1],
+    ], // 5 blok yüksek, sağ alt çıkıntılı
+    color: "#f0a000", // Orange (SVG'den)
   },
   U: {
     shape: [
@@ -33,44 +47,45 @@ const BLOCK_PIECES = {
       [1, 0, 1],
       [1, 1, 1],
     ],
-    color: "#33FF57", // Yeşil
+    color: "#f0f000", // Yellow (SVG'den)
   },
-  L: {
+  F: {
     shape: [
-      [1, 0],
-      [1, 0],
       [1, 1],
-    ],
-    color: "#3357FF", // Mavi
+      [1, 0],
+      [1, 1], // Orta çizgi
+      [1, 0],
+      [1, 0],
+    ], // 5 blok yüksekliğinde
+    color: "#00f000", // Green (SVG'den)
   },
-  I: {
-    shape: [[1], [1], [1], [1]],
-    color: "#33FFF5", // Camgöbeği
+  E: {
+    shape: [
+      [1, 1],
+      [1, 0],
+      [1, 1], // Orta çizgi
+      [1, 0],
+      [1, 1], // Alt çizgi
+    ], // 5 blok yüksekliğinde
+    color: "#a000f0", // Purple (SVG'den)
   },
   O: {
     shape: [
-      [1, 1],
-      [1, 1],
-    ],
-    color: "#F5FF33", // Sarı
+      [1, 1, 1],
+      [1, 1, 1],
+      [1, 1, 1],
+    ], // 3x3 Büyük Kare (SVG'den)
+    color: "#f00000", // Red (SVG'den)
   },
-  // E Harfi (Daha belirgin)
-  E: {
+  S: {
     shape: [
-      [1, 1, 1],
-      [1, 0, 0], // Orta çizgi (kısa)
-      [1, 1, 1],
-    ],
-    color: "#D500F9", // Parlak Mor
-  },
-  // F Harfi (Daha belirgin)
-  F: {
-    shape: [
-      [1, 1, 1],
-      [1, 0, 0], // Orta çizgi
-      [1, 0, 0], // Alt taraf boş
-    ],
-    color: "#F50057", // Parlak Pembe
+      [1, 1],
+      [1, 0],
+      [1, 1],
+      [0, 1],
+      [1, 1],
+    ], // SVG'deki S Harfi yapısı (5 yüksekliğinde kıvrımlı)
+    color: "#00f0f0", // Cyan (SVG'den)
   },
 };
 
@@ -199,7 +214,9 @@ const MorlesGame = () => {
   const spawnNewPiece = useCallback(() => {
     const piece = nextPiece || createRandomPiece();
     const next = createRandomPiece();
-    const startPosition = { x: Math.floor(BOARD_WIDTH / 2) - 1, y: 0 };
+    // Parçalar artık daha büyük olduğu için başlangıç X pozisyonunu ortalamak önemli
+    const startX = Math.floor((BOARD_WIDTH - piece.shape[0].length) / 2);
+    const startPosition = { x: startX, y: 0 };
 
     if (checkCollision(piece, startPosition, board)) {
       setGameOver(true);
@@ -223,7 +240,6 @@ const MorlesGame = () => {
       if (!checkCollision(currentPiece, newPosition, board)) {
         setCurrentPosition(newPosition);
       } else if (direction === "down") {
-        // Çarpışma varsa yerleştir
         const newBoard = placePiece(currentPiece, currentPosition, board);
         const { board: clearedBoard, linesCleared } = clearLines(newBoard);
 
@@ -267,8 +283,18 @@ const MorlesGame = () => {
   const rotatePieceAction = useCallback(() => {
     if (!currentPiece || !gameRunning || gameOver) return;
     const rotated = rotatePiece(currentPiece);
+    // Döndürme çarpışması kontrolü (Duvarın içine dönmemesi için basit duvar tekmesi)
     if (!checkCollision(rotated, currentPosition, board)) {
       setCurrentPiece(rotated);
+    } else {
+      // Basit Wall Kick: Eğer dönemiyorsa 1 sağa veya 1 sola kaydırıp dene
+      if (!checkCollision(rotated, { ...currentPosition, x: currentPosition.x - 1 }, board)) {
+        setCurrentPosition({ ...currentPosition, x: currentPosition.x - 1 });
+        setCurrentPiece(rotated);
+      } else if (!checkCollision(rotated, { ...currentPosition, x: currentPosition.x + 1 }, board)) {
+        setCurrentPosition({ ...currentPosition, x: currentPosition.x + 1 });
+        setCurrentPiece(rotated);
+      }
     }
   }, [currentPiece, gameRunning, gameOver, rotatePiece, checkCollision, currentPosition, board]);
 
@@ -293,7 +319,7 @@ const MorlesGame = () => {
     setDropTime(1000);
   };
 
-  // Zamanlayıcı (Oyun Döngüsü)
+  // Zamanlayıcı
   useEffect(() => {
     dropPieceRef.current = () => movePiece("down");
   });
@@ -354,16 +380,18 @@ const MorlesGame = () => {
   };
 
   const renderNextPieceGrid = () => {
+    // Sonraki parça ızgarasını dinamik hale getirdim çünkü parçalar büyük (5 birim)
     const cells = [];
-    for (let y = 0; y < 4; y++) {
-      for (let x = 0; x < 4; x++) {
+    const gridSize = 5; // SVG parçaları büyük olduğu için 5x5 grid
+    for (let y = 0; y < gridSize; y++) {
+      for (let x = 0; x < gridSize; x++) {
         const isPart = nextPiece && nextPiece.shape[y] && nextPiece.shape[y][x];
         cells.push(
           <div
             key={`n-${y}-${x}`}
             style={{
-              width: "12px",
-              height: "12px",
+              width: "10px",
+              height: "10px",
               background: isPart ? nextPiece.color : "transparent",
               opacity: isPart ? 1 : 0.1,
               border: "1px solid rgba(255,255,255,0.05)",
@@ -375,14 +403,13 @@ const MorlesGame = () => {
     return cells;
   };
 
-  // Butonlar için ortak stil
   const controlBtnStyle = (colorStart, colorEnd) => ({
     background: `linear-gradient(135deg, ${colorStart}, ${colorEnd})`,
     border: "2px solid rgba(255,255,255,0.2)",
     borderRadius: "15px",
     color: "white",
     padding: "0",
-    boxShadow: "0 4px 0px rgba(0,0,0,0.3)", // 3D hissi veren gölge
+    boxShadow: "0 4px 0px rgba(0,0,0,0.3)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -390,7 +417,6 @@ const MorlesGame = () => {
     width: "65px",
     height: "65px",
     touchAction: "manipulation",
-    active: { transform: "translateY(4px)", boxShadow: "none" }, // Basılma efekti (CSS'te handle edilir ama burada mantık basit)
   });
 
   return (
@@ -474,7 +500,7 @@ const MorlesGame = () => {
             borderRadius: "12px",
             border: "4px solid rgba(255, 255, 255, 0.2)",
             padding: "4px",
-            height: "60vh", // Biraz küçülttüm ki butonlara yer kalsın
+            height: "60vh",
             width: "auto",
             aspectRatio: "1/2",
             display: "flex",
@@ -560,8 +586,8 @@ const MorlesGame = () => {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(4, 12px)",
-                gridTemplateRows: "repeat(4, 12px)",
+                gridTemplateColumns: "repeat(5, 10px)",
+                gridTemplateRows: "repeat(5, 10px)",
                 gap: "1px",
               }}
             >
@@ -606,7 +632,7 @@ const MorlesGame = () => {
         </div>
       </div>
 
-      {/* ALT KONTROLLER (Optimize Edilmiş: 1 Tık = 1 Hareket) */}
+      {/* ALT KONTROLLER */}
       <div
         style={{
           marginTop: "auto",
@@ -635,7 +661,7 @@ const MorlesGame = () => {
           </button>
         </div>
 
-        {/* Döndürme (Daha Büyük) */}
+        {/* Döndürme */}
         <button
           onClick={rotatePieceAction}
           disabled={gameOver}
