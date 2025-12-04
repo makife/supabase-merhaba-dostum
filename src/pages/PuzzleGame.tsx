@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { Timer, RotateCcw, Trophy, ArrowLeft } from "lucide-react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { Timer, RotateCcw, Trophy, ArrowLeft, Type } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface GameState {
@@ -10,10 +10,16 @@ interface GameState {
   isRunning: boolean;
   isCompleted: boolean;
   difficulty: 3 | 4;
+  targetWord: string; // Hedef kelimeyi tutmak için
 }
 
 const PuzzleGamePage: React.FC = () => {
   const navigate = useNavigate();
+
+  // Kelime listelerini hafızada tutmak için ref kullanıyoruz
+  const wordsRef = useRef<{ 8: string[]; 15: string[] }>({ 8: [], 15: [] });
+  const [isWordsLoaded, setIsWordsLoaded] = useState(false);
+
   const [gameState, setGameState] = useState<GameState>({
     board: [],
     emptyIndex: 8,
@@ -22,6 +28,7 @@ const PuzzleGamePage: React.FC = () => {
     isRunning: false,
     isCompleted: false,
     difficulty: 3,
+    targetWord: "",
   });
 
   const [bestTimes, setBestTimes] = useState<{ 3: number | null; 4: number | null }>({
@@ -29,19 +36,80 @@ const PuzzleGamePage: React.FC = () => {
     4: null,
   });
 
-  const initializeBoard = useCallback((difficulty: 3 | 4) => {
-    const size = difficulty * difficulty;
-    const board = Array.from({ length: size - 1 }, (_, i) => i + 1);
-    board.push(0); // Empty space
+  // Kelimeleri wordlist.txt dosyasından çekme
+  useEffect(() => {
+    const fetchWords = async () => {
+      try {
+        const response = await fetch("/wordlist.txt");
+        const text = await response.text();
+        const allWords = text.split("\n").map((w) => w.trim().toLocaleUpperCase("tr-TR"));
 
-    // Shuffle the board
-    for (let i = board.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [board[i], board[j]] = [board[j], board[i]];
+        // Kelimeleri uzunluklarına göre ayır
+        const words8 = allWords.filter((w) => w.length === 8);
+        const words15 = allWords.filter((w) => w.length === 15);
+
+        // Eğer dosya boşsa veya okunamadıysa fallback (yedek) kelimeler
+        if (words8.length === 0) words8.push("PORTAKAL", "BİLGİSAY", "ÇEKİRDEK");
+        if (words15.length === 0) words15.push("AFYONKARAHİSARL", "KAHRAMANMARAŞLI");
+
+        wordsRef.current = { 8: words8, 15: words15 };
+        setIsWordsLoaded(true);
+      } catch (error) {
+        console.error("Kelime listesi yüklenemedi:", error);
+        // Hata durumunda yedek kelimeler
+        wordsRef.current = {
+          8: ["PORTAKAL", "TEKNOLOJ"],
+          15: ["PROGRAMLAMACISI"],
+        };
+        setIsWordsLoaded(true);
+      }
+    };
+
+    fetchWords();
+  }, []);
+
+  const initializeBoard = useCallback((difficulty: 3 | 4) => {
+    if (!wordsRef.current[8].length && !wordsRef.current[15].length) return;
+
+    const size = difficulty * difficulty;
+
+    // Rastgele kelime seçimi
+    const wordList = difficulty === 3 ? wordsRef.current[8] : wordsRef.current[15];
+    const randomWord = wordList[Math.floor(Math.random() * wordList.length)];
+
+    // Çözülmüş tahtayı oluştur (1'den N'e kadar sıralı, sonuncusu 0/boş)
+    let board = Array.from({ length: size - 1 }, (_, i) => i + 1);
+    board.push(0); // Son kare boş
+
+    let emptyIndex = size - 1;
+    let movesToShuffle = difficulty === 3 ? 100 : 300; // Zorluğa göre karıştırma sayısı
+
+    // Tahtayı geçerli hamleler yaparak karıştır (Böylece oyun her zaman çözülebilir olur)
+    let previousIndex = -1;
+    for (let i = 0; i < movesToShuffle; i++) {
+      const possibleMoves = [];
+      const row = Math.floor(emptyIndex / difficulty);
+      const col = emptyIndex % difficulty;
+
+      if (row > 0) possibleMoves.push(emptyIndex - difficulty); // Yukarı
+      if (row < difficulty - 1) possibleMoves.push(emptyIndex + difficulty); // Aşağı
+      if (col > 0) possibleMoves.push(emptyIndex - 1); // Sol
+      if (col < difficulty - 1) possibleMoves.push(emptyIndex + 1); // Sağ
+
+      // Bir önceki hamleyi geri almamak için filtrele (titreşimi önler)
+      const validMoves = possibleMoves.filter((idx) => idx !== previousIndex);
+
+      if (validMoves.length > 0) {
+        const randomMove = validMoves[Math.floor(Math.random() * validMoves.length)];
+
+        // Swap işlemi
+        [board[emptyIndex], board[randomMove]] = [board[randomMove], board[emptyIndex]];
+        previousIndex = emptyIndex;
+        emptyIndex = randomMove;
+      }
     }
 
-    const emptyIndex = board.indexOf(0);
-    const timeLimit = difficulty === 3 ? 120 : 180; // 2dk ve 3dk
+    const timeLimit = difficulty === 3 ? 120 : 180;
 
     setGameState({
       board,
@@ -51,8 +119,16 @@ const PuzzleGamePage: React.FC = () => {
       isRunning: false,
       isCompleted: false,
       difficulty,
+      targetWord: randomWord,
     });
   }, []);
+
+  // Kelimeler yüklendiğinde oyunu başlat
+  useEffect(() => {
+    if (isWordsLoaded) {
+      initializeBoard(gameState.difficulty);
+    }
+  }, [isWordsLoaded]);
 
   const isValidMove = (index: number, emptyIndex: number, difficulty: number) => {
     const row = Math.floor(index / difficulty);
@@ -137,11 +213,6 @@ const PuzzleGamePage: React.FC = () => {
     });
   }, []);
 
-  // Initialize board on mount
-  useEffect(() => {
-    initializeBoard(gameState.difficulty);
-  }, []);
-
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -152,6 +223,17 @@ const PuzzleGamePage: React.FC = () => {
     const totalTime = gameState.difficulty === 3 ? 120 : 180;
     return (gameState.timeLeft / totalTime) * 100;
   };
+
+  // Sayısal değeri (1-15) kelimenin ilgili harfine (0-14 index) çevirir
+  const getLetterForTile = (number: number) => {
+    if (number === 0) return "";
+    // number 1 ise targetWord[0], number 2 ise targetWord[1]...
+    return gameState.targetWord[number - 1] || "?";
+  };
+
+  if (!isWordsLoaded) {
+    return <div className="min-h-screen bg-indigo-900 flex items-center justify-center text-white">Yükleniyor...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-4">
@@ -168,9 +250,9 @@ const PuzzleGamePage: React.FC = () => {
         </div>
 
         {/* Başlık */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-4">
           <h1 className="text-3xl font-bold text-white mb-2 bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
-            🧱 Puzzle Oyunu 🧱
+            Kelime Puzzle
           </h1>
           <div className="flex justify-center items-center gap-4 text-white/80">
             <div className="flex items-center gap-1">
@@ -183,6 +265,17 @@ const PuzzleGamePage: React.FC = () => {
                 <span className="text-sm">Rekor: {bestTimes[gameState.difficulty]}s</span>
               </div>
             )}
+          </div>
+        </div>
+
+        {/* HEDEF KELİME GÖSTERGESİ */}
+        <div className="mb-6 bg-white/10 p-3 rounded-xl backdrop-blur-sm border border-white/10">
+          <div className="text-center">
+            <div className="text-white/60 text-xs uppercase mb-1 flex items-center justify-center gap-1">
+              <Type size={12} />
+              Hedef Kelime
+            </div>
+            <div className="text-2xl font-bold text-white tracking-widest font-mono">{gameState.targetWord}</div>
           </div>
         </div>
 
@@ -218,7 +311,8 @@ const PuzzleGamePage: React.FC = () => {
                 onClick={() => makeMove(index)}
                 disabled={gameState.isCompleted || gameState.timeLeft === 0}
                 className={`
-                  aspect-square rounded-lg font-bold text-xl transition-all duration-200 transform
+                  aspect-square rounded-lg font-bold text-2xl transition-all duration-200 transform
+                  flex items-center justify-center relative
                   ${
                     number === 0
                       ? "bg-transparent"
@@ -232,7 +326,17 @@ const PuzzleGamePage: React.FC = () => {
                   }
                 `}
               >
-                {number !== 0 && number}
+                {number !== 0 && (
+                  <>
+                    {/* Ana Harf */}
+                    {getLetterForTile(number)}
+
+                    {/* Yardımcı küçük sayı (opsiyonel - sıralamayı kolaylaştırmak için sağ altta silik numara) */}
+                    {/* <span className="absolute bottom-1 right-1 text-[10px] opacity-40 font-normal">
+                      {number}
+                    </span> */}
+                  </>
+                )}
               </button>
             ))}
           </div>
@@ -241,17 +345,16 @@ const PuzzleGamePage: React.FC = () => {
         {/* Game Status */}
         {gameState.isCompleted && (
           <div className="mb-6 p-4 bg-green-500/20 border border-green-400/30 rounded-xl text-center">
-            <div className="text-green-400 font-bold text-lg mb-1">🎉 Tebrikler!</div>
-            <div className="text-white/80 text-sm">
-              {gameState.moves} hamle ile {(gameState.difficulty === 3 ? 120 : 180) - gameState.timeLeft} saniyede
-              tamamladın!
-            </div>
+            <div className="text-green-400 font-bold text-lg mb-1">🎉 Harika!</div>
+            <div className="text-white font-semibold mb-1">"{gameState.targetWord}"</div>
+            <div className="text-white/80 text-sm">kelimesini {gameState.moves} hamlede tamamladın!</div>
           </div>
         )}
 
         {gameState.timeLeft === 0 && !gameState.isCompleted && (
           <div className="mb-6 p-4 bg-red-500/20 border border-red-400/30 rounded-xl text-center">
             <div className="text-red-400 font-bold text-lg mb-1">⏰ Süre Bitti!</div>
+            <div className="text-white mb-1">Aranan kelime: {gameState.targetWord}</div>
             <div className="text-white/80 text-sm">Yeniden deneyin!</div>
           </div>
         )}
@@ -261,23 +364,23 @@ const PuzzleGamePage: React.FC = () => {
           <div className="flex gap-3">
             <button
               onClick={() => initializeBoard(3)}
-              className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
+              className={`flex-1 py-3 px-2 rounded-xl font-semibold transition-all text-sm ${
                 gameState.difficulty === 3
                   ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white"
                   : "bg-white/10 text-white/70 hover:bg-white/20"
               }`}
             >
-              Kolay (3x3)
+              8 Harfli (3x3)
             </button>
             <button
               onClick={() => initializeBoard(4)}
-              className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
+              className={`flex-1 py-3 px-2 rounded-xl font-semibold transition-all text-sm ${
                 gameState.difficulty === 4
                   ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white"
                   : "bg-white/10 text-white/70 hover:bg-white/20"
               }`}
             >
-              Zor (4x4)
+              15 Harfli (4x4)
             </button>
           </div>
 
@@ -286,7 +389,7 @@ const PuzzleGamePage: React.FC = () => {
             className="w-full py-3 px-4 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2"
           >
             <RotateCcw size={20} />
-            Yeniden Başla
+            Yeni Kelime Getir
           </button>
         </div>
       </div>
