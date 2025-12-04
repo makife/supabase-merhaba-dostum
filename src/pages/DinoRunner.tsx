@@ -191,8 +191,7 @@ const DinoRunner = () => {
       startGame();
       return;
     }
-
-    // 🔥 DÜZELTME: "Havadaysa zıplama" kontrolü kaldırıldı (Flappy Bird Modu)
+    // Flappy Bird stili: Havada da zıplanabilir
     velocityRef.current = JUMP_FORCE;
     playSound(600 + Math.random() * 200, "sine");
   };
@@ -218,7 +217,6 @@ const DinoRunner = () => {
       dinoYRef.current = 0;
       velocityRef.current = 0;
     }
-    // Tavana çarpma kontrolü (Ekrandan uçup gitmesin)
     if (dinoYRef.current > GAME_HEIGHT - DINO_HEIGHT) {
       dinoYRef.current = GAME_HEIGHT - DINO_HEIGHT;
       velocityRef.current = -2;
@@ -434,7 +432,7 @@ const DinoRunner = () => {
                     {char}
                   </span>
                 ))}
-                <span className="target-preview">({targetWord})</span>
+                {/* Uzun kelime önizlemesini kaldırdık, harfler yeterli */}
               </div>
             )}
           </div>
@@ -458,7 +456,7 @@ const DinoRunner = () => {
           )}
         </div>
 
-        {/* MOBİL KONTROLLER (ZIPLA BUTONLARI) */}
+        {/* MOBİL KONTROLLER */}
         <div className="mobile-controls">
           <button className="control-btn" onPointerDown={(e) => handleJump(e)}>
             ZIPLA ↰
@@ -470,7 +468,7 @@ const DinoRunner = () => {
       </div>
 
       <style>{`
-        /* Sayfa Geneli - Gradient Arka Plan */
+        /* Sayfa Geneli */
         .page-wrapper {
             min-height: 100vh;
             width: 100%;
@@ -488,7 +486,7 @@ const DinoRunner = () => {
             position: relative;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             border-radius: 12px;
-            overflow: hidden; /* Köşeleri yuvarlamak için */
+            overflow: hidden;
         }
         
         .top-bar {
@@ -527,7 +525,6 @@ const DinoRunner = () => {
             border-top: none; border-bottom: none;
         }
 
-        /* Mobil Kontroller */
         .mobile-controls {
             display: flex;
             background: #111;
@@ -587,27 +584,35 @@ const DinoRunner = () => {
         .hud {
             position: absolute; top: 15px; left: 0; width: 100%;
             display: flex; justify-content: center; pointer-events: none;
+            padding: 0 10px; box-sizing: border-box;
         }
         
         .word-display {
-            background: rgba(0,0,0,0.7); padding: 8px 24px;
+            background: rgba(0,0,0,0.7); padding: 8px 12px;
             border-radius: 30px; border: 1px solid rgba(255,255,255,0.3);
-            display: flex; gap: 8px; align-items: center;
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 4px;
+            align-items: center;
             box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            max-width: 100%;
         }
 
         .char-slot {
-            font-size: 26px; font-weight: bold; color: #666;
-            min-width: 20px; text-align: center; font-family: monospace;
+            font-size: 20px; font-weight: bold; color: #666;
+            min-width: 15px; text-align: center; font-family: monospace;
             border-bottom: 2px solid #444;
         }
-        .char-slot.found { color: #00ff00; border-color: #00ff00; text-shadow: 0 0 10px #00ff00; transform: scale(1.1); transition: all 0.2s; }
         
-        .target-preview { font-size: 12px; color: #bbb; margin-left: 10px; opacity: 0.7; }
+        @media (max-width: 400px) {
+            .char-slot { font-size: 16px; border-bottom-width: 1px; }
+            .word-display { gap: 2px; padding: 6px 10px; }
+        }
+
+        .char-slot.found { color: #00ff00; border-color: #00ff00; text-shadow: 0 0 10px #00ff00; transform: scale(1.1); transition: all 0.2s; }
         
         .notification {
             font-size: 28px; font-weight: bold; color: #fff;
             text-shadow: 0 0 20px #ff00de; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-align: center;
         }
 
         .feedback-popup {
