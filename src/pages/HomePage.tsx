@@ -9,7 +9,7 @@ import { useUser } from "@/contexts/UserContext";
 import { useSounds } from "@/hooks/useSounds";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/componeyılnts/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import PrivateRoomModal from "@/components/PrivateRoomModal";
@@ -742,7 +742,7 @@ const HomePage = () => {
                     onClick={() => navigate("/snake-game")}
                   >
                     <div className="flex-1">
-                      <h2 className="text-xl font-semibold text-white font-painter">Yılan Oyunu</h2>
+                      <h2 className="text-xl font-semibold text-white font-painter">Harf Yeme</h2>
                     </div>
                     {/* Mini Snake İkonu */}
                     <div className="relative w-12 h-12 flex items-center justify-center">
