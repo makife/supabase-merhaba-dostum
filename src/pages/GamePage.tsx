@@ -5770,56 +5770,50 @@ const GamePage = ({
 
   const opponent = getOpponentInfo();
 
-  const handleCountdownComplete = (finishTime?: number) => {
-    console.log("🚀 Countdown tamamlandı. Oyun başlıyor.");
-
+  const handleCountdownComplete = () => {
     setShowCountdown(false);
-    countdownCompletedAtRef.current = finishTime || Date.now();
+    countdownCompletedAtRef.current = Date.now();
 
     const isMp = gameMode === "private-room" || gameMode === "random-match";
-    const initialTime = currentRoom?.time_limit || 120;
 
-    // 1. Timer'ı temizle
+    // Clear any existing timer before reinitializing
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
+      console.log("🧹 Cleared existing timer before countdown complete");
     }
 
-    // 2. Süreyi MANUEL OLARAK 120'ye (veya limit neyse) ayarla
-    // Bu, 1:45 sorununu çözen ana satırdır.
-    timeLeftRef.current = initialTime;
-    setDisplayTime(initialTime);
+    // Initialize timer to full time for all modes
+    const initial = currentRoom?.time_limit || 120;
+    timeLeftRef.current = initial;
+    setDisplayTime(initial);
 
-    // 3. Oyun Bitiş Zamanını (endsAt) ŞİMDİ + SÜRE olarak ayarla
-    // Sunucudaki eski 'started_at' değerini değil, 'finishTime'ı baz alıyoruz.
-    const gameStartTimestamp = finishTime || Date.now();
-    endsAtTimestampRef.current = gameStartTimestamp + initialTime * 1000;
-
-    console.log("⏱️ Timer ayarlandı:", {
-      initialTime,
-      gameStartTimestamp: new Date(gameStartTimestamp).toISOString(),
-      endsAt: new Date(endsAtTimestampRef.current).toISOString(),
-    });
-
-    // 4. Multiplayer için 'started_at' değerini sunucuda güncelle
+    // Multiplayer: set authoritative server start time exactly once
     if (isMp && currentRoom?.id) {
-      const serverStartTime = new Date(gameStartTimestamp).toISOString();
-      // Arka planda güncelle, await etme ki oyun donmasın
-      supabase
-        .from("game_rooms")
-        .update({ started_at: serverStartTime, status: "active" })
-        .is("started_at", null) // Sadece henüz set edilmemişse set et (ilk başlayan kazanır)
-        .eq("id", currentRoom.id)
-        .then(() => console.log("✅ Server started_at güncellendi"));
+      const serverStartTime = new Date().toISOString();
+      (async () => {
+        try {
+          await supabase
+            .from("game_rooms")
+            .update({ started_at: serverStartTime, status: "active" })
+            .is("started_at", null)
+            .eq("id", currentRoom.id);
+
+          console.log("✅ Server started_at set:", serverStartTime);
+        } catch (e) {
+          console.error("started_at set failed:", e);
+        }
+      })();
     }
 
-    // 5. Oyunu başlat
+    // Start game immediately - don't wait for started_at
     setGameStarted(true);
     gameHasStartedRef.current = true;
 
-    // 6. İlk 3 saniye boyunca sunucu senkronizasyonunu (jitter) engelle
-    // Bu, sürenin 1:59 -> 1:45 yapmasını engeller
-    syncSuppressUntilRef.current = Date.now() + 3000;
+    // Short suppress for multiplayer (only 1s to prevent initial jitter)
+    if (isMp) {
+      syncSuppressUntilRef.current = Date.now() + 1000;
+    }
   };
 
   return (
