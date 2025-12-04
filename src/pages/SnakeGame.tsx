@@ -6,7 +6,35 @@ const INITIAL_SNAKE = [{ x: 10, y: 10 }];
 const INITIAL_DIRECTION = { x: 0, y: -1 };
 
 // Meyve emojileri dizisi
-const FRUIT_EMOJIS = ["🍎", "🍊", "🍋", "🍌", "🍇", "🍓", "🍑", "🍒", "🥝", "🍐", "🥭", "🍍", "🥥", "🍈", "🍉"];
+const FRUIT_EMOJIS = [
+  "A",
+  "B",
+  "C",
+  "D",
+  "E",
+  "F",
+  "Ğ",
+  "H",
+  "I",
+  "İ",
+  "J",
+  "K",
+  "L",
+  "M",
+  "N",
+  "O",
+  "Ö",
+  "P",
+  "R",
+  "S",
+  "Ş",
+  "T",
+  "U",
+  "Ü",
+  "V",
+  "Y",
+  "Z",
+];
 
 const SnakeGame = () => {
   const navigate = () => {
@@ -144,9 +172,9 @@ const SnakeGame = () => {
         const newScore = score + 10 * level; // Seviye ile çarpan
         setScore(newScore);
         setFood(generateFood(newSnake));
-        
+
         // Meyve yeme sesi
-        playSound(600 + (level * 50), 150, "sine");
+        playSound(600 + level * 50, 150, "sine");
 
         // Level atlama kontrolü
         checkLevelUp(newScore);
