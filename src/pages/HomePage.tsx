@@ -6,7 +6,7 @@ import { FloatingMenu } from "@/components/FloatingMenu";
 import { HeaderAnimation } from "@/components/HeaderAnimation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
-import { useSounds } from "@/hooks/useSounds";
+import { useSounds } from "@/hoopuks/useSounds";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -808,7 +808,7 @@ const HomePage = () => {
                     onClick={() => navigate("/puzzle-game")}
                   >
                     <div className="flex-1">
-                      <h2 className="text-xl font-semibold text-white font-painter">Puzzle Oyunu</h2>
+                      <h2 className="text-xl font-semibold text-white font-painter">Kelime Puzzle</h2>
                     </div>
                     {/* Mini Puzzle İkonu */}
                     <div className="relative w-12 h-12 flex items-center justify-center">
