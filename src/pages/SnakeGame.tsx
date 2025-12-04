@@ -5,36 +5,8 @@ const GRID_SIZE = 20;
 const INITIAL_SNAKE = [{ x: 10, y: 10 }];
 const INITIAL_DIRECTION = { x: 0, y: -1 };
 
-// Meyve emojileri dizisi
-const FRUIT_EMOJIS = [
-  "A",
-  "B",
-  "C",
-  "D",
-  "E",
-  "F",
-  "Ğ",
-  "H",
-  "I",
-  "İ",
-  "J",
-  "K",
-  "L",
-  "M",
-  "N",
-  "O",
-  "Ö",
-  "P",
-  "R",
-  "S",
-  "Ş",
-  "T",
-  "U",
-  "Ü",
-  "V",
-  "Y",
-  "Z",
-];
+// Varsayılan kelime listesi (Dosya yüklenemezse kullanılır)
+const FALLBACK_WORDS = ["REACT", "KODLAMA", "YAZILIM", "FRONTEND", "SNAKE", "TASARIM"];
 
 const SnakeGame = () => {
   const navigate = () => {
@@ -45,8 +17,15 @@ const SnakeGame = () => {
     }
   };
 
+  // --- State Tanımları ---
   const [snake, setSnake] = useState(INITIAL_SNAKE);
-  const [food, setFood] = useState({ x: 5, y: 5, emoji: FRUIT_EMOJIS[0] });
+  const [wordList, setWordList] = useState<string[]>([]);
+  const [targetWord, setTargetWord] = useState(""); // Hedef kelime
+  const [targetLetterIdx, setTargetLetterIdx] = useState(0); // Şu an hangi harfteyiz
+
+  // Food artık emoji değil, hedef harfi taşıyacak
+  const [food, setFood] = useState({ x: 5, y: 5, letter: "" });
+
   const directionRef = useRef(INITIAL_DIRECTION);
   const [gameRunning, setGameRunning] = useState(false);
   const [gameOver, setGameOver] = useState(false);
@@ -60,13 +39,47 @@ const SnakeGame = () => {
   const touchStartRef = useRef({ x: 0, y: 0 });
   const audioContextRef = useRef<AudioContext | null>(null);
 
-  // AudioContext'i oluştur
+  // --- Kelime Listesini Çekme ---
+  useEffect(() => {
+    fetch("/wordlist.txt")
+      .then((res) => {
+        if (!res.ok) throw new Error("Dosya bulunamadı");
+        return res.text();
+      })
+      .then((text) => {
+        // Satır satır ayır, boşlukları temizle, büyük harfe çevir
+        const words = text
+          .split("\n")
+          .map((w) => w.trim().toUpperCase())
+          .filter((w) => w.length > 0);
+
+        if (words.length > 0) {
+          setWordList(words);
+          // İlk kelimeyi ayarla (oyun başlamadan önce hazır olsun)
+          const randomWord = words[Math.floor(Math.random() * words.length)];
+          setTargetWord(randomWord);
+          setFood((prev) => ({ ...prev, letter: randomWord[0] }));
+        } else {
+          setWordList(FALLBACK_WORDS);
+          setTargetWord(FALLBACK_WORDS[0]);
+          setFood((prev) => ({ ...prev, letter: FALLBACK_WORDS[0][0] }));
+        }
+      })
+      .catch((err) => {
+        console.warn("wordlist.txt yüklenemedi, varsayılan liste kullanılıyor.", err);
+        setWordList(FALLBACK_WORDS);
+        const startWord = FALLBACK_WORDS[Math.floor(Math.random() * FALLBACK_WORDS.length)];
+        setTargetWord(startWord);
+        setFood((prev) => ({ ...prev, letter: startWord[0] }));
+      });
+  }, []);
+
+  // --- Audio Setup ---
   useEffect(() => {
     if (!audioContextRef.current) {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       audioContextRef.current = new AudioContextClass();
     }
-
     return () => {
       if (audioContextRef.current) {
         audioContextRef.current.close();
@@ -80,73 +93,49 @@ const SnakeGame = () => {
     setHighScore(savedScore);
   }, []);
 
-  // Ses efekti
   const playSound = useCallback((frequency: number, duration = 100, type: OscillatorType = "sine") => {
     if (!audioContextRef.current) return;
-
     try {
       const audioContext = audioContextRef.current;
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
-
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
-
       oscillator.frequency.value = frequency;
       oscillator.type = type;
-
       gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
       gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
-
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + duration / 1000);
     } catch (error) {
-      console.log("Ses çalınamadı:", error);
+      console.log("Ses hatası:", error);
     }
   }, []);
 
-  // Yön değiştir ve oyunu başlat (eğer durmuşsa)
   const changeDirection = useCallback(
     (newDirection) => {
       const prev = directionRef.current;
-      // Ters yöne dönmeyi engelle
-      if (prev.x + newDirection.x === 0 && prev.y + newDirection.y === 0) {
-        return;
-      }
+      if (prev.x + newDirection.x === 0 && prev.y + newDirection.y === 0) return;
       directionRef.current = newDirection;
-      if (!gameRunning && !gameOver) {
-        setGameRunning(true);
-      }
+      if (!gameRunning && !gameOver) setGameRunning(true);
     },
     [gameRunning, gameOver],
   );
 
-  // Yeni yiyecek pozisyonu ve rastgele meyve oluştur
-  const generateFood = useCallback((currentSnake) => {
+  // --- Yeni Yiyecek (Harf) Oluşturma ---
+  const generateFood = useCallback((currentSnake, specificLetter) => {
     let newFood;
     do {
       newFood = {
         x: Math.floor(Math.random() * GRID_SIZE),
         y: Math.floor(Math.random() * GRID_SIZE),
-        emoji: FRUIT_EMOJIS[Math.floor(Math.random() * FRUIT_EMOJIS.length)],
+        letter: specificLetter, // Rastgele değil, sıradaki harf
       };
     } while (currentSnake.some((segment) => segment.x === newFood.x && segment.y === newFood.y));
     return newFood;
   }, []);
 
-  // Seviye kontrolü ve hız artışı
-  const checkLevelUp = useCallback((currentScore) => {
-    const newLevel = Math.floor(currentScore / 50) + 1;
-    setLevel((prevLevel) => {
-      if (newLevel > prevLevel) {
-        setSpeed((prev) => Math.max(80, prev - 15)); // Her seviyede hız artar
-        return prevLevel + 1; // Sadece 1 seviye artsın
-      }
-      return prevLevel;
-    });
-  }, []);
-
-  // Oyun döngüsü
+  // --- Oyun Döngüsü ---
   const gameLoop = useCallback(() => {
     setSnake((prevSnake) => {
       if (gameOver || !gameRunning) return prevSnake;
@@ -157,65 +146,96 @@ const SnakeGame = () => {
       head.x += directionRef.current.x;
       head.y += directionRef.current.y;
 
-      // Wrap-around: Bir kenardan çıkınca karşı kenardan gir
+      // Wrap-around
       if (head.x < 0) head.x = GRID_SIZE - 1;
       if (head.x >= GRID_SIZE) head.x = 0;
       if (head.y < 0) head.y = GRID_SIZE - 1;
       if (head.y >= GRID_SIZE) head.y = 0;
 
-      // Baş: öne ekle
       newSnake.unshift(head);
 
-      // Yiyecek yeme kontrolü
+      // Yiyecek kontrolü
       const ateFood = head.x === food.x && head.y === food.y;
-      if (ateFood) {
-        const newScore = score + 10 * level; // Seviye ile çarpan
-        setScore(newScore);
-        setFood(generateFood(newSnake));
 
-        // Meyve yeme sesi
+      if (ateFood) {
+        // Puan artır
+        const pointGain = 10 * level;
+        const newScore = score + pointGain;
+        setScore(newScore);
+
+        // Ses çal
         playSound(600 + level * 50, 150, "sine");
 
-        // Level atlama kontrolü
-        checkLevelUp(newScore);
-
-        // High score kontrolü
+        // High score
         if (newScore > highScore) {
           setHighScore(newScore);
           sessionStorage.setItem("snakeHighScore", newScore.toString());
         }
+
+        // --- Kelime Mantığı ---
+        const nextIdx = targetLetterIdx + 1;
+
+        if (nextIdx >= targetWord.length) {
+          // KELİME BİTTİ -> SEVİYE ATLA
+          playSound(800, 300, "square"); // Seviye atlama sesi
+
+          setLevel((prev) => prev + 1);
+          setSpeed((prev) => Math.max(80, prev - 15)); // Hızlandır
+
+          // Yeni kelime seç
+          const newWord = wordList[Math.floor(Math.random() * wordList.length)];
+          setTargetWord(newWord);
+          setTargetLetterIdx(0);
+
+          // Yeni kelimenin ilk harfini koy
+          setFood(generateFood(newSnake, newWord[0]));
+        } else {
+          // Kelime bitmedi, sıradaki harfi koy
+          setTargetLetterIdx(nextIdx);
+          setFood(generateFood(newSnake, targetWord[nextIdx]));
+        }
       } else {
-        // Yemedi ise kuyruğu küçült
+        // Yemedi ise kuyruk sil
         newSnake.pop();
       }
 
-      // Kendine çarpışma kontrolü (kuyruğun eski hücresine girmek serbest)
+      // Çarpışma kontrolü
       if (newSnake.slice(1).some((segment) => segment.x === head.x && segment.y === head.y)) {
         setGameOver(true);
         setGameRunning(false);
+        playSound(200, 500, "sawtooth"); // Game over sesi
         return prevSnake;
       }
 
       return newSnake;
     });
-  }, [food, gameOver, gameRunning, score, level, highScore, generateFood, checkLevelUp, playSound]);
+  }, [
+    food,
+    gameOver,
+    gameRunning,
+    score,
+    level,
+    highScore,
+    targetWord,
+    targetLetterIdx,
+    wordList,
+    generateFood,
+    playSound,
+  ]);
 
-  // Oyun döngüsünü başlat/durdur
   useEffect(() => {
     if (gameRunning && !gameOver) {
       gameLoopRef.current = setInterval(gameLoop, speed);
     } else {
       clearInterval(gameLoopRef.current);
     }
-
     return () => clearInterval(gameLoopRef.current);
   }, [gameLoop, gameRunning, gameOver, speed]);
 
-  // Klavye kontrolleri
+  // Klavye
   useEffect(() => {
     const handleKeyPress = (e) => {
       if (gameOver) return;
-
       switch (e.key) {
         case "ArrowUp":
           changeDirection({ x: 0, y: -1 });
@@ -231,12 +251,11 @@ const SnakeGame = () => {
           break;
       }
     };
-
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, [gameOver, changeDirection]);
 
-  // Dokunmatik kontroller
+  // Touch
   const handleTouchStart = (e) => {
     e.preventDefault();
     const touch = e.touches[0];
@@ -246,48 +265,41 @@ const SnakeGame = () => {
   const handleTouchEnd = (e) => {
     e.preventDefault();
     if (gameOver) return;
-
     const touch = e.changedTouches[0];
     const deltaX = touch.clientX - touchStartRef.current.x;
     const deltaY = touch.clientY - touchStartRef.current.y;
+    if (Math.max(Math.abs(deltaX), Math.abs(deltaY)) < 30) return;
 
-    const absX = Math.abs(deltaX);
-    const absY = Math.abs(deltaY);
-
-    if (Math.max(absX, absY) < 30) return; // Minimum kaydırma mesafesi
-
-    if (absX > absY) {
-      // Yatay hareket
-      if (deltaX > 0) {
-        changeDirection({ x: 1, y: 0 }); // Sağ
-      } else if (deltaX < 0) {
-        changeDirection({ x: -1, y: 0 }); // Sol
-      }
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+      deltaX > 0 ? changeDirection({ x: 1, y: 0 }) : changeDirection({ x: -1, y: 0 });
     } else {
-      // Dikey hareket
-      if (deltaY > 0) {
-        changeDirection({ x: 0, y: 1 }); // Aşağı
-      } else if (deltaY < 0) {
-        changeDirection({ x: 0, y: -1 }); // Yukarı
-      }
+      deltaY > 0 ? changeDirection({ x: 0, y: 1 }) : changeDirection({ x: 0, y: -1 });
     }
   };
 
-  // Oyunu başlat
   const startGame = () => {
     setGameRunning(true);
     setGameOver(false);
   };
 
-  // Oyunu duraklat
   const pauseGame = () => {
     setGameRunning(false);
   };
 
-  // Oyunu sıfırla
   const resetGame = () => {
     setSnake(INITIAL_SNAKE);
-    setFood({ x: 5, y: 5, emoji: FRUIT_EMOJIS[Math.floor(Math.random() * FRUIT_EMOJIS.length)] });
+
+    // Yeni rastgele kelime ile sıfırla
+    const randomWord = wordList.length > 0 ? wordList[Math.floor(Math.random() * wordList.length)] : "SNAKE";
+
+    setTargetWord(randomWord);
+    setTargetLetterIdx(0);
+    setFood({
+      x: 5,
+      y: 5,
+      letter: randomWord[0],
+    });
+
     directionRef.current = INITIAL_DIRECTION;
     setGameRunning(false);
     setGameOver(false);
@@ -296,7 +308,6 @@ const SnakeGame = () => {
     setSpeed(200);
   };
 
-  // Seviye rengi
   const getLevelColor = () => {
     const colors = ["#10b981", "#3b82f6", "#8b5cf6", "#f59e0b", "#ef4444"];
     return colors[(level - 1) % colors.length];
@@ -326,7 +337,7 @@ const SnakeGame = () => {
           width: "100%",
         }}
       >
-        {/* Geri Dön Butonu */}
+        {/* Geri Dön */}
         <div style={{ marginBottom: "16px" }}>
           <button
             onClick={() => navigate()}
@@ -338,126 +349,109 @@ const SnakeGame = () => {
               background: "transparent",
               border: "none",
               cursor: "pointer",
-              transition: "color 0.3s ease",
               fontSize: "14px",
             }}
-            onMouseOver={(e) => ((e.target as HTMLButtonElement).style.color = "white")}
-            onMouseOut={(e) => ((e.target as HTMLButtonElement).style.color = "rgba(255, 255, 255, 0.8)")}
           >
             <ArrowLeft size={20} />
             Geri Dön
           </button>
         </div>
 
-        {/* Header */}
+        {/* Header Info */}
         <div style={{ textAlign: "center", marginBottom: "16px" }}>
-          <h1
-            style={{
-              fontSize: "20px",
-              fontWeight: "bold",
-              color: "white",
-              marginBottom: "8px",
-              textShadow: "2px 2px 4px rgba(0,0,0,0.3)",
-            }}
-          >
-            🐍 Yılan Oyunu 🐍
+          <h1 style={{ fontSize: "20px", fontWeight: "bold", color: "white", marginBottom: "8px" }}>
+            🐍 Kelime Yılanı 🐍
           </h1>
+
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
               fontSize: "14px",
+              marginBottom: "12px",
             }}
           >
             <div
               style={{
                 display: "flex",
-                alignItems: "center",
                 gap: "8px",
                 color: "#FFD700",
                 background: "rgba(255, 215, 0, 0.1)",
-                padding: "8px 12px",
-                borderRadius: "20px",
-                backdropFilter: "blur(10px)",
+                padding: "6px 10px",
+                borderRadius: "12px",
               }}
             >
-              <Trophy size={16} />
-              <span>En Yüksek: {highScore}</span>
+              <Trophy size={16} /> <span>{highScore}</span>
+            </div>
+            <div
+              style={{
+                padding: "4px 12px",
+                borderRadius: "99px",
+                color: "white",
+                fontWeight: "bold",
+                backgroundColor: getLevelColor(),
+              }}
+            >
+              Seviye {level}
             </div>
             <div
               style={{
                 display: "flex",
-                alignItems: "center",
                 gap: "8px",
                 color: "#60A5FA",
                 background: "rgba(96, 165, 250, 0.1)",
-                padding: "8px 12px",
-                borderRadius: "20px",
-                backdropFilter: "blur(10px)",
+                padding: "6px 10px",
+                borderRadius: "12px",
               }}
             >
-              <Target size={16} />
-              <span>Skor: {score}</span>
+              <Target size={16} /> <span>{score}</span>
             </div>
           </div>
-          <div
-            style={{
-              marginTop: "8px",
-              padding: "7px 16px",
-              borderRadius: "9999px",
-              color: "white",
-              fontWeight: "bold",
-              fontSize: "18px",
-              backgroundColor: getLevelColor(),
-              textShadow: "1px 1px 2px rgba(0,0,0,0.3)",
-              boxShadow: `0 0 20px ${getLevelColor()}40`,
-            }}
-          >
-            Seviye {level}
-          </div>
 
-          {/* Seviye İlerleme Çubuğu */}
+          {/* KELİME GÖSTERGESİ */}
           <div
             style={{
-              marginTop: "12px",
-              background: "rgba(255, 255, 255, 0.1)",
-              borderRadius: "12px",
+              background: "rgba(0,0,0,0.3)",
               padding: "12px",
-              backdropFilter: "blur(10px)",
-              border: "1px solid rgba(255, 255, 255, 0.1)",
+              borderRadius: "12px",
+              marginBottom: "12px",
+              border: `1px solid ${getLevelColor()}40`,
             }}
           >
-            <div style={{ color: "white", fontSize: "14px" }}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginBottom: "4px",
-                }}
-              >
-                <span>Sonraki Seviye:</span>
-                <span style={{ color: "#FFD700" }}>{50 - (score % 50)} puan kaldı</span>
-              </div>
-              <div
-                style={{
-                  background: "rgba(255, 255, 255, 0.2)",
-                  borderRadius: "9999px",
-                  height: "8px",
-                  overflow: "hidden",
-                }}
-              >
-                <div
+            <p style={{ color: "#aaa", fontSize: "12px", marginBottom: "6px", textTransform: "uppercase" }}>
+              Hedef Kelime
+            </p>
+            <div style={{ display: "flex", justifyContent: "center", gap: "4px", flexWrap: "wrap" }}>
+              {targetWord.split("").map((letter, index) => (
+                <span
+                  key={index}
                   style={{
-                    height: "8px",
-                    borderRadius: "9999px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "28px",
+                    height: "28px",
+                    borderRadius: "6px",
+                    fontWeight: "bold",
+                    fontSize: "16px",
+                    // Eğer harf toplandıysa yeşilimsi, şu anki hedefse sarı, değilse şeffaf
+                    backgroundColor:
+                      index < targetLetterIdx
+                        ? "#10b981"
+                        : index === targetLetterIdx
+                          ? "#f59e0b"
+                          : "rgba(255,255,255,0.1)",
+                    color:
+                      index < targetLetterIdx ? "white" : index === targetLetterIdx ? "white" : "rgba(255,255,255,0.4)",
+                    border: index === targetLetterIdx ? "2px solid white" : "none",
+                    boxShadow: index === targetLetterIdx ? "0 0 10px #f59e0b" : "none",
                     transition: "all 0.3s ease",
-                    width: `${(score % 50) * 2}%`,
-                    background: `linear-gradient(90deg, ${getLevelColor()}, ${getLevelColor()}aa)`,
-                    boxShadow: `0 0 10px ${getLevelColor()}60`,
                   }}
-                />
-              </div>
+                >
+                  {letter}
+                </span>
+              ))}
             </div>
           </div>
         </div>
@@ -473,9 +467,8 @@ const SnakeGame = () => {
             margin: "0 auto",
             width: GRID_SIZE * 15,
             height: GRID_SIZE * 15,
-            backdropFilter: "blur(10px)",
-            boxShadow: "inset 0 0 20px rgba(0, 0, 0, 0.2)",
             overflow: "hidden",
+            touchAction: "none",
           }}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
@@ -491,400 +484,98 @@ const SnakeGame = () => {
                 width: 14,
                 height: 14,
                 borderRadius: index === 0 ? "50%" : "4px",
-                background:
-                  index === 0 ? "linear-gradient(45deg, #10b981, #34d399)" : "linear-gradient(45deg, #059669, #10b981)",
-                boxShadow:
-                  index === 0
-                    ? "0 0 15px rgba(16, 185, 129, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.3)"
-                    : "inset 0 0 5px rgba(255, 255, 255, 0.2)",
-                animation: index === 0 ? "pulse 2s infinite" : "none",
+                background: index === 0 ? "white" : getLevelColor(),
+                boxShadow: index === 0 ? "0 0 10px white" : "none",
+                zIndex: 2,
               }}
             />
           ))}
 
-          {/* Meyve Yiyecek */}
+          {/* Harf (Food) */}
           <div
             style={{
               position: "absolute",
               left: food.x * 15,
               top: food.y * 15,
-              width: 14,
-              height: 14,
+              width: 15,
+              height: 15,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               fontSize: "12px",
-              animation: "bounce 1.5s infinite",
-              filter: "drop-shadow(0 0 8px rgba(255, 255, 255, 0.6))",
+              fontWeight: "bold",
+              color: "#fff",
+              textShadow: "0 0 5px black",
+              animation: "bounce 1s infinite",
+              zIndex: 1,
             }}
           >
-            {food.emoji}
+            {food.letter}
           </div>
 
-          {/* Game Over Overlay */}
+          {/* Game Over */}
           {gameOver && (
             <div
               style={{
                 position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
+                inset: 0,
                 background: "rgba(0, 0, 0, 0.8)",
                 display: "flex",
+                flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
-                borderRadius: "12px",
-                backdropFilter: "blur(5px)",
+                color: "white",
+                zIndex: 10,
               }}
             >
-              <div style={{ textAlign: "center", color: "white" }}>
-                <h2
-                  style={{
-                    fontSize: "24px",
-                    fontWeight: "bold",
-                    marginBottom: "8px",
-                    textShadow: "2px 2px 4px rgba(0,0,0,0.5)",
-                  }}
-                >
-                  💥 Oyun Bitti!
-                </h2>
-                <p style={{ fontSize: "18px", marginBottom: "8px" }}>Skor: {score}</p>
-                <p style={{ fontSize: "16px", marginBottom: "16px" }}>Seviye: {level}</p>
-                {score === highScore && score > 0 && (
-                  <p
-                    style={{
-                      color: "#FFD700",
-                      fontWeight: "bold",
-                      marginBottom: "16px",
-                      textShadow: "0 0 10px rgba(255, 215, 0, 0.5)",
-                    }}
-                  >
-                    🎉 Yeni Rekor!
-                  </p>
-                )}
-              </div>
+              <h2 style={{ fontSize: "24px", marginBottom: "8px" }}>💥 Oyun Bitti!</h2>
+              <p>Tamamlanan Kelime: {targetWord}</p>
+              <p style={{ marginTop: "4px" }}>Toplam Skor: {score}</p>
             </div>
           )}
         </div>
 
-        {/* Kontrol Düğmeleri */}
-        <div style={{ marginTop: "24px" }}>
-          {/* Yön Kontrol Butonları */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              marginBottom: "20px",
-              gap: "8px",
-            }}
-          >
-            {/* Yukarı */}
-            <button
-              onClick={() => {
-                if (directionRef.current.y === 0) {
-                  changeDirection({ x: 0, y: -1 });
-                }
-              }}
-              disabled={gameOver}
-              style={{
-                width: "50px",
-                height: "50px",
-                borderRadius: "12px",
-                background: "linear-gradient(45deg, #667eea, #764ba2)",
-                border: "2px solid rgba(255, 255, 255, 0.3)",
-                color: "white",
-                fontSize: "20px",
-                cursor: !gameOver ? "pointer" : "not-allowed",
-                transition: "all 0.3s ease",
-                backdropFilter: "blur(10px)",
-                opacity: gameOver ? 0.5 : 1,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-              onMouseOver={(e) => {
-                if (!gameOver) {
-                  const target = e.target as HTMLButtonElement;
-                  target.style.transform = "scale(1.1)";
-                  target.style.boxShadow = "0 0 20px rgba(102, 126, 234, 0.5)";
-                }
-              }}
-              onMouseOut={(e) => {
-                const target = e.target as HTMLButtonElement;
-                target.style.transform = "scale(1)";
-                target.style.boxShadow = "none";
-              }}
-            >
-              ⬆️
+        {/* Kontroller */}
+        <div style={{ marginTop: "24px", display: "flex", justifyContent: "center", gap: "16px" }}>
+          {!gameRunning && !gameOver && (
+            <button onClick={startGame} style={btnStyle("#10b981")}>
+              <Play size={20} /> Başla
             </button>
-
-            {/* Sol - Aşağı - Sağ */}
-            <div style={{ display: "flex", gap: "30px", alignItems: "center" }}>
-              <button
-                onClick={() => {
-                  if (directionRef.current.x === 0) {
-                    changeDirection({ x: -1, y: 0 });
-                  }
-                }}
-                disabled={gameOver}
-                style={{
-                  width: "50px",
-                  height: "50px",
-                  borderRadius: "12px",
-                  background: "linear-gradient(45deg, #667eea, #764ba2)",
-                  border: "2px solid rgba(255, 255, 255, 0.3)",
-                  color: "white",
-                  fontSize: "20px",
-                  cursor: !gameOver ? "pointer" : "not-allowed",
-                  transition: "all 0.3s ease",
-                  backdropFilter: "blur(10px)",
-                  opacity: gameOver ? 0.5 : 1,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-                onMouseOver={(e) => {
-                  if (!gameOver) {
-                    const target = e.target as HTMLButtonElement;
-                    target.style.transform = "scale(1.1)";
-                    target.style.boxShadow = "0 0 20px rgba(102, 126, 234, 0.5)";
-                  }
-                }}
-                onMouseOut={(e) => {
-                  const target = e.target as HTMLButtonElement;
-                  target.style.transform = "scale(1)";
-                  target.style.boxShadow = "none";
-                }}
-              >
-                ⬅️
-              </button>
-
-              <button
-                onClick={() => {
-                  if (directionRef.current.y === 0) {
-                    changeDirection({ x: 0, y: 1 });
-                  }
-                }}
-                disabled={gameOver}
-                style={{
-                  width: "50px",
-                  height: "50px",
-                  borderRadius: "12px",
-                  background: "linear-gradient(45deg, #667eea, #764ba2)",
-                  border: "2px solid rgba(255, 255, 255, 0.3)",
-                  color: "white",
-                  fontSize: "20px",
-                  cursor: !gameOver ? "pointer" : "not-allowed",
-                  transition: "all 0.3s ease",
-                  backdropFilter: "blur(10px)",
-                  opacity: gameOver ? 0.5 : 1,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-                onMouseOver={(e) => {
-                  if (!gameOver) {
-                    const target = e.target as HTMLButtonElement;
-                    target.style.transform = "scale(1.1)";
-                    target.style.boxShadow = "0 0 20px rgba(102, 126, 234, 0.5)";
-                  }
-                }}
-                onMouseOut={(e) => {
-                  const target = e.target as HTMLButtonElement;
-                  target.style.transform = "scale(1)";
-                  target.style.boxShadow = "none";
-                }}
-              >
-                ⬇️
-              </button>
-
-              <button
-                onClick={() => {
-                  if (directionRef.current.x === 0) {
-                    changeDirection({ x: 1, y: 0 });
-                  }
-                }}
-                disabled={gameOver}
-                style={{
-                  width: "50px",
-                  height: "50px",
-                  borderRadius: "12px",
-                  background: "linear-gradient(45deg, #667eea, #764ba2)",
-                  border: "2px solid rgba(255, 255, 255, 0.3)",
-                  color: "white",
-                  fontSize: "20px",
-                  cursor: !gameOver ? "pointer" : "not-allowed",
-                  transition: "all 0.3s ease",
-                  backdropFilter: "blur(10px)",
-                  opacity: gameOver ? 0.5 : 1,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-                onMouseOver={(e) => {
-                  if (!gameOver) {
-                    const target = e.target as HTMLButtonElement;
-                    target.style.transform = "scale(1.1)";
-                    target.style.boxShadow = "0 0 20px rgba(102, 126, 234, 0.5)";
-                  }
-                }}
-                onMouseOut={(e) => {
-                  const target = e.target as HTMLButtonElement;
-                  target.style.transform = "scale(1)";
-                  target.style.boxShadow = "none";
-                }}
-              >
-                ➡️
-              </button>
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              gap: "16px",
-              marginBottom: "16px",
-            }}
-          >
-            {!gameRunning && !gameOver && (
-              <button
-                onClick={startGame}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  background: "linear-gradient(45deg, #10b981, #34d399)",
-                  color: "white",
-                  padding: "12px 24px",
-                  borderRadius: "12px",
-                  fontWeight: "bold",
-                  border: "none",
-                  cursor: "pointer",
-                  transition: "all 0.3s ease",
-                  boxShadow: "0 4px 15px rgba(16, 185, 129, 0.3)",
-                  fontSize: "16px",
-                }}
-                onMouseOver={(e) => {
-                  const target = e.target as HTMLButtonElement;
-                  target.style.transform = "translateY(-2px)";
-                  target.style.boxShadow = "0 6px 20px rgba(16, 185, 129, 0.4)";
-                }}
-                onMouseOut={(e) => {
-                  const target = e.target as HTMLButtonElement;
-                  target.style.transform = "translateY(0)";
-                  target.style.boxShadow = "0 4px 15px rgba(16, 185, 129, 0.3)";
-                }}
-              >
-                <Play size={20} />
-                Başla
-              </button>
-            )}
-
-            {gameRunning && !gameOver && (
-              <button
-                onClick={pauseGame}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  background: "linear-gradient(45deg, #f59e0b, #fbbf24)",
-                  color: "white",
-                  padding: "12px 24px",
-                  borderRadius: "12px",
-                  fontWeight: "bold",
-                  border: "none",
-                  cursor: "pointer",
-                  transition: "all 0.3s ease",
-                  boxShadow: "0 4px 15px rgba(245, 158, 11, 0.3)",
-                  fontSize: "16px",
-                }}
-                onMouseOver={(e) => {
-                  const target = e.target as HTMLButtonElement;
-                  target.style.transform = "translateY(-2px)";
-                  target.style.boxShadow = "0 6px 20px rgba(245, 158, 11, 0.4)";
-                }}
-                onMouseOut={(e) => {
-                  const target = e.target as HTMLButtonElement;
-                  target.style.transform = "translateY(0)";
-                  target.style.boxShadow = "0 4px 15px rgba(245, 158, 11, 0.3)";
-                }}
-              >
-                <Pause size={20} />
-                Duraklat
-              </button>
-            )}
-
-            <button
-              onClick={resetGame}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                background: "linear-gradient(45deg, #ef4444, #f87171)",
-                color: "white",
-                padding: "12px 24px",
-                borderRadius: "12px",
-                fontWeight: "bold",
-                border: "none",
-                cursor: "pointer",
-                transition: "all 0.3s ease",
-                boxShadow: "0 4px 15px rgba(239, 68, 68, 0.3)",
-                fontSize: "16px",
-              }}
-              onMouseOver={(e) => {
-                const target = e.target as HTMLButtonElement;
-                target.style.transform = "translateY(-2px)";
-                target.style.boxShadow = "0 6px 20px rgba(239, 68, 68, 0.4)";
-              }}
-              onMouseOut={(e) => {
-                const target = e.target as HTMLButtonElement;
-                target.style.transform = "translateY(0)";
-                target.style.boxShadow = "0 4px 15px rgba(239, 68, 68, 0.3)";
-              }}
-            >
-              <RotateCcw size={20} />
-              Yeniden
+          )}
+          {gameRunning && !gameOver && (
+            <button onClick={pauseGame} style={btnStyle("#f59e0b")}>
+              <Pause size={20} /> Duraklat
             </button>
-          </div>
+          )}
+          <button onClick={resetGame} style={btnStyle("#ef4444")}>
+            <RotateCcw size={20} /> Yeniden
+          </button>
         </div>
       </div>
 
+      {/* Animasyonlar */}
       <style>{`
-        @keyframes pulse {
-          0%, 100% {
-            opacity: 1;
-            transform: scale(1);
-          }
-          50% {
-            opacity: 0.8;
-            transform: scale(1.05);
-          }
-        }
-
         @keyframes bounce {
-          0%, 100% {
-            transform: scale(1) rotate(0deg);
-          }
-          25% {
-            transform: scale(1.1) rotate(-5deg);
-          }
-          50% {
-            transform: scale(1.15) rotate(0deg);
-          }
-          75% {
-            transform: scale(1.1) rotate(5deg);
-          }
-        }
-
-        @media (max-width: 480px) {
-          /* Mobil responsive ayarları */
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.3); }
         }
       `}</style>
     </div>
   );
 };
+
+// Basit stil yardımcısı
+const btnStyle = (color) => ({
+  display: "flex",
+  alignItems: "center",
+  gap: "8px",
+  background: color,
+  color: "white",
+  padding: "10px 20px",
+  borderRadius: "10px",
+  border: "none",
+  cursor: "pointer",
+  fontWeight: "bold",
+});
 
 export default SnakeGame;
