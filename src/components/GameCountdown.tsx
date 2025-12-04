@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
 
 interface GameCountdownProps {
-  onComplete: (finishTime?: number) => void; // Bitiş zamanını parent'a bildir
+  onComplete: () => void;
   className?: string;
   serverStartTime?: string | null;
   serverTimeOffset?: number;
@@ -12,22 +12,23 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
   const [count, setCount] = useState(5);
   const [isVisible, setIsVisible] = useState(false);
   const [showStart, setShowStart] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
   const [animKey, setAnimKey] = useState(0);
 
   const countdownAudioRef = useRef<HTMLAudioElement | null>(null);
   const startAudioRef = useRef<HTMLAudioElement | null>(null);
   const lastPlayedCountRef = useRef<number>(-1);
   const hasPlayedStartRef = useRef<boolean>(false);
-
-  // Bu Ref'ler döngüyü kırmadan durumu yönetmemizi sağlar
-  const hasCompletedRef = useRef<boolean>(false);
+  const hasCalledCompleteRef = useRef<boolean>(false);
+  const startTimeRef = useRef<number>(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const isMountedRef = useRef<boolean>(true);
 
-  // === PRELOAD & SETUP ===
+  // === PRELOAD (Basitleştirilmiş - donmayı önle) ===
   useEffect(() => {
     isMountedRef.current = true;
 
+    // Audio elementleri hemen hazırla (fetch beklemeden)
     countdownAudioRef.current = new Audio("/gerisayim.mp3");
     startAudioRef.current = new Audio("/basla.mp3");
 
@@ -39,6 +40,7 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
       }
     });
 
+    // Görselleri arka planda preload et (beklemeden)
     const images = ["/bir.png", "/iki.png", "/uc.png", "/dort.png", "/bes.png", "/basla.png"];
     images.forEach((src) => {
       const img = new Image();
@@ -47,10 +49,10 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
 
     return () => {
       isMountedRef.current = false;
-      if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, []);
 
+  // === MOBILE AUDIO UNLOCK ===
   const ensureAudioUnlocked = useCallback(() => {
     try {
       const unlock = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=");
@@ -59,111 +61,125 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
     } catch (e) {}
   }, []);
 
-  // === SERVER TIME COUNTDOWN LOGIC ===
+  // === COUNTDOWN LOGIC (Basitleştirilmiş ve güvenli) ===
   useEffect(() => {
     if (!serverStartTime) return;
+    if (hasStarted) return; // Zaten başlamışsa tekrar başlatma
 
-    // Geçersiz tarih koruması
-    const startTimeMs = new Date(serverStartTime).getTime();
-    if (isNaN(startTimeMs)) {
-      console.error("GameCountdown: Geçersiz tarih", serverStartTime);
-      onComplete(Date.now());
-      return;
+    console.log("🎯 GameCountdown başlatılıyor:", serverStartTime);
+
+    const startTime = new Date(serverStartTime).getTime();
+    startTimeRef.current = startTime;
+
+    // Audio unlock'u dene
+    ensureAudioUnlocked();
+
+    // Hemen görünür yap
+    if (isMountedRef.current) {
+      setHasStarted(true);
+      setIsVisible(true);
     }
 
-    console.log("🎯 Countdown Başlatılıyor. Hedef:", serverStartTime);
-    ensureAudioUnlocked();
-    setIsVisible(true);
-
-    const checkTime = () => {
+    const updateCountdown = () => {
       if (!isMountedRef.current) return;
-      if (hasCompletedRef.current) return;
 
       const now = Date.now() + serverTimeOffset;
-      const elapsedSeconds = (now - startTimeMs) / 1000;
+      const elapsed = Math.floor((now - startTime) / 1000);
+      const remaining = Math.max(0, 5 - elapsed);
 
-      // 5 saniyeden geriye say
-      const remaining = 5 - elapsedSeconds;
-      const displayCount = Math.max(0, Math.ceil(remaining));
-
-      // 1. DURUM: Geç kalınmış (7 saniyeden fazla geçmiş)
-      // Bu durumda animasyonu bekleme, direkt oyunu başlat.
-      if (elapsedSeconds > 7) {
-        console.log("⚠️ Countdown süresi çoktan dolmuş, direkt başlatılıyor.");
-        completeCountdown();
+      // Eğer countdown süresi çoktan geçmişse (>7 saniye), doğrudan tamamla
+      if (elapsed > 7 && !hasCalledCompleteRef.current) {
+        console.log("⚠️ Countdown süresi çoktan geçmiş, doğrudan tamamlanıyor");
+        hasCalledCompleteRef.current = true;
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+        setIsVisible(false);
+        onComplete();
         return;
       }
 
-      // 2. DURUM: Geri sayım devam ediyor
-      if (displayCount > 0) {
+      if (remaining > 0) {
         setCount((prev) => {
-          if (prev !== displayCount) {
-            if (countdownAudioRef.current && lastPlayedCountRef.current !== displayCount) {
+          if (prev !== remaining) {
+            // Ses çal
+            if (countdownAudioRef.current && lastPlayedCountRef.current !== remaining) {
               countdownAudioRef.current.currentTime = 0;
               countdownAudioRef.current.play().catch(() => {});
-              lastPlayedCountRef.current = displayCount;
+              lastPlayedCountRef.current = remaining;
             }
             setAnimKey((k) => k + 1);
           }
-          return displayCount;
+          return remaining;
         });
-      }
-      // 3. DURUM: Süre bitti, BAŞLA göster
-      else if (displayCount <= 0 && !hasPlayedStartRef.current) {
-        console.log("✅ Geri sayım bitti -> BAŞLA");
-        hasPlayedStartRef.current = true;
+      } else if (remaining === 0 && !hasPlayedStartRef.current) {
+        console.log("✅ Countdown tamamlandı - Başla gösteriliyor");
         setCount(0);
-        setShowStart(true);
         setAnimKey((k) => k + 1);
 
+        // Başla sesi
         if (startAudioRef.current) {
           startAudioRef.current.currentTime = 0;
           startAudioRef.current.play().catch(() => {});
         }
+        hasPlayedStartRef.current = true;
 
-        // "BAŞLA" yazısını 800ms gösterip bitir
+        setShowStart(true);
+
+        // Kısa bir süre sonra tamamla
         setTimeout(() => {
-          if (isMountedRef.current) completeCountdown();
+          if (!isMountedRef.current) return;
+          if (hasCalledCompleteRef.current) return;
+
+          hasCalledCompleteRef.current = true;
+          setIsVisible(false);
+
+          setTimeout(() => {
+            if (!isMountedRef.current) return;
+            console.log("🚀 Countdown onComplete çağrılıyor");
+            onComplete();
+          }, 200);
         }, 800);
       }
     };
 
-    // Tekrar eden timer'ı temizle ve başlat
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    checkTime(); // İlk kontrol
-    intervalRef.current = setInterval(checkTime, 100);
+    // Hemen başla + 100ms interval
+    updateCountdown();
+    intervalRef.current = setInterval(updateCountdown, 100);
 
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     };
-    // Dependency Array'e dikkat: 'count' veya 'hasStarted' buraya koyulmamalı!
-  }, [serverStartTime, serverTimeOffset, onComplete, ensureAudioUnlocked]);
+  }, [serverStartTime, serverTimeOffset, onComplete, ensureAudioUnlocked, hasStarted]);
 
-  const completeCountdown = () => {
-    if (hasCompletedRef.current) return;
-    hasCompletedRef.current = true;
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, []);
 
-    setIsVisible(false);
-    if (intervalRef.current) clearInterval(intervalRef.current);
-
-    // Oyunun başlangıç zamanı olarak ŞU ANI gönder
-    // Bu sayede 1:45 sorunu çözülür
-    onComplete(Date.now());
-  };
-
-  if (!isVisible && !hasCompletedRef.current) return null;
-  // Animasyon bittikten sonra null dön
-  if (hasCompletedRef.current && !isVisible) return null;
+  // === RENDER ===
+  if (!hasStarted || !isVisible) return null;
+  if (count === 0 && !showStart) return null;
 
   const getImageForCount = (num: number): string => {
-    const map: Record<number, string> = {
+    const imageMap: Record<number, string> = {
       1: "/bir.png",
       2: "/iki.png",
       3: "/uc.png",
       4: "/dort.png",
       5: "/bes.png",
     };
-    return map[num] || "/bes.png";
+    return imageMap[num] || "/bes.png";
   };
 
   return (
@@ -177,13 +193,28 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
             "transition-all duration-300 object-contain",
             "w-[280px] h-[280px]",
             "sm:w-[360px] sm:h-[360px]",
+            "md:w-[420px] md:h-[420px]",
+            "lg:w-[480px] lg:h-[480px]",
             showStart ? "scale-110" : "scale-100",
           )}
           style={{
             filter: showStart
-              ? "drop-shadow(0 0 60px rgba(255, 107, 107, 0.9))"
-              : "drop-shadow(0 0 60px rgba(102, 126, 234, 0.9))",
+              ? "drop-shadow(0 0 60px rgba(255, 107, 107, 0.9)) drop-shadow(0 0 30px rgba(255, 215, 0, 0.7))"
+              : "drop-shadow(0 0 60px rgba(102, 126, 234, 0.9)) drop-shadow(0 0 30px rgba(244, 143, 177, 0.7))",
             animation: "pulse 0.3s ease-out",
+          }}
+        />
+        <div
+          className={cn(
+            "absolute inset-0 transition-all duration-300 pointer-events-none",
+            showStart ? "opacity-100" : "opacity-70",
+          )}
+          style={{
+            background: showStart
+              ? "radial-gradient(circle at center, rgba(255,255,255,0.3) 0%, transparent 70%)"
+              : "radial-gradient(circle at center, rgba(255,255,255,0.2) 0%, transparent 70%)",
+            mixBlendMode: "overlay",
+            filter: "blur(10px)",
           }}
         />
       </div>
