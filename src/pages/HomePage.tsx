@@ -716,7 +716,7 @@ const HomePage = () => {
                     onClick={() => navigate("/reactor-runner")}
                   >
                     <div className="flex-1">
-                      <h2 className="text-xl font-semibold text-white font-painter">Reaktör Oyunu</h2>
+                      <h2 className="text-xl font-semibold text-white font-painter">Kelime Avcısı</h2>
                     </div>
                     {/* Mini Reaktör İkonu */}
                     <div className="relative w-12 h-12 flex items-center justify-center">
