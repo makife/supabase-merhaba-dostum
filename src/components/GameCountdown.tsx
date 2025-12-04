@@ -19,193 +19,161 @@ const GameCountdown = ({
   const [showStart, setShowStart] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const [animKey, setAnimKey] = useState(0);
-  const [preloadComplete, setPreloadComplete] = useState(false);
 
   const countdownAudioRef = useRef<HTMLAudioElement | null>(null);
   const startAudioRef = useRef<HTMLAudioElement | null>(null);
   const lastPlayedCountRef = useRef<number>(-1);
   const hasPlayedStartRef = useRef<boolean>(false);
-  const audioContextRef = useRef<AudioContext | null>(null);
+  const hasCalledCompleteRef = useRef<boolean>(false);
   const startTimeRef = useRef<number>(0);
-  const countdownLockRef = useRef<boolean>(false); // 🔒 Tek-seferlik countdown kilidi
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef<boolean>(true);
 
-  // === 1. PRELOAD (Görsel + Ses + AudioContext) ===
+  // === PRELOAD (Basitleştirilmiş - donmayı önle) ===
   useEffect(() => {
-    let cancelled = false;
-
-    const preload = async () => {
-      // AudioContext'i erkenden oluştur (mobile unlock için)
-      try {
-        audioContextRef.current = new AudioContext();
-      } catch (e) {
-        console.log("AudioContext erken oluşturulamadı, sonra deneriz");
+    isMountedRef.current = true;
+    
+    // Audio elementleri hemen hazırla (fetch beklemeden)
+    countdownAudioRef.current = new Audio("/gerisayim.mp3");
+    startAudioRef.current = new Audio("/basla.mp3");
+    
+    [countdownAudioRef.current, startAudioRef.current].forEach(a => {
+      if (a) {
+        a.preload = "auto";
+        a.volume = 0.7;
+        a.load();
       }
-
-      // Görseller
-      const images = ["/bir.png", "/iki.png", "/uc.png", "/dort.png", "/bes.png", "/basla.png"];
-      const imgPromises = images.map(src => 
-        new Promise<void>((res, rej) => {
-          const img = new Image();
-          img.src = src;
-          img.onload = () => res();
-          img.onerror = () => rej(new Error(`Image: ${src}`));
-        })
-      );
-
-      // Sesler (decodeAudioData ile tam preload)
-      const sounds = ["/gerisayim.mp3", "/basla.mp3"];
-      const soundPromises = sounds.map(src => 
-        new Promise<void>((res, rej) => {
-          fetch(src)
-            .then(r => r.arrayBuffer())
-            .then(buffer => {
-              if (audioContextRef.current) {
-                audioContextRef.current.decodeAudioData(buffer, () => res(), rej);
-              } else {
-                res();
-              }
-            })
-            .catch(rej);
-        })
-      );
-
-      await Promise.all([...imgPromises, ...soundPromises]);
-      
-      if (!cancelled) {
-        // Audio elementleri hazırla
-        countdownAudioRef.current = new Audio("/gerisayim.mp3");
-        startAudioRef.current = new Audio("/basla.mp3");
-        [countdownAudioRef.current, startAudioRef.current]?.forEach(a => {
-          if (a) {
-            a.preload = "auto";
-            a.volume = 0.7;
-            a.load(); // Force reload
-          }
-        });
-        setPreloadComplete(true);
-      }
-    };
-
-    preload().catch(e => {
-      console.error("Preload error:", e);
-      setPreloadComplete(true); // Devam et
     });
 
-    return () => { cancelled = true; };
+    // Görselleri arka planda preload et (beklemeden)
+    const images = ["/bir.png", "/iki.png", "/uc.png", "/dort.png", "/bes.png", "/basla.png"];
+    images.forEach(src => {
+      const img = new Image();
+      img.src = src;
+    });
+
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
 
-  // === 2. MOBILE AUDIO UNLOCK (Sessiz - Otomatik) ===
-  const ensureAudioUnlocked = useCallback(async () => {
-    if (audioContextRef.current?.state === 'running') return true;
-
-    // 1. AudioContext resume
-    if (audioContextRef.current) {
-      await audioContextRef.current.resume().catch(() => {});
-    }
-
-    // 2. HTML5 Audio unlock (çok kısa sessiz ses)
+  // === MOBILE AUDIO UNLOCK ===
+  const ensureAudioUnlocked = useCallback(() => {
     try {
       const unlock = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=");
       unlock.volume = 0.0;
-      await unlock.play();
-      unlock.pause();
+      unlock.play().catch(() => {});
     } catch (e) {}
-
-    // 3. Test sesi (gerçekten unlocked mı?)
-    if (countdownAudioRef.current) {
-      try {
-        await countdownAudioRef.current.play();
-        countdownAudioRef.current.pause();
-        countdownAudioRef.current.currentTime = 0;
-      } catch (e) {}
-    }
-
-    return audioContextRef.current?.state !== 'suspended' && audioContextRef.current?.state !== 'closed';
   }, []);
 
-  // === 3. SERVER TIME GERİ SAYIM (HER ŞEY OTOMATİK) ===
+  // === COUNTDOWN LOGIC (Basitleştirilmiş ve güvenli) ===
   useEffect(() => {
-    if (!serverStartTime || !preloadComplete) return;
+    if (!serverStartTime) return;
+    if (hasStarted) return; // Zaten başlamışsa tekrar başlatma
     
-    // 🔒 Countdown zaten başlamışsa tekrar başlatma
-    if (countdownLockRef.current) {
-      console.log("⚠️ Countdown zaten başlamış - duplicate trigger engellendi");
-      return;
-    }
-    
-    countdownLockRef.current = true;
-    console.log("🔒 Countdown kilidi aktif edildi", { serverStartTime });
+    console.log("🎯 GameCountdown başlatılıyor:", serverStartTime);
 
     const startTime = new Date(serverStartTime).getTime();
     startTimeRef.current = startTime;
     
-    // Audio unlock'u başlat (arka planda)
+    // Audio unlock'u dene
     ensureAudioUnlocked();
 
-    setHasStarted(true);
-    setIsVisible(true);
+    // Hemen görünür yap
+    if (isMountedRef.current) {
+      setHasStarted(true);
+      setIsVisible(true);
+    }
 
     const updateCountdown = () => {
+      if (!isMountedRef.current) return;
+      
       const now = Date.now() + serverTimeOffset;
       const elapsed = Math.floor((now - startTime) / 1000);
       const remaining = Math.max(0, 5 - elapsed);
 
+      // Eğer countdown süresi çoktan geçmişse (>7 saniye), doğrudan tamamla
+      if (elapsed > 7 && !hasCalledCompleteRef.current) {
+        console.log("⚠️ Countdown süresi çoktan geçmiş, doğrudan tamamlanıyor");
+        hasCalledCompleteRef.current = true;
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+        setIsVisible(false);
+        onComplete();
+        return;
+      }
+
       if (remaining > 0) {
         setCount((prev) => {
           if (prev !== remaining) {
-            // 5. saniye dahil TÜM sesler ZORLA çal
+            // Ses çal
             if (countdownAudioRef.current && lastPlayedCountRef.current !== remaining) {
               countdownAudioRef.current.currentTime = 0;
-              countdownAudioRef.current.play().catch(e => {
-                console.log(`Ses ${remaining} başarısız:`, e);
-              });
+              countdownAudioRef.current.play().catch(() => {});
               lastPlayedCountRef.current = remaining;
-              console.log(`${remaining} sesi çalındı`);
             }
             setAnimKey((k) => k + 1);
           }
           return remaining;
         });
       } else if (remaining === 0 && !hasPlayedStartRef.current) {
+        console.log("✅ Countdown tamamlandı - Başla gösteriliyor");
         setCount(0);
         setAnimKey((k) => k + 1);
         
         // Başla sesi
         if (startAudioRef.current) {
           startAudioRef.current.currentTime = 0;
-          startAudioRef.current.play().catch(e => console.log("Başla sesi hatası:", e));
-          hasPlayedStartRef.current = true;
+          startAudioRef.current.play().catch(() => {});
         }
+        hasPlayedStartRef.current = true;
         
         setShowStart(true);
         
+        // Kısa bir süre sonra tamamla
         setTimeout(() => {
+          if (!isMountedRef.current) return;
+          if (hasCalledCompleteRef.current) return;
+          
+          hasCalledCompleteRef.current = true;
           setIsVisible(false);
+          
           setTimeout(() => {
+            if (!isMountedRef.current) return;
+            console.log("🚀 Countdown onComplete çağrılıyor");
             onComplete();
           }, 200);
-        }, 1000);
+        }, 800);
       }
     };
 
-    // Hemen başla + 100ms interval (hassas timing)
+    // Hemen başla + 100ms interval
     updateCountdown();
-    const interval = setInterval(updateCountdown, 100);
+    intervalRef.current = setInterval(updateCountdown, 100);
 
     return () => {
-      clearInterval(interval);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     };
-  }, [serverStartTime, serverTimeOffset, onComplete, preloadComplete]);
+  }, [serverStartTime, serverTimeOffset, onComplete, ensureAudioUnlocked, hasStarted]);
 
-  // Sadece component unmount olduğunda lock'u kaldır
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      countdownLockRef.current = false;
+      isMountedRef.current = false;
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     };
   }, []);
 
-  // === RENDER (Sadece sayım sırasında görünür) ===
-  if (!hasStarted || !preloadComplete || !isVisible) return null;
+  // === RENDER ===
+  if (!hasStarted || !isVisible) return null;
   if (count === 0 && !showStart) return null;
 
   const getImageForCount = (num: number): string => {
@@ -216,7 +184,7 @@ const GameCountdown = ({
       4: "/dort.png",
       5: "/bes.png",
     };
-    return imageMap[num] || "";
+    return imageMap[num] || "/bes.png";
   };
 
   return (
