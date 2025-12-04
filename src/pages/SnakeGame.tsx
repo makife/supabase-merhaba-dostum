@@ -6,7 +6,7 @@ const INITIAL_SNAKE = [{ x: 10, y: 10 }];
 const INITIAL_DIRECTION = { x: 0, y: -1 };
 
 // Varsayılan kelime listesi (Dosya yüklenemezse kullanılır)
-const FALLBACK_WORDS = ["REACT", "KODLAMA", "YAZILIM", "FRONTEND", "SNAKE", "TASARIM"];
+const FALLBACK_WORDS = ["REACT", "KODLAMA", "YAZILIM", "FRONTEND", "SNAKE", "TASARIM", "MOBIL", "OYUN"];
 
 const SnakeGame = () => {
   const navigate = () => {
@@ -20,8 +20,8 @@ const SnakeGame = () => {
   // --- State Tanımları ---
   const [snake, setSnake] = useState(INITIAL_SNAKE);
   const [wordList, setWordList] = useState<string[]>([]);
-  const [targetWord, setTargetWord] = useState(""); // Hedef kelime
-  const [targetLetterIdx, setTargetLetterIdx] = useState(0); // Şu an hangi harfteyiz
+  const [targetWord, setTargetWord] = useState("");
+  const [targetLetterIdx, setTargetLetterIdx] = useState(0);
 
   // Food artık emoji değil, hedef harfi taşıyacak
   const [food, setFood] = useState({ x: 5, y: 5, letter: "" });
@@ -47,7 +47,6 @@ const SnakeGame = () => {
         return res.text();
       })
       .then((text) => {
-        // Satır satır ayır, boşlukları temizle, büyük harfe çevir
         const words = text
           .split("\n")
           .map((w) => w.trim().toUpperCase())
@@ -55,7 +54,6 @@ const SnakeGame = () => {
 
         if (words.length > 0) {
           setWordList(words);
-          // İlk kelimeyi ayarla (oyun başlamadan önce hazır olsun)
           const randomWord = words[Math.floor(Math.random() * words.length)];
           setTargetWord(randomWord);
           setFood((prev) => ({ ...prev, letter: randomWord[0] }));
@@ -122,14 +120,13 @@ const SnakeGame = () => {
     [gameRunning, gameOver],
   );
 
-  // --- Yeni Yiyecek (Harf) Oluşturma ---
   const generateFood = useCallback((currentSnake, specificLetter) => {
     let newFood;
     do {
       newFood = {
         x: Math.floor(Math.random() * GRID_SIZE),
         y: Math.floor(Math.random() * GRID_SIZE),
-        letter: specificLetter, // Rastgele değil, sıradaki harf
+        letter: specificLetter,
       };
     } while (currentSnake.some((segment) => segment.x === newFood.x && segment.y === newFood.y));
     return newFood;
@@ -146,7 +143,6 @@ const SnakeGame = () => {
       head.x += directionRef.current.x;
       head.y += directionRef.current.y;
 
-      // Wrap-around
       if (head.x < 0) head.x = GRID_SIZE - 1;
       if (head.x >= GRID_SIZE) head.x = 0;
       if (head.y < 0) head.y = GRID_SIZE - 1;
@@ -154,56 +150,45 @@ const SnakeGame = () => {
 
       newSnake.unshift(head);
 
-      // Yiyecek kontrolü
       const ateFood = head.x === food.x && head.y === food.y;
 
       if (ateFood) {
-        // Puan artır
         const pointGain = 10 * level;
         const newScore = score + pointGain;
         setScore(newScore);
 
-        // Ses çal
         playSound(600 + level * 50, 150, "sine");
 
-        // High score
         if (newScore > highScore) {
           setHighScore(newScore);
           sessionStorage.setItem("snakeHighScore", newScore.toString());
         }
 
-        // --- Kelime Mantığı ---
         const nextIdx = targetLetterIdx + 1;
 
         if (nextIdx >= targetWord.length) {
-          // KELİME BİTTİ -> SEVİYE ATLA
-          playSound(800, 300, "square"); // Seviye atlama sesi
-
+          // Kelime bitti
+          playSound(800, 300, "square");
           setLevel((prev) => prev + 1);
-          setSpeed((prev) => Math.max(80, prev - 15)); // Hızlandır
+          setSpeed((prev) => Math.max(80, prev - 15));
 
-          // Yeni kelime seç
           const newWord = wordList[Math.floor(Math.random() * wordList.length)];
           setTargetWord(newWord);
           setTargetLetterIdx(0);
-
-          // Yeni kelimenin ilk harfini koy
           setFood(generateFood(newSnake, newWord[0]));
         } else {
-          // Kelime bitmedi, sıradaki harfi koy
+          // Sonraki harf
           setTargetLetterIdx(nextIdx);
           setFood(generateFood(newSnake, targetWord[nextIdx]));
         }
       } else {
-        // Yemedi ise kuyruk sil
         newSnake.pop();
       }
 
-      // Çarpışma kontrolü
       if (newSnake.slice(1).some((segment) => segment.x === head.x && segment.y === head.y)) {
         setGameOver(true);
         setGameRunning(false);
-        playSound(200, 500, "sawtooth"); // Game over sesi
+        playSound(200, 500, "sawtooth");
         return prevSnake;
       }
 
@@ -232,7 +217,6 @@ const SnakeGame = () => {
     return () => clearInterval(gameLoopRef.current);
   }, [gameLoop, gameRunning, gameOver, speed]);
 
-  // Klavye
   useEffect(() => {
     const handleKeyPress = (e) => {
       if (gameOver) return;
@@ -288,18 +272,10 @@ const SnakeGame = () => {
 
   const resetGame = () => {
     setSnake(INITIAL_SNAKE);
-
-    // Yeni rastgele kelime ile sıfırla
     const randomWord = wordList.length > 0 ? wordList[Math.floor(Math.random() * wordList.length)] : "SNAKE";
-
     setTargetWord(randomWord);
     setTargetLetterIdx(0);
-    setFood({
-      x: 5,
-      y: 5,
-      letter: randomWord[0],
-    });
-
+    setFood({ x: 5, y: 5, letter: randomWord[0] });
     directionRef.current = INITIAL_DIRECTION;
     setGameRunning(false);
     setGameOver(false);
@@ -312,6 +288,24 @@ const SnakeGame = () => {
     const colors = ["#10b981", "#3b82f6", "#8b5cf6", "#f59e0b", "#ef4444"];
     return colors[(level - 1) % colors.length];
   };
+
+  // Buton Stili (Eski stilin aynısı)
+  const directionBtnStyle = (disabled) => ({
+    width: "50px",
+    height: "50px",
+    borderRadius: "12px",
+    background: "linear-gradient(45deg, #667eea, #764ba2)",
+    border: "2px solid rgba(255, 255, 255, 0.3)",
+    color: "white",
+    fontSize: "20px",
+    cursor: !disabled ? "pointer" : "not-allowed",
+    transition: "all 0.3s ease",
+    backdropFilter: "blur(10px)",
+    opacity: disabled ? 0.5 : 1,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  });
 
   return (
     <div
@@ -357,12 +351,11 @@ const SnakeGame = () => {
           </button>
         </div>
 
-        {/* Header Info */}
+        {/* Header */}
         <div style={{ textAlign: "center", marginBottom: "16px" }}>
           <h1 style={{ fontSize: "20px", fontWeight: "bold", color: "white", marginBottom: "8px" }}>
             🐍 Kelime Yılanı 🐍
           </h1>
-
           <div
             style={{
               display: "flex",
@@ -409,7 +402,7 @@ const SnakeGame = () => {
             </div>
           </div>
 
-          {/* KELİME GÖSTERGESİ */}
+          {/* Kelime Göstergesi */}
           <div
             style={{
               background: "rgba(0,0,0,0.3)",
@@ -435,7 +428,6 @@ const SnakeGame = () => {
                     borderRadius: "6px",
                     fontWeight: "bold",
                     fontSize: "16px",
-                    // Eğer harf toplandıysa yeşilimsi, şu anki hedefse sarı, değilse şeffaf
                     backgroundColor:
                       index < targetLetterIdx
                         ? "#10b981"
@@ -473,7 +465,6 @@ const SnakeGame = () => {
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
-          {/* Yılan */}
           {snake.map((segment, index) => (
             <div
               key={index}
@@ -490,8 +481,6 @@ const SnakeGame = () => {
               }}
             />
           ))}
-
-          {/* Harf (Food) */}
           <div
             style={{
               position: "absolute",
@@ -512,8 +501,6 @@ const SnakeGame = () => {
           >
             {food.letter}
           </div>
-
-          {/* Game Over */}
           {gameOver && (
             <div
               style={{
@@ -535,8 +522,52 @@ const SnakeGame = () => {
           )}
         </div>
 
-        {/* Kontroller */}
-        <div style={{ marginTop: "24px", display: "flex", justifyContent: "center", gap: "16px" }}>
+        {/* --- YÖN KONTROL BUTONLARI (MOBİL İÇİN) --- */}
+        <div style={{ marginTop: "24px", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
+          {/* Yukarı */}
+          <button
+            onClick={() => {
+              if (directionRef.current.y === 0) changeDirection({ x: 0, y: -1 });
+            }}
+            disabled={gameOver}
+            style={directionBtnStyle(gameOver)}
+          >
+            ⬆️
+          </button>
+          {/* Sol - Aşağı - Sağ */}
+          <div style={{ display: "flex", gap: "24px", alignItems: "center" }}>
+            <button
+              onClick={() => {
+                if (directionRef.current.x === 0) changeDirection({ x: -1, y: 0 });
+              }}
+              disabled={gameOver}
+              style={directionBtnStyle(gameOver)}
+            >
+              ⬅️
+            </button>
+            <button
+              onClick={() => {
+                if (directionRef.current.y === 0) changeDirection({ x: 0, y: 1 });
+              }}
+              disabled={gameOver}
+              style={directionBtnStyle(gameOver)}
+            >
+              ⬇️
+            </button>
+            <button
+              onClick={() => {
+                if (directionRef.current.x === 0) changeDirection({ x: 1, y: 0 });
+              }}
+              disabled={gameOver}
+              style={directionBtnStyle(gameOver)}
+            >
+              ➡️
+            </button>
+          </div>
+        </div>
+
+        {/* Başlat/Durdur/Sıfırla Kontrolleri */}
+        <div style={{ marginTop: "20px", display: "flex", justifyContent: "center", gap: "16px" }}>
           {!gameRunning && !gameOver && (
             <button onClick={startGame} style={btnStyle("#10b981")}>
               <Play size={20} /> Başla
@@ -553,7 +584,6 @@ const SnakeGame = () => {
         </div>
       </div>
 
-      {/* Animasyonlar */}
       <style>{`
         @keyframes bounce {
           0%, 100% { transform: scale(1); }
@@ -564,7 +594,7 @@ const SnakeGame = () => {
   );
 };
 
-// Basit stil yardımcısı
+// Alt butonlar için stil
 const btnStyle = (color) => ({
   display: "flex",
   alignItems: "center",
