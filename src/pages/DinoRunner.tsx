@@ -14,7 +14,7 @@ const DinoRunner = () => {
   const [gameState, setGameState] = useState("waiting");
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
-  const [isMuted, setIsMuted] = useState(false); // Ses durumu
+  const [isMuted, setIsMuted] = useState(false);
 
   // Render State'leri
   const [dinoY, setDinoY] = useState(0);
@@ -41,7 +41,7 @@ const DinoRunner = () => {
   const lettersRef = useRef([]);
   const cloudsRef = useRef([]);
   const scoreRef = useRef(0);
-  const isMutedRef = useRef(false); // Ses ref'i (loop içinde erişim için)
+  const isMutedRef = useRef(false);
 
   // Kelime Mantığı Ref'leri
   const targetWordRef = useRef("");
@@ -97,15 +97,12 @@ const DinoRunner = () => {
       .catch(() => setWordList(["REAKTÖR", "ATOM", "ENERJİ", "FİSYON", "URANYUM"]));
   }, []);
 
-  // Ref senkronizasyonları
   useEffect(() => {
     targetWordRef.current = targetWord;
   }, [targetWord]);
   useEffect(() => {
     collectedCountRef.current = collectedCount;
   }, [collectedCount]);
-
-  // Ses butonu için senkronizasyon
   useEffect(() => {
     isMutedRef.current = isMuted;
   }, [isMuted]);
@@ -115,7 +112,7 @@ const DinoRunner = () => {
   };
 
   const playSound = (freq, type = "sine", vol = 0.1) => {
-    if (!audioContextRef.current || isMutedRef.current) return; // Sessizse çalma
+    if (!audioContextRef.current || isMutedRef.current) return;
     try {
       const ctx = audioContextRef.current;
       const osc = ctx.createOscillator();
@@ -131,7 +128,6 @@ const DinoRunner = () => {
     } catch (e) {}
   };
 
-  // --- OYUN FONKSİYONLARI ---
   const pickNewWord = useCallback(() => {
     if (wordList.length === 0) return;
     const newWord = wordList[Math.floor(Math.random() * wordList.length)];
@@ -195,9 +191,8 @@ const DinoRunner = () => {
       startGame();
       return;
     }
-    // Havadaysa tekrar zıplamasın (opsiyonel, genelde runner'larda double jump olmaz)
-    if (dinoYRef.current > 0) return;
 
+    // 🔥 DÜZELTME: "Havadaysa zıplama" kontrolü kaldırıldı (Flappy Bird Modu)
     velocityRef.current = JUMP_FORCE;
     playSound(600 + Math.random() * 200, "sine");
   };
@@ -223,6 +218,7 @@ const DinoRunner = () => {
       dinoYRef.current = 0;
       velocityRef.current = 0;
     }
+    // Tavana çarpma kontrolü (Ekrandan uçup gitmesin)
     if (dinoYRef.current > GAME_HEIGHT - DINO_HEIGHT) {
       dinoYRef.current = GAME_HEIGHT - DINO_HEIGHT;
       velocityRef.current = -2;
@@ -355,7 +351,6 @@ const DinoRunner = () => {
     return () => window.removeEventListener("keydown", handleKey);
   }, [gameState]);
 
-  // --- RENDER ---
   return (
     <div className="page-wrapper">
       <div className="game-container">
@@ -463,7 +458,7 @@ const DinoRunner = () => {
           )}
         </div>
 
-        {/* ALT KONTROLLER (Mobil İçin) */}
+        {/* MOBİL KONTROLLER (ZIPLA BUTONLARI) */}
         <div className="mobile-controls">
           <button className="control-btn" onPointerDown={(e) => handleJump(e)}>
             ZIPLA ↰
@@ -475,14 +470,13 @@ const DinoRunner = () => {
       </div>
 
       <style>{`
-        /* Sayfa Geneli */
+        /* Sayfa Geneli - Gradient Arka Plan */
         .page-wrapper {
             min-height: 100vh;
             width: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
-            /* Arka plan gradient */
             background: linear-gradient(135deg, #141E30 0%, #243B55 100%);
             padding: 20px;
             box-sizing: border-box;
@@ -492,8 +486,9 @@ const DinoRunner = () => {
             width: 100%; max-width: 600px;
             font-family: 'Segoe UI', sans-serif; user-select: none;
             position: relative;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); /* Derinlik */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             border-radius: 12px;
+            overflow: hidden; /* Köşeleri yuvarlamak için */
         }
         
         .top-bar {
@@ -503,7 +498,6 @@ const DinoRunner = () => {
             background: rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(8px);
             border-bottom: 1px solid rgba(255,255,255,0.1);
-            border-radius: 12px 12px 0 0;
             position: relative; z-index: 20;
         }
         
@@ -528,8 +522,6 @@ const DinoRunner = () => {
         .game-stage {
             position: relative; width: 100%; height: 350px;
             background: linear-gradient(180deg, #1a2a6c 0%, #b21f1f 100%);
-            /* Köşeler kontrol butonları olduğu için düzlendi */
-            border-radius: 0; 
             overflow: hidden; cursor: pointer;
             border: 2px solid rgba(255,255,255,0.1);
             border-top: none; border-bottom: none;
@@ -541,9 +533,7 @@ const DinoRunner = () => {
             background: #111;
             padding: 15px;
             gap: 15px;
-            border-radius: 0 0 12px 12px;
-            border: 1px solid rgba(255,255,255,0.1);
-            border-top: none;
+            border-top: 1px solid rgba(255,255,255,0.1);
         }
         
         .control-btn {
