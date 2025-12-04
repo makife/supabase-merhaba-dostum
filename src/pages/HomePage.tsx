@@ -6,7 +6,7 @@ import { FloatingMenu } from "@/components/FloatingMenu";
 import { HeaderAnimation } from "@/components/HeaderAnimation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
-import { useSounds } from "@/hoopuks/useSounds";
+import { useSounds } from "@/hooks/useSounds";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
