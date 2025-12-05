@@ -4685,91 +4685,81 @@ const GamePage = ({
 
   // ⏱️ Initial server countdown sync for private/random
   useEffect(() => {
-    if (
-      (gameMode === "private-room" || gameMode === "random-match") &&
-      currentRoom?.countdown_started_at &&
-      !showCountdown &&
-      !gameStarted &&
-      !countdownServerTime
-    ) {
-      console.log("⏰ Initial countdown sync from room state:", currentRoom.countdown_started_at);
+    // Sadece private ve random modlarda çalışsın
+    if (gameMode !== "private-room" && gameMode !== "random-match") return;
 
-      // Server zamanını hesapla
-      const countdownStartTime = new Date(currentRoom.countdown_started_at).getTime();
-      const now = Date.now();
-      const serverNow = now + serverTimeOffset;
-      const timeDiff = countdownStartTime - serverNow;
+    // Gerekli verileri al
+    const startTimeStr = currentRoom?.countdown_started_at;
 
-      console.log("⏰ Countdown timing:", {
-        startTime: new Date(countdownStartTime).toISOString(),
-        serverNow: new Date(serverNow).toISOString(),
-        timeDiff,
-        willStartIn: Math.max(0, timeDiff),
-      });
+    // Eğer başlama zamanı yoksa veya sayaç zaten ekrandaysa işlem yapma
+    if (!startTimeStr || showCountdown || gameStarted || countdownServerTime) return;
 
-      const timers: NodeJS.Timeout[] = [];
+    console.log("⏰ Initial countdown sync başlatılıyor:", startTimeStr);
 
-      // Eğer countdown zamanı geçmişse veya çok yakınsa direkt başlat
-      if (timeDiff <= 0) {
-        console.log("⏰ Countdown zamanı geçmiş, direkt başlatılıyor");
-        setPreparingOpponent(null);
-        setCountdownServerTime(currentRoom.countdown_started_at);
-        setShowCountdown(true);
-        setGameStarted(false);
-      } else if (timeDiff > 5000) {
-        // 5+ saniye var, son 5 saniyeyi bekle
-        const waitTime = timeDiff - 5000;
-        console.log(`⏰ ${Math.ceil(timeDiff / 1000)}s kaldı, son 5 saniyede animasyonlar başlayacak`);
+    const countdownStartTime = new Date(startTimeStr).getTime();
+    // Anlık bir referans alıyoruz, değişken olarak kullanacağız
+    const now = Date.now();
+    const currentOffset = serverTimeOffset; // State'i burada capture ediyoruz
+    const serverNow = now + currentOffset;
+    const timeDiff = countdownStartTime - serverNow;
 
-        const waitTimer = setTimeout(() => {
-          setPreparingOpponent("preparing");
+    // Zamanlayıcıları tutacak dizi
+    const timers: NodeJS.Timeout[] = [];
 
-          timers.push(setTimeout(() => setPreparingOpponent("ready"), 3500));
-          timers.push(setTimeout(() => setPreparingOpponent(null), 4000));
-          timers.push(
-            setTimeout(() => {
-              console.log("⏰ Countdown başlatılıyor");
-              setCountdownServerTime(currentRoom.countdown_started_at);
-              setShowCountdown(true);
-              setGameStarted(false);
-            }, 5000),
-          );
-        }, waitTime);
+    // 1. Durum: Süre zaten dolmuşsa direkt başlat
+    if (timeDiff <= 0) {
+      console.log("⏰ Süre dolmuş, oyun direkt başlatılıyor");
+      setPreparingOpponent(null);
+      setCountdownServerTime(startTimeStr);
+      setShowCountdown(true);
+      setGameStarted(false);
+    }
+    // 2. Durum: Süre var, animasyon sırasını kur
+    else {
+      // 5 saniyeden uzunsa bekleme süresi koy, değilse 0 (hemen başla)
+      const delayBeforeStart = timeDiff > 5000 ? timeDiff - 5000 : 0;
 
-        timers.push(waitTimer);
-      } else if (timeDiff > 500) {
-        // 0.5-5 saniye arası, hemen animasyonları başlat
-        console.log(`⏰ ${Math.ceil(timeDiff / 1000)}s kaldı, animasyonlar hemen başlıyor`);
+      console.log(`⏰ Animasyon sırası kuruluyor. Bekleme: ${Math.ceil(delayBeforeStart / 1000)}sn`);
 
+      const sequenceTimer = setTimeout(() => {
+        // Adım 1: "Rakip Hazırlanıyor..."
         setPreparingOpponent("preparing");
 
-        const prepTime = Math.floor(timeDiff * 0.7);
-        const readyTime = prepTime + Math.floor(timeDiff * 0.1);
+        // Adım 2: "Hazır!" (3.5 saniye sonra)
+        timers.push(setTimeout(() => setPreparingOpponent("ready"), 3500));
 
-        timers.push(setTimeout(() => setPreparingOpponent("ready"), prepTime));
-        timers.push(setTimeout(() => setPreparingOpponent(null), readyTime));
+        // Adım 3: Yazıyı kaldır (4 saniye sonra)
+        timers.push(setTimeout(() => setPreparingOpponent(null), 4000));
+
+        // Adım 4: Geri Sayım Ekranını Aç (3, 2, 1...) (5 saniye sonra)
         timers.push(
           setTimeout(() => {
-            console.log("⏰ Countdown başlatılıyor");
-            setCountdownServerTime(currentRoom.countdown_started_at);
+            console.log("⏰ Geri sayım ekranı açılıyor");
+            setCountdownServerTime(startTimeStr);
             setShowCountdown(true);
             setGameStarted(false);
-          }, timeDiff),
+          }, 5000),
         );
-      } else {
-        // Çok az süre kaldı, direkt countdown başlat
-        console.log("⏰ Countdown hemen başlıyor (süre çok az)");
-        setPreparingOpponent(null);
-        setCountdownServerTime(currentRoom.countdown_started_at);
-        setShowCountdown(true);
-        setGameStarted(false);
-      }
+      }, delayBeforeStart);
 
-      return () => {
-        timers.forEach((timer) => clearTimeout(timer));
-      };
+      timers.push(sequenceTimer);
     }
-  }, [gameMode, currentRoom?.countdown_started_at, showCountdown, gameStarted, serverTimeOffset, countdownServerTime]);
+
+    // Cleanup: Sadece bileşen ekrandan giderse temizle
+    return () => {
+      timers.forEach((timer) => clearTimeout(timer));
+    };
+
+    // ⚠️ KRİTİK NOKTA: Dependency Array
+    // serverTimeOffset'i bilerek çıkardık. Çünkü drift sync olduğunda
+    // sayacın sıfırlanmasını istemiyoruz.
+  }, [
+    gameMode,
+    currentRoom?.countdown_started_at, // Sadece bu string değişirse çalışır
+    showCountdown,
+    gameStarted,
+    // serverTimeOffset BURADAN ÇIKARILDI
+  ]);
 
   // 🔍 Countdown eksiklik kontrolü: Eğer 2 oyuncu var ama countdown başlamamışsa kontrol et
   useEffect(() => {
