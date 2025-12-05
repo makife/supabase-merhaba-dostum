@@ -5789,7 +5789,7 @@ const GamePage = ({
     setDisplayTime(initial);
 
     // Multiplayer: set authoritative server start time exactly once
-    if (isMp && currentRoom?.id) {
+    /*if (isMp && currentRoom?.id) {
       const serverStartTime = new Date().toISOString();
       (async () => {
         try {
@@ -5804,7 +5804,7 @@ const GamePage = ({
           console.error("started_at set failed:", e);
         }
       })();
-    }
+    }*/
 
     // Start game immediately - don't wait for started_at
     setGameStarted(true);
