@@ -4777,93 +4777,114 @@ const GamePage = ({
     }
   }, [gameMode, currentRoom?.countdown_started_at, showCountdown, gameStarted, serverTimeOffset, countdownServerTime]);
 
-  // 🔍 Countdown eksiklik kontrolü: Eğer 2 oyuncu var ama countdown başlamamışsa kontrol et
-  // 🔍 GÜNCELLENMİŞ ANIMASYON VE COUNTDOWN KONTROLÜ
+  // 🔍 GÜNCELLENMİŞ VE KİLİTLENMİŞ COUNTDOWN KONTROLÜ
   useEffect(() => {
+    // 1. GEREKSİZ DURUMLARDA ÇIK
     if (gameMode !== "private-room" && gameMode !== "random-match") return;
-    // Eğer oyun zaten başladıysa veya geri sayım zaten ekrandaysa çık
-    if (showCountdown || gameStarted || countdownServerTime || gameHasStartedRef.current) return;
+    if (showCountdown || gameStarted || gameHasStartedRef.current) return;
+
+    // 🛑 KİLİT NOKTASI: Eğer kontrol yapıldıysa ASLA tekrar girme!
     if (countdownCheckDoneRef.current) return;
 
     const realPlayers = participants.filter((p) => !p.is_bot && p.user_id !== null);
+    // 2. OYUNCU SAYISI KONTROLÜ
     if (realPlayers.length < 2) return;
+
+    // 🔒 HEMEN KİLİTLE: Daha işlem bitmeden tekrar girmesin diye en başta true yapıyoruz
+    countdownCheckDoneRef.current = true;
 
     const checkCountdown = async () => {
       if (!currentRoom?.id) return;
 
       try {
-        // 1. Veritabanından zamanı çek
-        let dbCountdownStart = null;
+        console.log("🔒 Countdown kontrolü başladı (Tek seferlik)...");
+
+        // A. Veritabanından zamanı çek
+        let targetGameStart = null;
+        let dbCountdownStart = null; // Animasyonun başlama zamanı (started_at - 10sn)
 
         const { data } = await supabase
           .from("game_rooms")
-          .select("countdown_started_at")
+          .select("started_at, countdown_started_at")
           .eq("id", currentRoom.id)
           .single();
 
-        // Eğer DB'de yoksa ve biz HOST isek başlat (RPC)
-        if (!data?.countdown_started_at) {
-          // RPC çağır (10sn buffer veren fonksiyon)
-          const { data: startedAt } = await supabase.rpc("start_game_countdown", {
+        // B. Veri yoksa ve HOST isek başlat (RPC)
+        if (!data?.started_at) {
+          console.log("⚠️ Sunucuda zaman yok - RPC ile başlatılıyor (10sn Buffer)...");
+          const { data: rpcDate } = await supabase.rpc("start_game_countdown", {
             p_room_id: currentRoom.id,
           });
-          dbCountdownStart = startedAt;
+
+          // RPC bize 'countdown_started_at' döner (Şu an)
+          if (rpcDate) {
+            dbCountdownStart = new Date(rpcDate).getTime();
+            targetGameStart = dbCountdownStart + 10000; // Oyun 10sn sonra
+          }
         } else {
-          dbCountdownStart = data.countdown_started_at;
+          // Veri varsa onu kullan
+          targetGameStart = new Date(data.started_at).getTime();
+          dbCountdownStart = new Date(data.countdown_started_at).getTime();
         }
 
-        if (!dbCountdownStart) return;
+        if (!targetGameStart) return;
 
-        // 2. Zaman Farkını Hesapla
-        const countdownStartTime = new Date(dbCountdownStart).getTime();
-        const targetGameStart = countdownStartTime + 10000; // RPC 10sn ekliyor demiştik
+        // C. Zaman Farkını Hesapla
         const serverNow = Date.now() + serverTimeOffset;
         const msUntilStart = targetGameStart - serverNow;
 
         console.log(`⏳ Oyunun başlamasına kalan süre: ${msUntilStart}ms`);
 
-        // 3. Duruma Göre Animasyon Seç
-        if (msUntilStart > 7000) {
-          // -- AŞAMA 1: Hazırlanıyor (En az 3 saniye vaktimiz var) --
+        // D. Zamanlamayı Yönet (Tek bir Timeout zinciri)
+
+        // Eğer 7 saniyeden fazla varsa: Önce "Hazırlanıyor" göster
+        if (msUntilStart > 7500) {
           setPreparingOpponent("preparing");
 
-          // Hesaplanan gecikmelerle diğer aşamalara geç
-          setTimeout(() => setPreparingOpponent("ready"), msUntilStart - 6000); // Son 6sn kala "Hazır"
-          setTimeout(() => setPreparingOpponent(null), msUntilStart - 3500); // Son 3.5sn kala yazıyı kaldır
+          // "Hazır" yazısına geçiş (Oyun başlamadan 6sn önce)
+          const timeToReady = msUntilStart - 6000;
+          setTimeout(() => setPreparingOpponent("ready"), timeToReady);
 
-          // Son 3.5 saniye kala Geri Sayım Bileşenini (3-2-1) aç
+          // "Hazır" yazısını kaldır (Oyun başlamadan 3.5sn önce)
+          const timeToClear = msUntilStart - 3500;
+          setTimeout(() => setPreparingOpponent(null), timeToClear);
+
+          // Geri Sayımı Başlat (Oyun başlamadan 3.5sn önce)
           setTimeout(() => {
-            setCountdownServerTime(dbCountdownStart);
+            // GameCountdown bileşeni kendi içinde 3'ten geriye sayar
+            // Ona 'countdown_started_at' veriyoruz ki senkron olsun
+            setCountdownServerTime(new Date(dbCountdownStart!).toISOString());
             setShowCountdown(true);
-            countdownCheckDoneRef.current = true;
-          }, msUntilStart - 3500);
-        } else if (msUntilStart > 4000) {
-          // -- AŞAMA 2: Geç kaldık, direkt "Hazır" de --
+          }, timeToClear);
+        }
+        // Vakit daraldıysa (4-7.5 sn)
+        else if (msUntilStart > 4000) {
           setPreparingOpponent("ready");
 
-          setTimeout(() => setPreparingOpponent(null), msUntilStart - 3500);
-
+          const timeToClear = msUntilStart - 3500;
           setTimeout(() => {
-            setCountdownServerTime(dbCountdownStart);
+            setPreparingOpponent(null);
+            setCountdownServerTime(new Date(dbCountdownStart!).toISOString());
             setShowCountdown(true);
-            countdownCheckDoneRef.current = true;
-          }, msUntilStart - 3500);
-        } else if (msUntilStart > 500) {
-          // -- AŞAMA 3: Çok geç kaldık, direkt Geri Sayım aç --
+          }, timeToClear);
+        }
+        // Çok geç kaldıysak direkt sayacı aç
+        else if (msUntilStart > 500) {
           setPreparingOpponent(null);
-          setCountdownServerTime(dbCountdownStart);
+          setCountdownServerTime(new Date(dbCountdownStart!).toISOString());
           setShowCountdown(true);
-          countdownCheckDoneRef.current = true;
-        } else {
-          // -- AŞAMA 4: Oyun çoktan başlamış --
-          // Hiç animasyon gösterme, direkt oyunu başlat
+        }
+        // Oyun başladıysa direkt başlat
+        else {
           setPreparingOpponent(null);
           setShowCountdown(false);
           setGameStarted(true);
-          countdownCheckDoneRef.current = true;
+          gameHasStartedRef.current = true;
         }
       } catch (error) {
-        console.error("❌ Countdown sync hatası:", error);
+        console.error("❌ Countdown hatası:", error);
+        // Hata olursa kilidi aç ki tekrar deneyebilsin (İsteğe bağlı)
+        // countdownCheckDoneRef.current = false;
       }
     };
 
