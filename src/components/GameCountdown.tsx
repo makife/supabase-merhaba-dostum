@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, memo } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 
 interface GameCountdownProps {
@@ -8,183 +9,189 @@ interface GameCountdownProps {
   serverTimeOffset?: number;
 }
 
-const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffset = 0 }: GameCountdownProps) => {
-  const [count, setCount] = useState<number | "start" | null>(null);
+// Memoized image component to prevent unnecessary re-renders
+const CountdownImage = memo(({ src, alt }: { src: string; alt: string }) => (
+  <img
+    src={src}
+    alt={alt}
+    className="w-[280px] h-[280px] sm:w-[360px] sm:h-[360px] md:w-[420px] md:h-[420px] object-contain"
+    style={{
+      willChange: "auto",
+      transform: "translateZ(0)",
+      backfaceVisibility: "hidden",
+    }}
+    loading="eager"
+    decoding="sync"
+  />
+));
+CountdownImage.displayName = "CountdownImage";
+
+// Image sources mapping
+const IMAGE_MAP: Record<string, string> = {
+  "5": "/bes.png",
+  "4": "/dort.png",
+  "3": "/uc.png",
+  "2": "/iki.png",
+  "1": "/bir.png",
+  "start": "/basla.png",
+};
+
+const GameCountdown = memo(({ onComplete, className, serverStartTime, serverTimeOffset = 0 }: GameCountdownProps) => {
+  const [currentImage, setCurrentImage] = useState<string | null>(null);
   
-  const audioPoolRef = useRef<HTMLAudioElement[]>([]);
-  const startAudioRef = useRef<HTMLAudioElement | null>(null);
   const hasCalledCompleteRef = useRef(false);
   const hasStartedRef = useRef(false);
   const isMountedRef = useRef(true);
+  const timersRef = useRef<NodeJS.Timeout[]>([]);
+  
+  // Audio refs - separate instances for each sound
+  const audioRefs = useRef<HTMLAudioElement[]>([]);
+  const startAudioRef = useRef<HTMLAudioElement | null>(null);
   const audioIndexRef = useRef(0);
-  const imagesRef = useRef<Map<string, HTMLImageElement>>(new Map());
 
-  // Preload everything on mount
+  // Preload everything on mount - run once
   useEffect(() => {
     isMountedRef.current = true;
     
-    // Create audio pool for countdown sounds (5 separate instances)
+    // Preload images immediately
+    Object.values(IMAGE_MAP).forEach(src => {
+      const img = new Image();
+      img.src = src;
+    });
+
+    // Create 5 audio instances for countdown sounds
     for (let i = 0; i < 5; i++) {
-      const audio = new Audio("/gerisayim.mp3");
+      const audio = new Audio();
+      audio.src = "/gerisayim.mp3";
       audio.preload = "auto";
       audio.volume = 0.7;
-      audio.load();
-      audioPoolRef.current.push(audio);
+      audioRefs.current.push(audio);
     }
     
     // Start sound
-    startAudioRef.current = new Audio("/basla.mp3");
+    startAudioRef.current = new Audio();
+    startAudioRef.current.src = "/basla.mp3";
     startAudioRef.current.preload = "auto";
     startAudioRef.current.volume = 0.7;
-    startAudioRef.current.load();
-
-    // Preload and cache images
-    const imageSources = [
-      { key: "5", src: "/bes.png" },
-      { key: "4", src: "/dort.png" },
-      { key: "3", src: "/uc.png" },
-      { key: "2", src: "/iki.png" },
-      { key: "1", src: "/bir.png" },
-      { key: "start", src: "/basla.png" },
-    ];
-    
-    imageSources.forEach(({ key, src }) => {
-      const img = new Image();
-      img.src = src;
-      img.onload = () => {
-        imagesRef.current.set(key, img);
-      };
-    });
 
     return () => {
       isMountedRef.current = false;
-      // Cleanup audio pool
-      audioPoolRef.current.forEach(audio => {
-        audio.pause();
-        audio.src = "";
+      timersRef.current.forEach(t => clearTimeout(t));
+      timersRef.current = [];
+      audioRefs.current.forEach(a => {
+        a.pause();
+        a.src = "";
       });
-      audioPoolRef.current = [];
+      audioRefs.current = [];
+      if (startAudioRef.current) {
+        startAudioRef.current.pause();
+        startAudioRef.current.src = "";
+      }
     };
   }, []);
 
-  // Play sound from pool (non-blocking)
-  const playCountdownSound = () => {
-    const audio = audioPoolRef.current[audioIndexRef.current];
+  // Play sound from pool
+  const playSound = () => {
+    const audio = audioRefs.current[audioIndexRef.current];
     if (audio) {
       audio.currentTime = 0;
-      audio.play().catch(() => {});
-      audioIndexRef.current = (audioIndexRef.current + 1) % audioPoolRef.current.length;
+      // Use setTimeout to make it non-blocking
+      setTimeout(() => audio.play().catch(() => {}), 0);
+      audioIndexRef.current = (audioIndexRef.current + 1) % 5;
     }
   };
 
-  // Main sequence logic
+  // Main countdown sequence
   useEffect(() => {
-    if (!serverStartTime) return;
-    if (hasStartedRef.current) return;
-
+    if (!serverStartTime || hasStartedRef.current) return;
+    
     console.log("🎯 GameCountdown başlatılıyor:", serverStartTime);
     hasStartedRef.current = true;
 
-    const timers: NodeJS.Timeout[] = [];
+    // Clear any existing timers
+    timersRef.current.forEach(t => clearTimeout(t));
+    timersRef.current = [];
 
-    // 5s buffer -> Show 5
-    timers.push(setTimeout(() => {
+    // Schedule all transitions upfront
+    // 5s buffer (invisible) -> then show countdown
+    
+    timersRef.current.push(setTimeout(() => {
       if (!isMountedRef.current) return;
-      setCount(5);
-      playCountdownSound();
+      setCurrentImage("5");
+      playSound();
     }, 5000));
 
-    // 6s -> 4
-    timers.push(setTimeout(() => {
+    timersRef.current.push(setTimeout(() => {
       if (!isMountedRef.current) return;
-      setCount(4);
-      playCountdownSound();
+      setCurrentImage("4");
+      playSound();
     }, 6000));
 
-    // 7s -> 3
-    timers.push(setTimeout(() => {
+    timersRef.current.push(setTimeout(() => {
       if (!isMountedRef.current) return;
-      setCount(3);
-      playCountdownSound();
+      setCurrentImage("3");
+      playSound();
     }, 7000));
 
-    // 8s -> 2
-    timers.push(setTimeout(() => {
+    timersRef.current.push(setTimeout(() => {
       if (!isMountedRef.current) return;
-      setCount(2);
-      playCountdownSound();
+      setCurrentImage("2");
+      playSound();
     }, 8000));
 
-    // 9s -> 1
-    timers.push(setTimeout(() => {
+    timersRef.current.push(setTimeout(() => {
       if (!isMountedRef.current) return;
-      setCount(1);
-      playCountdownSound();
+      setCurrentImage("1");
+      playSound();
     }, 9000));
 
-    // 10s -> Start
-    timers.push(setTimeout(() => {
+    timersRef.current.push(setTimeout(() => {
       if (!isMountedRef.current) return;
-      setCount("start");
-      startAudioRef.current?.play().catch(() => {});
+      setCurrentImage("start");
+      setTimeout(() => startAudioRef.current?.play().catch(() => {}), 0);
     }, 10000));
 
-    // 10.8s -> Complete
-    timers.push(setTimeout(() => {
-      if (!isMountedRef.current) return;
-      if (hasCalledCompleteRef.current) return;
-      
+    timersRef.current.push(setTimeout(() => {
+      if (!isMountedRef.current || hasCalledCompleteRef.current) return;
       hasCalledCompleteRef.current = true;
-      setCount(null);
-      
-      // Small delay before calling onComplete
-      requestAnimationFrame(() => {
-        if (!isMountedRef.current) return;
-        console.log("🚀 Countdown onComplete çağrılıyor");
-        onComplete();
-      });
+      setCurrentImage(null);
+      console.log("🚀 Countdown onComplete çağrılıyor");
+      onComplete();
     }, 10800));
 
     return () => {
-      timers.forEach(t => clearTimeout(t));
+      timersRef.current.forEach(t => clearTimeout(t));
     };
   }, [serverStartTime, onComplete]);
 
-  if (count === null) return null;
+  // Don't render if no image to show
+  if (!currentImage) return null;
 
-  const getImageSrc = (): string => {
-    if (count === "start") return "/basla.png";
-    const srcMap: Record<number, string> = {
-      1: "/bir.png",
-      2: "/iki.png",
-      3: "/uc.png",
-      4: "/dort.png",
-      5: "/bes.png",
-    };
-    return srcMap[count] || "/bes.png";
-  };
+  const imageSrc = IMAGE_MAP[currentImage];
+  if (!imageSrc) return null;
 
-  return (
+  // Use portal to render countdown in a separate DOM tree
+  // This isolates it from parent re-renders
+  const countdownContent = (
     <div 
       className={cn(
-        "fixed inset-0 z-50 flex items-center justify-center bg-black/60",
+        "fixed inset-0 z-[9999] flex items-center justify-center",
         className
       )}
+      style={{
+        backgroundColor: "rgba(0, 0, 0, 0.6)",
+        isolation: "isolate",
+        contain: "layout style paint",
+      }}
     >
-      <img
-        key={count}
-        src={getImageSrc()}
-        alt={String(count)}
-        className="w-[280px] h-[280px] sm:w-[360px] sm:h-[360px] md:w-[420px] md:h-[420px] object-contain"
-        style={{
-          willChange: "transform",
-          transform: "translateZ(0)",
-        }}
-        loading="eager"
-        decoding="async"
-      />
+      <CountdownImage src={imageSrc} alt={currentImage} />
     </div>
   );
-};
+
+  // Render via portal to document.body
+  return createPortal(countdownContent, document.body);
+});
+
+GameCountdown.displayName = "GameCountdown";
 
 export default GameCountdown;
