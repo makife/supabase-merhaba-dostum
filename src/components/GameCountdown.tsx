@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 
 interface GameCountdownProps {
@@ -8,45 +8,74 @@ interface GameCountdownProps {
   serverTimeOffset?: number;
 }
 
-type Phase = "waiting" | "countdown" | "start" | "done";
-
 const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffset = 0 }: GameCountdownProps) => {
-  const [phase, setPhase] = useState<Phase>("waiting");
-  const [count, setCount] = useState(5);
-  const [isVisible, setIsVisible] = useState(false);
-
-  const countdownAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [count, setCount] = useState<number | "start" | null>(null);
+  
+  const audioPoolRef = useRef<HTMLAudioElement[]>([]);
   const startAudioRef = useRef<HTMLAudioElement | null>(null);
   const hasCalledCompleteRef = useRef(false);
   const hasStartedRef = useRef(false);
   const isMountedRef = useRef(true);
+  const audioIndexRef = useRef(0);
+  const imagesRef = useRef<Map<string, HTMLImageElement>>(new Map());
 
-  // Preload audio
+  // Preload everything on mount
   useEffect(() => {
     isMountedRef.current = true;
     
-    countdownAudioRef.current = new Audio("/gerisayim.mp3");
-    startAudioRef.current = new Audio("/basla.mp3");
+    // Create audio pool for countdown sounds (5 separate instances)
+    for (let i = 0; i < 5; i++) {
+      const audio = new Audio("/gerisayim.mp3");
+      audio.preload = "auto";
+      audio.volume = 0.7;
+      audio.load();
+      audioPoolRef.current.push(audio);
+    }
     
-    [countdownAudioRef.current, startAudioRef.current].forEach((a) => {
-      if (a) {
-        a.preload = "auto";
-        a.volume = 0.7;
-        a.load();
-      }
-    });
+    // Start sound
+    startAudioRef.current = new Audio("/basla.mp3");
+    startAudioRef.current.preload = "auto";
+    startAudioRef.current.volume = 0.7;
+    startAudioRef.current.load();
 
-    // Preload images
-    const images = ["/bir.png", "/iki.png", "/uc.png", "/dort.png", "/bes.png", "/basla.png"];
-    images.forEach((src) => {
+    // Preload and cache images
+    const imageSources = [
+      { key: "5", src: "/bes.png" },
+      { key: "4", src: "/dort.png" },
+      { key: "3", src: "/uc.png" },
+      { key: "2", src: "/iki.png" },
+      { key: "1", src: "/bir.png" },
+      { key: "start", src: "/basla.png" },
+    ];
+    
+    imageSources.forEach(({ key, src }) => {
       const img = new Image();
       img.src = src;
+      img.onload = () => {
+        imagesRef.current.set(key, img);
+      };
     });
 
     return () => {
       isMountedRef.current = false;
+      // Cleanup audio pool
+      audioPoolRef.current.forEach(audio => {
+        audio.pause();
+        audio.src = "";
+      });
+      audioPoolRef.current = [];
     };
   }, []);
+
+  // Play sound from pool (non-blocking)
+  const playCountdownSound = () => {
+    const audio = audioPoolRef.current[audioIndexRef.current];
+    if (audio) {
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
+      audioIndexRef.current = (audioIndexRef.current + 1) % audioPoolRef.current.length;
+    }
+  };
 
   // Main sequence logic
   useEffect(() => {
@@ -56,59 +85,47 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
     console.log("🎯 GameCountdown başlatılıyor:", serverStartTime);
     hasStartedRef.current = true;
 
-    if (isMountedRef.current) {
-      setIsVisible(false); // Buffer süresinde görünmez
-      setPhase("waiting");
-    }
-
-    // Phase timings:
-    // 0-5000ms: buffer (invisible wait)
-    // 5000-10000ms: countdown 5,4,3,2,1 (5s)
-    // 10000ms+: start then complete
-
     const timers: NodeJS.Timeout[] = [];
 
-    // 5s -> Countdown starts at 5, now visible
+    // 5s buffer -> Show 5
     timers.push(setTimeout(() => {
       if (!isMountedRef.current) return;
-      setIsVisible(true);
-      setPhase("countdown");
       setCount(5);
-      countdownAudioRef.current?.play().catch(() => {});
+      playCountdownSound();
     }, 5000));
 
     // 6s -> 4
     timers.push(setTimeout(() => {
       if (!isMountedRef.current) return;
       setCount(4);
-      countdownAudioRef.current?.play().catch(() => {});
+      playCountdownSound();
     }, 6000));
 
     // 7s -> 3
     timers.push(setTimeout(() => {
       if (!isMountedRef.current) return;
       setCount(3);
-      countdownAudioRef.current?.play().catch(() => {});
+      playCountdownSound();
     }, 7000));
 
     // 8s -> 2
     timers.push(setTimeout(() => {
       if (!isMountedRef.current) return;
       setCount(2);
-      countdownAudioRef.current?.play().catch(() => {});
+      playCountdownSound();
     }, 8000));
 
     // 9s -> 1
     timers.push(setTimeout(() => {
       if (!isMountedRef.current) return;
       setCount(1);
-      countdownAudioRef.current?.play().catch(() => {});
+      playCountdownSound();
     }, 9000));
 
     // 10s -> Start
     timers.push(setTimeout(() => {
       if (!isMountedRef.current) return;
-      setPhase("start");
+      setCount("start");
       startAudioRef.current?.play().catch(() => {});
     }, 10000));
 
@@ -118,13 +135,14 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
       if (hasCalledCompleteRef.current) return;
       
       hasCalledCompleteRef.current = true;
-      setIsVisible(false);
+      setCount(null);
       
-      setTimeout(() => {
+      // Small delay before calling onComplete
+      requestAnimationFrame(() => {
         if (!isMountedRef.current) return;
         console.log("🚀 Countdown onComplete çağrılıyor");
         onComplete();
-      }, 200);
+      });
     }, 10800));
 
     return () => {
@@ -132,55 +150,39 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
     };
   }, [serverStartTime, onComplete]);
 
-  // Cleanup
-  useEffect(() => {
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
+  if (count === null) return null;
 
-  if (!isVisible) return null;
-
-  const getImageForCount = (num: number): string => {
-    const imageMap: Record<number, string> = {
+  const getImageSrc = (): string => {
+    if (count === "start") return "/basla.png";
+    const srcMap: Record<number, string> = {
       1: "/bir.png",
       2: "/iki.png",
       3: "/uc.png",
       4: "/dort.png",
       5: "/bes.png",
     };
-    return imageMap[num] || "/bes.png";
+    return srcMap[count] || "/bes.png";
   };
 
   return (
-    <div className={cn("fixed inset-0 z-50 flex items-center justify-center bg-black/60", className)}>
-      <div className="relative flex flex-col items-center gap-4">
-        
-        {/* Countdown Phase - 5s */}
-        {phase === "countdown" && (
-          <img
-            src={getImageForCount(count)}
-            alt={`${count}`}
-            className="w-[280px] h-[280px] sm:w-[360px] sm:h-[360px] md:w-[420px] md:h-[420px] object-contain"
-            style={{
-              filter: "drop-shadow(0 0 60px rgba(102, 126, 234, 0.9)) drop-shadow(0 0 30px rgba(244, 143, 177, 0.7))",
-            }}
-          />
-        )}
-
-        {/* Start Phase */}
-        {phase === "start" && (
-          <img
-            src="/basla.png"
-            alt="Başla"
-            className="w-[280px] h-[280px] sm:w-[360px] sm:h-[360px] md:w-[420px] md:h-[420px] object-contain scale-110"
-            style={{
-              filter: "drop-shadow(0 0 60px rgba(255, 107, 107, 0.9)) drop-shadow(0 0 30px rgba(255, 215, 0, 0.7))",
-            }}
-          />
-        )}
-
-      </div>
+    <div 
+      className={cn(
+        "fixed inset-0 z-50 flex items-center justify-center bg-black/60",
+        className
+      )}
+    >
+      <img
+        key={count}
+        src={getImageSrc()}
+        alt={String(count)}
+        className="w-[280px] h-[280px] sm:w-[360px] sm:h-[360px] md:w-[420px] md:h-[420px] object-contain"
+        style={{
+          willChange: "transform",
+          transform: "translateZ(0)",
+        }}
+        loading="eager"
+        decoding="async"
+      />
     </div>
   );
 };
