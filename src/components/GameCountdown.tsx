@@ -8,10 +8,10 @@ interface GameCountdownProps {
   serverTimeOffset?: number;
 }
 
-type Phase = "preparing" | "ready" | "pause" | "countdown" | "start" | "done";
+type Phase = "waiting" | "countdown" | "start" | "done";
 
 const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffset = 0 }: GameCountdownProps) => {
-  const [phase, setPhase] = useState<Phase>("preparing");
+  const [phase, setPhase] = useState<Phase>("waiting");
   const [count, setCount] = useState(5);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -57,34 +57,21 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
     hasStartedRef.current = true;
 
     if (isMountedRef.current) {
-      setIsVisible(true);
-      setPhase("preparing");
+      setIsVisible(false); // Buffer süresinde görünmez
+      setPhase("waiting");
     }
 
     // Phase timings:
-    // 0-3500ms: preparing (3.5s)
-    // 3500-4500ms: ready (1s)
-    // 4500-5000ms: pause (0.5s)
+    // 0-5000ms: buffer (invisible wait)
     // 5000-10000ms: countdown 5,4,3,2,1 (5s)
     // 10000ms+: start then complete
 
     const timers: NodeJS.Timeout[] = [];
 
-    // 3.5s -> Ready phase
+    // 5s -> Countdown starts at 5, now visible
     timers.push(setTimeout(() => {
       if (!isMountedRef.current) return;
-      setPhase("ready");
-    }, 3500));
-
-    // 4.5s -> Pause phase
-    timers.push(setTimeout(() => {
-      if (!isMountedRef.current) return;
-      setPhase("pause");
-    }, 4500));
-
-    // 5s -> Countdown starts at 5
-    timers.push(setTimeout(() => {
-      if (!isMountedRef.current) return;
+      setIsVisible(true);
       setPhase("countdown");
       setCount(5);
       countdownAudioRef.current?.play().catch(() => {});
@@ -169,35 +156,6 @@ const GameCountdown = ({ onComplete, className, serverStartTime, serverTimeOffse
     <div className={cn("fixed inset-0 z-50 flex items-center justify-center bg-black/60", className)}>
       <div className="relative flex flex-col items-center gap-4">
         
-        {/* Preparing Phase - 3.5s */}
-        {phase === "preparing" && (
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center">
-              <div className="w-16 h-16 rounded-full bg-primary/40 flex items-center justify-center">
-                <div className="w-8 h-8 rounded-full bg-primary" />
-              </div>
-            </div>
-            <p className="text-2xl font-bold text-white">Oyuncu Hazırlanıyor...</p>
-          </div>
-        )}
-
-        {/* Ready Phase - 1s */}
-        {phase === "ready" && (
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-24 h-24 rounded-full bg-green-500/30 flex items-center justify-center">
-              <svg className="w-12 h-12 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <p className="text-2xl font-bold text-green-400">Oyuncu Hazır!</p>
-          </div>
-        )}
-
-        {/* Pause Phase - 0.5s */}
-        {phase === "pause" && (
-          <div className="h-24" /> 
-        )}
-
         {/* Countdown Phase - 5s */}
         {phase === "countdown" && (
           <img
