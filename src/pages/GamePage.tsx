@@ -4685,89 +4685,91 @@ const GamePage = ({
 
   // ⏱️ Initial server countdown sync for private/random
   useEffect(() => {
-    if (gameMode !== "private-room" && gameMode !== "random-match") return;
+    if (
+      (gameMode === "private-room" || gameMode === "random-match") &&
+      currentRoom?.countdown_started_at &&
+      !showCountdown &&
+      !gameStarted &&
+      !countdownServerTime
+    ) {
+      console.log("⏰ Initial countdown sync from room state:", currentRoom.countdown_started_at);
 
-    const startTimeStr = currentRoom?.countdown_started_at;
+      // Server zamanını hesapla
+      const countdownStartTime = new Date(currentRoom.countdown_started_at).getTime();
+      const now = Date.now();
+      const serverNow = now + serverTimeOffset;
+      const timeDiff = countdownStartTime - serverNow;
 
-    if (!startTimeStr || showCountdown || gameStarted || countdownServerTime) return;
+      console.log("⏰ Countdown timing:", {
+        startTime: new Date(countdownStartTime).toISOString(),
+        serverNow: new Date(serverNow).toISOString(),
+        timeDiff,
+        willStartIn: Math.max(0, timeDiff),
+      });
 
-    console.log("⏰ Initial countdown sync başlatılıyor:", startTimeStr);
+      const timers: NodeJS.Timeout[] = [];
 
-    const countdownStartTime = new Date(startTimeStr).getTime();
-    const now = Date.now();
-    // ServerTimeOffset'i state'ten alıp değişkene atıyoruz
-    const currentOffset = serverTimeOffset;
-    const serverNow = now + currentOffset;
-    const timeDiff = countdownStartTime - serverNow;
+      // Eğer countdown zamanı geçmişse veya çok yakınsa direkt başlat
+      if (timeDiff <= 0) {
+        console.log("⏰ Countdown zamanı geçmiş, direkt başlatılıyor");
+        setPreparingOpponent(null);
+        setCountdownServerTime(currentRoom.countdown_started_at);
+        setShowCountdown(true);
+        setGameStarted(false);
+      } else if (timeDiff > 5000) {
+        // 5+ saniye var, son 5 saniyeyi bekle
+        const waitTime = timeDiff - 5000;
+        console.log(`⏰ ${Math.ceil(timeDiff / 1000)}s kaldı, son 5 saniyede animasyonlar başlayacak`);
 
-    const timers: NodeJS.Timeout[] = [];
+        const waitTimer = setTimeout(() => {
+          setPreparingOpponent("preparing");
 
-    // 1. DURUM: Süre zaten dolmuşsa direkt başlat
-    if (timeDiff <= 0) {
-      console.log("⏰ Süre dolmuş, direkt başlatılıyor");
-      setPreparingOpponent(null);
-      setCountdownServerTime(startTimeStr);
-      setShowCountdown(true);
-      setGameStarted(false);
-    }
-    // 2. DURUM: Süre 5 saniyeden fazlaysa (Normal Akış)
-    else if (timeDiff > 5000) {
-      const delayBeforeStart = timeDiff - 5000;
-      console.log(`⏰ Uzun bekleme. Delay: ${Math.ceil(delayBeforeStart / 1000)}sn`);
+          timers.push(setTimeout(() => setPreparingOpponent("ready"), 3500));
+          timers.push(setTimeout(() => setPreparingOpponent(null), 4000));
+          timers.push(
+            setTimeout(() => {
+              console.log("⏰ Countdown başlatılıyor");
+              setCountdownServerTime(currentRoom.countdown_started_at);
+              setShowCountdown(true);
+              setGameStarted(false);
+            }, 5000),
+          );
+        }, waitTime);
 
-      const sequenceTimer = setTimeout(() => {
+        timers.push(waitTimer);
+      } else if (timeDiff > 500) {
+        // 0.5-5 saniye arası, hemen animasyonları başlat
+        console.log(`⏰ ${Math.ceil(timeDiff / 1000)}s kaldı, animasyonlar hemen başlıyor`);
+
         setPreparingOpponent("preparing");
 
-        // 3.5 sn sonra Hazır
-        timers.push(setTimeout(() => setPreparingOpponent("ready"), 3500));
+        const prepTime = Math.floor(timeDiff * 0.7);
+        const readyTime = prepTime + Math.floor(timeDiff * 0.1);
 
-        // 4.5 sn sonra yazıyı temizle (Boşluk hissini azaltmak için 4000 yerine 4500 yaptık)
-        timers.push(setTimeout(() => setPreparingOpponent(null), 4500));
-
-        // 5.0 sn sonra Geri Sayım
+        timers.push(setTimeout(() => setPreparingOpponent("ready"), prepTime));
+        timers.push(setTimeout(() => setPreparingOpponent(null), readyTime));
         timers.push(
           setTimeout(() => {
-            setCountdownServerTime(startTimeStr);
+            console.log("⏰ Countdown başlatılıyor");
+            setCountdownServerTime(currentRoom.countdown_started_at);
             setShowCountdown(true);
             setGameStarted(false);
-          }, 5000),
+          }, timeDiff),
         );
-      }, delayBeforeStart);
+      } else {
+        // Çok az süre kaldı, direkt countdown başlat
+        console.log("⏰ Countdown hemen başlıyor (süre çok az)");
+        setPreparingOpponent(null);
+        setCountdownServerTime(currentRoom.countdown_started_at);
+        setShowCountdown(true);
+        setGameStarted(false);
+      }
 
-      timers.push(sequenceTimer);
+      return () => {
+        timers.forEach((timer) => clearTimeout(timer));
+      };
     }
-    // 3. DURUM: Süre 5 saniyeden azsa (Sıkıştırılmış Akış)
-    else {
-      console.log(`⏰ Kısa süre kaldı (${Math.ceil(timeDiff / 1000)}sn), animasyon sıkıştırılıyor`);
-
-      // Hemen hazırlanıyor ile başla
-      setPreparingOpponent("preparing");
-
-      // "Hazır" yazısını geri sayım başlamadan 1.5 saniye önce göster
-      // Eğer süre 1.5 saniyeden bile azsa, hemen "Hazır" göster
-      const readyDelay = Math.max(0, timeDiff - 1500);
-
-      // Yazıyı geri sayım başlamadan hemen önce (200ms) kaldır ki boşluk olmasın
-      const clearDelay = Math.max(0, timeDiff - 200);
-
-      timers.push(setTimeout(() => setPreparingOpponent("ready"), readyDelay));
-
-      timers.push(setTimeout(() => setPreparingOpponent(null), clearDelay));
-
-      // Tam 'timeDiff' süresi dolduğunda geri sayımı başlat
-      timers.push(
-        setTimeout(() => {
-          setCountdownServerTime(startTimeStr);
-          setShowCountdown(true);
-          setGameStarted(false);
-        }, timeDiff),
-      );
-    }
-
-    return () => {
-      timers.forEach((timer) => clearTimeout(timer));
-    };
-  }, [gameMode, currentRoom?.countdown_started_at, showCountdown, gameStarted]);
+  }, [gameMode, currentRoom?.countdown_started_at, showCountdown, gameStarted, serverTimeOffset, countdownServerTime]);
 
   // 🔍 Countdown eksiklik kontrolü: Eğer 2 oyuncu var ama countdown başlamamışsa kontrol et
   useEffect(() => {
