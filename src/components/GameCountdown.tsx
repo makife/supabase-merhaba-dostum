@@ -36,13 +36,13 @@ const START_DISPLAY_DURATION_MS = 800; // Show "start" for 800ms
  * - Both clients calculate the SAME value at the SAME wall-clock moment
  */
 const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 }: GameCountdownProps) => {
-  const [displayValue, setDisplayValue] = useState<number | "start" | null>(null);
+  const [displayValue, setDisplayValue] = useState<number | "start" | null>(5);
   const completedRef = useRef(false);
   const mountedRef = useRef(true);
   const lastPlayedSecondRef = useRef<number | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
   const startShownRef = useRef(false);
-  const initializedRef = useRef(false);
+  // 🔧 setInterval kullan - requestAnimationFrame tab arka planda durur
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -53,15 +53,9 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
   }, []);
 
   useEffect(() => {
-    // Prevent re-initialization after completion
+    // Prevent running after completion
     if (completedRef.current) {
-      console.log("⏱️ GameCountdown: Already completed, ignoring");
-      return;
-    }
-
-    // Prevent re-initialization with same serverStartTime
-    if (initializedRef.current && serverStartTime) {
-      console.log("⏱️ GameCountdown: Already initialized, ignoring re-trigger");
+      console.log("⏱️ GameCountdown: Already completed, skipping");
       return;
     }
 
@@ -73,6 +67,12 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       } catch {}
     };
 
+    // Clear any existing interval
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
     // If no server time provided, use legacy client-side mode
     if (!serverStartTime) {
       console.log("⏱️ GameCountdown: Legacy client-side mode (no serverStartTime)");
@@ -80,7 +80,6 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       setDisplayValue(5);
       playSound("/gerisayim.mp3");
       lastPlayedSecondRef.current = 5;
-      initializedRef.current = true;
       
       const timers: NodeJS.Timeout[] = [];
       timers.push(setTimeout(() => { if (mountedRef.current) { setDisplayValue(4); playSound("/gerisayim.mp3"); } }, 1000));
@@ -104,34 +103,45 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
     const startTimeMs = new Date(serverStartTime).getTime();
     const endTimeMs = startTimeMs + COUNTDOWN_DURATION_MS;
     
-    console.log("⏱️ GameCountdown: Server-authoritative mode", {
+    console.log("⏱️ GameCountdown: Server-authoritative mode starting", {
       serverStartTime,
       startTimeMs,
       endTimeMs: new Date(endTimeMs).toISOString(),
       serverTimeOffset,
-      localNow: Date.now(),
-      serverNow: Date.now() + serverTimeOffset,
     });
     
-    initializedRef.current = true;
+    // Play initial sound
+    const serverNow = Date.now() + serverTimeOffset;
+    const initialRemaining = Math.ceil((endTimeMs - serverNow) / 1000);
+    if (initialRemaining >= 1 && initialRemaining <= 5) {
+      setDisplayValue(initialRemaining);
+      playSound("/gerisayim.mp3");
+      lastPlayedSecondRef.current = initialRemaining;
+    }
     
-    const updateDisplay = () => {
-      if (completedRef.current || !mountedRef.current) return;
+    // Use setInterval for consistent updates (doesn't pause in background)
+    intervalRef.current = setInterval(() => {
+      if (completedRef.current || !mountedRef.current) {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+        return;
+      }
       
       const serverNow = Date.now() + serverTimeOffset;
       const remainingMs = endTimeMs - serverNow;
       const remainingSeconds = Math.ceil(remainingMs / 1000);
-      
-      // Debug log every second
-      if (remainingSeconds !== lastPlayedSecondRef.current && remainingSeconds >= 0 && remainingSeconds <= 5) {
-        console.log("⏱️ Countdown:", remainingSeconds, "remaining ms:", remainingMs);
-      }
       
       if (remainingMs <= -START_DISPLAY_DURATION_MS) {
         // Countdown finished 800ms ago - complete
         if (!completedRef.current) {
           completedRef.current = true;
           console.log("⏱️ GameCountdown: Completed");
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
           onComplete();
         }
         return;
@@ -153,24 +163,13 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
           lastPlayedSecondRef.current = remainingSeconds;
           playSound("/gerisayim.mp3");
         }
-      } else if (remainingSeconds > 5) {
-        // Still waiting to enter 5-second window
-        // Show nothing or show 5 if very close
-        if (remainingSeconds === 6) {
-          setDisplayValue(5);
-        }
       }
-      
-      // Continue animation loop
-      animationFrameRef.current = requestAnimationFrame(updateDisplay);
-    };
-    
-    // Start the animation loop immediately
-    animationFrameRef.current = requestAnimationFrame(updateDisplay);
+    }, 50); // 50ms interval for smooth updates
     
     return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
     };
   }, [onComplete, serverStartTime, serverTimeOffset]);
@@ -186,7 +185,7 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
     return "/bes.png"; // fallback
   };
 
-  // Don't render if no value yet (waiting for countdown window)
+  // Don't render if no value yet
   if (displayValue === null) {
     return null;
   }
