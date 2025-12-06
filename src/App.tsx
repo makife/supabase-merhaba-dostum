@@ -42,7 +42,7 @@ import MemoryGamePage from "@/pages/MemoryGamePage";
 import PuzzleGamePage from "@/pages/PuzzleGame";
 import GridSimonSaysPage from "@/pages/GridSimonSays";
 import ReactorRunnerPage from "@/pages/DinoRunner";
-import ReactorRunnerPage from "@/pages/ReactorDecrypt";
+import ReactorDecyrptPage from "@/pages/ReactorDecrypt";
 import SnakeGamePage from "@/pages/SnakeGame";
 import MorlesGamePage from "@/pages/MorlesGame";
 import { Capacitor } from "@capacitor/core";
