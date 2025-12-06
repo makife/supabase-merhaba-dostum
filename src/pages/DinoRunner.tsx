@@ -177,7 +177,7 @@ const DinoRunner = () => {
     dinoYRef.current = 0;
     dinoRotationRef.current = 0;
     velocityRef.current = 0;
-    speedRef.current = 3;
+    speedRef.current = 2;
     scoreRef.current = 0;
     setScore(0);
     
@@ -241,7 +241,7 @@ const DinoRunner = () => {
     }
 
     dinoRotationRef.current += speedRef.current * 4;
-    speedRef.current += 0.0007;
+    speedRef.current += 0.0003;
     scoreRef.current += 1;
 
     setDinoY(dinoYRef.current);
