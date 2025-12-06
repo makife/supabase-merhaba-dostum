@@ -10,13 +10,31 @@ const DinoRunner = () => {
     }
   };
 
+  // --- RENK PALETLERİ ---
+  const getRandomGradient = () => {
+    const gradients = [
+      "linear-gradient(180deg, #1a2a6c 0%, #b21f1f 100%)", // Klasik
+      "linear-gradient(180deg, #000428 0%, #004e92 100%)", // Gece
+      "linear-gradient(180deg, #16222A 0%, #3A6073 100%)", // Metalik
+      "linear-gradient(180deg, #134E5E 0%, #71B280 100%)", // Orman
+      "linear-gradient(180deg, #2C3E50 0%, #FD746C 100%)", // Gün Batımı
+      "linear-gradient(180deg, #403B4A 0%, #E7E9BB 100%)", // Sisli
+      "linear-gradient(180deg, #FF512F 0%, #DD2476 100%)", // Ateş
+    ];
+    return gradients[Math.floor(Math.random() * gradients.length)];
+  };
+
   // --- OYUN STATE'LERİ ---
   const [gameState, setGameState] = useState("waiting");
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
+  
+  // Level ve Görünüm State'leri
+  const [level, setLevel] = useState(1);
+  const [bgGradient, setBgGradient] = useState("linear-gradient(180deg, #1a2a6c 0%, #b21f1f 100%)");
 
-  // Render State'leri
+  // Fiziksel Render State'leri
   const [dinoY, setDinoY] = useState(0);
   const [dinoRotation, setDinoRotation] = useState(0);
   const [obstacles, setObstacles] = useState([]);
@@ -27,7 +45,10 @@ const DinoRunner = () => {
   // --- KELİME VE FEEDBACK SİSTEMİ ---
   const [wordList, setWordList] = useState<string[]>([]);
   const [targetWord, setTargetWord] = useState("");
-  const [collectedCount, setCollectedCount] = useState(0);
+  
+  // YENİ: Hangi indekslerin toplandığını tutan Set (Sıralı değil, slot bazlı)
+  const [collectedIndices, setCollectedIndices] = useState<Set<number>>(new Set());
+  
   const [wordNotification, setWordNotification] = useState("");
   const [feedback, setFeedback] = useState<{ text: string; type: "success" | "fail" } | null>(null);
 
@@ -45,7 +66,8 @@ const DinoRunner = () => {
 
   // Kelime Mantığı Ref'leri
   const targetWordRef = useRef("");
-  const collectedCountRef = useRef(0);
+  const collectedIndicesRef = useRef<Set<number>>(new Set());
+  const wordsClearedRef = useRef(0); // Level takibi için sayaç
   const spawnIndexRef = useRef(0);
 
   const nextObstacleTimeRef = useRef(0);
@@ -54,16 +76,9 @@ const DinoRunner = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
 
   const PRAISE_WORDS = [
-    "Mükemmel",
-    "Süper",
-    "Çok iyi!",
-    "Aferin",
-    "Helaaal",
-    "Yürü bee!",
-    "Fevkalade",
-    "İşte Azim",
-    "Maşallah",
-    "Biliyorsun bu işi :)",
+    "Mükemmel", "Süper", "Çok iyi!", "Aferin", 
+    "Helaaal", "Yürü bee!", "Fevkalade", "İşte Azim", 
+    "Maşallah", "Biliyorsun bu işi :)"
   ];
 
   // --- AYARLAR ---
@@ -88,10 +103,9 @@ const DinoRunner = () => {
       .then((r) => r.text())
       .then((t) =>
         setWordList(
-          t
-            .split("\n")
-            .map((w) => w.trim().toUpperCase())
-            .filter((w) => w.length > 0),
+          t.split("\n")
+           .map((w) => w.trim().toUpperCase())
+           .filter((w) => w.length > 0),
         ),
       )
       .catch(() => setWordList(["REAKTÖR", "ATOM", "ENERJİ", "FİSYON", "URANYUM"]));
@@ -100,9 +114,7 @@ const DinoRunner = () => {
   useEffect(() => {
     targetWordRef.current = targetWord;
   }, [targetWord]);
-  useEffect(() => {
-    collectedCountRef.current = collectedCount;
-  }, [collectedCount]);
+
   useEffect(() => {
     isMutedRef.current = isMuted;
   }, [isMuted]);
@@ -133,12 +145,15 @@ const DinoRunner = () => {
     const newWord = wordList[Math.floor(Math.random() * wordList.length)];
 
     setTargetWord(newWord);
-    setCollectedCount(0);
+    
+    // Set'i sıfırla
+    setCollectedIndices(new Set());
+    collectedIndicesRef.current = new Set();
+    
     setWordNotification(`HEDEF: ${newWord}`);
     setTimeout(() => setWordNotification(""), 2000);
 
     targetWordRef.current = newWord;
-    collectedCountRef.current = 0;
     spawnIndexRef.current = 0;
     nextLetterTimeRef.current = Date.now() + 1000;
   }, [wordList]);
@@ -165,6 +180,11 @@ const DinoRunner = () => {
     speedRef.current = 4;
     scoreRef.current = 0;
     setScore(0);
+    
+    // Level Sıfırlama
+    setLevel(1);
+    wordsClearedRef.current = 0;
+    setBgGradient("linear-gradient(180deg, #1a2a6c 0%, #b21f1f 100%)");
 
     obstaclesRef.current = [];
     lettersRef.current = [];
@@ -191,7 +211,6 @@ const DinoRunner = () => {
       startGame();
       return;
     }
-    // Flappy Bird stili: Havada da zıplanabilir
     velocityRef.current = JUMP_FORCE;
     playSound(600 + Math.random() * 200, "sine");
   };
@@ -212,7 +231,6 @@ const DinoRunner = () => {
     // Fizik
     velocityRef.current -= GRAVITY;
     dinoYRef.current += velocityRef.current;
-
     if (dinoYRef.current <= 0) {
       dinoYRef.current = 0;
       velocityRef.current = 0;
@@ -290,30 +308,53 @@ const DinoRunner = () => {
         height: LETTER_SIZE,
         collected: false,
       });
-
       spawnIndexRef.current++;
       nextLetterTimeRef.current = Date.now() + 800 + Math.random() * 600;
     }
 
+    // Harf Toplama (Set Mantığı)
     lettersRef.current.forEach((letter) => {
       if (letter.collected) return;
       const hitBox = { x: letter.x - 15, y: letter.y - 15, width: letter.width + 30, height: letter.height + 30 };
+      
       if (checkCollision(dinoRect, hitBox)) {
         letter.collected = true;
         playSound(1000, "square", 0.1);
         setScore((s) => s + 50);
-        setCollectedCount((prev) => prev + 1);
-        collectedCountRef.current += 1;
+        
+        // Yeni: Set güncelleme
+        const newSet = new Set(collectedIndicesRef.current);
+        newSet.add(letter.indexInWord);
+        collectedIndicesRef.current = newSet;
+        setCollectedIndices(new Set(newSet));
       }
     });
 
     const activeLetters = lettersRef.current.filter((l) => !l.collected);
     setLetters(activeLetters);
 
+    // Kelime Bitiş Kontrolü
     if (currentWord && spawnIndexRef.current >= currentWord.length && activeLetters.length === 0) {
-      if (collectedCountRef.current === currentWord.length) {
+      
+      const isWordComplete = collectedIndicesRef.current.size === currentWord.length;
+
+      if (isWordComplete) {
         setScore((s) => s + 500);
         showFeedback(true);
+        
+        // Level Mantığı
+        wordsClearedRef.current += 1;
+        
+        if (wordsClearedRef.current >= 3) {
+           setLevel(prev => prev + 1);
+           wordsClearedRef.current = 0; // Sıfırla
+           
+           // Yeni Gradient ve Ses
+           setBgGradient(getRandomGradient());
+           playSound(600, "sine", 0.5); 
+           setWordNotification(`SEVİYE ${level + 1}!`);
+        }
+
       } else {
         showFeedback(false);
       }
@@ -361,6 +402,10 @@ const DinoRunner = () => {
 
           <div className="score-board">
             <div className="score-item">
+              <span className="label">SEVİYE</span>
+              <span className="value">{level}</span>
+            </div>
+            <div className="score-item">
               <span className="label">PUAN</span>
               <span className="value">{score}</span>
             </div>
@@ -376,7 +421,11 @@ const DinoRunner = () => {
         </div>
 
         {/* OYUN ALANI */}
-        <div className="game-stage" onPointerDown={handleJump}>
+        <div 
+          className="game-stage" 
+          onPointerDown={handleJump}
+          style={{ background: bgGradient }} // Inline style ile dinamik renk
+        >
           {clouds.map((c) => (
             <div key={c.id} className="cloud" style={{ left: c.x, bottom: c.y }}>
               ☁️
@@ -427,12 +476,15 @@ const DinoRunner = () => {
               <div className="notification">{wordNotification}</div>
             ) : (
               <div className="word-display">
-                {targetWord.split("").map((char, i) => (
-                  <span key={i} className={`char-slot ${i < collectedCount ? "found" : ""}`}>
-                    {char}
-                  </span>
-                ))}
-                {/* Uzun kelime önizlemesini kaldırdık, harfler yeterli */}
+                {targetWord.split("").map((char, i) => {
+                  // YENİ: Set.has ile kontrol
+                  const isFound = collectedIndices.has(i);
+                  return (
+                    <span key={i} className={`char-slot ${isFound ? "found" : ""}`}>
+                      {char}
+                    </span>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -481,7 +533,8 @@ const DinoRunner = () => {
         }
 
         .game-container {
-            width: 100%; max-width: 600px;
+            width: 100%;
+            max-width: 600px;
             font-family: 'Segoe UI', sans-serif; user-select: none;
             position: relative;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
@@ -490,7 +543,8 @@ const DinoRunner = () => {
         }
         
         .top-bar {
-            display: flex; justify-content: space-between; align-items: center;
+            display: flex;
+            justify-content: space-between; align-items: center;
             padding: 12px 20px;
             color: #fff;
             background: rgba(0, 0, 0, 0.6);
@@ -500,7 +554,7 @@ const DinoRunner = () => {
         }
         
         .icon-btn {
-            background: rgba(255,255,255,0.1); 
+            background: rgba(255,255,255,0.1);
             border: 1px solid rgba(255,255,255,0.2); 
             color: white; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
@@ -518,11 +572,14 @@ const DinoRunner = () => {
         .score-item .value { font-size: 16px; font-weight: bold; font-family: monospace; color: #FFD700; }
 
         .game-stage {
-            position: relative; width: 100%; height: 350px;
-            background: linear-gradient(180deg, #1a2a6c 0%, #b21f1f 100%);
+            position: relative;
+            width: 100%; height: 350px;
+            /* background burada inline olarak veriliyor, css default kalabilir */
+            transition: background 1s ease; /* Renk geçişi yumuşak olsun */
             overflow: hidden; cursor: pointer;
             border: 2px solid rgba(255,255,255,0.1);
-            border-top: none; border-bottom: none;
+            border-top: none;
+            border-bottom: none;
         }
 
         .mobile-controls {
@@ -563,32 +620,37 @@ const DinoRunner = () => {
 
         .letter-box { position: absolute; display: flex; align-items: center; justify-content: center; z-index: 5; }
         .letter-inner {
-            width: 32px; height: 32px;
+            width: 32px;
+            height: 32px;
             background: rgba(255, 255, 255, 0.95);
             border: 3px solid #FFD700;
             border-radius: 50%;
             color: #d32f2f;
-            display: flex; align-items: center; justify-content: center;
+            display: flex; align-items: center;
+            justify-content: center;
             font-weight: 900;
             box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
             font-size: 20px; font-family: 'Arial Black', sans-serif;
         }
 
         .ground {
-            position: absolute; bottom: 0; left: 0; width: 100%;
+            position: absolute;
+            bottom: 0; left: 0; width: 100%;
             background: #111; border-top: 3px solid #444;
             background-image: linear-gradient(90deg, #333 2px, transparent 2px);
             background-size: 50px 100%;
         }
 
         .hud {
-            position: absolute; top: 15px; left: 0; width: 100%;
+            position: absolute;
+            top: 15px; left: 0; width: 100%;
             display: flex; justify-content: center; pointer-events: none;
             padding: 0 10px; box-sizing: border-box;
         }
         
         .word-display {
-            background: rgba(0,0,0,0.7); padding: 8px 12px;
+            background: rgba(0,0,0,0.7);
+            padding: 8px 12px;
             border-radius: 30px; border: 1px solid rgba(255,255,255,0.3);
             display: flex; flex-wrap: wrap; justify-content: center; gap: 4px;
             align-items: center;
@@ -597,7 +659,8 @@ const DinoRunner = () => {
         }
 
         .char-slot {
-            font-size: 20px; font-weight: bold; color: #666;
+            font-size: 20px;
+            font-weight: bold; color: #666;
             min-width: 15px; text-align: center; font-family: monospace;
             border-bottom: 2px solid #444;
         }
@@ -610,13 +673,15 @@ const DinoRunner = () => {
         .char-slot.found { color: #00ff00; border-color: #00ff00; text-shadow: 0 0 10px #00ff00; transform: scale(1.1); transition: all 0.2s; }
         
         .notification {
-            font-size: 28px; font-weight: bold; color: #fff;
+            font-size: 28px;
+            font-weight: bold; color: #fff;
             text-shadow: 0 0 20px #ff00de; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             text-align: center;
         }
 
         .feedback-popup {
-            position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
+            position: absolute;
+            top: 40%; left: 50%; transform: translate(-50%, -50%);
             font-size: 40px; font-weight: 900; z-index: 40;
             text-align: center; white-space: nowrap;
             animation: bounceIn 0.5s ease-out forwards, fadeOut 0.5s ease-in 1s forwards;
@@ -641,11 +706,13 @@ const DinoRunner = () => {
         @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
 
         .overlay {
-            position: absolute; inset: 0; background: rgba(0,0,0,0.8);
+            position: absolute;
+            inset: 0; background: rgba(0,0,0,0.8);
             display: flex; align-items: center; justify-content: center; z-index: 50; backdrop-filter: blur(5px);
         }
         .card {
-            background: #222; color: #fff; padding: 30px; border-radius: 20px;
+            background: #222;
+            color: #fff; padding: 30px; border-radius: 20px;
             text-align: center; border: 1px solid #444; box-shadow: 0 0 50px rgba(0,0,0,0.6);
         }
         .start-btn {
