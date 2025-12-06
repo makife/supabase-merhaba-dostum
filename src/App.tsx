@@ -6,12 +6,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { GameProvider, useGame } from "@/contexts/GameContext";
+import { GameProvider } from "@/contexts/GameContext";
 import { MusicProvider } from "@/contexts/MusicContext";
 import { UserProvider, useUser } from "@/contexts/UserContext";
 import { MatchmakingProvider } from "@/contexts/NewMatchmakingContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { TournamentProvider } from "@/contexts/TournamentContext";
+import { RematchProvider, useRematchContext } from "@/contexts/RematchContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ModeratorRoute from "@/components/ModeratorRoute";
 import LoadingScreen from "@/components/LoadingScreen";
@@ -46,15 +47,11 @@ import MorlesGamePage from "@/pages/MorlesGame";
 import { Capacitor } from "@capacitor/core";
 import { useImmersiveBars } from "@/hooks/useImmersiveBars";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
 import RoomAutoNavigator from "@/components/RoomAutoNavigator";
-import { ToastAction } from "@/components/ui/toast";
 import { RematchDialog } from "@/components/RematchDialog";
 import { useAppState } from "@/hooks/useAppState";
 import { realtimeManager } from "@/utils/realtimeManager";
 import { OnboardingPermissions } from "@/components/OnboardingPermissions";
-import { useToast } from "@/hooks/use-toast";
 
 const queryClient = new QueryClient();
 
@@ -375,148 +372,20 @@ const AppRoutes = () => {
   );
 };
 
-const GlobalRematchListener = () => {
-  const navigate = useNavigate();
-  const { user } = useAuth();
+// Global Rematch Dialog - artık RematchContext kullanıyor
+const GlobalRematchDialog = () => {
+  const { incomingRequest, acceptRematch, rejectRematch } = useRematchContext();
   const { profile } = useUser();
-  const { respondRematchRequest } = useGame();
-  const { toast } = useToast();
-  const [processedRequests, setProcessedRequests] = useState<Set<string>>(new Set());
-  const [rematchRequest, setRematchRequest] = useState<{
-    id: string;
-    senderId: string;
-    senderName: string;
-    senderAvatar: string | null;
-    roomId: string;
-  } | null>(null);
-
-  useEffect(() => {
-    if (!user?.id) return;
-
-    console.log("🎮 GlobalRematchListener: Initializing for user:", user.id);
-
-    const channel = supabase
-      .channel("global-rematch-listener")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "rematch_requests",
-          filter: `to_user_id=eq.${user.id}`,
-        },
-        async (payload) => {
-          const request = payload.new as any;
-          console.log("🔔 GlobalRematchListener: New rematch request received:", request);
-
-          // Duplicate guard
-          if (processedRequests.has(request.id)) {
-            console.log("⏭️ Already processed request:", request.id);
-            return;
-          }
-
-          setProcessedRequests((prev) => new Set([...prev, request.id]));
-
-          // Fetch sender profile
-          const { data: senderProfile } = await supabase
-            .from("profiles")
-            .select("username, avatar_url")
-            .eq("id", request.from_user_id)
-            .single();
-
-          const senderName = senderProfile?.username || "Bilinmeyen oyuncu";
-          const senderAvatar = senderProfile?.avatar_url || null;
-
-          // Dialog'u aç
-          setRematchRequest({
-            id: request.id,
-            senderId: request.from_user_id,
-            senderName,
-            senderAvatar,
-            roomId: request.room_code,
-          });
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "rematch_requests",
-          filter: `from_user_id=eq.${user.id}`,
-        },
-        async (payload) => {
-          const request = payload.new as any;
-          console.log("📬 GlobalRematchListener: Rematch response received:", request);
-
-          const responseKey = `response-${request.id}`;
-          if (processedRequests.has(responseKey)) {
-            console.log("⏭️ Already processed response:", responseKey);
-            return;
-          }
-
-          setProcessedRequests((prev) => new Set([...prev, responseKey]));
-
-          if (request.status === "accepted") {
-            console.log("✅ Rematch accepted, navigating to game:", request.room_code);
-            toast({
-              title: "✅ Rematch Kabul Edildi",
-              description: "Oyun başlıyor...",
-            });
-            // Odayı bul ve yönlendir
-            const { data: roomRow } = await supabase
-              .from("game_rooms")
-              .select("id, game_mode")
-              .eq("room_code", request.room_code)
-              .maybeSingle();
-
-            if (roomRow) {
-              const type = roomRow.game_mode?.includes("score") ? "score" : "timed";
-              navigate(`/private-room-waiting?code=${request.room_code}&roomId=${roomRow.id}&gameType=${type}`);
-            }
-          } else if (request.status === "rejected") {
-            console.log("❌ Rematch rejected");
-            toast({
-              title: "❌ Rematch Reddedildi",
-              description: "Oyuncu rematch isteğini reddetti.",
-              variant: "destructive",
-            });
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      console.log("🧹 GlobalRematchListener: Cleaning up");
-      supabase.removeChannel(channel);
-    };
-  }, [user?.id, navigate, respondRematchRequest, toast, processedRequests]);
-
-  const handleAccept = async () => {
-    if (!rematchRequest) return;
-    
-    console.log("✅ Accepting rematch:", rematchRequest.id);
-    await respondRematchRequest(rematchRequest.id, true);
-    setRematchRequest(null);
-  };
-
-  const handleReject = async () => {
-    if (!rematchRequest) return;
-    
-    console.log("❌ Rejecting rematch:", rematchRequest.id);
-    await respondRematchRequest(rematchRequest.id, false);
-    setRematchRequest(null);
-  };
 
   const hasEnoughCredits = (profile?.game_credits ?? 0) >= 1;
 
   return (
     <RematchDialog
-      open={!!rematchRequest}
-      onAccept={handleAccept}
-      onReject={handleReject}
-      senderName={rematchRequest?.senderName || ""}
-      senderAvatar={rematchRequest?.senderAvatar}
+      open={!!incomingRequest}
+      onAccept={acceptRematch}
+      onReject={rejectRematch}
+      senderName={incomingRequest?.senderName || ""}
+      senderAvatar={incomingRequest?.senderAvatar}
       hasEnoughCredits={hasEnoughCredits}
     />
   );
@@ -557,14 +426,16 @@ const App = () => {
                 <MusicProvider>
                   <MatchmakingWrapper>
                     <GameProvider>
-                        {/* GlobalRematchListener kaldırıldı - artık GamePage içinde useRematch hook'u kullanılıyor */}
+                      <RematchProvider>
+                        <GlobalRematchDialog />
                         <RoomAutoNavigator />
                         <TournamentProvider>
                           <NotificationProvider>
                             <AppRoutes />
                           </NotificationProvider>
                         </TournamentProvider>
-                      </GameProvider>
+                      </RematchProvider>
+                    </GameProvider>
                   </MatchmakingWrapper>
                 </MusicProvider>
               </ThemeProvider>

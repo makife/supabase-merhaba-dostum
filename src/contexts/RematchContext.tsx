@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface RematchRequest {
   id: string;
@@ -12,30 +14,50 @@ interface RematchRequest {
   created_at: string;
 }
 
-interface RematchState {
-  isSending: boolean;
-  isWaiting: boolean;
-  incomingRequest: {
-    id: string;
-    senderId: string;
-    senderName: string;
-    senderAvatar: string | null;
-    roomCode: string;
-    gameType: "timed" | "score";
-  } | null;
+interface IncomingRequest {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderAvatar: string | null;
+  roomCode: string;
+  gameType: "timed" | "score";
 }
 
-export const useRematch = (userId: string | undefined, opponentId: string | null) => {
+interface RematchContextType {
+  isSending: boolean;
+  isWaiting: boolean;
+  incomingRequest: IncomingRequest | null;
+  sendRematchRequest: (opponentId: string, gameType: "timed" | "score", currentGameMode: string) => Promise<boolean>;
+  acceptRematch: () => Promise<void>;
+  rejectRematch: () => Promise<void>;
+  resetRematchState: () => void;
+}
+
+const RematchContext = createContext<RematchContextType | undefined>(undefined);
+
+export const useRematchContext = () => {
+  const context = useContext(RematchContext);
+  if (!context) {
+    throw new Error("useRematchContext must be used within RematchProvider");
+  }
+  return context;
+};
+
+export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
   const { toast } = useToast();
-  const [state, setState] = useState<RematchState>({
-    isSending: false,
-    isWaiting: false,
-    incomingRequest: null,
-  });
+  const navigate = useNavigate();
+  
+  const [isSending, setIsSending] = useState(false);
+  const [isWaiting, setIsWaiting] = useState(false);
+  const [incomingRequest, setIncomingRequest] = useState<IncomingRequest | null>(null);
   
   const sendingRef = useRef(false);
   const processedRef = useRef<Set<string>>(new Set());
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const waitingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const userId = user?.id;
 
   // Generate room code
   const generateRoomCode = () => {
@@ -89,11 +111,11 @@ export const useRematch = (userId: string | undefined, opponentId: string | null
 
   // Send rematch request
   const sendRematchRequest = useCallback(async (
+    opponentId: string,
     gameType: "timed" | "score",
     currentGameMode: string
   ): Promise<boolean> => {
     if (!userId) {
-      console.error("❌ Rematch: userId yok");
       toast({
         title: "Hata",
         description: "Giriş yapmanız gerekiyor",
@@ -103,30 +125,24 @@ export const useRematch = (userId: string | undefined, opponentId: string | null
     }
     
     if (!opponentId) {
-      console.error("❌ Rematch: Opponent yok");
       toast({
         title: "Hata",
-        description: "Rakip bulunamadı. Lütfen ana menüye dönüp tekrar deneyin.",
+        description: "Rakip bulunamadı",
         variant: "destructive",
       });
       return false;
     }
 
-    // Concurrent guard
     if (sendingRef.current) {
-      console.warn("⚠️ Rematch zaten gönderiliyor");
       return false;
     }
     sendingRef.current = true;
+    setIsSending(true);
 
     try {
-      console.log("🔄 Rematch gönderiliyor:", {
-        from: userId.slice(-8),
-        to: opponentId.slice(-8),
-        gameType,
-      });
+      console.log("🔄 Rematch gönderiliyor:", { from: userId.slice(-8), to: opponentId.slice(-8) });
 
-      // Check opt-out status
+      // Check opt-out
       const { data: optOut } = await supabase
         .from("rematch_opt_outs")
         .select("opt_out_until")
@@ -142,14 +158,14 @@ export const useRematch = (userId: string | undefined, opponentId: string | null
         return false;
       }
 
-      // Cancel any existing pending requests between these users
+      // Cancel old pending requests
       await supabase
         .from("rematch_requests")
         .update({ status: "rejected", responded_at: new Date().toISOString() })
         .or(`and(from_user_id.eq.${userId},to_user_id.eq.${opponentId}),and(from_user_id.eq.${opponentId},to_user_id.eq.${userId})`)
         .eq("status", "pending");
 
-      // Create new room
+      // Create room
       const roomCode = generateRoomCode();
       const baseMode = currentGameMode?.includes("random-match") ? "random-match" : "private-room";
       const mode = `${baseMode}-${gameType}`;
@@ -169,11 +185,10 @@ export const useRematch = (userId: string | undefined, opponentId: string | null
         .single();
 
       if (roomError || !room) {
-        console.error("❌ Room oluşturulamadı:", roomError);
         throw new Error("Oda oluşturulamadı");
       }
 
-      // Add self as participant
+      // Add sender as participant
       await supabase.from("game_participants").insert({
         room_id: room.id,
         user_id: userId,
@@ -182,7 +197,7 @@ export const useRematch = (userId: string | undefined, opponentId: string | null
       });
 
       // Create rematch request
-      const { data: request, error: requestError } = await supabase
+      const { error: requestError } = await supabase
         .from("rematch_requests")
         .insert({
           room_code: roomCode,
@@ -190,53 +205,54 @@ export const useRematch = (userId: string | undefined, opponentId: string | null
           to_user_id: opponentId,
           status: "pending",
           game_type: gameType,
-        })
-        .select()
-        .single();
+        });
 
-      if (requestError) {
-        console.error("❌ Rematch request oluşturulamadı:", requestError);
-        throw new Error("Rematch isteği gönderilemedi");
-      }
+      if (requestError) throw new Error("Rematch isteği gönderilemedi");
 
-      console.log("✅ Rematch request oluşturuldu:", request.id);
-
-      // Get sender username for notification
+      // Get sender profile for notification
       const { data: profile } = await supabase
         .from("profiles")
         .select("username")
         .eq("id", userId)
         .single();
 
-      // Send notification
-      const gameTypeText = gameType === "timed" ? "Zamana Karşı" : "Skora Karşı";
+      // Create notification
       await supabase.rpc("create_notification", {
         p_user_id: opponentId,
         p_type: "rematch",
-        p_message: `${profile?.username || "Bir oyuncu"} tekrar oyun istiyor (${gameTypeText})`,
+        p_message: `${profile?.username || "Bir oyuncu"} tekrar oyun istiyor`,
         p_related_id: roomCode,
       });
 
-      // Send push notification
+      // Send push
       try {
         await supabase.functions.invoke("send-push-notification", {
           body: {
             receiverId: opponentId,
             title: "🔄 Rematch İsteği",
-            body: `${profile?.username || "Bir oyuncu"} tekrar oyun istiyor! (${gameTypeText})`,
+            body: `${profile?.username || "Bir oyuncu"} tekrar oyun istiyor!`,
             data: { type: "rematch", roomCode, gameType },
           },
         });
       } catch (e) {
-        console.warn("Push notification gönderilemedi:", e);
+        console.warn("Push notification gönderilemedi");
       }
 
-      setState(prev => ({ ...prev, isWaiting: true }));
-      
+      setIsWaiting(true);
       toast({
         title: "🔄 Tekrar Oyun İsteği Gönderildi",
         description: "Rakibinizin yanıtını bekliyoruz...",
       });
+
+      // Set timeout
+      waitingTimeoutRef.current = setTimeout(() => {
+        setIsWaiting(false);
+        toast({
+          title: "⏰ Süre Doldu",
+          description: "Rakibiniz yanıt vermedi.",
+          variant: "destructive",
+        });
+      }, 30000);
 
       return true;
     } catch (error: any) {
@@ -248,56 +264,34 @@ export const useRematch = (userId: string | undefined, opponentId: string | null
       });
       return false;
     } finally {
+      setIsSending(false);
       setTimeout(() => {
         sendingRef.current = false;
       }, 2000);
     }
-  }, [userId, opponentId, toast]);
+  }, [userId, toast]);
 
-  // Respond to rematch request
-  const respondToRematch = useCallback(async (
-    requestId: string,
-    accepted: boolean
-  ): Promise<{ roomCode?: string; roomId?: string; gameType?: string } | null> => {
-    if (!userId) return null;
+  // Accept rematch
+  const acceptRematch = useCallback(async () => {
+    if (!userId || !incomingRequest) return;
 
     try {
-      console.log("📝 Rematch yanıtı:", { requestId, accepted });
+      console.log("✅ Rematch kabul ediliyor:", incomingRequest.id);
 
-      // Get request details
-      const { data: request } = await supabase
-        .from("rematch_requests")
-        .select("*")
-        .eq("id", requestId)
-        .single();
-
-      if (!request) {
-        console.error("❌ Request bulunamadı");
-        return null;
-      }
-
-      // Update request status
-      const { error } = await supabase
+      // Update status
+      await supabase
         .from("rematch_requests")
         .update({
-          status: accepted ? "accepted" : "rejected",
+          status: "accepted",
           responded_at: new Date().toISOString(),
         })
-        .eq("id", requestId)
-        .eq("to_user_id", userId);
+        .eq("id", incomingRequest.id);
 
-      if (error) throw error;
-
-      if (!accepted) {
-        setState(prev => ({ ...prev, incomingRequest: null }));
-        return null;
-      }
-
-      // Get room info
+      // Get room
       const { data: room } = await supabase
         .from("game_rooms")
         .select("id, game_mode")
-        .eq("room_code", request.room_code)
+        .eq("room_code", incomingRequest.roomCode)
         .maybeSingle();
 
       if (!room) {
@@ -306,10 +300,11 @@ export const useRematch = (userId: string | undefined, opponentId: string | null
           description: "Oda bulunamadı",
           variant: "destructive",
         });
-        return null;
+        setIncomingRequest(null);
+        return;
       }
 
-      // Add self as participant if not already
+      // Add as participant
       const { data: existing } = await supabase
         .from("game_participants")
         .select("id")
@@ -328,47 +323,65 @@ export const useRematch = (userId: string | undefined, opponentId: string | null
 
       const gameType = room.game_mode?.includes("score") ? "score" : "timed";
       
-      setState(prev => ({ ...prev, incomingRequest: null }));
-
-      return {
-        roomCode: request.room_code,
-        roomId: room.id,
-        gameType,
-      };
+      setIncomingRequest(null);
+      
+      // Navigate
+      navigate(`/private-room-waiting?code=${incomingRequest.roomCode}&roomId=${room.id}&gameType=${gameType}`);
     } catch (error) {
-      console.error("❌ Rematch yanıt hatası:", error);
+      console.error("❌ Rematch kabul hatası:", error);
       toast({
         title: "Hata",
-        description: "Rematch işlemi başarısız",
+        description: "Rematch kabul edilemedi",
         variant: "destructive",
       });
-      return null;
     }
-  }, [userId, toast]);
+  }, [userId, incomingRequest, toast, navigate]);
+
+  // Reject rematch
+  const rejectRematch = useCallback(async () => {
+    if (!userId || !incomingRequest) return;
+
+    try {
+      console.log("❌ Rematch reddediliyor:", incomingRequest.id);
+
+      await supabase
+        .from("rematch_requests")
+        .update({
+          status: "rejected",
+          responded_at: new Date().toISOString(),
+        })
+        .eq("id", incomingRequest.id);
+
+      setIncomingRequest(null);
+    } catch (error) {
+      console.error("❌ Rematch red hatası:", error);
+    }
+  }, [userId, incomingRequest]);
 
   // Reset state
   const resetRematchState = useCallback(() => {
-    setState({
-      isSending: false,
-      isWaiting: false,
-      incomingRequest: null,
-    });
+    setIsSending(false);
+    setIsWaiting(false);
+    setIncomingRequest(null);
     processedRef.current.clear();
+    if (waitingTimeoutRef.current) {
+      clearTimeout(waitingTimeoutRef.current);
+      waitingTimeoutRef.current = null;
+    }
   }, []);
 
-  // Listen for rematch requests and responses
+  // Global listener for rematch requests
   useEffect(() => {
     if (!userId) return;
 
-    console.log("🎮 useRematch: Listener başlatılıyor:", userId.slice(-8));
+    console.log("🎮 RematchContext: Global listener başlatılıyor");
 
-    // Cleanup previous channel
     if (channelRef.current) {
       supabase.removeChannel(channelRef.current);
     }
 
     const channel = supabase
-      .channel(`rematch-${userId}`)
+      .channel(`global-rematch-${userId}`)
       .on(
         "postgres_changes",
         {
@@ -379,33 +392,35 @@ export const useRematch = (userId: string | undefined, opponentId: string | null
         },
         async (payload) => {
           const request = payload.new as RematchRequest;
-          console.log("🔔 Rematch isteği alındı:", request.id);
-
-          // Duplicate guard
-          if (processedRef.current.has(request.id)) {
-            console.log("⏭️ Zaten işlendi:", request.id);
-            return;
-          }
+          
+          // Skip if already processed
+          if (processedRef.current.has(request.id)) return;
           processedRef.current.add(request.id);
 
-          // Fetch sender profile
-          const { data: senderProfile } = await supabase
+          // Check if request is recent (within 30 seconds)
+          const requestAge = Date.now() - new Date(request.created_at).getTime();
+          if (requestAge > 30000) {
+            console.log("⏭️ Eski rematch isteği atlanıyor:", request.id);
+            return;
+          }
+
+          console.log("🔔 Yeni rematch isteği alındı:", request.id);
+
+          // Get sender profile
+          const { data: sender } = await supabase
             .from("profiles")
             .select("username, avatar_url")
             .eq("id", request.from_user_id)
             .single();
 
-          setState(prev => ({
-            ...prev,
-            incomingRequest: {
-              id: request.id,
-              senderId: request.from_user_id,
-              senderName: senderProfile?.username || "Bilinmeyen oyuncu",
-              senderAvatar: senderProfile?.avatar_url || null,
-              roomCode: request.room_code,
-              gameType: request.game_type,
-            },
-          }));
+          setIncomingRequest({
+            id: request.id,
+            senderId: request.from_user_id,
+            senderName: sender?.username || "Bilinmeyen oyuncu",
+            senderAvatar: sender?.avatar_url || null,
+            roomCode: request.room_code,
+            gameType: request.game_type,
+          });
         }
       )
       .on(
@@ -418,19 +433,20 @@ export const useRematch = (userId: string | undefined, opponentId: string | null
         },
         async (payload) => {
           const request = payload.new as RematchRequest;
-          console.log("📬 Rematch yanıtı alındı:", request.status);
-
-          const responseKey = `response-${request.id}`;
-          if (processedRef.current.has(responseKey)) {
-            console.log("⏭️ Yanıt zaten işlendi:", responseKey);
-            return;
-          }
+          
+          const responseKey = `resp-${request.id}`;
+          if (processedRef.current.has(responseKey)) return;
           processedRef.current.add(responseKey);
 
           if (request.status === "accepted") {
             console.log("✅ Rematch kabul edildi:", request.room_code);
             
-            // Get room info
+            if (waitingTimeoutRef.current) {
+              clearTimeout(waitingTimeoutRef.current);
+              waitingTimeoutRef.current = null;
+            }
+            setIsWaiting(false);
+
             const { data: room } = await supabase
               .from("game_rooms")
               .select("id, game_mode")
@@ -445,56 +461,55 @@ export const useRematch = (userId: string | undefined, opponentId: string | null
                 description: "Oyun başlıyor...",
               });
 
-              // Navigate to waiting page
-              window.location.href = `/private-room-waiting?code=${request.room_code}&roomId=${room.id}&gameType=${gameType}`;
+              navigate(`/private-room-waiting?code=${request.room_code}&roomId=${room.id}&gameType=${gameType}`);
             }
           } else if (request.status === "rejected") {
             console.log("❌ Rematch reddedildi");
+            
+            if (waitingTimeoutRef.current) {
+              clearTimeout(waitingTimeoutRef.current);
+              waitingTimeoutRef.current = null;
+            }
+            setIsWaiting(false);
+            
             toast({
               title: "❌ Rematch Reddedildi",
-              description: "Oyuncu rematch isteğini reddetti.",
+              description: "Rakip rematch isteğini reddetti.",
               variant: "destructive",
             });
-            setState(prev => ({ ...prev, isWaiting: false }));
           }
         }
       )
       .subscribe((status) => {
-        console.log("🔌 Rematch channel status:", status);
+        console.log("🔌 RematchContext channel:", status);
       });
 
     channelRef.current = channel;
 
     return () => {
-      console.log("🧹 useRematch: Listener temizleniyor");
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
+      if (waitingTimeoutRef.current) {
+        clearTimeout(waitingTimeoutRef.current);
+      }
     };
-  }, [userId, toast]);
+  }, [userId, toast, navigate]);
 
-  // Timeout for waiting state
-  useEffect(() => {
-    if (!state.isWaiting) return;
-
-    const timeout = setTimeout(() => {
-      console.log("⏰ Rematch timeout");
-      setState(prev => ({ ...prev, isWaiting: false }));
-      toast({
-        title: "⏰ Süre Doldu",
-        description: "Rakibiniz yanıt vermedi.",
-        variant: "destructive",
-      });
-    }, 30000); // 30 seconds timeout
-
-    return () => clearTimeout(timeout);
-  }, [state.isWaiting, toast]);
-
-  return {
-    ...state,
-    sendRematchRequest,
-    respondToRematch,
-    resetRematchState,
-  };
+  return (
+    <RematchContext.Provider
+      value={{
+        isSending,
+        isWaiting,
+        incomingRequest,
+        sendRematchRequest,
+        acceptRematch,
+        rejectRematch,
+        resetRematchState,
+      }}
+    >
+      {children}
+    </RematchContext.Provider>
+  );
 };
