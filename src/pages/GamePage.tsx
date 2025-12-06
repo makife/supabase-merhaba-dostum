@@ -28,9 +28,11 @@ import { useSounds } from "@/hooks/useSounds";
 import { useJokerInventory } from "@/hooks/useJokerInventory";
 import { useUserPurchases } from "@/hooks/useUserPurchases";
 import { useNativeGameplay } from "@/hooks/useNativeGameplay";
+import { useRematch } from "@/hooks/useRematch";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateServerOffset, startDriftMonitoring } from "@/utils/serverTimeSync";
 import GameCountdown from "@/components/GameCountdown";
+import { RematchDialog } from "@/components/RematchDialog";
 import {
   ArrowLeft,
   Clock,
@@ -650,8 +652,30 @@ const GamePage = ({
   const [matchmakingTimeout, setMatchmakingTimeout] = useState<NodeJS.Timeout | null>(null);
   const [timeoutCountdown, setTimeoutCountdown] = useState(30);
   const [showResults, setShowResults] = useState(false);
+// Rematch state
   const [rematchRequested, setRematchRequested] = useState(false);
   const [waitingForRematchResponse, setWaitingForRematchResponse] = useState(false);
+  
+  // 🎮 Rematch hook - opponent ID'yi participants veya currentRoom'dan al
+  const opponentId = useMemo(() => {
+    // Önce participants'tan bul
+    const opponent = participants.find((p) => !p.is_bot && p.user_id !== user?.id);
+    if (opponent?.user_id) return opponent.user_id;
+    
+    // Yoksa currentRoom'dan bul
+    if (currentRoom) {
+      return currentRoom.player1_id === user?.id ? currentRoom.player2_id : currentRoom.player1_id;
+    }
+    return null;
+  }, [participants, currentRoom, user?.id]);
+
+  const {
+    incomingRequest: rematchIncomingRequest,
+    isWaiting: rematchIsWaiting,
+    sendRematchRequest: sendRematchHook,
+    respondToRematch,
+    resetRematchState,
+  } = useRematch(user?.id, opponentId);
 
   // 🔒 Server time sync için state ve ref'ler
   const serverTimeReadyRef = useRef(false);
@@ -1133,13 +1157,23 @@ const GamePage = ({
   // ❌ KALDIRILDI: Gereksiz polling - winner zaten handleTournamentGameEnd içinde doğru şekilde belirleniyor
   // Bu polling sadece "Skor hesaplanıyor..." mesajı gösterip gereksiz gecikmeye neden oluyordu
 
-  const requestRematch = async () => {
+const requestRematch = async () => {
     if (!user) {
       console.error("❌ Rematch: User yok");
       return;
     }
 
-    console.log("🔄 Rematch isteği başlatılıyor...");
+    if (!opponentId) {
+      console.error("❌ Rematch: Opponent yok");
+      toast({
+        title: "Hata",
+        description: "Rakip bulunamadı",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log("🔄 Rematch isteği başlatılıyor (yeni hook)...");
 
     try {
       // Disconnect logic'i geçici olarak devre dışı bırak
@@ -1148,29 +1182,22 @@ const GamePage = ({
       setRematchRequested(true);
       setWaitingForRematchResponse(true);
 
-      // Rematch request gönder - currentRoom'dan kesin game type al
+      // Yeni hook ile rematch gönder
       const currentGameType: "timed" | "score" = currentRoom?.game_mode?.includes("score") ? "score" : "timed";
       console.log("🎮 Mevcut oyun türü:", currentGameType, "game_mode:", currentRoom?.game_mode);
-      await sendRematchRequest(currentRoom?.room_code || generateRoomCode(), currentGameType);
-
-      // 30 saniye timeout
-      setTimeout(() => {
-        if (waitingForRematchResponse) {
-          setWaitingForRematchResponse(false);
-          setRematchRequested(false);
-          disconnectHandledRef.current = false; // Timeout'ta tekrar aktif et
-          toast({
-            title: "Süre Doldu",
-            description: "Rakibiniz yanıt vermedi.",
-            variant: "destructive",
-          });
-        }
-      }, 30000);
+      
+      const success = await sendRematchHook(currentGameType, currentRoom?.game_mode || "private-room-timed");
+      
+      if (!success) {
+        setRematchRequested(false);
+        setWaitingForRematchResponse(false);
+        disconnectHandledRef.current = false;
+      }
     } catch (error) {
       console.error("Rematch request error:", error);
       setRematchRequested(false);
       setWaitingForRematchResponse(false);
-      disconnectHandledRef.current = false; // Hata durumunda da tekrar aktif et
+      disconnectHandledRef.current = false;
       toast({
         title: "Hata",
         description: "Tekrar oyun isteği gönderilemedi.",
@@ -4884,33 +4911,36 @@ const GamePage = ({
     isPlayingWithAI,
   ]);
 
-  // Lightweight sender-side rematch status listener (no navigation)
+// 🔄 useRematch hook'undan gelen state'leri senkronize et
   useEffect(() => {
-    if (!user || !waitingForRematchResponse) return;
-    const channel = supabase
-      .channel(`rematch-sender-${user.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "rematch_requests",
-          filter: `from_user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          const req = payload.new as any;
-          if (req?.status === "accepted" || req?.status === "rejected") {
-            setWaitingForRematchResponse(false);
-            setRematchRequested(false);
-            disconnectHandledRef.current = false;
-          }
-        },
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user?.id, waitingForRematchResponse]);
+    if (rematchIsWaiting) {
+      setWaitingForRematchResponse(true);
+    } else if (waitingForRematchResponse && !rematchIsWaiting) {
+      // Hook waiting'i kapattı (timeout veya response)
+      setWaitingForRematchResponse(false);
+      setRematchRequested(false);
+      disconnectHandledRef.current = false;
+    }
+  }, [rematchIsWaiting]);
+
+  // Gelen rematch isteğine yanıt ver
+  const handleRematchAccept = useCallback(async () => {
+    if (!rematchIncomingRequest) return;
+    
+    console.log("✅ Rematch kabul ediliyor:", rematchIncomingRequest.id);
+    const result = await respondToRematch(rematchIncomingRequest.id, true);
+    
+    if (result) {
+      navigate(`/private-room-waiting?code=${result.roomCode}&roomId=${result.roomId}&gameType=${result.gameType}`);
+    }
+  }, [rematchIncomingRequest, respondToRematch, navigate]);
+
+  const handleRematchReject = useCallback(async () => {
+    if (!rematchIncomingRequest) return;
+    
+    console.log("❌ Rematch reddediliyor:", rematchIncomingRequest.id);
+    await respondToRematch(rematchIncomingRequest.id, false);
+  }, [rematchIncomingRequest, respondToRematch]);
 
   // Touch olayları için optimize edilmiş handler
   const handleLetterTouch = (letter: string, row: number, col: number, event: React.TouchEvent) => {
@@ -6355,6 +6385,16 @@ const GamePage = ({
             </AlertDialog>
           </>
         )}
+
+        {/* Gelen Rematch İsteği Dialog'u */}
+        <RematchDialog
+          open={!!rematchIncomingRequest}
+          onAccept={handleRematchAccept}
+          onReject={handleRematchReject}
+          senderName={rematchIncomingRequest?.senderName || ""}
+          senderAvatar={rematchIncomingRequest?.senderAvatar}
+          hasEnoughCredits={(profile?.game_credits ?? 0) >= 1}
+        />
       </>
     </LayoutGroup>
   );

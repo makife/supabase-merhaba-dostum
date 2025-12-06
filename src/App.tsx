@@ -557,7 +557,7 @@ const App = () => {
                 <MusicProvider>
                   <MatchmakingWrapper>
                     <GameProvider>
-                        <GlobalRematchListener />
+                        {/* GlobalRematchListener kaldırıldı - artık GamePage içinde useRematch hook'u kullanılıyor */}
                         <RoomAutoNavigator />
                         <TournamentProvider>
                           <NotificationProvider>
