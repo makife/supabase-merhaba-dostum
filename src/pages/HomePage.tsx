@@ -18,7 +18,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { useJokerInventory } from "@/hooks/useJokerInventory";
-import { Brain, Grid3X3, Shield } from "lucide-react";
+import { Brain, Grid3X3, Lock, Shield } from "lucide-react";
 import { useMemoryGame } from "@/hooks/useMemoryGame";
 import { useMatchmaking } from "@/contexts/NewMatchmakingContext";
 import { nakamaService } from "@/services/nakamaService";
@@ -669,6 +669,30 @@ const HomePage = () => {
                       <Brain className={`absolute w-6 h-6 ${canPlayMemory ? "text-white/80" : "text-white/50"}`} />
                     </div>
                   </div>
+                                    {/* Şifre Çözücü (Reactor Decrypt) */}
+                  <div
+                    className="bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px]"
+                    onClick={() => navigate("/reactor-decrypt")}
+                  >
+                    <div className="flex-1">
+                      <h2 className="text-xl font-semibold text-white font-painter">Şifre Çözücü</h2>
+                    </div>
+                    
+                    {/* Mini Şifre İkonu */}
+                    <div className="relative w-12 h-12 flex items-center justify-center">
+                      {/* Arka plandaki dönen halka */}
+                      <div className="absolute w-10 h-10 border-2 border-dashed border-white/30 rounded-full animate-spin" style={{ animationDuration: "8s" }}></div>
+                      
+                      {/* Ortadaki Kilit */}
+                      <Lock className="w-5 h-5 text-white drop-shadow-md z-10" />
+                      
+                      {/* Yüzen harf parçacıkları */}
+                      <div className="absolute top-1 right-2 w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.8)]" style={{ animationDelay: "0s" }}></div>
+                      <div className="absolute bottom-2 left-1 w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(248,113,113,0.8)]" style={{ animationDelay: "0.5s" }}></div>
+                      <div className="absolute bottom-1 right-3 w-1 h-1 bg-white rounded-full animate-ping" style={{ animationDelay: "1s" }}></div>
+                    </div>
+                  </div>
+                  
 
                   {/* Morles Game */}
                   <div
