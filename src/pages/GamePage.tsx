@@ -28,11 +28,10 @@ import { useSounds } from "@/hooks/useSounds";
 import { useJokerInventory } from "@/hooks/useJokerInventory";
 import { useUserPurchases } from "@/hooks/useUserPurchases";
 import { useNativeGameplay } from "@/hooks/useNativeGameplay";
-import { useRematch } from "@/hooks/useRematch";
+import { useRematchContext } from "@/contexts/RematchContext";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateServerOffset, startDriftMonitoring } from "@/utils/serverTimeSync";
 import GameCountdown from "@/components/GameCountdown";
-import { RematchDialog } from "@/components/RematchDialog";
 import {
   ArrowLeft,
   Clock,
@@ -681,13 +680,11 @@ const GamePage = ({
     return savedOpponentIdRef.current;
   }, [participants, currentRoom, user?.id]);
 
+  // RematchContext'ten rematch fonksiyonlarını al
   const {
-    incomingRequest: rematchIncomingRequest,
     isWaiting: rematchIsWaiting,
-    sendRematchRequest: sendRematchHook,
-    respondToRematch,
-    resetRematchState,
-  } = useRematch(user?.id, opponentId);
+    sendRematchRequest: sendRematchContext,
+  } = useRematchContext();
 
   // 🔒 Server time sync için state ve ref'ler
   const serverTimeReadyRef = useRef(false);
@@ -1198,7 +1195,7 @@ const requestRematch = async () => {
       const currentGameType: "timed" | "score" = currentRoom?.game_mode?.includes("score") ? "score" : "timed";
       console.log("🎮 Mevcut oyun türü:", currentGameType, "game_mode:", currentRoom?.game_mode);
       
-      const success = await sendRematchHook(currentGameType, currentRoom?.game_mode || "private-room-timed");
+      const success = await sendRematchContext(opponentId, currentGameType, currentRoom?.game_mode || "private-room-timed");
       
       if (!success) {
         setRematchRequested(false);
@@ -4935,24 +4932,8 @@ const requestRematch = async () => {
     }
   }, [rematchIsWaiting]);
 
-  // Gelen rematch isteğine yanıt ver
-  const handleRematchAccept = useCallback(async () => {
-    if (!rematchIncomingRequest) return;
-    
-    console.log("✅ Rematch kabul ediliyor:", rematchIncomingRequest.id);
-    const result = await respondToRematch(rematchIncomingRequest.id, true);
-    
-    if (result) {
-      navigate(`/private-room-waiting?code=${result.roomCode}&roomId=${result.roomId}&gameType=${result.gameType}`);
-    }
-  }, [rematchIncomingRequest, respondToRematch, navigate]);
-
-  const handleRematchReject = useCallback(async () => {
-    if (!rematchIncomingRequest) return;
-    
-    console.log("❌ Rematch reddediliyor:", rematchIncomingRequest.id);
-    await respondToRematch(rematchIncomingRequest.id, false);
-  }, [rematchIncomingRequest, respondToRematch]);
+  // NOT: handleRematchAccept ve handleRematchReject artık global RematchContext tarafından yönetiliyor
+  // GamePage'de bu fonksiyonlara gerek yok - RematchDialog App.tsx'te global olarak render ediliyor
 
   // Touch olayları için optimize edilmiş handler
   const handleLetterTouch = (letter: string, row: number, col: number, event: React.TouchEvent) => {
@@ -6398,15 +6379,7 @@ const requestRematch = async () => {
           </>
         )}
 
-        {/* Gelen Rematch İsteği Dialog'u */}
-        <RematchDialog
-          open={!!rematchIncomingRequest}
-          onAccept={handleRematchAccept}
-          onReject={handleRematchReject}
-          senderName={rematchIncomingRequest?.senderName || ""}
-          senderAvatar={rematchIncomingRequest?.senderAvatar}
-          hasEnoughCredits={(profile?.game_credits ?? 0) >= 1}
-        />
+        {/* RematchDialog artık App.tsx'te global olarak render ediliyor */}
       </>
     </LayoutGroup>
   );
