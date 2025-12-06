@@ -154,7 +154,7 @@ const AppRoutes = () => {
           path="/game/random-match"
           element={
             <ProtectedRoute>
-              <RandomMatchPage />
+              <GamePage gameMode="random-match" />
             </ProtectedRoute>
           }
         />
