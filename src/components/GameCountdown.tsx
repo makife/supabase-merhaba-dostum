@@ -4,7 +4,9 @@ import { createPortal } from "react-dom";
 interface GameCountdownProps {
   onComplete: () => void;
   className?: string;
+  /** Server timestamp when countdown STARTS (not ends) - countdown lasts 5 seconds */
   serverStartTime?: string | null;
+  /** Local offset to sync with server time */
   serverTimeOffset?: number;
 }
 
@@ -21,17 +23,47 @@ if (typeof window !== "undefined") {
   });
 }
 
-const GameCountdown = memo(({ onComplete }: GameCountdownProps) => {
-  const [displayValue, setDisplayValue] = useState<number | "start">(5);
+const COUNTDOWN_DURATION_MS = 5000; // 5 seconds countdown
+const START_DISPLAY_DURATION_MS = 800; // Show "start" for 800ms
+
+/**
+ * Production-ready countdown component
+ * 
+ * Uses server-authoritative timing:
+ * - serverStartTime: when countdown begins
+ * - Calculates remaining time passively: remaining = (serverStartTime + 5000) - serverNow
+ * - NEVER resets - if time already passed, shows appropriate state
+ * - Both clients calculate the SAME value at the SAME wall-clock moment
+ */
+const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 }: GameCountdownProps) => {
+  const [displayValue, setDisplayValue] = useState<number | "start" | null>(null);
   const completedRef = useRef(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const mountedRef = useRef(true);
+  const lastPlayedSecondRef = useRef<number | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const startShownRef = useRef(false);
+  const initializedRef = useRef(false);
 
   useEffect(() => {
-    if (completedRef.current) return;
+    mountedRef.current = true;
+    
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
-    // Create single audio instance
-    audioRef.current = new Audio("/gerisayim.mp3");
-    audioRef.current.volume = 0.6;
+  useEffect(() => {
+    // Prevent re-initialization after completion
+    if (completedRef.current) {
+      console.log("⏱️ GameCountdown: Already completed, ignoring");
+      return;
+    }
+
+    // Prevent re-initialization with same serverStartTime
+    if (initializedRef.current && serverStartTime) {
+      console.log("⏱️ GameCountdown: Already initialized, ignoring re-trigger");
+      return;
+    }
 
     const playSound = (src: string) => {
       try {
@@ -41,34 +73,123 @@ const GameCountdown = memo(({ onComplete }: GameCountdownProps) => {
       } catch {}
     };
 
-    // Play initial sound
-    playSound("/gerisayim.mp3");
+    // If no server time provided, use legacy client-side mode
+    if (!serverStartTime) {
+      console.log("⏱️ GameCountdown: Legacy client-side mode (no serverStartTime)");
+      
+      setDisplayValue(5);
+      playSound("/gerisayim.mp3");
+      lastPlayedSecondRef.current = 5;
+      initializedRef.current = true;
+      
+      const timers: NodeJS.Timeout[] = [];
+      timers.push(setTimeout(() => { if (mountedRef.current) { setDisplayValue(4); playSound("/gerisayim.mp3"); } }, 1000));
+      timers.push(setTimeout(() => { if (mountedRef.current) { setDisplayValue(3); playSound("/gerisayim.mp3"); } }, 2000));
+      timers.push(setTimeout(() => { if (mountedRef.current) { setDisplayValue(2); playSound("/gerisayim.mp3"); } }, 3000));
+      timers.push(setTimeout(() => { if (mountedRef.current) { setDisplayValue(1); playSound("/gerisayim.mp3"); } }, 4000));
+      timers.push(setTimeout(() => { if (mountedRef.current) { setDisplayValue("start"); playSound("/basla.mp3"); } }, 5000));
+      timers.push(setTimeout(() => {
+        if (!completedRef.current && mountedRef.current) {
+          completedRef.current = true;
+          onComplete();
+        }
+      }, 5800));
 
-    // Simple countdown: 5 -> 4 -> 3 -> 2 -> 1 -> start -> complete
-    const timers: NodeJS.Timeout[] = [];
+      return () => {
+        timers.forEach(clearTimeout);
+      };
+    }
 
-    timers.push(setTimeout(() => { setDisplayValue(4); playSound("/gerisayim.mp3"); }, 1000));
-    timers.push(setTimeout(() => { setDisplayValue(3); playSound("/gerisayim.mp3"); }, 2000));
-    timers.push(setTimeout(() => { setDisplayValue(2); playSound("/gerisayim.mp3"); }, 3000));
-    timers.push(setTimeout(() => { setDisplayValue(1); playSound("/gerisayim.mp3"); }, 4000));
-    timers.push(setTimeout(() => { setDisplayValue("start"); playSound("/basla.mp3"); }, 5000));
-    timers.push(setTimeout(() => {
-      if (!completedRef.current) {
-        completedRef.current = true;
-        onComplete();
+    // Server-authoritative mode
+    const startTimeMs = new Date(serverStartTime).getTime();
+    const endTimeMs = startTimeMs + COUNTDOWN_DURATION_MS;
+    
+    console.log("⏱️ GameCountdown: Server-authoritative mode", {
+      serverStartTime,
+      startTimeMs,
+      endTimeMs: new Date(endTimeMs).toISOString(),
+      serverTimeOffset,
+      localNow: Date.now(),
+      serverNow: Date.now() + serverTimeOffset,
+    });
+    
+    initializedRef.current = true;
+    
+    const updateDisplay = () => {
+      if (completedRef.current || !mountedRef.current) return;
+      
+      const serverNow = Date.now() + serverTimeOffset;
+      const remainingMs = endTimeMs - serverNow;
+      const remainingSeconds = Math.ceil(remainingMs / 1000);
+      
+      // Debug log every second
+      if (remainingSeconds !== lastPlayedSecondRef.current && remainingSeconds >= 0 && remainingSeconds <= 5) {
+        console.log("⏱️ Countdown:", remainingSeconds, "remaining ms:", remainingMs);
       }
-    }, 5800));
-
-    return () => {
-      timers.forEach(clearTimeout);
+      
+      if (remainingMs <= -START_DISPLAY_DURATION_MS) {
+        // Countdown finished 800ms ago - complete
+        if (!completedRef.current) {
+          completedRef.current = true;
+          console.log("⏱️ GameCountdown: Completed");
+          onComplete();
+        }
+        return;
+      }
+      
+      if (remainingMs <= 0 && remainingMs > -START_DISPLAY_DURATION_MS) {
+        // Show "start" for 800ms after countdown ends
+        if (!startShownRef.current) {
+          startShownRef.current = true;
+          setDisplayValue("start");
+          playSound("/basla.mp3");
+        }
+      } else if (remainingSeconds >= 1 && remainingSeconds <= 5) {
+        // Show countdown number (5, 4, 3, 2, 1)
+        setDisplayValue(remainingSeconds);
+        
+        // Play sound only once per second
+        if (lastPlayedSecondRef.current !== remainingSeconds) {
+          lastPlayedSecondRef.current = remainingSeconds;
+          playSound("/gerisayim.mp3");
+        }
+      } else if (remainingSeconds > 5) {
+        // Still waiting to enter 5-second window
+        // Show nothing or show 5 if very close
+        if (remainingSeconds === 6) {
+          setDisplayValue(5);
+        }
+      }
+      
+      // Continue animation loop
+      animationFrameRef.current = requestAnimationFrame(updateDisplay);
     };
-  }, [onComplete]);
+    
+    // Start the animation loop immediately
+    animationFrameRef.current = requestAnimationFrame(updateDisplay);
+    
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [onComplete, serverStartTime, serverTimeOffset]);
 
   // Get image source
   const getImageSrc = () => {
     if (displayValue === "start") return "/basla.png";
-    return `/${displayValue === 5 ? "bes" : displayValue === 4 ? "dort" : displayValue === 3 ? "uc" : displayValue === 2 ? "iki" : "bir"}.png`;
+    if (displayValue === 5) return "/bes.png";
+    if (displayValue === 4) return "/dort.png";
+    if (displayValue === 3) return "/uc.png";
+    if (displayValue === 2) return "/iki.png";
+    if (displayValue === 1) return "/bir.png";
+    return "/bes.png"; // fallback
   };
+
+  // Don't render if no value yet (waiting for countdown window)
+  if (displayValue === null) {
+    return null;
+  }
 
   return createPortal(
     <div

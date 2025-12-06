@@ -609,6 +609,11 @@ const GamePage = ({
   const [showCountdown, setShowCountdown] = useState(false);
   const [countdownServerTime, setCountdownServerTime] = useState<string | null>(null);
   const [preparingOpponent, setPreparingOpponent] = useState<"preparing" | "ready" | null>(null);
+  
+  // 🔒 CRITICAL: Countdown tek seferlik başlatma guard'ı
+  // Bu ref true olduktan sonra countdown ASLA yeniden başlatılamaz
+  // Production oyunlardaki gibi: sunucu zamanı bir kez belirlenir, client sadece hesaplar
+  const countdownInitiatedRef = useRef(false);
 
   // ⚠️ CRITICAL: Track component mount status to prevent ghost timer updates
   useEffect(() => {
@@ -1165,6 +1170,29 @@ const GamePage = ({
     }
   };
 
+  // 🔒 PRODUCTION-READY: Merkezi countdown başlatma fonksiyonu
+  // Bu fonksiyon countdown'ın sadece BİR KERE başlatılmasını garanti eder
+  // Birden fazla trigger (real-time subscription, initial load, event) olsa bile
+  // countdown asla reset edilmez
+  const initiateCountdown = useCallback((serverTime: string) => {
+    if (countdownInitiatedRef.current) {
+      console.log("⏱️ Countdown zaten başlatıldı, yeniden başlatma engellendi");
+      return false;
+    }
+    
+    if (gameStarted) {
+      console.log("⏱️ Oyun zaten başladı, countdown atlandı");
+      return false;
+    }
+    
+    console.log("⏱️ Countdown başlatılıyor (tek seferlik):", serverTime);
+    countdownInitiatedRef.current = true;
+    setCountdownServerTime(serverTime);
+    setShowCountdown(true);
+    setPreparingOpponent(null);
+    return true;
+  }, [gameStarted]);
+
   // 4. resetGameForRematch fonksiyonunu ekleyin:
   const resetGameForRematch = () => {
     console.log("🔄 resetGameForRematch: Başlatılıyor");
@@ -1211,6 +1239,7 @@ const GamePage = ({
     // Countdown, server zamanıyla veya vs-computer'da local zamanla başlatılacak
     setCountdownServerTime(null);
     setShowCountdown(false);
+    countdownInitiatedRef.current = false; // 🔒 Rematch için countdown guard'ı sıfırla
     setGameStarted(false);
     setGameEnded(false);
     gameEndedRef.current = false; // 🔒 Reset ref too
@@ -2875,41 +2904,11 @@ const GamePage = ({
 
           setTournamentMatch(matchData);
 
-          // 🎯 SERVER-SIDE COUNTDOWN SYNC - RPC zaten buffer eklemiş
-          if (matchData.countdown_started_at && !showCountdown && !gameStarted && !countdownServerTime) {
+          // 🎯 SERVER-SIDE COUNTDOWN SYNC - Merkezi fonksiyon kullan
+          if (matchData.countdown_started_at && !countdownInitiatedRef.current) {
             console.log("🎯 Tournament countdown başlatılıyor (initial load):", matchData.countdown_started_at);
-            const countdownStartTime = new Date(matchData.countdown_started_at).getTime();
-            const serverNow = Date.now() + serverTimeOffset;
-            const timeDiff = countdownStartTime - serverNow;
-
-            if (timeDiff > 5000) {
-              console.log(
-                `🎯 Tournament countdown ${Math.ceil(timeDiff / 1000)} saniye sonra, animasyonlar son 5 saniyede`,
-              );
-              setTimeout(() => {
-                setPreparingOpponent("preparing");
-                setTimeout(() => setPreparingOpponent("ready"), 3500);
-                setTimeout(() => setPreparingOpponent(null), 4000);
-                setTimeout(() => {
-                  setCountdownServerTime(matchData.countdown_started_at);
-                  setShowCountdown(true);
-                }, 5000);
-              }, timeDiff - 5000);
-            } else if (timeDiff > 1000) {
-              const prepDuration = Math.max(0, timeDiff - 1500);
-              const clearDuration = Math.max(0, timeDiff - 1000);
-              setPreparingOpponent("preparing");
-              setTimeout(() => setPreparingOpponent("ready"), prepDuration);
-              setTimeout(() => setPreparingOpponent(null), clearDuration);
-              setTimeout(() => {
-                setCountdownServerTime(matchData.countdown_started_at);
-                setShowCountdown(true);
-              }, timeDiff);
-            } else {
-              setPreparingOpponent(null);
-              setCountdownServerTime(matchData.countdown_started_at);
-              setShowCountdown(true);
-            }
+            // Direkt başlat - GameCountdown server zamanına göre hesaplayacak
+            initiateCountdown(matchData.countdown_started_at);
           }
         }
 
@@ -3421,40 +3420,12 @@ const GamePage = ({
           // ------------------------------------------------------------
           // 🎯 1. COUNTDOWN MANTIĞI - SADECE OYUN BAŞLAMADIYSA
           // ------------------------------------------------------------
-          // ⚠️ OYUN BAŞLADIYSA COUNTDOWN'U TEKRAR BAŞLATMA
-          if (gameStarted || showCountdown) {
-            console.log("⚠️ Oyun zaten aktif - countdown sync atlandı");
-          } else if (newData.countdown_started_at && !countdownServerTime) {
+          // 🔒 Countdown zaten başlatıldıysa hiçbir şey yapma
+          if (countdownInitiatedRef.current) {
+            console.log("⚠️ Countdown zaten başlatıldı - real-time event yok sayıldı");
+          } else if (newData.countdown_started_at) {
             console.log("🎯 Tournament countdown başlatılıyor (real-time):", newData.countdown_started_at);
-            const countdownStartTime = new Date(newData.countdown_started_at).getTime();
-            const serverNow = Date.now() + serverTimeOffset;
-            const timeDiff = countdownStartTime - serverNow;
-
-            if (timeDiff > 5000) {
-              setTimeout(() => {
-                setPreparingOpponent("preparing");
-                setTimeout(() => setPreparingOpponent("ready"), 3500);
-                setTimeout(() => setPreparingOpponent(null), 4000);
-                setTimeout(() => {
-                  setCountdownServerTime(newData.countdown_started_at);
-                  setShowCountdown(true);
-                }, 5000);
-              }, timeDiff - 5000);
-            } else if (timeDiff > 1000) {
-              const prepDuration = Math.max(0, timeDiff - 1500);
-              const clearDuration = Math.max(0, timeDiff - 1000);
-              setPreparingOpponent("preparing");
-              setTimeout(() => setPreparingOpponent("ready"), prepDuration);
-              setTimeout(() => setPreparingOpponent(null), clearDuration);
-              setTimeout(() => {
-                setCountdownServerTime(newData.countdown_started_at);
-                setShowCountdown(true);
-              }, timeDiff);
-            } else {
-              setPreparingOpponent(null);
-              setCountdownServerTime(newData.countdown_started_at);
-              setShowCountdown(true);
-            }
+            initiateCountdown(newData.countdown_started_at);
           }
 
           // ------------------------------------------------------------
@@ -3525,38 +3496,10 @@ const GamePage = ({
           console.log("🎮 Game room güncellendi:", payload);
           const newData = payload.new as any;
 
-          // 🎯 SERVER-SIDE COUNTDOWN SYNC - RPC zaten buffer eklemiş
-          if (newData.countdown_started_at && !showCountdown && !gameStarted && !countdownServerTime) {
+          // 🔒 Merkezi countdown guard - sadece BİR KERE başlat
+          if (newData.countdown_started_at && !countdownInitiatedRef.current) {
             console.log("🎯 Game room countdown başlatılıyor (server-sync):", newData.countdown_started_at);
-            const countdownStartTime = new Date(newData.countdown_started_at).getTime();
-            const serverNow = Date.now() + serverTimeOffset;
-            const timeDiff = countdownStartTime - serverNow;
-
-            if (timeDiff > 5000) {
-              setTimeout(() => {
-                setPreparingOpponent("preparing");
-                setTimeout(() => setPreparingOpponent("ready"), 3500);
-                setTimeout(() => setPreparingOpponent(null), 4000);
-                setTimeout(() => {
-                  setCountdownServerTime(newData.countdown_started_at);
-                  setShowCountdown(true);
-                }, 5000);
-              }, timeDiff - 5000);
-            } else if (timeDiff > 1000) {
-              const prepDuration = Math.max(0, timeDiff - 1500);
-              const clearDuration = Math.max(0, timeDiff - 1000);
-              setPreparingOpponent("preparing");
-              setTimeout(() => setPreparingOpponent("ready"), prepDuration);
-              setTimeout(() => setPreparingOpponent(null), clearDuration);
-              setTimeout(() => {
-                setCountdownServerTime(newData.countdown_started_at);
-                setShowCountdown(true);
-              }, timeDiff);
-            } else {
-              setPreparingOpponent(null);
-              setCountdownServerTime(newData.countdown_started_at);
-              setShowCountdown(true);
-            }
+            initiateCountdown(newData.countdown_started_at);
           }
         },
       )
