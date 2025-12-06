@@ -25,6 +25,7 @@ import SettingsPage from "@/pages/SettingsPage";
 import MarketPage from "@/pages/MarketPage";
 import TestMatchmakingPage from "@/pages/TestMatchmakingPage";
 import SyncTestPage from "@/pages/SyncTestPage";
+import RandomMatchPage from "@/pages/RandomMatchPage";
 import NakamaGamePage from "@/pages/NakamaGamePage";
 import NotFound from "./pages/NotFound";
 import LeaderboardPage from "@/pages/LeaderboardPage";
@@ -153,7 +154,7 @@ const AppRoutes = () => {
           path="/game/random-match"
           element={
             <ProtectedRoute>
-              <GamePage gameMode="random-match" />
+              <RandomMatchPage />
             </ProtectedRoute>
           }
         />
