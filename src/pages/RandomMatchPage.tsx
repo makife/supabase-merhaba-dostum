@@ -204,9 +204,17 @@ const RandomMatchPage = () => {
     };
   }, []);
 
+  // ============= REDIRECT IF NO ROOM =============
+  useEffect(() => {
+    if (!roomId || roomId === "ROOM_ID") {
+      console.log("⚠️ Geçersiz room ID, ana sayfaya yönlendiriliyor...");
+      navigate("/", { replace: true });
+    }
+  }, [roomId, navigate]);
+
   // ============= LOAD ROOM & OPPONENT =============
   useEffect(() => {
-    if (!roomId || !user) return;
+    if (!roomId || roomId === "ROOM_ID" || !user) return;
 
     const loadRoom = async () => {
       try {
@@ -218,7 +226,13 @@ const RandomMatchPage = () => {
           .single();
 
         if (roomError || !roomData) {
-          setError("Oda bulunamadı");
+          console.log("❌ Oda bulunamadı, ana sayfaya yönlendiriliyor...");
+          toast({
+            title: "Oda bulunamadı",
+            description: "Eşleşme bulunamadı veya süresi doldu.",
+            variant: "destructive",
+          });
+          navigate("/", { replace: true });
           return;
         }
 
@@ -262,12 +276,17 @@ const RandomMatchPage = () => {
 
       } catch (err) {
         console.error("Room load error:", err);
-        setError("Oda yüklenirken hata oluştu");
+        toast({
+          title: "Bağlantı hatası",
+          description: "Oda yüklenirken hata oluştu.",
+          variant: "destructive",
+        });
+        navigate("/", { replace: true });
       }
     };
 
     loadRoom();
-  }, [roomId, user]);
+  }, [roomId, user, navigate, toast]);
 
   // ============= REALTIME SUBSCRIPTION =============
   useEffect(() => {
