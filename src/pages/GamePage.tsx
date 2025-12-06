@@ -656,17 +656,29 @@ const GamePage = ({
   const [rematchRequested, setRematchRequested] = useState(false);
   const [waitingForRematchResponse, setWaitingForRematchResponse] = useState(false);
   
-  // 🎮 Rematch hook - opponent ID'yi participants veya currentRoom'dan al
+  // 🎮 Opponent ID - ref ile sakla ki oyun bittiğinde kaybolmasın
+  const savedOpponentIdRef = useRef<string | null>(null);
+  
+  // Opponent ID'yi hesapla ve ref'e kaydet
   const opponentId = useMemo(() => {
     // Önce participants'tan bul
     const opponent = participants.find((p) => !p.is_bot && p.user_id !== user?.id);
-    if (opponent?.user_id) return opponent.user_id;
+    if (opponent?.user_id) {
+      savedOpponentIdRef.current = opponent.user_id;
+      return opponent.user_id;
+    }
     
     // Yoksa currentRoom'dan bul
     if (currentRoom) {
-      return currentRoom.player1_id === user?.id ? currentRoom.player2_id : currentRoom.player1_id;
+      const id = currentRoom.player1_id === user?.id ? currentRoom.player2_id : currentRoom.player1_id;
+      if (id) {
+        savedOpponentIdRef.current = id;
+        return id;
+      }
     }
-    return null;
+    
+    // State temizlenmiş olabilir, ref'ten al
+    return savedOpponentIdRef.current;
   }, [participants, currentRoom, user?.id]);
 
   const {
