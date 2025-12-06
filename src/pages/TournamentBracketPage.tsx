@@ -42,12 +42,31 @@ const TournamentBracketPage = () => {
     }
   }, [currentTournament?.current_round]);
 
+  // Track if this client already started matches for this round
+  const matchesStartedRef = useRef<string | null>(null);
+
   const startAllMatches = async (forceRound?: number) => {
-    if (!tournamentId) return;
+    if (!tournamentId || !user) return;
+
+    // Only creator can start matches to prevent race conditions
+    const isCreator = currentTournament?.creator_id === user.id;
+    if (!isCreator) {
+      console.log("⏭️ Not creator, skipping startAllMatches");
+      return;
+    }
+
+    const currentRound = forceRound ?? (currentTournament?.current_round || 1);
+    const roundKey = `${tournamentId}-${currentRound}`;
+    
+    // Prevent double-starting same round
+    if (matchesStartedRef.current === roundKey) {
+      console.log("⏭️ Already started matches for this round");
+      return;
+    }
+    matchesStartedRef.current = roundKey;
 
     try {
-      const currentRound = forceRound ?? (currentTournament?.current_round || 1);
-      console.log(`🎬 Starting matches for round ${currentRound}...`);
+      console.log(`🎬 Creator starting matches for round ${currentRound}...`);
 
       const { data: updateResult, error: updateError } = await supabase
         .from("tournament_matches")
@@ -59,6 +78,7 @@ const TournamentBracketPage = () => {
 
       if (updateError) {
         console.error("❌ Failed to update matches to in_progress:", updateError);
+        matchesStartedRef.current = null; // Reset on error
         return;
       }
 
@@ -66,10 +86,20 @@ const TournamentBracketPage = () => {
       await simulateBotMatches(currentRound);
     } catch (e) {
       console.error("Error starting matches:", e);
+      matchesStartedRef.current = null;
     }
   };
 
   const simulateBotMatches = async (round: number) => {
+    if (!user) return;
+    
+    // Only creator simulates bot matches
+    const isCreator = currentTournament?.creator_id === user.id;
+    if (!isCreator) {
+      console.log("⏭️ Not creator, skipping bot simulation");
+      return;
+    }
+
     try {
       console.log(`🤖 simulateBotMatches called for round ${round}`);
 
@@ -107,6 +137,7 @@ const TournamentBracketPage = () => {
         if (hasNullPlayer) continue;
 
         if (player1IsBot && player2IsBot) {
+          // Both bots - complete immediately with random scores
           const player1Score = Math.floor(Math.random() * 50) + 20;
           const player2Score = Math.floor(Math.random() * 50) + 20;
           const winnerId = player1Score > player2Score ? match.player1_id : match.player2_id;
@@ -121,15 +152,8 @@ const TournamentBracketPage = () => {
               updated_at: new Date().toISOString(),
             })
             .eq("id", match.id);
-        } else {
-          await supabase
-            .from("tournament_matches")
-            .update({
-              room_id: match.id,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", match.id);
-
+        } else if (!match.countdown_started_at) {
+          // Real player match - start countdown if not started
           const { data: countdownStart, error: rpcError } = await supabase.rpc("start_game_countdown", {
             p_room_id: match.id,
           });
@@ -255,29 +279,16 @@ const TournamentBracketPage = () => {
     }
   }, [matches, tournamentId, currentTournament, user, playSpecialSound, showChampion, showEliminated]);
 
-  const botSimulationTriggeredRef = useRef<string | null>(null);
-  
-  useEffect(() => {
-    if (!tournamentId || !currentTournament || currentTournament.status !== "in_progress") return;
-    if (matches.length === 0) return;
-
-    const currentRound = currentTournament.current_round;
-    if (!currentRound) return;
-
-    const inProgressMatches = matches.filter((m) => m.round === currentRound && m.status === "in_progress");
-
-    if (inProgressMatches.length > 0) {
-      const roundKey = `${tournamentId}-${currentRound}`;
-      if (botSimulationTriggeredRef.current === roundKey) return;
-      
-      botSimulationTriggeredRef.current = roundKey;
-      simulateBotMatches(currentRound);
-    }
-  }, [tournamentId, currentTournament?.status, currentTournament?.current_round, matches]);
+  // Removed duplicate bot simulation trigger - now handled only by creator in startAllMatches
 
   useEffect(() => {
     if (!tournamentId || !currentTournament || currentTournament.status !== "in_progress") return;
+    if (!user) return;
     if (matches.length === 0) return;
+
+    // Only creator advances rounds to prevent race conditions
+    const isCreator = currentTournament.creator_id === user.id;
+    if (!isCreator) return;
 
     const currentRound = currentTournament.current_round;
     if (!currentRound) return;
@@ -292,7 +303,7 @@ const TournamentBracketPage = () => {
         checkAndAdvanceRound(currentRound);
       }, 1000);
     }
-  }, [matches, currentTournament, tournamentId]);
+  }, [matches, currentTournament, tournamentId, user]);
 
   useEffect(() => {
     if (!currentTournament || currentTournament.status !== "in_progress") return;
