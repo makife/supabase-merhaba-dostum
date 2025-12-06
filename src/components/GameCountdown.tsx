@@ -1,124 +1,99 @@
-import { useState, useEffect, useRef, memo } from "react";
+import { useEffect, useRef, memo, useState } from "react";
 import { createPortal } from "react-dom";
-import { cn } from "@/lib/utils";
 
 interface GameCountdownProps {
   onComplete: () => void;
   className?: string;
-  // serverStartTime ve offset artık gereksiz, çünkü bu bileşen
-  // ekrana geldiği an saymaya başlayacak. Zamanlamayı GamePage yönetiyor.
   serverStartTime?: string | null;
   serverTimeOffset?: number;
 }
 
-// Resim yolları
-const IMAGE_MAP: Record<string, string> = {
-  "5": "/bes.png",
-  "4": "/dort.png",
-  "3": "/uc.png",
-  "2": "/iki.png",
-  "1": "/bir.png",
-  start: "/basla.png",
-};
+// Preload images immediately when module loads
+const IMAGE_PATHS = ["/bes.png", "/dort.png", "/uc.png", "/iki.png", "/bir.png", "/basla.png"];
+const preloadedImages: HTMLImageElement[] = [];
 
-const GameCountdown = memo(({ onComplete, className }: GameCountdownProps) => {
-  const [count, setCount] = useState(5);
-  const [showStart, setShowStart] = useState(false);
+// Preload on module load - not in component
+if (typeof window !== "undefined") {
+  IMAGE_PATHS.forEach((src) => {
+    const img = new Image();
+    img.src = src;
+    preloadedImages.push(img);
+  });
+}
 
-  // Sesler için basit referanslar
-  const beepAudio = useRef<HTMLAudioElement | null>(null);
-  const startAudio = useRef<HTMLAudioElement | null>(null);
+const GameCountdown = memo(({ onComplete }: GameCountdownProps) => {
+  const [displayValue, setDisplayValue] = useState<number | "start">(5);
+  const completedRef = useRef(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Sesleri yükle
   useEffect(() => {
-    beepAudio.current = new Audio("/gerisayim.mp3");
-    startAudio.current = new Audio("/basla.mp3");
-    beepAudio.current.volume = 0.7;
-    startAudio.current.volume = 0.7;
+    if (completedRef.current) return;
 
-    // Resimleri preload et (tarayıcı önbelleğine al)
-    Object.values(IMAGE_MAP).forEach((src) => {
-      const img = new Image();
-      img.src = src;
-    });
-  }, []);
+    // Create single audio instance
+    audioRef.current = new Audio("/gerisayim.mp3");
+    audioRef.current.volume = 0.6;
 
-  // Sayaç Mantığı
-  useEffect(() => {
-    // 1. Fonksiyon: Sesi çal
-    const playBeep = () => {
-      if (beepAudio.current) {
-        beepAudio.current.currentTime = 0;
-        beepAudio.current.play().catch(() => {});
-      }
+    const playSound = (src: string) => {
+      try {
+        const audio = new Audio(src);
+        audio.volume = 0.6;
+        audio.play().catch(() => {});
+      } catch {}
     };
 
-    const playStart = () => {
-      if (startAudio.current) {
-        startAudio.current.currentTime = 0;
-        startAudio.current.play().catch(() => {});
+    // Play initial sound
+    playSound("/gerisayim.mp3");
+
+    // Simple countdown: 5 -> 4 -> 3 -> 2 -> 1 -> start -> complete
+    const timers: NodeJS.Timeout[] = [];
+
+    timers.push(setTimeout(() => { setDisplayValue(4); playSound("/gerisayim.mp3"); }, 1000));
+    timers.push(setTimeout(() => { setDisplayValue(3); playSound("/gerisayim.mp3"); }, 2000));
+    timers.push(setTimeout(() => { setDisplayValue(2); playSound("/gerisayim.mp3"); }, 3000));
+    timers.push(setTimeout(() => { setDisplayValue(1); playSound("/gerisayim.mp3"); }, 4000));
+    timers.push(setTimeout(() => { setDisplayValue("start"); playSound("/basla.mp3"); }, 5000));
+    timers.push(setTimeout(() => {
+      if (!completedRef.current) {
+        completedRef.current = true;
+        onComplete();
       }
+    }, 5800));
+
+    return () => {
+      timers.forEach(clearTimeout);
     };
-
-    // İlk açılışta 5. saniye sesi
-    playBeep();
-
-    const timer = setInterval(() => {
-      setCount((prev) => {
-        const next = prev - 1;
-
-        if (next > 0) {
-          playBeep(); // 4, 3, 2, 1 sesleri
-        } else if (next === 0) {
-          // 0 olduğunda "BAŞLA" gösterilecek
-          playStart(); // Başla sesi
-          setShowStart(true);
-        } else {
-          // -1 olduğunda bitir
-          clearInterval(timer);
-          // Küçük bir gecikme ile onComplete çağır (Start yazısı görünsün)
-          setTimeout(() => {
-            onComplete();
-          }, 800);
-        }
-        return next;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
   }, [onComplete]);
 
-  // Render edilecek resim
-  let imageSrc = null;
-  if (showStart) {
-    imageSrc = IMAGE_MAP["start"];
-  } else if (count > 0) {
-    imageSrc = IMAGE_MAP[String(count)];
-  }
+  // Get image source
+  const getImageSrc = () => {
+    if (displayValue === "start") return "/basla.png";
+    return `/${displayValue === 5 ? "bes" : displayValue === 4 ? "dort" : displayValue === 3 ? "uc" : displayValue === 2 ? "iki" : "bir"}.png`;
+  };
 
-  if (!imageSrc) return null;
-
-  // Portal kullanarak body'ye render et (z-index sorunlarını çözer)
   return createPortal(
     <div
-      className={cn(
-        "fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300",
-        className,
-      )}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 9999,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "rgba(0, 0, 0, 0.7)",
+      }}
     >
-      <div key={showStart ? "start" : count} className="animate-bounce-in">
-        <img
-          src={imageSrc}
-          alt={showStart ? "Başla" : String(count)}
-          className="w-[280px] h-[280px] sm:w-[360px] sm:h-[360px] object-contain drop-shadow-2xl"
-          style={{
-            willChange: "transform",
-            filter: "drop-shadow(0 0 20px rgba(255,255,255,0.3))",
-          }}
-        />
-      </div>
+      <img
+        key={String(displayValue)}
+        src={getImageSrc()}
+        alt={String(displayValue)}
+        style={{
+          width: 280,
+          height: 280,
+          objectFit: "contain",
+        }}
+      />
     </div>,
-    document.body,
+    document.body
   );
 });
 
