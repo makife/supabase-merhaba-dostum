@@ -157,6 +157,9 @@ const RandomMatchPage = () => {
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const countdownInitiatedRef = useRef(false);
+  const statsUpdatedRef = useRef(false);
+  const gameStartTimeRef = useRef<number>(0);
+  const firstWordTimeRef = useRef<number | null>(null);
 
   // ============= ROOM STATE =============
   const [room, setRoom] = useState<RoomData | null>(null);
@@ -170,8 +173,13 @@ const RandomMatchPage = () => {
   const [playerScore, setPlayerScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
   const [playerWords, setPlayerWords] = useState<string[]>([]);
+  const [playerWordsWithScores, setPlayerWordsWithScores] = useState<{ word: string; score: number }[]>([]);
   const [usedWords, setUsedWords] = useState<Set<string>>(new Set());
   const [displayTime, setDisplayTime] = useState(GAME_DURATION);
+
+  // ============= WORDLIST STATE =============
+  const [wordlist, setWordlist] = useState<Set<string>>(new Set());
+  const [wordlistLoaded, setWordlistLoaded] = useState(false);
 
   // ============= UI STATE =============
   const [showCountdown, setShowCountdown] = useState(false);
@@ -189,6 +197,30 @@ const RandomMatchPage = () => {
 
   // Derived state
   const currentWord = useMemo(() => selectedLetters.map((s) => s.letter).join(""), [selectedLetters]);
+
+  // ============= LOAD WORDLIST =============
+  useEffect(() => {
+    const loadWordlist = async () => {
+      try {
+        const response = await fetch("/wordlist.txt");
+        if (!response.ok) throw new Error("Wordlist fetch failed");
+        const text = await response.text();
+        const words = text
+          .split("\n")
+          .map((word) => word.trim().toLocaleUpperCase("tr-TR"))
+          .filter((word) => word.length >= 3);
+        
+        const wordSet = new Set(words);
+        setWordlist(wordSet);
+        setWordlistLoaded(true);
+        console.log(`✅ Wordlist loaded: ${wordSet.size} words`);
+      } catch (error) {
+        console.error("❌ Failed to load wordlist:", error);
+        setWordlistLoaded(false);
+      }
+    };
+    loadWordlist();
+  }, []);
 
   // ============= CLEANUP =============
   useEffect(() => {
@@ -486,11 +518,14 @@ const RandomMatchPage = () => {
     
     setGameEnded(true);
     
+    const isWinner = playerScore > opponentScore;
+    const isTie = playerScore === opponentScore;
+    
     // Determine winner
-    if (playerScore > opponentScore) {
+    if (isWinner) {
       setWinner("player");
       playCelebrationSound();
-    } else if (opponentScore > playerScore) {
+    } else if (!isTie) {
       setWinner("opponent");
       playGameLoseSound();
     } else {
@@ -498,12 +533,38 @@ const RandomMatchPage = () => {
       playTieSound();
     }
 
+    // Update game statistics
+    if (user && !statsUpdatedRef.current) {
+      statsUpdatedRef.current = true;
+      
+      const gameDuration = 120;
+      const wordsJson = playerWordsWithScores.map(w => ({ word: w.word, score: w.score }));
+      
+      try {
+        const { error } = await (supabase.rpc as any)("update_game_stats", {
+          p_user_id: user.id,
+          p_score: playerScore,
+          p_words: wordsJson,
+          p_is_winner: isWinner,
+          p_game_duration: gameDuration,
+          p_first_word_time: firstWordTimeRef.current,
+          p_game_mode: "random-match",
+        });
+        
+        if (error) {
+          console.error("❌ İstatistik güncelleme hatası:", error);
+        } else {
+          console.log("✅ İstatistikler güncellendi");
+        }
+      } catch (err) {
+        console.error("❌ İstatistik güncelleme exception:", err);
+      }
+    }
+
     setShowResults(true);
-  }, [gameEnded, playerScore, opponentScore, playCelebrationSound, playGameLoseSound, playTieSound]);
+  }, [gameEnded, playerScore, opponentScore, user, playerWordsWithScores, playCelebrationSound, playGameLoseSound, playTieSound]);
 
   // ============= TIMER (timestamp-based) =============
-  const gameStartTimeRef = useRef<number | null>(null);
-  
   useEffect(() => {
     if (!gameStarted || gameEnded) return;
 
@@ -553,6 +614,9 @@ const RandomMatchPage = () => {
     setGameStarted(true);
     // Timer GAME_DURATION ile başlamalı - ends_at'tan hesaplanacak
     setDisplayTime(GAME_DURATION);
+    
+    // Record game start time for first word tracking
+    gameStartTimeRef.current = Date.now() + serverTimeOffset;
     
     // ends_at henüz set edilmediyse şimdi hesapla
     if (room && !room.ends_at) {
@@ -609,8 +673,15 @@ const RandomMatchPage = () => {
       const score = calculateWordScore(word);
       const newScore = playerScore + score;
 
+      // Record first word time
+      if (firstWordTimeRef.current === null && gameStartTimeRef.current) {
+        firstWordTimeRef.current = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
+        console.log("⚡ İlk kelime süresi:", firstWordTimeRef.current, "saniye");
+      }
+
       setPlayerScore(newScore);
       setPlayerWords(prev => [...prev, word]);
+      setPlayerWordsWithScores(prev => [...prev, { word, score }]);
       setUsedWords(prev => new Set([...prev, word]));
       setInputFlash("success");
       playSound("correctWord");
@@ -670,38 +741,227 @@ const RandomMatchPage = () => {
 
   // ============= JOKER HANDLERS =============
   const useDegisTirJoker = useCallback(async () => {
-    if (jokers.degistir <= 0 || !gameStarted) return;
+    if (jokers.degistir <= 0 || !gameStarted || isJokerActive) return;
 
-    const success = await useJoker("degistir");
-    if (success) {
-      // Generate new grid (local only for random-match)
-      setGameGrid(generateSeededGrid(Date.now().toString()));
-      playSound("buttonClick");
-      toast({ title: "Değiştir jokeri kullanıldı!" });
+    playSpecialSound("/degistir.mp3");
+    setIsJokerActive(true);
+
+    const vowels = ["A", "E", "İ", "I", "O", "U", "Ü", "Ö"];
+    const consonants = ["B", "C", "Ç", "D", "F", "G", "Ğ", "H", "J", "K", "L", "M", "N", "P", "R", "S", "Ş", "T", "V", "Y", "Z"];
+
+    const newGrid = [...gameGrid.map((row) => [...row])];
+
+    // Rastgele 5 pozisyon seç
+    const positions: { row: number; col: number }[] = [];
+    while (positions.length < 5) {
+      const row = Math.floor(Math.random() * 4);
+      const col = Math.floor(Math.random() * 4);
+      if (!positions.some((p) => p.row === row && p.col === col)) {
+        positions.push({ row, col });
+      }
     }
-  }, [jokers.degistir, gameStarted, useJoker, playSound, toast]);
+
+    // İlk 3 pozisyona sesli harf
+    for (let i = 0; i < 3; i++) {
+      newGrid[positions[i].row][positions[i].col] = vowels[Math.floor(Math.random() * vowels.length)];
+    }
+
+    // Son 2 pozisyona sessiz harf
+    for (let i = 3; i < 5; i++) {
+      newGrid[positions[i].row][positions[i].col] = consonants[Math.floor(Math.random() * consonants.length)];
+    }
+
+    setHighlightedLetters(positions);
+    setGameGrid(newGrid);
+
+    const jokerUsed = await useJoker("degistir");
+    if (!jokerUsed) {
+      setIsJokerActive(false);
+      return;
+    }
+
+    setTimeout(() => {
+      setHighlightedLetters([]);
+      setIsJokerActive(false);
+    }, 1000);
+
+    setSelectedLetters([]);
+    playSound("correctWord");
+  }, [jokers.degistir, gameStarted, isJokerActive, gameGrid, useJoker, playSpecialSound, playSound]);
 
   const useFisildaJoker = useCallback(async () => {
-    if (jokers.fisilida <= 0 || !gameStarted) return;
+    if (jokers.fisilida <= 0 || !gameStarted || isJokerActive) return;
 
-    const success = await useJoker("fisilida");
-    if (success) {
-      // TODO: Implement hint logic
-      playSound("buttonClick");
-      toast({ title: "Fısılda jokeri kullanıldı!" });
+    playSpecialSound("/fisilda.mp3");
+    setIsJokerActive(true);
+
+    const availableLetters = gameGrid.flat();
+    const letterCount: { [key: string]: number } = {};
+    availableLetters.forEach((letter) => {
+      letterCount[letter] = (letterCount[letter] || 0) + 1;
+    });
+
+    // Wordlist'ten geçerli kelimeleri bul
+    let validWords: string[] = [];
+    if (wordlistLoaded) {
+      const wordArray = Array.from(wordlist).map((word) => word.toLocaleUpperCase("tr-TR").trim());
+      validWords = wordArray.filter((word) => {
+        if (usedWords.has(word)) return false;
+        const wordLetterCount: { [key: string]: number } = {};
+        for (const letter of word) {
+          wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
+        }
+        for (const [letter, needed] of Object.entries(wordLetterCount)) {
+          if ((letterCount[letter] || 0) < needed) return false;
+        }
+        return true;
+      });
     }
-  }, [jokers.fisilida, gameStarted, useJoker, playSound, toast]);
+
+    if (validWords.length > 0) {
+      const selectedWord = validWords[Math.floor(Math.random() * validWords.length)];
+
+      // Harflerin pozisyonlarını bul
+      const wordPositions: { row: number; col: number }[] = [];
+      const usedPositions: { row: number; col: number }[] = [];
+
+      for (const letter of selectedWord) {
+        for (let row = 0; row < 4; row++) {
+          let found = false;
+          for (let col = 0; col < 4; col++) {
+            if (gameGrid[row][col] === letter && !usedPositions.some((p) => p.row === row && p.col === col)) {
+              wordPositions.push({ row, col });
+              usedPositions.push({ row, col });
+              found = true;
+              break;
+            }
+          }
+          if (found) break;
+        }
+      }
+
+      // Sırayla harfleri göster
+      for (let i = 0; i < wordPositions.length; i++) {
+        setTimeout(() => {
+          setHighlightedLetters([wordPositions[i]]);
+          playSound("buttonClick");
+          setTimeout(() => setHighlightedLetters([]), 400);
+        }, i * 500);
+      }
+
+      setTimeout(() => setIsJokerActive(false), wordPositions.length * 500 + 800);
+
+      await useJoker("fisilida");
+    } else {
+      setIsJokerActive(false);
+      toast({
+        title: "💡 Fısılda Jokeri",
+        description: "Şu an kulağına fısıldayacağım bir kelime aklıma gelmedi. Değiştir jokeri ile yeni harfler al!",
+        duration: 4000,
+      });
+    }
+  }, [jokers.fisilida, gameStarted, isJokerActive, gameGrid, wordlist, wordlistLoaded, usedWords, useJoker, playSpecialSound, playSound, toast]);
 
   const useSenYazJoker = useCallback(async () => {
-    if (jokers.senYaz <= 0 || !gameStarted) return;
+    if (jokers.senYaz <= 0 || !gameStarted || isJokerActive) return;
 
-    const success = await useJoker("senYaz");
-    if (success) {
-      // TODO: Implement auto-word logic
-      playSound("buttonClick");
-      toast({ title: "Sen Yaz jokeri kullanıldı!" });
+    playSpecialSound("/senyaz.mp3");
+    setIsJokerActive(true);
+
+    const availableLetters = gameGrid.flat();
+    const letterCount: { [key: string]: number } = {};
+    availableLetters.forEach((letter) => {
+      letterCount[letter] = (letterCount[letter] || 0) + 1;
+    });
+
+    // Wordlist'ten geçerli kelimeleri bul
+    let validWords: string[] = [];
+    if (wordlistLoaded) {
+      const wordArray = Array.from(wordlist);
+      validWords = wordArray.filter((word) => {
+        if (usedWords.has(word)) return false;
+        const wordLetterCount: { [key: string]: number } = {};
+        for (const letter of word) {
+          wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
+        }
+        for (const [letter, needed] of Object.entries(wordLetterCount)) {
+          if ((letterCount[letter] || 0) < needed) return false;
+        }
+        return true;
+      });
     }
-  }, [jokers.senYaz, gameStarted, useJoker, playSound, toast]);
+
+    if (validWords.length === 0) {
+      setIsJokerActive(false);
+      toast({
+        title: "✍️ Sen Yaz Jokeri",
+        description: "Düşünüyorum ama henüz bulamadım. Değiştir jokeri ile harfleri değiştir!",
+        duration: 4000,
+      });
+      return;
+    }
+
+    const selectedWord = validWords[Math.floor(Math.random() * validWords.length)];
+    const normalizedWord = selectedWord.toLocaleUpperCase("tr-TR");
+
+    if (usedWords.has(normalizedWord)) {
+      setIsJokerActive(false);
+      return;
+    }
+
+    // Pozisyonları bul
+    const wordPositions: { letter: string; row: number; col: number }[] = [];
+    const usedPositions: { row: number; col: number }[] = [];
+
+    for (const letter of selectedWord) {
+      for (let row = 0; row < 4; row++) {
+        let found = false;
+        for (let col = 0; col < 4; col++) {
+          if (gameGrid[row][col] === letter && !usedPositions.some((p) => p.row === row && p.col === col)) {
+            wordPositions.push({ letter, row, col });
+            usedPositions.push({ row, col });
+            found = true;
+            break;
+          }
+        }
+        if (found) break;
+      }
+    }
+
+    if (wordPositions.length !== selectedWord.length) {
+      setIsJokerActive(false);
+      return;
+    }
+
+    setSelectedLetters(wordPositions);
+
+    setTimeout(async () => {
+      const score = calculateWordScore(selectedWord);
+      const newScore = playerScore + score;
+
+      setPlayerScore(newScore);
+      setPlayerWords(prev => [...prev, selectedWord]);
+      setPlayerWordsWithScores(prev => [...prev, { word: selectedWord, score }]);
+      setUsedWords(prev => new Set([...prev, normalizedWord]));
+      playSound("correctWord");
+
+      // Update score in database
+      if (room) {
+        const scoreField = user?.id === room.player1_id ? "player1_score" : "player2_score";
+        await supabase.from("game_rooms").update({ [scoreField]: newScore }).eq("id", room.id);
+        await supabase.from("game_words").insert({
+          room_id: room.id,
+          player_id: user?.id,
+          word: selectedWord,
+          points: score,
+        });
+      }
+
+      await useJoker("senYaz");
+      setSelectedLetters([]);
+      setIsJokerActive(false);
+    }, 1500);
+  }, [jokers.senYaz, gameStarted, isJokerActive, gameGrid, wordlist, wordlistLoaded, usedWords, room, user, playerScore, useJoker, playSpecialSound, playSound, toast]);
 
   // ============= EXIT HANDLING =============
   const handleBackToMenu = useCallback(() => {
