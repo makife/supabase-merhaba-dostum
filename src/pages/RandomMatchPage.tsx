@@ -339,16 +339,51 @@ const RandomMatchPage = () => {
     };
   }, [roomId, user, gameEnded]);
 
-  // ============= TIMER (timestamp-based) =============
-  useEffect(() => {
-    if (!gameStarted || gameEnded || !room?.ends_at) return;
+  // ============= GAME HANDLERS =============
+  const handleTimeUp = useCallback(async () => {
+    if (gameEnded) return;
+    
+    setGameEnded(true);
+    
+    // Determine winner
+    if (playerScore > opponentScore) {
+      setWinner("player");
+      playCelebrationSound();
+    } else if (opponentScore > playerScore) {
+      setWinner("opponent");
+      playGameLoseSound();
+    } else {
+      setWinner("tie");
+      playTieSound();
+    }
 
-    const endsAt = new Date(room.ends_at).getTime();
+    setShowResults(true);
+  }, [gameEnded, playerScore, opponentScore, playCelebrationSound, playGameLoseSound, playTieSound]);
+
+  // ============= TIMER (timestamp-based) =============
+  const gameStartTimeRef = useRef<number | null>(null);
+  
+  useEffect(() => {
+    if (!gameStarted || gameEnded) return;
+
+    // Oyun başladığında başlangıç zamanını kaydet
+    if (!gameStartTimeRef.current) {
+      gameStartTimeRef.current = Date.now() + serverTimeOffset;
+    }
+
+    let endsAt: number;
+    
+    if (room?.ends_at) {
+      endsAt = new Date(room.ends_at).getTime();
+    } else {
+      // ends_at yoksa, oyun başlangıç zamanından hesapla
+      endsAt = gameStartTimeRef.current + (GAME_DURATION * 1000);
+    }
 
     const updateTimer = () => {
       if (!isMountedRef.current) return;
 
-      const now = serverNow();
+      const now = Date.now() + serverTimeOffset;
       const remaining = Math.max(0, Math.ceil((endsAt - now) / 1000));
       
       setDisplayTime(remaining);
@@ -369,35 +404,25 @@ const RandomMatchPage = () => {
         clearInterval(timerRef.current);
       }
     };
-  }, [gameStarted, gameEnded, room?.ends_at, serverNow]);
+  }, [gameStarted, gameEnded, room?.ends_at, serverTimeOffset, handleTimeUp]);
 
-  // ============= GAME HANDLERS =============
   const handleCountdownComplete = useCallback(() => {
+    console.log("🎮 Countdown complete, starting game!");
     setShowCountdown(false);
     setGameStarted(true);
+    // Timer GAME_DURATION ile başlamalı - ends_at'tan hesaplanacak
     setDisplayTime(GAME_DURATION);
-    console.log("🎮 Game started!");
-  }, []);
-
-  const handleTimeUp = useCallback(async () => {
-    if (gameEnded) return;
     
-    setGameEnded(true);
-    
-    // Determine winner
-    if (playerScore > opponentScore) {
-      setWinner("player");
-      playCelebrationSound();
-    } else if (opponentScore > playerScore) {
-      setWinner("opponent");
-      playGameLoseSound();
-    } else {
-      setWinner("tie");
-      playTieSound();
+    // ends_at henüz set edilmediyse şimdi hesapla
+    if (room && !room.ends_at) {
+      const endsAt = new Date(Date.now() + serverTimeOffset + GAME_DURATION * 1000).toISOString();
+      supabase
+        .from("game_rooms")
+        .update({ ends_at: endsAt, status: "active" })
+        .eq("id", room.id)
+        .then(() => console.log("✅ ends_at set:", endsAt));
     }
-
-    setShowResults(true);
-  }, [gameEnded, playerScore, opponentScore, playCelebrationSound, playGameLoseSound, playTieSound]);
+  }, [room, serverTimeOffset]);
 
   const handleGameEnd = useCallback((roomData: RoomData) => {
     if (gameEnded) return;

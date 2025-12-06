@@ -36,19 +36,23 @@ const START_DISPLAY_DURATION_MS = 800; // Show "start" for 800ms
  * - Both clients calculate the SAME value at the SAME wall-clock moment
  */
 const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 }: GameCountdownProps) => {
-  const [displayValue, setDisplayValue] = useState<number | "start" | null>(5);
+  const [displayValue, setDisplayValue] = useState<number | "start" | null>(null);
   const completedRef = useRef(false);
   const mountedRef = useRef(true);
   const lastPlayedSecondRef = useRef<number | null>(null);
   const startShownRef = useRef(false);
-  // 🔧 setInterval kullan - requestAnimationFrame tab arka planda durur
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const soundPlayedRef = useRef<Set<number>>(new Set()); // Her saniye için sadece bir ses çal
 
   useEffect(() => {
     mountedRef.current = true;
     
     return () => {
       mountedRef.current = false;
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     };
   }, []);
 
@@ -73,20 +77,53 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       intervalRef.current = null;
     }
 
+    // Reset sound tracking
+    soundPlayedRef.current.clear();
+
     // If no server time provided, use legacy client-side mode
     if (!serverStartTime) {
       console.log("⏱️ GameCountdown: Legacy client-side mode (no serverStartTime)");
       
       setDisplayValue(5);
       playSound("/gerisayim.mp3");
-      lastPlayedSecondRef.current = 5;
+      soundPlayedRef.current.add(5);
       
       const timers: NodeJS.Timeout[] = [];
-      timers.push(setTimeout(() => { if (mountedRef.current) { setDisplayValue(4); playSound("/gerisayim.mp3"); } }, 1000));
-      timers.push(setTimeout(() => { if (mountedRef.current) { setDisplayValue(3); playSound("/gerisayim.mp3"); } }, 2000));
-      timers.push(setTimeout(() => { if (mountedRef.current) { setDisplayValue(2); playSound("/gerisayim.mp3"); } }, 3000));
-      timers.push(setTimeout(() => { if (mountedRef.current) { setDisplayValue(1); playSound("/gerisayim.mp3"); } }, 4000));
-      timers.push(setTimeout(() => { if (mountedRef.current) { setDisplayValue("start"); playSound("/basla.mp3"); } }, 5000));
+      timers.push(setTimeout(() => { 
+        if (mountedRef.current && !soundPlayedRef.current.has(4)) { 
+          setDisplayValue(4); 
+          playSound("/gerisayim.mp3"); 
+          soundPlayedRef.current.add(4);
+        } 
+      }, 1000));
+      timers.push(setTimeout(() => { 
+        if (mountedRef.current && !soundPlayedRef.current.has(3)) { 
+          setDisplayValue(3); 
+          playSound("/gerisayim.mp3"); 
+          soundPlayedRef.current.add(3);
+        } 
+      }, 2000));
+      timers.push(setTimeout(() => { 
+        if (mountedRef.current && !soundPlayedRef.current.has(2)) { 
+          setDisplayValue(2); 
+          playSound("/gerisayim.mp3"); 
+          soundPlayedRef.current.add(2);
+        } 
+      }, 3000));
+      timers.push(setTimeout(() => { 
+        if (mountedRef.current && !soundPlayedRef.current.has(1)) { 
+          setDisplayValue(1); 
+          playSound("/gerisayim.mp3"); 
+          soundPlayedRef.current.add(1);
+        } 
+      }, 4000));
+      timers.push(setTimeout(() => { 
+        if (mountedRef.current && !startShownRef.current) { 
+          setDisplayValue("start"); 
+          playSound("/basla.mp3"); 
+          startShownRef.current = true;
+        } 
+      }, 5000));
       timers.push(setTimeout(() => {
         if (!completedRef.current && mountedRef.current) {
           completedRef.current = true;
@@ -110,13 +147,28 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       serverTimeOffset,
     });
     
-    // Play initial sound
+    // Calculate initial state
     const serverNow = Date.now() + serverTimeOffset;
     const initialRemaining = Math.ceil((endTimeMs - serverNow) / 1000);
+    
+    // Set initial display
     if (initialRemaining >= 1 && initialRemaining <= 5) {
       setDisplayValue(initialRemaining);
-      playSound("/gerisayim.mp3");
-      lastPlayedSecondRef.current = initialRemaining;
+      // Play initial sound only once
+      if (!soundPlayedRef.current.has(initialRemaining)) {
+        playSound("/gerisayim.mp3");
+        soundPlayedRef.current.add(initialRemaining);
+      }
+    } else if (initialRemaining > 5) {
+      // Countdown hasn't started yet, show 5
+      setDisplayValue(5);
+    } else if (initialRemaining <= 0 && initialRemaining > -1) {
+      // Should show "start"
+      if (!startShownRef.current) {
+        setDisplayValue("start");
+        playSound("/basla.mp3");
+        startShownRef.current = true;
+      }
     }
     
     // Use setInterval for consistent updates (doesn't pause in background)
@@ -158,13 +210,13 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
         // Show countdown number (5, 4, 3, 2, 1)
         setDisplayValue(remainingSeconds);
         
-        // Play sound only once per second
-        if (lastPlayedSecondRef.current !== remainingSeconds) {
-          lastPlayedSecondRef.current = remainingSeconds;
+        // Play sound only once per second - use Set for tracking
+        if (!soundPlayedRef.current.has(remainingSeconds)) {
+          soundPlayedRef.current.add(remainingSeconds);
           playSound("/gerisayim.mp3");
         }
       }
-    }, 50); // 50ms interval for smooth updates
+    }, 100); // 100ms interval for smooth updates
     
     return () => {
       if (intervalRef.current) {
