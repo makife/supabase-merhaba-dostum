@@ -24,6 +24,7 @@ import ProfilePage from "@/pages/ProfilePage";
 import SettingsPage from "@/pages/SettingsPage";
 import MarketPage from "@/pages/MarketPage";
 import TestMatchmakingPage from "@/pages/TestMatchmakingPage";
+import SyncTestPage from "@/pages/SyncTestPage";
 import NakamaGamePage from "@/pages/NakamaGamePage";
 import NotFound from "./pages/NotFound";
 import LeaderboardPage from "@/pages/LeaderboardPage";
@@ -292,6 +293,14 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute>
               <TestMatchmakingPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/sync-test"
+          element={
+            <ProtectedRoute>
+              <SyncTestPage />
             </ProtectedRoute>
           }
         />
