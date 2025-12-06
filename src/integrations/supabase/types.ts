@@ -1084,6 +1084,7 @@ export type Database = {
           player2_id: string | null
           player2_score: number | null
           round: number
+          started_at: string | null
           status: string | null
           tournament_id: string | null
           updated_at: string | null
@@ -1100,6 +1101,7 @@ export type Database = {
           player2_id?: string | null
           player2_score?: number | null
           round: number
+          started_at?: string | null
           status?: string | null
           tournament_id?: string | null
           updated_at?: string | null
@@ -1116,6 +1118,7 @@ export type Database = {
           player2_id?: string | null
           player2_score?: number | null
           round?: number
+          started_at?: string | null
           status?: string | null
           tournament_id?: string | null
           updated_at?: string | null
