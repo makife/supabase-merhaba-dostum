@@ -1,28 +1,24 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tournament, TournamentParticipant, TournamentMatch } from "@/types/tournament";
 import { toast } from "@/components/ui/use-toast";
-import { calculateServerOffset } from "@/utils/serverTimeSync";
+import { generateBotName } from "@/utils/tournamentHelpers";
 
 interface TournamentContextType {
-  // State
   tournaments: Tournament[];
   currentTournament: Tournament | null;
   participants: TournamentParticipant[];
   matches: TournamentMatch[];
   loading: boolean;
-  serverTimeOffset: number;
 
-  // Actions
   createTournament: () => Promise<string | null>;
   joinTournament: (tournamentId: string) => Promise<boolean>;
   leaveTournament: (tournamentId: string) => Promise<boolean>;
   startTournament: (tournamentId: string) => Promise<boolean>;
   fetchTournaments: () => Promise<void>;
   fetchTournamentDetails: (tournamentId: string) => Promise<void>;
-
-  // Cleanup
+  advanceToNextRound: (tournamentId: string) => Promise<boolean>;
   resetContext: () => void;
 }
 
@@ -36,32 +32,17 @@ export const useTournamentContext = () => {
   return context;
 };
 
-interface TournamentProviderProps {
-  children: ReactNode;
-}
-
-export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children }) => {
+export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useAuth();
 
-  // State
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [currentTournament, setCurrentTournament] = useState<Tournament | null>(null);
   const [participants, setParticipants] = useState<TournamentParticipant[]>([]);
   const [matches, setMatches] = useState<TournamentMatch[]>([]);
   const [loading, setLoading] = useState(false);
-  const [serverTimeOffset, setServerTimeOffset] = useState(0);
+  
+  const fetchingRef = useRef(false);
 
-  // Get server time offset once on mount - Seviye 1 optimizasyonlu
-  useEffect(() => {
-    const initializeServerSync = async () => {
-      const offset = await calculateServerOffset();
-      setServerTimeOffset(offset);
-      console.log("⏰ Tournament server time offset:", offset, "ms");
-    };
-    initializeServerSync();
-  }, []);
-
-  // Cleanup function
   const resetContext = () => {
     setTournaments([]);
     setCurrentTournament(null);
@@ -70,55 +51,45 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
     setLoading(false);
   };
 
-  // Fetch active tournaments - Supabase
+  // Fetch active tournaments
   const fetchTournaments = async () => {
-    if (!user) return;
-
+    if (!user || fetchingRef.current) return;
+    
     try {
+      fetchingRef.current = true;
       setLoading(true);
 
-      // Önce süresi dolmuş turnuvaları temizle
+      // Cleanup expired tournaments first
       await supabase.rpc("cleanup_expired_tournaments");
-
-      // Get server time for comparison
-      const { data: serverTime } = await supabase.rpc("get_server_time" as any);
 
       const { data, error } = await supabase
         .from("tournaments")
         .select("*")
         .in("status", ["waiting", "in_progress"])
-        .gt("expires_at", (serverTime as string) || new Date().toISOString())
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-
       setTournaments((data || []) as Tournament[]);
     } catch (error) {
-      console.error("Turnuvalar alınırken hata:", error);
-      toast({
-        title: "Hata",
-        description: "Turnuvalar yüklenirken bir hata oluştu",
-      });
+      console.error("❌ Turnuva listesi hatası:", error);
     } finally {
       setLoading(false);
+      fetchingRef.current = false;
     }
   };
 
-  // Create tournament - Supabase
+  // Create tournament
   const createTournament = async (): Promise<string | null> => {
     if (!user) return null;
 
     try {
       setLoading(true);
 
-      // Get server time and add 30 seconds
-      const { data: serverTime } = await supabase.rpc("get_server_time" as any);
-      const expiresAt = new Date((serverTime as string) || new Date());
+      const expiresAt = new Date();
       expiresAt.setSeconds(expiresAt.getSeconds() + 30);
 
       const tournamentName = `Turnuva ${new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}`;
 
-      // Supabase'de turnuva oluştur
       const { data: tournament, error } = await supabase
         .from("tournaments")
         .insert({
@@ -128,7 +99,7 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
           game_type: "timed",
           max_participants: 8,
           current_round: 1,
-          timeout_duration: 15,
+          timeout_duration: 120,
           expires_at: expiresAt.toISOString(),
         })
         .select()
@@ -136,65 +107,58 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
 
       if (error) throw error;
 
-      // Yaratıcıyı otomatik olarak katılımcılara ekle
-      const { error: participantError } = await supabase.from("tournament_participants").insert({
-        tournament_id: tournament.id,
-        user_id: user.id,
-        is_bot: false,
-      });
+      // Add creator as participant
+      const { error: participantError } = await supabase
+        .from("tournament_participants")
+        .insert({
+          tournament_id: tournament.id,
+          user_id: user.id,
+          is_bot: false,
+        });
 
       if (participantError) throw participantError;
 
-      // 300ms bekle - participant'ın DB'ye yazılmasını garanti et
-      await new Promise(resolve => setTimeout(resolve, 300));
-
+      console.log("✅ Turnuva oluşturuldu:", tournament.id);
       await fetchTournaments();
       return tournament.id;
     } catch (error: any) {
-      console.error("Turnuva oluşturulurken hata:", error);
-      toast({
-        title: "❌ Hata",
-        description: "Turnuva oluşturulamadı",
-        variant: "destructive",
-      });
+      console.error("❌ Turnuva oluşturma hatası:", error);
+      toast({ title: "Hata", description: "Turnuva oluşturulamadı", variant: "destructive" });
       return null;
     } finally {
       setLoading(false);
     }
   };
 
-  // Join tournament - Supabase
+  // Join tournament
   const joinTournament = async (tournamentId: string): Promise<boolean> => {
     if (!user) return false;
 
     try {
       setLoading(true);
 
-      // Turnuvaya katılımcı olarak ekle
-      const { error } = await supabase.from("tournament_participants").insert({
-        tournament_id: tournamentId,
-        user_id: user.id,
-        is_bot: false,
-      });
+      const { error } = await supabase
+        .from("tournament_participants")
+        .insert({
+          tournament_id: tournamentId,
+          user_id: user.id,
+          is_bot: false,
+        });
 
-      // Duplicate key hatası = zaten katılmış, başarılı say
-      if (error && error.code === '23505') {
-        console.log("✅ Kullanıcı zaten turnuvaya katılmış, devam ediliyor");
-        await fetchTournamentDetails(tournamentId);
+      // Duplicate key = already joined
+      if (error && error.code === "23505") {
+        console.log("✅ Zaten katılmış");
         return true;
       }
 
       if (error) throw error;
 
+      console.log("✅ Turnuvaya katıldı");
       await fetchTournamentDetails(tournamentId);
       return true;
-    } catch (error: any) {
-      console.error("Turnuvaya katılırken hata:", error);
-      toast({
-        title: "❌ Hata",
-        description: "Turnuvaya katılınamadı",
-        variant: "destructive",
-      });
+    } catch (error) {
+      console.error("❌ Katılma hatası:", error);
+      toast({ title: "Hata", description: "Turnuvaya katılınamadı", variant: "destructive" });
       return false;
     } finally {
       setLoading(false);
@@ -208,45 +172,6 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
     try {
       setLoading(true);
 
-      // Check if user is the creator
-      const { data: tournament } = await supabase
-        .from("tournaments")
-        .select("creator_id, status")
-        .eq("id", tournamentId)
-        .single();
-
-      const isCreator = tournament?.creator_id === user.id;
-      const isWaiting = tournament?.status === "waiting";
-
-      // If creator is leaving a waiting tournament, transfer ownership FIRST
-      if (isCreator && isWaiting) {
-        const { data: remainingParticipants } = await supabase
-          .from("tournament_participants")
-          .select("user_id, is_bot")
-          .eq("tournament_id", tournamentId)
-          .eq("is_bot", false)
-          .neq("user_id", user.id); // Exclude current user
-
-        // Find first real player to become new creator
-        const newCreator = remainingParticipants?.[0];
-        
-        if (newCreator?.user_id) {
-          const { error: updateError } = await supabase
-            .from("tournaments")
-            .update({ creator_id: newCreator.user_id })
-            .eq("id", tournamentId);
-
-          if (updateError) {
-            console.error("Kuruculuk aktarma hatası:", updateError);
-          } else {
-            console.log("✅ Kuruculuk aktarıldı:", newCreator.user_id);
-          }
-        }
-      }
-
-      // Optimistic update: remove myself immediately
-      setParticipants((prev) => prev.filter((p) => String(p.user_id) !== String(user.id)));
-
       const { error } = await supabase
         .from("tournament_participants")
         .delete()
@@ -255,213 +180,214 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
 
       if (error) throw error;
 
-      // Refresh details to stay in sync (also covers other derived state)
-      await fetchTournamentDetails(tournamentId);
-
-      toast({
-        title: "Başarılı",
-        description: "Turnuvadan ayrıldınız",
-      });
-
+      console.log("✅ Turnuvadan ayrıldı");
+      toast({ title: "Başarılı", description: "Turnuvadan ayrıldınız" });
       return true;
     } catch (error) {
-      console.error("Ayrılma hatası:", error);
-      // Re-fetch to rollback optimistic update if needed
-      await fetchTournamentDetails(tournamentId);
-      toast({
-        title: "Hata",
-        description: "Turnuvadan ayrılınamadı",
-        variant: "destructive",
-      });
+      console.error("❌ Ayrılma hatası:", error);
+      toast({ title: "Hata", description: "Turnuvadan ayrılınamadı", variant: "destructive" });
       return false;
     } finally {
       setLoading(false);
     }
   };
-  // Start tournament
+
+  // Start tournament - called when countdown ends
   const startTournament = async (tournamentId: string): Promise<boolean> => {
     try {
       setLoading(true);
+      console.log("🏆 Turnuva başlatılıyor:", tournamentId);
 
-      const { data, error } = await supabase.rpc("create_matches_for_active_tournament", {
-        p_tournament_id: tournamentId,
-      });
+      // 1. Get current participants
+      const { data: currentParticipants } = await supabase
+        .from("tournament_participants")
+        .select("*")
+        .eq("tournament_id", tournamentId);
 
-      if (error) throw error;
-
-      // Fetch created matches
-      const { data: matches } = await supabase
-        .from("tournament_matches")
-        .select("id")
-        .eq("tournament_id", tournamentId)
-        .eq("round", 1);
-
-      // Start countdown for all first round matches
-      if (matches && matches.length > 0) {
-        console.log("🏆 Starting countdown for", matches.length, "matches");
-        await Promise.all(
-          matches.map(async (match) => {
-            try {
-              await supabase.rpc("start_tournament_countdown", {
-                p_match_id: match.id,
-              });
-              console.log("✅ Countdown started for match:", match.id);
-            } catch (err) {
-              console.error("❌ Failed to start countdown for match:", match.id, err);
-            }
-          })
-        );
+      const realPlayers = (currentParticipants || []).filter((p) => !p.is_bot);
+      
+      if (realPlayers.length < 2) {
+        // Cancel tournament
+        await supabase
+          .from("tournaments")
+          .update({ status: "cancelled" })
+          .eq("id", tournamentId);
+        
+        toast({ title: "Turnuva İptal", description: "Yeterli oyuncu yok" });
+        return false;
       }
 
-      await fetchTournaments();
-      await fetchTournamentDetails(tournamentId);
+      // 2. Fill remaining slots with bots (to make 8 total)
+      const botsNeeded = 8 - (currentParticipants?.length || 0);
+      if (botsNeeded > 0) {
+        const botInserts = Array.from({ length: botsNeeded }, (_, i) => ({
+          tournament_id: tournamentId,
+          user_id: `bot_${Date.now()}_${i}`,
+          is_bot: true,
+        }));
 
+        await supabase.from("tournament_participants").insert(botInserts);
+        console.log(`🤖 ${botsNeeded} bot eklendi`);
+      }
+
+      // 3. Get all participants for match creation
+      const { data: allParticipants } = await supabase
+        .from("tournament_participants")
+        .select("*")
+        .eq("tournament_id", tournamentId)
+        .order("joined_at", { ascending: true });
+
+      if (!allParticipants || allParticipants.length !== 8) {
+        console.error("❌ 8 katılımcı olmalı!");
+        return false;
+      }
+
+      // 4. Create quarter-final matches (4 matches)
+      const quarterFinalMatches = [
+        { player1_id: allParticipants[0].user_id, player2_id: allParticipants[1].user_id, match_number: 1 },
+        { player1_id: allParticipants[2].user_id, player2_id: allParticipants[3].user_id, match_number: 2 },
+        { player1_id: allParticipants[4].user_id, player2_id: allParticipants[5].user_id, match_number: 3 },
+        { player1_id: allParticipants[6].user_id, player2_id: allParticipants[7].user_id, match_number: 4 },
+      ];
+
+      const matchInserts = quarterFinalMatches.map((m) => ({
+        tournament_id: tournamentId,
+        round: 1,
+        match_number: m.match_number,
+        player1_id: m.player1_id,
+        player2_id: m.player2_id,
+        status: "pending",
+        player1_score: 0,
+        player2_score: 0,
+      }));
+
+      const { error: matchError } = await supabase
+        .from("tournament_matches")
+        .insert(matchInserts);
+
+      if (matchError) throw matchError;
+
+      // 5. Update tournament status
+      const nextRoundStartsAt = new Date();
+      nextRoundStartsAt.setSeconds(nextRoundStartsAt.getSeconds() + 10);
+
+      await supabase
+        .from("tournaments")
+        .update({
+          status: "in_progress",
+          current_round: 1,
+          started_at: new Date().toISOString(),
+          next_round_starts_at: nextRoundStartsAt.toISOString(),
+        })
+        .eq("id", tournamentId);
+
+      console.log("✅ Turnuva başladı, çeyrek final maçları oluşturuldu");
+      await fetchTournamentDetails(tournamentId);
       return true;
     } catch (error) {
-      console.error("Turnuva başlatma hatası:", error);
-      toast({
-        title: "Hata",
-        description: "Turnuva başlatılamadı",
-        variant: "destructive",
-      });
+      console.error("❌ Turnuva başlatma hatası:", error);
+      toast({ title: "Hata", description: "Turnuva başlatılamadı", variant: "destructive" });
       return false;
     } finally {
       setLoading(false);
     }
   };
 
-  // Helper function to get player info
-  const getPlayerInfo = async (playerId: string | null, participants: TournamentParticipant[]) => {
-    if (!playerId) return null;
-
-    // Önce participant'ı bul
-    const participant = participants.find((p) => p.user_id === playerId);
-
-    // Bot kontrolü - is_bot alanını kullan
-    if (participant?.is_bot) {
-      // Deterministic seed from user_id to keep bot names stable
-      const seed = Array.from(String(playerId)).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-      return {
-        username: generateBotName(seed),
-        avatar_url: null,
-        is_bot: true,
-      };
-    }
-
-    // Gerçek oyuncu
-    if (participant?.profiles) {
-      return {
-        username: participant.profiles.username || "Oyuncu",
-        avatar_url: participant.profiles.avatar_url,
-        is_bot: false,
-      };
-    }
-
-    return {
-      username: "Oyuncu",
-      avatar_url: null,
-      is_bot: false,
-    };
-  };
-
-  const generateBotName = (index: number): string => {
-    const turkishNames = [
-      "ahmet",
-      "mehmet",
-      "ayşe",
-      "fatma",
-      "ali",
-      "veli",
-      "zeynep",
-      "elif",
-      "mustafa",
-      "emre",
-      "can",
-      "ece",
-      "selin",
-      "burak",
-      "deniz",
-      "yusuf",
-      "merve",
-      "özge",
-      "berk",
-      "arda",
-      "sude",
-      "efe",
-      "ada",
-      "emir",
-      "defne",
-      "kaan",
-      "ilayda",
-      "mert",
-      "asya",
-      "kerem",
-      "nisa",
-      "bora",
-      "irem",
-      "doruk",
-      "ela",
-      "eren",
-      "nehir",
-      "alp",
-      "maya",
-      "ege",
-      "eylül",
-      "tunç",
-      "lara",
-      "uras",
-      "derin",
-      "çağlar",
-      "pelin",
-      "koray",
-      "damla",
-      "tolga",
-      "su",
-      "onur",
-      "ceren",
-      "umut",
-      "begüm",
-      "barış",
-    ];
-
-    // Seeded RNG (deterministic) using index
-    let seed = index >>> 0 || 0;
-    const next = (mod: number) => {
-      seed = (seed * 1664525 + 1013904223) >>> 0; // LCG
-      return seed % mod;
-    };
-
-    const nameIndex = Math.abs(index) % turkishNames.length;
-    const decorationIndex = Math.floor(Math.abs(index) / turkishNames.length) % 9;
-
-    const baseName = turkishNames[nameIndex];
-    const num4 = 1000 + next(9000);
-    const num2 = 10 + next(90);
-    const num3 = 100 + next(900);
-
-    const decorations = [
-      (name: string) => name + String(num4),
-      (name: string) => name + "_",
-      (name: string) => "_" + name,
-      (name: string) => "_" + name + "_",
-      (name: string) => name + name.charAt(name.length - 1).repeat(2),
-      (name: string) => name.charAt(0) + name.slice(1) + String(num2),
-      (name: string) => name + "." + String(next(100)),
-      (name: string) => name.charAt(0).toUpperCase() + name.slice(1) + String(num3),
-      (name: string) => name,
-    ];
-
-    return decorations[decorationIndex](baseName);
-  };
-
-  // Fetch tournament details - Supabase
-  const fetchTournamentDetails = async (tournamentId: string) => {
+  // Advance to next round
+  const advanceToNextRound = async (tournamentId: string): Promise<boolean> => {
     try {
-      if (!user) return;
+      const { data: tournament } = await supabase
+        .from("tournaments")
+        .select("current_round")
+        .eq("id", tournamentId)
+        .single();
 
+      if (!tournament) return false;
+
+      const currentRound = tournament.current_round || 1;
+      const nextRound = currentRound + 1;
+
+      // Get completed matches from current round
+      const { data: completedMatches } = await supabase
+        .from("tournament_matches")
+        .select("*")
+        .eq("tournament_id", tournamentId)
+        .eq("round", currentRound)
+        .eq("status", "completed")
+        .order("match_number", { ascending: true });
+
+      if (!completedMatches) return false;
+
+      // Check if all matches in current round are completed
+      const expectedMatches = currentRound === 1 ? 4 : currentRound === 2 ? 2 : 1;
+      if (completedMatches.length < expectedMatches) {
+        console.log(`⏳ Tur ${currentRound} henüz tamamlanmadı`);
+        return false;
+      }
+
+      if (currentRound >= 3) {
+        // Tournament finished
+        await supabase
+          .from("tournaments")
+          .update({ status: "completed", finished_at: new Date().toISOString() })
+          .eq("id", tournamentId);
+        
+        console.log("🏆 Turnuva tamamlandı!");
+        return true;
+      }
+
+      // Create next round matches from winners
+      const winners = completedMatches.map((m) => m.winner_id);
+      
+      const nextRoundMatches = [];
+      for (let i = 0; i < winners.length; i += 2) {
+        nextRoundMatches.push({
+          tournament_id: tournamentId,
+          round: nextRound,
+          match_number: Math.floor(i / 2) + 1,
+          player1_id: winners[i],
+          player2_id: winners[i + 1],
+          status: "pending",
+          player1_score: 0,
+          player2_score: 0,
+        });
+      }
+
+      const { error: insertError } = await supabase
+        .from("tournament_matches")
+        .insert(nextRoundMatches);
+
+      if (insertError) throw insertError;
+
+      // Update tournament round
+      const nextRoundStartsAt = new Date();
+      nextRoundStartsAt.setSeconds(nextRoundStartsAt.getSeconds() + 10);
+
+      await supabase
+        .from("tournaments")
+        .update({
+          current_round: nextRound,
+          next_round_starts_at: nextRoundStartsAt.toISOString(),
+        })
+        .eq("id", tournamentId);
+
+      console.log(`✅ Tur ${nextRound} oluşturuldu`);
+      await fetchTournamentDetails(tournamentId);
+      return true;
+    } catch (error) {
+      console.error("❌ Tur ilerleme hatası:", error);
+      return false;
+    }
+  };
+
+  // Fetch tournament details
+  const fetchTournamentDetails = async (tournamentId: string) => {
+    if (!user) return;
+
+    try {
       setLoading(true);
 
-      // Turnuva bilgisini çek
+      // Get tournament
       const { data: tournament, error: tournamentError } = await supabase
         .from("tournaments")
         .select("*")
@@ -470,21 +396,20 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
 
       if (tournamentError) throw tournamentError;
 
-      // Katılımcıları çek
-      const { data: rawParticipants, error: participantsError } = await supabase
+      // Get participants with profiles
+      const { data: rawParticipants } = await supabase
         .from("tournament_participants")
         .select("*")
-        .eq("tournament_id", tournamentId);
+        .eq("tournament_id", tournamentId)
+        .order("joined_at", { ascending: true });
 
-      if (participantsError) throw participantsError;
-
-      // Her katılımcı için profil bilgisini al
       const participantsWithProfiles = await Promise.all(
         (rawParticipants || []).map(async (p) => {
           if (p.is_bot || !p.user_id) {
+            const seed = Array.from(String(p.user_id || "")).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
             return {
               ...p,
-              profiles: undefined,
+              profiles: { username: generateBotName(seed), avatar_url: null },
             };
           }
 
@@ -494,189 +419,102 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
             .eq("id", p.user_id)
             .single();
 
-          return {
-            ...p,
-            profiles: profile || undefined,
-          };
-        }),
+          return { ...p, profiles: profile || undefined };
+        })
       );
 
-      // Maçları çek ve oyuncu bilgilerini de al
-      const { data: rawMatches, error: matchesError } = await supabase
+      // Get matches with player info
+      const { data: rawMatches } = await supabase
         .from("tournament_matches")
         .select("*")
         .eq("tournament_id", tournamentId)
         .order("round", { ascending: true })
         .order("match_number", { ascending: true });
 
-      if (matchesError) throw matchesError;
+      const matchesWithPlayers = (rawMatches || []).map((match) => {
+        const player1 = participantsWithProfiles.find((p) => p.user_id === match.player1_id);
+        const player2 = participantsWithProfiles.find((p) => p.user_id === match.player2_id);
 
-      // Her maç için oyuncu bilgilerini ekle
-      const matchesWithPlayers = await Promise.all(
-        (rawMatches || []).map(async (match) => {
-          const player1Data = await getPlayerInfo(match.player1_id, participantsWithProfiles);
-          const player2Data = await getPlayerInfo(match.player2_id, participantsWithProfiles);
-
-          return {
-            ...match,
-            player1: player1Data,
-            player2: player2Data,
-          };
-        }),
-      );
+        return {
+          ...match,
+          player1: player1 ? {
+            username: player1.profiles?.username || "Oyuncu",
+            avatar_url: player1.profiles?.avatar_url,
+            is_bot: player1.is_bot,
+          } : null,
+          player2: player2 ? {
+            username: player2.profiles?.username || "Oyuncu",
+            avatar_url: player2.profiles?.avatar_url,
+            is_bot: player2.is_bot,
+          } : null,
+        };
+      });
 
       setCurrentTournament(tournament as Tournament);
       setParticipants(participantsWithProfiles as TournamentParticipant[]);
       setMatches(matchesWithPlayers as TournamentMatch[]);
     } catch (error) {
-      console.error("Turnuva detayları alınırken hata:", error);
-      toast({
-        title: "Hata",
-        description: "Turnuva detayları yüklenemedi",
-        variant: "destructive",
-      });
+      console.error("❌ Detay hatası:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Auto-fetch tournaments on mount and setup realtime subscriptions
+  // Realtime subscriptions
   useEffect(() => {
+    if (!user) return;
+
     fetchTournaments();
 
-    // Realtime subscription for tournaments
-    const tournamentsChannel = supabase
-      .channel("tournaments-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "tournaments",
-        },
-        () => {
-          fetchTournaments();
-        },
-      )
+    const channel = supabase
+      .channel("tournament-global")
+      .on("postgres_changes", { event: "*", schema: "public", table: "tournaments" }, () => {
+        fetchTournaments();
+      })
       .subscribe();
 
     return () => {
-      supabase.removeChannel(tournamentsChannel);
+      supabase.removeChannel(channel);
     };
-  }, []);
+  }, [user]);
 
-  // Setup realtime subscription for current tournament details
   useEffect(() => {
     if (!currentTournament?.id) return;
 
     const tournamentId = currentTournament.id;
 
-    // Participants subscription
-    const participantsChannel = supabase
-      .channel(`tournament-participants-${tournamentId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "tournament_participants",
-          filter: `tournament_id=eq.${tournamentId}`,
-        },
-        (payload) => {
-          console.log("🔄 Participant değişikliği tespit edildi:", payload.eventType, payload);
-          fetchTournamentDetails(tournamentId);
-        },
-      )
-      .subscribe((status) => {
-        console.log("📡 Participants channel status:", status);
-      });
-
-    // Matches subscription
-    const matchesChannel = supabase
-      .channel(`tournament-matches-${tournamentId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "tournament_matches",
-          filter: `tournament_id=eq.${tournamentId}`,
-        },
-        (payload) => {
-          console.log("Match updated:", payload);
-          fetchTournamentDetails(tournamentId);
-        },
-      )
-      .subscribe();
-
-    // Tournament status subscription
-    const statusChannel = supabase
-      .channel(`tournament-status-${tournamentId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "tournaments",
-          filter: `id=eq.${tournamentId}`,
-        },
-        (payload) => {
-          const newTournament = payload.new as any;
-          setCurrentTournament((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  ...newTournament,
-                  status: newTournament.status as "waiting" | "in_progress" | "completed" | "cancelled",
-                }
-              : null,
-          );
-        },
-      )
+    const channel = supabase
+      .channel(`tournament-details-${tournamentId}`)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "tournament_participants",
+        filter: `tournament_id=eq.${tournamentId}`,
+      }, () => {
+        fetchTournamentDetails(tournamentId);
+      })
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "tournament_matches",
+        filter: `tournament_id=eq.${tournamentId}`,
+      }, () => {
+        fetchTournamentDetails(tournamentId);
+      })
+      .on("postgres_changes", {
+        event: "UPDATE",
+        schema: "public",
+        table: "tournaments",
+        filter: `id=eq.${tournamentId}`,
+      }, (payload) => {
+        setCurrentTournament((prev) => prev ? { ...prev, ...payload.new } as Tournament : null);
+      })
       .subscribe();
 
     return () => {
-      supabase.removeChannel(participantsChannel);
-      supabase.removeChannel(matchesChannel);
-      supabase.removeChannel(statusChannel);
+      supabase.removeChannel(channel);
     };
   }, [currentTournament?.id]);
-
-  // Auto-check tournament progress
-  const checkTournamentProgress = async (tournamentId: string) => {
-    try {
-      const { data: matches } = await supabase
-        .from("tournament_matches")
-        .select("*")
-        .eq("tournament_id", tournamentId)
-        .eq("status", "completed");
-
-      const { data: tournament } = await supabase
-        .from("tournaments")
-        .select("current_round")
-        .eq("id", tournamentId)
-        .single();
-
-      if (!matches || !tournament) return;
-
-      const currentRound = tournament.current_round;
-      const roundMatches = matches.filter((m) => m.round === currentRound);
-
-      // Count expected matches for current round
-      const expectedMatches = currentRound === 1 ? 4 : currentRound === 2 ? 2 : 1;
-
-      if (roundMatches.length === expectedMatches && currentRound < 3) {
-        // Auto-advance to next round
-        console.log(`Round ${currentRound} complete, advancing...`);
-
-        await supabase.rpc("advance_tournament_round", {
-          p_tournament_id: tournamentId,
-        });
-      }
-    } catch (error) {
-      console.error("Error checking tournament progress:", error);
-    }
-  };
 
   const value: TournamentContextType = {
     tournaments,
@@ -684,13 +522,13 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
     participants,
     matches,
     loading,
-    serverTimeOffset,
     createTournament,
     joinTournament,
     leaveTournament,
     startTournament,
     fetchTournaments,
     fetchTournamentDetails,
+    advanceToNextRound,
     resetContext,
   };
 

@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useTournamentContext } from "@/contexts/TournamentContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { calculateServerOffset } from "@/utils/serverTimeSync";
 
 export const useTournament = (tournamentId?: string) => {
   const { user } = useAuth();
@@ -14,73 +13,37 @@ export const useTournament = (tournamentId?: string) => {
   const [isCreator, setIsCreator] = useState(false);
   const [hasJoined, setHasJoined] = useState(false);
   const [realPlayerCount, setRealPlayerCount] = useState(0);
-  const [serverTimeOffset, setServerTimeOffset] = useState(0);
-  
-  // Track expires_at to prevent countdown reset on every render
-  const expiresAtRef = useRef<string | null>(null);
+
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const startingRef = useRef(false);
 
-  // Get server time offset once on mount - Seviye 1 optimizasyonlu
-  useEffect(() => {
-    const initializeServerSync = async () => {
-      const offset = await calculateServerOffset();
-      setServerTimeOffset(offset);
-      console.log("⏰ Tournament hook server time offset:", offset, "ms");
-    };
-    initializeServerSync();
-  }, []);
-
-  // Calculate countdown - only reset when expires_at actually changes
+  // Countdown timer
   useEffect(() => {
     if (!context.currentTournament?.expires_at || context.currentTournament?.status !== "waiting") {
-      expiresAtRef.current = null;
+      setTimeLeft(0);
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
-      setTimeLeft(0);
       return;
     }
 
-    // Only reset countdown if expires_at actually changed
-    const newExpiresAt = context.currentTournament.expires_at;
-    if (expiresAtRef.current === newExpiresAt && intervalRef.current) {
-      return; // Don't restart interval if expires_at hasn't changed and interval is running
-    }
-    
-    expiresAtRef.current = newExpiresAt;
+    const expiresAt = new Date(context.currentTournament.expires_at).getTime();
 
-    // Clear any existing interval before starting new one
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
-
-    intervalRef.current = setInterval(() => {
-      const expiresAt = new Date(newExpiresAt).getTime();
-      const now = Date.now() + serverTimeOffset; // Use server time
+    const tick = () => {
+      const now = Date.now();
       const remaining = Math.max(0, Math.floor((expiresAt - now) / 1000));
-
       setTimeLeft(remaining);
 
-      // Auto-start or cancel when time is up AND tournament is still waiting
-      if (remaining === 0 && context.currentTournament?.status === "waiting") {
-        if (realPlayerCount >= 2) {
-          if (isCreator) {
-            startTournament();
-          }
-        } else {
-          // Cancel tournament if not enough players - any participant can trigger this
-          supabase
-            .from("tournaments")
-            .update({ status: "cancelled" })
-            .eq("id", tournamentId)
-            .then(() => {
-              // Force refetch tournament details to get updated status
-              context.fetchTournamentDetails(tournamentId);
-            });
-        }
+      // Auto-start when countdown ends
+      if (remaining === 0 && !startingRef.current) {
+        startingRef.current = true;
+        handleCountdownEnd();
       }
-    }, 1000);
+    };
+
+    tick();
+    intervalRef.current = setInterval(tick, 1000);
 
     return () => {
       if (intervalRef.current) {
@@ -88,59 +51,51 @@ export const useTournament = (tournamentId?: string) => {
         intervalRef.current = null;
       }
     };
-  }, [
-    context.currentTournament?.expires_at,
-    context.currentTournament?.status,
-    isCreator,
-    realPlayerCount,
-    tournamentId,
-    serverTimeOffset,
-  ]);
+  }, [context.currentTournament?.expires_at, context.currentTournament?.status]);
+
+  // Handle countdown end
+  const handleCountdownEnd = useCallback(async () => {
+    if (!tournamentId || !user || !context.currentTournament) return;
+
+    // Only creator starts the tournament
+    if (context.currentTournament.creator_id !== user.id) {
+      console.log("⏳ Bekliyor - kurucu başlatacak");
+      return;
+    }
+
+    if (realPlayerCount < 2) {
+      // Cancel tournament
+      await supabase
+        .from("tournaments")
+        .update({ status: "cancelled" })
+        .eq("id", tournamentId);
+      return;
+    }
+
+    console.log("🏆 Kurucu turnuvayı başlatıyor...");
+    const success = await context.startTournament(tournamentId);
+    
+    if (success) {
+      navigate(`/tournament-bracket/${tournamentId}`);
+    }
+  }, [tournamentId, user, context, realPlayerCount, navigate]);
 
   // Update derived state
   useEffect(() => {
     if (!context.currentTournament || !user) return;
 
     setIsCreator(context.currentTournament.creator_id === user.id);
-
-    const userParticipant = context.participants.find((p) => p.user_id === user.id);
-    console.log("🔍 User participant check:", {
-      userId: user.id.slice(-8),
-      participantsCount: context.participants.length,
-      participants: context.participants.map((p) => ({ id: p.user_id?.slice(-8), isBot: p.is_bot })),
-      found: !!userParticipant,
-    });
-    setHasJoined(!!userParticipant);
-
-    const realPlayers = context.participants.filter((p) => !p.is_bot);
-    setRealPlayerCount(realPlayers.length);
+    setHasJoined(context.participants.some((p) => p.user_id === user.id && !p.is_bot));
+    setRealPlayerCount(context.participants.filter((p) => !p.is_bot).length);
   }, [context.currentTournament, context.participants, user]);
 
-  const startTournament = async () => {
-    if (!tournamentId || !isCreator || !context.currentTournament) return;
-
-    // Check if tournament is already started or in progress
-    if (context.currentTournament.status !== "waiting") {
-      console.log("Tournament already started or not waiting:", context.currentTournament.status);
-      return;
-    }
-
-    // Check minimum participants
-    if (realPlayerCount < 2) {
-      // Cancel tournament
-      await supabase.from("tournaments").update({ status: "cancelled" }).eq("id", tournamentId);
-      return;
-    }
-
-    const success = await context.startTournament(tournamentId);
-    if (success) {
-      navigate(`/tournament-bracket/${tournamentId}`);
-    }
-  };
+  // Reset starting ref when tournament changes
+  useEffect(() => {
+    startingRef.current = false;
+  }, [tournamentId]);
 
   const joinTournament = async () => {
     if (!tournamentId) return false;
-
     const success = await context.joinTournament(tournamentId);
     if (success) {
       navigate(`/tournament-waiting/${tournamentId}`);
@@ -150,7 +105,6 @@ export const useTournament = (tournamentId?: string) => {
 
   const leaveTournament = async () => {
     if (!tournamentId) return false;
-
     const success = await context.leaveTournament(tournamentId);
     if (success) {
       navigate("/tournament");
@@ -164,7 +118,6 @@ export const useTournament = (tournamentId?: string) => {
     isCreator,
     hasJoined,
     realPlayerCount,
-    startTournament,
     joinTournament,
     leaveTournament,
   };
