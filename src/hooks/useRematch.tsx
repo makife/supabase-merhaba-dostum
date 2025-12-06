@@ -92,11 +92,21 @@ export const useRematch = (userId: string | undefined, opponentId: string | null
     gameType: "timed" | "score",
     currentGameMode: string
   ): Promise<boolean> => {
-    if (!userId || !opponentId) {
-      console.error("❌ Rematch: userId veya opponentId yok");
+    if (!userId) {
+      console.error("❌ Rematch: userId yok");
       toast({
         title: "Hata",
-        description: "Rakip bulunamadı",
+        description: "Giriş yapmanız gerekiyor",
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    if (!opponentId) {
+      console.error("❌ Rematch: Opponent yok");
+      toast({
+        title: "Hata",
+        description: "Rakip bulunamadı. Lütfen ana menüye dönüp tekrar deneyin.",
         variant: "destructive",
       });
       return false;
