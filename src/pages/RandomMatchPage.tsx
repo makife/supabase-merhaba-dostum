@@ -304,11 +304,23 @@ const RandomMatchPage = () => {
 
         setIsLoading(false);
 
-        // Check if countdown already started - add buffer animation
+        // Check if countdown already started - start countdown IMMEDIATELY
+        // Buffer animation runs in parallel, countdown starts right away
         if (roomData.countdown_started_at && !countdownInitiatedRef.current) {
           countdownInitiatedRef.current = true;
           
-          // Buffer animasyonu: 3.5s hazırlanıyor, 0.5s hazır, 1s boşluk, sonra countdown
+          // Calculate ADJUSTED server time: countdown_started_at + 5s buffer = actual countdown start
+          // Bu sayede countdown 5 saniye sonra başlayacak şekilde hesaplanır
+          const originalStartTime = new Date(roomData.countdown_started_at).getTime();
+          const adjustedStartTime = new Date(originalStartTime + 5000).toISOString(); // Add 5s buffer
+          
+          console.log("⏱️ Countdown timing:", {
+            original: roomData.countdown_started_at,
+            adjusted: adjustedStartTime,
+            bufferMs: 5000
+          });
+          
+          // Buffer animasyonu: 3.5s hazırlanıyor, 0.5s hazır, 1s boşluk
           setPreparingOpponent("preparing");
           
           setTimeout(() => {
@@ -321,10 +333,11 @@ const RandomMatchPage = () => {
             setPreparingOpponent(null);
           }, 3500);
           
-          // 5 saniyelik buffer sonunda countdown göster
+          // Countdown'u HEMEN göster ama ADJUSTED time ile (5s sonra başlayacak)
+          // Bu sayede 5 4 3 2 1 tam olarak görünür
           setTimeout(() => {
             if (!isMountedRef.current) return;
-            setCountdownServerTime(roomData.countdown_started_at);
+            setCountdownServerTime(adjustedStartTime);
             setShowCountdown(true);
           }, 5000);
         }
@@ -417,7 +430,17 @@ const RandomMatchPage = () => {
             console.log("⏱️ Countdown started from realtime - buffer başlıyor");
             countdownInitiatedRef.current = true;
             
-            // Buffer animasyonu: 3.5s hazırlanıyor, 0.5s hazır, 1s boşluk, sonra countdown
+            // Calculate ADJUSTED server time: countdown_started_at + 5s buffer = actual countdown start
+            const originalStartTime = new Date(newRoom.countdown_started_at).getTime();
+            const adjustedStartTime = new Date(originalStartTime + 5000).toISOString();
+            
+            console.log("⏱️ Realtime countdown timing:", {
+              original: newRoom.countdown_started_at,
+              adjusted: adjustedStartTime,
+              bufferMs: 5000
+            });
+            
+            // Buffer animasyonu: 3.5s hazırlanıyor, 0.5s hazır, 1s boşluk
             setPreparingOpponent("preparing");
             
             setTimeout(() => {
@@ -430,11 +453,11 @@ const RandomMatchPage = () => {
               setPreparingOpponent(null);
             }, 3500);
             
-            // 5 saniyelik buffer sonunda countdown göster
+            // Countdown'u HEMEN göster ama ADJUSTED time ile (5s sonra başlayacak)
             setTimeout(() => {
               if (!isMountedRef.current) return;
               console.log("⏱️ Buffer tamamlandı, countdown gösteriliyor");
-              setCountdownServerTime(newRoom.countdown_started_at);
+              setCountdownServerTime(adjustedStartTime);
               setShowCountdown(true);
             }, 5000);
           }
