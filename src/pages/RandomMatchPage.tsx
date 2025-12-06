@@ -238,6 +238,22 @@ const RandomMatchPage = () => {
 
         setRoom(roomData as RoomData);
 
+        // Determine which player we are
+        const isPlayer1 = roomData.player1_id === user.id;
+        const isPlayer2 = roomData.player2_id === user.id;
+        
+        console.log("🎮 Room loaded - isPlayer1:", isPlayer1, "isPlayer2:", isPlayer2);
+        console.log("🔢 Scores - p1:", roomData.player1_score, "p2:", roomData.player2_score);
+
+        // Set initial scores correctly
+        if (isPlayer1) {
+          setPlayerScore(roomData.player1_score || 0);
+          setOpponentScore(roomData.player2_score || 0);
+        } else if (isPlayer2) {
+          setPlayerScore(roomData.player2_score || 0);
+          setOpponentScore(roomData.player1_score || 0);
+        }
+
         // Set grid from room
         if (roomData.current_grid) {
           const flat = roomData.current_grid as string[];
@@ -252,8 +268,9 @@ const RandomMatchPage = () => {
         }
 
         // Load opponent
-        const opponentId = roomData.player1_id === user.id ? roomData.player2_id : roomData.player1_id;
+        const opponentId = isPlayer1 ? roomData.player2_id : roomData.player1_id;
         if (opponentId) {
+          console.log("👤 Loading opponent:", opponentId);
           const { data: opponentData } = await supabase
             .from("profiles")
             .select("id, username, avatar_url")
@@ -262,7 +279,10 @@ const RandomMatchPage = () => {
           
           if (opponentData) {
             setOpponent(opponentData);
+            console.log("✅ Opponent loaded:", opponentData.username);
           }
+        } else {
+          console.log("⚠️ No opponent ID yet, will load from realtime");
         }
 
         setIsLoading(false);
@@ -319,19 +339,41 @@ const RandomMatchPage = () => {
           table: "game_rooms",
           filter: `id=eq.${roomId}`,
         },
-        (payload) => {
+        async (payload) => {
           const newRoom = payload.new as RoomData;
-          console.log("📡 Room update:", newRoom.status);
+          console.log("📡 Room update:", newRoom.status, "p1:", newRoom.player1_score, "p2:", newRoom.player2_score);
 
           setRoom(newRoom);
 
-          // Update scores
-          if (user.id === newRoom.player1_id) {
-            setPlayerScore(newRoom.player1_score || 0);
+          // Determine which player we are
+          const isPlayer1 = user.id === newRoom.player1_id;
+          const isPlayer2 = user.id === newRoom.player2_id;
+          
+          console.log("🔍 User check - isPlayer1:", isPlayer1, "isPlayer2:", isPlayer2);
+
+          // Update opponent score only (player score is managed locally)
+          if (isPlayer1) {
             setOpponentScore(newRoom.player2_score || 0);
-          } else {
-            setPlayerScore(newRoom.player2_score || 0);
+          } else if (isPlayer2) {
             setOpponentScore(newRoom.player1_score || 0);
+          }
+
+          // Load opponent if not loaded yet (may have joined after page load)
+          if (!opponent) {
+            const opponentId = isPlayer1 ? newRoom.player2_id : newRoom.player1_id;
+            if (opponentId) {
+              console.log("👤 Loading opponent from realtime:", opponentId);
+              const { data: opponentData } = await supabase
+                .from("profiles")
+                .select("id, username, avatar_url")
+                .eq("id", opponentId)
+                .single();
+              
+              if (opponentData) {
+                setOpponent(opponentData);
+                console.log("✅ Opponent loaded:", opponentData.username);
+              }
+            }
           }
 
           // Countdown başlatma - buffer animasyonu ile
@@ -374,7 +416,7 @@ const RandomMatchPage = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [roomId, user, gameEnded]);
+  }, [roomId, user, gameEnded, opponent]);
 
   // ============= GAME HANDLERS =============
   const handleTimeUp = useCallback(async () => {
