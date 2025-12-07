@@ -112,7 +112,7 @@ const NeonBlitz: React.FC = () => {
       if (newScore % LEVEL_THRESHOLD === 0) {
         setLevel((prev) => prev + 1);
         setThemeColor(generateRandomColor());
-        maxTimeRef.current = Math.max(400, maxTimeRef.current * 0.85);
+        maxTimeRef.current = Math.max(400, maxTimeRef.current * 0.89);
       }
 
       nextTurn();
