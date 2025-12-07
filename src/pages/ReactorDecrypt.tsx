@@ -1,351 +1,353 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import { X, Lock, Unlock, Timer } from "lucide-react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { ArrowLeft, Play, RefreshCw, Trophy } from "lucide-react";
 
-// --- TİPLER ---
-interface Particle {
+// --- TİP TANIMLAMALARI ---
+type GameState = "MENU" | "PLAYING" | "GAMEOVER";
+
+interface Tile {
   id: number;
-  char: string;
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  size: number;
-  isTarget: boolean; // Sırada bu mu var? (Debug için değil, mantık için)
 }
 
-interface ReactorDecryptProps {
-  word?: string; // Dışarıdan kelime gönderilebilir
-  onComplete?: (success: boolean) => void; // Oyun bitince ne olacak?
-  onClose?: () => void; // Kapatma butonu
-}
+// --- SABİTLER ---
+const GRID_SIZE = 9; // 3x3 Grid
+const INITIAL_TIME = 2000; // Milisaniye cinsinden başlangıç süresi
+const LEVEL_THRESHOLD = 5; // Her 5 puanda bir level atla
 
-const ReactorDecrypt: React.FC<ReactorDecryptProps> = ({ 
-  word = "ÇEKİRDEK", 
-  onComplete, 
-  onClose 
-}) => {
-  // --- AYARLAR ---
-  const GAME_WIDTH = 600;
-  const GAME_HEIGHT = 400;
-  const TIME_LIMIT = 15; // Saniye
+const App: React.FC = () => {
+  // --- STATE YÖNETİMİ ---
+  const [gameState, setGameState] = useState<GameState>("MENU");
+  const [score, setScore] = useState<number>(0);
+  const [level, setLevel] = useState<number>(1);
+  const [activeTile, setActiveTile] = useState<number | null>(null);
+  const [timeLeft, setTimeLeft] = useState<number>(100); // Yüzdelik bar için
+  const [themeColor, setThemeColor] = useState<string>("hsl(180, 100%, 50%)"); // Başlangıç rengi (Cyan)
 
-  // --- STATE ---
-  const [targetWord, setTargetWord] = useState(word.toUpperCase());
-  const [foundIndex, setFoundIndex] = useState(0); // Kaçıncı harfteyiz
-  const [timeLeft, setTimeLeft] = useState(TIME_LIMIT);
-  const [gameState, setGameState] = useState<"playing" | "won" | "lost">("playing");
-  const [particles, setParticles] = useState<Particle[]>([]);
-  const [shake, setShake] = useState(false); // Hata efekt
+  // Zamanlayıcı referansları
+  const timerRef = useRef<number | null>(null);
+  const progressRef = useRef<number | null>(null);
+  const maxTimeRef = useRef<number>(INITIAL_TIME);
+  const startTimeRef = useRef<number>(0);
 
-  // --- REF ---
-  const reqRef = useRef<number>();
-  const particlesRef = useRef<Particle[]>([]);
-  const containerRef = useRef<HTMLDivElement>(null);
+  // --- YARDIMCI FONKSİYONLAR ---
 
-  // --- SES (Basit bip sesi) ---
-  const playTone = (freq: number, type: "sine" | "square" | "sawtooth", duration: number) => {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContextClass) return;
-    const ctx = new AudioContextClass();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.frequency.value = freq;
-    osc.type = type;
-    osc.start();
-    gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + duration);
-    osc.stop(ctx.currentTime + duration);
+  // Rastgele canlı bir renk üretir
+  const generateRandomColor = () => {
+    const hue = Math.floor(Math.random() * 360);
+    return `hsl(${hue}, 100%, 60%)`;
   };
 
-  // --- BAŞLANGIÇ ---
-  useEffect(() => {
-    // Harfleri parçacık olarak oluştur
-    const chars = targetWord.split("");
-    // Biraz kafa karıştırmak için rastgele 3-4 harf daha ekleyelim
-    const decoChars = ["X", "Q", "W", "Z", "1", "0"];
-    const allChars = [...chars, ...decoChars.slice(0, 3)].sort(() => Math.random() - 0.5);
+  // Yeni bir hedef kutucuk seçer (bir öncekiyle aynı olamaz)
+  const pickNewTile = useCallback((current: number | null) => {
+    let newTile;
+    do {
+      newTile = Math.floor(Math.random() * GRID_SIZE);
+    } while (newTile === current);
+    return newTile;
+  }, []);
 
-    const newParticles: Particle[] = allChars.map((char, i) => ({
-      id: i,
-      char,
-      x: Math.random() * (GAME_WIDTH - 60) + 30,
-      y: Math.random() * (GAME_HEIGHT - 60) + 30,
-      vx: (Math.random() - 0.5) * 3, // Rastgele hız
-      vy: (Math.random() - 0.5) * 3,
-      size: 40 + Math.random() * 10,
-      isTarget: false
-    }));
+  // --- OYUN MANTIĞI ---
 
-    particlesRef.current = newParticles;
-    setParticles(newParticles);
-    
-    // Oyun Döngüsünü Başlat
-    reqRef.current = requestAnimationFrame(gameLoop);
+  const startGame = () => {
+    setScore(0);
+    setLevel(1);
+    maxTimeRef.current = INITIAL_TIME;
+    setThemeColor(generateRandomColor());
+    setGameState("PLAYING");
+    nextTurn(true);
+  };
 
-    // Zaman Sayacı
-    const timer = setInterval(() => {
-      if (gameState === "playing") {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            handleGameOver(false);
-            return 0;
-          }
-          return prev - 1;
-        });
+  const stopGame = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (progressRef.current) cancelAnimationFrame(progressRef.current);
+    setGameState("GAMEOVER");
+  };
+
+  const returnHome = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (progressRef.current) cancelAnimationFrame(progressRef.current);
+    setGameState("MENU");
+  };
+
+  // Her turda çalışacak döngü
+  const nextTurn = (isFirst: boolean = false) => {
+    // Önceki zamanlayıcıları temizle
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (progressRef.current) cancelAnimationFrame(progressRef.current);
+
+    // Yeni hedef belirle
+    const nextTile = pickNewTile(isFirst ? null : activeTile);
+    setActiveTile(nextTile);
+
+    // Zamanlayıcıyı başlat
+    startTimeRef.current = Date.now();
+
+    // Progress bar animasyonu loop'u
+    const updateProgress = () => {
+      const now = Date.now();
+      const elapsed = now - startTimeRef.current;
+      const remaining = Math.max(0, maxTimeRef.current - elapsed);
+      const percentage = (remaining / maxTimeRef.current) * 100;
+
+      setTimeLeft(percentage);
+
+      if (remaining > 0) {
+        progressRef.current = requestAnimationFrame(updateProgress);
+      } else {
+        stopGame(); // Süre bitti
       }
-    }, 1000);
-
-    return () => {
-      if (reqRef.current) cancelAnimationFrame(reqRef.current);
-      clearInterval(timer);
     };
-  }, []); // Sadece mount olduğunda çalış
 
-  // --- OYUN SONU ---
-  const handleGameOver = (success: boolean) => {
-    setGameState(success ? "won" : "lost");
-    if (reqRef.current) cancelAnimationFrame(reqRef.current);
-    if (success) playTone(880, "square", 0.5);
-    else playTone(150, "sawtooth", 0.8);
-
-    // 2 saniye sonra callback çağır
-    setTimeout(() => {
-      if (onComplete) onComplete(success);
-    }, 2000);
+    progressRef.current = requestAnimationFrame(updateProgress);
   };
 
-  // --- FİZİK MOTORU ---
-  const gameLoop = () => {
-    if (gameState !== "playing") return;
+  const handleTileClick = (id: number) => {
+    if (gameState !== "PLAYING") return;
 
-    particlesRef.current = particlesRef.current.map(p => {
-      let { x, y, vx, vy } = p;
+    if (id === activeTile) {
+      // DOĞRU TIKLAMA
+      const newScore = score + 1;
+      setScore(newScore);
 
-      x += vx;
-      y += vy;
-
-      // Duvarlardan sekme
-      if (x <= 0 || x >= GAME_WIDTH - p.size) vx *= -1;
-      if (y <= 0 || y >= GAME_HEIGHT - p.size) vy *= -1;
-
-      return { ...p, x, y, vx, vy };
-    });
-
-    setParticles([...particlesRef.current]);
-    reqRef.current = requestAnimationFrame(gameLoop);
-  };
-
-  // --- TIKLAMA MANTIĞI ---
-  const handleParticleClick = (p: Particle) => {
-    if (gameState !== "playing") return;
-
-    const neededChar = targetWord[foundIndex];
-
-    if (p.char === neededChar) {
-      // DOĞRU HARF
-      playTone(600 + (foundIndex * 100), "sine", 0.1);
-      
-      // O harfi parçacık listesinden kaldır (veya görünmez yap)
-      const newParticles = particlesRef.current.filter(particle => particle.id !== p.id);
-      particlesRef.current = newParticles;
-      setParticles(newParticles);
-
-      const nextIndex = foundIndex + 1;
-      setFoundIndex(nextIndex);
-
-      if (nextIndex === targetWord.length) {
-        handleGameOver(true);
+      // Level Kontrolü
+      if (newScore % LEVEL_THRESHOLD === 0) {
+        setLevel((prev) => prev + 1);
+        setThemeColor(generateRandomColor()); // Level atlayınca renk değişsin
+        // Süreyi kısalt (Zorlaştırma) - En az 400ms'ye kadar düşebilir
+        maxTimeRef.current = Math.max(400, maxTimeRef.current * 0.92);
       }
+
+      nextTurn();
     } else {
-      // YANLIŞ HARF
-      playTone(150, "sawtooth", 0.3);
-      setShake(true);
-      setTimeout(() => setShake(false), 500);
-      setTimeLeft(prev => Math.max(0, prev - 2)); // 2 saniye ceza!
+      // YANLIŞ TIKLAMA -> Oyun biter
+      stopGame();
     }
   };
 
-  // --- RENDER ---
-  return (
-    <div className="mini-game-overlay">
-      <div className={`mini-game-container ${shake ? "shake" : ""}`}>
-        
-        {/* HEADER */}
-        <div className="mg-header">
-          <div className="mg-title">
-             <Lock size={18} /> ŞİFRE ÇÖZÜCÜ
-          </div>
-          <div className={`mg-timer ${timeLeft < 5 ? "danger" : ""}`}>
-            <Timer size={18} /> {timeLeft}s
-          </div>
-          {onClose && (
-            <button onClick={onClose} className="mg-close-btn">
-              <X size={20} />
-            </button>
-          )}
-        </div>
+  // --- EKRAN BİLEŞENLERİ ---
 
-        {/* OYUN ALANI */}
-        <div className="mg-stage" style={{ width: GAME_WIDTH, height: GAME_HEIGHT }}>
-          
-          {/* Parçacıklar */}
-          {particles.map((p) => (
-            <div
-              key={p.id}
-              className="mg-particle"
-              onPointerDown={(e) => {
-                e.stopPropagation(); // Arkaya tıklamayı engelle
-                handleParticleClick(p);
-              }}
-              style={{
-                left: p.x,
-                top: p.y,
-                width: p.size,
-                height: p.size,
-                fontSize: p.size * 0.6,
-                borderColor: targetWord[foundIndex] === p.char ? "#00ff00" : "#444" // İpucu (isteğe bağlı kapatılabilir)
-              }}
-            >
-              {p.char}
-            </div>
-          ))}
+  // 1. Ana Menü
+  const renderMenu = () => (
+    <div style={styles.centerContainer}>
+      <h1 style={{ ...styles.title, textShadow: `0 0 20px ${themeColor}` }}>NEON REFLEKS</h1>
+      <p style={styles.subtitle}>Hızını Test Et. Rengi Yakala.</p>
+      <button
+        onClick={startGame}
+        style={{ ...styles.button, backgroundColor: themeColor, boxShadow: `0 0 15px ${themeColor}` }}
+      >
+        <Play size={24} style={{ marginRight: 8 }} /> OYNA
+      </button>
+    </div>
+  );
 
-          {/* Hedef Kelime Göstergesi (Alt Bar) */}
-          <div className="mg-word-display">
-            {targetWord.split("").map((char, i) => (
-              <div 
-                key={i} 
-                className={`mg-char-slot ${i < foundIndex ? "found" : ""} ${i === foundIndex ? "active" : ""}`}
-              >
-                {i < foundIndex ? char : (i === foundIndex ? "?" : "_")}
-              </div>
-            ))}
-          </div>
-
-          {/* Sonuç Ekranı */}
-          {gameState !== "playing" && (
-            <div className="mg-result-overlay">
-              <div className={`mg-result-card ${gameState}`}>
-                {gameState === "won" ? (
-                  <>
-                    <Unlock size={48} />
-                    <h3>Erişim Sağlandı!</h3>
-                  </>
-                ) : (
-                  <>
-                    <Lock size={48} />
-                    <h3>Süre Doldu!</h3>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-
+  // 2. Oyun Ekranı
+  const renderGame = () => (
+    <div style={styles.gameContainer}>
+      {/* Üst Bar */}
+      <div style={styles.header}>
+        <button onClick={returnHome} style={styles.iconButton}>
+          <ArrowLeft size={28} color="#fff" />
+        </button>
+        <div style={styles.scoreBoard}>
+          <div style={{ color: themeColor }}>LVL {level}</div>
+          <div>SKOR: {score}</div>
         </div>
       </div>
 
-      <style>{`
-        .mini-game-overlay {
-          position: fixed; inset: 0;
-          background: rgba(0,0,0,0.85);
-          backdrop-filter: blur(5px);
-          display: flex; align-items: center; justify-content: center;
-          z-index: 100;
-        }
-        .mini-game-container {
-          background: #111;
-          border: 2px solid #333;
-          border-radius: 12px;
-          overflow: hidden;
-          box-shadow: 0 0 40px rgba(0, 255, 255, 0.2);
-          width: 100%; max-width: 620px;
-        }
-        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
-        
-        @keyframes shake {
-          10%, 90% { transform: translate3d(-1px, 0, 0); }
-          20%, 80% { transform: translate3d(2px, 0, 0); }
-          30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
-          40%, 60% { transform: translate3d(4px, 0, 0); }
-        }
+      {/* Süre Çubuğu */}
+      <div style={styles.progressContainer}>
+        <div
+          style={{
+            ...styles.progressBar,
+            width: `${timeLeft}%`,
+            backgroundColor: themeColor,
+            boxShadow: `0 0 10px ${themeColor}`,
+          }}
+        />
+      </div>
 
-        .mg-header {
-          display: flex; justify-content: space-between; align-items: center;
-          padding: 10px 20px;
-          background: #222; border-bottom: 1px solid #333;
-          color: #fff;
-        }
-        .mg-title { display: flex; gap: 8px; align-items: center; font-weight: bold; color: #00ffff; }
-        .mg-timer { 
-            font-family: monospace; font-size: 20px; color: #00ff00; 
-            display: flex; align-items: center; gap: 5px; 
-        }
-        .mg-timer.danger { color: #ff0000; animation: pulse 0.5s infinite; }
-        
-        .mg-close-btn {
-            background: none; border: none; color: #666; cursor: pointer;
-        }
-        .mg-close-btn:hover { color: #fff; }
+      {/* Oyun Alanı Grid */}
+      <div style={styles.grid}>
+        {Array.from({ length: GRID_SIZE }).map((_, index) => (
+          <button
+            key={index}
+            onClick={() => handleTileClick(index)}
+            style={{
+              ...styles.tile,
+              backgroundColor: index === activeTile ? themeColor : "rgba(255,255,255,0.05)",
+              boxShadow: index === activeTile ? `0 0 30px ${themeColor}` : "none",
+              transform: index === activeTile ? "scale(1.05)" : "scale(1)",
+              borderColor: index === activeTile ? "#fff" : "rgba(255,255,255,0.1)",
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
 
-        .mg-stage {
-          position: relative;
-          background: radial-gradient(circle at center, #1a1a2e 0%, #000 100%);
-          overflow: hidden;
-          margin: 0 auto;
-        }
+  // 3. Game Over Ekranı
+  const renderGameOver = () => (
+    <div style={styles.centerContainer}>
+      <Trophy size={64} color={themeColor} style={{ marginBottom: 20 }} />
+      <h2 style={styles.gameOverTitle}>OYUN BİTTİ</h2>
+      <div style={styles.finalScore}>Skorun: {score}</div>
+      <div style={styles.finalLevel}>Ulaşılan Level: {level}</div>
 
-        .mg-particle {
-          position: absolute;
-          border-radius: 50%;
-          background: rgba(255,255,255,0.1);
-          border: 2px solid #444;
-          color: #fff;
-          display: flex; align-items: center; justify-content: center;
-          font-weight: bold;
-          cursor: pointer;
-          user-select: none;
-          box-shadow: 0 0 10px rgba(0,0,0,0.5);
-          transition: transform 0.1s, border-color 0.2s;
-        }
-        .mg-particle:active { transform: scale(0.9); background: rgba(255,255,255,0.2); }
+      <div style={styles.buttonGroup}>
+        <button onClick={startGame} style={{ ...styles.button, backgroundColor: themeColor, marginRight: 10 }}>
+          <RefreshCw size={20} style={{ marginRight: 8 }} /> Tekrar Dene
+        </button>
+        <button onClick={returnHome} style={{ ...styles.outlineButton, borderColor: themeColor, color: themeColor }}>
+          Ana Sayfa
+        </button>
+      </div>
+    </div>
+  );
 
-        .mg-word-display {
-          position: absolute; bottom: 20px; left: 0; width: 100%;
-          display: flex; justify-content: center; gap: 10px;
-          pointer-events: none;
-        }
-        
-        .mg-char-slot {
-          width: 40px; height: 50px;
-          border-bottom: 3px solid #444;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 24px; font-weight: bold; color: #666;
-          font-family: monospace;
-        }
-        .mg-char-slot.found { color: #00ff00; border-color: #00ff00; text-shadow: 0 0 10px #00ff00; }
-        .mg-char-slot.active { border-color: #00ffff; color: #00ffff; animation: blink 1s infinite; }
-
-        .mg-result-overlay {
-          position: absolute; inset: 0;
-          background: rgba(0,0,0,0.6);
-          display: flex; align-items: center; justify-content: center;
-          z-index: 20;
-        }
-        .mg-result-card {
-            background: #222; color: #fff; padding: 30px; border-radius: 20px;
-            display: flex; flex-direction: column; align-items: center; gap: 10px;
-            border: 2px solid #444;
-        }
-        .mg-result-card.won { border-color: #00ff00; color: #00ff00; box-shadow: 0 0 30px rgba(0,255,0,0.3); }
-        .mg-result-card.lost { border-color: #ff0000; color: #ff0000; box-shadow: 0 0 30px rgba(255,0,0,0.3); }
-
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-        @keyframes blink { 0% { border-color: #444; } 50% { border-color: #00ffff; } 100% { border-color: #444; } }
-      `}</style>
+  return (
+    <div style={styles.appContainer}>
+      {gameState === "MENU" && renderMenu()}
+      {gameState === "PLAYING" && renderGame()}
+      {gameState === "GAMEOVER" && renderGameOver()}
     </div>
   );
 };
 
-export default ReactorDecrypt;
-            
+// --- STYLES (CSS-in-JS) ---
+// Not: Normalde ayrı bir CSS dosyası önerilir ama kopyala-yapıştır kolaylığı için buraya ekledim.
+const styles: { [key: string]: React.CSSProperties } = {
+  appContainer: {
+    width: "100vw",
+    height: "100vh",
+    backgroundColor: "#0f0f13", // Çok koyu gri/siyah arka plan
+    color: "#fff",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+    overflow: "hidden",
+    userSelect: "none",
+  },
+  centerContainer: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    textAlign: "center",
+    padding: 20,
+    animation: "fadeIn 0.5s ease",
+  },
+  gameContainer: {
+    width: "100%",
+    height: "100%",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    padding: "20px",
+    maxWidth: "500px", // Mobilde tam ekran, masaüstünde limitli
+  },
+  header: {
+    width: "100%",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "20px",
+    paddingTop: "20px", // Safe area
+  },
+  scoreBoard: {
+    fontSize: "1.2rem",
+    fontWeight: "bold",
+    textAlign: "right",
+  },
+  title: {
+    fontSize: "3rem",
+    fontWeight: "900",
+    marginBottom: "10px",
+    letterSpacing: "2px",
+    color: "#fff",
+  },
+  subtitle: {
+    fontSize: "1.2rem",
+    color: "#aaa",
+    marginBottom: "40px",
+  },
+  gameOverTitle: {
+    fontSize: "2.5rem",
+    fontWeight: "bold",
+    marginBottom: "10px",
+  },
+  finalScore: {
+    fontSize: "2rem",
+    fontWeight: "bold",
+    marginBottom: "5px",
+  },
+  finalLevel: {
+    fontSize: "1rem",
+    color: "#888",
+    marginBottom: "30px",
+  },
+  button: {
+    padding: "15px 40px",
+    fontSize: "1.2rem",
+    fontWeight: "bold",
+    color: "#000",
+    border: "none",
+    borderRadius: "50px",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    transition: "transform 0.1s",
+  },
+  outlineButton: {
+    padding: "13px 30px",
+    fontSize: "1rem",
+    fontWeight: "bold",
+    backgroundColor: "transparent",
+    border: "2px solid",
+    borderRadius: "50px",
+    cursor: "pointer",
+  },
+  iconButton: {
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    padding: "10px",
+    borderRadius: "50%",
+    backgroundColor: "rgba(255,255,255,0.1)",
+  },
+  buttonGroup: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  progressContainer: {
+    width: "100%",
+    height: "10px",
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: "10px",
+    marginBottom: "30px",
+    overflow: "hidden",
+  },
+  progressBar: {
+    height: "100%",
+    transition: "width 0.1s linear", // Akıcı azalma için
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, 1fr)",
+    gap: "15px",
+    width: "100%",
+    aspectRatio: "1/1", // Kare kalmasını sağlar
+  },
+  tile: {
+    borderRadius: "15px",
+    border: "2px solid",
+    cursor: "pointer",
+    transition: "background-color 0.1s, transform 0.1s",
+    outline: "none",
+    // Dokunmatik cihazlar için tap highlight'ı kaldır
+    WebkitTapHighlightColor: "transparent",
+  },
+};
+
+export default App;
