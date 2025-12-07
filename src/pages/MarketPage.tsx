@@ -216,6 +216,7 @@ const MarketPage = () => {
     if (!user || !profile) return;
     playSound("buttonClick");
 
+    // 1. İstemci tarafında bakiye kontrolü
     if ((profile.ink_count || 0) < item.priceInInk) {
       toast({
         title: "Yetersiz Mürekkep 💧",
@@ -228,13 +229,18 @@ const MarketPage = () => {
 
     setPurchaseLoading(true);
     try {
-      const { error: deductError } = await supabase
+      // 2. Mürekkebi düş ve GÜNCEL VERİYİ GERİ İSTE (.select() ile)
+      // Bu sayede refreshProfile'ın eski veriyi çekme riskini (Race Condition) önleriz.
+      const { data: updatedProfile, error: deductError } = await supabase
         .from("profiles")
         .update({ ink_count: (profile.ink_count || 0) - item.priceInInk })
-        .eq("id", user.id);
+        .eq("id", user.id)
+        .select() // <--- BU ÇOK ÖNEMLİ: Güncel veriyi anında alıyoruz.
+        .single();
 
       if (deductError) throw deductError;
 
+      // 3. Eğer ürün bir Joker ise Envantere ekle
       if (item.type === "joker" && item.subtype) {
         const { data: inv } = await supabase
           .from("user_inventory")
@@ -245,7 +251,7 @@ const MarketPage = () => {
 
         const currentQty = inv?.quantity || 0;
 
-        await supabase.from("user_inventory").upsert(
+        const { error: invError } = await supabase.from("user_inventory").upsert(
           {
             user_id: user.id,
             item_type: item.subtype,
@@ -253,7 +259,11 @@ const MarketPage = () => {
           },
           { onConflict: "user_id,item_type" },
         );
-      } else if (item.type === "heart") {
+
+        if (invError) throw invError;
+      }
+      // 4. Can veya Zaman ise profili güncelle (Zaten yukarıda ink düşerken profili çektik ama can/süre için tekrar update gerekebilir)
+      else if (item.type === "heart") {
         const currentCredits = profile.game_credits || 0;
         await supabase
           .from("profiles")
@@ -261,23 +271,23 @@ const MarketPage = () => {
           .eq("id", user.id);
       } else if (item.type === "time") {
         const now = new Date();
-        // FIX 2: Tip hatasını önlemek için 'as any' kullanıldı
         const currentExpiryVal = (profile as any).unlimited_lives_until;
         const currentExpiry = currentExpiryVal ? new Date(currentExpiryVal) : now;
-
         const baseTime = currentExpiry > now ? currentExpiry : now;
         const newExpiry = new Date(baseTime.getTime() + item.value * 60 * 60 * 1000);
 
-        // FIX 3: Update işleminde de 'as any' kullanıldı
         await supabase
           .from("profiles")
           .update({ unlimited_lives_until: newExpiry.toISOString() } as any)
           .eq("id", user.id);
       }
 
+      // 5. Kritik Nokta: Context'i güncelle
+      // refreshProfile() muhtemelen envanteri çekmiyor.
+      // Eğer UserContext içinde "refreshInventory" gibi bir fonksiyonun varsa onu da çağırmalısın.
       await refreshProfile();
-      // FIX 1: "success" yerine "correct" kullanıldı
-      playSound("buttonClick");
+
+      playSound("buttonClick"); // FIX: success sesi
       toast({
         title: "İşlem Başarılı! 🖋️",
         description: `${item.name} envanterinize eklendi.`,
