@@ -62,10 +62,14 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
       // Cleanup expired tournaments first
       await supabase.rpc("cleanup_expired_tournaments");
 
+      // Sadece beklemedeki turnuvaları getir (in_progress olan turnuvalar bracket'ta gösterilmeli)
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      
       const { data, error } = await supabase
         .from("tournaments")
         .select("*")
-        .in("status", ["waiting", "in_progress"])
+        .eq("status", "waiting")
+        .gt("created_at", oneHourAgo)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
