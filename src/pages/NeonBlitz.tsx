@@ -16,6 +16,7 @@ const LEVEL_THRESHOLD = 5; // Her 5 puanda bir level atla
 
 const App: React.FC = () => {
   // --- STATE YÖNETİMİ ---
+  const navigate = useNavigate();
   const [gameState, setGameState] = useState<GameState>("MENU");
   const [score, setScore] = useState<number>(0);
   const [level, setLevel] = useState<number>(1);
@@ -66,7 +67,7 @@ const App: React.FC = () => {
   const returnHome = () => {
     if (timerRef.current) clearTimeout(timerRef.current);
     if (progressRef.current) cancelAnimationFrame(progressRef.current);
-    setGameState("MENU");
+    navigate("/");
   };
 
   // Her turda çalışacak döngü
