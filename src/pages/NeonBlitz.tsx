@@ -1,44 +1,37 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import { ArrowLeft, Play, RefreshCw, Trophy } from "lucide-react";
+import React, { useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { ArrowLeft, Play, RefreshCw, Trophy, LogOut } from "lucide-react";
 
 // --- TİP TANIMLAMALARI ---
 type GameState = "MENU" | "PLAYING" | "GAMEOVER";
 
-interface Tile {
-  id: number;
-}
-
 // --- SABİTLER ---
-const GRID_SIZE = 9; // 3x3 Grid
-const INITIAL_TIME = 2000; // Milisaniye cinsinden başlangıç süresi
-const LEVEL_THRESHOLD = 5; // Her 5 puanda bir level atla
+const GRID_SIZE = 9;
+const INITIAL_TIME = 2000;
+const LEVEL_THRESHOLD = 5;
 
-const App: React.FC = () => {
-  // --- STATE YÖNETİMİ ---
+const NeonBlitz: React.FC = () => {
   const navigate = useNavigate();
+
+  // --- STATE YÖNETİMİ ---
   const [gameState, setGameState] = useState<GameState>("MENU");
   const [score, setScore] = useState<number>(0);
   const [level, setLevel] = useState<number>(1);
   const [activeTile, setActiveTile] = useState<number | null>(null);
-  const [timeLeft, setTimeLeft] = useState<number>(100); // Yüzdelik bar için
-  const [themeColor, setThemeColor] = useState<string>("hsl(180, 100%, 50%)"); // Başlangıç rengi (Cyan)
+  const [timeLeft, setTimeLeft] = useState<number>(100);
+  const [themeColor, setThemeColor] = useState<string>("hsl(180, 100%, 50%)");
 
-  // Zamanlayıcı referansları
   const timerRef = useRef<number | null>(null);
   const progressRef = useRef<number | null>(null);
   const maxTimeRef = useRef<number>(INITIAL_TIME);
   const startTimeRef = useRef<number>(0);
 
   // --- YARDIMCI FONKSİYONLAR ---
-
-  // Rastgele canlı bir renk üretir
   const generateRandomColor = () => {
     const hue = Math.floor(Math.random() * 360);
     return `hsl(${hue}, 100%, 60%)`;
   };
 
-  // Yeni bir hedef kutucuk seçer (bir öncekiyle aynı olamaz)
   const pickNewTile = useCallback((current: number | null) => {
     let newTile;
     do {
@@ -47,8 +40,9 @@ const App: React.FC = () => {
     return newTile;
   }, []);
 
-  // --- OYUN MANTIĞI ---
+  // --- OYUN MANTIĞI & NAVİGASYON ---
 
+  // 1. Oyunu Başlat
   const startGame = () => {
     setScore(0);
     setLevel(1);
@@ -58,32 +52,38 @@ const App: React.FC = () => {
     nextTurn(true);
   };
 
+  // 2. Oyunu Durdur (Game Over)
   const stopGame = () => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    if (progressRef.current) cancelAnimationFrame(progressRef.current);
+    clearTimers();
     setGameState("GAMEOVER");
   };
 
-  const returnHome = () => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    if (progressRef.current) cancelAnimationFrame(progressRef.current);
+  // 3. Oyunun Ana Menüsüne Dön (Oyun içindeki sol üst tuş için)
+  const returnToGameMenu = () => {
+    clearTimers();
+    setGameState("MENU");
+  };
+
+  // 4. Uygulamanın Ana Sayfasına Çık (Menüdeki çıkış tuşu için)
+  const exitToAppHome = () => {
+    clearTimers();
     navigate("/");
   };
 
-  // Her turda çalışacak döngü
-  const nextTurn = (isFirst: boolean = false) => {
-    // Önceki zamanlayıcıları temizle
+  // Timer temizleme yardımcısı
+  const clearTimers = () => {
     if (timerRef.current) clearTimeout(timerRef.current);
     if (progressRef.current) cancelAnimationFrame(progressRef.current);
+  };
 
-    // Yeni hedef belirle
+  const nextTurn = (isFirst: boolean = false) => {
+    clearTimers();
+
     const nextTile = pickNewTile(isFirst ? null : activeTile);
     setActiveTile(nextTile);
 
-    // Zamanlayıcıyı başlat
     startTimeRef.current = Date.now();
 
-    // Progress bar animasyonu loop'u
     const updateProgress = () => {
       const now = Date.now();
       const elapsed = now - startTimeRef.current;
@@ -95,7 +95,7 @@ const App: React.FC = () => {
       if (remaining > 0) {
         progressRef.current = requestAnimationFrame(updateProgress);
       } else {
-        stopGame(); // Süre bitti
+        stopGame();
       }
     };
 
@@ -106,47 +106,50 @@ const App: React.FC = () => {
     if (gameState !== "PLAYING") return;
 
     if (id === activeTile) {
-      // DOĞRU TIKLAMA
       const newScore = score + 1;
       setScore(newScore);
 
-      // Level Kontrolü
       if (newScore % LEVEL_THRESHOLD === 0) {
         setLevel((prev) => prev + 1);
-        setThemeColor(generateRandomColor()); // Level atlayınca renk değişsin
-        // Süreyi kısalt (Zorlaştırma) - En az 400ms'ye kadar düşebilir
+        setThemeColor(generateRandomColor());
         maxTimeRef.current = Math.max(400, maxTimeRef.current * 0.92);
       }
 
       nextTurn();
     } else {
-      // YANLIŞ TIKLAMA -> Oyun biter
       stopGame();
     }
   };
 
   // --- EKRAN BİLEŞENLERİ ---
 
-  // 1. Ana Menü
+  // 1. GİRİŞ EKRANI (MENU)
   const renderMenu = () => (
     <div style={styles.centerContainer}>
-      <h1 style={{ ...styles.title, textShadow: `0 0 20px ${themeColor}` }}>NEON REFLEKS</h1>
+      <h1 style={{ ...styles.title, textShadow: `0 0 20px ${themeColor}` }}>NEON BLITZ</h1>
       <p style={styles.subtitle}>Hızını Test Et. Rengi Yakala.</p>
+
+      {/* Oyna Butonu */}
       <button
         onClick={startGame}
-        style={{ ...styles.button, backgroundColor: themeColor, boxShadow: `0 0 15px ${themeColor}` }}
+        style={{ ...styles.button, backgroundColor: themeColor, boxShadow: `0 0 15px ${themeColor}`, marginBottom: 20 }}
       >
         <Play size={24} style={{ marginRight: 8 }} /> OYNA
+      </button>
+
+      {/* Oyundan Çıkış Butonu (App Ana Sayfasına Gider) */}
+      <button onClick={exitToAppHome} style={{ ...styles.outlineButton, borderColor: "#fff", color: "#fff" }}>
+        <LogOut size={20} style={{ marginRight: 8 }} /> Oyundan Çık
       </button>
     </div>
   );
 
-  // 2. Oyun Ekranı
+  // 2. OYUN EKRANI (PLAYING)
   const renderGame = () => (
     <div style={styles.gameContainer}>
-      {/* Üst Bar */}
       <div style={styles.header}>
-        <button onClick={returnHome} style={styles.iconButton}>
+        {/* Sol üst geri tuşu: Sadece MENÜYE döner */}
+        <button onClick={returnToGameMenu} style={styles.iconButton}>
           <ArrowLeft size={28} color="#fff" />
         </button>
         <div style={styles.scoreBoard}>
@@ -155,19 +158,18 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      {/* Süre Çubuğu */}
+      {/* Süre Çubuğu (Daha belirgin hale getirildi) */}
       <div style={styles.progressContainer}>
         <div
           style={{
             ...styles.progressBar,
             width: `${timeLeft}%`,
             backgroundColor: themeColor,
-            boxShadow: `0 0 10px ${themeColor}`,
+            boxShadow: `0 0 15px ${themeColor}`,
           }}
         />
       </div>
 
-      {/* Oyun Alanı Grid */}
       <div style={styles.grid}>
         {Array.from({ length: GRID_SIZE }).map((_, index) => (
           <button
@@ -186,7 +188,7 @@ const App: React.FC = () => {
     </div>
   );
 
-  // 3. Game Over Ekranı
+  // 3. OYUN BİTTİ (GAMEOVER)
   const renderGameOver = () => (
     <div style={styles.centerContainer}>
       <Trophy size={64} color={themeColor} style={{ marginBottom: 20 }} />
@@ -198,8 +200,13 @@ const App: React.FC = () => {
         <button onClick={startGame} style={{ ...styles.button, backgroundColor: themeColor, marginRight: 10 }}>
           <RefreshCw size={20} style={{ marginRight: 8 }} /> Tekrar Dene
         </button>
-        <button onClick={returnHome} style={{ ...styles.outlineButton, borderColor: themeColor, color: themeColor }}>
-          Ana Sayfa
+
+        {/* Menüye dönme butonu */}
+        <button
+          onClick={returnToGameMenu}
+          style={{ ...styles.outlineButton, borderColor: themeColor, color: themeColor }}
+        >
+          Menüye Dön
         </button>
       </div>
     </div>
@@ -214,13 +221,11 @@ const App: React.FC = () => {
   );
 };
 
-// --- STYLES (CSS-in-JS) ---
-// Not: Normalde ayrı bir CSS dosyası önerilir ama kopyala-yapıştır kolaylığı için buraya ekledim.
 const styles: { [key: string]: React.CSSProperties } = {
   appContainer: {
-    width: "100vw",
+    width: "100%",
     height: "100vh",
-    backgroundColor: "#0f0f13", // Çok koyu gri/siyah arka plan
+    backgroundColor: "#0f0f13",
     color: "#fff",
     display: "flex",
     flexDirection: "column",
@@ -229,6 +234,10 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
     overflow: "hidden",
     userSelect: "none",
+    position: "absolute",
+    top: 0,
+    left: 0,
+    zIndex: 50,
   },
   centerContainer: {
     display: "flex",
@@ -246,7 +255,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     flexDirection: "column",
     alignItems: "center",
     padding: "20px",
-    maxWidth: "500px", // Mobilde tam ekran, masaüstünde limitli
+    maxWidth: "500px",
   },
   header: {
     width: "100%",
@@ -254,7 +263,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: "20px",
-    paddingTop: "20px", // Safe area
+    paddingTop: "20px",
   },
   scoreBoard: {
     fontSize: "1.2rem",
@@ -308,6 +317,8 @@ const styles: { [key: string]: React.CSSProperties } = {
     border: "2px solid",
     borderRadius: "50px",
     cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
   },
   iconButton: {
     background: "none",
@@ -322,24 +333,27 @@ const styles: { [key: string]: React.CSSProperties } = {
     justifyContent: "center",
     alignItems: "center",
   },
+  // SÜRE ÇUBUĞU GÖRÜNÜRLÜĞÜ GÜNCELLENDİ
   progressContainer: {
     width: "100%",
-    height: "10px",
-    backgroundColor: "rgba(255,255,255,0.1)",
+    height: "16px", // Biraz kalınlaştırdım
+    backgroundColor: "#333", // Arkaya koyu gri bir fon atadım ki bar belli olsun
+    border: "1px solid #555", // Hafif çerçeve
     borderRadius: "10px",
     marginBottom: "30px",
     overflow: "hidden",
   },
   progressBar: {
     height: "100%",
-    transition: "width 0.1s linear", // Akıcı azalma için
+    transition: "width 0.1s linear",
+    borderRadius: "10px", // Barın ucu da oval olsun
   },
   grid: {
     display: "grid",
     gridTemplateColumns: "repeat(3, 1fr)",
     gap: "15px",
     width: "100%",
-    aspectRatio: "1/1", // Kare kalmasını sağlar
+    aspectRatio: "1/1",
   },
   tile: {
     borderRadius: "15px",
@@ -347,9 +361,8 @@ const styles: { [key: string]: React.CSSProperties } = {
     cursor: "pointer",
     transition: "background-color 0.1s, transform 0.1s",
     outline: "none",
-    // Dokunmatik cihazlar için tap highlight'ı kaldır
     WebkitTapHighlightColor: "transparent",
   },
 };
 
-export default App;
+export default NeonBlitz;
