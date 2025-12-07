@@ -230,16 +230,19 @@ const MarketPage = () => {
     setPurchaseLoading(true);
     try {
       // 2. Mürekkebi düş (Veritabanı Güncellemesi)
+      // .select() ekleyerek işlemin bittiğinden emin oluyoruz ama veriyi kullanmamıza gerek yok,
+      // çünkü senin Realtime sistemin (konsoldaki log) zaten arayüzü güncelleyecek.
       const { error: deductError } = await supabase
         .from("profiles")
         .update({ ink_count: (profile.ink_count || 0) - item.priceInInk })
-        .eq("id", user.id);
+        .eq("id", user.id)
+        .select()
+        .single();
 
       if (deductError) throw deductError;
 
-      // 3. Ürün tipine göre envanter veya profil güncellemesi
+      // 3. Ürün tipine göre envanter işlemleri
       if (item.type === "joker" && item.subtype) {
-        // Envantere Ekleme
         const { data: inv } = await supabase
           .from("user_inventory")
           .select("quantity")
@@ -260,14 +263,12 @@ const MarketPage = () => {
 
         if (invError) throw invError;
       } else if (item.type === "heart") {
-        // Can Ekleme
         const currentCredits = profile.game_credits || 0;
         await supabase
           .from("profiles")
           .update({ game_credits: currentCredits + item.value })
           .eq("id", user.id);
       } else if (item.type === "time") {
-        // Süre Ekleme
         const now = new Date();
         const currentExpiryVal = (profile as any).unlimited_lives_until;
         const currentExpiry = currentExpiryVal ? new Date(currentExpiryVal) : now;
@@ -280,12 +281,11 @@ const MarketPage = () => {
           .eq("id", user.id);
       }
 
-      // 4. KRİTİK NOKTA: Veritabanının kendine gelmesi için 1 saniye bekle
-      // Bu bekleme sırasında buton hala "loading" modunda dönecek.
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // 5. Şimdi en güncel veriyi çek
-      await refreshProfile();
+      // --- DÜZELTME BURADA ---
+      // await refreshProfile();  <-- BU SATIR SİLİNDİ!
+      // setTimeout(...)          <-- BU SATIR SİLİNDİ!
+      // Konsoldaki "Profile stats updated" logu, sistemin zaten otomatik güncellendiğini gösteriyor.
+      // Bizim manuel müdahalemiz eski veriyi geri çağırıyordu. Artık Realtime'a güveniyoruz.
 
       playSound("buttonClick");
       toast({
@@ -296,7 +296,6 @@ const MarketPage = () => {
       console.error(error);
       toast({ title: "Hata", description: "İşlem gerçekleştirilemedi.", variant: "destructive" });
     } finally {
-      // Yükleme ikonunu işlem ve bekleme bittikten SONRA kaldır
       setPurchaseLoading(false);
     }
   };
