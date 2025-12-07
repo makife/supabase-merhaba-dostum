@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { ArrowLeft, Play, RefreshCw, Trophy } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 // --- TİP TANIMLAMALARI ---
 type GameState = "MENU" | "PLAYING" | "GAMEOVER";
