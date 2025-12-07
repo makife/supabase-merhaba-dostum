@@ -706,12 +706,6 @@ const HomePage = () => {
                         className="absolute bottom-2 left-2 w-1.5 h-1.5 bg-white rounded-sm animate-pulse shadow-[0_0_8px_rgba(255,255,255,0.8)]"
                         style={{ animationDelay: "0.2s" }}
                       ></div>
-
-                      {/* Ekstra bir parıltı */}
-                      <div
-                        className="absolute top-0 left-3 w-1 h-1 bg-blue-300 rounded-sm animate-bounce"
-                        style={{ animationDelay: "0.5s" }}
-                      ></div>
                     </div>
                   </div>
 
