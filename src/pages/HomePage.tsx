@@ -669,38 +669,48 @@ const HomePage = () => {
                       <Brain className={`absolute w-6 h-6 ${canPlayMemory ? "text-white/80" : "text-white/50"}`} />
                     </div>
                   </div>
-                  {/* Şifre Çözücü (Reactor Decrypt) */}
+
+                  {/* Neon Blitz (Refleks Oyunu) */}
                   <div
-                    className="bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px]"
+                    className="bg-gradient-to-r from-cyan-500 to-blue-600 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px] relative overflow-hidden"
                     onClick={() => navigate("/neon-blitz")}
                   >
-                    <div className="flex-1">
-                      <h2 className="text-xl font-semibold text-white font-painter">Şifre Çözücü</h2>
+                    {/* Arka plan için hafif yanıp sönen grid efekti (Opsiyonel süsleme) */}
+                    <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent animate-pulse"></div>
+
+                    <div className="flex-1 z-10">
+                      <h2 className="text-xl font-semibold text-white font-painter tracking-wide drop-shadow-md">
+                        Neon Blitz
+                      </h2>
                     </div>
 
-                    {/* Mini Şifre İkonu */}
-                    <div className="relative w-12 h-12 flex items-center justify-center">
-                      {/* Arka plandaki dönen halka */}
+                    {/* Mini Neon İkonu */}
+                    <div className="relative w-12 h-12 flex items-center justify-center z-10">
+                      {/* Arkadaki hızlı dönen halka */}
                       <div
-                        className="absolute w-10 h-10 border-2 border-dashed border-white/30 rounded-full animate-spin"
-                        style={{ animationDuration: "8s" }}
+                        className="absolute w-10 h-10 border-2 border-cyan-300/30 rounded-full animate-spin"
+                        style={{ animationDuration: "3s" }} // Daha hızlı dönüyor
                       ></div>
 
-                      {/* Ortadaki Kilit */}
-                      <Lock className="w-5 h-5 text-white drop-shadow-md z-10" />
+                      {/* Ortadaki Şimşek (Hız/Refleks temsili) */}
+                      {/* Not: Zap ikonunu lucide-react'ten import etmen gerekebilir */}
+                      <Zap className="w-6 h-6 text-yellow-300 fill-yellow-300 drop-shadow-[0_0_10px_rgba(253,224,71,0.8)] animate-pulse" />
 
-                      {/* Yüzen harf parçacıkları */}
+                      {/* Yüzen Kare Parçacıkları (Oyunun Grid yapısına atıf) */}
                       <div
-                        className="absolute top-1 right-2 w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.8)]"
-                        style={{ animationDelay: "0s" }}
+                        className="absolute top-1 right-2 w-2 h-2 bg-cyan-300 rounded-sm animate-ping shadow-[0_0_8px_rgba(103,232,249,0.8)]"
+                        style={{ animationDuration: "1.5s" }}
                       ></div>
+
                       <div
-                        className="absolute bottom-2 left-1 w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(248,113,113,0.8)]"
+                        className="absolute bottom-2 left-2 w-1.5 h-1.5 bg-white rounded-sm animate-pulse shadow-[0_0_8px_rgba(255,255,255,0.8)]"
+                        style={{ animationDelay: "0.2s" }}
+                      ></div>
+
+                      {/* Ekstra bir parıltı */}
+                      <div
+                        className="absolute top-0 left-3 w-1 h-1 bg-blue-300 rounded-sm animate-bounce"
                         style={{ animationDelay: "0.5s" }}
-                      ></div>
-                      <div
-                        className="absolute bottom-1 right-3 w-1 h-1 bg-white rounded-full animate-ping"
-                        style={{ animationDelay: "1s" }}
                       ></div>
                     </div>
                   </div>
