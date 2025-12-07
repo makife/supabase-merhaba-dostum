@@ -63,8 +63,13 @@ export const useTournament = (tournamentId?: string) => {
       return;
     }
 
-    if (realPlayerCount < 2) {
-      // Cancel tournament
+    // Güncel katılımcı sayısını al
+    const currentRealPlayers = context.participants.filter((p) => !p.is_bot).length;
+    console.log("🎮 Gerçek oyuncu sayısı:", currentRealPlayers);
+
+    if (currentRealPlayers < 1) {
+      // Cancel tournament - minimum 1 gerçek oyuncu gerekli (botlarla doldurulacak)
+      console.log("❌ Yeterli oyuncu yok, iptal ediliyor");
       await supabase
         .from("tournaments")
         .update({ status: "cancelled" })
@@ -78,7 +83,7 @@ export const useTournament = (tournamentId?: string) => {
     if (success) {
       navigate(`/tournament-bracket/${tournamentId}`);
     }
-  }, [tournamentId, user, context, realPlayerCount, navigate]);
+  }, [tournamentId, user, context.currentTournament, context.participants, navigate]);
 
   // Update derived state
   useEffect(() => {
