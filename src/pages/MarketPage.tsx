@@ -229,25 +229,23 @@ const MarketPage = () => {
 
     setPurchaseLoading(true);
     try {
-      // 2. Mürekkebi düş ve GÜNCEL VERİYİ GERİ İSTE (.select() ile)
-      // Bu sayede refreshProfile'ın eski veriyi çekme riskini (Race Condition) önleriz.
-      const { data: updatedProfile, error: deductError } = await supabase
+      // 2. Mürekkebi düş (Veritabanı Güncellemesi)
+      const { error: deductError } = await supabase
         .from("profiles")
         .update({ ink_count: (profile.ink_count || 0) - item.priceInInk })
-        .eq("id", user.id)
-        .select() // <--- BU ÇOK ÖNEMLİ: Güncel veriyi anında alıyoruz.
-        .single();
+        .eq("id", user.id);
 
       if (deductError) throw deductError;
 
-      // 3. Eğer ürün bir Joker ise Envantere ekle
+      // 3. Ürün tipine göre envanter veya profil güncellemesi
       if (item.type === "joker" && item.subtype) {
+        // Envantere Ekleme
         const { data: inv } = await supabase
           .from("user_inventory")
           .select("quantity")
           .eq("user_id", user.id)
           .eq("item_type", item.subtype)
-          .single();
+          .maybeSingle();
 
         const currentQty = inv?.quantity || 0;
 
@@ -261,15 +259,15 @@ const MarketPage = () => {
         );
 
         if (invError) throw invError;
-      }
-      // 4. Can veya Zaman ise profili güncelle (Zaten yukarıda ink düşerken profili çektik ama can/süre için tekrar update gerekebilir)
-      else if (item.type === "heart") {
+      } else if (item.type === "heart") {
+        // Can Ekleme
         const currentCredits = profile.game_credits || 0;
         await supabase
           .from("profiles")
           .update({ game_credits: currentCredits + item.value })
           .eq("id", user.id);
       } else if (item.type === "time") {
+        // Süre Ekleme
         const now = new Date();
         const currentExpiryVal = (profile as any).unlimited_lives_until;
         const currentExpiry = currentExpiryVal ? new Date(currentExpiryVal) : now;
@@ -282,12 +280,14 @@ const MarketPage = () => {
           .eq("id", user.id);
       }
 
-      // 5. Kritik Nokta: Context'i güncelle
-      // refreshProfile() muhtemelen envanteri çekmiyor.
-      // Eğer UserContext içinde "refreshInventory" gibi bir fonksiyonun varsa onu da çağırmalısın.
+      // 4. KRİTİK NOKTA: Veritabanının kendine gelmesi için 1 saniye bekle
+      // Bu bekleme sırasında buton hala "loading" modunda dönecek.
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // 5. Şimdi en güncel veriyi çek
       await refreshProfile();
 
-      playSound("buttonClick"); // FIX: success sesi
+      playSound("buttonClick");
       toast({
         title: "İşlem Başarılı! 🖋️",
         description: `${item.name} envanterinize eklendi.`,
@@ -296,6 +296,7 @@ const MarketPage = () => {
       console.error(error);
       toast({ title: "Hata", description: "İşlem gerçekleştirilemedi.", variant: "destructive" });
     } finally {
+      // Yükleme ikonunu işlem ve bekleme bittikten SONRA kaldır
       setPurchaseLoading(false);
     }
   };
