@@ -198,7 +198,7 @@ const MarketPage = () => {
 
       await refreshProfile();
       // FIX 1: "success" yerine "correct" kullanıldı
-      playSound("correct");
+      playSound("success");
       toast({
         title: "Mürekkep Eklendi! 💧",
         description: `${pack.amount} damla mürekkep hesabınıza tanımlandı.`,
