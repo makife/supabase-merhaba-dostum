@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,7 +9,7 @@ import { useUser } from "@/contexts/UserContext";
 import { useAdMob } from "@/hooks/useAdMob";
 import { useNativeSubscriptions } from "@/hooks/useNativeSubscriptions";
 import { supabase } from "@/integrations/supabase/client";
-import { useSounds } from "@/hooks/useSounds"; // Ses efektleri için
+import { useSounds } from "@/hooks/useSounds";
 import {
   ArrowLeft,
   Crown,
@@ -77,7 +77,7 @@ const MarketPage = () => {
       amount: 300,
       price: 99.99,
       label: "Popüler",
-      icon: Database, // Şişe şekli temsili
+      icon: Database,
       color: "text-indigo-500 bg-indigo-50",
     },
     {
@@ -182,14 +182,12 @@ const MarketPage = () => {
 
   // --- Aksiyonlar ---
 
-  // 1. Mürekkep Satın Alma (Gerçek Para - Simüle Edilmiş)
   const handleBuyInkPack = async (pack: InkPack) => {
     if (!user) return;
     setPurchaseLoading(true);
     playSound("buttonClick");
 
     try {
-      // Burada RevenueCat veya IAP entegrasyonu olacak. Şimdilik simüle ediyoruz:
       console.log(`${pack.id} için satın alma işlemi başlatıldı...`);
 
       const newBalance = (profile?.ink_count || 0) + pack.amount;
@@ -199,7 +197,8 @@ const MarketPage = () => {
       if (error) throw error;
 
       await refreshProfile();
-      playSound("success"); // "Splash" sesi eklenebilir
+      // FIX 1: "success" yerine "correct" kullanıldı
+      playSound("correct");
       toast({
         title: "Mürekkep Eklendi! 💧",
         description: `${pack.amount} damla mürekkep hesabınıza tanımlandı.`,
@@ -213,26 +212,22 @@ const MarketPage = () => {
     }
   };
 
-  // 2. Mürekkep Harcama (Kırtasiye Dükkanı)
   const handleSpendInk = async (item: StationeryItem) => {
     if (!user || !profile) return;
     playSound("buttonClick");
 
-    // Yetersiz Bakiye Kontrolü
     if ((profile.ink_count || 0) < item.priceInInk) {
       toast({
         title: "Yetersiz Mürekkep 💧",
         description: "Yeterli mürekkebiniz yok. Mürekkep Dükkanına göz atın!",
         variant: "destructive",
       });
-      // Kullanıcıyı satın alma sekmesine yönlendir
       setActiveTab("ink-store");
       return;
     }
 
     setPurchaseLoading(true);
     try {
-      // A. Mürekkebi Düş
       const { error: deductError } = await supabase
         .from("profiles")
         .update({ ink_count: (profile.ink_count || 0) - item.priceInInk })
@@ -240,9 +235,7 @@ const MarketPage = () => {
 
       if (deductError) throw deductError;
 
-      // B. Ürünü Ver
       if (item.type === "joker" && item.subtype) {
-        // Envanter kontrolü ve güncelleme
         const { data: inv } = await supabase
           .from("user_inventory")
           .select("quantity")
@@ -262,24 +255,29 @@ const MarketPage = () => {
         );
       } else if (item.type === "heart") {
         const currentCredits = profile.game_credits || 0;
-        // Basit mantık: Canları direkt ekle. Backend'de max sınır kontrolü olabilir.
         await supabase
           .from("profiles")
           .update({ game_credits: currentCredits + item.value })
           .eq("id", user.id);
       } else if (item.type === "time") {
-        // Yeni bitiş süresini hesapla
         const now = new Date();
-        const currentExpiry = profile.unlimited_lives_until ? new Date(profile.unlimited_lives_until) : now;
-        // Eğer zaten süresi varsa, sürenin üstüne ekle, yoksa şu andan itibaren ekle
-        const baseTime = currentExpiry > now ? currentExpiry : now;
-        const newExpiry = new Date(baseTime.getTime() + item.value * 60 * 60 * 1000); // Saat -> Milisaniye
+        // FIX 2: Tip hatasını önlemek için 'as any' kullanıldı
+        const currentExpiryVal = (profile as any).unlimited_lives_until;
+        const currentExpiry = currentExpiryVal ? new Date(currentExpiryVal) : now;
 
-        await supabase.from("profiles").update({ unlimited_lives_until: newExpiry.toISOString() }).eq("id", user.id);
+        const baseTime = currentExpiry > now ? currentExpiry : now;
+        const newExpiry = new Date(baseTime.getTime() + item.value * 60 * 60 * 1000);
+
+        // FIX 3: Update işleminde de 'as any' kullanıldı
+        await supabase
+          .from("profiles")
+          .update({ unlimited_lives_until: newExpiry.toISOString() } as any)
+          .eq("id", user.id);
       }
 
       await refreshProfile();
-      playSound("success"); // Yazı yazma veya damga sesi
+      // FIX 1: "success" yerine "correct" kullanıldı
+      playSound("correct");
       toast({
         title: "İşlem Başarılı! 🖋️",
         description: `${item.name} envanterinize eklendi.`,
@@ -292,9 +290,7 @@ const MarketPage = () => {
     }
   };
 
-  // 3. Reklam İzle (Mürekkep Kazan)
   const handleWatchAd = async () => {
-    // Günlük limit kontrolü (localStorage ile basit simülasyon)
     const today = new Date().toDateString();
     const storedDate = localStorage.getItem("lastAdDate");
     const storedCount = parseInt(localStorage.getItem("adCount") || "0");
@@ -312,14 +308,12 @@ const MarketPage = () => {
       await loadRewardedAd();
       await showRewardedAd();
 
-      // Ödülü Ver (+5 Mürekkep)
       const { error } = await supabase
         .from("profiles")
         .update({ ink_count: (profile?.ink_count || 0) + 5 })
         .eq("id", user?.id);
 
       if (!error) {
-        // Sayacı güncelle
         if (storedDate !== today) {
           localStorage.setItem("lastAdDate", today);
           localStorage.setItem("adCount", "1");
@@ -344,7 +338,6 @@ const MarketPage = () => {
     <div className="flex flex-col h-screen bg-slate-50">
       {/* Dekoratif Üst Arkaplan */}
       <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-indigo-900 via-indigo-800 to-slate-50 rounded-b-[40px] z-0 overflow-hidden">
-        {/* Yüzen Mürekkep Efektleri */}
         <div className="absolute top-10 left-10 w-20 h-20 bg-indigo-600 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse"></div>
         <div className="absolute top-10 right-10 w-20 h-20 bg-purple-600 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse"></div>
       </div>
@@ -374,7 +367,6 @@ const MarketPage = () => {
               </div>
             </div>
 
-            {/* Reklam İzle Butonu */}
             <Button
               size="sm"
               variant="secondary"
@@ -408,7 +400,7 @@ const MarketPage = () => {
           </TabsList>
 
           <div className="flex-1 overflow-y-auto pb-8 scrollbar-hide">
-            {/* 1. MÜREKKEP DÜKKANI (IAP) */}
+            {/* 1. MÜREKKEP DÜKKANI */}
             <TabsContent value="ink-store" className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
               <div className="text-center mb-2">
                 <p className="text-sm text-slate-500">Mürekkep ile oyun içi her şeye sahip olabilirsin.</p>
@@ -444,9 +436,8 @@ const MarketPage = () => {
               </div>
             </TabsContent>
 
-            {/* 2. KIRTASİYE (MÜREKKEP HARCA) */}
+            {/* 2. KIRTASİYE */}
             <TabsContent value="stationery" className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-              {/* Jokerler Bölümü */}
               <div>
                 <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Jokerler</h3>
                 <div className="grid grid-cols-1 gap-2">
@@ -479,7 +470,6 @@ const MarketPage = () => {
                 </div>
               </div>
 
-              {/* Canlar Bölümü */}
               <div>
                 <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Can Paketleri</h3>
                 <div className="grid grid-cols-2 gap-3">
@@ -512,7 +502,6 @@ const MarketPage = () => {
                 </div>
               </div>
 
-              {/* Süre Bölümü */}
               <div>
                 <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Sınırsız Süre</h3>
                 <div className="space-y-2">
