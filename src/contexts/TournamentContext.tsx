@@ -222,11 +222,15 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
       if (botsNeeded > 0) {
         const botInserts = Array.from({ length: botsNeeded }, (_, i) => ({
           tournament_id: tournamentId,
-          user_id: `bot_${Date.now()}_${i}`,
+          user_id: crypto.randomUUID(),
           is_bot: true,
         }));
 
-        await supabase.from("tournament_participants").insert(botInserts);
+        const { error: botError } = await supabase.from("tournament_participants").insert(botInserts);
+        if (botError) {
+          console.error("❌ Bot ekleme hatası:", botError);
+          throw botError;
+        }
         console.log(`🤖 ${botsNeeded} bot eklendi`);
       }
 
