@@ -680,7 +680,7 @@ const HomePage = () => {
 
                     <div className="flex-1 z-10">
                       <h2 className="text-xl font-semibold text-white font-painter tracking-wide drop-shadow-md">
-                        YakalaMala
+                        Dokunsana
                       </h2>
                     </div>
 
