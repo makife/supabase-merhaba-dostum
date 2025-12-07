@@ -114,7 +114,7 @@ const MarketPage = () => {
     {
       id: "j_whisper",
       type: "joker",
-      subtype: "joker_fisilida",
+      subtype: "joker_fisildi",
       name: "Fısılda",
       description: "Bir kelime ipucu verir",
       priceInInk: 10,

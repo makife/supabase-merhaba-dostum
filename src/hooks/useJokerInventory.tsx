@@ -31,7 +31,6 @@ export const useJokerInventory = () => {
           "joker_degistir",
           "fisilida",
           "joker_fisildi",
-          "joker_fisilida",
           "senYaz",
           "senyaz",
           "joker_senyaz",
@@ -39,7 +38,7 @@ export const useJokerInventory = () => {
 
       const jokerInventory: JokerInventory = {
         degistir: 0,
-        fisilida: 0,
+        fisildi: 0,
         senYaz: 0,
       };
 
