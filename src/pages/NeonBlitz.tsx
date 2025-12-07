@@ -126,7 +126,7 @@ const NeonBlitz: React.FC = () => {
   // 1. GİRİŞ EKRANI (MENU)
   const renderMenu = () => (
     <div style={styles.centerContainer}>
-      <h1 style={{ ...styles.title, textShadow: `0 0 20px ${themeColor}` }}>NEON BLITZ</h1>
+      <h1 style={{ ...styles.title, textShadow: `0 0 20px ${themeColor}` }}>DOKUNSANA</h1>
       <p style={styles.subtitle}>Hızını Test Et. Rengi Yakala.</p>
 
       {/* Oyna Butonu */}
