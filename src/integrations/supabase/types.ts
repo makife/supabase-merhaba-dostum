@@ -1961,6 +1961,10 @@ export type Database = {
         Args: { p_tournament_id: string }
         Returns: undefined
       }
+      start_tournament_with_bots_v2: {
+        Args: { p_tournament_id: string }
+        Returns: Json
+      }
       start_tournament_with_bracket: {
         Args: { p_tournament_id: string }
         Returns: Json

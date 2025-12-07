@@ -171,25 +171,39 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
 
   // Leave tournament
   const leaveTournament = async (tournamentId: string): Promise<boolean> => {
-    if (!user) return false;
+    if (!user) {
+      console.error("❌ Ayrılma: Kullanıcı yok");
+      return false;
+    }
 
     try {
       setLoading(true);
+      console.log("🚪 Turnuvadan ayrılıyor:", { tournamentId, userId: user.id });
 
-      const { error } = await supabase
+      const { error, count } = await supabase
         .from("tournament_participants")
         .delete()
         .eq("tournament_id", tournamentId)
-        .eq("user_id", user.id);
+        .eq("user_id", user.id)
+        .eq("is_bot", false);
 
-      if (error) throw error;
+      if (error) {
+        console.error("❌ Ayrılma DB hatası:", error);
+        throw error;
+      }
 
-      console.log("✅ Turnuvadan ayrıldı");
+      console.log("✅ Turnuvadan ayrıldı, silinen:", count);
       toast({ title: "Başarılı", description: "Turnuvadan ayrıldınız" });
+      
+      // Context'i temizle
+      setCurrentTournament(null);
+      setParticipants([]);
+      setMatches([]);
+      
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error("❌ Ayrılma hatası:", error);
-      toast({ title: "Hata", description: "Turnuvadan ayrılınamadı", variant: "destructive" });
+      toast({ title: "Hata", description: error?.message || "Turnuvadan ayrılınamadı", variant: "destructive" });
       return false;
     } finally {
       setLoading(false);
@@ -202,94 +216,25 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
       setLoading(true);
       console.log("🏆 Turnuva başlatılıyor:", tournamentId);
 
-      // 1. Get current participants
-      const { data: currentParticipants } = await supabase
-        .from("tournament_participants")
-        .select("*")
-        .eq("tournament_id", tournamentId);
+      // Server-side RPC fonksiyonu kullan (RLS bypass için)
+      const { data, error } = await supabase.rpc("start_tournament_with_bots_v2", {
+        p_tournament_id: tournamentId,
+      });
 
-      const realPlayers = (currentParticipants || []).filter((p) => !p.is_bot);
+      if (error) {
+        console.error("❌ RPC hatası:", error);
+        throw error;
+      }
+
+      const result = data as { success: boolean; error?: string; bots_added?: number };
       
-      if (realPlayers.length < 2) {
-        // Cancel tournament
-        await supabase
-          .from("tournaments")
-          .update({ status: "cancelled" })
-          .eq("id", tournamentId);
-        
-        toast({ title: "Turnuva İptal", description: "Yeterli oyuncu yok" });
+      if (!result.success) {
+        console.error("❌ Turnuva başlatılamadı:", result.error);
+        toast({ title: "Turnuva İptal", description: result.error || "Yeterli oyuncu yok" });
         return false;
       }
 
-      // 2. Fill remaining slots with bots (to make 8 total)
-      const botsNeeded = 8 - (currentParticipants?.length || 0);
-      if (botsNeeded > 0) {
-        const botInserts = Array.from({ length: botsNeeded }, (_, i) => ({
-          tournament_id: tournamentId,
-          user_id: crypto.randomUUID(),
-          is_bot: true,
-        }));
-
-        const { error: botError } = await supabase.from("tournament_participants").insert(botInserts);
-        if (botError) {
-          console.error("❌ Bot ekleme hatası:", botError);
-          throw botError;
-        }
-        console.log(`🤖 ${botsNeeded} bot eklendi`);
-      }
-
-      // 3. Get all participants for match creation
-      const { data: allParticipants } = await supabase
-        .from("tournament_participants")
-        .select("*")
-        .eq("tournament_id", tournamentId)
-        .order("joined_at", { ascending: true });
-
-      if (!allParticipants || allParticipants.length !== 8) {
-        console.error("❌ 8 katılımcı olmalı!");
-        return false;
-      }
-
-      // 4. Create quarter-final matches (4 matches)
-      const quarterFinalMatches = [
-        { player1_id: allParticipants[0].user_id, player2_id: allParticipants[1].user_id, match_number: 1 },
-        { player1_id: allParticipants[2].user_id, player2_id: allParticipants[3].user_id, match_number: 2 },
-        { player1_id: allParticipants[4].user_id, player2_id: allParticipants[5].user_id, match_number: 3 },
-        { player1_id: allParticipants[6].user_id, player2_id: allParticipants[7].user_id, match_number: 4 },
-      ];
-
-      const matchInserts = quarterFinalMatches.map((m) => ({
-        tournament_id: tournamentId,
-        round: 1,
-        match_number: m.match_number,
-        player1_id: m.player1_id,
-        player2_id: m.player2_id,
-        status: "pending",
-        player1_score: 0,
-        player2_score: 0,
-      }));
-
-      const { error: matchError } = await supabase
-        .from("tournament_matches")
-        .insert(matchInserts);
-
-      if (matchError) throw matchError;
-
-      // 5. Update tournament status
-      const nextRoundStartsAt = new Date();
-      nextRoundStartsAt.setSeconds(nextRoundStartsAt.getSeconds() + 10);
-
-      await supabase
-        .from("tournaments")
-        .update({
-          status: "in_progress",
-          current_round: 1,
-          started_at: new Date().toISOString(),
-          next_round_starts_at: nextRoundStartsAt.toISOString(),
-        })
-        .eq("id", tournamentId);
-
-      console.log("✅ Turnuva başladı, çeyrek final maçları oluşturuldu");
+      console.log(`✅ Turnuva başladı, ${result.bots_added} bot eklendi`);
       await fetchTournamentDetails(tournamentId);
       return true;
     } catch (error) {
