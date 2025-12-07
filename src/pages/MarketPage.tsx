@@ -198,7 +198,7 @@ const MarketPage = () => {
 
       await refreshProfile();
       // FIX 1: "success" yerine "correct" kullanıldı
-      playSound("success");
+      playSound("buttonClick");
       toast({
         title: "Mürekkep Eklendi! 💧",
         description: `${pack.amount} damla mürekkep hesabınıza tanımlandı.`,
@@ -277,7 +277,7 @@ const MarketPage = () => {
 
       await refreshProfile();
       // FIX 1: "success" yerine "correct" kullanıldı
-      playSound("success");
+      playSound("buttonClick");
       toast({
         title: "İşlem Başarılı! 🖋️",
         description: `${item.name} envanterinize eklendi.`,
