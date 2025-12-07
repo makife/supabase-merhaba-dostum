@@ -42,7 +42,7 @@ import MemoryGamePage from "@/pages/MemoryGamePage";
 import PuzzleGamePage from "@/pages/PuzzleGame";
 import GridSimonSaysPage from "@/pages/GridSimonSays";
 import ReactorRunnerPage from "@/pages/DinoRunner";
-import ReactorDecryptPage from "@/pages/ReactorDecrypt";
+import NeonBlitzPage from "@/pages/NeonBlitz";
 import SnakeGamePage from "@/pages/SnakeGame";
 import MorlesGamePage from "@/pages/MorlesGame";
 import { Capacitor } from "@capacitor/core";
@@ -59,12 +59,12 @@ const queryClient = new QueryClient();
 // Wrapper component to use useNavigate inside Router context
 const MatchmakingWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
-  
+
   return (
     <MatchmakingProvider
       onMatchFound={(roomId) => {
         console.log("✅ Eşleşme bulundu, oyun sayfasına yönlendiriliyor:", roomId);
-        const currentGameType = (window as any).__currentMatchmakingType || 'timed';
+        const currentGameType = (window as any).__currentMatchmakingType || "timed";
         // Use React Router navigate for instant navigation
         navigate(`/game/random-match?room=${roomId}&type=${currentGameType}`);
       }}
@@ -191,7 +191,7 @@ const AppRoutes = () => {
             </ProtectedRoute>
           }
         />
-        
+
         <Route
           path="/game"
           element={
@@ -344,14 +344,14 @@ const AppRoutes = () => {
           }
         />
         <Route
-          path="/reactor-decrypt"
+          path="/neon-blitz"
           element={
             <ProtectedRoute>
-              <ReactorDecryptPage />
+              <NeonBlitzPage />
             </ProtectedRoute>
           }
         />
-        
+
         <Route
           path="/snake-game"
           element={
