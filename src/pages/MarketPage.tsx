@@ -277,7 +277,7 @@ const MarketPage = () => {
 
       await refreshProfile();
       // FIX 1: "success" yerine "correct" kullanıldı
-      playSound("correct");
+      playSound("success");
       toast({
         title: "İşlem Başarılı! 🖋️",
         description: `${item.name} envanterinize eklendi.`,
