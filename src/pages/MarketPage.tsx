@@ -1,670 +1,598 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
-import { useUserPurchases } from "@/hooks/useUserPurchases";
 import { useAdMob } from "@/hooks/useAdMob";
 import { useNativeSubscriptions } from "@/hooks/useNativeSubscriptions";
 import { supabase } from "@/integrations/supabase/client";
+import { useSounds } from "@/hooks/useSounds"; // Ses efektleri için
 import {
   ArrowLeft,
-  ShoppingCart,
   Crown,
   Zap,
   Clock,
-  Star,
   Infinity,
-  Palette,
-  Volume2,
-  Music,
-  Moon,
-  Sun,
-  Gamepad2,
-  Gift,
+  Droplet,
+  Feather,
+  PenTool,
+  Heart,
+  Video,
+  Sparkles,
+  Database,
+  Scroll,
 } from "lucide-react";
 
-// Capacitor type check
-declare global {
-  interface Window {
-    Capacitor?: any;
-  }
+// Veri Tipleri
+interface InkPack {
+  id: string;
+  name: string;
+  amount: number;
+  price: number;
+  label?: string;
+  icon: any;
+  color: string;
 }
 
-interface MarketItem {
+interface StationeryItem {
   id: string;
-  title: string;
+  type: "joker" | "heart" | "time";
+  subtype?: string; // joker tipi için (degistir, fisilda vb.)
+  name: string;
   description: string;
-  price: number;
-  currency: "credits" | "premium";
+  priceInInk: number;
+  value: number; // miktar veya saat
   icon: any;
-  type: "credits" | "unlimited_time" | "premium" | "theme" | "joker";
-  value: number;
-  duration?: string;
-  image?: string;
 }
 
 const MarketPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { profile, isPremium, refreshProfile } = useUser();
-  const { isAdLoading, isAdReady, initializeAdMob, loadRewardedAd, showRewardedAd } = useAdMob();
-  const { processPurchase, hasPurchased, loading: purchaseLoading } = useUserPurchases();
-  const {
-    isLoading: isSubscriptionLoading,
-    subscriptionProducts,
-    isSubscribed,
-    subscriptionInfo,
-    purchaseSubscription,
-    restoreSubscriptions,
-    openSubscriptionManagement,
-  } = useNativeSubscriptions();
+  const { profile, refreshProfile } = useUser();
+  const { playSound } = useSounds();
+  const { isAdLoading, loadRewardedAd, showRewardedAd } = useAdMob();
+  const { isLoading: isSubscriptionLoading, purchaseSubscription } = useNativeSubscriptions();
 
-  const marketItems: MarketItem[] = [
-    // Oyun Hakları
-    {
-      id: "credits_10",
-      title: "10 Oyun Hakkı",
-      description: "Ekstra 10 oyun hakkı kazanın",
-      price: 2.99,
-      currency: "premium",
-      icon: Zap,
-      type: "credits",
-      value: 10,
-    },
-    {
-      id: "credits_25",
-      title: "25 Oyun Hakkı",
-      description: "Ekstra 25 oyun hakkı kazanın",
-      price: 5.99,
-      currency: "premium",
-      icon: Zap,
-      type: "credits",
-      value: 25,
-    },
-    {
-      id: "credits_50",
-      title: "50 Oyun Hakkı",
-      description: "Büyük oyun hakkı paketi",
-      price: 9.99,
-      currency: "premium",
-      icon: Zap,
-      type: "credits",
-      value: 50,
-    },
+  const [activeTab, setActiveTab] = useState("ink-store");
+  const [purchaseLoading, setPurchaseLoading] = useState(false);
 
-    // Sınırsız Zaman (Premium dönem verir)
-    {
-      id: "unlimited_1h",
-      title: "1 Saat Sınırsız",
-      description: "1 saat boyunca sınırsız oyun oynayın",
-      price: 12.99,
-      currency: "premium",
-      icon: Clock,
-      type: "premium",
-      value: 1,
-      duration: "1 saat",
-    },
-    {
-      id: "unlimited_24h",
-      title: "24 Saat Sınırsız",
-      description: "24 saat boyunca sınırsız oyun oynayın",
-      price: 23.99,
-      currency: "premium",
-      icon: Infinity,
-      type: "premium",
-      value: 24,
-      duration: "24 saat",
-    },
+  // --- Yapılandırma ---
 
-    // Premium - Aylık ve Yıllık
+  const inkPacks: InkPack[] = [
     {
-      id: "premium_month",
-      title: "Premium Aylık",
-      description: "Sınırsız oyun, tüm temalar ve özel özellikler",
-      price: 119.99,
-      currency: "premium",
-      icon: Crown,
-      type: "premium",
-      value: 30,
+      id: "ink_drop",
+      name: "Bir Damla Mürekkep",
+      amount: 100,
+      price: 39.99,
+      icon: Droplet,
+      color: "text-blue-400 bg-blue-50",
     },
     {
-      id: "premium_year",
-      title: "Premium Yıllık",
-      description: "12 aylık premium üyelik - %40 tasarruf! Tüm özellikler dahil",
-      price: 647.99,
-      currency: "premium",
-      icon: Crown,
-      type: "premium",
-      value: 365,
-    },
-
-    // Jokerler
-    {
-      id: "joker_degistir",
-      title: "Değiştir Jokeri",
-      description: "Her satın alım 1 adet joker verir",
-      price: 0.99,
-      currency: "premium",
-      icon: Star,
-      type: "joker",
-      value: 1,
+      id: "ink_bottle",
+      name: "Mürekkep Şişesi",
+      amount: 300,
+      price: 99.99,
+      label: "Popüler",
+      icon: Database, // Şişe şekli temsili
+      color: "text-indigo-500 bg-indigo-50",
     },
     {
-      id: "joker_fisildi",
-      title: "Fısılda Jokeri",
-      description: "Her satın alım 1 adet joker verir",
-      price: 0.99,
-      currency: "premium",
-      icon: Star,
-      type: "joker",
-      value: 1,
+      id: "ink_pot",
+      name: "Hokka",
+      amount: 850,
+      price: 249.99,
+      icon: Feather,
+      color: "text-purple-600 bg-purple-50",
     },
     {
-      id: "joker_senyaz",
-      title: "Sen Yaz Jokeri",
-      description: "Her satın alım 1 adet joker verir",
-      price: 0.99,
-      currency: "premium",
-      icon: Star,
-      type: "joker",
-      value: 1,
+      id: "ink_barrel",
+      name: "Mürekkep Varili",
+      amount: 2500,
+      price: 699.99,
+      label: "En İyi Fiyat",
+      icon: Scroll,
+      color: "text-violet-700 bg-violet-50",
     },
   ];
 
-  const watchAdForCredits = async () => {
-    try {
-      await loadRewardedAd();
-      await showRewardedAd();
+  const stationeryItems: StationeryItem[] = [
+    // Jokerler
+    {
+      id: "j_swap",
+      type: "joker",
+      subtype: "degistir",
+      name: "Değiştir",
+      description: "Harfleri karıştırır",
+      priceInInk: 10,
+      value: 1,
+      icon: Sparkles,
+    },
+    {
+      id: "j_whisper",
+      type: "joker",
+      subtype: "fisilida",
+      name: "Fısılda",
+      description: "Bir kelime ipucu verir",
+      priceInInk: 10,
+      value: 1,
+      icon: Feather,
+    },
+    {
+      id: "j_custom",
+      type: "joker",
+      subtype: "senyaz",
+      name: "Sen Yaz",
+      description: "Kendi kelimeni yaz",
+      priceInInk: 20,
+      value: 1,
+      icon: PenTool,
+    },
+    // Canlar (Kalpler)
+    {
+      id: "h_full",
+      type: "heart",
+      name: "Canları Doldur",
+      description: "Tüm canları (5) yeniler",
+      priceInInk: 25,
+      value: 5,
+      icon: Heart,
+    },
+    {
+      id: "h_10",
+      type: "heart",
+      name: "+10 Can Paketi",
+      description: "Stoğunuza 10 can ekler",
+      priceInInk: 45,
+      value: 10,
+      icon: Heart,
+    },
+    {
+      id: "h_50",
+      type: "heart",
+      name: "+50 Can Paketi",
+      description: "Uzun soluklu oyun için",
+      priceInInk: 200,
+      value: 50,
+      icon: Heart,
+    },
+    // Sınırsız Zaman
+    {
+      id: "t_1h",
+      type: "time",
+      name: "1 Saat Yaratıcı Akış",
+      description: "1 Saat boyunca sınırsız can",
+      priceInInk: 40,
+      value: 1,
+      icon: Clock,
+    },
+    {
+      id: "t_24h",
+      type: "time",
+      name: "24 Saat Maraton",
+      description: "24 Saat boyunca sınırsız can",
+      priceInInk: 100,
+      value: 24,
+      icon: Infinity,
+    },
+  ];
 
-      toast({
-        title: "Tebrikler!",
-        description: "+1 oyun kredisi kazandınız!",
-        variant: "default",
-      });
+  // --- Aksiyonlar ---
 
-      refreshProfile();
-    } catch (error) {
-      console.error("Ad error:", error);
-      toast({
-        title: "Reklam hatası",
-        description: "Reklam gösterilemedi. Lütfen tekrar deneyin.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const watchAdForJoker = async () => {
+  // 1. Mürekkep Satın Alma (Gerçek Para - Simüle Edilmiş)
+  const handleBuyInkPack = async (pack: InkPack) => {
     if (!user) return;
+    setPurchaseLoading(true);
+    playSound("buttonClick");
 
     try {
-      await loadRewardedAd();
-      await showRewardedAd();
+      // Burada RevenueCat veya IAP entegrasyonu olacak. Şimdilik simüle ediyoruz:
+      console.log(`${pack.id} için satın alma işlemi başlatıldı...`);
 
-      // Rastgele joker seç
-      const jokerTypes = ["degistir", "fisilida", "senyaz"];
-      const randomJoker = jokerTypes[Math.floor(Math.random() * jokerTypes.length)];
+      const newBalance = (profile?.ink_count || 0) + pack.amount;
 
-      // Mevcut joker miktarını kontrol et
-      const { data: existingItem } = await supabase
-        .from("user_inventory")
-        .select("quantity")
-        .eq("user_id", user.id)
-        .eq("item_type", randomJoker)
-        .single();
-
-      // Joker'ı inventory'e ekle veya miktarı artır
-      const { error } = await supabase.from("user_inventory").upsert(
-        {
-          user_id: user.id,
-          item_type: randomJoker,
-          quantity: (existingItem?.quantity || 0) + 1,
-        },
-        {
-          onConflict: "user_id,item_type",
-        },
-      );
+      const { error } = await supabase.from("profiles").update({ ink_count: newBalance }).eq("id", user.id);
 
       if (error) throw error;
 
-      const jokerNames: Record<string, string> = {
-        degistir: "Değiştir",
-        fisilida: "Fısılda",
-        senyaz: "Sen Yaz",
-      };
-
+      await refreshProfile();
+      playSound("success"); // "Splash" sesi eklenebilir
       toast({
-        title: "Tebrikler! 🎉",
-        description: `+1 ${jokerNames[randomJoker]} jokeri kazandınız!`,
-        variant: "default",
+        title: "Mürekkep Eklendi! 💧",
+        description: `${pack.amount} damla mürekkep hesabınıza tanımlandı.`,
+        className: "bg-indigo-900 text-white border-indigo-700",
       });
-
-      refreshProfile();
     } catch (error) {
-      console.error("Ad error:", error);
-      toast({
-        title: "Reklam hatası",
-        description: "Reklam gösterilemedi. Lütfen tekrar deneyin.",
-        variant: "destructive",
-      });
+      console.error(error);
+      toast({ title: "Hata", description: "Satın alma işlemi başarısız.", variant: "destructive" });
+    } finally {
+      setPurchaseLoading(false);
     }
   };
 
-  const handlePurchase = async (item: MarketItem) => {
-    if (!user) {
+  // 2. Mürekkep Harcama (Kırtasiye Dükkanı)
+  const handleSpendInk = async (item: StationeryItem) => {
+    if (!user || !profile) return;
+    playSound("buttonClick");
+
+    // Yetersiz Bakiye Kontrolü
+    if ((profile.ink_count || 0) < item.priceInInk) {
       toast({
-        title: "Giriş yapmanız gerekiyor",
-        description: "Satın alma yapmak için önce giriş yapın.",
+        title: "Yetersiz Mürekkep 💧",
+        description: "Yeterli mürekkebiniz yok. Mürekkep Dükkanına göz atın!",
         variant: "destructive",
       });
+      // Kullanıcıyı satın alma sekmesine yönlendir
+      setActiveTab("ink-store");
       return;
     }
 
-    // Oyun hakları ve jokerler için tekrar satın alma kontrolü kaldırıldı
-    if (item.type !== "credits" && item.type !== "joker" && hasPurchased(item.id)) {
+    setPurchaseLoading(true);
+    try {
+      // A. Mürekkebi Düş
+      const { error: deductError } = await supabase
+        .from("profiles")
+        .update({ ink_count: (profile.ink_count || 0) - item.priceInInk })
+        .eq("id", user.id);
+
+      if (deductError) throw deductError;
+
+      // B. Ürünü Ver
+      if (item.type === "joker" && item.subtype) {
+        // Envanter kontrolü ve güncelleme
+        const { data: inv } = await supabase
+          .from("user_inventory")
+          .select("quantity")
+          .eq("user_id", user.id)
+          .eq("item_type", item.subtype)
+          .single();
+
+        const currentQty = inv?.quantity || 0;
+
+        await supabase.from("user_inventory").upsert(
+          {
+            user_id: user.id,
+            item_type: item.subtype,
+            quantity: currentQty + item.value,
+          },
+          { onConflict: "user_id,item_type" },
+        );
+      } else if (item.type === "heart") {
+        const currentCredits = profile.game_credits || 0;
+        // Basit mantık: Canları direkt ekle. Backend'de max sınır kontrolü olabilir.
+        await supabase
+          .from("profiles")
+          .update({ game_credits: currentCredits + item.value })
+          .eq("id", user.id);
+      } else if (item.type === "time") {
+        // Yeni bitiş süresini hesapla
+        const now = new Date();
+        const currentExpiry = profile.unlimited_lives_until ? new Date(profile.unlimited_lives_until) : now;
+        // Eğer zaten süresi varsa, sürenin üstüne ekle, yoksa şu andan itibaren ekle
+        const baseTime = currentExpiry > now ? currentExpiry : now;
+        const newExpiry = new Date(baseTime.getTime() + item.value * 60 * 60 * 1000); // Saat -> Milisaniye
+
+        await supabase.from("profiles").update({ unlimited_lives_until: newExpiry.toISOString() }).eq("id", user.id);
+      }
+
+      await refreshProfile();
+      playSound("success"); // Yazı yazma veya damga sesi
       toast({
-        title: "Zaten sahipsiniz",
-        description: "Bu ürün zaten sizde mevcut.",
+        title: "İşlem Başarılı! 🖋️",
+        description: `${item.name} envanterinize eklendi.`,
+      });
+    } catch (error) {
+      console.error(error);
+      toast({ title: "Hata", description: "İşlem gerçekleştirilemedi.", variant: "destructive" });
+    } finally {
+      setPurchaseLoading(false);
+    }
+  };
+
+  // 3. Reklam İzle (Mürekkep Kazan)
+  const handleWatchAd = async () => {
+    // Günlük limit kontrolü (localStorage ile basit simülasyon)
+    const today = new Date().toDateString();
+    const storedDate = localStorage.getItem("lastAdDate");
+    const storedCount = parseInt(localStorage.getItem("adCount") || "0");
+
+    if (storedDate === today && storedCount >= 5) {
+      toast({
+        title: "Günlük Limit Doldu",
+        description: "Yarın tekrar gelip mürekkep kazanabilirsin!",
         variant: "default",
       });
       return;
     }
 
     try {
-      if (item.type === "premium") {
-        // Premium üyelik için subscription kullan
-        if (subscriptionProducts.length > 0) {
-          await purchaseSubscription(subscriptionProducts[0].id);
+      await loadRewardedAd();
+      await showRewardedAd();
+
+      // Ödülü Ver (+5 Mürekkep)
+      const { error } = await supabase
+        .from("profiles")
+        .update({ ink_count: (profile?.ink_count || 0) + 5 })
+        .eq("id", user?.id);
+
+      if (!error) {
+        // Sayacı güncelle
+        if (storedDate !== today) {
+          localStorage.setItem("lastAdDate", today);
+          localStorage.setItem("adCount", "1");
+        } else {
+          localStorage.setItem("adCount", (storedCount + 1).toString());
         }
-      } else {
-        await processPurchase(item);
+
+        await refreshProfile();
+        toast({
+          title: "Tebrikler!",
+          description: "+5 Damla Mürekkep kazandın! 💧",
+          className: "bg-indigo-600 text-white",
+        });
       }
-
-      toast({
-        title: "Satın alma başarılı!",
-        description: `${item.title} başarıyla satın alındı.`,
-        variant: "default",
-      });
-
-      // Force refresh to bypass cache and show updated credits immediately
-      await refreshProfile(true);
-    } catch (error) {
-      console.error("Purchase error:", error);
-      toast({
-        title: "Satın alma hatası",
-        description: "Satın alma işlemi başarısız oldu.",
-        variant: "destructive",
-      });
+    } catch (e) {
+      console.error(e);
+      toast({ title: "Reklam Hatası", description: "Reklam yüklenemedi.", variant: "destructive" });
     }
   };
-
-  const getItemsByCategory = (category: string) => {
-    switch (category) {
-      case "credits":
-        return marketItems.filter((item) => item.type === "credits");
-      case "premium":
-        return marketItems.filter((item) => item.type === "premium");
-      case "themes":
-        return marketItems.filter((item) => item.type === "theme");
-      case "jokers":
-        return marketItems.filter((item) => item.type === "joker");
-      default:
-        return [];
-    }
-  };
-
-  const renderMarketItems = (items: MarketItem[]) => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {items.map((item) => (
-        <Card
-          key={item.id}
-          className="group relative overflow-hidden border transition-all duration-300 hover:scale-105 hover:shadow-xl hover:border-primary/50 bg-gradient-to-br from-card to-muted/50 backdrop-blur-sm"
-        >
-          {/* Light background overlay for better text readability */}
-          <div className="absolute inset-0 bg-background/5" />
-
-          {/* Animated sparkles */}
-          <div className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-500">
-            <div className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full animate-pulse" />
-            <div className="absolute top-6 right-6 w-1 h-1 bg-accent rounded-full animate-pulse delay-100" />
-            <div className="absolute bottom-4 left-4 w-1.5 h-1.5 bg-primary/70 rounded-full animate-pulse delay-200" />
-          </div>
-
-          <CardContent className="relative z-10 p-4">
-            <div className="flex items-start justify-between mb-3">
-              <div className="p-2 bg-gradient-to-br from-primary/20 to-accent/20 rounded-lg backdrop-blur-sm group-hover:scale-110 transition-transform duration-300">
-                <item.icon className="w-5 h-5 text-primary" />
-              </div>
-              <div className="text-right space-y-1">
-                {item.type !== "credits" && item.type !== "joker" && hasPurchased(item.id) && (
-                  <Badge variant="secondary" className="mb-1 bg-green-500/20 text-green-700 border-green-500/30">
-                    Satın Alındı
-                  </Badge>
-                )}
-                {item.type === "joker" && (
-                  <Badge variant="outline" className="text-xs">
-                    1 adet
-                  </Badge>
-                )}
-                {item.duration && (
-                  <Badge variant="outline" className="text-xs">
-                    {item.duration}
-                  </Badge>
-                )}
-              </div>
-            </div>
-
-            <h3 className="font-semibold text-sm mb-2 text-foreground">{item.title}</h3>
-            <p className="text-xs text-muted-foreground mb-4 line-clamp-2">{item.description}</p>
-
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col">
-                <span className="text-lg font-bold text-primary">
-                  {item.currency === "premium" ? `₺${item.price}` : `${item.price} Kredi`}
-                </span>
-                {item.currency === "premium" && item.price > 50 && (
-                  <span className="text-xs text-muted-foreground line-through">₺{(item.price * 1.4).toFixed(2)}</span>
-                )}
-              </div>
-
-              <Button
-                onClick={() => handlePurchase(item)}
-                disabled={purchaseLoading || isSubscriptionLoading}
-                size="sm"
-                className="px-3 py-1 text-xs font-medium bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 transition-all duration-300 group-hover:scale-105"
-              >
-                <ShoppingCart className="w-3 h-3 mr-1" />
-                Satın Al
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-background to-muted/50">
-      {/* Tente Image - Fixed at top */}
-      <img src="/tente.png" alt="Tente" className="fixed top-0 left-0 w-full h-auto z-50 pointer-events-none" />
-
-      {/* Fixed Header - Positioned below tente */}
-      <div className="sticky top-0 z-10 bg-green-50/95 backdrop-blur-sm border-b border-green-200 p-3 pt-6 mt-[60px]">
-        <div className="max-w-6xl mx-auto">
-          <div className="space-y-4">
-            {" "}
-            {/* space-y-4'ü buraya taşıdım */}
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate("/")}
-                className="text-green-600 border-green-500/30 hover:bg-green-500/20 bg-green-500/10"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Geri
-              </Button>
-
-              <div className="relative inline-block">
-                {/* Market Text Image */}
-                <img
-                  src="/marketYazi.png"
-                  alt="Market Text"
-                  className="relative z-10 px-6 py-3 h-20 w-auto object-contain"
-                />
-              </div>
-
-              <div className="w-16" />
-            </div>
-            {/* Hero Section */}
-            <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary to-accent p-3 text-primary-foreground">
-              <div className="relative z-10">
-                <h2 className="text-3xl font-bold mb-2">Oyun Deneyimini Geliştir!</h2>
-                <p className="text-lg opacity-100">Özel paketler ve premium özelliklerle daha keyifli oyna</p>
-              </div>
-              <div className="absolute inset-0 bg-black/10" />
-              <img src="/marketimaj.png" alt="Market" className="absolute right-0 top-0 h-full w-auto opacity-90" />
-            </div>
-          </div>
-        </div>
+    <div className="flex flex-col h-screen bg-slate-50">
+      {/* Dekoratif Üst Arkaplan */}
+      <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-indigo-900 via-indigo-800 to-slate-50 rounded-b-[40px] z-0 overflow-hidden">
+        {/* Yüzen Mürekkep Efektleri */}
+        <div className="absolute top-10 left-10 w-20 h-20 bg-indigo-600 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse"></div>
+        <div className="absolute top-10 right-10 w-20 h-20 bg-purple-600 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse"></div>
       </div>
 
-      {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-6xl mx-auto p-4 space-y-6">
-          {/* User Status */}
-          {user && (
-            <Card
-              className={`${
-                isPremium
-                  ? "bg-gradient-to-br from-yellow-500/25 via-orange-500/25 to-amber-500/25 border-yellow-500/40"
-                  : "bg-gradient-to-br from-blue-500/25 via-cyan-500/25 to-teal-500/25 border-blue-500/40"
-              }`}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className={`p-2 rounded-lg ${isPremium ? "bg-yellow-500/20" : "bg-blue-500/20"}`}>
-                      <Crown className={`w-5 h-5 ${isPremium ? "text-yellow-500" : "text-blue-500"}`} />
-                    </div>
-                    <div>
-                      <p className="font-semibold">{isPremium ? "Premium Üye" : "Ücretsiz Üye"}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Oyun Hakkı: {(profile?.game_credits || 0) + (profile?.bonus_credits || 0)}/5
-                      </p>
-                    </div>
-                  </div>
-                  {isPremium && (
-                    <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white">Premium</Badge>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Reklam İzle Bölümü */}
-          {user && window.Capacitor && (
-            <Card className="bg-gradient-to-br from-lime-500/15 via-yellow-500/15 to-orange-500/15 border-lime-500/40">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <div className="p-2 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-lg mr-2">
-                    <Gift className="w-5 h-5 text-green-600" />
-                  </div>
-                  Ücretsiz Ödül Kazan
-                </CardTitle>
-                <CardDescription className="text-foreground/70">
-                  Reklam izleyerek ücretsiz kredi veya joker kazanabilirsiniz
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-3">
-                  <Button
-                    onClick={watchAdForCredits}
-                    disabled={isAdLoading || !isAdReady}
-                    className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white border-0"
-                  >
-                    <Gamepad2 className="w-4 h-4 mr-2" />
-                    Reklam İzle
-                    <br />
-                    +1 Hak
-                  </Button>
-                  <Button
-                    onClick={watchAdForJoker}
-                    disabled={isAdLoading || !isAdReady}
-                    className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0"
-                  >
-                    <Star className="w-4 h-4 mr-2" />
-                    Reklam İzle
-                    <br />
-                    +1 Joker
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Satın Alımları Geri Yükle */}
-          {user && window.Capacitor && (
-            <Card className="bg-gradient-to-br from-blue-500/15 via-indigo-500/15 to-violet-500/15 border-blue-500/40">
-              <CardContent className="p-4">
-                <Button
-                  onClick={restoreSubscriptions}
-                  variant="outline"
-                  className="w-full bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border-blue-500/50 hover:from-blue-500/20 hover:to-indigo-500/20 hover:border-blue-500/70 transition-all"
-                  disabled={isSubscriptionLoading}
-                >
-                  Satın Alımları Geri Yükle
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Market Kategorileri */}
-          <Tabs defaultValue="credits" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-muted/50">
-              <TabsTrigger
-                value="credits"
-                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white"
-              >
-                <Zap className="w-4 h-4 mr-2" />
-                Oyun
-              </TabsTrigger>
-              <TabsTrigger
-                value="premium"
-                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-500 data-[state=active]:to-orange-500 data-[state=active]:text-white"
-              >
-                <Crown className="w-4 h-4 mr-2" />
-                Premium
-              </TabsTrigger>
-              <TabsTrigger
-                value="jokers"
-                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white"
-              >
-                <Star className="w-4 h-4 mr-2" />
-                Jokerler
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="credits" className="space-y-4">
-              <div className="text-center mb-6">
-                <h3 className="text-xl font-bold mb-2">Oyun Hakları ve Sınırsız Zaman</h3>
-                <p className="text-muted-foreground">Daha fazla oyun oynayın, yeteneklerinizi geliştirin</p>
-              </div>
-
-              {renderMarketItems(getItemsByCategory("credits"))}
-
-              {/* Oyun Açıklaması */}
-              <Card className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border-blue-500/30">
-                <CardHeader>
-                  <CardTitle className="flex items-center text-blue-600">
-                    <Zap className="w-5 h-5 mr-2" />
-                    Oyun Hakkı Nasıl Çalışır?
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2 text-sm">
-                    <li className="flex items-center">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full mr-3" />
-                      Her oyun için 1 hak harcanır
-                    </li>
-                    <li className="flex items-center">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full mr-3" />
-                      Satın aldığınız haklar mevcut haklarınıza eklenir
-                    </li>
-                    <li className="flex items-center">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full mr-3" />
-                      Premium üyeler sınırsız hak sahibidir
-                    </li>
-                    <li className="flex items-center">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full mr-3" />
-                      Her 15 dakikada 1 ücretsiz hak kazanırsınız (max 5)
-                    </li>
-                  </ul>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="premium" className="space-y-4">
-              <div className="text-center mb-6">
-                <h3 className="text-xl font-bold mb-2">Premium Üyelik</h3>
-                <p className="text-muted-foreground">Tüm özelliklere sınırsız erişim</p>
-              </div>
-
-              {renderMarketItems(getItemsByCategory("premium"))}
-
-              {/* Premium Avantajları */}
-              <Card className="mt-6 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30">
-                <CardHeader>
-                  <CardTitle className="flex items-center text-yellow-600">
-                    <Crown className="w-5 h-5 mr-2" />
-                    Premium Avantajları
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2 text-sm">
-                    <li className="flex items-center">
-                      <div className="w-2 h-2 bg-yellow-500 rounded-full mr-3" />
-                      Sınırsız oyun hakkı
-                    </li>
-                    <li className="flex items-center">
-                      <div className="w-2 h-2 bg-yellow-500 rounded-full mr-3" />
-                      Özel premium rozet
-                    </li>
-                    <li className="flex items-center">
-                      <div className="w-2 h-2 bg-yellow-500 rounded-full mr-3" />
-                      Reklamsız deneyim
-                    </li>
-                    <li className="flex items-center">
-                      <div className="w-2 h-2 bg-yellow-500 rounded-full mr-3" />
-                      Yeni özellikler için öncelikli erişim
-                    </li>
-                  </ul>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="jokers" className="space-y-4">
-              <div className="text-center mb-6">
-                <h3 className="text-xl font-bold mb-2">Joker Paketleri</h3>
-                <p className="text-muted-foreground">Zor durumlarda kullanabileceğiniz jokerler</p>
-              </div>
-
-              {renderMarketItems(getItemsByCategory("jokers"))}
-
-              {/* Joker Açıklaması */}
-              <Card className="mb-6 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/30">
-                <CardHeader>
-                  <CardTitle className="flex items-center text-green-600">
-                    <Star className="w-5 h-5 mr-2" />
-                    Joker Türleri ve Kullanımları
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                    <div className="bg-white/50 p-3 rounded-lg">
-                      <h4 className="font-semibold text-green-700 mb-2">🔄 Değiştir Jokeri</h4>
-                      <p>Oyun tahtasındaki harfleri yeniden karıştırır. Yeni kombinasyonlar için ideal.</p>
-                    </div>
-                    <div className="bg-white/50 p-3 rounded-lg">
-                      <h4 className="font-semibold text-green-700 mb-2">💡 Fısılda Jokeri</h4>
-                      <p>Bulunabilecek kelimelerden birinin ipucunu verir. Takıldığınızda kullanın.</p>
-                    </div>
-                    <div className="bg-white/50 p-3 rounded-lg">
-                      <h4 className="font-semibold text-green-700 mb-2">✏️ Sen Yaz Jokeri</h4>
-                      <p>Kendi belirlediğiniz kelimeyi oyuna yazmanızı sağlar. En güçlü joker!</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+      {/* Header */}
+      <div className="relative z-10 px-4 pt-4 pb-2 mt-[60px]">
+        <div className="flex items-center justify-between mb-4">
+          <Button variant="ghost" onClick={() => navigate("/")} className="text-white hover:bg-white/10">
+            <ArrowLeft className="w-5 h-5 mr-1" /> Geri
+          </Button>
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-white font-serif tracking-wide drop-shadow-md">Kırtasiye</h1>
+          </div>
+          <div className="w-16"></div>
         </div>
+
+        {/* Bakiye Kartı */}
+        <Card className="bg-white/10 backdrop-blur-md border-white/20 shadow-xl overflow-hidden">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-white p-2 rounded-full shadow-inner">
+                <Droplet className="w-6 h-6 text-indigo-600 fill-indigo-600" />
+              </div>
+              <div>
+                <p className="text-indigo-100 text-xs font-medium uppercase tracking-wider">Mürekkep Haznen</p>
+                <p className="text-2xl font-bold text-white drop-shadow-sm">{profile?.ink_count || 0}</p>
+              </div>
+            </div>
+
+            {/* Reklam İzle Butonu */}
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={handleWatchAd}
+              className="bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white border-0 shadow-lg text-xs"
+              disabled={isAdLoading}
+            >
+              <Video className="w-3 h-3 mr-1" />
+              +5 Kazan
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Ana İçerik */}
+      <div className="flex-1 relative z-10 px-4 mt-2 overflow-hidden flex flex-col">
+        <Tabs defaultValue="ink-store" value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+          <TabsList className="grid grid-cols-3 mb-4 bg-white/50 backdrop-blur p-1 rounded-xl border border-indigo-100 shadow-sm">
+            <TabsTrigger value="ink-store" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white">
+              <Droplet className="w-4 h-4 mr-1" /> Mürekkep
+            </TabsTrigger>
+            <TabsTrigger
+              value="stationery"
+              className="data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+            >
+              <PenTool className="w-4 h-4 mr-1" /> Kırtasiye
+            </TabsTrigger>
+            <TabsTrigger value="vip" className="data-[state=active]:bg-amber-500 data-[state=active]:text-white">
+              <Crown className="w-4 h-4 mr-1" /> VIP Yazar
+            </TabsTrigger>
+          </TabsList>
+
+          <div className="flex-1 overflow-y-auto pb-8 scrollbar-hide">
+            {/* 1. MÜREKKEP DÜKKANI (IAP) */}
+            <TabsContent value="ink-store" className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
+              <div className="text-center mb-2">
+                <p className="text-sm text-slate-500">Mürekkep ile oyun içi her şeye sahip olabilirsin.</p>
+              </div>
+              <div className="grid grid-cols-1 gap-3">
+                {inkPacks.map((pack) => (
+                  <div
+                    key={pack.id}
+                    onClick={() => handleBuyInkPack(pack)}
+                    className="relative bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-indigo-200 transition-all group"
+                  >
+                    {pack.label && (
+                      <span className="absolute -top-2 left-4 bg-gradient-to-r from-pink-500 to-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm z-10">
+                        {pack.label}
+                      </span>
+                    )}
+                    <div className="flex items-center gap-4">
+                      <div
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform ${pack.color}`}
+                      >
+                        <pack.icon className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-slate-800">{pack.name}</h3>
+                        <p className="text-indigo-600 font-semibold">{pack.amount} Damla</p>
+                      </div>
+                    </div>
+                    <Button variant="ghost" className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-bold">
+                      ₺{pack.price}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+
+            {/* 2. KIRTASİYE (MÜREKKEP HARCA) */}
+            <TabsContent value="stationery" className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
+              {/* Jokerler Bölümü */}
+              <div>
+                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Jokerler</h3>
+                <div className="grid grid-cols-1 gap-2">
+                  {stationeryItems
+                    .filter((i) => i.type === "joker")
+                    .map((item) => (
+                      <div
+                        key={item.id}
+                        className="bg-white rounded-xl p-3 border border-slate-100 flex items-center justify-between shadow-sm"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="bg-purple-50 p-2 rounded-lg text-purple-600">
+                            <item.icon className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="font-bold text-sm text-slate-800">{item.name}</p>
+                            <p className="text-xs text-slate-500">{item.description}</p>
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white min-w-[80px]"
+                          onClick={() => handleSpendInk(item)}
+                          disabled={purchaseLoading}
+                        >
+                          <Droplet className="w-3 h-3 mr-1" /> {item.priceInInk}
+                        </Button>
+                      </div>
+                    ))}
+                </div>
+              </div>
+
+              {/* Canlar Bölümü */}
+              <div>
+                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Can Paketleri</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {stationeryItems
+                    .filter((i) => i.type === "heart")
+                    .map((item) => (
+                      <Card
+                        key={item.id}
+                        className="border-slate-100 shadow-sm overflow-hidden group hover:border-red-200 transition-colors"
+                      >
+                        <CardContent className="p-3 text-center flex flex-col items-center gap-2">
+                          <div className="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center text-red-500 group-hover:scale-110 transition-transform">
+                            <item.icon className="w-5 h-5 fill-current" />
+                          </div>
+                          <div>
+                            <p className="font-bold text-sm text-slate-800">{item.name}</p>
+                            <p className="text-[10px] text-slate-500 leading-tight">{item.description}</p>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full mt-1 border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:text-indigo-800 text-xs"
+                            onClick={() => handleSpendInk(item)}
+                          >
+                            {item.priceInInk} Damla
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                </div>
+              </div>
+
+              {/* Süre Bölümü */}
+              <div>
+                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Sınırsız Süre</h3>
+                <div className="space-y-2">
+                  {stationeryItems
+                    .filter((i) => i.type === "time")
+                    .map((item) => (
+                      <div
+                        key={item.id}
+                        className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl p-4 text-white flex items-center justify-between shadow-lg relative overflow-hidden"
+                      >
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+                        <div className="flex items-center gap-3 relative z-10">
+                          <item.icon className="w-6 h-6 text-amber-400" />
+                          <div>
+                            <p className="font-bold">{item.name}</p>
+                            <p className="text-xs text-slate-300">{item.description}</p>
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          className="bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur-sm z-10"
+                          onClick={() => handleSpendInk(item)}
+                        >
+                          {item.priceInInk} Damla
+                        </Button>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* 3. VIP ABONELİK */}
+            <TabsContent value="vip" className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
+              <Card className="bg-gradient-to-br from-amber-400 to-orange-500 border-none shadow-xl text-white overflow-hidden">
+                <CardHeader className="text-center pb-2">
+                  <div className="mx-auto bg-white/20 w-12 h-12 rounded-full flex items-center justify-center mb-2 backdrop-blur-sm">
+                    <Crown className="w-6 h-6 text-white" />
+                  </div>
+                  <CardTitle className="text-2xl font-serif">VIP Yazar Ol</CardTitle>
+                  <CardDescription className="text-amber-100">Yazarlık kariyerinde zirveye oyna</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2 bg-black/10 p-4 rounded-xl backdrop-blur-sm">
+                    <div className="flex items-center gap-3">
+                      <Infinity className="w-5 h-5 text-amber-100" />
+                      <span className="font-medium">Sınırsız Can</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Zap className="w-5 h-5 text-amber-100" />
+                      <span className="font-medium">Reklamsız Deneyim</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Droplet className="w-5 h-5 text-amber-100" />
+                      <span className="font-medium">Her Gün +10 Damla Mürekkep</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 pt-2">
+                    <Button
+                      className="bg-white text-orange-600 hover:bg-orange-50 font-bold h-auto py-3 flex-col gap-1"
+                      onClick={() => purchaseSubscription("premium_month")}
+                      disabled={isSubscriptionLoading}
+                    >
+                      <span>Aylık</span>
+                      <span className="text-xs opacity-70">₺119.99</span>
+                    </Button>
+                    <Button
+                      className="bg-indigo-900 text-white hover:bg-indigo-800 font-bold h-auto py-3 flex-col gap-1 border border-white/20"
+                      onClick={() => purchaseSubscription("premium_year")}
+                      disabled={isSubscriptionLoading}
+                    >
+                      <span>Yıllık</span>
+                      <span className="text-xs opacity-70">₺647.99</span>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </div>
+        </Tabs>
       </div>
     </div>
   );
