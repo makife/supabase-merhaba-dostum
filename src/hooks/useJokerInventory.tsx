@@ -21,16 +21,17 @@ export const useJokerInventory = () => {
     if (!user) return;
 
     try {
-      // 1. DÜZELTME: Sorgu listesine 'joker_fisilida' eklendi (MarketPage ile uyum için)
       const { data } = await supabase
         .from("user_inventory")
         .select("item_type, quantity")
         .eq("user_id", user.id)
+        // BURAYA 'joker_fisilida' (hatalı versiyonu) da ekledik ki geçmiş kayıplar görünsün
         .in("item_type", [
           "degistir",
           "joker_degistir",
           "fisilida",
           "joker_fisildi",
+          "joker_fisilida",
           "senYaz",
           "senyaz",
           "joker_senyaz",
@@ -38,7 +39,7 @@ export const useJokerInventory = () => {
 
       const jokerInventory: JokerInventory = {
         degistir: 0,
-        fisildi: 0,
+        fisilida: 0,
         senYaz: 0,
       };
 
@@ -48,7 +49,7 @@ export const useJokerInventory = () => {
 
         fisilida: "fisilida",
         joker_fisildi: "fisilida",
-        joker_fisilida: "fisilida", // <--- Bunu ekledim, çünkü MarketPage bunu kullanıyor
+        joker_fisilida: "fisilida", // Hatalı yazılanı da 'fisilida' hanesine ekle
 
         senYaz: "senYaz",
         senyaz: "senYaz",
