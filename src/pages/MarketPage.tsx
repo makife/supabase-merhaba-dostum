@@ -104,7 +104,7 @@ const MarketPage = () => {
     {
       id: "j_swap",
       type: "joker",
-      subtype: "degistir",
+      subtype: "joker_degistir",
       name: "Değiştir",
       description: "Harfleri karıştırır",
       priceInInk: 10,
@@ -114,7 +114,7 @@ const MarketPage = () => {
     {
       id: "j_whisper",
       type: "joker",
-      subtype: "fisilida",
+      subtype: "joker_fisilida",
       name: "Fısılda",
       description: "Bir kelime ipucu verir",
       priceInInk: 10,
@@ -124,7 +124,7 @@ const MarketPage = () => {
     {
       id: "j_custom",
       type: "joker",
-      subtype: "senyaz",
+      subtype: "joker_senyaz",
       name: "Sen Yaz",
       description: "Kendi kelimeni yaz",
       priceInInk: 20,
