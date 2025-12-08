@@ -9,7 +9,7 @@ BEGIN
   -- Sadece premium olmayan kullanıcılar için kredi yenile
   IF NEW.premium_until IS NULL OR NEW.premium_until <= NOW() THEN
     -- Eğer game_credits 5'ten az ise ve son yenilemeden 15 dakika geçmişse
-    IF NEW.game_credits < 5 AND (NEW.last_credit_refresh IS NULL OR NEW.last_credit_refresh <= NOW() - INTERVAL '15 minutes') THEN
+    IF NEW.game_credits < 5 AND (NEW.last_credit_refresh IS NULL OR NEW.last_credit_refresh <= NOW() - INTERVAL '72 minutes') THEN
       -- Kredileri 1 artır ama 5'i geçmesin
       NEW.game_credits = LEAST(NEW.game_credits + 1, 5);
       NEW.last_credit_refresh = NOW();
