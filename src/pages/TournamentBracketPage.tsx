@@ -260,7 +260,7 @@ const TournamentBracketPage = () => {
       setShowChampion(true);
       playSpecialSound("/sampiyon.mp3", 0.8);
 
-      // 🎯 ŞAMPİYONA ÖDÜLÜ VER
+      // 🏆 ŞAMPİYONA ÖDÜLÜ VER
       giveChampionReward();
     } else if (isInFinal && finalMatch.winner_id !== user.id && !showEliminated) {
       setShowEliminated(true);
@@ -272,25 +272,32 @@ const TournamentBracketPage = () => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase.rpc("give_tournament_champion_reward", {
+      const { data, error } = await (supabase.rpc as any)("give_tournament_champion_reward", {
         p_user_id: user.id,
         p_reward_amount: 5,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("❌ RPC hatası:", error);
+        throw error;
+      }
 
       const result = data as { success: boolean; reward_amount: number; new_ink_count: number };
 
-      if (result.success) {
+      if (result?.success) {
         toast.success("🎉 Tebrikler Şampiyon!", {
           description: `${result.reward_amount} damla mürekkep kazandınız! 💧`,
           duration: 5000,
         });
 
-        console.log(`🏆 Şampiyona ödülü verildi: +${result.reward_amount} mürekkep (Yeni: ${result.new_ink_count})`);
+        console.log(
+          `🏆 Şampiyona ödülü verildi: +${result.reward_amount} mürekkep (Yeni toplam: ${result.new_ink_count})`,
+        );
       }
     } catch (error) {
       console.error("❌ Şampiyona ödülü verme hatası:", error);
+      // Kullanıcıya hata gösterme - sessizce logla
+      // (Şampiyonluk deneyimini bozmamak için)
     }
   };
 
