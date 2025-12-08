@@ -88,6 +88,12 @@ const isGiftPremium = (profile: any) => {
   return daysDiff >= 6 && daysDiff <= 8 && premiumUntil > new Date();
 };
 
+const isUnlimitedLivesActive = (profile: any) => {
+  if (!profile?.unlimited_lives_until) return false;
+  const expiry = new Date(profile.unlimited_lives_until);
+  return expiry > new Date();
+};
+
 const HomePage = () => {
   const { user } = useAuth();
   const { profile, isPremium, refreshProfile } = useUser();
@@ -101,6 +107,7 @@ const HomePage = () => {
   const [matchmakingKey, setMatchmakingKey] = useState<number>(0);
   //
   const [timeUntilNextCredit, setTimeUntilNextCredit] = useState<string>("");
+  const [unlimitedTimeLeft, setUnlimitedTimeLeft] = useState<string>("");
   const { canPlay: canPlayMemory, timeUntilNextPlay } = useMemoryGame();
   const { startSearch, isSearching, searchProgress, cancelSearch } = useMatchmaking();
   const [greeting, setGreeting] = useState(() => {
@@ -130,6 +137,41 @@ const HomePage = () => {
     const nextLevelExp = currentLevelExp;
 
     return { level, experience, nextLevelExp };
+  };
+
+  // Kalan süreyi hesaplama (Sınırsız Can için)
+  const calculateUnlimitedTimeLeft = () => {
+    if (!profile || !isUnlimitedLivesActive(profile)) {
+      setUnlimitedTimeLeft("");
+      return;
+    }
+
+    const now = new Date();
+    const expiry = new Date((profile as any).unlimited_lives_until);
+
+    if (now >= expiry) {
+      setUnlimitedTimeLeft("");
+      // Profilin güncellenmesi burada gerekli olmayabilir, Realtime/Reset
+      // sistemi halledebilir, ancak garantilemek isterseniz bir refreshProfile çağırabilirsiniz.
+      return;
+    }
+
+    const timeDiff = expiry.getTime() - now.getTime();
+    const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+
+    let result = "";
+    if (days > 0) {
+      result = `${days}g ${hours}s`;
+    } else if (hours > 0) {
+      result = `${hours}s ${minutes}d`;
+    } else {
+      result = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+    }
+
+    setUnlimitedTimeLeft(result);
   };
 
   // Kalan süreyi hesaplama fonksiyonu
@@ -184,6 +226,17 @@ const HomePage = () => {
       console.error("Kredi yenileme hatası:", error);
     }
   };
+
+  // Sınırsız Can geri sayım efekti
+  useEffect(() => {
+    if (profile && isUnlimitedLivesActive(profile)) {
+      calculateUnlimitedTimeLeft();
+      const interval = setInterval(calculateUnlimitedTimeLeft, 1000);
+      return () => clearInterval(interval);
+    } else {
+      setUnlimitedTimeLeft("");
+    }
+  }, [profile?.unlimited_lives_until]);
 
   // Timer effect for credit countdown
   useEffect(() => {
@@ -443,6 +496,7 @@ const HomePage = () => {
               </div>
 
               {/* Alt kısım - Hak barı ve istatistikler */}
+              {/* Alt kısım - Hak barı ve istatistikler */}
               <div className="space-y-2 mt-2 pt-2 border-t border-white/20">
                 {/* Hak barı - Real-time güncellemeler */}
                 {!isPremium && (
@@ -450,51 +504,71 @@ const HomePage = () => {
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-muted-foreground">Oyun Hakları</span>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-foreground">
-                          {(profile?.game_credits || 0) + (profile?.bonus_credits || 0)}/5
-                        </span>
-                        {timeUntilNextCredit && profile?.game_credits < 5 && (
-                          <span className="text-xs text-orange-500 bg-orange-100 px-2 py-1 rounded-full">
-                            +1 {timeUntilNextCredit}
-                          </span>
+                        {isUnlimitedLivesActive(profile) ? (
+                          <>
+                            <span className="text-xs font-bold text-green-400 bg-green-900/50 px-2 py-1 rounded-full border border-green-500/50">
+                              <Infinity className="w-3 h-3 inline mr-1" /> SINIRSIZ
+                            </span>
+                            {unlimitedTimeLeft && (
+                              <span className="text-xs text-blue-400 bg-blue-900/50 px-2 py-1 rounded-full border border-blue-500/50">
+                                Kalan: {unlimitedTimeLeft}
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          // Normal Kredi Gösterimi
+                          <>
+                            <span className="text-xs font-medium text-foreground">
+                              {(profile?.game_credits || 0) + (profile?.bonus_credits || 0)}/5
+                            </span>
+                            {timeUntilNextCredit && profile?.game_credits < 5 && (
+                              <span className="text-xs text-orange-500 bg-orange-100 px-2 py-1 rounded-full">
+                                +1 {timeUntilNextCredit}
+                              </span>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
-                    <div className="flex gap-1 h-2 w-full">
-                      {Array.from({ length: 5 }, (_, i) => {
-                        const isActive = i < (profile?.game_credits || 0);
-                        let segmentColor = "bg-black/20";
 
-                        if (isActive) {
-                          switch (i + 1) {
-                            case 1:
-                              segmentColor = "bg-red-500";
-                              break;
-                            case 2:
-                              segmentColor = "bg-red-400";
-                              break;
-                            case 3:
-                              segmentColor = "bg-orange-500";
-                              break;
-                            case 4:
-                              segmentColor = "bg-green-400";
-                              break;
-                            case 5:
-                              segmentColor = "bg-green-500";
-                              break;
-                            default:
-                              segmentColor = "bg-black/20";
+                    {/* Sadece Sınırsız Can aktif değilken normal kredi çubuklarını göster */}
+                    {!isUnlimitedLivesActive(profile) && (
+                      <div className="flex gap-1 h-2 w-full">
+                        {Array.from({ length: 5 }, (_, i) => {
+                          const isActive = i < (profile?.game_credits || 0);
+                          let segmentColor = "bg-black/20";
+
+                          if (isActive) {
+                            switch (i + 1) {
+                              case 1:
+                                segmentColor = "bg-red-500";
+                                break;
+                              case 2:
+                                segmentColor = "bg-red-400";
+                                break;
+                              case 3:
+                                segmentColor = "bg-orange-500";
+                                break;
+                              case 4:
+                                segmentColor = "bg-green-400";
+                                break;
+                              case 5:
+                                segmentColor = "bg-green-500";
+                                break;
+                              default:
+                                segmentColor = "bg-black/20";
+                            }
                           }
-                        }
 
-                        return (
-                          <div
-                            key={i}
-                            className={`flex-1 rounded-full transition-all duration-500 ease-out shadow-sm ${segmentColor}`}
-                          />
-                        );
-                      })}
-                    </div>
+                          return (
+                            <div
+                              key={i}
+                              className={`flex-1 rounded-full transition-all duration-500 ease-out shadow-sm ${segmentColor}`}
+                            />
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 )}
 
