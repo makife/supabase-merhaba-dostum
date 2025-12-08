@@ -15,15 +15,9 @@ const TournamentBracketPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { playSpecialSound } = useSounds();
-  
-  const {
-    currentTournament,
-    matches,
-    participants,
-    loading,
-    fetchTournamentDetails,
-    advanceToNextRound,
-  } = useTournament(tournamentId);
+
+  const { currentTournament, matches, participants, loading, fetchTournamentDetails, advanceToNextRound } =
+    useTournament(tournamentId);
 
   const [countdown, setCountdown] = useState(10);
   const [showChampion, setShowChampion] = useState(false);
@@ -109,7 +103,7 @@ const TournamentBracketPage = () => {
           const now = new Date();
           const countdownStartedAt = now.toISOString();
           const endsAt = new Date(now.getTime() + 125 * 1000).toISOString();
-          
+
           await supabase
             .from("tournament_matches")
             .update({
@@ -147,7 +141,7 @@ const TournamentBracketPage = () => {
     if (!roundMatches) return;
 
     const allCompleted = roundMatches.every((m) => m.status === "completed");
-    
+
     if (allCompleted && currentRound < 3) {
       advancingRef.current = true;
       console.log(`📈 Round ${currentRound} tamamlandı, ilerleniyor...`);
@@ -205,7 +199,7 @@ const TournamentBracketPage = () => {
         (m) =>
           m.status === "in_progress" &&
           (m as any).countdown_started_at &&
-          (m.player1_id === user.id || m.player2_id === user.id)
+          (m.player1_id === user.id || m.player2_id === user.id),
       );
 
       if (myMatch) {
@@ -243,7 +237,7 @@ const TournamentBracketPage = () => {
             setNavigatedToGame(true);
             navigate(`/game?match=${newMatch.id}&tournament=${tournamentId}`);
           }
-        }
+        },
       )
       .subscribe();
 
@@ -264,10 +258,46 @@ const TournamentBracketPage = () => {
     if (finalMatch.winner_id === user.id && !showChampion) {
       setShowChampion(true);
       playSpecialSound("/sampiyon.mp3", 0.8);
+
+      // 🎯 ŞAMPİYONA ÖDÜLÜ VER
+      giveChampionReward();
     } else if (isInFinal && finalMatch.winner_id !== user.id && !showEliminated) {
       setShowEliminated(true);
     }
   }, [matches, user, showChampion, showEliminated, playSpecialSound]);
+
+  // 🆕 Şampiyona ödül verme fonksiyonu
+  const giveChampionReward = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase.from("profiles").select("ink_count").eq("id", user.id).single();
+
+      if (error) throw error;
+
+      const currentInk = data?.ink_count || 0;
+      const rewardAmount = 5;
+
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({
+          ink_count: currentInk + rewardAmount,
+        })
+        .eq("id", user.id);
+
+      if (updateError) throw updateError;
+
+      // Toast bildirimi göster
+      toast.success("🎉 Tebrikler Şampiyon!", {
+        description: `${rewardAmount} damla mürekkep kazandınız! 💧`,
+        duration: 5000,
+      });
+
+      console.log(`🏆 Şampiyona ödülü verildi: +${rewardAmount} mürekkep`);
+    } catch (error) {
+      console.error("❌ Şampiyona ödülü verme hatası:", error);
+    }
+  };
 
   // Auto-redirect after champion/eliminated screens
   useEffect(() => {
@@ -313,9 +343,8 @@ const TournamentBracketPage = () => {
   // Champion screen
   if (showChampion) {
     const finalMatch = matches.find((m) => m.round === 3);
-    const championName = finalMatch?.winner_id === finalMatch?.player1_id
-      ? finalMatch?.player1?.username
-      : finalMatch?.player2?.username;
+    const championName =
+      finalMatch?.winner_id === finalMatch?.player1_id ? finalMatch?.player1?.username : finalMatch?.player2?.username;
 
     return (
       <div className="min-h-screen bg-gradient-to-b from-yellow-600 to-orange-700 p-4 flex items-center justify-center">
@@ -400,9 +429,7 @@ const TournamentBracketPage = () => {
                 </div>
 
                 {matchesByRound[round]?.length ? (
-                  matchesByRound[round].map((match) => (
-                    <MatchCard key={match.id} match={match} roundInfo={roundInfo} />
-                  ))
+                  matchesByRound[round].map((match) => <MatchCard key={match.id} match={match} roundInfo={roundInfo} />)
                 ) : (
                   <Card className="bg-white/5 border-white/10 mb-3">
                     <CardContent className="p-3 text-center text-gray-400 text-sm">
@@ -423,7 +450,7 @@ const TournamentBracketPage = () => {
 const MatchCard = ({ match, roundInfo }: { match: any; roundInfo: { color: string; border: string } }) => {
   const getPlayerInfo = (playerId: string | null, playerData: any) => {
     if (!playerId) return { name: "TBD", isBot: false, avatar_url: null };
-    
+
     const isBot = playerData?.is_bot || playerId.startsWith("bot_");
     if (isBot) {
       const seed = [...playerId].reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
@@ -438,8 +465,10 @@ const MatchCard = ({ match, roundInfo }: { match: any; roundInfo: { color: strin
   const isCompleted = match.status === "completed";
   const winner = match.winner_id;
 
-  const statusText = match.status === "completed" ? "Tamamlandı" : match.status === "in_progress" ? "Oynanıyor" : "Bekliyor";
-  const statusColor = match.status === "completed" ? "bg-green-600" : match.status === "in_progress" ? "bg-yellow-600" : "bg-blue-600";
+  const statusText =
+    match.status === "completed" ? "Tamamlandı" : match.status === "in_progress" ? "Oynanıyor" : "Bekliyor";
+  const statusColor =
+    match.status === "completed" ? "bg-green-600" : match.status === "in_progress" ? "bg-yellow-600" : "bg-blue-600";
 
   return (
     <Card className={`${roundInfo.color} border ${roundInfo.border} mb-3`}>
@@ -451,12 +480,22 @@ const MatchCard = ({ match, roundInfo }: { match: any; roundInfo: { color: strin
         </div>
 
         {/* Player 1 */}
-        <PlayerRow player={player1} score={match.player1_score} isWinner={isCompleted && winner === match.player1_id} isCompleted={isCompleted} />
-        
+        <PlayerRow
+          player={player1}
+          score={match.player1_score}
+          isWinner={isCompleted && winner === match.player1_id}
+          isCompleted={isCompleted}
+        />
+
         <div className="text-center text-white/60 text-xs my-1">VS</div>
 
         {/* Player 2 */}
-        <PlayerRow player={player2} score={match.player2_score} isWinner={isCompleted && winner === match.player2_id} isCompleted={isCompleted} />
+        <PlayerRow
+          player={player2}
+          score={match.player2_score}
+          isWinner={isCompleted && winner === match.player2_id}
+          isCompleted={isCompleted}
+        />
 
         {match.status === "in_progress" && (
           <div className="mt-2 text-center">
@@ -468,12 +507,24 @@ const MatchCard = ({ match, roundInfo }: { match: any; roundInfo: { color: strin
   );
 };
 
-const PlayerRow = ({ player, score, isWinner, isCompleted }: { player: any; score: number; isWinner: boolean; isCompleted: boolean }) => (
+const PlayerRow = ({
+  player,
+  score,
+  isWinner,
+  isCompleted,
+}: {
+  player: any;
+  score: number;
+  isWinner: boolean;
+  isCompleted: boolean;
+}) => (
   <div className={`rounded p-2 ${isWinner ? "bg-green-700 border border-green-400" : "bg-white/10"}`}>
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2 min-w-0 flex-1">
         {player.isBot ? (
-          <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center text-sm flex-shrink-0">🤖</div>
+          <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center text-sm flex-shrink-0">
+            🤖
+          </div>
         ) : (
           <Avatar className="w-7 h-7 flex-shrink-0">
             <AvatarImage src={player.avatar_url || undefined} />
