@@ -26,7 +26,22 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { AvatarViewDialog } from "@/components/AvatarViewDialog";
 import { OnboardingTutorial } from "@/components/OnboardingTutorial";
 
-import { Bot, Users, Trophy, Clock, Target, User, Crown, Zap, Camera, Gift, Sparkles, RotateCcw } from "lucide-react";
+// DÜZELTME 1: Infinity ikonu importlara eklendi
+import {
+  Bot,
+  Users,
+  Trophy,
+  Clock,
+  Target,
+  User,
+  Crown,
+  Zap,
+  Camera,
+  Gift,
+  Sparkles,
+  RotateCcw,
+  Infinity,
+} from "lucide-react";
 
 // Pozitif selamlama mesajları
 const greetingMessages = [
@@ -147,12 +162,11 @@ const HomePage = () => {
     }
 
     const now = new Date();
+    // Burada zaten (profile as any) kullanmışsın, bu doğru.
     const expiry = new Date((profile as any).unlimited_lives_until);
 
     if (now >= expiry) {
       setUnlimitedTimeLeft("");
-      // Profilin güncellenmesi burada gerekli olmayabilir, Realtime/Reset
-      // sistemi halledebilir, ancak garantilemek isterseniz bir refreshProfile çağırabilirsiniz.
       return;
     }
 
@@ -236,7 +250,8 @@ const HomePage = () => {
     } else {
       setUnlimitedTimeLeft("");
     }
-  }, [profile?.unlimited_lives_until]);
+    // DÜZELTME 2: (profile as any) eklendi çünkü tip tanımı henüz güncel değil
+  }, [(profile as any)?.unlimited_lives_until]);
 
   // Timer effect for credit countdown
   useEffect(() => {
@@ -495,7 +510,6 @@ const HomePage = () => {
                 </div>
               </div>
 
-              {/* Alt kısım - Hak barı ve istatistikler */}
               {/* Alt kısım - Hak barı ve istatistikler */}
               <div className="space-y-2 mt-2 pt-2 border-t border-white/20">
                 {/* Hak barı - Real-time güncellemeler */}
