@@ -2,6 +2,12 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 
+declare global {
+  interface Window {
+    Capacitor: any;
+  }
+}
+
 const GridSimonSays = () => {
   const navigate = useNavigate();
   const [gameState, setGameState] = useState("waiting"); // waiting, showing, playing, gameOver
