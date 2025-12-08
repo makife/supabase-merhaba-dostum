@@ -44,6 +44,9 @@ export interface TournamentMatch {
   status: "pending" | "in_progress" | "completed";
   created_at: string;
   updated_at: string;
+  countdown_started_at?: string;
+  ends_at?: string;
+  started_at?: string;
   player1?: {
     username: string;
     avatar_url: string;

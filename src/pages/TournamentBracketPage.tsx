@@ -105,17 +105,21 @@ const TournamentBracketPage = () => {
           console.log(`🤖 Bot maçı tamamlandı: ${match.id}`);
         } else {
           // Real player match - start countdown
-          const countdownStartedAt = new Date().toISOString();
+          // ends_at hesapla: şimdi + 5sn (countdown) + 120sn (oyun) = 125sn
+          const now = new Date();
+          const countdownStartedAt = now.toISOString();
+          const endsAt = new Date(now.getTime() + 125 * 1000).toISOString();
           
           await supabase
             .from("tournament_matches")
             .update({
               status: "in_progress",
               countdown_started_at: countdownStartedAt,
+              ends_at: endsAt,
             })
             .eq("id", match.id);
 
-          console.log(`⚔️ Maç başladı: ${match.id}`);
+          console.log(`⚔️ Maç başladı: ${match.id}, ends_at: ${endsAt}`);
         }
       }
 
@@ -189,22 +193,63 @@ const TournamentBracketPage = () => {
     };
   }, [currentTournament?.next_round_starts_at, currentTournament?.status, startAllMatches]);
 
-  // Navigate to game when my match starts
+  // Navigate to game when my match starts - with realtime subscription
   useEffect(() => {
-    if (!user || navigatedToGame) return;
+    if (!user || !tournamentId) return;
     if (!currentTournament || currentTournament.status !== "in_progress") return;
+    if (navigatedToGame) return;
 
-    const myMatch = matches.find(
-      (m) =>
-        m.status === "in_progress" &&
-        (m as any).countdown_started_at &&
-        (m.player1_id === user.id || m.player2_id === user.id)
-    );
+    // İlk yükleme kontrolü
+    const checkMyMatch = () => {
+      const myMatch = matches.find(
+        (m) =>
+          m.status === "in_progress" &&
+          (m as any).countdown_started_at &&
+          (m.player1_id === user.id || m.player2_id === user.id)
+      );
 
-    if (myMatch) {
-      setNavigatedToGame(true);
-      navigate(`/game?match=${myMatch.id}&tournament=${tournamentId}`);
-    }
+      if (myMatch) {
+        console.log("🎮 My match started, navigating to game:", myMatch.id);
+        setNavigatedToGame(true);
+        navigate(`/game?match=${myMatch.id}&tournament=${tournamentId}`);
+        return true;
+      }
+      return false;
+    };
+
+    // İlk kontrol
+    if (checkMyMatch()) return;
+
+    // Realtime subscription - maç durumu değiştiğinde kontrol et
+    const channel = supabase
+      .channel(`my-match-updates-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "tournament_matches",
+          filter: `tournament_id=eq.${tournamentId}`,
+        },
+        (payload) => {
+          const newMatch = payload.new as any;
+          // Benim maçım mı ve in_progress mu?
+          if (
+            newMatch.status === "in_progress" &&
+            newMatch.countdown_started_at &&
+            (newMatch.player1_id === user.id || newMatch.player2_id === user.id)
+          ) {
+            console.log("🎮 [Realtime] My match started, navigating:", newMatch.id);
+            setNavigatedToGame(true);
+            navigate(`/game?match=${newMatch.id}&tournament=${tournamentId}`);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [matches, user, navigatedToGame, tournamentId, navigate, currentTournament]);
 
   // Check for champion/eliminated

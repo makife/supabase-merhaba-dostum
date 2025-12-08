@@ -863,6 +863,7 @@ export type Database = {
           total_words: number | null
           total_words_created: number | null
           tournament_wins: number | null
+          unlimited_lives_until: string | null
           updated_at: string | null
           username: string | null
           vs_bot_games: number | null
@@ -911,6 +912,7 @@ export type Database = {
           total_words?: number | null
           total_words_created?: number | null
           tournament_wins?: number | null
+          unlimited_lives_until?: string | null
           updated_at?: string | null
           username?: string | null
           vs_bot_games?: number | null
@@ -959,6 +961,7 @@ export type Database = {
           total_words?: number | null
           total_words_created?: number | null
           tournament_wins?: number | null
+          unlimited_lives_until?: string | null
           updated_at?: string | null
           username?: string | null
           vs_bot_games?: number | null
