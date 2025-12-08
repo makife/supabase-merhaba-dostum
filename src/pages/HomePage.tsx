@@ -523,7 +523,7 @@ const HomePage = () => {
                               <Infinity className="w-3 h-3 inline mr-1" /> SINIRSIZ
                             </span>
                             {unlimitedTimeLeft && (
-                              <span className="text-xs text-blue-400 bg-blue-900/50 px-2 py-1 rounded-full border border-blue-900/50">
+                              <span className="text-xs font-bold text-yellow-100 bg-orange-600/70 px-2 py-1 rounded-full border border-yellow-300/80">
                                 Kalan: {unlimitedTimeLeft}
                               </span>
                             )}
