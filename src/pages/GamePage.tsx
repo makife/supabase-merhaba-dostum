@@ -1259,6 +1259,7 @@ const requestRematch = async () => {
     serverMatchStartRef.current = null;
     countdownCompletedAtRef.current = null;
     startedAtRef.current = null;
+    endsAtTimestampRef.current = null; // 🔒 KRİTİK: Timer'ın tekrar init olabilmesi için
 
     // ⚠️ KRİTİK: Optimistic update flag'ini sıfırla
     setIsMatchFinishing(false);
@@ -3813,6 +3814,13 @@ const requestRematch = async () => {
     // Fetch ends_at from database
     // ⏱️ TIMESTAMP-BASED TIMER - Prevents jumps and glitches
     const initializeTimer = async () => {
+      // 🔒 KRİTİK: Timer zaten başlatıldıysa, tekrar başlatma!
+      // Bu kelime girildiğinde timer'ın 2:00'a reset olmasını engeller
+      if (endsAtTimestampRef.current && timerRef.current) {
+        console.log("⏱️ Timer already initialized, skipping re-init (prevents 2:00 reset)");
+        return;
+      }
+
       // 🔒 REMATCH FIX: Reset display to initial time immediately
       if (isMountedRef.current) {
         setDisplayTime(120);
@@ -3828,7 +3836,7 @@ const requestRematch = async () => {
           // Turnuva modu için DB'den ends_at al
           const { data } = await supabase
             .from("tournament_matches")
-            .select("ends_at")
+            .select("ends_at, countdown_started_at")
             .eq("id", tournamentMatch.id)
             .single();
 
@@ -3836,17 +3844,18 @@ const requestRematch = async () => {
             endsAtTimestamp = new Date(data.ends_at).getTime();
             // Turnuva için start time'ı ends_at - 120sn olarak geri hesaplayabiliriz
             gameStartTimestamp = endsAtTimestamp - 120 * 1000;
+          } else if (data?.countdown_started_at) {
+            // ends_at yoksa countdown_started_at + 5sn (countdown) + 120sn (game) kullan
+            const countdownStart = new Date(data.countdown_started_at).getTime();
+            gameStartTimestamp = countdownStart + 5000; // 5 saniye countdown
+            endsAtTimestamp = gameStartTimestamp + 120 * 1000;
           }
         } else if (currentRoom?.started_at) {
           // Normal oyunlar (Private/Random) için started_at kullan
-          // started_at artık RPC'den gelen "Gelecekteki Başlangıç Zamanı" (Buffer eklenmiş)
           gameStartTimestamp = new Date(currentRoom.started_at).getTime();
-
-          // Oyun Bitişi = Başlangıç + 120 Saniye
           endsAtTimestamp = gameStartTimestamp + 120 * 1000;
         } else {
-          // Fallback: started_at yoksa (örn: vs-computer veya hata), şu an + buffer
-          // vs-computer için genelde buffer gerekmez ama güvenli taraf için 5sn ekleyebilirsin
+          // Fallback: vs-computer için
           const buffer = gameMode === "vs-computer" ? 0 : 5000;
           gameStartTimestamp = Date.now() + serverTimeOffset + buffer;
           endsAtTimestamp = gameStartTimestamp + 120 * 1000;
@@ -3868,16 +3877,14 @@ const requestRematch = async () => {
 
           // 🔒 KİLİT MEKANİZMASI: Oyun Henüz Başlamadıysa (Buffer Time)
           if (gameStartTimestamp > 0 && currentServerTime < gameStartTimestamp) {
-            // Oyunun başlamasına daha var (örn: animasyon oynuyor)
-            // Süreyi 120'de sabitle
             timeLeftRef.current = 120;
             setDisplayTime(120);
-            return; // ⚠️ KRİTİK: Buradan dön, aşağıya inip süreyi düşürme!
+            return;
           }
 
           // 🔓 OYUN BAŞLADI: Normal Geri Sayım
           const remainingMs = Math.max(0, endsAtTimestampRef.current - currentServerTime);
-          const remainingSeconds = Math.ceil(remainingMs / 1000); // ceil kullanmak 119.1'i 120 gösterir, daha temizdir
+          const remainingSeconds = Math.ceil(remainingMs / 1000);
 
           // State güncelle
           timeLeftRef.current = remainingSeconds;
@@ -3886,30 +3893,24 @@ const requestRematch = async () => {
           // Süre Bitti Kontrolü
           if (remainingSeconds <= 0 && !gameEndedRef.current) {
             console.log("⏰ TIMESTAMP TIMER: Time reached 0 - ending game");
-            gameEndedRef.current = true; // 🔒 Guard
+            gameEndedRef.current = true;
 
-            // Interval'i temizle
             if (timerRef.current) {
               clearInterval(timerRef.current);
               timerRef.current = null;
             }
 
-            // Sync channel temizle
             if (syncInterval) {
               if (typeof syncInterval === "object" && "unsubscribe" in syncInterval) {
-                // @ts-ignore
-                supabase.removeChannel(syncInterval);
+                supabase.removeChannel(syncInterval as any);
               } else {
-                // @ts-ignore
-                clearInterval(syncInterval);
+                clearInterval(syncInterval as any);
               }
             }
 
-            // Oyun sonu işlemleri
             if (gameMode === "tournament" && tournamentMatch) {
               setIsMatchFinishing(true);
-              // ... turnuva bitiş kodları ...
-              handleGameEnd(); // Turnuva için bu yeterli olabilir, detaylar handleGameEnd içinde
+              handleGameEnd();
             } else {
               handleGameEnd();
               setTimeout(() => {
@@ -3918,10 +3919,9 @@ const requestRematch = async () => {
               }, 50);
             }
           }
-        }, 1000); // 1000ms (1 saniye) interval
+        }, 1000);
       } catch (error) {
         console.error("❌ Timer initialization error:", error);
-        // Fallback: Hata durumunda direkt 120sn ver
         endsAtTimestampRef.current = Date.now() + 120 * 1000;
       }
     };
