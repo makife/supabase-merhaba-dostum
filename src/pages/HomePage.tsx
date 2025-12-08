@@ -250,8 +250,7 @@ const HomePage = () => {
     } else {
       setUnlimitedTimeLeft("");
     }
-    // DÜZELTME 2: (profile as any) eklendi çünkü tip tanımı henüz güncel değil
-  }, [(profile as any)?.unlimited_lives_until]);
+  }, [profile]);
 
   // Timer effect for credit countdown
   useEffect(() => {
