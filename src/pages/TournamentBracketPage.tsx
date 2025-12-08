@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSounds } from "@/hooks/useSounds";
 import { generateBotName } from "@/utils/tournamentHelpers";
+import { toast } from "sonner";
 
 const TournamentBracketPage = () => {
   const { tournamentId } = useParams();
