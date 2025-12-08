@@ -19,7 +19,8 @@ interface UserProfile {
   total_score: number;
   created_at: string;
   ink_count: number;
-  // Yeni eklenen alanlar:
+  unlimited_lives_until?: string | null;
+  // Diğer alanlar...
   daily_games?: number;
   win_streak?: number;
   daily_wins?: number;
@@ -29,7 +30,6 @@ interface UserProfile {
   favorite_letter?: string;
   total_play_time?: number;
   last_daily_reset?: string;
-  // Diğer mevcut alanlar:
   total_games?: number;
   wins?: number;
   losses?: number;
@@ -574,12 +574,16 @@ export const UserProvider = ({ children }: UserProviderProps) => {
           if (!payload.new) return;
 
           const now = Date.now();
+
+          // 🔥 FIX: unlimited_lives_until alanını da hash'e ekle
           const dataHash = JSON.stringify({
             game_credits: (payload.new as any).game_credits,
             bonus_credits: (payload.new as any).bonus_credits,
             total_score: (payload.new as any).total_score,
             wins: (payload.new as any).wins,
             losses: (payload.new as any).losses,
+            unlimited_lives_until: (payload.new as any).unlimited_lives_until, // ✅ EKLENEN
+            ink_count: (payload.new as any).ink_count, // ✅ EKLENEN
           });
 
           // Ignore if same data within 2 seconds
@@ -598,6 +602,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
             ink_count: (payload.new as any).ink_count ?? 0,
           };
 
+          // 🔥 FIX: Detaylı log ekle
           console.log("📊 Profile stats updated:", {
             total_score: newProfile.total_score,
             wins: newProfile.wins,
@@ -605,9 +610,20 @@ export const UserProvider = ({ children }: UserProviderProps) => {
             game_credits: newProfile.game_credits,
             bonus_credits: newProfile.bonus_credits,
             ink_count: newProfile.ink_count,
+            unlimited_lives_until: (payload.new as any).unlimited_lives_until, // ✅ LOG EKLENEN
           });
 
           setProfile(newProfile);
+
+          // 🔥 FIX: Cache'i de güncelle (HomePage refresh olsa bile çalışsın)
+          localStorage.setItem(
+            "cached_profile",
+            JSON.stringify({
+              id: user.id,
+              data: newProfile,
+              timestamp: Date.now(),
+            }),
+          );
         },
       )
       .subscribe();
