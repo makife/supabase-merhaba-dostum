@@ -272,29 +272,23 @@ const TournamentBracketPage = () => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase.from("profiles").select("ink_count").eq("id", user.id).single();
+      const { data, error } = await supabase.rpc("give_tournament_champion_reward", {
+        p_user_id: user.id,
+        p_reward_amount: 5,
+      });
 
       if (error) throw error;
 
-      const currentInk = data?.ink_count || 0;
-      const rewardAmount = 5;
+      const result = data as { success: boolean; reward_amount: number; new_ink_count: number };
 
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({
-          ink_count: currentInk + rewardAmount,
-        })
-        .eq("id", user.id);
+      if (result.success) {
+        toast.success("🎉 Tebrikler Şampiyon!", {
+          description: `${result.reward_amount} damla mürekkep kazandınız! 💧`,
+          duration: 5000,
+        });
 
-      if (updateError) throw updateError;
-
-      // Toast bildirimi göster
-      toast.success("🎉 Tebrikler Şampiyon!", {
-        description: `${rewardAmount} damla mürekkep kazandınız! 💧`,
-        duration: 5000,
-      });
-
-      console.log(`🏆 Şampiyona ödülü verildi: +${rewardAmount} mürekkep`);
+        console.log(`🏆 Şampiyona ödülü verildi: +${result.reward_amount} mürekkep (Yeni: ${result.new_ink_count})`);
+      }
     } catch (error) {
       console.error("❌ Şampiyona ödülü verme hatası:", error);
     }
