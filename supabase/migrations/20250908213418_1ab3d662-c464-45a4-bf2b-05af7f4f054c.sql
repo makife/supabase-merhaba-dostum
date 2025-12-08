@@ -78,7 +78,7 @@ BEGIN
     AND game_credits < 5 -- Maksimum krediye ulaşmamış
     AND (
       last_credit_refresh IS NULL OR 
-      last_credit_refresh < NOW() - INTERVAL '15 minutes'
+      last_credit_refresh < NOW() - INTERVAL '72 minutes'
     );
 END;
 $$;
