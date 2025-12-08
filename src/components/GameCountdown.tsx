@@ -151,17 +151,28 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
     const serverNow = Date.now() + serverTimeOffset;
     const initialRemaining = Math.ceil((endTimeMs - serverNow) / 1000);
     
-    // Set initial display
-    if (initialRemaining >= 1 && initialRemaining <= 5) {
+    console.log("⏱️ GameCountdown: Initial calculation", {
+      serverNow: new Date(serverNow).toISOString(),
+      endTime: new Date(endTimeMs).toISOString(),
+      initialRemaining,
+    });
+    
+    // 🔒 KRİTİK: İlk görüntüleme değeri HER ZAMAN 5 olmalı
+    // Eğer countdown henüz başlamamış veya tam zamanında açıldıysa 5 göster
+    // Sadece gerçekten geride kaldıysak (2-3 saniye) daha düşük göster
+    if (initialRemaining >= 5) {
+      setDisplayValue(5);
+      if (!soundPlayedRef.current.has(5)) {
+        playSound("/gerisayim.mp3");
+        soundPlayedRef.current.add(5);
+      }
+    } else if (initialRemaining >= 1 && initialRemaining <= 4) {
+      // Eğer geride kaldıysak doğru sayıyı göster
       setDisplayValue(initialRemaining);
-      // Play initial sound only once
       if (!soundPlayedRef.current.has(initialRemaining)) {
         playSound("/gerisayim.mp3");
         soundPlayedRef.current.add(initialRemaining);
       }
-    } else if (initialRemaining > 5) {
-      // Countdown hasn't started yet, show 5
-      setDisplayValue(5);
     } else if (initialRemaining <= 0 && initialRemaining > -1) {
       // Should show "start"
       if (!startShownRef.current) {
@@ -169,6 +180,9 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
         playSound("/basla.mp3");
         startShownRef.current = true;
       }
+    } else {
+      // Fallback - 5'ten başla
+      setDisplayValue(5);
     }
     
     // Use setInterval for consistent updates (doesn't pause in background)

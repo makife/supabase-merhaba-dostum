@@ -3821,11 +3821,9 @@ const requestRematch = async () => {
         return;
       }
 
-      // 🔒 REMATCH FIX: Reset display to initial time immediately
-      if (isMountedRef.current) {
-        setDisplayTime(120);
-        console.log("⏱️ Display time reset to 120 before fetching ends_at");
-      }
+      // ⚠️ NOT: setDisplayTime(120) BURADA YAPILMAMALI!
+      // Bu satır her re-render'da timer'ı 2:00'a resetliyordu
+      // Timer değeri sadece ends_at hesaplandıktan SONRA ayarlanmalı
 
       try {
         let endsAtTimestamp = 0;
