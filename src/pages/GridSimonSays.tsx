@@ -23,8 +23,22 @@ const GridSimonSays = () => {
   const [guessValue, setGuessValue] = useState("");
   const [cellLetters, setCellLetters] = useState({});
   const audioContextRef = useRef(null);
+  const [attempts, setAttempts] = useState(3); // 3 Hak
+  const [modal, setModal] = useState({ show: false, title: "", message: "", type: "info" }); // Modal yönetimi
 
   const gridSize = 16;
+
+  const showModal = (title, message, type = "info") => {
+    setModal({ show: true, title, message, type });
+  };
+
+  const closeModal = () => {
+    setModal({ ...modal, show: false });
+    // Eğer oyun bittiyse ve modal kapatıldıysa game over ekranına geçiş yapılabilir
+    if (attempts <= 0) {
+      setGameState("gameOver");
+    }
+  };
 
   // Kelime listesini yükle
   useEffect(() => {
