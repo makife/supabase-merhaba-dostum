@@ -788,11 +788,6 @@ const HomePage = () => {
                         className="absolute top-1 right-2 w-2 h-2 bg-cyan-300 rounded-sm animate-ping shadow-[0_0_8px_rgba(103,232,249,0.8)]"
                         style={{ animationDuration: "1.5s" }}
                       ></div>
-
-                      <div
-                        className="absolute bottom-2 left-2 w-1.5 h-1.5 bg-white rounded-sm animate-pulse shadow-[0_0_8px_rgba(255,255,255,0.8)]"
-                        style={{ animationDelay: "0.2s" }}
-                      ></div>
                     </div>
                   </div>
 
