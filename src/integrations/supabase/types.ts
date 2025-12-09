@@ -1856,6 +1856,10 @@ export type Database = {
               weekly_score: number
             }[]
           }
+      give_tournament_champion_reward: {
+        Args: { p_reward_amount?: number; p_user_id: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
