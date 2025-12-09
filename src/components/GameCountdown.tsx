@@ -148,53 +148,24 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       };
     }
 
-    // Server-authoritative mode
-    const startTimeMs = new Date(serverStartTime).getTime();
-    const endTimeMs = startTimeMs + COUNTDOWN_DURATION_MS;
+    // 🎯 FİX: Countdown her zaman 5'ten başlasın - lokal zamanlama kullan
+    // Server zamanı sadece iki oyuncu arasında senkronizasyon için kullanılır
+    // Ama countdown açıldığı anda HER ZAMAN 5'ten başlamalı
+    
+    const countdownStartedAt = Date.now(); // Countdown komponent mount anı
+    const localEndTime = countdownStartedAt + COUNTDOWN_DURATION_MS;
 
-    console.log("⏱️ GameCountdown: Server-authoritative mode starting", {
+    console.log("⏱️ GameCountdown: Starting from 5 (local timing)", {
       serverStartTime,
-      startTimeMs,
-      endTimeMs: new Date(endTimeMs).toISOString(),
-      serverTimeOffset,
+      countdownStartedAt: new Date(countdownStartedAt).toISOString(),
+      localEndTime: new Date(localEndTime).toISOString(),
     });
 
-    // Calculate initial state
-    const serverNow = Date.now() + serverTimeOffset;
-    const initialRemaining = Math.ceil((endTimeMs - serverNow) / 1000);
-
-    console.log("⏱️ GameCountdown: Initial calculation", {
-      serverNow: new Date(serverNow).toISOString(),
-      endTime: new Date(endTimeMs).toISOString(),
-      initialRemaining,
-    });
-
-    // 🔒 KRİTİK: İlk görüntüleme değeri HER ZAMAN 5 olmalı
-    // Eğer countdown henüz başlamamış veya tam zamanında açıldıysa 5 göster
-    // Sadece gerçekten geride kaldıysak (2-3 saniye) daha düşük göster
-    if (initialRemaining >= 5) {
-      setDisplayValue(5);
-      if (!soundPlayedRef.current.has(5)) {
-        playSound("/gerisayim.mp3");
-        soundPlayedRef.current.add(5);
-      }
-    } else if (initialRemaining >= 1 && initialRemaining <= 4) {
-      // Eğer geride kaldıysak doğru sayıyı göster
-      setDisplayValue(initialRemaining);
-      if (!soundPlayedRef.current.has(initialRemaining)) {
-        playSound("/gerisayim.mp3");
-        soundPlayedRef.current.add(initialRemaining);
-      }
-    } else if (initialRemaining <= 0 && initialRemaining > -1) {
-      // Should show "start"
-      if (!startShownRef.current) {
-        setDisplayValue("start");
-        playSound("/basla.mp3");
-        startShownRef.current = true;
-      }
-    } else {
-      // Fallback - 5'ten başla
-      setDisplayValue(5);
+    // 🔒 KRİTİK: HER ZAMAN 5'ten başla
+    setDisplayValue(5);
+    if (!soundPlayedRef.current.has(5)) {
+      playSound("/gerisayim.mp3");
+      soundPlayedRef.current.add(5);
     }
 
     // Use setInterval for consistent updates (doesn't pause in background)
@@ -207,8 +178,9 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
         return;
       }
 
-      const serverNow = Date.now() + serverTimeOffset;
-      const remainingMs = endTimeMs - serverNow;
+      // 🎯 Lokal zamanlama kullan - pürüzsüz countdown için
+      const now = Date.now();
+      const remainingMs = localEndTime - now;
       const remainingSeconds = Math.ceil(remainingMs / 1000);
 
       if (remainingMs <= -START_DISPLAY_DURATION_MS) {
