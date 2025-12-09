@@ -10,19 +10,7 @@ import { useAdMob } from "@/hooks/useAdMob";
 import { useNativeSubscriptions } from "@/hooks/useNativeSubscriptions";
 import { supabase } from "@/integrations/supabase/client";
 import { useSounds } from "@/hooks/useSounds";
-import {
-  ArrowLeft,
-  Crown,
-  Zap,
-  Clock,
-  Infinity,
-  Droplet,
-  Feather,
-  PenTool,
-  Heart,
-  Video,
-  Sparkles,
-} from "lucide-react";
+import { ArrowLeft, Crown, Zap, Infinity, Droplet, PenTool, Video } from "lucide-react";
 
 // Veri Tipleri
 interface InkPack {
@@ -130,7 +118,7 @@ const MarketPage = () => {
       value: 1,
       image: "/senyazIkon.png",
     },
-    // Canlar (Kalpler)
+    // Canlar (Görseller Güncellendi)
     {
       id: "h_full",
       type: "heart",
@@ -138,16 +126,16 @@ const MarketPage = () => {
       description: "Tüm canları (5) yeniler",
       priceInInk: 25,
       value: 5,
-      icon: Heart,
+      image: "/bescanPaketi.png", // GÜNCELLENDİ
     },
     {
-      id: "h_10",
+      id: "h_25", // GÜNCELLENDİ (Eski h_10)
       type: "heart",
-      name: "+10 Can Paketi",
-      description: "Stoğunuza 10 can ekler",
-      priceInInk: 45,
-      value: 10,
-      icon: Heart,
+      name: "+25 Can Paketi",
+      description: "Stoğunuza 25 can ekler",
+      priceInInk: 90, // Fiyat güncellendi (miktar arttığı için)
+      value: 25, // GÜNCELLENDİ
+      image: "/yirmibescanPaketi.png", // GÜNCELLENDİ
     },
     {
       id: "h_50",
@@ -156,9 +144,9 @@ const MarketPage = () => {
       description: "Uzun soluklu oyun için",
       priceInInk: 200,
       value: 50,
-      icon: Heart,
+      image: "/ellicanPaketi.png", // GÜNCELLENDİ
     },
-    // Sınırsız Zaman (Görseller Eklendi)
+    // Sınırsız Zaman
     {
       id: "t_1h",
       type: "time",
@@ -166,7 +154,7 @@ const MarketPage = () => {
       description: "1 Saat boyunca sınırsız can",
       priceInInk: 40,
       value: 1,
-      image: "/birsaatUyelik.png", // Yeni görsel
+      image: "/birsaatUyelik.png",
     },
     {
       id: "t_24h",
@@ -175,7 +163,7 @@ const MarketPage = () => {
       description: "24 Saat boyunca sınırsız can",
       priceInInk: 100,
       value: 24,
-      image: "/yirmidortsaatUyelik.png", // Yeni görsel
+      image: "/yirmidortsaatUyelik.png",
     },
   ];
 
@@ -437,7 +425,7 @@ const MarketPage = () => {
             <TabsContent value="stationery" className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
               <div>
                 <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Jokerler</h3>
-                <div className="grid grid-cols-1 gap-2">
+                <div className="grid grid-cols-1 gap-3">
                   {stationeryItems
                     .filter((i) => i.type === "joker")
                     .map((item) => (
@@ -445,16 +433,21 @@ const MarketPage = () => {
                         key={item.id}
                         className="bg-white rounded-xl p-3 border border-slate-100 flex items-center justify-between shadow-sm"
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="bg-purple-50 p-2 rounded-lg text-purple-600 w-9 h-9 flex items-center justify-center">
+                        <div className="flex items-center gap-4">
+                          {/* GÜNCELLENDİ: Joker ikon alanı büyütüldü */}
+                          <div className="bg-purple-50 p-2 rounded-xl text-purple-600 w-16 h-16 flex items-center justify-center shadow-inner">
                             {item.image ? (
-                              <img src={item.image} alt={item.name} className="w-5 h-5 object-contain" />
+                              <img
+                                src={item.image}
+                                alt={item.name}
+                                className="w-10 h-10 object-contain drop-shadow-sm"
+                              />
                             ) : (
-                              item.icon && <item.icon className="w-5 h-5" />
+                              item.icon && <item.icon className="w-8 h-8" />
                             )}
                           </div>
                           <div>
-                            <p className="font-bold text-sm text-slate-800">{item.name}</p>
+                            <p className="font-bold text-base text-slate-800">{item.name}</p>
                             <p className="text-xs text-slate-500">{item.description}</p>
                           </div>
                         </div>
@@ -482,8 +475,13 @@ const MarketPage = () => {
                         className="border-slate-100 shadow-sm overflow-hidden group hover:border-red-200 transition-colors"
                       >
                         <CardContent className="p-3 text-center flex flex-col items-center gap-2">
-                          <div className="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center text-red-500 group-hover:scale-110 transition-transform">
-                            {item.icon && <item.icon className="w-5 h-5 fill-current" />}
+                          {/* GÜNCELLENDİ: Kalp ikonu yerine görsel kullanımı */}
+                          <div className="w-16 h-16 flex items-center justify-center group-hover:scale-105 transition-transform mb-1">
+                            {item.image ? (
+                              <img src={item.image} alt={item.name} className="w-full h-full object-contain" />
+                            ) : (
+                              item.icon && <item.icon className="w-8 h-8 text-red-500" />
+                            )}
                           </div>
                           <div>
                             <p className="font-bold text-sm text-slate-800">{item.name}</p>
