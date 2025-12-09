@@ -263,7 +263,7 @@ const HomePage = () => {
         if (profile?.last_credit_refresh && !isPremium && profile.game_credits < 5) {
           const now = new Date();
           const lastRefresh = new Date(profile.last_credit_refresh);
-          const nextRefresh = new Date(lastRefresh.getTime() + 15 * 60 * 1000);
+          const nextRefresh = new Date(lastRefresh.getTime() + 72 * 60 * 1000);
 
           if (now >= nextRefresh) {
             refreshCredits();
