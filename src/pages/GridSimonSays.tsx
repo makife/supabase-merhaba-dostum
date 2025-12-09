@@ -403,7 +403,7 @@ const GridSimonSays = () => {
       </button>
 
       <div className="game-header">
-        <h2>💣 Kelime Tahmin Oyunu 💣</h2>
+        <h2>💣Sıkı Takip💣</h2>
 
         {gameState !== "waiting" && (
           <div className="word-section">
