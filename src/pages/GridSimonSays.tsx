@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { ArrowLeft } from "lucide-react";
 
+// TypeScript hatası için global tanım
 declare global {
   interface Window {
     webkitAudioContext: typeof AudioContext;
@@ -9,36 +10,26 @@ declare global {
 
 const GridSimonSays = () => {
   const [gameState, setGameState] = useState("waiting");
-  const [sequence, setSequence] = useState([]);
-  const [playerSequence, setPlayerSequence] = useState([]);
+  const [sequence, setSequence] = useState<number[]>([]);
+  const [playerSequence, setPlayerSequence] = useState<number[]>([]);
   const [score, setScore] = useState(0);
-  const [activeCell, setActiveCell] = useState(null);
+  const [activeCell, setActiveCell] = useState<number | null>(null);
   const [level, setLevel] = useState(1);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [vibrationEnabled, setVibrationEnabled] = useState(true);
-  const [wordList, setWordList] = useState([]);
+  const [wordList, setWordList] = useState<string[]>([]);
   const [currentWord, setCurrentWord] = useState("");
   const [revealedCells, setRevealedCells] = useState(new Set());
   const [showGuessInput, setShowGuessInput] = useState(false);
   const [guessValue, setGuessValue] = useState("");
-  const [cellLetters, setCellLetters] = useState({});
-  const audioContextRef = useRef(null);
-  const [attempts, setAttempts] = useState(3); // 3 Hak
-  const [modal, setModal] = useState({ show: false, title: "", message: "", type: "info" }); // Modal yönetimi
+  const [cellLetters, setCellLetters] = useState<any>({});
 
+  // YENİ EKLENEN STATE'LER
+  const [attempts, setAttempts] = useState(3); // 3 Can hakkı
+  const [modal, setModal] = useState({ show: false, title: "", message: "", type: "info" });
+
+  const audioContextRef = useRef<AudioContext | null>(null);
   const gridSize = 16;
-
-  const showModal = (title, message, type = "info") => {
-    setModal({ show: true, title, message, type });
-  };
-
-  const closeModal = () => {
-    setModal({ ...modal, show: false });
-    // Eğer oyun bittiyse ve modal kapatıldıysa game over ekranına geçiş yapılabilir
-    if (attempts <= 0) {
-      setGameState("gameOver");
-    }
-  };
 
   // Kelime listesini yükle
   useEffect(() => {
@@ -53,20 +44,18 @@ const GridSimonSays = () => {
         setWordList(words);
       } catch (error) {
         console.log("Kelime listesi yüklenemedi:", error);
-        // Fallback kelimeler
         setWordList(["KEDI", "KALEM", "BILGISAYAR", "TEKNOLOJI", "PROGRAMLAMA", "OYUN", "MASA", "KITAP"]);
       }
     };
     loadWordList();
   }, []);
 
-  // AudioContext'i oluştur
+  // AudioContext
   useEffect(() => {
     if (!audioContextRef.current) {
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
       audioContextRef.current = new AudioContextClass();
     }
-
     return () => {
       if (audioContextRef.current) {
         audioContextRef.current.close();
@@ -75,10 +64,22 @@ const GridSimonSays = () => {
     };
   }, []);
 
-  const createSound = useCallback(
-    (frequency, duration = 200) => {
-      if (!soundEnabled || !audioContextRef.current) return;
+  // MODAL YÖNETİMİ
+  const showModal = (title: string, message: string, type = "info") => {
+    setModal({ show: true, title, message, type });
+  };
 
+  const closeModal = () => {
+    setModal({ ...modal, show: false });
+    // Eğer haklar bittiyse ve modal kapatılıyorsa oyun sonu ekranına geç
+    if (attempts <= 0) {
+      setGameState("gameOver");
+    }
+  };
+
+  const createSound = useCallback(
+    (frequency: number, duration = 200) => {
+      if (!soundEnabled || !audioContextRef.current) return;
       try {
         const audioContext = audioContextRef.current;
         const oscillator = audioContext.createOscillator();
@@ -105,11 +106,8 @@ const GridSimonSays = () => {
   const vibrate = useCallback(
     (pattern = [100]) => {
       if (!vibrationEnabled) return;
-
       try {
-        if (navigator.vibrate) {
-          navigator.vibrate(pattern);
-        }
+        if (navigator.vibrate) navigator.vibrate(pattern);
       } catch (error) {
         console.log("Titreşim çalışmadı:", error);
       }
@@ -117,67 +115,36 @@ const GridSimonSays = () => {
     [vibrationEnabled],
   );
 
-  const getCellSound = useCallback((cellIndex) => {
-    const baseFreq = 200;
-    return baseFreq + cellIndex * 50;
-  }, []);
+  const getCellSound = useCallback((cellIndex: number) => 200 + cellIndex * 50, []);
+  const getRandomCell = useCallback(() => Math.floor(Math.random() * gridSize), []);
+  const getWordLengthForLevel = useCallback((lvl: number) => Math.min(3 + lvl, 16), []);
 
-  const getRandomCell = useCallback(() => {
-    return Math.floor(Math.random() * gridSize);
-  }, []);
-
-  // Level'e göre kelime uzunluğu belirle (Level 1 = 4 harf, Level 2 = 5 harf...)
-  const getWordLengthForLevel = useCallback((lvl) => {
-    const length = 3 + lvl; // Level 1 = 4, Level 2 = 5, ...
-    return Math.min(length, 16); // Max 16 harf
-  }, []);
-
-  // Belirli uzunluktaki rastgele kelime seç
   const selectRandomWord = useCallback(
-    (targetLength) => {
-      if (wordList.length === 0) {
-        const fallback = ["KEDI", "KALEM", "BILGISAYAR", "TEKNOLOJI"];
-        return fallback[Math.floor(Math.random() * fallback.length)];
-      }
-
+    (targetLength: number) => {
+      if (wordList.length === 0) return "OYUN";
       const wordsOfLength = wordList.filter((word) => word.length === targetLength);
-
       if (wordsOfLength.length > 0) {
-        const randomIndex = Math.floor(Math.random() * wordsOfLength.length);
-        return wordsOfLength[randomIndex];
-      } else {
-        // Eğer tam uzunlukta kelime yoksa, yakın uzunluktaki kelimeyi seç
-        const closeWords = wordList.filter(
-          (word) => word.length >= targetLength - 1 && word.length <= targetLength + 1,
-        );
-        if (closeWords.length > 0) {
-          return closeWords[Math.floor(Math.random() * closeWords.length)];
-        }
-        return wordList[Math.floor(Math.random() * wordList.length)];
+        return wordsOfLength[Math.floor(Math.random() * wordsOfLength.length)];
       }
+      const closeWords = wordList.filter((word) => word.length >= targetLength - 1 && word.length <= targetLength + 1);
+      if (closeWords.length > 0) return closeWords[Math.floor(Math.random() * closeWords.length)];
+      return wordList[Math.floor(Math.random() * wordList.length)];
     },
     [wordList],
   );
 
-  // Harfleri gride rastgele dağıt
-  const assignLettersToGrid = useCallback((word) => {
-    const letters = {};
+  const assignLettersToGrid = useCallback((word: string) => {
+    const letters: any = {};
     const wordLength = word.length;
-
-    // Rastgele pozisyonlar seç (0-15 arası)
     const availablePositions = Array.from({ length: gridSize }, (_, i) => i);
     const shuffledPositions = availablePositions.sort(() => Math.random() - 0.5);
 
-    // Kelimenin harflerini rastgele pozisyonlara yerleştir
     for (let i = 0; i < wordLength; i++) {
       letters[shuffledPositions[i]] = word[i];
     }
-
-    // Kalan pozisyonlar boş (null)
     for (let i = wordLength; i < gridSize; i++) {
       letters[shuffledPositions[i]] = null;
     }
-
     return letters;
   }, []);
 
@@ -193,6 +160,7 @@ const GridSimonSays = () => {
     setPlayerSequence([]);
     setScore(0);
     setLevel(1);
+    setAttempts(3); // Hakları sıfırla
     setRevealedCells(new Set());
     setGameState("showing");
     setShowGuessInput(false);
@@ -203,7 +171,7 @@ const GridSimonSays = () => {
   }, [getRandomCell, getWordLengthForLevel, selectRandomWord, assignLettersToGrid, createSound, vibrate]);
 
   const showSequence = useCallback(
-    (seq) => {
+    (seq: number[]) => {
       let index = 0;
       setActiveCell(null);
 
@@ -211,7 +179,11 @@ const GridSimonSays = () => {
         if (index < seq.length) {
           const cellIndex = seq[index];
           setActiveCell(cellIndex);
-          setRevealedCells((prev) => new Set([...prev, cellIndex]));
+          setRevealedCells((prev) => {
+            const newSet = new Set(prev);
+            newSet.add(cellIndex);
+            return newSet;
+          });
 
           createSound(getCellSound(cellIndex), 300);
           vibrate([50]);
@@ -230,19 +202,17 @@ const GridSimonSays = () => {
           }, 300);
         }
       };
-
       setTimeout(showNext, 500);
     },
     [createSound, getCellSound, vibrate],
   );
 
   const handleCellClick = useCallback(
-    (cellIndex) => {
+    (cellIndex: number) => {
       if (gameState !== "playing") return;
 
       const newPlayerSequence = [...playerSequence, cellIndex];
       setPlayerSequence(newPlayerSequence);
-
       setActiveCell(cellIndex);
       createSound(getCellSound(cellIndex), 150);
       vibrate([30]);
@@ -252,6 +222,9 @@ const GridSimonSays = () => {
       const currentSequenceIndex = newPlayerSequence.length - 1;
 
       if (newPlayerSequence[currentSequenceIndex] !== sequence[currentSequenceIndex]) {
+        // Yanlış butona basınca oyun biter (Simon Says kuralı gereği)
+        // İstersen burada da can eksiltme yapabiliriz ama orijinal isteğin kelime tahmini içindi.
+        // Şimdilik burası direkt game over.
         setGameState("gameOver");
         createSound(150, 500);
         vibrate([200, 100, 200]);
@@ -260,14 +233,10 @@ const GridSimonSays = () => {
 
       if (newPlayerSequence.length === sequence.length) {
         const newScore = score + level * 10;
-        const newLevel = level + 1;
-
         setScore(newScore);
-        setLevel(newLevel);
 
         createSound(660, 200);
         setTimeout(() => createSound(880, 200), 100);
-        setTimeout(() => createSound(1100, 300), 200);
         vibrate([100, 50, 100]);
 
         setTimeout(() => {
@@ -298,7 +267,7 @@ const GridSimonSays = () => {
     const normalizedWord = currentWord.toUpperCase();
 
     if (normalizedGuess === normalizedWord) {
-      // Doğru tahmin!
+      // --- DOĞRU TAHMİN ---
       const wordLetterCount = Object.values(cellLetters).filter((l) => l !== null).length;
       const bonusPoints = 100 + (wordLetterCount - revealedCells.size) * 10;
       const newScore = score + bonusPoints;
@@ -306,15 +275,17 @@ const GridSimonSays = () => {
 
       setScore(newScore);
       setLevel(newLevel);
+      setAttempts(3); // Seviye geçince hakları tazele
+
       createSound(1200, 300);
       setTimeout(() => createSound(1400, 300), 150);
-      setTimeout(() => createSound(1600, 400), 300);
       vibrate([100, 50, 100, 50, 100]);
 
-      alert(`🎉 Tebrikler! Doğru tahmin! +${bonusPoints} puan kazandınız!`);
+      // Başarı Modalı
+      showModal("🎉 Mükemmel!", `Doğru bildin! +${bonusPoints} puan!`, "success");
 
-      // Yeni seviye başlat
       setTimeout(() => {
+        closeModal();
         const wordLength = getWordLengthForLevel(newLevel);
         const word = selectRandomWord(wordLength);
         const letters = assignLettersToGrid(word);
@@ -329,13 +300,23 @@ const GridSimonSays = () => {
         setGuessValue("");
         setGameState("showing");
         showSequence([firstCell]);
-      }, 1500);
+      }, 2000); // 2 saniye sonra otomatik geçiş
     } else {
-      // Yanlış tahmin
-      createSound(150, 500);
-      vibrate([200, 100, 200]);
-      alert("❌ Yanlış tahmin! Tekrar deneyin.");
+      // --- YANLIŞ TAHMİN ---
+      const newAttempts = attempts - 1;
+      setAttempts(newAttempts);
       setGuessValue("");
+
+      if (newAttempts > 0) {
+        createSound(150, 500);
+        vibrate([200, 100, 200]);
+        showModal("❌ Yanlış Cevap", `Dikkat et! Kalan Hakkın: ${newAttempts}`, "error");
+      } else {
+        createSound(100, 800);
+        vibrate([500]);
+        showModal("💀 Oyun Bitti", "Tahmin hakkın kalmadı!", "error");
+        // Modal kapanınca gameOver state'ine geçecek (closeModal içinde)
+      }
     }
   }, [
     guessValue,
@@ -344,6 +325,7 @@ const GridSimonSays = () => {
     revealedCells,
     level,
     cellLetters,
+    attempts,
     createSound,
     vibrate,
     getWordLengthForLevel,
@@ -359,20 +341,19 @@ const GridSimonSays = () => {
     setPlayerSequence([]);
     setScore(0);
     setLevel(1);
+    setAttempts(3); // Reset
     setActiveCell(null);
     setRevealedCells(new Set());
     setCurrentWord("");
     setCellLetters({});
     setShowGuessInput(false);
     setGuessValue("");
+    setModal({ show: false, title: "", message: "", type: "info" });
   }, []);
 
   const renderWordDisplay = () => {
-    // Kelimeyi sıralı göster (açılan harfleri göster)
     const wordLetters = currentWord.split("");
     const revealedLettersSet = new Set();
-
-    // Hangi harflerin açıldığını bul
     Object.entries(cellLetters).forEach(([cellIndex, letter]) => {
       if (letter && revealedCells.has(parseInt(cellIndex))) {
         revealedLettersSet.add(letter);
@@ -395,7 +376,6 @@ const GridSimonSays = () => {
 
   const renderGrid = () => {
     const cells = [];
-
     for (let i = 0; i < gridSize; i++) {
       const isActive = activeCell === i;
       const isClickable = gameState === "playing";
@@ -405,6 +385,7 @@ const GridSimonSays = () => {
       cells.push(
         <button
           key={i}
+          // "empty" sınıfı kaldırıldı, hepsi aynı görünür
           className={`grid-cell ${isActive ? "active" : ""} ${isClickable ? "clickable" : ""}`}
           onClick={() => handleCellClick(i)}
           disabled={!isClickable}
@@ -413,7 +394,6 @@ const GridSimonSays = () => {
         </button>,
       );
     }
-
     return cells;
   };
 
@@ -432,14 +412,14 @@ const GridSimonSays = () => {
         <div className="game-info">
           <span>Seviye: {level}</span>
           <span>Puan: {score}</span>
-          <span>
-            {gameState === "waiting"
-              ? "Başlamayı bekliyor"
-              : gameState === "showing"
-                ? "Diziyi gösteriyor..."
-                : gameState === "playing"
-                  ? "Sırayı tekrarla!"
-                  : "Oyun Bitti!"}
+          {/* Kalan Hak Göstergesi */}
+          <span
+            style={{
+              color: attempts === 1 ? "#ff4d4d" : "white",
+              border: attempts === 1 ? "1px solid #ff4d4d" : "1px solid rgba(255,255,255,0.2)",
+            }}
+          >
+            ❤️ Hak: {attempts}
           </span>
         </div>
 
@@ -515,6 +495,22 @@ const GridSimonSays = () => {
         )}
       </div>
 
+      {/* CUSTOM MODAL */}
+      {modal.show && (
+        <div className="modal-overlay">
+          <div className={`modal-content ${modal.type}`}>
+            <h3>{modal.title}</h3>
+            <p>{modal.message}</p>
+            {/* Canı varsa Tamam butonu göster, yoksa Oyun Sonu butonunu göster */}
+            {attempts > 0 ? (
+              <button onClick={closeModal}>Tamam</button>
+            ) : (
+              <button onClick={closeModal}>Sonuçları Gör</button>
+            )}
+          </div>
+        </div>
+      )}
+
       <style>{`
         .simon-game {
           min-height: 100vh;
@@ -527,25 +523,19 @@ const GridSimonSays = () => {
           color: white;
           box-sizing: border-box;
         }
-
         .game-header h2 {
           margin-bottom: 20px;
           color: white;
           text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
           font-size: 24px;
         }
-
-        .word-section {
-          margin: 20px 0;
-        }
-
+        .word-section { margin: 20px 0; }
         .word-section h3 {
           color: #64ffda;
           font-size: 16px;
           margin-bottom: 10px;
           text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
         }
-
         .word-display {
           display: flex;
           justify-content: center;
@@ -553,7 +543,6 @@ const GridSimonSays = () => {
           flex-wrap: wrap;
           margin: 10px 0;
         }
-
         .word-letter {
           width: 28px;
           height: 34px;
@@ -568,20 +557,17 @@ const GridSimonSays = () => {
           color: rgba(255, 255, 255, 0.3);
           transition: all 0.3s ease;
         }
-
         .word-letter.revealed {
           background: rgba(100, 255, 218, 0.3);
           border-color: #64ffda;
           color: #64ffda;
           animation: letterReveal 0.5s ease;
         }
-
         @keyframes letterReveal {
           0% { transform: scale(0.5) rotateY(90deg); }
           50% { transform: scale(1.2) rotateY(0deg); }
           100% { transform: scale(1) rotateY(0deg); }
         }
-
         .game-info {
           display: flex;
           justify-content: space-between;
@@ -589,7 +575,6 @@ const GridSimonSays = () => {
           flex-wrap: wrap;
           gap: 8px;
         }
-
         .game-info span {
           background: rgba(255, 255, 255, 0.15);
           backdrop-filter: blur(10px);
@@ -598,15 +583,14 @@ const GridSimonSays = () => {
           border-radius: 20px;
           font-size: 13px;
           font-weight: bold;
+          transition: all 0.3s ease;
         }
-
         .settings {
           display: flex;
           justify-content: center;
           gap: 10px;
           margin-bottom: 20px;
         }
-
         .setting-btn {
           background: rgba(255, 255, 255, 0.1);
           border: 2px solid rgba(255, 255, 255, 0.2);
@@ -618,14 +602,12 @@ const GridSimonSays = () => {
           font-size: 12px;
           backdrop-filter: blur(10px);
         }
-
         .setting-btn.active {
           background: rgba(100, 255, 100, 0.3);
           border-color: #64ff64;
           color: #64ff64;
           box-shadow: 0 0 15px rgba(100, 255, 100, 0.3);
         }
-
         .simon-grid {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
@@ -635,10 +617,8 @@ const GridSimonSays = () => {
           margin-left: auto;
           margin-right: auto;
         }
-
         .grid-cell {
           aspect-ratio: 1;
-          border: none;
           border-radius: 12px;
           background: rgba(255, 255, 255, 0.15);
           backdrop-filter: blur(10px);
@@ -653,35 +633,23 @@ const GridSimonSays = () => {
           justify-content: center;
           position: relative;
         }
-
-        .grid-cell.empty {
-          background: rgba(255, 255, 255, 0.05);
-          border-color: rgba(255, 255, 255, 0.1);
-        }
-
         .cell-letter {
           font-size: 24px;
           color: #64ffda;
           text-shadow: 0 0 10px rgba(100, 255, 218, 0.5);
           animation: letterPop 0.3s ease;
         }
-
         @keyframes letterPop {
           0% { transform: scale(0); }
           50% { transform: scale(1.3); }
           100% { transform: scale(1); }
         }
-
         .grid-cell.active {
           background: linear-gradient(45deg, #ff6b6b, #feca57) !important;
           transform: scale(1.08);
           box-shadow: 0 0 25px rgba(255, 202, 87, 0.8);
         }
-
-        .game-controls {
-          margin: 20px 0;
-        }
-
+        .game-controls { margin: 20px 0; }
         .start-btn, .restart-btn, .guess-btn {
           background: linear-gradient(45deg, #48cae4, #023e8a);
           color: white;
@@ -695,16 +663,8 @@ const GridSimonSays = () => {
           box-shadow: 0 4px 15px rgba(72, 202, 228, 0.3);
           margin: 5px;
         }
-
-        .guess-btn {
-          background: linear-gradient(45deg, #ffd60a, #e85d04);
-        }
-
-        .guess-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
+        .guess-btn { background: linear-gradient(45deg, #ffd60a, #e85d04); }
+        .guess-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .guess-section {
           background: rgba(255, 255, 255, 0.15);
           backdrop-filter: blur(10px);
@@ -712,7 +672,6 @@ const GridSimonSays = () => {
           border-radius: 15px;
           margin-top: 15px;
         }
-
         .guess-input {
           width: 100%;
           max-width: 300px;
@@ -727,17 +686,8 @@ const GridSimonSays = () => {
           text-transform: uppercase;
           margin-bottom: 10px;
         }
-
-        .guess-input::placeholder {
-          color: rgba(255, 255, 255, 0.5);
-        }
-
-        .guess-buttons {
-          display: flex;
-          gap: 10px;
-          justify-content: center;
-        }
-
+        .guess-input::placeholder { color: rgba(255, 255, 255, 0.5); }
+        .guess-buttons { display: flex; gap: 10px; justify-content: center; }
         .submit-guess-btn, .cancel-guess-btn {
           padding: 10px 20px;
           border: none;
@@ -747,17 +697,8 @@ const GridSimonSays = () => {
           cursor: pointer;
           transition: all 0.3s ease;
         }
-
-        .submit-guess-btn {
-          background: linear-gradient(45deg, #10b981, #059669);
-          color: white;
-        }
-
-        .cancel-guess-btn {
-          background: rgba(239, 68, 68, 0.8);
-          color: white;
-        }
-
+        .submit-guess-btn { background: linear-gradient(45deg, #10b981, #059669); color: white; }
+        .cancel-guess-btn { background: rgba(239, 68, 68, 0.8); color: white; }
         .game-over {
           background: rgba(255, 255, 255, 0.15);
           backdrop-filter: blur(10px);
@@ -765,37 +706,61 @@ const GridSimonSays = () => {
           border-radius: 15px;
           animation: fadeIn 0.5s ease;
         }
-
-        .game-over p {
-          margin-bottom: 15px;
-          font-size: 18px;
-          color: #feca57;
+        .game-over p { margin-bottom: 15px; font-size: 18px; color: #feca57; }
+        .game-over strong { color: #64ffda; font-size: 20px; }
+        
+        /* MODAL STYLES */
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.7);
+          backdrop-filter: blur(5px);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 1000;
+          animation: fadeIn 0.3s ease;
         }
-
-        .game-over strong {
-          color: #64ffda;
-          font-size: 20px;
+        .modal-content {
+          background: rgba(30, 30, 40, 0.95);
+          border: 2px solid rgba(255, 255, 255, 0.1);
+          padding: 30px;
+          border-radius: 20px;
+          text-align: center;
+          max-width: 80%;
+          width: 300px;
+          box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+          animation: scaleUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
+        .modal-content.success { border-color: #00b894; box-shadow: 0 0 20px rgba(0, 184, 148, 0.3); }
+        .modal-content.error { border-color: #ff7675; box-shadow: 0 0 20px rgba(255, 118, 117, 0.3); }
+        .modal-content h3 { margin-top: 0; font-size: 24px; margin-bottom: 10px; }
+        .modal-content.success h3 { color: #55efc4; }
+        .modal-content.error h3 { color: #ff7675; }
+        .modal-content p { color: #dfe6e9; font-size: 16px; margin-bottom: 25px; line-height: 1.5; }
+        .modal-content button {
+          background: linear-gradient(45deg, #6c5ce7, #a29bfe);
+          border: none;
+          padding: 10px 30px;
+          color: white;
+          border-radius: 25px;
+          font-weight: bold;
+          cursor: pointer;
+          transition: transform 0.2s;
+          font-size: 16px;
+        }
+        .modal-content button:hover { transform: scale(1.05); }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scaleUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
         @media (max-width: 480px) {
-          .simon-game {
-            padding: 15px;
-          }
-          
-          .word-letter {
-            width: 24px;
-            height: 30px;
-            font-size: 16px;
-          }
-          
-          .simon-grid {
-            max-width: 280px;
-            gap: 6px;
-          }
-
-          .cell-letter {
-            font-size: 20px;
-          }
+          .simon-game { padding: 15px; }
+          .word-letter { width: 24px; height: 30px; font-size: 16px; }
+          .simon-grid { max-width: 280px; gap: 6px; }
+          .cell-letter { font-size: 20px; }
         }
       `}</style>
     </div>
