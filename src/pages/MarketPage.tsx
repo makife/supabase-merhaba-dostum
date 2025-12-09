@@ -539,7 +539,7 @@ const MarketPage = () => {
                     <img
                       src="/vipIkon.png"
                       alt="VIP"
-                      className="w-40 h-40 object-contain drop-shadow-xl" // İkonu büyüttük
+                      className="w-64 h-64 object-contain drop-shadow-xl" // İkonu büyüttük
                     />
                   </div>
                   <CardTitle className="text-2xl font-serif relative z-10">VIP Yazar Ol</CardTitle>
