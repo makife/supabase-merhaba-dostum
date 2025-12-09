@@ -322,24 +322,37 @@ const MarketPage = () => {
         <div className="absolute top-10 right-10 w-20 h-20 bg-purple-600 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse"></div>
       </div>
 
-      {/* Header Kısmı */}
+      {/* Header */}
       <div className="relative z-10 px-4 pt-4 pb-2 mt-[60px]">
-        <div className="flex items-center justify-between mb-4">
-          <Button variant="ghost" onClick={() => navigate("/")} className="text-white hover:bg-white/10">
+        {/* Container'a 'relative' veriyoruz ve bir yükseklik (h-12) belirliyoruz 
+            ki butonlar hizalı dursun ama resim özgür olsun.
+        */}
+        <div className="relative flex items-center justify-between mb-4 h-12">
+          {/* SOL BUTON: z-20 veriyoruz ki devasa resmin altında kalmasın, tıklanabilsin */}
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/")}
+            className="text-white hover:bg-white/10 shrink-0 relative z-20"
+          >
             <ArrowLeft className="w-5 h-5 mr-1" /> Geri
           </Button>
 
-          {/* ESKİ DÜZ YAZI YERİNE GÖRSEL */}
-          <div className="text-center">
-            {/* h1 yerine img kullanıyoruz */}
+          {/* ORTA - BAŞLIK GÖRSELİ (HAYALET MODU) */}
+          {/* absolute: Akıştan çıkarır, alttaki elementleri İTMEZ.
+              left-1/2 top-1/2 transform -translate... : Tam ortaya çiviler.
+              pointer-events-none: Resim çok büyük olursa butonların tıklanmasını engellemesin diye tıklamayı kapatır.
+          */}
+          <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none">
             <img
               src="/kirtasiyeBaslik.png"
               alt="Kırtasiye"
-              className="h-64 object-contain drop-shadow-lg filter brightness-110" // Yükseklik ayarını buradan yapabilirsin (h-10, h-12, h-16)
+              // Buradaki h-40 değerini h-60, h-80 hatta h-96 yapabilirsin, kimse yerinden oynamaz!
+              className="h-48 object-contain drop-shadow-2xl filter brightness-110"
             />
           </div>
 
-          <div className="w-16"></div>
+          {/* Sağ Boşluk (Denge için) */}
+          <div className="w-16 shrink-0"></div>
         </div>
 
         {/* Bakiye Kartı */}
