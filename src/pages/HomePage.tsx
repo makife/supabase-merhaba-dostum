@@ -515,7 +515,7 @@ const HomePage = () => {
                 {!isPremium && (
                   <div className="space-y-1">
                     <div className="flex justify-between items-center">
-                      <span className="text-xs text-muted-foreground">Oyun Hakları</span>
+                      <span className="text-xs text-muted-foreground">Kalan Sayfalarım</span>
                       <div className="flex items-center gap-2">
                         {isUnlimitedLivesActive(profile) ? (
                           <>
