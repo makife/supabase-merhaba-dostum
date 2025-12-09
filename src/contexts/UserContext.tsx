@@ -361,13 +361,23 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         newGameCredits = profile.game_credits - 1;
       }
 
+      // last_credit_refresh'i sadece kredi 5'in altına düştüğünde ve daha önce set edilmediyse güncelle
+      // Böylece timer her kredi kullanımında sıfırlanmaz
+      const shouldSetRefreshTime = newGameCredits < 5 && !profile.last_credit_refresh;
+
+      const updateData: any = {
+        game_credits: newGameCredits,
+        bonus_credits: newBonusCredits,
+      };
+
+      // Sadece ilk kez 5'in altına düştüğünde last_credit_refresh set et
+      if (shouldSetRefreshTime) {
+        updateData.last_credit_refresh = new Date().toISOString();
+      }
+
       const { error } = await supabase
         .from("profiles")
-        .update({
-          game_credits: newGameCredits,
-          bonus_credits: newBonusCredits,
-          last_credit_refresh: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq("id", user.id);
 
       if (error) throw error;
@@ -376,7 +386,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         ...profile,
         game_credits: newGameCredits,
         bonus_credits: newBonusCredits,
-        last_credit_refresh: new Date().toISOString(),
+        last_credit_refresh: shouldSetRefreshTime ? new Date().toISOString() : profile.last_credit_refresh,
         ink_count: profile.ink_count ?? 0,
       };
       setProfile(updatedProfile);
