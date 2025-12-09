@@ -22,8 +22,6 @@ import {
   Heart,
   Video,
   Sparkles,
-  Database,
-  Scroll,
 } from "lucide-react";
 
 // Veri Tipleri
@@ -33,7 +31,7 @@ interface InkPack {
   amount: number;
   price: number;
   label?: string;
-  icon: any;
+  image: string; // İkon yerine görsel yolu string olarak değiştirildi
   color: string;
 }
 
@@ -68,8 +66,8 @@ const MarketPage = () => {
       name: "Bir Damla Mürekkep",
       amount: 100,
       price: 39.99,
-      icon: Droplet,
-      color: "text-blue-400 bg-blue-50",
+      image: "/murekkepDamla.png",
+      color: "bg-blue-50",
     },
     {
       id: "ink_bottle",
@@ -77,16 +75,16 @@ const MarketPage = () => {
       amount: 300,
       price: 99.99,
       label: "Popüler",
-      icon: Database,
-      color: "text-indigo-500 bg-indigo-50",
+      image: "/murekkepSisesi.png",
+      color: "bg-indigo-50",
     },
     {
       id: "ink_pot",
       name: "Hokka",
       amount: 850,
       price: 249.99,
-      icon: Feather,
-      color: "text-purple-600 bg-purple-50",
+      image: "/murekkepHokka.png",
+      color: "bg-purple-50",
     },
     {
       id: "ink_barrel",
@@ -94,8 +92,8 @@ const MarketPage = () => {
       amount: 2500,
       price: 699.99,
       label: "En İyi Fiyat",
-      icon: Scroll,
-      color: "text-violet-700 bg-violet-50",
+      image: "/murekkepVaril.png",
+      color: "bg-violet-50",
     },
   ];
 
@@ -197,7 +195,6 @@ const MarketPage = () => {
       if (error) throw error;
 
       await refreshProfile();
-      // FIX 1: "success" yerine "correct" kullanıldı
       playSound("buttonClick");
       toast({
         title: "Mürekkep Eklendi! 💧",
@@ -230,8 +227,6 @@ const MarketPage = () => {
     setPurchaseLoading(true);
     try {
       // 2. Mürekkebi düş (Veritabanı Güncellemesi)
-      // .select() ekleyerek işlemin bittiğinden emin oluyoruz ama veriyi kullanmamıza gerek yok,
-      // çünkü senin Realtime sistemin (konsoldaki log) zaten arayüzü güncelleyecek.
       const { error: deductError } = await supabase
         .from("profiles")
         .update({ ink_count: (profile.ink_count || 0) - item.priceInInk })
@@ -280,12 +275,6 @@ const MarketPage = () => {
           .update({ unlimited_lives_until: newExpiry.toISOString() } as any)
           .eq("id", user.id);
       }
-
-      // --- DÜZELTME BURADA ---
-      // await refreshProfile();  <-- BU SATIR SİLİNDİ!
-      // setTimeout(...)          <-- BU SATIR SİLİNDİ!
-      // Konsoldaki "Profile stats updated" logu, sistemin zaten otomatik güncellendiğini gösteriyor.
-      // Bizim manuel müdahalemiz eski veriyi geri çağırıyordu. Artık Realtime'a güveniyoruz.
 
       playSound("buttonClick");
       toast({
@@ -428,10 +417,11 @@ const MarketPage = () => {
                       </span>
                     )}
                     <div className="flex items-center gap-4">
+                      {/* PNG Görselleri için güncellenen alan */}
                       <div
-                        className={`w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform ${pack.color}`}
+                        className={`w-14 h-14 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform ${pack.color} p-2`}
                       >
-                        <pack.icon className="w-6 h-6" />
+                        <img src={pack.image} alt={pack.name} className="w-full h-full object-contain drop-shadow-sm" />
                       </div>
                       <div>
                         <h3 className="font-bold text-slate-800">{pack.name}</h3>
