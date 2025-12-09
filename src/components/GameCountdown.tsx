@@ -1,6 +1,5 @@
 import { useEffect, useRef, memo, useState } from "react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "framer-motion"; // EKLENDİ
 
 interface GameCountdownProps {
   onComplete: () => void;
@@ -29,7 +28,8 @@ const START_DISPLAY_DURATION_MS = 800; // Show "start" for 800ms
 
 /**
  * Production-ready countdown component
- * * Uses server-authoritative timing:
+ *
+ * Uses server-authoritative timing:
  * - serverStartTime: when countdown begins
  * - Calculates remaining time passively: remaining = (serverStartTime + 5000) - serverNow
  * - NEVER resets - if time already passed, shows appropriate state
@@ -39,7 +39,7 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
   const [displayValue, setDisplayValue] = useState<number | "start" | null>(null);
   const completedRef = useRef(false);
   const mountedRef = useRef(true);
-  // lastPlayedSecondRef unused variable removed clean up
+  const lastPlayedSecondRef = useRef<number | null>(null);
   const startShownRef = useRef(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const soundPlayedRef = useRef<Set<number>>(new Set()); // Her saniye için sadece bir ses çal
@@ -170,6 +170,8 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
     });
 
     // 🔒 KRİTİK: İlk görüntüleme değeri HER ZAMAN 5 olmalı
+    // Eğer countdown henüz başlamamış veya tam zamanında açıldıysa 5 göster
+    // Sadece gerçekten geride kaldıysak (2-3 saniye) daha düşük göster
     if (initialRemaining >= 5) {
       setDisplayValue(5);
       if (!soundPlayedRef.current.has(5)) {
@@ -177,21 +179,25 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
         soundPlayedRef.current.add(5);
       }
     } else if (initialRemaining >= 1 && initialRemaining <= 4) {
+      // Eğer geride kaldıysak doğru sayıyı göster
       setDisplayValue(initialRemaining);
       if (!soundPlayedRef.current.has(initialRemaining)) {
         playSound("/gerisayim.mp3");
         soundPlayedRef.current.add(initialRemaining);
       }
     } else if (initialRemaining <= 0 && initialRemaining > -1) {
+      // Should show "start"
       if (!startShownRef.current) {
         setDisplayValue("start");
         playSound("/basla.mp3");
         startShownRef.current = true;
       }
     } else {
+      // Fallback - 5'ten başla
       setDisplayValue(5);
     }
 
+    // Use setInterval for consistent updates (doesn't pause in background)
     intervalRef.current = setInterval(() => {
       if (completedRef.current || !mountedRef.current) {
         if (intervalRef.current) {
@@ -206,6 +212,7 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       const remainingSeconds = Math.ceil(remainingMs / 1000);
 
       if (remainingMs <= -START_DISPLAY_DURATION_MS) {
+        // Countdown finished 800ms ago - complete
         if (!completedRef.current) {
           completedRef.current = true;
           console.log("⏱️ GameCountdown: Completed");
@@ -219,20 +226,23 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       }
 
       if (remainingMs <= 0 && remainingMs > -START_DISPLAY_DURATION_MS) {
+        // Show "start" for 800ms after countdown ends
         if (!startShownRef.current) {
           startShownRef.current = true;
           setDisplayValue("start");
           playSound("/basla.mp3");
         }
       } else if (remainingSeconds >= 1 && remainingSeconds <= 5) {
+        // Show countdown number (5, 4, 3, 2, 1)
         setDisplayValue(remainingSeconds);
 
+        // Play sound only once per second - use Set for tracking
         if (!soundPlayedRef.current.has(remainingSeconds)) {
           soundPlayedRef.current.add(remainingSeconds);
           playSound("/gerisayim.mp3");
         }
       }
-    }, 100);
+    }, 100); // 100ms interval for smooth updates
 
     return () => {
       if (intervalRef.current) {
@@ -241,6 +251,17 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       }
     };
   }, [onComplete, serverStartTime, serverTimeOffset]);
+
+  // Get image source
+  const getImageSrc = () => {
+    if (displayValue === "start") return "/basla.png";
+    if (displayValue === 5) return "/bes.png";
+    if (displayValue === 4) return "/dort.png";
+    if (displayValue === 3) return "/uc.png";
+    if (displayValue === 2) return "/iki.png";
+    if (displayValue === 1) return "/bir.png";
+    return "/bes.png"; // fallback
+  };
 
   // Don't render if no value yet
   if (displayValue === null) {
@@ -257,63 +278,18 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: "rgba(0, 0, 0, 0.7)",
-        overflow: "hidden", // Animasyon ekran dışına taşarken scroll çıkmasın
       }}
     >
-      <AnimatePresence mode="wait">
-        {displayValue === "start" ? (
-          // --- BAŞLA ANİMASYONU ---
-          // Soldan gir -> Ortada dur -> Sağdan çık
-          <motion.img
-            key="start-image"
-            src="/basla.png"
-            alt="Başla"
-            initial={{ x: "-100vw", opacity: 0 }} // Başlangıç konumu (ekranın solu)
-            animate={{
-              x: ["-100vw", "0%", "0%", "100vw"], // Keyframes: Sol -> Orta -> Orta -> Sağ
-              opacity: [1, 1, 1, 1],
-            }}
-            transition={{
-              duration: 0.8, // START_DISPLAY_DURATION_MS (800ms) ile eşleşmeli
-              times: [0, 0.2, 0.7, 1], // Zamanlama: %20 giriş, %50 bekleme, %30 çıkış
-              ease: "easeInOut",
-            }}
-            style={{
-              width: 320, // Biraz daha büyük daha etkileyici durur
-              height: 320,
-              objectFit: "contain",
-              willChange: "transform",
-            }}
-          />
-        ) : (
-          // --- GERİ SAYIM ANİMASYONU (5-4-3-2-1) ---
-          // Pop-in efekti
-          <motion.img
-            key={displayValue} // Key değiştiğinde animasyon tekrar tetiklenir
-            src={
-              displayValue === 5
-                ? "/bes.png"
-                : displayValue === 4
-                  ? "/dort.png"
-                  : displayValue === 3
-                    ? "/uc.png"
-                    : displayValue === 2
-                      ? "/iki.png"
-                      : "/bir.png"
-            }
-            alt={String(displayValue)}
-            initial={{ scale: 0.5, opacity: 0 }}
-            animate={{ scale: 1.2, opacity: 1 }}
-            exit={{ scale: 1.5, opacity: 0 }}
-            transition={{ duration: 0.4, type: "spring", stiffness: 300 }}
-            style={{
-              width: 280,
-              height: 280,
-              objectFit: "contain",
-            }}
-          />
-        )}
-      </AnimatePresence>
+      <img
+        key={String(displayValue)}
+        src={getImageSrc()}
+        alt={String(displayValue)}
+        style={{
+          width: 280,
+          height: 280,
+          objectFit: "contain",
+        }}
+      />
     </div>,
     document.body,
   );
