@@ -117,8 +117,8 @@ const MarketPage = () => {
     {
       id: "h_full",
       type: "heart",
-      name: "Canları Doldur",
-      description: "Tüm canları (5) yeniler",
+      name: "Müsvedde",
+      description: "5 sayfa verir",
       priceInInk: 25,
       value: 5,
       image: "/bescanPaketi.png",
@@ -126,8 +126,8 @@ const MarketPage = () => {
     {
       id: "h_25",
       type: "heart",
-      name: "+25 Can Paketi",
-      description: "Stoğunuza 25 can ekler",
+      name: "Not defteri",
+      description: "Stoğunuza 25 sayfa ekler",
       priceInInk: 90,
       value: 25,
       image: "/yirmibescanPaketi.png",
@@ -135,8 +135,8 @@ const MarketPage = () => {
     {
       id: "h_50",
       type: "heart",
-      name: "+50 Can Paketi",
-      description: "Uzun soluklu oyun için",
+      name: "Ajanda",
+      description: "Stoğunuza 50 sayfa ekler",
       priceInInk: 200,
       value: 50,
       image: "/ellicanPaketi.png",
@@ -480,7 +480,7 @@ const MarketPage = () => {
               </div>
 
               <div>
-                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Can Paketleri</h3>
+                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Sayfa Paketleri</h3>
                 <div className="grid grid-cols-2 gap-3">
                   {stationeryItems
                     .filter((i) => i.type === "heart")
