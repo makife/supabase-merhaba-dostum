@@ -348,7 +348,7 @@ const MarketPage = () => {
               src="/kirtasiyeBaslik.png"
               alt="Kırtasiye"
               // max-w-none ekledik ki resim kırpılmadan özgürce yayılabilsin
-              className="h-54 w-auto max-w-none object-contain drop-shadow-2xl filter brightness-110"
+              className="h-64 w-auto max-w-none object-contain drop-shadow-2xl filter brightness-110"
             />
           </div>
 
