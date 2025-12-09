@@ -2038,8 +2038,10 @@ export const GameProvider = ({ children }: GameProviderProps) => {
               });
 
               // ⚠️ KRİTİK KOŞUL: Rakip gerçekten gitti mi?
+              // NOT: realPlayerCount kontrolü kaldırıldı çünkü DB'de participant silinmiyor, 
+              // sadece presence kanalından ayrılıyor. isOpponentStillGone yeterli.
               const shouldTriggerDisconnect =
-                freshRoomData.status === "active" && isOpponentStillGone && realPlayerCount <= 1; // Sadece sen kaldıysan
+                freshRoomData.status === "active" && isOpponentStillGone;
 
               if (shouldTriggerDisconnect) {
                 console.log("🏆 Rakip gerçekten gitti - kazandınız!");
