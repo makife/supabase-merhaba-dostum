@@ -81,6 +81,15 @@ export const useTournament = (tournamentId?: string) => {
     const success = await context.startTournament(tournamentId);
     
     if (success) {
+      // Hemen next_round_starts_at set et - yarı final ile aynı davranış
+      const nextRoundStartsAt = new Date();
+      nextRoundStartsAt.setSeconds(nextRoundStartsAt.getSeconds() + 10);
+      
+      await supabase
+        .from("tournaments")
+        .update({ next_round_starts_at: nextRoundStartsAt.toISOString() })
+        .eq("id", tournamentId);
+      
       navigate(`/tournament-bracket/${tournamentId}`);
     }
   }, [tournamentId, user, context.currentTournament, context.participants, navigate]);
