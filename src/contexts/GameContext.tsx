@@ -1868,6 +1868,12 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   // Countdown logic tamamen GamePage.tsx'te yönetiliyor
   // Bu subscription duplicate countdown'a neden oluyordu
 
+  // 🔒 REF: Presence handler için güncel room state'i sakla (closure sorunu çözümü)
+  const currentRoomRef = useRef<GameRoom | null>(null);
+  useEffect(() => {
+    currentRoomRef.current = currentRoom;
+  }, [currentRoom]);
+
   // 🎯 OPTIMIZED Real-time subscriptions with RealtimeManager + Presence
   useEffect(() => {
     if (!currentRoom || !user) {
@@ -1884,6 +1890,9 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     console.log("🔗 Setting up optimized real-time for room:", String(currentRoom.id).slice(-8));
     setIsConnected(true);
     const pendingTimers: NodeJS.Timeout[] = [];
+    
+    // 🔒 Subscription için room ID'yi capture et (rematch sonrası değişebilir)
+    const subscriptionRoomId = currentRoom.id;
 
     // Participants'ı fetch et
     const fetchParticipantsLocal = async (roomId: string) => {
@@ -1916,14 +1925,13 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       }
     };
 
-    fetchParticipantsLocal(currentRoom.id);
+    fetchParticipantsLocal(subscriptionRoomId);
 
-    const currentGameMode = getGameModeFromRoom(currentRoom);
     const presenceGraceUntil = Date.now() + 2000;
 
     // ✅ PRESENCE CHANNEL (ayrı, tek instance - duplicate önleme)
     const presenceChannel = supabase
-      .channel(`presence-${currentRoom.id}`, {
+      .channel(`presence-${subscriptionRoomId}`, {
         config: {
           presence: {
             key: user.id, // ✅ Sadece user.id (user-${user.id} değil)
@@ -1938,12 +1946,22 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         console.log("👋 Player joined:", key, newPresences);
       })
       .on("presence", { event: "leave" }, async ({ key }) => {
-        console.log("🚪 Presence leave event:", key);
+        console.log("🚪 Presence leave event:", key, "for room:", subscriptionRoomId.slice(-8));
 
-        // ⚠️ CRITICAL FIX: Mevcut state'i capture et
-        const currentRoomId = currentRoom?.id;
-        const currentRoomStatus = currentRoom?.status;
+        // 🔒 CRITICAL FIX: REF'ten güncel state'i al (closure sorunu çözümü)
+        const freshRoom = currentRoomRef.current;
+        const currentRoomId = freshRoom?.id;
+        const currentRoomStatus = freshRoom?.status;
         const currentUserId = user?.id;
+        
+        // 🔒 REMATCH GUARD: Bu subscription farklı bir room için mi?
+        if (currentRoomId !== subscriptionRoomId) {
+          console.log("🔄 Room değişti (rematch?), eski subscription'dan leave event ignore ediliyor", {
+            subscriptionRoom: subscriptionRoomId.slice(-8),
+            currentRoom: currentRoomId?.slice(-8),
+          });
+          return;
+        }
 
         if (!currentRoomId || !currentUserId) {
           console.log("⚠️ Room veya user bilgisi yok, ignore ediliyor");
@@ -1963,20 +1981,30 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           // 3 saniye bekle, belki geri gelir
           setTimeout(async () => {
             try {
+              // 🔒 REMATCH GUARD: 3 saniye sonra da kontrol et - oda değişmiş olabilir
+              const latestRoom = currentRoomRef.current;
+              if (latestRoom?.id !== subscriptionRoomId) {
+                console.log("🔄 Room değişti (rematch?), eski disconnect kontrolü iptal", {
+                  subscriptionRoom: subscriptionRoomId.slice(-8),
+                  latestRoom: latestRoom?.id?.slice(-8),
+                });
+                return;
+              }
+              
               // ⚠️ ÖNEMLİ: Oda state'ini DB'den TEKRAR kontrol et
-              const { data: freshRoom, error: roomError } = await supabase
+              const { data: freshRoomData, error: roomError } = await supabase
                 .from("game_rooms")
                 .select("status, game_mode, player1_id, player2_id")
                 .eq("id", currentRoomId)
                 .single();
 
-              if (roomError || !freshRoom) {
+              if (roomError || !freshRoomData) {
                 console.error("❌ Oda bilgisi alınamadı:", roomError);
                 return;
               }
 
               // Oda artık aktif değilse işlem yapma
-              if (freshRoom.status !== "active") {
+              if (freshRoomData.status !== "active") {
                 console.log("🔄 Oda artık aktif değil, ignore ediliyor");
                 return;
               }
@@ -2003,7 +2031,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
               const isOpponentStillGone = otherPlayers.length === 0;
 
               console.log("🔍 Disconnect kontrolü:", {
-                roomStatus: freshRoom.status,
+                roomStatus: freshRoomData.status,
                 otherPlayersCount: otherPlayers.length,
                 realPlayerCount,
                 isOpponentStillGone,
@@ -2011,7 +2039,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
               // ⚠️ KRİTİK KOŞUL: Rakip gerçekten gitti mi?
               const shouldTriggerDisconnect =
-                freshRoom.status === "active" && isOpponentStillGone && realPlayerCount <= 1; // Sadece sen kaldıysan
+                freshRoomData.status === "active" && isOpponentStillGone && realPlayerCount <= 1; // Sadece sen kaldıysan
 
               if (shouldTriggerDisconnect) {
                 console.log("🏆 Rakip gerçekten gitti - kazandınız!");
@@ -2188,24 +2216,36 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
         // DELETE: Participant silindi + Disconnect handling
         if (payload.eventType === "DELETE" && isValidParticipantPayload(payload.old)) {
-          await fetchParticipantsLocal(currentRoom.id);
+          await fetchParticipantsLocal(subscriptionRoomId);
 
           const oldParticipant = payload.old as GameParticipantPayload;
+          
+          // 🔒 REMATCH GUARD: Güncel room'u ref'ten al
+          const latestRoom = currentRoomRef.current;
+          const latestGameMode = latestRoom ? getGameModeFromRoom(latestRoom) : null;
 
           if (
             !oldParticipant.is_bot &&
             oldParticipant.user_id &&
             oldParticipant.user_id !== user?.id &&
-            currentRoom.status === "active" &&
-            getGameModeFromRoom(currentRoom) !== "vs-computer"
+            latestRoom?.status === "active" &&
+            latestRoom?.id === subscriptionRoomId && // 🔒 REMATCH GUARD
+            latestGameMode !== "vs-computer"
           ) {
             console.log("⏳ DELETE event alındı, 2sn sonra doğrulanacak...");
 
-            const eventRoomId = currentRoom.id;
+            const eventRoomId = subscriptionRoomId;
             const winnerUserId = user?.id || null;
 
             const tId = setTimeout(async () => {
               try {
+                // 🔒 REMATCH GUARD: 2 saniye sonra da kontrol et
+                const currentLatestRoom = currentRoomRef.current;
+                if (currentLatestRoom?.id !== subscriptionRoomId) {
+                  console.log("🔄 Room değişti (rematch?), DELETE disconnect kontrolü iptal");
+                  return;
+                }
+                
                 const { data: roomState } = await supabase
                   .from("game_rooms")
                   .select("status")
@@ -2243,22 +2283,25 @@ export const GameProvider = ({ children }: GameProviderProps) => {
                   }),
                 );
 
-                const gameMode = getGameModeFromRoom(currentRoom);
+                // 🔒 Güncel room bilgisini ref'ten al
+                const activeRoom = currentRoomRef.current;
+                const gameMode = activeRoom ? getGameModeFromRoom(activeRoom) : null;
+                
                 if (gameMode?.includes("tournament")) {
                   // Turnuva maçında rakip ayrılırsa oyuncuya +500 bonus puan ver ve devam etmesine izin ver
                   const bonusScore = 500;
 
                   // Mevcut skora +500 ekle
                   const currentScore =
-                    currentRoom.player1_id === winnerUserId
-                      ? currentRoom.player1_score || 0
-                      : currentRoom.player2_score || 0;
+                    activeRoom?.player1_id === winnerUserId
+                      ? activeRoom?.player1_score || 0
+                      : activeRoom?.player2_score || 0;
 
                   await supabase
                     .from("game_rooms")
                     .update({
                       // Oyunu bitirme, sadece skoru güncelle
-                      ...(currentRoom.player1_id === winnerUserId
+                      ...(activeRoom?.player1_id === winnerUserId
                         ? { player1_score: currentScore + bonusScore }
                         : { player2_score: currentScore + bonusScore }),
                       updated_at: new Date().toISOString(),
@@ -2277,9 +2320,9 @@ export const GameProvider = ({ children }: GameProviderProps) => {
                       .from("profiles")
                       .update({
                         total_score:
-                          (currentRoom.player1_id === winnerUserId
-                            ? currentRoom.player1_score
-                            : currentRoom.player2_score) + bonusScore,
+                          (activeRoom?.player1_id === winnerUserId
+                            ? activeRoom?.player1_score
+                            : activeRoom?.player2_score) + bonusScore,
                         updated_at: new Date().toISOString(),
                       })
                       .eq("id", winnerUserId);
@@ -2318,7 +2361,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     );
 
     // ✅ ROOM UPDATES SUBSCRIPTION (RealtimeManager ile)
-    const roomChannel = realtimeManager.subscribe("game_rooms", user.id, `id=eq.${currentRoom.id}`, (payload) => {
+    const roomChannel = realtimeManager.subscribe("game_rooms", user.id, `id=eq.${subscriptionRoomId}`, (payload) => {
       const newRoom = payload.new as GameRoom;
       console.log("🏠 Room güncelleme:", newRoom);
 
@@ -2342,7 +2385,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
     // Cleanup
     return () => {
-      console.log("🔌 Cleaning up real-time subscriptions for room:", String(currentRoom.id).slice(-8));
+      console.log("🔌 Cleaning up real-time subscriptions for room:", subscriptionRoomId.slice(-8));
       // Reset countdown guard for next room/game
       lastCountdownAtRef.current = null;
 
@@ -2352,10 +2395,10 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
       // RealtimeManager cleanup
       if (participantsChannel) {
-        realtimeManager.unsubscribe(`game_participants-room_id=eq.${currentRoom.id}`, user.id);
+        realtimeManager.unsubscribe(`game_participants-room_id=eq.${subscriptionRoomId}`, user.id);
       }
       if (roomChannel) {
-        realtimeManager.unsubscribe(`game_rooms-id=eq.${currentRoom.id}`, user.id);
+        realtimeManager.unsubscribe(`game_rooms-id=eq.${subscriptionRoomId}`, user.id);
       }
 
       // Clear timers
