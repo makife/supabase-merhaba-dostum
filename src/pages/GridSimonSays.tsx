@@ -27,7 +27,7 @@ const GridSimonSays = () => {
   const [cellLetters, setCellLetters] = useState<any>({});
 
   // Can ve Modal State'leri
-  const [attempts, setAttempts] = useState(3);
+  const [attempts, setAttempts] = useState(10);
   const [modal, setModal] = useState({ show: false, title: "", message: "", type: "info" });
 
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -166,7 +166,7 @@ const GridSimonSays = () => {
     setPlayerSequence([]);
     setScore(0);
     setLevel(1);
-    setAttempts(3);
+    setAttempts(10);
     setRevealedCells(new Set());
     setGameState("showing");
     setShowGuessInput(false);
@@ -277,7 +277,7 @@ const GridSimonSays = () => {
 
       setScore(newScore);
       setLevel(newLevel);
-      setAttempts(3);
+      setAttempts(10);
 
       createSound(1200, 300);
       setTimeout(() => createSound(1400, 300), 150);
@@ -340,7 +340,7 @@ const GridSimonSays = () => {
     setPlayerSequence([]);
     setScore(0);
     setLevel(1);
-    setAttempts(3);
+    setAttempts(10);
     setActiveCell(null);
     setRevealedCells(new Set());
     setCurrentWord("");
