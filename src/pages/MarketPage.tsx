@@ -43,7 +43,8 @@ interface StationeryItem {
   description: string;
   priceInInk: number;
   value: number; // miktar veya saat
-  icon: any;
+  icon?: any; // Jokerler için opsiyonel hale getirildi
+  image?: string; // Jokerler için yeni görsel yolu
 }
 
 const MarketPage = () => {
@@ -66,7 +67,7 @@ const MarketPage = () => {
       name: "Bir Damla Mürekkep",
       amount: 100,
       price: 39.99,
-      image: "/damlaMurekkep.png",
+      image: "/murekkepDamla.png",
       color: "bg-blue-50",
     },
     {
@@ -98,7 +99,7 @@ const MarketPage = () => {
   ];
 
   const stationeryItems: StationeryItem[] = [
-    // Jokerler
+    // Jokerler (PNG Kullanımı İçin Güncellendi)
     {
       id: "j_swap",
       type: "joker",
@@ -107,7 +108,7 @@ const MarketPage = () => {
       description: "Harfleri karıştırır",
       priceInInk: 10,
       value: 1,
-      icon: Sparkles,
+      image: "/degistirIkon.png", // Yeni görsel yolu
     },
     {
       id: "j_whisper",
@@ -117,7 +118,7 @@ const MarketPage = () => {
       description: "Bir kelime ipucu verir",
       priceInInk: 10,
       value: 1,
-      icon: Feather,
+      image: "/fisildaIkon.png", // Yeni görsel yolu
     },
     {
       id: "j_custom",
@@ -127,9 +128,9 @@ const MarketPage = () => {
       description: "Kendi kelimeni yaz",
       priceInInk: 20,
       value: 1,
-      icon: PenTool,
+      image: "/senyazIkon.png", // Yeni görsel yolu
     },
-    // Canlar (Kalpler)
+    // Canlar (Kalpler) - Lucide İkon Kullanımı Devam Ediyor
     {
       id: "h_full",
       type: "heart",
@@ -157,7 +158,7 @@ const MarketPage = () => {
       value: 50,
       icon: Heart,
     },
-    // Sınırsız Zaman
+    // Sınırsız Zaman - Lucide İkon Kullanımı Devam Ediyor
     {
       id: "t_1h",
       type: "time",
@@ -417,7 +418,6 @@ const MarketPage = () => {
                       </span>
                     )}
                     <div className="flex items-center gap-4">
-                      {/* PNG Görselleri için güncellenen alan */}
                       <div
                         className={`w-14 h-14 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform ${pack.color} p-2`}
                       >
@@ -449,8 +449,13 @@ const MarketPage = () => {
                         className="bg-white rounded-xl p-3 border border-slate-100 flex items-center justify-between shadow-sm"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="bg-purple-50 p-2 rounded-lg text-purple-600">
-                            <item.icon className="w-5 h-5" />
+                          <div className="bg-purple-50 p-2 rounded-lg text-purple-600 w-9 h-9 flex items-center justify-center">
+                            {/* Jokerler için görsel veya ikon kontrolü */}
+                            {item.image ? (
+                              <img src={item.image} alt={item.name} className="w-5 h-5 object-contain" />
+                            ) : (
+                              item.icon && <item.icon className="w-5 h-5" />
+                            )}
                           </div>
                           <div>
                             <p className="font-bold text-sm text-slate-800">{item.name}</p>
@@ -482,7 +487,7 @@ const MarketPage = () => {
                       >
                         <CardContent className="p-3 text-center flex flex-col items-center gap-2">
                           <div className="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center text-red-500 group-hover:scale-110 transition-transform">
-                            <item.icon className="w-5 h-5 fill-current" />
+                            {item.icon && <item.icon className="w-5 h-5 fill-current" />}
                           </div>
                           <div>
                             <p className="font-bold text-sm text-slate-800">{item.name}</p>
@@ -514,7 +519,7 @@ const MarketPage = () => {
                       >
                         <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
                         <div className="flex items-center gap-3 relative z-10">
-                          <item.icon className="w-6 h-6 text-amber-400" />
+                          {item.icon && <item.icon className="w-6 h-6 text-amber-400" />}
                           <div>
                             <p className="font-bold">{item.name}</p>
                             <p className="text-xs text-slate-300">{item.description}</p>
