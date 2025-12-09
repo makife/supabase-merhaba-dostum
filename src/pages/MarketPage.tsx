@@ -31,20 +31,20 @@ interface InkPack {
   amount: number;
   price: number;
   label?: string;
-  image: string; // İkon yerine görsel yolu string olarak değiştirildi
+  image: string;
   color: string;
 }
 
 interface StationeryItem {
   id: string;
   type: "joker" | "heart" | "time";
-  subtype?: string; // joker tipi için (degistir, fisilda vb.)
+  subtype?: string; // joker tipi için
   name: string;
   description: string;
   priceInInk: number;
   value: number; // miktar veya saat
-  icon?: any; // Jokerler için opsiyonel hale getirildi
-  image?: string; // Jokerler için yeni görsel yolu
+  icon?: any;
+  image?: string;
 }
 
 const MarketPage = () => {
@@ -67,7 +67,7 @@ const MarketPage = () => {
       name: "Bir Damla Mürekkep",
       amount: 100,
       price: 39.99,
-      image: "/damlaMurekkep.png",
+      image: "/murekkepDamla.png",
       color: "bg-blue-50",
     },
     {
@@ -99,7 +99,7 @@ const MarketPage = () => {
   ];
 
   const stationeryItems: StationeryItem[] = [
-    // Jokerler (PNG Kullanımı İçin Güncellendi)
+    // Jokerler
     {
       id: "j_swap",
       type: "joker",
@@ -108,7 +108,7 @@ const MarketPage = () => {
       description: "Harfleri karıştırır",
       priceInInk: 10,
       value: 1,
-      image: "/degistirIkon.png", // Yeni görsel yolu
+      image: "/degistirIkon.png",
     },
     {
       id: "j_whisper",
@@ -118,7 +118,7 @@ const MarketPage = () => {
       description: "Bir kelime ipucu verir",
       priceInInk: 10,
       value: 1,
-      image: "/fisildaIkon.png", // Yeni görsel yolu
+      image: "/fisildaIkon.png",
     },
     {
       id: "j_custom",
@@ -128,9 +128,9 @@ const MarketPage = () => {
       description: "Kendi kelimeni yaz",
       priceInInk: 20,
       value: 1,
-      image: "/senyazIkon.png", // Yeni görsel yolu
+      image: "/senyazIkon.png",
     },
-    // Canlar (Kalpler) - Lucide İkon Kullanımı Devam Ediyor
+    // Canlar (Kalpler)
     {
       id: "h_full",
       type: "heart",
@@ -158,7 +158,7 @@ const MarketPage = () => {
       value: 50,
       icon: Heart,
     },
-    // Sınırsız Zaman - Lucide İkon Kullanımı Devam Ediyor
+    // Sınırsız Zaman (Görseller Eklendi)
     {
       id: "t_1h",
       type: "time",
@@ -166,7 +166,7 @@ const MarketPage = () => {
       description: "1 Saat boyunca sınırsız can",
       priceInInk: 40,
       value: 1,
-      icon: Clock,
+      image: "/birsaatUyelik.png", // Yeni görsel
     },
     {
       id: "t_24h",
@@ -175,7 +175,7 @@ const MarketPage = () => {
       description: "24 Saat boyunca sınırsız can",
       priceInInk: 100,
       value: 24,
-      icon: Infinity,
+      image: "/yirmidortsaatUyelik.png", // Yeni görsel
     },
   ];
 
@@ -214,7 +214,6 @@ const MarketPage = () => {
     if (!user || !profile) return;
     playSound("buttonClick");
 
-    // 1. İstemci tarafında bakiye kontrolü
     if ((profile.ink_count || 0) < item.priceInInk) {
       toast({
         title: "Yetersiz Mürekkep 💧",
@@ -227,7 +226,6 @@ const MarketPage = () => {
 
     setPurchaseLoading(true);
     try {
-      // 2. Mürekkebi düş (Veritabanı Güncellemesi)
       const { error: deductError } = await supabase
         .from("profiles")
         .update({ ink_count: (profile.ink_count || 0) - item.priceInInk })
@@ -237,7 +235,6 @@ const MarketPage = () => {
 
       if (deductError) throw deductError;
 
-      // 3. Ürün tipine göre envanter işlemleri
       if (item.type === "joker" && item.subtype) {
         const { data: inv } = await supabase
           .from("user_inventory")
@@ -450,7 +447,6 @@ const MarketPage = () => {
                       >
                         <div className="flex items-center gap-3">
                           <div className="bg-purple-50 p-2 rounded-lg text-purple-600 w-9 h-9 flex items-center justify-center">
-                            {/* Jokerler için görsel veya ikon kontrolü */}
                             {item.image ? (
                               <img src={item.image} alt={item.name} className="w-5 h-5 object-contain" />
                             ) : (
@@ -519,7 +515,11 @@ const MarketPage = () => {
                       >
                         <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
                         <div className="flex items-center gap-3 relative z-10">
-                          {item.icon && <item.icon className="w-6 h-6 text-amber-400" />}
+                          {item.image ? (
+                            <img src={item.image} alt={item.name} className="w-12 h-12 object-contain" />
+                          ) : (
+                            item.icon && <item.icon className="w-6 h-6 text-amber-400" />
+                          )}
                           <div>
                             <p className="font-bold">{item.name}</p>
                             <p className="text-xs text-slate-300">{item.description}</p>
