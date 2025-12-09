@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { ArrowLeft } from "lucide-react";
 
+declare global {
+  interface Window {
+    webkitAudioContext: typeof AudioContext;
+  }
+}
+
 const GridSimonSays = () => {
   const [gameState, setGameState] = useState("waiting");
   const [sequence, setSequence] = useState([]);
