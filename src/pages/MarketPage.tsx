@@ -20,7 +20,7 @@ interface InkPack {
   price: number;
   label?: string;
   image: string;
-  color: string;
+  // color prop'unu kaldırdık çünkü artık kullanmıyoruz
 }
 
 interface StationeryItem {
@@ -56,7 +56,6 @@ const MarketPage = () => {
       amount: 100,
       price: 39.99,
       image: "/damlaMurekkep.png",
-      color: "bg-blue-50",
     },
     {
       id: "ink_bottle",
@@ -65,7 +64,6 @@ const MarketPage = () => {
       price: 99.99,
       label: "Popüler",
       image: "/murekkepSisesi.png",
-      color: "bg-indigo-50",
     },
     {
       id: "ink_pot",
@@ -73,7 +71,6 @@ const MarketPage = () => {
       amount: 850,
       price: 249.99,
       image: "/murekkepHokka.png",
-      color: "bg-purple-50",
     },
     {
       id: "ink_barrel",
@@ -82,7 +79,6 @@ const MarketPage = () => {
       price: 699.99,
       label: "En İyi Fiyat",
       image: "/murekkepVaril.png",
-      color: "bg-violet-50",
     },
   ];
 
@@ -403,10 +399,9 @@ const MarketPage = () => {
                       </span>
                     )}
                     <div className="flex items-center gap-4">
-                      <div
-                        className={`w-14 h-14 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform ${pack.color} p-2`}
-                      >
-                        <img src={pack.image} alt={pack.name} className="w-full h-full object-contain drop-shadow-sm" />
+                      {/* GÜNCELLENDİ: Arkaplan karesi kaldırıldı ve resim büyütüldü */}
+                      <div className="flex-shrink-0 group-hover:scale-105 transition-transform">
+                        <img src={pack.image} alt={pack.name} className="w-20 h-20 object-contain drop-shadow-sm" />
                       </div>
                       <div>
                         <h3 className="font-bold text-slate-800">{pack.name}</h3>
@@ -434,7 +429,6 @@ const MarketPage = () => {
                         className="bg-white rounded-xl p-3 border border-slate-100 flex items-center justify-between shadow-sm"
                       >
                         <div className="flex items-center gap-4">
-                          {/* GÜNCELLENDİ: Kutu (bg-purple-50) kaldırıldı, ikon serbest bırakıldı */}
                           <div className="flex-shrink-0">
                             {item.image ? (
                               <img
