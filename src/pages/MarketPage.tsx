@@ -67,7 +67,7 @@ const MarketPage = () => {
       name: "Bir Damla Mürekkep",
       amount: 100,
       price: 39.99,
-      image: "/murekkepDamla.png",
+      image: "/damlaMurekkep.png",
       color: "bg-blue-50",
     },
     {
