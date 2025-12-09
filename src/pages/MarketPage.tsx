@@ -335,7 +335,7 @@ const MarketPage = () => {
             <img
               src="/kirtasiyeBaslik.png"
               alt="Kırtasiye"
-              className="h-12 object-contain drop-shadow-lg filter brightness-110" // Yükseklik ayarını buradan yapabilirsin (h-10, h-12, h-16)
+              className="h-64 object-contain drop-shadow-lg filter brightness-110" // Yükseklik ayarını buradan yapabilirsin (h-10, h-12, h-16)
             />
           </div>
 
