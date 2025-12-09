@@ -323,17 +323,9 @@ const MarketPage = () => {
       </div>
 
       {/* Header */}
-
       <div className="relative z-10 px-4 pt-4 pb-2 mt-[60px]">
-        {/* Container'a 'relative' veriyoruz ve bir yükseklik (h-12) belirliyoruz 
-
-            ki butonlar hizalı dursun ama resim özgür olsun.
-
-        */}
-
         <div className="relative flex items-center justify-between mb-4 h-12">
-          {/* SOL BUTON: z-20 veriyoruz ki devasa resmin altında kalmasın, tıklanabilsin */}
-
+          {/* SOL BUTON */}
           <Button
             variant="ghost"
             onClick={() => navigate("/")}
@@ -342,28 +334,25 @@ const MarketPage = () => {
             <ArrowLeft className="w-5 h-5 mr-1" /> Geri
           </Button>
 
-          {/* ORTA - BAŞLIK GÖRSELİ (HAYALET MODU) */}
-
-          {/* absolute: Akıştan çıkarır, alttaki elementleri İTMEZ.
-
-              left-1/2 top-1/2 transform -translate... : Tam ortaya çiviler.
-
-              pointer-events-none: Resim çok büyük olursa butonların tıklanmasını engellemesin diye tıklamayı kapatır.
-
+          {/* ORTA - BAŞLIK GÖRSELİ */}
+          {/* DEĞİŞİKLİKLER:
+              1. 'top-1/2' YERİNE '-top-[76px]': 
+                 (mt-60 [60px] + pt-4 [16px] = 76px). 
+                 Bu sayede resmi üstteki boşluğu yok sayarak en tepeye çekeriz.
+                 
+              2. '-translate-y-1/2' KALDIRILDI: 
+                 Artık dikey ortalamıyoruz, yukarı sabitliyoruz.
           */}
-
-          <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none">
+          <div className="absolute left-1/2 -top-[76px] transform -translate-x-1/2 z-10 pointer-events-none">
             <img
               src="/kirtasiyeBaslik.png"
               alt="Kırtasiye"
-              // Buradaki h-40 değerini h-60, h-80 hatta h-96 yapabilirsin, kimse yerinden oynamaz!
-
-              className="h-48 object-contain drop-shadow-2xl filter brightness-110"
+              // max-w-none ekledik ki resim kırpılmadan özgürce yayılabilsin
+              className="h-96 w-auto max-w-none object-contain drop-shadow-2xl filter brightness-110"
             />
           </div>
 
-          {/* Sağ Boşluk (Denge için) */}
-
+          {/* Sağ Boşluk */}
           <div className="w-16 shrink-0"></div>
         </div>
         {/* Bakiye Kartı */}
