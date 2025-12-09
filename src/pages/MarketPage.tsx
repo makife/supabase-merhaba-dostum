@@ -347,7 +347,7 @@ const MarketPage = () => {
               src="/kirtasiyeBaslik.png"
               alt="Kırtasiye"
               // Buradaki h-40 değerini h-60, h-80 hatta h-96 yapabilirsin, kimse yerinden oynamaz!
-              className="h-96 object-contain drop-shadow-2xl filter brightness-110"
+              className="h-64 w-auto max-w-none object-contain drop-shadow-2xl filter brightness-110"
             />
           </div>
 
