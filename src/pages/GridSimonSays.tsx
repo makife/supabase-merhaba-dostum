@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom"; // Navigate eklendi
 
 // TypeScript hatası için global tanım
 declare global {
@@ -9,6 +10,7 @@ declare global {
 }
 
 const GridSimonSays = () => {
+  const navigate = useNavigate(); // Hook'u başlattık
   const [gameState, setGameState] = useState("waiting");
   const [sequence, setSequence] = useState<number[]>([]);
   const [playerSequence, setPlayerSequence] = useState<number[]>([]);
@@ -24,8 +26,8 @@ const GridSimonSays = () => {
   const [guessValue, setGuessValue] = useState("");
   const [cellLetters, setCellLetters] = useState<any>({});
 
-  // YENİ EKLENEN STATE'LER
-  const [attempts, setAttempts] = useState(10); // 3 Can hakkı
+  // Can ve Modal State'leri
+  const [attempts, setAttempts] = useState(3);
   const [modal, setModal] = useState({ show: false, title: "", message: "", type: "info" });
 
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -64,17 +66,21 @@ const GridSimonSays = () => {
     };
   }, []);
 
-  // MODAL YÖNETİMİ
   const showModal = (title: string, message: string, type = "info") => {
     setModal({ show: true, title, message, type });
   };
 
   const closeModal = () => {
     setModal({ ...modal, show: false });
-    // Eğer haklar bittiyse ve modal kapatılıyorsa oyun sonu ekranına geç
     if (attempts <= 0) {
       setGameState("gameOver");
     }
+  };
+
+  // Ana sayfaya dönüş fonksiyonu
+  const handleGoBack = () => {
+    // Eğer oyun devam ediyorsa belki bir onay sorabilirsin ama şimdilik direkt çıkarıyoruz
+    navigate("/");
   };
 
   const createSound = useCallback(
@@ -160,7 +166,7 @@ const GridSimonSays = () => {
     setPlayerSequence([]);
     setScore(0);
     setLevel(1);
-    setAttempts(10); // Hakları sıfırla
+    setAttempts(3);
     setRevealedCells(new Set());
     setGameState("showing");
     setShowGuessInput(false);
@@ -222,9 +228,6 @@ const GridSimonSays = () => {
       const currentSequenceIndex = newPlayerSequence.length - 1;
 
       if (newPlayerSequence[currentSequenceIndex] !== sequence[currentSequenceIndex]) {
-        // Yanlış butona basınca oyun biter (Simon Says kuralı gereği)
-        // İstersen burada da can eksiltme yapabiliriz ama orijinal isteğin kelime tahmini içindi.
-        // Şimdilik burası direkt game over.
         setGameState("gameOver");
         createSound(150, 500);
         vibrate([200, 100, 200]);
@@ -267,7 +270,6 @@ const GridSimonSays = () => {
     const normalizedWord = currentWord.toUpperCase();
 
     if (normalizedGuess === normalizedWord) {
-      // --- DOĞRU TAHMİN ---
       const wordLetterCount = Object.values(cellLetters).filter((l) => l !== null).length;
       const bonusPoints = 100 + (wordLetterCount - revealedCells.size) * 10;
       const newScore = score + bonusPoints;
@@ -275,13 +277,12 @@ const GridSimonSays = () => {
 
       setScore(newScore);
       setLevel(newLevel);
-      setAttempts(10); // Seviye geçince hakları tazele
+      setAttempts(3);
 
       createSound(1200, 300);
       setTimeout(() => createSound(1400, 300), 150);
       vibrate([100, 50, 100, 50, 100]);
 
-      // Başarı Modalı
       showModal("🎉 Mükemmel!", `Doğru bildin! +${bonusPoints} puan!`, "success");
 
       setTimeout(() => {
@@ -300,9 +301,8 @@ const GridSimonSays = () => {
         setGuessValue("");
         setGameState("showing");
         showSequence([firstCell]);
-      }, 2000); // 2 saniye sonra otomatik geçiş
+      }, 2000);
     } else {
-      // --- YANLIŞ TAHMİN ---
       const newAttempts = attempts - 1;
       setAttempts(newAttempts);
       setGuessValue("");
@@ -315,7 +315,6 @@ const GridSimonSays = () => {
         createSound(100, 800);
         vibrate([500]);
         showModal("💀 Oyun Bitti", "Tahmin hakkın kalmadı!", "error");
-        // Modal kapanınca gameOver state'ine geçecek (closeModal içinde)
       }
     }
   }, [
@@ -341,7 +340,7 @@ const GridSimonSays = () => {
     setPlayerSequence([]);
     setScore(0);
     setLevel(1);
-    setAttempts(3); // Reset
+    setAttempts(3);
     setActiveCell(null);
     setRevealedCells(new Set());
     setCurrentWord("");
@@ -385,7 +384,6 @@ const GridSimonSays = () => {
       cells.push(
         <button
           key={i}
-          // "empty" sınıfı kaldırıldı, hepsi aynı görünür
           className={`grid-cell ${isActive ? "active" : ""} ${isClickable ? "clickable" : ""}`}
           onClick={() => handleCellClick(i)}
           disabled={!isClickable}
@@ -399,6 +397,11 @@ const GridSimonSays = () => {
 
   return (
     <div className="simon-game">
+      {/* GERİ BUTONU */}
+      <button className="back-button" onClick={handleGoBack}>
+        <ArrowLeft size={28} />
+      </button>
+
       <div className="game-header">
         <h2>💣 Kelime Tahmin Oyunu 💣</h2>
 
@@ -412,7 +415,6 @@ const GridSimonSays = () => {
         <div className="game-info">
           <span>Seviye: {level}</span>
           <span>Puan: {score}</span>
-          {/* Kalan Hak Göstergesi */}
           <span
             style={{
               color: attempts === 1 ? "#ff4d4d" : "white",
@@ -501,7 +503,6 @@ const GridSimonSays = () => {
           <div className={`modal-content ${modal.type}`}>
             <h3>{modal.title}</h3>
             <p>{modal.message}</p>
-            {/* Canı varsa Tamam butonu göster, yoksa Oyun Sonu butonunu göster */}
             {attempts > 0 ? (
               <button onClick={closeModal}>Tamam</button>
             ) : (
@@ -522,13 +523,42 @@ const GridSimonSays = () => {
           text-align: center;
           color: white;
           box-sizing: border-box;
+          position: relative; /* Geri butonu için */
         }
+
+        /* YENİ EKLENEN GERİ BUTONU STİLİ */
+        .back-button {
+          position: absolute;
+          top: 15px;
+          left: 15px;
+          background: rgba(255, 255, 255, 0.1);
+          border: none;
+          border-radius: 50%;
+          width: 45px;
+          height: 45px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          cursor: pointer;
+          backdrop-filter: blur(5px);
+          transition: all 0.3s ease;
+          z-index: 10;
+        }
+
+        .back-button:hover {
+          background: rgba(255, 255, 255, 0.25);
+          transform: scale(1.1);
+        }
+
         .game-header h2 {
           margin-bottom: 20px;
+          margin-top: 35px; /* Başlığı butonla çakışmaması için biraz aşağı ittik */
           color: white;
           text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
           font-size: 24px;
         }
+
         .word-section { margin: 20px 0; }
         .word-section h3 {
           color: #64ffda;
