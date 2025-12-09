@@ -391,7 +391,7 @@ const GridSimonSays = () => {
       cells.push(
         <button
           key={i}
-          className={`grid-cell ${isActive ? "active" : ""} ${isClickable ? "clickable" : ""} ${!hasLetter ? "empty" : ""}`}
+          className={`grid-cell ${isActive ? "active" : ""} ${isClickable ? "clickable" : ""}`}
           onClick={() => handleCellClick(i)}
           disabled={!isClickable}
         >
