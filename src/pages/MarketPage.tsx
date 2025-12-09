@@ -322,15 +322,23 @@ const MarketPage = () => {
         <div className="absolute top-10 right-10 w-20 h-20 bg-purple-600 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse"></div>
       </div>
 
-      {/* Header */}
+      {/* Header Kısmı */}
       <div className="relative z-10 px-4 pt-4 pb-2 mt-[60px]">
         <div className="flex items-center justify-between mb-4">
           <Button variant="ghost" onClick={() => navigate("/")} className="text-white hover:bg-white/10">
             <ArrowLeft className="w-5 h-5 mr-1" /> Geri
           </Button>
+
+          {/* ESKİ DÜZ YAZI YERİNE GÖRSEL */}
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-white font-serif tracking-wide drop-shadow-md">Kırtasiye</h1>
+            {/* h1 yerine img kullanıyoruz */}
+            <img
+              src="/kirtasiyeBaslik.png"
+              alt="Kırtasiye"
+              className="h-12 object-contain drop-shadow-lg filter brightness-110" // Yükseklik ayarını buradan yapabilirsin (h-10, h-12, h-16)
+            />
           </div>
+
           <div className="w-16"></div>
         </div>
 
