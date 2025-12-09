@@ -535,7 +535,7 @@ const MarketPage = () => {
               <Card className="bg-gradient-to-br from-amber-400 to-orange-500 border-none shadow-xl text-white overflow-hidden">
                 <CardHeader className="text-center pb-2">
                   {/* VIP İkon Alanı */}
-                  <div className="mx-auto flex items-center justify-center -mb-6">
+                  <div className="mx-auto flex items-center justify-center -mb-12">
                     <img
                       src="/vipIkon.png"
                       alt="VIP"
