@@ -20,7 +20,6 @@ interface InkPack {
   price: number;
   label?: string;
   image: string;
-  // color prop'unu kaldırdık çünkü artık kullanmıyoruz
 }
 
 interface StationeryItem {
@@ -399,7 +398,7 @@ const MarketPage = () => {
                       </span>
                     )}
                     <div className="flex items-center gap-4">
-                      {/* GÜNCELLENDİ: Arkaplan karesi kaldırıldı ve resim büyütüldü */}
+                      {/* Arkaplan karesi kaldırıldı ve resim büyütüldü */}
                       <div className="flex-shrink-0 group-hover:scale-105 transition-transform">
                         <img src={pack.image} alt={pack.name} className="w-20 h-20 object-contain drop-shadow-sm" />
                       </div>
@@ -429,6 +428,7 @@ const MarketPage = () => {
                         className="bg-white rounded-xl p-3 border border-slate-100 flex items-center justify-between shadow-sm"
                       >
                         <div className="flex items-center gap-4">
+                          {/* Kutu (bg-purple-50) kaldırıldı, ikon serbest ve büyük */}
                           <div className="flex-shrink-0">
                             {item.image ? (
                               <img
@@ -469,6 +469,7 @@ const MarketPage = () => {
                         className="border-slate-100 shadow-sm overflow-hidden group hover:border-red-200 transition-colors"
                       >
                         <CardContent className="p-3 text-center flex flex-col items-center gap-2">
+                          {/* Görsel Büyütüldü */}
                           <div className="w-16 h-16 flex items-center justify-center group-hover:scale-105 transition-transform mb-1">
                             {item.image ? (
                               <img src={item.image} alt={item.name} className="w-full h-full object-contain" />
@@ -529,12 +530,13 @@ const MarketPage = () => {
               </div>
             </TabsContent>
 
-            {/* 3. VIP ABONELİK */}
+            {/* 3. VIP ABONELİK (GÜNCELLENDİ: Taç ikonu yerine vipIkon.png kullanıldı) */}
             <TabsContent value="vip" className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
               <Card className="bg-gradient-to-br from-amber-400 to-orange-500 border-none shadow-xl text-white overflow-hidden">
                 <CardHeader className="text-center pb-2">
-                  <div className="mx-auto bg-white/20 w-12 h-12 rounded-full flex items-center justify-center mb-2 backdrop-blur-sm">
-                    <Crown className="w-6 h-6 text-white" />
+                  {/* VIP İkon Alanı */}
+                  <div className="mx-auto flex items-center justify-center mb-4">
+                    <img src="/vipIkon.png" alt="VIP" className="w-24 h-24 object-contain drop-shadow-md" />
                   </div>
                   <CardTitle className="text-2xl font-serif">VIP Yazar Ol</CardTitle>
                   <CardDescription className="text-amber-100">Yazarlık kariyerinde zirveye oyna</CardDescription>
