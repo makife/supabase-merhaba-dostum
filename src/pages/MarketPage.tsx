@@ -343,7 +343,7 @@ const MarketPage = () => {
               2. '-translate-y-1/2' KALDIRILDI: 
                  Artık dikey ortalamıyoruz, yukarı sabitliyoruz.
           */}
-          <div className="absolute left-1/2 -top-[76px] transform -translate-x-1/2 z-10 pointer-events-none">
+          <div className="absolute left-1/2 -top-[48px] transform -translate-x-1/2 z-10 pointer-events-none">
             <img
               src="/kirtasiyeBaslik.png"
               alt="Kırtasiye"
