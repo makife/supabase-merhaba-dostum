@@ -118,7 +118,7 @@ const MarketPage = () => {
       value: 1,
       image: "/senyazIkon.png",
     },
-    // Canlar (Görseller Güncellendi)
+    // Canlar
     {
       id: "h_full",
       type: "heart",
@@ -126,16 +126,16 @@ const MarketPage = () => {
       description: "Tüm canları (5) yeniler",
       priceInInk: 25,
       value: 5,
-      image: "/bescanPaketi.png", // GÜNCELLENDİ
+      image: "/bescanPaketi.png",
     },
     {
-      id: "h_25", // GÜNCELLENDİ (Eski h_10)
+      id: "h_25",
       type: "heart",
       name: "+25 Can Paketi",
       description: "Stoğunuza 25 can ekler",
-      priceInInk: 90, // Fiyat güncellendi (miktar arttığı için)
-      value: 25, // GÜNCELLENDİ
-      image: "/yirmibescanPaketi.png", // GÜNCELLENDİ
+      priceInInk: 90,
+      value: 25,
+      image: "/yirmibescanPaketi.png",
     },
     {
       id: "h_50",
@@ -144,7 +144,7 @@ const MarketPage = () => {
       description: "Uzun soluklu oyun için",
       priceInInk: 200,
       value: 50,
-      image: "/ellicanPaketi.png", // GÜNCELLENDİ
+      image: "/ellicanPaketi.png",
     },
     // Sınırsız Zaman
     {
@@ -434,16 +434,16 @@ const MarketPage = () => {
                         className="bg-white rounded-xl p-3 border border-slate-100 flex items-center justify-between shadow-sm"
                       >
                         <div className="flex items-center gap-4">
-                          {/* GÜNCELLENDİ: Joker ikon alanı büyütüldü */}
-                          <div className="bg-purple-50 p-2 rounded-xl text-purple-600 w-16 h-16 flex items-center justify-center shadow-inner">
+                          {/* GÜNCELLENDİ: Kutu (bg-purple-50) kaldırıldı, ikon serbest bırakıldı */}
+                          <div className="flex-shrink-0">
                             {item.image ? (
                               <img
                                 src={item.image}
                                 alt={item.name}
-                                className="w-10 h-10 object-contain drop-shadow-sm"
+                                className="w-16 h-16 object-contain drop-shadow-sm"
                               />
                             ) : (
-                              item.icon && <item.icon className="w-8 h-8" />
+                              item.icon && <item.icon className="w-12 h-12 text-purple-600" />
                             )}
                           </div>
                           <div>
@@ -475,7 +475,6 @@ const MarketPage = () => {
                         className="border-slate-100 shadow-sm overflow-hidden group hover:border-red-200 transition-colors"
                       >
                         <CardContent className="p-3 text-center flex flex-col items-center gap-2">
-                          {/* GÜNCELLENDİ: Kalp ikonu yerine görsel kullanımı */}
                           <div className="w-16 h-16 flex items-center justify-center group-hover:scale-105 transition-transform mb-1">
                             {item.image ? (
                               <img src={item.image} alt={item.name} className="w-full h-full object-contain" />
