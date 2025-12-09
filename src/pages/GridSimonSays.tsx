@@ -1,30 +1,49 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 
-declare global {
-  interface Window {
-    Capacitor: any;
-  }
-}
-
 const GridSimonSays = () => {
-  const navigate = useNavigate();
-  const [gameState, setGameState] = useState("waiting"); // waiting, showing, playing, gameOver
+  const [gameState, setGameState] = useState("waiting");
   const [sequence, setSequence] = useState([]);
   const [playerSequence, setPlayerSequence] = useState([]);
-  const [currentStep, setCurrentStep] = useState(0);
   const [score, setScore] = useState(0);
   const [activeCell, setActiveCell] = useState(null);
   const [level, setLevel] = useState(1);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [vibrationEnabled, setVibrationEnabled] = useState(true);
-  const audioContextRef = useRef<AudioContext | null>(null);
+  const [wordList, setWordList] = useState([]);
+  const [currentWord, setCurrentWord] = useState("");
+  const [revealedCells, setRevealedCells] = useState(new Set());
+  const [showGuessInput, setShowGuessInput] = useState(false);
+  const [guessValue, setGuessValue] = useState("");
+  const [cellLetters, setCellLetters] = useState({});
+  const audioContextRef = useRef(null);
+
+  const gridSize = 16;
+
+  // Kelime listesini yükle
+  useEffect(() => {
+    const loadWordList = async () => {
+      try {
+        const response = await fetch("/wordlist.txt");
+        const text = await response.text();
+        const words = text
+          .split("\n")
+          .map((word) => word.trim().toUpperCase())
+          .filter((word) => word.length >= 4 && word.length <= 16);
+        setWordList(words);
+      } catch (error) {
+        console.log("Kelime listesi yüklenemedi:", error);
+        // Fallback kelimeler
+        setWordList(["KEDI", "KALEM", "BILGISAYAR", "TEKNOLOJI", "PROGRAMLAMA", "OYUN", "MASA", "KITAP"]);
+      }
+    };
+    loadWordList();
+  }, []);
 
   // AudioContext'i oluştur
   useEffect(() => {
     if (!audioContextRef.current) {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
       audioContextRef.current = new AudioContextClass();
     }
 
@@ -36,10 +55,6 @@ const GridSimonSays = () => {
     };
   }, []);
 
-  // 4x4 grid oluştur (0-15 arası sayılar)
-  const gridSize = 16;
-
-  // Ses efektleri
   const createSound = useCallback(
     (frequency, duration = 200) => {
       if (!soundEnabled || !audioContextRef.current) return;
@@ -67,7 +82,6 @@ const GridSimonSays = () => {
     [soundEnabled],
   );
 
-  // Titreşim efekti
   const vibrate = useCallback(
     (pattern = [100]) => {
       if (!vibrationEnabled) return;
@@ -75,8 +89,6 @@ const GridSimonSays = () => {
       try {
         if (navigator.vibrate) {
           navigator.vibrate(pattern);
-        } else if (window.Capacitor && window.Capacitor.Plugins.Haptics) {
-          window.Capacitor.Plugins.Haptics.impact({ style: "medium" });
         }
       } catch (error) {
         console.log("Titreşim çalışmadı:", error);
@@ -85,32 +97,91 @@ const GridSimonSays = () => {
     [vibrationEnabled],
   );
 
-  // Hücre sesler - her hücre için farklı frekans
   const getCellSound = useCallback((cellIndex) => {
     const baseFreq = 200;
     return baseFreq + cellIndex * 50;
   }, []);
 
-  // Rastgele hücre seç
   const getRandomCell = useCallback(() => {
     return Math.floor(Math.random() * gridSize);
   }, []);
 
-  // Oyunu başlat
+  // Level'e göre kelime uzunluğu belirle (Level 1 = 4 harf, Level 2 = 5 harf...)
+  const getWordLengthForLevel = useCallback((lvl) => {
+    const length = 3 + lvl; // Level 1 = 4, Level 2 = 5, ...
+    return Math.min(length, 16); // Max 16 harf
+  }, []);
+
+  // Belirli uzunluktaki rastgele kelime seç
+  const selectRandomWord = useCallback(
+    (targetLength) => {
+      if (wordList.length === 0) {
+        const fallback = ["KEDI", "KALEM", "BILGISAYAR", "TEKNOLOJI"];
+        return fallback[Math.floor(Math.random() * fallback.length)];
+      }
+
+      const wordsOfLength = wordList.filter((word) => word.length === targetLength);
+
+      if (wordsOfLength.length > 0) {
+        const randomIndex = Math.floor(Math.random() * wordsOfLength.length);
+        return wordsOfLength[randomIndex];
+      } else {
+        // Eğer tam uzunlukta kelime yoksa, yakın uzunluktaki kelimeyi seç
+        const closeWords = wordList.filter(
+          (word) => word.length >= targetLength - 1 && word.length <= targetLength + 1,
+        );
+        if (closeWords.length > 0) {
+          return closeWords[Math.floor(Math.random() * closeWords.length)];
+        }
+        return wordList[Math.floor(Math.random() * wordList.length)];
+      }
+    },
+    [wordList],
+  );
+
+  // Harfleri gride rastgele dağıt
+  const assignLettersToGrid = useCallback((word) => {
+    const letters = {};
+    const wordLength = word.length;
+
+    // Rastgele pozisyonlar seç (0-15 arası)
+    const availablePositions = Array.from({ length: gridSize }, (_, i) => i);
+    const shuffledPositions = availablePositions.sort(() => Math.random() - 0.5);
+
+    // Kelimenin harflerini rastgele pozisyonlara yerleştir
+    for (let i = 0; i < wordLength; i++) {
+      letters[shuffledPositions[i]] = word[i];
+    }
+
+    // Kalan pozisyonlar boş (null)
+    for (let i = wordLength; i < gridSize; i++) {
+      letters[shuffledPositions[i]] = null;
+    }
+
+    return letters;
+  }, []);
+
   const startGame = useCallback(() => {
     const firstCell = getRandomCell();
+    const wordLength = getWordLengthForLevel(1);
+    const word = selectRandomWord(wordLength);
+    const letters = assignLettersToGrid(word);
+
+    setCurrentWord(word);
+    setCellLetters(letters);
     setSequence([firstCell]);
     setPlayerSequence([]);
-    setCurrentStep(0);
     setScore(0);
     setLevel(1);
+    setRevealedCells(new Set());
     setGameState("showing");
-    createSound(440, 300); // Başlama sesi
+    setShowGuessInput(false);
+    setGuessValue("");
+    createSound(440, 300);
     vibrate([200]);
     showSequence([firstCell]);
-  }, [getRandomCell, createSound, vibrate]);
+  }, [getRandomCell, getWordLengthForLevel, selectRandomWord, assignLettersToGrid, createSound, vibrate]);
 
-  // Diziyi göster (daha hızlı)
   const showSequence = useCallback(
     (seq) => {
       let index = 0;
@@ -120,8 +191,8 @@ const GridSimonSays = () => {
         if (index < seq.length) {
           const cellIndex = seq[index];
           setActiveCell(cellIndex);
+          setRevealedCells((prev) => new Set([...prev, cellIndex]));
 
-          // Hücre sesi çal
           createSound(getCellSound(cellIndex), 300);
           vibrate([50]);
 
@@ -130,22 +201,21 @@ const GridSimonSays = () => {
             setTimeout(() => {
               index++;
               showNext();
-            }, 100); // Daha hızlı geçiş (200'den 100'e)
-          }, 400); // Daha hızlı gösterim (600'den 400'e)
+            }, 100);
+          }, 400);
         } else {
           setTimeout(() => {
             setGameState("playing");
-            createSound(880, 200); // Oyuncu sırası sesi
-          }, 300); // Daha hızlı başlama (500'den 300'e)
+            createSound(880, 200);
+          }, 300);
         }
       };
 
-      setTimeout(showNext, 500); // Daha hızlı başlama (1000'den 500'e)
+      setTimeout(showNext, 500);
     },
     [createSound, getCellSound, vibrate],
   );
 
-  // Hücreye tıklanma
   const handleCellClick = useCallback(
     (cellIndex) => {
       if (gameState !== "playing") return;
@@ -153,47 +223,40 @@ const GridSimonSays = () => {
       const newPlayerSequence = [...playerSequence, cellIndex];
       setPlayerSequence(newPlayerSequence);
 
-      // Tıklama efekti
       setActiveCell(cellIndex);
       createSound(getCellSound(cellIndex), 150);
       vibrate([30]);
 
-      setTimeout(() => setActiveCell(null), 150); // Daha hızlı efekt (200'den 150'ye)
+      setTimeout(() => setActiveCell(null), 150);
 
-      // Kontrol et
       const currentSequenceIndex = newPlayerSequence.length - 1;
 
       if (newPlayerSequence[currentSequenceIndex] !== sequence[currentSequenceIndex]) {
-        // Yanlış tıklama - oyun bitti
         setGameState("gameOver");
-        createSound(150, 500); // Hata sesi
+        createSound(150, 500);
         vibrate([200, 100, 200]);
         return;
       }
 
-      // Doğru tıklama
       if (newPlayerSequence.length === sequence.length) {
-        // Seviye tamamlandı
         const newScore = score + level * 10;
         const newLevel = level + 1;
 
         setScore(newScore);
         setLevel(newLevel);
 
-        // Başarı sesi
         createSound(660, 200);
         setTimeout(() => createSound(880, 200), 100);
         setTimeout(() => createSound(1100, 300), 200);
         vibrate([100, 50, 100]);
 
         setTimeout(() => {
-          // Yeni hücre ekle ve göster
           const newSequence = [...sequence, getRandomCell()];
           setSequence(newSequence);
           setPlayerSequence([]);
           setGameState("showing");
           showSequence(newSequence);
-        }, 600); // Daha hızlı geçiş (1000'den 600'e)
+        }, 600);
       }
     },
     [
@@ -210,33 +273,123 @@ const GridSimonSays = () => {
     ],
   );
 
-  // Oyunu sıfırla
+  const handleGuess = useCallback(() => {
+    const normalizedGuess = guessValue.trim().toUpperCase();
+    const normalizedWord = currentWord.toUpperCase();
+
+    if (normalizedGuess === normalizedWord) {
+      // Doğru tahmin!
+      const wordLetterCount = Object.values(cellLetters).filter((l) => l !== null).length;
+      const bonusPoints = 100 + (wordLetterCount - revealedCells.size) * 10;
+      const newScore = score + bonusPoints;
+      const newLevel = level + 1;
+
+      setScore(newScore);
+      setLevel(newLevel);
+      createSound(1200, 300);
+      setTimeout(() => createSound(1400, 300), 150);
+      setTimeout(() => createSound(1600, 400), 300);
+      vibrate([100, 50, 100, 50, 100]);
+
+      alert(`🎉 Tebrikler! Doğru tahmin! +${bonusPoints} puan kazandınız!`);
+
+      // Yeni seviye başlat
+      setTimeout(() => {
+        const wordLength = getWordLengthForLevel(newLevel);
+        const word = selectRandomWord(wordLength);
+        const letters = assignLettersToGrid(word);
+        const firstCell = getRandomCell();
+
+        setCurrentWord(word);
+        setCellLetters(letters);
+        setSequence([firstCell]);
+        setPlayerSequence([]);
+        setRevealedCells(new Set());
+        setShowGuessInput(false);
+        setGuessValue("");
+        setGameState("showing");
+        showSequence([firstCell]);
+      }, 1500);
+    } else {
+      // Yanlış tahmin
+      createSound(150, 500);
+      vibrate([200, 100, 200]);
+      alert("❌ Yanlış tahmin! Tekrar deneyin.");
+      setGuessValue("");
+    }
+  }, [
+    guessValue,
+    currentWord,
+    score,
+    revealedCells,
+    level,
+    cellLetters,
+    createSound,
+    vibrate,
+    getWordLengthForLevel,
+    selectRandomWord,
+    assignLettersToGrid,
+    getRandomCell,
+    showSequence,
+  ]);
+
   const resetGame = useCallback(() => {
     setGameState("waiting");
     setSequence([]);
     setPlayerSequence([]);
-    setCurrentStep(0);
     setScore(0);
     setLevel(1);
     setActiveCell(null);
+    setRevealedCells(new Set());
+    setCurrentWord("");
+    setCellLetters({});
+    setShowGuessInput(false);
+    setGuessValue("");
   }, []);
 
-  // Grid oluştur
+  const renderWordDisplay = () => {
+    // Kelimeyi sıralı göster (açılan harfleri göster)
+    const wordLetters = currentWord.split("");
+    const revealedLettersSet = new Set();
+
+    // Hangi harflerin açıldığını bul
+    Object.entries(cellLetters).forEach(([cellIndex, letter]) => {
+      if (letter && revealedCells.has(parseInt(cellIndex))) {
+        revealedLettersSet.add(letter);
+      }
+    });
+
+    return (
+      <div className="word-display">
+        {wordLetters.map((letter, index) => {
+          const isRevealed = revealedLettersSet.has(letter);
+          return (
+            <span key={index} className={`word-letter ${isRevealed ? "revealed" : ""}`}>
+              {isRevealed ? letter : "?"}
+            </span>
+          );
+        })}
+      </div>
+    );
+  };
+
   const renderGrid = () => {
     const cells = [];
 
     for (let i = 0; i < gridSize; i++) {
       const isActive = activeCell === i;
       const isClickable = gameState === "playing";
+      const isRevealed = revealedCells.has(i);
+      const hasLetter = cellLetters[i] !== null && cellLetters[i] !== undefined;
 
       cells.push(
         <button
           key={i}
-          className={`grid-cell ${isActive ? "active" : ""} ${isClickable ? "clickable" : ""}`}
+          className={`grid-cell ${isActive ? "active" : ""} ${isClickable ? "clickable" : ""} ${!hasLetter ? "empty" : ""}`}
           onClick={() => handleCellClick(i)}
           disabled={!isClickable}
         >
-          {i + 1}
+          {isRevealed && hasLetter && <span className="cell-letter">{cellLetters[i]}</span>}
         </button>,
       );
     }
@@ -246,24 +399,20 @@ const GridSimonSays = () => {
 
   return (
     <div className="simon-game">
-      {/* Geri Dön Butonu */}
-      <div className="mb-4">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-white/80 hover:text-white transition-colors bg-transparent border-none cursor-pointer"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          Geri Dön
-        </button>
-      </div>
-
       <div className="game-header">
-        <h2>👣 Adım Oyunu 👣</h2>
+        <h2>💣 Kelime Tahmin Oyunu 💣</h2>
+
+        {gameState !== "waiting" && (
+          <div className="word-section">
+            <h3>Gizli Kelime ({currentWord.length} harf):</h3>
+            {renderWordDisplay()}
+          </div>
+        )}
+
         <div className="game-info">
           <span>Seviye: {level}</span>
           <span>Puan: {score}</span>
           <span>
-            Durum:{" "}
             {gameState === "waiting"
               ? "Başlamayı bekliyor"
               : gameState === "showing"
@@ -274,7 +423,6 @@ const GridSimonSays = () => {
           </span>
         </div>
 
-        {/* Ayarlar */}
         <div className="settings">
           <button
             className={`setting-btn ${soundEnabled ? "active" : ""}`}
@@ -300,9 +448,46 @@ const GridSimonSays = () => {
           </button>
         )}
 
+        {(gameState === "playing" || gameState === "showing") && !showGuessInput && (
+          <button className="guess-btn" onClick={() => setShowGuessInput(true)} disabled={gameState === "showing"}>
+            🤔 Kelimeyi Tahmin Et
+          </button>
+        )}
+
+        {showGuessInput && gameState === "playing" && (
+          <div className="guess-section">
+            <input
+              type="text"
+              value={guessValue}
+              onChange={(e) => setGuessValue(e.target.value.toUpperCase())}
+              placeholder="Kelimeyi yazın..."
+              className="guess-input"
+              maxLength={16}
+              autoFocus
+            />
+            <div className="guess-buttons">
+              <button className="submit-guess-btn" onClick={handleGuess}>
+                ✅ Gönder
+              </button>
+              <button
+                className="cancel-guess-btn"
+                onClick={() => {
+                  setShowGuessInput(false);
+                  setGuessValue("");
+                }}
+              >
+                ❌ İptal
+              </button>
+            </div>
+          </div>
+        )}
+
         {gameState === "gameOver" && (
           <div className="game-over">
             <p>🎯 Oyun Bitti! Final Puanınız: {score}</p>
+            <p>
+              Kelime: <strong>{currentWord}</strong>
+            </p>
             <button className="restart-btn" onClick={resetGame}>
               🔄 Tekrar Oyna
             </button>
@@ -319,7 +504,6 @@ const GridSimonSays = () => {
           padding: 20px;
           font-family: Arial, sans-serif;
           text-align: center;
-          border-radius: 0;
           color: white;
           box-sizing: border-box;
         }
@@ -329,6 +513,53 @@ const GridSimonSays = () => {
           color: white;
           text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
           font-size: 24px;
+        }
+
+        .word-section {
+          margin: 20px 0;
+        }
+
+        .word-section h3 {
+          color: #64ffda;
+          font-size: 16px;
+          margin-bottom: 10px;
+          text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .word-display {
+          display: flex;
+          justify-content: center;
+          gap: 4px;
+          flex-wrap: wrap;
+          margin: 10px 0;
+        }
+
+        .word-letter {
+          width: 28px;
+          height: 34px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(255, 255, 255, 0.1);
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          border-radius: 8px;
+          font-size: 18px;
+          font-weight: bold;
+          color: rgba(255, 255, 255, 0.3);
+          transition: all 0.3s ease;
+        }
+
+        .word-letter.revealed {
+          background: rgba(100, 255, 218, 0.3);
+          border-color: #64ffda;
+          color: #64ffda;
+          animation: letterReveal 0.5s ease;
+        }
+
+        @keyframes letterReveal {
+          0% { transform: scale(0.5) rotateY(90deg); }
+          50% { transform: scale(1.2) rotateY(0deg); }
+          100% { transform: scale(1) rotateY(0deg); }
         }
 
         .game-info {
@@ -347,7 +578,6 @@ const GridSimonSays = () => {
           border-radius: 20px;
           font-size: 13px;
           font-weight: bold;
-          color: white;
         }
 
         .settings {
@@ -376,11 +606,6 @@ const GridSimonSays = () => {
           box-shadow: 0 0 15px rgba(100, 255, 100, 0.3);
         }
 
-        .setting-btn:hover {
-          transform: scale(1.05);
-          background: rgba(255, 255, 255, 0.2);
-        }
-
         .simon-grid {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
@@ -398,53 +623,46 @@ const GridSimonSays = () => {
           background: rgba(255, 255, 255, 0.15);
           backdrop-filter: blur(10px);
           color: white;
-          font-size: 16px;
+          font-size: 14px;
           font-weight: bold;
           cursor: pointer;
           transition: all 0.15s ease;
           border: 2px solid rgba(255, 255, 255, 0.2);
-          user-select: none;
-          -webkit-tap-highlight-color: transparent;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
         }
 
-        .grid-cell:hover {
-          background: rgba(255, 255, 255, 0.25);
-          transform: scale(1.03);
+        .grid-cell.empty {
+          background: rgba(255, 255, 255, 0.05);
+          border-color: rgba(255, 255, 255, 0.1);
         }
 
-        .grid-cell:active {
-          transform: scale(0.95);
+        .cell-letter {
+          font-size: 24px;
+          color: #64ffda;
+          text-shadow: 0 0 10px rgba(100, 255, 218, 0.5);
+          animation: letterPop 0.3s ease;
+        }
+
+        @keyframes letterPop {
+          0% { transform: scale(0); }
+          50% { transform: scale(1.3); }
+          100% { transform: scale(1); }
         }
 
         .grid-cell.active {
           background: linear-gradient(45deg, #ff6b6b, #feca57) !important;
-          color: white;
           transform: scale(1.08);
           box-shadow: 0 0 25px rgba(255, 202, 87, 0.8);
-          border-color: #feca57;
-          animation: pulse 0.15s ease-in-out;
-        }
-
-        @keyframes pulse {
-          0% { transform: scale(1.08); }
-          50% { transform: scale(1.15); }
-          100% { transform: scale(1.08); }
-        }
-
-        .grid-cell.clickable {
-          cursor: pointer;
-        }
-
-        .grid-cell:disabled {
-          cursor: not-allowed;
-          opacity: 0.6;
         }
 
         .game-controls {
           margin: 20px 0;
         }
 
-        .start-btn, .restart-btn {
+        .start-btn, .restart-btn, .guess-btn {
           background: linear-gradient(45deg, #48cae4, #023e8a);
           color: white;
           border: none;
@@ -455,111 +673,108 @@ const GridSimonSays = () => {
           cursor: pointer;
           transition: all 0.3s ease;
           box-shadow: 0 4px 15px rgba(72, 202, 228, 0.3);
-          user-select: none;
-          -webkit-tap-highlight-color: transparent;
+          margin: 5px;
         }
 
-        .start-btn:hover, .restart-btn:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 6px 20px rgba(72, 202, 228, 0.4);
-          background: linear-gradient(45deg, #0077b6, #001d3d);
+        .guess-btn {
+          background: linear-gradient(45deg, #ffd60a, #e85d04);
         }
 
-        .start-btn:active, .restart-btn:active {
-          transform: translateY(-1px);
+        .guess-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .guess-section {
+          background: rgba(255, 255, 255, 0.15);
+          backdrop-filter: blur(10px);
+          padding: 20px;
+          border-radius: 15px;
+          margin-top: 15px;
+        }
+
+        .guess-input {
+          width: 100%;
+          max-width: 300px;
+          padding: 12px;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          border-radius: 10px;
+          background: rgba(255, 255, 255, 0.2);
+          color: white;
+          font-size: 18px;
+          text-align: center;
+          font-weight: bold;
+          text-transform: uppercase;
+          margin-bottom: 10px;
+        }
+
+        .guess-input::placeholder {
+          color: rgba(255, 255, 255, 0.5);
+        }
+
+        .guess-buttons {
+          display: flex;
+          gap: 10px;
+          justify-content: center;
+        }
+
+        .submit-guess-btn, .cancel-guess-btn {
+          padding: 10px 20px;
+          border: none;
+          border-radius: 20px;
+          font-size: 14px;
+          font-weight: bold;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        .submit-guess-btn {
+          background: linear-gradient(45deg, #10b981, #059669);
+          color: white;
+        }
+
+        .cancel-guess-btn {
+          background: rgba(239, 68, 68, 0.8);
+          color: white;
         }
 
         .game-over {
           background: rgba(255, 255, 255, 0.15);
           backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.2);
           padding: 20px;
           border-radius: 15px;
-          animation: fadeIn 0.5s ease-in;
-        }
-
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
+          animation: fadeIn 0.5s ease;
         }
 
         .game-over p {
           margin-bottom: 15px;
           font-size: 18px;
           color: #feca57;
-          text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
         }
 
-        .game-instructions {
-          background: rgba(255, 255, 255, 0.15);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          padding: 15px;
-          border-radius: 15px;
-          margin-top: 20px;
-        }
-
-        .game-instructions h4 {
-          margin-bottom: 10px;
+        .game-over strong {
           color: #64ffda;
-          text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-        }
-
-        .game-instructions p {
-          margin: 8px 0;
-          font-size: 13px;
-          text-align: left;
-          line-height: 1.4;
-          color: white;
+          font-size: 20px;
         }
 
         @media (max-width: 480px) {
           .simon-game {
-            margin: 0;
             padding: 15px;
-            border-radius: 0;
-            min-height: 100vh;
           }
           
-          .game-info {
-            flex-direction: column;
-            align-items: center;
-            gap: 5px;
+          .word-letter {
+            width: 24px;
+            height: 30px;
+            font-size: 16px;
           }
           
           .simon-grid {
             max-width: 280px;
             gap: 6px;
           }
-          
-          .grid-cell {
-            font-size: 14px;
-            border-radius: 10px;
-          }
 
-          .settings {
-            flex-wrap: wrap;
-            gap: 8px;
-          }
-
-          .setting-btn {
-            font-size: 11px;
-            padding: 6px 12px;
-          }
-        }
-
-        @media (max-height: 700px) {
-          .simon-game {
-            padding: 10px;
-          }
-          
-          .game-header h2 {
+          .cell-letter {
             font-size: 20px;
-            margin-bottom: 15px;
-          }
-          
-          .game-instructions {
-            font-size: 12px;
           }
         }
       `}</style>
