@@ -25,7 +25,7 @@ const GridSimonSays = () => {
   const [cellLetters, setCellLetters] = useState<any>({});
 
   // YENİ EKLENEN STATE'LER
-  const [attempts, setAttempts] = useState(3); // 3 Can hakkı
+  const [attempts, setAttempts] = useState(10); // 3 Can hakkı
   const [modal, setModal] = useState({ show: false, title: "", message: "", type: "info" });
 
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -160,7 +160,7 @@ const GridSimonSays = () => {
     setPlayerSequence([]);
     setScore(0);
     setLevel(1);
-    setAttempts(3); // Hakları sıfırla
+    setAttempts(10); // Hakları sıfırla
     setRevealedCells(new Set());
     setGameState("showing");
     setShowGuessInput(false);
@@ -275,7 +275,7 @@ const GridSimonSays = () => {
 
       setScore(newScore);
       setLevel(newLevel);
-      setAttempts(3); // Seviye geçince hakları tazele
+      setAttempts(10); // Seviye geçince hakları tazele
 
       createSound(1200, 300);
       setTimeout(() => createSound(1400, 300), 150);
