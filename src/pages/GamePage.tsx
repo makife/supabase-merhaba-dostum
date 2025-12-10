@@ -996,10 +996,8 @@ const GamePage = ({
     setWaitingForRematchResponse(false);
   }, [currentRoom?.id]);
 
-  // 🎯 AKTİF POLLING: Rakibin hala oyunda olup olmadığını kontrol et (3 saniyede bir)
-  // Bu passive subscription'lara güvenmeyen güvenilir bir mekanizma
-  const disconnectPollingRef = useRef<NodeJS.Timeout | null>(null);
-  
+  // 🎯 REALTIME SUBSCRIPTION: Rakip participant silindiyinde anında tespit et
+  // Polling yerine Supabase Realtime kullanıyoruz
   useEffect(() => {
     // Sadece multiplayer modlarda ve oyun aktifken çalış
     if (
@@ -1010,113 +1008,82 @@ const GamePage = ({
       !user?.id ||
       disconnectHandledRef.current
     ) {
-      if (disconnectPollingRef.current) {
-        clearInterval(disconnectPollingRef.current);
-        disconnectPollingRef.current = null;
-      }
       return;
     }
 
-    console.log("🔍 Disconnect polling başlatılıyor:", shortId(currentRoom?.id));
-    
     const capturedRoomId = currentRoom.id;
     const capturedUserId = user.id;
     
-    disconnectPollingRef.current = setInterval(async () => {
-      // Guard: Room veya game state değiştiyse polling'i durdur
-      const latestRoomId = currentRoomIdRef.current;
-      if (latestRoomId !== capturedRoomId || disconnectHandledRef.current) {
-        console.log("🔄 Room değişti veya disconnect handled, polling durduruluyor");
-        if (disconnectPollingRef.current) {
-          clearInterval(disconnectPollingRef.current);
-          disconnectPollingRef.current = null;
-        }
-        return;
-      }
-      
-      try {
-        // 1. Room status kontrolü
-        const { data: roomData, error: roomError } = await supabase
-          .from("game_rooms")
-          .select("status, player1_id, player2_id")
-          .eq("id", capturedRoomId)
-          .single();
-        
-        if (roomError || !roomData) {
-          console.log("⚠️ Room bulunamadı, polling durduruluyor");
-          return;
-        }
-        
-        // Room artık aktif değilse polling'i durdur
-        if (roomData.status !== "active") {
-          console.log("🔄 Room artık aktif değil, polling durduruluyor");
-          if (disconnectPollingRef.current) {
-            clearInterval(disconnectPollingRef.current);
-            disconnectPollingRef.current = null;
-          }
-          return;
-        }
-        
-        // 2. Rakip ID'yi belirle
-        const opponentIdFromRoom = roomData.player1_id === capturedUserId 
-          ? roomData.player2_id 
-          : roomData.player1_id;
-        
-        if (!opponentIdFromRoom) {
-          console.log("⚠️ Rakip ID bulunamadı");
-          return;
-        }
-        
-        // 3. Rakip hala participant mı kontrol et
-        const { data: opponentParticipant, error: participantError } = await supabase
-          .from("game_participants")
-          .select("id, user_id")
-          .eq("room_id", capturedRoomId)
-          .eq("user_id", opponentIdFromRoom)
-          .maybeSingle();
-        
-        if (participantError) {
-          console.error("❌ Participant kontrol hatası:", participantError);
-          return;
-        }
-        
-        // Rakip participant'ta yoksa - DISCONNECT!
-        if (!opponentParticipant && !disconnectHandledRef.current) {
-          console.log("🚨 POLLING: Rakip participant'ta yok - DISCONNECT TETİKLENİYOR!");
-          disconnectHandledRef.current = true;
+    // Rakip ID'yi hesapla
+    const opponentId = currentRoom.player1_id === capturedUserId 
+      ? currentRoom.player2_id 
+      : currentRoom.player1_id;
+    
+    if (!opponentId) {
+      console.log("⚠️ Realtime disconnect: Rakip ID bulunamadı");
+      return;
+    }
+    
+    console.log("📡 Realtime disconnect subscription başlatılıyor:", {
+      roomId: shortId(capturedRoomId),
+      opponentId: shortId(opponentId)
+    });
+
+    // game_participants tablosundaki DELETE eventlerini dinle
+    const channel = supabase
+      .channel(`disconnect-detection-${capturedRoomId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'game_participants',
+          filter: `room_id=eq.${capturedRoomId}`
+        },
+        (payload) => {
+          console.log("🔔 Participant DELETE event:", payload);
           
-          // Polling'i durdur
-          if (disconnectPollingRef.current) {
-            clearInterval(disconnectPollingRef.current);
-            disconnectPollingRef.current = null;
+          // Guard: Room değiştiyse veya zaten handled ise işlem yapma
+          const latestRoomId = currentRoomIdRef.current;
+          if (latestRoomId !== capturedRoomId || disconnectHandledRef.current) {
+            console.log("🔄 Room değişti veya disconnect handled, event yoksayılıyor");
+            return;
           }
           
-          // Opponent ID'yi kaydet (ceza için)
-          savedOpponentIdRef.current = opponentIdFromRoom;
-          
-          // Disconnect event'i dispatch et
-          window.dispatchEvent(
-            new CustomEvent("playerDisconnected", {
-              detail: { 
-                winner: "player", 
-                reason: "opponent_left_polling", 
-                roomId: capturedRoomId 
-              },
-            }),
-          );
+          // Silinen participant rakip mi kontrol et
+          const deletedUserId = (payload.old as any)?.user_id;
+          if (deletedUserId === opponentId) {
+            console.log("🚨 REALTIME: Rakip participant silindi - DISCONNECT TETİKLENİYOR!");
+            disconnectHandledRef.current = true;
+            
+            // Opponent ID'yi kaydet (ceza için)
+            savedOpponentIdRef.current = opponentId;
+            
+            // Subscription'ı kapat
+            supabase.removeChannel(channel);
+            
+            // Disconnect event'i dispatch et
+            window.dispatchEvent(
+              new CustomEvent("playerDisconnected", {
+                detail: { 
+                  winner: "player", 
+                  reason: "opponent_left_realtime", 
+                  roomId: capturedRoomId 
+                },
+              }),
+            );
+          }
         }
-      } catch (err) {
-        console.error("❌ Polling hatası:", err);
-      }
-    }, 3000); // Her 3 saniyede bir kontrol et
+      )
+      .subscribe((status) => {
+        console.log("📡 Disconnect channel status:", status);
+      });
     
     return () => {
-      if (disconnectPollingRef.current) {
-        clearInterval(disconnectPollingRef.current);
-        disconnectPollingRef.current = null;
-      }
+      console.log("🔌 Disconnect subscription temizleniyor:", shortId(capturedRoomId));
+      supabase.removeChannel(channel);
     };
-  }, [gameMode, gameStarted, gameEnded, currentRoom?.id, user?.id]);
+  }, [gameMode, gameStarted, gameEnded, currentRoom?.id, currentRoom?.player1_id, currentRoom?.player2_id, user?.id]);
 
   const [isAIOpponent, setIsAIOpponent] = useState(false);
   const [opponentName, setOpponentName] = useState("");
