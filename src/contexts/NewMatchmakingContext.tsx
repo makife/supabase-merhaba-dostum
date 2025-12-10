@@ -367,6 +367,31 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       console.log("📡 Real-time channel kapatıldı");
     }
 
+    // Veritabanından odayı sil (eğer bekleyen oda varsa)
+    if (currentRoom && user) {
+      console.log("🗑️ Bekleyen oda veritabanından siliniyor:", currentRoom.id.slice(-8));
+      
+      // Önce katılımcıları sil
+      await supabase
+        .from("game_participants")
+        .delete()
+        .eq("room_id", currentRoom.id);
+      
+      // Sonra odayı sil
+      const { error } = await supabase
+        .from("game_rooms")
+        .delete()
+        .eq("id", currentRoom.id)
+        .eq("host_id", user.id)
+        .eq("status", "waiting");
+      
+      if (error) {
+        console.error("❌ Oda silme hatası:", error);
+      } else {
+        console.log("✅ Bekleyen oda veritabanından silindi");
+      }
+    }
+
     setIsSearching(false);
     setCurrentRoom(null);
 
