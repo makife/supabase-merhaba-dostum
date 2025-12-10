@@ -1593,6 +1593,16 @@ export type Database = {
           penalty: number
         }[]
       }
+      apply_moderator_ban: {
+        Args: {
+          p_description: string
+          p_duration_hours: number
+          p_moderator_id: string
+          p_reason: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       auto_set_users_offline: { Args: never; Returns: undefined }
       auto_start_countdown_finished_games: { Args: never; Returns: undefined }
       award_badge_with_notification: {
@@ -1902,6 +1912,10 @@ export type Database = {
       recalculate_user_stats: {
         Args: { p_user_id: string }
         Returns: undefined
+      }
+      remove_moderator_ban: {
+        Args: { p_ban_id: string; p_moderator_id: string }
+        Returns: Json
       }
       reset_daily_games: { Args: never; Returns: undefined }
       save_memory_game_play: {

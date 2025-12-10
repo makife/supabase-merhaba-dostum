@@ -157,50 +157,25 @@ const ModeratorPage = () => {
   };
 
   const handleBanUser = async () => {
-    if (!selectedReport) return;
+    if (!selectedReport || !user) return;
 
     try {
-      const bannedUntil = new Date();
-      bannedUntil.setHours(bannedUntil.getHours() + parseInt(banDuration));
+      // RPC fonksiyonu kullanarak ban uygula (bildirim otomatik gönderilir)
+      const { data, error } = await supabase.rpc('apply_moderator_ban', {
+        p_user_id: selectedReport.reported_user_id,
+        p_reason: selectedReport.reason,
+        p_description: selectedReport.description || '',
+        p_duration_hours: parseInt(banDuration),
+        p_moderator_id: user.id
+      });
 
-      // user_bans tablosuna kayıt ekle
-      const { error: banError } = await supabase
-        .from('user_bans')
-        .insert({
-          user_id: selectedReport.reported_user_id,
-          reason: `Şikayet: ${selectedReport.reason} - ${selectedReport.description || ''}`,
-          banned_until: bannedUntil.toISOString(),
-          banned_by: user?.id,
-          is_active: true
-        });
+      if (error) throw error;
 
-      if (banError) throw banError;
-
-      // profiles tablosundaki banned_until alanını güncelle
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          banned_until: bannedUntil.toISOString()
-        })
-        .eq('id', selectedReport.reported_user_id);
-
-      if (profileError) throw profileError;
-
-      // Kullanıcıya bildirim gönder
-      const banHours = parseInt(banDuration);
-      const banMessage = `🚫 Sohbet yasağı aldınız.\n\nSebep: ${selectedReport.reason}\nDetay: ${selectedReport.description || 'Uygunsuz içerik paylaşımı'}\n\nYasak süresi: ${banHours} saat\nBitiş: ${new Date(bannedUntil).toLocaleString('tr-TR')}`;
-
-      const { error: notificationError } = await supabase
-        .from('notifications')
-        .insert({
-          user_id: selectedReport.reported_user_id,
-          type: 'ban',
-          message: banMessage,
-          is_read: false
-        });
-
-      if (notificationError) {
-        console.error('Bildirim gönderme hatası:', notificationError);
+      const result = data as { success: boolean; error?: string; message?: string };
+      
+      if (!result.success) {
+        toast.error(result.error || 'Yasaklama başarısız');
+        return;
       }
 
       await updateReportStatus(selectedReport.id, 'resolved');
@@ -237,44 +212,22 @@ const ModeratorPage = () => {
   };
 
   const removeBan = async (banId: string) => {
+    if (!user) return;
+    
     try {
-      // İlgili ban kaydını bul
-      const { data: banData, error: fetchError } = await supabase
-        .from('user_bans')
-        .select('user_id, reason')
-        .eq('id', banId)
-        .single();
+      // RPC fonksiyonu kullanarak yasak kaldır (bildirim otomatik gönderilir)
+      const { data, error } = await supabase.rpc('remove_moderator_ban', {
+        p_ban_id: banId,
+        p_moderator_id: user.id
+      });
 
-      if (fetchError) throw fetchError;
+      if (error) throw error;
 
-      // user_bans tablosunda is_active'i false yap
-      const { error: banError } = await supabase
-        .from('user_bans')
-        .update({ is_active: false })
-        .eq('id', banId);
-
-      if (banError) throw banError;
-
-      // profiles tablosundaki banned_until alanını temizle
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ banned_until: null })
-        .eq('id', banData.user_id);
-
-      if (profileError) throw profileError;
-
-      // Kullanıcıya yasak kaldırma bildirimi gönder
-      const { error: notificationError } = await supabase
-        .from('notifications')
-        .insert({
-          user_id: banData.user_id,
-          type: 'ban_lifted',
-          message: '✅ Sohbet yasağınız kaldırıldı. Artık sohbete katılabilirsiniz.',
-          is_read: false
-        });
-
-      if (notificationError) {
-        console.error('Bildirim gönderme hatası:', notificationError);
+      const result = data as { success: boolean; error?: string; message?: string };
+      
+      if (!result.success) {
+        toast.error(result.error || 'Yasak kaldırılamadı');
+        return;
       }
 
       toast.success('Yasak kaldırıldı ve kullanıcıya bildirim gönderildi');
