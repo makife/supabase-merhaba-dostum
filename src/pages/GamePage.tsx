@@ -2950,11 +2950,13 @@ const requestRematch = async () => {
 
           setTournamentMatch(matchData);
 
-          // 🎯 SERVER-SIDE COUNTDOWN SYNC - Merkezi fonksiyon kullan
+          // 🎯 SERVER-SIDE COUNTDOWN SYNC - Merkezi fonksiyon kullan (random-match ile aynı mantık)
           if (matchData.countdown_started_at && !countdownInitiatedRef.current) {
             console.log("🎯 Tournament countdown başlatılıyor (initial load):", matchData.countdown_started_at);
-            // Direkt başlat - GameCountdown server zamanına göre hesaplayacak
-            initiateCountdown(matchData.countdown_started_at);
+            // 🎯 5 saniyelik buffer ekle - random-match ile aynı
+            const originalTime = new Date(matchData.countdown_started_at).getTime();
+            const adjustedTime = new Date(originalTime + 5000).toISOString();
+            initiateCountdown(adjustedTime);
           }
         }
 
@@ -3464,14 +3466,17 @@ const requestRematch = async () => {
           setTournamentMatch(newData);
 
           // ------------------------------------------------------------
-          // 🎯 1. COUNTDOWN MANTIĞI - SADECE OYUN BAŞLAMADIYSA
+          // 🎯 1. COUNTDOWN MANTIĞI - SADECE OYUN BAŞLAMADIYSA (random-match ile aynı mantık)
           // ------------------------------------------------------------
           // 🔒 Countdown zaten başlatıldıysa hiçbir şey yapma
           if (countdownInitiatedRef.current) {
             console.log("⚠️ Countdown zaten başlatıldı - real-time event yok sayıldı");
           } else if (newData.countdown_started_at) {
             console.log("🎯 Tournament countdown başlatılıyor (real-time):", newData.countdown_started_at);
-            initiateCountdown(newData.countdown_started_at);
+            // 🎯 5 saniyelik buffer ekle - random-match ile aynı
+            const originalTime = new Date(newData.countdown_started_at).getTime();
+            const adjustedTime = new Date(originalTime + 5000).toISOString();
+            initiateCountdown(adjustedTime);
           }
 
           // ------------------------------------------------------------
