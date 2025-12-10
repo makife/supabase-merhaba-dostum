@@ -172,6 +172,10 @@ const GamePage = ({
   const countdownCompletedAtRef = useRef<number | null>(null);
   // Touch/click double-fire koruması: Gönder butonu için son touch zaman damgası
   const submitTouchTsRef = useRef(0);
+  
+  // 🔒 REMATCH FIX: Closure sorunu çözümü - güncel değerleri ref'lerde sakla
+  const participantsRef = useRef(participants);
+  const currentRoomIdRef = useRef<string | null>(currentRoom?.id || null);
 
   const [globalUsedWords, setGlobalUsedWords] = useState<Set<string>>(new Set());
   const [serverTimeOffset, setServerTimeOffset] = useState(0);
@@ -908,17 +912,33 @@ const GamePage = ({
       if (realPlayers.length < 2 && amIStillParticipant && !disconnectHandledRef.current) {
         console.log("⏳ Fallback disconnect tespit edildi, 3.5 saniye doğrulanacak...");
 
+        // 🔒 REMATCH FIX: Room ID'yi capture et
+        const capturedRoomId = currentRoom?.id;
+
         // 🛡️ 3.5 saniye bekle, tekrar kontrol et (oyuncu geri dönebilir)
         disconnectTimerRef.current = setTimeout(() => {
-          const currentRealPlayers = participants.filter((p) => !p.is_bot);
-          const stillAmIInRoom = participants.some((p) => p.user_id === user?.id);
+          // 🔒 REMATCH FIX: Ref'lerden güncel değerleri oku (closure sorunu çözümü)
+          const latestParticipants = participantsRef.current;
+          const latestRoomId = currentRoomIdRef.current;
+          
+          // 🔒 REMATCH GUARD: Room değiştiyse işlem yapma
+          if (latestRoomId !== capturedRoomId) {
+            console.log("🔄 Room değişti (rematch?), fallback disconnect iptal", {
+              captured: capturedRoomId?.slice(-8),
+              latest: latestRoomId?.slice(-8),
+            });
+            return;
+          }
+          
+          const currentRealPlayers = latestParticipants.filter((p) => !p.is_bot);
+          const stillAmIInRoom = latestParticipants.some((p) => p.user_id === user?.id);
 
           if (currentRealPlayers.length < 2 && stillAmIInRoom && !disconnectHandledRef.current) {
             console.log("🚪 Fallback disconnect doğrulandı - oyun sonlandırılıyor");
             disconnectHandledRef.current = true;
             window.dispatchEvent(
               new CustomEvent("playerDisconnected", {
-                detail: { winner: "player", reason: "opponent_left_fallback", roomId: currentRoom?.id },
+                detail: { winner: "player", reason: "opponent_left_fallback", roomId: capturedRoomId },
               }),
             );
           } else {
@@ -934,7 +954,7 @@ const GamePage = ({
         disconnectTimerRef.current = null;
       }
     };
-  }, [participants.length, gameMode, gameStarted, gameEnded, user?.id, waitingForRematchResponse, rematchRequested]);
+  }, [participants.length, gameMode, gameStarted, gameEnded, user?.id, waitingForRematchResponse, rematchRequested, currentRoom?.id]);
 
   // Oyunun gerçekten başladığını işaretle - Countdown TAMAMLANDIKTAN sonra
   useEffect(() => {
@@ -954,6 +974,15 @@ const GamePage = ({
       return () => clearTimeout(timer);
     }
   }, [participants.length, gameMode, gameStarted, gameEnded, showCountdown]);
+
+  // 🔒 REMATCH FIX: Ref'leri güncel tut (closure sorunu çözümü)
+  useEffect(() => {
+    participantsRef.current = participants;
+  }, [participants]);
+  
+  useEffect(() => {
+    currentRoomIdRef.current = currentRoom?.id || null;
+  }, [currentRoom?.id]);
 
   // Oda değiştiğinde tüm disconnect/game state bayraklarını sıfırla
   // 🎯 REMATCH FIX: Yeni rematch oyununda disconnect detection çalışması için kritik
