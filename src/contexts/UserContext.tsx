@@ -244,12 +244,19 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       const remainingBonus = Math.max(0, bonusCredits - neededForFull);
       const newTotalBonus = profile.bonus_credits + remainingBonus;
 
+      // Krediler 5/5'e ulaştıysa last_credit_refresh'i temizle (timer dursun)
+      const updateData: any = {
+        game_credits: newBase,
+        bonus_credits: newTotalBonus,
+      };
+      
+      if (newBase >= 5) {
+        updateData.last_credit_refresh = null;
+      }
+
       const { error } = await supabase
         .from("profiles")
-        .update({
-          game_credits: newBase,
-          bonus_credits: newTotalBonus,
-        })
+        .update(updateData)
         .eq("id", user.id);
 
       if (error) throw error;
@@ -258,6 +265,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         ...profile,
         game_credits: newBase,
         bonus_credits: newTotalBonus,
+        last_credit_refresh: newBase >= 5 ? null : profile.last_credit_refresh,
         ink_count: profile.ink_count ?? 0,
       };
       setProfile(updatedProfile);
