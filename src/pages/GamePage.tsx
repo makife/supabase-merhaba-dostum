@@ -996,6 +996,128 @@ const GamePage = ({
     setWaitingForRematchResponse(false);
   }, [currentRoom?.id]);
 
+  // 🎯 AKTİF POLLING: Rakibin hala oyunda olup olmadığını kontrol et (3 saniyede bir)
+  // Bu passive subscription'lara güvenmeyen güvenilir bir mekanizma
+  const disconnectPollingRef = useRef<NodeJS.Timeout | null>(null);
+  
+  useEffect(() => {
+    // Sadece multiplayer modlarda ve oyun aktifken çalış
+    if (
+      !(gameMode === "private-room" || gameMode === "random-match") ||
+      !gameStarted ||
+      gameEnded ||
+      !currentRoom?.id ||
+      !user?.id ||
+      disconnectHandledRef.current
+    ) {
+      if (disconnectPollingRef.current) {
+        clearInterval(disconnectPollingRef.current);
+        disconnectPollingRef.current = null;
+      }
+      return;
+    }
+
+    console.log("🔍 Disconnect polling başlatılıyor:", shortId(currentRoom?.id));
+    
+    const capturedRoomId = currentRoom.id;
+    const capturedUserId = user.id;
+    
+    disconnectPollingRef.current = setInterval(async () => {
+      // Guard: Room veya game state değiştiyse polling'i durdur
+      const latestRoomId = currentRoomIdRef.current;
+      if (latestRoomId !== capturedRoomId || disconnectHandledRef.current) {
+        console.log("🔄 Room değişti veya disconnect handled, polling durduruluyor");
+        if (disconnectPollingRef.current) {
+          clearInterval(disconnectPollingRef.current);
+          disconnectPollingRef.current = null;
+        }
+        return;
+      }
+      
+      try {
+        // 1. Room status kontrolü
+        const { data: roomData, error: roomError } = await supabase
+          .from("game_rooms")
+          .select("status, player1_id, player2_id")
+          .eq("id", capturedRoomId)
+          .single();
+        
+        if (roomError || !roomData) {
+          console.log("⚠️ Room bulunamadı, polling durduruluyor");
+          return;
+        }
+        
+        // Room artık aktif değilse polling'i durdur
+        if (roomData.status !== "active") {
+          console.log("🔄 Room artık aktif değil, polling durduruluyor");
+          if (disconnectPollingRef.current) {
+            clearInterval(disconnectPollingRef.current);
+            disconnectPollingRef.current = null;
+          }
+          return;
+        }
+        
+        // 2. Rakip ID'yi belirle
+        const opponentIdFromRoom = roomData.player1_id === capturedUserId 
+          ? roomData.player2_id 
+          : roomData.player1_id;
+        
+        if (!opponentIdFromRoom) {
+          console.log("⚠️ Rakip ID bulunamadı");
+          return;
+        }
+        
+        // 3. Rakip hala participant mı kontrol et
+        const { data: opponentParticipant, error: participantError } = await supabase
+          .from("game_participants")
+          .select("id, user_id")
+          .eq("room_id", capturedRoomId)
+          .eq("user_id", opponentIdFromRoom)
+          .maybeSingle();
+        
+        if (participantError) {
+          console.error("❌ Participant kontrol hatası:", participantError);
+          return;
+        }
+        
+        // Rakip participant'ta yoksa - DISCONNECT!
+        if (!opponentParticipant && !disconnectHandledRef.current) {
+          console.log("🚨 POLLING: Rakip participant'ta yok - DISCONNECT TETİKLENİYOR!");
+          disconnectHandledRef.current = true;
+          
+          // Polling'i durdur
+          if (disconnectPollingRef.current) {
+            clearInterval(disconnectPollingRef.current);
+            disconnectPollingRef.current = null;
+          }
+          
+          // Opponent ID'yi kaydet (ceza için)
+          savedOpponentIdRef.current = opponentIdFromRoom;
+          
+          // Disconnect event'i dispatch et
+          window.dispatchEvent(
+            new CustomEvent("playerDisconnected", {
+              detail: { 
+                winner: "player", 
+                reason: "opponent_left_polling", 
+                roomId: capturedRoomId 
+              },
+            }),
+          );
+        }
+      } catch (err) {
+        console.error("❌ Polling hatası:", err);
+      }
+    }, 3000); // Her 3 saniyede bir kontrol et
+    
+    return () => {
+      if (disconnectPollingRef.current) {
+        clearInterval(disconnectPollingRef.current);
+        disconnectPollingRef.current = null;
+      }
+    };
+  }, [gameMode, gameStarted, gameEnded, currentRoom?.id, user?.id]);
+
   const [isAIOpponent, setIsAIOpponent] = useState(false);
   const [opponentName, setOpponentName] = useState("");
   const [targetScore, setTargetScore] = useState(gameType === "score" ? 500 : 0);
