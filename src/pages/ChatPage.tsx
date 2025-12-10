@@ -6,7 +6,7 @@ import { useSounds } from "@/hooks/useSounds";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowLeft, Users, MessageCircle, Hash, Home, Dot, Mail, UserX, UserCheck } from "lucide-react";
+import { ArrowLeft, Users, MessageCircle, Hash, Home, Dot, Mail, UserX, UserCheck, Ban } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { GlobalChat } from "@/components/GlobalChat";
 import { PrivateChat } from "@/components/PrivateChat";
@@ -15,6 +15,15 @@ import { SwipeToDeleteCard } from "@/components/SwipeToDeleteCard";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
 import { useUserBlocking } from "@/hooks/useUserBlocking";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type ViewMode = "global" | "users" | "private-chat" | "blocked-users";
 
@@ -22,6 +31,13 @@ interface SelectedUser {
   id: string;
   username: string;
   avatar_url?: string;
+}
+
+interface BanInfo {
+  is_banned: boolean;
+  ban_reason: string;
+  banned_until: string;
+  remaining_hours: number;
 }
 
 export default function ChatPage() {
@@ -36,9 +52,54 @@ export default function ChatPage() {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [allUsers, setAllUsers] = useState<SelectedUser[]>([]);
   const [unreadCounts, setUnreadCounts] = useState<{ [key: string]: number }>({});
+  const [banInfo, setBanInfo] = useState<BanInfo | null>(null);
+  const [showBanDialog, setShowBanDialog] = useState(false);
   const { unreadCount, markAllAsRead, markPrivateMessagesAsRead, markGlobalMessagesAsRead, refreshUnreadCounts } =
     useChatNotifications();
   const { blockedUsers, blockUser, unblockUser, isUserBlocked } = useUserBlocking();
+
+  // Yasak kontrolü
+  useEffect(() => {
+    const checkBanStatus = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const { data, error } = await supabase.rpc('check_user_ban_status', {
+          p_user_id: user.id
+        });
+        
+        if (error) {
+          console.error('Ban check error:', error);
+          return;
+        }
+        
+        if (data && data.length > 0 && data[0].is_banned) {
+          setBanInfo(data[0]);
+          setShowBanDialog(true);
+        }
+      } catch (err) {
+        console.error('Ban status check failed:', err);
+      }
+    };
+    
+    checkBanStatus();
+  }, [user?.id]);
+
+  const formatBanDuration = (hours: number): string => {
+    if (hours < 1) {
+      const minutes = Math.round(hours * 60);
+      return `${minutes} dakika`;
+    } else if (hours < 24) {
+      return `${Math.round(hours)} saat`;
+    } else {
+      const days = Math.floor(hours / 24);
+      const remainingHours = Math.round(hours % 24);
+      if (remainingHours > 0) {
+        return `${days} gün ${remainingHours} saat`;
+      }
+      return `${days} gün`;
+    }
+  };
 
   // Tüm fonksiyonlar aynı kalacak (kısaltıyorum)
   const fetchAllUsers = async () => {
@@ -593,6 +654,44 @@ export default function ChatPage() {
 
       {/* Safe area bottom */}
       <div className="safe-area-bottom"></div>
+
+      {/* Ban Dialog */}
+      <AlertDialog open={showBanDialog} onOpenChange={setShowBanDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+              <Ban className="w-6 h-6" />
+              Sohbet Yasağı
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mt-2">
+                <p className="font-semibold text-red-800 mb-2">Yasak Sebebi:</p>
+                <p className="text-red-700">{banInfo?.ban_reason || 'Uygunsuz davranış'}</p>
+              </div>
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <p className="font-semibold text-orange-800 mb-2">Kalan Süre:</p>
+                <p className="text-orange-700 text-lg font-bold">
+                  {banInfo ? formatBanDuration(banInfo.remaining_hours) : ''}
+                </p>
+              </div>
+              <p className="text-sm text-gray-600 mt-4">
+                Yasak süreniz dolana kadar sohbet özelliklerini kullanamazsınız.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction 
+              onClick={() => {
+                setShowBanDialog(false);
+                navigate('/');
+              }}
+              className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
+            >
+              Anladım
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
