@@ -446,11 +446,20 @@ const HomePage = () => {
                       </div>
                     </div>
 
-                    {/* Premium Badge */}
+                    {/* Premium/Sınırsız Badge */}
                     {isPremium && (
-                      <div className="flex items-center space-x-1 mt-1">
-                        <Crown className="w-4 h-4 text-yellow-500" />
-                        <span className="text-xs text-yellow-500 font-semibold">Premium</span>
+                      <div className="flex flex-col items-end mt-1">
+                        <div className="flex items-center space-x-1">
+                          <Crown className="w-4 h-4 text-yellow-500" />
+                          <span className="text-xs text-yellow-500 font-semibold">
+                            {isUnlimitedLivesActive(profile) ? 'Sınırsız' : 'Premium'}
+                          </span>
+                        </div>
+                        {unlimitedTimeLeft && (
+                          <span className="text-xs text-orange-400 font-medium">
+                            {unlimitedTimeLeft}
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
