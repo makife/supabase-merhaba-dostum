@@ -13,24 +13,26 @@ export const CreditBar = ({ showRefresh = false }: CreditBarProps) => {
 
   // Calculate remaining time for premium or unlimited lives
   useEffect(() => {
-    // Determine which expiry date to use (prefer unlimited_lives_until if active, else premium_until)
-    const unlimitedExpiry = profile?.unlimited_lives_until ? new Date(profile.unlimited_lives_until) : null;
-    const premiumExpiry = profile?.premium_until ? new Date(profile.premium_until) : null;
-    const now = new Date();
-    
-    // Use unlimited_lives if active, otherwise use premium
-    let expiryDate: Date | null = null;
-    if (unlimitedExpiry && unlimitedExpiry > now) {
-      expiryDate = unlimitedExpiry;
-    } else if (premiumExpiry && premiumExpiry > now) {
-      expiryDate = premiumExpiry;
-    }
-    
-    if (!expiryDate) return;
+    const calculateAndSetTime = () => {
+      // Determine which expiry date to use (prefer unlimited_lives_until if active, else premium_until)
+      const unlimitedExpiry = profile?.unlimited_lives_until ? new Date(profile.unlimited_lives_until) : null;
+      const premiumExpiry = profile?.premium_until ? new Date(profile.premium_until) : null;
+      const now = new Date();
+      
+      // Use unlimited_lives if active, otherwise use premium
+      let expiryDate: Date | null = null;
+      if (unlimitedExpiry && unlimitedExpiry > now) {
+        expiryDate = unlimitedExpiry;
+      } else if (premiumExpiry && premiumExpiry > now) {
+        expiryDate = premiumExpiry;
+      }
+      
+      if (!expiryDate) {
+        setTimeRemaining('');
+        return;
+      }
 
-    const updateTimeRemaining = () => {
-      const currentNow = new Date();
-      const diff = expiryDate!.getTime() - currentNow.getTime();
+      const diff = expiryDate.getTime() - now.getTime();
 
       if (diff <= 0) {
         setTimeRemaining('');
@@ -53,8 +55,11 @@ export const CreditBar = ({ showRefresh = false }: CreditBarProps) => {
       }
     };
 
-    updateTimeRemaining();
-    const interval = setInterval(updateTimeRemaining, 1000);
+    // Initial calculation
+    calculateAndSetTime();
+    
+    // Update every second
+    const interval = setInterval(calculateAndSetTime, 1000);
 
     return () => clearInterval(interval);
   }, [profile?.unlimited_lives_until, profile?.premium_until]);
