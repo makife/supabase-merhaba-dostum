@@ -785,6 +785,31 @@ const GamePage = ({
         timerRef.current = null;
       }
 
+      // 🎯 REMATCH FIX: Rakibe disconnect cezası uygula
+      const disconnectedOpponentId = savedOpponentIdRef.current;
+      if (disconnectedOpponentId && currentRoom?.id) {
+        console.log("⚖️ Disconnect penalty uygulanıyor (GamePage handler):", disconnectedOpponentId.slice(-8));
+        try {
+          const { data: penaltyResult, error: penaltyError } = await supabase.rpc("apply_disconnect_penalty", {
+            p_offender_id: disconnectedOpponentId,
+            p_room_id: currentRoom.id,
+          });
+          
+          if (penaltyError) {
+            console.error("❌ Disconnect penalty hatası:", penaltyError);
+          } else if (penaltyResult && penaltyResult.length > 0) {
+            const result = penaltyResult[0];
+            console.log("✅ Disconnect penalty uygulandı:", {
+              penalty: result.penalty,
+              newScore: result.new_score,
+              disconnectCount: result.disconnect_count,
+            });
+          }
+        } catch (err) {
+          console.error("❌ Disconnect penalty exception:", err);
+        }
+      }
+
       toast({
         title: "Rakip oyundan ayrıldı",
         description: "Maçı kazandınız! 🎉",
@@ -813,6 +838,24 @@ const GamePage = ({
       playSound("gameWin");
       setTimeout(() => playCelebrationSound(), 500);
 
+      // 🎯 Odayı finished yap ve kazananı belirle
+      if (currentRoom?.id && user?.id) {
+        console.log("🏁 Disconnect sonrası oda sonlandırılıyor");
+        try {
+          await supabase
+            .from("game_rooms")
+            .update({
+              status: "finished",
+              winner_id: user.id,
+              finished_at: new Date().toISOString(),
+            })
+            .eq("id", currentRoom.id);
+          console.log("✅ Oda finished olarak güncellendi");
+        } catch (err) {
+          console.error("❌ Oda güncelleme hatası:", err);
+        }
+      }
+
       // Room state'ini hemen temizle (RoomAutoNavigator yeniden yönlendirmeyi önle)
       console.log("🧹 Disconnect sonrası room temizleniyor");
       leaveRoom();
@@ -826,6 +869,7 @@ const GamePage = ({
     playCelebrationSound,
     toast,
     currentRoom?.id,
+    user?.id,
     isPremium,
     playerWordsWithScores.length,
     opponentWordsWithScores.length,
