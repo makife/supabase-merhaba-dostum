@@ -12,16 +12,31 @@ interface GameCountdownProps {
 
 // Preload images immediately when module loads
 const IMAGE_PATHS = ["/bes.png", "/dort.png", "/uc.png", "/iki.png", "/bir.png", "/basla.png"];
-const preloadedImages: HTMLImageElement[] = [];
+const preloadedImages: Map<string, HTMLImageElement> = new Map();
+let imagesPreloaded = false;
 
-// Preload on module load - not in component
-if (typeof window !== "undefined") {
-  IMAGE_PATHS.forEach((src) => {
-    const img = new Image();
-    img.src = src;
-    preloadedImages.push(img);
-  });
-}
+// Preload on module load with completion tracking
+const preloadPromise = typeof window !== "undefined" 
+  ? Promise.all(
+      IMAGE_PATHS.map((src) => {
+        return new Promise<void>((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            preloadedImages.set(src, img);
+            resolve();
+          };
+          img.onerror = () => resolve(); // Don't block on errors
+          img.src = src;
+        });
+      })
+    ).then(() => {
+      imagesPreloaded = true;
+      console.log("✅ GameCountdown: All images preloaded");
+    })
+  : Promise.resolve();
+
+// Export for external preload check
+export const ensureImagesLoaded = () => preloadPromise;
 
 const COUNTDOWN_DURATION_MS = 5000; // 5 seconds countdown
 const START_DISPLAY_DURATION_MS = 800; // Show "start" for 800ms

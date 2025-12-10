@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ensureImagesLoaded } from './GameCountdown';
 
 const LoadingScreen = ({ onLoadingComplete }) => {
   const [tips, setTips] = useState(['Oyun yükleniyor...']);
@@ -16,31 +17,42 @@ const LoadingScreen = ({ onLoadingComplete }) => {
     { text: 'Harfler yükleniyor...', progress: 15 },
     { text: 'Kelimeler kontrol ediliyor...', progress: 30 },
     { text: 'Joker kartları hazırlanıyor...', progress: 45 },
-    { text: 'Sözlük güncelleniyor...', progress: 60 },
-    { text: 'Oyun kuralları yükleniyor...', progress: 75 },
-    { text: 'Kullanıcı verisi kontrol ediliyor...', progress: 90 },
+    { text: 'Geri sayım görselleri yükleniyor...', progress: 55 },
+    { text: 'Sözlük güncelleniyor...', progress: 70 },
+    { text: 'Oyun kuralları yükleniyor...', progress: 85 },
     { text: 'Son hazırlıklar...', progress: 95 },
     { text: 'Tamamlandı!', progress: 100 }
   ];
 
   useEffect(() => {
-    // İpuçları yükle
-    const loadTips = async () => {
+    // İpuçları yükle ve countdown görsellerini preload et
+    const loadAssets = async () => {
       try {
-        const response = await fetch('/ipucu.txt');
-        if (response.ok) {
-          const text = await response.text();
-          const tipsArray = text.split('\n').filter(line => line.trim() !== '');
-          setTips(tipsArray);
-          setCurrentTip(tipsArray[Math.floor(Math.random() * tipsArray.length)]);
-        }
+        // Countdown görsellerini paralel olarak yükle
+        const countdownPromise = ensureImagesLoaded();
+        
+        // İpuçlarını yükle
+        const tipsPromise = fetch('/ipucu.txt').then(async (response) => {
+          if (response.ok) {
+            const text = await response.text();
+            const tipsArray = text.split('\n').filter(line => line.trim() !== '');
+            setTips(tipsArray);
+            setCurrentTip(tipsArray[Math.floor(Math.random() * tipsArray.length)]);
+          }
+        }).catch((error) => {
+          console.warn('İpucu dosyası okunamadı:', error);
+          setCurrentTip(tips[0]);
+        });
+
+        // Her ikisini de bekle
+        await Promise.all([countdownPromise, tipsPromise]);
+        console.log('✅ LoadingScreen: All assets preloaded');
       } catch (error) {
-        console.warn('İpucu dosyası okunamadı:', error);
-        setCurrentTip(tips[0]);
+        console.warn('Asset yükleme hatası:', error);
       }
     };
 
-    loadTips();
+    loadAssets();
   }, []);
 
   // Component mount olduğunda çalış
