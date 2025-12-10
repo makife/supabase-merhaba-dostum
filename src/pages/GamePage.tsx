@@ -955,11 +955,16 @@ const GamePage = ({
     }
   }, [participants.length, gameMode, gameStarted, gameEnded, showCountdown]);
 
+  // Oda değiştiğinde tüm disconnect/game state bayraklarını sıfırla
+  // 🎯 REMATCH FIX: Yeni rematch oyununda disconnect detection çalışması için kritik
   useEffect(() => {
-    // Oda değiştiğinde fallback bayrağını sıfırla
+    console.log("🔄 Room changed, resetting all disconnect flags:", shortId(currentRoom?.id));
     disconnectHandledRef.current = false;
     gameHasStartedRef.current = false;
-    countdownCheckDoneRef.current = false; // Countdown kontrolünü de sıfırla
+    countdownCheckDoneRef.current = false;
+    // 🎯 REMATCH FIX: Rematch state'lerini de sıfırla ki disconnect detection çalışsın
+    setRematchRequested(false);
+    setWaitingForRematchResponse(false);
   }, [currentRoom?.id]);
 
   const [isAIOpponent, setIsAIOpponent] = useState(false);
