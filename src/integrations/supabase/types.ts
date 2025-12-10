@@ -1579,11 +1579,11 @@ export type Database = {
     }
     Functions: {
       advance_tournament_round:
+        | { Args: { p_tournament_id: string }; Returns: Json }
         | {
             Args: { p_current_round: number; p_tournament_id: string }
             Returns: Json
           }
-        | { Args: { p_tournament_id: string }; Returns: Json }
       apply_disconnect_penalty: {
         Args: { p_offender_id: string; p_room_id: string }
         Returns: {
@@ -1752,6 +1752,19 @@ export type Database = {
       }
       get_monthly_leaderboard:
         | {
+            Args: never
+            Returns: {
+              avatar_url: string
+              games_played: number
+              games_won: number
+              monthly_score: number
+              rank_change: number
+              rank_position: number
+              user_id: string
+              username: string
+            }[]
+          }
+        | {
             Args: { limit_count?: number }
             Returns: {
               avatar_url: string
@@ -1766,19 +1779,6 @@ export type Database = {
           }
         | {
             Args: { target_month_start?: string }
-            Returns: {
-              avatar_url: string
-              games_played: number
-              games_won: number
-              monthly_score: number
-              rank_change: number
-              rank_position: number
-              user_id: string
-              username: string
-            }[]
-          }
-        | {
-            Args: never
             Returns: {
               avatar_url: string
               games_played: number
@@ -1818,6 +1818,19 @@ export type Database = {
       }
       get_weekly_leaderboard:
         | {
+            Args: never
+            Returns: {
+              avatar_url: string
+              games_played: number
+              games_won: number
+              rank_change: number
+              rank_position: number
+              user_id: string
+              username: string
+              weekly_score: number
+            }[]
+          }
+        | {
             Args: { limit_count?: number }
             Returns: {
               avatar_url: string
@@ -1832,19 +1845,6 @@ export type Database = {
           }
         | {
             Args: { target_week_start?: string }
-            Returns: {
-              avatar_url: string
-              games_played: number
-              games_won: number
-              rank_change: number
-              rank_position: number
-              user_id: string
-              username: string
-              weekly_score: number
-            }[]
-          }
-        | {
-            Args: never
             Returns: {
               avatar_url: string
               games_played: number
@@ -1920,17 +1920,17 @@ export type Database = {
         | {
             Args: {
               p_message: string
+              p_message_id?: string
+              p_receiver_id: string
               p_sender_username: string
-              p_user_id: string
             }
             Returns: boolean
           }
         | {
             Args: {
               p_message: string
-              p_message_id?: string
-              p_receiver_id: string
               p_sender_username: string
+              p_user_id: string
             }
             Returns: boolean
           }
@@ -2023,16 +2023,6 @@ export type Database = {
       update_game_stats:
         | {
             Args: {
-              p_game_duration: number
-              p_is_winner: boolean
-              p_score: number
-              p_user_id: string
-              p_words: Json
-            }
-            Returns: undefined
-          }
-        | {
-            Args: {
               p_first_word_time?: number
               p_game_duration?: number
               p_is_winner?: boolean
@@ -2048,6 +2038,16 @@ export type Database = {
               p_game_duration?: number
               p_game_mode?: string
               p_is_winner?: boolean
+              p_score: number
+              p_user_id: string
+              p_words: Json
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_game_duration: number
+              p_is_winner: boolean
               p_score: number
               p_user_id: string
               p_words: Json

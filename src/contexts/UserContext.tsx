@@ -334,7 +334,22 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     };
   };
 
-  const isPremium = profile?.premium_until ? new Date(profile.premium_until) > new Date() : false;
+  // Check both premium_until and unlimited_lives_until for premium/unlimited status
+  const isPremium = (() => {
+    const now = new Date();
+    
+    // Check permanent premium subscription
+    if (profile?.premium_until && new Date(profile.premium_until) > now) {
+      return true;
+    }
+    
+    // Check temporary unlimited lives (1 hour or 24 hour packages from market)
+    if (profile?.unlimited_lives_until && new Date(profile.unlimited_lives_until) > now) {
+      return true;
+    }
+    
+    return false;
+  })();
 
   const consumeCredit = async (): Promise<boolean> => {
     if (!user || !profile) {
