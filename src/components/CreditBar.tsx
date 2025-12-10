@@ -11,25 +11,40 @@ export const CreditBar = ({ showRefresh = false }: CreditBarProps) => {
   const { profile, getDisplayCredits, isPremium, checkAndRefreshCredits } = useUser();
   const [timeRemaining, setTimeRemaining] = useState<string>('');
 
-  // Calculate remaining time for unlimited lives
+  // Calculate remaining time for premium or unlimited lives
   useEffect(() => {
-    if (!profile?.unlimited_lives_until) return;
+    // Determine which expiry date to use (prefer unlimited_lives_until if active, else premium_until)
+    const unlimitedExpiry = profile?.unlimited_lives_until ? new Date(profile.unlimited_lives_until) : null;
+    const premiumExpiry = profile?.premium_until ? new Date(profile.premium_until) : null;
+    const now = new Date();
+    
+    // Use unlimited_lives if active, otherwise use premium
+    let expiryDate: Date | null = null;
+    if (unlimitedExpiry && unlimitedExpiry > now) {
+      expiryDate = unlimitedExpiry;
+    } else if (premiumExpiry && premiumExpiry > now) {
+      expiryDate = premiumExpiry;
+    }
+    
+    if (!expiryDate) return;
 
     const updateTimeRemaining = () => {
-      const now = new Date();
-      const expiryDate = new Date(profile.unlimited_lives_until!);
-      const diff = expiryDate.getTime() - now.getTime();
+      const currentNow = new Date();
+      const diff = expiryDate!.getTime() - currentNow.getTime();
 
       if (diff <= 0) {
         setTimeRemaining('');
         return;
       }
 
-      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
-      if (hours > 0) {
+      if (days > 0) {
+        setTimeRemaining(`${days}g ${hours}s`);
+      } else if (hours > 0) {
         setTimeRemaining(`${hours}s ${minutes}dk`);
       } else if (minutes > 0) {
         setTimeRemaining(`${minutes}dk ${seconds}sn`);
@@ -42,7 +57,7 @@ export const CreditBar = ({ showRefresh = false }: CreditBarProps) => {
     const interval = setInterval(updateTimeRemaining, 1000);
 
     return () => clearInterval(interval);
-  }, [profile?.unlimited_lives_until]);
+  }, [profile?.unlimited_lives_until, profile?.premium_until]);
 
   if (!profile) return null;
 
@@ -62,7 +77,7 @@ export const CreditBar = ({ showRefresh = false }: CreditBarProps) => {
           <span className="text-sm font-medium text-primary">
             {hasPermanentPremium ? 'Premium - Sınırsız Oyun' : 'Sınırsız Oyun'}
           </span>
-          {hasUnlimitedLives && !hasPermanentPremium && timeRemaining && (
+          {timeRemaining && (
             <span className="text-xs text-muted-foreground flex items-center gap-1">
               <Clock className="h-3 w-3" />
               Kalan süre: {timeRemaining}
