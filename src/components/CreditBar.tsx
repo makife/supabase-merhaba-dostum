@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { useUser } from '@/contexts/UserContext';
-import { Heart } from 'lucide-react';
+import { Heart, Clock } from 'lucide-react';
 
 interface CreditBarProps {
   showRefresh?: boolean;
@@ -9,16 +9,66 @@ interface CreditBarProps {
 
 export const CreditBar = ({ showRefresh = false }: CreditBarProps) => {
   const { profile, getDisplayCredits, isPremium, checkAndRefreshCredits } = useUser();
+  const [timeRemaining, setTimeRemaining] = useState<string>('');
+
+  // Calculate remaining time for unlimited lives
+  useEffect(() => {
+    if (!profile?.unlimited_lives_until) return;
+
+    const updateTimeRemaining = () => {
+      const now = new Date();
+      const expiryDate = new Date(profile.unlimited_lives_until!);
+      const diff = expiryDate.getTime() - now.getTime();
+
+      if (diff <= 0) {
+        setTimeRemaining('');
+        return;
+      }
+
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      if (hours > 0) {
+        setTimeRemaining(`${hours}s ${minutes}dk`);
+      } else if (minutes > 0) {
+        setTimeRemaining(`${minutes}dk ${seconds}sn`);
+      } else {
+        setTimeRemaining(`${seconds}sn`);
+      }
+    };
+
+    updateTimeRemaining();
+    const interval = setInterval(updateTimeRemaining, 1000);
+
+    return () => clearInterval(interval);
+  }, [profile?.unlimited_lives_until]);
 
   if (!profile) return null;
 
   const { base, bonus } = getDisplayCredits();
 
+  // Check if user has active unlimited lives (temporary package from market)
+  const hasUnlimitedLives = profile?.unlimited_lives_until && new Date(profile.unlimited_lives_until) > new Date();
+  
+  // Check if user has permanent premium subscription
+  const hasPermanentPremium = profile?.premium_until && new Date(profile.premium_until) > new Date();
+
   if (isPremium) {
     return (
       <div className="flex items-center gap-2 bg-gradient-to-r from-accent/20 to-primary/20 rounded-lg p-3 border border-primary/20">
         <Heart className="h-5 w-5 text-primary fill-current" />
-        <span className="text-sm font-medium text-primary">Premium - Sınırsız Oyun</span>
+        <div className="flex flex-col">
+          <span className="text-sm font-medium text-primary">
+            {hasPermanentPremium ? 'Premium - Sınırsız Oyun' : 'Sınırsız Oyun'}
+          </span>
+          {hasUnlimitedLives && !hasPermanentPremium && timeRemaining && (
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              Kalan süre: {timeRemaining}
+            </span>
+          )}
+        </div>
       </div>
     );
   }
