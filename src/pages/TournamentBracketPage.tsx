@@ -399,33 +399,15 @@ const TournamentBracketPage = () => {
           <div className="w-16 sm:w-24" />
         </div>
 
-        {/* Countdown - Hazırlık ve Geri Sayım */}
+        {/* Countdown */}
         {hasPendingMatches && countdown > 0 && (
-          <Card className="mb-4 bg-gradient-to-r from-indigo-800 to-purple-800 border-indigo-500 shadow-lg">
-            <CardContent className="p-4 text-center">
-              {countdown > 5 ? (
-                // Hazırlık kartı - geri sayım 5'ten büyükse
-                <>
-                  <div className="text-4xl mb-2">⚡</div>
-                  <p className="text-yellow-300 font-bold text-lg mb-1">Hazır Olun!</p>
-                  <p className="text-white text-sm mb-2">
-                    {currentRound === 1 ? "Çeyrek Final" : currentRound === 2 ? "Yarı Final" : "Final"} birazdan başlayacak
-                  </p>
-                  <div className="flex items-center justify-center gap-2 text-gray-300 text-sm">
-                    <Clock className="w-4 h-4" />
-                    <span>{countdown} saniye</span>
-                  </div>
-                </>
-              ) : (
-                // Geri sayım kartı - son 5 saniye
-                <>
-                  <Clock className="w-6 h-6 text-yellow-400 mx-auto mb-1" />
-                  <p className="text-white font-medium text-sm">
-                    {currentRound === 1 ? "Çeyrek Final" : currentRound === 2 ? "Yarı Final" : "Final"} başlıyor...
-                  </p>
-                  <p className="text-yellow-300 text-3xl font-bold animate-pulse">{countdown}</p>
-                </>
-              )}
+          <Card className="mb-4 bg-indigo-800 border-indigo-600">
+            <CardContent className="p-3 text-center">
+              <Clock className="w-6 h-6 text-yellow-400 mx-auto mb-1" />
+              <p className="text-white font-medium text-sm">
+                {currentRound === 1 ? "Çeyrek Final" : currentRound === 2 ? "Yarı Final" : "Final"} başlıyor...
+              </p>
+              <p className="text-yellow-300 text-xl font-bold">{countdown} saniye</p>
             </CardContent>
           </Card>
         )}
