@@ -10,7 +10,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSounds } from "@/hooks/useSounds";
 import { generateBotName } from "@/utils/tournamentHelpers";
 import { toast } from "sonner";
-import GameCountdown from "@/components/GameCountdown";
 
 const TournamentBracketPage = () => {
   const { tournamentId } = useParams();
@@ -22,14 +21,11 @@ const TournamentBracketPage = () => {
     useTournament(tournamentId);
 
   const [countdown, setCountdown] = useState(10);
-  const [showCountdown, setShowCountdown] = useState(false);
-  const [countdownServerTime, setCountdownServerTime] = useState<string | null>(null);
   const [showChampion, setShowChampion] = useState(false);
   const [showEliminated, setShowEliminated] = useState(false);
   const [navigatedToGame, setNavigatedToGame] = useState(false);
 
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
-  const countdownInitiatedRef = useRef(false);
   const matchesStartedRef = useRef<string | null>(null);
   const advancingRef = useRef(false);
 
@@ -160,7 +156,7 @@ const TournamentBracketPage = () => {
     }
   }, [tournamentId, user, currentTournament, advanceToNextRound]);
 
-  // Countdown for next round - GameCountdown entegrasyonu
+  // Countdown for next round
   useEffect(() => {
     if (!currentTournament || currentTournament.status !== "in_progress") return;
     if (!currentTournament.next_round_starts_at) return;
@@ -171,15 +167,6 @@ const TournamentBracketPage = () => {
       const now = Date.now();
       const remaining = Math.max(0, Math.ceil((targetTime - now) / 1000));
       setCountdown(remaining);
-
-      // 5 saniyeye ulaştığında GameCountdown'ı başlat
-      if (remaining <= 5 && remaining > 0 && !countdownInitiatedRef.current) {
-        countdownInitiatedRef.current = true;
-        // GameCountdown için server time ayarla - countdown ŞU AN başlıyor
-        const countdownStartTime = new Date(now).toISOString();
-        setCountdownServerTime(countdownStartTime);
-        setShowCountdown(true);
-      }
 
       if (remaining === 0) {
         if (countdownRef.current) {
@@ -200,19 +187,6 @@ const TournamentBracketPage = () => {
       }
     };
   }, [currentTournament?.next_round_starts_at, currentTournament?.status, startAllMatches]);
-
-  // Reset countdown state on round change
-  useEffect(() => {
-    countdownInitiatedRef.current = false;
-    setShowCountdown(false);
-    setCountdownServerTime(null);
-  }, [currentTournament?.current_round]);
-
-  // GameCountdown tamamlandığında
-  const handleCountdownComplete = useCallback(() => {
-    console.log("🏆 Bracket countdown tamamlandı");
-    setShowCountdown(false);
-  }, []);
 
   // Navigate to game when my match starts - with realtime subscription
   useEffect(() => {
@@ -411,16 +385,6 @@ const TournamentBracketPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-900 to-indigo-900 p-3 sm:p-4">
-      {/* GameCountdown - Son 5 saniye için tam ekran geri sayım */}
-      {showCountdown && countdownServerTime && (
-        <GameCountdown
-          key={`bracket-countdown-${currentRound}`}
-          onComplete={handleCountdownComplete}
-          serverStartTime={countdownServerTime}
-          serverTimeOffset={0}
-        />
-      )}
-
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
@@ -435,19 +399,33 @@ const TournamentBracketPage = () => {
           <div className="w-16 sm:w-24" />
         </div>
 
-        {/* Countdown - Hazırlık kartı (sadece 5 saniyeden fazlaysa) */}
-        {hasPendingMatches && countdown > 5 && (
+        {/* Countdown - Hazırlık ve Geri Sayım */}
+        {hasPendingMatches && countdown > 0 && (
           <Card className="mb-4 bg-gradient-to-r from-indigo-800 to-purple-800 border-indigo-500 shadow-lg">
             <CardContent className="p-4 text-center">
-              <div className="text-4xl mb-2">⚡</div>
-              <p className="text-yellow-300 font-bold text-lg mb-1">Hazır Olun!</p>
-              <p className="text-white text-sm mb-2">
-                {currentRound === 1 ? "Çeyrek Final" : currentRound === 2 ? "Yarı Final" : "Final"} birazdan başlayacak
-              </p>
-              <div className="flex items-center justify-center gap-2 text-gray-300 text-sm">
-                <Clock className="w-4 h-4" />
-                <span>{countdown} saniye</span>
-              </div>
+              {countdown > 5 ? (
+                // Hazırlık kartı - geri sayım 5'ten büyükse
+                <>
+                  <div className="text-4xl mb-2">⚡</div>
+                  <p className="text-yellow-300 font-bold text-lg mb-1">Hazır Olun!</p>
+                  <p className="text-white text-sm mb-2">
+                    {currentRound === 1 ? "Çeyrek Final" : currentRound === 2 ? "Yarı Final" : "Final"} birazdan başlayacak
+                  </p>
+                  <div className="flex items-center justify-center gap-2 text-gray-300 text-sm">
+                    <Clock className="w-4 h-4" />
+                    <span>{countdown} saniye</span>
+                  </div>
+                </>
+              ) : (
+                // Geri sayım kartı - son 5 saniye
+                <>
+                  <Clock className="w-6 h-6 text-yellow-400 mx-auto mb-1" />
+                  <p className="text-white font-medium text-sm">
+                    {currentRound === 1 ? "Çeyrek Final" : currentRound === 2 ? "Yarı Final" : "Final"} başlıyor...
+                  </p>
+                  <p className="text-yellow-300 text-3xl font-bold animate-pulse">{countdown}</p>
+                </>
+              )}
             </CardContent>
           </Card>
         )}
