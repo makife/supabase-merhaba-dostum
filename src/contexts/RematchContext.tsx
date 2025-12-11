@@ -158,11 +158,68 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return false;
       }
 
-      // Cancel old pending requests
+      // FIRST-WINS: Check if opponent already sent a pending request to us
+      const { data: existingFromOpponent } = await supabase
+        .from("rematch_requests")
+        .select("id, room_code, game_type")
+        .eq("from_user_id", opponentId)
+        .eq("to_user_id", userId)
+        .eq("status", "pending")
+        .gte("created_at", new Date(Date.now() - 30000).toISOString()) // Son 30 saniye içinde
+        .maybeSingle();
+
+      if (existingFromOpponent) {
+        console.log("✅ Rakip zaten istek göndermiş, otomatik kabul ediyorum:", existingFromOpponent.room_code);
+        
+        // Auto-accept the existing request
+        await supabase
+          .from("rematch_requests")
+          .update({ status: "accepted", responded_at: new Date().toISOString() })
+          .eq("id", existingFromOpponent.id);
+
+        // Get the room
+        const { data: room } = await supabase
+          .from("game_rooms")
+          .select("id, game_mode")
+          .eq("room_code", existingFromOpponent.room_code)
+          .maybeSingle();
+
+        if (room) {
+          // Add as participant if not exists
+          const { data: existing } = await supabase
+            .from("game_participants")
+            .select("id")
+            .eq("room_id", room.id)
+            .eq("user_id", userId)
+            .maybeSingle();
+
+          if (!existing) {
+            await supabase.from("game_participants").insert({
+              room_id: room.id,
+              user_id: userId,
+              score: 0,
+              is_bot: false,
+            });
+          }
+
+          const gameType = room.game_mode?.includes("score") ? "score" : "timed";
+          
+          toast({
+            title: "✅ Rematch Eşleşti",
+            description: "Her iki oyuncu da aynı anda istek gönderdi!",
+          });
+
+          navigate(`/private-room-waiting?code=${existingFromOpponent.room_code}&roomId=${room.id}&gameType=${gameType}`);
+          return true;
+        }
+      }
+
+      // Cancel any other old pending requests (cleanup)
       await supabase
         .from("rematch_requests")
         .update({ status: "rejected", responded_at: new Date().toISOString() })
-        .or(`and(from_user_id.eq.${userId},to_user_id.eq.${opponentId}),and(from_user_id.eq.${opponentId},to_user_id.eq.${userId})`)
+        .eq("from_user_id", userId)
+        .eq("to_user_id", opponentId)
         .eq("status", "pending");
 
       // Create room
@@ -269,7 +326,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         sendingRef.current = false;
       }, 2000);
     }
-  }, [userId, toast]);
+  }, [userId, toast, navigate]);
 
   // Accept rematch
   const acceptRematch = useCallback(async () => {
