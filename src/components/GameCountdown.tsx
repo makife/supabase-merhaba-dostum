@@ -174,45 +174,34 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       serverTimeOffset,
     });
 
-    // Calculate initial state
+    // 🔒 HYBRID APPROACH: Server time ile başla, local timing ile ilerle
+    // Bu yaklaşım serverTimeOffset hatalı olsa bile düzgün çalışır
+    
+    // İlk değeri hesapla - ama minimum 5'ten başla
     const serverNow = Date.now() + serverTimeOffset;
     const initialRemaining = Math.ceil((endTimeMs - serverNow) / 1000);
+    
+    // Local countdown start time - şu andan itibaren 5 saniye say
+    const localCountdownStart = Date.now();
+    const localEndTime = localCountdownStart + COUNTDOWN_DURATION_MS;
 
-    console.log("⏱️ GameCountdown: Initial calculation", {
+    console.log("⏱️ GameCountdown: Hybrid calculation", {
       serverNow: new Date(serverNow).toISOString(),
-      endTime: new Date(endTimeMs).toISOString(),
       initialRemaining,
+      localEndTime: new Date(localEndTime).toISOString(),
     });
 
-    // 🔒 KRİTİK: İlk görüntüleme değeri HER ZAMAN 5 olmalı
-    // Eğer countdown henüz başlamamış veya tam zamanında açıldıysa 5 göster
-    // Sadece gerçekten geride kaldıysak (2-3 saniye) daha düşük göster
-    if (initialRemaining >= 5) {
-      setDisplayValue(5);
-      if (!soundPlayedRef.current.has(5)) {
-        playSound("/gerisayim.mp3");
-        soundPlayedRef.current.add(5);
-      }
-    } else if (initialRemaining >= 1 && initialRemaining <= 4) {
-      // Eğer geride kaldıysak doğru sayıyı göster
-      setDisplayValue(initialRemaining);
-      if (!soundPlayedRef.current.has(initialRemaining)) {
-        playSound("/gerisayim.mp3");
-        soundPlayedRef.current.add(initialRemaining);
-      }
-    } else if (initialRemaining <= 0 && initialRemaining > -1) {
-      // Should show "start"
-      if (!startShownRef.current) {
-        setDisplayValue("start");
-        playSound("/basla.mp3");
-        startShownRef.current = true;
-      }
-    } else {
-      // Fallback - 5'ten başla
-      setDisplayValue(5);
+    // Her zaman 5'ten başla (smooth UX için)
+    setDisplayValue(5);
+    if (!soundPlayedRef.current.has(5)) {
+      playSound("/gerisayim.mp3");
+      soundPlayedRef.current.add(5);
     }
 
-    // Use setInterval for consistent updates (doesn't pause in background)
+    // Son gösterilen değeri takip et - sadece değiştiğinde güncelle
+    let lastDisplayed = 5;
+
+    // Use setInterval for consistent updates
     intervalRef.current = setInterval(() => {
       if (completedRef.current || !mountedRef.current) {
         if (intervalRef.current) {
@@ -222,8 +211,9 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
         return;
       }
 
-      const serverNow = Date.now() + serverTimeOffset;
-      const remainingMs = endTimeMs - serverNow;
+      // Local timing kullan - daha güvenilir
+      const now = Date.now();
+      const remainingMs = localEndTime - now;
       const remainingSeconds = Math.ceil(remainingMs / 1000);
 
       if (remainingMs <= -START_DISPLAY_DURATION_MS) {
@@ -244,20 +234,24 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
         // Show "start" for 800ms after countdown ends
         if (!startShownRef.current) {
           startShownRef.current = true;
+          lastDisplayed = 0;
           setDisplayValue("start");
           playSound("/basla.mp3");
         }
       } else if (remainingSeconds >= 1 && remainingSeconds <= 5) {
-        // Show countdown number (5, 4, 3, 2, 1)
-        setDisplayValue(remainingSeconds);
+        // Sadece değiştiğinde güncelle - takılma önlenir
+        if (remainingSeconds !== lastDisplayed) {
+          lastDisplayed = remainingSeconds;
+          setDisplayValue(remainingSeconds);
 
-        // Play sound only once per second - use Set for tracking
-        if (!soundPlayedRef.current.has(remainingSeconds)) {
-          soundPlayedRef.current.add(remainingSeconds);
-          playSound("/gerisayim.mp3");
+          // Play sound only once per second
+          if (!soundPlayedRef.current.has(remainingSeconds)) {
+            soundPlayedRef.current.add(remainingSeconds);
+            playSound("/gerisayim.mp3");
+          }
         }
       }
-    }, 100); // 100ms interval for smooth updates
+    }, 50); // 50ms interval for smoother transition detection
 
     return () => {
       if (intervalRef.current) {
