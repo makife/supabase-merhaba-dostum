@@ -69,6 +69,7 @@ interface TournamentMatch {
   created_at: string;
   updated_at?: string;
   room_id?: string;
+  countdown_started_at?: string;
 }
 
 interface GamePageProps {
@@ -3638,12 +3639,33 @@ const requestRematch = async () => {
           // 🔒 Countdown zaten başlatıldıysa hiçbir şey yapma
           if (countdownInitiatedRef.current) {
             console.log("⚠️ Countdown zaten başlatıldı - real-time event yok sayıldı");
-          } else if (newData.countdown_started_at) {
-            console.log("🎯 Tournament countdown başlatılıyor (real-time):", newData.countdown_started_at);
-            // 🎯 5 saniyelik buffer ekle - random-match ile aynı
-            const originalTime = new Date(newData.countdown_started_at).getTime();
-            const adjustedTime = new Date(originalTime + 5000).toISOString();
-            initiateCountdown(adjustedTime);
+          } else if (newData.countdown_started_at && !preparingOpponent && !showCountdown) {
+            console.log("🎯 Tournament countdown hazırlanıyor (real-time):", newData.countdown_started_at);
+            
+            // 🎯 Random-match ile aynı 5 saniyelik buffer animasyonu
+            // 3.5s "Oyuncu Hazırlanıyor", 0.5s "Oyuncu Hazır", 1s boşluk, 5s countdown
+            countdownInitiatedRef.current = true;
+            
+            // Buffer animasyonları başlat
+            setPreparingOpponent("preparing");
+            
+            // 3.5 saniye sonra "Oyuncu Hazır" göster
+            setTimeout(() => {
+              setPreparingOpponent("ready");
+            }, 3500);
+            
+            // 4 saniye sonra animasyonu temizle
+            setTimeout(() => {
+              setPreparingOpponent(null);
+            }, 4000);
+            
+            // 5 saniye sonra countdown başlat
+            setTimeout(() => {
+              const originalTime = new Date(newData.countdown_started_at).getTime();
+              const adjustedTime = new Date(originalTime + 5000).toISOString();
+              setCountdownServerTime(adjustedTime);
+              setShowCountdown(true);
+            }, 5000);
           }
 
           // ------------------------------------------------------------
@@ -3690,7 +3712,80 @@ const requestRematch = async () => {
     };
     // ⚠️ DİKKAT: gameStarted ve showCountdown dependency'ye eklendi
     // Oyun başladığında countdown tekrar başlamaması için gerekli
-  }, [gameMode, tournamentMatch?.id, user?.id, serverTimeOffset, gameStarted, showCountdown]);
+  }, [gameMode, tournamentMatch?.id, user?.id, serverTimeOffset, gameStarted, showCountdown, preparingOpponent]);
+
+  // 🏆 TURNUVA MAÇLARI İÇİN INITIAL COUNTDOWN SYNC - Sayfa açıldığında animasyonları başlat
+  useEffect(() => {
+    if (gameMode !== "tournament" || !tournamentMatch?.countdown_started_at) return;
+    if (showCountdown || gameStarted || preparingOpponent) return;
+    if (countdownInitiatedRef.current) return;
+
+    console.log("🏆 Tournament initial countdown sync:", tournamentMatch.countdown_started_at);
+
+    // Server zamanını hesapla
+    const originalCountdownTime = new Date(tournamentMatch.countdown_started_at).getTime();
+    const BUFFER_MS = 5000;
+    const adjustedCountdownStart = originalCountdownTime + BUFFER_MS;
+    const serverNow = Date.now() + serverTimeOffset;
+    const msUntilCountdown = adjustedCountdownStart - serverNow;
+
+    console.log("🏆 Tournament countdown timing:", {
+      originalTime: new Date(originalCountdownTime).toISOString(),
+      adjustedStart: new Date(adjustedCountdownStart).toISOString(),
+      serverNow: new Date(serverNow).toISOString(),
+      msUntilCountdown,
+    });
+
+    // Guard'ı hemen set et
+    countdownInitiatedRef.current = true;
+
+    const timers: NodeJS.Timeout[] = [];
+
+    if (msUntilCountdown > 0) {
+      // Buffer period aktif - animasyonları göster
+      if (msUntilCountdown > 3500) {
+        // 3.5 saniyeden fazla var - tam animasyon süreci
+        setPreparingOpponent("preparing");
+        
+        const timeToReady = msUntilCountdown - 1500;
+        timers.push(setTimeout(() => setPreparingOpponent("ready"), Math.max(0, timeToReady - 500)));
+        timers.push(setTimeout(() => setPreparingOpponent(null), Math.max(0, msUntilCountdown - 1000)));
+      } else if (msUntilCountdown > 1500) {
+        // 1.5-3.5 saniye arası - kısa animasyon
+        setPreparingOpponent("ready");
+        timers.push(setTimeout(() => setPreparingOpponent(null), Math.max(0, msUntilCountdown - 1000)));
+      } else {
+        // 1.5 saniyeden az - animasyon atla
+        setPreparingOpponent(null);
+      }
+
+      // Countdown'ı tam zamanında başlat
+      timers.push(
+        setTimeout(() => {
+          console.log("🏆 Tournament countdown başlatılıyor (buffer sonrası)");
+          setCountdownServerTime(new Date(adjustedCountdownStart).toISOString());
+          setShowCountdown(true);
+        }, Math.max(0, msUntilCountdown)),
+      );
+    } else if (msUntilCountdown > -5000) {
+      // Countdown başlamış ama 5 saniye geçmemiş
+      console.log("🏆 Tournament countdown başlamış, devam ediliyor");
+      setPreparingOpponent(null);
+      setCountdownServerTime(new Date(adjustedCountdownStart).toISOString());
+      setShowCountdown(true);
+    } else {
+      // Countdown tamamen geçmiş - oyun direkt başlamalı
+      console.log("🏆 Tournament countdown geçmiş, oyun direkt başlatılıyor");
+      setPreparingOpponent(null);
+      setShowCountdown(false);
+      setGameStarted(true);
+      gameHasStartedRef.current = true;
+    }
+
+    return () => {
+      timers.forEach((timer) => clearTimeout(timer));
+    };
+  }, [gameMode, tournamentMatch?.countdown_started_at, showCountdown, gameStarted, serverTimeOffset, preparingOpponent]);
 
   // 🎮 NORMAL OYUNLAR (RANDOM-MATCH, PRIVATE-ROOM) İÇİN COUNTDOWN SYNC
   useEffect(() => {
