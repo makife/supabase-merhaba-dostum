@@ -1,0 +1,99 @@
+
+-- recalculate_user_stats fonksiyonunu game_sessions tablosunu kullanacak şekilde güncelle
+CREATE OR REPLACE FUNCTION public.recalculate_user_stats(p_user_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+    session_stats RECORD;
+    tournament_stats RECORD;
+    word_stats RECORD;
+    longest_word_text TEXT;
+    highest_word_text TEXT;
+    avg_length NUMERIC;
+BEGIN
+    -- Game sessions tablosundan istatistikleri al
+    SELECT 
+        COUNT(*) as total_games,
+        COUNT(CASE WHEN is_winner THEN 1 END) as wins,
+        COUNT(CASE WHEN NOT is_winner THEN 1 END) as losses,
+        COALESCE(SUM(score), 0) as total_score,
+        COALESCE(SUM(words_count), 0) as total_words,
+        COUNT(CASE WHEN game_mode = 'vs-computer' THEN 1 END) as vs_bot_games,
+        COUNT(CASE WHEN game_mode LIKE 'private-room%' THEN 1 END) as private_room_games,
+        COUNT(CASE WHEN game_mode LIKE 'random-match%' THEN 1 END) as random_match_games
+    INTO session_stats
+    FROM game_sessions
+    WHERE user_id = p_user_id;
+    
+    -- Turnuva kazanma sayısını hesapla (final maçlarını kazananlar)
+    SELECT 
+        COUNT(*) as tournament_wins
+    INTO tournament_stats
+    FROM tournament_matches tm
+    WHERE tm.winner_id = p_user_id 
+    AND tm.status = 'completed'
+    AND tm.round = (
+        SELECT MAX(round) FROM tournament_matches tm2 
+        WHERE tm2.tournament_id = tm.tournament_id
+    );
+    
+    -- Kelime istatistiklerini game_words tablosundan al
+    SELECT 
+        COALESCE(MAX(LENGTH(word)), 0) as longest_length,
+        COALESCE(MAX(points), 0) as highest_score
+    INTO word_stats
+    FROM game_words
+    WHERE player_id = p_user_id;
+    
+    -- En uzun kelimeyi bul
+    SELECT word INTO longest_word_text
+    FROM game_words
+    WHERE player_id = p_user_id 
+    AND LENGTH(word) = word_stats.longest_length
+    LIMIT 1;
+    
+    -- En yüksek puanlı kelimeyi bul
+    SELECT word INTO highest_word_text
+    FROM game_words
+    WHERE player_id = p_user_id 
+    AND points = word_stats.highest_score
+    LIMIT 1;
+    
+    -- Ortalama kelime uzunluğunu hesapla
+    SELECT COALESCE(AVG(LENGTH(word)), 0) INTO avg_length
+    FROM game_words
+    WHERE player_id = p_user_id;
+    
+    -- Profili güncelle
+    UPDATE profiles SET
+        total_games = COALESCE(session_stats.total_games, 0),
+        wins = COALESCE(session_stats.wins, 0),
+        losses = COALESCE(session_stats.losses, 0),
+        total_score = COALESCE(session_stats.total_score, 0),
+        total_words_created = COALESCE(session_stats.total_words, 0),
+        longest_word = longest_word_text,
+        longest_word_length = COALESCE(word_stats.longest_length, 0),
+        highest_word = highest_word_text,
+        highest_word_score = COALESCE(word_stats.highest_score, 0),
+        average_word_length = COALESCE(avg_length, 0),
+        tournament_wins = COALESCE(tournament_stats.tournament_wins, 0),
+        vs_bot_games = COALESCE(session_stats.vs_bot_games, 0),
+        random_match_games = COALESCE(session_stats.random_match_games, 0),
+        private_room_games = COALESCE(session_stats.private_room_games, 0),
+        updated_at = NOW()
+    WHERE id = p_user_id;
+END;
+$function$;
+
+-- Tüm kullanıcıların istatistiklerini yeniden hesapla
+DO $$
+DECLARE
+    user_record RECORD;
+BEGIN
+    FOR user_record IN SELECT id FROM profiles LOOP
+        PERFORM recalculate_user_stats(user_record.id);
+    END LOOP;
+END $$;
