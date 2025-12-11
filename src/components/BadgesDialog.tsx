@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { Award, Lock } from 'lucide-react';
 
 interface BadgeData {
@@ -10,15 +11,78 @@ interface BadgeData {
   icon: string;
   earned: boolean;
   earned_at?: string;
+  condition_type?: string;
+  condition_value?: number;
+}
+
+interface UserStats {
+  total_games?: number;
+  total_score?: number;
+  win_streak?: number;
+  total_words_created?: number;
+  longest_word_length?: number;
+  tournament_wins?: number;
+  degistir_joker_used?: number;
+  fisilida_joker_used?: number;
+  senyaz_joker_used?: number;
+  vs_bot_games?: number;
+  private_room_games?: number;
+  random_match_games?: number;
+  wins?: number;
+  fastest_word_time?: number;
 }
 
 interface BadgesDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   badges: BadgeData[];
+  userStats?: UserStats;
 }
 
-export const BadgesDialog = ({ open, onOpenChange, badges }: BadgesDialogProps) => {
+// condition_type'a göre kullanıcının mevcut değerini döndür
+const getCurrentValue = (conditionType: string, stats: UserStats): number => {
+  switch (conditionType) {
+    case 'total_games':
+      return stats.total_games || 0;
+    case 'total_score':
+      return stats.total_score || 0;
+    case 'win_streak':
+      return stats.win_streak || 0;
+    case 'total_words':
+      return stats.total_words_created || 0;
+    case 'longest_word':
+      return stats.longest_word_length || 0;
+    case 'tournament_wins':
+    case 'tournaments_won':
+      return stats.tournament_wins || 0;
+    case 'degistir_joker_used':
+      return stats.degistir_joker_used || 0;
+    case 'fisilida_joker_used':
+      return stats.fisilida_joker_used || 0;
+    case 'senyaz_joker_used':
+      return stats.senyaz_joker_used || 0;
+    case 'vs_bot_games':
+      return stats.vs_bot_games || 0;
+    case 'private_room_games':
+      return stats.private_room_games || 0;
+    case 'random_match_games':
+      return stats.random_match_games || 0;
+    case 'wins':
+      return stats.wins || 0;
+    case 'fast_typing':
+      return stats.fastest_word_time || 0;
+    default:
+      return 0;
+  }
+};
+
+// Formatlanmış ilerleme metni
+const formatProgress = (current: number, target: number): string => {
+  if (current >= target) return 'Tamamlandı!';
+  return `${current.toLocaleString('tr-TR')} / ${target.toLocaleString('tr-TR')}`;
+};
+
+export const BadgesDialog = ({ open, onOpenChange, badges, userStats }: BadgesDialogProps) => {
   const earnedBadges = badges.filter(b => b.earned);
   const lockedBadges = badges.filter(b => !b.earned);
 
@@ -71,23 +135,49 @@ export const BadgesDialog = ({ open, onOpenChange, badges }: BadgesDialogProps) 
                   Kilitli Rozetler ({lockedBadges.length})
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {lockedBadges.map((badge) => (
-                    <div
-                      key={badge.id}
-                      className="p-4 rounded-lg border border-border bg-muted/30 opacity-60"
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="relative">
-                          <div className="text-4xl grayscale">{badge.icon}</div>
-                          <Lock className="w-4 h-4 absolute -top-1 -right-1 text-muted-foreground" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-bold text-muted-foreground mb-1">{badge.name}</h4>
-                          <p className="text-sm text-muted-foreground">{badge.description}</p>
+                  {lockedBadges.map((badge) => {
+                    const currentValue = userStats && badge.condition_type 
+                      ? getCurrentValue(badge.condition_type, userStats) 
+                      : 0;
+                    const targetValue = badge.condition_value || 1;
+                    const progressPercent = Math.min((currentValue / targetValue) * 100, 100);
+                    const hasProgress = userStats && badge.condition_type && badge.condition_value;
+
+                    return (
+                      <div
+                        key={badge.id}
+                        className="p-4 rounded-lg border border-border bg-muted/30"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="relative">
+                            <div className="text-4xl grayscale opacity-50">{badge.icon}</div>
+                            <Lock className="w-4 h-4 absolute -top-1 -right-1 text-muted-foreground" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-bold text-muted-foreground mb-1">{badge.name}</h4>
+                            <p className="text-sm text-muted-foreground/70">{badge.description}</p>
+                            
+                            {/* İlerleme Çubuğu */}
+                            {hasProgress && (
+                              <div className="mt-3 space-y-1">
+                                <div className="flex justify-between text-xs text-muted-foreground">
+                                  <span>İlerleme</span>
+                                  <span>{formatProgress(currentValue, targetValue)}</span>
+                                </div>
+                                <Progress 
+                                  value={progressPercent} 
+                                  className="h-2"
+                                />
+                                <div className="text-xs text-right text-muted-foreground/70">
+                                  %{Math.round(progressPercent)}
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}

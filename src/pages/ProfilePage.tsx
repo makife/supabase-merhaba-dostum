@@ -74,7 +74,27 @@ const ProfilePage = () => {
     icon: string;
     earned: boolean;
     earned_at?: string;
+    condition_type?: string;
+    condition_value?: number;
   }>>([]);
+
+  // Badge ilerleme için kullanıcı istatistikleri
+  const [userStats, setUserStats] = useState<{
+    total_games?: number;
+    total_score?: number;
+    win_streak?: number;
+    total_words_created?: number;
+    longest_word_length?: number;
+    tournament_wins?: number;
+    degistir_joker_used?: number;
+    fisilida_joker_used?: number;
+    senyaz_joker_used?: number;
+    vs_bot_games?: number;
+    private_room_games?: number;
+    random_match_games?: number;
+    wins?: number;
+    fastest_word_time?: number;
+  }>({});
 
   // Calculate level from total score (same as LevelProgress component)
   const calculateLevel = (totalScore: number) => {
@@ -131,7 +151,9 @@ const ProfilePage = () => {
         description: badge.description,
         icon: badge.icon,
         earned: earnedBadgeIds.has(badge.id),
-        earned_at: userBadges?.find(ub => ub.badge_id === badge.id)?.earned_at
+        earned_at: userBadges?.find(ub => ub.badge_id === badge.id)?.earned_at,
+        condition_type: badge.condition_type,
+        condition_value: badge.condition_value
       })) || [];
     
       setBadges(badgesWithStatus);
@@ -221,6 +243,24 @@ const ProfilePage = () => {
           tournamentsPlayed: tournamentStats.played,
           tournamentWinRate: tournamentStats.winRate,
         }));
+
+        // Badge ilerleme için kullanıcı istatistiklerini güncelle
+        setUserStats({
+          total_games: data.total_games || 0,
+          total_score: data.total_score || 0,
+          win_streak: data.win_streak || 0,
+          total_words_created: data.total_words_created || 0,
+          longest_word_length: data.longest_word_length || 0,
+          tournament_wins: data.tournament_wins || 0,
+          degistir_joker_used: data.degistir_joker_used || 0,
+          fisilida_joker_used: data.fisilida_joker_used || 0,
+          senyaz_joker_used: data.senyaz_joker_used || 0,
+          vs_bot_games: data.vs_bot_games || 0,
+          private_room_games: data.private_room_games || 0,
+          random_match_games: data.random_match_games || 0,
+          wins: data.wins || 0,
+          fastest_word_time: data.fastest_word_time || 0,
+        });
       }
     };
 
@@ -271,6 +311,25 @@ const ProfilePage = () => {
               averageScore: newData.average_score ?? prev.averageScore,
             };
           });
+
+          // Badge ilerleme için userStats'ı da güncelle
+          setUserStats(prev => ({
+            ...prev,
+            total_games: newData.total_games ?? prev.total_games,
+            total_score: newData.total_score ?? prev.total_score,
+            win_streak: newData.win_streak ?? prev.win_streak,
+            total_words_created: newData.total_words_created ?? prev.total_words_created,
+            longest_word_length: newData.longest_word_length ?? prev.longest_word_length,
+            tournament_wins: newData.tournament_wins ?? prev.tournament_wins,
+            degistir_joker_used: newData.degistir_joker_used ?? prev.degistir_joker_used,
+            fisilida_joker_used: newData.fisilida_joker_used ?? prev.fisilida_joker_used,
+            senyaz_joker_used: newData.senyaz_joker_used ?? prev.senyaz_joker_used,
+            vs_bot_games: newData.vs_bot_games ?? prev.vs_bot_games,
+            private_room_games: newData.private_room_games ?? prev.private_room_games,
+            random_match_games: newData.random_match_games ?? prev.random_match_games,
+            wins: newData.wins ?? prev.wins,
+            fastest_word_time: newData.fastest_word_time ?? prev.fastest_word_time,
+          }));
 
           // Profilde bir güncelleme olduğunda rozetleri de tazele ve kontrol et
           fetchBadges();
@@ -955,6 +1014,7 @@ const ProfilePage = () => {
           open={showBadgesDialog}
           onOpenChange={setShowBadgesDialog}
           badges={badges}
+          userStats={userStats}
         />
       </div>
     </div>
