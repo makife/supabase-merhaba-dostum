@@ -142,14 +142,28 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
     try {
       console.log("🔄 Rematch gönderiliyor:", { from: userId.slice(-8), to: opponentId.slice(-8) });
 
-      // Check opt-out
+      // Clear own opt-out since we want to rematch
+      await supabase
+        .from("rematch_opt_outs")
+        .delete()
+        .eq("user_id", userId);
+
+      // Check if opponent explicitly opted out (clicked "Ana Menüye Dön")
+      // Only block if opt-out was set very recently (within last 30 seconds) 
+      // This prevents blocking from stale opt-out entries
       const { data: optOut } = await supabase
         .from("rematch_opt_outs")
-        .select("opt_out_until")
+        .select("opt_out_until, updated_at")
         .eq("user_id", opponentId)
         .maybeSingle();
 
-      if (optOut && new Date(optOut.opt_out_until) > new Date()) {
+      const now = new Date();
+      const thirtySecondsAgo = new Date(now.getTime() - 30000);
+      
+      if (optOut && 
+          new Date(optOut.opt_out_until) > now && 
+          new Date(optOut.updated_at) > thirtySecondsAgo) {
+        console.log("❌ Rakip son 30 saniye içinde opt-out yaptı");
         toast({
           title: "Rematch Gönderilemedi",
           description: "Rakibiniz oyunu terk etti",
