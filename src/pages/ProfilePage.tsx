@@ -166,9 +166,10 @@ const ProfilePage = () => {
     if (!viewedUserId) return { won: 0, lost: 0, played: 0, winRate: 0 };
 
     try {
-      const { data: tournamentMatches, error } = await supabase
+      // Sadece final maçlarını getir (şampiyonluk)
+      const { data: finalMatches, error } = await supabase
         .from('tournament_matches')
-        .select('winner_id, player1_id, player2_id, status')
+        .select('winner_id, player1_id, player2_id, status, tournament_id, round')
         .or(`player1_id.eq.${viewedUserId},player2_id.eq.${viewedUserId}`)
         .eq('status', 'completed');
 
@@ -177,18 +178,33 @@ const ProfilePage = () => {
         return { won: 0, lost: 0, played: 0, winRate: 0 };
       }
 
-      if (!tournamentMatches || tournamentMatches.length === 0) {
+      if (!finalMatches || finalMatches.length === 0) {
         return { won: 0, lost: 0, played: 0, winRate: 0 };
       }
 
+      // Her turnuvanın max round'unu bul
+      const tournamentMaxRounds: Record<string, number> = {};
+      finalMatches.forEach(match => {
+        if (match.tournament_id) {
+          tournamentMaxRounds[match.tournament_id] = Math.max(
+            tournamentMaxRounds[match.tournament_id] || 0,
+            match.round
+          );
+        }
+      });
+
+      // Sadece final maçlarını say (şampiyonluklar)
       let won = 0;
       let lost = 0;
 
-      tournamentMatches.forEach(match => {
-        if (match.winner_id === viewedUserId) {
-          won++;
-        } else {
-          lost++;
+      finalMatches.forEach(match => {
+        // Sadece final round'larını say
+        if (match.tournament_id && match.round === tournamentMaxRounds[match.tournament_id]) {
+          if (match.winner_id === viewedUserId) {
+            won++;
+          } else {
+            lost++;
+          }
         }
       });
 
