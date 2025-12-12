@@ -373,8 +373,8 @@ const HomePage = () => {
   return (
     <>
 
-      <div className="h-screen overflow-hidden bg-gradient-to-br from-background to-muted px-4 py-2 flex flex-col">
-        <div className="max-w-4xl mx-auto space-y-3 flex-1 overflow-y-auto scrollbar-hide">
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted px-4 pt-4 pb-2 native-safe-container">
+        <div className="max-w-4xl mx-auto space-y-3">
           {/* Birleştirilmiş Header ve Level Progress */}
           <Card className="border-0 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/10 shadow-2xl relative overflow-hidden">
             <HeaderAnimation />
