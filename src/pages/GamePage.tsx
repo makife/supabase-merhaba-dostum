@@ -4113,18 +4113,26 @@ const requestRematch = async () => {
             .single();
 
           if (data?.ends_at) {
-            endsAtTimestamp = new Date(data.ends_at).getTime();
-            // Turnuva için start time'ı ends_at - 120sn olarak geri hesaplayabiliriz
+            // ends_at trigger'da countdown_started_at + 130s olarak ayarlanıyor
+            // Ama gerçek oyun başlangıcı: 5s buffer + 5s countdown + ~1s "başla" = ~11s
+            // Bu yüzden ends_at'a 1 saniye ekliyoruz (başla gösterimi için)
+            endsAtTimestamp = new Date(data.ends_at).getTime() + 1000;
             gameStartTimestamp = endsAtTimestamp - 120 * 1000;
+            console.log("🏆 Tournament timer from ends_at (with +1s for başla):", {
+              original_ends_at: data.ends_at,
+              adjusted_ends_at: new Date(endsAtTimestamp).toISOString(),
+              gameStart: new Date(gameStartTimestamp).toISOString()
+            });
           } else if (data?.countdown_started_at) {
-            // ends_at yoksa countdown_started_at + 5sn (buffer) + 5sn (countdown) + 120sn (game) kullan
+            // ends_at yoksa countdown_started_at + buffer + countdown + başla kullan
             // Buffer: 3.5s preparing + 0.5s ready + 1s blank = 5s
             // Countdown: 5, 4, 3, 2, 1 = 5s
-            // Toplam: 10 saniye sonra oyun başlar
+            // "Başla" gösterimi: ~1s
+            // Toplam: 11 saniye sonra oyun başlar
             const countdownStart = new Date(data.countdown_started_at).getTime();
-            gameStartTimestamp = countdownStart + 10000; // 5s buffer + 5s countdown = 10 saniye
+            gameStartTimestamp = countdownStart + 11000; // 5s buffer + 5s countdown + 1s başla
             endsAtTimestamp = gameStartTimestamp + 120 * 1000;
-            console.log("🏆 Tournament timer calculated: countdown_started_at + 10s (5s buffer + 5s countdown)");
+            console.log("🏆 Tournament timer calculated: countdown_started_at + 11s");
           }
         } else if (currentRoom?.started_at) {
           // Normal oyunlar (Private/Random) için started_at kullan
