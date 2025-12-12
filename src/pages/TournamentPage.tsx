@@ -54,16 +54,16 @@ const TournamentPage = () => {
     <div className="relative min-h-screen bg-gradient-to-br from-purple-900 to-blue-900 flex flex-col">
       {/* Arka plan görseli - sabit */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <img 
-          src="/turnuvaBracket.png" 
-          alt="" 
+        <img
+          src="/turnuvaBracket.png"
+          alt=""
           className="absolute top-0 left-1/2 -translate-x-1/2 w-[120%] max-w-2xl opacity-20"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-900/50 to-purple-900" />
       </div>
 
       {/* Sabit üst bölüm */}
-      <div className="sticky top-0 z-10 bg-purple-900/30 backdrop-blur-sm p-4">
+      <div className="sticky top-0 z-10 bg-purple-900/100 backdrop-blur-sm p-4">
         {/* Çıkış butonu */}
         <div className="absolute top-4 left-4 z-20">
           <Button
@@ -86,7 +86,6 @@ const TournamentPage = () => {
         </div>
 
         <div className="max-w-4xl mx-auto">
-
           {/* Turnuva Oluştur */}
           <Card className="mb-8 bg-white/10 backdrop-blur-md border-white/20">
             <CardContent className="p-6 text-center">
