@@ -4103,35 +4103,15 @@ const requestRematch = async () => {
 
         // 1. ADIM: Başlangıç ve Bitiş Zamanlarını Belirle
         if (gameMode === "tournament" && tournamentMatch) {
-          // Turnuva modu için DB'den ends_at al
-          const { data } = await supabase
-            .from("tournament_matches")
-            .select("ends_at, countdown_started_at")
-            .eq("id", tournamentMatch.id)
-            .single();
-
-          if (data?.ends_at) {
-            // ends_at trigger'da countdown_started_at + 130s olarak ayarlanıyor
-            // Ama gerçek oyun başlangıcı: 5s buffer + 5s countdown + ~1s "başla" = ~11s
-            // Bu yüzden ends_at'a 1 saniye ekliyoruz (başla gösterimi için)
-            endsAtTimestamp = new Date(data.ends_at).getTime() + 1000;
-            gameStartTimestamp = endsAtTimestamp - 120 * 1000;
-            console.log("🏆 Tournament timer from ends_at (with +1s for başla):", {
-              original_ends_at: data.ends_at,
-              adjusted_ends_at: new Date(endsAtTimestamp).toISOString(),
-              gameStart: new Date(gameStartTimestamp).toISOString()
-            });
-          } else if (data?.countdown_started_at) {
-            // ends_at yoksa countdown_started_at + buffer + countdown + başla kullan
-            // Buffer: 3.5s preparing + 0.5s ready + 1s blank = 5s
-            // Countdown: 5, 4, 3, 2, 1 = 5s
-            // "Başla" gösterimi: ~1s
-            // Toplam: 11 saniye sonra oyun başlar
-            const countdownStart = new Date(data.countdown_started_at).getTime();
-            gameStartTimestamp = countdownStart + 11000; // 5s buffer + 5s countdown + 1s başla
-            endsAtTimestamp = gameStartTimestamp + 120 * 1000;
-            console.log("🏆 Tournament timer calculated: countdown_started_at + 11s");
-          }
+          // 🔒 KRİTİK FIX: Countdown artık local timing kullandığı için
+          // ends_at'i de local olarak hesapla: şimdi + 120 saniye
+          // Bu sayede oyun her zaman 2:00'dan başlar
+          gameStartTimestamp = Date.now();
+          endsAtTimestamp = gameStartTimestamp + 120 * 1000;
+          console.log("🏆 Tournament timer: Local timing (2:00 from now)", {
+            gameStart: new Date(gameStartTimestamp).toISOString(),
+            endsAt: new Date(endsAtTimestamp).toISOString()
+          });
         } else if (currentRoom?.started_at) {
           // Normal oyunlar (Private/Random) için started_at kullan
           gameStartTimestamp = new Date(currentRoom.started_at).getTime();
