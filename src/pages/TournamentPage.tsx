@@ -51,14 +51,16 @@ const TournamentPage = () => {
   };
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-purple-900 to-blue-900 flex flex-col bg-[url('/turnuvaBracket.png')] bg-cover bg-center bg-blend-overlay">
+    <div className="relative min-h-screen bg-gradient-to-br from-purple-900 to-blue-900 flex flex-col">
       {/* Sabit üst bölüm */}
-      <div className="sticky top-0 z-10 bg-gradient-to-br from-purple-900 to-blue-900/90 p-4 backdrop-blur-sm">
+
+      <div className="sticky top-0 z-10 bg-gradient-to-br from-purple-900 to-blue-900 p-4">
         {/* Çıkış butonu */}
+
         <div className="absolute top-4 left-4">
           <Button
             onClick={() => navigate("/")}
-            className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg"
+            className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
           >
             <Home className="w-4 h-4 mr-2" />
             Ana Sayfa
@@ -67,9 +69,12 @@ const TournamentPage = () => {
 
         <div className="max-w-4xl mx-auto pt-12">
           {/* Başlık */}
+
           <div className="text-center mb-8">
-            <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4 drop-shadow-lg" />
-            <h1 className="text-4xl font-bold text-white mb-2 drop-shadow-md">Turnuvalar</h1>
+            <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
+
+            <h1 className="text-4xl font-bold text-white mb-2">Turnuvalar</h1>
+
             <p className="text-gray-300 text-lg">8 oyunculu heyecan dolu turnuvalara katıl!</p>
           </div>
 
