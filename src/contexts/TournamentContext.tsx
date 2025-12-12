@@ -180,70 +180,31 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
       setLoading(true);
       console.log("🚪 Turnuvadan ayrılıyor:", { tournamentId, userId: user.id });
 
-      // Önce turnuva bilgisini al
-      const { data: tournament } = await supabase
-        .from("tournaments")
-        .select("creator_id")
-        .eq("id", tournamentId)
-        .maybeSingle();
+      // RPC fonksiyonunu çağır (UUID tip uyumluluğu için)
+      const { data, error } = await supabase.rpc('leave_tournament_with_transfer', {
+        p_tournament_id: tournamentId,
+        p_user_id: user.id
+      });
 
-      if (!tournament) {
-        console.error("❌ Turnuva bulunamadı");
-        toast({ title: "Hata", description: "Turnuva bulunamadı", variant: "destructive" });
+      if (error) {
+        console.error("❌ Ayrılma RPC hatası:", error);
+        throw error;
+      }
+
+      const result = data as { success: boolean; action?: string; new_creator_id?: string; error?: string };
+
+      if (!result.success) {
+        console.error("❌ Ayrılma başarısız:", result.error);
+        toast({ title: "Hata", description: result.error || "Turnuvadan ayrılınamadı", variant: "destructive" });
         return false;
       }
 
-      const isCreator = tournament.creator_id === user.id;
-
-      // Önce katılımcı kaydını sil (RLS politikası kendi kaydını silmeye izin veriyor)
-      const { error: deleteError } = await supabase
-        .from("tournament_participants")
-        .delete()
-        .eq("tournament_id", tournamentId)
-        .eq("user_id", user.id);
-
-      if (deleteError) {
-        console.error("❌ Ayrılma DB hatası:", deleteError);
-        throw deleteError;
-      }
-
-      console.log("✅ Katılımcı kaydı silindi");
-
-      // Eğer kurucu ayrılıyorsa, başka bir oyuncuya kuruculuk devret veya turnuvayı iptal et
-      if (isCreator) {
-        // Diğer gerçek oyuncuları bul
-        const { data: remainingParticipants } = await supabase
-          .from("tournament_participants")
-          .select("user_id")
-          .eq("tournament_id", tournamentId)
-          .eq("is_bot", false)
-          .order("joined_at", { ascending: true });
-
-        if (remainingParticipants && remainingParticipants.length > 0) {
-          // Kuruculuğu ilk katılan oyuncuya devret
-          const newCreatorId = remainingParticipants[0].user_id;
-          const { error: updateError } = await supabase
-            .from("tournaments")
-            .update({ creator_id: newCreatorId })
-            .eq("id", tournamentId);
-
-          if (updateError) {
-            console.error("❌ Kuruculuk devir hatası:", updateError);
-          } else {
-            console.log("✅ Kuruculuk devredildi:", newCreatorId);
-          }
-        } else {
-          // Başka oyuncu yoksa turnuvayı iptal et
-          console.log("🚫 Başka oyuncu yok, turnuva iptal edilecek");
-          const { error: cancelError } = await supabase
-            .from("tournaments")
-            .update({ status: "cancelled" })
-            .eq("id", tournamentId);
-
-          if (cancelError) {
-            console.error("❌ Turnuva iptal hatası:", cancelError);
-          }
-        }
+      console.log("✅ Turnuvadan ayrıldı:", result);
+      
+      if (result.action === 'transferred') {
+        console.log("✅ Kuruculuk devredildi:", result.new_creator_id);
+      } else if (result.action === 'cancelled') {
+        console.log("🚫 Turnuva iptal edildi");
       }
 
       toast({ title: "Başarılı", description: "Turnuvadan ayrıldınız" });
