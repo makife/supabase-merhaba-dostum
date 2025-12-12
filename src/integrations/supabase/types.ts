@@ -1727,6 +1727,10 @@ export type Database = {
         Args: { p_round: number; p_tournament_id: string }
         Returns: undefined
       }
+      delete_tournament_participant: {
+        Args: { p_tournament_id: string; p_user_id: string }
+        Returns: boolean
+      }
       delete_user_account: { Args: never; Returns: undefined }
       determine_tournament_winner_with_tiebreaker: {
         Args: {
