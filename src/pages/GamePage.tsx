@@ -1432,10 +1432,7 @@ const requestRematch = async () => {
       setTimeout(() => {
         if (isMountedRef.current) {
           console.log("🏆 Countdown gösteriliyor");
-          // 🔒 KRİTİK: GameCountdown'a buffer SONRASI zamanı geç
-          // serverTime buffer öncesi zaman, +5000ms ekleyerek buffer sonrası countdown başlangıcını belirtiyoruz
-          const countdownStartTime = new Date(new Date(serverTime).getTime() + 5000).toISOString();
-          setCountdownServerTime(countdownStartTime);
+          setCountdownServerTime(serverTime);
           setShowCountdown(true);
         }
       }, 5000);
