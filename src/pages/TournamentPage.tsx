@@ -52,12 +52,20 @@ const TournamentPage = () => {
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-purple-900 to-blue-900 flex flex-col">
+      {/* Arka plan görseli - sabit */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <img 
+          src="/turnuvaBracket.png" 
+          alt="" 
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-[120%] max-w-2xl opacity-20"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-900/50 to-purple-900" />
+      </div>
+
       {/* Sabit üst bölüm */}
-
-      <div className="sticky top-0 z-10 bg-gradient-to-br from-purple-900 to-blue-900 p-4">
+      <div className="sticky top-0 z-10 bg-gradient-to-br from-purple-900/95 to-blue-900/95 backdrop-blur-sm p-4">
         {/* Çıkış butonu */}
-
-        <div className="absolute top-4 left-4">
+        <div className="absolute top-4 left-4 z-20">
           <Button
             onClick={() => navigate("/")}
             className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
@@ -67,25 +75,14 @@ const TournamentPage = () => {
           </Button>
         </div>
 
-        {/* Hero Görsel Bölümü */}
-        <div className="relative w-full mb-4">
-          <img 
-            src="/turnuvaBracket.png" 
-            alt="Turnuva Bracket" 
-            className="w-full max-w-md mx-auto h-auto object-contain opacity-90"
-          />
-          {/* Overlay gradient for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-purple-900/80 via-transparent to-transparent" />
-          
-          {/* Başlık overlay */}
-          <div className="absolute bottom-0 left-0 right-0 text-center pb-2">
-            <div className="flex items-center justify-center gap-2 mb-1">
-              <Trophy className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-400 drop-shadow-lg" />
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white drop-shadow-lg">Turnuvalar</h1>
-              <Trophy className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-400 drop-shadow-lg" />
-            </div>
-            <p className="text-gray-200 text-xs sm:text-sm">8 oyunculu heyecan dolu turnuvalara katıl!</p>
+        {/* Başlık */}
+        <div className="text-center pt-12 pb-2">
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <Trophy className="w-8 h-8 sm:w-10 sm:h-10 text-yellow-400 drop-shadow-lg" />
+            <h1 className="text-3xl sm:text-4xl font-bold text-white drop-shadow-lg">Turnuvalar</h1>
+            <Trophy className="w-8 h-8 sm:w-10 sm:h-10 text-yellow-400 drop-shadow-lg" />
           </div>
+          <p className="text-gray-200 text-sm">8 oyunculu heyecan dolu turnuvalara katıl!</p>
         </div>
 
         <div className="max-w-4xl mx-auto">
