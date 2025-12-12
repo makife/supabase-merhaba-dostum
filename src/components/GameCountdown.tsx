@@ -163,54 +163,20 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       };
     }
 
-    // Server-authoritative mode
-    const startTimeMs = new Date(serverStartTime).getTime();
-    const endTimeMs = startTimeMs + COUNTDOWN_DURATION_MS;
-
-    console.log("⏱️ GameCountdown: Server-authoritative mode starting", {
-      serverStartTime,
-      startTimeMs,
-      endTimeMs: new Date(endTimeMs).toISOString(),
-      serverTimeOffset,
-    });
-
-    // Calculate initial state
-    const serverNow = Date.now() + serverTimeOffset;
-    const initialRemaining = Math.ceil((endTimeMs - serverNow) / 1000);
-
-    console.log("⏱️ GameCountdown: Initial calculation", {
-      serverNow: new Date(serverNow).toISOString(),
-      endTime: new Date(endTimeMs).toISOString(),
-      initialRemaining,
-    });
-
-    // 🔒 KRİTİK: İlk görüntüleme değeri HER ZAMAN 5 olmalı
-    // Eğer countdown henüz başlamamış veya tam zamanında açıldıysa 5 göster
-    // Sadece gerçekten geride kaldıysak (2-3 saniye) daha düşük göster
-    if (initialRemaining >= 5) {
-      setDisplayValue(5);
-      if (!soundPlayedRef.current.has(5)) {
-        playSound("/gerisayim.mp3");
-        soundPlayedRef.current.add(5);
-      }
-    } else if (initialRemaining >= 1 && initialRemaining <= 4) {
-      // Eğer geride kaldıysak doğru sayıyı göster
-      setDisplayValue(initialRemaining);
-      if (!soundPlayedRef.current.has(initialRemaining)) {
-        playSound("/gerisayim.mp3");
-        soundPlayedRef.current.add(initialRemaining);
-      }
-    } else if (initialRemaining <= 0 && initialRemaining > -1) {
-      // Should show "start"
-      if (!startShownRef.current) {
-        setDisplayValue("start");
-        playSound("/basla.mp3");
-        startShownRef.current = true;
-      }
-    } else {
-      // Fallback - 5'ten başla
-      setDisplayValue(5);
+    // 🔒 KRİTİK FIX: Her zaman 5'ten başla - local timing kullan
+    // serverStartTime sadece referans için, countdown component mount olduğunda
+    // 5'ten başlar ve local olarak sayar - bu sayede atlama olmaz
+    console.log("⏱️ GameCountdown: Starting from 5 (local timing for smooth experience)");
+    
+    // Her zaman 5'ten başla
+    setDisplayValue(5);
+    if (!soundPlayedRef.current.has(5)) {
+      playSound("/gerisayim.mp3");
+      soundPlayedRef.current.add(5);
     }
+    
+    // Local end time - mount anından itibaren 5 saniye
+    const localEndTimeMs = Date.now() + COUNTDOWN_DURATION_MS;
 
     // Use setInterval for consistent updates (doesn't pause in background)
     intervalRef.current = setInterval(() => {
@@ -222,8 +188,8 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
         return;
       }
 
-      const serverNow = Date.now() + serverTimeOffset;
-      const remainingMs = endTimeMs - serverNow;
+      const serverNow = Date.now();
+      const remainingMs = localEndTimeMs - serverNow;
       const remainingSeconds = Math.ceil(remainingMs / 1000);
 
       if (remainingMs <= -START_DISPLAY_DURATION_MS) {
