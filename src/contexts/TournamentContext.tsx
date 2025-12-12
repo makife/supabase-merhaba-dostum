@@ -201,11 +201,13 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
         .select("id, user_id, is_bot")
         .eq("tournament_id", tournamentId);
 
-      // 3. SECURITY DEFINER RPC ile sil (UUID tip uyumu için)
-      const { error: deleteError } = await supabase.rpc('delete_tournament_participant', {
-        p_tournament_id: tournamentId,
-        p_user_id: user.id
-      });
+      // 3. Doğrudan tablo silme (RPC geçici olarak çalışmıyor)
+      const { error: deleteError } = await supabase
+        .from("tournament_participants")
+        .delete()
+        .eq("tournament_id", tournamentId)
+        .eq("user_id", user.id)
+        .eq("is_bot", false);
 
       if (deleteError) {
         console.error("❌ Silme hatası:", deleteError);
