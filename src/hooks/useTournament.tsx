@@ -67,9 +67,9 @@ export const useTournament = (tournamentId?: string) => {
     const currentRealPlayers = context.participants.filter((p) => !p.is_bot).length;
     console.log("🎮 Gerçek oyuncu sayısı:", currentRealPlayers);
 
-    if (currentRealPlayers < 1) {
-      // Cancel tournament - minimum 1 gerçek oyuncu gerekli (botlarla doldurulacak)
-      console.log("❌ Yeterli oyuncu yok, iptal ediliyor");
+    if (currentRealPlayers < 2) {
+      // Cancel tournament - minimum 2 gerçek oyuncu gerekli
+      console.log("❌ Yeterli oyuncu yok (min 2 gerekli), iptal ediliyor");
       await supabase
         .from("tournaments")
         .update({ status: "cancelled" })
