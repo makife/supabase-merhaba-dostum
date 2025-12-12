@@ -100,10 +100,10 @@ const TournamentBracketPage = () => {
           console.log(`🤖 Bot maçı tamamlandı: ${match.id}`);
         } else {
           // Real player match - start countdown
-          // ends_at hesapla: şimdi + 5sn (countdown) + 120sn (oyun) = 125sn
+          // Özel oda ile aynı mantık: 5sn buffer + 5sn countdown + 120sn oyun = 130sn
           const now = new Date();
           const countdownStartedAt = now.toISOString();
-          const endsAt = new Date(now.getTime() + 125 * 1000).toISOString();
+          const endsAt = new Date(now.getTime() + 130 * 1000).toISOString();
 
           await supabase
             .from("tournament_matches")
@@ -114,7 +114,7 @@ const TournamentBracketPage = () => {
             })
             .eq("id", match.id);
 
-          console.log(`⚔️ Maç başladı: ${match.id}, ends_at: ${endsAt}`);
+          console.log(`⚔️ Maç başladı: ${match.id}, countdown_started_at: ${countdownStartedAt}, ends_at: ${endsAt}`);
         }
       }
 
