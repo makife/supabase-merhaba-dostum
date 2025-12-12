@@ -63,7 +63,7 @@ const TournamentPage = () => {
       </div>
 
       {/* Sabit üst bölüm */}
-      <div className="sticky top-0 z-10 bg-purple-900/100 backdrop-blur-sm p-4">
+      <div className="sticky top-0 z-10 bg-purple-900/0 backdrop-blur-sm p-4">
         {/* Çıkış butonu */}
         <div className="absolute top-4 left-4 z-20">
           <Button
