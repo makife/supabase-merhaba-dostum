@@ -384,8 +384,11 @@ const TournamentBracketPage = () => {
   const hasPendingMatches = matches.some((m) => m.round === currentRound && m.status === "pending");
   
   // Mevcut round maçları henüz oluşturulmadı mı kontrol et
+  // loading durumunda veya maçlar henüz yoksa spinner göster
   const currentRoundMatches = matches.filter((m) => m.round === currentRound);
-  const isWaitingForRoundCreation = currentRoundMatches.length === 0 && currentTournament.status === "in_progress";
+  const isWaitingForRoundCreation = 
+    currentTournament.status === "in_progress" && 
+    (loading || currentRoundMatches.length === 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-900 to-indigo-900 p-3 sm:p-4">
