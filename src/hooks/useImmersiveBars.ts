@@ -152,36 +152,22 @@ export function useImmersiveBars() {
     };
 
     const handleTouchMove = async (e: TouchEvent) => {
-      if (touchStartY.current === null || touchStartX.current === null) return;
+      if (touchStartY.current === null) return;
       
       const touch = e.touches[0];
       const deltaY = touch.clientY - touchStartY.current;
-      const deltaX = Math.abs(touch.clientX - touchStartX.current);
       const screenHeight = window.innerHeight;
-      const screenWidth = window.innerWidth;
       
-      // Dikey hareket mi kontrolü
-      const isVerticalSwipe = Math.abs(deltaY) > deltaX;
-      
-      // Üst kenardan aşağı kaydırma (status bar için)
-      const isTopEdgeSwipe = touchStartY.current < EDGE_SWIPE_THRESHOLD && 
-                            deltaY > SWIPE_DISTANCE_THRESHOLD && 
-                            isVerticalSwipe;
-      
-      // Alt kenardan yukarı kaydırma (navigation bar için)
+      // Sadece alt kenardan yukarı kaydırma - her iki bar'ı da göster
       const isBottomEdgeSwipe = touchStartY.current > (screenHeight - EDGE_SWIPE_THRESHOLD) && 
-                               deltaY < -SWIPE_DISTANCE_THRESHOLD && 
-                               isVerticalSwipe;
-      
-      // Yan kenarlardan kaydırma (navigation gesture hint için)
-      const isSideEdgeSwipe = (touchStartX.current < EDGE_SWIPE_THRESHOLD || 
-                              touchStartX.current > (screenWidth - EDGE_SWIPE_THRESHOLD)) &&
-                             Math.abs(deltaX) > SWIPE_DISTANCE_THRESHOLD;
+                               deltaY < -SWIPE_DISTANCE_THRESHOLD;
 
-      if (isTopEdgeSwipe || isBottomEdgeSwipe || isSideEdgeSwipe) {
-        console.log('Edge swipe detected:', { isTopEdgeSwipe, isBottomEdgeSwipe, isSideEdgeSwipe });
+      if (isBottomEdgeSwipe) {
+        console.log('Bottom edge swipe detected - showing both bars');
         await showBars();
         scheduleAutoHide();
+        // Bir kez tetiklendikten sonra tekrar tetiklenmesini önle
+        touchStartY.current = null;
       }
     };
 
