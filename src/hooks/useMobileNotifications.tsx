@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { Capacitor } from "@capacitor/core";
-import { PushNotifications, PushNotificationSchema, ActionPerformed, Token } from "@capacitor/push-notifications";
-import { LocalNotifications, LocalNotificationSchema } from "@capacitor/local-notifications";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+
+// Dinamik import için tipler
+type PushNotificationsType = typeof import("@capacitor/push-notifications").PushNotifications;
+type LocalNotificationsType = typeof import("@capacitor/local-notifications").LocalNotifications;
 
 export const useMobileNotifications = () => {
   const [isPermissionGranted, setIsPermissionGranted] = useState(false);
@@ -15,20 +17,47 @@ export const useMobileNotifications = () => {
   // Check if we're on a mobile platform
   const isMobile = Capacitor.isNativePlatform();
 
+  // Güvenli plugin yükleme
+  const getPushNotifications = async (): Promise<PushNotificationsType | null> => {
+    try {
+      if (!isMobile) return null;
+      const module = await import("@capacitor/push-notifications");
+      return module.PushNotifications;
+    } catch (error) {
+      console.log("PushNotifications plugin yüklenemedi:", error);
+      return null;
+    }
+  };
+
+  const getLocalNotifications = async (): Promise<LocalNotificationsType | null> => {
+    try {
+      if (!isMobile) return null;
+      const module = await import("@capacitor/local-notifications");
+      return module.LocalNotifications;
+    } catch (error) {
+      console.log("LocalNotifications plugin yüklenemedi:", error);
+      return null;
+    }
+  };
+
   // Initialize push notifications
   const initializePushNotifications = useCallback(async () => {
     if (!isMobile) {
       // Web bildirim izinlerini kontrol et
-      if ("Notification" in window) {
-        const permission = await Notification.requestPermission();
-        setIsPermissionGranted(permission === "granted");
+      try {
+        if ("Notification" in window) {
+          const permission = await Notification.requestPermission();
+          setIsPermissionGranted(permission === "granted");
+        }
+      } catch (error) {
+        console.log("Web notification error:", error);
       }
       return;
     }
 
     try {
-      // Capacitor plugin'in mevcut olup olmadığını kontrol et
-      if (!PushNotifications || typeof PushNotifications.requestPermissions !== 'function') {
+      const PushNotifications = await getPushNotifications();
+      if (!PushNotifications) {
         console.log("PushNotifications plugin not available");
         return;
       }
@@ -43,7 +72,7 @@ export const useMobileNotifications = () => {
         await PushNotifications.register();
 
         // Listen for registration events
-        PushNotifications.addListener("registration", async (token: Token) => {
+        PushNotifications.addListener("registration", async (token) => {
           console.log("Push registration success, token: " + token.value);
           setPushToken(token.value);
 
@@ -59,18 +88,14 @@ export const useMobileNotifications = () => {
         });
 
         // Show us the notification payload if the app is open on iOS
-        PushNotifications.addListener("pushNotificationReceived", (notification: PushNotificationSchema) => {
+        PushNotifications.addListener("pushNotificationReceived", (notification) => {
           console.log("Push notification received: ", notification);
-
-          // Show local notification if app is in foreground
           showLocalNotification(notification.title || "Kelimele", notification.body || "Yeni bildiriminiz var");
         });
 
         // Method called when tapping on a notification
-        PushNotifications.addListener("pushNotificationActionPerformed", (notification: ActionPerformed) => {
+        PushNotifications.addListener("pushNotificationActionPerformed", (notification) => {
           console.log("Push notification action performed: ", notification);
-
-          // Handle notification tap actions here
           handleNotificationAction(notification);
         });
       } else {
@@ -79,10 +104,6 @@ export const useMobileNotifications = () => {
       }
     } catch (error) {
       console.error("Error initializing push notifications:", error);
-      // Native platform'da değilse sessizce devam et
-      if (!isMobile) {
-        console.log("Skipping push notifications - not on native platform");
-      }
     }
   }, [isMobile, user?.id]);
 
@@ -91,8 +112,8 @@ export const useMobileNotifications = () => {
     if (!isMobile) return;
 
     try {
-      // Capacitor plugin'in mevcut olup olmadığını kontrol et
-      if (!LocalNotifications || typeof LocalNotifications.requestPermissions !== 'function') {
+      const LocalNotifications = await getLocalNotifications();
+      if (!LocalNotifications) {
         console.log("LocalNotifications plugin not available");
         return;
       }
@@ -100,7 +121,6 @@ export const useMobileNotifications = () => {
       const permissionStatus = await LocalNotifications.requestPermissions();
 
       if (permissionStatus.display === "granted") {
-        // Listen for local notification actions
         LocalNotifications.addListener("localNotificationActionPerformed", (notification) => {
           console.log("Local notification action performed: ", notification);
           handleNotificationAction(notification);
@@ -114,12 +134,10 @@ export const useMobileNotifications = () => {
   // Save push token to database
   const savePushToken = async (userId: string, token: string) => {
     try {
-      // Save to Supabase profiles table
       const { error } = await supabase.from("profiles").update({ push_token: token }).eq("id", userId);
 
       if (error) {
         console.error("Error saving push token to database:", error);
-        // Fallback to localStorage
         const savedTokens = localStorage.getItem("push_tokens") || "{}";
         const tokens = JSON.parse(savedTokens);
         tokens[userId] = {
@@ -140,8 +158,8 @@ export const useMobileNotifications = () => {
   const showLocalNotification = async (title: string, body: string, data?: any) => {
     try {
       if (isMobile) {
-        // Capacitor plugin kontrolü
-        if (!LocalNotifications || typeof LocalNotifications.schedule !== 'function') {
+        const LocalNotifications = await getLocalNotifications();
+        if (!LocalNotifications) {
           console.log("LocalNotifications.schedule not available");
           return;
         }
@@ -151,7 +169,7 @@ export const useMobileNotifications = () => {
               title,
               body,
               id: Date.now(),
-              schedule: { at: new Date(Date.now() + 1000) }, // Show after 1 second
+              schedule: { at: new Date(Date.now() + 1000) },
               sound: undefined,
               attachments: undefined,
               actionTypeId: "",
@@ -161,12 +179,16 @@ export const useMobileNotifications = () => {
         });
       } else {
         // Web bildirimi göster
-        if ("Notification" in window && Notification.permission === "granted") {
-          new Notification(title, {
-            body,
-            icon: "/favicon.ico",
-            badge: "/favicon.ico",
-          });
+        try {
+          if ("Notification" in window && Notification.permission === "granted") {
+            new Notification(title, {
+              body,
+              icon: "/favicon.ico",
+              badge: "/favicon.ico",
+            });
+          }
+        } catch (webError) {
+          console.log("Web notification error:", webError);
         }
       }
     } catch (error) {
@@ -180,13 +202,10 @@ export const useMobileNotifications = () => {
       const notificationData = notification.notification?.extra || notification.actionId;
 
       if (notificationData?.type === "game_invite") {
-        // Navigate to game with room code
         window.location.href = `/game?room=${notificationData.roomCode}`;
       } else if (notificationData?.type === "private_message") {
-        // Navigate to private chat
         window.location.href = `/chat?chat=${notificationData.chatId}`;
       } else if (notificationData?.type === "tournament") {
-        // Navigate to tournament
         window.location.href = `/tournament`;
       }
     } catch (error) {
@@ -200,7 +219,6 @@ export const useMobileNotifications = () => {
     const body = `${senderUsername} sizi oyuna davet ediyor!`;
 
     if (isMobile) {
-      // Send push notification via your backend
       await sendPushNotification(receiverId, title, body, {
         type: "game_invite",
         roomCode,
@@ -261,7 +279,6 @@ export const useMobileNotifications = () => {
   // Send push notification via backend
   const sendPushNotification = async (receiverId: string, title: string, body: string, data?: any) => {
     try {
-      // Send via Supabase edge function
       const { data: result, error } = await supabase.functions.invoke("send-push-notification", {
         body: {
           receiverId,
@@ -273,7 +290,6 @@ export const useMobileNotifications = () => {
 
       if (error) {
         console.error("Error sending push notification:", error);
-        // Fallback to local notification
         await showLocalNotification(title, body, data);
         return false;
       }
@@ -282,7 +298,6 @@ export const useMobileNotifications = () => {
       return true;
     } catch (error) {
       console.error("Error sending push notification:", error);
-      // Fallback to local notification
       await showLocalNotification(title, body, data);
       return false;
     }
@@ -290,44 +305,47 @@ export const useMobileNotifications = () => {
 
   // Request notification permissions
   const requestPermissions = async () => {
-    if (isMobile) {
-      await initializePushNotifications();
-      await initializeLocalNotifications();
-    } else {
-      // Web bildirimi izinleri
-      if ("Notification" in window) {
-        const permission = await Notification.requestPermission();
-        setIsPermissionGranted(permission === "granted");
+    try {
+      if (isMobile) {
+        await initializePushNotifications();
+        await initializeLocalNotifications();
+      } else {
+        // Web bildirimi izinleri
+        if ("Notification" in window) {
+          const permission = await Notification.requestPermission();
+          setIsPermissionGranted(permission === "granted");
 
-        if (permission === "granted") {
-          toast({
-            title: "Bildirimler Aktif",
-            description: "Oyun bildirimleri artık aktif",
-          });
+          if (permission === "granted") {
+            toast({
+              title: "Bildirimler Aktif",
+              description: "Oyun bildirimleri artık aktif",
+            });
+          }
         }
       }
+    } catch (error) {
+      console.error("Error requesting permissions:", error);
     }
   };
 
   // Check current permission status
   const checkPermissionStatus = useCallback(async () => {
-    if (isMobile) {
-      try {
-        // Capacitor plugin kontrolü
-        if (!PushNotifications || typeof PushNotifications.checkPermissions !== 'function') {
+    try {
+      if (isMobile) {
+        const PushNotifications = await getPushNotifications();
+        if (!PushNotifications) {
           console.log("PushNotifications.checkPermissions not available");
           return;
         }
         const permissionStatus = await PushNotifications.checkPermissions();
         setIsPermissionGranted(permissionStatus.receive === "granted");
-      } catch (error) {
-        console.error("Error checking permissions:", error);
-        // Hata durumunda sessizce devam et
+      } else {
+        if ("Notification" in window) {
+          setIsPermissionGranted(Notification.permission === "granted");
+        }
       }
-    } else {
-      if ("Notification" in window) {
-        setIsPermissionGranted(Notification.permission === "granted");
-      }
+    } catch (error) {
+      console.error("Error checking permissions:", error);
     }
   }, [isMobile]);
 
