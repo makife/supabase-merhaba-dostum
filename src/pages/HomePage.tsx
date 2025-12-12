@@ -374,7 +374,7 @@ const HomePage = () => {
     <>
 
       <div className="min-h-screen bg-gradient-to-br from-background to-muted">
-        <div className="max-w-4xl mx-auto space-y-3 px-2 py-2">
+        <div className="space-y-3">
           {/* Birleştirilmiş Header ve Level Progress */}
           <Card className="border-0 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/10 shadow-2xl relative overflow-hidden">
             <HeaderAnimation />
