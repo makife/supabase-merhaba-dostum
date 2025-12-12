@@ -191,17 +191,20 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
 
       // Eğer kurucu ayrılıyorsa, başka bir oyuncuya kuruculuk devret
       if (isCreator) {
-        // Diğer gerçek oyuncuları bul
-        const { data: otherParticipants } = await supabase
+        // Diğer gerçek oyuncuları bul (neq yerine filter kullan - UUID uyumluluğu için)
+        const { data: allParticipants } = await supabase
           .from("tournament_participants")
           .select("user_id")
           .eq("tournament_id", tournamentId)
           .eq("is_bot", false)
-          .neq("user_id", user.id)
-          .order("joined_at", { ascending: true })
-          .limit(1);
+          .order("joined_at", { ascending: true });
 
-        if (otherParticipants && otherParticipants.length > 0) {
+        // Mevcut kullanıcıyı filtrele
+        const otherParticipants = (allParticipants || []).filter(
+          (p) => p.user_id && p.user_id !== user.id
+        );
+
+        if (otherParticipants.length > 0) {
           // Kuruculuğu ilk katılan oyuncuya devret
           const newCreatorId = otherParticipants[0].user_id;
           const { error: updateError } = await supabase
