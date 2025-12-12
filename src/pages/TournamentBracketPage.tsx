@@ -389,13 +389,15 @@ const TournamentBracketPage = () => {
   const hasPendingMatches = matches.some((m) => m.round === currentRound && m.status === "pending");
   
   // Mevcut round maçları henüz oluşturulmadı mı kontrol et
-  // loading durumunda veya maçlar henüz yoksa spinner göster
   const currentRoundMatches = matches.filter((m) => m.round === currentRound);
-  // initialLoading: sayfa ilk açıldığında hemen spinner
-  // loading: context loading durumu  
-  // currentRoundMatches.length === 0: maçlar henüz oluşturulmamış
+  
+  // Countdown aktifse (maçlar pending ve geri sayım var) spinner'ı gizle
+  const hasActiveCountdown = hasPendingMatches && countdown > 0;
+  
+  // Loading spinner: maçlar oluşturulmadıysa VE countdown henüz başlamadıysa göster
   const isWaitingForRoundCreation = 
     currentTournament.status === "in_progress" && 
+    !hasActiveCountdown && 
     (initialLoading || loading || currentRoundMatches.length === 0);
 
   return (
@@ -414,7 +416,7 @@ const TournamentBracketPage = () => {
           <div className="w-16 sm:w-24" />
         </div>
 
-        {/* Round Oluşturuluyor Loading - maçlar henüz DB'de yokken */}
+        {/* Round Oluşturuluyor Loading - countdown başlayana kadar göster */}
         {isWaitingForRoundCreation && (
           <Card className="mb-4 bg-indigo-800 border-indigo-600">
             <CardContent className="p-4 text-center">
@@ -427,7 +429,7 @@ const TournamentBracketPage = () => {
         )}
 
         {/* Countdown - maçlar oluştuktan sonra geri sayım */}
-        {hasPendingMatches && countdown > 0 && (
+        {hasActiveCountdown && (
           <Card className="mb-4 bg-indigo-800 border-indigo-600">
             <CardContent className="p-3 text-center">
               <Clock className="w-6 h-6 text-yellow-400 mx-auto mb-1" />
