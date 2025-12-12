@@ -5,7 +5,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Home, Trophy, Users, Plus } from "lucide-react";
 import { TournamentCard } from "@/components/TournamentCard";
 import { useTournamentContext } from "@/contexts/TournamentContext";
-import { getRealPlayerCount } from "@/utils/tournamentHelpers";
 import { useUser } from "@/contexts/UserContext";
 import { toast } from "sonner";
 
@@ -51,27 +50,49 @@ const TournamentPage = () => {
   };
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-purple-900 to-blue-900 flex flex-col bg-[url('/turnuvaBracket.png')] bg-cover bg-center bg-blend-overlay">
+    <div className="relative min-h-screen bg-gradient-to-br from-purple-900 to-blue-900 flex flex-col">
+
       {/* Sabit üst bölüm */}
-      <div className="sticky top-0 z-10 bg-gradient-to-br from-purple-900 to-blue-900/90 p-4 backdrop-blur-sm">
+
+      <div className="sticky top-0 z-10 bg-gradient-to-br from-purple-900 to-blue-900 p-4">
+
         {/* Çıkış butonu */}
+
         <div className="absolute top-4 left-4">
+
           <Button
+
             onClick={() => navigate("/")}
-            className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg"
+
+            className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
+
           >
+
             <Home className="w-4 h-4 mr-2" />
+
             Ana Sayfa
+
           </Button>
+
         </div>
 
+
+
         <div className="max-w-4xl mx-auto pt-12">
+
           {/* Başlık */}
+
           <div className="text-center mb-8">
-            <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4 drop-shadow-lg" />
-            <h1 className="text-4xl font-bold text-white mb-2 drop-shadow-md">Turnuvalar</h1>
+
+            <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
+
+            <h1 className="text-4xl font-bold text-white mb-2">Turnuvalar</h1>
+
             <p className="text-gray-300 text-lg">8 oyunculu heyecan dolu turnuvalara katıl!</p>
+
           </div>
+          </div>
+          {/* --- BAŞLIK ALANI SONU --- */}
 
           {/* Turnuva Oluştur */}
           <Card className="mb-8 bg-white/10 backdrop-blur-md border-white/20">
@@ -79,7 +100,7 @@ const TournamentPage = () => {
               <Button
                 onClick={handleCreateTournament}
                 disabled={loading}
-                className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-4 px-8 text-lg"
+                className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-4 px-8 text-lg shadow-lg hover:shadow-orange-500/20 transition-all"
                 size="lg"
               >
                 <Plus className="w-6 h-6 mr-2" />
@@ -93,9 +114,9 @@ const TournamentPage = () => {
                   onClick={fetchTournaments}
                   variant="outline"
                   size="sm"
-                  className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white border-0"
+                  className="bg-transparent border-white/30 text-white hover:bg-white/10"
                 >
-                  Yenile
+                  Listeyi Yenile
                 </Button>
               </div>
             </CardContent>
@@ -106,7 +127,7 @@ const TournamentPage = () => {
       {/* Scroll edilebilir içerik */}
       <div className="flex-1 overflow-y-auto px-4 pb-4">
         <div className="max-w-4xl mx-auto space-y-4">
-          <h2 className="text-2xl font-bold text-white">Aktif Turnuvalar</h2>
+          <h2 className="text-2xl font-bold text-white pl-2 border-l-4 border-yellow-500">Aktif Turnuvalar</h2>
 
           {loading ? (
             <Card className="bg-white/10 backdrop-blur-md border-white/20">
