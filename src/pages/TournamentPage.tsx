@@ -68,14 +68,23 @@ const TournamentPage = () => {
         </div>
 
         <div className="max-w-4xl mx-auto pt-12">
-          {/* Başlık */}
+          {/* Başlık ve Görsel */}
+          <div className="text-center mb-6">
+            {/* Turnuva Bracket Görseli */}
+            <div className="relative mb-4">
+              <img 
+                src="/turnuvaBracket.png" 
+                alt="Turnuva Bracket" 
+                className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 mx-auto object-contain drop-shadow-2xl"
+              />
+              {/* Trophy ikonu görselin üzerinde */}
+              <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
+                <Trophy className="w-8 h-8 sm:w-10 sm:h-10 text-yellow-400 drop-shadow-lg" />
+              </div>
+            </div>
 
-          <div className="text-center mb-8">
-            <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
-
-            <h1 className="text-4xl font-bold text-white mb-2">Turnuvalar</h1>
-
-            <p className="text-gray-300 text-lg">8 oyunculu heyecan dolu turnuvalara katıl!</p>
+            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">Turnuvalar</h1>
+            <p className="text-gray-300 text-sm sm:text-lg">8 oyunculu heyecan dolu turnuvalara katıl!</p>
           </div>
 
           {/* Turnuva Oluştur */}
