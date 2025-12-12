@@ -195,28 +195,24 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
 
       const isCreator = tournament.creator_id === user.id;
 
-      // 2. Kendi katılımcı kaydımızı bul ve sil
+      // 2. Katılımcıları al ve kendi kaydımızı sil (user_id ve tournament_id ile)
       const { data: allParticipants } = await supabase
         .from("tournament_participants")
         .select("id, user_id, is_bot")
         .eq("tournament_id", tournamentId);
 
-      const myRecord = allParticipants?.find(p => p.user_id === user.id && !p.is_bot);
-      
-      if (myRecord) {
-        const { error: deleteError } = await supabase
-          .from("tournament_participants")
-          .delete()
-          .eq("id", myRecord.id);
+      // Doğrudan user_id ve tournament_id ile sil (UUID tip uyumu için)
+      const { error: deleteError } = await supabase
+        .from("tournament_participants")
+        .delete()
+        .eq("tournament_id", tournamentId)
+        .eq("user_id", user.id);
 
-        if (deleteError) {
-          console.error("❌ Silme hatası:", deleteError);
-          throw deleteError;
-        }
-        console.log("✅ Katılımcı kaydı silindi:", myRecord.id);
-      } else {
-        console.log("⚠️ Katılımcı kaydı bulunamadı, devam ediliyor...");
+      if (deleteError) {
+        console.error("❌ Silme hatası:", deleteError);
+        throw deleteError;
       }
+      console.log("✅ Katılımcı kaydı silindi");
 
       // 3. Eğer kurucu ayrılıyorsa, başka bir oyuncuya kuruculuk devret
       if (isCreator && tournament.status === 'waiting') {
