@@ -5,7 +5,7 @@ import { StatusBar, Style as StatusBarStyle } from '@capacitor/status-bar';
 // @ts-ignore - third-party plugin may not ship full types
 import { NavigationBar } from '@ethion/capacitor-navigation-bar';
 
-const DARK_HEX = '#1a1a1a';
+const DARK_HEX = '#000000';
 const AUTO_HIDE_MS = 3000;
 const EDGE_SWIPE_THRESHOLD = 50;
 const SWIPE_DISTANCE_THRESHOLD = 30;
