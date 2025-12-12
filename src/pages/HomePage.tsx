@@ -24,7 +24,7 @@ import { useMatchmaking } from "@/contexts/NewMatchmakingContext";
 import { nakamaService } from "@/services/nakamaService";
 import { useUserRole } from "@/hooks/useUserRole";
 import { AvatarViewDialog } from "@/components/AvatarViewDialog";
-import { OnboardingTutorial } from "@/components/OnboardingTutorial";
+
 
 // DÜZELTME 1: Infinity ikonu importlara eklendi
 import {
@@ -372,8 +372,6 @@ const HomePage = () => {
 
   return (
     <>
-      {/* Onboarding Tutorial */}
-      <OnboardingTutorial />
 
       <div className="min-h-screen bg-gradient-to-br from-background to-muted px-4 pt-4 pb-2 native-safe-container">
         <div className="max-w-4xl mx-auto space-y-3">
