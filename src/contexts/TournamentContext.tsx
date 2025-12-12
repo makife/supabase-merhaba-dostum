@@ -185,28 +185,43 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
         .from("tournaments")
         .select("creator_id")
         .eq("id", tournamentId)
-        .single();
+        .maybeSingle();
 
-      const isCreator = tournament?.creator_id === user.id;
+      if (!tournament) {
+        console.error("❌ Turnuva bulunamadı");
+        toast({ title: "Hata", description: "Turnuva bulunamadı", variant: "destructive" });
+        return false;
+      }
 
-      // Eğer kurucu ayrılıyorsa, başka bir oyuncuya kuruculuk devret
+      const isCreator = tournament.creator_id === user.id;
+
+      // Önce katılımcı kaydını sil (RLS politikası kendi kaydını silmeye izin veriyor)
+      const { error: deleteError } = await supabase
+        .from("tournament_participants")
+        .delete()
+        .eq("tournament_id", tournamentId)
+        .eq("user_id", user.id);
+
+      if (deleteError) {
+        console.error("❌ Ayrılma DB hatası:", deleteError);
+        throw deleteError;
+      }
+
+      console.log("✅ Katılımcı kaydı silindi");
+
+      // Eğer kurucu ayrılıyorsa, başka bir oyuncuya kuruculuk devret veya turnuvayı iptal et
       if (isCreator) {
-        // Diğer gerçek oyuncuları bul (neq yerine filter kullan - UUID uyumluluğu için)
-        const { data: allParticipants } = await supabase
+        // Diğer gerçek oyuncuları bul
+        const { data: remainingParticipants } = await supabase
           .from("tournament_participants")
           .select("user_id")
           .eq("tournament_id", tournamentId)
           .eq("is_bot", false)
           .order("joined_at", { ascending: true });
 
-        // Mevcut kullanıcıyı filtrele
-        const otherParticipants = (allParticipants || []).filter(
-          (p) => p.user_id && p.user_id !== user.id
-        );
-
-        if (otherParticipants.length > 0) {
+        if (remainingParticipants && remainingParticipants.length > 0) {
           // Kuruculuğu ilk katılan oyuncuya devret
-          const newCreatorId = otherParticipants[0].user_id;
+          const newCreatorId = remainingParticipants[0].user_id;
           const { error: updateError } = await supabase
             .from("tournaments")
             .update({ creator_id: newCreatorId })
@@ -220,27 +235,17 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
         } else {
           // Başka oyuncu yoksa turnuvayı iptal et
           console.log("🚫 Başka oyuncu yok, turnuva iptal edilecek");
-          await supabase
+          const { error: cancelError } = await supabase
             .from("tournaments")
             .update({ status: "cancelled" })
             .eq("id", tournamentId);
+
+          if (cancelError) {
+            console.error("❌ Turnuva iptal hatası:", cancelError);
+          }
         }
       }
 
-      // Katılımcı kaydını sil
-      const { error, count } = await supabase
-        .from("tournament_participants")
-        .delete()
-        .eq("tournament_id", tournamentId)
-        .eq("user_id", user.id)
-        .eq("is_bot", false);
-
-      if (error) {
-        console.error("❌ Ayrılma DB hatası:", error);
-        throw error;
-      }
-
-      console.log("✅ Turnuvadan ayrıldı, silinen:", count);
       toast({ title: "Başarılı", description: "Turnuvadan ayrıldınız" });
       
       // Context'i temizle
