@@ -1893,6 +1893,10 @@ export type Database = {
         Args: { tournament_id: string }
         Returns: undefined
       }
+      leave_tournament_with_transfer: {
+        Args: { p_tournament_id: string; p_user_id: string }
+        Returns: Json
+      }
       moderate_and_insert_message: {
         Args: {
           p_avatar_url?: string
