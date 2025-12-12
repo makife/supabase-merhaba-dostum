@@ -3927,11 +3927,10 @@ const requestRematch = async () => {
 
       // ✅ TURNUVA KATILIMCISINI SİL (kritik - yoksa yeni turnuvaya katılamaz)
       console.log("🗑️ tournament_participants kaydı siliniyor...");
-      const { error: participantDeleteError } = await supabase
-        .from("tournament_participants")
-        .delete()
-        .eq("tournament_id", tournamentMatch.tournament_id)
-        .eq("user_id", user.id);
+      const { error: participantDeleteError } = await supabase.rpc('delete_tournament_participant', {
+        p_tournament_id: tournamentMatch.tournament_id,
+        p_user_id: user.id
+      });
 
       if (participantDeleteError) {
         console.error("❌ Tournament participant silinemedi:", participantDeleteError);
@@ -3957,11 +3956,10 @@ const requestRematch = async () => {
 
       // Hata durumunda da turnuva kaydını temizle
       try {
-        await supabase
-          .from("tournament_participants")
-          .delete()
-          .eq("tournament_id", tournamentMatch.tournament_id)
-          .eq("user_id", user.id);
+        await supabase.rpc('delete_tournament_participant', {
+          p_tournament_id: tournamentMatch.tournament_id,
+          p_user_id: user.id
+        });
       } catch (cleanupError) {
         console.error("Cleanup hatası:", cleanupError);
       }
