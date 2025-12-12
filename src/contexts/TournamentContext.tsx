@@ -195,18 +195,17 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
 
       const isCreator = tournament.creator_id === user.id;
 
-      // 2. Katılımcıları al ve kendi kaydımızı sil (user_id ve tournament_id ile)
+      // 2. Katılımcıları al
       const { data: allParticipants } = await supabase
         .from("tournament_participants")
         .select("id, user_id, is_bot")
         .eq("tournament_id", tournamentId);
 
-      // Doğrudan user_id ve tournament_id ile sil (UUID tip uyumu için)
-      const { error: deleteError } = await supabase
-        .from("tournament_participants")
-        .delete()
-        .eq("tournament_id", tournamentId)
-        .eq("user_id", user.id);
+      // 3. SECURITY DEFINER RPC ile sil (UUID tip uyumu için)
+      const { error: deleteError } = await supabase.rpc('delete_tournament_participant', {
+        p_tournament_id: tournamentId,
+        p_user_id: user.id
+      });
 
       if (deleteError) {
         console.error("❌ Silme hatası:", deleteError);
