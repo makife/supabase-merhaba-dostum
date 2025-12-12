@@ -40,27 +40,38 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
     shownNotifications.current.clear();
 
     try {
+      console.log("🔔 NotificationContext: Realtime subscription başlatılıyor, user:", user.id);
+      
       const channel = supabase
-        .channel("comprehensive-notifications")
+        .channel(`notifications-${user.id}`)
         .on(
           "postgres_changes",
           {
             event: "INSERT",
             schema: "public",
             table: "notifications",
-            filter: `user_id=eq.${user.id}`,
           },
           (payload) => {
             try {
               const notification = payload.new as any;
+              
+              console.log("🔔 Realtime bildirim alındı:", notification);
+
+              // Sadece bu kullanıcıya gelen bildirimleri işle
+              if (notification.user_id !== user.id) {
+                console.log("🚫 Bildirim başka kullanıcıya ait, atlanıyor");
+                return;
+              }
 
               // Aynı bildirimi birden fazla göstermeyi önle
               const notificationKey = `${notification.id}_${notification.created_at}`;
               if (shownNotifications.current.has(notificationKey)) {
-                return; // Bu bildirim zaten gösterildi
+                console.log("🚫 Bildirim zaten gösterildi:", notificationKey);
+                return;
               }
 
               shownNotifications.current.add(notificationKey);
+              console.log("✅ Bildirim işleniyor:", notification.type);
 
               // Rozet bildirimi
               if (notification.type === "badge_earned") {
@@ -72,6 +83,7 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
 
               // Mention bildirimi
               if (notification.type === "mention") {
+                console.log("📢 Mention toast gösteriliyor");
                 toast.info(`📢 ${notification.message}`, {
                   duration: 5000,
                   action: {
@@ -96,6 +108,7 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
                 const userIds = chatId.replace("chat_", "").split("_");
                 const otherUserId = userIds.find((id: string) => id !== user?.id);
 
+                console.log("💬 Private message toast gösteriliyor");
                 toast.info(`💬 ${notification.message}`, {
                   duration: 5000,
                   action: {
@@ -109,7 +122,9 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
             }
           },
         )
-        .subscribe();
+        .subscribe((status) => {
+          console.log("🔔 Notification channel status:", status);
+        });
 
       return () => {
         try {
