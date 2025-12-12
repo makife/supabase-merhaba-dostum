@@ -404,6 +404,7 @@ const TournamentBracketPage = () => {
           <Card className="mb-4 bg-indigo-800 border-indigo-600">
             <CardContent className="p-3 text-center">
               <Clock className="w-6 h-6 text-yellow-400 mx-auto mb-1" />
+              <p className="text-yellow-200 text-xs mb-1">🔄 Round oluşturuluyor, hazır olun!</p>
               <p className="text-white font-medium text-sm">
                 {currentRound === 1 ? "Çeyrek Final" : currentRound === 2 ? "Yarı Final" : "Final"} başlıyor...
               </p>
