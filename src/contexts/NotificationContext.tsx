@@ -42,14 +42,18 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
     try {
       console.log("🔔 NotificationContext: Realtime subscription başlatılıyor, user:", user.id);
       
+      // Unique channel name to avoid conflicts
+      const channelName = `user-notifications-toast-${user.id}-${Date.now()}`;
+      
       const channel = supabase
-        .channel(`notifications-${user.id}`)
+        .channel(channelName)
         .on(
           "postgres_changes",
           {
             event: "INSERT",
             schema: "public",
             table: "notifications",
+            filter: `user_id=eq.${user.id}`,
           },
           (payload) => {
             try {
@@ -57,14 +61,13 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
               
               console.log("🔔 Realtime bildirim alındı:", notification);
 
-              // Sadece bu kullanıcıya gelen bildirimleri işle
-              if (notification.user_id !== user.id) {
-                console.log("🚫 Bildirim başka kullanıcıya ait, atlanıyor");
+              if (!notification || !notification.id) {
+                console.log("🚫 Geçersiz bildirim payload");
                 return;
               }
 
               // Aynı bildirimi birden fazla göstermeyi önle
-              const notificationKey = `${notification.id}_${notification.created_at}`;
+              const notificationKey = notification.id;
               if (shownNotifications.current.has(notificationKey)) {
                 console.log("🚫 Bildirim zaten gösterildi:", notificationKey);
                 return;
@@ -124,6 +127,9 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
         )
         .subscribe((status) => {
           console.log("🔔 Notification channel status:", status);
+          if (status === "SUBSCRIBED") {
+            console.log("✅ Bildirim kanalı başarıyla bağlandı");
+          }
         });
 
       return () => {
