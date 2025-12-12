@@ -1387,7 +1387,8 @@ const requestRematch = async () => {
   // Bu fonksiyon countdown'ın sadece BİR KERE başlatılmasını garanti eder
   // Birden fazla trigger (real-time subscription, initial load, event) olsa bile
   // countdown asla reset edilmez
-  const initiateCountdown = useCallback((serverTime: string) => {
+  // 🎯 Buffer animasyonları dahil: 3.5s preparing + 0.5s ready + 1s blank = 5s total
+  const initiateCountdown = useCallback((serverTime: string, skipBuffer: boolean = false) => {
     if (countdownInitiatedRef.current) {
       console.log("⏱️ Countdown zaten başlatıldı, yeniden başlatma engellendi");
       return false;
@@ -1398,11 +1399,45 @@ const requestRematch = async () => {
       return false;
     }
     
-    console.log("⏱️ Countdown başlatılıyor (tek seferlik):", serverTime);
+    console.log("⏱️ Countdown başlatılıyor (tek seferlik):", serverTime, "skipBuffer:", skipBuffer);
     countdownInitiatedRef.current = true;
-    setCountdownServerTime(serverTime);
-    setShowCountdown(true);
-    setPreparingOpponent(null);
+    
+    if (skipBuffer) {
+      // Buffer atla, direkt countdown göster
+      setCountdownServerTime(serverTime);
+      setShowCountdown(true);
+      setPreparingOpponent(null);
+    } else {
+      // 🎯 Buffer animasyonları: 3.5s preparing + 0.5s ready + 1s blank = 5s
+      console.log("🏆 Buffer animasyonu başlatıldı: preparing");
+      setPreparingOpponent("preparing");
+      
+      // 3.5s sonra ready - isMountedRef ile koruma
+      setTimeout(() => {
+        if (isMountedRef.current) {
+          console.log("🏆 Buffer animasyonu: ready");
+          setPreparingOpponent("ready");
+        }
+      }, 3500);
+      
+      // 4s sonra blank (3.5s + 0.5s)
+      setTimeout(() => {
+        if (isMountedRef.current) {
+          console.log("🏆 Buffer animasyonu: blank");
+          setPreparingOpponent(null);
+        }
+      }, 4000);
+      
+      // 5s sonra countdown başlat
+      setTimeout(() => {
+        if (isMountedRef.current) {
+          console.log("🏆 Countdown gösteriliyor");
+          setCountdownServerTime(serverTime);
+          setShowCountdown(true);
+        }
+      }, 5000);
+    }
+    
     return true;
   }, [gameStarted]);
 
@@ -3717,140 +3752,45 @@ const requestRematch = async () => {
   // 🏆 TURNUVA MAÇLARI İÇİN INITIAL COUNTDOWN SYNC - Sayfa açıldığında animasyonları başlat
   useEffect(() => {
     if (gameMode !== "tournament" || !tournamentMatch?.countdown_started_at) return;
-    if (countdownInitiatedRef.current) return; // ✅ Sadece ref kontrolü - state'lere bağlı değil
-    if (showCountdown || gameStarted) return;
+    if (countdownInitiatedRef.current) return; // ✅ Sadece ref kontrolü
 
     console.log("🏆 Tournament initial countdown sync:", tournamentMatch.countdown_started_at);
 
-    // Guard'ı HEMEN set et - real-time event'lerin araya girmesini engelle
-    countdownInitiatedRef.current = true;
-
     // Server zamanını hesapla
     const originalCountdownTime = new Date(tournamentMatch.countdown_started_at).getTime();
-    // Buffer: 3.5s preparing + 0.5s ready + 1s blank = 5s total
-    const PREPARING_MS = 3500;
-    const READY_MS = 500;
-    const BLANK_MS = 1000;
-    const TOTAL_BUFFER_MS = PREPARING_MS + READY_MS + BLANK_MS; // 5000ms
+    // Buffer: 5s total (initiateCountdown fonksiyonu içinde yönetiliyor)
+    const TOTAL_BUFFER_MS = 5000;
     
     const adjustedCountdownStart = originalCountdownTime + TOTAL_BUFFER_MS;
     const serverNow = Date.now() + serverTimeOffset;
     const msElapsedSinceStart = serverNow - originalCountdownTime;
-    const msUntilCountdown = adjustedCountdownStart - serverNow;
 
     console.log("🏆 Tournament countdown timing:", {
       originalTime: new Date(originalCountdownTime).toISOString(),
       adjustedStart: new Date(adjustedCountdownStart).toISOString(),
       serverNow: new Date(serverNow).toISOString(),
       msElapsedSinceStart,
-      msUntilCountdown,
     });
 
-    const timers: NodeJS.Timeout[] = [];
-
-    if (msElapsedSinceStart < 0) {
-      // Henüz başlamamış - tüm buffer'ı göster
-      console.log("🏆 Buffer henüz başlamamış, tam süre bekleniyor");
-      setPreparingOpponent("preparing");
-      
-      const delayToStart = Math.abs(msElapsedSinceStart);
-      
-      timers.push(setTimeout(() => {
-        console.log("🏆 Buffer animasyonu: preparing (delayed start)");
-        setPreparingOpponent("preparing");
-        
-        // 3.5s sonra ready
-        timers.push(setTimeout(() => {
-          console.log("🏆 Buffer animasyonu: ready");
-          setPreparingOpponent("ready");
-        }, PREPARING_MS));
-        
-        // 4s sonra (3.5s + 0.5s) blank
-        timers.push(setTimeout(() => {
-          console.log("🏆 Buffer animasyonu: blank");
-          setPreparingOpponent(null);
-        }, PREPARING_MS + READY_MS));
-        
-        // 5s sonra countdown başlat
-        timers.push(setTimeout(() => {
-          console.log("🏆 Tournament countdown başlatılıyor (full buffer)");
-          setCountdownServerTime(new Date(adjustedCountdownStart).toISOString());
-          setShowCountdown(true);
-        }, TOTAL_BUFFER_MS));
-      }, delayToStart));
-      
-    } else if (msElapsedSinceStart < PREPARING_MS) {
-      // Preparing aşamasındayız (0-3500ms)
-      const remainingPreparing = PREPARING_MS - msElapsedSinceStart;
-      console.log("🏆 Buffer aşaması: preparing, kalan:", remainingPreparing);
-      setPreparingOpponent("preparing");
-      
-      // Kalan preparing süresinden sonra ready'e geç
-      timers.push(setTimeout(() => {
-        console.log("🏆 Buffer animasyonu: ready");
-        setPreparingOpponent("ready");
-      }, remainingPreparing));
-      
-      // Ready + blank süresinden sonra countdown
-      timers.push(setTimeout(() => {
-        console.log("🏆 Buffer animasyonu: blank");
-        setPreparingOpponent(null);
-      }, remainingPreparing + READY_MS));
-      
-      timers.push(setTimeout(() => {
-        console.log("🏆 Tournament countdown başlatılıyor (from preparing)");
-        setCountdownServerTime(new Date(adjustedCountdownStart).toISOString());
-        setShowCountdown(true);
-      }, remainingPreparing + READY_MS + BLANK_MS));
-      
-    } else if (msElapsedSinceStart < PREPARING_MS + READY_MS) {
-      // Ready aşamasındayız (3500-4000ms)
-      const remainingReady = (PREPARING_MS + READY_MS) - msElapsedSinceStart;
-      console.log("🏆 Buffer aşaması: ready, kalan:", remainingReady);
-      setPreparingOpponent("ready");
-      
-      timers.push(setTimeout(() => {
-        console.log("🏆 Buffer animasyonu: blank");
-        setPreparingOpponent(null);
-      }, remainingReady));
-      
-      timers.push(setTimeout(() => {
-        console.log("🏆 Tournament countdown başlatılıyor (from ready)");
-        setCountdownServerTime(new Date(adjustedCountdownStart).toISOString());
-        setShowCountdown(true);
-      }, remainingReady + BLANK_MS));
-      
-    } else if (msElapsedSinceStart < TOTAL_BUFFER_MS) {
-      // Blank aşamasındayız (4000-5000ms)
-      const remainingBlank = TOTAL_BUFFER_MS - msElapsedSinceStart;
-      console.log("🏆 Buffer aşaması: blank, kalan:", remainingBlank);
-      setPreparingOpponent(null);
-      
-      timers.push(setTimeout(() => {
-        console.log("🏆 Tournament countdown başlatılıyor (from blank)");
-        setCountdownServerTime(new Date(adjustedCountdownStart).toISOString());
-        setShowCountdown(true);
-      }, remainingBlank));
-      
-    } else if (msUntilCountdown > -5000) {
-      // Countdown başlamış ama 5 saniye geçmemiş
-      console.log("🏆 Tournament countdown başlamış, devam ediliyor");
-      setPreparingOpponent(null);
-      setCountdownServerTime(new Date(adjustedCountdownStart).toISOString());
-      setShowCountdown(true);
+    // Sayfa yeni açıldı - buffer henüz başlamamış veya başlangıçtaysa
+    if (msElapsedSinceStart < 500) {
+      // Yeni başlıyor - tam buffer göster
+      console.log("🏆 Buffer tam olarak başlatılıyor");
+      initiateCountdown(new Date(adjustedCountdownStart).toISOString(), false);
+    } else if (msElapsedSinceStart < TOTAL_BUFFER_MS + 5000) {
+      // Buffer veya countdown devam ediyor - hemen başlat (skipBuffer = false ama geç katılım)
+      console.log("🏆 Buffer/countdown devam ediyor, başlatılıyor");
+      initiateCountdown(new Date(adjustedCountdownStart).toISOString(), false);
     } else {
       // Countdown tamamen geçmiş - oyun direkt başlamalı
       console.log("🏆 Tournament countdown geçmiş, oyun direkt başlatılıyor");
+      countdownInitiatedRef.current = true;
       setPreparingOpponent(null);
       setShowCountdown(false);
       setGameStarted(true);
       gameHasStartedRef.current = true;
     }
-
-    return () => {
-      timers.forEach((timer) => clearTimeout(timer));
-    };
-  }, [gameMode, tournamentMatch?.countdown_started_at, showCountdown, gameStarted, serverTimeOffset]);
+  }, [gameMode, tournamentMatch?.countdown_started_at, serverTimeOffset, initiateCountdown]);
 
   // 🎮 NORMAL OYUNLAR (RANDOM-MATCH, PRIVATE-ROOM) İÇİN COUNTDOWN SYNC
   useEffect(() => {
@@ -3876,13 +3816,15 @@ const requestRematch = async () => {
 
           // 🔒 Merkezi countdown guard - sadece BİR KERE başlat
           if (newData.countdown_started_at && !countdownInitiatedRef.current) {
-            console.log("🎯 Game room countdown başlatılıyor (server-sync + 5s buffer):", newData.countdown_started_at);
+            console.log("🎯 Game room countdown başlatılıyor (buffer animasyonu ile):", newData.countdown_started_at);
             
-            // 🎯 5 saniyelik buffer ekle
+            // Buffer animasyonu + countdown için adjusted time hesapla
+            // initiateCountdown içinde 5s buffer var, onun sonunda countdown gösterilecek
             const originalTime = new Date(newData.countdown_started_at).getTime();
             const adjustedTime = new Date(originalTime + 5000).toISOString();
             
-            initiateCountdown(adjustedTime);
+            // Buffer animasyonlarını göster (skipBuffer = false)
+            initiateCountdown(adjustedTime, false);
           }
         },
       )
