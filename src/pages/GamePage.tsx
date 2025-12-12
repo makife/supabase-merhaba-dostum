@@ -4010,11 +4010,11 @@ const requestRematch = async () => {
           if (matchData && matchData.status === "in_progress" && matchData.countdown_started_at) {
             // ✅ SERVER-SIDE COUNTDOWN ZAMANI KULLAN
             if (!serverMatchStartRef.current) {
-              // Countdown 5 saniye, oyun başlangıcı = countdown_started_at + 5 saniye
+              // Buffer 5 saniye + Countdown 5 saniye = 10 saniye, oyun başlangıcı = countdown_started_at + 10 saniye
               const countdownStart = new Date(matchData.countdown_started_at).getTime();
-              serverMatchStartRef.current = countdownStart + 5000; // 5 saniye sonra başlar
+              serverMatchStartRef.current = countdownStart + 10000; // 5s buffer + 5s countdown = 10 saniye sonra başlar
               console.log(
-                "📌 Tournament match start time (countdown_started_at + 5s):",
+                "📌 Tournament match start time (countdown_started_at + 10s):",
                 new Date(serverMatchStartRef.current).toISOString(),
               );
             }
@@ -4117,10 +4117,14 @@ const requestRematch = async () => {
             // Turnuva için start time'ı ends_at - 120sn olarak geri hesaplayabiliriz
             gameStartTimestamp = endsAtTimestamp - 120 * 1000;
           } else if (data?.countdown_started_at) {
-            // ends_at yoksa countdown_started_at + 5sn (countdown) + 120sn (game) kullan
+            // ends_at yoksa countdown_started_at + 5sn (buffer) + 5sn (countdown) + 120sn (game) kullan
+            // Buffer: 3.5s preparing + 0.5s ready + 1s blank = 5s
+            // Countdown: 5, 4, 3, 2, 1 = 5s
+            // Toplam: 10 saniye sonra oyun başlar
             const countdownStart = new Date(data.countdown_started_at).getTime();
-            gameStartTimestamp = countdownStart + 5000; // 5 saniye countdown
+            gameStartTimestamp = countdownStart + 10000; // 5s buffer + 5s countdown = 10 saniye
             endsAtTimestamp = gameStartTimestamp + 120 * 1000;
+            console.log("🏆 Tournament timer calculated: countdown_started_at + 10s (5s buffer + 5s countdown)");
           }
         } else if (currentRoom?.started_at) {
           // Normal oyunlar (Private/Random) için started_at kullan
