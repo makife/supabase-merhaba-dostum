@@ -27,6 +27,12 @@ export const useMobileNotifications = () => {
     }
 
     try {
+      // Capacitor plugin'in mevcut olup olmadığını kontrol et
+      if (!PushNotifications || typeof PushNotifications.requestPermissions !== 'function') {
+        console.log("PushNotifications plugin not available");
+        return;
+      }
+
       // Request permission to use push notifications
       const permissionStatus = await PushNotifications.requestPermissions();
 
@@ -50,11 +56,6 @@ export const useMobileNotifications = () => {
         // Some issue with the setup and push will not work
         PushNotifications.addListener("registrationError", (error: any) => {
           console.error("Push registration error: ", error.error);
-          toast({
-            title: "Bildirim Hatası",
-            description: "Push bildirimler ayarlanamadı",
-            variant: "destructive",
-          });
         });
 
         // Show us the notification payload if the app is open on iOS
@@ -78,14 +79,24 @@ export const useMobileNotifications = () => {
       }
     } catch (error) {
       console.error("Error initializing push notifications:", error);
+      // Native platform'da değilse sessizce devam et
+      if (!isMobile) {
+        console.log("Skipping push notifications - not on native platform");
+      }
     }
-  }, [isMobile, user?.id, toast]);
+  }, [isMobile, user?.id]);
 
   // Initialize local notifications
   const initializeLocalNotifications = useCallback(async () => {
     if (!isMobile) return;
 
     try {
+      // Capacitor plugin'in mevcut olup olmadığını kontrol et
+      if (!LocalNotifications || typeof LocalNotifications.requestPermissions !== 'function') {
+        console.log("LocalNotifications plugin not available");
+        return;
+      }
+
       const permissionStatus = await LocalNotifications.requestPermissions();
 
       if (permissionStatus.display === "granted") {
@@ -129,6 +140,11 @@ export const useMobileNotifications = () => {
   const showLocalNotification = async (title: string, body: string, data?: any) => {
     try {
       if (isMobile) {
+        // Capacitor plugin kontrolü
+        if (!LocalNotifications || typeof LocalNotifications.schedule !== 'function') {
+          console.log("LocalNotifications.schedule not available");
+          return;
+        }
         await LocalNotifications.schedule({
           notifications: [
             {
@@ -297,10 +313,16 @@ export const useMobileNotifications = () => {
   const checkPermissionStatus = useCallback(async () => {
     if (isMobile) {
       try {
+        // Capacitor plugin kontrolü
+        if (!PushNotifications || typeof PushNotifications.checkPermissions !== 'function') {
+          console.log("PushNotifications.checkPermissions not available");
+          return;
+        }
         const permissionStatus = await PushNotifications.checkPermissions();
         setIsPermissionGranted(permissionStatus.receive === "granted");
       } catch (error) {
         console.error("Error checking permissions:", error);
+        // Hata durumunda sessizce devam et
       }
     } else {
       if ("Notification" in window) {
