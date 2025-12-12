@@ -67,25 +67,28 @@ const TournamentPage = () => {
           </Button>
         </div>
 
-        <div className="max-w-4xl mx-auto pt-12">
-          {/* Başlık ve Görsel */}
-          <div className="text-center mb-6">
-            {/* Turnuva Bracket Görseli */}
-            <div className="relative mb-4">
-              <img 
-                src="/turnuvaBracket.png" 
-                alt="Turnuva Bracket" 
-                className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 mx-auto object-contain drop-shadow-2xl"
-              />
-              {/* Trophy ikonu görselin üzerinde */}
-              <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
-                <Trophy className="w-8 h-8 sm:w-10 sm:h-10 text-yellow-400 drop-shadow-lg" />
-              </div>
+        {/* Hero Görsel Bölümü */}
+        <div className="relative w-full mb-4">
+          <img 
+            src="/turnuvaBracket.png" 
+            alt="Turnuva Bracket" 
+            className="w-full max-w-md mx-auto h-auto object-contain opacity-90"
+          />
+          {/* Overlay gradient for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-purple-900/80 via-transparent to-transparent" />
+          
+          {/* Başlık overlay */}
+          <div className="absolute bottom-0 left-0 right-0 text-center pb-2">
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <Trophy className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-400 drop-shadow-lg" />
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white drop-shadow-lg">Turnuvalar</h1>
+              <Trophy className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-400 drop-shadow-lg" />
             </div>
-
-            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">Turnuvalar</h1>
-            <p className="text-gray-300 text-sm sm:text-lg">8 oyunculu heyecan dolu turnuvalara katıl!</p>
+            <p className="text-gray-200 text-xs sm:text-sm">8 oyunculu heyecan dolu turnuvalara katıl!</p>
           </div>
+        </div>
+
+        <div className="max-w-4xl mx-auto">
 
           {/* Turnuva Oluştur */}
           <Card className="mb-8 bg-white/10 backdrop-blur-md border-white/20">
