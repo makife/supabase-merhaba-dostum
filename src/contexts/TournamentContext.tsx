@@ -180,6 +180,51 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
       setLoading(true);
       console.log("🚪 Turnuvadan ayrılıyor:", { tournamentId, userId: user.id });
 
+      // Önce turnuva bilgisini al
+      const { data: tournament } = await supabase
+        .from("tournaments")
+        .select("creator_id")
+        .eq("id", tournamentId)
+        .single();
+
+      const isCreator = tournament?.creator_id === user.id;
+
+      // Eğer kurucu ayrılıyorsa, başka bir oyuncuya kuruculuk devret
+      if (isCreator) {
+        // Diğer gerçek oyuncuları bul
+        const { data: otherParticipants } = await supabase
+          .from("tournament_participants")
+          .select("user_id")
+          .eq("tournament_id", tournamentId)
+          .eq("is_bot", false)
+          .neq("user_id", user.id)
+          .order("joined_at", { ascending: true })
+          .limit(1);
+
+        if (otherParticipants && otherParticipants.length > 0) {
+          // Kuruculuğu ilk katılan oyuncuya devret
+          const newCreatorId = otherParticipants[0].user_id;
+          const { error: updateError } = await supabase
+            .from("tournaments")
+            .update({ creator_id: newCreatorId })
+            .eq("id", tournamentId);
+
+          if (updateError) {
+            console.error("❌ Kuruculuk devir hatası:", updateError);
+          } else {
+            console.log("✅ Kuruculuk devredildi:", newCreatorId);
+          }
+        } else {
+          // Başka oyuncu yoksa turnuvayı iptal et
+          console.log("🚫 Başka oyuncu yok, turnuva iptal edilecek");
+          await supabase
+            .from("tournaments")
+            .update({ status: "cancelled" })
+            .eq("id", tournamentId);
+        }
+      }
+
+      // Katılımcı kaydını sil
       const { error, count } = await supabase
         .from("tournament_participants")
         .delete()
