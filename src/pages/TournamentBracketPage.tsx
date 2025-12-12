@@ -382,6 +382,10 @@ const TournamentBracketPage = () => {
   // Check pending matches for countdown
   const currentRound = currentTournament.current_round || 1;
   const hasPendingMatches = matches.some((m) => m.round === currentRound && m.status === "pending");
+  
+  // Mevcut round maçları henüz oluşturulmadı mı kontrol et
+  const currentRoundMatches = matches.filter((m) => m.round === currentRound);
+  const isWaitingForRoundCreation = currentRoundMatches.length === 0 && currentTournament.status === "in_progress";
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-900 to-indigo-900 p-3 sm:p-4">
@@ -399,12 +403,23 @@ const TournamentBracketPage = () => {
           <div className="w-16 sm:w-24" />
         </div>
 
-        {/* Countdown */}
+        {/* Round Oluşturuluyor Loading - maçlar henüz DB'de yokken */}
+        {isWaitingForRoundCreation && (
+          <Card className="mb-4 bg-indigo-800 border-indigo-600">
+            <CardContent className="p-4 text-center">
+              <div className="w-8 h-8 border-2 border-yellow-400 border-t-transparent rounded-full mx-auto mb-2 animate-spin" />
+              <p className="text-yellow-200 text-sm font-medium">
+                🔄 {currentRound === 2 ? "Yarı Final" : currentRound === 3 ? "Final" : "Round"} oluşturuluyor, lütfen bekleyin...
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Countdown - maçlar oluştuktan sonra geri sayım */}
         {hasPendingMatches && countdown > 0 && (
           <Card className="mb-4 bg-indigo-800 border-indigo-600">
             <CardContent className="p-3 text-center">
               <Clock className="w-6 h-6 text-yellow-400 mx-auto mb-1" />
-              <p className="text-yellow-200 text-xs mb-1">🔄 Round oluşturuluyor, hazır olun!</p>
               <p className="text-white font-medium text-sm">
                 {currentRound === 1 ? "Çeyrek Final" : currentRound === 2 ? "Yarı Final" : "Final"} başlıyor...
               </p>
