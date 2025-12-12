@@ -24,6 +24,7 @@ const TournamentBracketPage = () => {
   const [showChampion, setShowChampion] = useState(false);
   const [showEliminated, setShowEliminated] = useState(false);
   const [navigatedToGame, setNavigatedToGame] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true); // Bracket'e ilk girişte hemen spinner göster
 
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
   const matchesStartedRef = useRef<string | null>(null);
@@ -32,7 +33,11 @@ const TournamentBracketPage = () => {
   // Fetch tournament on mount
   useEffect(() => {
     if (tournamentId) {
-      fetchTournamentDetails(tournamentId);
+      setInitialLoading(true); // Her yeni tournamentId'de loading'i resetle
+      fetchTournamentDetails(tournamentId).finally(() => {
+        // Data yüklendikten sonra kısa bir delay ile initialLoading'i kapat
+        setTimeout(() => setInitialLoading(false), 300);
+      });
       setNavigatedToGame(false);
     }
   }, [tournamentId]);
@@ -386,9 +391,12 @@ const TournamentBracketPage = () => {
   // Mevcut round maçları henüz oluşturulmadı mı kontrol et
   // loading durumunda veya maçlar henüz yoksa spinner göster
   const currentRoundMatches = matches.filter((m) => m.round === currentRound);
+  // initialLoading: sayfa ilk açıldığında hemen spinner
+  // loading: context loading durumu  
+  // currentRoundMatches.length === 0: maçlar henüz oluşturulmamış
   const isWaitingForRoundCreation = 
     currentTournament.status === "in_progress" && 
-    (loading || currentRoundMatches.length === 0);
+    (initialLoading || loading || currentRoundMatches.length === 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-900 to-indigo-900 p-3 sm:p-4">
