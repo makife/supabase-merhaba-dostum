@@ -372,10 +372,9 @@ const HomePage = () => {
 
   return (
     <>
-
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted">
-        <div className="space-y-3">
-          {/* Birleştirilmiş Header ve Level Progress */}
+      <div className="fixed inset-0 flex flex-col bg-gradient-to-br from-background to-muted">
+        {/* Sabit Header */}
+        <div className="flex-shrink-0">
           <Card className="border-0 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/10 shadow-2xl relative overflow-hidden">
             <HeaderAnimation />
 
@@ -630,33 +629,37 @@ const HomePage = () => {
               </div>
             </CardContent>
           </Card>
+        </div>
 
-          {/* Gift Premium Banner */}
-          {isPremium && isGiftPremium(profile) && (
-            <Card className="border-2 border-gradient-to-r from-yellow-400 to-orange-500 bg-gradient-to-r from-yellow-50 to-orange-50 shadow-lg">
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
-                    <Gift className="w-5 h-5 text-white" />
+        {/* Scrollable Content */}
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="space-y-3 p-2">
+            {/* Gift Premium Banner */}
+            {isPremium && isGiftPremium(profile) && (
+              <Card className="border-2 border-gradient-to-r from-yellow-400 to-orange-500 bg-gradient-to-r from-yellow-50 to-orange-50 shadow-lg">
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
+                      <Gift className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-gray-800">🎉 Hoş Geldin Hediyesi!</h3>
+                      <p className="text-sm text-gray-600">
+                        1 haftalık ücretsiz premium paketini kullanıyorsun! Tüm özelliklerden faydalanabilirsin.
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Son tarih:{" "}
+                        {profile?.premium_until ? new Date(profile.premium_until).toLocaleDateString("tr-TR") : ""}
+                      </p>
+                    </div>
+                    <Crown className="w-6 h-6 text-yellow-500" />
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-bold text-gray-800">🎉 Hoş Geldin Hediyesi!</h3>
-                    <p className="text-sm text-gray-600">
-                      1 haftalık ücretsiz premium paketini kullanıyorsun! Tüm özelliklerden faydalanabilirsin.
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Son tarih:{" "}
-                      {profile?.premium_until ? new Date(profile.premium_until).toLocaleDateString("tr-TR") : ""}
-                    </p>
-                  </div>
-                  <Crown className="w-6 h-6 text-yellow-500" />
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                </CardContent>
+              </Card>
+            )}
 
-          {/* Game Modes */}
-          <div className="flex-1 min-h-0">
+            {/* Game Modes */}
+            <div>
             {/* Üst Oyunlar - Scroll edilebilir */}
             <div className="mb-3">
               <div className="w-full overflow-x-auto scrollbar-hide">
@@ -1175,18 +1178,19 @@ const HomePage = () => {
             </div>
           )}
 
-          {/* Floating Menu */}
-          <div data-onboarding="floating-menu">
-            <FloatingMenu />
-          </div>
+            {/* Floating Menu */}
+            <div data-onboarding="floating-menu">
+              <FloatingMenu />
+            </div>
 
-          {/* Avatar View Dialog */}
-          <AvatarViewDialog
-            open={showAvatarView}
-            onOpenChange={setShowAvatarView}
-            avatarUrl={profile?.avatar_url || user?.user_metadata?.avatar_url || ""}
-            username={profile?.username || user?.user_metadata?.username || user?.email?.split("@")[0] || "Oyuncu"}
-          />
+            {/* Avatar View Dialog */}
+            <AvatarViewDialog
+              open={showAvatarView}
+              onOpenChange={setShowAvatarView}
+              avatarUrl={profile?.avatar_url || user?.user_metadata?.avatar_url || ""}
+              username={profile?.username || user?.user_metadata?.username || user?.email?.split("@")[0] || "Oyuncu"}
+            />
+          </div>
         </div>
       </div>
     </>
