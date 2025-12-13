@@ -1,12 +1,31 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Camera, Bell, Shield, CheckCircle2 } from "lucide-react";
-import { PushNotifications } from "@capacitor/push-notifications";
-import { Camera as CapacitorCamera } from "@capacitor/camera";
 import { Capacitor } from "@capacitor/core";
 import { toast } from "sonner";
+
+// Dinamik import için helper fonksiyonlar
+const getPushNotifications = async () => {
+  try {
+    const module = await import("@capacitor/push-notifications");
+    return module.PushNotifications;
+  } catch (error) {
+    console.log("PushNotifications plugin yüklenemedi:", error);
+    return null;
+  }
+};
+
+const getCapacitorCamera = async () => {
+  try {
+    const module = await import("@capacitor/camera");
+    return module.Camera;
+  } catch (error) {
+    console.log("Camera plugin yüklenemedi:", error);
+    return null;
+  }
+};
 
 interface OnboardingPermissionsProps {
   open: boolean;
@@ -130,11 +149,14 @@ export const OnboardingPermissions = ({ open, onComplete }: OnboardingPermission
     // Bildirim izni
     if (isMobile) {
       try {
-        const permission = await PushNotifications.requestPermissions();
-        if (permission.receive === "granted") {
-          await PushNotifications.register();
-          granted.notifications = true;
-          console.log("Bildirim izni verildi ✅");
+        const PushNotifications = await getPushNotifications();
+        if (PushNotifications) {
+          const permission = await PushNotifications.requestPermissions();
+          if (permission.receive === "granted") {
+            await PushNotifications.register();
+            granted.notifications = true;
+            console.log("Bildirim izni verildi ✅");
+          }
         }
       } catch (err) {
         console.error("Bildirim izni hatası:", err);
@@ -151,8 +173,11 @@ export const OnboardingPermissions = ({ open, onComplete }: OnboardingPermission
     // Kamera izni
     if (isMobile) {
       try {
-        const permission = await CapacitorCamera.requestPermissions();
-        granted.camera = permission.camera === "granted";
+        const CapacitorCamera = await getCapacitorCamera();
+        if (CapacitorCamera) {
+          const permission = await CapacitorCamera.requestPermissions();
+          granted.camera = permission.camera === "granted";
+        }
       } catch (err) {
         console.error("Kamera izni hatası:", err);
       }
