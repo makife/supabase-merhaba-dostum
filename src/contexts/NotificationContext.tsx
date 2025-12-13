@@ -3,10 +3,10 @@ import { useChatNotifications } from "@/hooks/useChatNotifications";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { PushNotifications } from "@capacitor/push-notifications";
-import { Capacitor } from "@capacitor/core";
 import { useNavigate } from "react-router-dom";
 import { getActivePrivateChats } from "@/utils/notifications";
+
+// PushNotifications artık kullanılmıyor - useMobileNotifications hook'u kullanılıyor
 
 interface NotificationContextType {
   unreadCount: number;
