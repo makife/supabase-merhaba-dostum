@@ -248,18 +248,20 @@ serve(async (req) => {
     const sendNotification = async () => {
       const success = await sendFirebaseNotification(fcmMessage)
       
-      // Store notification in database
-      await supabaseClient
-        .from('notifications')
-        .insert({
-          user_id: receiverId,
-          type: data?.type || 'general',
-          title,
-          message: body,
-          data,
-          sent_at: new Date().toISOString(),
-          is_read: false
-        })
+      // Store notification in database (only fields that exist in the table)
+      try {
+        await supabaseClient
+          .from('notifications')
+          .insert({
+            user_id: receiverId,
+            type: data?.type || 'general',
+            message: `${title}: ${body}`,
+            related_id: data?.roomCode || data?.chatId || data?.tournamentId || null,
+            is_read: false
+          })
+      } catch (dbError) {
+        console.log('Could not save notification to DB:', dbError)
+      }
 
       console.log(`Notification ${success ? 'sent' : 'failed'} to user ${receiverId}`)
     }
