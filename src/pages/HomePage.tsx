@@ -631,40 +631,37 @@ const HomePage = () => {
           </Card>
         </div>
 
-        {/* Scrollable Content */}
-        <div className="flex-1 min-h-0 overflow-y-auto">
-          <div className="space-y-3 p-2">
-            {/* Gift Premium Banner */}
-            {isPremium && isGiftPremium(profile) && (
-              <Card className="border-2 border-gradient-to-r from-yellow-400 to-orange-500 bg-gradient-to-r from-yellow-50 to-orange-50 shadow-lg">
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
-                      <Gift className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-bold text-gray-800">🎉 Hoş Geldin Hediyesi!</h3>
-                      <p className="text-sm text-gray-600">
-                        1 haftalık ücretsiz premium paketini kullanıyorsun! Tüm özelliklerden faydalanabilirsin.
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Son tarih:{" "}
-                        {profile?.premium_until ? new Date(profile.premium_until).toLocaleDateString("tr-TR") : ""}
-                      </p>
-                    </div>
-                    <Crown className="w-6 h-6 text-yellow-500" />
+        {/* Gift Premium Banner - Sabit */}
+        {isPremium && isGiftPremium(profile) && (
+          <div className="flex-shrink-0 p-2">
+            <Card className="border-2 border-gradient-to-r from-yellow-400 to-orange-500 bg-gradient-to-r from-yellow-50 to-orange-50 shadow-lg">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
+                    <Gift className="w-5 h-5 text-white" />
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                  <div className="flex-1">
+                    <h3 className="font-bold text-gray-800">🎉 Hoş Geldin Hediyesi!</h3>
+                    <p className="text-sm text-gray-600">
+                      1 haftalık ücretsiz premium paketini kullanıyorsun! Tüm özelliklerden faydalanabilirsin.
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Son tarih:{" "}
+                      {profile?.premium_until ? new Date(profile.premium_until).toLocaleDateString("tr-TR") : ""}
+                    </p>
+                  </div>
+                  <Crown className="w-6 h-6 text-yellow-500" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
-            {/* Game Modes */}
-            <div>
-            {/* Üst Oyunlar - Scroll edilebilir */}
-            <div className="mb-3">
-              <div className="w-full overflow-x-auto scrollbar-hide">
-                <div className="flex gap-3 pb-2" style={{ minWidth: "max-content" }}>
-                  {/* Günlük Çark */}
+        {/* Mini Oyunlar - Yatay Scroll (Sabit) */}
+        <div className="flex-shrink-0 px-2 py-2">
+          <div className="w-full overflow-x-auto scrollbar-hide">
+            <div className="flex gap-3 pb-2" style={{ minWidth: "max-content" }}>
+              {/* Günlük Çark */}
                   <div
                     data-onboarding="daily-wheel"
                     className="bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg px-4 py-2 flex items-center shadow-md cursor-pointer hover:shadow-lg transition-all duration-300 min-w-[200px]"
@@ -1000,28 +997,101 @@ const HomePage = () => {
                       <Grid3X3 className="absolute w-6 h-6 text-white/20" />
                     </div>
                   </div>
-                </div>
-              </div>
             </div>
+          </div>
+        </div>
 
-            <div className="h-80 overflow-y-auto scrollbar-hide" data-onboarding="game-modes">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-2">
-                {gameModesConfig.map((mode) => (
-                  <Card
-                    key={mode.id}
-                    className={`cursor-pointer border-0 overflow-hidden ${mode.gradient}`}
-                    onClick={() => {
+        {/* Temel Oyun Modları - Dikey Scroll */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-2 pb-20" data-onboarding="game-modes">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-2">
+            {gameModesConfig.map((mode) => (
+              <Card
+                key={mode.id}
+                className={`cursor-pointer border-0 overflow-hidden ${mode.gradient}`}
+                onClick={() => {
+                  playSound("buttonClick");
+
+                  // Kredi kontrolü - premium değilse ve kredi yoksa
+                  if (!isPremium && (profile?.game_credits || 0) + (profile?.bonus_credits || 0) <= 0) {
+                    toast.error("Yetersiz oyun hakkı!", {
+                      description: "Oyun oynamak için hak satın alın veya dolmasını bekleyin.",
+                      duration: 4000,
+                    });
+                    return;
+                  }
+
+                  if (mode.id === "tournament") {
+                    navigate("/tournament");
+                  } else {
+                    setSelectedMode(mode.id);
+                  }
+                }}
+              >
+                <CardHeader className="pb-2 pt-3 relative">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center border border-white/30">
+                        <mode.icon className="w-4 h-4 text-white" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-base text-white drop-shadow-lg">{mode.title}</CardTitle>
+                        <CardDescription className="text-white/80 font-medium text-sm">
+                          {mode.description}
+                        </CardDescription>
+                      </div>
+                    </div>
+                    {mode.id === "vs-computer" && (
+                      <img
+                        src="/lovable-uploads/8008dff7-7ead-48e2-b47e-fde31770af08.png"
+                        alt="Computer player"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-48 h-36 object-contain opacity-60"
+                      />
+                    )}
+                    {mode.id === "private-room" && (
+                      <img
+                        src="/lovable-uploads/e5d22948-34db-460d-adff-dc6284efcf50.png"
+                        alt="Private room"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-48 h-36 object-contain opacity-60"
+                      />
+                    )}
+                    {mode.id === "random-match" && (
+                      <img
+                        src="/lovable-uploads/a91ec87e-aaac-47fa-93fa-22e1f0270999.png"
+                        alt="Random match"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-48 h-36 object-contain opacity-60"
+                      />
+                    )}
+                    {mode.id === "tournament" && (
+                      <img
+                        src="/lovable-uploads/70bff2fc-4ab0-4705-b1f1-d3cf41bbc7b5.png"
+                        alt="Tournament"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-48 h-36 object-contain opacity-60"
+                      />
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0 pb-3">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Badge
+                      variant="secondary"
+                      className="text-xs bg-white/20 text-white border-white/30 hover:bg-white/30"
+                    >
+                      <Clock className="w-3 h-3 mr-1" />2 Dakika
+                    </Badge>
+                    <Badge
+                      variant="secondary"
+                      className="text-xs bg-white/20 text-white border-white/30 hover:bg-white/30"
+                    >
+                      <Target className="w-3 h-3 mr-1" />
+                      500 Puan
+                    </Badge>
+                  </div>
+                  <Button
+                    className="w-full bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50 backdrop-blur-sm font-semibold"
+                    variant="outline"
+                    onClick={(e) => {
+                      e.stopPropagation();
                       playSound("buttonClick");
-
-                      // Kredi kontrolü - premium değilse ve kredi yoksa
-                      if (!isPremium && (profile?.game_credits || 0) + (profile?.bonus_credits || 0) <= 0) {
-                        toast.error("Yetersiz oyun hakkı!", {
-                          description: "Oyun oynamak için hak satın alın veya dolmasını bekleyin.",
-                          duration: 4000,
-                        });
-                        return;
-                      }
-
                       if (mode.id === "tournament") {
                         navigate("/tournament");
                       } else {
@@ -1029,169 +1099,94 @@ const HomePage = () => {
                       }
                     }}
                   >
-                    <CardHeader className="pb-2 pt-3 relative">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center border border-white/30">
-                            <mode.icon className="w-4 h-4 text-white" />
-                          </div>
-                          <div>
-                            <CardTitle className="text-base text-white drop-shadow-lg">{mode.title}</CardTitle>
-                            <CardDescription className="text-white/80 font-medium text-sm">
-                              {mode.description}
-                            </CardDescription>
-                          </div>
-                        </div>
-                        {mode.id === "vs-computer" && (
-                          <img
-                            src="/lovable-uploads/8008dff7-7ead-48e2-b47e-fde31770af08.png"
-                            alt="Computer player"
-                            className="absolute right-2 top-1/2 -translate-y-1/2 w-48 h-36 object-contain opacity-60"
-                          />
-                        )}
-                        {mode.id === "private-room" && (
-                          <img
-                            src="/lovable-uploads/e5d22948-34db-460d-adff-dc6284efcf50.png"
-                            alt="Private room"
-                            className="absolute right-2 top-1/2 -translate-y-1/2 w-48 h-36 object-contain opacity-60"
-                          />
-                        )}
-                        {mode.id === "random-match" && (
-                          <img
-                            src="/lovable-uploads/a91ec87e-aaac-47fa-93fa-22e1f0270999.png"
-                            alt="Random match"
-                            className="absolute right-2 top-1/2 -translate-y-1/2 w-48 h-36 object-contain opacity-60"
-                          />
-                        )}
-                        {mode.id === "tournament" && (
-                          <img
-                            src="/lovable-uploads/70bff2fc-4ab0-4705-b1f1-d3cf41bbc7b5.png"
-                            alt="Tournament"
-                            className="absolute right-2 top-1/2 -translate-y-1/2 w-48 h-36 object-contain opacity-60"
-                          />
-                        )}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-0 pb-3">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <Badge
-                          variant="secondary"
-                          className="text-xs bg-white/20 text-white border-white/30 hover:bg-white/30"
-                        >
-                          <Clock className="w-3 h-3 mr-1" />2 Dakika
-                        </Badge>
-                        <Badge
-                          variant="secondary"
-                          className="text-xs bg-white/20 text-white border-white/30 hover:bg-white/30"
-                        >
-                          <Target className="w-3 h-3 mr-1" />
-                          500 Puan
-                        </Badge>
-                      </div>
-                      <Button
-                        className="w-full bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50 backdrop-blur-sm font-semibold"
-                        variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          playSound("buttonClick");
-                          if (mode.id === "tournament") {
-                            navigate("/tournament");
-                          } else {
-                            setSelectedMode(mode.id);
-                          }
-                        }}
-                      >
-                        {mode.id === "tournament" ? "Giriş Yap" : "Oyuna Başla"}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Game Mode Selector Modal */}
-          {selectedMode && selectedMode === "private-room" ? (
-            <PrivateRoomModal
-              onClose={() => setSelectedMode(null)}
-              onStartGame={(nakamaMatchId, gameType) => {
-                setSelectedMode(null);
-                navigate(`/game/random-match?room=${nakamaMatchId}&type=${gameType}`);
-              }}
-            />
-          ) : selectedMode === "random-match" ? (
-            <GameModeSelector
-              mode={selectedMode}
-              onStart={(gameType) => {
-                setSelectedMode(null);
-                setMatchmakingGameType(gameType);
-                setMatchmakingKey(Date.now());
-                setShowMatchmaking(true);
-                // Küçük gecikme ile arama başlat (modal mount olduktan sonra)
-                setTimeout(() => startSearch(gameType), 100);
-              }}
-              onClose={() => {
-                playSound("buttonClick");
-                setSelectedMode(null);
-              }}
-            />
-          ) : selectedMode === "tournament" ? (
-            <GameModeSelector
-              mode={selectedMode}
-              onStart={(gameType) => {
-                navigate("/tournament", { state: { gameType } });
-                setSelectedMode(null);
-              }}
-              onClose={() => {
-                playSound("buttonClick");
-                setSelectedMode(null);
-              }}
-            />
-          ) : selectedMode ? (
-            <GameModeSelector
-              mode={selectedMode}
-              onStart={(gameType) => {
-                const mode = gameModesConfig.find((m) => m.id === selectedMode);
-                if (mode) {
-                  navigate(`${mode.route}?type=${gameType}`);
-                }
-                setSelectedMode(null);
-              }}
-              onClose={() => {
-                playSound("buttonClick");
-                setSelectedMode(null);
-              }}
-            />
-          ) : null}
-
-          {/* Slot Matchmaking Modal for Random Match */}
-          {showMatchmaking && (
-            <div className="fixed inset-0 z-[9999] bg-background">
-              <SlotMatchmaking
-                key={`matchmaking-${matchmakingKey}`}
-                onCancel={() => {
-                  cancelSearch();
-                  setShowMatchmaking(false);
-                }}
-                searchProgress={searchProgress}
-              />
-            </div>
-          )}
-
-            {/* Floating Menu */}
-            <div data-onboarding="floating-menu">
-              <FloatingMenu />
-            </div>
-
-            {/* Avatar View Dialog */}
-            <AvatarViewDialog
-              open={showAvatarView}
-              onOpenChange={setShowAvatarView}
-              avatarUrl={profile?.avatar_url || user?.user_metadata?.avatar_url || ""}
-              username={profile?.username || user?.user_metadata?.username || user?.email?.split("@")[0] || "Oyuncu"}
-            />
+                    {mode.id === "tournament" ? "Giriş Yap" : "Oyuna Başla"}
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
+
+        {/* Game Mode Selector Modal */}
+        {selectedMode && selectedMode === "private-room" ? (
+          <PrivateRoomModal
+            onClose={() => setSelectedMode(null)}
+            onStartGame={(nakamaMatchId, gameType) => {
+              setSelectedMode(null);
+              navigate(`/game/random-match?room=${nakamaMatchId}&type=${gameType}`);
+            }}
+          />
+        ) : selectedMode === "random-match" ? (
+          <GameModeSelector
+            mode={selectedMode}
+            onStart={(gameType) => {
+              setSelectedMode(null);
+              setMatchmakingGameType(gameType);
+              setMatchmakingKey(Date.now());
+              setShowMatchmaking(true);
+              // Küçük gecikme ile arama başlat (modal mount olduktan sonra)
+              setTimeout(() => startSearch(gameType), 100);
+            }}
+            onClose={() => {
+              playSound("buttonClick");
+              setSelectedMode(null);
+            }}
+          />
+        ) : selectedMode === "tournament" ? (
+          <GameModeSelector
+            mode={selectedMode}
+            onStart={(gameType) => {
+              navigate("/tournament", { state: { gameType } });
+              setSelectedMode(null);
+            }}
+            onClose={() => {
+              playSound("buttonClick");
+              setSelectedMode(null);
+            }}
+          />
+        ) : selectedMode ? (
+          <GameModeSelector
+            mode={selectedMode}
+            onStart={(gameType) => {
+              const mode = gameModesConfig.find((m) => m.id === selectedMode);
+              if (mode) {
+                navigate(`${mode.route}?type=${gameType}`);
+              }
+              setSelectedMode(null);
+            }}
+            onClose={() => {
+              playSound("buttonClick");
+              setSelectedMode(null);
+            }}
+          />
+        ) : null}
+
+        {/* Slot Matchmaking Modal for Random Match */}
+        {showMatchmaking && (
+          <div className="fixed inset-0 z-[9999] bg-background">
+            <SlotMatchmaking
+              key={`matchmaking-${matchmakingKey}`}
+              onCancel={() => {
+                cancelSearch();
+                setShowMatchmaking(false);
+              }}
+              searchProgress={searchProgress}
+            />
+          </div>
+        )}
+
+        {/* Floating Menu */}
+        <div data-onboarding="floating-menu" className="fixed bottom-0 left-0 right-0 z-50">
+          <FloatingMenu />
+        </div>
+
+        {/* Avatar View Dialog */}
+        <AvatarViewDialog
+          open={showAvatarView}
+          onOpenChange={setShowAvatarView}
+          avatarUrl={profile?.avatar_url || user?.user_metadata?.avatar_url || ""}
+          username={profile?.username || user?.user_metadata?.username || user?.email?.split("@")[0] || "Oyuncu"}
+        />
       </div>
     </>
   );
