@@ -15,23 +15,80 @@ const IMAGE_PATHS = ["/bes.png", "/dort.png", "/uc.png", "/iki.png", "/bir.png",
 const preloadedImages: Map<string, HTMLImageElement> = new Map();
 let imagesPreloaded = false;
 
+// 🔊 AUDIO POOL - Sesleri önceden yükle ve havuzda tut
+const COUNTDOWN_SOUND_POOL_SIZE = 6;
+const START_SOUND_POOL_SIZE = 2;
+
+interface AudioPool {
+  sounds: HTMLAudioElement[];
+  currentIndex: number;
+}
+
+const countdownSoundPool: AudioPool = { sounds: [], currentIndex: 0 };
+const startSoundPool: AudioPool = { sounds: [], currentIndex: 0 };
+let audioPoolInitialized = false;
+
+// Audio pool'u başlat
+const initAudioPool = () => {
+  if (audioPoolInitialized || typeof window === "undefined") return;
+  
+  // Geri sayım sesleri için pool
+  for (let i = 0; i < COUNTDOWN_SOUND_POOL_SIZE; i++) {
+    const audio = new Audio("/gerisayim.mp3");
+    audio.volume = 0.6;
+    audio.preload = "auto";
+    audio.load();
+    countdownSoundPool.sounds.push(audio);
+  }
+  
+  // Başla sesi için pool
+  for (let i = 0; i < START_SOUND_POOL_SIZE; i++) {
+    const audio = new Audio("/basla.mp3");
+    audio.volume = 0.6;
+    audio.preload = "auto";
+    audio.load();
+    startSoundPool.sounds.push(audio);
+  }
+  
+  audioPoolInitialized = true;
+  console.log("✅ GameCountdown: Audio pool initialized");
+};
+
+// Pool'dan ses çal
+const playFromPool = (pool: AudioPool) => {
+  if (pool.sounds.length === 0) return;
+  
+  const audio = pool.sounds[pool.currentIndex];
+  pool.currentIndex = (pool.currentIndex + 1) % pool.sounds.length;
+  
+  // Sesi başa sar ve çal
+  audio.currentTime = 0;
+  audio.play().catch(() => {});
+};
+
 // Preload on module load with completion tracking
 const preloadPromise = typeof window !== "undefined" 
-  ? Promise.all(
-      IMAGE_PATHS.map((src) => {
+  ? Promise.all([
+      // Görüntüleri yükle
+      ...IMAGE_PATHS.map((src) => {
         return new Promise<void>((resolve) => {
           const img = new Image();
           img.onload = () => {
             preloadedImages.set(src, img);
             resolve();
           };
-          img.onerror = () => resolve(); // Don't block on errors
+          img.onerror = () => resolve();
           img.src = src;
         });
+      }),
+      // Audio pool'u başlat
+      new Promise<void>((resolve) => {
+        initAudioPool();
+        resolve();
       })
-    ).then(() => {
+    ]).then(() => {
       imagesPreloaded = true;
-      console.log("✅ GameCountdown: All images preloaded");
+      console.log("✅ GameCountdown: All images and audio preloaded");
     })
   : Promise.resolve();
 
@@ -78,12 +135,13 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       return;
     }
 
-    const playSound = (src: string) => {
-      try {
-        const audio = new Audio(src);
-        audio.volume = 0.6;
-        audio.play().catch(() => {});
-      } catch {}
+    // 🔊 Pool-based sound playback - çok daha hızlı
+    const playCountdownSound = () => {
+      playFromPool(countdownSoundPool);
+    };
+    
+    const playStartSound = () => {
+      playFromPool(startSoundPool);
     };
 
     // Clear any existing interval
@@ -100,7 +158,7 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       console.log("⏱️ GameCountdown: Legacy client-side mode (no serverStartTime)");
 
       setDisplayValue(5);
-      playSound("/gerisayim.mp3");
+      playCountdownSound();
       soundPlayedRef.current.add(5);
 
       const timers: NodeJS.Timeout[] = [];
@@ -108,7 +166,7 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
         setTimeout(() => {
           if (mountedRef.current && !soundPlayedRef.current.has(4)) {
             setDisplayValue(4);
-            playSound("/gerisayim.mp3");
+            playCountdownSound();
             soundPlayedRef.current.add(4);
           }
         }, 1000),
@@ -117,7 +175,7 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
         setTimeout(() => {
           if (mountedRef.current && !soundPlayedRef.current.has(3)) {
             setDisplayValue(3);
-            playSound("/gerisayim.mp3");
+            playCountdownSound();
             soundPlayedRef.current.add(3);
           }
         }, 2000),
@@ -126,7 +184,7 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
         setTimeout(() => {
           if (mountedRef.current && !soundPlayedRef.current.has(2)) {
             setDisplayValue(2);
-            playSound("/gerisayim.mp3");
+            playCountdownSound();
             soundPlayedRef.current.add(2);
           }
         }, 3000),
@@ -135,7 +193,7 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
         setTimeout(() => {
           if (mountedRef.current && !soundPlayedRef.current.has(1)) {
             setDisplayValue(1);
-            playSound("/gerisayim.mp3");
+            playCountdownSound();
             soundPlayedRef.current.add(1);
           }
         }, 4000),
@@ -144,7 +202,7 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
         setTimeout(() => {
           if (mountedRef.current && !startShownRef.current) {
             setDisplayValue("start");
-            playSound("/basla.mp3");
+            playStartSound();
             startShownRef.current = true;
           }
         }, 5000),
@@ -171,7 +229,7 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
     // Her zaman 5'ten başla
     setDisplayValue(5);
     if (!soundPlayedRef.current.has(5)) {
-      playSound("/gerisayim.mp3");
+      playCountdownSound();
       soundPlayedRef.current.add(5);
     }
     
@@ -211,7 +269,7 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
         if (!startShownRef.current) {
           startShownRef.current = true;
           setDisplayValue("start");
-          playSound("/basla.mp3");
+          playStartSound();
         }
       } else if (remainingSeconds >= 1 && remainingSeconds <= 5) {
         // Show countdown number (5, 4, 3, 2, 1)
@@ -220,7 +278,7 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
         // Play sound only once per second - use Set for tracking
         if (!soundPlayedRef.current.has(remainingSeconds)) {
           soundPlayedRef.current.add(remainingSeconds);
-          playSound("/gerisayim.mp3");
+          playCountdownSound();
         }
       }
     }, 100); // 100ms interval for smooth updates
