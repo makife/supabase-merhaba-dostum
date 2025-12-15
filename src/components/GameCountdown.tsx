@@ -115,6 +115,7 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
   const startShownRef = useRef(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const soundPlayedRef = useRef<Set<number>>(new Set()); // Her saniye için sadece bir ses çal
+  const countdownStartedRef = useRef(false); // 🔒 Geri sayım başladı mı kontrolü
 
   useEffect(() => {
     mountedRef.current = true;
@@ -134,6 +135,13 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       console.log("⏱️ GameCountdown: Already completed, skipping");
       return;
     }
+
+    // 🔒 Geri sayım zaten başladıysa, tekrar başlatma (race condition önleme)
+    if (countdownStartedRef.current) {
+      console.log("⏱️ GameCountdown: Already started, skipping duplicate trigger");
+      return;
+    }
+    countdownStartedRef.current = true;
 
     // 🔊 Pool-based sound playback - çok daha hızlı
     const playCountdownSound = () => {
