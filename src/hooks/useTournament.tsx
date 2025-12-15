@@ -63,13 +63,18 @@ export const useTournament = (tournamentId?: string) => {
       return;
     }
 
-    // Güncel katılımcı sayısını al
-    const currentRealPlayers = context.participants.filter((p) => !p.is_bot).length;
-    console.log("🎮 Gerçek oyuncu sayısı:", currentRealPlayers);
+    // 🔒 Güncel katılımcı sayısını VERITABANINDAN al (stale state önleme)
+    const { data: freshParticipants } = await supabase
+      .from("tournament_participants")
+      .select("id, user_id, is_bot")
+      .eq("tournament_id", tournamentId);
+    
+    const currentRealPlayers = freshParticipants?.filter((p) => !p.is_bot).length || 0;
+    console.log("🎮 Gerçek oyuncu sayısı (DB'den):", currentRealPlayers);
 
-    if (currentRealPlayers < 2) {
-      // Cancel tournament - minimum 2 gerçek oyuncu gerekli
-      console.log("❌ Yeterli oyuncu yok (min 2 gerekli), iptal ediliyor");
+    // Minimum 1 gerçek oyuncu gerekli (RPC ile tutarlı)
+    if (currentRealPlayers < 1) {
+      console.log("❌ Yeterli oyuncu yok (min 1 gerekli), iptal ediliyor");
       await supabase
         .from("tournaments")
         .update({ status: "cancelled" })

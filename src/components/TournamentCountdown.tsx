@@ -23,9 +23,9 @@ export const TournamentCountdown: React.FC<TournamentCountdownProps> = ({
   const getBotCount = () => totalParticipants - realPlayerCount;
 
   const getStatusMessage = () => {
-    if (realPlayerCount < 2) {
+    if (realPlayerCount < 1) {
       return {
-        text: "En az 2 oyuncu gerekli",
+        text: "En az 1 oyuncu gerekli",
         color: "text-red-400",
         emoji: "⚠️",
       };
@@ -44,6 +44,14 @@ export const TournamentCountdown: React.FC<TournamentCountdownProps> = ({
         text: "Yeterli oyuncu var, harika bir turnuva olacak!",
         color: "text-green-400",
         emoji: "✅",
+      };
+    }
+
+    if (realPlayerCount >= 1) {
+      return {
+        text: `Turnuva başlayacak! ${8 - realPlayerCount} eksik slotlar botlarla doldurulacak`,
+        color: "text-blue-400",
+        emoji: "🤖",
       };
     }
 
@@ -85,7 +93,7 @@ export const TournamentCountdown: React.FC<TournamentCountdownProps> = ({
 
           {!isCreator && <p className="text-blue-300 text-sm">Turnuvanın başlaması bekleniyor...</p>}
 
-          {isCreator && realPlayerCount < 2 && (
+          {isCreator && realPlayerCount < 1 && (
             <p className="text-red-300 text-sm">⏱️ Süre bittiğinde turnuva iptal edilecek</p>
           )}
         </div>
