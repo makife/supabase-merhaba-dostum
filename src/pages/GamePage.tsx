@@ -4115,6 +4115,13 @@ const requestRematch = async () => {
       gameStart: new Date(gameStartTimestamp).toISOString(),
       endsAt: new Date(endsAtTimestamp).toISOString()
     });
+  } else {
+    // Fallback: countdown_started_at yoksa (olmaması lazım ama güvenlik için)
+    console.warn("⚠️ Tournament countdown_started_at missing, using fallback");
+    gameStartTimestamp = Date.now() + serverTimeOffset;
+    endsAtTimestamp = gameStartTimestamp + 120 * 1000;
+  }
+}
         } else if (currentRoom?.started_at) {
           // Normal oyunlar (Private/Random) için started_at kullan
           gameStartTimestamp = new Date(currentRoom.started_at).getTime();
