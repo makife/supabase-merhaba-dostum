@@ -115,17 +115,17 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
   const startShownRef = useRef(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const soundPlayedRef = useRef<Set<number>>(new Set()); // Her saniye için sadece bir ses çal
-  const countdownStartedRef = useRef(false); // 🔒 Geri sayım başladı mı kontrolü
   const currentDisplayRef = useRef<number | "start" | null>(null); // 🔒 Closure problemi çözümü
+  const lastServerStartTimeRef = useRef<string | null>(null); // Aynı serverStartTime için tekrar çalışmayı önle
 
   useEffect(() => {
     mountedRef.current = true;
     // 🔒 Yeni mount'ta ref'leri resetle (yarı final gibi yeni maçlar için)
     completedRef.current = false;
-    countdownStartedRef.current = false;
     startShownRef.current = false;
     soundPlayedRef.current.clear();
     currentDisplayRef.current = null;
+    lastServerStartTimeRef.current = null;
 
     return () => {
       mountedRef.current = false;
@@ -143,12 +143,19 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       return;
     }
 
-    // 🔒 Geri sayım zaten başladıysa, tekrar başlatma (race condition önleme)
-    if (countdownStartedRef.current) {
-      console.log("⏱️ GameCountdown: Already started, skipping duplicate trigger");
+    // 🔒 Aynı serverStartTime için tekrar çalışmayı önle (ama farklı maç için çalışsın)
+    if (serverStartTime && lastServerStartTimeRef.current === serverStartTime) {
+      console.log("⏱️ GameCountdown: Same serverStartTime, skipping duplicate");
       return;
     }
-    countdownStartedRef.current = true;
+    
+    // Yeni countdown başlıyor - state'i resetle
+    if (serverStartTime) {
+      lastServerStartTimeRef.current = serverStartTime;
+      startShownRef.current = false;
+      soundPlayedRef.current.clear();
+      currentDisplayRef.current = null;
+    }
 
     // 🔊 Pool-based sound playback - çok daha hızlı
     const playCountdownSound = () => {
