@@ -4084,7 +4084,6 @@ const requestRematch = async () => {
 
     // ⏱️ TIMESTAMP-BASED TIMER - Prevents jumps and glitches
     console.log("⏱️ Starting TIMESTAMP-BASED timer (no more setInterval decrement)");
-
     // Fetch ends_at from database
     // ⏱️ TIMESTAMP-BASED TIMER - Prevents jumps and glitches
     const initializeTimer = async () => {
