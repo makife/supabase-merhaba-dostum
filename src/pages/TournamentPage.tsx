@@ -19,10 +19,11 @@ const TournamentPage = () => {
   }, []);
 
   const handleCreateTournament = async () => {
-    // Kredi kontrolü
-    if (!isPremium && (profile?.game_credits || 0) + (profile?.bonus_credits || 0) <= 0) {
+    // Kredi kontrolü - minimum 3 hak gerekli
+    const totalCredits = (profile?.game_credits || 0) + (profile?.bonus_credits || 0);
+    if (!isPremium && totalCredits < 3) {
       toast.error("Yetersiz oyun hakkı!", {
-        description: "Turnuva oluşturmak için hak satın alın veya dolmasını bekleyin.",
+        description: `Turnuva için en az 3 hak gerekli. Mevcut: ${totalCredits}`,
         duration: 4000,
       });
       return;
@@ -35,10 +36,11 @@ const TournamentPage = () => {
   };
 
   const handleJoinTournament = async (tournamentId: string) => {
-    // Kredi kontrolü
-    if (!isPremium && (profile?.game_credits || 0) + (profile?.bonus_credits || 0) <= 0) {
+    // Kredi kontrolü - minimum 3 hak gerekli
+    const totalCredits = (profile?.game_credits || 0) + (profile?.bonus_credits || 0);
+    if (!isPremium && totalCredits < 3) {
       toast.error("Yetersiz oyun hakkı!", {
-        description: "Turnuvaya katılmak için hak satın alın veya dolmasını bekleyin.",
+        description: `Turnuva için en az 3 hak gerekli. Mevcut: ${totalCredits}`,
         duration: 4000,
       });
       return;
