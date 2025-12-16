@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { autoReconnect } from "@/utils/supabaseAutoReconnect";
 
 interface RematchRequest {
   id: string;
@@ -54,7 +55,6 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
   
   const sendingRef = useRef(false);
   const processedRef = useRef<Set<string>>(new Set());
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const waitingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const userId = user?.id;
@@ -441,127 +441,122 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, []);
 
-  // Global listener for rematch requests
+  // Global listener for rematch requests (auto-reconnect destekli)
   useEffect(() => {
     if (!userId) return;
 
-    console.log("🎮 RematchContext: Global listener başlatılıyor");
+    console.log("🎮 RematchContext: Global listener başlatılıyor (auto-reconnect)");
 
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
-    }
-
-    const channel = supabase
-      .channel(`global-rematch-${userId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "rematch_requests",
-          filter: `to_user_id=eq.${userId}`,
-        },
-        async (payload) => {
-          const request = payload.new as RematchRequest;
-          
-          // Skip if already processed
-          if (processedRef.current.has(request.id)) return;
-          processedRef.current.add(request.id);
-
-          // Check if request is recent (within 30 seconds)
-          const requestAge = Date.now() - new Date(request.created_at).getTime();
-          if (requestAge > 30000) {
-            console.log("⏭️ Eski rematch isteği atlanıyor:", request.id);
-            return;
-          }
-
-          console.log("🔔 Yeni rematch isteği alındı:", request.id);
-
-          // Get sender profile
-          const { data: sender } = await supabase
-            .from("profiles")
-            .select("username, avatar_url")
-            .eq("id", request.from_user_id)
-            .single();
-
-          setIncomingRequest({
-            id: request.id,
-            senderId: request.from_user_id,
-            senderName: sender?.username || "Bilinmeyen oyuncu",
-            senderAvatar: sender?.avatar_url || null,
-            roomCode: request.room_code,
-            gameType: request.game_type,
-          });
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "rematch_requests",
-          filter: `from_user_id=eq.${userId}`,
-        },
-        async (payload) => {
-          const request = payload.new as RematchRequest;
-          
-          const responseKey = `resp-${request.id}`;
-          if (processedRef.current.has(responseKey)) return;
-          processedRef.current.add(responseKey);
-
-          if (request.status === "accepted") {
-            console.log("✅ Rematch kabul edildi:", request.room_code);
+    const channelName = `global-rematch-${userId}`;
+    
+    autoReconnect.registerChannel(channelName, () =>
+      supabase
+        .channel(channelName)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "rematch_requests",
+            filter: `to_user_id=eq.${userId}`,
+          },
+          async (payload) => {
+            const request = payload.new as RematchRequest;
             
-            if (waitingTimeoutRef.current) {
-              clearTimeout(waitingTimeoutRef.current);
-              waitingTimeoutRef.current = null;
-            }
-            setIsWaiting(false);
+            // Skip if already processed
+            if (processedRef.current.has(request.id)) return;
+            processedRef.current.add(request.id);
 
-            const { data: room } = await supabase
-              .from("game_rooms")
-              .select("id, game_mode")
-              .eq("room_code", request.room_code)
-              .maybeSingle();
-
-            if (room) {
-              const gameType = room.game_mode?.includes("score") ? "score" : "timed";
-              
-              toast({
-                title: "✅ Rematch Kabul Edildi",
-                description: "Oyun başlıyor...",
-              });
-
-              navigate(`/private-room-waiting?code=${request.room_code}&roomId=${room.id}&gameType=${gameType}`);
+            // Check if request is recent (within 30 seconds)
+            const requestAge = Date.now() - new Date(request.created_at).getTime();
+            if (requestAge > 30000) {
+              console.log("⏭️ Eski rematch isteği atlanıyor:", request.id);
+              return;
             }
-          } else if (request.status === "rejected") {
-            console.log("❌ Rematch reddedildi");
-            
-            if (waitingTimeoutRef.current) {
-              clearTimeout(waitingTimeoutRef.current);
-              waitingTimeoutRef.current = null;
-            }
-            setIsWaiting(false);
-            
-            toast({
-              title: "❌ Rematch Reddedildi",
-              description: "Rakip rematch isteğini reddetti.",
-              variant: "destructive",
+
+            console.log("🔔 Yeni rematch isteği alındı:", request.id);
+
+            // Get sender profile
+            const { data: sender } = await supabase
+              .from("profiles")
+              .select("username, avatar_url")
+              .eq("id", request.from_user_id)
+              .single();
+
+            setIncomingRequest({
+              id: request.id,
+              senderId: request.from_user_id,
+              senderName: sender?.username || "Bilinmeyen oyuncu",
+              senderAvatar: sender?.avatar_url || null,
+              roomCode: request.room_code,
+              gameType: request.game_type,
             });
           }
-        }
-      )
-      .subscribe((status) => {
-        console.log("🔌 RematchContext channel:", status);
-      });
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "rematch_requests",
+            filter: `from_user_id=eq.${userId}`,
+          },
+          async (payload) => {
+            const request = payload.new as RematchRequest;
+            
+            const responseKey = `resp-${request.id}`;
+            if (processedRef.current.has(responseKey)) return;
+            processedRef.current.add(responseKey);
 
-    channelRef.current = channel;
+            if (request.status === "accepted") {
+              console.log("✅ Rematch kabul edildi:", request.room_code);
+              
+              if (waitingTimeoutRef.current) {
+                clearTimeout(waitingTimeoutRef.current);
+                waitingTimeoutRef.current = null;
+              }
+              setIsWaiting(false);
+
+              const { data: room } = await supabase
+                .from("game_rooms")
+                .select("id, game_mode")
+                .eq("room_code", request.room_code)
+                .maybeSingle();
+
+              if (room) {
+                const gameType = room.game_mode?.includes("score") ? "score" : "timed";
+                
+                toast({
+                  title: "✅ Rematch Kabul Edildi",
+                  description: "Oyun başlıyor...",
+                });
+
+                navigate(`/private-room-waiting?code=${request.room_code}&roomId=${room.id}&gameType=${gameType}`);
+              }
+            } else if (request.status === "rejected") {
+              console.log("❌ Rematch reddedildi");
+              
+              if (waitingTimeoutRef.current) {
+                clearTimeout(waitingTimeoutRef.current);
+                waitingTimeoutRef.current = null;
+              }
+              setIsWaiting(false);
+              
+              toast({
+                title: "❌ Rematch Reddedildi",
+                description: "Rakip rematch isteğini reddetti.",
+                variant: "destructive",
+              });
+            }
+          }
+        )
+        .subscribe((status) => {
+          console.log("🔌 RematchContext channel:", status);
+        })
+    );
 
     return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
+      autoReconnect.unregisterChannel(channelName);
       if (waitingTimeoutRef.current) {
         clearTimeout(waitingTimeoutRef.current);
       }

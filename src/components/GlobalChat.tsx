@@ -18,6 +18,7 @@ import { sendMentionNotification } from '@/utils/notifications';
 import { isUserBanned, containsBannedWords, banUser, getBanTimeLeft } from '@/utils/chatBot';
 import { useUserBlocking } from '@/hooks/useUserBlocking';
 import { useNavigate } from 'react-router-dom';
+import { autoReconnect } from '@/utils/supabaseAutoReconnect';
 
 
 interface ChatMessage {
@@ -249,78 +250,81 @@ useEffect(() => {
 
 
 
-// Real-time subscription için ayrı bir useEffect
+// Real-time subscription için ayrı bir useEffect (auto-reconnect destekli)
 useEffect(() => {
     if (!isOpen || !user?.id) return;
 
-    console.log('🔄 Setting up Global Chat real-time subscription');
+    console.log('🔄 Setting up Global Chat real-time subscription (auto-reconnect)');
     
     // İlk mesajları ve online kullanıcıları yükle
     fetchMessages();
     refreshOnlineUsers();
 
-    // Real-time subscription kur
-    const channel = supabase
-      .channel('global-chat-realtime', {
-        config: {
-          broadcast: { self: false }, // Kendi mesajlarını tekrar alma
-        }
-      })
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'global_chat'
-        },
-        (payload) => {
-          console.log('📨 New global message received:', payload.new);
-          
-          const newMessage = payload.new as ChatMessage;
-          
-          setMessages(prev => {
-            // Duplicate kontrolü
-            const exists = prev.some(msg => msg.id === newMessage.id);
-            if (exists) {
-              console.log('⚠️ Message already exists, skipping');
-              return prev;
-            }
-            
-            console.log('✅ Adding new message to state');
-            return [...prev, newMessage].sort((a, b) => 
-              new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-            );
-          });
-          
-          // Sadece başkalarının mesajları için ses çal
-          if (newMessage.user_id !== user?.id) {
-            playSound('correctWord');
+    // Real-time subscription kur (auto-reconnect destekli)
+    const channelName = `global-chat-realtime-${user.id}`;
+    autoReconnect.registerChannel(channelName, () =>
+      supabase
+        .channel('global-chat-realtime', {
+          config: {
+            broadcast: { self: false }, // Kendi mesajlarını tekrar alma
           }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'global_chat'
-        },
-        (payload) => {
-          console.log('🗑️ Message deleted:', payload.old);
-          setMessages(prev => prev.filter(msg => msg.id !== payload.old.id));
-        }
-      )
-      .subscribe((status) => {
-        console.log('📡 Global subscription status:', status);
-        
-        if (status === 'CHANNEL_ERROR') {
-          console.error('❌ Channel error detected');
-        }
-      });
+        })
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'global_chat'
+          },
+          (payload) => {
+            console.log('📨 New global message received:', payload.new);
+            
+            const newMessage = payload.new as ChatMessage;
+            
+            setMessages(prev => {
+              // Duplicate kontrolü
+              const exists = prev.some(msg => msg.id === newMessage.id);
+              if (exists) {
+                console.log('⚠️ Message already exists, skipping');
+                return prev;
+              }
+              
+              console.log('✅ Adding new message to state');
+              return [...prev, newMessage].sort((a, b) => 
+                new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+              );
+            });
+            
+            // Sadece başkalarının mesajları için ses çal
+            if (newMessage.user_id !== user?.id) {
+              playSound('correctWord');
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'DELETE',
+            schema: 'public',
+            table: 'global_chat'
+          },
+          (payload) => {
+            console.log('🗑️ Message deleted:', payload.old);
+            setMessages(prev => prev.filter(msg => msg.id !== payload.old.id));
+          }
+        )
+        .subscribe((status) => {
+          console.log('📡 Global subscription status:', status);
+          
+          if (status === 'CHANNEL_ERROR') {
+            console.error('❌ Channel error detected - auto-reconnect will handle');
+          }
+        })
+    );
 
     return () => {
       console.log('🧹 Cleaning up global real-time channel');
-      supabase.removeChannel(channel);
+      autoReconnect.unregisterChannel(channelName);
     };
   }, [isOpen, user?.id]);
 
