@@ -236,18 +236,25 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       };
     }
 
-    // 🔒 HYBRID APPROACH: Local visual progression + Server-sync completion
-    // Visual: Her zaman 5-4-3-2-1 göster (local timing)
-    // Completion: Server end time'a göre bitir (senkronize)
-    console.log("⏱️ GameCountdown: Hybrid mode with serverStartTime:", serverStartTime);
+    // 🔒 FULL SERVER-AUTHORITATIVE COUNTDOWN
+    // Tüm oyuncular server time'a göre senkronize countdown görür
+    console.log("⏱️ GameCountdown: Server-authoritative mode with serverStartTime:", serverStartTime);
     
-    // Server countdown end time (AUTHORITATIVE for completion)
+    // Server countdown timing (AUTHORITATIVE)
     const countdownStartTime = new Date(serverStartTime).getTime();
     const countdownEndTime = countdownStartTime + COUNTDOWN_DURATION_MS;
-    const serverNow = Date.now() + serverTimeOffset;
+    
+    // İlk server time hesapla
+    const initialServerNow = Date.now() + serverTimeOffset;
+    const initialRemainingMs = countdownEndTime - initialServerNow;
+    
+    console.log("⏱️ Server time offset:", serverTimeOffset, "ms");
+    console.log("⏱️ Countdown starts at:", new Date(countdownStartTime).toISOString());
+    console.log("⏱️ Countdown ends at:", new Date(countdownEndTime).toISOString());
+    console.log("⏱️ Initial remaining:", initialRemainingMs, "ms");
     
     // Eğer countdown zaten bitmişse
-    if (countdownEndTime - serverNow <= 0) {
+    if (initialRemainingMs <= -START_DISPLAY_DURATION_MS) {
       if (!completedRef.current && mountedRef.current) {
         completedRef.current = true;
         console.log("⏱️ GameCountdown: Already completed at mount");
@@ -256,16 +263,29 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       return;
     }
     
-    // 🎯 LOCAL VISUAL START - Her zaman 5'ten başla
-    const localStartTime = Date.now();
-    console.log("⏱️ Starting countdown from 5 (local visual), server ends at:", new Date(countdownEndTime).toISOString());
+    // İlk görsel değeri server time'a göre ayarla
+    if (initialRemainingMs > 0) {
+      const initialSeconds = Math.ceil(initialRemainingMs / 1000);
+      const initialDisplay = Math.min(5, Math.max(1, initialSeconds));
+      setDisplayValue(initialDisplay);
+      currentDisplayRef.current = initialDisplay;
+      
+      // İlk ses
+      if (!soundPlayedRef.current.has(initialDisplay)) {
+        soundPlayedRef.current.add(initialDisplay);
+        playCountdownSound();
+      }
+      console.log("⏱️ Starting countdown from", initialDisplay, "(server-sync)");
+    } else if (initialRemainingMs > -START_DISPLAY_DURATION_MS) {
+      // Countdown bitti ama start süresi devam ediyor
+      setDisplayValue("start");
+      currentDisplayRef.current = "start";
+      startShownRef.current = true;
+      playStartSound();
+      console.log("⏱️ Starting at 'start' display (server-sync)");
+    }
     
-    setDisplayValue(5);
-    currentDisplayRef.current = 5;
-    playCountdownSound();
-    soundPlayedRef.current.add(5);
-    
-    // Use setInterval for consistent updates
+    // Server-authoritative interval
     intervalRef.current = setInterval(() => {
       if (completedRef.current || !mountedRef.current) {
         if (intervalRef.current) {
@@ -275,21 +295,15 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
         return;
       }
 
-      const now = Date.now();
-      const serverNow = now + serverTimeOffset;
-      
-      // Server end time'a göre kalan süre (completion için)
+      // Her tick'te server time hesapla
+      const serverNow = Date.now() + serverTimeOffset;
       const serverRemainingMs = countdownEndTime - serverNow;
       
-      // Local elapsed time (visual için)
-      const localElapsedMs = now - localStartTime;
-      const localRemainingMs = COUNTDOWN_DURATION_MS - localElapsedMs;
-      
-      // 🔒 COMPLETION CHECK: Local timing + start display süresi sonrası
-      if (localRemainingMs <= -START_DISPLAY_DURATION_MS) {
+      // 🔒 COMPLETION CHECK: Server time + start display süresi sonrası
+      if (serverRemainingMs <= -START_DISPLAY_DURATION_MS) {
         if (!completedRef.current) {
           completedRef.current = true;
-          console.log("⏱️ GameCountdown: Completed (local-sync)");
+          console.log("⏱️ GameCountdown: Completed (server-sync)");
           if (intervalRef.current) {
             clearInterval(intervalRef.current);
             intervalRef.current = null;
@@ -299,24 +313,23 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
         return;
       }
 
-      // 🎯 VISUAL DISPLAY: Local timing ile 5-4-3-2-1 ve start
-      // Local timing kullan - hem visual hem start için tutarlılık
-      if (localRemainingMs <= 0) {
-        // Show "start" - local countdown ended
+      // 🎯 VISUAL DISPLAY: Server time'a göre 5-4-3-2-1 ve start
+      if (serverRemainingMs <= 0) {
+        // Show "start" - server countdown ended
         if (!startShownRef.current) {
           startShownRef.current = true;
-          console.log("⏱️ Countdown: start");
+          console.log("⏱️ Countdown: start (server-sync)");
           setDisplayValue("start");
           currentDisplayRef.current = "start";
           playStartSound();
         }
       } else {
-        // Local visual countdown (5-4-3-2-1)
-        const localSeconds = Math.ceil(localRemainingMs / 1000);
-        const displaySeconds = Math.min(5, Math.max(1, localSeconds));
+        // Server-authoritative countdown (5-4-3-2-1)
+        const serverSeconds = Math.ceil(serverRemainingMs / 1000);
+        const displaySeconds = Math.min(5, Math.max(1, serverSeconds));
         
         if (currentDisplayRef.current !== displaySeconds && displaySeconds >= 1 && displaySeconds <= 5) {
-          console.log("⏱️ Countdown:", displaySeconds);
+          console.log("⏱️ Countdown:", displaySeconds, "(server remaining:", serverRemainingMs, "ms)");
           setDisplayValue(displaySeconds);
           currentDisplayRef.current = displaySeconds;
           
