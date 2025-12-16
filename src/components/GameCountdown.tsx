@@ -229,54 +229,32 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       };
     }
 
-    // 🔒 SERVER TIME SYNC - Her client aynı anda aynı saniyeyi görür
-console.log("⏱️ GameCountdown: Server-sync mode with serverStartTime:", serverStartTime);
+    // 🔒 LOCAL TIMING - Component mount olduğunda HER ZAMAN 5'ten başla
+    // Server time sadece senkronizasyon için kullanılır, görsel her zaman 5'ten başlar
+    console.log("⏱️ GameCountdown: Starting countdown from 5 (local timing mode)");
+    
+    // 🎯 HER ZAMAN 5'ten başla - server sync gecikmelerinden bağımsız
+    const localStartTime = Date.now();
+    const localEndTime = localStartTime + COUNTDOWN_DURATION_MS;
+    
+    // İlk değer 5
+    setDisplayValue(5);
+    playCountdownSound();
+    soundPlayedRef.current.add(5);
+    
+    // Use setInterval for consistent updates
+    intervalRef.current = setInterval(() => {
+      if (completedRef.current || !mountedRef.current) {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+        return;
+      }
 
-// Server countdown başlangıç zamanını hesapla
-const countdownStartTime = new Date(serverStartTime).getTime();
-const serverNow = Date.now() + serverTimeOffset;
-
-// Countdown'un sonlanma zamanı
-const countdownEndTime = countdownStartTime + COUNTDOWN_DURATION_MS;
-
-// Şu an countdown'un kaçıncı saniyesindeyiz?
-const elapsedMs = serverNow - countdownStartTime;
-const remainingMs = Math.max(0, COUNTDOWN_DURATION_MS - elapsedMs);
-const currentSecond = Math.ceil(remainingMs / 1000);
-
-// Eğer countdown zaten bitmişse
-if (remainingMs <= 0) {
-  if (!completedRef.current && mountedRef.current) {
-    completedRef.current = true;
-    console.log("⏱️ GameCountdown: Already completed at mount");
-    onComplete();
-  }
-  return;
-}
-
-// Countdown'u doğru saniyeden başlat (5, 4, 3, 2, veya 1)
-console.log("⏱️ Starting countdown from second:", currentSecond);
-setDisplayValue(currentSecond);
-
-// İlk sesi çal
-if (!soundPlayedRef.current.has(currentSecond)) {
-  playCountdownSound();
-  soundPlayedRef.current.add(currentSecond);
-}
-
-// Use setInterval for consistent updates (doesn't pause in background)
-intervalRef.current = setInterval(() => {
-  if (completedRef.current || !mountedRef.current) {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    return;
-  }
-
-  const serverNow = Date.now() + serverTimeOffset;
-  const remainingMs = countdownEndTime - serverNow;
-  const remainingSeconds = Math.ceil(remainingMs / 1000);
+      const now = Date.now();
+      const remainingMs = localEndTime - now;
+      const remainingSeconds = Math.ceil(remainingMs / 1000);
 
       if (remainingMs <= -START_DISPLAY_DURATION_MS) {
         // Countdown finished 800ms ago - complete
@@ -301,7 +279,9 @@ intervalRef.current = setInterval(() => {
         }
       } else if (remainingSeconds >= 1 && remainingSeconds <= 5) {
         // Show countdown number (5, 4, 3, 2, 1)
-        setDisplayValue(remainingSeconds);
+        if (displayValue !== remainingSeconds) {
+          setDisplayValue(remainingSeconds);
+        }
 
         // Play sound only once per second - use Set for tracking
         if (!soundPlayedRef.current.has(remainingSeconds)) {
@@ -309,7 +289,7 @@ intervalRef.current = setInterval(() => {
           playCountdownSound();
         }
       }
-    }, 100); // 100ms interval for smooth updates
+    }, 50); // 50ms interval for smoother updates
 
     return () => {
       if (intervalRef.current) {
