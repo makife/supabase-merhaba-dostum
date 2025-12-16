@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Play, Pause, RotateCcw, Trophy, Target, ArrowLeft } from "lucide-react";
 
-const GRID_SIZE = 20;
-const INITIAL_SNAKE = [{ x: 10, y: 10 }];
+const GRID_SIZE = 15;
+const INITIAL_SNAKE = [{ x: 7, y: 7 }];
 const INITIAL_DIRECTION = { x: 0, y: -1 };
 
 // Varsayılan kelime listesi (Dosya yüklenemezse kullanılır)
@@ -415,35 +415,40 @@ const SnakeGame = () => {
             <p style={{ color: "#aaa", fontSize: "12px", marginBottom: "6px", textTransform: "uppercase" }}>
               Hedef Kelime
             </p>
-            <div style={{ display: "flex", justifyContent: "center", gap: "4px", flexWrap: "wrap" }}>
-              {targetWord.split("").map((letter, index) => (
-                <span
-                  key={index}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    width: "28px",
-                    height: "28px",
-                    borderRadius: "6px",
-                    fontWeight: "bold",
-                    fontSize: "16px",
-                    backgroundColor:
-                      index < targetLetterIdx
-                        ? "#10b981"
-                        : index === targetLetterIdx
-                          ? "#f59e0b"
-                          : "rgba(255,255,255,0.1)",
-                    color:
-                      index < targetLetterIdx ? "white" : index === targetLetterIdx ? "white" : "rgba(255,255,255,0.4)",
-                    border: index === targetLetterIdx ? "2px solid white" : "none",
-                    boxShadow: index === targetLetterIdx ? "0 0 10px #f59e0b" : "none",
-                    transition: "all 0.3s ease",
-                  }}
-                >
-                  {letter}
-                </span>
-              ))}
+            <div style={{ display: "flex", justifyContent: "center", gap: targetWord.length > 10 ? "2px" : "4px", flexWrap: "nowrap" }}>
+              {targetWord.split("").map((letter, index) => {
+                const letterSize = targetWord.length > 12 ? 20 : targetWord.length > 10 ? 24 : 28;
+                const fontSize = targetWord.length > 12 ? 11 : targetWord.length > 10 ? 13 : 16;
+                return (
+                  <span
+                    key={index}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: `${letterSize}px`,
+                      height: `${letterSize}px`,
+                      borderRadius: "6px",
+                      fontWeight: "bold",
+                      fontSize: `${fontSize}px`,
+                      backgroundColor:
+                        index < targetLetterIdx
+                          ? "#10b981"
+                          : index === targetLetterIdx
+                            ? "#f59e0b"
+                            : "rgba(255,255,255,0.1)",
+                      color:
+                        index < targetLetterIdx ? "white" : index === targetLetterIdx ? "white" : "rgba(255,255,255,0.4)",
+                      border: index === targetLetterIdx ? "2px solid white" : "none",
+                      boxShadow: index === targetLetterIdx ? "0 0 10px #f59e0b" : "none",
+                      transition: "all 0.3s ease",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {letter}
+                  </span>
+                );
+              })}
             </div>
           </div>
         </div>
