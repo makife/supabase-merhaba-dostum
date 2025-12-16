@@ -6332,7 +6332,9 @@ const requestRematch = async () => {
                         <div className="absolute inset-0 bg-silver-gradient/95 backdrop-blur-sm flex items-center justify-center">
                           {preparingOpponent === "preparing" ? (
                             <div className="text-center animate-pulse">
-                              <p className="text-sm font-bold text-gray-700">Oyuncu Hazırlanıyor...</p>
+                              <p className="text-sm font-bold text-gray-700">
+                                {gameMode === "vs-computer" ? "Bilgisayar Hazırlanıyor..." : "Oyuncu Hazırlanıyor..."}
+                              </p>
                               <div className="flex gap-1 justify-center mt-2">
                                 <div
                                   className="w-2 h-2 bg-primary rounded-full animate-bounce"
@@ -6350,7 +6352,7 @@ const requestRematch = async () => {
                             </div>
                           ) : (
                             <Badge variant="default" className="text-sm font-semibold animate-pulse bg-green-500">
-                              ✓ Oyuncu Hazır!
+                              {gameMode === "vs-computer" ? "✓ Bilgisayar Hazır!" : "✓ Oyuncu Hazır!"}
                             </Badge>
                           )}
                         </div>
