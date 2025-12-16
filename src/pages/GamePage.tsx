@@ -4103,15 +4103,24 @@ const requestRematch = async () => {
 
         // 1. ADIM: Başlangıç ve Bitiş Zamanlarını Belirle
         if (gameMode === "tournament" && tournamentMatch) {
-  // 🔒 KRİTİK FIX: Countdown artık local timing kullandığı için
-  // ends_at'i de local olarak hesapla: şimdi + 120 saniye
-  // Bu sayede oyun her zaman 2:00'dan başlar
-  gameStartTimestamp = Date.now();
-  endsAtTimestamp = gameStartTimestamp + 120 * 1000;
-  console.log("🏆 Tournament timer: Local timing (2:00 from now)", {
-    gameStart: new Date(gameStartTimestamp).toISOString(),
-    endsAt: new Date(endsAtTimestamp).toISOString()
-  });
+  // 🔒 SERVER TIME SYNC - countdown_started_at kullan
+  // Buffer (5s) + Countdown (5s) = 10 saniye sonra oyun başlar
+  if (tournamentMatch.countdown_started_at) {
+    const countdownStartTime = new Date(tournamentMatch.countdown_started_at).getTime();
+    gameStartTimestamp = countdownStartTime + 10000; // 10 saniye sonra
+    endsAtTimestamp = gameStartTimestamp + 120 * 1000;
+    
+    console.log("🏆 Tournament timer: Server timing", {
+      countdownStart: new Date(countdownStartTime).toISOString(),
+      gameStart: new Date(gameStartTimestamp).toISOString(),
+      endsAt: new Date(endsAtTimestamp).toISOString()
+    });
+  } else {
+    // Fallback: countdown_started_at yoksa (olmaması lazım ama güvenlik için)
+    console.warn("⚠️ Tournament countdown_started_at missing, using fallback");
+    gameStartTimestamp = Date.now() + serverTimeOffset;
+    endsAtTimestamp = gameStartTimestamp + 120 * 1000;
+  }
 }
         } else if (currentRoom?.started_at) {
           // Normal oyunlar (Private/Random) için started_at kullan
