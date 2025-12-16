@@ -5756,7 +5756,8 @@ const requestRematch = async () => {
 
       if (!opponentId || String(opponentId).startsWith("bot_")) {
         const seed = Array.from(String(opponentId || "bot")).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-        return { name: generateBotName(seed), icon: Trophy, avatar: generateBotAvatar(seed) };
+        const botName = generateBotName(seed);
+        return { name: botName, icon: Trophy, avatar: generateBotAvatar(seed, botName) };
       }
 
       // Participants yüklenmediyse fallback
