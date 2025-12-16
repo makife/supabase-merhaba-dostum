@@ -46,7 +46,7 @@ import {
   PenTool,
   Loader2,
 } from "lucide-react";
-import { generateBotName } from "@/utils/tournamentHelpers";
+import { generateBotName, generateBotAvatar } from "@/utils/tournamentHelpers";
 import { matchBanlist } from "@/utils/matchBanlist";
 import robotAvatar from "@/assets/robot-avatar.png";
 import { useQueryClient } from "@tanstack/react-query";
@@ -5680,7 +5680,7 @@ const requestRematch = async () => {
 
       if (!opponentId || String(opponentId).startsWith("bot_")) {
         const seed = Array.from(String(opponentId || "bot")).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-        return { name: generateBotName(seed), icon: Trophy, avatar: null };
+        return { name: generateBotName(seed), icon: Trophy, avatar: generateBotAvatar(seed) };
       }
 
       // Participants yüklenmediyse fallback
