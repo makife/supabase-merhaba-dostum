@@ -3751,24 +3751,24 @@ const requestRematch = async () => {
 
   // 🏆 TURNUVA MAÇLARI İÇİN INITIAL COUNTDOWN SYNC - Sayfa açıldığında animasyonları başlat
   useEffect(() => {
-  if (gameMode !== "tournament" || !tournamentMatch?.countdown_started_at) return;
-  if (countdownInitiatedRef.current) return;
+    if (gameMode !== "tournament" || !tournamentMatch?.countdown_started_at) return;
+    if (countdownInitiatedRef.current) return;
 
-  console.log("🏆 Tournament initial countdown sync:", tournamentMatch.countdown_started_at);
+    console.log("🏆 Tournament initial countdown sync:", tournamentMatch.countdown_started_at);
 
-  // Server countdown başlangıç zamanı
-  const countdownStartTime = new Date(tournamentMatch.countdown_started_at).getTime();
-  const BUFFER_MS = 5000; // Buffer süresi
-  const COUNTDOWN_MS = 5000; // Countdown süresi
-  
-  // Gerçek countdown başlangıcı (buffer sonrası)
-  const realCountdownStart = countdownStartTime + BUFFER_MS;
-  
-  const serverNow = Date.now() + serverTimeOffset;
-  const msUntilCountdown = realCountdownStart - serverNow;
+    // Server countdown başlangıç zamanı
+    const countdownStartTime = new Date(tournamentMatch.countdown_started_at).getTime();
+    const BUFFER_MS = 5000; // Buffer süresi
+    const TOTAL_BUFFER_MS = 5000;
+    
+    // Gerçek countdown başlangıcı (buffer sonrası)
+    const adjustedCountdownStart = countdownStartTime + BUFFER_MS;
+    
+    const serverNow = Date.now() + serverTimeOffset;
+    const msElapsedSinceStart = serverNow - countdownStartTime;
 
     console.log("🏆 Tournament countdown timing:", {
-      originalTime: new Date(originalCountdownTime).toISOString(),
+      originalTime: new Date(countdownStartTime).toISOString(),
       adjustedStart: new Date(adjustedCountdownStart).toISOString(),
       serverNow: new Date(serverNow).toISOString(),
       msElapsedSinceStart,
@@ -4105,25 +4105,24 @@ const requestRematch = async () => {
 
         // 1. ADIM: Başlangıç ve Bitiş Zamanlarını Belirle
         if (gameMode === "tournament" && tournamentMatch) {
-  // 🔒 SERVER TIME SYNC - countdown_started_at kullan
-  // Buffer (5s) + Countdown (5s) = 10 saniye sonra oyun başlar
-  if (tournamentMatch.countdown_started_at) {
-    const countdownStartTime = new Date(tournamentMatch.countdown_started_at).getTime();
-    gameStartTimestamp = countdownStartTime + 10000; // 10 saniye sonra
-    endsAtTimestamp = gameStartTimestamp + 120 * 1000;
-    
-    console.log("🏆 Tournament timer: Server timing", {
-      countdownStart: new Date(countdownStartTime).toISOString(),
-      gameStart: new Date(gameStartTimestamp).toISOString(),
-      endsAt: new Date(endsAtTimestamp).toISOString()
-    });
-  } else {
-    // Fallback: countdown_started_at yoksa (olmaması lazım ama güvenlik için)
-    console.warn("⚠️ Tournament countdown_started_at missing, using fallback");
-    gameStartTimestamp = Date.now() + serverTimeOffset;
-    endsAtTimestamp = gameStartTimestamp + 120 * 1000;
-  }
-}
+          // 🔒 SERVER TIME SYNC - countdown_started_at kullan
+          // Buffer (5s) + Countdown (5s) = 10 saniye sonra oyun başlar
+          if (tournamentMatch.countdown_started_at) {
+            const countdownStartTime = new Date(tournamentMatch.countdown_started_at).getTime();
+            gameStartTimestamp = countdownStartTime + 10000; // 10 saniye sonra
+            endsAtTimestamp = gameStartTimestamp + 120 * 1000;
+            
+            console.log("🏆 Tournament timer: Server timing", {
+              countdownStart: new Date(countdownStartTime).toISOString(),
+              gameStart: new Date(gameStartTimestamp).toISOString(),
+              endsAt: new Date(endsAtTimestamp).toISOString()
+            });
+          } else {
+            // Fallback: countdown_started_at yoksa (olmaması lazım ama güvenlik için)
+            console.warn("⚠️ Tournament countdown_started_at missing, using fallback");
+            gameStartTimestamp = Date.now() + serverTimeOffset;
+            endsAtTimestamp = gameStartTimestamp + 120 * 1000;
+          }
         } else if (currentRoom?.started_at) {
           // Normal oyunlar (Private/Random) için started_at kullan
           gameStartTimestamp = new Date(currentRoom.started_at).getTime();
