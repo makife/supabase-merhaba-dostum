@@ -116,9 +116,16 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const soundPlayedRef = useRef<Set<number>>(new Set()); // Her saniye için sadece bir ses çal
   const countdownStartedRef = useRef(false); // 🔒 Geri sayım başladı mı kontrolü
+  const currentDisplayRef = useRef<number | "start" | null>(null); // 🔒 Closure problemi çözümü
 
   useEffect(() => {
     mountedRef.current = true;
+    // 🔒 Yeni mount'ta ref'leri resetle (yarı final gibi yeni maçlar için)
+    completedRef.current = false;
+    countdownStartedRef.current = false;
+    startShownRef.current = false;
+    soundPlayedRef.current.clear();
+    currentDisplayRef.current = null;
 
     return () => {
       mountedRef.current = false;
@@ -257,6 +264,7 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
     // Ama server end time'a göre senkronize bitir
     console.log("⏱️ Starting countdown from 5, server remaining:", remainingMs, "ms");
     setDisplayValue(5);
+    currentDisplayRef.current = 5; // 🔒 Ref'i de güncelle
     playCountdownSound();
     soundPlayedRef.current.add(5);
     
@@ -295,12 +303,16 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
         if (!startShownRef.current) {
           startShownRef.current = true;
           setDisplayValue("start");
+          currentDisplayRef.current = "start";
           playStartSound();
         }
       } else if (remainingSeconds >= 1 && remainingSeconds <= 5) {
         // Show countdown number (5, 4, 3, 2, 1)
-        if (displayValue !== remainingSeconds) {
+        // 🔒 Ref kullanarak closure problemi çözüldü
+        if (currentDisplayRef.current !== remainingSeconds) {
+          console.log("⏱️ Countdown:", remainingSeconds);
           setDisplayValue(remainingSeconds);
+          currentDisplayRef.current = remainingSeconds;
         }
 
         // Play sound only once per second - use Set for tracking
