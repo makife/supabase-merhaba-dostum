@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tournament, TournamentParticipant, TournamentMatch } from "@/types/tournament";
 import { toast } from "@/components/ui/use-toast";
-import { generateBotName } from "@/utils/tournamentHelpers";
+import { generateBotName, generateBotAvatar } from "@/utils/tournamentHelpers";
 import { autoReconnect } from "@/utils/supabaseAutoReconnect";
 
 interface TournamentContextType {
@@ -403,9 +403,10 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
         (rawParticipants || []).map(async (p) => {
           if (p.is_bot || !p.user_id) {
             const seed = Array.from(String(p.user_id || "")).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+            const botName = generateBotName(seed);
             return {
               ...p,
-              profiles: { username: generateBotName(seed), avatar_url: null },
+              profiles: { username: botName, avatar_url: generateBotAvatar(seed, botName) },
             };
           }
 
