@@ -3157,7 +3157,9 @@ const requestRematch = async () => {
           if (matchData.countdown_started_at && !countdownInitiatedRef.current) {
             console.log("🎯 Tournament countdown başlatılıyor (initial load):", matchData.countdown_started_at);
             // 🎯 5 saniyelik buffer ekle - random-match ile aynı
-            initiateCountdown(matchData.countdown_started_at);
+            const originalTime = new Date(matchData.countdown_started_at).getTime();
+            const adjustedTime = new Date(originalTime + 5000).toISOString();
+            initiateCountdown(adjustedTime);
           }
         }
 
@@ -3694,10 +3696,11 @@ const requestRematch = async () => {
             
             // 5 saniye sonra countdown başlat
             setTimeout(() => {
-  // ✅ Server time'ı direkt kullan, +5000 EKLEME!
-  setCountdownServerTime(newData.countdown_started_at);
-  setShowCountdown(true);
-}, 5000);
+              const originalTime = new Date(newData.countdown_started_at).getTime();
+              const adjustedTime = new Date(originalTime + 5000).toISOString();
+              setCountdownServerTime(adjustedTime);
+              setShowCountdown(true);
+            }, 5000);
           }
 
           // ------------------------------------------------------------
@@ -3819,7 +3822,11 @@ const requestRematch = async () => {
             
             // Buffer animasyonu + countdown için adjusted time hesapla
             // initiateCountdown içinde 5s buffer var, onun sonunda countdown gösterilecek
-            initiateCountdown(newData.countdown_started_at, false);
+            const originalTime = new Date(newData.countdown_started_at).getTime();
+            const adjustedTime = new Date(originalTime + 5000).toISOString();
+            
+            // Buffer animasyonlarını göster (skipBuffer = false)
+            initiateCountdown(adjustedTime, false);
           }
         },
       )
