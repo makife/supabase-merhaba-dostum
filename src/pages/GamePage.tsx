@@ -639,6 +639,27 @@ const GamePage = ({
     if (readySentRef.current) return; // Sadece bir kez gönder
     
     const sendReadySignal = async () => {
+      // 🎮 vs-computer: Tek oyuncu olduğu için direkt countdown başlat
+      if (gameMode === "vs-computer" && currentRoom?.id) {
+        console.log("🚀 VS-COMPUTER: Starting countdown directly for room:", currentRoom.id.slice(-8));
+        
+        const { error } = await supabase
+          .from("game_rooms")
+          .update({ 
+            countdown_started_at: new Date().toISOString(),
+            status: "active"
+          })
+          .eq("id", currentRoom.id);
+          
+        if (error) {
+          console.error("❌ VS-COMPUTER countdown start error:", error);
+        } else {
+          readySentRef.current = true;
+          console.log("✅ VS-COMPUTER: Countdown started!");
+        }
+        return;
+      }
+      
       // Random-match ve private-room için game_participants tablosunu güncelle
       if ((gameMode === "random-match" || gameMode === "private-room") && currentRoom?.id) {
         console.log("🚀 LAZY START: Sending ready signal for room:", currentRoom.id.slice(-8));
