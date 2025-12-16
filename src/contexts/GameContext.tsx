@@ -897,17 +897,10 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         })
         .eq("id", roomId);
 
-      // 🎯 SERVER-SIDE COUNTDOWN başlat - Real-time subscription yakalayacak
-      const { data: countdownTime, error: rpcError } = await supabase.rpc("start_game_countdown", {
-        p_room_id: roomId,
-      });
-
-      if (rpcError) {
-        console.error("❌ RPC countdown hatası:", rpcError);
-      } else {
-        console.log("✅ Server-side countdown başlatıldı:", countdownTime);
-        // Real-time subscription countdown_started_at değişikliğini yakalayıp event dispatch edecek
-      }
+      // 🎯 LAZY START: Countdown artık burada başlatılmıyor
+      // Her iki oyuncu da GamePage'e ulaşıp is_ready=true yapınca
+      // database trigger otomatik olarak countdown_started_at'ı set edecek
+      console.log("✅ Oda active yapıldı - LAZY START: Oyuncular hazır olunca countdown başlayacak");
 
       console.log("✅ Oda kapatma işlemi tamamlandı (countdown real-time'dan gelecek)");
     } catch (error) {
@@ -1327,20 +1320,10 @@ export const GameProvider = ({ children }: GameProviderProps) => {
               // Successful join!
               console.log("✅ BAŞARILI EŞLEŞME!");
 
-              // 🎯 SERVER-SIDE COUNTDOWN başlat (2. oyuncu join olduğunda)
-              try {
-                const { data: countdownTime, error: rpcError } = await supabase.rpc("start_game_countdown", {
-                  p_room_id: targetRoom.id,
-                });
-
-                if (rpcError) {
-                  console.warn("⚠️ RPC countdown hatası:", rpcError);
-                } else {
-                  console.log("✅ Matchmaking countdown başlatıldı:", countdownTime);
-                }
-              } catch (countdownError) {
-                console.error("❌ Countdown başlatma hatası:", countdownError);
-              }
+              // 🎯 LAZY START: Countdown artık burada başlatılmıyor
+              // Her iki oyuncu da GamePage'e ulaşıp is_ready=true yapınca
+              // database trigger otomatik olarak countdown_started_at'ı set edecek
+              console.log("✅ Eşleşme bulundu - LAZY START: Oyuncular hazır olunca countdown başlayacak");
 
               // ✅ ÖNEMLI: Oda zaten bir ızgara var, onu kullan
               setCurrentRoom(targetRoom);
