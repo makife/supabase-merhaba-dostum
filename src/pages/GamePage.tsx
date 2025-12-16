@@ -631,6 +631,61 @@ const GamePage = ({
     };
   }, []);
 
+  // 🚀 LAZY START: Component mount olduğunda "hazırım" sinyali gönder
+  // Her iki oyuncu da hazır olunca database trigger countdown başlatır
+  const readySentRef = useRef(false);
+  useEffect(() => {
+    if (!user?.id) return;
+    if (readySentRef.current) return; // Sadece bir kez gönder
+    
+    const sendReadySignal = async () => {
+      // Random-match ve private-room için game_participants tablosunu güncelle
+      if ((gameMode === "random-match" || gameMode === "private-room") && currentRoom?.id) {
+        console.log("🚀 LAZY START: Sending ready signal for room:", currentRoom.id.slice(-8));
+        
+        const { error } = await supabase
+          .from("game_participants")
+          .update({ is_ready: true })
+          .eq("room_id", currentRoom.id)
+          .eq("user_id", user.id);
+          
+        if (error) {
+          console.error("❌ Ready signal error:", error);
+        } else {
+          readySentRef.current = true;
+          console.log("✅ LAZY START: Ready signal sent - waiting for opponent");
+        }
+      }
+      
+      // Tournament için tournament_participants tablosunu güncelle
+      if (gameMode === "tournament" && tournamentMatch?.tournament_id) {
+        console.log("🚀 LAZY START: Sending tournament ready signal for match:", tournamentMatch.id.slice(-8));
+        
+        const { error } = await supabase
+          .from("tournament_participants")
+          .update({ is_ready: true })
+          .eq("tournament_id", tournamentMatch.tournament_id)
+          .eq("user_id", user.id);
+          
+        if (error) {
+          console.error("❌ Tournament ready signal error:", error);
+        } else {
+          readySentRef.current = true;
+          console.log("✅ LAZY START: Tournament ready signal sent - waiting for opponent");
+        }
+      }
+    };
+    
+    // Component mount olduktan 100ms sonra ready sinyali gönder (state'lerin settle olması için)
+    const timer = setTimeout(sendReadySignal, 100);
+    return () => clearTimeout(timer);
+  }, [user?.id, gameMode, currentRoom?.id, tournamentMatch?.tournament_id, tournamentMatch?.id]);
+
+  // 🔄 LAZY START: Room değiştiğinde ready flag'i sıfırla (rematch için)
+  useEffect(() => {
+    readySentRef.current = false;
+  }, [currentRoom?.id, tournamentMatch?.id]);
+
   const [gameStarted, setGameStarted] = useState(false);
   const countdownCheckDoneRef = useRef(false);
   const [waitingForPlayer, setWaitingForPlayer] = useState(false);
