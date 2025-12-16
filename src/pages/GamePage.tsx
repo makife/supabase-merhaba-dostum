@@ -3820,11 +3820,7 @@ const requestRematch = async () => {
             
             // Buffer animasyonu + countdown için adjusted time hesapla
             // initiateCountdown içinde 5s buffer var, onun sonunda countdown gösterilecek
-            const originalTime = new Date(newData.countdown_started_at).getTime();
-            const adjustedTime = new Date(originalTime + 5000).toISOString();
-            
-            // Buffer animasyonlarını göster (skipBuffer = false)
-            initiateCountdown(adjustedTime, false);
+            initiateCountdown(newData.countdown_started_at, false);
           }
         },
       )
