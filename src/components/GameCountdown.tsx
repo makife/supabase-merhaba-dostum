@@ -229,15 +229,33 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       };
     }
 
-    // 🔒 LOCAL TIMING - Component mount olduğunda HER ZAMAN 5'ten başla
-    // Server time sadece senkronizasyon için kullanılır, görsel her zaman 5'ten başlar
-    console.log("⏱️ GameCountdown: Starting countdown from 5 (local timing mode)");
+    // 🔒 SERVER TIME SYNC - Tüm oyuncular aynı anda biter, ama her zaman 5'ten başlar
+    console.log("⏱️ GameCountdown: Server-sync mode with serverStartTime:", serverStartTime);
     
-    // 🎯 HER ZAMAN 5'ten başla - server sync gecikmelerinden bağımsız
-    const localStartTime = Date.now();
-    const localEndTime = localStartTime + COUNTDOWN_DURATION_MS;
+    // Server countdown başlangıç zamanını hesapla
+    const countdownStartTime = new Date(serverStartTime).getTime();
+    const serverNow = Date.now() + serverTimeOffset;
     
-    // İlk değer 5
+    // Countdown'un sonlanma zamanı (SERVER AUTHORITATIVE)
+    const countdownEndTime = countdownStartTime + COUNTDOWN_DURATION_MS;
+    
+    // Şu an countdown'un kaçıncı saniyesindeyiz?
+    const elapsedMs = serverNow - countdownStartTime;
+    const remainingMs = Math.max(0, COUNTDOWN_DURATION_MS - elapsedMs);
+    
+    // Eğer countdown zaten bitmişse
+    if (remainingMs <= 0) {
+      if (!completedRef.current && mountedRef.current) {
+        completedRef.current = true;
+        console.log("⏱️ GameCountdown: Already completed at mount");
+        onComplete();
+      }
+      return;
+    }
+    
+    // 🎯 HER ZAMAN 5'TEN BAŞLA - geç mount olsak bile
+    // Ama server end time'a göre senkronize bitir
+    console.log("⏱️ Starting countdown from 5, server remaining:", remainingMs, "ms");
     setDisplayValue(5);
     playCountdownSound();
     soundPlayedRef.current.add(5);
@@ -252,8 +270,10 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
         return;
       }
 
-      const now = Date.now();
-      const remainingMs = localEndTime - now;
+      const serverNow = Date.now() + serverTimeOffset;
+      const remainingMs = countdownEndTime - serverNow;
+      
+      // Server time'a göre hangi saniyedeyiz?
       const remainingSeconds = Math.ceil(remainingMs / 1000);
 
       if (remainingMs <= -START_DISPLAY_DURATION_MS) {
