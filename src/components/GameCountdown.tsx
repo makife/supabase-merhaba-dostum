@@ -329,6 +329,20 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
           setDisplayValue("start");
           currentDisplayRef.current = "start";
           playStartSound();
+          
+          // 🔒 FALLBACK: Start gösterildikten 1 saniye sonra zorla complete et
+          // Server time offset sorunlarından bağımsız çalışır
+          setTimeout(() => {
+            if (!completedRef.current && mountedRef.current) {
+              completedRef.current = true;
+              console.log("⏱️ GameCountdown: Completed (fallback timeout)");
+              if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+                intervalRef.current = null;
+              }
+              onComplete();
+            }
+          }, 1000);
         }
       } else {
         // Server-authoritative countdown (5-4-3-2-1)
