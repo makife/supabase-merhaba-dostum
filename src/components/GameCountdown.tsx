@@ -285,11 +285,11 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       const localElapsedMs = now - localStartTime;
       const localRemainingMs = COUNTDOWN_DURATION_MS - localElapsedMs;
       
-      // 🔒 COMPLETION CHECK: Server time'a göre
-      if (serverRemainingMs <= -START_DISPLAY_DURATION_MS) {
+      // 🔒 COMPLETION CHECK: Local timing + start display süresi sonrası
+      if (localRemainingMs <= -START_DISPLAY_DURATION_MS) {
         if (!completedRef.current) {
           completedRef.current = true;
-          console.log("⏱️ GameCountdown: Completed (server-sync)");
+          console.log("⏱️ GameCountdown: Completed (local-sync)");
           if (intervalRef.current) {
             clearInterval(intervalRef.current);
             intervalRef.current = null;
@@ -299,11 +299,13 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
         return;
       }
 
-      // 🎯 VISUAL DISPLAY: Local timing ile 5-4-3-2-1
-      if (serverRemainingMs <= 0 && serverRemainingMs > -START_DISPLAY_DURATION_MS) {
-        // Show "start" - server says countdown ended
+      // 🎯 VISUAL DISPLAY: Local timing ile 5-4-3-2-1 ve start
+      // Local timing kullan - hem visual hem start için tutarlılık
+      if (localRemainingMs <= 0) {
+        // Show "start" - local countdown ended
         if (!startShownRef.current) {
           startShownRef.current = true;
+          console.log("⏱️ Countdown: start");
           setDisplayValue("start");
           currentDisplayRef.current = "start";
           playStartSound();
@@ -317,11 +319,12 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
           console.log("⏱️ Countdown:", displaySeconds);
           setDisplayValue(displaySeconds);
           currentDisplayRef.current = displaySeconds;
-        }
-
-        // Play sound only once per second
-        if (!soundPlayedRef.current.has(displaySeconds) && displaySeconds >= 1 && displaySeconds <= 5) {
-          soundPlayedRef.current.add(displaySeconds);
+          
+          // Play sound for this second
+          if (!soundPlayedRef.current.has(displaySeconds)) {
+            soundPlayedRef.current.add(displaySeconds);
+            playCountdownSound();
+          }
         }
       }
     }, 50); // 50ms interval for smoother updates
