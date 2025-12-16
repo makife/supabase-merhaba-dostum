@@ -3157,9 +3157,7 @@ const requestRematch = async () => {
           if (matchData.countdown_started_at && !countdownInitiatedRef.current) {
             console.log("🎯 Tournament countdown başlatılıyor (initial load):", matchData.countdown_started_at);
             // 🎯 5 saniyelik buffer ekle - random-match ile aynı
-            const originalTime = new Date(matchData.countdown_started_at).getTime();
-            const adjustedTime = new Date(originalTime + 5000).toISOString();
-            initiateCountdown(adjustedTime);
+            initiateCountdown(matchData.countdown_started_at);
           }
         }
 
