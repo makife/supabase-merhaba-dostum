@@ -3694,11 +3694,10 @@ const requestRematch = async () => {
             
             // 5 saniye sonra countdown başlat
             setTimeout(() => {
-              const originalTime = new Date(newData.countdown_started_at).getTime();
-              const adjustedTime = new Date(originalTime + 5000).toISOString();
-              setCountdownServerTime(adjustedTime);
-              setShowCountdown(true);
-            }, 5000);
+  // ✅ Server time'ı direkt kullan, +5000 EKLEME!
+  setCountdownServerTime(newData.countdown_started_at);
+  setShowCountdown(true);
+}, 5000);
           }
 
           // ------------------------------------------------------------
