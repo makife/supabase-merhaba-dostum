@@ -100,6 +100,14 @@ export const getMatchStatus = (match: TournamentMatch): string => {
   }
 };
 
+export const generateBotAvatar = (seed: number): string => {
+  // 1e-18e and 1k-18k avatars pool (36 total avatars)
+  const avatarCount = 18;
+  const avatarIndex = (Math.abs(seed) % avatarCount) + 1;
+  const suffix = seed % 2 === 0 ? 'e' : 'k';
+  return `/${avatarIndex}${suffix}.jpg`;
+};
+
 export const generateBotName = (index: number): string => {
   const turkishNames = [
     "ahmet",

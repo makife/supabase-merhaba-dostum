@@ -8,7 +8,7 @@ import { useTournament } from "@/hooks/useTournament";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSounds } from "@/hooks/useSounds";
-import { generateBotName } from "@/utils/tournamentHelpers";
+import { generateBotName, generateBotAvatar } from "@/utils/tournamentHelpers";
 import { toast } from "sonner";
 
 const TournamentBracketPage = () => {
@@ -485,7 +485,11 @@ const MatchCard = ({ match, roundInfo }: { match: any; roundInfo: { color: strin
     const isBot = playerData?.is_bot || playerId.startsWith("bot_");
     if (isBot) {
       const seed = [...playerId].reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-      return { name: playerData?.username || generateBotName(seed), isBot: true, avatar_url: null };
+      return { 
+        name: playerData?.username || generateBotName(seed), 
+        isBot: true, 
+        avatar_url: generateBotAvatar(seed) 
+      };
     }
 
     return { name: playerData?.username || "Oyuncu", isBot: false, avatar_url: playerData?.avatar_url };
@@ -552,18 +556,12 @@ const PlayerRow = ({
   <div className={`rounded p-2 ${isWinner ? "bg-green-700 border border-green-400" : "bg-white/10"}`}>
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2 min-w-0 flex-1">
-        {player.isBot ? (
-          <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center text-sm flex-shrink-0">
-            🤖
-          </div>
-        ) : (
-          <Avatar className="w-7 h-7 flex-shrink-0">
-            <AvatarImage src={player.avatar_url || undefined} />
-            <AvatarFallback className="bg-blue-600 text-white text-xs">
-              {player.name.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-        )}
+        <Avatar className="w-7 h-7 flex-shrink-0">
+          <AvatarImage src={player.avatar_url || undefined} />
+          <AvatarFallback className="bg-blue-600 text-white text-xs">
+            {player.name.charAt(0).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
         <span className="text-white text-sm truncate">{player.name}</span>
       </div>
       {isCompleted && (
