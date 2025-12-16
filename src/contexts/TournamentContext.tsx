@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Tournament, TournamentParticipant, TournamentMatch } from "@/types/tournament";
 import { toast } from "@/components/ui/use-toast";
 import { generateBotName } from "@/utils/tournamentHelpers";
+import { autoReconnect } from "@/utils/supabaseAutoReconnect";
 
 interface TournamentContextType {
   tournaments: Tournament[];
@@ -455,21 +456,24 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     }
   };
 
-  // Realtime subscriptions
+  // Realtime subscriptions with auto-reconnect
   useEffect(() => {
     if (!user) return;
 
     fetchTournaments();
 
-    const channel = supabase
-      .channel("tournament-global")
-      .on("postgres_changes", { event: "*", schema: "public", table: "tournaments" }, () => {
-        fetchTournaments();
-      })
-      .subscribe();
+    const channelName = "tournament-global";
+    autoReconnect.registerChannel(channelName, () =>
+      supabase
+        .channel(channelName)
+        .on("postgres_changes", { event: "*", schema: "public", table: "tournaments" }, () => {
+          fetchTournaments();
+        })
+        .subscribe()
+    );
 
     return () => {
-      supabase.removeChannel(channel);
+      autoReconnect.unregisterChannel(channelName);
     };
   }, [user]);
 
@@ -477,37 +481,40 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     if (!currentTournament?.id) return;
 
     const tournamentId = currentTournament.id;
+    const channelName = `tournament-details-${tournamentId}`;
 
-    const channel = supabase
-      .channel(`tournament-details-${tournamentId}`)
-      .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "tournament_participants",
-        filter: `tournament_id=eq.${tournamentId}`,
-      }, () => {
-        fetchTournamentDetails(tournamentId);
-      })
-      .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "tournament_matches",
-        filter: `tournament_id=eq.${tournamentId}`,
-      }, () => {
-        fetchTournamentDetails(tournamentId);
-      })
-      .on("postgres_changes", {
-        event: "UPDATE",
-        schema: "public",
-        table: "tournaments",
-        filter: `id=eq.${tournamentId}`,
-      }, (payload) => {
-        setCurrentTournament((prev) => prev ? { ...prev, ...payload.new } as Tournament : null);
-      })
-      .subscribe();
+    autoReconnect.registerChannel(channelName, () =>
+      supabase
+        .channel(channelName)
+        .on("postgres_changes", {
+          event: "*",
+          schema: "public",
+          table: "tournament_participants",
+          filter: `tournament_id=eq.${tournamentId}`,
+        }, () => {
+          fetchTournamentDetails(tournamentId);
+        })
+        .on("postgres_changes", {
+          event: "*",
+          schema: "public",
+          table: "tournament_matches",
+          filter: `tournament_id=eq.${tournamentId}`,
+        }, () => {
+          fetchTournamentDetails(tournamentId);
+        })
+        .on("postgres_changes", {
+          event: "UPDATE",
+          schema: "public",
+          table: "tournaments",
+          filter: `id=eq.${tournamentId}`,
+        }, (payload) => {
+          setCurrentTournament((prev) => prev ? { ...prev, ...payload.new } as Tournament : null);
+        })
+        .subscribe()
+    );
 
     return () => {
-      supabase.removeChannel(channel);
+      autoReconnect.unregisterChannel(channelName);
     };
   }, [currentTournament?.id]);
 

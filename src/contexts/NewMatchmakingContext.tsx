@@ -4,6 +4,7 @@ import { useAuth } from "./AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { matchBanlist } from "@/utils/matchBanlist";
 import { useAppState } from "@/hooks/useAppState";
+import { autoReconnect } from "@/utils/supabaseAutoReconnect";
 
 interface MatchmakingRoom {
   id: string;
@@ -109,7 +110,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
     clearProgressTimer();
 
     if (searchChannel) {
-      supabase.removeChannel(searchChannel);
+      autoReconnect.unregisterChannel(searchChannel);
       setSearchChannel(null);
       console.log("📡 Real-time channel kapatıldı");
     }
@@ -277,72 +278,75 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
 
       console.log("⏳ Oda hazır, 2. oyuncu bekleniyor...");
 
-      // 3️⃣ REALTIME SUBSCRIPTION - 2. oyuncu gelince tetiklenecek
-      const channel = supabase
-        .channel(`matchmaking-${newRoomId}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "game_participants",
-            filter: `room_id=eq.${newRoomId}`,
-          },
-          async (payload) => {
-            console.log("📡 Yeni katılımcı tespit edildi:", payload);
+      // 3️⃣ REALTIME SUBSCRIPTION - 2. oyuncu gelince tetiklenecek (auto-reconnect destekli)
+      const channelName = `matchmaking-${newRoomId}`;
+      const channel = autoReconnect.registerChannel(channelName, () => 
+        supabase
+          .channel(channelName)
+          .on(
+            "postgres_changes",
+            {
+              event: "INSERT",
+              schema: "public",
+              table: "game_participants",
+              filter: `room_id=eq.${newRoomId}`,
+            },
+            async (payload) => {
+              console.log("📡 Yeni katılımcı tespit edildi:", payload);
 
-            // Farklı oyuncu ve bot değilse
-            if (!payload.new.is_bot && payload.new.user_id !== user.id && payload.new.user_id !== null) {
-              console.log("🎉 2. oyuncu odaya katıldı! (Player 2 - oda sahibi tespit etti)");
+              // Farklı oyuncu ve bot değilse
+              if (!payload.new.is_bot && payload.new.user_id !== user.id && payload.new.user_id !== null) {
+                console.log("🎉 2. oyuncu odaya katıldı! (Player 2 - oda sahibi tespit etti)");
 
-              // SADECE countdown bilgisini dinle, navigate için bekle
-              // Countdown Player 1 tarafından başlatıldı, biz sadece tespit ediyoruz
-              console.log("⏳ Player 1 countdown başlattı, realtime'dan bekliyoruz...");
+                // SADECE countdown bilgisini dinle, navigate için bekle
+                // Countdown Player 1 tarafından başlatıldı, biz sadece tespit ediyoruz
+                console.log("⏳ Player 1 countdown başlattı, realtime'dan bekliyoruz...");
 
-              clearProgressTimer();
-              setSearchProgress(100);
-              setIsSearching(false);
-              
-              // Channel'ı KAPATMA - room update için açık tutuyoruz
-              console.log("📡 Participant subscription tamamlandı, room update dinleniyor...");
+                clearProgressTimer();
+                setSearchProgress(100);
+                setIsSearching(false);
+                
+                // Channel'ı KAPATMA - room update için açık tutuyoruz
+                console.log("📡 Participant subscription tamamlandı, room update dinleniyor...");
 
-              // Navigate etmeden önce countdown_started_at'ın set edilmesini bekle
-              // Bu bilgi room update realtime'ından gelecek
+                // Navigate etmeden önce countdown_started_at'ın set edilmesini bekle
+                // Bu bilgi room update realtime'ından gelecek
+              }
             }
-          }
-        )
-        .on(
-          "postgres_changes",
-          {
-            event: "UPDATE",
-            schema: "public",
-            table: "game_rooms",
-            filter: `id=eq.${newRoomId}`,
-          },
-          async (payload) => {
-            console.log("📡 Room update tespit edildi:", payload);
-            
-            // countdown_started_at set edildiyse navigate yap
-            if (payload.new.countdown_started_at) {
-              console.log("✅ Countdown timestamp alındı, navigate ediliyor...", payload.new.countdown_started_at);
+          )
+          .on(
+            "postgres_changes",
+            {
+              event: "UPDATE",
+              schema: "public",
+              table: "game_rooms",
+              filter: `id=eq.${newRoomId}`,
+            },
+            async (payload) => {
+              console.log("📡 Room update tespit edildi:", payload);
               
-              // ÖNCE channel'ı kapat - duplicate tetiklemeyi önle
-              supabase.removeChannel(channel);
-              setSearchChannel(null);
-              console.log("📡 Room update subscription kapatıldı (duplicate önleme)");
-              
-              // Event dispatch et
-              window.dispatchEvent(new CustomEvent("countdownStarted", { detail: { serverTime: payload.new.countdown_started_at } }));
-              
-              // Son olarak navigate
-              onMatchFound?.(newRoomId);
+              // countdown_started_at set edildiyse navigate yap
+              if (payload.new.countdown_started_at) {
+                console.log("✅ Countdown timestamp alındı, navigate ediliyor...", payload.new.countdown_started_at);
+                
+                // ÖNCE channel'ı kapat - duplicate tetiklemeyi önle
+                autoReconnect.unregisterChannel(channelName);
+                setSearchChannel(null);
+                console.log("📡 Room update subscription kapatıldı (duplicate önleme)");
+                
+                // Event dispatch et
+                window.dispatchEvent(new CustomEvent("countdownStarted", { detail: { serverTime: payload.new.countdown_started_at } }));
+                
+                // Son olarak navigate
+                onMatchFound?.(newRoomId);
+              }
             }
-          }
-        )
-        .subscribe();
+          )
+          .subscribe()
+      );
 
-      setSearchChannel(channel);
-      console.log("📡 Realtime subscription aktif (participants + room updates)");
+      setSearchChannel(channelName);
+      console.log("📡 Realtime subscription aktif (participants + room updates) - auto-reconnect destekli");
 
     } catch (error) {
       console.error("❌ Matchmaking hatası:", error);
@@ -362,7 +366,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
     clearProgressTimer();
 
     if (searchChannel) {
-      supabase.removeChannel(searchChannel);
+      autoReconnect.unregisterChannel(searchChannel);
       setSearchChannel(null);
       console.log("📡 Real-time channel kapatıldı");
     }
