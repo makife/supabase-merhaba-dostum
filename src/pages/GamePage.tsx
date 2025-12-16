@@ -3751,19 +3751,21 @@ const requestRematch = async () => {
 
   // 🏆 TURNUVA MAÇLARI İÇİN INITIAL COUNTDOWN SYNC - Sayfa açıldığında animasyonları başlat
   useEffect(() => {
-    if (gameMode !== "tournament" || !tournamentMatch?.countdown_started_at) return;
-    if (countdownInitiatedRef.current) return; // ✅ Sadece ref kontrolü
+  if (gameMode !== "tournament" || !tournamentMatch?.countdown_started_at) return;
+  if (countdownInitiatedRef.current) return;
 
-    console.log("🏆 Tournament initial countdown sync:", tournamentMatch.countdown_started_at);
+  console.log("🏆 Tournament initial countdown sync:", tournamentMatch.countdown_started_at);
 
-    // Server zamanını hesapla
-    const originalCountdownTime = new Date(tournamentMatch.countdown_started_at).getTime();
-    // Buffer: 5s total (initiateCountdown fonksiyonu içinde yönetiliyor)
-    const TOTAL_BUFFER_MS = 5000;
-    
-    const adjustedCountdownStart = originalCountdownTime + TOTAL_BUFFER_MS;
-    const serverNow = Date.now() + serverTimeOffset;
-    const msElapsedSinceStart = serverNow - originalCountdownTime;
+  // Server countdown başlangıç zamanı
+  const countdownStartTime = new Date(tournamentMatch.countdown_started_at).getTime();
+  const BUFFER_MS = 5000; // Buffer süresi
+  const COUNTDOWN_MS = 5000; // Countdown süresi
+  
+  // Gerçek countdown başlangıcı (buffer sonrası)
+  const realCountdownStart = countdownStartTime + BUFFER_MS;
+  
+  const serverNow = Date.now() + serverTimeOffset;
+  const msUntilCountdown = realCountdownStart - serverNow;
 
     console.log("🏆 Tournament countdown timing:", {
       originalTime: new Date(originalCountdownTime).toISOString(),
