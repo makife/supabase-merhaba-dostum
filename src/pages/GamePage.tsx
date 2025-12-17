@@ -631,81 +631,8 @@ const GamePage = ({
     };
   }, []);
 
-  // 🚀 LAZY START: Component mount olduğunda "hazırım" sinyali gönder
-  // Her iki oyuncu da hazır olunca database trigger countdown başlatır
-  const readySentRef = useRef(false);
-  useEffect(() => {
-    if (!user?.id) return;
-    if (readySentRef.current) return; // Sadece bir kez gönder
-    
-    const sendReadySignal = async () => {
-      // 🎮 vs-computer: Tek oyuncu olduğu için direkt countdown başlat
-      if (gameMode === "vs-computer" && currentRoom?.id) {
-        console.log("🚀 VS-COMPUTER: Starting countdown directly for room:", currentRoom.id.slice(-8));
-        
-        const { error } = await supabase
-          .from("game_rooms")
-          .update({ 
-            countdown_started_at: new Date().toISOString(),
-            status: "active"
-          })
-          .eq("id", currentRoom.id);
-          
-        if (error) {
-          console.error("❌ VS-COMPUTER countdown start error:", error);
-        } else {
-          readySentRef.current = true;
-          console.log("✅ VS-COMPUTER: Countdown started!");
-        }
-        return;
-      }
-      
-      // Random-match ve private-room için game_participants tablosunu güncelle
-      if ((gameMode === "random-match" || gameMode === "private-room") && currentRoom?.id) {
-        console.log("🚀 LAZY START: Sending ready signal for room:", currentRoom.id.slice(-8));
-        
-        const { error } = await supabase
-          .from("game_participants")
-          .update({ is_ready: true })
-          .eq("room_id", currentRoom.id)
-          .eq("user_id", user.id);
-          
-        if (error) {
-          console.error("❌ Ready signal error:", error);
-        } else {
-          readySentRef.current = true;
-          console.log("✅ LAZY START: Ready signal sent - waiting for opponent");
-        }
-      }
-      
-      // Tournament için tournament_participants tablosunu güncelle
-      if (gameMode === "tournament" && tournamentMatch?.tournament_id) {
-        console.log("🚀 LAZY START: Sending tournament ready signal for match:", tournamentMatch.id.slice(-8));
-        
-        const { error } = await supabase
-          .from("tournament_participants")
-          .update({ is_ready: true })
-          .eq("tournament_id", tournamentMatch.tournament_id)
-          .eq("user_id", user.id);
-          
-        if (error) {
-          console.error("❌ Tournament ready signal error:", error);
-        } else {
-          readySentRef.current = true;
-          console.log("✅ LAZY START: Tournament ready signal sent - waiting for opponent");
-        }
-      }
-    };
-    
-    // Component mount olduktan 100ms sonra ready sinyali gönder (state'lerin settle olması için)
-    const timer = setTimeout(sendReadySignal, 100);
-    return () => clearTimeout(timer);
-  }, [user?.id, gameMode, currentRoom?.id, tournamentMatch?.tournament_id, tournamentMatch?.id]);
-
-  // 🔄 LAZY START: Room değiştiğinde ready flag'i sıfırla (rematch için)
-  useEffect(() => {
-    readySentRef.current = false;
-  }, [currentRoom?.id, tournamentMatch?.id]);
+  // 🚀 DIRECT COUNTDOWN: Lazy Start kaldırıldı - direkt countdown başlatma
+  // İki oyuncu odadayken countdown hemen başlar (useEffect aşağıda tanımlı - initiateCountdown sonrası)
 
   const [gameStarted, setGameStarted] = useState(false);
   const countdownCheckDoneRef = useRef(false);
@@ -1459,12 +1386,9 @@ const requestRematch = async () => {
     }
   };
 
-  // 🔒 PRODUCTION-READY: Merkezi countdown başlatma fonksiyonu
+  // 🔒 SIMPLE COUNTDOWN: Buffer animasyonları kaldırıldı - direkt countdown
   // Bu fonksiyon countdown'ın sadece BİR KERE başlatılmasını garanti eder
-  // Birden fazla trigger (real-time subscription, initial load, event) olsa bile
-  // countdown asla reset edilmez
-  // 🎯 Buffer animasyonları dahil: 3.5s preparing + 0.5s ready + 1s blank = 5s total
-  const initiateCountdown = useCallback((serverTime: string, skipBuffer: boolean = false) => {
+  const initiateCountdown = useCallback((serverTime: string, _skipBuffer: boolean = true) => {
     if (countdownInitiatedRef.current) {
       console.log("⏱️ Countdown zaten başlatıldı, yeniden başlatma engellendi");
       return false;
@@ -1475,47 +1399,95 @@ const requestRematch = async () => {
       return false;
     }
     
-    console.log("⏱️ Countdown başlatılıyor (tek seferlik):", serverTime, "skipBuffer:", skipBuffer);
+    console.log("⏱️ Countdown başlatılıyor (direkt):", serverTime);
     countdownInitiatedRef.current = true;
     
-    if (skipBuffer) {
-      // Buffer atla, direkt countdown göster
-      setCountdownServerTime(serverTime);
-      setShowCountdown(true);
-      setPreparingOpponent(null);
-    } else {
-      // 🎯 Buffer animasyonları: 3.5s preparing + 0.5s ready + 1s blank = 5s
-      console.log("🏆 Buffer animasyonu başlatıldı: preparing");
-      setPreparingOpponent("preparing");
-      
-      // 3.5s sonra ready - isMountedRef ile koruma
-      setTimeout(() => {
-        if (isMountedRef.current) {
-          console.log("🏆 Buffer animasyonu: ready");
-          setPreparingOpponent("ready");
-        }
-      }, 3500);
-      
-      // 4s sonra blank (3.5s + 0.5s)
-      setTimeout(() => {
-        if (isMountedRef.current) {
-          console.log("🏆 Buffer animasyonu: blank");
-          setPreparingOpponent(null);
-        }
-      }, 4000);
-      
-      // 5s sonra countdown başlat
-      setTimeout(() => {
-        if (isMountedRef.current) {
-          console.log("🏆 Countdown gösteriliyor");
-          setCountdownServerTime(serverTime);
-          setShowCountdown(true);
-        }
-      }, 5000);
-    }
+    // Direkt countdown göster - buffer animasyonu yok
+    setCountdownServerTime(serverTime);
+    setShowCountdown(true);
+    setPreparingOpponent(null);
     
     return true;
   }, [gameStarted]);
+
+  // 🚀 DIRECT COUNTDOWN: 2 oyuncu odadayken countdown hemen başlar
+  const countdownStartedForRoomRef = useRef<string | null>(null);
+  
+  useEffect(() => {
+    if (!user?.id) return;
+    if (gameStarted || showCountdown) return;
+    
+    const startCountdownIfReady = async () => {
+      // 🎮 vs-computer: Tek oyuncu - direkt countdown başlat
+      if (gameMode === "vs-computer" && currentRoom?.id) {
+        if (countdownStartedForRoomRef.current === currentRoom.id) return;
+        
+        console.log("🚀 VS-COMPUTER: Starting countdown directly");
+        countdownStartedForRoomRef.current = currentRoom.id;
+        
+        const countdownTime = new Date().toISOString();
+        await supabase
+          .from("game_rooms")
+          .update({ countdown_started_at: countdownTime, status: "active" })
+          .eq("id", currentRoom.id);
+          
+        // Direkt local countdown başlat (buffer yok - skipBuffer=true)
+        initiateCountdown(countdownTime, true);
+        return;
+      }
+      
+      // Random-match ve private-room: 2 oyuncu olduğunda countdown başlat
+      if ((gameMode === "random-match" || gameMode === "private-room") && currentRoom?.id) {
+        if (countdownStartedForRoomRef.current === currentRoom.id) return;
+        
+        // Odada 2 oyuncu var mı kontrol et
+        const realPlayers = participants.filter(p => !p.is_bot);
+        if (realPlayers.length < 2) {
+          console.log("⏳ Waiting for opponent...", realPlayers.length, "/2");
+          return;
+        }
+        
+        // Countdown zaten başlamış mı kontrol et
+        const { data: roomData } = await supabase
+          .from("game_rooms")
+          .select("countdown_started_at, host_id")
+          .eq("id", currentRoom.id)
+          .single();
+          
+        if (roomData?.countdown_started_at) {
+          console.log("✅ Countdown already started, using existing:", roomData.countdown_started_at);
+          countdownStartedForRoomRef.current = currentRoom.id;
+          initiateCountdown(roomData.countdown_started_at, true);
+          return;
+        }
+        
+        // Sadece host countdown başlatır (race condition önlemi)
+        if (roomData?.host_id === user.id) {
+          console.log("🚀 HOST: Starting countdown for room:", currentRoom.id.slice(-8));
+          countdownStartedForRoomRef.current = currentRoom.id;
+          
+          const countdownTime = new Date().toISOString();
+          await supabase
+            .from("game_rooms")
+            .update({ countdown_started_at: countdownTime, status: "active" })
+            .eq("id", currentRoom.id);
+            
+          initiateCountdown(countdownTime, true);
+        } else {
+          console.log("⏳ Not host, waiting for countdown signal...");
+        }
+      }
+    };
+    
+    // Kısa delay ile başlat (state'lerin settle olması için)
+    const timer = setTimeout(startCountdownIfReady, 200);
+    return () => clearTimeout(timer);
+  }, [user?.id, gameMode, currentRoom?.id, participants.length, gameStarted, showCountdown, initiateCountdown, participants]);
+
+  // Room değiştiğinde countdown flag'i sıfırla (rematch için)
+  useEffect(() => {
+    countdownStartedForRoomRef.current = null;
+  }, [currentRoom?.id, tournamentMatch?.id]);
 
   // 4. resetGameForRematch fonksiyonunu ekleyin:
   const resetGameForRematch = () => {
@@ -3825,56 +3797,20 @@ const requestRematch = async () => {
     // Oyun başladığında countdown tekrar başlamaması için gerekli
   }, [gameMode, tournamentMatch?.id, user?.id, serverTimeOffset, gameStarted, showCountdown, preparingOpponent]);
 
-  // 🏆 TURNUVA MAÇLARI İÇİN INITIAL COUNTDOWN SYNC - Sayfa açıldığında animasyonları başlat
+  // 🏆 TURNUVA MAÇLARI İÇİN INITIAL COUNTDOWN SYNC - Basitleştirildi
   useEffect(() => {
     if (gameMode !== "tournament" || !tournamentMatch?.countdown_started_at) return;
     if (countdownInitiatedRef.current) return;
 
-    console.log("🏆 Tournament initial countdown sync:", tournamentMatch.countdown_started_at);
+    console.log("🏆 Tournament countdown direkt başlatılıyor:", tournamentMatch.countdown_started_at);
+    initiateCountdown(tournamentMatch.countdown_started_at, true);
+  }, [gameMode, tournamentMatch?.countdown_started_at, initiateCountdown]);
 
-    // Server countdown başlangıç zamanı
-    const countdownStartTime = new Date(tournamentMatch.countdown_started_at).getTime();
-    const BUFFER_MS = 5000; // Buffer süresi
-    const TOTAL_BUFFER_MS = 5000;
-    
-    // Gerçek countdown başlangıcı (buffer sonrası)
-    const adjustedCountdownStart = countdownStartTime + BUFFER_MS;
-    
-    const serverNow = Date.now() + serverTimeOffset;
-    const msElapsedSinceStart = serverNow - countdownStartTime;
-
-    console.log("🏆 Tournament countdown timing:", {
-      originalTime: new Date(countdownStartTime).toISOString(),
-      adjustedStart: new Date(adjustedCountdownStart).toISOString(),
-      serverNow: new Date(serverNow).toISOString(),
-      msElapsedSinceStart,
-    });
-
-    // Sayfa yeni açıldı - buffer henüz başlamamış veya başlangıçtaysa
-    if (msElapsedSinceStart < 500) {
-      // Yeni başlıyor - tam buffer göster
-      console.log("🏆 Buffer tam olarak başlatılıyor");
-      initiateCountdown(new Date(adjustedCountdownStart).toISOString(), false);
-    } else if (msElapsedSinceStart < TOTAL_BUFFER_MS + 5000) {
-      // Buffer veya countdown devam ediyor - hemen başlat (skipBuffer = false ama geç katılım)
-      console.log("🏆 Buffer/countdown devam ediyor, başlatılıyor");
-      initiateCountdown(new Date(adjustedCountdownStart).toISOString(), false);
-    } else {
-      // Countdown tamamen geçmiş - oyun direkt başlamalı
-      console.log("🏆 Tournament countdown geçmiş, oyun direkt başlatılıyor");
-      countdownInitiatedRef.current = true;
-      setPreparingOpponent(null);
-      setShowCountdown(false);
-      setGameStarted(true);
-      gameHasStartedRef.current = true;
-    }
-  }, [gameMode, tournamentMatch?.countdown_started_at, serverTimeOffset, initiateCountdown]);
-
-  // 🎮 NORMAL OYUNLAR (RANDOM-MATCH, PRIVATE-ROOM) İÇİN COUNTDOWN SYNC
+  // 🎮 NORMAL OYUNLAR (RANDOM-MATCH, PRIVATE-ROOM) İÇİN COUNTDOWN SYNC - Basitleştirildi
   useEffect(() => {
     if (gameMode === "tournament" || gameMode === "vs-computer") return;
     if (!currentRoom || !user) return;
-    if (showCountdown || gameStarted) return; // Zaten countdown başlamışsa tekrar başlatma
+    if (showCountdown || gameStarted) return;
 
     console.log("🔄 Game room countdown subscription başlatılıyor:", shortId(currentRoom?.id));
 
@@ -3889,30 +3825,20 @@ const requestRematch = async () => {
           filter: `id=eq.${currentRoom.id}`,
         },
         (payload) => {
-          console.log("🎮 Game room güncellendi:", payload);
           const newData = payload.new as any;
-
-          // 🔒 Merkezi countdown guard - sadece BİR KERE başlat
+          // Direkt countdown başlat - buffer yok
           if (newData.countdown_started_at && !countdownInitiatedRef.current) {
-            console.log("🎯 Game room countdown başlatılıyor (buffer animasyonu ile):", newData.countdown_started_at);
-            
-            // Buffer animasyonu + countdown için adjusted time hesapla
-            // initiateCountdown içinde 5s buffer var, onun sonunda countdown gösterilecek
-            const originalTime = new Date(newData.countdown_started_at).getTime();
-            const adjustedTime = new Date(originalTime + 5000).toISOString();
-            
-            // Buffer animasyonlarını göster (skipBuffer = false)
-            initiateCountdown(adjustedTime, false);
+            console.log("🎯 Non-host: Countdown signal alındı:", newData.countdown_started_at);
+            initiateCountdown(newData.countdown_started_at, true);
           }
         },
       )
       .subscribe();
 
     return () => {
-      console.log("🔌 Game room countdown subscription temizleniyor");
       supabase.removeChannel(channel);
     };
-  }, [gameMode, currentRoom?.id, user, showCountdown, gameStarted]);
+  }, [gameMode, currentRoom?.id, user, showCountdown, gameStarted, initiateCountdown]);
 
   const handleTournamentExit = async () => {
     if (!user || !tournamentMatch) return;
