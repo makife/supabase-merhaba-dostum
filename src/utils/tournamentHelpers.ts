@@ -100,49 +100,72 @@ export const getMatchStatus = (match: TournamentMatch): string => {
   }
 };
 
-// Erkek isimleri listesi
-const maleNames = [
-  "ahmet", "mehmet", "ali", "veli", "mustafa", "emre", "can", "burak",
-  "yusuf", "berk", "arda", "efe", "emir", "kaan", "mert", "kerem",
-  "bora", "doruk", "eren", "alp", "ege", "tunç", "uras", "çağlar",
-  "koray", "tolga", "onur", "umut", "barış"
-];
-
-// Kadın isimleri listesi
-const femaleNames = [
-  "ayşe", "fatma", "zeynep", "elif", "ece", "selin", "merve", "özge",
-  "sude", "ada", "defne", "ilayda", "asya", "nisa", "irem", "ela",
-  "nehir", "maya", "eylül", "lara", "derin", "pelin", "damla", "su",
-  "ceren", "begüm"
-];
-
-// İsme göre cinsiyet belirleme
-const isFemale = (name: string): boolean => {
-  return femaleNames.includes(name.toLowerCase());
-};
-
-export const generateBotAvatar = (seed: number, botName?: string): string => {
-  // Avatar index (1-18)
+export const generateBotAvatar = (seed: number): string => {
+  // 1e-18e and 1k-18k avatars pool (36 total avatars)
   const avatarCount = 18;
   const avatarIndex = (Math.abs(seed) % avatarCount) + 1;
-  
-  // Eğer bot ismi verilmişse, cinsiyete göre suffix belirle
-  if (botName) {
-    // Bot isminin base kısmını al (sayılar ve süslemeler olmadan)
-    const baseName = botName.replace(/[0-9_\.]/g, '').toLowerCase();
-    const suffix = isFemale(baseName) ? 'k' : 'e';
-    return `/${avatarIndex}${suffix}.jpg`;
-  }
-  
-  // Fallback: seed'e göre belirle
   const suffix = seed % 2 === 0 ? 'e' : 'k';
   return `/${avatarIndex}${suffix}.jpg`;
 };
 
 export const generateBotName = (index: number): string => {
   const turkishNames = [
-    ...maleNames,
-    ...femaleNames
+    "ahmet",
+    "mehmet",
+    "ayşe",
+    "fatma",
+    "ali",
+    "veli",
+    "zeynep",
+    "elif",
+    "mustafa",
+    "emre",
+    "can",
+    "ece",
+    "selin",
+    "burak",
+    "deniz",
+    "yusuf",
+    "merve",
+    "özge",
+    "berk",
+    "arda",
+    "sude",
+    "efe",
+    "ada",
+    "emir",
+    "defne",
+    "kaan",
+    "ilayda",
+    "mert",
+    "asya",
+    "kerem",
+    "nisa",
+    "bora",
+    "irem",
+    "doruk",
+    "ela",
+    "eren",
+    "nehir",
+    "alp",
+    "maya",
+    "ege",
+    "eylül",
+    "tunç",
+    "lara",
+    "uras",
+    "derin",
+    "çağlar",
+    "pelin",
+    "koray",
+    "damla",
+    "tolga",
+    "su",
+    "onur",
+    "ceren",
+    "umut",
+    "begüm",
+    "barış",
   ];
 
   // Seeded RNG (deterministic) using index
@@ -174,11 +197,4 @@ export const generateBotName = (index: number): string => {
   ];
 
   return decorations[decorationIndex](baseName);
-};
-
-// İsimle birlikte avatar oluşturmak için yardımcı fonksiyon
-export const generateBotInfo = (seed: number): { name: string; avatar: string } => {
-  const name = generateBotName(seed);
-  const avatar = generateBotAvatar(seed, name);
-  return { name, avatar };
 };

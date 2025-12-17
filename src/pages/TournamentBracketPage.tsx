@@ -485,11 +485,10 @@ const MatchCard = ({ match, roundInfo }: { match: any; roundInfo: { color: strin
     const isBot = playerData?.is_bot || playerId.startsWith("bot_");
     if (isBot) {
       const seed = [...playerId].reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-      const botName = playerData?.username || generateBotName(seed);
       return { 
-        name: botName, 
+        name: playerData?.username || generateBotName(seed), 
         isBot: true, 
-        avatar_url: generateBotAvatar(seed, botName) 
+        avatar_url: generateBotAvatar(seed) 
       };
     }
 

@@ -177,10 +177,20 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
         if (participantError && participantError.code !== "23505") {
           console.error("❌ Katılımcı ekleme hatası:", participantError);
         } else {
-          console.log("✅ Odaya katıldı! LAZY START: Countdown oyuncular hazır olunca başlayacak");
-          // 🎯 LAZY START: Countdown artık burada başlatılmıyor
-          // Her iki oyuncu da GamePage'e ulaşıp is_ready=true yapınca
-          // database trigger otomatik olarak countdown_started_at'ı set edecek
+          console.log("✅ Odaya katıldı! Countdown başlatılıyor...");
+          
+          // Countdown başlat (Player 1)
+          const { data: countdownTime, error: rpcError } = await supabase.rpc("start_game_countdown", {
+            p_room_id: targetRoom.id,
+          });
+
+          if (rpcError) {
+            console.error("❌ Countdown RPC error:", rpcError);
+          } else if (countdownTime) {
+            console.log("✅ Countdown başlatıldı (Player 1) - real-time subscription event'i bekleyeceğiz");
+            // ❌ KALDIRILDI: window.dispatchEvent burada yapılmıyor
+            // Çünkü real-time subscription zaten yapacak (line 334)
+          }
           
           setCurrentRoom({
             id: targetRoom.id,

@@ -235,7 +235,6 @@ export type Database = {
         Row: {
           id: string
           is_bot: boolean | null
-          is_ready: boolean | null
           joined_at: string | null
           room_id: string | null
           score: number | null
@@ -244,7 +243,6 @@ export type Database = {
         Insert: {
           id?: string
           is_bot?: boolean | null
-          is_ready?: boolean | null
           joined_at?: string | null
           room_id?: string | null
           score?: number | null
@@ -253,7 +251,6 @@ export type Database = {
         Update: {
           id?: string
           is_bot?: boolean | null
-          is_ready?: boolean | null
           joined_at?: string | null
           room_id?: string | null
           score?: number | null
@@ -1152,7 +1149,6 @@ export type Database = {
         Row: {
           id: string
           is_bot: boolean | null
-          is_ready: boolean | null
           joined_at: string | null
           seed: number | null
           tournament_id: string | null
@@ -1161,7 +1157,6 @@ export type Database = {
         Insert: {
           id?: string
           is_bot?: boolean | null
-          is_ready?: boolean | null
           joined_at?: string | null
           seed?: number | null
           tournament_id?: string | null
@@ -1170,7 +1165,6 @@ export type Database = {
         Update: {
           id?: string
           is_bot?: boolean | null
-          is_ready?: boolean | null
           joined_at?: string | null
           seed?: number | null
           tournament_id?: string | null
