@@ -111,263 +111,152 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
   const [displayValue, setDisplayValue] = useState<number | "start" | null>(null);
   const completedRef = useRef(false);
   const mountedRef = useRef(true);
-  const lastPlayedSecondRef = useRef<number | null>(null);
   const startShownRef = useRef(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const soundPlayedRef = useRef<Set<number>>(new Set()); // Her saniye için sadece bir ses çal
-  const currentDisplayRef = useRef<number | "start" | null>(null); // 🔒 Closure problemi çözümü
-  const lastServerStartTimeRef = useRef<string | null>(null); // Aynı serverStartTime için tekrar çalışmayı önle
+  const rafRef = useRef<number | null>(null);
+  const soundPlayedRef = useRef<Set<number | string>>(new Set());
+  const lastDisplayRef = useRef<number | "start" | null>(null);
+
+  // 🔊 Pool-based sound playback
+  const playCountdownSound = () => playFromPool(countdownSoundPool);
+  const playStartSound = () => playFromPool(startSoundPool);
 
   useEffect(() => {
     mountedRef.current = true;
-    // 🔒 Yeni mount'ta ref'leri resetle (yarı final gibi yeni maçlar için)
     completedRef.current = false;
     startShownRef.current = false;
     soundPlayedRef.current.clear();
-    currentDisplayRef.current = null;
-    lastServerStartTimeRef.current = null;
+    lastDisplayRef.current = null;
 
     return () => {
       mountedRef.current = false;
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
       }
     };
   }, []);
 
   useEffect(() => {
-    // Prevent running after completion
-    if (completedRef.current) {
-      console.log("⏱️ GameCountdown: Already completed, skipping");
-      return;
+    if (completedRef.current) return;
+
+    // Clean previous animation frame
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
     }
 
-    // 🔒 Aynı serverStartTime için tekrar çalışmayı önle (ama farklı maç için çalışsın)
-    if (serverStartTime && lastServerStartTimeRef.current === serverStartTime) {
-      console.log("⏱️ GameCountdown: Same serverStartTime, skipping duplicate");
-      return;
-    }
-    
-    // Yeni countdown başlıyor - state'i resetle
-    if (serverStartTime) {
-      lastServerStartTimeRef.current = serverStartTime;
-      startShownRef.current = false;
-      soundPlayedRef.current.clear();
-      currentDisplayRef.current = null;
-    }
-
-    // 🔊 Pool-based sound playback - çok daha hızlı
-    const playCountdownSound = () => {
-      playFromPool(countdownSoundPool);
-    };
-    
-    const playStartSound = () => {
-      playFromPool(startSoundPool);
-    };
-
-    // Clear any existing interval
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-
-    // Reset sound tracking
+    // Reset state for new countdown
+    startShownRef.current = false;
     soundPlayedRef.current.clear();
+    lastDisplayRef.current = null;
 
-    // If no server time provided, use legacy client-side mode
+    // Legacy client-side mode (no server time)
     if (!serverStartTime) {
-      console.log("⏱️ GameCountdown: Legacy client-side mode (no serverStartTime)");
-
-      setDisplayValue(5);
-      playCountdownSound();
-      soundPlayedRef.current.add(5);
-
-      const timers: NodeJS.Timeout[] = [];
-      timers.push(
-        setTimeout(() => {
-          if (mountedRef.current && !soundPlayedRef.current.has(4)) {
-            setDisplayValue(4);
-            playCountdownSound();
-            soundPlayedRef.current.add(4);
-          }
-        }, 1000),
-      );
-      timers.push(
-        setTimeout(() => {
-          if (mountedRef.current && !soundPlayedRef.current.has(3)) {
-            setDisplayValue(3);
-            playCountdownSound();
-            soundPlayedRef.current.add(3);
-          }
-        }, 2000),
-      );
-      timers.push(
-        setTimeout(() => {
-          if (mountedRef.current && !soundPlayedRef.current.has(2)) {
-            setDisplayValue(2);
-            playCountdownSound();
-            soundPlayedRef.current.add(2);
-          }
-        }, 3000),
-      );
-      timers.push(
-        setTimeout(() => {
-          if (mountedRef.current && !soundPlayedRef.current.has(1)) {
-            setDisplayValue(1);
-            playCountdownSound();
-            soundPlayedRef.current.add(1);
-          }
-        }, 4000),
-      );
-      timers.push(
-        setTimeout(() => {
-          if (mountedRef.current && !startShownRef.current) {
-            setDisplayValue("start");
-            playStartSound();
-            startShownRef.current = true;
-          }
-        }, 5000),
-      );
-      timers.push(
-        setTimeout(() => {
-          if (!completedRef.current && mountedRef.current) {
+      console.log("⏱️ GameCountdown: Legacy client-side mode");
+      const localStartTime = Date.now();
+      
+      const tick = () => {
+        if (!mountedRef.current || completedRef.current) return;
+        
+        const elapsed = Date.now() - localStartTime;
+        const remaining = COUNTDOWN_DURATION_MS - elapsed;
+        
+        if (remaining <= -START_DISPLAY_DURATION_MS) {
+          if (!completedRef.current) {
             completedRef.current = true;
             onComplete();
           }
-        }, 5800),
-      );
-
+          return;
+        }
+        
+        if (remaining <= 0) {
+          if (!startShownRef.current) {
+            startShownRef.current = true;
+            setDisplayValue("start");
+            if (!soundPlayedRef.current.has("start")) {
+              soundPlayedRef.current.add("start");
+              playStartSound();
+            }
+          }
+        } else {
+          const seconds = Math.ceil(remaining / 1000);
+          const display = Math.min(5, Math.max(1, seconds));
+          if (lastDisplayRef.current !== display) {
+            lastDisplayRef.current = display;
+            setDisplayValue(display);
+            if (!soundPlayedRef.current.has(display)) {
+              soundPlayedRef.current.add(display);
+              playCountdownSound();
+            }
+          }
+        }
+        
+        rafRef.current = requestAnimationFrame(tick);
+      };
+      
+      rafRef.current = requestAnimationFrame(tick);
       return () => {
-        timers.forEach(clearTimeout);
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
       };
     }
 
-    // 🔒 FULL SERVER-AUTHORITATIVE COUNTDOWN
-    // Tüm oyuncular server time'a göre senkronize countdown görür
-    console.log("⏱️ GameCountdown: Server-authoritative mode with serverStartTime:", serverStartTime);
+    // 🔒 SERVER-AUTHORITATIVE MODE
+    console.log("⏱️ GameCountdown: Server mode, startTime:", serverStartTime, "offset:", serverTimeOffset);
     
-    // Server countdown timing (AUTHORITATIVE)
-    const countdownStartTime = new Date(serverStartTime).getTime();
-    const countdownEndTime = countdownStartTime + COUNTDOWN_DURATION_MS;
+    const countdownEndTime = new Date(serverStartTime).getTime() + COUNTDOWN_DURATION_MS;
     
-    // İlk server time hesapla
-    const initialServerNow = Date.now() + serverTimeOffset;
-    const initialRemainingMs = countdownEndTime - initialServerNow;
-    
-    console.log("⏱️ Server time offset:", serverTimeOffset, "ms");
-    console.log("⏱️ Countdown starts at:", new Date(countdownStartTime).toISOString());
-    console.log("⏱️ Countdown ends at:", new Date(countdownEndTime).toISOString());
-    console.log("⏱️ Initial remaining:", initialRemainingMs, "ms");
-    
-    // Eğer countdown zaten bitmişse
-    if (initialRemainingMs <= -START_DISPLAY_DURATION_MS) {
-      if (!completedRef.current && mountedRef.current) {
-        completedRef.current = true;
-        console.log("⏱️ GameCountdown: Already completed at mount");
-        onComplete();
-      }
-      return;
-    }
-    
-    // İlk görsel değeri server time'a göre ayarla
-    if (initialRemainingMs > 0) {
-      const initialSeconds = Math.ceil(initialRemainingMs / 1000);
-      const initialDisplay = Math.min(5, Math.max(1, initialSeconds));
-      setDisplayValue(initialDisplay);
-      currentDisplayRef.current = initialDisplay;
+    const tick = () => {
+      if (!mountedRef.current || completedRef.current) return;
       
-      // İlk ses
-      if (!soundPlayedRef.current.has(initialDisplay)) {
-        soundPlayedRef.current.add(initialDisplay);
-        playCountdownSound();
-      }
-      console.log("⏱️ Starting countdown from", initialDisplay, "(server-sync)");
-    } else if (initialRemainingMs > -START_DISPLAY_DURATION_MS) {
-      // Countdown bitti ama start süresi devam ediyor
-      setDisplayValue("start");
-      currentDisplayRef.current = "start";
-      startShownRef.current = true;
-      playStartSound();
-      console.log("⏱️ Starting at 'start' display (server-sync)");
-    }
-    
-    // Server-authoritative interval
-    intervalRef.current = setInterval(() => {
-      if (completedRef.current || !mountedRef.current) {
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        }
-        return;
-      }
-
-      // Her tick'te server time hesapla
       const serverNow = Date.now() + serverTimeOffset;
-      const serverRemainingMs = countdownEndTime - serverNow;
+      const remaining = countdownEndTime - serverNow;
       
-      // 🔒 COMPLETION CHECK: Server time + start display süresi sonrası
-      if (serverRemainingMs <= -START_DISPLAY_DURATION_MS) {
+      // Completion check
+      if (remaining <= -START_DISPLAY_DURATION_MS) {
         if (!completedRef.current) {
           completedRef.current = true;
-          console.log("⏱️ GameCountdown: Completed (server-sync)");
-          if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-            intervalRef.current = null;
-          }
+          console.log("⏱️ Countdown completed");
           onComplete();
         }
         return;
       }
-
-      // 🎯 VISUAL DISPLAY: Server time'a göre 5-4-3-2-1 ve start
-      if (serverRemainingMs <= 0) {
-        // Show "start" - server countdown ended
+      
+      // Show "start"
+      if (remaining <= 0) {
         if (!startShownRef.current) {
           startShownRef.current = true;
-          console.log("⏱️ Countdown: start (server-sync)");
+          console.log("⏱️ Showing: start");
           setDisplayValue("start");
-          currentDisplayRef.current = "start";
-          playStartSound();
-          
-          // 🔒 FALLBACK: Start gösterildikten 1 saniye sonra zorla complete et
-          // Server time offset sorunlarından bağımsız çalışır
-          setTimeout(() => {
-            if (!completedRef.current && mountedRef.current) {
-              completedRef.current = true;
-              console.log("⏱️ GameCountdown: Completed (fallback timeout)");
-              if (intervalRef.current) {
-                clearInterval(intervalRef.current);
-                intervalRef.current = null;
-              }
-              onComplete();
-            }
-          }, 1000);
+          lastDisplayRef.current = "start";
+          if (!soundPlayedRef.current.has("start")) {
+            soundPlayedRef.current.add("start");
+            playStartSound();
+          }
         }
       } else {
-        // Server-authoritative countdown (5-4-3-2-1)
-        const serverSeconds = Math.ceil(serverRemainingMs / 1000);
-        const displaySeconds = Math.min(5, Math.max(1, serverSeconds));
+        // Show countdown numbers 5-4-3-2-1
+        const seconds = Math.ceil(remaining / 1000);
+        const display = Math.min(5, Math.max(1, seconds));
         
-        if (currentDisplayRef.current !== displaySeconds && displaySeconds >= 1 && displaySeconds <= 5) {
-          console.log("⏱️ Countdown:", displaySeconds, "(server remaining:", serverRemainingMs, "ms)");
-          setDisplayValue(displaySeconds);
-          currentDisplayRef.current = displaySeconds;
-          
-          // Play sound for this second
-          if (!soundPlayedRef.current.has(displaySeconds)) {
-            soundPlayedRef.current.add(displaySeconds);
+        if (lastDisplayRef.current !== display) {
+          console.log("⏱️ Showing:", display, "(remaining:", Math.round(remaining), "ms)");
+          lastDisplayRef.current = display;
+          setDisplayValue(display);
+          if (!soundPlayedRef.current.has(display)) {
+            soundPlayedRef.current.add(display);
             playCountdownSound();
           }
         }
       }
-    }, 50); // 50ms interval for smoother updates
-
+      
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    
+    // Start immediately
+    rafRef.current = requestAnimationFrame(tick);
+    
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, [onComplete, serverStartTime, serverTimeOffset]);
 
