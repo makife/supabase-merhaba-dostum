@@ -257,6 +257,9 @@ const MarketPage = () => {
           .eq("id", user.id);
       }
 
+      // CRITICAL: Profile'ı yenile ki UI güncellensin
+      await refreshProfile();
+      
       playSound("buttonClick");
       toast({
         title: "İşlem Başarılı! 🖋️",
