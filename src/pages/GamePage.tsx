@@ -4223,7 +4223,7 @@ const requestRematch = async () => {
     gameEnded,
     gameType,
     gameMode,
-    tournamentMatch,
+    tournamentMatch?.id, // ⚠️ SADECE ID DEĞİŞİMİNDE tetikle - score güncellemeleri timer'ı resetlememeli!
     participants.length,
     currentRoom?.status,
     currentRoom?.started_at,
