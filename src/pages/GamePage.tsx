@@ -1387,9 +1387,7 @@ const requestRematch = async () => {
   // Bu fonksiyon countdown'ın sadece BİR KERE başlatılmasını garanti eder
   // Birden fazla trigger (real-time subscription, initial load, event) olsa bile
   // countdown asla reset edilmez
-  // 🎯 Buffer animasyonları:
-  // - Normal modlar: 3.5s preparing + 0.5s ready + 1s blank = 5s total
-  // - Turnuva modu: 3.5s preparing + 0.5s ready + 2.5s blank = 6.5s total
+  // 🎯 Buffer animasyonları dahil: 3.5s preparing + 0.5s ready + 1s blank = 5s total
   const initiateCountdown = useCallback((serverTime: string, skipBuffer: boolean = false) => {
     if (countdownInitiatedRef.current) {
       console.log("⏱️ Countdown zaten başlatıldı, yeniden başlatma engellendi");
@@ -1401,7 +1399,7 @@ const requestRematch = async () => {
       return false;
     }
     
-    console.log("⏱️ Countdown başlatılıyor (tek seferlik):", serverTime, "skipBuffer:", skipBuffer, "gameMode:", gameMode);
+    console.log("⏱️ Countdown başlatılıyor (tek seferlik):", serverTime, "skipBuffer:", skipBuffer);
     countdownInitiatedRef.current = true;
     
     if (skipBuffer) {
@@ -1410,13 +1408,8 @@ const requestRematch = async () => {
       setShowCountdown(true);
       setPreparingOpponent(null);
     } else {
-      // 🎯 Turnuva için özel timing: 3.5s preparing + 0.5s ready + 2.5s blank = 6.5s
-      // Normal modlar: 3.5s preparing + 0.5s ready + 1s blank = 5s
-      const isTournament = gameMode === "tournament";
-      const BLANK_WAIT_MS = isTournament ? 2500 : 1000; // Turnuvada 2.5s, diğerlerinde 1s
-      const TOTAL_BUFFER_MS = 3500 + 500 + BLANK_WAIT_MS; // 6500ms veya 5000ms
-      
-      console.log(`🏆 Buffer animasyonu başlatıldı: preparing (${isTournament ? 'TURNUVA' : 'NORMAL'} mode, total: ${TOTAL_BUFFER_MS}ms)`);
+      // 🎯 Buffer animasyonları: 3.5s preparing + 0.5s ready + 1s blank = 5s
+      console.log("🏆 Buffer animasyonu başlatıldı: preparing");
       setPreparingOpponent("preparing");
       
       // 3.5s sonra ready - isMountedRef ile koruma
@@ -1435,18 +1428,18 @@ const requestRematch = async () => {
         }
       }, 4000);
       
-      // TOTAL_BUFFER_MS sonra countdown başlat (turnuva: 6.5s, diğer: 5s)
+      // 5s sonra countdown başlat
       setTimeout(() => {
         if (isMountedRef.current) {
           console.log("🏆 Countdown gösteriliyor");
           setCountdownServerTime(serverTime);
           setShowCountdown(true);
         }
-      }, TOTAL_BUFFER_MS);
+      }, 5000);
     }
     
     return true;
-  }, [gameStarted, gameMode]);
+  }, [gameStarted]);
 
   // 4. resetGameForRematch fonksiyonunu ekleyin:
   const resetGameForRematch = () => {
@@ -3684,7 +3677,8 @@ const requestRematch = async () => {
           } else if (newData.countdown_started_at && !preparingOpponent && !showCountdown) {
             console.log("🎯 Tournament countdown hazırlanıyor (real-time):", newData.countdown_started_at);
             
-            // 🎯 Turnuva için özel buffer: 3.5s "Oyuncu Hazırlanıyor" + 0.5s "Oyuncu Hazır" + 2.5s bekleme = 6.5s
+            // 🎯 Random-match ile aynı 5 saniyelik buffer animasyonu
+            // 3.5s "Oyuncu Hazırlanıyor", 0.5s "Oyuncu Hazır", 1s boşluk, 5s countdown
             countdownInitiatedRef.current = true;
             
             // Buffer animasyonları başlat
@@ -3700,13 +3694,13 @@ const requestRematch = async () => {
               setPreparingOpponent(null);
             }, 4000);
             
-            // 6.5 saniye sonra countdown başlat (turnuva için 2.5s extra bekleme)
+            // 5 saniye sonra countdown başlat
             setTimeout(() => {
               const originalTime = new Date(newData.countdown_started_at).getTime();
-              const adjustedTime = new Date(originalTime + 6500).toISOString();
+              const adjustedTime = new Date(originalTime + 5000).toISOString();
               setCountdownServerTime(adjustedTime);
               setShowCountdown(true);
-            }, 6500);
+            }, 5000);
           }
 
           // ------------------------------------------------------------
@@ -3764,8 +3758,8 @@ const requestRematch = async () => {
 
     // Server countdown başlangıç zamanı
     const countdownStartTime = new Date(tournamentMatch.countdown_started_at).getTime();
-    const BUFFER_MS = 6500; // Turnuva buffer: 3.5s hazırlanıyor + 0.5s hazır + 2.5s bekleme
-    const TOTAL_BUFFER_MS = 6500;
+    const BUFFER_MS = 5000; // Buffer süresi
+    const TOTAL_BUFFER_MS = 5000;
     
     // Gerçek countdown başlangıcı (buffer sonrası)
     const adjustedCountdownStart = countdownStartTime + BUFFER_MS;
@@ -3778,13 +3772,12 @@ const requestRematch = async () => {
       adjustedStart: new Date(adjustedCountdownStart).toISOString(),
       serverNow: new Date(serverNow).toISOString(),
       msElapsedSinceStart,
-      bufferMs: BUFFER_MS,
     });
 
     // Sayfa yeni açıldı - buffer henüz başlamamış veya başlangıçtaysa
     if (msElapsedSinceStart < 500) {
       // Yeni başlıyor - tam buffer göster
-      console.log("🏆 Buffer tam olarak başlatılıyor (6.5s)");
+      console.log("🏆 Buffer tam olarak başlatılıyor");
       initiateCountdown(new Date(adjustedCountdownStart).toISOString(), false);
     } else if (msElapsedSinceStart < TOTAL_BUFFER_MS + 5000) {
       // Buffer veya countdown devam ediyor - hemen başlat (skipBuffer = false ama geç katılım)
