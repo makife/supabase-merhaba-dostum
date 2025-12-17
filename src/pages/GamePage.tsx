@@ -5717,18 +5717,6 @@ const requestRematch = async () => {
     switch (gameMode) {
       case "vs-computer":
         return { name: "Bilgisayar", icon: Bot, avatar: robotAvatar };
-      case "private-room":
-        if (participants.length >= 2) {
-          const opponent = participants.find((p) => p.user_id !== user?.id);
-          if (opponent && (opponent as any).profiles?.avatar_url) {
-            return {
-              name: (opponent as any).profiles.username || "Arkadaş",
-              icon: User,
-              avatar: (opponent as any).profiles.avatar_url,
-            };
-          }
-        }
-        return { name: "Arkadaş", icon: User, avatar: null };
       case "random-match":
       case "private-room":
         if (participants.length >= 2) {
