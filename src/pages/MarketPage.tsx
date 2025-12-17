@@ -8,10 +8,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import { useAdMob } from "@/hooks/useAdMob";
 import { useNativeSubscriptions } from "@/hooks/useNativeSubscriptions";
+import { useNativePurchases } from "@/hooks/useNativePurchases";
 import { supabase } from "@/integrations/supabase/client";
 import { useSounds } from "@/hooks/useSounds";
-import { ArrowLeft, Crown, Zap, Infinity, Droplet, PenTool, Video } from "lucide-react";
-
+import { Capacitor } from "@capacitor/core";
+import { ArrowLeft, Crown, Zap, Infinity, Droplet, PenTool, Video, RotateCcw } from "lucide-react";
 // Veri Tipleri
 interface InkPack {
   id: string;
@@ -42,9 +43,12 @@ const MarketPage = () => {
   const { playSound } = useSounds();
   const { isAdLoading, loadRewardedAd, showRewardedAd } = useAdMob();
   const { isLoading: isSubscriptionLoading, purchaseSubscription } = useNativeSubscriptions();
+  const { isLoading: isRestoreLoading, restorePurchases } = useNativePurchases();
 
   const [activeTab, setActiveTab] = useState("ink-store");
   const [purchaseLoading, setPurchaseLoading] = useState(false);
+  
+  const isNativePlatform = Capacitor.isNativePlatform();
 
   // --- Yapılandırma ---
 
@@ -603,6 +607,19 @@ const MarketPage = () => {
                       <span className="text-xs opacity-70">₺647.99</span>
                     </Button>
                   </div>
+
+                  {/* Satın Alımları Geri Yükle - Sadece Mobilde */}
+                  {isNativePlatform && (
+                    <Button
+                      variant="ghost"
+                      className="w-full mt-4 text-amber-100 hover:text-white hover:bg-white/10"
+                      onClick={restorePurchases}
+                      disabled={isRestoreLoading}
+                    >
+                      <RotateCcw className={`w-4 h-4 mr-2 ${isRestoreLoading ? 'animate-spin' : ''}`} />
+                      {isRestoreLoading ? 'Geri Yükleniyor...' : 'Satın Alımları Geri Yükle'}
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
