@@ -205,6 +205,18 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
     
     const countdownEndTime = new Date(serverStartTime).getTime() + COUNTDOWN_DURATION_MS;
     
+    // 🎯 ALWAYS start by showing 5 immediately to ensure countdown starts from 5
+    // This prevents server sync delays from skipping initial numbers
+    if (lastDisplayRef.current === null) {
+      console.log("⏱️ Initial display: 5 (forced)");
+      setDisplayValue(5);
+      lastDisplayRef.current = 5;
+      if (!soundPlayedRef.current.has(5)) {
+        soundPlayedRef.current.add(5);
+        playCountdownSound();
+      }
+    }
+    
     const tick = () => {
       if (!mountedRef.current || completedRef.current) return;
       
@@ -238,6 +250,7 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
         const seconds = Math.ceil(remaining / 1000);
         const display = Math.min(5, Math.max(1, seconds));
         
+        // Only update if display changed (but skip initial 5 since we already showed it)
         if (lastDisplayRef.current !== display) {
           console.log("⏱️ Showing:", display, "(remaining:", Math.round(remaining), "ms)");
           lastDisplayRef.current = display;
@@ -252,8 +265,12 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       rafRef.current = requestAnimationFrame(tick);
     };
     
-    // Start immediately
-    rafRef.current = requestAnimationFrame(tick);
+    // Start RAF after a small delay to let initial 5 render
+    setTimeout(() => {
+      if (mountedRef.current && !completedRef.current) {
+        rafRef.current = requestAnimationFrame(tick);
+      }
+    }, 50);
     
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
