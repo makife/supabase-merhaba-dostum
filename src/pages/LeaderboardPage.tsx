@@ -372,10 +372,10 @@ const LeaderboardPage = () => {
   const currentStats = getCurrentUserStats();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted flex flex-col">
-      <div className="max-w-2xl mx-auto w-full">
+    <div className="h-screen bg-gradient-to-br from-background to-muted flex flex-col overflow-hidden">
+      <div className="max-w-2xl mx-auto w-full flex flex-col h-full">
         {/* Sabit Header */}
-        <div className="sticky top-0 z-10 bg-yellow-50/95 backdrop-blur-sm border-b border-yellow-200 p-3 pt-6">
+        <div className="flex-shrink-0 bg-yellow-50/95 backdrop-blur-sm border-b border-yellow-200 p-3 pt-6">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <Button
@@ -439,16 +439,10 @@ const LeaderboardPage = () => {
                 </CardContent>
               </Card>
             )}
-          </div>
-        </div>
-        {/* Scroll edilebilir İçerik */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-4">
-          {/* Liderlik Tabloları */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Liderlik Sıralaması</CardTitle>
-            </CardHeader>
-            <CardContent>
+
+            {/* Liderlik Sıralaması Başlık ve Tablar - Sabit */}
+            <div className="pt-2">
+              <h2 className="text-lg font-semibold mb-3">Liderlik Sıralaması</h2>
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-3 h-9 bg-gray-100">
                   <TabsTrigger
@@ -476,24 +470,18 @@ const LeaderboardPage = () => {
                     <span className="xs:hidden">Ay</span>
                   </TabsTrigger>
                 </TabsList>
-
-                <TabsContent value="all-time" className="space-y-4">
-                  <CardDescription>{getTabDescription("all-time")}</CardDescription>
-                  {renderLeaderboard(allTimeLeaders, false)}
-                </TabsContent>
-
-                <TabsContent value="weekly" className="space-y-4">
-                  <CardDescription>{getTabDescription("weekly")}</CardDescription>
-                  {renderLeaderboard(weeklyLeaders, true)}
-                </TabsContent>
-
-                <TabsContent value="monthly" className="space-y-4">
-                  <CardDescription>{getTabDescription("monthly")}</CardDescription>
-                  {renderLeaderboard(monthlyLeaders, true)}
-                </TabsContent>
               </Tabs>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+        </div>
+
+        {/* Scroll edilebilir Liste İçeriği */}
+        <div className="flex-1 overflow-y-auto p-3 space-y-4">
+          <CardDescription className="text-center">{getTabDescription(activeTab)}</CardDescription>
+          
+          {activeTab === "all-time" && renderLeaderboard(allTimeLeaders, false)}
+          {activeTab === "weekly" && renderLeaderboard(weeklyLeaders, true)}
+          {activeTab === "monthly" && renderLeaderboard(monthlyLeaders, true)}
 
           <Card className="border-blue-200 bg-blue-50">
             <CardContent className="p-4">
