@@ -20,11 +20,31 @@ interface SoundPack {
   sounds: SoundConfig;
 }
 
+// 🔓 Mobile audio unlock state
+let globalAudioUnlocked = false;
+
+const unlockGlobalAudio = () => {
+  if (globalAudioUnlocked) return;
+  globalAudioUnlocked = true;
+  console.log("✅ useSounds: Global audio unlocked");
+};
+
+// Kullanıcı etkileşimi dinleyicileri
+if (typeof window !== "undefined") {
+  const unlockEvents = ['touchstart', 'touchend', 'click', 'keydown'];
+  const handleUnlock = () => {
+    unlockGlobalAudio();
+    unlockEvents.forEach(e => document.removeEventListener(e, handleUnlock));
+  };
+  unlockEvents.forEach(e => document.addEventListener(e, handleUnlock, { once: false, passive: true }));
+}
+
 export const useSounds = () => {
   const [soundsEnabled, setSoundsEnabled] = useState(true);
   const { soundPack } = useThemeContext();
   const audioCache = useRef<Map<string, HTMLAudioElement[]>>(new Map());
   const audioContextRef = useRef<AudioContext | null>(null);
+  const audioUnlockedRef = useRef(false);
 
   // DÜZELTME: Sound packs'i ref ile sabitle
   const soundPacksRef = useRef<Record<string, SoundPack>>({
@@ -108,17 +128,34 @@ export const useSounds = () => {
   // DÜZELTME: Audio utility fonksiyonlarını useCallback ile stabilize et
   const createAudioPool = useCallback((soundPath: string, poolSize: number = 3): HTMLAudioElement[] => {
     const pool: HTMLAudioElement[] = [];
+    // Capacitor için path düzeltmesi - / ile başlayan pathları ./ yap
+    const fixedPath = soundPath.startsWith('/') ? '.' + soundPath : soundPath;
+    
     for (let i = 0; i < poolSize; i++) {
       const audio = new Audio();
-      audio.src = soundPath;
+      audio.src = fixedPath;
       audio.preload = "auto";
       audio.volume = 0.7;
       audio.onerror = () => {
-        console.warn(`Could not load sound: ${soundPath}`);
+        console.warn(`Could not load sound: ${fixedPath}`);
       };
       pool.push(audio);
     }
     return pool;
+  }, []);
+
+  // 🔓 Unlock audio for mobile - ses çalmadan önce çağır
+  const unlockAudioForMobile = useCallback(() => {
+    if (audioUnlockedRef.current) return;
+    
+    // AudioContext'i resume et
+    const ctx = audioContextRef.current;
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+    
+    audioUnlockedRef.current = true;
+    console.log("✅ useSounds: Audio unlocked for mobile");
   }, []);
 
   // Get available audio from pool
@@ -143,6 +180,12 @@ export const useSounds = () => {
         return null;
       }
     }
+    
+    // Mobile için AudioContext'i resume et
+    if (audioContextRef.current.state === 'suspended') {
+      audioContextRef.current.resume().catch(() => {});
+    }
+    
     return audioContextRef.current;
   }, []);
 
@@ -351,7 +394,9 @@ export const useSounds = () => {
     if (!soundsEnabled) return;
 
     const activePack = getActiveSoundPack();
-    const soundPath = activePack.sounds.celebration;
+    let soundPath = activePack.sounds.celebration;
+    // Capacitor için path düzeltmesi
+    if (soundPath.startsWith('/')) soundPath = '.' + soundPath;
 
     try {
       const audio = new Audio(soundPath);
@@ -368,7 +413,9 @@ export const useSounds = () => {
     if (!soundsEnabled) return;
 
     const activePack = getActiveSoundPack();
-    const soundPath = activePack.sounds.gameLoseSound;
+    let soundPath = activePack.sounds.gameLoseSound;
+    // Capacitor için path düzeltmesi
+    if (soundPath.startsWith('/')) soundPath = '.' + soundPath;
 
     try {
       const audio = new Audio(soundPath);
@@ -385,7 +432,9 @@ export const useSounds = () => {
     if (!soundsEnabled) return;
 
     const activePack = getActiveSoundPack();
-    const soundPath = activePack.sounds.tieSound;
+    let soundPath = activePack.sounds.tieSound;
+    // Capacitor için path düzeltmesi
+    if (soundPath.startsWith('/')) soundPath = '.' + soundPath;
 
     try {
       const audio = new Audio(soundPath);
@@ -426,7 +475,11 @@ export const useSounds = () => {
         }
         
         // Fallback: pool bulunamazsa eski yöntem
-        const audio = new Audio(soundFile);
+        // Capacitor için path düzeltmesi
+        let fixedPath = soundFile;
+        if (fixedPath.startsWith('/')) fixedPath = '.' + fixedPath;
+        
+        const audio = new Audio(fixedPath);
         audio.volume = volume;
         audio.currentTime = 0;
         audio.play().catch((error) => {

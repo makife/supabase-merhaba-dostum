@@ -27,6 +27,36 @@ interface AudioPool {
 const countdownSoundPool: AudioPool = { sounds: [], currentIndex: 0 };
 const startSoundPool: AudioPool = { sounds: [], currentIndex: 0 };
 let audioPoolInitialized = false;
+let audioUnlocked = false;
+
+// 🔓 Mobile audio unlock - kullanıcı etkileşimi ile ses kilidini aç
+const unlockAudio = () => {
+  if (audioUnlocked) return;
+  
+  // Tüm ses elementlerini sessiz çal ve durdur
+  [...countdownSoundPool.sounds, ...startSoundPool.sounds].forEach(audio => {
+    const originalVolume = audio.volume;
+    audio.volume = 0;
+    audio.play().then(() => {
+      audio.pause();
+      audio.currentTime = 0;
+      audio.volume = originalVolume;
+    }).catch(() => {});
+  });
+  
+  audioUnlocked = true;
+  console.log("✅ GameCountdown: Audio unlocked for mobile");
+};
+
+// Kullanıcı etkileşimi dinleyicileri
+if (typeof window !== "undefined") {
+  const unlockEvents = ['touchstart', 'touchend', 'click', 'keydown'];
+  const handleUnlock = () => {
+    unlockAudio();
+    unlockEvents.forEach(e => document.removeEventListener(e, handleUnlock));
+  };
+  unlockEvents.forEach(e => document.addEventListener(e, handleUnlock, { once: false, passive: true }));
+}
 
 // Audio pool'u başlat
 const initAudioPool = () => {
@@ -34,7 +64,8 @@ const initAudioPool = () => {
   
   // Geri sayım sesleri için pool
   for (let i = 0; i < COUNTDOWN_SOUND_POOL_SIZE; i++) {
-    const audio = new Audio("/gerisayim.mp3");
+    const audio = new Audio();
+    audio.src = "./gerisayim.mp3"; // Capacitor için relative path
     audio.volume = 0.6;
     audio.preload = "auto";
     audio.load();
@@ -43,7 +74,8 @@ const initAudioPool = () => {
   
   // Başla sesi için pool
   for (let i = 0; i < START_SOUND_POOL_SIZE; i++) {
-    const audio = new Audio("/basla.mp3");
+    const audio = new Audio();
+    audio.src = "./basla.mp3"; // Capacitor için relative path
     audio.volume = 0.6;
     audio.preload = "auto";
     audio.load();
@@ -56,14 +88,23 @@ const initAudioPool = () => {
 
 // Pool'dan ses çal
 const playFromPool = (pool: AudioPool) => {
-  if (pool.sounds.length === 0) return;
+  if (pool.sounds.length === 0) {
+    console.warn("⚠️ Audio pool empty");
+    return;
+  }
   
   const audio = pool.sounds[pool.currentIndex];
   pool.currentIndex = (pool.currentIndex + 1) % pool.sounds.length;
   
   // Sesi başa sar ve çal
   audio.currentTime = 0;
-  audio.play().catch(() => {});
+  audio.play().then(() => {
+    console.log("✅ Sound played successfully");
+  }).catch((err) => {
+    console.warn("⚠️ Audio play failed:", err.message);
+    // Tekrar dene - mobile unlock gerekebilir
+    unlockAudio();
+  });
 };
 
 // Preload on module load with completion tracking
