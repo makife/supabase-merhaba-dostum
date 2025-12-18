@@ -207,10 +207,7 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
         {/* --- FOOTER (BAŞLAT BUTONU) --- */}
         {/* Buraya da slide-in-from-bottom ekleyerek alttan gelmesini sağladık */}
         <div className="p-6 pt-0 z-10 mt-auto animate-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both">
-          <div className="mb-4 flex items-center justify-center gap-2 text-xs text-zinc-500">
-            <Shield className="w-3 h-3" />
-            <span>Adil eşleştirme sistemi aktif</span>
-          </div>
+          <div className="mb-4 flex items-center justify-center gap-2 text-xs text-zinc-500"></div>
 
           <Button
             onClick={handleStart}
