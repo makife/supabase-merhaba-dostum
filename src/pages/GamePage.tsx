@@ -173,7 +173,7 @@ const GamePage = ({
   const countdownCompletedAtRef = useRef<number | null>(null);
   // Touch/click double-fire koruması: Gönder butonu için son touch zaman damgası
   const submitTouchTsRef = useRef(0);
-  
+
   // 🔒 REMATCH FIX: Closure sorunu çözümü - güncel değerleri ref'lerde sakla
   const participantsRef = useRef(participants);
   const currentRoomIdRef = useRef<string | null>(currentRoom?.id || null);
@@ -225,11 +225,11 @@ const GamePage = ({
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [showTournamentExitDialog, setShowTournamentExitDialog] = useState(false);
   const [isInBackground, setIsInBackground] = useState(false);
-  
+
   // Ref'ler - arka plan disconnect için güncel değerleri tut
   const gameStartedRef = useRef(false);
   const currentRoomRef = useRef(currentRoom);
-  
+
   // Ref'leri güncel tut
   useEffect(() => {
     currentRoomRef.current = currentRoom;
@@ -238,7 +238,7 @@ const GamePage = ({
   // Arka plan yönetimi - oyun sırasında disconnect mantığı (10 saniye)
   const handleBackgroundDisconnect = useCallback(async () => {
     console.log("⚠️ 10 saniye arka planda kaldı - oyuncu disconnect ediliyor");
-    
+
     // Sadece multiplayer oyunlarda ve oyun başladıysa çalış
     if (!gameStartedRef.current) {
       console.log("⏭️ Oyun başlamadı, arka plan disconnect atlanıyor");
@@ -248,20 +248,20 @@ const GamePage = ({
       console.log("⏭️ Multiplayer mod değil, arka plan disconnect atlanıyor");
       return;
     }
-    
+
     const room = currentRoomRef.current;
     if (!user?.id || !room?.id) {
       console.log("⏭️ Room veya user yok, arka plan disconnect atlanıyor");
       return;
     }
-    
+
     // Oyuncuya disconnect cezası uygula
     try {
       const { data: penaltyResult, error: penaltyError } = await supabase.rpc("apply_disconnect_penalty", {
         p_offender_id: user.id,
         p_room_id: room.id,
       });
-      
+
       if (penaltyError) {
         console.error("❌ Background disconnect penalty hatası:", penaltyError);
       } else if (penaltyResult && penaltyResult.length > 0) {
@@ -270,10 +270,10 @@ const GamePage = ({
     } catch (err) {
       console.error("❌ Background disconnect penalty exception:", err);
     }
-    
+
     // Rakibi kazanan olarak işaretle
     const opponentUserId = room.player1_id === user.id ? room.player2_id : room.player1_id;
-    
+
     try {
       await supabase
         .from("game_rooms")
@@ -287,31 +287,27 @@ const GamePage = ({
     } catch (err) {
       console.error("❌ Oda güncelleme hatası:", err);
     }
-    
+
     // Participant kaydını sil (rakibe disconnect eventi tetikler)
     try {
-      await supabase
-        .from("game_participants")
-        .delete()
-        .eq("room_id", room.id)
-        .eq("user_id", user.id);
+      await supabase.from("game_participants").delete().eq("room_id", room.id).eq("user_id", user.id);
       console.log("✅ Participant kaydı silindi - rakibe bildirim gönderildi");
     } catch (err) {
       console.error("❌ Participant silme hatası:", err);
     }
-    
+
     toast({
       title: "Bağlantı Kesildi",
       description: "Uygulama 10 saniyeden fazla arka planda kaldı",
       variant: "destructive",
     });
-    
+
     // Oyunu bitir ve kaybeden kartı göster
     setWinner("opponent");
     setGameEnded(true);
     setShowResults(true);
     setButtonsEnabled(false);
-    
+
     // Room temizle
     leaveRoom();
   }, [gameMode, user?.id, toast, leaveRoom]);
@@ -684,7 +680,7 @@ const GamePage = ({
   const [showCountdown, setShowCountdown] = useState(false);
   const [countdownServerTime, setCountdownServerTime] = useState<string | null>(null);
   const [preparingOpponent, setPreparingOpponent] = useState<"preparing" | "ready" | null>(null);
-  
+
   // 🔒 CRITICAL: Countdown tek seferlik başlatma guard'ı
   // Bu ref true olduktan sonra countdown ASLA yeniden başlatılamaz
   // Production oyunlardaki gibi: sunucu zamanı bir kez belirlenir, client sadece hesaplar
@@ -716,7 +712,7 @@ const GamePage = ({
       gameEndedRef.current = true; // 🔒 Sync ref with state
     }
   }, [gameEnded]);
-  
+
   // 🎮 Arka plan disconnect için gameStarted ref'ini senkronize tut
   useEffect(() => {
     gameStartedRef.current = gameStarted;
@@ -730,13 +726,13 @@ const GamePage = ({
   const [matchmakingTimeout, setMatchmakingTimeout] = useState<NodeJS.Timeout | null>(null);
   const [timeoutCountdown, setTimeoutCountdown] = useState(30);
   const [showResults, setShowResults] = useState(false);
-// Rematch state
+  // Rematch state
   const [rematchRequested, setRematchRequested] = useState(false);
   const [waitingForRematchResponse, setWaitingForRematchResponse] = useState(false);
-  
+
   // 🎮 Opponent ID - ref ile sakla ki oyun bittiğinde kaybolmasın
   const savedOpponentIdRef = useRef<string | null>(null);
-  
+
   // Opponent ID'yi hesapla ve ref'e kaydet
   const opponentId = useMemo(() => {
     // Önce participants'tan bul
@@ -745,7 +741,7 @@ const GamePage = ({
       savedOpponentIdRef.current = opponent.user_id;
       return opponent.user_id;
     }
-    
+
     // Yoksa currentRoom'dan bul
     if (currentRoom) {
       const id = currentRoom.player1_id === user?.id ? currentRoom.player2_id : currentRoom.player1_id;
@@ -754,16 +750,13 @@ const GamePage = ({
         return id;
       }
     }
-    
+
     // State temizlenmiş olabilir, ref'ten al
     return savedOpponentIdRef.current;
   }, [participants, currentRoom, user?.id]);
 
   // RematchContext'ten rematch fonksiyonlarını al
-  const {
-    isWaiting: rematchIsWaiting,
-    sendRematchRequest: sendRematchContext,
-  } = useRematchContext();
+  const { isWaiting: rematchIsWaiting, sendRematchRequest: sendRematchContext } = useRematchContext();
 
   // 🔒 Server time sync için state ve ref'ler
   const serverTimeReadyRef = useRef(false);
@@ -873,7 +866,7 @@ const GamePage = ({
             p_offender_id: disconnectedOpponentId,
             p_room_id: currentRoom.id,
           });
-          
+
           if (penaltyError) {
             console.error("❌ Disconnect penalty hatası:", penaltyError);
           } else if (penaltyResult && penaltyResult.length > 0) {
@@ -995,7 +988,7 @@ const GamePage = ({
           // 🔒 REMATCH FIX: Ref'lerden güncel değerleri oku (closure sorunu çözümü)
           const latestParticipants = participantsRef.current;
           const latestRoomId = currentRoomIdRef.current;
-          
+
           // 🔒 REMATCH GUARD: Room değiştiyse işlem yapma
           if (latestRoomId !== capturedRoomId) {
             console.log("🔄 Room değişti (rematch?), fallback disconnect iptal", {
@@ -1004,7 +997,7 @@ const GamePage = ({
             });
             return;
           }
-          
+
           const currentRealPlayers = latestParticipants.filter((p) => !p.is_bot);
           const stillAmIInRoom = latestParticipants.some((p) => p.user_id === user?.id);
 
@@ -1029,7 +1022,16 @@ const GamePage = ({
         disconnectTimerRef.current = null;
       }
     };
-  }, [participants.length, gameMode, gameStarted, gameEnded, user?.id, waitingForRematchResponse, rematchRequested, currentRoom?.id]);
+  }, [
+    participants.length,
+    gameMode,
+    gameStarted,
+    gameEnded,
+    user?.id,
+    waitingForRematchResponse,
+    rematchRequested,
+    currentRoom?.id,
+  ]);
 
   // Oyunun gerçekten başladığını işaretle - Countdown TAMAMLANDIKTAN sonra
   useEffect(() => {
@@ -1054,7 +1056,7 @@ const GamePage = ({
   useEffect(() => {
     participantsRef.current = participants;
   }, [participants]);
-  
+
   useEffect(() => {
     currentRoomIdRef.current = currentRoom?.id || null;
   }, [currentRoom?.id]);
@@ -1089,72 +1091,70 @@ const GamePage = ({
 
     const capturedRoomId = currentRoom.id;
     const capturedUserId = user.id;
-    
+
     // Rakip ID'yi hesapla
-    const opponentId = currentRoom.player1_id === capturedUserId 
-      ? currentRoom.player2_id 
-      : currentRoom.player1_id;
-    
+    const opponentId = currentRoom.player1_id === capturedUserId ? currentRoom.player2_id : currentRoom.player1_id;
+
     if (!opponentId) {
       console.log("⚠️ Realtime disconnect: Rakip ID bulunamadı");
       return;
     }
-    
+
     console.log("📡 Realtime disconnect subscription başlatılıyor:", {
       roomId: shortId(capturedRoomId),
-      opponentId: shortId(opponentId)
+      opponentId: shortId(opponentId),
     });
 
     // game_participants tablosundaki DELETE eventlerini dinle
     const channel = supabase
       .channel(`disconnect-detection-${capturedRoomId}`)
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'game_participants',
-          filter: `room_id=eq.${capturedRoomId}`
+          event: "DELETE",
+          schema: "public",
+          table: "game_participants",
+          filter: `room_id=eq.${capturedRoomId}`,
         },
         (payload) => {
           console.log("🔔 Participant DELETE event:", payload);
-          
+
           // Guard: Room değiştiyse veya zaten handled ise işlem yapma
           const latestRoomId = currentRoomIdRef.current;
           if (latestRoomId !== capturedRoomId || disconnectHandledRef.current) {
             console.log("🔄 Room değişti veya disconnect handled, event yoksayılıyor");
             return;
           }
-          
+
           // Silinen participant rakip mi kontrol et
           const deletedUserId = (payload.old as any)?.user_id;
           if (deletedUserId === opponentId) {
             console.log("🚨 REALTIME: Rakip participant silindi - DISCONNECT TETİKLENİYOR!");
             disconnectHandledRef.current = true;
-            
+
             // Opponent ID'yi kaydet (ceza için)
             savedOpponentIdRef.current = opponentId;
-            
+
             // Subscription'ı kapat
             supabase.removeChannel(channel);
-            
+
             // Disconnect event'i dispatch et
             window.dispatchEvent(
               new CustomEvent("playerDisconnected", {
-                detail: { 
-                  winner: "player", 
-                  reason: "opponent_left_realtime", 
-                  roomId: capturedRoomId 
+                detail: {
+                  winner: "player",
+                  reason: "opponent_left_realtime",
+                  roomId: capturedRoomId,
                 },
               }),
             );
           }
-        }
+        },
       )
       .subscribe((status) => {
         console.log("📡 Disconnect channel status:", status);
       });
-    
+
     return () => {
       console.log("🔌 Disconnect subscription temizleniyor:", shortId(capturedRoomId));
       supabase.removeChannel(channel);
@@ -1409,7 +1409,7 @@ const GamePage = ({
   // ❌ KALDIRILDI: Gereksiz polling - winner zaten handleTournamentGameEnd içinde doğru şekilde belirleniyor
   // Bu polling sadece "Skor hesaplanıyor..." mesajı gösterip gereksiz gecikmeye neden oluyordu
 
-const requestRematch = async () => {
+  const requestRematch = async () => {
     if (!user) {
       console.error("❌ Rematch: User yok");
       return;
@@ -1437,9 +1437,13 @@ const requestRematch = async () => {
       // Yeni hook ile rematch gönder
       const currentGameType: "timed" | "score" = currentRoom?.game_mode?.includes("score") ? "score" : "timed";
       console.log("🎮 Mevcut oyun türü:", currentGameType, "game_mode:", currentRoom?.game_mode);
-      
-      const success = await sendRematchContext(opponentId, currentGameType, currentRoom?.game_mode || "private-room-timed");
-      
+
+      const success = await sendRematchContext(
+        opponentId,
+        currentGameType,
+        currentRoom?.game_mode || "private-room-timed",
+      );
+
       if (!success) {
         setRematchRequested(false);
         setWaitingForRematchResponse(false);
@@ -1463,58 +1467,65 @@ const requestRematch = async () => {
   // Birden fazla trigger (real-time subscription, initial load, event) olsa bile
   // countdown asla reset edilmez
   // 🎯 Buffer animasyonları dahil: 3.5s preparing + 0.5s ready + 1s blank = 5s total
-  const initiateCountdown = useCallback((serverTime: string, skipBuffer: boolean = false) => {
-    if (countdownInitiatedRef.current) {
-      console.log("⏱️ Countdown zaten başlatıldı, yeniden başlatma engellendi");
-      return false;
-    }
-    
-    if (gameStarted) {
-      console.log("⏱️ Oyun zaten başladı, countdown atlandı");
-      return false;
-    }
-    
-    console.log("⏱️ Countdown başlatılıyor (tek seferlik):", serverTime, "skipBuffer:", skipBuffer);
-    countdownInitiatedRef.current = true;
-    
-    if (skipBuffer) {
-      // Buffer atla, direkt countdown göster
-      setCountdownServerTime(serverTime);
-      setShowCountdown(true);
-      setPreparingOpponent(null);
-    } else {
-      // 🎯 Buffer animasyonları: 3.5s preparing + 0.5s ready + 1s blank = 5s
-      console.log("🏆 Buffer animasyonu başlatıldı: preparing");
-      setPreparingOpponent("preparing");
-      
-      // 3.5s sonra ready - isMountedRef ile koruma
-      setTimeout(() => {
-        if (isMountedRef.current) {
-          console.log("🏆 Buffer animasyonu: ready");
-          setPreparingOpponent("ready");
-        }
-      }, 3500);
-      
-      // 4s sonra blank (3.5s + 0.5s)
-      setTimeout(() => {
-        if (isMountedRef.current) {
-          console.log("🏆 Buffer animasyonu: blank");
-          setPreparingOpponent(null);
-        }
-      }, 4000);
-      
-      // 5s sonra countdown başlat
-      setTimeout(() => {
-        if (isMountedRef.current) {
-          console.log("🏆 Countdown gösteriliyor");
-          setCountdownServerTime(serverTime);
-          setShowCountdown(true);
-        }
-      }, 5000);
-    }
-    
-    return true;
-  }, [gameStarted]);
+  // GamePage.tsx içinde initiateCountdown fonksiyonunu bul ve bununla değiştir:
+
+  const initiateCountdown = useCallback(
+    (serverTime: string, skipBuffer: boolean = false, force: boolean = false) => {
+      // Eğer force=true ise (Realtime update'den geliyorsa), korumayı yoksay ve güncelle
+      if (countdownInitiatedRef.current && !force) {
+        console.log("⏱️ Countdown zaten başlatıldı, yeniden başlatma engellendi (Force yok)");
+        return false;
+      }
+
+      if (gameStarted && !force) {
+        console.log("⏱️ Oyun zaten başladı, countdown atlandı");
+        return false;
+      }
+
+      console.log("⏱️ Countdown başlatılıyor/güncelleniyor:", serverTime, "Force:", force);
+
+      // Flag'i işaretle
+      countdownInitiatedRef.current = true;
+
+      // Eğer force güncellemesi ise, mevcut state'i güncelle
+      if (force) {
+        setCountdownServerTime(serverTime);
+        setShowCountdown(true);
+        // Eğer oyun başladıysa geri al (çünkü countdown yeni zamana göre tekrar akmalı)
+        setGameStarted(false);
+        return true;
+      }
+
+      if (skipBuffer) {
+        setCountdownServerTime(serverTime);
+        setShowCountdown(true);
+        setPreparingOpponent(null);
+      } else {
+        // Buffer animasyonları...
+        console.log("🏆 Buffer animasyonu başlatıldı: preparing");
+        setPreparingOpponent("preparing");
+
+        setTimeout(() => {
+          if (isMountedRef.current) setPreparingOpponent("ready");
+        }, 3500);
+
+        setTimeout(() => {
+          if (isMountedRef.current) setPreparingOpponent(null);
+        }, 4000);
+
+        setTimeout(() => {
+          if (isMountedRef.current) {
+            console.log("🏆 Countdown gösteriliyor");
+            setCountdownServerTime(serverTime);
+            setShowCountdown(true);
+          }
+        }, 5000);
+      }
+
+      return true;
+    },
+    [gameStarted],
+  );
 
   // 4. resetGameForRematch fonksiyonunu ekleyin:
   const resetGameForRematch = () => {
@@ -3752,24 +3763,24 @@ const requestRematch = async () => {
             console.log("⚠️ Countdown zaten başlatıldı - real-time event yok sayıldı");
           } else if (newData.countdown_started_at && !preparingOpponent && !showCountdown) {
             console.log("🎯 Tournament countdown hazırlanıyor (real-time):", newData.countdown_started_at);
-            
+
             // 🎯 Random-match ile aynı 5 saniyelik buffer animasyonu
             // 3.5s "Oyuncu Hazırlanıyor", 0.5s "Oyuncu Hazır", 1s boşluk, 5s countdown
             countdownInitiatedRef.current = true;
-            
+
             // Buffer animasyonları başlat
             setPreparingOpponent("preparing");
-            
+
             // 3.5 saniye sonra "Oyuncu Hazır" göster
             setTimeout(() => {
               setPreparingOpponent("ready");
             }, 3500);
-            
+
             // 4 saniye sonra animasyonu temizle
             setTimeout(() => {
               setPreparingOpponent(null);
             }, 4000);
-            
+
             // 5 saniye sonra countdown başlat
             setTimeout(() => {
               const originalTime = new Date(newData.countdown_started_at).getTime();
@@ -3836,10 +3847,10 @@ const requestRematch = async () => {
     const countdownStartTime = new Date(tournamentMatch.countdown_started_at).getTime();
     const BUFFER_MS = 5000; // Buffer süresi
     const TOTAL_BUFFER_MS = 5000;
-    
+
     // Gerçek countdown başlangıcı (buffer sonrası)
     const adjustedCountdownStart = countdownStartTime + BUFFER_MS;
-    
+
     const serverNow = Date.now() + serverTimeOffset;
     const msElapsedSinceStart = serverNow - countdownStartTime;
 
@@ -3896,12 +3907,12 @@ const requestRematch = async () => {
           // 🔒 Merkezi countdown guard - sadece BİR KERE başlat
           if (newData.countdown_started_at && !countdownInitiatedRef.current) {
             console.log("🎯 Game room countdown başlatılıyor (buffer animasyonu ile):", newData.countdown_started_at);
-            
+
             // Buffer animasyonu + countdown için adjusted time hesapla
             // initiateCountdown içinde 5s buffer var, onun sonunda countdown gösterilecek
             const originalTime = new Date(newData.countdown_started_at).getTime();
             const adjustedTime = new Date(originalTime + 5000).toISOString();
-            
+
             // Buffer animasyonlarını göster (skipBuffer = false)
             initiateCountdown(adjustedTime, false);
           }
@@ -4006,9 +4017,9 @@ const requestRematch = async () => {
 
       // ✅ TURNUVA KATILIMCISINI SİL (kritik - yoksa yeni turnuvaya katılamaz)
       console.log("🗑️ tournament_participants kaydı siliniyor...");
-      const { error: participantDeleteError } = await supabase.rpc('delete_tournament_participant', {
+      const { error: participantDeleteError } = await supabase.rpc("delete_tournament_participant", {
         p_tournament_id: tournamentMatch.tournament_id,
-        p_user_id: user.id
+        p_user_id: user.id,
       });
 
       if (participantDeleteError) {
@@ -4035,9 +4046,9 @@ const requestRematch = async () => {
 
       // Hata durumunda da turnuva kaydını temizle
       try {
-        await supabase.rpc('delete_tournament_participant', {
+        await supabase.rpc("delete_tournament_participant", {
           p_tournament_id: tournamentMatch.tournament_id,
-          p_user_id: user.id
+          p_user_id: user.id,
         });
       } catch (cleanupError) {
         console.error("Cleanup hatası:", cleanupError);
@@ -4187,11 +4198,11 @@ const requestRematch = async () => {
             const countdownStartTime = new Date(tournamentMatch.countdown_started_at).getTime();
             gameStartTimestamp = countdownStartTime + 10000; // 10 saniye sonra
             endsAtTimestamp = gameStartTimestamp + 120 * 1000;
-            
+
             console.log("🏆 Tournament timer: Server timing", {
               countdownStart: new Date(countdownStartTime).toISOString(),
               gameStart: new Date(gameStartTimestamp).toISOString(),
-              endsAt: new Date(endsAtTimestamp).toISOString()
+              endsAt: new Date(endsAtTimestamp).toISOString(),
             });
           } else {
             // Fallback: countdown_started_at yoksa (olmaması lazım ama güvenlik için)
@@ -5047,7 +5058,7 @@ const requestRematch = async () => {
       const originalCountdownTime = new Date(currentRoom.countdown_started_at).getTime();
       const BUFFER_MS = 5000;
       const adjustedCountdownStart = originalCountdownTime + BUFFER_MS;
-      
+
       const serverNow = Date.now() + serverTimeOffset;
       const msUntilCountdown = adjustedCountdownStart - serverNow;
 
@@ -5062,10 +5073,10 @@ const requestRematch = async () => {
 
       if (msUntilCountdown > 0) {
         // Buffer period aktif - animasyonları göster
-        
+
         if (msUntilCountdown > 3500) {
           setPreparingOpponent("preparing");
-          
+
           const timeToReady = msUntilCountdown - 1500;
           timers.push(setTimeout(() => setPreparingOpponent("ready"), Math.max(0, timeToReady - 500)));
           timers.push(setTimeout(() => setPreparingOpponent(null), Math.max(0, msUntilCountdown - 1000)));
@@ -5078,12 +5089,15 @@ const requestRematch = async () => {
 
         // Countdown'ı tam zamanında başlat
         timers.push(
-          setTimeout(() => {
-            console.log("⏰ Countdown başlatılıyor (buffer sonrası)");
-            setCountdownServerTime(new Date(adjustedCountdownStart).toISOString());
-            setShowCountdown(true);
-            setGameStarted(false);
-          }, Math.max(0, msUntilCountdown)),
+          setTimeout(
+            () => {
+              console.log("⏰ Countdown başlatılıyor (buffer sonrası)");
+              setCountdownServerTime(new Date(adjustedCountdownStart).toISOString());
+              setShowCountdown(true);
+              setGameStarted(false);
+            },
+            Math.max(0, msUntilCountdown),
+          ),
         );
       } else if (msUntilCountdown > -5000) {
         // Countdown başlamış ama 5 saniye geçmemiş
@@ -5106,7 +5120,15 @@ const requestRematch = async () => {
         timers.forEach((timer) => clearTimeout(timer));
       };
     }
-  }, [gameMode, currentRoom?.countdown_started_at, showCountdown, gameStarted, serverTimeOffset, countdownServerTime, serverTimeReady]);
+  }, [
+    gameMode,
+    currentRoom?.countdown_started_at,
+    showCountdown,
+    gameStarted,
+    serverTimeOffset,
+    countdownServerTime,
+    serverTimeReady,
+  ]);
 
   // 🔍 GÜNCELLENMİŞ SÜRE YÖNETİMİ - Server Time Sync + 5sn Buffer
   // RandomMatchPage'deki mantık ile senkronize
@@ -5160,7 +5182,7 @@ const requestRematch = async () => {
 
         // C. Server time ile senkronize hesapla
         const serverNow = Date.now() + serverTimeOffset;
-        
+
         // 🎯 5 saniyelik buffer: countdown_started_at + 5000ms = gerçek countdown başlangıcı
         const BUFFER_MS = 5000;
         const adjustedCountdownStart = countdownStartTime + BUFFER_MS;
@@ -5183,11 +5205,11 @@ const requestRematch = async () => {
           // 3.5 saniyeden fazla varsa "Hazırlanıyor" göster
           if (msUntilCountdown > 3500) {
             setPreparingOpponent("preparing");
-            
+
             // 1.5 saniye kala "Hazır" göster
             const timeToReady = msUntilCountdown - 1500;
             setTimeout(() => setPreparingOpponent("ready"), Math.max(0, timeToReady - 500));
-            
+
             // 1 saniye kala yazıyı kaldır
             setTimeout(() => setPreparingOpponent(null), Math.max(0, msUntilCountdown - 1000));
           } else if (msUntilCountdown > 1500) {
@@ -5200,13 +5222,15 @@ const requestRematch = async () => {
           }
 
           // Countdown'ı tam zamanında başlat (buffer sonunda)
-          setTimeout(() => {
-            console.log("🎯 Countdown başlatılıyor (buffer sonrası)");
-            // adjustedCountdownStart zamanını ISO string olarak gönder
-            setCountdownServerTime(new Date(adjustedCountdownStart).toISOString());
-            setShowCountdown(true);
-          }, Math.max(0, msUntilCountdown));
-          
+          setTimeout(
+            () => {
+              console.log("🎯 Countdown başlatılıyor (buffer sonrası)");
+              // adjustedCountdownStart zamanını ISO string olarak gönder
+              setCountdownServerTime(new Date(adjustedCountdownStart).toISOString());
+              setShowCountdown(true);
+            },
+            Math.max(0, msUntilCountdown),
+          );
         } else if (msUntilCountdown > -5000) {
           // Countdown zaten başlamış olmalı ama 5 saniye geçmemiş, countdown göster
           console.log("⏰ Countdown başlamış, devam ediliyor");
@@ -5272,7 +5296,7 @@ const requestRematch = async () => {
     isPlayingWithAI,
   ]);
 
-// 🔄 useRematch hook'undan gelen state'leri senkronize et
+  // 🔄 useRematch hook'undan gelen state'leri senkronize et
   useEffect(() => {
     if (rematchIsWaiting) {
       setWaitingForRematchResponse(true);
