@@ -4,18 +4,17 @@ import { createPortal } from "react-dom";
 interface GameCountdownProps {
   onComplete: () => void;
   className?: string;
-  /** Sunucudan gelen oyun BAŞLAMA zamanı (Timestamp string) */
+  /** Server timestamp when countdown STARTS */
   serverStartTime?: string | null;
-  /** Sunucu ile istemci arasındaki saat farkı (ms) */
+  /** Local offset to sync with server time */
   serverTimeOffset?: number;
 }
 
-// --- ASSET YÖNETİMİ (PRELOAD) ---
+// --- ASSET VE AUDIO YÖNETİMİ ---
 const IMAGE_PATHS = ["/bes.png", "/dort.png", "/uc.png", "/iki.png", "/bir.png", "/basla.png"];
 const preloadedImages: Map<string, HTMLImageElement> = new Map();
 let imagesPreloaded = false;
 
-// --- SES YÖNETİMİ (AUDIO POOL) ---
 const COUNTDOWN_SOUND_POOL_SIZE = 6;
 const START_SOUND_POOL_SIZE = 2;
 
@@ -29,7 +28,6 @@ const startSoundPool: AudioPool = { sounds: [], currentIndex: 0 };
 let audioPoolInitialized = false;
 let audioUnlocked = false;
 
-// Mobil tarayıcılar için ses kilidini açma (İlk dokunuşta çalışır)
 const unlockAudio = () => {
   if (audioUnlocked) return;
   [...countdownSoundPool.sounds, ...startSoundPool.sounds].forEach(audio => {
@@ -44,7 +42,6 @@ const unlockAudio = () => {
   audioUnlocked = true;
 };
 
-// Event Listenerları ekle
 if (typeof window !== "undefined") {
   const unlockEvents = ['touchstart', 'touchend', 'click', 'keydown'];
   const handleUnlock = () => {
@@ -54,7 +51,6 @@ if (typeof window !== "undefined") {
   unlockEvents.forEach(e => document.addEventListener(e, handleUnlock, { once: false, passive: true }));
 }
 
-// Ses havuzunu başlat
 const initAudioPool = () => {
   if (audioPoolInitialized || typeof window === "undefined") return;
 
@@ -75,11 +71,9 @@ const initAudioPool = () => {
     audio.load();
     startSoundPool.sounds.push(audio);
   }
-  
   audioPoolInitialized = true;
 };
 
-// Ses çalma fonksiyonu
 const playFromPool = (pool: AudioPool) => {
   if (pool.sounds.length === 0) return;
   const audio = pool.sounds[pool.currentIndex];
@@ -88,7 +82,6 @@ const playFromPool = (pool: AudioPool) => {
   audio.play().catch(() => unlockAudio());
 };
 
-// Resim ve Sesleri Yükle
 const preloadPromise = typeof window !== "undefined" 
   ? Promise.all([
       ...IMAGE_PATHS.map((src) => new Promise<void>((resolve) => {
@@ -103,14 +96,19 @@ const preloadPromise = typeof window !== "undefined"
 
 export const ensureImagesLoaded = () => preloadPromise;
 
-const COUNTDOWN_DURATION_MS = 5000; // Geri sayım süresi (5 saniye)
-const START_DISPLAY_DURATION_MS = 800; // "BAŞLA" yazısının ekranda kalma süresi
+const COUNTDOWN_DURATION_MS = 5000;
+const START_DISPLAY_DURATION_MS = 800;
 
 // --- ANA COMPONENT ---
 const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 }: GameCountdownProps) => {
   const [displayValue, setDisplayValue] = useState<number | "start" | null>(null);
   
-  // Refs
+  // Debug için anlık farkı hesapla (Render sırasında)
+  const debugNow = Date.now() + serverTimeOffset;
+  const debugStartTime = serverStartTime ? new Date(serverStartTime).getTime() : 0;
+  // Eğer pozitifse oyunun başlamasına daha var demektir. Negatifse geç kaldık demektir.
+  const debugDiff = serverStartTime ? (debugStartTime - debugNow) : 0;
+
   const completedRef = useRef(false);
   const mountedRef = useRef(true);
   const startShownRef = useRef(false);
@@ -140,43 +138,37 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
   useEffect(() => {
     if (completedRef.current) return;
 
-    // Eğer sunucudan zaman bilgisi henüz gelmediyse HİÇBİR ŞEY YAPMA.
-    // Legacy (Client-side) modu tamamen kaldırdık.
-    // Bu sayede SQL Buffer'dan gelen ileri tarihi beklemek ZORUNDA kalır.
+    // --- KRİTİK KONTROL ---
+    // Sunucudan veri yoksa bekle. Legacy mod YOK.
     if (!serverStartTime) {
-        console.log("⏳ GameCountdown: Sunucudan başlama saati bekleniyor...");
+        console.log("⏳ GameCountdown: Sunucu saati bekleniyor (Veri null)...");
         return; 
     }
 
-    // Önceki döngüyü temizle
     if (rafRef.current) {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
 
-    console.log("⏱️ GameCountdown: Server Modu Aktif. Başlama:", serverStartTime, "Offset:", serverTimeOffset);
-    
-    // Geri sayımın BİTİŞ zamanı = Başlama Zamanı + 5 Saniye
+    // Countdown bitişi = StartTime + 5sn
     const countdownEndTime = new Date(serverStartTime).getTime() + COUNTDOWN_DURATION_MS;
     
-    // Animasyon Döngüsü (Tick)
     const tick = () => {
       if (!mountedRef.current || completedRef.current) return;
 
       const serverNow = Date.now() + serverTimeOffset;
       const remaining = countdownEndTime - serverNow;
       
-      // 1. Durum: Süre tamamen bitti ("Başla" yazısı da kalkmalı)
+      // 1. Oyun Başladı
       if (remaining <= -START_DISPLAY_DURATION_MS) {
         if (!completedRef.current) {
           completedRef.current = true;
-          console.log("🏁 Geri sayım tamamlandı, oyun başlıyor.");
           onComplete();
         }
         return;
       }
       
-      // 2. Durum: Süre doldu, "BAŞLA!" göster
+      // 2. "BAŞLA" Yazısı
       if (remaining <= 0) {
         if (!startShownRef.current) {
           startShownRef.current = true;
@@ -188,20 +180,16 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
           }
         }
       } 
-      // 3. Durum: Geri sayım devam ediyor (veya tampon süresindeyiz)
+      // 3. Geri Sayım (veya Buffer Beklemesi)
       else {
         const seconds = Math.ceil(remaining / 1000);
-        
-        // Burası kritik: Eğer SQL'den +20sn geldiyse 'seconds' 15-20 arası çıkabilir.
-        // Math.min(5, ...) sayesinde ekranda hep "5" görürüz.
+        // Eğer buffer yüzünden 20 saniye varsa bile en fazla 5 göster.
         const display = Math.min(5, Math.max(1, seconds));
         
-        // Ekrana basma işlemi (Gereksiz render önleme)
         if (lastDisplayRef.current !== display) {
           lastDisplayRef.current = display;
           setDisplayValue(display);
           
-          // Ses çalma (sadece rakam değişince)
           if (!soundPlayedRef.current.has(display)) {
             soundPlayedRef.current.add(display);
             playCountdownSound();
@@ -212,7 +200,6 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       rafRef.current = requestAnimationFrame(tick);
     };
     
-    // İlk render'ın oturması için minik bir gecikme ile başlat
     setTimeout(() => {
       if (mountedRef.current && !completedRef.current) {
         rafRef.current = requestAnimationFrame(tick);
@@ -224,7 +211,6 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
     };
   }, [onComplete, serverStartTime, serverTimeOffset]);
 
-  // Görsel Seçimi
   const getImageSrc = () => {
     if (displayValue === "start") return "/basla.png";
     if (displayValue === 5) return "/bes.png";
@@ -235,11 +221,9 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
     return "/bes.png"; 
   };
 
-  // Eğer değer yoksa hiçbir şey gösterme
-  if (displayValue === null) {
-    return null;
-  }
-
+  // Veri yoksa veya değer oluşmadıysa null (Debug panel için aşağıyı bekle)
+  // Ama debug panelini görmek için return null yapmıyoruz, sadece resmi gizliyoruz.
+  
   return createPortal(
     <div
       style={{
@@ -252,16 +236,46 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
         backgroundColor: "rgba(0, 0, 0, 0.7)",
       }}
     >
-      <img
-        key={String(displayValue)}
-        src={getImageSrc()}
-        alt={String(displayValue)}
-        style={{
-          width: 280,
-          height: 280,
-          objectFit: "contain",
-        }}
-      />
+        {/* --- DEBUG PANELİ BAŞLANGIÇ --- */}
+        <div style={{
+            position: 'absolute',
+            top: '10%',
+            left: '5%',
+            right: '5%',
+            padding: '10px',
+            backgroundColor: 'black',
+            border: '2px solid red',
+            color: '#00FF00',
+            fontFamily: 'monospace',
+            fontSize: '14px',
+            zIndex: 10000,
+            pointerEvents: 'none'
+        }}>
+            <div><strong>DEBUG MODE</strong></div>
+            <div>ServerStart (Raw): {serverStartTime || "YOK (NULL)"}</div>
+            <div>Offset: {serverTimeOffset} ms</div>
+            <div style={{ color: debugDiff < 0 ? 'red' : 'yellow' }}>
+                FARK (Start - ŞuAn): {Math.round(debugDiff)} ms
+            </div>
+            <div>
+                Durum: {debugDiff < 0 ? "⚠️ GEÇ KALINDI (Negatif)" : "✅ BEKLENİYOR (Pozitif)"}
+            </div>
+            <div>Display: {displayValue}</div>
+        </div>
+        {/* --- DEBUG PANELİ BİTİŞ --- */}
+
+      {displayValue !== null && (
+          <img
+            key={String(displayValue)}
+            src={getImageSrc()}
+            alt={String(displayValue)}
+            style={{
+              width: 280,
+              height: 280,
+              objectFit: "contain",
+            }}
+          />
+      )}
     </div>,
     document.body,
   );
