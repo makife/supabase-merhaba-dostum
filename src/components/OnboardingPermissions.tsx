@@ -87,9 +87,17 @@ export const OnboardingPermissions = ({ open, onComplete }: OnboardingPermission
             <p className="text-xs text-muted-foreground mt-4">İletişim: info@erganmuhendislik.com</p>
           </div>
 
-          <div className="flex items-start space-x-3 p-3 border rounded-lg">
-            <Checkbox id="kvkk" checked={kvkkAccepted} onCheckedChange={(checked) => setKvkkAccepted(!!checked)} />
-            <label htmlFor="kvkk" className="text-sm cursor-pointer">
+          <div 
+            className="flex items-start space-x-3 p-3 border rounded-lg cursor-pointer active:bg-muted/50"
+            onClick={() => setKvkkAccepted(!kvkkAccepted)}
+          >
+            <Checkbox 
+              id="kvkk" 
+              checked={kvkkAccepted} 
+              onCheckedChange={(checked) => setKvkkAccepted(!!checked)}
+              className="mt-0.5"
+            />
+            <label htmlFor="kvkk" className="text-sm cursor-pointer select-none">
               KVKK metnini okudum, anladım ve kabul ediyorum. Kişisel verilerimin yukarıda belirtilen amaçlarla
               işlenmesine onay veriyorum.
             </label>
@@ -199,7 +207,7 @@ export const OnboardingPermissions = ({ open, onComplete }: OnboardingPermission
       const granted = await requestPermissions();
 
       // Permission onboarding tamamlandı olarak işaretle
-      localStorage.setItem("kelimeci-permissions-completed", "true");
+      localStorage.setItem("kelimeci-onboarding-completed", "true");
 
       // Bildirim ayarını kaydet - granted.notifications değerini kullan
       const settings = JSON.parse(localStorage.getItem("kelimeci-settings") || "{}");
@@ -217,7 +225,7 @@ export const OnboardingPermissions = ({ open, onComplete }: OnboardingPermission
   };
 
   const handleSkip = () => {
-    localStorage.setItem("kelimeci-permissions-completed", "true");
+    localStorage.setItem("kelimeci-onboarding-completed", "true");
     toast.info("Kurulumu atladınız. İzinleri ayarlardan verebilirsiniz.");
     onComplete();
   };
