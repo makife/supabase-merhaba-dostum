@@ -151,10 +151,6 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
                 <span className="text-xs text-zinc-500 mt-1 block px-2">2 Dakika içinde maksimum kelime bul</span>
               </div>
 
-              <Badge variant="outline" className="border-white/10 text-zinc-400 text-[10px] bg-black/20">
-                ⚡ En Popüler
-              </Badge>
-
               {selectedType === "timed" && (
                 <div
                   className={`absolute inset-0 border-2 ${theme.border} rounded-xl blur-[2px] pointer-events-none`}
