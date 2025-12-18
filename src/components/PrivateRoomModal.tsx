@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Users, Clock, Trophy, Play, LogIn, X, Hash, AlertTriangle } from "lucide-react";
+import { Users, Clock, Play, LogIn, X, Hash, AlertTriangle } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,9 +30,7 @@ interface PrivateRoomModalProps {
 const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"create" | "join">("create");
-  const [roomCode, setRoomCode] = useState("");
   const [joinCode, setJoinCode] = useState("");
-  const [gameType, setGameType] = useState<"timed" | "score">("timed");
   const [loading, setLoading] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
 
@@ -67,17 +65,13 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
       if (!user) return;
       const roomId = crypto.randomUUID();
       const shortCode = generateRoomCode();
-      setRoomCode(shortCode);
 
       localStorage.setItem(`room_${shortCode}`, roomId);
-      localStorage.setItem(`room_type_${shortCode}`, gameType);
+      localStorage.setItem(`room_type_${shortCode}`, "timed");
 
       const letterPool = [
         "A",
         "A",
-        "A",
-        "A",
-        "E",
         "E",
         "E",
         "İ",
@@ -102,7 +96,6 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
         "G",
         "Ğ",
         "H",
-        "J",
         "P",
         "Ş",
         "V",
@@ -118,11 +111,11 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
         room_code: shortCode,
         host_id: user.id,
         game_mode: `private-room`,
-        game_type_new: gameType,
+        game_type_new: "timed",
         status: "waiting",
         max_players: 2,
-        time_limit: gameType === "timed" ? 120 : 0,
-        max_score: gameType === "score" ? 500 : 0,
+        time_limit: 120,
+        max_score: 0,
         current_grid: grid,
       });
 
@@ -133,7 +126,7 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
         user_id: user.id,
       });
 
-      navigate(`/private-room-waiting?code=${shortCode}&roomId=${roomId}&gameType=${gameType}`);
+      navigate(`/private-room-waiting?code=${shortCode}&roomId=${roomId}&gameType=timed`);
       onClose();
     } catch (error: any) {
       toast({ title: "Hata", description: "Oda oluşturulamadı", variant: "destructive" });
@@ -156,7 +149,7 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
         .eq("status", "waiting")
         .maybeSingle();
 
-      if (roomError || !room) throw new Error("Oda bulunamadı");
+      if (roomError || !room) throw new Error("Oda bulunamadı veya dolu");
 
       await supabase.from("game_participants").insert({
         room_id: room.id,
@@ -186,9 +179,7 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
   return (
     <>
       <Dialog open={true} onOpenChange={() => handleClose()}>
-        {/* max-w-sm ile GameModeSelector genişliğine eşitlendi */}
         <DialogContent className="max-w-sm w-full bg-zinc-950/90 backdrop-blur-xl border border-white/10 text-white shadow-2xl p-0 overflow-hidden gap-0 [&>button]:hidden rounded-3xl">
-          {/* Dekoratif Yeşil Işık */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-32 bg-gradient-to-b from-green-600 to-transparent opacity-20 blur-3xl pointer-events-none" />
 
           {/* HEADER */}
@@ -207,7 +198,7 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
             <h2 className="text-xl font-black uppercase tracking-tighter text-white">ÖZEL ODA</h2>
           </div>
 
-          {/* TABS - Kompakt Tasarım */}
+          {/* TABS */}
           <div className="px-8 pb-4 z-10">
             <div className="grid grid-cols-2 p-1 bg-black/40 rounded-xl border border-white/5">
               <button
@@ -231,47 +222,25 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
             </div>
           </div>
 
-          {/* İÇERİK ALANI */}
-          <div className="px-8 pb-8 space-y-4 z-10 min-h-[320px]">
+          {/* CONTENT */}
+          <div className="px-8 pb-8 space-y-4 z-10 min-h-[300px]">
             {activeTab === "create" ? (
               <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500">
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Mod Butonları - GameModeSelector ile birebir aynı boyut */}
-                  <button
-                    onClick={() => {
-                      playSound("buttonClick");
-                      setGameType("timed");
-                    }}
-                    className={`flex flex-col items-center p-4 rounded-2xl border-2 transition-all h-36 justify-between ${gameType === "timed" ? "border-green-500/50 bg-green-500/10" : "border-white/5 bg-white/5"}`}
-                  >
-                    <div
-                      className={`p-2 rounded-xl ${gameType === "timed" ? "bg-green-600 text-white" : "bg-zinc-800 text-zinc-500"}`}
-                    >
-                      <Clock className="w-5 h-5" />
+                {/* Tekli Mod Kartı (GameModeSelector ile aynı) */}
+                <div className="flex justify-center">
+                  <div className="w-full flex flex-col items-center p-6 rounded-2xl border-2 border-green-500/50 bg-green-500/10 scale-[1.02]">
+                    <div className="p-3 rounded-xl mb-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white">
+                      <Clock className="w-6 h-6" />
                     </div>
                     <div className="text-center">
-                      <span className="block font-bold text-sm">Zamana Karşı</span>
-                      <span className="text-[10px] text-zinc-500 block">2 Dakika</span>
+                      <span className="block font-bold text-base text-white">Zamana Karşı</span>
+                      <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
+                        2 Dakika içinde maksimum
+                        <br />
+                        kelimeyi bul!
+                      </p>
                     </div>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      playSound("buttonClick");
-                      setGameType("score");
-                    }}
-                    className={`flex flex-col items-center p-4 rounded-2xl border-2 transition-all h-36 justify-between ${gameType === "score" ? "border-green-500/50 bg-green-500/10" : "border-white/5 bg-white/5"}`}
-                  >
-                    <div
-                      className={`p-2 rounded-xl ${gameType === "score" ? "bg-green-600 text-white" : "bg-zinc-800 text-zinc-500"}`}
-                    >
-                      <Trophy className="w-5 h-5" />
-                    </div>
-                    <div className="text-center">
-                      <span className="block font-bold text-sm">Skor Modu</span>
-                      <span className="text-[10px] text-zinc-500 block">500 Puan</span>
-                    </div>
-                  </button>
+                  </div>
                 </div>
 
                 <Button
@@ -285,10 +254,13 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
             ) : (
               <div className="space-y-6 py-4 animate-in slide-in-from-bottom-4 duration-500">
                 <div className="relative">
+                  <div className="flex justify-center mb-4">
+                    <Hash className="w-8 h-8 text-green-500 opacity-50" />
+                  </div>
                   <Input
                     value={joinCode}
                     onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                    placeholder="KODU GİRİN"
+                    placeholder="ODA KODU"
                     maxLength={6}
                     className="bg-white/5 border-white/10 text-white text-center h-16 text-2xl font-black tracking-[0.3em] rounded-2xl focus-visible:ring-green-500"
                   />
@@ -305,7 +277,7 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
 
             <button
               onClick={onClose}
-              className="w-full text-[10px] font-bold text-zinc-500 hover:text-white transition-colors tracking-widest uppercase"
+              className="w-full mt-2 text-[10px] font-bold text-zinc-500 hover:text-white transition-colors tracking-widest uppercase"
             >
               İPTAL ET
             </button>
@@ -313,7 +285,6 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
         </DialogContent>
       </Dialog>
 
-      {/* ALERT DIALOG (Aynı tasarım diliyle korundu) */}
       <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
         <AlertDialogContent className="bg-zinc-950 border border-white/10 text-white rounded-3xl max-w-[320px]">
           <AlertDialogHeader>
