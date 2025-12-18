@@ -157,46 +157,6 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
                 />
               )}
             </button>
-
-            {/* Seçenek 2: Puanlı */}
-            <button
-              onClick={() => {
-                playSound("buttonClick");
-                setSelectedType("score");
-              }}
-              className={`relative group flex flex-col items-center p-4 rounded-xl border-2 transition-all duration-300 h-44 justify-between
-                        ${
-                          selectedType === "score"
-                            ? `${theme.border} ${theme.bgGlow} shadow-[0_0_20px_rgba(0,0,0,0.3)] scale-[1.02]`
-                            : "border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/20"
-                        }
-                    `}
-            >
-              <div
-                className={`p-3 rounded-full ${selectedType === "score" ? `bg-gradient-to-r ${theme.gradient}` : "bg-zinc-800"}`}
-              >
-                <Target className={`w-6 h-6 ${selectedType === "score" ? "text-white" : "text-zinc-500"}`} />
-              </div>
-
-              <div className="text-center">
-                <span
-                  className={`block font-bold text-lg ${selectedType === "score" ? "text-white" : "text-zinc-400"}`}
-                >
-                  Skor Modu
-                </span>
-                <span className="text-xs text-zinc-500 mt-1 block px-2">500 Puana ulaşan ilk kişi kazanır</span>
-              </div>
-
-              <Badge variant="outline" className="border-white/10 text-zinc-400 text-[10px] bg-black/20">
-                🎯 Stratejik
-              </Badge>
-
-              {selectedType === "score" && (
-                <div
-                  className={`absolute inset-0 border-2 ${theme.border} rounded-xl blur-[2px] pointer-events-none`}
-                />
-              )}
-            </button>
           </div>
         </div>
 
