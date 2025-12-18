@@ -27,8 +27,8 @@ const NakamaGamePage = () => {
   const [joinedMatchId, setJoinedMatchId] = useState<string | null>(null);
 
   // Arka plan yönetimi - bekleme ekranında arka plana giderse uyar
-  useAppState(
-    () => {
+  useAppState({
+    onBackground: () => {
       console.log('📱 Nakama oyun arka plana gitti');
       if (!hasStarted) {
         toast({
@@ -37,10 +37,10 @@ const NakamaGamePage = () => {
         });
       }
     },
-    () => {
+    onForeground: () => {
       console.log('📱 Nakama oyun ön plana geldi');
-    }
-  );
+    },
+  });
 
   useEffect(() => {
     if (!matchId || !gameType || !user) {
