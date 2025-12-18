@@ -47,7 +47,7 @@ const MarketPage = () => {
 
   const [activeTab, setActiveTab] = useState("ink-store");
   const [purchaseLoading, setPurchaseLoading] = useState(false);
-  
+
   const isNativePlatform = Capacitor.isNativePlatform();
 
   // --- Yapılandırma ---
@@ -93,7 +93,7 @@ const MarketPage = () => {
       subtype: "joker_degistir",
       name: "Değiştir",
       description: "Harfleri karıştırır",
-      priceInInk: 10,
+      priceInInk: 15,
       value: 1,
       image: "/degistirIkon.png",
     },
@@ -263,7 +263,7 @@ const MarketPage = () => {
 
       // CRITICAL: Profile'ı yenile ki UI güncellensin
       await refreshProfile();
-      
+
       playSound("buttonClick");
       toast({
         title: "İşlem Başarılı! 🖋️",
@@ -616,8 +616,8 @@ const MarketPage = () => {
                       onClick={restorePurchases}
                       disabled={isRestoreLoading}
                     >
-                      <RotateCcw className={`w-4 h-4 mr-2 ${isRestoreLoading ? 'animate-spin' : ''}`} />
-                      {isRestoreLoading ? 'Geri Yükleniyor...' : 'Satın Alımları Geri Yükle'}
+                      <RotateCcw className={`w-4 h-4 mr-2 ${isRestoreLoading ? "animate-spin" : ""}`} />
+                      {isRestoreLoading ? "Geri Yükleniyor..." : "Satın Alımları Geri Yükle"}
                     </Button>
                   )}
                 </CardContent>
