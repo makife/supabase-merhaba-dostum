@@ -644,16 +644,10 @@ export default function ChatPage() {
 
   return (
     <div className="fixed inset-0 flex flex-col bg-gradient-to-br from-chat-50 via-gray-50 to-chat-100">
-      {/* Safe area top */}
-      <div className="safe-area-top flex-shrink-0"></div>
-
       <div className="flex-1 flex flex-col min-h-0 max-w-4xl w-full mx-auto bg-white shadow-2xl border-x-2 border-chat-200 overflow-hidden">
         {/* Content Area */}
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden">{renderContent()}</div>
       </div>
-
-      {/* Safe area bottom */}
-      <div className="safe-area-bottom flex-shrink-0"></div>
 
       {/* Ban Dialog */}
       <AlertDialog open={showBanDialog} onOpenChange={setShowBanDialog}>
