@@ -403,21 +403,27 @@ const GlobalRematchDialog = () => {
 };
 
 const App = () => {
-  // Native immersive bars (Android): show on edge-swipe for 3s, then auto-hide
-  useImmersiveBars();
+  // 1. Hook'u sadece bir referans almak için kullanıyoruz
+  const { manualHideBars } = useImmersiveBars();
 
-  // Arka plan/ön plan yönetimi - 30 saniye sonra durdur
+  // 2. Arka plan/ön plan yönetimi
   useAppState(
     () => {
-      // Arka plana gitti - 30 saniye beklendi, hala arka plandaysa durdur
+      // Arka plana gitti - 30 saniye beklendi
       console.log("⏹️ 30 saniye arka planda kaldı - realtime bağlantılar kapatılıyor");
       realtimeManager.forceCleanupAll();
     },
     () => {
-      // Ön plana geldi
-      console.log("▶️ Uygulama ön plana geldi");
+      // ÖNEMLİ: Uygulama ön plana geldiğinde barları tekrar gizle komutu veriyoruz.
+      // Bu sayede Android barları geri getirse bile biz onları tekrar "sticky" moduna sokuyoruz.
+      console.log("▶️ Uygulama ön plana geldi - Immersive modu tazeleniyor");
+
+      // React render döngüsünü bozmamak için küçük bir timeout ile tetikliyoruz
+      setTimeout(() => {
+        manualHideBars();
+      }, 300);
     },
-    30000, // 30 saniye gecikme
+    30000,
   );
 
   return (
@@ -431,6 +437,9 @@ const App = () => {
             v7_relativeSplatPath: true,
           }}
         >
+          {/* AuthProvider en dışta olmalı çünkü useUser ve diğerleri 
+              Supabase session'ına ihtiyaç duyuyor. 
+          */}
           <AuthProvider>
             <UserProvider>
               <ThemeProvider>
