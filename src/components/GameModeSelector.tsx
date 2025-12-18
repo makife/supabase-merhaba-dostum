@@ -85,10 +85,7 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
         {/* HEADER */}
         <div className="relative pt-10 pb-6 px-6 text-center z-10">
           <button
-            onClick={() => {
-              playSound("buttonClick");
-              onClose();
-            }}
+            onClick={onClose}
             className="absolute top-4 right-4 p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/50 transition-colors"
           >
             <X className="w-5 h-5" />

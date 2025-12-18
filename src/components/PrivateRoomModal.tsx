@@ -178,14 +178,14 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
 
   return (
     <>
-      <Dialog open={true} onOpenChange={() => handleClose()}>
+      <Dialog open={true} onOpenChange={onClose}>
         <DialogContent className="max-w-sm w-full bg-zinc-950/90 backdrop-blur-xl border border-white/10 text-white shadow-2xl p-0 overflow-hidden gap-0 [&>button]:hidden rounded-3xl">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-32 bg-gradient-to-b from-green-600 to-transparent opacity-20 blur-3xl pointer-events-none" />
 
           {/* HEADER */}
           <div className="relative pt-10 pb-4 px-6 text-center z-10">
             <button
-              onClick={handleClose}
+              onClick={onClose}
               className="absolute top-4 right-4 p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/50 transition-colors"
             >
               <X className="w-5 h-5" />
