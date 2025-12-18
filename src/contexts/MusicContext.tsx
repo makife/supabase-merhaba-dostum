@@ -49,15 +49,15 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     },
   });
 
-  // Default pack playlist
+  // Default pack playlist - Capacitor için relative path kullan
   const defaultPlaylist = [
-    "/sounds/default/backround-music.mp3",
-    "/sounds/default/backround-music1.mp3",
-    "/sounds/default/backround-music2.mp3",
-    "/sounds/default/backround-music3.mp3",
-    "/sounds/default/backround-music4.mp3",
-    "/sounds/default/backround-music5.mp3",
-    "/sounds/default/backround-music6.mp3",
+    "./sounds/default/backround-music.mp3",
+    "./sounds/default/backround-music1.mp3",
+    "./sounds/default/backround-music2.mp3",
+    "./sounds/default/backround-music3.mp3",
+    "./sounds/default/backround-music4.mp3",
+    "./sounds/default/backround-music5.mp3",
+    "./sounds/default/backround-music6.mp3",
   ];
 
   // Shuffle function
@@ -110,17 +110,17 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         backgroundMusicRef.current.pause();
       }
 
-      // Get music file based on selected pack
+      // Get music file based on selected pack - Capacitor için relative path
       const getMusicFile = () => {
         switch (musicPack) {
           case "nature1":
-            return "/sounds/default/doga1.mp3";
+            return "./sounds/default/doga1.mp3";
           case "nature2":
-            return "/sounds/default/doga2.mp3";
+            return "./sounds/default/doga2.mp3";
           case "space1":
-            return "/sounds/default/uzay1.mp3";
+            return "./sounds/default/uzay1.mp3";
           case "space2":
-            return "/sounds/default/uzay2.mp3";
+            return "./sounds/default/uzay2.mp3";
           default:
             return defaultPlaylist[shuffledPlaylistRef.current[shuffleIndexRef.current] || 0];
         }
