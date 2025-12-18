@@ -478,38 +478,10 @@ const LeaderboardPage = () => {
         {/* Scroll edilebilir Liste İçeriği */}
         <div className="flex-1 overflow-y-auto p-3 space-y-4">
           <CardDescription className="text-center">{getTabDescription(activeTab)}</CardDescription>
-          
+
           {activeTab === "all-time" && renderLeaderboard(allTimeLeaders, false)}
           {activeTab === "weekly" && renderLeaderboard(weeklyLeaders, true)}
           {activeTab === "monthly" && renderLeaderboard(monthlyLeaders, true)}
-
-          <Card className="border-blue-200 bg-blue-50">
-            <CardContent className="p-4">
-              <div className="flex items-start space-x-3">
-                <Trophy className="w-5 h-5 text-blue-600 mt-0.5" />
-                <div className="text-sm text-blue-800">
-                  <p className="font-medium mb-1">Sıralama Sistemi</p>
-                  <ul className="list-disc list-inside space-y-1 text-blue-700">
-                    <li>
-                      <strong>Genel:</strong> Tüm zamanların toplam puanı
-                    </li>
-                    <li>
-                      <strong>Haftalık:</strong> Son 7 gündeki performans
-                    </li>
-                    <li>
-                      <strong>Aylık:</strong> Bu aydaki performans
-                    </li>
-                    <li>
-                      🏆 <strong>İlk 3:</strong> Özel renkler ve ikonlar
-                    </li>
-                    <li>
-                      📈 <strong>Oklar:</strong> Haftalık ve aylık sıralama değişiklikleri
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>
