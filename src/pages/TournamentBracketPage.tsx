@@ -336,13 +336,16 @@ const TournamentBracketPage = () => {
   }, [matches]);
 
   // Loading state
-  if (!currentTournament) {
+  if (!currentTournament || initialLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-purple-900 to-indigo-900 p-4 flex items-center justify-center">
-        <div className="text-white text-center">
-          <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full mx-auto mb-4 animate-spin" />
-          <p>Turnuva yükleniyor...</p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-b from-purple-900 to-indigo-900 p-4 flex flex-col items-center justify-center">
+        <Card className="w-full max-w-md bg-indigo-800 border-indigo-600">
+          <CardContent className="p-8 text-center">
+            <div className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full mx-auto mb-4 animate-spin" />
+            <h2 className="text-xl font-bold text-white mb-2">Turnuva Durumu Güncelleniyor</h2>
+            <p className="text-yellow-200 animate-pulse">Sonuçlar işleniyor ve sonraki eşleşmeler hazırlanıyor...</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -387,17 +390,17 @@ const TournamentBracketPage = () => {
   // Check pending matches for countdown
   const currentRound = currentTournament.current_round || 1;
   const hasPendingMatches = matches.some((m) => m.round === currentRound && m.status === "pending");
-  
+
   // Mevcut round maçları henüz oluşturulmadı mı kontrol et
   const currentRoundMatches = matches.filter((m) => m.round === currentRound);
-  
+
   // Countdown aktifse (maçlar pending ve geri sayım var) spinner'ı gizle
   const hasActiveCountdown = hasPendingMatches && countdown > 0;
-  
+
   // Loading spinner: maçlar oluşturulmadıysa VE countdown henüz başlamadıysa göster
-  const isWaitingForRoundCreation = 
-    currentTournament.status === "in_progress" && 
-    !hasActiveCountdown && 
+  const isWaitingForRoundCreation =
+    currentTournament.status === "in_progress" &&
+    !hasActiveCountdown &&
     (initialLoading || loading || currentRoundMatches.length === 0);
 
   return (
@@ -422,7 +425,8 @@ const TournamentBracketPage = () => {
             <CardContent className="p-4 text-center">
               <div className="w-8 h-8 border-2 border-yellow-400 border-t-transparent rounded-full mx-auto mb-2 animate-spin" />
               <p className="text-yellow-200 text-sm font-medium">
-                🔄 {currentRound === 2 ? "Yarı Final" : currentRound === 3 ? "Final" : "Round"} oluşturuluyor, lütfen bekleyin...
+                🔄 {currentRound === 2 ? "Yarı Final" : currentRound === 3 ? "Final" : "Round"} oluşturuluyor, lütfen
+                bekleyin...
               </p>
             </CardContent>
           </Card>
@@ -485,10 +489,10 @@ const MatchCard = ({ match, roundInfo }: { match: any; roundInfo: { color: strin
     const isBot = playerData?.is_bot || playerId.startsWith("bot_");
     if (isBot) {
       const seed = [...playerId].reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-      return { 
-        name: playerData?.username || generateBotName(seed), 
-        isBot: true, 
-        avatar_url: generateBotAvatar(seed) 
+      return {
+        name: playerData?.username || generateBotName(seed),
+        isBot: true,
+        avatar_url: generateBotAvatar(seed),
       };
     }
 
