@@ -35,6 +35,7 @@ interface OnboardingPermissionsProps {
 export const OnboardingPermissions = ({ open, onComplete }: OnboardingPermissionsProps) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [kvkkAccepted, setKvkkAccepted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [permissionsGranted, setPermissionsGranted] = useState({
     notifications: false,
     camera: false,
@@ -203,24 +204,36 @@ export const OnboardingPermissions = ({ open, onComplete }: OnboardingPermission
       }
       setCurrentStep(1);
     } else if (currentStep === 1) {
-      // İzinleri iste
-      const granted = await requestPermissions();
+      setIsLoading(true);
+      
+      try {
+        // İzinleri iste
+        const granted = await requestPermissions();
 
-      // Permission onboarding tamamlandı olarak işaretle
-      localStorage.setItem("kelimeci-onboarding-completed", "true");
+        // Permission onboarding tamamlandı olarak işaretle
+        localStorage.setItem("kelimeci-onboarding-completed", "true");
 
-      // Bildirim ayarını kaydet - granted.notifications değerini kullan
-      const settings = JSON.parse(localStorage.getItem("kelimeci-settings") || "{}");
-      settings.notifications = granted.notifications;
-      localStorage.setItem("kelimeci-settings", JSON.stringify(settings));
+        // Bildirim ayarını kaydet - granted.notifications değerini kullan
+        const settings = JSON.parse(localStorage.getItem("kelimeci-settings") || "{}");
+        settings.notifications = granted.notifications;
+        localStorage.setItem("kelimeci-settings", JSON.stringify(settings));
 
-      console.log("✅ Onboarding tamamlandı - Bildirimler:", granted.notifications);
+        console.log("✅ Onboarding tamamlandı - Bildirimler:", granted.notifications);
 
-      // Custom event dispatch et - onboarding tutorial'ı başlatmak için
-      window.dispatchEvent(new Event("permissionsCompleted"));
+        // Custom event dispatch et - onboarding tutorial'ı başlatmak için
+        window.dispatchEvent(new Event("permissionsCompleted"));
 
-      toast.success("Kurulum tamamlandı! Hoş geldiniz 🎉");
-      onComplete();
+        toast.success("Kurulum tamamlandı! Hoş geldiniz 🎉");
+        onComplete();
+      } catch (error) {
+        console.error("İzin isteme hatası:", error);
+        // Hata olsa bile onboarding'i tamamla
+        localStorage.setItem("kelimeci-onboarding-completed", "true");
+        toast.info("Kurulum tamamlandı. İzinleri ayarlardan verebilirsiniz.");
+        onComplete();
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -260,8 +273,8 @@ export const OnboardingPermissions = ({ open, onComplete }: OnboardingPermission
                 Geri
               </Button>
             )}
-            <Button onClick={handleNext} disabled={currentStep === 0 && !kvkkAccepted}>
-              {currentStep === steps.length - 1 ? "Tamamla" : "İleri"}
+            <Button onClick={handleNext} disabled={(currentStep === 0 && !kvkkAccepted) || isLoading}>
+              {isLoading ? "Yükleniyor..." : currentStep === steps.length - 1 ? "Tamamla" : "İleri"}
             </Button>
           </div>
         </div>
