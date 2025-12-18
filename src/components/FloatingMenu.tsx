@@ -315,7 +315,7 @@ export function FloatingMenu() {
               : `${(2 - menuItems.length) * 40}ms`,
           }}
         >
-          <div className="flex items-center space-x-2 bg-black/80 backdrop-blur-md rounded-full px-3 py-1.5 border border-white/20 shadow-xl">
+          <div className="flex items-center space-x-2 bg-orange-500/80 backdrop-blur-md rounded-full px-3 py-1.5 border border-white/20 shadow-xl">
             <span
               className="text-sm font-semibold text-white whitespace-nowrap pointer-events-none select-none tracking-wide"
               style={{
