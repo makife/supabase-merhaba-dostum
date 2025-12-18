@@ -1065,6 +1065,7 @@ const GamePage = ({
     console.log("🔄 Room changed, resetting all disconnect flags:", shortId(currentRoom?.id));
     disconnectHandledRef.current = false;
     gameHasStartedRef.current = false;
+    gameStartedRef.current = false; // Arka plan disconnect kontrolü için sıfırla
     countdownCheckDoneRef.current = false;
     // 🎯 REMATCH FIX: Rematch state'lerini de sıfırla ki disconnect detection çalışsın
     setRematchRequested(false);
@@ -1566,6 +1567,7 @@ const requestRematch = async () => {
     setGameStarted(false);
     setGameEnded(false);
     gameEndedRef.current = false; // 🔒 Reset ref too
+    gameStartedRef.current = false; // Arka plan disconnect kontrolü için sıfırla
     setWinner(null);
     setShowResults(false); // ⚠️ KRİTİK: Skor kartını kapat
     setTimeWarningPlayed(false);
@@ -3865,6 +3867,7 @@ const requestRematch = async () => {
       setShowCountdown(false);
       setGameStarted(true);
       gameHasStartedRef.current = true;
+      gameStartedRef.current = true; // Arka plan disconnect kontrolü için
     }
   }, [gameMode, tournamentMatch?.countdown_started_at, serverTimeOffset, initiateCountdown]);
 
@@ -5096,6 +5099,7 @@ const requestRematch = async () => {
         setShowCountdown(false);
         setGameStarted(true);
         gameHasStartedRef.current = true;
+        gameStartedRef.current = true; // Arka plan disconnect kontrolü için
       }
 
       return () => {
@@ -5216,6 +5220,7 @@ const requestRematch = async () => {
           setShowCountdown(false);
           setGameStarted(true);
           gameHasStartedRef.current = true;
+          gameStartedRef.current = true; // Arka plan disconnect kontrolü için
         }
       } catch (error) {
         console.error("❌ Countdown hatası:", error);
@@ -5248,6 +5253,7 @@ const requestRematch = async () => {
           setWaitingForPlayer(true);
           // Oyun başlamadan önce beklemeye dönerse tekrar geri sayım hakkı tanı
           gameHasStartedRef.current = false;
+          gameStartedRef.current = false; // Arka plan disconnect kontrolü için sıfırla
           setHasShownStartMessage(false);
         } else {
           console.log("⏳ Geçici oyuncu ayrılığı (presence) tespit edildi, oynanabilirliği koruyoruz");
@@ -6116,6 +6122,7 @@ const requestRematch = async () => {
     // Start game immediately - don't wait for started_at
     setGameStarted(true);
     gameHasStartedRef.current = true;
+    gameStartedRef.current = true; // Arka plan disconnect kontrolü için
 
     // Short suppress for multiplayer (only 1s to prevent initial jitter)
     if (isMp) {
