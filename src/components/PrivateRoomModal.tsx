@@ -185,7 +185,10 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
           {/* HEADER */}
           <div className="relative pt-10 pb-4 px-6 text-center z-10">
             <button
-              onClick={onClose}
+              onClick={() => {
+                playSound("buttonClick");
+                onClose();
+              }}
               className="absolute top-4 right-4 p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/50 transition-colors"
             >
               <X className="w-5 h-5" />
@@ -276,7 +279,10 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
             )}
 
             <button
-              onClick={onClose}
+              onClick={() => {
+                playSound("buttonClick");
+                onClose();
+              }}
               className="w-full mt-2 text-[10px] font-bold text-zinc-500 hover:text-white transition-colors tracking-widest uppercase"
             >
               İPTAL ET
