@@ -59,17 +59,15 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   // Arka plan yönetimi - matchmaking devam ediyor mu kontrol et
   const matchmakingStateRef = React.useRef({ isSearching: false, foundMatch: false });
 
-  useAppState(
-    () => {
-      // Arka plana gitti
+  useAppState({
+    onBackground: () => {
       console.log("📱 Uygulama arka plana gitti");
       if (isSearching) {
         console.log("🔍 Matchmaking arka planda devam ediyor...");
         matchmakingStateRef.current.isSearching = true;
       }
     },
-    () => {
-      // Ön plana geldi
+    onForeground: () => {
       console.log("📱 Uygulama ön plana geldi");
       if (matchmakingStateRef.current.foundMatch) {
         console.log("✅ Arka planda eşleşme bulundu!");
@@ -77,7 +75,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       }
       matchmakingStateRef.current.isSearching = false;
     },
-  );
+  });
 
   const clearProgressTimer = () => {
     if (progressIntervalRef.current) {

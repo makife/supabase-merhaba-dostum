@@ -407,13 +407,11 @@ const App = () => {
   const { manualHideBars } = useImmersiveBars();
 
   // 2. Arka plan/ön plan yönetimi
-  useAppState(
-    () => {
-      // Arka plana gitti - 30 saniye beklendi
-      console.log("⏹️ 30 saniye arka planda kaldı - realtime bağlantılar kapatılıyor");
-      realtimeManager.forceCleanupAll();
+  useAppState({
+    onBackground: () => {
+      console.log("📱 Uygulama arka plana gitti");
     },
-    () => {
+    onForeground: () => {
       // ÖNEMLİ: Uygulama ön plana geldiğinde barları tekrar gizle komutu veriyoruz.
       // Bu sayede Android barları geri getirse bile biz onları tekrar "sticky" moduna sokuyoruz.
       console.log("▶️ Uygulama ön plana geldi - Immersive modu tazeleniyor");
@@ -423,8 +421,12 @@ const App = () => {
         manualHideBars();
       }, 300);
     },
-    30000,
-  );
+    backgroundDelay: 30000,
+    onBackgroundTimeout: () => {
+      console.log("⏹️ 30 saniye arka planda kaldı - realtime bağlantılar kapatılıyor");
+      realtimeManager.forceCleanupAll();
+    },
+  });
 
   return (
     <QueryClientProvider client={queryClient}>

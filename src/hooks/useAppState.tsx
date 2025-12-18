@@ -1,50 +1,96 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { App } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 
-export const useAppState = (onBackground?: () => void, onForeground?: () => void, backgroundDelay: number = 0) => {
+interface UseAppStateOptions {
+  onBackground?: () => void;
+  onForeground?: () => void;
+  backgroundDelay?: number; // ms cinsinden - bu süre sonunda onBackground tetiklenir
+  onBackgroundTimeout?: () => void; // backgroundDelay sonunda tetiklenir (oyundan çıkış için)
+}
+
+export const useAppState = (options: UseAppStateOptions = {}) => {
+  const { 
+    onBackground, 
+    onForeground, 
+    backgroundDelay = 0,
+    onBackgroundTimeout 
+  } = options;
+  
   const [isActive, setIsActive] = useState(true);
-  const isNative = Capacitor.isNativePlatform(); // State yerine doğrudan değişken
+  const [backgroundStartTime, setBackgroundStartTime] = useState<number | null>(null);
+  const isNative = Capacitor.isNativePlatform();
   const backgroundTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutFiredRef = useRef(false);
+
+  const clearBackgroundTimer = useCallback(() => {
+    if (backgroundTimerRef.current) {
+      clearTimeout(backgroundTimerRef.current);
+      backgroundTimerRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     const handleStateChange = (active: boolean) => {
       setIsActive(active);
 
       if (active) {
-        if (backgroundTimerRef.current) {
-          clearTimeout(backgroundTimerRef.current);
-          backgroundTimerRef.current = null;
-        }
+        // Ön plana döndü
+        clearBackgroundTimer();
+        timeoutFiredRef.current = false;
+        setBackgroundStartTime(null);
         onForeground?.();
       } else {
-        if (backgroundDelay > 0) {
+        // Arka plana alındı
+        setBackgroundStartTime(Date.now());
+        onBackground?.();
+        
+        // Eğer backgroundDelay ve onBackgroundTimeout varsa, timer başlat
+        if (backgroundDelay > 0 && onBackgroundTimeout && !timeoutFiredRef.current) {
+          clearBackgroundTimer();
           backgroundTimerRef.current = setTimeout(() => {
-            onBackground?.();
-            backgroundTimerRef.current = null;
+            // Hala arka plandaysa timeout'u tetikle
+            if (!timeoutFiredRef.current) {
+              timeoutFiredRef.current = true;
+              onBackgroundTimeout();
+            }
           }, backgroundDelay);
-        } else {
-          onBackground?.();
         }
       }
     };
 
     if (!isNative) {
+      // Web için visibilitychange kullan
       const handleVisibilityChange = () => handleStateChange(!document.hidden);
       document.addEventListener("visibilitychange", handleVisibilityChange);
-      return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+      return () => {
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+        clearBackgroundTimer();
+      };
     } else {
-      // Native tarafta listener'ı bir değişkende tutup temizliyoruz
+      // Native için Capacitor App listener kullan
       const listenerPromise = App.addListener("appStateChange", (state) => {
         handleStateChange(state.isActive);
       });
 
       return () => {
         listenerPromise.then((l) => l.remove());
-        if (backgroundTimerRef.current) clearTimeout(backgroundTimerRef.current);
+        clearBackgroundTimer();
       };
     }
-  }, [onBackground, onForeground, backgroundDelay, isNative]);
+  }, [onBackground, onForeground, onBackgroundTimeout, backgroundDelay, isNative, clearBackgroundTimer]);
 
-  return { isActive, isNative };
+  // Arka planda geçen süreyi hesapla
+  const getBackgroundDuration = useCallback(() => {
+    if (!backgroundStartTime || isActive) return 0;
+    return Date.now() - backgroundStartTime;
+  }, [backgroundStartTime, isActive]);
+
+  return { 
+    isActive, 
+    isNative, 
+    backgroundStartTime,
+    getBackgroundDuration,
+    wasTimeoutFired: timeoutFiredRef.current
+  };
 };

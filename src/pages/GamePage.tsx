@@ -225,40 +225,109 @@ const GamePage = ({
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [showTournamentExitDialog, setShowTournamentExitDialog] = useState(false);
   const [isInBackground, setIsInBackground] = useState(false);
-  const backgroundTimerRef = useRef<number | null>(null);
+  
+  // Ref'ler - arka plan disconnect için güncel değerleri tut
+  const gameStartedRef = useRef(false);
+  const currentRoomRef = useRef(currentRoom);
+  
+  // Ref'leri güncel tut
+  useEffect(() => {
+    currentRoomRef.current = currentRoom;
+  }, [currentRoom]);
 
-  // Arka plan yönetimi - oyun sırasında disconnect mantığı
-  useAppState(
-    () => {
-      // Arka plana gitti
+  // Arka plan yönetimi - oyun sırasında disconnect mantığı (10 saniye)
+  const handleBackgroundDisconnect = useCallback(async () => {
+    console.log("⚠️ 10 saniye arka planda kaldı - oyuncu disconnect ediliyor");
+    
+    // Sadece multiplayer oyunlarda ve oyun başladıysa çalış
+    if (!gameStartedRef.current) {
+      console.log("⏭️ Oyun başlamadı, arka plan disconnect atlanıyor");
+      return;
+    }
+    if (gameMode !== "random-match" && gameMode !== "private-room" && gameMode !== "tournament") {
+      console.log("⏭️ Multiplayer mod değil, arka plan disconnect atlanıyor");
+      return;
+    }
+    
+    const room = currentRoomRef.current;
+    if (!user?.id || !room?.id) {
+      console.log("⏭️ Room veya user yok, arka plan disconnect atlanıyor");
+      return;
+    }
+    
+    // Oyuncuya disconnect cezası uygula
+    try {
+      const { data: penaltyResult, error: penaltyError } = await supabase.rpc("apply_disconnect_penalty", {
+        p_offender_id: user.id,
+        p_room_id: room.id,
+      });
+      
+      if (penaltyError) {
+        console.error("❌ Background disconnect penalty hatası:", penaltyError);
+      } else if (penaltyResult && penaltyResult.length > 0) {
+        console.log("✅ Background disconnect penalty uygulandı:", penaltyResult[0]);
+      }
+    } catch (err) {
+      console.error("❌ Background disconnect penalty exception:", err);
+    }
+    
+    // Rakibi kazanan olarak işaretle
+    const opponentUserId = room.player1_id === user.id ? room.player2_id : room.player1_id;
+    
+    try {
+      await supabase
+        .from("game_rooms")
+        .update({
+          status: "finished",
+          winner_id: opponentUserId,
+          finished_at: new Date().toISOString(),
+        })
+        .eq("id", room.id);
+      console.log("✅ Arka plan disconnect - oda finished olarak güncellendi, kazanan:", opponentUserId?.slice(-8));
+    } catch (err) {
+      console.error("❌ Oda güncelleme hatası:", err);
+    }
+    
+    // Participant kaydını sil (rakibe disconnect eventi tetikler)
+    try {
+      await supabase
+        .from("game_participants")
+        .delete()
+        .eq("room_id", room.id)
+        .eq("user_id", user.id);
+      console.log("✅ Participant kaydı silindi - rakibe bildirim gönderildi");
+    } catch (err) {
+      console.error("❌ Participant silme hatası:", err);
+    }
+    
+    toast({
+      title: "Bağlantı Kesildi",
+      description: "Uygulama 10 saniyeden fazla arka planda kaldı",
+      variant: "destructive",
+    });
+    
+    // Oyunu bitir ve kaybeden kartı göster
+    setWinner("opponent");
+    setGameEnded(true);
+    setShowResults(true);
+    setButtonsEnabled(false);
+    
+    // Room temizle
+    leaveRoom();
+  }, [gameMode, user?.id, toast, leaveRoom]);
+
+  useAppState({
+    onBackground: () => {
       console.log("🎮 Oyun arka plana gitti");
       setIsInBackground(true);
-
-      // Eğer multiplayer oyun aktifse, 30 saniye timeout başlat
-      if ((gameMode === "random-match" || gameMode === "private-room" || gameMode === "tournament") && gameStarted) {
-        backgroundTimerRef.current = window.setTimeout(() => {
-          console.log("⚠️ Arka plan timeout - oyuncu disconnect ediliyor");
-          toast({
-            title: "Bağlantı Kesildi",
-            description: "Oyun çok uzun süre arka planda kaldı",
-            variant: "destructive",
-          });
-          handleGameEnd();
-        }, 30000); // 30 saniye
-      }
     },
-    () => {
-      // Ön plana geldi
+    onForeground: () => {
       console.log("🎮 Oyun ön plana geldi");
       setIsInBackground(false);
-
-      // Timeout'u iptal et
-      if (backgroundTimerRef.current) {
-        clearTimeout(backgroundTimerRef.current);
-        backgroundTimerRef.current = null;
-      }
     },
-  );
+    backgroundDelay: 10000, // 10 saniye
+    onBackgroundTimeout: handleBackgroundDisconnect,
+  });
 
   // Game state - Generate random letters each time
   const generateRandomGrid = useCallback((): string[][] => {
@@ -647,6 +716,11 @@ const GamePage = ({
       gameEndedRef.current = true; // 🔒 Sync ref with state
     }
   }, [gameEnded]);
+  
+  // 🎮 Arka plan disconnect için gameStarted ref'ini senkronize tut
+  useEffect(() => {
+    gameStartedRef.current = gameStarted;
+  }, [gameStarted]);
   const [winner, setWinner] = useState<"player" | "opponent" | "tie" | null>(null);
   const [disconnectWin, setDisconnectWin] = useState(false);
   const [buttonsEnabled, setButtonsEnabled] = useState(false);
