@@ -472,8 +472,6 @@ const SettingsPage = () => {
                   }}
                 />
               </div>
-
-              <Separator />
             </CardContent>
           </Card>
 
