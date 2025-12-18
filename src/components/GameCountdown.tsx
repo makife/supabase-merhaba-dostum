@@ -244,10 +244,21 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
     // 🔒 SERVER-AUTHORITATIVE MODE
     console.log("⏱️ GameCountdown: Server mode, startTime:", serverStartTime, "offset:", serverTimeOffset);
     
-    const countdownEndTime = new Date(serverStartTime).getTime() + COUNTDOWN_DURATION_MS;
+    const serverStartMs = new Date(serverStartTime).getTime();
+    const countdownEndTime = serverStartMs + COUNTDOWN_DURATION_MS;
+    const serverNow = Date.now() + serverTimeOffset;
     
-    // 🎯 ALWAYS start by showing 5 immediately to ensure countdown starts from 5
-    // This prevents server sync delays from skipping initial numbers
+    // 🎯 KEY FIX: Eğer geri sayım henüz başlamamışsa veya çok yeni başladıysa
+    // client-side'da kendi zamanlayıcımızla 5'ten başla
+    const alreadyElapsed = serverNow - serverStartMs;
+    
+    // Eğer geçen süre 500ms'den azsa, tam 5 saniye göster (ağ gecikmesi toleransı)
+    const useLocalTiming = alreadyElapsed < 500;
+    const localStartTime = useLocalTiming ? Date.now() : null;
+    
+    console.log("⏱️ Already elapsed:", alreadyElapsed, "ms, useLocalTiming:", useLocalTiming);
+    
+    // İlk değeri hemen göster
     if (lastDisplayRef.current === null) {
       console.log("⏱️ Initial display: 5 (forced)");
       setDisplayValue(5);
@@ -261,8 +272,16 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
     const tick = () => {
       if (!mountedRef.current || completedRef.current) return;
       
-      const serverNow = Date.now() + serverTimeOffset;
-      const remaining = countdownEndTime - serverNow;
+      // 🎯 Lokal zamanlama kullan eğer uygunsa, yoksa sunucu zamanlaması
+      let remaining: number;
+      if (useLocalTiming && localStartTime) {
+        // Client-side timing - garantili 5 saniye
+        remaining = COUNTDOWN_DURATION_MS - (Date.now() - localStartTime);
+      } else {
+        // Server timing - gecikmeli durumlar için
+        const currentServerNow = Date.now() + serverTimeOffset;
+        remaining = countdownEndTime - currentServerNow;
+      }
       
       // Completion check
       if (remaining <= -START_DISPLAY_DURATION_MS) {
@@ -291,7 +310,7 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
         const seconds = Math.ceil(remaining / 1000);
         const display = Math.min(5, Math.max(1, seconds));
         
-        // Only update if display changed (but skip initial 5 since we already showed it)
+        // Only update if display changed
         if (lastDisplayRef.current !== display) {
           console.log("⏱️ Showing:", display, "(remaining:", Math.round(remaining), "ms)");
           lastDisplayRef.current = display;
