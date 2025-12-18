@@ -4,18 +4,18 @@ import { createPortal } from "react-dom";
 interface GameCountdownProps {
   onComplete: () => void;
   className?: string;
-  /** Server timestamp when countdown STARTS (not ends) - countdown lasts 5 seconds */
+  /** Sunucudan gelen oyun BAŞLAMA zamanı (Timestamp string) */
   serverStartTime?: string | null;
-  /** Local offset to sync with server time */
+  /** Sunucu ile istemci arasındaki saat farkı (ms) */
   serverTimeOffset?: number;
 }
 
-// Preload images immediately when module loads
+// --- ASSET YÖNETİMİ (PRELOAD) ---
 const IMAGE_PATHS = ["/bes.png", "/dort.png", "/uc.png", "/iki.png", "/bir.png", "/basla.png"];
 const preloadedImages: Map<string, HTMLImageElement> = new Map();
 let imagesPreloaded = false;
 
-// 🔊 AUDIO POOL - Sesleri önceden yükle ve havuzda tut
+// --- SES YÖNETİMİ (AUDIO POOL) ---
 const COUNTDOWN_SOUND_POOL_SIZE = 6;
 const START_SOUND_POOL_SIZE = 2;
 
@@ -29,11 +29,9 @@ const startSoundPool: AudioPool = { sounds: [], currentIndex: 0 };
 let audioPoolInitialized = false;
 let audioUnlocked = false;
 
-// 🔓 Mobile audio unlock - kullanıcı etkileşimi ile ses kilidini aç
+// Mobil tarayıcılar için ses kilidini açma (İlk dokunuşta çalışır)
 const unlockAudio = () => {
   if (audioUnlocked) return;
-  
-  // Tüm ses elementlerini sessiz çal ve durdur
   [...countdownSoundPool.sounds, ...startSoundPool.sounds].forEach(audio => {
     const originalVolume = audio.volume;
     audio.volume = 0;
@@ -43,12 +41,10 @@ const unlockAudio = () => {
       audio.volume = originalVolume;
     }).catch(() => {});
   });
-  
   audioUnlocked = true;
-  console.log("✅ GameCountdown: Audio unlocked for mobile");
 };
 
-// Kullanıcı etkileşimi dinleyicileri
+// Event Listenerları ekle
 if (typeof window !== "undefined") {
   const unlockEvents = ['touchstart', 'touchend', 'click', 'keydown'];
   const handleUnlock = () => {
@@ -58,24 +54,22 @@ if (typeof window !== "undefined") {
   unlockEvents.forEach(e => document.addEventListener(e, handleUnlock, { once: false, passive: true }));
 }
 
-// Audio pool'u başlat
+// Ses havuzunu başlat
 const initAudioPool = () => {
   if (audioPoolInitialized || typeof window === "undefined") return;
-  
-  // Geri sayım sesleri için pool
+
   for (let i = 0; i < COUNTDOWN_SOUND_POOL_SIZE; i++) {
     const audio = new Audio();
-    audio.src = "./gerisayim.mp3"; // Capacitor için relative path
+    audio.src = "./gerisayim.mp3"; 
     audio.volume = 0.6;
     audio.preload = "auto";
     audio.load();
     countdownSoundPool.sounds.push(audio);
   }
   
-  // Başla sesi için pool
   for (let i = 0; i < START_SOUND_POOL_SIZE; i++) {
     const audio = new Audio();
-    audio.src = "./basla.mp3"; // Capacitor için relative path
+    audio.src = "./basla.mp3";
     audio.volume = 0.6;
     audio.preload = "auto";
     audio.load();
@@ -83,73 +77,40 @@ const initAudioPool = () => {
   }
   
   audioPoolInitialized = true;
-  console.log("✅ GameCountdown: Audio pool initialized");
 };
 
-// Pool'dan ses çal
+// Ses çalma fonksiyonu
 const playFromPool = (pool: AudioPool) => {
-  if (pool.sounds.length === 0) {
-    console.warn("⚠️ Audio pool empty");
-    return;
-  }
-  
+  if (pool.sounds.length === 0) return;
   const audio = pool.sounds[pool.currentIndex];
   pool.currentIndex = (pool.currentIndex + 1) % pool.sounds.length;
-  
-  // Sesi başa sar ve çal
   audio.currentTime = 0;
-  audio.play().then(() => {
-    console.log("✅ Sound played successfully");
-  }).catch((err) => {
-    console.warn("⚠️ Audio play failed:", err.message);
-    // Tekrar dene - mobile unlock gerekebilir
-    unlockAudio();
-  });
+  audio.play().catch(() => unlockAudio());
 };
 
-// Preload on module load with completion tracking
+// Resim ve Sesleri Yükle
 const preloadPromise = typeof window !== "undefined" 
   ? Promise.all([
-      // Görüntüleri yükle
-      ...IMAGE_PATHS.map((src) => {
-        return new Promise<void>((resolve) => {
+      ...IMAGE_PATHS.map((src) => new Promise<void>((resolve) => {
           const img = new Image();
-          img.onload = () => {
-            preloadedImages.set(src, img);
-            resolve();
-          };
+          img.onload = () => { preloadedImages.set(src, img); resolve(); };
           img.onerror = () => resolve();
           img.src = src;
-        });
-      }),
-      // Audio pool'u başlat
-      new Promise<void>((resolve) => {
-        initAudioPool();
-        resolve();
-      })
-    ]).then(() => {
-      imagesPreloaded = true;
-      console.log("✅ GameCountdown: All images and audio preloaded");
-    })
+        })),
+      new Promise<void>((resolve) => { initAudioPool(); resolve(); })
+    ]).then(() => { imagesPreloaded = true; })
   : Promise.resolve();
 
-// Export for external preload check
 export const ensureImagesLoaded = () => preloadPromise;
 
-const COUNTDOWN_DURATION_MS = 5000; // 5 seconds countdown
-const START_DISPLAY_DURATION_MS = 800; // Show "start" for 800ms
+const COUNTDOWN_DURATION_MS = 5000; // Geri sayım süresi (5 saniye)
+const START_DISPLAY_DURATION_MS = 800; // "BAŞLA" yazısının ekranda kalma süresi
 
-/**
- * Production-ready countdown component
- *
- * Uses server-authoritative timing:
- * - serverStartTime: when countdown begins
- * - Calculates remaining time passively: remaining = (serverStartTime + 5000) - serverNow
- * - NEVER resets - if time already passed, shows appropriate state
- * - Both clients calculate the SAME value at the SAME wall-clock moment
- */
+// --- ANA COMPONENT ---
 const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 }: GameCountdownProps) => {
   const [displayValue, setDisplayValue] = useState<number | "start" | null>(null);
+  
+  // Refs
   const completedRef = useRef(false);
   const mountedRef = useRef(true);
   const startShownRef = useRef(false);
@@ -157,7 +118,6 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
   const soundPlayedRef = useRef<Set<number | string>>(new Set());
   const lastDisplayRef = useRef<number | "start" | null>(null);
 
-  // 🔊 Pool-based sound playback
   const playCountdownSound = () => playFromPool(countdownSoundPool);
   const playStartSound = () => playFromPool(startSoundPool);
 
@@ -180,105 +140,46 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
   useEffect(() => {
     if (completedRef.current) return;
 
-    // Clean previous animation frame
+    // Eğer sunucudan zaman bilgisi henüz gelmediyse HİÇBİR ŞEY YAPMA.
+    // Legacy (Client-side) modu tamamen kaldırdık.
+    // Bu sayede SQL Buffer'dan gelen ileri tarihi beklemek ZORUNDA kalır.
+    if (!serverStartTime) {
+        console.log("⏳ GameCountdown: Sunucudan başlama saati bekleniyor...");
+        return; 
+    }
+
+    // Önceki döngüyü temizle
     if (rafRef.current) {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
 
-    // Reset state for new countdown
-    startShownRef.current = false;
-    soundPlayedRef.current.clear();
-    lastDisplayRef.current = null;
-
-    // Legacy client-side mode (no server time)
-    if (!serverStartTime) {
-      console.log("⏱️ GameCountdown: Legacy client-side mode");
-      const localStartTime = Date.now();
-      
-      const tick = () => {
-        if (!mountedRef.current || completedRef.current) return;
-        
-        const elapsed = Date.now() - localStartTime;
-        const remaining = COUNTDOWN_DURATION_MS - elapsed;
-        
-        if (remaining <= -START_DISPLAY_DURATION_MS) {
-          if (!completedRef.current) {
-            completedRef.current = true;
-            onComplete();
-          }
-          return;
-        }
-        
-        if (remaining <= 0) {
-          if (!startShownRef.current) {
-            startShownRef.current = true;
-            setDisplayValue("start");
-            if (!soundPlayedRef.current.has("start")) {
-              soundPlayedRef.current.add("start");
-              playStartSound();
-            }
-          }
-        } else {
-          const seconds = Math.ceil(remaining / 1000);
-          const display = Math.min(5, Math.max(1, seconds));
-          if (lastDisplayRef.current !== display) {
-            lastDisplayRef.current = display;
-            setDisplayValue(display);
-            if (!soundPlayedRef.current.has(display)) {
-              soundPlayedRef.current.add(display);
-              playCountdownSound();
-            }
-          }
-        }
-        
-        rafRef.current = requestAnimationFrame(tick);
-      };
-      
-      rafRef.current = requestAnimationFrame(tick);
-      return () => {
-        if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      };
-    }
-
-    // 🔒 SERVER-AUTHORITATIVE MODE
-    console.log("⏱️ GameCountdown: Server mode, startTime:", serverStartTime, "offset:", serverTimeOffset);
+    console.log("⏱️ GameCountdown: Server Modu Aktif. Başlama:", serverStartTime, "Offset:", serverTimeOffset);
     
+    // Geri sayımın BİTİŞ zamanı = Başlama Zamanı + 5 Saniye
     const countdownEndTime = new Date(serverStartTime).getTime() + COUNTDOWN_DURATION_MS;
     
-    // 🎯 ALWAYS start by showing 5 immediately to ensure countdown starts from 5
-    // This prevents server sync delays from skipping initial numbers
-    if (lastDisplayRef.current === null) {
-      console.log("⏱️ Initial display: 5 (forced)");
-      setDisplayValue(5);
-      lastDisplayRef.current = 5;
-      if (!soundPlayedRef.current.has(5)) {
-        soundPlayedRef.current.add(5);
-        playCountdownSound();
-      }
-    }
-    
+    // Animasyon Döngüsü (Tick)
     const tick = () => {
       if (!mountedRef.current || completedRef.current) return;
-      
+
       const serverNow = Date.now() + serverTimeOffset;
       const remaining = countdownEndTime - serverNow;
       
-      // Completion check
+      // 1. Durum: Süre tamamen bitti ("Başla" yazısı da kalkmalı)
       if (remaining <= -START_DISPLAY_DURATION_MS) {
         if (!completedRef.current) {
           completedRef.current = true;
-          console.log("⏱️ Countdown completed");
+          console.log("🏁 Geri sayım tamamlandı, oyun başlıyor.");
           onComplete();
         }
         return;
       }
       
-      // Show "start"
+      // 2. Durum: Süre doldu, "BAŞLA!" göster
       if (remaining <= 0) {
         if (!startShownRef.current) {
           startShownRef.current = true;
-          console.log("⏱️ Showing: start");
           setDisplayValue("start");
           lastDisplayRef.current = "start";
           if (!soundPlayedRef.current.has("start")) {
@@ -286,16 +187,21 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
             playStartSound();
           }
         }
-      } else {
-        // Show countdown numbers 5-4-3-2-1
+      } 
+      // 3. Durum: Geri sayım devam ediyor (veya tampon süresindeyiz)
+      else {
         const seconds = Math.ceil(remaining / 1000);
+        
+        // Burası kritik: Eğer SQL'den +20sn geldiyse 'seconds' 15-20 arası çıkabilir.
+        // Math.min(5, ...) sayesinde ekranda hep "5" görürüz.
         const display = Math.min(5, Math.max(1, seconds));
         
-        // Only update if display changed (but skip initial 5 since we already showed it)
+        // Ekrana basma işlemi (Gereksiz render önleme)
         if (lastDisplayRef.current !== display) {
-          console.log("⏱️ Showing:", display, "(remaining:", Math.round(remaining), "ms)");
           lastDisplayRef.current = display;
           setDisplayValue(display);
+          
+          // Ses çalma (sadece rakam değişince)
           if (!soundPlayedRef.current.has(display)) {
             soundPlayedRef.current.add(display);
             playCountdownSound();
@@ -306,19 +212,19 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       rafRef.current = requestAnimationFrame(tick);
     };
     
-    // Start RAF after a small delay to let initial 5 render
+    // İlk render'ın oturması için minik bir gecikme ile başlat
     setTimeout(() => {
       if (mountedRef.current && !completedRef.current) {
         rafRef.current = requestAnimationFrame(tick);
       }
     }, 50);
-    
+
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, [onComplete, serverStartTime, serverTimeOffset]);
 
-  // Get image source
+  // Görsel Seçimi
   const getImageSrc = () => {
     if (displayValue === "start") return "/basla.png";
     if (displayValue === 5) return "/bes.png";
@@ -326,10 +232,10 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
     if (displayValue === 3) return "/uc.png";
     if (displayValue === 2) return "/iki.png";
     if (displayValue === 1) return "/bir.png";
-    return "/bes.png"; // fallback
+    return "/bes.png"; 
   };
 
-  // Don't render if no value yet
+  // Eğer değer yoksa hiçbir şey gösterme
   if (displayValue === null) {
     return null;
   }
