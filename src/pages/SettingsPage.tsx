@@ -65,7 +65,7 @@ const SettingsPage = () => {
   useEffect(() => {
     const savedSettings = localStorage.getItem("kelimeci-settings");
     const permissionsCompleted = localStorage.getItem("kelimeci-permissions-completed");
-    
+
     if (savedSettings) {
       const settings = JSON.parse(savedSettings);
       setNotifications(settings.notifications ?? false);
@@ -474,27 +474,6 @@ const SettingsPage = () => {
               </div>
 
               <Separator />
-
-              {/* Legacy Theme for backward compatibility */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Palette className="w-5 h-5" />
-                  <div>
-                    <p className="font-medium">Sistem Teması</p>
-                    <p className="text-sm text-muted-foreground">Açık/Koyu sistem ayarı</p>
-                  </div>
-                </div>
-                <Select value={theme} onValueChange={(value) => setTheme(value as "light" | "dark" | "system")}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="light">Açık</SelectItem>
-                    <SelectItem value="dark">Koyu</SelectItem>
-                    <SelectItem value="system">Sistem</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </CardContent>
           </Card>
 
