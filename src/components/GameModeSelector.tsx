@@ -115,7 +115,6 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
           </div>
 
           <h2 className="text-2xl font-black uppercase tracking-wider text-white drop-shadow-lg">{theme.title}</h2>
-          <p className="text-white/60 text-sm font-medium mt-1">Mücadele türünü seç ve başla</p>
         </div>
 
         {/* --- CONTENT (SEÇİM ALANI) --- */}
