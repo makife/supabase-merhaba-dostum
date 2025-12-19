@@ -1,12 +1,12 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { App } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 
 interface UseAppStateOptions {
   onBackground?: () => void;
   onForeground?: () => void;
-  backgroundDelay?: number; // ms cinsinden - bu süre sonunda onBackground tetiklenir
-  onBackgroundTimeout?: () => void; // backgroundDelay sonunda tetiklenir (oyundan çıkış için)
+  backgroundDelay?: number;
+  onBackgroundTimeout?: () => void;
 }
 
 export const useAppState = (options: UseAppStateOptions = {}) => {
@@ -17,12 +17,16 @@ export const useAppState = (options: UseAppStateOptions = {}) => {
     onBackgroundTimeout 
   } = options;
   
+  // isNative'i useMemo ile memoize et - her render'da yeniden hesaplanmasın
+  const isNative = useMemo(() => Capacitor.isNativePlatform(), []);
+  
   const [isActive, setIsActive] = useState(true);
   const [backgroundStartTime, setBackgroundStartTime] = useState<number | null>(null);
-  const isNative = Capacitor.isNativePlatform();
+  
   const backgroundTimerRef = useRef<NodeJS.Timeout | null>(null);
   const timeoutFiredRef = useRef(false);
-  const backgroundStartRef = useRef<number | null>(null); // Arka plan başlangıç zamanını ref'te tut
+  const backgroundStartRef = useRef<number | null>(null);
+  const isMountedRef = useRef(true); // Component mount durumunu takip et
 
   const clearBackgroundTimer = useCallback(() => {
     if (backgroundTimerRef.current) {
@@ -31,16 +35,26 @@ export const useAppState = (options: UseAppStateOptions = {}) => {
     }
   }, []);
 
+  // Mount/unmount tracking
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   useEffect(() => {
     const handleStateChange = (active: boolean) => {
+      // Component unmount olduysa state güncelleme yapma
+      if (!isMountedRef.current) return;
+      
       setIsActive(active);
 
       if (active) {
         // Ön plana döndü
         clearBackgroundTimer();
         
-        // 🔥 KRİTİK: Mobilde setTimeout çalışmaz!
-        // Foreground'a döndüğümüzde arka planda ne kadar kaldığımızı kontrol et
+        // Mobilde setTimeout çalışmaz, foreground'a döndüğümüzde kontrol et
         if (backgroundStartRef.current && backgroundDelay > 0 && onBackgroundTimeout && !timeoutFiredRef.current) {
           const timeInBackground = Date.now() - backgroundStartRef.current;
           console.log(`📱 Arka planda geçen süre: ${timeInBackground}ms (limit: ${backgroundDelay}ms)`);
@@ -48,35 +62,41 @@ export const useAppState = (options: UseAppStateOptions = {}) => {
           if (timeInBackground >= backgroundDelay) {
             console.log("⚠️ Arka plan limiti aşıldı - timeout tetikleniyor!");
             timeoutFiredRef.current = true;
-            onBackgroundTimeout();
-            // Timeout tetiklendikten sonra state'leri temizle ve return et
-            // Reset işlemi timeout callback'i içinde olmalı
-            setBackgroundStartTime(null);
+            
+            // State güncellemelerini güvenli şekilde yap
+            if (isMountedRef.current) {
+              setBackgroundStartTime(null);
+            }
             backgroundStartRef.current = null;
+            
+            // Callback'leri en son çağır
+            onBackgroundTimeout();
             onForeground?.();
-            return; // Aşağıdaki reset'i atlayıp döngüden çık
+            return;
           }
         }
         
-        // Normal foreground dönüşü (timeout tetiklenmedi)
+        // Normal foreground dönüşü
         timeoutFiredRef.current = false;
-        setBackgroundStartTime(null);
+        if (isMountedRef.current) {
+          setBackgroundStartTime(null);
+        }
         backgroundStartRef.current = null;
         onForeground?.();
       } else {
         // Arka plana alındı
         const now = Date.now();
-        setBackgroundStartTime(now);
-        backgroundStartRef.current = now; // Ref'e de kaydet (sync kontrol için)
+        if (isMountedRef.current) {
+          setBackgroundStartTime(now);
+        }
+        backgroundStartRef.current = now;
         onBackground?.();
         
-        // Web için setTimeout hala çalışabilir (tab değişimi vs.)
-        // Native'de çalışmayacak ama foreground'a dönünce kontrol edeceğiz
+        // Web için setTimeout
         if (backgroundDelay > 0 && onBackgroundTimeout && !timeoutFiredRef.current) {
           clearBackgroundTimer();
           backgroundTimerRef.current = setTimeout(() => {
-            // Hala arka plandaysa timeout'u tetikle
-            if (!timeoutFiredRef.current) {
+            if (!timeoutFiredRef.current && isMountedRef.current) {
               timeoutFiredRef.current = true;
               onBackgroundTimeout();
             }
@@ -86,7 +106,7 @@ export const useAppState = (options: UseAppStateOptions = {}) => {
     };
 
     if (!isNative) {
-      // Web için visibilitychange kullan
+      // Web için visibilitychange
       const handleVisibilityChange = () => handleStateChange(!document.hidden);
       document.addEventListener("visibilitychange", handleVisibilityChange);
       return () => {
@@ -94,19 +114,26 @@ export const useAppState = (options: UseAppStateOptions = {}) => {
         clearBackgroundTimer();
       };
     } else {
-      // Native için Capacitor App listener kullan
-      const listenerPromise = App.addListener("appStateChange", (state) => {
+      // Native için Capacitor App listener
+      let listenerHandle: { remove: () => void } | null = null;
+      
+      App.addListener("appStateChange", (state) => {
         handleStateChange(state.isActive);
+      }).then((handle) => {
+        listenerHandle = handle;
+      }).catch((err) => {
+        console.warn("App state listener error:", err);
       });
 
       return () => {
-        listenerPromise.then((l) => l.remove());
         clearBackgroundTimer();
+        if (listenerHandle) {
+          listenerHandle.remove();
+        }
       };
     }
   }, [onBackground, onForeground, onBackgroundTimeout, backgroundDelay, isNative, clearBackgroundTimer]);
 
-  // Arka planda geçen süreyi hesapla
   const getBackgroundDuration = useCallback(() => {
     if (!backgroundStartTime || isActive) return 0;
     return Date.now() - backgroundStartTime;
