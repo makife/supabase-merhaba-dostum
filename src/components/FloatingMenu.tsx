@@ -103,7 +103,7 @@ const menuItems = [
     hoverColor: "hover:from-green-600 hover:to-green-700",
   },
   {
-    title: "Market",
+    title: "Kırtasiye",
     route: "/market",
     icon: ShoppingCart,
     color: "from-purple-500 to-purple-600",
