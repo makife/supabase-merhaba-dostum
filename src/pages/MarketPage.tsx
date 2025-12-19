@@ -556,7 +556,7 @@ const MarketPage = () => {
               </div>
             </TabsContent>
 
-            {/* 3. VIP ABONELİK */}
+            {/* 3. VIP ABONELİK - Fiyatlar ve Avantajlar Güncellendi */}
             <TabsContent value="vip" className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
               <Card className="bg-gradient-to-br from-amber-400 to-orange-500 border-none shadow-xl text-white overflow-hidden">
                 <CardHeader className="text-center pb-2">
@@ -564,52 +564,70 @@ const MarketPage = () => {
                     <img src="/vipIkon.png" alt="VIP" className="w-64 h-64 object-contain drop-shadow-xl" />
                   </div>
                   <CardTitle className="text-2xl font-serif relative z-10">VIP Yazar Ol</CardTitle>
-                  <CardDescription className="text-amber-100">Yazarlık kariyerinde zirveye oyna</CardDescription>
+                  <CardDescription className="text-amber-100 italic">
+                    Kısıtlamaları kaldır, kalemini konuştur!
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="space-y-2 bg-black/10 p-4 rounded-xl backdrop-blur-sm">
+                  <div className="space-y-3 bg-black/10 p-4 rounded-xl backdrop-blur-sm">
                     <div className="flex items-center gap-3">
                       <Infinity className="w-5 h-5 text-amber-100" />
-                      <span className="font-medium">Sınırsız Can</span>
+                      <span className="font-medium text-sm">Sınırsız Sayfa (Hiç bitmeyen hak)</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <Zap className="w-5 h-5 text-amber-100" />
-                      <span className="font-medium">Reklamsız Deneyim</span>
+                      <span className="font-medium text-sm">Reklamsız Deneyim</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Droplet className="w-5 h-5 text-amber-100" />
-                      <span className="font-medium">Her Gün +10 Damla Mürekkep</span>
+                    <div className="flex items-center gap-3 border-t border-white/10 pt-2">
+                      <div className="bg-amber-400 p-1 rounded-full">
+                        <img src="/degistirIkon.png" className="w-4 h-4" alt="joker" />
+                      </div>
+                      <div className="bg-amber-400 p-1 rounded-full -ml-2">
+                        <img src="/fisildaIkon.png" className="w-4 h-4" alt="joker" />
+                      </div>
+                      <div className="bg-amber-400 p-1 rounded-full -ml-2">
+                        <img src="/senyazIkon.png" className="w-4 h-4" alt="joker" />
+                      </div>
+                      <span className="font-bold text-sm ml-1 text-white">Her Gün 3'er Bedava Joker!</span>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 pt-2">
                     <Button
-                      className="bg-white text-orange-600 hover:bg-orange-50 font-bold h-auto py-3 flex-col gap-1"
+                      className="bg-white text-orange-600 hover:bg-orange-50 font-bold h-auto py-3 flex-col gap-1 shadow-md"
                       onClick={() => purchaseSubscription("premium_month")}
                       disabled={isSubscriptionLoading}
                     >
-                      <span>Aylık</span>
+                      <span className="text-lg">Aylık</span>
                       <span className="text-xs opacity-70">₺249.99</span>
                     </Button>
                     <Button
-                      className="bg-indigo-900 text-white hover:bg-indigo-800 font-bold h-auto py-3 flex-col gap-1 border border-white/20"
+                      className="bg-indigo-900 text-white hover:bg-indigo-800 font-bold h-auto py-3 flex-col gap-1 border border-white/20 shadow-md relative"
                       onClick={() => purchaseSubscription("premium_year")}
                       disabled={isSubscriptionLoading}
                     >
-                      <span>Yıllık</span>
+                      <span className="absolute -top-2 right-0 bg-red-500 text-[9px] px-2 py-0.5 rounded-full animate-bounce">
+                        %50 İNDİRİM
+                      </span>
+                      <span className="text-lg">Yıllık</span>
                       <span className="text-xs opacity-70">₺1499.99</span>
                     </Button>
                   </div>
 
+                  <p className="text-[10px] text-center text-amber-100/80 italic">
+                    * Günlük jokerler her gece 00:00'da yenilenir.
+                  </p>
+
+                  {/* Satın Alımları Geri Yükle */}
                   {isNativePlatform && (
                     <Button
                       variant="ghost"
-                      className="w-full mt-4 text-amber-100 hover:text-white hover:bg-white/10"
+                      className="w-full mt-2 text-amber-100 hover:text-white hover:bg-white/10 text-xs"
                       onClick={restorePurchases}
                       disabled={isRestoreLoading}
                     >
-                      <RotateCcw className={`w-4 h-4 mr-2 ${isRestoreLoading ? "animate-spin" : ""}`} />
-                      {isRestoreLoading ? "Geri Yükleniyor..." : "Satın Alımları Geri Yükle"}
+                      <RotateCcw className={`w-3 h-3 mr-2 ${isRestoreLoading ? "animate-spin" : ""}`} />
+                      Satın Alımları Geri Yükle
                     </Button>
                   )}
                 </CardContent>
