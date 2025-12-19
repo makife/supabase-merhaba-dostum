@@ -713,7 +713,9 @@ const GamePage = ({
   const statsUpdatedRef = useRef(false);
   const attemptedAutoCompleteRef = useRef(false);
 
-  // 💓 HEARTBEAT SİSTEMİ: Uygulama kill edilse bile çalışır
+  // 💓 HEARTBEAT SİSTEMİ: Database-based (Arka planda da çalışır)
+  // Supabase Presence yerine player_activities tablosunu kullanır
+  // Böylece aktif oyuncu, arka plandaki rakibin timeout olduğunu anında tespit eder
   useEffect(() => {
     // 1. GÜVENLİK KONTROLLERİ
     if (
@@ -727,119 +729,122 @@ const GamePage = ({
     }
 
     const roomId = currentRoom.id;
-    const userId = user.id;
+    const myUserId = user.id;
+    const opponentId = currentRoom.player1_id === myUserId 
+      ? currentRoom.player2_id 
+      : currentRoom.player1_id;
+    
+    if (!opponentId) {
+      console.log("💓 Rakip ID bulunamadı, heartbeat başlatılmıyor");
+      return;
+    }
 
-    console.log("💓 Heartbeat sistemi başlatılıyor (Ghost Session Korumalı)...");
+    console.log("💓 Database Heartbeat sistemi başlatılıyor...");
+    console.log("   Ben:", myUserId.slice(-8), "Rakip:", opponentId.slice(-8));
 
-    lastOpponentHeartbeat.current = Date.now();
-    isChannelSubscribedRef.current = false;
-    lastSeenDataRef.current = "";
+    let isCleanedUp = false;
 
-    const channel = supabase.channel(`presence-${roomId}`, {
-      config: {
-        presence: {
-          key: userId,
-        },
-      },
-    });
+    // 2. KENDİ HEARTBEAT'İMİ DATABASE'E YAZ (Her 2 saniyede)
+    const writeMyHeartbeat = async () => {
+      if (isCleanedUp || gameEndedRef.current) return;
+      
+      try {
+        const now = new Date().toISOString();
+        await supabase
+          .from("player_activities")
+          .upsert({
+            player_id: myUserId,
+            match_id: roomId,
+            last_action_time: now,
+            updated_at: now
+          }, {
+            onConflict: "match_id,player_id"
+          });
+      } catch (err) {
+        console.warn("💓 Heartbeat yazma hatası:", err);
+      }
+    };
 
-    channel
-      .on("presence", { event: "sync" }, () => {
-        const state = channel.presenceState();
+    // İlk heartbeat'i hemen yaz
+    writeMyHeartbeat();
+    
+    // Sonra her 2 saniyede bir
+    heartbeatIntervalRef.current = setInterval(writeMyHeartbeat, 2000);
 
-        Object.keys(state).forEach((key) => {
-          if (key !== userId) {
-            // Rakibin tüm oturumlarını al (Bazen birden fazla olabilir)
-            const presences = state[key] as any[];
+    // 3. RAKİBİN HEARTBEAT'İNİ KONTROL ET (Her saniye)
+    checkOpponentAliveIntervalRef.current = setInterval(async () => {
+      if (isCleanedUp || gameEndedRef.current) return;
 
-            if (presences && presences.length > 0) {
-              // EN YENİ OLAN OTURUMU BUL (Sıralama karışıklığını önler)
-              // Listeyi tarihe göre tersten sırala (en yeni en başta) ve ilkini al
-              const latestPresence = presences.sort((a, b) => {
-                const dateA = a.online_at ? new Date(a.online_at).getTime() : 0;
-                const dateB = b.online_at ? new Date(b.online_at).getTime() : 0;
-                return dateB - dateA;
-              })[0];
+      try {
+        // Rakibin son heartbeat'ini oku
+        const { data: opponentActivity, error } = await supabase
+          .from("player_activities")
+          .select("last_action_time")
+          .eq("player_id", opponentId)
+          .eq("match_id", roomId)
+          .maybeSingle();
 
-              if (latestPresence && latestPresence.online_at) {
-                const newDataCheck = latestPresence.online_at;
-
-                // Sadece EN YENİ veri bir önceki gördüğümüzden farklıysa güncelle
-                if (newDataCheck !== lastSeenDataRef.current) {
-                  lastSeenDataRef.current = newDataCheck;
-                  lastOpponentHeartbeat.current = Date.now();
-                  // console.log("💓 Canlı sinyal alındı:", newDataCheck);
-                }
-              }
-            }
-          }
-        });
-      })
-      .subscribe(async (status) => {
-        console.log(`📡 Heartbeat kanalı durumu: ${status}`);
-        if (status === "SUBSCRIBED") {
-          isChannelSubscribedRef.current = true;
-          await channel.track({ online_at: new Date().toISOString() });
-        } else {
-          isChannelSubscribedRef.current = false;
+        if (error) {
+          console.warn("💓 Rakip heartbeat okuma hatası:", error);
+          return;
         }
-      });
 
-    presenceChannelRef.current = channel;
+        // Rakip hiç heartbeat yazmamışsa, henüz bağlanmamış olabilir - bekle
+        if (!opponentActivity?.last_action_time) {
+          return;
+        }
 
-    // 2. KENDİ NABZINI GÖNDER (2 saniyede bir)
-    heartbeatIntervalRef.current = setInterval(async () => {
-      if (channel && isChannelSubscribedRef.current) {
-        await channel.track({ online_at: new Date().toISOString() });
-      }
-    }, 2000);
+        const lastHeartbeatTime = new Date(opponentActivity.last_action_time).getTime();
+        const now = Date.now();
+        const timeSinceLastHeartbeat = now - lastHeartbeatTime;
 
-    // 3. BEKÇİ KONTROLÜ (Her saniye)
-    checkOpponentAliveIntervalRef.current = setInterval(() => {
-      if (gameEndedRef.current) return;
+        // 10 saniye kuralı: Rakip 10 saniyedir heartbeat göndermiyorsa ÖLDÜ
+        if (timeSinceLastHeartbeat > 10000) {
+          console.log("💀 RAKİP TIMEOUT! Son heartbeat:", Math.round(timeSinceLastHeartbeat / 1000), "sn önce");
 
-      // Eğer biz koptuysak yanlış karar vermeyelim
-      if (!isChannelSubscribedRef.current) {
-        lastOpponentHeartbeat.current = Date.now();
-        return;
-      }
+          // Temizlik
+          isCleanedUp = true;
+          if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
+          if (checkOpponentAliveIntervalRef.current) clearInterval(checkOpponentAliveIntervalRef.current);
 
-      const now = Date.now();
-      const timeSinceLastHeartbeat = now - lastOpponentHeartbeat.current;
+          // Oyunu bitir
+          window.dispatchEvent(
+            new CustomEvent("playerDisconnected", {
+              detail: {
+                winner: "player",
+                reason: "opponent_timeout_db",
+                roomId: roomId,
+              },
+            }),
+          );
 
-      // 12 Saniye kuralı (10 sn + 2 sn tolerans)
-      if (timeSinceLastHeartbeat > 12000) {
-        console.log("💀 RAKİP ÖLDÜ! (Veri akışı durdu - Kill detected):", timeSinceLastHeartbeat, "ms");
-
-        if (checkOpponentAliveIntervalRef.current) clearInterval(checkOpponentAliveIntervalRef.current);
-        if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
-
-        window.dispatchEvent(
-          new CustomEvent("playerDisconnected", {
-            detail: {
-              winner: "player",
-              reason: "opponent_timeout_killed",
-              roomId: roomId,
-            },
-          }),
-        );
-
-        toast({
-          title: "Rakip Bağlantısı Koptu",
-          description: "Rakip oyundan düştü. Kazandınız!",
-          variant: "default",
-        });
+          toast({
+            title: "Rakip Bağlantısı Koptu",
+            description: "Rakip oyundan düştü. Kazandınız!",
+            variant: "default",
+          });
+        }
+      } catch (err) {
+        console.warn("💓 Heartbeat kontrol hatası:", err);
       }
     }, 1000);
 
+    // 4. TEMİZLİK
     return () => {
-      console.log("💓 Heartbeat temizleniyor");
-      isChannelSubscribedRef.current = false;
+      console.log("💓 Database Heartbeat temizleniyor");
+      isCleanedUp = true;
       if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
       if (checkOpponentAliveIntervalRef.current) clearInterval(checkOpponentAliveIntervalRef.current);
-      if (presenceChannelRef.current) supabase.removeChannel(presenceChannelRef.current);
+      
+      // Kendi activity kaydımı sil (opsiyonel)
+      supabase
+        .from("player_activities")
+        .delete()
+        .eq("player_id", myUserId)
+        .eq("match_id", roomId)
+        .then(() => {});
     };
-  }, [gameMode, gameStarted, gameEnded, currentRoom?.id, user?.id]);
+  }, [gameMode, gameStarted, gameEnded, currentRoom?.id, currentRoom?.player1_id, currentRoom?.player2_id, user?.id]);
 
   // Reset duplicate stats guard when game resets
   useEffect(() => {
