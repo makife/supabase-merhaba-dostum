@@ -300,7 +300,7 @@ const WheelPage = () => {
 
           {!canSpin && !isSpinning && (
             <p className="text-xs text-gray-500 bg-slate-900/50 px-3 py-1 rounded-full border border-slate-800">
-              Bir sonraki çevirme hakkı gece 00:00'da yenilenir.
+              Bir sonraki çevirme hakkı için yarını bekle.
             </p>
           )}
         </div>
