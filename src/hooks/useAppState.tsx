@@ -22,6 +22,7 @@ export const useAppState = (options: UseAppStateOptions = {}) => {
   const isNative = Capacitor.isNativePlatform();
   const backgroundTimerRef = useRef<NodeJS.Timeout | null>(null);
   const timeoutFiredRef = useRef(false);
+  const backgroundStartRef = useRef<number | null>(null); // Arka plan başlangıç zamanını ref'te tut
 
   const clearBackgroundTimer = useCallback(() => {
     if (backgroundTimerRef.current) {
@@ -37,15 +38,40 @@ export const useAppState = (options: UseAppStateOptions = {}) => {
       if (active) {
         // Ön plana döndü
         clearBackgroundTimer();
+        
+        // 🔥 KRİTİK: Mobilde setTimeout çalışmaz!
+        // Foreground'a döndüğümüzde arka planda ne kadar kaldığımızı kontrol et
+        if (backgroundStartRef.current && backgroundDelay > 0 && onBackgroundTimeout && !timeoutFiredRef.current) {
+          const timeInBackground = Date.now() - backgroundStartRef.current;
+          console.log(`📱 Arka planda geçen süre: ${timeInBackground}ms (limit: ${backgroundDelay}ms)`);
+          
+          if (timeInBackground >= backgroundDelay) {
+            console.log("⚠️ Arka plan limiti aşıldı - timeout tetikleniyor!");
+            timeoutFiredRef.current = true;
+            onBackgroundTimeout();
+            // Timeout tetiklendikten sonra state'leri temizle ve return et
+            // Reset işlemi timeout callback'i içinde olmalı
+            setBackgroundStartTime(null);
+            backgroundStartRef.current = null;
+            onForeground?.();
+            return; // Aşağıdaki reset'i atlayıp döngüden çık
+          }
+        }
+        
+        // Normal foreground dönüşü (timeout tetiklenmedi)
         timeoutFiredRef.current = false;
         setBackgroundStartTime(null);
+        backgroundStartRef.current = null;
         onForeground?.();
       } else {
         // Arka plana alındı
-        setBackgroundStartTime(Date.now());
+        const now = Date.now();
+        setBackgroundStartTime(now);
+        backgroundStartRef.current = now; // Ref'e de kaydet (sync kontrol için)
         onBackground?.();
         
-        // Eğer backgroundDelay ve onBackgroundTimeout varsa, timer başlat
+        // Web için setTimeout hala çalışabilir (tab değişimi vs.)
+        // Native'de çalışmayacak ama foreground'a dönünce kontrol edeceğiz
         if (backgroundDelay > 0 && onBackgroundTimeout && !timeoutFiredRef.current) {
           clearBackgroundTimer();
           backgroundTimerRef.current = setTimeout(() => {
