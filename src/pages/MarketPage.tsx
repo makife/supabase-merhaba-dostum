@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSounds } from "@/hooks/useSounds";
 import { Capacitor } from "@capacitor/core";
 import { ArrowLeft, Crown, Zap, Infinity, Droplet, PenTool, Video, RotateCcw } from "lucide-react";
+
 // Veri Tipleri
 interface InkPack {
   id: string;
@@ -117,7 +118,7 @@ const MarketPage = () => {
       value: 1,
       image: "/senyazIkon.png",
     },
-    // Canlar
+    // Canlar (Sayfa Paketleri)
     {
       id: "h_full",
       type: "heart",
@@ -144,6 +145,15 @@ const MarketPage = () => {
       priceInInk: 200,
       value: 50,
       image: "/ellicanPaketi.png",
+    },
+    {
+      id: "h_85",
+      type: "heart",
+      name: "Ansiklopedi",
+      description: "Stoğunuza 85 sayfa ekler",
+      priceInInk: 220,
+      value: 85,
+      image: "/Ansiklopedi.png",
     },
     // Sınırsız Zaman
     {
@@ -342,19 +352,10 @@ const MarketPage = () => {
           </Button>
 
           {/* ORTA - BAŞLIK GÖRSELİ */}
-          {/* DEĞİŞİKLİKLER:
-              1. 'top-1/2' YERİNE '-top-[76px]': 
-                 (mt-60 [60px] + pt-4 [16px] = 76px). 
-                 Bu sayede resmi üstteki boşluğu yok sayarak en tepeye çekeriz.
-                 
-              2. '-translate-y-1/2' KALDIRILDI: 
-                 Artık dikey ortalamıyoruz, yukarı sabitliyoruz.
-          */}
           <div className="absolute left-1/2 -top-[144px] transform -translate-x-1/2 z-10 pointer-events-none">
             <img
               src="/kirtasiyeBaslik.png"
               alt="Kırtasiye"
-              // max-w-none ekledik ki resim kırpılmadan özgürce yayılabilsin
               className="h-64 w-auto max-w-none object-contain drop-shadow-2xl filter brightness-110"
             />
           </div>
@@ -426,7 +427,6 @@ const MarketPage = () => {
                       </span>
                     )}
                     <div className="flex items-center gap-4">
-                      {/* Arkaplan karesi kaldırıldı ve resim büyütüldü */}
                       <div className="flex-shrink-0 group-hover:scale-105 transition-transform">
                         <img src={pack.image} alt={pack.name} className="w-20 h-20 object-contain drop-shadow-sm" />
                       </div>
@@ -456,7 +456,6 @@ const MarketPage = () => {
                         className="bg-white rounded-xl p-3 border border-slate-100 flex items-center justify-between shadow-sm"
                       >
                         <div className="flex items-center gap-4">
-                          {/* Kutu (bg-purple-50) kaldırıldı, ikon serbest ve büyük */}
                           <div className="flex-shrink-0">
                             {item.image ? (
                               <img
@@ -497,7 +496,6 @@ const MarketPage = () => {
                         className="border-slate-100 shadow-sm overflow-hidden group hover:border-red-200 transition-colors"
                       >
                         <CardContent className="p-3 text-center flex flex-col items-center gap-2">
-                          {/* Görsel Büyütüldü */}
                           <div className="w-16 h-16 flex items-center justify-center group-hover:scale-105 transition-transform mb-1">
                             {item.image ? (
                               <img src={item.image} alt={item.name} className="w-full h-full object-contain" />
@@ -558,17 +556,12 @@ const MarketPage = () => {
               </div>
             </TabsContent>
 
-            {/* 3. VIP ABONELİK (GÜNCELLENDİ: Taç ikonu yerine vipIkon.png kullanıldı) */}
+            {/* 3. VIP ABONELİK */}
             <TabsContent value="vip" className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
               <Card className="bg-gradient-to-br from-amber-400 to-orange-500 border-none shadow-xl text-white overflow-hidden">
                 <CardHeader className="text-center pb-2">
-                  {/* VIP İkon Alanı */}
                   <div className="mx-auto flex items-center justify-center -mb-16 -mt-20">
-                    <img
-                      src="/vipIkon.png"
-                      alt="VIP"
-                      className="w-64 h-64 object-contain drop-shadow-xl" // İkonu büyüttük
-                    />
+                    <img src="/vipIkon.png" alt="VIP" className="w-64 h-64 object-contain drop-shadow-xl" />
                   </div>
                   <CardTitle className="text-2xl font-serif relative z-10">VIP Yazar Ol</CardTitle>
                   <CardDescription className="text-amber-100">Yazarlık kariyerinde zirveye oyna</CardDescription>
@@ -608,7 +601,6 @@ const MarketPage = () => {
                     </Button>
                   </div>
 
-                  {/* Satın Alımları Geri Yükle - Sadece Mobilde */}
                   {isNativePlatform && (
                     <Button
                       variant="ghost"
