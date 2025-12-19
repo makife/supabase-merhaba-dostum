@@ -732,13 +732,12 @@ const GamePage = ({
 
     // Başlangıçta rakibi yaşıyor varsayıyoruz
     lastOpponentHeartbeat.current = Date.now();
-    isChannelSubscribedRef.current = false; // Başlangıçta bağlı değiliz
 
     // 1. KANAL OLUŞTUR VE PRESENCE (VARLIK) TAKİBİ YAP
     const channel = supabase.channel(`presence-${roomId}`, {
       config: {
         presence: {
-          key: userId,
+          key: userId, // Beni bu ID ile takip et
         },
       },
     });
@@ -746,58 +745,54 @@ const GamePage = ({
     channel
       .on("presence", { event: "sync" }, () => {
         const state = channel.presenceState();
+
+        // Odadaki diğer kişileri bul
         Object.keys(state).forEach((key) => {
           if (key !== userId) {
-            // Sinyal alındı, saati güncelle
+            // Rakibimden sinyal geldi! Zamanı güncelle.
+            // console.log("💓 Rakip nabzı alındı:", key);
             lastOpponentHeartbeat.current = Date.now();
           }
         });
       })
       .subscribe(async (status) => {
-        console.log(`📡 Heartbeat kanalı durumu: ${status}`);
-
         if (status === "SUBSCRIBED") {
-          isChannelSubscribedRef.current = true; // BAĞLANDIK! Artık dinleyebiliriz.
+          // Kanala girdim, ilk sinyali gönder
           await channel.track({ online_at: new Date().toISOString() });
-        } else {
-          isChannelSubscribedRef.current = false; // Bağlantı koptu veya kurulmadı.
         }
       });
 
     presenceChannelRef.current = channel;
 
-    // 2. KENDİ NABZIMI GÖNDER - 2 saniyede bir
+    // 2. KENDİ NABZIMI GÖNDER (Sinyal Verici)
+    // 2 saniyede bir "Ben buradayım" de.
+    // EĞER OYUNCU UYGULAMAYI ARKA PLANA ALIRSA VEYA KAPATIRSA BU INTERVAL DURUR!
+    // Dolayısıyla rakip sinyal alamaz ve bizi disconnect sayar.
     heartbeatIntervalRef.current = setInterval(async () => {
-      if (channel && isChannelSubscribedRef.current) {
+      if (channel) {
         await channel.track({ online_at: new Date().toISOString() });
       }
     }, 2000);
 
-    // 3. RAKİBİ KONTROL ET (Bekçi) - Her saniye
+    // 3. RAKİBİ KONTROL ET (Bekçi)
+    // Her saniye kontrol et: Rakip en son ne zaman sinyal verdi?
     checkOpponentAliveIntervalRef.current = setInterval(() => {
-      // Oyun bittiyse dur
+      // Eğer oyun bittiyse kontrolü durdur
       if (gameEndedRef.current) return;
-
-      // --- KRİTİK DÜZELTME BURASI ---
-      // Eğer henüz kanala bağlanamadıysak, rakibi ölü sayma!
-      // Sayacı sürekli şimdiki zamana eşitle ki "fark" büyümesin.
-      if (!isChannelSubscribedRef.current) {
-        // console.log("⏳ Henüz bağlanılmadı, sayaç bekletiliyor...");
-        lastOpponentHeartbeat.current = Date.now();
-        return;
-      }
-      // -----------------------------
 
       const now = Date.now();
       const timeSinceLastHeartbeat = now - lastOpponentHeartbeat.current;
 
-      // 12 Saniye kuralı
+      // 12 Saniye kuralı (10 sn limit + 2 sn internet gecikme payı)
       if (timeSinceLastHeartbeat > 12000) {
         console.log("💀 RAKİP ÖLDÜ! (Heartbeat timeout):", timeSinceLastHeartbeat, "ms");
 
+        // Interval'leri temizle ki tekrar tekrar tetiklenmesin
         if (checkOpponentAliveIntervalRef.current) clearInterval(checkOpponentAliveIntervalRef.current);
         if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
 
+        // 🔥 RAKİBİ DİSCONNECT ET VE OYUNU KAZAN
+        // Mevcut disconnect handler'ını kullanıyoruz
         window.dispatchEvent(
           new CustomEvent("playerDisconnected", {
             detail: {
@@ -810,15 +805,15 @@ const GamePage = ({
 
         toast({
           title: "Rakip Bağlantısı Koptu",
-          description: "Rakip oyundan düştü. Kazandınız!",
+          description: "Rakip oyundan düştü veya çıktı. Kazandınız!",
           variant: "default",
         });
       }
     }, 1000);
 
     return () => {
+      // Temizlik
       console.log("💓 Heartbeat temizleniyor");
-      isChannelSubscribedRef.current = false;
       if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
       if (checkOpponentAliveIntervalRef.current) clearInterval(checkOpponentAliveIntervalRef.current);
       if (presenceChannelRef.current) supabase.removeChannel(presenceChannelRef.current);
