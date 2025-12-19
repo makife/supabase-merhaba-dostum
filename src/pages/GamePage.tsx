@@ -159,114 +159,6 @@ const GamePage = ({
     return type || "timed";
   });
 
-  // 💓 HEARTBEAT SİSTEMİ: Uygulama kill edilse bile çalışır
-  useEffect(() => {
-    // Sadece multiplayer ve oyun başladıysa çalışsın
-    if (
-      !(gameMode === "private-room" || gameMode === "random-match") ||
-      !gameStarted ||
-      gameEnded ||
-      !currentRoom?.id ||
-      !user?.id
-    ) {
-      return;
-    }
-
-    const roomId = currentRoom.id;
-    const userId = user.id;
-
-    console.log("💓 Heartbeat sistemi başlatılıyor...");
-
-    // Başlangıçta rakibi yaşıyor varsayıyoruz
-    lastOpponentHeartbeat.current = Date.now();
-
-    // 1. KANAL OLUŞTUR VE PRESENCE (VARLIK) TAKİBİ YAP
-    const channel = supabase.channel(`presence-${roomId}`, {
-      config: {
-        presence: {
-          key: userId, // Beni bu ID ile takip et
-        },
-      },
-    });
-
-    channel
-      .on("presence", { event: "sync" }, () => {
-        const state = channel.presenceState();
-
-        // Odadaki diğer kişileri bul
-        Object.keys(state).forEach((key) => {
-          if (key !== userId) {
-            // Rakibimden sinyal geldi! Zamanı güncelle.
-            // console.log("💓 Rakip nabzı alındı:", key);
-            lastOpponentHeartbeat.current = Date.now();
-          }
-        });
-      })
-      .subscribe(async (status) => {
-        if (status === "SUBSCRIBED") {
-          // Kanala girdim, ilk sinyali gönder
-          await channel.track({ online_at: new Date().toISOString() });
-        }
-      });
-
-    presenceChannelRef.current = channel;
-
-    // 2. KENDİ NABZIMI GÖNDER (Sinyal Verici)
-    // 2 saniyede bir "Ben buradayım" de.
-    // EĞER OYUNCU UYGULAMAYI ARKA PLANA ALIRSA VEYA KAPATIRSA BU INTERVAL DURUR!
-    // Dolayısıyla rakip sinyal alamaz ve bizi disconnect sayar.
-    heartbeatIntervalRef.current = setInterval(async () => {
-      if (channel) {
-        await channel.track({ online_at: new Date().toISOString() });
-      }
-    }, 2000);
-
-    // 3. RAKİBİ KONTROL ET (Bekçi)
-    // Her saniye kontrol et: Rakip en son ne zaman sinyal verdi?
-    checkOpponentAliveIntervalRef.current = setInterval(() => {
-      // Eğer oyun bittiyse kontrolü durdur
-      if (gameEndedRef.current) return;
-
-      const now = Date.now();
-      const timeSinceLastHeartbeat = now - lastOpponentHeartbeat.current;
-
-      // 12 Saniye kuralı (10 sn limit + 2 sn internet gecikme payı)
-      if (timeSinceLastHeartbeat > 12000) {
-        console.log("💀 RAKİP ÖLDÜ! (Heartbeat timeout):", timeSinceLastHeartbeat, "ms");
-
-        // Interval'leri temizle ki tekrar tekrar tetiklenmesin
-        if (checkOpponentAliveIntervalRef.current) clearInterval(checkOpponentAliveIntervalRef.current);
-        if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
-
-        // 🔥 RAKİBİ DİSCONNECT ET VE OYUNU KAZAN
-        // Mevcut disconnect handler'ını kullanıyoruz
-        window.dispatchEvent(
-          new CustomEvent("playerDisconnected", {
-            detail: {
-              winner: "player",
-              reason: "opponent_timeout_killed",
-              roomId: roomId,
-            },
-          }),
-        );
-
-        toast({
-          title: "Rakip Bağlantısı Koptu",
-          description: "Rakip oyundan düştü veya çıktı. Kazandınız!",
-          variant: "default",
-        });
-      }
-    }, 1000);
-
-    return () => {
-      // Temizlik
-      console.log("💓 Heartbeat temizleniyor");
-      if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
-      if (checkOpponentAliveIntervalRef.current) clearInterval(checkOpponentAliveIntervalRef.current);
-      if (presenceChannelRef.current) supabase.removeChannel(presenceChannelRef.current);
-    };
-  }, [gameMode, gameStarted, gameEnded, currentRoom?.id, user?.id]);
-
   const [lastClickTime, setLastClickTime] = useState(0);
   const [isNavigating, setIsNavigating] = useState(false);
   const cleanupRef = useRef<(() => void)[]>([]);
@@ -818,6 +710,115 @@ const GamePage = ({
   const gameEndedRef = useRef(false); // 🔒 Ref for synchronous guard in timer
   const statsUpdatedRef = useRef(false);
   const attemptedAutoCompleteRef = useRef(false);
+
+  // 💓 HEARTBEAT SİSTEMİ: Uygulama kill edilse bile çalışır
+  useEffect(() => {
+    // Sadece multiplayer ve oyun başladıysa çalışsın
+    if (
+      !(gameMode === "private-room" || gameMode === "random-match") ||
+      !gameStarted ||
+      gameEnded ||
+      !currentRoom?.id ||
+      !user?.id
+    ) {
+      return;
+    }
+
+    const roomId = currentRoom.id;
+    const userId = user.id;
+
+    console.log("💓 Heartbeat sistemi başlatılıyor...");
+
+    // Başlangıçta rakibi yaşıyor varsayıyoruz
+    lastOpponentHeartbeat.current = Date.now();
+
+    // 1. KANAL OLUŞTUR VE PRESENCE (VARLIK) TAKİBİ YAP
+    const channel = supabase.channel(`presence-${roomId}`, {
+      config: {
+        presence: {
+          key: userId, // Beni bu ID ile takip et
+        },
+      },
+    });
+
+    channel
+      .on("presence", { event: "sync" }, () => {
+        const state = channel.presenceState();
+
+        // Odadaki diğer kişileri bul
+        Object.keys(state).forEach((key) => {
+          if (key !== userId) {
+            // Rakibimden sinyal geldi! Zamanı güncelle.
+            // console.log("💓 Rakip nabzı alındı:", key);
+            lastOpponentHeartbeat.current = Date.now();
+          }
+        });
+      })
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          // Kanala girdim, ilk sinyali gönder
+          await channel.track({ online_at: new Date().toISOString() });
+        }
+      });
+
+    presenceChannelRef.current = channel;
+
+    // 2. KENDİ NABZIMI GÖNDER (Sinyal Verici)
+    // 2 saniyede bir "Ben buradayım" de.
+    // EĞER OYUNCU UYGULAMAYI ARKA PLANA ALIRSA VEYA KAPATIRSA BU INTERVAL DURUR!
+    // Dolayısıyla rakip sinyal alamaz ve bizi disconnect sayar.
+    heartbeatIntervalRef.current = setInterval(async () => {
+      if (channel) {
+        await channel.track({ online_at: new Date().toISOString() });
+      }
+    }, 2000);
+
+    // 3. RAKİBİ KONTROL ET (Bekçi)
+    // Her saniye kontrol et: Rakip en son ne zaman sinyal verdi?
+    checkOpponentAliveIntervalRef.current = setInterval(() => {
+      // Eğer oyun bittiyse kontrolü durdur
+      if (gameEndedRef.current) return;
+
+      const now = Date.now();
+      const timeSinceLastHeartbeat = now - lastOpponentHeartbeat.current;
+
+      // 12 Saniye kuralı (10 sn limit + 2 sn internet gecikme payı)
+      if (timeSinceLastHeartbeat > 12000) {
+        console.log("💀 RAKİP ÖLDÜ! (Heartbeat timeout):", timeSinceLastHeartbeat, "ms");
+
+        // Interval'leri temizle ki tekrar tekrar tetiklenmesin
+        if (checkOpponentAliveIntervalRef.current) clearInterval(checkOpponentAliveIntervalRef.current);
+        if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
+
+        // 🔥 RAKİBİ DİSCONNECT ET VE OYUNU KAZAN
+        // Mevcut disconnect handler'ını kullanıyoruz
+        window.dispatchEvent(
+          new CustomEvent("playerDisconnected", {
+            detail: {
+              winner: "player",
+              reason: "opponent_timeout_killed",
+              roomId: roomId,
+            },
+          }),
+        );
+
+        toast({
+          title: "Rakip Bağlantısı Koptu",
+          description: "Rakip oyundan düştü veya çıktı. Kazandınız!",
+          variant: "default",
+        });
+      }
+    }, 1000);
+
+    return () => {
+      // Temizlik
+      console.log("💓 Heartbeat temizleniyor");
+      if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
+      if (checkOpponentAliveIntervalRef.current) clearInterval(checkOpponentAliveIntervalRef.current);
+      if (presenceChannelRef.current) supabase.removeChannel(presenceChannelRef.current);
+    };
+  }, [gameMode, gameStarted, gameEnded, currentRoom?.id, user?.id]);
+
   // Reset duplicate stats guard when game resets
   useEffect(() => {
     if (!gameEnded) {
