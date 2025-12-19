@@ -54,6 +54,8 @@ import { RematchDialog } from "@/components/RematchDialog";
 import { useAppState } from "@/hooks/useAppState";
 import { realtimeManager } from "@/utils/realtimeManager";
 import { OnboardingPermissions } from "@/components/OnboardingPermissions";
+import { StatusBar, Style } from "@capacitor/status-bar";
+import { NavigationBar } from "@capacitor/navigation-bar";
 
 const queryClient = new QueryClient();
 
@@ -88,6 +90,30 @@ const AppRoutes = () => {
 
   // Immersive mode'u aktif et (navigasyon tuşlarını gizle)
   //useImmersiveMode();
+
+  useEffect(() => {
+    const applyImmersiveMode = async () => {
+      if (Capacitor.isNativePlatform()) {
+        try {
+          // Status Bar Rengi ve Stili
+          await StatusBar.setStyle({ style: Style.Dark }); // Style.Dark = Yazılar BEYAZ (iOS/Android farkı kafa karıştırır, Android'de Dark stil light content demektir genelde)
+          await StatusBar.setBackgroundColor({ color: "#000000" });
+          await StatusBar.setOverlaysWebView({ overlay: true });
+
+          // Nav Bar Rengi
+          await NavigationBar.setColor({ color: "#000000", darkButtons: false }); // darkButtons: false = İkonlar BEYAZ
+
+          // Gizle
+          await StatusBar.hide();
+          await NavigationBar.hide();
+        } catch (e) {
+          console.log("Status bar error:", e);
+        }
+      }
+    };
+
+    applyImmersiveMode();
+  }, []);
 
   // İlk açılış kontrolü
   useEffect(() => {
