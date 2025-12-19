@@ -55,7 +55,8 @@ import { useAppState } from "@/hooks/useAppState";
 import { realtimeManager } from "@/utils/realtimeManager";
 import { OnboardingPermissions } from "@/components/OnboardingPermissions";
 import { StatusBar, Style } from "@capacitor/status-bar";
-import { NavigationBar } from "@capacitor/navigation-bar";
+// @ts-ignore - Third-party plugin
+import { NavigationBar } from "@ethion/capacitor-navigation-bar";
 
 const queryClient = new QueryClient();
 
