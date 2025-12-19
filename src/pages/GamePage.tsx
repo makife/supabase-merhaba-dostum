@@ -246,8 +246,8 @@ const GamePage = ({
     // Sadece multiplayer ve oyun başladıysa çalışsın
     if (
       !(gameMode === "private-room" || gameMode === "random-match") ||
-      !gameStarted ||
-      gameEnded ||
+      !gameStartedRef.current ||
+      gameEndedRef.current ||
       !currentRoom?.id ||
       !user?.id
     ) {
@@ -347,7 +347,7 @@ const GamePage = ({
       if (checkOpponentAliveIntervalRef.current) clearInterval(checkOpponentAliveIntervalRef.current);
       if (presenceChannelRef.current) supabase.removeChannel(presenceChannelRef.current);
     };
-  }, [gameMode, gameStarted, gameEnded, currentRoom?.id, user?.id]);
+  }, [gameMode, currentRoom?.id, user?.id]);
 
   // Arka plan yönetimi - oyun sırasında disconnect mantığı (10 saniye)
   const handleBackgroundDisconnect = useCallback(async () => {
