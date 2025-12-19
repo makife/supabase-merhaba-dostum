@@ -28,30 +28,51 @@ const countdownSoundPool: AudioPool = { sounds: [], currentIndex: 0 };
 const startSoundPool: AudioPool = { sounds: [], currentIndex: 0 };
 let audioPoolInitialized = false;
 let audioUnlocked = false;
+let audioContext: AudioContext | null = null;
 
-// Mobil tarayıcılar için ses kilidini açma (İlk dokunuşta çalışır)
+// Mobil tarayıcılar ve Capacitor için güçlendirilmiş ses kilidi açma
 const unlockAudio = () => {
   if (audioUnlocked) return;
+  
+  // AudioContext oluştur ve resume et
+  if (!audioContext) {
+    try {
+      audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    } catch (e) {
+      console.warn("GameCountdown: AudioContext oluşturulamadı:", e);
+    }
+  }
+  
+  if (audioContext && audioContext.state === 'suspended') {
+    audioContext.resume().then(() => {
+      console.log("✅ GameCountdown: AudioContext resumed");
+    }).catch(() => {});
+  }
+  
+  // Tüm ses dosyalarını unlock et
   [...countdownSoundPool.sounds, ...startSoundPool.sounds].forEach(audio => {
     const originalVolume = audio.volume;
-    audio.volume = 0;
+    audio.volume = 0.01;
     audio.play().then(() => {
       audio.pause();
       audio.currentTime = 0;
       audio.volume = originalVolume;
+      console.log("✅ GameCountdown: Audio element unlocked");
     }).catch(() => {});
   });
+  
   audioUnlocked = true;
+  console.log("✅ GameCountdown: Audio unlocked");
 };
 
-// Event Listenerları ekle
+// Event Listenerları ekle - Capacitor için genişletilmiş
 if (typeof window !== "undefined") {
-  const unlockEvents = ['touchstart', 'touchend', 'click', 'keydown'];
+  const unlockEvents = ['touchstart', 'touchend', 'click', 'keydown', 'pointerdown', 'mousedown'];
   const handleUnlock = () => {
     unlockAudio();
     unlockEvents.forEach(e => document.removeEventListener(e, handleUnlock));
   };
-  unlockEvents.forEach(e => document.addEventListener(e, handleUnlock, { once: false, passive: true }));
+  unlockEvents.forEach(e => document.addEventListener(e, handleUnlock, { passive: true }));
 }
 
 // Ses havuzunu başlat
@@ -79,13 +100,27 @@ const initAudioPool = () => {
   audioPoolInitialized = true;
 };
 
-// Ses çalma fonksiyonu
+// Ses çalma fonksiyonu - Mobil için güçlendirilmiş
 const playFromPool = (pool: AudioPool) => {
   if (pool.sounds.length === 0) return;
+  
+  // Her çalmadan önce unlock dene
+  if (!audioUnlocked) {
+    unlockAudio();
+  }
+  
+  // AudioContext'i resume et
+  if (audioContext && audioContext.state === 'suspended') {
+    audioContext.resume().catch(() => {});
+  }
+  
   const audio = pool.sounds[pool.currentIndex];
   pool.currentIndex = (pool.currentIndex + 1) % pool.sounds.length;
   audio.currentTime = 0;
-  audio.play().catch(() => unlockAudio());
+  audio.play().catch((e) => {
+    console.warn("GameCountdown: Ses çalınamadı, unlock deneniyor:", e);
+    unlockAudio();
+  });
 };
 
 // Resim ve Sesleri Yükle
