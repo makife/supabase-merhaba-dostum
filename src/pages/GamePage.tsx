@@ -242,6 +242,7 @@ const GamePage = ({
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const checkOpponentAliveIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isChannelSubscribedRef = useRef(false);
+  const lastSeenDataRef = useRef<string>(""); // Rakibin son sinyal verisini tutar
 
   // Arka plan yönetimi - oyun sırasında disconnect mantığı (10 saniye)
   const handleBackgroundDisconnect = useCallback(async () => {
@@ -728,13 +729,12 @@ const GamePage = ({
     const roomId = currentRoom.id;
     const userId = user.id;
 
-    console.log("💓 Heartbeat sistemi başlatılıyor...");
+    console.log("💓 Heartbeat sistemi başlatılıyor (Timestamp Kontrollü)...");
 
-    // Başlangıçta rakibi yaşıyor varsayıyoruz
     lastOpponentHeartbeat.current = Date.now();
-    isChannelSubscribedRef.current = false; // Başlangıçta bağlı değiliz
+    isChannelSubscribedRef.current = false;
+    lastSeenDataRef.current = ""; // Sıfırla
 
-    // 1. KANAL OLUŞTUR VE PRESENCE (VARLIK) TAKİBİ YAP
     const channel = supabase.channel(`presence-${roomId}`, {
       config: {
         presence: {
@@ -746,21 +746,34 @@ const GamePage = ({
     channel
       .on("presence", { event: "sync" }, () => {
         const state = channel.presenceState();
+
         Object.keys(state).forEach((key) => {
           if (key !== userId) {
-            // Sinyal alındı, saati güncelle
-            lastOpponentHeartbeat.current = Date.now();
+            // Rakibin verisini al (en son gönderdiği presence objesi)
+            const opponentPresence = state[key][0];
+
+            // Eğer rakip varsa ve 'online_at' verisi değişmişse sayacı güncelle
+            if (opponentPresence && opponentPresence.online_at) {
+              const newDataCheck = opponentPresence.online_at;
+
+              // KRİTİK KONTROL: Veri gerçekten yeni mi?
+              if (newDataCheck !== lastSeenDataRef.current) {
+                // Evet, rakip yeni bir sinyal göndermiş!
+                lastSeenDataRef.current = newDataCheck;
+                lastOpponentHeartbeat.current = Date.now();
+                // console.log("💓 Rakip canlı, yeni sinyal:", newDataCheck);
+              }
+            }
           }
         });
       })
       .subscribe(async (status) => {
         console.log(`📡 Heartbeat kanalı durumu: ${status}`);
-
         if (status === "SUBSCRIBED") {
-          isChannelSubscribedRef.current = true; // BAĞLANDIK! Artık dinleyebiliriz.
+          isChannelSubscribedRef.current = true;
           await channel.track({ online_at: new Date().toISOString() });
         } else {
-          isChannelSubscribedRef.current = false; // Bağlantı koptu veya kurulmadı.
+          isChannelSubscribedRef.current = false;
         }
       });
 
@@ -768,6 +781,7 @@ const GamePage = ({
 
     // 2. KENDİ NABZIMI GÖNDER - 2 saniyede bir
     heartbeatIntervalRef.current = setInterval(async () => {
+      // Sadece kanala bağlıysak gönder
       if (channel && isChannelSubscribedRef.current) {
         await channel.track({ online_at: new Date().toISOString() });
       }
@@ -775,25 +789,20 @@ const GamePage = ({
 
     // 3. RAKİBİ KONTROL ET (Bekçi) - Her saniye
     checkOpponentAliveIntervalRef.current = setInterval(() => {
-      // Oyun bittiyse dur
       if (gameEndedRef.current) return;
 
-      // --- KRİTİK DÜZELTME BURASI ---
-      // Eğer henüz kanala bağlanamadıysak, rakibi ölü sayma!
-      // Sayacı sürekli şimdiki zamana eşitle ki "fark" büyümesin.
+      // Eğer biz koptuysak yanlış karar vermeyelim, bekleyelim.
       if (!isChannelSubscribedRef.current) {
-        // console.log("⏳ Henüz bağlanılmadı, sayaç bekletiliyor...");
         lastOpponentHeartbeat.current = Date.now();
         return;
       }
-      // -----------------------------
 
       const now = Date.now();
       const timeSinceLastHeartbeat = now - lastOpponentHeartbeat.current;
 
-      // 12 Saniye kuralı
+      // 12 Saniye boyunca YENİ VERİ gelmediyse bitir
       if (timeSinceLastHeartbeat > 12000) {
-        console.log("💀 RAKİP ÖLDÜ! (Heartbeat timeout):", timeSinceLastHeartbeat, "ms");
+        console.log("💀 RAKİP ÖLDÜ! (Veri akışı durdu):", timeSinceLastHeartbeat, "ms");
 
         if (checkOpponentAliveIntervalRef.current) clearInterval(checkOpponentAliveIntervalRef.current);
         if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
