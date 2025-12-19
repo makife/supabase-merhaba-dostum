@@ -158,88 +158,6 @@ const GamePage = ({
     const type = searchParams.get("type") as "timed" | "score";
     return type || "timed";
   });
-  const [lastClickTime, setLastClickTime] = useState(0);
-  const [isNavigating, setIsNavigating] = useState(false);
-  const cleanupRef = useRef<(() => void)[]>([]);
-  const syncingRef = useRef(false);
-  const submissionLockRef = useRef(false);
-  const timerStartedRef = useRef(false);
-  const recentSubmissionsRef = useRef<Set<string>>(new Set());
-  const randomMatchInitRef = useRef(false);
-  const privateRoomInitRef = useRef(false);
-  const lastInitializedRoomRef = useRef<string | null>(null);
-  const serverMatchStartRef = useRef<number | null>(null);
-  const syncSuppressUntilRef = useRef<number>(0);
-  const countdownCompletedAtRef = useRef<number | null>(null);
-  // Touch/click double-fire koruması: Gönder butonu için son touch zaman damgası
-  const submitTouchTsRef = useRef(0);
-
-  // 🔒 REMATCH FIX: Closure sorunu çözümü - güncel değerleri ref'lerde sakla
-  const participantsRef = useRef(participants);
-  const currentRoomIdRef = useRef<string | null>(currentRoom?.id || null);
-
-  const [globalUsedWords, setGlobalUsedWords] = useState<Set<string>>(new Set());
-  const [serverTimeOffset, setServerTimeOffset] = useState(0);
-
-  const addCleanup = useCallback((cleanupFn: () => void) => {
-    cleanupRef.current.push(cleanupFn);
-  }, []);
-
-  // Joker state'leri artık envanter hook'undan geliyor
-  const jokers = jokerInventory;
-  const [selectedJoker, setSelectedJoker] = useState<string | null>(null);
-  const [highlightedLetters, setHighlightedLetters] = useState<{ row: number; col: number }[]>([]);
-  const [isJokerActive, setIsJokerActive] = useState(false);
-
-  // Wordlist for local validation
-  const [wordlist, setWordlist] = useState<Set<string>>(new Set());
-  const [wordlistLoaded, setWordlistLoaded] = useState(false);
-
-  // Get game type from room or URL params - DÜZELTME
-  const getGameType = useCallback((): "timed" | "score" => {
-    // TURNUVA MODU HER ZAMAN SÜRELİ!
-    if (gameMode === "tournament") {
-      return "timed";
-    }
-
-    if (gameMode === "vs-computer") {
-      return urlGameType;
-    }
-
-    // RANDOM MATCH için öncelikle URL type'ı kullan
-    if (gameMode === "random-match") {
-      return urlGameType;
-    }
-
-    // Diğer modlar için mevcut mantık
-    if (currentRoom?.game_mode) {
-      if (currentRoom.game_mode.includes("score")) return "score";
-      else return "timed";
-    }
-
-    return urlGameType;
-  }, [gameMode, currentRoom?.game_mode, urlGameType]);
-
-  const gameType = getGameType();
-  const [timeWarningPlayed, setTimeWarningPlayed] = useState(false);
-  const [showExitDialog, setShowExitDialog] = useState(false);
-  const [showTournamentExitDialog, setShowTournamentExitDialog] = useState(false);
-  const [isInBackground, setIsInBackground] = useState(false);
-
-  // Ref'ler - arka plan disconnect için güncel değerleri tut
-  const gameStartedRef = useRef(false);
-  const currentRoomRef = useRef(currentRoom);
-
-  // Ref'leri güncel tut
-  useEffect(() => {
-    currentRoomRef.current = currentRoom;
-  }, [currentRoom]);
-
-  // 💓 HEARTBEAT (NABIZ) KONTROLÜ
-  const lastOpponentHeartbeat = useRef<number>(Date.now());
-  const presenceChannelRef = useRef<any>(null);
-  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const checkOpponentAliveIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // 💓 HEARTBEAT SİSTEMİ: Uygulama kill edilse bile çalışır
   useEffect(() => {
@@ -348,6 +266,89 @@ const GamePage = ({
       if (presenceChannelRef.current) supabase.removeChannel(presenceChannelRef.current);
     };
   }, [gameMode, gameStarted, gameEnded, currentRoom?.id, user?.id]);
+
+  const [lastClickTime, setLastClickTime] = useState(0);
+  const [isNavigating, setIsNavigating] = useState(false);
+  const cleanupRef = useRef<(() => void)[]>([]);
+  const syncingRef = useRef(false);
+  const submissionLockRef = useRef(false);
+  const timerStartedRef = useRef(false);
+  const recentSubmissionsRef = useRef<Set<string>>(new Set());
+  const randomMatchInitRef = useRef(false);
+  const privateRoomInitRef = useRef(false);
+  const lastInitializedRoomRef = useRef<string | null>(null);
+  const serverMatchStartRef = useRef<number | null>(null);
+  const syncSuppressUntilRef = useRef<number>(0);
+  const countdownCompletedAtRef = useRef<number | null>(null);
+  // Touch/click double-fire koruması: Gönder butonu için son touch zaman damgası
+  const submitTouchTsRef = useRef(0);
+
+  // 🔒 REMATCH FIX: Closure sorunu çözümü - güncel değerleri ref'lerde sakla
+  const participantsRef = useRef(participants);
+  const currentRoomIdRef = useRef<string | null>(currentRoom?.id || null);
+
+  const [globalUsedWords, setGlobalUsedWords] = useState<Set<string>>(new Set());
+  const [serverTimeOffset, setServerTimeOffset] = useState(0);
+
+  const addCleanup = useCallback((cleanupFn: () => void) => {
+    cleanupRef.current.push(cleanupFn);
+  }, []);
+
+  // Joker state'leri artık envanter hook'undan geliyor
+  const jokers = jokerInventory;
+  const [selectedJoker, setSelectedJoker] = useState<string | null>(null);
+  const [highlightedLetters, setHighlightedLetters] = useState<{ row: number; col: number }[]>([]);
+  const [isJokerActive, setIsJokerActive] = useState(false);
+
+  // Wordlist for local validation
+  const [wordlist, setWordlist] = useState<Set<string>>(new Set());
+  const [wordlistLoaded, setWordlistLoaded] = useState(false);
+
+  // Get game type from room or URL params - DÜZELTME
+  const getGameType = useCallback((): "timed" | "score" => {
+    // TURNUVA MODU HER ZAMAN SÜRELİ!
+    if (gameMode === "tournament") {
+      return "timed";
+    }
+
+    if (gameMode === "vs-computer") {
+      return urlGameType;
+    }
+
+    // RANDOM MATCH için öncelikle URL type'ı kullan
+    if (gameMode === "random-match") {
+      return urlGameType;
+    }
+
+    // Diğer modlar için mevcut mantık
+    if (currentRoom?.game_mode) {
+      if (currentRoom.game_mode.includes("score")) return "score";
+      else return "timed";
+    }
+
+    return urlGameType;
+  }, [gameMode, currentRoom?.game_mode, urlGameType]);
+
+  const gameType = getGameType();
+  const [timeWarningPlayed, setTimeWarningPlayed] = useState(false);
+  const [showExitDialog, setShowExitDialog] = useState(false);
+  const [showTournamentExitDialog, setShowTournamentExitDialog] = useState(false);
+  const [isInBackground, setIsInBackground] = useState(false);
+
+  // Ref'ler - arka plan disconnect için güncel değerleri tut
+  const gameStartedRef = useRef(false);
+  const currentRoomRef = useRef(currentRoom);
+
+  // Ref'leri güncel tut
+  useEffect(() => {
+    currentRoomRef.current = currentRoom;
+  }, [currentRoom]);
+
+  // 💓 HEARTBEAT (NABIZ) KONTROLÜ
+  const lastOpponentHeartbeat = useRef<number>(Date.now());
+  const presenceChannelRef = useRef<any>(null);
+  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const checkOpponentAliveIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Arka plan yönetimi - oyun sırasında disconnect mantığı (10 saniye)
   const handleBackgroundDisconnect = useCallback(async () => {
