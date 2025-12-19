@@ -715,7 +715,7 @@ const GamePage = ({
 
   // 💓 HEARTBEAT SİSTEMİ: Uygulama kill edilse bile çalışır
   useEffect(() => {
-    // Sadece multiplayer ve oyun başladıysa çalışsın
+    // 1. GÜVENLİK KONTROLLERİ
     if (
       !(gameMode === "private-room" || gameMode === "random-match") ||
       !gameStarted ||
@@ -729,11 +729,11 @@ const GamePage = ({
     const roomId = currentRoom.id;
     const userId = user.id;
 
-    console.log("💓 Heartbeat sistemi başlatılıyor (Timestamp Kontrollü)...");
+    console.log("💓 Heartbeat sistemi başlatılıyor (Ghost Session Korumalı)...");
 
     lastOpponentHeartbeat.current = Date.now();
     isChannelSubscribedRef.current = false;
-    lastSeenDataRef.current = ""; // Sıfırla
+    lastSeenDataRef.current = "";
 
     const channel = supabase.channel(`presence-${roomId}`, {
       config: {
@@ -749,18 +749,27 @@ const GamePage = ({
 
         Object.keys(state).forEach((key) => {
           if (key !== userId) {
-            // HATA ÇÖZÜMÜ: Sonuna 'as any' ekliyoruz
-            // Böylece TypeScript "online_at yok" diye ağlamayı kesiyor.
-            const opponentPresence = state[key][0] as any;
+            // Rakibin tüm oturumlarını al (Bazen birden fazla olabilir)
+            const presences = state[key] as any[];
 
-            // Eğer rakip varsa ve 'online_at' verisi değişmişse sayacı güncelle
-            if (opponentPresence && opponentPresence.online_at) {
-              const newDataCheck = opponentPresence.online_at;
+            if (presences && presences.length > 0) {
+              // EN YENİ OLAN OTURUMU BUL (Sıralama karışıklığını önler)
+              // Listeyi tarihe göre tersten sırala (en yeni en başta) ve ilkini al
+              const latestPresence = presences.sort((a, b) => {
+                const dateA = a.online_at ? new Date(a.online_at).getTime() : 0;
+                const dateB = b.online_at ? new Date(b.online_at).getTime() : 0;
+                return dateB - dateA;
+              })[0];
 
-              // KRİTİK KONTROL: Veri gerçekten yeni mi?
-              if (newDataCheck !== lastSeenDataRef.current) {
-                lastSeenDataRef.current = newDataCheck;
-                lastOpponentHeartbeat.current = Date.now();
+              if (latestPresence && latestPresence.online_at) {
+                const newDataCheck = latestPresence.online_at;
+
+                // Sadece EN YENİ veri bir önceki gördüğümüzden farklıysa güncelle
+                if (newDataCheck !== lastSeenDataRef.current) {
+                  lastSeenDataRef.current = newDataCheck;
+                  lastOpponentHeartbeat.current = Date.now();
+                  // console.log("💓 Canlı sinyal alındı:", newDataCheck);
+                }
               }
             }
           }
@@ -778,19 +787,18 @@ const GamePage = ({
 
     presenceChannelRef.current = channel;
 
-    // 2. KENDİ NABZIMI GÖNDER - 2 saniyede bir
+    // 2. KENDİ NABZINI GÖNDER (2 saniyede bir)
     heartbeatIntervalRef.current = setInterval(async () => {
-      // Sadece kanala bağlıysak gönder
       if (channel && isChannelSubscribedRef.current) {
         await channel.track({ online_at: new Date().toISOString() });
       }
     }, 2000);
 
-    // 3. RAKİBİ KONTROL ET (Bekçi) - Her saniye
+    // 3. BEKÇİ KONTROLÜ (Her saniye)
     checkOpponentAliveIntervalRef.current = setInterval(() => {
       if (gameEndedRef.current) return;
 
-      // Eğer biz koptuysak yanlış karar vermeyelim, bekleyelim.
+      // Eğer biz koptuysak yanlış karar vermeyelim
       if (!isChannelSubscribedRef.current) {
         lastOpponentHeartbeat.current = Date.now();
         return;
@@ -799,9 +807,9 @@ const GamePage = ({
       const now = Date.now();
       const timeSinceLastHeartbeat = now - lastOpponentHeartbeat.current;
 
-      // 12 Saniye boyunca YENİ VERİ gelmediyse bitir
+      // 12 Saniye kuralı (10 sn + 2 sn tolerans)
       if (timeSinceLastHeartbeat > 12000) {
-        console.log("💀 RAKİP ÖLDÜ! (Veri akışı durdu):", timeSinceLastHeartbeat, "ms");
+        console.log("💀 RAKİP ÖLDÜ! (Veri akışı durdu - Kill detected):", timeSinceLastHeartbeat, "ms");
 
         if (checkOpponentAliveIntervalRef.current) clearInterval(checkOpponentAliveIntervalRef.current);
         if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
