@@ -241,6 +241,7 @@ const GamePage = ({
   const presenceChannelRef = useRef<any>(null);
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const checkOpponentAliveIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isChannelSubscribedRef = useRef(false);
 
   // Arka plan yönetimi - oyun sırasında disconnect mantığı (10 saniye)
   const handleBackgroundDisconnect = useCallback(async () => {
@@ -731,12 +732,13 @@ const GamePage = ({
 
     // Başlangıçta rakibi yaşıyor varsayıyoruz
     lastOpponentHeartbeat.current = Date.now();
+    isChannelSubscribedRef.current = false; // Başlangıçta bağlı değiliz
 
     // 1. KANAL OLUŞTUR VE PRESENCE (VARLIK) TAKİBİ YAP
     const channel = supabase.channel(`presence-${roomId}`, {
       config: {
         presence: {
-          key: userId, // Beni bu ID ile takip et
+          key: userId,
         },
       },
     });
@@ -744,54 +746,58 @@ const GamePage = ({
     channel
       .on("presence", { event: "sync" }, () => {
         const state = channel.presenceState();
-
-        // Odadaki diğer kişileri bul
         Object.keys(state).forEach((key) => {
           if (key !== userId) {
-            // Rakibimden sinyal geldi! Zamanı güncelle.
-            // console.log("💓 Rakip nabzı alındı:", key);
+            // Sinyal alındı, saati güncelle
             lastOpponentHeartbeat.current = Date.now();
           }
         });
       })
       .subscribe(async (status) => {
+        console.log(`📡 Heartbeat kanalı durumu: ${status}`);
+
         if (status === "SUBSCRIBED") {
-          // Kanala girdim, ilk sinyali gönder
+          isChannelSubscribedRef.current = true; // BAĞLANDIK! Artık dinleyebiliriz.
           await channel.track({ online_at: new Date().toISOString() });
+        } else {
+          isChannelSubscribedRef.current = false; // Bağlantı koptu veya kurulmadı.
         }
       });
 
     presenceChannelRef.current = channel;
 
-    // 2. KENDİ NABZIMI GÖNDER (Sinyal Verici)
-    // 2 saniyede bir "Ben buradayım" de.
-    // EĞER OYUNCU UYGULAMAYI ARKA PLANA ALIRSA VEYA KAPATIRSA BU INTERVAL DURUR!
-    // Dolayısıyla rakip sinyal alamaz ve bizi disconnect sayar.
+    // 2. KENDİ NABZIMI GÖNDER - 2 saniyede bir
     heartbeatIntervalRef.current = setInterval(async () => {
-      if (channel) {
+      if (channel && isChannelSubscribedRef.current) {
         await channel.track({ online_at: new Date().toISOString() });
       }
     }, 2000);
 
-    // 3. RAKİBİ KONTROL ET (Bekçi)
-    // Her saniye kontrol et: Rakip en son ne zaman sinyal verdi?
+    // 3. RAKİBİ KONTROL ET (Bekçi) - Her saniye
     checkOpponentAliveIntervalRef.current = setInterval(() => {
-      // Eğer oyun bittiyse kontrolü durdur
+      // Oyun bittiyse dur
       if (gameEndedRef.current) return;
+
+      // --- KRİTİK DÜZELTME BURASI ---
+      // Eğer henüz kanala bağlanamadıysak, rakibi ölü sayma!
+      // Sayacı sürekli şimdiki zamana eşitle ki "fark" büyümesin.
+      if (!isChannelSubscribedRef.current) {
+        // console.log("⏳ Henüz bağlanılmadı, sayaç bekletiliyor...");
+        lastOpponentHeartbeat.current = Date.now();
+        return;
+      }
+      // -----------------------------
 
       const now = Date.now();
       const timeSinceLastHeartbeat = now - lastOpponentHeartbeat.current;
 
-      // 12 Saniye kuralı (10 sn limit + 2 sn internet gecikme payı)
+      // 12 Saniye kuralı
       if (timeSinceLastHeartbeat > 12000) {
         console.log("💀 RAKİP ÖLDÜ! (Heartbeat timeout):", timeSinceLastHeartbeat, "ms");
 
-        // Interval'leri temizle ki tekrar tekrar tetiklenmesin
         if (checkOpponentAliveIntervalRef.current) clearInterval(checkOpponentAliveIntervalRef.current);
         if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
 
-        // 🔥 RAKİBİ DİSCONNECT ET VE OYUNU KAZAN
-        // Mevcut disconnect handler'ını kullanıyoruz
         window.dispatchEvent(
           new CustomEvent("playerDisconnected", {
             detail: {
@@ -804,15 +810,15 @@ const GamePage = ({
 
         toast({
           title: "Rakip Bağlantısı Koptu",
-          description: "Rakip oyundan düştü veya çıktı. Kazandınız!",
+          description: "Rakip oyundan düştü. Kazandınız!",
           variant: "default",
         });
       }
     }, 1000);
 
     return () => {
-      // Temizlik
       console.log("💓 Heartbeat temizleniyor");
+      isChannelSubscribedRef.current = false;
       if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
       if (checkOpponentAliveIntervalRef.current) clearInterval(checkOpponentAliveIntervalRef.current);
       if (presenceChannelRef.current) supabase.removeChannel(presenceChannelRef.current);
