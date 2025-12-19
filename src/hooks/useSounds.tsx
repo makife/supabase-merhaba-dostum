@@ -20,23 +20,53 @@ interface SoundPack {
   sounds: SoundConfig;
 }
 
-// 🔓 Mobile audio unlock state
+// 🔓 Mobile audio unlock state - Capacitor için güçlendirilmiş
 let globalAudioUnlocked = false;
+let globalAudioContext: AudioContext | null = null;
 
 const unlockGlobalAudio = () => {
   if (globalAudioUnlocked) return;
+  
+  // AudioContext oluştur ve resume et
+  if (!globalAudioContext) {
+    try {
+      globalAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    } catch (e) {
+      console.warn("AudioContext oluşturulamadı:", e);
+    }
+  }
+  
+  if (globalAudioContext && globalAudioContext.state === 'suspended') {
+    globalAudioContext.resume().then(() => {
+      console.log("✅ useSounds: AudioContext resumed");
+    }).catch(() => {});
+  }
+  
+  // Sessiz bir ses çalarak mobil kilidi aç
+  try {
+    const silentAudio = new Audio();
+    silentAudio.src = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYoRwmHAAAAAAD/+9DEAAAIAANIAAAASCgZoIAAAAQAAANIAAAAP/7UMQAAAgYA0gAAAAJIANIAAAABEREREREREf/+1DEAAAIGANIAAAACSADTAAAABERERERERH//tQxAAACCgDSAAAAAlAA0gAAAAEREREREREf/7UMQAAAQYA0gAAAABJABpAAAABEREREREREQAAAAA//tQxAAABAADSAAAAAAAANIAAAAAAAAAAAAAAAAA//sQxAAABAADSAAAAAAAANIAAAAAAAAA//sQxAAAAwADSAAAAAAAANIAAAAAAAAA";
+    silentAudio.volume = 0.01;
+    silentAudio.play().then(() => {
+      silentAudio.pause();
+      console.log("✅ useSounds: Silent audio played for unlock");
+    }).catch(() => {});
+  } catch (e) {}
+  
   globalAudioUnlocked = true;
   console.log("✅ useSounds: Global audio unlocked");
 };
 
-// Kullanıcı etkileşimi dinleyicileri
+// Kullanıcı etkileşimi dinleyicileri - Capacitor için genişletilmiş
 if (typeof window !== "undefined") {
-  const unlockEvents = ['touchstart', 'touchend', 'click', 'keydown'];
+  const unlockEvents = ['touchstart', 'touchend', 'click', 'keydown', 'pointerdown', 'mousedown'];
   const handleUnlock = () => {
     unlockGlobalAudio();
+    // İlk unlock sonrası listener'ları kaldır
     unlockEvents.forEach(e => document.removeEventListener(e, handleUnlock));
   };
-  unlockEvents.forEach(e => document.addEventListener(e, handleUnlock, { once: false, passive: true }));
+  // Passive: true ile performans artışı
+  unlockEvents.forEach(e => document.addEventListener(e, handleUnlock, { passive: true }));
 }
 
 export const useSounds = () => {
@@ -146,10 +176,13 @@ export const useSounds = () => {
 
   // 🔓 Unlock audio for mobile - ses çalmadan önce çağır
   const unlockAudioForMobile = useCallback(() => {
-    if (audioUnlockedRef.current) return;
+    // Global unlock'u tetikle
+    unlockGlobalAudio();
     
-    // AudioContext'i resume et
-    const ctx = audioContextRef.current;
+    if (audioUnlockedRef.current && globalAudioUnlocked) return;
+    
+    // AudioContext'i resume et (hem local hem global)
+    const ctx = audioContextRef.current || globalAudioContext;
     if (ctx && ctx.state === 'suspended') {
       ctx.resume().catch(() => {});
     }
@@ -229,6 +262,9 @@ export const useSounds = () => {
     (frequency: number, duration: number, type: OscillatorType = "sine") => {
       if (!soundsEnabled) return;
 
+      // 🔓 Mobil için unlock - AudioContext kullanmadan önce
+      unlockAudioForMobile();
+
       try {
         const audioContext = getAudioContext();
         if (!audioContext) return;
@@ -263,13 +299,16 @@ export const useSounds = () => {
         console.warn("Could not play generated sound:", error);
       }
     },
-    [soundsEnabled, getAudioContext],
+    [soundsEnabled, getAudioContext, unlockAudioForMobile],
   );
 
   // DÜZELTME: playSound fonksiyonunu stabilize et
   const playSound = useCallback(
     async (soundKey: keyof SoundConfig) => {
       if (!soundsEnabled) return;
+
+      // 🔓 Mobil için her ses çalmadan önce unlock dene
+      unlockAudioForMobile();
 
       const activePack = getActiveSoundPack();
 
@@ -280,7 +319,7 @@ export const useSounds = () => {
           const availableAudio = getAvailableAudio(audioPool);
           if (availableAudio && availableAudio.src && !availableAudio.src.includes("undefined")) {
             availableAudio.currentTime = 0;
-            await availableAudio.play();
+            await availableAudio.play().catch(() => unlockAudioForMobile());
             return;
           }
         }
@@ -377,21 +416,27 @@ export const useSounds = () => {
         console.warn("Could not play sound:", error);
       }
     },
-    [soundsEnabled, getActiveSoundPack, getAvailableAudio, playGeneratedSound],
+    [soundsEnabled, getActiveSoundPack, getAvailableAudio, playGeneratedSound, unlockAudioForMobile],
   );
 
   // Diğer fonksiyonları da stabilize et
   const playTimeWarningSequence = useCallback(() => {
     if (!soundsEnabled) return;
 
+    // 🔓 Mobil için unlock
+    unlockAudioForMobile();
+
     // Play 3 quick beeps for time warning
     setTimeout(() => playGeneratedSound(1000, 0.15), 0);
     setTimeout(() => playGeneratedSound(1000, 0.15), 200);
     setTimeout(() => playGeneratedSound(1000, 0.15), 400);
-  }, [soundsEnabled, playGeneratedSound]);
+  }, [soundsEnabled, playGeneratedSound, unlockAudioForMobile]);
 
   const playCelebrationSound = useCallback(() => {
     if (!soundsEnabled) return;
+
+    // 🔓 Mobil için unlock
+    unlockAudioForMobile();
 
     const activePack = getActiveSoundPack();
     let soundPath = activePack.sounds.celebration;
@@ -403,14 +448,18 @@ export const useSounds = () => {
       audio.volume = 0.6;
       audio.play().catch((error) => {
         console.warn("Could not play celebration sound:", error);
+        unlockAudioForMobile();
       });
     } catch (error) {
       console.warn("Could not load celebration sound:", error);
     }
-  }, [soundsEnabled, getActiveSoundPack]);
+  }, [soundsEnabled, getActiveSoundPack, unlockAudioForMobile]);
 
   const playGameLoseSound = useCallback(() => {
     if (!soundsEnabled) return;
+
+    // 🔓 Mobil için unlock
+    unlockAudioForMobile();
 
     const activePack = getActiveSoundPack();
     let soundPath = activePack.sounds.gameLoseSound;
@@ -422,14 +471,18 @@ export const useSounds = () => {
       audio.volume = 0.6;
       audio.play().catch((error) => {
         console.warn("Could not play game lose sound:", error);
+        unlockAudioForMobile();
       });
     } catch (error) {
       console.warn("Could not load game lose sound:", error);
     }
-  }, [soundsEnabled, getActiveSoundPack]);
+  }, [soundsEnabled, getActiveSoundPack, unlockAudioForMobile]);
 
   const playTieSound = useCallback(() => {
     if (!soundsEnabled) return;
+
+    // 🔓 Mobil için unlock
+    unlockAudioForMobile();
 
     const activePack = getActiveSoundPack();
     let soundPath = activePack.sounds.tieSound;
@@ -441,16 +494,20 @@ export const useSounds = () => {
       audio.volume = 0.6;
       audio.play().catch((error) => {
         console.warn("Could not play game tie sound:", error);
+        unlockAudioForMobile();
       });
     } catch (error) {
       console.warn("Could not load game tie sound:", error);
     }
-  }, [soundsEnabled, getActiveSoundPack]);
+  }, [soundsEnabled, getActiveSoundPack, unlockAudioForMobile]);
 
   // Special game sounds that need to respect sound settings
   const playSpecialSound = useCallback(
     (soundFile: string, volume: number = 0.7) => {
       if (!soundsEnabled) return;
+
+      // 🔓 Mobil için unlock
+      unlockAudioForMobile();
 
       try {
         // ✅ Pool'dan ses çal (gecikme ve yarım çalma sorunu düzeltildi)
@@ -468,6 +525,7 @@ export const useSounds = () => {
               availableAudio.currentTime = 0;
               availableAudio.play().catch((error) => {
                 console.warn(`Could not play special sound ${soundFile}:`, error);
+                unlockAudioForMobile();
               });
               return;
             }
@@ -484,12 +542,13 @@ export const useSounds = () => {
         audio.currentTime = 0;
         audio.play().catch((error) => {
           console.warn(`Could not play special sound ${soundFile}:`, error);
+          unlockAudioForMobile();
         });
       } catch (error) {
         console.warn(`Could not load special sound ${soundFile}:`, error);
       }
     },
-    [soundsEnabled, getAvailableAudio],
+    [soundsEnabled, getAvailableAudio, unlockAudioForMobile],
   );
 
   // DÜZELTME: setSoundsEnabled fonksiyonunu stabilize et
