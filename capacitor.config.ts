@@ -12,37 +12,31 @@ const config: CapacitorConfig = {
     allowMixedContent: true,
     captureInput: true,
     webContentsDebuggingEnabled: true,
-    // Immersive mode için ek ayarlar
     windowSoftInputMode: 'adjustResize',
-    appendUserAgent: 'ImmersiveApp'
+    // Immersive mode flags
+    overrideUserAgent: 'ImmersiveApp',
+    backgroundColor: '#000000'
   },
   ios: {
     contentInset: 'automatic',
-    scrollEnabled: true
+    scrollEnabled: true,
+    backgroundColor: '#000000'
   },
   plugins: {
     SplashScreen: {
-      launchShowDuration: 3000,
+      launchShowDuration: 2000,
       launchAutoHide: true,
       androidSplashResourceName: 'splash',
       androidScaleType: 'CENTER_CROP',
       showSpinner: false,
-      androidSpinnerStyle: 'large',
-      iosSpinnerStyle: 'small',
-      spinnerColor: '#999999',
       splashFullScreen: true,
-      splashImmersive: true
+      splashImmersive: true,
+      backgroundColor: '#000000'
     },
     StatusBar: {
-      style: 'LIGHT',
-      backgroundColor: '#1a1a1a',
-      overlay: true,
-      androidStatusBarColor: '#1a1a1a'
-    },
-    SafeArea: {
-      enabled: false,
-      customColorsForSystemBars: false,
-      offset: false
+      style: 'DARK',
+      backgroundColor: '#000000',
+      overlay: true
     },
     Keyboard: {
       resize: 'ionic'
@@ -54,12 +48,6 @@ const config: CapacitorConfig = {
     },
     ScreenOrientation: {
       orientation: 'portrait'
-    },
-    // NavigationBar plugin ayarları
-    NavigationBar: {
-      height: 0,
-      color: '#1a1a1a',
-      visibility: 'hidden'
     }
   }
 };
