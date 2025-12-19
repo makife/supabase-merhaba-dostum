@@ -51,20 +51,21 @@ const MarketPage = () => {
 
   const isNativePlatform = Capacitor.isNativePlatform();
 
-  // --- Mürekkep Paketleri (TL ile alınanlar) ---
+  // --- Yapılandırma ---
+
   const inkPacks: InkPack[] = [
     {
       id: "ink_drop",
       name: "Bir Damla Mürekkep",
       amount: 100,
-      price: 49.99, // Giriş bariyerini düşürdük
+      price: 39.99,
       image: "/damlaMurekkep.png",
     },
     {
       id: "ink_bottle",
       name: "Mürekkep Şişesi",
       amount: 300,
-      price: 129.99, // %15 civarı daha avantajlı
+      price: 99.99,
       label: "Popüler",
       image: "/murekkepSisesi.png",
     },
@@ -72,20 +73,19 @@ const MarketPage = () => {
       id: "ink_pot",
       name: "Hokka",
       amount: 850,
-      price: 349.99, // %20 daha avantajlı
+      price: 249.99,
       image: "/murekkepHokka.png",
     },
     {
       id: "ink_barrel",
       name: "Mürekkep Varili",
       amount: 2500,
-      price: 899.99, // En yüksek avantaj oranı
+      price: 699.99,
       label: "En İyi Fiyat",
       image: "/murekkepVaril.png",
     },
   ];
 
-  // --- Kırtasiye Ürünleri (Mürekkep ile alınanlar) ---
   const stationeryItems: StationeryItem[] = [
     // Jokerler
     {
@@ -118,13 +118,13 @@ const MarketPage = () => {
       value: 1,
       image: "/senyazIkon.png",
     },
-    // Sayfa Paketleri (Canlar) - Matematiksel denge sağlandı
+    // Canlar (Sayfa Paketleri)
     {
       id: "h_full",
       type: "heart",
       name: "Müsvedde",
       description: "5 sayfa verir",
-      priceInInk: 25, // Sayfa başı 5 Ink
+      priceInInk: 25,
       value: 5,
       image: "/bescanPaketi.png",
     },
@@ -133,7 +133,7 @@ const MarketPage = () => {
       type: "heart",
       name: "Not defteri",
       description: "Stoğunuza 25 sayfa ekler",
-      priceInInk: 90, // Sayfa başı 3.6 Ink
+      priceInInk: 90,
       value: 25,
       image: "/yirmibescanPaketi.png",
     },
@@ -142,7 +142,7 @@ const MarketPage = () => {
       type: "heart",
       name: "Ajanda",
       description: "Stoğunuza 50 sayfa ekler",
-      priceInInk: 150, // Sayfa başı 3.0 Ink
+      priceInInk: 200,
       value: 50,
       image: "/ellicanPaketi.png",
     },
@@ -151,7 +151,7 @@ const MarketPage = () => {
       type: "heart",
       name: "Ansiklopedi",
       description: "Stoğunuza 85 sayfa ekler",
-      priceInInk: 240, // Sayfa başı 2.8 Ink (En kârlı seçenek!)
+      priceInInk: 220,
       value: 85,
       image: "/Ansiklopedi.png",
     },
@@ -175,6 +175,7 @@ const MarketPage = () => {
       image: "/yirmidortsaatUyelik.png",
     },
   ];
+
   // --- Aksiyonlar ---
 
   const handleBuyInkPack = async (pack: InkPack) => {
@@ -588,7 +589,7 @@ const MarketPage = () => {
                       disabled={isSubscriptionLoading}
                     >
                       <span>Aylık</span>
-                      <span className="text-xs opacity-70">₺119.99</span>
+                      <span className="text-xs opacity-70">₺249.99</span>
                     </Button>
                     <Button
                       className="bg-indigo-900 text-white hover:bg-indigo-800 font-bold h-auto py-3 flex-col gap-1 border border-white/20"
@@ -596,7 +597,7 @@ const MarketPage = () => {
                       disabled={isSubscriptionLoading}
                     >
                       <span>Yıllık</span>
-                      <span className="text-xs opacity-70">₺647.99</span>
+                      <span className="text-xs opacity-70">₺1499.99</span>
                     </Button>
                   </div>
 
