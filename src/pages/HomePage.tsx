@@ -606,18 +606,23 @@ const HomePage = () => {
                     <h4 className="text-sm font-bold text-foreground">🃏 Jokerlerim</h4>
                   </div>
                   <div className="flex gap-2 text-xs">
+                    {/* DEĞİŞTİR */}
                     <div className="bg-white/10 rounded-lg p-2 flex items-center gap-1">
-                      <span>5️⃣</span>
+                      <img src="/degistirIkon.png" alt="Değiştir" className="w-7 h-7 object-contain" />
                       <span className="font-medium">Değiştir</span>
                       <span className="font-semibold">×{jokers.degistir}</span>
                     </div>
+
+                    {/* FISILDA */}
                     <div className="bg-white/10 rounded-lg p-2 flex items-center gap-1">
-                      <span>🗣️</span>
+                      <img src="/fisildaIkon.png" alt="Fısılda" className="w-7 h-7 object-contain" />
                       <span className="font-medium">Fısılda</span>
                       <span className="font-semibold">×{jokers.fisilida}</span>
                     </div>
+
+                    {/* SEN YAZ */}
                     <div className="bg-white/10 rounded-lg p-2 flex items-center gap-1">
-                      <span>✍️</span>
+                      <img src="/senyazIkon.png" alt="Sen Yaz" className="w-7 h-7 object-contain" />
                       <span className="font-medium">Sen Yaz</span>
                       <span className="font-semibold">×{jokers.senYaz}</span>
                     </div>
