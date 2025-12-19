@@ -749,8 +749,9 @@ const GamePage = ({
 
         Object.keys(state).forEach((key) => {
           if (key !== userId) {
-            // Rakibin verisini al (en son gönderdiği presence objesi)
-            const opponentPresence = state[key][0];
+            // HATA ÇÖZÜMÜ: Sonuna 'as any' ekliyoruz
+            // Böylece TypeScript "online_at yok" diye ağlamayı kesiyor.
+            const opponentPresence = state[key][0] as any;
 
             // Eğer rakip varsa ve 'online_at' verisi değişmişse sayacı güncelle
             if (opponentPresence && opponentPresence.online_at) {
@@ -758,10 +759,8 @@ const GamePage = ({
 
               // KRİTİK KONTROL: Veri gerçekten yeni mi?
               if (newDataCheck !== lastSeenDataRef.current) {
-                // Evet, rakip yeni bir sinyal göndermiş!
                 lastSeenDataRef.current = newDataCheck;
                 lastOpponentHeartbeat.current = Date.now();
-                // console.log("💓 Rakip canlı, yeni sinyal:", newDataCheck);
               }
             }
           }
