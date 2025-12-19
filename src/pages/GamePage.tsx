@@ -713,9 +713,9 @@ const GamePage = ({
   const statsUpdatedRef = useRef(false);
   const attemptedAutoCompleteRef = useRef(false);
 
-  // 💓 HEARTBEAT SİSTEMİ: Database-based (Arka planda da çalışır)
+  // 💓 HEARTBEAT SİSTEMİ: Database-based + Server Time (Kill/Arka plan korumalı)
   // Supabase Presence yerine player_activities tablosunu kullanır
-  // Böylece aktif oyuncu, arka plandaki rakibin timeout olduğunu anında tespit eder
+  // Server time kullanarak saat farkı sorunlarını önler
   useEffect(() => {
     // 1. GÜVENLİK KONTROLLERİ
     if (
@@ -739,18 +739,33 @@ const GamePage = ({
       return;
     }
 
-    console.log("💓 Database Heartbeat sistemi başlatılıyor...");
+    console.log("💓 Database Heartbeat sistemi başlatılıyor (Server Time)...");
     console.log("   Ben:", myUserId.slice(-8), "Rakip:", opponentId.slice(-8));
 
     let isCleanedUp = false;
+    let consecutiveTimeouts = 0; // Üst üste timeout sayacı
+
+    // Server time al (Supabase RPC)
+    const getServerTime = async (): Promise<Date | null> => {
+      try {
+        const { data, error } = await supabase.rpc("get_server_time");
+        if (error || !data) return null;
+        return new Date(data);
+      } catch {
+        return null;
+      }
+    };
 
     // 2. KENDİ HEARTBEAT'İMİ DATABASE'E YAZ (Her 2 saniyede)
     const writeMyHeartbeat = async () => {
       if (isCleanedUp || gameEndedRef.current) return;
       
       try {
-        const now = new Date().toISOString();
-        await supabase
+        // Server time kullan - daha güvenilir
+        const serverTime = await getServerTime();
+        const now = serverTime ? serverTime.toISOString() : new Date().toISOString();
+        
+        const { error } = await supabase
           .from("player_activities")
           .upsert({
             player_id: myUserId,
@@ -760,8 +775,12 @@ const GamePage = ({
           }, {
             onConflict: "match_id,player_id"
           });
+        
+        if (error) {
+          console.warn("💓 Heartbeat yazma hatası:", error.message);
+        }
       } catch (err) {
-        console.warn("💓 Heartbeat yazma hatası:", err);
+        console.warn("💓 Heartbeat yazma exception:", err);
       }
     };
 
@@ -771,11 +790,21 @@ const GamePage = ({
     // Sonra her 2 saniyede bir
     heartbeatIntervalRef.current = setInterval(writeMyHeartbeat, 2000);
 
-    // 3. RAKİBİN HEARTBEAT'İNİ KONTROL ET (Her saniye)
+    // 3. RAKİBİN HEARTBEAT'İNİ KONTROL ET (Her 2 saniye - server time ile)
+    const TIMEOUT_SECONDS = 10; // 10 saniye timeout
+    const REQUIRED_CONSECUTIVE_TIMEOUTS = 2; // 2 kez üst üste timeout olmalı
+
     checkOpponentAliveIntervalRef.current = setInterval(async () => {
       if (isCleanedUp || gameEndedRef.current) return;
 
       try {
+        // Server time al
+        const serverTime = await getServerTime();
+        if (!serverTime) {
+          console.warn("💓 Server time alınamadı, kontrol atlanıyor");
+          return;
+        }
+
         // Rakibin son heartbeat'ini oku
         const { data: opponentActivity, error } = await supabase
           .from("player_activities")
@@ -785,49 +814,63 @@ const GamePage = ({
           .maybeSingle();
 
         if (error) {
-          console.warn("💓 Rakip heartbeat okuma hatası:", error);
+          console.warn("💓 Rakip heartbeat okuma hatası:", error.message);
           return;
         }
 
         // Rakip hiç heartbeat yazmamışsa, henüz bağlanmamış olabilir - bekle
         if (!opponentActivity?.last_action_time) {
+          console.log("💓 Rakip henüz heartbeat yazmamış, bekleniyor...");
+          consecutiveTimeouts = 0;
           return;
         }
 
         const lastHeartbeatTime = new Date(opponentActivity.last_action_time).getTime();
-        const now = Date.now();
-        const timeSinceLastHeartbeat = now - lastHeartbeatTime;
+        const serverNow = serverTime.getTime();
+        const timeSinceLastHeartbeat = serverNow - lastHeartbeatTime;
+        const secondsSinceLastHeartbeat = Math.round(timeSinceLastHeartbeat / 1000);
 
-        // 10 saniye kuralı: Rakip 10 saniyedir heartbeat göndermiyorsa ÖLDÜ
-        if (timeSinceLastHeartbeat > 10000) {
-          console.log("💀 RAKİP TIMEOUT! Son heartbeat:", Math.round(timeSinceLastHeartbeat / 1000), "sn önce");
+        console.log(`💓 Rakip son heartbeat: ${secondsSinceLastHeartbeat} sn önce`);
 
-          // Temizlik
-          isCleanedUp = true;
-          if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
-          if (checkOpponentAliveIntervalRef.current) clearInterval(checkOpponentAliveIntervalRef.current);
+        // Timeout kontrolü
+        if (timeSinceLastHeartbeat > TIMEOUT_SECONDS * 1000) {
+          consecutiveTimeouts++;
+          console.log(`⚠️ Timeout tespit! (${consecutiveTimeouts}/${REQUIRED_CONSECUTIVE_TIMEOUTS})`);
 
-          // Oyunu bitir
-          window.dispatchEvent(
-            new CustomEvent("playerDisconnected", {
-              detail: {
-                winner: "player",
-                reason: "opponent_timeout_db",
-                roomId: roomId,
-              },
-            }),
-          );
+          // Üst üste belirli sayıda timeout olmalı (false positive önleme)
+          if (consecutiveTimeouts >= REQUIRED_CONSECUTIVE_TIMEOUTS) {
+            console.log("💀 RAKİP ÖLDÜ! (Kill/Disconnect tespit edildi)");
 
-          toast({
-            title: "Rakip Bağlantısı Koptu",
-            description: "Rakip oyundan düştü. Kazandınız!",
-            variant: "default",
-          });
+            // Temizlik
+            isCleanedUp = true;
+            if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
+            if (checkOpponentAliveIntervalRef.current) clearInterval(checkOpponentAliveIntervalRef.current);
+
+            // Oyunu bitir
+            window.dispatchEvent(
+              new CustomEvent("playerDisconnected", {
+                detail: {
+                  winner: "player",
+                  reason: "opponent_killed",
+                  roomId: roomId,
+                },
+              }),
+            );
+
+            toast({
+              title: "Rakip Bağlantısı Koptu",
+              description: "Rakip oyundan düştü. Kazandınız!",
+              variant: "default",
+            });
+          }
+        } else {
+          // Heartbeat geldi, sayaç sıfırla
+          consecutiveTimeouts = 0;
         }
       } catch (err) {
         console.warn("💓 Heartbeat kontrol hatası:", err);
       }
-    }, 1000);
+    }, 2000); // Her 2 saniyede kontrol (daha az agresif)
 
     // 4. TEMİZLİK
     return () => {
@@ -836,7 +879,7 @@ const GamePage = ({
       if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
       if (checkOpponentAliveIntervalRef.current) clearInterval(checkOpponentAliveIntervalRef.current);
       
-      // Kendi activity kaydımı sil (opsiyonel)
+      // Kendi activity kaydımı sil (best effort - uygulama kill edilirse çalışmaz)
       supabase
         .from("player_activities")
         .delete()
