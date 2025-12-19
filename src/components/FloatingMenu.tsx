@@ -23,6 +23,7 @@ import {
   Trophy,
   Zap,
   Shield,
+  PenTool,
   Volume2,
   VolumeX,
 } from "lucide-react";
@@ -105,7 +106,7 @@ const menuItems = [
   {
     title: "Kırtasiye",
     route: "/market",
-    icon: ShoppingCart,
+    icon: PenTool,
     color: "from-purple-500 to-purple-600",
     hoverColor: "hover:from-purple-600 hover:to-purple-700",
   },
