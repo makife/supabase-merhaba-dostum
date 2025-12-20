@@ -6413,13 +6413,6 @@ const GamePage = ({
               />
             )}
             
-            {/* Son 9 saniye büyüyüp kaybolan geri sayım */}
-            {gameStarted && !gameEnded && gameType === "timed" && (
-              <FinalCountdown 
-                displayTime={displayTime} 
-                onCountdownTick={handleFinalCountdownTick}
-              />
-            )}
             <div
               key={`game-${currentRoom?.id || tournamentMatch?.id || "container"}`}
               className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 relative overflow-hidden letters-background"
@@ -6473,16 +6466,17 @@ const GamePage = ({
                         >
                           ⏳
                         </span>
-                        {/* Dijital saat tarzı timer */}
+                      {/* Dijital saat tarzı timer - sabit genişlik */}
                         <div 
-                          className={`relative px-3 py-1 rounded-lg transition-all duration-300 ${
+                          className={`relative px-4 py-2 rounded-lg ${
                             displayTime <= 30 
                               ? "bg-red-500/10 border border-red-500/30" 
                               : "bg-primary/5 border border-primary/20"
                           }`}
+                          style={{ minWidth: '120px' }}
                         >
                           <span
-                            className={`font-mono text-2xl font-black tracking-wider transition-all duration-300 ${
+                            className={`font-mono text-2xl font-black tracking-wider block text-center ${
                               displayTime <= 30 ? "text-red-500" : "text-primary"
                             }`}
                             style={{
@@ -6490,6 +6484,8 @@ const GamePage = ({
                               textShadow: displayTime <= 30 
                                 ? '0 0 10px rgba(239,68,68,0.5)' 
                                 : '0 0 10px rgba(var(--primary),0.3)',
+                              fontVariantNumeric: 'tabular-nums',
+                              letterSpacing: '0.1em',
                             }}
                           >
                             {formatTime(displayTime)}
@@ -6555,8 +6551,8 @@ const GamePage = ({
                   </div>
                 )}
 
-                {/* Scores */}
-                <div className="grid grid-cols-2 gap-4">
+                {/* Scores - Son 9 saniye geri sayımı ortada */}
+                <div className="grid grid-cols-2 gap-4 relative">
                   <Card className="silver-gradient border border-gray-300 shadow-lg">
                     <CardContent className="p-4 text-center relative overflow-hidden">
                       <Avatar className="w-16 h-16 mx-auto mb-2">
@@ -6572,6 +6568,17 @@ const GamePage = ({
                       )}
                     </CardContent>
                   </Card>
+                  
+                  {/* Son 9 saniye geri sayım - kartların ortasında */}
+                  {gameStarted && !gameEnded && gameType === "timed" && displayTime >= 1 && displayTime <= 9 && (
+                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+                      <FinalCountdown 
+                        displayTime={displayTime} 
+                        onCountdownTick={handleFinalCountdownTick}
+                      />
+                    </div>
+                  )}
+                  
                   <Card className="silver-gradient border border-gray-300 shadow-lg">
                     <CardContent className="p-4 text-center relative overflow-hidden">
                       {/* Normal kart içeriği - her zaman göster */}
