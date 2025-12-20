@@ -329,6 +329,16 @@ const GamePage = ({
     onForeground: () => {
       console.log("🎮 Oyun ön plana geldi");
       setIsInBackground(false);
+      
+      // Native'de arka plandayken setTimeout çalışmaz
+      // Oyun bitmişse ve butonlar hala deaktifse, aktif et
+      setTimeout(() => {
+        setButtonsEnabled(prev => {
+          // Eğer hala false ise ve oyun bitmişse true yap
+          console.log("🎮 Ön plan buton kontrolü - mevcut değer:", prev);
+          return true; // Her zaman aktif et ön plana dönünce
+        });
+      }, 100);
     },
     backgroundDelay: 10000, // 10 saniye
     onBackgroundTimeout: handleBackgroundDisconnect,
