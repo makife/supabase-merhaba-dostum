@@ -5156,8 +5156,13 @@ const GamePage = ({
       }, 3500);
 
       // 5 saniye sonra countdown başlat
+      // ÖNEMLİ: Countdown component'i serverStartTime'dan itibaren 5 saniye sayıyor
+      // React render gecikmesi için 100ms buffer ekliyoruz
       setTimeout(() => {
-        setCountdownServerTime(new Date().toISOString());
+        // 100ms buffer ekle - React render gecikmesini telafi et
+        const countdownStart = new Date(Date.now() + 100).toISOString();
+        console.log("🤖 vs-computer countdown başlıyor:", countdownStart);
+        setCountdownServerTime(countdownStart);
         setShowCountdown(true);
       }, 5000);
 
