@@ -6371,7 +6371,7 @@ const GamePage = ({
                 key={`countdown-${currentRoom?.id || tournamentMatch?.id || "default"}`}
                 onComplete={handleCountdownComplete}
                 serverStartTime={countdownServerTime}
-                serverTimeOffset={serverTimeOffset}
+                serverTimeOffset={gameMode === "vs-computer" ? 0 : serverTimeOffset}
               />
             )}
             <div
