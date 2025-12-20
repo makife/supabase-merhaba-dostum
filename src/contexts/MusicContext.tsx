@@ -29,25 +29,55 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const shuffleIndexRef = useRef(0);
   const wasPlayingBeforeBackgroundRef = useRef(false);
 
-  // Arka plan yönetimi - uygulama arka plana gittiğinde müziği hemen durdur
+  // Arka plana geçişte hızlı fade out için ref
+  const backgroundFadeRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Hızlı fade out fonksiyonu (arka plan için)
+  const quickFadeOut = () => {
+    if (!backgroundMusicRef.current || backgroundMusicRef.current.paused) return;
+    
+    // Önceki fade'i temizle
+    if (backgroundFadeRef.current) {
+      clearInterval(backgroundFadeRef.current);
+    }
+
+    const audio = backgroundMusicRef.current;
+    const fadeStep = audio.volume / 10; // 500ms'de 10 adım = 50ms aralık
+    
+    console.log('🎵 Hızlı fade out başlatılıyor...');
+    
+    backgroundFadeRef.current = setInterval(() => {
+      if (audio.volume > fadeStep) {
+        audio.volume = Math.max(0, audio.volume - fadeStep);
+      } else {
+        audio.volume = 0;
+        audio.pause();
+        if (backgroundFadeRef.current) {
+          clearInterval(backgroundFadeRef.current);
+          backgroundFadeRef.current = null;
+        }
+        console.log('🎵 Fade out tamamlandı, müzik durdu');
+      }
+    }, 50);
+  };
+
+  // Arka plan yönetimi - uygulama arka plana gittiğinde müziği fade out ile durdur
   const { isActive, isNative } = useAppState({
     onBackground: () => {
-      // Arka plana gitti - müziği hemen durdur
-      if (backgroundMusicRef.current) {
-        const wasPaused = backgroundMusicRef.current.paused;
-        console.log('🎵 Arka plan algılandı - müzik durumu:', wasPaused ? 'zaten durmuş' : 'çalıyor');
-        
-        if (!wasPaused) {
-          wasPlayingBeforeBackgroundRef.current = true;
-          backgroundMusicRef.current.pause();
-          // Native'de ekstra garanti için volume'u da sıfırla
-          backgroundMusicRef.current.volume = 0;
-          console.log('🎵 Müzik arka plan için duraklatıldı ve volume sıfırlandı');
-        }
+      // Arka plana gitti - müziği fade out ile durdur
+      if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
+        console.log('🎵 Arka plan algılandı - fade out başlatılıyor');
+        wasPlayingBeforeBackgroundRef.current = true;
+        quickFadeOut();
       }
     },
     onForeground: () => {
-      // Ön plana geldi
+      // Ön plana geldi - fade'i temizle ve müziği başlat
+      if (backgroundFadeRef.current) {
+        clearInterval(backgroundFadeRef.current);
+        backgroundFadeRef.current = null;
+      }
+      
       if (wasPlayingBeforeBackgroundRef.current && musicEnabled && backgroundMusicRef.current) {
         console.log('🎵 Müzik ön plan için devam ettiriliyor');
         wasPlayingBeforeBackgroundRef.current = false;
@@ -62,8 +92,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!isActive && backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
       console.log('🎵 isActive=false - müzik zorla durduruluyor');
       wasPlayingBeforeBackgroundRef.current = true;
-      backgroundMusicRef.current.pause();
-      backgroundMusicRef.current.volume = 0;
+      quickFadeOut();
     }
   }, [isActive]);
 
