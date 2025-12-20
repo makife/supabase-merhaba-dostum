@@ -27,36 +27,21 @@ const FinalCountdown = memo(({ displayTime, onCountdownTick }: FinalCountdownPro
   const isUrgent = displayTime <= 3;
 
   return (
-    <div 
+    <span
       className={`
-        flex items-center justify-center
-        w-16 h-16
-        rounded-full
-        ${isUrgent ? 'bg-red-500/20 border-2 border-red-500' : 'bg-orange-400/20 border-2 border-orange-400'}
-        shadow-lg
-        animate-pulse
+        font-mono font-black leading-none
+        ${isUrgent ? "text-red-500" : "text-orange-400"}
       `}
       style={{
-        boxShadow: isUrgent 
-          ? '0 0 20px rgba(239,68,68,0.5)' 
-          : '0 0 20px rgba(251,146,60,0.5)',
+        fontFamily: "'Orbitron', 'Courier New', monospace",
+        fontSize: '6rem',
+        textShadow: isUrgent
+          ? '0 0 30px rgba(239,68,68,0.8), 0 0 60px rgba(239,68,68,0.5)'
+          : '0 0 30px rgba(251,146,60,0.8), 0 0 60px rgba(251,146,60,0.5)',
       }}
     >
-      <span
-        className={`
-          font-mono font-black text-3xl leading-none
-          ${isUrgent ? "text-red-500" : "text-orange-400"}
-        `}
-        style={{
-          fontFamily: "'Orbitron', 'Courier New', monospace",
-          textShadow: isUrgent
-            ? '0 0 10px rgba(239,68,68,0.8)'
-            : '0 0 10px rgba(251,146,60,0.8)',
-        }}
-      >
-        {displayTime}
-      </span>
-    </div>
+      {displayTime}
+    </span>
   );
 });
 

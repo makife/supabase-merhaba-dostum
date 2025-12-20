@@ -6459,40 +6459,29 @@ const GamePage = ({
 
                       {/* Son 9 saniyede timer'ı gizle */}
                       {displayTime > 9 && (
-                        <div className="flex items-center space-x-2">
+                        <div 
+                          className={`flex items-center justify-center h-8 px-3 rounded-lg ${
+                            displayTime <= 30 
+                              ? "bg-red-500/10 border border-red-500/30" 
+                              : "bg-primary/5 border border-primary/20"
+                          }`}
+                          style={{ minWidth: '100px' }}
+                        >
                           <span
-                            className="text-base inline-block"
+                            className={`font-mono text-lg font-black tracking-wider ${
+                              displayTime <= 30 ? "text-red-500" : "text-primary"
+                            }`}
                             style={{
-                              animation: "hourglassFlip 4s ease-in-out infinite",
+                              fontFamily: "'Orbitron', 'Courier New', monospace",
+                              textShadow: displayTime <= 30 
+                                ? '0 0 10px rgba(239,68,68,0.5)' 
+                                : '0 0 10px rgba(var(--primary),0.3)',
+                              fontVariantNumeric: 'tabular-nums',
+                              letterSpacing: '0.1em',
                             }}
                           >
-                            ⏳
+                            {formatTime(displayTime)}
                           </span>
-                          {/* Dijital saat tarzı timer - çıkış butonuyla aynı yükseklik (h-8) */}
-                          <div 
-                            className={`flex items-center justify-center h-8 px-3 rounded-lg ${
-                              displayTime <= 30 
-                                ? "bg-red-500/10 border border-red-500/30" 
-                                : "bg-primary/5 border border-primary/20"
-                            }`}
-                            style={{ minWidth: '100px' }}
-                          >
-                            <span
-                              className={`font-mono text-lg font-black tracking-wider ${
-                                displayTime <= 30 ? "text-red-500" : "text-primary"
-                              }`}
-                              style={{
-                                fontFamily: "'Orbitron', 'Courier New', monospace",
-                                textShadow: displayTime <= 30 
-                                  ? '0 0 10px rgba(239,68,68,0.5)' 
-                                  : '0 0 10px rgba(var(--primary),0.3)',
-                                fontVariantNumeric: 'tabular-nums',
-                                letterSpacing: '0.1em',
-                              }}
-                            >
-                              {formatTime(displayTime)}
-                            </span>
-                          </div>
                         </div>
                       )}
                     </div>
