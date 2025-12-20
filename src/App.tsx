@@ -57,6 +57,7 @@ import { OnboardingPermissions } from "@/components/OnboardingPermissions";
 import { StatusBar, Style } from "@capacitor/status-bar";
 // @ts-ignore - Third-party plugin
 import { NavigationBar } from "@ethion/capacitor-navigation-bar";
+import { BackButtonDialog } from "@/hooks/useBackButton";
 
 const queryClient = new QueryClient();
 
@@ -477,6 +478,7 @@ const App = () => {
                     <GameProvider>
                       <RematchProvider>
                         <GlobalRematchDialog />
+                        <BackButtonDialog />
                         <RoomAutoNavigator />
                         <TournamentProvider>
                           <NotificationProvider>
