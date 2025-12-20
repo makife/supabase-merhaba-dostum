@@ -30,13 +30,20 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const wasPlayingBeforeBackgroundRef = useRef(false);
 
   // Arka plan yönetimi - uygulama arka plana gittiğinde müziği hemen durdur
-  useAppState({
+  const { isActive, isNative } = useAppState({
     onBackground: () => {
       // Arka plana gitti - müziği hemen durdur
-      if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
-        console.log('🎵 Müzik arka plan için hemen duraklatılıyor');
-        wasPlayingBeforeBackgroundRef.current = true;
-        backgroundMusicRef.current.pause();
+      if (backgroundMusicRef.current) {
+        const wasPaused = backgroundMusicRef.current.paused;
+        console.log('🎵 Arka plan algılandı - müzik durumu:', wasPaused ? 'zaten durmuş' : 'çalıyor');
+        
+        if (!wasPaused) {
+          wasPlayingBeforeBackgroundRef.current = true;
+          backgroundMusicRef.current.pause();
+          // Native'de ekstra garanti için volume'u da sıfırla
+          backgroundMusicRef.current.volume = 0;
+          console.log('🎵 Müzik arka plan için duraklatıldı ve volume sıfırlandı');
+        }
       }
     },
     onForeground: () => {
@@ -44,10 +51,21 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (wasPlayingBeforeBackgroundRef.current && musicEnabled && backgroundMusicRef.current) {
         console.log('🎵 Müzik ön plan için devam ettiriliyor');
         wasPlayingBeforeBackgroundRef.current = false;
+        backgroundMusicRef.current.volume = originalVolumeRef.current;
         backgroundMusicRef.current.play().catch(console.warn);
       }
     },
   });
+
+  // Native'de ek güvenlik: isActive false olduğunda müziği zorla durdur
+  useEffect(() => {
+    if (!isActive && backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
+      console.log('🎵 isActive=false - müzik zorla durduruluyor');
+      wasPlayingBeforeBackgroundRef.current = true;
+      backgroundMusicRef.current.pause();
+      backgroundMusicRef.current.volume = 0;
+    }
+  }, [isActive]);
 
   // Default pack playlist - Capacitor için relative path kullan
   const defaultPlaylist = [
