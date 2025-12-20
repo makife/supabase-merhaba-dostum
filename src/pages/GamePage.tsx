@@ -32,6 +32,7 @@ import { useRematchContext } from "@/contexts/RematchContext";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateServerOffset, startDriftMonitoring } from "@/utils/serverTimeSync";
 import GameCountdown from "@/components/GameCountdown";
+import FinalCountdown from "@/components/FinalCountdown";
 import {
   ArrowLeft,
   Clock,
@@ -5989,12 +5990,19 @@ const GamePage = ({
     }, 4000); // 3000ms → 4000ms DAHA UZUN
   };
 
-  // Format time
+  // Format time - dijital saat formatı
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
+  
+  // Son 9 saniye geri sayım ses efekti
+  const handleFinalCountdownTick = useCallback((second: number) => {
+    // Her saniyede tik ses efekti çal
+    playSpecialSound("/geriSayimKlik.mp3");
+    console.log(`⏰ Final countdown: ${second}`);
+  }, [playSpecialSound]);
 
   // Get opponent info based on game mode with avatar
   const getOpponentInfo = () => {
@@ -6404,6 +6412,14 @@ const GamePage = ({
                 serverTimeOffset={gameMode === "vs-computer" ? 0 : serverTimeOffset}
               />
             )}
+            
+            {/* Son 9 saniye büyüyüp kaybolan geri sayım */}
+            {gameStarted && !gameEnded && gameType === "timed" && (
+              <FinalCountdown 
+                displayTime={displayTime} 
+                onCountdownTick={handleFinalCountdownTick}
+              />
+            )}
             <div
               key={`game-${currentRoom?.id || tournamentMatch?.id || "container"}`}
               className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 relative overflow-hidden letters-background"
@@ -6448,38 +6464,44 @@ const GamePage = ({
                         </div>
                       )}
 
-                      <div
-                        className={`flex items-center space-x-2 transition-all duration-300 ${
-                          displayTime <= 15 ? "animate-pulse text-red-500" : "text-foreground"
-                        }`}
-                      >
+                      <div className="flex items-center space-x-3 transition-all duration-300">
                         <span
-                          className={`text-lg transition-all duration-300 inline-block ${
-                            displayTime <= 15 ? "animate-pulse text-red-500" : ""
-                          }`}
+                          className="text-lg transition-all duration-300 inline-block"
                           style={{
-                            animation:
-                              displayTime <= 15
-                                ? "pulse 1s infinite, hourglassFlip 2s ease-in-out infinite"
-                                : "hourglassFlip 4s ease-in-out infinite",
+                            animation: "hourglassFlip 4s ease-in-out infinite",
                           }}
                         >
                           ⏳
                         </span>
-                        <span
-                          className={`font-mono text-lg font-bold transition-all duration-300 ${
-                            displayTime <= 15 ? "text-red-500 scale-110" : ""
+                        {/* Dijital saat tarzı timer */}
+                        <div 
+                          className={`relative px-3 py-1 rounded-lg transition-all duration-300 ${
+                            displayTime <= 30 
+                              ? "bg-red-500/10 border border-red-500/30" 
+                              : "bg-primary/5 border border-primary/20"
                           }`}
                         >
-                          {formatTime(displayTime)}
-                        </span>
+                          <span
+                            className={`font-mono text-2xl font-black tracking-wider transition-all duration-300 ${
+                              displayTime <= 30 ? "text-red-500" : "text-primary"
+                            }`}
+                            style={{
+                              fontFamily: "'Orbitron', 'Courier New', monospace",
+                              textShadow: displayTime <= 30 
+                                ? '0 0 10px rgba(239,68,68,0.5)' 
+                                : '0 0 10px rgba(var(--primary),0.3)',
+                            }}
+                          >
+                            {formatTime(displayTime)}
+                          </span>
+                        </div>
                       </div>
-                      <div className="w-32 h-1 bg-muted rounded-full overflow-hidden">
+                      <div className="w-32 h-1.5 bg-muted rounded-full overflow-hidden">
                         <div
                           className={`h-full transition-all duration-1000 ease-out ${
-                            displayTime <= 15
-                              ? "bg-red-500 animate-pulse"
-                              : displayTime <= 30
+                            displayTime <= 30
+                              ? "bg-red-500"
+                              : displayTime <= 60
                                 ? "bg-orange-500"
                                 : "bg-green-500"
                           }`}
