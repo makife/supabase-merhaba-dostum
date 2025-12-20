@@ -118,7 +118,7 @@ const ProfilePage = () => {
   };
 
   const fetchBadges = async () => {
-    if (!user || !isOwnProfile) return;
+    if (!viewedUserId) return;
   
     try {
       // Get all badges with user's earned status
@@ -132,11 +132,11 @@ const ProfilePage = () => {
         return;
       }
     
-      // Get user's earned badges
+      // Get viewed user's earned badges
       const { data: userBadges, error: userBadgesError } = await supabase
         .from('user_badges')
         .select('badge_id, earned_at')
-        .eq('user_id', user.id);
+        .eq('user_id', viewedUserId);
         
       if (userBadgesError) {
         console.error('Kullanıcı rozet fetch hatası:', userBadgesError);
@@ -445,10 +445,8 @@ const ProfilePage = () => {
   }, [user, isOwnProfile]);
 
   useEffect(() => {
-    if (isOwnProfile) {
-      fetchBadges();
-    }
-  }, [viewedUserId, isOwnProfile]);
+    fetchBadges();
+  }, [viewedUserId]);
 
   const handleEditToggle = () => {
     if (isEditing) {
