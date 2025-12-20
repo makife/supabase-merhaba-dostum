@@ -377,7 +377,7 @@ const HomePage = () => {
           <Card className="border-0 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/10 shadow-2xl relative overflow-hidden">
             <HeaderAnimation />
 
-            <CardContent className="p-4 relative z-10">
+            <CardContent className="px-4 pb-4 pt-12 relative z-10">
               {/* Mobil optimized layout */}
               <div className="space-y-3">
                 {/* Üst satır - Avatar ve Kelimeci başlığı */}
