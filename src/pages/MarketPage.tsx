@@ -254,9 +254,17 @@ const MarketPage = () => {
         if (invError) throw invError;
       } else if (item.type === "heart") {
         const currentCredits = profile.game_credits || 0;
+        const newCredits = currentCredits + item.value;
+        
+        // Eğer yeni krediler >= 5 ise, timer'ı sıfırla (last_credit_refresh = null)
+        const updateData: any = { game_credits: newCredits };
+        if (newCredits >= 5) {
+          updateData.last_credit_refresh = null;
+        }
+        
         await supabase
           .from("profiles")
-          .update({ game_credits: currentCredits + item.value })
+          .update(updateData)
           .eq("id", user.id);
       } else if (item.type === "time") {
         const now = new Date();
