@@ -1,20 +1,20 @@
-import { useAuth } from '@/contexts/AuthContext';
-import { useUser } from '@/contexts/UserContext';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { Input } from '@/components/ui/input';
-import { useJokerInventory } from '@/hooks/useJokerInventory';
-import { useAvatarUpload } from '@/hooks/useAvatarUpload';
-import { AvatarOptionsDialog } from '@/components/AvatarOptionsDialog';
-import { BadgesDialog } from '@/components/BadgesDialog';
+import { useAuth } from "@/contexts/AuthContext";
+import { useUser } from "@/contexts/UserContext";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { useJokerInventory } from "@/hooks/useJokerInventory";
+import { useAvatarUpload } from "@/hooks/useAvatarUpload";
+import { AvatarOptionsDialog } from "@/components/AvatarOptionsDialog";
+import { BadgesDialog } from "@/components/BadgesDialog";
 import {
   ArrowLeft,
   Trophy,
@@ -27,8 +27,8 @@ import {
   Clock,
   Award,
   Users,
-  User
-} from 'lucide-react';
+  User,
+} from "lucide-react";
 
 const ProfilePage = () => {
   const { user } = useAuth();
@@ -41,18 +41,18 @@ const ProfilePage = () => {
   const viewedUserId = routeId || user?.id || null;
   const isOwnProfile = !routeId || routeId === user?.id;
   const [isEditing, setIsEditing] = useState(false);
-  const [editedUsername, setEditedUsername] = useState('');
+  const [editedUsername, setEditedUsername] = useState("");
   const [showAvatarOptions, setShowAvatarOptions] = useState(false);
   const [showBadgesDialog, setShowBadgesDialog] = useState(false);
   const [viewedProfile, setViewedProfile] = useState<{ avatar_url?: string | null } | null>(null);
   const [profileData, setProfileData] = useState({
-    username: user?.email?.split('@')[0] || 'Oyuncu',
+    username: user?.email?.split("@")[0] || "Oyuncu",
     totalGames: 0,
     wins: 0,
     losses: 0,
     totalScore: 0,
     winRate: 0,
-    longestWord: '',
+    longestWord: "",
     longestWordLength: 0,
     currentStreak: 0,
     level: 1,
@@ -67,16 +67,18 @@ const ProfilePage = () => {
     tournamentWinRate: 0,
   });
 
-  const [badges, setBadges] = useState<Array<{
-    id: string;
-    name: string;
-    description: string;
-    icon: string;
-    earned: boolean;
-    earned_at?: string;
-    condition_type?: string;
-    condition_value?: number;
-  }>>([]);
+  const [badges, setBadges] = useState<
+    Array<{
+      id: string;
+      name: string;
+      description: string;
+      icon: string;
+      earned: boolean;
+      earned_at?: string;
+      condition_type?: string;
+      condition_value?: number;
+    }>
+  >([]);
 
   // Badge ilerleme için kullanıcı istatistikleri
   const [userStats, setUserStats] = useState<{
@@ -100,7 +102,7 @@ const ProfilePage = () => {
   const calculateLevel = (totalScore: number) => {
     const baseExp = 1000;
     const expIncreasePerLevel = 100;
-    
+
     let level = 1;
     let totalExpNeeded = 0;
     let currentLevelExp = baseExp;
@@ -119,46 +121,44 @@ const ProfilePage = () => {
 
   const fetchBadges = async () => {
     if (!viewedUserId) return;
-  
+
     try {
       // Get all badges with user's earned status
-      const { data: allBadges, error: badgesError } = await supabase
-        .from('badges')
-        .select('*')
-        .order('name');
-        
+      const { data: allBadges, error: badgesError } = await supabase.from("badges").select("*").order("name");
+
       if (badgesError) {
-        console.error('Rozet fetch hatası:', badgesError);
+        console.error("Rozet fetch hatası:", badgesError);
         return;
       }
-    
+
       // Get viewed user's earned badges
       const { data: userBadges, error: userBadgesError } = await supabase
-        .from('user_badges')
-        .select('badge_id, earned_at')
-        .eq('user_id', viewedUserId);
-        
+        .from("user_badges")
+        .select("badge_id, earned_at")
+        .eq("user_id", viewedUserId);
+
       if (userBadgesError) {
-        console.error('Kullanıcı rozet fetch hatası:', userBadgesError);
+        console.error("Kullanıcı rozet fetch hatası:", userBadgesError);
         return;
       }
-    
+
       // Combine badges with earned status
-      const earnedBadgeIds = new Set(userBadges?.map(ub => ub.badge_id) || []);
-      const badgesWithStatus = allBadges?.map(badge => ({
-        id: badge.id,
-        name: badge.name,
-        description: badge.description,
-        icon: badge.icon,
-        earned: earnedBadgeIds.has(badge.id),
-        earned_at: userBadges?.find(ub => ub.badge_id === badge.id)?.earned_at,
-        condition_type: badge.condition_type,
-        condition_value: badge.condition_value
-      })) || [];
-    
+      const earnedBadgeIds = new Set(userBadges?.map((ub) => ub.badge_id) || []);
+      const badgesWithStatus =
+        allBadges?.map((badge) => ({
+          id: badge.id,
+          name: badge.name,
+          description: badge.description,
+          icon: badge.icon,
+          earned: earnedBadgeIds.has(badge.id),
+          earned_at: userBadges?.find((ub) => ub.badge_id === badge.id)?.earned_at,
+          condition_type: badge.condition_type,
+          condition_value: badge.condition_value,
+        })) || [];
+
       setBadges(badgesWithStatus);
     } catch (error) {
-      console.error('Rozet yükleme hatası:', error);
+      console.error("Rozet yükleme hatası:", error);
     }
   };
 
@@ -168,13 +168,13 @@ const ProfilePage = () => {
     try {
       // Sadece final maçlarını getir (şampiyonluk)
       const { data: finalMatches, error } = await supabase
-        .from('tournament_matches')
-        .select('winner_id, player1_id, player2_id, status, tournament_id, round')
+        .from("tournament_matches")
+        .select("winner_id, player1_id, player2_id, status, tournament_id, round")
         .or(`player1_id.eq.${viewedUserId},player2_id.eq.${viewedUserId}`)
-        .eq('status', 'completed');
+        .eq("status", "completed");
 
       if (error) {
-        console.error('Turnuva istatistikleri hatası:', error);
+        console.error("Turnuva istatistikleri hatası:", error);
         return { won: 0, lost: 0, played: 0, winRate: 0 };
       }
 
@@ -184,11 +184,11 @@ const ProfilePage = () => {
 
       // Her turnuvanın max round'unu bul
       const tournamentMaxRounds: Record<string, number> = {};
-      finalMatches.forEach(match => {
+      finalMatches.forEach((match) => {
         if (match.tournament_id) {
           tournamentMaxRounds[match.tournament_id] = Math.max(
             tournamentMaxRounds[match.tournament_id] || 0,
-            match.round
+            match.round,
           );
         }
       });
@@ -197,7 +197,7 @@ const ProfilePage = () => {
       let won = 0;
       let lost = 0;
 
-      finalMatches.forEach(match => {
+      finalMatches.forEach((match) => {
         // Sadece final round'larını say
         if (match.tournament_id && match.round === tournamentMaxRounds[match.tournament_id]) {
           if (match.winner_id === viewedUserId) {
@@ -213,7 +213,7 @@ const ProfilePage = () => {
 
       return { won, lost, played, winRate };
     } catch (error) {
-      console.error('Turnuva istatistikleri fetch hatası:', error);
+      console.error("Turnuva istatistikleri fetch hatası:", error);
       return { won: 0, lost: 0, played: 0, winRate: 0 };
     }
   };
@@ -221,23 +221,19 @@ const ProfilePage = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       if (!viewedUserId) return;
-      
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', viewedUserId)
-        .maybeSingle();
-      
+
+      const { data } = await supabase.from("profiles").select("*").eq("id", viewedUserId).maybeSingle();
+
       // Turnuva istatistiklerini al
       const tournamentStats = await fetchTournamentStats();
-      
+
       if (data) {
         const levelData = calculateLevel(data.total_score || 0);
-        const username = data.username || (user?.email?.split('@')[0] || 'Oyuncu');
-        
+        const username = data.username || user?.email?.split("@")[0] || "Oyuncu";
+
         setViewedProfile({ avatar_url: data.avatar_url });
-            
-        setProfileData(prev => ({
+
+        setProfileData((prev) => ({
           ...prev,
           username: username,
           totalGames: data.total_games || 0,
@@ -245,7 +241,7 @@ const ProfilePage = () => {
           losses: data.losses || 0,
           totalScore: data.total_score || 0,
           winRate: data.total_games > 0 ? Math.round(((data.wins || 0) / data.total_games) * 100) : 0,
-          longestWord: data.longest_word || '',
+          longestWord: data.longest_word || "",
           longestWordLength: data.longest_word_length || 0,
           currentStreak: data.win_streak || 0,
           level: levelData.level,
@@ -288,20 +284,20 @@ const ProfilePage = () => {
     if (!user || !isOwnProfile) return;
 
     const channel = supabase
-      .channel('profile-updates')
+      .channel("profile-updates")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'profiles',
-          filter: `id=eq.${user.id}`
+          event: "UPDATE",
+          schema: "public",
+          table: "profiles",
+          filter: `id=eq.${user.id}`,
         },
         (payload) => {
-          console.log('📊 Profile updated:', payload.new);
+          console.log("📊 Profile updated:", payload.new);
           const newData = payload.new;
-        
-          setProfileData(prev => {
+
+          setProfileData((prev) => {
             const baseTotalScore = newData.total_score ?? prev.totalScore ?? 0;
             const levelData = calculateLevel(baseTotalScore);
 
@@ -318,9 +314,10 @@ const ProfilePage = () => {
               longestWord: newData.longest_word ?? prev.longestWord,
               longestWordLength: newData.longest_word_length ?? prev.longestWordLength,
               currentStreak: newData.win_streak ?? prev.currentStreak,
-              winRate: (newData.total_games ?? prev.totalGames) > 0
-                ? Math.round(((newData.wins ?? prev.wins ?? 0) / (newData.total_games ?? prev.totalGames ?? 1)) * 100)
-                : 0,
+              winRate:
+                (newData.total_games ?? prev.totalGames) > 0
+                  ? Math.round(((newData.wins ?? prev.wins ?? 0) / (newData.total_games ?? prev.totalGames ?? 1)) * 100)
+                  : 0,
               level: levelData.level,
               experience: levelData.experience,
               nextLevelExp: levelData.nextLevelExp,
@@ -329,7 +326,7 @@ const ProfilePage = () => {
           });
 
           // Badge ilerleme için userStats'ı da güncelle
-          setUserStats(prev => ({
+          setUserStats((prev) => ({
             ...prev,
             total_games: newData.total_games ?? prev.total_games,
             total_score: newData.total_score ?? prev.total_score,
@@ -349,93 +346,93 @@ const ProfilePage = () => {
 
           // Profilde bir güncelleme olduğunda rozetleri de tazele ve kontrol et
           fetchBadges();
-          
+
           // Rozet kontrolü yap
           if (user) {
             checkBadges(user.id);
           }
-        }
+        },
       )
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'user_badges',
-          filter: `user_id=eq.${user.id}`
+          event: "INSERT",
+          schema: "public",
+          table: "user_badges",
+          filter: `user_id=eq.${user.id}`,
         },
         async (payload) => {
-          console.log('🏆 New badge earned:', payload.new);
-        
+          console.log("🏆 New badge earned:", payload.new);
+
           const { data: badgeData } = await supabase
-            .from('badges')
-            .select('name, icon')
-            .eq('id', payload.new.badge_id)
+            .from("badges")
+            .select("name, icon")
+            .eq("id", payload.new.badge_id)
             .single();
-        
+
           if (badgeData) {
             toast.success(`🏆 Yeni Rozet: ${badgeData.name} ${badgeData.icon}`, {
               duration: 5000,
             });
           }
-        
+
           fetchBadges();
-        }
+        },
       )
       // Turnuva maçları değişikliklerini dinle
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'tournament_matches',
-          filter: `player1_id=eq.${user.id}`
+          event: "UPDATE",
+          schema: "public",
+          table: "tournament_matches",
+          filter: `player1_id=eq.${user.id}`,
         },
         async (payload) => {
-          console.log('🏆 Tournament match updated (as player1):', payload.new);
-          if (payload.new.status === 'completed') {
+          console.log("🏆 Tournament match updated (as player1):", payload.new);
+          if (payload.new.status === "completed") {
             const tournamentStats = await fetchTournamentStats();
-            setProfileData(prev => ({
+            setProfileData((prev) => ({
               ...prev,
               tournamentsWon: tournamentStats.won,
               tournamentsLost: tournamentStats.lost,
               tournamentsPlayed: tournamentStats.played,
               tournamentWinRate: tournamentStats.winRate,
             }));
-            
+
             // Rozet kontrolü yap
             if (user) {
               checkBadges(user.id);
             }
           }
-        }
+        },
       )
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'tournament_matches',
-          filter: `player2_id=eq.${user.id}`
+          event: "UPDATE",
+          schema: "public",
+          table: "tournament_matches",
+          filter: `player2_id=eq.${user.id}`,
         },
         async (payload) => {
-          console.log('🏆 Tournament match updated (as player2):', payload.new);
-          if (payload.new.status === 'completed') {
+          console.log("🏆 Tournament match updated (as player2):", payload.new);
+          if (payload.new.status === "completed") {
             const tournamentStats = await fetchTournamentStats();
-            setProfileData(prev => ({
+            setProfileData((prev) => ({
               ...prev,
               tournamentsWon: tournamentStats.won,
               tournamentsLost: tournamentStats.lost,
               tournamentsPlayed: tournamentStats.played,
               tournamentWinRate: tournamentStats.winRate,
             }));
-            
+
             // Rozet kontrolü yap
             if (user) {
               checkBadges(user.id);
             }
           }
-        }
+        },
       )
       .subscribe();
 
@@ -460,48 +457,45 @@ const ProfilePage = () => {
 
     // Rumuz uzunluk kontrolü
     if (editedUsername.length > 15) {
-      toast.error('Rumuz en fazla 15 karakter olabilir');
+      toast.error("Rumuz en fazla 15 karakter olabilir");
       return;
     }
 
     if (editedUsername.length < 2) {
-      toast.error('Rumuz en az 2 karakter olmalıdır');
+      toast.error("Rumuz en az 2 karakter olmalıdır");
       return;
     }
 
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ username: editedUsername })
-        .eq('id', user.id);
+      const { error } = await supabase.from("profiles").update({ username: editedUsername }).eq("id", user.id);
 
       if (error) throw error;
 
-      setProfileData(prev => ({ ...prev, username: editedUsername }));
+      setProfileData((prev) => ({ ...prev, username: editedUsername }));
       setIsEditing(false);
-      toast.success('Profil başarıyla güncellendi');
+      toast.success("Profil başarıyla güncellendi");
     } catch (error: any) {
-      console.error('Profile update error:', error);
-      toast.error('Profil güncellenirken hata oluştu');
+      console.error("Profile update error:", error);
+      toast.error("Profil güncellenirken hata oluştu");
     }
   };
 
   // Helper function to get subscription info
   const getSubscriptionInfo = () => {
     if (!profileData.premiumUntil) return null;
-    
+
     const premiumDate = new Date(profileData.premiumUntil);
     const now = new Date();
-    
+
     if (premiumDate <= now) return null;
-    
+
     const diffTime = premiumDate.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     const isYearly = diffDays > 40;
-    const subscriptionType = isYearly ? 'Yıllık' : 'Aylık';
-    
-    let timeLeft = '';
+    const subscriptionType = isYearly ? "Yıllık" : "Aylık";
+
+    let timeLeft = "";
     if (diffDays > 365) {
       const years = Math.floor(diffDays / 365);
       const remainingDays = diffDays % 365;
@@ -513,7 +507,7 @@ const ProfilePage = () => {
     } else {
       timeLeft = `${diffDays} gün`;
     }
-    
+
     return { subscriptionType, timeLeft, diffDays };
   };
 
@@ -522,19 +516,19 @@ const ProfilePage = () => {
   // checkBadges fonksiyonunu ekle
   const checkBadges = async (userId: string) => {
     try {
-      console.log('Rozet kontrolu yapiliyor:', userId);
+      console.log("Rozet kontrolu yapiliyor:", userId);
 
-      const { data: badges, error } = await supabase.rpc('check_and_award_badges_simple', {
-        p_user_id: userId
+      const { data: badges, error } = await supabase.rpc("check_and_award_badges_simple", {
+        p_user_id: userId,
       });
 
       if (error) {
-        console.error('Rozet kontrolu hatasi:', error);
+        console.error("Rozet kontrolu hatasi:", error);
       }
 
-      console.log('Rozet kontrolu tamamlandi');
+      console.log("Rozet kontrolu tamamlandi");
     } catch (error) {
-      console.error('Rozet kontrolu hatasi:', error);
+      console.error("Rozet kontrolu hatasi:", error);
     }
   };
 
@@ -548,7 +542,7 @@ const ProfilePage = () => {
     setShowAvatarOptions(false);
     const avatarUrl = await uploadFromCamera();
     if (avatarUrl) {
-      setProfileData(prev => ({ ...prev, avatar_url: avatarUrl }));
+      setProfileData((prev) => ({ ...prev, avatar_url: avatarUrl }));
     }
   };
 
@@ -556,14 +550,14 @@ const ProfilePage = () => {
     setShowAvatarOptions(false);
     const avatarUrl = await uploadFromGallery();
     if (avatarUrl) {
-      setProfileData(prev => ({ ...prev, avatar_url: avatarUrl }));
+      setProfileData((prev) => ({ ...prev, avatar_url: avatarUrl }));
     }
   };
 
   const handleGameAvatarsSelect = async (avatarPath: string) => {
     const avatarUrl = await uploadGameAvatar(avatarPath);
     if (avatarUrl) {
-      setProfileData(prev => ({ ...prev, avatar_url: avatarUrl }));
+      setProfileData((prev) => ({ ...prev, avatar_url: avatarUrl }));
     }
   };
 
@@ -571,36 +565,32 @@ const ProfilePage = () => {
     setShowAvatarOptions(false);
     const success = await deleteAvatar();
     if (success) {
-      setProfileData(prev => ({ ...prev, avatar_url: '' }));
+      setProfileData((prev) => ({ ...prev, avatar_url: "" }));
     }
   };
 
   const refreshStats = async () => {
     if (!viewedUserId) return;
-  
+
     try {
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', viewedUserId)
-        .single();
-    
+      const { data } = await supabase.from("profiles").select("*").eq("id", viewedUserId).single();
+
       const tournamentStats = await fetchTournamentStats();
-    
+
       if (data) {
         const levelData = calculateLevel(data.total_score || 0);
-        const username = data.username || (user?.email?.split('@')[0] || 'Oyuncu');
-      
-        setProfileData(prev => ({
+        const username = data.username || user?.email?.split("@")[0] || "Oyuncu";
+
+        setProfileData((prev) => ({
           ...prev,
           username: username,
-          avatar_url: data.avatar_url || '',
+          avatar_url: data.avatar_url || "",
           totalGames: data.total_games || 0,
           wins: data.wins || 0,
           losses: data.losses || 0,
           totalScore: data.total_score || 0,
           winRate: data.total_games > 0 ? Math.round(((data.wins || 0) / data.total_games) * 100) : 0,
-          longestWord: data.longest_word || '',
+          longestWord: data.longest_word || "",
           longestWordLength: data.longest_word_length || 0,
           currentStreak: data.win_streak || 0,
           level: levelData.level,
@@ -614,17 +604,17 @@ const ProfilePage = () => {
           tournamentWinRate: tournamentStats.winRate,
         }));
       }
-    
+
       await fetchBadges();
-      
+
       // Rozet kontrolü yap (sadece kendi profilinde)
       if (isOwnProfile && user) {
         await checkBadges(user.id);
       }
-      
-      toast.success('İstatistikler güncellendi!');
+
+      toast.success("İstatistikler güncellendi!");
     } catch (error) {
-      toast.error('Güncelleme hatası');
+      toast.error("Güncelleme hatası");
     }
   };
 
@@ -634,63 +624,62 @@ const ProfilePage = () => {
         {/* Fixed Header */}
         <div className="p-3 pt-6 bg-blue-50/95 backdrop-blur-sm border-b border-blue-200 sticky top-0 z-10">
           <div className="flex items-center justify-between mb-4">
-  <Button variant="outline" size="sm" onClick={() => {
-    const fromPage = location.state?.from;
-    if (fromPage === '/chat') {
-      navigate('/chat');
-    } else {
-      navigate('/');
-    }
-  }} className="text-blue-600 border-blue-500/30 hover:bg-blue-500/20 bg-blue-500/10">
-    <ArrowLeft className="w-4 h-4 mr-2" />
-    Geri
-  </Button>
-  
-  <div className="relative inline-block">
-    {/* Stroke Background */}
-    <img 
-      src="/stroke.png" 
-      alt="Stroke Background" 
-      className="absolute inset-0 w-full h-full object-contain opacity-50" 
-    />
-    {/* Profile Title */}
-    <h1 className="text-3xl font-bold flex items-center text-blue-600 relative z-10 px-6 py-3">
-      <User className="w-6 h-6 mr-3 text-blue-500"/>
-      {isOwnProfile ? 'Profil' : `${profileData.username} Profili`}
-    </h1>
-  </div>
-  
-  <div className="w-16 flex justify-end">
-  {isOwnProfile && (
-    isEditing ? (
-      <Button variant="outline" size="sm" onClick={handleSaveProfile}>
-        Kaydet
-      </Button>
-    ) : (
-      <Button variant="outline" size="sm" onClick={handleEditToggle} className="p-2">
-        <Edit className="w-5 h-5 text-red-500" />
-      </Button>
-    )
-  )}
-</div>
-</div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const fromPage = location.state?.from;
+                if (fromPage === "/chat") {
+                  navigate("/chat");
+                } else {
+                  navigate("/");
+                }
+              }}
+              className="text-blue-600 border-blue-500/30 hover:bg-blue-500/20 bg-blue-500/10"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Geri
+            </Button>
+
+            <div className="relative inline-block">
+              {/* Stroke Background */}
+              <img
+                src="/stroke.png"
+                alt="Stroke Background"
+                className="absolute inset-0 w-full h-full object-contain opacity-50"
+              />
+              {/* Profile Title */}
+              <h1 className="text-3xl font-bold flex items-center text-blue-600 relative z-10 px-6 py-3">
+                <User className="w-6 h-6 mr-3 text-blue-500" />
+                {isOwnProfile ? "Profil" : `${profileData.username} Profili`}
+              </h1>
+            </div>
+
+            <div className="w-16 flex justify-end">
+              {isOwnProfile &&
+                (isEditing ? (
+                  <Button variant="outline" size="sm" onClick={handleSaveProfile}>
+                    Kaydet
+                  </Button>
+                ) : (
+                  <Button variant="outline" size="sm" onClick={handleEditToggle} className="p-2">
+                    <Edit className="w-5 h-5 text-red-500" />
+                  </Button>
+                ))}
+            </div>
+          </div>
 
           {/* Profile Header in Fixed Area */}
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center space-x-4">
-                <div 
-                  className={`relative ${isOwnProfile ? 'cursor-pointer' : ''}`}
-                  onClick={handleAvatarClick}
-                >
+                <div className={`relative ${isOwnProfile ? "cursor-pointer" : ""}`} onClick={handleAvatarClick}>
                   <Avatar className="w-20 h-20 ring-2 ring-primary/20">
-                    <AvatarImage 
-                      src={(isOwnProfile ? profile?.avatar_url : viewedProfile?.avatar_url) || ''} 
-                      alt={profileData.username} 
+                    <AvatarImage
+                      src={(isOwnProfile ? profile?.avatar_url : viewedProfile?.avatar_url) || ""}
+                      alt={profileData.username}
                     />
-                    <AvatarFallback className="text-2xl">
-                      {profileData.username.charAt(0).toUpperCase()}
-                    </AvatarFallback>
+                    <AvatarFallback className="text-2xl">{profileData.username.charAt(0).toUpperCase()}</AvatarFallback>
                   </Avatar>
                   {uploading && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
@@ -710,9 +699,7 @@ const ProfilePage = () => {
                   ) : (
                     <h2 className="text-2xl font-bold">{profileData.username}</h2>
                   )}
-                  {!isOwnProfile && (
-                    <p className="text-sm text-muted-foreground">Oyuncu Profili</p>
-                  )}
+                  {!isOwnProfile && <p className="text-sm text-muted-foreground">Oyuncu Profili</p>}
                   {isOwnProfile && user?.email && (
                     <p className="text-xs text-muted-foreground truncate max-w-xs">{user.email}</p>
                   )}
@@ -734,12 +721,14 @@ const ProfilePage = () => {
                   </div>
                 </div>
               </div>
-              
+
               {/* Level Progress */}
               <div className="mt-4">
                 <div className="flex justify-between text-sm mb-2">
                   <span>Seviye İlerlemesi</span>
-                  <span>{profileData.experience}/{profileData.nextLevelExp} EXP</span>
+                  <span>
+                    {profileData.experience}/{profileData.nextLevelExp} EXP
+                  </span>
                 </div>
                 <Progress value={(profileData.experience / profileData.nextLevelExp) * 100} />
               </div>
@@ -750,266 +739,258 @@ const ProfilePage = () => {
         {/* Scrollable Content */}
         <ScrollArea className="flex-1 px-4">
           <div className="space-y-6 pb-6">
-
-        {/* Premium Subscription Info */}
-        {subscriptionInfo && (
-          <Card className="border-yellow-200 bg-gradient-to-r from-yellow-50 to-orange-50">
-            <CardHeader>
-              <CardTitle className="flex items-center text-yellow-700">
-                <Crown className="w-5 h-5 mr-2" />
-                Premium Abonelik
-              </CardTitle>
-              <CardDescription>
-                Aktif premium üyeliğinizin detayları
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center space-x-3">
-                  <div className="bg-yellow-100 p-2 rounded-lg">
-                    <Calendar className="w-5 h-5 text-yellow-600" />
+            {/* Premium Subscription Info */}
+            {subscriptionInfo && (
+              <Card className="border-yellow-200 bg-gradient-to-r from-yellow-50 to-orange-50">
+                <CardHeader>
+                  <CardTitle className="flex items-center text-yellow-700">
+                    <Crown className="w-5 h-5 mr-2" />
+                    Premium Abonelik
+                  </CardTitle>
+                  <CardDescription>Aktif premium üyeliğinizin detayları</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="bg-yellow-100 p-2 rounded-lg">
+                        <Calendar className="w-5 h-5 text-yellow-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-yellow-800">Abonelik Türü</p>
+                        <p className="text-sm text-yellow-600">{subscriptionInfo.subscriptionType} Premium</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <div className="bg-orange-100 p-2 rounded-lg">
+                        <Clock className="w-5 h-5 text-orange-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-orange-800">Kalan Süre</p>
+                        <p className="text-sm text-orange-600">{subscriptionInfo.timeLeft}</p>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium text-yellow-800">Abonelik Türü</p>
-                    <p className="text-sm text-yellow-600">{subscriptionInfo.subscriptionType} Premium</p>
+                  <div className="mt-4">
+                    <div className="flex justify-between text-sm mb-2">
+                      <span className="text-yellow-700">Yenilenme süresine kalan gün</span>
+                      <span className="font-medium text-yellow-800">{subscriptionInfo.diffDays} gün</span>
+                    </div>
+                    <Progress
+                      value={Math.max(0, Math.min(100, ((30 - subscriptionInfo.diffDays) / 30) * 100))}
+                      className="bg-yellow-100"
+                    />
                   </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="bg-orange-100 p-2 rounded-lg">
-                    <Clock className="w-5 h-5 text-orange-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-orange-800">Kalan Süre</p>
-                    <p className="text-sm text-orange-600">{subscriptionInfo.timeLeft}</p>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-4">
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-yellow-700">Yenilenme süresine kalan gün</span>
-                  <span className="font-medium text-yellow-800">{subscriptionInfo.diffDays} gün</span>
-                </div>
-                <Progress 
-                  value={Math.max(0, Math.min(100, (30 - subscriptionInfo.diffDays) / 30 * 100))} 
-                  className="bg-yellow-100"
-                />
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Statistics */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4 text-center">
-              <Target className="w-8 h-8 mx-auto mb-2 text-blue-500" />
-              <p className="text-2xl font-bold">{profileData.totalGames}</p>
-              <p className="text-sm text-muted-foreground">Toplam Oyun</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <Trophy className="w-8 h-8 mx-auto mb-2 text-green-500" />
-              <p className="text-2xl font-bold">{profileData.wins}</p>
-              <p className="text-sm text-muted-foreground">Kazanma</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <Zap className="w-8 h-8 mx-auto mb-2 text-purple-500" />
-              <p className="text-2xl font-bold">{profileData.currentStreak}</p>
-              <p className="text-sm text-muted-foreground">Seri</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <TrendingUp className="w-8 h-8 mx-auto mb-2 text-cyan-500" />
-              <p className="text-2xl font-bold">{Math.round(profileData.averageScore)}</p>
-              <p className="text-sm text-muted-foreground">Ort. Puan</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Tournament Statistics */}
-        {profileData.tournamentsPlayed > 0 && (
-          <Card className="border-yellow-200 bg-gradient-to-r from-yellow-50 to-amber-50">
-            <CardHeader>
-              <CardTitle className="flex items-center text-yellow-700">
-                <Trophy className="w-5 h-5 mr-2" />
-                Turnuva İstatistikleri
-              </CardTitle>
-              <CardDescription>
-                Turnuva performansınız
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center">
-                  <div className="flex items-center justify-center mb-2">
-                    <Users className="w-6 h-6 text-amber-600" />
-                  </div>
-                  <p className="text-xl font-bold text-amber-800">{profileData.tournamentsPlayed}</p>
-                  <p className="text-sm text-amber-600">Katılım</p>
-                </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center mb-2">
-                    <Award className="w-6 h-6 text-green-600" />
-                  </div>
-                  <p className="text-xl font-bold text-green-800">{profileData.tournamentsWon}</p>
-                  <p className="text-sm text-green-600">Kazanma</p>
-                </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center mb-2">
-                    <Target className="w-6 h-6 text-red-500" />
-                  </div>
-                  <p className="text-xl font-bold text-red-700">{profileData.tournamentsLost}</p>
-                  <p className="text-sm text-red-500">Kaybetme</p>
-                </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center mb-2">
-                    <TrendingUp className="w-6 h-6 text-purple-600" />
-                  </div>
-                  <p className="text-xl font-bold text-purple-800">{profileData.tournamentWinRate}%</p>
-                  <p className="text-sm text-purple-600">Başarı</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Achievements / Badges */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center">
-                  <Crown className="w-5 h-5 mr-2" />
-                  Rozetler
-                </CardTitle>
-                <CardDescription>
-                  Oyun içi başarılarınız ve rozetleriniz
-                </CardDescription>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowBadgesDialog(true)}
-              >
-                Tümünü Gör
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {badges.filter(b => b.earned).slice(0, 4).map((badge) => (
-                <div 
-                  key={badge.id}
-                  className="flex items-center space-x-3 p-3 rounded-lg border bg-accent/50 border-accent"
-                >
-                  <div className="text-2xl">{badge.icon}</div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{badge.name}</p>
-                    <p className="text-sm text-muted-foreground truncate">{badge.description}</p>
-                  </div>
-                  <Badge variant="secondary" className="text-xs">
-                    Kazanıldı
-                  </Badge>
-                </div>
-              ))}
-              {badges.filter(b => b.earned).length === 0 && (
-                <div className="col-span-2 text-center py-8 text-muted-foreground">
-                  Henüz kazanılmış rozet yok
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Joker Envanteri */}
-        {(jokers.degistir > 0 || jokers.fisilida > 0 || jokers.senYaz > 0) && (
-          <Card>
-            <CardHeader>
-              <CardTitle>🃏 Joker Envanteri</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
-                  <div className="text-2xl mb-2">🔄</div>
-                  <div className="text-sm text-muted-foreground">Değiştir</div>
-                  <div className="text-lg font-bold">{jokers.degistir}</div>
-                </div>
-                <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg">
-                  <div className="text-2xl mb-2">💬</div>
-                  <div className="text-sm text-muted-foreground">Fısılda</div>
-                  <div className="text-lg font-bold">{jokers.fisilida}</div>
-                </div>
-                <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
-                  <div className="text-2xl mb-2">✍️</div>
-                  <div className="text-sm text-muted-foreground">Sen Yaz</div>
-                  <div className="text-lg font-bold">{jokers.senYaz}</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Detailed Stats */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Detaylı İstatistikler</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex justify-between">
-              <span>Toplam Puan:</span>
-              <span className="font-bold">{profileData.totalScore.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>En Uzun Kelime:</span>
-              <span className="font-bold">
-                {profileData.longestWord ? 
-                  `${profileData.longestWord} (${profileData.longestWordLength} harf)` : 
-                  profileData.longestWordLength > 0 ?
-                    `${profileData.longestWordLength} harfli kelime` : 
-                    'Henüz yok'
-                }
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span>Kaybetme:</span>
-              <span className="font-bold">{profileData.losses}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Kazanma Oranı:</span>
-              <span className="font-bold">{profileData.winRate}%</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Ortalama Puan:</span>
-              <span className="font-bold">{Math.round(profileData.averageScore)}</span>
-            </div>
-            {profileData.tournamentsPlayed > 0 && (
-              <>
-                <hr className="my-4" />
-                <div className="text-sm font-semibold text-muted-foreground mb-2">Turnuva Performansı</div>
-                <div className="flex justify-between">
-                  <span>Kazanılan Turnuva:</span>
-                  <span className="font-bold text-green-600">{profileData.tournamentsWon}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Kaybedilen Turnuva:</span>
-                  <span className="font-bold text-red-600">{profileData.tournamentsLost}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Toplam Turnuva:</span>
-                  <span className="font-bold">{profileData.tournamentsPlayed}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Turnuva Başarı Oranı:</span>
-                  <span className="font-bold text-yellow-600">{profileData.tournamentWinRate}%</span>
-                </div>
-              </>
+                </CardContent>
+              </Card>
             )}
-          </CardContent>
-        </Card>
+
+            {/* Statistics */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card>
+                <CardContent className="p-4 text-center">
+                  <Target className="w-8 h-8 mx-auto mb-2 text-blue-500" />
+                  <p className="text-2xl font-bold">{profileData.totalGames}</p>
+                  <p className="text-sm text-muted-foreground">Toplam Oyun</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4 text-center">
+                  <Trophy className="w-8 h-8 mx-auto mb-2 text-green-500" />
+                  <p className="text-2xl font-bold">{profileData.wins}</p>
+                  <p className="text-sm text-muted-foreground">Kazanma</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4 text-center">
+                  <Zap className="w-8 h-8 mx-auto mb-2 text-purple-500" />
+                  <p className="text-2xl font-bold">{profileData.currentStreak}</p>
+                  <p className="text-sm text-muted-foreground">Seri</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4 text-center">
+                  <TrendingUp className="w-8 h-8 mx-auto mb-2 text-cyan-500" />
+                  <p className="text-2xl font-bold">{Math.round(profileData.averageScore)}</p>
+                  <p className="text-sm text-muted-foreground">Ort. Puan</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Tournament Statistics */}
+            {profileData.tournamentsPlayed > 0 && (
+              <Card className="border-yellow-200 bg-gradient-to-r from-yellow-50 to-amber-50">
+                <CardHeader>
+                  <CardTitle className="flex items-center text-yellow-700">
+                    <Trophy className="w-5 h-5 mr-2" />
+                    Turnuva İstatistikleri
+                  </CardTitle>
+                  <CardDescription>Turnuva performansınız</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="text-center">
+                      <div className="flex items-center justify-center mb-2">
+                        <Users className="w-6 h-6 text-amber-600" />
+                      </div>
+                      <p className="text-xl font-bold text-amber-800">{profileData.tournamentsPlayed}</p>
+                      <p className="text-sm text-amber-600">Katılım</p>
+                    </div>
+                    <div className="text-center">
+                      <div className="flex items-center justify-center mb-2">
+                        <Award className="w-6 h-6 text-green-600" />
+                      </div>
+                      <p className="text-xl font-bold text-green-800">{profileData.tournamentsWon}</p>
+                      <p className="text-sm text-green-600">Kazanma</p>
+                    </div>
+                    <div className="text-center">
+                      <div className="flex items-center justify-center mb-2">
+                        <Target className="w-6 h-6 text-red-500" />
+                      </div>
+                      <p className="text-xl font-bold text-red-700">{profileData.tournamentsLost}</p>
+                      <p className="text-sm text-red-500">Kaybetme</p>
+                    </div>
+                    <div className="text-center">
+                      <div className="flex items-center justify-center mb-2">
+                        <TrendingUp className="w-6 h-6 text-purple-600" />
+                      </div>
+                      <p className="text-xl font-bold text-purple-800">{profileData.tournamentWinRate}%</p>
+                      <p className="text-sm text-purple-600">Başarı</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Achievements / Badges */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center">
+                      <Crown className="w-5 h-5 mr-2" />
+                      Rozetler
+                    </CardTitle>
+                    <CardDescription>Oyun içi başarılarınız ve rozetleriniz</CardDescription>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => setShowBadgesDialog(true)}>
+                    Tümünü Gör
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {badges
+                    .filter((b) => b.earned)
+                    .slice(0, 4)
+                    .map((badge) => (
+                      <div
+                        key={badge.id}
+                        className="flex items-center space-x-3 p-3 rounded-lg border bg-accent/50 border-accent"
+                      >
+                        <div className="text-2xl">{badge.icon}</div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{badge.name}</p>
+                          <p className="text-sm text-muted-foreground truncate">{badge.description}</p>
+                        </div>
+                        <Badge variant="secondary" className="text-xs">
+                          Kazanıldı
+                        </Badge>
+                      </div>
+                    ))}
+                  {badges.filter((b) => b.earned).length === 0 && (
+                    <div className="col-span-2 text-center py-8 text-muted-foreground">Henüz kazanılmış rozet yok</div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Joker Envanteri */}
+            {(jokers.degistir > 0 || jokers.fisilida > 0 || jokers.senYaz > 0) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>🃏 Joker Envanteri</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
+                      {/* Değiştir İkonu */}
+                      <img src="/degistirIkon.png" alt="Değiştir" className="w-10 h-10 mx-auto mb-2 object-contain" />
+                      <div className="text-sm text-muted-foreground">Değiştir</div>
+                      <div className="text-lg font-bold">{jokers.degistir}</div>
+                    </div>
+                    <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg">
+                      {/* Fısılda İkonu */}
+                      <img src="/fisildaIkon.png" alt="Fısılda" className="w-10 h-10 mx-auto mb-2 object-contain" />
+                      <div className="text-sm text-muted-foreground">Fısılda</div>
+                      <div className="text-lg font-bold">{jokers.fisilida}</div>
+                    </div>
+                    <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
+                      {/* Sen Yaz İkonu */}
+                      <img src="/senyazIkon.png" alt="Sen Yaz" className="w-10 h-10 mx-auto mb-2 object-contain" />
+                      <div className="text-sm text-muted-foreground">Sen Yaz</div>
+                      <div className="text-lg font-bold">{jokers.senYaz}</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Detailed Stats */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Detaylı İstatistikler</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between">
+                  <span>Toplam Puan:</span>
+                  <span className="font-bold">{profileData.totalScore.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>En Uzun Kelime:</span>
+                  <span className="font-bold">
+                    {profileData.longestWord
+                      ? `${profileData.longestWord} (${profileData.longestWordLength} harf)`
+                      : profileData.longestWordLength > 0
+                        ? `${profileData.longestWordLength} harfli kelime`
+                        : "Henüz yok"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Kaybetme:</span>
+                  <span className="font-bold">{profileData.losses}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Kazanma Oranı:</span>
+                  <span className="font-bold">{profileData.winRate}%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Ortalama Puan:</span>
+                  <span className="font-bold">{Math.round(profileData.averageScore)}</span>
+                </div>
+                {profileData.tournamentsPlayed > 0 && (
+                  <>
+                    <hr className="my-4" />
+                    <div className="text-sm font-semibold text-muted-foreground mb-2">Turnuva Performansı</div>
+                    <div className="flex justify-between">
+                      <span>Kazanılan Turnuva:</span>
+                      <span className="font-bold text-green-600">{profileData.tournamentsWon}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Kaybedilen Turnuva:</span>
+                      <span className="font-bold text-red-600">{profileData.tournamentsLost}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Toplam Turnuva:</span>
+                      <span className="font-bold">{profileData.tournamentsPlayed}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Turnuva Başarı Oranı:</span>
+                      <span className="font-bold text-yellow-600">{profileData.tournamentWinRate}%</span>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </ScrollArea>
 
