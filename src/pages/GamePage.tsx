@@ -6457,53 +6457,44 @@ const GamePage = ({
                         </div>
                       )}
 
-                      <div className="flex items-center space-x-3 transition-all duration-300">
-                        <span
-                          className="text-lg transition-all duration-300 inline-block"
-                          style={{
-                            animation: "hourglassFlip 4s ease-in-out infinite",
-                          }}
-                        >
-                          ⏳
-                        </span>
-                      {/* Dijital saat tarzı timer - sabit genişlik */}
-                        <div 
-                          className={`relative px-4 py-2 rounded-lg ${
-                            displayTime <= 30 
-                              ? "bg-red-500/10 border border-red-500/30" 
-                              : "bg-primary/5 border border-primary/20"
-                          }`}
-                          style={{ minWidth: '120px' }}
-                        >
+                      {/* Son 9 saniyede timer'ı gizle */}
+                      {displayTime > 9 && (
+                        <div className="flex items-center space-x-2">
                           <span
-                            className={`font-mono text-2xl font-black tracking-wider block text-center ${
-                              displayTime <= 30 ? "text-red-500" : "text-primary"
-                            }`}
+                            className="text-base inline-block"
                             style={{
-                              fontFamily: "'Orbitron', 'Courier New', monospace",
-                              textShadow: displayTime <= 30 
-                                ? '0 0 10px rgba(239,68,68,0.5)' 
-                                : '0 0 10px rgba(var(--primary),0.3)',
-                              fontVariantNumeric: 'tabular-nums',
-                              letterSpacing: '0.1em',
+                              animation: "hourglassFlip 4s ease-in-out infinite",
                             }}
                           >
-                            {formatTime(displayTime)}
+                            ⏳
                           </span>
+                          {/* Dijital saat tarzı timer - çıkış butonuyla aynı yükseklik (h-8) */}
+                          <div 
+                            className={`flex items-center justify-center h-8 px-3 rounded-lg ${
+                              displayTime <= 30 
+                                ? "bg-red-500/10 border border-red-500/30" 
+                                : "bg-primary/5 border border-primary/20"
+                            }`}
+                            style={{ minWidth: '100px' }}
+                          >
+                            <span
+                              className={`font-mono text-lg font-black tracking-wider ${
+                                displayTime <= 30 ? "text-red-500" : "text-primary"
+                              }`}
+                              style={{
+                                fontFamily: "'Orbitron', 'Courier New', monospace",
+                                textShadow: displayTime <= 30 
+                                  ? '0 0 10px rgba(239,68,68,0.5)' 
+                                  : '0 0 10px rgba(var(--primary),0.3)',
+                                fontVariantNumeric: 'tabular-nums',
+                                letterSpacing: '0.1em',
+                              }}
+                            >
+                              {formatTime(displayTime)}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="w-32 h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className={`h-full transition-all duration-1000 ease-out ${
-                            displayTime <= 30
-                              ? "bg-red-500"
-                              : displayTime <= 60
-                                ? "bg-orange-500"
-                                : "bg-green-500"
-                          }`}
-                          style={{ width: `${(displayTime / 120) * 100}%` }}
-                        />
-                      </div>
+                      )}
                     </div>
                   ) : (
                     <div className="flex flex-col items-center space-y-1">
