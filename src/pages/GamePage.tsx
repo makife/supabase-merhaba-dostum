@@ -323,7 +323,7 @@ const GamePage = ({
 
   // Arka plan disconnect sonrası winner state'ini koru
   const backgroundDisconnectedRef = useRef(false);
-
+  
   const wrappedHandleBackgroundDisconnect = useCallback(() => {
     backgroundDisconnectedRef.current = true;
     handleBackgroundDisconnect();
@@ -337,7 +337,7 @@ const GamePage = ({
     onForeground: () => {
       console.log("🎮 Oyun ön plana geldi, backgroundDisconnected:", backgroundDisconnectedRef.current);
       setIsInBackground(false);
-
+      
       // Eğer arka plan disconnect olduysa, winner state'ini "opponent" olarak zorla
       // Çünkü realtime event'ler yanlış winner set etmiş olabilir
       if (backgroundDisconnectedRef.current) {
@@ -350,11 +350,11 @@ const GamePage = ({
         }, 100);
         return;
       }
-
+      
       // Native'de arka plandayken setTimeout çalışmaz
       // Oyun bitmişse ve butonlar hala deaktifse, aktif et
       setTimeout(() => {
-        setButtonsEnabled((prev) => {
+        setButtonsEnabled(prev => {
           console.log("🎮 Ön plan buton kontrolü - mevcut değer:", prev);
           return true;
         });
@@ -760,8 +760,10 @@ const GamePage = ({
 
     const roomId = currentRoom.id;
     const myUserId = user.id;
-    const opponentId = currentRoom.player1_id === myUserId ? currentRoom.player2_id : currentRoom.player1_id;
-
+    const opponentId = currentRoom.player1_id === myUserId 
+      ? currentRoom.player2_id 
+      : currentRoom.player1_id;
+    
     if (!opponentId) {
       console.log("💓 Rakip ID bulunamadı, heartbeat başlatılmıyor");
       return;
@@ -787,24 +789,23 @@ const GamePage = ({
     // 2. KENDİ HEARTBEAT'İMİ DATABASE'E YAZ (Her 2 saniyede)
     const writeMyHeartbeat = async () => {
       if (isCleanedUp || gameEndedRef.current) return;
-
+      
       try {
         // Server time kullan - daha güvenilir
         const serverTime = await getServerTime();
         const now = serverTime ? serverTime.toISOString() : new Date().toISOString();
-
-        const { error } = await supabase.from("player_activities").upsert(
-          {
+        
+        const { error } = await supabase
+          .from("player_activities")
+          .upsert({
             player_id: myUserId,
             match_id: roomId,
             last_action_time: now,
-            updated_at: now,
-          },
-          {
-            onConflict: "match_id,player_id",
-          },
-        );
-
+            updated_at: now
+          }, {
+            onConflict: "match_id,player_id"
+          });
+        
         if (error) {
           console.warn("💓 Heartbeat yazma hatası:", error.message);
         }
@@ -815,7 +816,7 @@ const GamePage = ({
 
     // İlk heartbeat'i hemen yaz
     writeMyHeartbeat();
-
+    
     // Sonra her 2 saniyede bir
     heartbeatIntervalRef.current = setInterval(writeMyHeartbeat, 2000);
 
@@ -907,7 +908,7 @@ const GamePage = ({
       isCleanedUp = true;
       if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
       if (checkOpponentAliveIntervalRef.current) clearInterval(checkOpponentAliveIntervalRef.current);
-
+      
       // Kendi activity kaydımı sil (best effort - uygulama kill edilirse çalışmaz)
       supabase
         .from("player_activities")
@@ -2357,20 +2358,6 @@ const GamePage = ({
 
     navigate("/");
   };
-
-  // GamePage.tsx içine ekle
-
-  useEffect(() => {
-    // Oyun devam ederken ve süre 9'a gelmiş veya altındaysa (0 hariç)
-    if (gameStarted && !gameEnded && displayTime <= 9 && displayTime > 0) {
-      const utterance = new SpeechSynthesisUtterance(String(displayTime));
-      utterance.lang = "tr-TR";
-      utterance.rate = 1.2; // Biraz hızlı okusun
-      // Varsa önceki konuşmayı durdur ki üst üste binmesin
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(utterance);
-    }
-  }, [displayTime, gameStarted, gameEnded]);
 
   // Random match için grid'i URL'den al ve game room oluştur
   useEffect(() => {

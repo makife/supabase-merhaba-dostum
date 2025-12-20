@@ -1,6 +1,6 @@
 /**
  * RandomMatchPage.tsx - Production-Ready Random Match Implementation
- *
+ * 
  * Temiz sayfa yaklaşımı ile yazıldı:
  * - Supabase Realtime tabanlı eşleşme
  * - Server-authoritative timing (server time offset)
@@ -34,7 +34,16 @@ import { useJokerInventory } from "@/hooks/useJokerInventory";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerTime } from "@/hooks/useServerTime";
 import GameCountdown from "@/components/GameCountdown";
-import { ArrowLeft, Trash2, Send, User, Shuffle, Lightbulb, PenTool, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Trash2,
+  Send,
+  User,
+  Shuffle,
+  Lightbulb,
+  PenTool,
+  Loader2,
+} from "lucide-react";
 import { matchBanlist } from "@/utils/matchBanlist";
 
 // ============= TYPES =============
@@ -73,106 +82,34 @@ const generateSeededGrid = (seed: string): string[][] => {
   };
 
   const letterPool = [
-    "A",
-    "A",
-    "A",
-    "A",
-    "A",
-    "A",
-    "A",
-    "A",
-    "E",
-    "E",
-    "E",
-    "E",
-    "E",
-    "E",
-    "E",
-    "İ",
-    "İ",
-    "İ",
-    "İ",
-    "İ",
-    "İ",
-    "I",
-    "I",
-    "I",
-    "I",
-    "I",
-    "O",
-    "O",
-    "O",
-    "O",
-    "O",
-    "U",
-    "U",
-    "U",
-    "U",
-    "Ü",
-    "Ü",
-    "Ü",
-    "Ö",
-    "Ö",
-    "Ö",
-    "L",
-    "L",
-    "L",
-    "L",
-    "L",
-    "N",
-    "N",
-    "N",
-    "N",
-    "N",
-    "R",
-    "R",
-    "R",
-    "R",
-    "R",
-    "K",
-    "K",
-    "K",
-    "K",
-    "M",
-    "M",
-    "M",
-    "M",
-    "T",
-    "T",
-    "T",
-    "T",
-    "S",
-    "S",
-    "S",
-    "S",
-    "D",
-    "D",
-    "D",
-    "Y",
-    "Y",
-    "Y",
-    "B",
-    "B",
-    "B",
-    "C",
-    "C",
-    "Ç",
-    "Ç",
-    "F",
-    "F",
-    "G",
-    "G",
-    "Ğ",
-    "Ğ",
-    "H",
-    "H",
+    "A", "A", "A", "A", "A", "A", "A", "A",
+    "E", "E", "E", "E", "E", "E", "E",
+    "İ", "İ", "İ", "İ", "İ", "İ",
+    "I", "I", "I", "I", "I",
+    "O", "O", "O", "O", "O",
+    "U", "U", "U", "U",
+    "Ü", "Ü", "Ü",
+    "Ö", "Ö", "Ö",
+    "L", "L", "L", "L", "L",
+    "N", "N", "N", "N", "N",
+    "R", "R", "R", "R", "R",
+    "K", "K", "K", "K",
+    "M", "M", "M", "M",
+    "T", "T", "T", "T",
+    "S", "S", "S", "S",
+    "D", "D", "D",
+    "Y", "Y", "Y",
+    "B", "B", "B",
+    "C", "C",
+    "Ç", "Ç",
+    "F", "F",
+    "G", "G",
+    "Ğ", "Ğ",
+    "H", "H",
     "J",
-    "P",
-    "P",
-    "Ş",
-    "Ş",
-    "V",
-    "V",
+    "P", "P",
+    "Ş", "Ş",
+    "V", "V",
     "Z",
   ];
 
@@ -272,7 +209,7 @@ const RandomMatchPage = () => {
           .split("\n")
           .map((word) => word.trim().toLocaleUpperCase("tr-TR"))
           .filter((word) => word.length >= 3);
-
+        
         const wordSet = new Set(words);
         setWordlist(wordSet);
         setWordlistLoaded(true);
@@ -309,7 +246,7 @@ const RandomMatchPage = () => {
 
   // ============= LOAD ROOM & OPPONENT =============
   const opponentRef = useRef<OpponentInfo | null>(null);
-
+  
   useEffect(() => {
     if (!roomId || roomId === "ROOM_ID" || !user?.id) return;
 
@@ -339,7 +276,7 @@ const RandomMatchPage = () => {
         const myId = user.id;
         const isPlayer1 = roomData.player1_id === myId;
         const isPlayer2 = roomData.player2_id === myId;
-
+        
         console.log("🎮 Room loaded - myId:", myId);
         console.log("🎮 Room players - p1:", roomData.player1_id, "p2:", roomData.player2_id);
         console.log("🎮 I am - isPlayer1:", isPlayer1, "isPlayer2:", isPlayer2);
@@ -374,18 +311,18 @@ const RandomMatchPage = () => {
         // Load opponent - CRITICAL: wait for this to complete
         const opponentId = isPlayer1 ? roomData.player2_id : roomData.player1_id;
         console.log("👤 Opponent ID to load:", opponentId);
-
+        
         if (opponentId) {
           const { data: opponentData, error: opponentError } = await supabase
             .from("profiles")
             .select("id, username, avatar_url")
             .eq("id", opponentId)
             .single();
-
+          
           if (opponentError) {
             console.error("❌ Opponent load error:", opponentError);
           }
-
+          
           if (opponentData) {
             console.log("✅ Opponent loaded:", opponentData.username, opponentData.id);
             setOpponent(opponentData);
@@ -403,31 +340,31 @@ const RandomMatchPage = () => {
         // Buffer animation runs in parallel, countdown starts right away
         if (roomData.countdown_started_at && !countdownInitiatedRef.current) {
           countdownInitiatedRef.current = true;
-
+          
           // Calculate ADJUSTED server time: countdown_started_at + 5s buffer = actual countdown start
           // Bu sayede countdown 5 saniye sonra başlayacak şekilde hesaplanır
           const originalStartTime = new Date(roomData.countdown_started_at).getTime();
           const adjustedStartTime = new Date(originalStartTime + 5000).toISOString(); // Add 5s buffer
-
+          
           console.log("⏱️ Countdown timing:", {
             original: roomData.countdown_started_at,
             adjusted: adjustedStartTime,
-            bufferMs: 5000,
+            bufferMs: 5000
           });
-
+          
           // Buffer animasyonu: 3.5s hazırlanıyor, 0.5s hazır, 1s boşluk
           setPreparingOpponent("preparing");
-
+          
           setTimeout(() => {
             if (!isMountedRef.current) return;
             setPreparingOpponent("ready");
           }, 3000);
-
+          
           setTimeout(() => {
             if (!isMountedRef.current) return;
             setPreparingOpponent(null);
           }, 3500);
-
+          
           // Countdown'u HEMEN göster ama ADJUSTED time ile (5s sonra başlayacak)
           // Bu sayede 5 4 3 2 1 tam olarak görünür
           setTimeout(() => {
@@ -436,6 +373,7 @@ const RandomMatchPage = () => {
             setShowCountdown(true);
           }, 5000);
         }
+
       } catch (err) {
         console.error("Room load error:", err);
         toast({
@@ -457,8 +395,7 @@ const RandomMatchPage = () => {
     const myId = user.id;
     console.log("📡 Setting up realtime subscription for room:", roomId, "myId:", myId);
 
-    const channel = supabase
-      .channel(`room-${roomId}`)
+    const channel = supabase.channel(`room-${roomId}`)
       .on(
         "postgres_changes",
         {
@@ -474,7 +411,7 @@ const RandomMatchPage = () => {
             p1_id: newRoom.player1_id,
             p2_id: newRoom.player2_id,
             p1_score: newRoom.player1_score,
-            p2_score: newRoom.player2_score,
+            p2_score: newRoom.player2_score
           });
 
           setRoom(newRoom);
@@ -482,7 +419,7 @@ const RandomMatchPage = () => {
           // Determine which player we are - CRITICAL: compare with myId
           const isPlayer1 = myId === newRoom.player1_id;
           const isPlayer2 = myId === newRoom.player2_id;
-
+          
           console.log("🔍 Player determination - myId:", myId, "isPlayer1:", isPlayer1, "isPlayer2:", isPlayer2);
 
           // Update opponent score only (player score is managed locally)
@@ -507,11 +444,11 @@ const RandomMatchPage = () => {
                 .select("id, username, avatar_url")
                 .eq("id", opponentId)
                 .single();
-
+              
               if (opponentError) {
                 console.error("❌ Failed to load opponent:", opponentError);
               }
-
+              
               if (opponentData) {
                 console.log("✅ Opponent loaded from realtime:", opponentData.username);
                 setOpponent(opponentData);
@@ -524,30 +461,30 @@ const RandomMatchPage = () => {
           if (newRoom.countdown_started_at && !countdownInitiatedRef.current) {
             console.log("⏱️ Countdown started from realtime - buffer başlıyor");
             countdownInitiatedRef.current = true;
-
+            
             // Calculate ADJUSTED server time: countdown_started_at + 5s buffer = actual countdown start
             const originalStartTime = new Date(newRoom.countdown_started_at).getTime();
             const adjustedStartTime = new Date(originalStartTime + 5000).toISOString();
-
+            
             console.log("⏱️ Realtime countdown timing:", {
               original: newRoom.countdown_started_at,
               adjusted: adjustedStartTime,
-              bufferMs: 5000,
+              bufferMs: 5000
             });
-
+            
             // Buffer animasyonu: 3.5s hazırlanıyor, 0.5s hazır, 1s boşluk
             setPreparingOpponent("preparing");
-
+            
             setTimeout(() => {
               if (!isMountedRef.current) return;
               setPreparingOpponent("ready");
             }, 3000);
-
+            
             setTimeout(() => {
               if (!isMountedRef.current) return;
               setPreparingOpponent(null);
             }, 3500);
-
+            
             // Countdown'u HEMEN göster ama ADJUSTED time ile (5s sonra başlayacak)
             setTimeout(() => {
               if (!isMountedRef.current) return;
@@ -561,7 +498,7 @@ const RandomMatchPage = () => {
           if (newRoom.status === "finished" && !gameEnded) {
             handleGameEnd(newRoom);
           }
-        },
+        }
       )
       .subscribe((status) => {
         console.log("📡 Realtime subscription status:", status);
@@ -578,12 +515,12 @@ const RandomMatchPage = () => {
   // ============= GAME HANDLERS =============
   const handleTimeUp = useCallback(async () => {
     if (gameEnded) return;
-
+    
     setGameEnded(true);
-
+    
     const isWinner = playerScore > opponentScore;
     const isTie = playerScore === opponentScore;
-
+    
     // Determine winner
     if (isWinner) {
       setWinner("player");
@@ -599,10 +536,10 @@ const RandomMatchPage = () => {
     // Update game statistics
     if (user && !statsUpdatedRef.current) {
       statsUpdatedRef.current = true;
-
+      
       const gameDuration = 120;
-      const wordsJson = playerWordsWithScores.map((w) => ({ word: w.word, score: w.score }));
-
+      const wordsJson = playerWordsWithScores.map(w => ({ word: w.word, score: w.score }));
+      
       try {
         const { error } = await (supabase.rpc as any)("update_game_stats", {
           p_user_id: user.id,
@@ -613,7 +550,7 @@ const RandomMatchPage = () => {
           p_first_word_time: firstWordTimeRef.current,
           p_game_mode: "random-match",
         });
-
+        
         if (error) {
           console.error("❌ İstatistik güncelleme hatası:", error);
         } else {
@@ -625,16 +562,7 @@ const RandomMatchPage = () => {
     }
 
     setShowResults(true);
-  }, [
-    gameEnded,
-    playerScore,
-    opponentScore,
-    user,
-    playerWordsWithScores,
-    playCelebrationSound,
-    playGameLoseSound,
-    playTieSound,
-  ]);
+  }, [gameEnded, playerScore, opponentScore, user, playerWordsWithScores, playCelebrationSound, playGameLoseSound, playTieSound]);
 
   // ============= TIMER (timestamp-based) =============
   useEffect(() => {
@@ -646,12 +574,12 @@ const RandomMatchPage = () => {
     }
 
     let endsAt: number;
-
+    
     if (room?.ends_at) {
       endsAt = new Date(room.ends_at).getTime();
     } else {
       // ends_at yoksa, oyun başlangıç zamanından hesapla
-      endsAt = gameStartTimeRef.current + GAME_DURATION * 1000;
+      endsAt = gameStartTimeRef.current + (GAME_DURATION * 1000);
     }
 
     const updateTimer = () => {
@@ -659,7 +587,7 @@ const RandomMatchPage = () => {
 
       const now = Date.now() + serverTimeOffset;
       const remaining = Math.max(0, Math.ceil((endsAt - now) / 1000));
-
+      
       setDisplayTime(remaining);
 
       if (remaining <= 0 && !gameEnded) {
@@ -686,10 +614,10 @@ const RandomMatchPage = () => {
     setGameStarted(true);
     // Timer GAME_DURATION ile başlamalı - ends_at'tan hesaplanacak
     setDisplayTime(GAME_DURATION);
-
+    
     // Record game start time for first word tracking
     gameStartTimeRef.current = Date.now() + serverTimeOffset;
-
+    
     // ends_at henüz set edilmediyse şimdi hesapla
     if (room && !room.ends_at) {
       const endsAt = new Date(Date.now() + serverTimeOffset + GAME_DURATION * 1000).toISOString();
@@ -701,30 +629,27 @@ const RandomMatchPage = () => {
     }
   }, [room, serverTimeOffset]);
 
-  const handleGameEnd = useCallback(
-    (roomData: RoomData) => {
-      if (gameEnded) return;
+  const handleGameEnd = useCallback((roomData: RoomData) => {
+    if (gameEnded) return;
 
-      setGameEnded(true);
+    setGameEnded(true);
 
-      const myScore = user?.id === roomData.player1_id ? roomData.player1_score : roomData.player2_score;
-      const theirScore = user?.id === roomData.player1_id ? roomData.player2_score : roomData.player1_score;
+    const myScore = user?.id === roomData.player1_id ? roomData.player1_score : roomData.player2_score;
+    const theirScore = user?.id === roomData.player1_id ? roomData.player2_score : roomData.player1_score;
 
-      if (myScore > theirScore) {
-        setWinner("player");
-        playCelebrationSound();
-      } else if (theirScore > myScore) {
-        setWinner("opponent");
-        playGameLoseSound();
-      } else {
-        setWinner("tie");
-        playTieSound();
-      }
+    if (myScore > theirScore) {
+      setWinner("player");
+      playCelebrationSound();
+    } else if (theirScore > myScore) {
+      setWinner("opponent");
+      playGameLoseSound();
+    } else {
+      setWinner("tie");
+      playTieSound();
+    }
 
-      setShowResults(true);
-    },
-    [user, gameEnded, playCelebrationSound, playGameLoseSound, playTieSound],
-  );
+    setShowResults(true);
+  }, [user, gameEnded, playCelebrationSound, playGameLoseSound, playTieSound]);
 
   // ============= WORD SUBMISSION =============
   const submitWord = useCallback(async () => {
@@ -755,9 +680,9 @@ const RandomMatchPage = () => {
       }
 
       setPlayerScore(newScore);
-      setPlayerWords((prev) => [...prev, word]);
-      setPlayerWordsWithScores((prev) => [...prev, { word, score }]);
-      setUsedWords((prev) => new Set([...prev, word]));
+      setPlayerWords(prev => [...prev, word]);
+      setPlayerWordsWithScores(prev => [...prev, { word, score }]);
+      setUsedWords(prev => new Set([...prev, word]));
       setInputFlash("success");
       playSound("correctWord");
 
@@ -790,39 +715,24 @@ const RandomMatchPage = () => {
 
     setTimeout(() => setInputFlash(null), 300);
     setSelectedLetters([]);
-  }, [
-    currentWord,
-    gameStarted,
-    gameEnded,
-    room,
-    user,
-    playerScore,
-    usedWords,
-    validateWord,
-    playSound,
-    playSpecialSound,
-    toast,
-  ]);
+  }, [currentWord, gameStarted, gameEnded, room, user, playerScore, usedWords, validateWord, playSound, playSpecialSound, toast]);
 
   // ============= LETTER HANDLING =============
-  const handleLetterClick = useCallback(
-    (letter: string, row: number, col: number) => {
-      if (!gameStarted || gameEnded) return;
+  const handleLetterClick = useCallback((letter: string, row: number, col: number) => {
+    if (!gameStarted || gameEnded) return;
 
-      const isSelected = selectedLetters.some((s) => s.row === row && s.col === col);
+    const isSelected = selectedLetters.some(s => s.row === row && s.col === col);
 
-      if (isSelected) {
-        // Remove this and all letters after it
-        const index = selectedLetters.findIndex((s) => s.row === row && s.col === col);
-        setSelectedLetters((prev) => prev.slice(0, index));
-      } else {
-        // Add letter
-        setSelectedLetters((prev) => [...prev, { letter, row, col }]);
-        playSound("buttonClick");
-      }
-    },
-    [gameStarted, gameEnded, selectedLetters, playSound],
-  );
+    if (isSelected) {
+      // Remove this and all letters after it
+      const index = selectedLetters.findIndex(s => s.row === row && s.col === col);
+      setSelectedLetters(prev => prev.slice(0, index));
+    } else {
+      // Add letter
+      setSelectedLetters(prev => [...prev, { letter, row, col }]);
+      playSound("buttonClick");
+    }
+  }, [gameStarted, gameEnded, selectedLetters, playSound]);
 
   const clearWord = useCallback(() => {
     setSelectedLetters([]);
@@ -837,29 +747,7 @@ const RandomMatchPage = () => {
     setIsJokerActive(true);
 
     const vowels = ["A", "E", "İ", "I", "O", "U", "Ü", "Ö"];
-    const consonants = [
-      "B",
-      "C",
-      "Ç",
-      "D",
-      "F",
-      "G",
-      "Ğ",
-      "H",
-      "J",
-      "K",
-      "L",
-      "M",
-      "N",
-      "P",
-      "R",
-      "S",
-      "Ş",
-      "T",
-      "V",
-      "Y",
-      "Z",
-    ];
+    const consonants = ["B", "C", "Ç", "D", "F", "G", "Ğ", "H", "J", "K", "L", "M", "N", "P", "R", "S", "Ş", "T", "V", "Y", "Z"];
 
     const newGrid = [...gameGrid.map((row) => [...row])];
 
@@ -972,19 +860,7 @@ const RandomMatchPage = () => {
         duration: 4000,
       });
     }
-  }, [
-    jokers.fisilida,
-    gameStarted,
-    isJokerActive,
-    gameGrid,
-    wordlist,
-    wordlistLoaded,
-    usedWords,
-    useJoker,
-    playSpecialSound,
-    playSound,
-    toast,
-  ]);
+  }, [jokers.fisilida, gameStarted, isJokerActive, gameGrid, wordlist, wordlistLoaded, usedWords, useJoker, playSpecialSound, playSound, toast]);
 
   const useSenYazJoker = useCallback(async () => {
     if (jokers.senYaz <= 0 || !gameStarted || isJokerActive) return;
@@ -1064,18 +940,15 @@ const RandomMatchPage = () => {
       const newScore = playerScore + score;
 
       setPlayerScore(newScore);
-      setPlayerWords((prev) => [...prev, selectedWord]);
-      setPlayerWordsWithScores((prev) => [...prev, { word: selectedWord, score }]);
-      setUsedWords((prev) => new Set([...prev, normalizedWord]));
+      setPlayerWords(prev => [...prev, selectedWord]);
+      setPlayerWordsWithScores(prev => [...prev, { word: selectedWord, score }]);
+      setUsedWords(prev => new Set([...prev, normalizedWord]));
       playSound("correctWord");
 
       // Update score in database
       if (room) {
         const scoreField = user?.id === room.player1_id ? "player1_score" : "player2_score";
-        await supabase
-          .from("game_rooms")
-          .update({ [scoreField]: newScore })
-          .eq("id", room.id);
+        await supabase.from("game_rooms").update({ [scoreField]: newScore }).eq("id", room.id);
         await supabase.from("game_words").insert({
           room_id: room.id,
           player_id: user?.id,
@@ -1088,22 +961,7 @@ const RandomMatchPage = () => {
       setSelectedLetters([]);
       setIsJokerActive(false);
     }, 1500);
-  }, [
-    jokers.senYaz,
-    gameStarted,
-    isJokerActive,
-    gameGrid,
-    wordlist,
-    wordlistLoaded,
-    usedWords,
-    room,
-    user,
-    playerScore,
-    useJoker,
-    playSpecialSound,
-    playSound,
-    toast,
-  ]);
+  }, [jokers.senYaz, gameStarted, isJokerActive, gameGrid, wordlist, wordlistLoaded, usedWords, room, user, playerScore, useJoker, playSpecialSound, playSound, toast]);
 
   // ============= EXIT HANDLING =============
   const handleBackToMenu = useCallback(() => {
@@ -1118,7 +976,10 @@ const RandomMatchPage = () => {
     if (room) {
       matchBanlist.add(room.id);
       // Leave room
-      await supabase.from("game_rooms").update({ status: "finished" }).eq("id", room.id);
+      await supabase
+        .from("game_rooms")
+        .update({ status: "finished" })
+        .eq("id", room.id);
     }
     navigate("/");
   }, [room, navigate]);
@@ -1157,11 +1018,9 @@ const RandomMatchPage = () => {
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center p-4">
         <Card className="max-w-sm w-full">
           <CardContent className="p-6 text-center">
-            <h2
-              className={`text-2xl font-bold mb-4 ${
-                winner === "player" ? "text-yellow-600" : winner === "opponent" ? "text-gray-600" : "text-blue-600"
-              }`}
-            >
+            <h2 className={`text-2xl font-bold mb-4 ${
+              winner === "player" ? "text-yellow-600" : winner === "opponent" ? "text-gray-600" : "text-blue-600"
+            }`}>
               {winner === "player" ? "Kazandınız! 🎉" : winner === "opponent" ? "Kaybettiniz" : "Beraberlik!"}
             </h2>
 
@@ -1177,7 +1036,10 @@ const RandomMatchPage = () => {
             </div>
 
             <div className="space-y-2">
-              <Button onClick={() => navigate("/")} className="w-full">
+              <Button
+                onClick={() => navigate("/")}
+                className="w-full"
+              >
                 Ana Menüye Dön
               </Button>
             </div>
@@ -1218,48 +1080,33 @@ const RandomMatchPage = () => {
           <div className="h-full flex flex-col px-2 relative z-15">
             {/* Header */}
             <div className="flex items-center justify-between py-2 shrink-0">
-              <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-8" onClick={handleBackToMenu}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs px-2 py-1 h-8"
+                onClick={handleBackToMenu}
+              >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Çıkış
               </Button>
 
-              {/* DİJİTAL SAYAÇ ALANI */}
-              <div className="flex flex-col items-center justify-center min-h-[3rem]">
-                {/* DURUM 1: Normal Geri Sayım (> 9 saniye) */}
-                {displayTime > 9 ? (
-                  <>
-                    <div className="flex items-center space-x-2 text-foreground transition-all">
-                      <span className="text-lg">⏳</span>
-                      {/* Sadece fontu dijitale çevirdik, pulse'u kaldırdık */}
-                      <span className="font-digital text-xl font-bold tracking-widest text-slate-700">
-                        {formatTime(displayTime)}
-                      </span>
-                    </div>
-                    {/* Progress bar sadece 9 saniyeye kadar görünsün */}
-                    <div className="w-32 h-1 bg-muted rounded-full overflow-hidden mt-1">
-                      <div
-                        className={`h-full transition-all duration-1000 ease-out ${
-                          displayTime <= 30 ? "bg-orange-500" : "bg-green-500"
-                        }`}
-                        style={{ width: `${(displayTime / 120) * 100}%` }}
-                      />
-                    </div>
-                  </>
-                ) : (
-                  /* DURUM 2: Son 9 Saniye (Panik Modu) */
-                  <motion.div
-                    key={displayTime} // Her saniyede animasyonu tetikle
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1.2, opacity: 1 }} // Büyüme efekti
-                    transition={{ type: "spring", stiffness: 300, damping: 10 }}
-                    className="flex items-center justify-center"
-                  >
-                    <span className="font-digital text-6xl font-black text-red-600 drop-shadow-lg tabular-nums">
-                      {displayTime}
-                    </span>
-                  </motion.div>
-                )}
+              {/* Timer */}
+              <div className="flex flex-col items-center space-y-2">
+                <div className={`flex items-center space-x-2 ${displayTime <= 15 ? "text-red-500 animate-pulse" : ""}`}>
+                  <span className="text-lg">⏳</span>
+                  <span className="font-mono text-lg font-bold">{formatTime(displayTime)}</span>
+                </div>
+                <div className="w-32 h-1 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-1000 ${
+                      displayTime <= 15 ? "bg-red-500" : displayTime <= 30 ? "bg-orange-500" : "bg-green-500"
+                    }`}
+                    style={{ width: `${(displayTime / GAME_DURATION) * 100}%` }}
+                  />
+                </div>
               </div>
+
+              <div className="w-16" />
             </div>
 
             {/* Scores */}
@@ -1268,9 +1115,7 @@ const RandomMatchPage = () => {
                 <CardContent className="p-4 text-center">
                   <Avatar className="w-16 h-16 mx-auto mb-2">
                     <AvatarImage src={profile?.avatar_url} alt="Profile" />
-                    <AvatarFallback>
-                      <User className="w-8 h-8" />
-                    </AvatarFallback>
+                    <AvatarFallback><User className="w-8 h-8" /></AvatarFallback>
                   </Avatar>
                   <p className="text-sm font-bold">Siz</p>
                   <p className="text-2xl font-bold">{playerScore}</p>
@@ -1281,9 +1126,7 @@ const RandomMatchPage = () => {
                 <CardContent className="p-4 text-center relative">
                   <Avatar className="w-16 h-16 mx-auto mb-2">
                     <AvatarImage src={opponent?.avatar_url || ""} alt="Opponent" />
-                    <AvatarFallback>
-                      <User className="w-8 h-8" />
-                    </AvatarFallback>
+                    <AvatarFallback><User className="w-8 h-8" /></AvatarFallback>
                   </Avatar>
                   <p className="text-sm font-bold">{opponent?.username || "Rakip"}</p>
                   <p className="text-2xl font-bold">{opponentScore}</p>
@@ -1382,7 +1225,9 @@ const RandomMatchPage = () => {
                       </div>
                     )}
                   </div>
-                  <Badge className="bg-slate-800 text-white text-base font-bold px-3 py-1">{currentWord.length}</Badge>
+                  <Badge className="bg-slate-800 text-white text-base font-bold px-3 py-1">
+                    {currentWord.length}
+                  </Badge>
                 </div>
               </CardContent>
             </Card>
@@ -1393,8 +1238,8 @@ const RandomMatchPage = () => {
                 <div className="grid grid-cols-4 gap-2 w-full max-w-xs">
                   {gameGrid.map((row, rowIndex) =>
                     row.map((letter, colIndex) => {
-                      const isSelected = selectedLetters.some((s) => s.row === rowIndex && s.col === colIndex);
-                      const selectionOrder = selectedLetters.findIndex((s) => s.row === rowIndex && s.col === colIndex);
+                      const isSelected = selectedLetters.some(s => s.row === rowIndex && s.col === colIndex);
+                      const selectionOrder = selectedLetters.findIndex(s => s.row === rowIndex && s.col === colIndex);
 
                       return (
                         <Button
@@ -1406,9 +1251,13 @@ const RandomMatchPage = () => {
                           onClick={() => handleLetterClick(letter, rowIndex, colIndex)}
                         >
                           {!isSelected && (
-                            <motion.span layoutId={`letter-${rowIndex}-${colIndex}`}>{letter}</motion.span>
+                            <motion.span layoutId={`letter-${rowIndex}-${colIndex}`}>
+                              {letter}
+                            </motion.span>
                           )}
-                          {isSelected && <span className="opacity-30">{letter}</span>}
+                          {isSelected && (
+                            <span className="opacity-30">{letter}</span>
+                          )}
                           {isSelected && selectionOrder >= 0 && (
                             <motion.span
                               initial={{ scale: 0 }}
@@ -1420,7 +1269,7 @@ const RandomMatchPage = () => {
                           )}
                         </Button>
                       );
-                    }),
+                    })
                   )}
                 </div>
               </CardContent>
