@@ -321,27 +321,47 @@ const GamePage = ({
     leaveRoom();
   }, [gameMode, user?.id, toast, leaveRoom]);
 
+  // Arka plan disconnect sonrası winner state'ini koru
+  const backgroundDisconnectedRef = useRef(false);
+  
+  const wrappedHandleBackgroundDisconnect = useCallback(() => {
+    backgroundDisconnectedRef.current = true;
+    handleBackgroundDisconnect();
+  }, [handleBackgroundDisconnect]);
+
   useAppState({
     onBackground: () => {
       console.log("🎮 Oyun arka plana gitti");
       setIsInBackground(true);
     },
     onForeground: () => {
-      console.log("🎮 Oyun ön plana geldi");
+      console.log("🎮 Oyun ön plana geldi, backgroundDisconnected:", backgroundDisconnectedRef.current);
       setIsInBackground(false);
+      
+      // Eğer arka plan disconnect olduysa, winner state'ini "opponent" olarak zorla
+      // Çünkü realtime event'ler yanlış winner set etmiş olabilir
+      if (backgroundDisconnectedRef.current) {
+        console.log("🎮 Arka plan disconnect sonrası - winner 'opponent' olarak korunuyor");
+        setTimeout(() => {
+          setWinner("opponent");
+          setGameEnded(true);
+          setShowResults(true);
+          setButtonsEnabled(true);
+        }, 100);
+        return;
+      }
       
       // Native'de arka plandayken setTimeout çalışmaz
       // Oyun bitmişse ve butonlar hala deaktifse, aktif et
       setTimeout(() => {
         setButtonsEnabled(prev => {
-          // Eğer hala false ise ve oyun bitmişse true yap
           console.log("🎮 Ön plan buton kontrolü - mevcut değer:", prev);
-          return true; // Her zaman aktif et ön plana dönünce
+          return true;
         });
       }, 100);
     },
     backgroundDelay: 10000, // 10 saniye
-    onBackgroundTimeout: handleBackgroundDisconnect,
+    onBackgroundTimeout: wrappedHandleBackgroundDisconnect,
   });
 
   // Game state - Generate random letters each time
