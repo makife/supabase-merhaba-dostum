@@ -158,8 +158,9 @@ export const useSounds = () => {
   // DÜZELTME: Audio utility fonksiyonlarını useCallback ile stabilize et
   const createAudioPool = useCallback((soundPath: string, poolSize: number = 3): HTMLAudioElement[] => {
     const pool: HTMLAudioElement[] = [];
-    // Capacitor için path düzeltmesi - / ile başlayan pathları ./ yap
-    const fixedPath = soundPath.startsWith('/') ? '.' + soundPath : soundPath;
+    // Capacitor için absolute path kullan
+    const basePath = window.location.origin;
+    const fixedPath = soundPath.startsWith('/') ? `${basePath}${soundPath}` : soundPath;
     
     for (let i = 0; i < poolSize; i++) {
       const audio = new Audio();
@@ -247,11 +248,20 @@ export const useSounds = () => {
       }
     });
     
-    // ✅ Özel sesler için audio pool oluştur (yes, wow, yahoo) - gecikme düzeltmesi
+    // ✅ Özel sesler için audio pool oluştur (yes, wow, yahoo, joker sesleri) - gecikme düzeltmesi
     try {
-      audioCache.current.set('special_yes' as any, createAudioPool('/yes.mp3', 5));
-      audioCache.current.set('special_wow' as any, createAudioPool('/wow2.mp3', 5));
-      audioCache.current.set('special_yahoo' as any, createAudioPool('/yahoo.mp3', 5));
+      audioCache.current.set('special_yes', createAudioPool('/yes.mp3', 5));
+      audioCache.current.set('special_wow', createAudioPool('/wow2.mp3', 5));
+      audioCache.current.set('special_yahoo', createAudioPool('/yahoo.mp3', 5));
+      audioCache.current.set('special_wow1', createAudioPool('/wow1.mp3', 3));
+      // Joker sesleri
+      audioCache.current.set('joker_degistir', createAudioPool('/degistir.mp3', 3));
+      audioCache.current.set('joker_fisilda', createAudioPool('/fisilda.mp3', 3));
+      audioCache.current.set('joker_senyaz', createAudioPool('/senyaz.mp3', 3));
+      // Sampiyon sesi
+      audioCache.current.set('special_sampiyon', createAudioPool('/sampiyon.mp3', 2));
+      // Çark sesi
+      audioCache.current.set('special_cark', createAudioPool('/carkSesi.mp3', 2));
     } catch (error) {
       console.warn('Failed to load special sound pools:', error);
     }
@@ -439,12 +449,13 @@ export const useSounds = () => {
     unlockAudioForMobile();
 
     const activePack = getActiveSoundPack();
-    let soundPath = activePack.sounds.celebration;
-    // Capacitor için path düzeltmesi
-    if (soundPath.startsWith('/')) soundPath = '.' + soundPath;
+    const soundPath = activePack.sounds.celebration;
+    // Capacitor için absolute path kullan
+    const basePath = window.location.origin;
+    const fixedPath = soundPath.startsWith('/') ? `${basePath}${soundPath}` : soundPath;
 
     try {
-      const audio = new Audio(soundPath);
+      const audio = new Audio(fixedPath);
       audio.volume = 0.6;
       audio.play().catch((error) => {
         console.warn("Could not play celebration sound:", error);
@@ -462,12 +473,13 @@ export const useSounds = () => {
     unlockAudioForMobile();
 
     const activePack = getActiveSoundPack();
-    let soundPath = activePack.sounds.gameLoseSound;
-    // Capacitor için path düzeltmesi
-    if (soundPath.startsWith('/')) soundPath = '.' + soundPath;
+    const soundPath = activePack.sounds.gameLoseSound;
+    // Capacitor için absolute path kullan
+    const basePath = window.location.origin;
+    const fixedPath = soundPath.startsWith('/') ? `${basePath}${soundPath}` : soundPath;
 
     try {
-      const audio = new Audio(soundPath);
+      const audio = new Audio(fixedPath);
       audio.volume = 0.6;
       audio.play().catch((error) => {
         console.warn("Could not play game lose sound:", error);
@@ -485,12 +497,13 @@ export const useSounds = () => {
     unlockAudioForMobile();
 
     const activePack = getActiveSoundPack();
-    let soundPath = activePack.sounds.tieSound;
-    // Capacitor için path düzeltmesi
-    if (soundPath.startsWith('/')) soundPath = '.' + soundPath;
+    const soundPath = activePack.sounds.tieSound;
+    // Capacitor için absolute path kullan
+    const basePath = window.location.origin;
+    const fixedPath = soundPath.startsWith('/') ? `${basePath}${soundPath}` : soundPath;
 
     try {
-      const audio = new Audio(soundPath);
+      const audio = new Audio(fixedPath);
       audio.volume = 0.6;
       audio.play().catch((error) => {
         console.warn("Could not play game tie sound:", error);
@@ -514,10 +527,16 @@ export const useSounds = () => {
         let cacheKey: string | null = null;
         if (soundFile.includes('yes.mp3')) cacheKey = 'special_yes';
         else if (soundFile.includes('wow2.mp3')) cacheKey = 'special_wow';
+        else if (soundFile.includes('wow1.mp3')) cacheKey = 'special_wow1';
         else if (soundFile.includes('yahoo.mp3')) cacheKey = 'special_yahoo';
+        else if (soundFile.includes('degistir.mp3')) cacheKey = 'joker_degistir';
+        else if (soundFile.includes('fisilda.mp3')) cacheKey = 'joker_fisilda';
+        else if (soundFile.includes('senyaz.mp3')) cacheKey = 'joker_senyaz';
+        else if (soundFile.includes('sampiyon.mp3')) cacheKey = 'special_sampiyon';
+        else if (soundFile.includes('carkSesi.mp3')) cacheKey = 'special_cark';
         
         if (cacheKey) {
-          const audioPool = audioCache.current.get(cacheKey as any);
+          const audioPool = audioCache.current.get(cacheKey);
           if (audioPool && audioPool.length > 0) {
             const availableAudio = getAvailableAudio(audioPool);
             if (availableAudio) {
@@ -533,9 +552,9 @@ export const useSounds = () => {
         }
         
         // Fallback: pool bulunamazsa eski yöntem
-        // Capacitor için path düzeltmesi
-        let fixedPath = soundFile;
-        if (fixedPath.startsWith('/')) fixedPath = '.' + fixedPath;
+        // Capacitor için absolute path kullan
+        const basePath = window.location.origin;
+        const fixedPath = soundFile.startsWith('/') ? `${basePath}${soundFile}` : soundFile;
         
         const audio = new Audio(fixedPath);
         audio.volume = volume;
