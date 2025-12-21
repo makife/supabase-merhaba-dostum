@@ -75,13 +75,17 @@ if (typeof window !== "undefined") {
   unlockEvents.forEach(e => document.addEventListener(e, handleUnlock, { passive: true }));
 }
 
-// Ses havuzunu başlat
+// Ses havuzunu başlat - Capacitor için absolute path kullan
 const initAudioPool = () => {
   if (audioPoolInitialized || typeof window === "undefined") return;
 
+  // Capacitor ortamında base URL'den yükle
+  const basePath = window.location.origin;
+  
   for (let i = 0; i < COUNTDOWN_SOUND_POOL_SIZE; i++) {
     const audio = new Audio();
-    audio.src = "./gerisayim.mp3"; 
+    // Hem web hem Capacitor için çalışacak şekilde
+    audio.src = `${basePath}/gerisayim.mp3`;
     audio.volume = 0.6;
     audio.preload = "auto";
     audio.load();
@@ -90,7 +94,7 @@ const initAudioPool = () => {
   
   for (let i = 0; i < START_SOUND_POOL_SIZE; i++) {
     const audio = new Audio();
-    audio.src = "./basla.mp3";
+    audio.src = `${basePath}/basla.mp3`;
     audio.volume = 0.6;
     audio.preload = "auto";
     audio.load();
