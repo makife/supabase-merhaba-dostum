@@ -376,10 +376,16 @@ const sendMessage = async () => {
 
       if (moderationError) {
         console.error('Moderasyon hatası:', moderationError);
-        // Hata durumunda eski sistemi kullan
-        if (containsBannedWords(trimmedMessage)) {
-          toast.error('Mesajınız yasaklı kelime içeriyor ve sohbet yasağı aldınız!');
-          await banUser(user.id, 'Yasaklı kelime kullanımı', 48);
+        // Hata durumunda gelişmiş client-side sistemi kullan
+        const bannedCheck = containsBannedWords(trimmedMessage);
+        if (bannedCheck.found) {
+          if (bannedCheck.severity === 'high') {
+            toast.error(`Ağır küfür tespit edildi! 2 gün sohbet yasağı aldınız.`);
+            await banUser(user.id, `Ağır küfür: ${bannedCheck.word}`, 48);
+          } else {
+            toast.error('Yasaklı kelime kullandınız! 2 gün sohbet yasağı aldınız.');
+            await banUser(user.id, `Yasaklı kelime: ${bannedCheck.word}`, 48);
+          }
           setNewMessage('');
           return;
         }
@@ -398,10 +404,11 @@ const sendMessage = async () => {
       }
     } catch (error) {
       console.error('Moderasyon sistem hatası:', error);
-      // Fallback eski sistem
-      if (containsBannedWords(trimmedMessage)) {
-        toast.error('Mesajınız yasaklı kelime içeriyor ve sohbet yasağı aldınız!');
-        await banUser(user.id, 'Yasaklı kelime kullanımı', 48);
+      // Fallback gelişmiş sistem
+      const bannedCheck = containsBannedWords(trimmedMessage);
+      if (bannedCheck.found) {
+        toast.error('Yasaklı kelime tespit edildi! 2 gün sohbet yasağı aldınız.');
+        await banUser(user.id, `Yasaklı kelime: ${bannedCheck.word}`, 48);
         setNewMessage('');
         return;
       }
