@@ -224,15 +224,17 @@ export const OnboardingPermissions = ({ open, onComplete }: OnboardingPermission
         window.dispatchEvent(new Event("permissionsCompleted"));
 
         toast.success("Kurulum tamamlandı! Hoş geldiniz 🎉");
-        onComplete();
       } catch (error) {
         console.error("İzin isteme hatası:", error);
         // Hata olsa bile onboarding'i tamamla
         localStorage.setItem("kelimeci-onboarding-completed", "true");
         toast.info("Kurulum tamamlandı. İzinleri ayarlardan verebilirsiniz.");
-        onComplete();
       } finally {
         setIsLoading(false);
+        // Dialog'u kesinlikle kapat - setTimeout ile React render döngüsünü bekle
+        setTimeout(() => {
+          onComplete();
+        }, 100);
       }
     }
   };
