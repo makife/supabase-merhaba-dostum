@@ -259,6 +259,82 @@ const GamePage = ({
       return;
     }
 
+    // TURNUVA MODU için ayrı işlem
+    if (gameMode === "tournament" && tournamentMatch) {
+      console.log("🏆 Turnuva modu - arka plan disconnect işleniyor");
+      
+      const isPlayer1 = String(tournamentMatch.player1_id) === String(user?.id);
+      const opponentUserId = isPlayer1 ? tournamentMatch.player2_id : tournamentMatch.player1_id;
+
+      // Oyuncuya disconnect cezası uygula
+      try {
+        await supabase.rpc("apply_disconnect_penalty", {
+          p_offender_id: user?.id,
+          p_room_id: tournamentMatch.id,
+        });
+        console.log("✅ Turnuva disconnect penalty uygulandı");
+      } catch (err) {
+        console.error("❌ Turnuva disconnect penalty hatası:", err);
+      }
+
+      // Rakibe 200 exp/puan bonus ver
+      if (opponentUserId && !opponentUserId.startsWith("bot_")) {
+        try {
+          const { data: opponentProfile } = await supabase
+            .from("profiles")
+            .select("total_score, win_count, tournament_wins")
+            .eq("id", opponentUserId)
+            .single();
+          
+          if (opponentProfile) {
+            await supabase
+              .from("profiles")
+              .update({
+                total_score: (opponentProfile.total_score || 0) + 200,
+                win_count: (opponentProfile.win_count || 0) + 1,
+                last_win: new Date().toISOString(),
+              })
+              .eq("id", opponentUserId);
+            console.log("🏆 Turnuva rakibine 200 disconnect bonus verildi:", opponentUserId?.slice(-8));
+          }
+        } catch (err) {
+          console.error("❌ Turnuva rakibe bonus verme hatası:", err);
+        }
+      }
+
+      // Turnuva maçını rakibin kazandığı şekilde tamamla
+      try {
+        const player1Score = isPlayer1 ? 0 : 100;
+        const player2Score = isPlayer1 ? 100 : 0;
+        
+        await supabase
+          .from("tournament_matches")
+          .update({
+            status: "completed",
+            player1_score: player1Score,
+            player2_score: player2Score,
+            winner_id: opponentUserId,
+          })
+          .eq("id", tournamentMatch.id);
+        console.log("✅ Turnuva maçı rakip kazandı olarak güncellendi:", opponentUserId?.slice(-8));
+      } catch (err) {
+        console.error("❌ Turnuva maç güncelleme hatası:", err);
+      }
+
+      toast({
+        title: "Bağlantı Kesildi",
+        description: "Uygulama 10 saniyeden fazla arka planda kaldı",
+        variant: "destructive",
+      });
+
+      setWinner("opponent");
+      setGameEnded(true);
+      setShowResults(true);
+      setButtonsEnabled(true);
+      return;
+    }
+
+    // NORMAL MODLAR (random-match, private-room) için
     const room = currentRoomRef.current;
     if (!user?.id || !room?.id) {
       console.log("⏭️ Room veya user yok, arka plan disconnect atlanıyor");
@@ -345,7 +421,7 @@ const GamePage = ({
 
     // Room temizle
     leaveRoom();
-  }, [gameMode, user?.id, toast, leaveRoom]);
+  }, [gameMode, user?.id, toast, leaveRoom, tournamentMatch]);
 
   // Arka plan disconnect sonrası winner state'ini koru
   const backgroundDisconnectedRef = useRef(false);
