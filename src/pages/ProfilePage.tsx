@@ -673,18 +673,31 @@ const ProfilePage = () => {
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center space-x-4">
-                <div className={`relative ${isOwnProfile ? "cursor-pointer" : ""}`} onClick={handleAvatarClick}>
-                  <Avatar className="w-20 h-20 ring-2 ring-primary/20">
-                    <AvatarImage
-                      src={(isOwnProfile ? profile?.avatar_url : viewedProfile?.avatar_url) || ""}
-                      alt={profileData.username}
-                    />
-                    <AvatarFallback className="text-2xl">{profileData.username.charAt(0).toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  {uploading && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    </div>
+                <div className="flex flex-col items-center">
+                  <div className={`relative ${isOwnProfile ? "cursor-pointer" : ""}`} onClick={handleAvatarClick}>
+                    <Avatar className="w-20 h-20 ring-2 ring-primary/20">
+                      <AvatarImage
+                        src={(isOwnProfile ? profile?.avatar_url : viewedProfile?.avatar_url) || ""}
+                        alt={profileData.username}
+                      />
+                      <AvatarFallback className="text-2xl">{profileData.username.charAt(0).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    {uploading && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                    )}
+                  </div>
+                  {isOwnProfile && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAvatarClick}
+                      className="mt-2 text-xs px-3 py-1 h-7 border-blue-300 hover:bg-blue-50"
+                      disabled={uploading}
+                    >
+                      {uploading ? "Yükleniyor..." : "Yükle/Değiştir"}
+                    </Button>
                   )}
                 </div>
                 <div className="flex-1">
