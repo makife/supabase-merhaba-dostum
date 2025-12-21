@@ -1,7 +1,7 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.3b5b613276aa428688ad82b8da5a6692',
+  appId: 'com.example.kelimeci',
   appName: 'supabase-merhaba-dostum',
   webDir: 'dist',
   server: {
