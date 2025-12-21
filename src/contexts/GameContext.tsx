@@ -2052,9 +2052,9 @@ export const GameProvider = ({ children }: GameProviderProps) => {
                   await applyDisconnectPenalty(key, currentRoomId);
                 }
 
-                // 2. Bonus puan ver
+                // 2. Bonus puan ver (rakip koparsa 200 puan)
                 if (applyWinBonus && currentUserId) {
-                  await applyWinBonus(currentUserId, 50);
+                  await applyWinBonus(currentUserId, 200);
                 }
 
                 // 3. Odayı finished yap ama STATE'İ SIFIRLAMA!
@@ -2075,7 +2075,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
                 // 4. Sadece bildirim göster, OYUNU KİLİTLEME!
                 toast({
                   title: "🏆 Kazandınız!",
-                  description: "Rakip bağlantısı koptu. +50 puan!",
+                  description: "Rakip bağlantısı koptu. +200 puan!",
                   duration: 4000,
                 });
 

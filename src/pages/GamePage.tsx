@@ -284,6 +284,31 @@ const GamePage = ({
     // Rakibi kazanan olarak işaretle
     const opponentUserId = room.player1_id === user.id ? room.player2_id : room.player1_id;
 
+    // Rakibe 200 exp/puan bonus ver
+    if (opponentUserId) {
+      try {
+        const { data: opponentProfile } = await supabase
+          .from("profiles")
+          .select("total_score, win_count")
+          .eq("id", opponentUserId)
+          .single();
+        
+        if (opponentProfile) {
+          await supabase
+            .from("profiles")
+            .update({
+              total_score: (opponentProfile.total_score || 0) + 200,
+              win_count: (opponentProfile.win_count || 0) + 1,
+              last_win: new Date().toISOString(),
+            })
+            .eq("id", opponentUserId);
+          console.log("🏆 Rakibe 200 disconnect bonus verildi:", opponentUserId?.slice(-8));
+        }
+      } catch (err) {
+        console.error("❌ Rakibe bonus verme hatası:", err);
+      }
+    }
+
     try {
       await supabase
         .from("game_rooms")
