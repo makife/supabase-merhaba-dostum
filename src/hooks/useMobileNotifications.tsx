@@ -154,6 +154,41 @@ export const useMobileNotifications = () => {
     }
   };
 
+  // Remove push token from database (disable notifications)
+  const removePushToken = async (userId: string) => {
+    try {
+      const { error } = await supabase.from("profiles").update({ push_token: null }).eq("id", userId);
+
+      if (error) {
+        console.error("Error removing push token from database:", error);
+      } else {
+        console.log("Push token removed from database - notifications disabled");
+        setPushToken("");
+      }
+
+      // Also remove from localStorage
+      const savedTokens = localStorage.getItem("push_tokens") || "{}";
+      const tokens = JSON.parse(savedTokens);
+      delete tokens[userId];
+      localStorage.setItem("push_tokens", JSON.stringify(tokens));
+    } catch (error) {
+      console.error("Error removing push token:", error);
+    }
+  };
+
+  // Disable notifications completely
+  const disableNotifications = async () => {
+    try {
+      if (user?.id) {
+        await removePushToken(user.id);
+      }
+      setIsPermissionGranted(false);
+      console.log("Notifications disabled successfully");
+    } catch (error) {
+      console.error("Error disabling notifications:", error);
+    }
+  };
+
   // Show local notification
   const showLocalNotification = async (title: string, body: string, data?: any) => {
     try {
@@ -366,6 +401,7 @@ export const useMobileNotifications = () => {
     isMobile,
     pushToken,
     requestPermissions,
+    disableNotifications,
     checkPermissionStatus,
     showLocalNotification,
     sendGameInviteNotification,

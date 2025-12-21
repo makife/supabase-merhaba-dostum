@@ -44,7 +44,7 @@ const SettingsPage = () => {
   const { soundsEnabled, setSoundsEnabled, playSound } = useSounds();
   const { musicEnabled, setMusicEnabled } = useMusic();
   const { hasPurchased, settings, updateSettings } = useUserPurchases();
-  const { isPermissionGranted, isMobile, requestPermissions, showLocalNotification } = useMobileNotifications();
+  const { isPermissionGranted, isMobile, requestPermissions, disableNotifications, showLocalNotification } = useMobileNotifications();
 
   // Settings state
   const [notifications, setNotifications] = useState(false);
@@ -170,6 +170,13 @@ const SettingsPage = () => {
         setTimeout(() => {
           showLocalNotification("Bildirimler Aktif", "Kelimeci bildirimleriniz aktif edildi!");
         }, 2000);
+      } else {
+        // Bildirimleri kapat - push token'ı veritabanından sil
+        await disableNotifications();
+        toast({
+          title: "Bildirimler Kapatıldı",
+          description: "Artık oyun bildirimi almayacaksınız",
+        });
       }
     } catch (error) {
       console.error("Bildirim ayarı hatası:", error);
