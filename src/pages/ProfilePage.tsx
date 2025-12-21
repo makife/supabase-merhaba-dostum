@@ -680,7 +680,9 @@ const ProfilePage = () => {
                         src={(isOwnProfile ? profile?.avatar_url : viewedProfile?.avatar_url) || ""}
                         alt={profileData.username}
                       />
-                      <AvatarFallback className="text-2xl">{profileData.username.charAt(0).toUpperCase()}</AvatarFallback>
+                      <AvatarFallback className="text-2xl">
+                        {profileData.username.charAt(0).toUpperCase()}
+                      </AvatarFallback>
                     </Avatar>
                     {uploading && (
                       <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
