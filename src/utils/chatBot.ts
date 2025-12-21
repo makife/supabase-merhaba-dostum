@@ -1,17 +1,189 @@
 // utils/chatBot.ts
 import { supabase } from '@/integrations/supabase/client';
 
-// Yasaklı kelime listesi
+// Kapsamlı yasaklı kelime listesi - kategorize edilmiş
 export const BANNED_WORDS = [
-  // Küfürler
-  'am', 'çük', 'sik','yarak', 'göt', 'amına','koduğum', 'goduğum', 'ibne','ibine', 'ipne', 'gavat','kavat', 'oç', 'o.ç','kahpe', 'piç', 'pic','orospu', 'orosbu', 'orusbu',
-  // Argo kelimeler
-  'yavşak', 'yavsak', 'it','lan', 'aptal', 'mal','hayvan', 'pipi', 'öküz','manyak', 'yalarım', 'sokarım',
-  // Hakaretler
-  'şerefsiz', 'beyinsiz','salak', 'zalak', 'mal','it', 'köpek', 'orusbu',
-  // Bypass attempt'leri
-  'sikti*r', 'sikti-r', 's i k t i r',
+  // === AĞIR KÜFÜRLER (Direkt ban) ===
+  'am', 'amcık', 'amcik', 'amına', 'amina', 'amk', 'aq', 'a.q',
+  'yarrak', 'yarak', 'yarraq', 'yaraq', 'yrrk', 'yrk',
+  'sik', 'sikik', 'sikim', 'sikti', 'siktir', 'sikerim', 'sikim', 'skm', 'sktir', 'siktr',
+  'göt', 'got', 'götün', 'gotun', 'götten', 'gotten',
+  'orospu', 'orosbu', 'oruspu', 'orusbu', 'orspı', 'orspu', 'orsp',
+  'piç', 'pic', 'piçlik',
+  'ibne', 'ibine', 'ipne', 'ipine',
+  'gavat', 'kavat', 'gavad',
+  'pezevenk', 'pezeveng', 'pzvnk',
+  'kahpe', 'kaltak', 'sürtük', 'surtuk', 'fahişe', 'fahise',
+  'çük', 'cuk', 'çüklü', 'cuklu',
+  'taşak', 'tasak', 'taşşak', 'tassak', 'daşak', 'dasak',
+  'meme', 'memeler',
+  'döl', 'dol',
+  'saksocı', 'saksoci', 'saksocu',
+  'boşalmak', 'bosalmak',
+  'zıkkım', 'zikkim',
+
+  // === KÖTÜ KELİMELER ===
+  'ananı', 'anani', 'anan', 'anneni', 'ananızı', 'ananizi',
+  'babanı', 'babani', 'baban',
+  'sülalen', 'sulalen', 'soyunu', 
+  'koduğum', 'kodugum', 'kodum',
+  'oç', 'o.ç', 'oc', 'o.c', 'oğlancı', 'oglanci',
+  'yavşak', 'yavsak', 'yawsak', 'yvsak',
+  'şerefsiz', 'serefsiz', 'serefisz', 'şrfsz',
+  'haysiyetsiz', 'namussuz', 'alçak', 'alcak',
+  'köpek', 'kopek', 'it',
+  'domuz', 'hınzır', 'hinzir', 'hanzır',
+  'salak', 'zalak', 'slak', 'slk',
+  'aptal', 'aptl', 'ahmak',
+  'gerizekalı', 'gerizekali', 'gerzek', 'geri zekalı',
+  'mal', 'mâl',
+  'dangalak', 'dangal', 'andaval',
+  'embesil', 'imbecil',
+  'beyinsiz', 'kafasız', 'kafasiz',
+  'enayi', 'enai',
+  'öküz', 'okuz', 'eşek', 'esek', 'merkep',
+  'kıç', 'kic', 'popo', 'makat',
+
+  // === ARGO TEHDITLER ===
+  'sinkaf', 'skim', 's2m', 's2k', 's2ş',
+  'yalarım', 'yalarim', 'yal',
+  'sokarım', 'sokarim', 'sokayım', 'sokayim',
+  'keserim', 'koparırım',
+  'geber', 'gebertir', 'geberesin', 'öl', 'ölücek',
+  
+  // === AYRIMCILIK / IRKÇILIK ===
+  'zenci', 'nigga', 'negro', 
+  'yahudi', 'ermeni', 'kürt', 'arap', // sadece hakaret bağlamında
+  'gay', 'lezbiyen', 'homo', 'trans', 'travesti', // hakaret bağlamında
+
+  // === BYPASS DENEMELERI ===
+  // Boşluklu versiyonlar
+  's i k', 'a m', 'y a r a k', 'o r o s p u', 'p i ç',
+  // Noktalı versiyonlar  
+  's.i.k', 'a.m', 'y.a.r.a.k', 'o.r.o.s.p.u',
+  // Tireli versiyonlar
+  's-i-k', 'a-m', 'y-a-r-a-k',
+  // Yıldızlı versiyonlar
+  'sik*r', 'am*k', 'p*ç', 's*k',
+  // Sayı ile değiştirilmiş
+  's1k', 's!k', '@m', 'am1na', 'p1ç', 'p!c',
+  '4m', 'y4r4k', '0rospu', '0ç', 'g0t', 's!kt!r',
+  // Türkçe karakterlerin değiştirilmesi
+  'sikis', 'sikişmek', 'sikismek', 'gotten', 'piclik',
 ];
+
+// Leet speak ve karakter değişimleri için mapping
+const CHAR_REPLACEMENTS: { [key: string]: string[] } = {
+  'a': ['4', '@', 'α', 'а'],
+  'e': ['3', '€', 'е'],
+  'i': ['1', '!', '|', 'ı', 'í'],
+  'o': ['0', 'ο', 'о'],
+  's': ['5', '$', 'ş', 'š'],
+  'g': ['9', 'ğ'],
+  'c': ['ç', '(', '<'],
+  'u': ['ü', 'µ', 'υ'],
+};
+
+// Normalize fonksiyonu - tüm bypass denemelerini yakala
+const normalizeText = (text: string): string => {
+  let normalized = text.toLowerCase();
+  
+  // 1. Özel karakterleri kaldır (tire, nokta, boşluk, yıldız vb.)
+  normalized = normalized.replace(/[-_.* ]/g, '');
+  
+  // 2. Leet speak dönüşümü
+  normalized = normalized
+    .replace(/4/g, 'a')
+    .replace(/@/g, 'a')
+    .replace(/3/g, 'e')
+    .replace(/€/g, 'e')
+    .replace(/1/g, 'i')
+    .replace(/!/g, 'i')
+    .replace(/\|/g, 'i')
+    .replace(/0/g, 'o')
+    .replace(/5/g, 's')
+    .replace(/\$/g, 's')
+    .replace(/9/g, 'g');
+  
+  // 3. Türkçe karakterleri normalize et
+  normalized = normalized
+    .replace(/ı/g, 'i')
+    .replace(/ğ/g, 'g')
+    .replace(/ü/g, 'u')
+    .replace(/ş/g, 's')
+    .replace(/ö/g, 'o')
+    .replace(/ç/g, 'c');
+  
+  // 4. Tekrarlanan harfleri teke indir (yaaraaak -> yarak)
+  normalized = normalized.replace(/(.)\1+/g, '$1');
+  
+  return normalized;
+};
+
+// Kelime sınırları ile kontrol (daha hassas)
+const containsWordBoundary = (text: string, word: string): boolean => {
+  // Önce direkt içerme kontrolü
+  if (text.includes(word)) return true;
+  
+  // Kelime sınırı ile kontrol (regex kullanarak)
+  const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`(^|[^a-zçğıöşü])${escapedWord}([^a-zçğıöşü]|$)`, 'i');
+  return regex.test(text);
+};
+
+// Mesajda yasaklı kelime kontrol et - GELİŞMİŞ
+export const containsBannedWords = (message: string): { found: boolean; word?: string; severity: 'high' | 'medium' | 'low' } => {
+  const originalLower = message.toLowerCase();
+  const normalizedMessage = normalizeText(message);
+  
+  // Ağır küfürler (ilk 30 kelime) - direkt ban
+  const highSeverityWords = BANNED_WORDS.slice(0, 30);
+  
+  for (const word of highSeverityWords) {
+    const normalizedWord = normalizeText(word);
+    
+    // Hem orijinal hem normalized metinde kontrol
+    if (originalLower.includes(word) || normalizedMessage.includes(normalizedWord)) {
+      console.log(`🚫 Ağır küfür tespit edildi: "${word}" mesajda: "${message}"`);
+      return { found: true, word, severity: 'high' };
+    }
+  }
+  
+  // Diğer yasaklı kelimeler
+  for (const word of BANNED_WORDS.slice(30)) {
+    const normalizedWord = normalizeText(word);
+    
+    if (containsWordBoundary(originalLower, word) || 
+        containsWordBoundary(normalizedMessage, normalizedWord)) {
+      console.log(`⚠️ Yasaklı kelime tespit edildi: "${word}" mesajda: "${message}"`);
+      return { found: true, word, severity: 'medium' };
+    }
+  }
+  
+  // Bypass pattern'leri kontrol et
+  const bypassPatterns = [
+    /s+[^a-z]*i+[^a-z]*k/i,      // s-i-k, s.i.k, s i k vb
+    /a+[^a-z]*m+[^a-z]*[ck]/i,   // a-m-k, a.m.c.k vb
+    /y+[^a-z]*a+[^a-z]*r+[^a-z]*a+[^a-z]*k/i, // y-a-r-a-k vb
+    /o+[^a-z]*r+[^a-z]*o+[^a-z]*s+[^a-z]*p/i, // o-r-o-s-p vb
+    /p+[^a-z]*[iı1!]+[^a-z]*[cç]/i, // p-i-ç vb
+    /g+[^a-z]*[oö0]+[^a-z]*t/i,    // g-ö-t vb
+  ];
+  
+  for (const pattern of bypassPatterns) {
+    if (pattern.test(message)) {
+      console.log(`🔍 Bypass pattern tespit edildi: ${pattern} mesajda: "${message}"`);
+      return { found: true, word: 'bypass-pattern', severity: 'high' };
+    }
+  }
+  
+  return { found: false, severity: 'low' };
+};
+
+// Basit boolean döndüren eski fonksiyon (geriye uyumluluk için)
+export const containsBannedWordsSimple = (message: string): boolean => {
+  return containsBannedWords(message).found;
+};
 
 // Kullanıcı yasaklı mı kontrol et - user_bans tablosunu kullan
 export const isUserBanned = async (userId: string): Promise<boolean> => {
@@ -75,7 +247,7 @@ export const sendWelcomeMessage = async (chatId?: string) => {
         user_id: null,
         username: 'kelimeciBot',
         message: 'Hoşgeldiniz! 🎉 Lütfen kurallar çerçevesinde sohbet ediniz. Küfür, argo ve hakaret içeren mesajlar otomatik olarak tespit edilir ve 2 gün sohbet yasağı uygulanır.',
-        avatar_url: '/bot-avatar.png' // Bot avatarı
+        avatar_url: '/bot-avatar.png'
       });
 
     return !error;
@@ -83,12 +255,6 @@ export const sendWelcomeMessage = async (chatId?: string) => {
     console.error('Error sending welcome message:', error);
     return false;
   }
-};
-
-// Mesajda yasaklı kelime kontrol et
-export const containsBannedWords = (message: string): boolean => {
-  const lowerMessage = message.toLowerCase();
-  return BANNED_WORDS.some(word => lowerMessage.includes(word.toLowerCase()));
 };
 
 export const getBanTimeLeft = async (userId: string): Promise<string> => {
