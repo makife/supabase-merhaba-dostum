@@ -352,7 +352,7 @@ const fetchMessages = async () => {
 const sendMessage = async () => {
     if (!newMessage.trim() || !user || !profile) return;
 
-    // Ban kontrolü (mevcut kodunuz)
+    // Ban kontrolü
     const isBanned = await isUserBanned(user.id);
     if (isBanned) {
       const timeLeft = await getBanTimeLeft(user.id);
@@ -366,7 +366,23 @@ const sendMessage = async () => {
       return;
     }
 
-    // Gelişmiş moderasyon kontrolü
+    // 🚫 ÖNCELİKLİ: Client-side küfür kontrolü (RPC'den önce!)
+    const bannedCheck = containsBannedWords(trimmedMessage);
+    if (bannedCheck.found) {
+      console.log(`🚫 KÜFÜR TESPİT EDİLDİ: "${bannedCheck.word}" - Severity: ${bannedCheck.severity}`);
+      
+      if (bannedCheck.severity === 'high') {
+        toast.error(`Ağır küfür tespit edildi! 2 gün sohbet yasağı aldınız.`);
+        await banUser(user.id, `Ağır küfür: ${bannedCheck.word}`, 48);
+      } else {
+        toast.error('Yasaklı kelime kullandınız! 2 gün sohbet yasağı aldınız.');
+        await banUser(user.id, `Yasaklı kelime: ${bannedCheck.word}`, 48);
+      }
+      setNewMessage('');
+      return;
+    }
+
+    // İsteğe bağlı: Server-side ek kontrol (varsa)
     try {
       const { data: moderationResult, error: moderationError } = await supabase
         .rpc('moderate_message_advanced', {
@@ -374,22 +390,7 @@ const sendMessage = async () => {
           p_message: trimmedMessage
         });
 
-      if (moderationError) {
-        console.error('Moderasyon hatası:', moderationError);
-        // Hata durumunda gelişmiş client-side sistemi kullan
-        const bannedCheck = containsBannedWords(trimmedMessage);
-        if (bannedCheck.found) {
-          if (bannedCheck.severity === 'high') {
-            toast.error(`Ağır küfür tespit edildi! 2 gün sohbet yasağı aldınız.`);
-            await banUser(user.id, `Ağır küfür: ${bannedCheck.word}`, 48);
-          } else {
-            toast.error('Yasaklı kelime kullandınız! 2 gün sohbet yasağı aldınız.');
-            await banUser(user.id, `Yasaklı kelime: ${bannedCheck.word}`, 48);
-          }
-          setNewMessage('');
-          return;
-        }
-      } else if (moderationResult && moderationResult.length > 0) {
+      if (!moderationError && moderationResult && moderationResult.length > 0) {
         const result = moderationResult[0];
         if (!result.is_appropriate) {
           if (result.should_ban) {
@@ -403,15 +404,8 @@ const sendMessage = async () => {
         }
       }
     } catch (error) {
-      console.error('Moderasyon sistem hatası:', error);
-      // Fallback gelişmiş sistem
-      const bannedCheck = containsBannedWords(trimmedMessage);
-      if (bannedCheck.found) {
-        toast.error('Yasaklı kelime tespit edildi! 2 gün sohbet yasağı aldınız.');
-        await banUser(user.id, `Yasaklı kelime: ${bannedCheck.word}`, 48);
-        setNewMessage('');
-        return;
-      }
+      console.log('Server-side moderation skipped:', error);
+      // Client-side kontrol zaten yapıldı, devam et
     }
 
     const username = profile.username || user.email?.split('@')[0] || 'Anonim';
