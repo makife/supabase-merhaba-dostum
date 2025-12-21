@@ -100,74 +100,48 @@ export const getMatchStatus = (match: TournamentMatch): string => {
   }
 };
 
-export const generateBotAvatar = (seed: number): string => {
-  // 1e-18e and 1k-18k avatars pool (36 total avatars)
+// Erkek isimleri
+const maleNames = [
+  "ahmet", "mehmet", "ali", "veli", "mustafa", "emre", "can", "burak", 
+  "yusuf", "berk", "arda", "efe", "emir", "kaan", "mert", "kerem",
+  "bora", "doruk", "eren", "alp", "ege", "tunç", "uras", "çağlar",
+  "koray", "tolga", "onur", "umut", "barış"
+];
+
+// Kız isimleri
+const femaleNames = [
+  "ayşe", "fatma", "zeynep", "elif", "ece", "selin", "merve", "özge",
+  "sude", "ada", "defne", "ilayda", "asya", "nisa", "irem", "ela",
+  "nehir", "maya", "eylül", "lara", "derin", "pelin", "damla", "su",
+  "ceren", "begüm", "deniz"
+];
+
+// Tüm isimler (generateBotName için)
+const allNames = [...maleNames, ...femaleNames];
+
+// İsmin erkek mi kız mı olduğunu kontrol et
+export const isMaleName = (name: string): boolean => {
+  const baseName = name.toLowerCase().replace(/[0-9_\.]/g, '').replace(/(.)\1+$/, '$1');
+  return maleNames.includes(baseName);
+};
+
+// İsme göre bot avatarı oluştur
+export const generateBotAvatar = (seed: number, botName?: string): string => {
   const avatarCount = 18;
   const avatarIndex = (Math.abs(seed) % avatarCount) + 1;
+  
+  // Eğer bot ismi verilmişse, cinsiyete göre suffix belirle
+  if (botName) {
+    const suffix = isMaleName(botName) ? 'e' : 'k';
+    return `/${avatarIndex}${suffix}.jpg`;
+  }
+  
+  // Fallback: seed'e göre rastgele
   const suffix = seed % 2 === 0 ? 'e' : 'k';
   return `/${avatarIndex}${suffix}.jpg`;
 };
 
 export const generateBotName = (index: number): string => {
-  const turkishNames = [
-    "ahmet",
-    "mehmet",
-    "ayşe",
-    "fatma",
-    "ali",
-    "veli",
-    "zeynep",
-    "elif",
-    "mustafa",
-    "emre",
-    "can",
-    "ece",
-    "selin",
-    "burak",
-    "deniz",
-    "yusuf",
-    "merve",
-    "özge",
-    "berk",
-    "arda",
-    "sude",
-    "efe",
-    "ada",
-    "emir",
-    "defne",
-    "kaan",
-    "ilayda",
-    "mert",
-    "asya",
-    "kerem",
-    "nisa",
-    "bora",
-    "irem",
-    "doruk",
-    "ela",
-    "eren",
-    "nehir",
-    "alp",
-    "maya",
-    "ege",
-    "eylül",
-    "tunç",
-    "lara",
-    "uras",
-    "derin",
-    "çağlar",
-    "pelin",
-    "koray",
-    "damla",
-    "tolga",
-    "su",
-    "onur",
-    "ceren",
-    "umut",
-    "begüm",
-    "barış",
-  ];
-
   // Seeded RNG (deterministic) using index
   let seed = index >>> 0 || 0;
   const next = (mod: number) => {
@@ -176,10 +150,10 @@ export const generateBotName = (index: number): string => {
   };
 
   // Keep mapping deterministic based on index
-  const nameIndex = Math.abs(index) % turkishNames.length;
-  const decorationIndex = Math.floor(Math.abs(index) / turkishNames.length) % 9;
+  const nameIndex = Math.abs(index) % allNames.length;
+  const decorationIndex = Math.floor(Math.abs(index) / allNames.length) % 9;
 
-  const baseName = turkishNames[nameIndex];
+  const baseName = allNames[nameIndex];
   const num4 = 1000 + next(9000); // 4-digit
   const num2 = 10 + next(90); // 2-digit
   const num3 = 100 + next(900); // 3-digit
