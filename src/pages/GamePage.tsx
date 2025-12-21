@@ -312,11 +312,11 @@ const GamePage = ({
       variant: "destructive",
     });
 
-    // Oyunu bitir ve kaybeden kartı göster
+    // Oyunu bitir ve kaybeden kartı göster - Ana Menü butonu hemen aktif olsun
     setWinner("opponent");
     setGameEnded(true);
     setShowResults(true);
-    setButtonsEnabled(false);
+    setButtonsEnabled(true); // ✅ Butonları hemen aktif et
 
     // Room temizle
     leaveRoom();
@@ -324,9 +324,11 @@ const GamePage = ({
 
   // Arka plan disconnect sonrası winner state'ini koru
   const backgroundDisconnectedRef = useRef(false);
+  const [backgroundDisconnected, setBackgroundDisconnected] = useState(false);
   
   const wrappedHandleBackgroundDisconnect = useCallback(() => {
     backgroundDisconnectedRef.current = true;
+    setBackgroundDisconnected(true);
     handleBackgroundDisconnect();
   }, [handleBackgroundDisconnect]);
 
@@ -6225,8 +6227,8 @@ const GamePage = ({
               ) : gameMode === "private-room" || gameMode === "random-match" ? (
                 // ✅ ÖZEL ODA VE RASTGELE EŞLEŞME BUTONLARI - YENİ
                 <div className="space-y-2">
-                  {/* Disconnect durumunda rematch butonu gösterme */}
-                  {!disconnectWin && !rematchRequested && !waitingForRematchResponse && (
+                  {/* Disconnect durumunda (rakip ayrıldı VEYA biz arka plandan disconnect olduk) rematch butonu gösterme */}
+                  {!disconnectWin && !backgroundDisconnected && !rematchRequested && !waitingForRematchResponse && (
                     <Button
                       disabled={!buttonsEnabled}
                       onClick={() => {
