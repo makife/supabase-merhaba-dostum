@@ -48,6 +48,7 @@ export const useMobileNotifications = () => {
         if ("Notification" in window) {
           const permission = await Notification.requestPermission();
           setIsPermissionGranted(permission === "granted");
+          console.log("🌐 Web bildirim izni:", permission);
         }
       } catch (error) {
         console.log("Web notification error:", error);
@@ -62,45 +63,54 @@ export const useMobileNotifications = () => {
         return;
       }
 
+      console.log("📱 Push bildirimleri başlatılıyor...");
+
       // Request permission to use push notifications
       const permissionStatus = await PushNotifications.requestPermissions();
+      console.log("📱 İzin durumu:", permissionStatus.receive);
 
       if (permissionStatus.receive === "granted") {
         setIsPermissionGranted(true);
 
-        // Register with Apple / Google to receive push via APNS/FCM
-        await PushNotifications.register();
-
-        // Listen for registration events
+        // Önce listener'ları kur
         PushNotifications.addListener("registration", async (token) => {
-          console.log("Push registration success, token: " + token.value);
+          console.log("✅ Push registration success, token:", token.value.substring(0, 30) + "...");
           setPushToken(token.value);
 
           // Save token to database for the user
           if (user?.id) {
             await savePushToken(user.id, token.value);
+          } else {
+            // User yoksa localStorage'a kaydet, sonra kullanılır
+            console.log("⚠️ User henüz yok, token localStorage'a kaydediliyor");
+            localStorage.setItem("push_token_pending", JSON.stringify({ token: token.value }));
           }
         });
 
         // Some issue with the setup and push will not work
         PushNotifications.addListener("registrationError", (error: any) => {
-          console.error("Push registration error: ", error.error);
+          console.error("❌ Push registration error:", error.error);
         });
 
         // Show us the notification payload if the app is open on iOS
         PushNotifications.addListener("pushNotificationReceived", (notification) => {
-          console.log("Push notification received: ", notification);
+          console.log("📬 Push notification received:", notification);
           showLocalNotification(notification.title || "Kelimele", notification.body || "Yeni bildiriminiz var");
         });
 
         // Method called when tapping on a notification
         PushNotifications.addListener("pushNotificationActionPerformed", (notification) => {
-          console.log("Push notification action performed: ", notification);
+          console.log("👆 Push notification action performed:", notification);
           handleNotificationAction(notification);
         });
+
+        // Register with Apple / Google to receive push via APNS/FCM
+        console.log("📱 Register çağrılıyor...");
+        await PushNotifications.register();
+        console.log("✅ Register başarılı");
       } else {
         setIsPermissionGranted(false);
-        console.log("Push notification permissions denied");
+        console.log("❌ Push notification permissions denied");
       }
     } catch (error) {
       console.error("Error initializing push notifications:", error);
@@ -341,14 +351,25 @@ export const useMobileNotifications = () => {
   // Request notification permissions
   const requestPermissions = async () => {
     try {
+      console.log("🔔 requestPermissions çağrıldı, isMobile:", isMobile);
+      
       if (isMobile) {
         await initializePushNotifications();
         await initializeLocalNotifications();
+        
+        // İzin durumunu tekrar kontrol et
+        const PushNotifications = await getPushNotifications();
+        if (PushNotifications) {
+          const status = await PushNotifications.checkPermissions();
+          console.log("📱 İzin kontrolü sonucu:", status.receive);
+          setIsPermissionGranted(status.receive === "granted");
+        }
       } else {
         // Web bildirimi izinleri
         if ("Notification" in window) {
           const permission = await Notification.requestPermission();
           setIsPermissionGranted(permission === "granted");
+          console.log("🌐 Web bildirim izni:", permission);
 
           if (permission === "granted") {
             toast({
@@ -373,6 +394,7 @@ export const useMobileNotifications = () => {
           return;
         }
         const permissionStatus = await PushNotifications.checkPermissions();
+        console.log("📱 İzin durumu kontrol:", permissionStatus.receive);
         setIsPermissionGranted(permissionStatus.receive === "granted");
       } else {
         if ("Notification" in window) {
@@ -384,9 +406,29 @@ export const useMobileNotifications = () => {
     }
   }, [isMobile]);
 
+  // Bekleyen token'ı kaydet (user login olduktan sonra)
+  const savePendingToken = useCallback(async () => {
+    if (!user?.id) return;
+    
+    try {
+      const pendingData = localStorage.getItem("push_token_pending");
+      if (pendingData) {
+        const { token } = JSON.parse(pendingData);
+        if (token) {
+          console.log("📱 Bekleyen token kaydediliyor...");
+          await savePushToken(user.id, token);
+          localStorage.removeItem("push_token_pending");
+        }
+      }
+    } catch (error) {
+      console.error("Bekleyen token kaydetme hatası:", error);
+    }
+  }, [user?.id]);
+
   // Initialize on mount
   useEffect(() => {
     checkPermissionStatus();
+    savePendingToken();
 
     if (isPermissionGranted && user?.id) {
       if (isMobile) {
@@ -394,7 +436,7 @@ export const useMobileNotifications = () => {
         initializeLocalNotifications();
       }
     }
-  }, [user?.id, isPermissionGranted, checkPermissionStatus, initializePushNotifications, initializeLocalNotifications]);
+  }, [user?.id, isPermissionGranted, checkPermissionStatus, initializePushNotifications, initializeLocalNotifications, savePendingToken]);
 
   return {
     isPermissionGranted,

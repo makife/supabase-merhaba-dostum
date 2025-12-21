@@ -5,6 +5,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Camera, Bell, Shield, CheckCircle2 } from "lucide-react";
 import { Capacitor } from "@capacitor/core";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Dinamik import için helper fonksiyonlar
 const getPushNotifications = async () => {
@@ -41,6 +43,7 @@ export const OnboardingPermissions = ({ open, onComplete }: OnboardingPermission
     camera: false,
   });
 
+  const { user } = useAuth();
   const isMobile = Capacitor.getPlatform() !== "web";
 
   const steps = [
@@ -152,6 +155,28 @@ export const OnboardingPermissions = ({ open, onComplete }: OnboardingPermission
     },
   ];
 
+  // Push token'ı veritabanına kaydet
+  const savePushToken = async (userId: string, token: string) => {
+    try {
+      console.log("📱 Push token kaydediliyor:", token.substring(0, 20) + "...");
+      const { error } = await supabase
+        .from("profiles")
+        .update({ push_token: token })
+        .eq("id", userId);
+
+      if (error) {
+        console.error("Push token kaydetme hatası:", error);
+        // LocalStorage'a da kaydet (yedek)
+        localStorage.setItem("push_token_pending", JSON.stringify({ userId, token }));
+      } else {
+        console.log("✅ Push token veritabanına kaydedildi");
+        localStorage.removeItem("push_token_pending");
+      }
+    } catch (error) {
+      console.error("Push token kaydetme hatası:", error);
+    }
+  };
+
   const requestPermissions = async () => {
     const granted = { notifications: false, camera: false };
 
@@ -160,11 +185,34 @@ export const OnboardingPermissions = ({ open, onComplete }: OnboardingPermission
       try {
         const PushNotifications = await getPushNotifications();
         if (PushNotifications) {
+          console.log("📱 Bildirim izni isteniyor...");
           const permission = await PushNotifications.requestPermissions();
+          console.log("📱 Bildirim izni sonucu:", permission.receive);
+          
           if (permission.receive === "granted") {
+            // Önce listener'ları kur
+            PushNotifications.addListener("registration", async (token) => {
+              console.log("✅ Push token alındı:", token.value.substring(0, 20) + "...");
+              
+              // User varsa hemen kaydet, yoksa localStorage'a koy
+              if (user?.id) {
+                await savePushToken(user.id, token.value);
+              } else {
+                console.log("⚠️ User henüz yok, token localStorage'a kaydediliyor");
+                localStorage.setItem("push_token_pending", JSON.stringify({ token: token.value }));
+              }
+            });
+
+            PushNotifications.addListener("registrationError", (error: any) => {
+              console.error("❌ Push registration hatası:", error.error);
+            });
+
+            // Sonra register çağır
             await PushNotifications.register();
             granted.notifications = true;
-            console.log("Bildirim izni verildi ✅");
+            console.log("✅ Bildirim izni verildi ve register çağrıldı");
+          } else {
+            console.log("❌ Bildirim izni reddedildi");
           }
         }
       } catch (err) {
@@ -174,6 +222,7 @@ export const OnboardingPermissions = ({ open, onComplete }: OnboardingPermission
       try {
         const permission = await Notification.requestPermission();
         granted.notifications = permission === "granted";
+        console.log("🌐 Web bildirim izni:", permission);
       } catch (err) {
         console.error("Web bildirim izni hatası:", err);
       }
@@ -186,6 +235,7 @@ export const OnboardingPermissions = ({ open, onComplete }: OnboardingPermission
         if (CapacitorCamera) {
           const permission = await CapacitorCamera.requestPermissions();
           granted.camera = permission.camera === "granted";
+          console.log("📷 Kamera izni:", permission.camera);
         }
       } catch (err) {
         console.error("Kamera izni hatası:", err);

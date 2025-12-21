@@ -142,34 +142,36 @@ const SettingsPage = () => {
 
   const handleNotificationChange = async (checked: boolean) => {
     try {
+      console.log("🔔 Bildirim değişikliği:", checked);
       setNotifications(checked);
 
       if (checked) {
         // Mobile veya web bildirim izinlerini iste
-        if (isMobile) {
-          await requestPermissions();
-        } else if ("Notification" in window) {
-          const permission = await Notification.requestPermission();
-          if (permission === "granted") {
+        console.log("📱 Platform:", isMobile ? "Mobile" : "Web");
+        
+        await requestPermissions();
+        
+        // İzin verildi mi kontrol et
+        setTimeout(async () => {
+          if (isPermissionGranted) {
             toast({
               title: "Bildirimler Aktif",
               description: "Oyun bildirimleri başarıyla aktif edildi",
             });
-          } else {
+            
+            // Test bildirimi göster
+            setTimeout(() => {
+              showLocalNotification("Bildirimler Aktif", "Kelimeci bildirimleriniz aktif edildi!");
+            }, 1000);
+          } else if (!isMobile && "Notification" in window && Notification.permission === "denied") {
             toast({
               title: "İzin Reddedildi",
               description: "Bildirim izni reddedildi. Tarayıcı ayarlarından izin verebilirsiniz.",
               variant: "destructive",
             });
             setNotifications(false);
-            return;
           }
-        }
-
-        // Test bildirimi göster
-        setTimeout(() => {
-          showLocalNotification("Bildirimler Aktif", "Kelimeci bildirimleriniz aktif edildi!");
-        }, 2000);
+        }, 500);
       } else {
         // Bildirimleri kapat - push token'ı veritabanından sil
         await disableNotifications();
