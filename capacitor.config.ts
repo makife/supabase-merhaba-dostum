@@ -48,6 +48,9 @@ const config: CapacitorConfig = {
     },
     ScreenOrientation: {
       orientation: 'portrait'
+    },
+    PushNotifications: {
+      presentationOptions: ['badge', 'sound', 'alert']
     }
   }
 };
