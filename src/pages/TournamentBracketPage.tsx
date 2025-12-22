@@ -596,9 +596,10 @@ const MatchCard = ({ match, roundInfo }: { match: any; roundInfo: { color: strin
         {/* Player 1 */}
         <PlayerRow
           player={player1}
-          score={match.player1_score}
+          score={match.player1_score || 0}
           isWinner={isCompleted && winner === match.player1_id}
           isCompleted={isCompleted}
+          isInProgress={match.status === "in_progress"}
         />
 
         <div className="text-center text-white/60 text-xs my-1">VS</div>
@@ -606,9 +607,10 @@ const MatchCard = ({ match, roundInfo }: { match: any; roundInfo: { color: strin
         {/* Player 2 */}
         <PlayerRow
           player={player2}
-          score={match.player2_score}
+          score={match.player2_score || 0}
           isWinner={isCompleted && winner === match.player2_id}
           isCompleted={isCompleted}
+          isInProgress={match.status === "in_progress"}
         />
 
         {match.status === "in_progress" && (
@@ -626,11 +628,13 @@ const PlayerRow = ({
   score,
   isWinner,
   isCompleted,
+  isInProgress,
 }: {
   player: any;
   score: number;
   isWinner: boolean;
   isCompleted: boolean;
+  isInProgress: boolean;
 }) => (
   <div className={`rounded p-2 ${isWinner ? "bg-green-700 border border-green-400" : "bg-white/10"}`}>
     <div className="flex items-center justify-between">
@@ -643,10 +647,11 @@ const PlayerRow = ({
         </Avatar>
         <span className="text-white text-sm truncate">{player.name}</span>
       </div>
-      {isCompleted && (
+      {/* Skor: Maç devam ederken veya tamamlandığında göster */}
+      {(isCompleted || isInProgress) && (
         <div className="flex items-center gap-1 flex-shrink-0">
           {isWinner && <Trophy className="w-4 h-4 text-yellow-400" />}
-          <span className="text-white font-bold">{score}</span>
+          <span className={`font-bold ${isInProgress ? "text-yellow-300" : "text-white"}`}>{score}</span>
         </div>
       )}
     </div>
