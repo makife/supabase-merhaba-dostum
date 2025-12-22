@@ -131,10 +131,19 @@ const containsWordBoundary = (text: string, word: string): boolean => {
   return regex.test(text);
 };
 
+// @mention'ları mesajdan çıkar (kullanıcı adları yasaklı kelime kontrolüne takılmamalı)
+const removeMentions = (text: string): string => {
+  // @kullanıcıadı formatındaki tüm mention'ları kaldır
+  return text.replace(/@\w+/g, '');
+};
+
 // Mesajda yasaklı kelime kontrol et - GELİŞMİŞ
 export const containsBannedWords = (message: string): { found: boolean; word?: string; severity: 'high' | 'medium' | 'low' } => {
-  const originalLower = message.toLowerCase();
-  const normalizedMessage = normalizeText(message);
+  // Önce @mention'ları çıkar - kullanıcı adları yasaklı kelime kontrolüne takılmamalı
+  const messageWithoutMentions = removeMentions(message);
+  
+  const originalLower = messageWithoutMentions.toLowerCase();
+  const normalizedMessage = normalizeText(messageWithoutMentions);
   
   // Ağır küfürler (ilk 30 kelime) - direkt ban
   const highSeverityWords = BANNED_WORDS.slice(0, 30);
@@ -160,7 +169,7 @@ export const containsBannedWords = (message: string): { found: boolean; word?: s
     }
   }
   
-  // Bypass pattern'leri kontrol et
+  // Bypass pattern'leri kontrol et (mention'sız metinde)
   const bypassPatterns = [
     /s+[^a-z]*i+[^a-z]*k/i,      // s-i-k, s.i.k, s i k vb
     /a+[^a-z]*m+[^a-z]*[ck]/i,   // a-m-k, a.m.c.k vb
@@ -171,7 +180,7 @@ export const containsBannedWords = (message: string): { found: boolean; word?: s
   ];
   
   for (const pattern of bypassPatterns) {
-    if (pattern.test(message)) {
+    if (pattern.test(messageWithoutMentions)) {
       console.log(`🔍 Bypass pattern tespit edildi: ${pattern} mesajda: "${message}"`);
       return { found: true, word: 'bypass-pattern', severity: 'high' };
     }
