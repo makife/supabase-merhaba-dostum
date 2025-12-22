@@ -275,13 +275,6 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
         window.dispatchEvent(new Event("permissionsCompleted"));
 
         toast.success("Kurulum tamamlandı! Hoş geldiniz 🎉");
-        
-        // Intro dialog'u göster
-        if (onShowIntro) {
-          setTimeout(() => {
-            onShowIntro();
-          }, 300);
-        }
       } catch (error) {
         console.error("İzin isteme hatası:", error);
         // Hata olsa bile onboarding'i tamamla
@@ -289,10 +282,16 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
         toast.info("Kurulum tamamlandı. İzinleri ayarlardan verebilirsiniz.");
       } finally {
         setIsLoading(false);
-        // Dialog'u kesinlikle kapat - setTimeout ile React render döngüsünü bekle
-        setTimeout(() => {
-          onComplete();
-        }, 100);
+        // Önce dialog'u kapat, sonra intro'yu göster
+        onComplete();
+        
+        // Intro dialog'u göster (henüz gösterilmediyse)
+        const introCompleted = localStorage.getItem("kelimeci-intro-completed");
+        if (onShowIntro && !introCompleted) {
+          setTimeout(() => {
+            onShowIntro();
+          }, 400);
+        }
       }
     }
   };
@@ -301,6 +300,14 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
     localStorage.setItem("kelimeci-onboarding-completed", "true");
     toast.info("Kurulumu atladınız. İzinleri ayarlardan verebilirsiniz.");
     onComplete();
+    
+    // Skip'te de intro dialog'u göster
+    const introCompleted = localStorage.getItem("kelimeci-intro-completed");
+    if (onShowIntro && !introCompleted) {
+      setTimeout(() => {
+        onShowIntro();
+      }, 400);
+    }
   };
 
   const CurrentIcon = steps[currentStep].icon;
