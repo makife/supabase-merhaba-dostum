@@ -675,10 +675,14 @@ const SettingsPage = () => {
                 onClick={async () => {
                   setIsDeleting(true);
                   try {
-                    // Hesap silme fonksiyonunu çağır
-                    const { error } = await supabase.rpc("delete_user_account");
+                    // Edge Function ile hesap silme
+                    const { data, error } = await supabase.functions.invoke("delete-user-account");
 
                     if (error) throw error;
+
+                    if (data?.error) {
+                      throw new Error(data.error);
+                    }
 
                     // Başarılı mesajı göster
                     toast({
@@ -688,6 +692,9 @@ const SettingsPage = () => {
 
                     // Kullanıcıyı çıkış yap
                     await supabase.auth.signOut();
+
+                    // LocalStorage'ı temizle
+                    localStorage.clear();
 
                     // Ana sayfaya yönlendir
                     setTimeout(() => {
