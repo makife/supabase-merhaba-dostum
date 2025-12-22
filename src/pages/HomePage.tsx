@@ -3,7 +3,7 @@ import { useMusic } from "@/contexts/MusicContext";
 import { useGame } from "@/contexts/GameContext";
 import GameModeSelector from "@/components/GameModeSelector";
 import { FloatingMenu } from "@/components/FloatingMenu";
-import { HeaderAnimation } from "@/components/HeaderAnimation";
+// HeaderAnimation kaldırıldı - import { HeaderAnimation } from "@/components/HeaderAnimation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import { useSounds } from "@/hooks/useSounds";
@@ -336,8 +336,8 @@ const HomePage = () => {
       title: "Yapay Zekaya Karşı",
       description: "AI rakibine karşı pratik yap",
       icon: Bot,
-      color: "bg-blue-500",
-      gradient: "bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700",
+      color: "bg-slate-600",
+      gradient: "bg-gradient-to-br from-slate-600 via-slate-700 to-slate-800",
       route: "/game/vs-computer",
     },
     {
@@ -345,8 +345,8 @@ const HomePage = () => {
       title: "Özel Oda",
       description: "Arkadaşınla özel oda oluştur",
       icon: Users,
-      color: "bg-green-500",
-      gradient: "bg-gradient-to-br from-green-500 via-emerald-600 to-green-700",
+      color: "bg-zinc-600",
+      gradient: "bg-gradient-to-br from-zinc-600 via-zinc-700 to-zinc-800",
       route: "/game/private-room",
     },
     {
@@ -354,8 +354,8 @@ const HomePage = () => {
       title: "Rastgele Rakip",
       description: "Rastgele oyuncu ile eşleş",
       icon: Zap,
-      color: "bg-purple-500",
-      gradient: "bg-gradient-to-br from-purple-500 via-violet-600 to-purple-700",
+      color: "bg-neutral-600",
+      gradient: "bg-gradient-to-br from-neutral-600 via-neutral-700 to-neutral-800",
       route: "/game/random-match",
     },
     {
@@ -363,8 +363,8 @@ const HomePage = () => {
       title: "Turnuva",
       description: "8 kişilik turnuvaya katıl",
       icon: Trophy,
-      color: "bg-yellow-500",
-      gradient: "bg-gradient-to-br from-yellow-500 via-orange-500 to-yellow-600",
+      color: "bg-stone-600",
+      gradient: "bg-gradient-to-br from-stone-600 via-stone-700 to-amber-900/80",
       route: "/tournament",
     },
   ];
@@ -372,11 +372,12 @@ const HomePage = () => {
   return (
     <>
       <div className="fixed inset-0 flex flex-col bg-gradient-to-br from-background to-muted">
-        {/* Sabit Header */}
+        {/* Sabit Header - Füme Tema */}
         <div className="flex-shrink-0">
-          <Card className="border-0 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/10 shadow-2xl relative overflow-hidden">
-            <HeaderAnimation />
-
+          <Card className="border-0 bg-gradient-to-br from-slate-800 via-slate-900 to-zinc-900 shadow-2xl relative overflow-hidden rounded-none">
+            {/* Subtle pattern overlay */}
+            <div className="absolute inset-0 opacity-5 bg-[radial-gradient(circle_at_50%_50%,_rgba(255,255,255,0.1)_1px,_transparent_1px)] bg-[length:20px_20px]" />
+            
             <CardContent className="px-4 pb-4 pt-6 relative z-10">
               {/* Mobil optimized layout */}
               <div className="space-y-3">
@@ -384,14 +385,14 @@ const HomePage = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div className="relative cursor-pointer group flex-shrink-0" onClick={handleAvatarClick}>
-                      <Avatar className="w-14 h-14 ring-2 ring-white/50 shadow-lg transition-all duration-500 ease-in-out">
+                      <Avatar className="w-14 h-14 ring-2 ring-slate-500/50 shadow-lg transition-all duration-500 ease-in-out">
                         <AvatarImage
                           src={profile?.avatar_url || user?.user_metadata?.avatar_url}
                           alt="Profile"
                           className="transition-opacity duration-500 ease-in-out"
                           loading="eager"
                         />
-                        <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-sm font-bold transition-all duration-500 ease-in-out">
+                        <AvatarFallback className="bg-gradient-to-br from-slate-600 to-slate-700 text-white text-sm font-bold transition-all duration-500 ease-in-out">
                           <User className="w-6 h-6" />
                         </AvatarFallback>
                       </Avatar>
@@ -399,17 +400,15 @@ const HomePage = () => {
 
                     <div className="flex-1 min-w-0">
                       <h1
-                        className="text-xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent drop-shadow-lg"
+                        className="text-xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-amber-400 via-amber-300 to-amber-400 bg-clip-text text-transparent drop-shadow-lg"
                         style={{
-                          textShadow:
-                            "1px 1px 0px hsl(var(--primary)), 2px 2px 0px rgba(0,0,0,0.3), 0 0 15px hsl(var(--primary) / 0.5)",
-                          WebkitTextStroke: "0.5px hsl(var(--border))",
+                          textShadow: "0 2px 4px rgba(0,0,0,0.5)",
                         }}
                       >
                         KELİMELE
                       </h1>
-                      <p className="text-xs text-muted-foreground">{greeting}</p>
-                      <p className="text-sm font-semibold text-foreground truncate">
+                      <p className="text-xs text-slate-400">{greeting}</p>
+                      <p className="text-sm font-semibold text-slate-200 truncate">
                         {profile?.username || user?.user_metadata?.username || user?.email?.split("@")[0]}
                       </p>
                     </div>
@@ -433,26 +432,26 @@ const HomePage = () => {
                           className="w-10 h-10 object-contain transition-transform duration-300 group-hover:scale-110 drop-shadow-lg"
                         />
                         {/* Hover efekti için opsiyonel glow */}
-                        <div className="absolute inset-0 bg-purple-500/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        <div className="absolute inset-0 bg-amber-500/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                       </div>
 
                       {/* Mürekkep Sayısı */}
-                      <div className="bg-gradient-to-r from-purple-500/90 to-indigo-500/90 backdrop-blur-sm px-3 py-0 rounded-full border-2 border-white/30 shadow-lg min-w-[60px] flex items-center justify-center">
-                        <span className="text-sm font-bold text-white drop-shadow-md">{profile?.ink_count || 0}</span>
+                      <div className="bg-gradient-to-r from-slate-600/90 to-slate-700/90 backdrop-blur-sm px-3 py-0.5 rounded-full border border-slate-500/50 shadow-lg min-w-[60px] flex items-center justify-center">
+                        <span className="text-sm font-bold text-amber-400 drop-shadow-md">{profile?.ink_count || 0}</span>
                       </div>
                     </div>
 
                     {/* Premium/Sınırsız Badge */}
                     {isPremium && (
                       <div className="flex flex-col items-end mt-1">
-                        <div className="flex items-center space-x-1">
-                          <Crown className="w-4 h-4 text-yellow-500" />
-                          <span className="text-xs text-yellow-500 font-semibold">
+                        <div className="flex items-center space-x-1 bg-slate-700/50 px-2 py-0.5 rounded-full">
+                          <Crown className="w-4 h-4 text-amber-400" />
+                          <span className="text-xs text-amber-400 font-semibold">
                             {isUnlimitedLivesActive(profile) ? "Sınırsız" : "Premium"}
                           </span>
                         </div>
                         {unlimitedTimeLeft && (
-                          <span className="text-xs text-orange-400 font-medium">{unlimitedTimeLeft}</span>
+                          <span className="text-xs text-amber-300 font-medium">{unlimitedTimeLeft}</span>
                         )}
                       </div>
                     )}
@@ -460,18 +459,18 @@ const HomePage = () => {
                 </div>
               </div>
 
-              {/* Seviye progress - Real-time güncellemeler için profile state'ini direkt kullan */}
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 shadow-inner">
+              {/* Seviye progress - Füme tema */}
+              <div className="bg-slate-700/50 backdrop-blur-sm rounded-xl p-3 border border-slate-600/50 shadow-inner mt-3">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2">
-                    <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg flex-shrink-0">
+                    <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-amber-600 rounded-full flex items-center justify-center shadow-lg flex-shrink-0">
                       <Trophy className="w-4 h-4 text-white" />
                     </div>
                     <div className="min-w-0">
-                      <h3 className="text-sm font-bold text-foreground">
+                      <h3 className="text-sm font-bold text-slate-100">
                         Seviye {calculateLevel(profile?.total_score || 0).level}
                       </h3>
-                      <p className="text-xs text-muted-foreground truncate">
+                      <p className="text-xs text-slate-400 truncate">
                         {calculateLevel(profile?.total_score || 0).experience} /{" "}
                         {calculateLevel(profile?.total_score || 0).nextLevelExp} EXP
                       </p>
@@ -479,18 +478,18 @@ const HomePage = () => {
                   </div>
 
                   <div className="text-right flex-shrink-0">
-                    <div className="text-base font-bold text-primary">
+                    <div className="text-base font-bold text-amber-400">
                       {(profile?.total_score || 0) > 9999
                         ? `${Math.floor((profile?.total_score || 0) / 1000)}k`
                         : (profile?.total_score || 0).toLocaleString()}
                     </div>
-                    <div className="text-xs text-muted-foreground">Puan</div>
+                    <div className="text-xs text-slate-400">Puan</div>
                   </div>
                 </div>
 
-                {/* Progress bar - Real-time güncellemeler */}
+                {/* Progress bar - Füme tema */}
                 <div className="space-y-1">
-                  <div className="flex justify-between text-xs text-muted-foreground">
+                  <div className="flex justify-between text-xs text-slate-400">
                     <span>İlerleme</span>
                     <span>
                       %
@@ -501,9 +500,9 @@ const HomePage = () => {
                       )}
                     </span>
                   </div>
-                  <div className="w-full bg-black/20 rounded-full h-2 overflow-hidden">
+                  <div className="w-full bg-slate-800/50 rounded-full h-2 overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 rounded-full transition-all duration-1000 ease-out shadow-lg"
+                      className="h-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-300 rounded-full transition-all duration-1000 ease-out shadow-lg"
                       style={{
                         width: `${(calculateLevel(profile?.total_score || 0).experience / calculateLevel(profile?.total_score || 0).nextLevelExp) * 100}%`,
                       }}
@@ -513,20 +512,20 @@ const HomePage = () => {
               </div>
 
               {/* Alt kısım - Hak barı ve istatistikler */}
-              <div className="space-y-2 mt-2 pt-2 border-t border-white/20">
-                {/* Hak barı - Real-time güncellemeler */}
+              <div className="space-y-2 mt-2 pt-2 border-t border-slate-700/50">
+                {/* Hak barı - Füme tema */}
                 {!isPremium && (
                   <div className="space-y-1">
                     <div className="flex justify-between items-center">
-                      <span className="text-xs text-muted-foreground">Kalan Sayfalarım</span>
+                      <span className="text-xs text-slate-400">Kalan Sayfalarım</span>
                       <div className="flex items-center gap-2">
                         {isUnlimitedLivesActive(profile) ? (
                           <>
-                            <span className="text-xs font-bold text-green-400 bg-green-900/50 px-2 py-1 rounded-full border border-green-500/50">
+                            <span className="text-xs font-bold text-emerald-400 bg-emerald-900/50 px-2 py-1 rounded-full border border-emerald-500/50">
                               <Infinity className="w-3 h-3 inline mr-1" /> SINIRSIZ
                             </span>
                             {unlimitedTimeLeft && (
-                              <span className="text-xs font-bold text-yellow-100 bg-orange-600/70 px-2 py-1 rounded-full border border-yellow-300/80">
+                              <span className="text-xs font-bold text-amber-200 bg-amber-700/70 px-2 py-1 rounded-full border border-amber-500/50">
                                 Kalan: {unlimitedTimeLeft}
                               </span>
                             )}
@@ -534,11 +533,11 @@ const HomePage = () => {
                         ) : (
                           // Normal Kredi Gösterimi
                           <>
-                            <span className="text-xs font-medium text-foreground">
+                            <span className="text-xs font-medium text-slate-200">
                               {(profile?.game_credits || 0) + (profile?.bonus_credits || 0)}/5
                             </span>
                             {timeUntilNextCredit && profile?.game_credits < 5 && (
-                              <span className="text-xs text-orange-500 bg-orange-100 px-2 py-1 rounded-full">
+                              <span className="text-xs text-amber-300 bg-slate-700/80 px-2 py-1 rounded-full border border-slate-600">
                                 +1 {timeUntilNextCredit}
                               </span>
                             )}
@@ -552,7 +551,7 @@ const HomePage = () => {
                       <div className="flex gap-1 h-2 w-full">
                         {Array.from({ length: 5 }, (_, i) => {
                           const isActive = i < (profile?.game_credits || 0);
-                          let segmentColor = "bg-black/20";
+                          let segmentColor = "bg-slate-800/50";
 
                           if (isActive) {
                             switch (i + 1) {
@@ -560,19 +559,19 @@ const HomePage = () => {
                                 segmentColor = "bg-red-500";
                                 break;
                               case 2:
-                                segmentColor = "bg-red-400";
-                                break;
-                              case 3:
                                 segmentColor = "bg-orange-500";
                                 break;
+                              case 3:
+                                segmentColor = "bg-amber-500";
+                                break;
                               case 4:
-                                segmentColor = "bg-green-400";
+                                segmentColor = "bg-emerald-500";
                                 break;
                               case 5:
-                                segmentColor = "bg-green-500";
+                                segmentColor = "bg-emerald-400";
                                 break;
                               default:
-                                segmentColor = "bg-black/20";
+                                segmentColor = "bg-slate-800/50";
                             }
                           }
 
@@ -588,43 +587,43 @@ const HomePage = () => {
                   </div>
                 )}
 
-                {/* İstatistik badge'leri - Real-time güncellemeler */}
+                {/* İstatistik badge'leri - Füme tema */}
                 <div className="flex flex-wrap gap-2 justify-center">
-                  <Badge variant="secondary" className="bg-white/20 text-foreground border-white/30 text-xs">
-                    <Target className="w-3 h-3 mr-1" />
+                  <Badge variant="secondary" className="bg-slate-700/50 text-slate-200 border-slate-600/50 text-xs">
+                    <Target className="w-3 h-3 mr-1 text-amber-400" />
                     Günlük Oyun: {profile?.daily_games || 0}/∞
                   </Badge>
-                  <Badge variant="secondary" className="bg-white/20 text-foreground border-white/30 text-xs">
-                    <Zap className="w-3 h-3 mr-1" />
+                  <Badge variant="secondary" className="bg-slate-700/50 text-slate-200 border-slate-600/50 text-xs">
+                    <Zap className="w-3 h-3 mr-1 text-amber-400" />
                     Günlük Seri: {profile?.win_streak || 0}/∞
                   </Badge>
                 </div>
 
-                {/* Joker Envanteri */}
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 mt-3">
+                {/* Joker Envanteri - Füme tema */}
+                <div className="bg-slate-700/50 backdrop-blur-sm rounded-xl p-3 border border-slate-600/50 mt-3">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-bold text-foreground">🃏 Jokerlerim</h4>
+                    <h4 className="text-sm font-bold text-slate-100">🃏 Jokerlerim</h4>
                   </div>
                   <div className="flex gap-2 text-xs">
                     {/* DEĞİŞTİR */}
-                    <div className="bg-white/10 rounded-lg p-2 flex items-center gap-1">
+                    <div className="bg-slate-600/50 rounded-lg p-2 flex items-center gap-1 border border-slate-500/30">
                       <img src="/degistirIkon.png" alt="Değiştir" className="w-8 h-8 object-contain" />
-                      <span className="font-medium">Değiştir</span>
-                      <span className="font-semibold">×{jokers.degistir}</span>
+                      <span className="font-medium text-slate-300">Değiştir</span>
+                      <span className="font-semibold text-amber-400">×{jokers.degistir}</span>
                     </div>
 
                     {/* FISILDA */}
-                    <div className="bg-white/10 rounded-lg p-2 flex items-center gap-1">
+                    <div className="bg-slate-600/50 rounded-lg p-2 flex items-center gap-1 border border-slate-500/30">
                       <img src="/fisildaIkon.png" alt="Fısılda" className="w-8 h-8 object-contain" />
-                      <span className="font-medium">Fısılda</span>
-                      <span className="font-semibold">×{jokers.fisilida}</span>
+                      <span className="font-medium text-slate-300">Fısılda</span>
+                      <span className="font-semibold text-amber-400">×{jokers.fisilida}</span>
                     </div>
 
                     {/* SEN YAZ */}
-                    <div className="bg-white/10 rounded-lg p-2 flex items-center gap-1">
+                    <div className="bg-slate-600/50 rounded-lg p-2 flex items-center gap-1 border border-slate-500/30">
                       <img src="/senyazIkon.png" alt="Sen Yaz" className="w-8 h-8 object-contain" />
-                      <span className="font-medium">Sen Yaz</span>
-                      <span className="font-semibold">×{jokers.senYaz}</span>
+                      <span className="font-medium text-slate-300">Sen Yaz</span>
+                      <span className="font-semibold text-amber-400">×{jokers.senYaz}</span>
                     </div>
                   </div>
                 </div>
@@ -1030,12 +1029,12 @@ const HomePage = () => {
                 <CardHeader className="pb-2 pt-3 relative">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center border border-white/30">
-                        <mode.icon className="w-4 h-4 text-white" />
+                      <div className="w-8 h-8 bg-slate-500/30 backdrop-blur-sm rounded-lg flex items-center justify-center border border-slate-400/30">
+                        <mode.icon className="w-4 h-4 text-amber-400" />
                       </div>
                       <div>
-                        <CardTitle className="text-base text-white drop-shadow-lg">{mode.title}</CardTitle>
-                        <CardDescription className="text-white/80 font-medium text-sm">
+                        <CardTitle className="text-base text-slate-100 drop-shadow-lg">{mode.title}</CardTitle>
+                        <CardDescription className="text-slate-300 font-medium text-sm">
                           {mode.description}
                         </CardDescription>
                       </div>
@@ -1044,28 +1043,28 @@ const HomePage = () => {
                       <img
                         src="/lovable-uploads/8008dff7-7ead-48e2-b47e-fde31770af08.png"
                         alt="Computer player"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 w-48 h-36 object-contain opacity-60"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-48 h-36 object-contain opacity-40"
                       />
                     )}
                     {mode.id === "private-room" && (
                       <img
                         src="/lovable-uploads/e5d22948-34db-460d-adff-dc6284efcf50.png"
                         alt="Private room"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 w-48 h-36 object-contain opacity-60"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-48 h-36 object-contain opacity-40"
                       />
                     )}
                     {mode.id === "random-match" && (
                       <img
                         src="/lovable-uploads/a91ec87e-aaac-47fa-93fa-22e1f0270999.png"
                         alt="Random match"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 w-48 h-36 object-contain opacity-60"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-48 h-36 object-contain opacity-40"
                       />
                     )}
                     {mode.id === "tournament" && (
                       <img
                         src="/lovable-uploads/70bff2fc-4ab0-4705-b1f1-d3cf41bbc7b5.png"
                         alt="Tournament"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 w-48 h-36 object-contain opacity-60"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-48 h-36 object-contain opacity-40"
                       />
                     )}
                   </div>
@@ -1074,13 +1073,13 @@ const HomePage = () => {
                   <div className="flex items-center space-x-2 mb-2">
                     <Badge
                       variant="secondary"
-                      className="text-xs bg-white/20 text-white border-white/30 hover:bg-white/30"
+                      className="text-xs bg-slate-600/50 text-slate-200 border-slate-500/50 hover:bg-slate-600/70"
                     >
-                      <Clock className="w-3 h-3 mr-1" />2 Dakika
+                      <Clock className="w-3 h-3 mr-1 text-amber-400" />2 Dakika
                     </Badge>
                   </div>
                   <Button
-                    className="w-full bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50 backdrop-blur-sm font-semibold"
+                    className="w-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-500/30 hover:border-amber-500/50 backdrop-blur-sm font-semibold"
                     variant="outline"
                     onClick={(e) => {
                       e.stopPropagation();
