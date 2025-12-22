@@ -459,85 +459,103 @@ const HomePage = () => {
                 </div>
               </div>
 
-              {/* Seviye progress - Füme tema */}
-              <div className="bg-slate-700/50 backdrop-blur-sm rounded-xl p-3 border border-slate-600/50 shadow-inner mt-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-amber-600 rounded-full flex items-center justify-center shadow-lg flex-shrink-0">
-                      <Trophy className="w-4 h-4 text-white" />
+              {/* Seviye Progress - Yenilenmiş Tasarım */}
+              <div className="bg-gradient-to-br from-slate-700/60 to-slate-800/60 backdrop-blur-sm rounded-2xl p-4 border border-slate-500/30 shadow-xl mt-3 relative overflow-hidden">
+                {/* Dekoratif arka plan */}
+                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/2" />
+                
+                <div className="flex items-center justify-between mb-3 relative z-10">
+                  <div className="flex items-center space-x-3">
+                    <div className="relative">
+                      <div className="w-12 h-12 bg-gradient-to-br from-amber-400 via-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg rotate-3">
+                        <Crown className="w-6 h-6 text-white drop-shadow-md" />
+                      </div>
+                      <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-slate-800 rounded-full flex items-center justify-center border-2 border-amber-400 text-[10px] font-bold text-amber-400">
+                        {calculateLevel(profile?.total_score || 0).level}
+                      </div>
                     </div>
                     <div className="min-w-0">
-                      <h3 className="text-sm font-bold text-slate-100">
+                      <h3 className="text-base font-bold text-white">
                         Seviye {calculateLevel(profile?.total_score || 0).level}
                       </h3>
-                      <p className="text-xs text-slate-400 truncate">
-                        {calculateLevel(profile?.total_score || 0).experience} /{" "}
-                        {calculateLevel(profile?.total_score || 0).nextLevelExp} EXP
+                      <p className="text-xs text-slate-400">
+                        <span className="text-amber-400 font-semibold">{calculateLevel(profile?.total_score || 0).experience}</span>
+                        <span className="text-slate-500"> / </span>
+                        <span>{calculateLevel(profile?.total_score || 0).nextLevelExp} EXP</span>
                       </p>
                     </div>
                   </div>
 
-                  <div className="text-right flex-shrink-0">
-                    <div className="text-base font-bold text-amber-400">
+                  <div className="text-right flex-shrink-0 bg-slate-800/50 rounded-xl px-3 py-2 border border-slate-600/30">
+                    <div className="text-lg font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
                       {(profile?.total_score || 0) > 9999
                         ? `${Math.floor((profile?.total_score || 0) / 1000)}k`
                         : (profile?.total_score || 0).toLocaleString()}
                     </div>
-                    <div className="text-xs text-slate-400">Puan</div>
+                    <div className="text-[10px] text-slate-500 uppercase tracking-wider">Toplam Puan</div>
                   </div>
                 </div>
 
-                {/* Progress bar - Füme tema */}
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs text-slate-400">
-                    <span>İlerleme</span>
-                    <span>
-                      %
-                      {Math.round(
+                {/* Progress bar - Yenilenmiş */}
+                <div className="relative z-10">
+                  <div className="flex justify-between text-xs mb-1.5">
+                    <span className="text-slate-400 flex items-center gap-1">
+                      <Zap className="w-3 h-3 text-amber-400" />
+                      İlerleme
+                    </span>
+                    <span className="text-amber-400 font-semibold">
+                      %{Math.round(
                         (calculateLevel(profile?.total_score || 0).experience /
                           calculateLevel(profile?.total_score || 0).nextLevelExp) *
                           100,
                       )}
                     </span>
                   </div>
-                  <div className="w-full bg-slate-800/50 rounded-full h-2 overflow-hidden">
+                  <div className="w-full bg-slate-900/60 rounded-full h-3 overflow-hidden border border-slate-600/30 shadow-inner">
                     <div
-                      className="h-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-300 rounded-full transition-all duration-1000 ease-out shadow-lg"
+                      className="h-full bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-300 rounded-full transition-all duration-1000 ease-out relative"
                       style={{
                         width: `${(calculateLevel(profile?.total_score || 0).experience / calculateLevel(profile?.total_score || 0).nextLevelExp) * 100}%`,
                       }}
-                    />
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/20 to-white/30 rounded-full" />
+                      <div className="absolute right-0 top-0 bottom-0 w-2 bg-white/40 rounded-full blur-sm" />
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Alt kısım - Hak barı ve istatistikler */}
-              <div className="space-y-2 mt-2 pt-2 border-t border-slate-700/50">
-                {/* Hak barı - Füme tema */}
+              <div className="space-y-3 mt-3 pt-3 border-t border-slate-600/30">
+                {/* Hak barı - Yenilenmiş Tasarım */}
                 {!isPremium && (
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-slate-400">Kalan Sayfalarım</span>
+                  <div className="bg-gradient-to-br from-slate-700/40 to-slate-800/40 rounded-xl p-3 border border-slate-600/20">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
+                        <div className="w-4 h-4 bg-gradient-to-br from-rose-500 to-pink-500 rounded-full flex items-center justify-center">
+                          <span className="text-[8px] text-white">❤</span>
+                        </div>
+                        Oyun Haklarım
+                      </span>
                       <div className="flex items-center gap-2">
                         {isUnlimitedLivesActive(profile) ? (
                           <>
-                            <span className="text-xs font-bold text-emerald-400 bg-emerald-900/50 px-2 py-1 rounded-full border border-emerald-500/50">
-                              <Infinity className="w-3 h-3 inline mr-1" /> SINIRSIZ
+                            <span className="text-xs font-bold text-emerald-400 bg-emerald-900/50 px-2.5 py-1 rounded-full border border-emerald-500/50 flex items-center gap-1">
+                              <Infinity className="w-3 h-3" /> SINIRSIZ
                             </span>
                             {unlimitedTimeLeft && (
-                              <span className="text-xs font-bold text-amber-200 bg-amber-700/70 px-2 py-1 rounded-full border border-amber-500/50">
-                                Kalan: {unlimitedTimeLeft}
+                              <span className="text-xs font-medium text-amber-300 bg-amber-900/40 px-2 py-1 rounded-full border border-amber-500/30">
+                                ⏱ {unlimitedTimeLeft}
                               </span>
                             )}
                           </>
                         ) : (
-                          // Normal Kredi Gösterimi
                           <>
-                            <span className="text-xs font-medium text-slate-200">
+                            <span className="text-sm font-bold text-white bg-slate-600/50 px-2 py-0.5 rounded-md">
                               {(profile?.game_credits || 0) + (profile?.bonus_credits || 0)}/5
                             </span>
                             {timeUntilNextCredit && profile?.game_credits < 5 && (
-                              <span className="text-xs text-amber-300 bg-slate-700/80 px-2 py-1 rounded-full border border-slate-600">
+                              <span className="text-[10px] text-amber-400 bg-slate-700/60 px-2 py-1 rounded-full">
                                 +1 {timeUntilNextCredit}
                               </span>
                             )}
@@ -546,40 +564,32 @@ const HomePage = () => {
                       </div>
                     </div>
 
-                    {/* Sadece Sınırsız Can aktif değilken normal kredi çubuklarını göster */}
+                    {/* Yenilenmiş Kredi Çubukları */}
                     {!isUnlimitedLivesActive(profile) && (
-                      <div className="flex gap-1 h-2 w-full">
+                      <div className="flex gap-1.5 h-3 w-full">
                         {Array.from({ length: 5 }, (_, i) => {
-                          const isActive = i < (profile?.game_credits || 0);
-                          let segmentColor = "bg-slate-800/50";
-
-                          if (isActive) {
-                            switch (i + 1) {
-                              case 1:
-                                segmentColor = "bg-red-500";
-                                break;
-                              case 2:
-                                segmentColor = "bg-orange-500";
-                                break;
-                              case 3:
-                                segmentColor = "bg-amber-500";
-                                break;
-                              case 4:
-                                segmentColor = "bg-emerald-500";
-                                break;
-                              case 5:
-                                segmentColor = "bg-emerald-400";
-                                break;
-                              default:
-                                segmentColor = "bg-slate-800/50";
-                            }
-                          }
+                          const credits = (profile?.game_credits || 0) + (profile?.bonus_credits || 0);
+                          const isActive = i < credits;
+                          
+                          const gradients = [
+                            "bg-gradient-to-r from-red-600 to-red-500",
+                            "bg-gradient-to-r from-orange-600 to-orange-500",
+                            "bg-gradient-to-r from-amber-600 to-amber-500",
+                            "bg-gradient-to-r from-emerald-600 to-emerald-500",
+                            "bg-gradient-to-r from-emerald-500 to-green-400",
+                          ];
 
                           return (
                             <div
                               key={i}
-                              className={`flex-1 rounded-full transition-all duration-500 ease-out shadow-sm ${segmentColor}`}
-                            />
+                              className={`flex-1 rounded-md transition-all duration-500 ease-out relative overflow-hidden ${
+                                isActive ? gradients[i] : "bg-slate-800/60 border border-slate-700/30"
+                              }`}
+                            >
+                              {isActive && (
+                                <div className="absolute inset-0 bg-gradient-to-t from-transparent to-white/20" />
+                              )}
+                            </div>
                           );
                         })}
                       </div>
@@ -587,43 +597,47 @@ const HomePage = () => {
                   </div>
                 )}
 
-                {/* İstatistik badge'leri - Füme tema */}
-                <div className="flex flex-wrap gap-2 justify-center">
-                  <Badge variant="secondary" className="bg-slate-700/50 text-slate-200 border-slate-600/50 text-xs">
-                    <Target className="w-3 h-3 mr-1 text-amber-400" />
-                    Günlük Oyun: {profile?.daily_games || 0}/∞
-                  </Badge>
-                  <Badge variant="secondary" className="bg-slate-700/50 text-slate-200 border-slate-600/50 text-xs">
-                    <Zap className="w-3 h-3 mr-1 text-amber-400" />
-                    Günlük Seri: {profile?.win_streak || 0}/∞
-                  </Badge>
+                {/* İstatistik badge'leri - Yenilenmiş */}
+                <div className="flex gap-2 justify-center">
+                  <div className="bg-slate-700/40 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-slate-600/20 flex items-center gap-2">
+                    <Target className="w-3.5 h-3.5 text-amber-400" />
+                    <span className="text-xs text-slate-300">Günlük:</span>
+                    <span className="text-xs font-bold text-white">{profile?.daily_games || 0}</span>
+                  </div>
+                  <div className="bg-slate-700/40 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-slate-600/20 flex items-center gap-2">
+                    <Zap className="w-3.5 h-3.5 text-amber-400" />
+                    <span className="text-xs text-slate-300">Seri:</span>
+                    <span className="text-xs font-bold text-white">{profile?.win_streak || 0}</span>
+                  </div>
                 </div>
 
-                {/* Joker Envanteri - Füme tema */}
-                <div className="bg-slate-700/50 backdrop-blur-sm rounded-xl p-3 border border-slate-600/50 mt-3">
+                {/* Joker Envanteri - Yenilenmiş Kompakt Tasarım */}
+                <div className="bg-gradient-to-br from-slate-700/40 to-slate-800/40 backdrop-blur-sm rounded-xl p-3 border border-slate-600/20 mt-2">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-bold text-slate-100">🃏 Jokerlerim</h4>
+                    <h4 className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                      <span className="text-base">🃏</span> Jokerlerim
+                    </h4>
                   </div>
-                  <div className="flex gap-2 text-xs">
+                  <div className="grid grid-cols-3 gap-2">
                     {/* DEĞİŞTİR */}
-                    <div className="bg-slate-600/50 rounded-lg p-2 flex items-center gap-1 border border-slate-500/30">
-                      <img src="/degistirIkon.png" alt="Değiştir" className="w-8 h-8 object-contain" />
-                      <span className="font-medium text-slate-300">Değiştir</span>
-                      <span className="font-semibold text-amber-400">×{jokers.degistir}</span>
+                    <div className="bg-slate-600/40 rounded-lg p-2 border border-slate-500/20 flex flex-col items-center gap-1">
+                      <img src="/degistirIkon.png" alt="Değiştir" className="w-7 h-7 object-contain" />
+                      <span className="text-[10px] font-medium text-slate-400 truncate">Değiştir</span>
+                      <span className="text-sm font-bold text-amber-400">×{jokers.degistir}</span>
                     </div>
 
                     {/* FISILDA */}
-                    <div className="bg-slate-600/50 rounded-lg p-2 flex items-center gap-1 border border-slate-500/30">
-                      <img src="/fisildaIkon.png" alt="Fısılda" className="w-8 h-8 object-contain" />
-                      <span className="font-medium text-slate-300">Fısılda</span>
-                      <span className="font-semibold text-amber-400">×{jokers.fisilida}</span>
+                    <div className="bg-slate-600/40 rounded-lg p-2 border border-slate-500/20 flex flex-col items-center gap-1">
+                      <img src="/fisildaIkon.png" alt="Fısılda" className="w-7 h-7 object-contain" />
+                      <span className="text-[10px] font-medium text-slate-400 truncate">Fısılda</span>
+                      <span className="text-sm font-bold text-amber-400">×{jokers.fisilida}</span>
                     </div>
 
                     {/* SEN YAZ */}
-                    <div className="bg-slate-600/50 rounded-lg p-2 flex items-center gap-1 border border-slate-500/30">
-                      <img src="/senyazIkon.png" alt="Sen Yaz" className="w-8 h-8 object-contain" />
-                      <span className="font-medium text-slate-300">Sen Yaz</span>
-                      <span className="font-semibold text-amber-400">×{jokers.senYaz}</span>
+                    <div className="bg-slate-600/40 rounded-lg p-2 border border-slate-500/20 flex flex-col items-center gap-1">
+                      <img src="/senyazIkon.png" alt="Sen Yaz" className="w-7 h-7 object-contain" />
+                      <span className="text-[10px] font-medium text-slate-400 truncate">Sen Yaz</span>
+                      <span className="text-sm font-bold text-amber-400">×{jokers.senYaz}</span>
                     </div>
                   </div>
                 </div>
