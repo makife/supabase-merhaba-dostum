@@ -851,6 +851,7 @@ const GamePage = ({
   // Supabase Presence yerine player_activities tablosunu kullanır
   // Server time kullanarak saat farkı sorunlarını önler
   // TURNUVA MODU DAHİL!
+  // ⚡ Page Visibility API ile ön plana gelince hemen kontrol!
   useEffect(() => {
     // 1. GÜVENLİK KONTROLLERİ - TURNUVA MODU EKLENDİ
     const isTournamentMode = gameMode === "tournament" && tournamentMatch;
@@ -895,7 +896,7 @@ const GamePage = ({
       return;
     }
 
-    console.log("💓 Database Heartbeat sistemi başlatılıyor (Server Time)...");
+    console.log("💓 Database Heartbeat sistemi başlatılıyor (Server Time + Visibility API)...");
     console.log("   Ben:", myUserId.slice(-8), "Rakip:", opponentId.slice(-8));
 
     let isCleanedUp = false;
@@ -950,7 +951,7 @@ const GamePage = ({
     const TIMEOUT_SECONDS = 10; // 10 saniye timeout
     const REQUIRED_CONSECUTIVE_TIMEOUTS = 2; // 2 kez üst üste timeout olmalı
 
-    checkOpponentAliveIntervalRef.current = setInterval(async () => {
+    const checkOpponentHeartbeat = async (isVisibilityTrigger = false) => {
       if (isCleanedUp || gameEndedRef.current) return;
 
       try {
@@ -986,15 +987,18 @@ const GamePage = ({
         const timeSinceLastHeartbeat = serverNow - lastHeartbeatTime;
         const secondsSinceLastHeartbeat = Math.round(timeSinceLastHeartbeat / 1000);
 
-        console.log(`💓 Rakip son heartbeat: ${secondsSinceLastHeartbeat} sn önce`);
+        console.log(`💓 Rakip son heartbeat: ${secondsSinceLastHeartbeat} sn önce${isVisibilityTrigger ? " (visibility trigger)" : ""}`);
 
         // Timeout kontrolü
         if (timeSinceLastHeartbeat > TIMEOUT_SECONDS * 1000) {
           consecutiveTimeouts++;
           console.log(`⚠️ Timeout tespit! (${consecutiveTimeouts}/${REQUIRED_CONSECUTIVE_TIMEOUTS})`);
 
+          // Visibility trigger'da daha agresif ol (1 kez yeter) çünkü uzun süre arka plandaydı
+          const requiredTimeouts = isVisibilityTrigger ? 1 : REQUIRED_CONSECUTIVE_TIMEOUTS;
+
           // Üst üste belirli sayıda timeout olmalı (false positive önleme)
-          if (consecutiveTimeouts >= REQUIRED_CONSECUTIVE_TIMEOUTS) {
+          if (consecutiveTimeouts >= requiredTimeouts) {
             console.log("💀 RAKİP ÖLDÜ! (Kill/Disconnect tespit edildi)");
 
             // Temizlik
@@ -1027,12 +1031,35 @@ const GamePage = ({
       } catch (err) {
         console.warn("💓 Heartbeat kontrol hatası:", err);
       }
-    }, 2000); // Her 2 saniyede kontrol (daha az agresif)
+    };
+
+    // Normal interval kontrolü
+    checkOpponentAliveIntervalRef.current = setInterval(() => checkOpponentHeartbeat(false), 2000);
+
+    // ⚡ PAGE VISIBILITY API: Ön plana gelince HEMEN kontrol et
+    // Mobil cihazlarda uygulama arka plana alındığında interval'ler durur
+    // Bu sayede ön plana gelince rakibin düşüp düşmediğini hemen anlarız
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        console.log("👁️ Sayfa ön plana geldi, heartbeat kontrolü yapılıyor...");
+        
+        // Önce kendi heartbeat'imizi yaz (arka planda durmamış olabilir)
+        writeMyHeartbeat();
+        
+        // Sonra rakibin heartbeat'ini kontrol et (visibility trigger = true)
+        setTimeout(() => checkOpponentHeartbeat(true), 500);
+      } else {
+        console.log("👁️ Sayfa arka plana alındı");
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     // 4. TEMİZLİK
     return () => {
       console.log("💓 Database Heartbeat temizleniyor");
       isCleanedUp = true;
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
       if (checkOpponentAliveIntervalRef.current) clearInterval(checkOpponentAliveIntervalRef.current);
       
