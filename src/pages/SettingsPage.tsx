@@ -59,6 +59,7 @@ const SettingsPage = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState({ title: "", content: "" });
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteFinalConfirmOpen, setDeleteFinalConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Load settings from localStorage and set initial values
@@ -672,49 +673,85 @@ const SettingsPage = () => {
                 variant="destructive"
                 className="flex-1"
                 disabled={isDeleting}
-                onClick={async () => {
-                  setIsDeleting(true);
-                  try {
-                    // Edge Function ile hesap silme
-                    const { data, error } = await supabase.functions.invoke("delete-user-account");
-
-                    if (error) throw error;
-
-                    if (data?.error) {
-                      throw new Error(data.error);
-                    }
-
-                    // Başarılı mesajı göster
-                    toast({
-                      title: "Hesap Silindi",
-                      description: "Hesabınız başarıyla silindi. Yönlendiriliyorsunuz...",
-                    });
-
-                    // Kullanıcıyı çıkış yap
-                    await supabase.auth.signOut();
-
-                    // LocalStorage'ı temizle
-                    localStorage.clear();
-
-                    // Ana sayfaya yönlendir
-                    setTimeout(() => {
-                      navigate("/auth");
-                    }, 2000);
-                  } catch (error) {
-                    console.error("Delete error:", error);
-                    toast({
-                      title: "Hata",
-                      description: "Hesap silinemedi. Lütfen tekrar deneyin.",
-                      variant: "destructive",
-                    });
-                    setIsDeleting(false);
-                    setDeleteConfirmOpen(false);
-                  }
+                onClick={() => {
+                  setDeleteConfirmOpen(false);
+                  setDeleteFinalConfirmOpen(true);
                 }}
               >
-                {isDeleting ? "Siliniyor..." : "Evet, Hesabımı Sil"}
+                Evet, Hesabımı Sil
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Final Delete Account Confirmation Dialog */}
+      <Dialog open={deleteFinalConfirmOpen} onOpenChange={setDeleteFinalConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-destructive flex items-center">
+              <AlertTriangle className="w-5 h-5 mr-2" />
+              Son Onay
+            </DialogTitle>
+            <DialogDescription className="text-base pt-2">
+              Emin olmak için üzülerek tekrar sormak istiyoruz. Bu son onay aşamasıdır ve geri alınması imkansızdır.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-2 pt-4">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setDeleteFinalConfirmOpen(false)}
+              disabled={isDeleting}
+            >
+              Kalıyorum
+            </Button>
+            <Button
+              variant="destructive"
+              className="flex-1"
+              disabled={isDeleting}
+              onClick={async () => {
+                setIsDeleting(true);
+                try {
+                  // Edge Function ile hesap silme
+                  const { data, error } = await supabase.functions.invoke("delete-user-account");
+
+                  if (error) throw error;
+
+                  if (data?.error) {
+                    throw new Error(data.error);
+                  }
+
+                  // Başarılı mesajı göster
+                  toast({
+                    title: "Hesap Silindi",
+                    description: "Hesabınız başarıyla silindi. Yönlendiriliyorsunuz...",
+                  });
+
+                  // Kullanıcıyı çıkış yap
+                  await supabase.auth.signOut();
+
+                  // LocalStorage'ı temizle
+                  localStorage.clear();
+
+                  // Ana sayfaya yönlendir
+                  setTimeout(() => {
+                    navigate("/auth");
+                  }, 2000);
+                } catch (error) {
+                  console.error("Delete error:", error);
+                  toast({
+                    title: "Hata",
+                    description: "Hesap silinemedi. Lütfen tekrar deneyin.",
+                    variant: "destructive",
+                  });
+                  setIsDeleting(false);
+                  setDeleteFinalConfirmOpen(false);
+                }
+              }}
+            >
+              {isDeleting ? "Siliniyor..." : "Hesabımı Sil"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
