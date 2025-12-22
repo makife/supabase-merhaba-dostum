@@ -24,6 +24,7 @@ const TournamentBracketPage = () => {
   const [showChampion, setShowChampion] = useState(false);
   const [showEliminated, setShowEliminated] = useState(false);
   const [navigatedToGame, setNavigatedToGame] = useState(false);
+  const navigatedMatchIdRef = useRef<string | null>(null); // Hangi maça gidildi takibi
   const [initialLoading, setInitialLoading] = useState(true); // Bracket'e ilk girişte hemen spinner göster
 
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
@@ -47,6 +48,7 @@ const TournamentBracketPage = () => {
     if (currentTournament?.current_round) {
       setNavigatedToGame(false);
       matchesStartedRef.current = null;
+      navigatedMatchIdRef.current = null; // Yeni round için match ref'i de sıfırla
     }
   }, [currentTournament?.current_round]);
 
@@ -271,7 +273,21 @@ const TournamentBracketPage = () => {
   useEffect(() => {
     if (!user || !tournamentId) return;
     if (!currentTournament || currentTournament.status !== "in_progress") return;
-    if (navigatedToGame) return;
+
+    // Navigasyon fonksiyonu - aynı maça tekrar gitmeyi önle
+    const navigateToMatch = (match: any, source: string) => {
+      // Aynı maça zaten gidildiyse tekrar gitme
+      if (navigatedMatchIdRef.current === match.id) {
+        console.log(`🚫 Already navigated to match ${match.id}, skipping`);
+        return false;
+      }
+      
+      console.log(`🎮 [${source}] My match started, navigating:`, match.id);
+      navigatedMatchIdRef.current = match.id;
+      setNavigatedToGame(true);
+      navigate(`/game?match=${match.id}&tournament=${tournamentId}`);
+      return true;
+    };
 
     // İlk yükleme kontrolü
     const checkMyMatch = () => {
@@ -282,17 +298,16 @@ const TournamentBracketPage = () => {
           (m.player1_id === user.id || m.player2_id === user.id),
       );
 
-      if (myMatch) {
-        console.log("🎮 My match started, navigating to game:", myMatch.id);
-        setNavigatedToGame(true);
-        navigate(`/game?match=${myMatch.id}&tournament=${tournamentId}`);
-        return true;
+      if (myMatch && navigatedMatchIdRef.current !== myMatch.id) {
+        return navigateToMatch(myMatch, "Initial");
       }
       return false;
     };
 
-    // İlk kontrol
-    if (checkMyMatch()) return;
+    // İlk kontrol - sadece henüz navigate edilmediyse
+    if (!navigatedToGame) {
+      if (checkMyMatch()) return;
+    }
 
     // Realtime subscription - maç durumu değiştiğinde kontrol et
     const channel = supabase
@@ -313,9 +328,7 @@ const TournamentBracketPage = () => {
             newMatch.countdown_started_at &&
             (newMatch.player1_id === user.id || newMatch.player2_id === user.id)
           ) {
-            console.log("🎮 [Realtime] My match started, navigating:", newMatch.id);
-            setNavigatedToGame(true);
-            navigate(`/game?match=${newMatch.id}&tournament=${tournamentId}`);
+            navigateToMatch(newMatch, "Realtime");
           }
         },
       )
