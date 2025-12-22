@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Eye, EyeOff, Mail } from "lucide-react";
+import { Eye, EyeOff, Mail, CheckCircle } from "lucide-react";
 import { HeaderAnimation } from "@/components/HeaderAnimation";
 import {
   Dialog,
@@ -24,6 +24,8 @@ const AuthPage = () => {
   const [resetEmail, setResetEmail] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState("");
 
   const [signInData, setSignInData] = useState({
     email: "",
@@ -46,8 +48,14 @@ const AuthPage = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    await signUp(signUpData.email, signUpData.password, signUpData.username);
+    const { error } = await signUp(signUpData.email, signUpData.password, signUpData.username);
     setLoading(false);
+    
+    if (!error) {
+      setRegisteredEmail(signUpData.email);
+      setShowEmailConfirmation(true);
+      setSignUpData({ email: "", password: "", username: "" });
+    }
   };
 
   const handleResetPassword = async (e: React.FormEvent) => {
@@ -180,55 +188,87 @@ const AuthPage = () => {
                 <CardDescription>Yeni bir hesap oluşturun ve oyuna başlayın</CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-username">Kullanıcı Adı</Label>
-                    <Input
-                      id="signup-username"
-                      type="text"
-                      placeholder="kullaniciadi"
-                      value={signUpData.username}
-                      onChange={(e) => setSignUpData({ ...signUpData, username: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">E-posta</Label>
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="ornek@email.com"
-                      value={signUpData.email}
-                      onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">Şifre</Label>
-                    <div className="relative">
-                      <Input
-                        id="signup-password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="••••••••"
-                        value={signUpData.password}
-                        onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
-                        required
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                        onClick={() => setShowPassword(!showPassword)}
+                {showEmailConfirmation ? (
+                  <div className="text-center space-y-4 py-4">
+                    <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+                      <Mail className="w-8 h-8 text-primary" />
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="text-lg font-semibold text-foreground flex items-center justify-center gap-2">
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                        Kayıt Başarılı!
+                      </h3>
+                      <p className="text-muted-foreground text-sm">
+                        <span className="font-medium text-foreground">{registeredEmail}</span> adresine bir onay maili gönderdik.
+                      </p>
+                      <p className="text-muted-foreground text-sm">
+                        Lütfen e-posta kutunuzu kontrol edin ve hesabınızı onaylamak için maildeki linke tıklayın.
+                      </p>
+                    </div>
+                    <div className="pt-2 space-y-2">
+                      <p className="text-xs text-muted-foreground">
+                        Mail gelmediyse spam/gereksiz klasörünü kontrol edin.
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={() => setShowEmailConfirmation(false)}
                       >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        Yeni Kayıt Yap
                       </Button>
                     </div>
                   </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Kayıt olunuyor..." : "Kayıt Ol"}
-                  </Button>
-                </form>
+                ) : (
+                  <form onSubmit={handleSignUp} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-username">Kullanıcı Adı</Label>
+                      <Input
+                        id="signup-username"
+                        type="text"
+                        placeholder="kullaniciadi"
+                        value={signUpData.username}
+                        onChange={(e) => setSignUpData({ ...signUpData, username: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-email">E-posta</Label>
+                      <Input
+                        id="signup-email"
+                        type="email"
+                        placeholder="ornek@email.com"
+                        value={signUpData.email}
+                        onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-password">Şifre</Label>
+                      <div className="relative">
+                        <Input
+                          id="signup-password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          value={signUpData.password}
+                          onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
+                          required
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </div>
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading ? "Kayıt olunuyor..." : "Kayıt Ol"}
+                    </Button>
+                  </form>
+                )}
               </CardContent>
             </TabsContent>
           </Tabs>

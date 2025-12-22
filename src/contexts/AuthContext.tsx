@@ -96,12 +96,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         description: error.message,
         variant: 'destructive',
       });
-    } else {
-      toast({
-        title: 'Kayıt Başarılı',
-        description: 'Hesabınız oluşturuldu!',
-      });
     }
+    // Başarı mesajını burada gösterme, AuthPage'de göstereceğiz
 
     return { error };
   };
