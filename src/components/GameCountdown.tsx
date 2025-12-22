@@ -1,5 +1,11 @@
 import { useEffect, useRef, memo, useState } from "react";
 import { createPortal } from "react-dom";
+import { Capacitor } from '@capacitor/core';
+import { 
+  initNativeAudio, 
+  playNativeSound, 
+  isNativePlatform 
+} from "@/services/nativeAudioService";
 
 interface GameCountdownProps {
   onComplete: () => void;
@@ -15,7 +21,7 @@ const IMAGE_PATHS = ["/bes.png", "/dort.png", "/uc.png", "/iki.png", "/bir.png",
 const preloadedImages: Map<string, HTMLImageElement> = new Map();
 let imagesPreloaded = false;
 
-// --- SES YÖNETİMİ (AUDIO POOL) ---
+// --- SES YÖNETİMİ (AUDIO POOL) - Sadece Web için ---
 const COUNTDOWN_SOUND_POOL_SIZE = 6;
 const START_SOUND_POOL_SIZE = 2;
 
@@ -29,12 +35,34 @@ const startSoundPool: AudioPool = { sounds: [], currentIndex: 0 };
 let audioPoolInitialized = false;
 let audioUnlocked = false;
 let audioContext: AudioContext | null = null;
+let nativeAudioReady = false;
+
+// Native Audio'yu başlat
+const initNativeCountdownAudio = async () => {
+  if (!isNativePlatform()) return;
+  if (nativeAudioReady) return;
+  
+  try {
+    await initNativeAudio();
+    nativeAudioReady = true;
+    console.log("✅ GameCountdown: Native Audio hazır");
+  } catch (e) {
+    console.warn("GameCountdown: Native Audio başlatılamadı:", e);
+  }
+};
 
 // Mobil tarayıcılar ve Capacitor için güçlendirilmiş ses kilidi açma
 const unlockAudio = () => {
   if (audioUnlocked) return;
   
-  // AudioContext oluştur ve resume et
+  // Native platform için Native Audio kullan
+  if (isNativePlatform()) {
+    initNativeCountdownAudio();
+    audioUnlocked = true;
+    return;
+  }
+  
+  // Web için AudioContext oluştur ve resume et
   if (!audioContext) {
     try {
       audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -73,18 +101,27 @@ if (typeof window !== "undefined") {
     unlockEvents.forEach(e => document.removeEventListener(e, handleUnlock));
   };
   unlockEvents.forEach(e => document.addEventListener(e, handleUnlock, { passive: true }));
+  
+  // Native için erken başlat
+  if (isNativePlatform()) {
+    initNativeCountdownAudio();
+  }
 }
 
-// Ses havuzunu başlat - Capacitor için absolute path kullan
+// Ses havuzunu başlat - Sadece Web için (Native Audio ayrı yönetiliyor)
 const initAudioPool = () => {
   if (audioPoolInitialized || typeof window === "undefined") return;
+  if (isNativePlatform()) {
+    // Native'de HTML5 Audio kullanma, Native Audio kullan
+    audioPoolInitialized = true;
+    return;
+  }
 
-  // Capacitor ortamında base URL'den yükle
+  // Web için Capacitor ortamında base URL'den yükle
   const basePath = window.location.origin;
   
   for (let i = 0; i < COUNTDOWN_SOUND_POOL_SIZE; i++) {
     const audio = new Audio();
-    // Hem web hem Capacitor için çalışacak şekilde
     audio.src = `${basePath}/gerisayim.mp3`;
     audio.volume = 0.6;
     audio.preload = "auto";
@@ -104,8 +141,20 @@ const initAudioPool = () => {
   audioPoolInitialized = true;
 };
 
-// Ses çalma fonksiyonu - Mobil için güçlendirilmiş
-const playFromPool = (pool: AudioPool) => {
+// Ses çalma fonksiyonu - Native ve Web için ayrı yönetim
+const playFromPool = async (pool: AudioPool, soundType: 'countdown' | 'start') => {
+  // Native platform için Native Audio kullan
+  if (isNativePlatform()) {
+    try {
+      await playNativeSound(soundType, soundType === 'countdown' ? 0.6 : 0.7);
+      console.log(`🔊 GameCountdown: Native ${soundType} sesi çalındı`);
+    } catch (e) {
+      console.warn(`GameCountdown: Native ${soundType} sesi çalınamadı:`, e);
+    }
+    return;
+  }
+  
+  // Web için HTML5 Audio
   if (pool.sounds.length === 0) return;
   
   // Her çalmadan önce unlock dene
@@ -157,8 +206,8 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
   const soundPlayedRef = useRef<Set<number | string>>(new Set());
   const lastDisplayRef = useRef<number | "start" | null>(null);
 
-  const playCountdownSound = () => playFromPool(countdownSoundPool);
-  const playStartSound = () => playFromPool(startSoundPool);
+  const playCountdownSound = () => playFromPool(countdownSoundPool, 'countdown');
+  const playStartSound = () => playFromPool(startSoundPool, 'start');
 
   useEffect(() => {
     mountedRef.current = true;

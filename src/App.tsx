@@ -59,6 +59,7 @@ import { StatusBar, Style } from "@capacitor/status-bar";
 // @ts-ignore - Third-party plugin
 import { NavigationBar } from "@ethion/capacitor-navigation-bar";
 import { BackButtonDialog } from "@/hooks/useBackButton";
+import { initNativeAudio, isNativePlatform } from "@/services/nativeAudioService";
 
 const queryClient = new QueryClient();
 
@@ -99,6 +100,13 @@ const AppRoutes = () => {
     const applyImmersiveMode = async () => {
       if (Capacitor.isNativePlatform()) {
         try {
+          // 🔊 Native Audio'yu başlat
+          if (isNativePlatform()) {
+            initNativeAudio().then(() => {
+              console.log("✅ App: Native Audio başlatıldı");
+            }).catch(console.warn);
+          }
+
           // Status Bar Rengi ve Stili
           await StatusBar.setStyle({ style: Style.Dark }); // Style.Dark = Yazılar BEYAZ (iOS/Android farkı kafa karıştırır, Android'de Dark stil light content demektir genelde)
           await StatusBar.setBackgroundColor({ color: "#000000" });
