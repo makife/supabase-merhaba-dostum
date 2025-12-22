@@ -29,6 +29,7 @@ export const useJokerInventory = () => {
         .in("item_type", [
           "degistir",
           "joker_degistir",
+          "fisilda",
           "fisilida",
           "joker_fisildi",
           "joker_fisilida",
@@ -47,9 +48,10 @@ export const useJokerInventory = () => {
         degistir: "degistir",
         joker_degistir: "degistir",
 
+        fisilda: "fisilida",
         fisilida: "fisilida",
         joker_fisildi: "fisilida",
-        joker_fisilida: "fisilida", // Hatalı yazılanı da 'fisilida' hanesine ekle
+        joker_fisilida: "fisilida",
 
         senYaz: "senYaz",
         senyaz: "senYaz",
@@ -133,7 +135,7 @@ export const useJokerInventory = () => {
       // Inventory Veritabanı Güncelleme
       const aliasMap: Record<keyof JokerInventory, string[]> = {
         degistir: ["joker_degistir", "degistir"],
-        fisilida: ["joker_fisilida", "joker_fisildi", "fisilida"], // Burayı da güncelledim
+        fisilida: ["fisilda", "fisilida", "joker_fisilida", "joker_fisildi"],
         senYaz: ["joker_senyaz", "senYaz", "senyaz"],
       };
       const aliases = aliasMap[jokerType];
