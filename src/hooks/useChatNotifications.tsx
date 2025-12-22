@@ -88,7 +88,7 @@ export function useChatNotifications() {
     setGlobalMentionCount(mentionCount);
   };
 
-  // SADECE sayaç güncelleme için - bildirim gösterme YOK
+  // Real-time bildirim dinleyicisi
   useEffect(() => {
     if (!user?.id) return;
 
@@ -104,7 +104,38 @@ export function useChatNotifications() {
           table: "private_messages",
           filter: `recipient_id=eq.${user.id}`,
         },
-        refreshUnreadCounts,
+        async (payload) => {
+          const newMsg: any = payload.new;
+          if (!newMsg) return;
+
+          // Sayacı güncelle
+          refreshUnreadCounts();
+
+          // Gönderen bilgisini al
+          const { data: senderProfile } = await supabase
+            .from("profiles")
+            .select("username")
+            .eq("id", newMsg.sender_id)
+            .single();
+
+          const senderName = senderProfile?.username || "Birisi";
+
+          // Toast bildirimi göster
+          toast({
+            title: "💬 Yeni Özel Mesaj",
+            description: `${senderName} sana mesaj gönderdi`,
+            duration: 5000,
+            action: (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/chat")}
+              >
+                Görüntüle
+              </Button>
+            ),
+          });
+        },
       )
       .on(
         "postgres_changes",
@@ -118,8 +149,42 @@ export function useChatNotifications() {
           const notif: any = payload.new;
           if (!notif) return;
 
+          // Mention bildirimi
           if (notif.type === "mention") {
-            refreshUnreadCounts(); // Sadece sayacı güncelle
+            refreshUnreadCounts();
+            toast({
+              title: "📢 Senden Bahsedildi",
+              description: notif.message,
+              duration: 5000,
+              action: (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate("/chat")}
+                >
+                  Görüntüle
+                </Button>
+              ),
+            });
+          }
+
+          // Özel mesaj bildirimi (notifications tablosundan)
+          if (notif.type === "message") {
+            refreshUnreadCounts();
+            toast({
+              title: "💬 Yeni Özel Mesaj",
+              description: notif.message,
+              duration: 5000,
+              action: (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate("/chat")}
+                >
+                  Görüntüle
+                </Button>
+              ),
+            });
           }
 
           // Turnuva rakip ayrıldı bildirimi
@@ -147,7 +212,7 @@ export function useChatNotifications() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id, profile?.username]);
+  }, [user?.id, profile?.username, navigate]);
 
   const totalNotifications = unreadCount + globalMentionCount;
 
