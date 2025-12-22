@@ -161,6 +161,80 @@ const TournamentBracketPage = () => {
     }
   }, [tournamentId, user, currentTournament, advanceToNextRound]);
 
+  // ⏰ SÜRESİ DOLAN MAÇLARI OTOMATİK TAMAMLA (Her 5 saniyede kontrol)
+  // Oyuncular uygulamayı kill ederse veya bağlantı koparsa maç takılı kalır
+  // Bu mekanizma süresi dolan maçları mevcut skora göre tamamlar
+  const expiredMatchCheckRef = useRef<NodeJS.Timeout | null>(null);
+  
+  useEffect(() => {
+    if (!tournamentId || !user || !currentTournament) return;
+    if (currentTournament.status !== "in_progress") return;
+    // Sadece kurucu kontrol etsin (race condition önleme)
+    if (currentTournament.creator_id !== user.id) return;
+    
+    const checkExpiredMatches = async () => {
+      try {
+        // Süresi dolmuş in_progress maçları bul
+        const { data: expiredMatches } = await supabase
+          .from("tournament_matches")
+          .select("*")
+          .eq("tournament_id", tournamentId)
+          .eq("status", "in_progress")
+          .lt("ends_at", new Date().toISOString());
+        
+        if (!expiredMatches || expiredMatches.length === 0) return;
+        
+        console.log(`⏰ ${expiredMatches.length} adet süresi dolmuş maç tespit edildi`);
+        
+        for (const match of expiredMatches) {
+          const p1Score = match.player1_score || 0;
+          const p2Score = match.player2_score || 0;
+          
+          // Kazananı belirle (beraberlikte önce player1)
+          let winnerId: string;
+          if (p1Score >= p2Score) {
+            winnerId = match.player1_id;
+          } else {
+            winnerId = match.player2_id;
+          }
+          
+          console.log(`⏰ Maç otomatik tamamlanıyor: ${match.id} | P1: ${p1Score} vs P2: ${p2Score} | Kazanan: ${winnerId?.slice(-8)}`);
+          
+          await supabase
+            .from("tournament_matches")
+            .update({
+              status: "completed",
+              winner_id: winnerId,
+            })
+            .eq("id", match.id)
+            .eq("status", "in_progress"); // Double-check status
+        }
+        
+        // Maçlar tamamlandıysa round ilerlemeyi kontrol et ve data yenile
+        if (expiredMatches.length > 0) {
+          toast.info(`${expiredMatches.length} maç süre dolduğu için tamamlandı`);
+          fetchTournamentDetails(tournamentId);
+          setTimeout(() => checkAndAdvance(), 1000);
+        }
+      } catch (err) {
+        console.error("⏰ Süresi dolan maç kontrolü hatası:", err);
+      }
+    };
+    
+    // İlk kontrol
+    checkExpiredMatches();
+    
+    // Her 5 saniyede bir kontrol et
+    expiredMatchCheckRef.current = setInterval(checkExpiredMatches, 5000);
+    
+    return () => {
+      if (expiredMatchCheckRef.current) {
+        clearInterval(expiredMatchCheckRef.current);
+        expiredMatchCheckRef.current = null;
+      }
+    };
+  }, [tournamentId, user?.id, currentTournament?.status, currentTournament?.creator_id, checkAndAdvance]);
+
   // Countdown for next round
   useEffect(() => {
     if (!currentTournament || currentTournament.status !== "in_progress") return;

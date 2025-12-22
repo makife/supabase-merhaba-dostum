@@ -850,23 +850,45 @@ const GamePage = ({
   // 💓 HEARTBEAT SİSTEMİ: Database-based + Server Time (Kill/Arka plan korumalı)
   // Supabase Presence yerine player_activities tablosunu kullanır
   // Server time kullanarak saat farkı sorunlarını önler
+  // TURNUVA MODU DAHİL!
   useEffect(() => {
-    // 1. GÜVENLİK KONTROLLERİ
-    if (
-      !(gameMode === "private-room" || gameMode === "random-match") ||
-      !gameStarted ||
-      gameEnded ||
-      !currentRoom?.id ||
-      !user?.id
-    ) {
+    // 1. GÜVENLİK KONTROLLERİ - TURNUVA MODU EKLENDİ
+    const isTournamentMode = gameMode === "tournament" && tournamentMatch;
+    const isMultiplayerMode = gameMode === "private-room" || gameMode === "random-match";
+    
+    if (!(isTournamentMode || isMultiplayerMode)) {
+      return;
+    }
+    
+    if (!gameStarted || gameEnded || !user?.id) {
       return;
     }
 
-    const roomId = currentRoom.id;
-    const myUserId = user.id;
-    const opponentId = currentRoom.player1_id === myUserId 
-      ? currentRoom.player2_id 
-      : currentRoom.player1_id;
+    // Turnuva veya normal mod için room/match ID belirle
+    let matchId: string;
+    let myUserId: string;
+    let opponentId: string | null;
+    
+    if (isTournamentMode && tournamentMatch) {
+      matchId = tournamentMatch.id;
+      myUserId = user.id;
+      const isPlayer1 = String(tournamentMatch.player1_id) === String(user.id);
+      opponentId = isPlayer1 ? tournamentMatch.player2_id : tournamentMatch.player1_id;
+      
+      // Bot rakip ise heartbeat gerekli değil
+      if (opponentId && String(opponentId).startsWith("bot_")) {
+        console.log("💓 Turnuva bot rakip, heartbeat atlanıyor");
+        return;
+      }
+    } else if (currentRoom?.id) {
+      matchId = currentRoom.id;
+      myUserId = user.id;
+      opponentId = currentRoom.player1_id === myUserId 
+        ? currentRoom.player2_id 
+        : currentRoom.player1_id;
+    } else {
+      return;
+    }
     
     if (!opponentId) {
       console.log("💓 Rakip ID bulunamadı, heartbeat başlatılmıyor");
@@ -903,7 +925,7 @@ const GamePage = ({
           .from("player_activities")
           .upsert({
             player_id: myUserId,
-            match_id: roomId,
+            match_id: matchId,
             last_action_time: now,
             updated_at: now
           }, {
@@ -944,7 +966,7 @@ const GamePage = ({
           .from("player_activities")
           .select("last_action_time")
           .eq("player_id", opponentId)
-          .eq("match_id", roomId)
+          .eq("match_id", matchId)
           .maybeSingle();
 
         if (error) {
@@ -986,7 +1008,8 @@ const GamePage = ({
                 detail: {
                   winner: "player",
                   reason: "opponent_killed",
-                  roomId: roomId,
+                  roomId: matchId,
+                  isTournament: isTournamentMode,
                 },
               }),
             );
@@ -1018,10 +1041,10 @@ const GamePage = ({
         .from("player_activities")
         .delete()
         .eq("player_id", myUserId)
-        .eq("match_id", roomId)
+        .eq("match_id", matchId)
         .then(() => {});
     };
-  }, [gameMode, gameStarted, gameEnded, currentRoom?.id, currentRoom?.player1_id, currentRoom?.player2_id, user?.id]);
+  }, [gameMode, gameStarted, gameEnded, currentRoom?.id, currentRoom?.player1_id, currentRoom?.player2_id, user?.id, tournamentMatch?.id, tournamentMatch?.player1_id, tournamentMatch?.player2_id]);
 
   // Reset duplicate stats guard when game resets
   useEffect(() => {
@@ -1127,7 +1150,61 @@ const GamePage = ({
     const handler = async (e: any) => {
       const evtRoomId = e?.detail?.roomId;
       const eventWinner = e?.detail?.winner; // 'player' veya 'opponent'
+      const isTournamentEvent = e?.detail?.isTournament;
 
+      // TURNUVA MODU İÇİN ÖZEL HANDLER
+      if (isTournamentEvent && gameMode === "tournament" && tournamentMatch) {
+        if (evtRoomId !== tournamentMatch.id) {
+          console.log("🚫 Farklı turnuva maçına ait disconnect eventi yok sayıldı");
+          return;
+        }
+
+        console.log("🏆 Turnuva: Rakip disconnect/kill tespit edildi, maç kazanılıyor!");
+        
+        // Maçı kazanan olarak güncelle
+        const isPlayer1 = String(tournamentMatch.player1_id) === String(user?.id);
+        const player1Score = isPlayer1 ? playerScoreRef.current + 100 : 0; // +100 bonus
+        const player2Score = isPlayer1 ? 0 : playerScoreRef.current + 100;
+        
+        try {
+          await supabase
+            .from("tournament_matches")
+            .update({
+              status: "completed",
+              player1_score: player1Score,
+              player2_score: player2Score,
+              winner_id: user?.id,
+            })
+            .eq("id", tournamentMatch.id);
+          console.log("✅ Turnuva maçı kazanan olarak güncellendi");
+        } catch (err) {
+          console.error("❌ Turnuva maç güncelleme hatası:", err);
+        }
+
+        setDisconnectWin(true);
+        setWinner("player");
+        setButtonsEnabled(false);
+        setTimeout(() => setButtonsEnabled(true), 1000);
+        setGameEnded(true);
+        setShowResults(true);
+
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+
+        playSound("gameWin");
+        setTimeout(() => playCelebrationSound(), 500);
+
+        toast({
+          title: "Rakip Bağlantısı Koptu",
+          description: "Rakip oyundan düştü. Kazandınız! 🎉",
+          duration: 3000,
+        });
+        return;
+      }
+
+      // NORMAL MOD KONTROLLARI
       if (!evtRoomId || evtRoomId !== currentRoom?.id) {
         console.log("🚫 Farklı odaya ait disconnect eventi yok sayıldı", { evtRoomId, current: currentRoom?.id });
         return;
@@ -1267,6 +1344,8 @@ const GamePage = ({
     opponentWordsWithScores.length,
     addBonusCredits,
     leaveRoom,
+    tournamentMatch?.id,
+    tournamentMatch?.player1_id,
   ]);
 
   // Fallback: Katılımcı azalınca disconnect'i yakala - 3-4sn gecikme ile
