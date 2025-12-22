@@ -478,11 +478,17 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     };
   }, [user]);
 
+  // Realtime: Sadece kritik değişikliklerde bracket'i yenile
+  // Skor güncellemeleri (oyun içi kelime girişleri) bracket'i yeniden yüklememeli
   useEffect(() => {
     if (!currentTournament?.id) return;
 
     const tournamentId = currentTournament.id;
     const channelName = `tournament-details-${tournamentId}`;
+
+    // Son bilinen maç durumlarını cache'le
+    const matchStatusCache = new Map<string, string>();
+    matches.forEach(m => matchStatusCache.set(m.id, m.status));
 
     autoReconnect.registerChannel(channelName, () =>
       supabase
@@ -496,11 +502,39 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
           fetchTournamentDetails(tournamentId);
         })
         .on("postgres_changes", {
-          event: "*",
+          event: "UPDATE",
+          schema: "public",
+          table: "tournament_matches",
+          filter: `tournament_id=eq.${tournamentId}`,
+        }, (payload) => {
+          const newMatch = payload.new as any;
+          const oldMatch = payload.old as any;
+          
+          // Sadece durum veya kazanan değiştiyse bracket'i yenile
+          // Skor güncellemeleri (kelime girişleri) bracket'i yeniden yüklememeli
+          const statusChanged = oldMatch?.status !== newMatch?.status;
+          const winnerChanged = oldMatch?.winner_id !== newMatch?.winner_id;
+          const countdownChanged = !oldMatch?.countdown_started_at && newMatch?.countdown_started_at;
+          
+          if (statusChanged || winnerChanged || countdownChanged) {
+            console.log(`🔄 Bracket yenileniyor: status=${statusChanged}, winner=${winnerChanged}, countdown=${countdownChanged}`);
+            fetchTournamentDetails(tournamentId);
+          } else {
+            // Sadece lokal state'i güncelle (skor için)
+            setMatches(prev => prev.map(m => 
+              m.id === newMatch.id 
+                ? { ...m, player1_score: newMatch.player1_score, player2_score: newMatch.player2_score }
+                : m
+            ));
+          }
+        })
+        .on("postgres_changes", {
+          event: "INSERT",
           schema: "public",
           table: "tournament_matches",
           filter: `tournament_id=eq.${tournamentId}`,
         }, () => {
+          // Yeni maç oluşturuldu (yeni round) - bracket'i yenile
           fetchTournamentDetails(tournamentId);
         })
         .on("postgres_changes", {
