@@ -32,9 +32,10 @@ const getCapacitorCamera = async () => {
 interface OnboardingPermissionsProps {
   open: boolean;
   onComplete: () => void;
+  onShowIntro?: () => void;
 }
 
-export const OnboardingPermissions = ({ open, onComplete }: OnboardingPermissionsProps) => {
+export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: OnboardingPermissionsProps) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [kvkkAccepted, setKvkkAccepted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -274,6 +275,13 @@ export const OnboardingPermissions = ({ open, onComplete }: OnboardingPermission
         window.dispatchEvent(new Event("permissionsCompleted"));
 
         toast.success("Kurulum tamamlandı! Hoş geldiniz 🎉");
+        
+        // Intro dialog'u göster
+        if (onShowIntro) {
+          setTimeout(() => {
+            onShowIntro();
+          }, 300);
+        }
       } catch (error) {
         console.error("İzin isteme hatası:", error);
         // Hata olsa bile onboarding'i tamamla

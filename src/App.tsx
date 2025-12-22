@@ -54,6 +54,7 @@ import { RematchDialog } from "@/components/RematchDialog";
 import { useAppState } from "@/hooks/useAppState";
 import { realtimeManager } from "@/utils/realtimeManager";
 import { OnboardingPermissions } from "@/components/OnboardingPermissions";
+import { WelcomeIntroDialog } from "@/components/WelcomeIntroDialog";
 import { StatusBar, Style } from "@capacitor/status-bar";
 // @ts-ignore - Third-party plugin
 import { NavigationBar } from "@ethion/capacitor-navigation-bar";
@@ -83,6 +84,7 @@ const AppRoutes = () => {
   const { user, loading } = useAuth();
   const [customLoading, setCustomLoading] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showIntroDialog, setShowIntroDialog] = useState(false);
 
   // LocalStorage temizleme hook'unu kullan
   useLocalStorageClear();
@@ -133,7 +135,15 @@ const AppRoutes = () => {
 
   return (
     <>
-      <OnboardingPermissions open={showOnboarding} onComplete={() => setShowOnboarding(false)} />
+      <OnboardingPermissions 
+        open={showOnboarding} 
+        onComplete={() => setShowOnboarding(false)}
+        onShowIntro={() => setShowIntroDialog(true)}
+      />
+      <WelcomeIntroDialog 
+        open={showIntroDialog} 
+        onClose={() => setShowIntroDialog(false)} 
+      />
       <Routes>
         <Route path="/auth" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
         <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
