@@ -1,0 +1,224 @@
+/**
+ * Native Audio Service - Capacitor Native Audio Plugin
+ * Mobile'da HTML5 Audio yerine native ses sistemi kullanır
+ */
+
+import { Capacitor } from '@capacitor/core';
+import { NativeAudio } from '@capacitor-community/native-audio';
+
+// Platform kontrolü
+const isNative = Capacitor.isNativePlatform();
+
+// Preload edilmiş ses listesi
+const preloadedSounds = new Set<string>();
+
+// Ses dosyası tanımları
+interface SoundDefinition {
+  assetId: string;
+  assetPath: string;
+  volume?: number;
+  isUrl?: boolean;
+}
+
+// Tüm sesler
+const SOUND_DEFINITIONS: SoundDefinition[] = [
+  // Geri sayım sesleri
+  { assetId: 'countdown', assetPath: 'public/gerisayim.mp3', volume: 0.6 },
+  { assetId: 'start', assetPath: 'public/basla.mp3', volume: 0.7 },
+  
+  // Joker sesleri
+  { assetId: 'joker_degistir', assetPath: 'public/degistir.mp3', volume: 0.7 },
+  { assetId: 'joker_fisilda', assetPath: 'public/fisilda.mp3', volume: 0.7 },
+  { assetId: 'joker_senyaz', assetPath: 'public/senyaz.mp3', volume: 0.7 },
+  
+  // Özel sesler
+  { assetId: 'yes', assetPath: 'public/yes.mp3', volume: 0.7 },
+  { assetId: 'wow1', assetPath: 'public/wow1.mp3', volume: 0.7 },
+  { assetId: 'wow2', assetPath: 'public/wow2.mp3', volume: 0.7 },
+  { assetId: 'yahoo', assetPath: 'public/yahoo.mp3', volume: 0.7 },
+  { assetId: 'sampiyon', assetPath: 'public/sampiyon.mp3', volume: 0.8 },
+  { assetId: 'cark', assetPath: 'public/carkSesi.mp3', volume: 0.6 },
+  
+  // Oyun sesleri
+  { assetId: 'button_click', assetPath: 'public/sounds/default/button-click.mp3', volume: 0.5 },
+  { assetId: 'correct_word', assetPath: 'public/sounds/default/correct-word.mp3', volume: 0.6 },
+  { assetId: 'wrong_word', assetPath: 'public/sounds/default/wrong-word.mp3', volume: 0.5 },
+  { assetId: 'celebration', assetPath: 'public/sounds/default/kutlama.mp3', volume: 0.6 },
+  { assetId: 'game_lose', assetPath: 'public/sounds/default/kaybetme.mp3', volume: 0.6 },
+  { assetId: 'tie', assetPath: 'public/sounds/default/beraberlik.mp3', volume: 0.6 },
+];
+
+// Initialization flag
+let initialized = false;
+let initPromise: Promise<void> | null = null;
+
+/**
+ * Native Audio'yu başlat ve tüm sesleri preload et
+ */
+export const initNativeAudio = async (): Promise<void> => {
+  if (!isNative) {
+    console.log('🔊 NativeAudio: Web ortamı, HTML5 Audio kullanılacak');
+    return;
+  }
+
+  if (initialized) return;
+  if (initPromise) return initPromise;
+
+  initPromise = (async () => {
+    try {
+      console.log('🔊 NativeAudio: Başlatılıyor...');
+      
+      // Tüm sesleri preload et
+      for (const sound of SOUND_DEFINITIONS) {
+        try {
+          await NativeAudio.preload({
+            assetId: sound.assetId,
+            assetPath: sound.assetPath,
+            audioChannelNum: 1,
+            isUrl: false,
+          });
+          preloadedSounds.add(sound.assetId);
+          console.log(`✅ NativeAudio: ${sound.assetId} yüklendi`);
+        } catch (e) {
+          console.warn(`⚠️ NativeAudio: ${sound.assetId} yüklenemedi:`, e);
+        }
+      }
+      
+      initialized = true;
+      console.log(`🔊 NativeAudio: ${preloadedSounds.size}/${SOUND_DEFINITIONS.length} ses yüklendi`);
+    } catch (error) {
+      console.error('❌ NativeAudio: Başlatma hatası:', error);
+    }
+  })();
+
+  return initPromise;
+};
+
+/**
+ * Native ses çal
+ */
+export const playNativeSound = async (assetId: string, volume?: number): Promise<boolean> => {
+  if (!isNative) return false;
+  
+  if (!preloadedSounds.has(assetId)) {
+    console.warn(`⚠️ NativeAudio: ${assetId} preload edilmemiş`);
+    return false;
+  }
+
+  try {
+    // Önce durdur (önceki çalma varsa)
+    try {
+      await NativeAudio.stop({ assetId });
+    } catch (e) {
+      // Ignore stop errors
+    }
+
+    // Volume ayarla
+    if (volume !== undefined) {
+      await NativeAudio.setVolume({ assetId, volume });
+    }
+
+    // Çal
+    await NativeAudio.play({ assetId });
+    console.log(`🔊 NativeAudio: ${assetId} çalındı`);
+    return true;
+  } catch (error) {
+    console.error(`❌ NativeAudio: ${assetId} çalınamadı:`, error);
+    return false;
+  }
+};
+
+/**
+ * Geri sayım sesi çal
+ */
+export const playCountdownSound = async (): Promise<boolean> => {
+  return playNativeSound('countdown', 0.6);
+};
+
+/**
+ * Başla sesi çal
+ */
+export const playStartSound = async (): Promise<boolean> => {
+  return playNativeSound('start', 0.7);
+};
+
+/**
+ * Joker sesi çal
+ */
+export const playJokerSound = async (jokerType: 'degistir' | 'fisilda' | 'senyaz'): Promise<boolean> => {
+  return playNativeSound(`joker_${jokerType}`, 0.7);
+};
+
+/**
+ * Özel ses çal (dosya adından assetId çıkar)
+ */
+export const playSpecialNativeSound = async (soundFile: string, volume: number = 0.7): Promise<boolean> => {
+  // Dosya adından assetId çıkar
+  let assetId = '';
+  
+  if (soundFile.includes('yes.mp3')) assetId = 'yes';
+  else if (soundFile.includes('wow2.mp3')) assetId = 'wow2';
+  else if (soundFile.includes('wow1.mp3')) assetId = 'wow1';
+  else if (soundFile.includes('yahoo.mp3')) assetId = 'yahoo';
+  else if (soundFile.includes('degistir.mp3')) assetId = 'joker_degistir';
+  else if (soundFile.includes('fisilda.mp3')) assetId = 'joker_fisilda';
+  else if (soundFile.includes('senyaz.mp3')) assetId = 'joker_senyaz';
+  else if (soundFile.includes('sampiyon.mp3')) assetId = 'sampiyon';
+  else if (soundFile.includes('carkSesi.mp3')) assetId = 'cark';
+  else if (soundFile.includes('kutlama.mp3')) assetId = 'celebration';
+  else if (soundFile.includes('kaybetme.mp3')) assetId = 'game_lose';
+  else if (soundFile.includes('beraberlik.mp3')) assetId = 'tie';
+  else if (soundFile.includes('button-click.mp3')) assetId = 'button_click';
+  else if (soundFile.includes('correct-word.mp3')) assetId = 'correct_word';
+  else if (soundFile.includes('wrong-word.mp3')) assetId = 'wrong_word';
+  
+  if (assetId) {
+    return playNativeSound(assetId, volume);
+  }
+  
+  return false;
+};
+
+/**
+ * Tüm sesleri kapat
+ */
+export const stopAllSounds = async (): Promise<void> => {
+  if (!isNative) return;
+  
+  for (const assetId of preloadedSounds) {
+    try {
+      await NativeAudio.stop({ assetId });
+    } catch (e) {
+      // Ignore
+    }
+  }
+};
+
+/**
+ * Tüm sesleri temizle (unload)
+ */
+export const unloadAllSounds = async (): Promise<void> => {
+  if (!isNative) return;
+  
+  for (const assetId of preloadedSounds) {
+    try {
+      await NativeAudio.unload({ assetId });
+    } catch (e) {
+      // Ignore
+    }
+  }
+  
+  preloadedSounds.clear();
+  initialized = false;
+  initPromise = null;
+};
+
+/**
+ * Native platform mi kontrol et
+ */
+export const isNativePlatform = (): boolean => isNative;
+
+/**
+ * Ses preload edilmiş mi kontrol et
+ */
+export const isSoundPreloaded = (assetId: string): boolean => preloadedSounds.has(assetId);

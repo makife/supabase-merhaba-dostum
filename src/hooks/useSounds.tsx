@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useThemeContext } from "@/components/ThemeProvider";
+import { Capacitor } from '@capacitor/core';
+import { 
+  initNativeAudio, 
+  playNativeSound, 
+  playSpecialNativeSound, 
+  isNativePlatform 
+} from "@/services/nativeAudioService";
 
 interface SoundConfig {
   buttonClick: string;
@@ -23,9 +30,18 @@ interface SoundPack {
 // 🔓 Mobile audio unlock state - Capacitor için güçlendirilmiş
 let globalAudioUnlocked = false;
 let globalAudioContext: AudioContext | null = null;
+let nativeAudioInitialized = false;
 
 const unlockGlobalAudio = () => {
   if (globalAudioUnlocked) return;
+  
+  // Native platform için Native Audio kullan
+  if (isNativePlatform() && !nativeAudioInitialized) {
+    initNativeAudio().then(() => {
+      nativeAudioInitialized = true;
+      console.log("✅ useSounds: Native Audio initialized");
+    });
+  }
   
   // AudioContext oluştur ve resume et
   if (!globalAudioContext) {
@@ -42,16 +58,18 @@ const unlockGlobalAudio = () => {
     }).catch(() => {});
   }
   
-  // Sessiz bir ses çalarak mobil kilidi aç
-  try {
-    const silentAudio = new Audio();
-    silentAudio.src = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYoRwmHAAAAAAD/+9DEAAAIAANIAAAASCgZoIAAAAQAAANIAAAAP/7UMQAAAgYA0gAAAAJIANIAAAABEREREREREf/+1DEAAAIGANIAAAACSADTAAAABERERERERH//tQxAAACCgDSAAAAAlAA0gAAAAEREREREREf/7UMQAAAQYA0gAAAABJABpAAAABEREREREREQAAAAA//tQxAAABAADSAAAAAAAANIAAAAAAAAAAAAAAAAA//sQxAAABAADSAAAAAAAANIAAAAAAAAA//sQxAAAAwADSAAAAAAAANIAAAAAAAAA";
-    silentAudio.volume = 0.01;
-    silentAudio.play().then(() => {
-      silentAudio.pause();
-      console.log("✅ useSounds: Silent audio played for unlock");
-    }).catch(() => {});
-  } catch (e) {}
+  // Web için sessiz bir ses çalarak mobil kilidi aç
+  if (!isNativePlatform()) {
+    try {
+      const silentAudio = new Audio();
+      silentAudio.src = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYoRwmHAAAAAAD/+9DEAAAIAANIAAAASCgZoIAAAAQAAANIAAAAP/7UMQAAAgYA0gAAAAJIANIAAAABEREREREREf/+1DEAAAIGANIAAAACSADTAAAABERERERERH//tQxAAACCgDSAAAAAlAA0gAAAAEREREREREf/7UMQAAAQYA0gAAAABJABpAAAABEREREREREQAAAAA//tQxAAABAADSAAAAAAAANIAAAAAAAAAAAAAAAAA//sQxAAABAADSAAAAAAAANIAAAAAAAAA//sQxAAAAwADSAAAAAAAANIAAAAAAAAA";
+      silentAudio.volume = 0.01;
+      silentAudio.play().then(() => {
+        silentAudio.pause();
+        console.log("✅ useSounds: Silent audio played for unlock");
+      }).catch(() => {});
+    } catch (e) {}
+  }
   
   globalAudioUnlocked = true;
   console.log("✅ useSounds: Global audio unlocked");
@@ -442,11 +460,20 @@ export const useSounds = () => {
     setTimeout(() => playGeneratedSound(1000, 0.15), 400);
   }, [soundsEnabled, playGeneratedSound, unlockAudioForMobile]);
 
-  const playCelebrationSound = useCallback(() => {
+  const playCelebrationSound = useCallback(async () => {
     if (!soundsEnabled) return;
 
     // 🔓 Mobil için unlock
     unlockAudioForMobile();
+
+    // 🎵 Native platform için Native Audio kullan
+    if (isNativePlatform()) {
+      const played = await playNativeSound('celebration', 0.6);
+      if (played) {
+        console.log("🔊 useSounds: Native kutlama sesi çalındı");
+        return;
+      }
+    }
 
     const activePack = getActiveSoundPack();
     const soundPath = activePack.sounds.celebration;
@@ -466,11 +493,20 @@ export const useSounds = () => {
     }
   }, [soundsEnabled, getActiveSoundPack, unlockAudioForMobile]);
 
-  const playGameLoseSound = useCallback(() => {
+  const playGameLoseSound = useCallback(async () => {
     if (!soundsEnabled) return;
 
     // 🔓 Mobil için unlock
     unlockAudioForMobile();
+
+    // 🎵 Native platform için Native Audio kullan
+    if (isNativePlatform()) {
+      const played = await playNativeSound('game_lose', 0.6);
+      if (played) {
+        console.log("🔊 useSounds: Native kaybetme sesi çalındı");
+        return;
+      }
+    }
 
     const activePack = getActiveSoundPack();
     const soundPath = activePack.sounds.gameLoseSound;
@@ -490,11 +526,20 @@ export const useSounds = () => {
     }
   }, [soundsEnabled, getActiveSoundPack, unlockAudioForMobile]);
 
-  const playTieSound = useCallback(() => {
+  const playTieSound = useCallback(async () => {
     if (!soundsEnabled) return;
 
     // 🔓 Mobil için unlock
     unlockAudioForMobile();
+
+    // 🎵 Native platform için Native Audio kullan
+    if (isNativePlatform()) {
+      const played = await playNativeSound('tie', 0.6);
+      if (played) {
+        console.log("🔊 useSounds: Native beraberlik sesi çalındı");
+        return;
+      }
+    }
 
     const activePack = getActiveSoundPack();
     const soundPath = activePack.sounds.tieSound;
@@ -516,11 +561,21 @@ export const useSounds = () => {
 
   // Special game sounds that need to respect sound settings
   const playSpecialSound = useCallback(
-    (soundFile: string, volume: number = 0.7) => {
+    async (soundFile: string, volume: number = 0.7) => {
       if (!soundsEnabled) return;
 
       // 🔓 Mobil için unlock
       unlockAudioForMobile();
+
+      // 🎵 Native platform için Native Audio kullan
+      if (isNativePlatform()) {
+        const played = await playSpecialNativeSound(soundFile, volume);
+        if (played) {
+          console.log(`🔊 useSounds: Native ses çalındı - ${soundFile}`);
+          return;
+        }
+        // Native çalamazsa web fallback'e düş
+      }
 
       try {
         // ✅ Pool'dan ses çal (gecikme ve yarım çalma sorunu düzeltildi)
