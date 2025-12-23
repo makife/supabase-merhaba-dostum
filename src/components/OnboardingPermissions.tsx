@@ -92,13 +92,13 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
             <p className="text-xs text-muted-foreground mt-4">İletişim: info@erganmuhendislik.com</p>
           </div>
 
-          <div 
+          <div
             className="flex items-start space-x-3 p-3 border rounded-lg cursor-pointer active:bg-muted/50"
             onClick={() => setKvkkAccepted(!kvkkAccepted)}
           >
-            <Checkbox 
-              id="kvkk" 
-              checked={kvkkAccepted} 
+            <Checkbox
+              id="kvkk"
+              checked={kvkkAccepted}
               onCheckedChange={(checked) => setKvkkAccepted(!!checked)}
               className="mt-0.5"
             />
@@ -160,10 +160,7 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
   const savePushToken = async (userId: string, token: string) => {
     try {
       console.log("📱 Push token kaydediliyor:", token.substring(0, 20) + "...");
-      const { error } = await supabase
-        .from("profiles")
-        .update({ push_token: token })
-        .eq("id", userId);
+      const { error } = await supabase.from("profiles").update({ push_token: token }).eq("id", userId);
 
       if (error) {
         console.error("Push token kaydetme hatası:", error);
@@ -189,12 +186,12 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
           console.log("📱 Bildirim izni isteniyor...");
           const permission = await PushNotifications.requestPermissions();
           console.log("📱 Bildirim izni sonucu:", permission.receive);
-          
+
           if (permission.receive === "granted") {
             // Önce listener'ları kur
             PushNotifications.addListener("registration", async (token) => {
               console.log("✅ Push token alındı:", token.value.substring(0, 20) + "...");
-              
+
               // User varsa hemen kaydet, yoksa localStorage'a koy
               if (user?.id) {
                 await savePushToken(user.id, token.value);
@@ -256,36 +253,42 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
       setCurrentStep(1);
     } else if (currentStep === 1) {
       setIsLoading(true);
-      
-      try {
-        // İzinleri iste
-        const granted = await requestPermissions();
 
-        // Permission onboarding tamamlandı olarak işaretle
+      try {
+        // --- EMNİYET KEMERİ BAŞLANGIÇ ---
+        // İzin isteme işlemine 5 saniyelik süre tanı.
+        // Eğer 5 saniyede cevap gelmezse (pencere açılmazsa veya takılırsa) hata fırlat ve devam et.
+
+        const permissionPromise = requestPermissions(); // Senin yazdığın fonksiyon
+
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 5000));
+
+        // Hangisi önce biterse onu kabul et
+        await Promise.race([permissionPromise, timeoutPromise]);
+        // --- EMNİYET KEMERİ BİTİŞ ---
+
+        // İzin verilsin veya verilmesin, kod buradan aşağıya akmaya devam eder.
+
         localStorage.setItem("kelimeci-onboarding-completed", "true");
 
-        // Bildirim ayarını kaydet - granted.notifications değerini kullan
         const settings = JSON.parse(localStorage.getItem("kelimeci-settings") || "{}");
-        settings.notifications = granted.notifications;
+        settings.notifications = true; // Varsayılan olarak true varsayıyoruz, zaten verilmediyse çalışmaz
         localStorage.setItem("kelimeci-settings", JSON.stringify(settings));
 
-        console.log("✅ Onboarding tamamlandı - Bildirimler:", granted.notifications);
-
-        // Custom event dispatch et - onboarding tutorial'ı başlatmak için
+        console.log("✅ Onboarding tamamlandı");
         window.dispatchEvent(new Event("permissionsCompleted"));
-
         toast.success("Kurulum tamamlandı! Hoş geldiniz 🎉");
       } catch (error) {
-        console.error("İzin isteme hatası:", error);
-        // Hata olsa bile onboarding'i tamamla
+        console.error("İzin işlemi hatası veya zaman aşımı:", error);
+
+        // Hata olsa bile (veya timeout olsa bile) kullanıcıyı içeri al
         localStorage.setItem("kelimeci-onboarding-completed", "true");
-        toast.info("Kurulum tamamlandı. İzinleri ayarlardan verebilirsiniz.");
+        toast.info("Kurulum tamamlandı.");
       } finally {
+        // Burası HER TÜRLÜ çalışır ve yükleniyor ekranını kapatır
         setIsLoading(false);
-        // Önce dialog'u kapat, sonra intro'yu göster
         onComplete();
-        
-        // Intro dialog'u göster (henüz gösterilmediyse)
+
         const introCompleted = localStorage.getItem("kelimeci-intro-completed");
         if (onShowIntro && !introCompleted) {
           setTimeout(() => {
@@ -300,7 +303,7 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
     localStorage.setItem("kelimeci-onboarding-completed", "true");
     toast.info("Kurulumu atladınız. İzinleri ayarlardan verebilirsiniz.");
     onComplete();
-    
+
     // Skip'te de intro dialog'u göster
     const introCompleted = localStorage.getItem("kelimeci-intro-completed");
     if (onShowIntro && !introCompleted) {
