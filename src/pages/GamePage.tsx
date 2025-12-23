@@ -4528,58 +4528,6 @@ const GamePage = ({
     let syncInterval: NodeJS.Timeout | null = null;
 
     // For tournament matches, sync timer with database using countdown_started_at
-    if (gameMode === "tournament" && tournamentMatch) {
-      const syncTimer = async () => {
-        try {
-          // Maç countdown_started_at zamanını kontrol et
-          const { data: matchData } = await supabase
-            .from("tournament_matches")
-            .select("countdown_started_at, status")
-            .eq("id", tournamentMatch.id)
-            .single();
-
-          if (matchData && matchData.status === "in_progress" && matchData.countdown_started_at) {
-            // ... (içerik kodları) ...
-            // BU KISIM TİTREMEYE SEBEP OLUYOR 👇
-            // if (Math.abs(timeLeftRef.current - remainingTime) > 1) {
-            //   timeLeftRef.current = remainingTime;
-            //   if (isMountedRef.current) {
-            //     setDisplayTime(remainingTime);
-            //     console.log("🔄 Timer synced to:", remainingTime, "seconds (server-side)");
-            //   }
-            // }
-          }
-        } catch (error) {
-          console.error("Timer sync error:", error);
-        }
-      };
-
-      // ❌ POLLING KALDIRILDI - Realtime subscription kullan
-      // İlk sync
-      syncTimer();
-
-      // game_rooms tablosundaki started_at değişikliklerini realtime dinle (sadece tournament için geçerli)
-      const syncChannel = supabase
-        .channel(`tournament-timer-sync-${tournamentMatch.id}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "UPDATE",
-            schema: "public",
-            table: "tournament_matches",
-            filter: `id=eq.${tournamentMatch.id}`,
-          },
-          (payload: any) => {
-            // ...
-            // BURASI SKOR GÜNCELLENDİĞİNDE BİLE TETİKLENİP SYNC YAPIYOR
-            syncTimer();
-          },
-        )
-        .subscribe();
-
-      // Cleanup için channel referansını sakla
-      syncInterval = syncChannel as any;
-    }
 
     // ⚠️ Gereksiz game_rooms timer sync subscription kaldırıldı
     // Timestamp-based timer zaten ends_at'i database'den okuyor, started_at sync'e gerek yok
