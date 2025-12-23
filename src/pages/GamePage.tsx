@@ -262,7 +262,7 @@ const GamePage = ({
     // TURNUVA MODU için ayrı işlem
     if (gameMode === "tournament" && tournamentMatch) {
       console.log("🏆 Turnuva modu - arka plan disconnect işleniyor");
-      
+
       const isPlayer1 = String(tournamentMatch.player1_id) === String(user?.id);
       const opponentUserId = isPlayer1 ? tournamentMatch.player2_id : tournamentMatch.player1_id;
 
@@ -285,7 +285,7 @@ const GamePage = ({
             .select("total_score, win_count, tournament_wins")
             .eq("id", opponentUserId)
             .single();
-          
+
           if (opponentProfile) {
             await supabase
               .from("profiles")
@@ -306,7 +306,7 @@ const GamePage = ({
       try {
         const player1Score = isPlayer1 ? 0 : 100;
         const player2Score = isPlayer1 ? 100 : 0;
-        
+
         await supabase
           .from("tournament_matches")
           .update({
@@ -368,7 +368,7 @@ const GamePage = ({
           .select("total_score, win_count")
           .eq("id", opponentUserId)
           .single();
-        
+
         if (opponentProfile) {
           await supabase
             .from("profiles")
@@ -426,7 +426,7 @@ const GamePage = ({
   // Arka plan disconnect sonrası winner state'ini koru
   const backgroundDisconnectedRef = useRef(false);
   const [backgroundDisconnected, setBackgroundDisconnected] = useState(false);
-  
+
   const wrappedHandleBackgroundDisconnect = useCallback(() => {
     backgroundDisconnectedRef.current = true;
     setBackgroundDisconnected(true);
@@ -441,7 +441,7 @@ const GamePage = ({
     onForeground: () => {
       console.log("🎮 Oyun ön plana geldi, backgroundDisconnected:", backgroundDisconnectedRef.current);
       setIsInBackground(false);
-      
+
       // Eğer arka plan disconnect olduysa, winner state'ini "opponent" olarak zorla
       // Çünkü realtime event'ler yanlış winner set etmiş olabilir
       if (backgroundDisconnectedRef.current) {
@@ -454,11 +454,11 @@ const GamePage = ({
         }, 100);
         return;
       }
-      
+
       // Native'de arka plandayken setTimeout çalışmaz
       // Oyun bitmişse ve butonlar hala deaktifse, aktif et
       setTimeout(() => {
-        setButtonsEnabled(prev => {
+        setButtonsEnabled((prev) => {
           console.log("🎮 Ön plan buton kontrolü - mevcut değer:", prev);
           return true;
         });
@@ -856,11 +856,11 @@ const GamePage = ({
     // 1. GÜVENLİK KONTROLLERİ - TURNUVA MODU EKLENDİ
     const isTournamentMode = gameMode === "tournament" && tournamentMatch;
     const isMultiplayerMode = gameMode === "private-room" || gameMode === "random-match";
-    
+
     if (!(isTournamentMode || isMultiplayerMode)) {
       return;
     }
-    
+
     if (!gameStarted || gameEnded || !user?.id) {
       return;
     }
@@ -869,13 +869,13 @@ const GamePage = ({
     let matchId: string;
     let myUserId: string;
     let opponentId: string | null;
-    
+
     if (isTournamentMode && tournamentMatch) {
       matchId = tournamentMatch.id;
       myUserId = user.id;
       const isPlayer1 = String(tournamentMatch.player1_id) === String(user.id);
       opponentId = isPlayer1 ? tournamentMatch.player2_id : tournamentMatch.player1_id;
-      
+
       // Bot rakip ise heartbeat gerekli değil
       if (opponentId && String(opponentId).startsWith("bot_")) {
         console.log("💓 Turnuva bot rakip, heartbeat atlanıyor");
@@ -884,13 +884,11 @@ const GamePage = ({
     } else if (currentRoom?.id) {
       matchId = currentRoom.id;
       myUserId = user.id;
-      opponentId = currentRoom.player1_id === myUserId 
-        ? currentRoom.player2_id 
-        : currentRoom.player1_id;
+      opponentId = currentRoom.player1_id === myUserId ? currentRoom.player2_id : currentRoom.player1_id;
     } else {
       return;
     }
-    
+
     if (!opponentId) {
       console.log("💓 Rakip ID bulunamadı, heartbeat başlatılmıyor");
       return;
@@ -916,23 +914,24 @@ const GamePage = ({
     // 2. KENDİ HEARTBEAT'İMİ DATABASE'E YAZ (Her 2 saniyede)
     const writeMyHeartbeat = async () => {
       if (isCleanedUp || gameEndedRef.current) return;
-      
+
       try {
         // Server time kullan - daha güvenilir
         const serverTime = await getServerTime();
         const now = serverTime ? serverTime.toISOString() : new Date().toISOString();
-        
-        const { error } = await supabase
-          .from("player_activities")
-          .upsert({
+
+        const { error } = await supabase.from("player_activities").upsert(
+          {
             player_id: myUserId,
             match_id: matchId,
             last_action_time: now,
-            updated_at: now
-          }, {
-            onConflict: "match_id,player_id"
-          });
-        
+            updated_at: now,
+          },
+          {
+            onConflict: "match_id,player_id",
+          },
+        );
+
         if (error) {
           console.warn("💓 Heartbeat yazma hatası:", error.message);
         }
@@ -943,7 +942,7 @@ const GamePage = ({
 
     // İlk heartbeat'i hemen yaz
     writeMyHeartbeat();
-    
+
     // Sonra her 2 saniyede bir
     heartbeatIntervalRef.current = setInterval(writeMyHeartbeat, 2000);
 
@@ -987,7 +986,9 @@ const GamePage = ({
         const timeSinceLastHeartbeat = serverNow - lastHeartbeatTime;
         const secondsSinceLastHeartbeat = Math.round(timeSinceLastHeartbeat / 1000);
 
-        console.log(`💓 Rakip son heartbeat: ${secondsSinceLastHeartbeat} sn önce${isVisibilityTrigger ? " (visibility trigger)" : ""}`);
+        console.log(
+          `💓 Rakip son heartbeat: ${secondsSinceLastHeartbeat} sn önce${isVisibilityTrigger ? " (visibility trigger)" : ""}`,
+        );
 
         // Timeout kontrolü
         if (timeSinceLastHeartbeat > TIMEOUT_SECONDS * 1000) {
@@ -1042,10 +1043,10 @@ const GamePage = ({
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
         console.log("👁️ Sayfa ön plana geldi, heartbeat kontrolü yapılıyor...");
-        
+
         // Önce kendi heartbeat'imizi yaz (arka planda durmamış olabilir)
         writeMyHeartbeat();
-        
+
         // Sonra rakibin heartbeat'ini kontrol et (visibility trigger = true)
         setTimeout(() => checkOpponentHeartbeat(true), 500);
       } else {
@@ -1062,7 +1063,7 @@ const GamePage = ({
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
       if (checkOpponentAliveIntervalRef.current) clearInterval(checkOpponentAliveIntervalRef.current);
-      
+
       // Kendi activity kaydımı sil (best effort - uygulama kill edilirse çalışmaz)
       supabase
         .from("player_activities")
@@ -1071,7 +1072,18 @@ const GamePage = ({
         .eq("match_id", matchId)
         .then(() => {});
     };
-  }, [gameMode, gameStarted, gameEnded, currentRoom?.id, currentRoom?.player1_id, currentRoom?.player2_id, user?.id, tournamentMatch?.id, tournamentMatch?.player1_id, tournamentMatch?.player2_id]);
+  }, [
+    gameMode,
+    gameStarted,
+    gameEnded,
+    currentRoom?.id,
+    currentRoom?.player1_id,
+    currentRoom?.player2_id,
+    user?.id,
+    tournamentMatch?.id,
+    tournamentMatch?.player1_id,
+    tournamentMatch?.player2_id,
+  ]);
 
   // Reset duplicate stats guard when game resets
   useEffect(() => {
@@ -1187,12 +1199,12 @@ const GamePage = ({
         }
 
         console.log("🏆 Turnuva: Rakip disconnect/kill tespit edildi, maç kazanılıyor!");
-        
+
         // Maçı kazanan olarak güncelle
         const isPlayer1 = String(tournamentMatch.player1_id) === String(user?.id);
         const player1Score = isPlayer1 ? playerScoreRef.current + 100 : 0; // +100 bonus
         const player2Score = isPlayer1 ? 0 : playerScoreRef.current + 100;
-        
+
         try {
           await supabase
             .from("tournament_matches")
@@ -3617,9 +3629,9 @@ const GamePage = ({
           if (matchData.status === "completed") {
             console.log("🚫 Bu maç zaten tamamlanmış, bracket sayfasına sessizce yönlendiriliyor:", matchData.id);
             // Toast gösterme - döngüyü kırmak için sessizce dön
-            navigate(`/tournament-bracket/${finalTournamentId}`, { 
+            navigate(`/tournament-bracket/${finalTournamentId}`, {
               replace: true,
-              state: { fromCompletedMatch: matchData.id } 
+              state: { fromCompletedMatch: matchData.id },
             });
             return;
           }
@@ -6210,13 +6222,16 @@ const GamePage = ({
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
-  
+
   // Son 9 saniye geri sayım ses efekti
-  const handleFinalCountdownTick = useCallback((second: number) => {
-    // Her saniyede tik ses efekti çal
-    playSpecialSound("/geriSayimKlik.mp3");
-    console.log(`⏰ Final countdown: ${second}`);
-  }, [playSpecialSound]);
+  const handleFinalCountdownTick = useCallback(
+    (second: number) => {
+      // Her saniyede tik ses efekti çal
+      playSpecialSound("/geriSayimKlik.mp3");
+      console.log(`⏰ Final countdown: ${second}`);
+    },
+    [playSpecialSound],
+  );
 
   // Get opponent info based on game mode with avatar
   const getOpponentInfo = () => {
@@ -6627,7 +6642,7 @@ const GamePage = ({
                 serverTimeOffset={gameMode === "vs-computer" ? 0 : serverTimeOffset}
               />
             )}
-            
+
             <div
               key={`game-${currentRoom?.id || tournamentMatch?.id || "container"}`}
               className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 relative overflow-hidden letters-background"
@@ -6660,7 +6675,7 @@ const GamePage = ({
                   {/* Orta kısım - Timer veya hedef + Turnuva bilgisi */}
                   {gameType === "timed" ? (
                     <div className="flex flex-col items-center space-y-2">
-                      {/* 🏆 TURNUVA BİLGİSİ EKLENDİ */}
+                      {/* ... Turnuva bilgisi (Çeyrek Final vs) ... */}
                       {gameMode === "tournament" && tournamentMatch && (
                         <div className="text-xs text-yellow-600 font-medium mb-1">
                           {tournamentMatch.round === 1
@@ -6672,33 +6687,34 @@ const GamePage = ({
                         </div>
                       )}
 
-                      {/* Son 9 saniyede timer'ı gizle */}
-                      {displayTime > 9 && (
-                        <div 
-                          className={`flex items-center justify-center h-8 px-3 rounded-lg ${
-                            displayTime <= 30 
-                              ? "bg-red-500/10 border border-red-500/30" 
-                              : "bg-primary/5 border border-primary/20"
+                      {/* DÜZELTME BURADA: Koşullu render yerine opacity/visibility kullanıyoruz */}
+                      <div
+                        className={`flex items-center justify-center h-8 px-3 rounded-lg transition-opacity duration-300 ${
+                          displayTime <= 9
+                            ? "invisible opacity-0" // Görünmez ama yer kaplar
+                            : "visible opacity-100" // Görünür
+                        } ${
+                          displayTime <= 30
+                            ? "bg-red-500/10 border border-red-500/30"
+                            : "bg-primary/5 border border-primary/20"
+                        }`}
+                        style={{ minWidth: "100px" }}
+                      >
+                        <span
+                          className={`font-mono text-lg font-black tracking-wider ${
+                            displayTime <= 30 ? "text-red-500" : "text-primary"
                           }`}
-                          style={{ minWidth: '100px' }}
+                          style={{
+                            fontFamily: "'Orbitron', 'Courier New', monospace",
+                            textShadow:
+                              displayTime <= 30 ? "0 0 10px rgba(239,68,68,0.5)" : "0 0 10px rgba(var(--primary),0.3)",
+                            fontVariantNumeric: "tabular-nums",
+                            letterSpacing: "0.1em",
+                          }}
                         >
-                          <span
-                            className={`font-mono text-lg font-black tracking-wider ${
-                              displayTime <= 30 ? "text-red-500" : "text-primary"
-                            }`}
-                            style={{
-                              fontFamily: "'Orbitron', 'Courier New', monospace",
-                              textShadow: displayTime <= 30 
-                                ? '0 0 10px rgba(239,68,68,0.5)' 
-                                : '0 0 10px rgba(var(--primary),0.3)',
-                              fontVariantNumeric: 'tabular-nums',
-                              letterSpacing: '0.1em',
-                            }}
-                          >
-                            {formatTime(displayTime)}
-                          </span>
-                        </div>
-                      )}
+                          {formatTime(displayTime)}
+                        </span>
+                      </div>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center space-y-1">
@@ -6763,17 +6779,14 @@ const GamePage = ({
                       )}
                     </CardContent>
                   </Card>
-                  
+
                   {/* Son 9 saniye geri sayım - kartların ortasında */}
                   {gameStarted && !gameEnded && gameType === "timed" && displayTime >= 1 && displayTime <= 9 && (
                     <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
-                      <FinalCountdown 
-                        displayTime={displayTime} 
-                        onCountdownTick={handleFinalCountdownTick}
-                      />
+                      <FinalCountdown displayTime={displayTime} onCountdownTick={handleFinalCountdownTick} />
                     </div>
                   )}
-                  
+
                   <Card className="silver-gradient border border-gray-300 shadow-lg">
                     <CardContent className="p-4 text-center relative overflow-hidden">
                       {/* Normal kart içeriği - her zaman göster */}
