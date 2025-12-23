@@ -5112,14 +5112,6 @@ const GamePage = ({
 
     const aiPlayInterval = setInterval(
       () => {
-        const timeSincePlayerAction = Date.now() - lastPlayerAction;
-        const minDelayAfterPlayerAction = 1500;
-
-        if (timeSincePlayerAction < minDelayAfterPlayerAction) {
-          console.log("🤖 Waiting for player action cooldown");
-          return;
-        }
-
         // AI kelime seçimi
         const selectAIWord = async () => {
           try {
@@ -5307,7 +5299,6 @@ const GamePage = ({
     globalUsedWords,
     tournamentMatch?.id,
     opponentScore,
-    lastPlayerAction,
     playSound,
   ]);
 
