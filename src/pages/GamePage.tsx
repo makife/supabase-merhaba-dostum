@@ -3555,7 +3555,13 @@ const GamePage = ({
     const initializeGame = async () => {
       fadeOutBackgroundMusic(1500);
 
-      console.log("GamePage isPremium:", isPremium);
+      console.log("GamePage isPremium:", isPremium, "gameMode:", gameMode);
+
+      // Turnuva modunda kredi düşürme - katılırken zaten 3 hak düşürüldü
+      if (gameMode === "tournament") {
+        console.log("Tournament mode - credits already deducted on join, skipping");
+        return;
+      }
 
       if (!isPremium) {
         console.log("User is not premium, consuming credit...");
