@@ -11,8 +11,9 @@ import { toast } from "sonner";
 import { ArrowLeft, Sparkles, Trophy, Lock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
+// GÜNCELLEME: 'ink' tipi eklendi
 interface WheelReward {
-  type: "credits" | "joker" | "empty";
+  type: "credits" | "joker" | "empty" | "ink";
   value: number;
   item?: string;
   text: string;
@@ -26,6 +27,7 @@ const WHEEL_COLORS = {
   purple: "#8B5CF6",
   gray: "#6B7280",
   red: "#EF4444",
+  indigo: "#6366f1", // Mürekkep rengi eklendi
 };
 
 const WheelPage = () => {
@@ -40,6 +42,7 @@ const WheelPage = () => {
   const [rotation, setRotation] = useState(0);
   const [lastReward, setLastReward] = useState<WheelReward | null>(null);
   const [transitionDuration, setTransitionDuration] = useState(0);
+
   // Daha doğal bir duruş için bezier eğrisi
   const [timingFunction, setTimingFunction] = useState("cubic-bezier(0.2, 0, 0.1, 1)");
 
@@ -51,10 +54,16 @@ const WheelPage = () => {
       { type: "credits", value: 2, text: "2 Oyun", color: WHEEL_COLORS.blue },
       { type: "joker", value: 1, item: "fisilida", text: "Fısılda", color: WHEEL_COLORS.yellow },
       { type: "empty", value: 0, text: "Pas", color: WHEEL_COLORS.gray },
-      { type: "credits", value: 3, text: "3 Oyun", color: WHEEL_COLORS.blue },
+      
+      // GÜNCELLEME: 3 Oyun -> 1 Oyun yapıldı
+      { type: "credits", value: 1, text: "1 Oyun", color: WHEEL_COLORS.blue },
+      
       { type: "joker", value: 2, item: "degistir", text: "2x Değiştir", color: WHEEL_COLORS.green },
       { type: "empty", value: 0, text: "Pas", color: WHEEL_COLORS.gray },
-      { type: "credits", value: 5, text: "5 Oyun", color: WHEEL_COLORS.purple },
+      
+      // GÜNCELLEME: 5 Oyun -> 5 Mürekkep yapıldı ve rengi indigo oldu
+      { type: "ink", value: 5, text: "5 Mürekkep", color: WHEEL_COLORS.indigo },
+      
       { type: "joker", value: 1, item: "senyaz", text: "Sen Yaz", color: WHEEL_COLORS.red },
       { type: "empty", value: 0, text: "Pas", color: WHEEL_COLORS.gray },
       { type: "joker", value: 2, item: "fisilida", text: "2x Fısılda", color: WHEEL_COLORS.yellow },
@@ -73,12 +82,14 @@ const WheelPage = () => {
   const checkDailySpinAvailability = async () => {
     if (!user) return;
     const today = new Date().toISOString().split("T")[0];
+
     const { data } = await supabase
       .from("wheel_spins")
       .select("*")
       .eq("user_id", user.id)
       .eq("date", today)
       .maybeSingle();
+
     setCanSpin(!data);
   };
 
@@ -138,6 +149,7 @@ const WheelPage = () => {
   const saveWheelSpin = async (reward: WheelReward) => {
     if (!user) return;
     const today = new Date().toISOString().split("T")[0];
+
     await supabase.from("wheel_spins").insert({
       user_id: user.id,
       date: today,
@@ -149,6 +161,7 @@ const WheelPage = () => {
 
   const giveReward = async (reward: WheelReward) => {
     if (!user || reward.type === "empty") return;
+
     if (reward.type === "credits") {
       const currentCredits = profile?.game_credits || 0;
       const newCredits = currentCredits + reward.value;
@@ -156,6 +169,13 @@ const WheelPage = () => {
       await refreshProfile();
     } else if (reward.type === "joker" && reward.item) {
       await updateInventory(reward.item, reward.value);
+    } 
+    // GÜNCELLEME: Mürekkep ödül mantığı eklendi
+    else if (reward.type === "ink") {
+      const currentInk = profile?.ink_count || 0;
+      const newInk = currentInk + reward.value;
+      await supabase.from("profiles").update({ ink_count: newInk }).eq("id", user.id);
+      await refreshProfile();
     }
   };
 
@@ -228,14 +248,22 @@ const WheelPage = () => {
 
                   const segmentAngle = 360 / wheelSegments.length;
                   const rotateAngle = index * segmentAngle + segmentAngle / 2;
+                  
+                  // GÜNCELLEME: Büyük ödül (Mürekkep) kontrolü
+                  const isGrandPrize = segment.type === "ink";
 
                   return (
-                    <g key={index}>
+                    // Grand Prize ise ekstra shadow efekti
+                    <g key={index} className={isGrandPrize ? "drop-shadow-[0_0_2px_rgba(255,215,0,0.8)]" : ""}>
                       <path
                         d={`M 0 0 L ${startX} ${startY} A 1 1 0 ${largeArcFlag} 1 ${endX} ${endY} Z`}
                         fill={segment.color}
-                        stroke="#1e293b"
-                        strokeWidth="0.01"
+                        // GÜNCELLEME: Büyük ödül ise Altın rengi çerçeve, değilse standart
+                        stroke={isGrandPrize ? "#FFD700" : "#1e293b"}
+                        // GÜNCELLEME: Büyük ödül ise kalın çerçeve
+                        strokeWidth={isGrandPrize ? "0.04" : "0.01"}
+                        // GÜNCELLEME: Çerçeve diğerlerinin üstünde kalsın diye
+                        style={{ zIndex: isGrandPrize ? 10 : 1 }}
                       />
                       <text
                         x="0.65"
@@ -246,7 +274,11 @@ const WheelPage = () => {
                         textAnchor="middle"
                         dominantBaseline="middle"
                         transform={`rotate(${rotateAngle} 0 0)`}
-                        style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.8)" }}
+                        style={{ 
+                          textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
+                          // GÜNCELLEME: Büyük ödül yazısına ekstra parlama
+                          filter: isGrandPrize ? "drop-shadow(0 0 1px black)" : "none" 
+                        }}
                       >
                         {segment.text}
                       </text>
