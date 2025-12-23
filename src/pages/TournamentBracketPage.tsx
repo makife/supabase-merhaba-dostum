@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Trophy, Home, Clock, Crown } from "lucide-react";
@@ -14,6 +14,7 @@ import { toast } from "sonner";
 const TournamentBracketPage = () => {
   const { tournamentId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { playSpecialSound } = useSounds();
 
@@ -26,6 +27,18 @@ const TournamentBracketPage = () => {
   const [navigatedToGame, setNavigatedToGame] = useState(false);
   const navigatedMatchIdRef = useRef<string | null>(null); // Hangi maça gidildi takibi
   const [initialLoading, setInitialLoading] = useState(true); // Bracket'e ilk girişte hemen spinner göster
+  
+  // 🔒 Tamamlanmış maçtan döndüyse, o maça tekrar gitmeyi engelle
+  const fromCompletedMatchRef = useRef<string | null>(null);
+  useEffect(() => {
+    const state = location.state as { fromCompletedMatch?: string } | null;
+    if (state?.fromCompletedMatch) {
+      console.log(`🔒 Came from completed match: ${state.fromCompletedMatch}, blocking re-navigation`);
+      fromCompletedMatchRef.current = state.fromCompletedMatch;
+      // State'i temizle - browser history'de kalmasın
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
   const matchesStartedRef = useRef<string | null>(null);
@@ -46,9 +59,11 @@ const TournamentBracketPage = () => {
   // Reset navigation flag on round change
   useEffect(() => {
     if (currentTournament?.current_round) {
+      console.log(`🔄 Round changed to ${currentTournament.current_round}, resetting navigation flags`);
       setNavigatedToGame(false);
       matchesStartedRef.current = null;
       navigatedMatchIdRef.current = null; // Yeni round için match ref'i de sıfırla
+      // NOT: completedMatchIdsRef temizlenmemeli - eski tamamlanmış maçları hatırlamalı
     }
   }, [currentTournament?.current_round]);
 
@@ -270,12 +285,34 @@ const TournamentBracketPage = () => {
   }, [currentTournament?.next_round_starts_at, currentTournament?.status, startAllMatches]);
 
   // Navigate to game when my match starts - with realtime subscription
+  // 🔒 Tamamlanmış maçlara gitmeyi önle ve döngüyü kır
+  const completedMatchIdsRef = useRef<Set<string>>(new Set());
+  
   useEffect(() => {
     if (!user || !tournamentId) return;
     if (!currentTournament || currentTournament.status !== "in_progress") return;
 
-    // Navigasyon fonksiyonu - aynı maça tekrar gitmeyi önle
+    // Tamamlanmış maçları cache'le - tekrar navigate edilmesini önle
+    matches.forEach(m => {
+      if (m.status === "completed") {
+        completedMatchIdsRef.current.add(m.id);
+      }
+    });
+
+    // Navigasyon fonksiyonu - aynı maça veya tamamlanmış maça gitmeyi önle
     const navigateToMatch = (match: any, source: string) => {
+      // Tamamlanmış maçtan döndüysek, o maça tekrar gitme
+      if (fromCompletedMatchRef.current === match.id) {
+        console.log(`🚫 Match ${match.id} was just completed, blocking re-navigation`);
+        return false;
+      }
+      
+      // Tamamlanmış maça gitme
+      if (match.status === "completed" || completedMatchIdsRef.current.has(match.id)) {
+        console.log(`🚫 Match ${match.id} is completed, skipping navigation`);
+        return false;
+      }
+      
       // Aynı maça zaten gidildiyse tekrar gitme
       if (navigatedMatchIdRef.current === match.id) {
         console.log(`🚫 Already navigated to match ${match.id}, skipping`);
@@ -289,11 +326,12 @@ const TournamentBracketPage = () => {
       return true;
     };
 
-    // İlk yükleme kontrolü
+    // İlk yükleme kontrolü - sadece in_progress ve henüz tamamlanmamış maçlar
     const checkMyMatch = () => {
       const myMatch = matches.find(
         (m) =>
           m.status === "in_progress" &&
+          !completedMatchIdsRef.current.has(m.id) &&
           (m as any).countdown_started_at &&
           (m.player1_id === user.id || m.player2_id === user.id),
       );
@@ -311,7 +349,7 @@ const TournamentBracketPage = () => {
 
     // Realtime subscription - maç durumu değiştiğinde kontrol et
     const channel = supabase
-      .channel(`my-match-updates-${user.id}`)
+      .channel(`my-match-updates-${user.id}-${currentTournament.current_round}`)
       .on(
         "postgres_changes",
         {
@@ -322,9 +360,18 @@ const TournamentBracketPage = () => {
         },
         (payload) => {
           const newMatch = payload.new as any;
-          // Benim maçım mı ve in_progress mu?
+          
+          // Maç tamamlandıysa cache'e ekle
+          if (newMatch.status === "completed") {
+            completedMatchIdsRef.current.add(newMatch.id);
+            console.log(`✅ Match ${newMatch.id} marked as completed in cache`);
+            return;
+          }
+          
+          // Benim maçım mı ve in_progress mu ve henüz tamamlanmamış mı?
           if (
             newMatch.status === "in_progress" &&
+            !completedMatchIdsRef.current.has(newMatch.id) &&
             newMatch.countdown_started_at &&
             (newMatch.player1_id === user.id || newMatch.player2_id === user.id)
           ) {
