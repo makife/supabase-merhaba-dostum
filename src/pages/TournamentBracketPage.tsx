@@ -27,7 +27,7 @@ const TournamentBracketPage = () => {
   const [navigatedToGame, setNavigatedToGame] = useState(false);
   const navigatedMatchIdRef = useRef<string | null>(null); // Hangi maça gidildi takibi
   const [initialLoading, setInitialLoading] = useState(true); // Bracket'e ilk girişte hemen spinner göster
-  
+
   // 🔒 Tamamlanmış maçtan döndüyse, o maça tekrar gitmeyi engelle
   const fromCompletedMatchRef = useRef<string | null>(null);
   useEffect(() => {
@@ -182,13 +182,13 @@ const TournamentBracketPage = () => {
   // Oyuncular uygulamayı kill ederse veya bağlantı koparsa maç takılı kalır
   // Bu mekanizma süresi dolan maçları mevcut skora göre tamamlar
   const expiredMatchCheckRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   useEffect(() => {
     if (!tournamentId || !user || !currentTournament) return;
     if (currentTournament.status !== "in_progress") return;
     // Sadece kurucu kontrol etsin (race condition önleme)
     if (currentTournament.creator_id !== user.id) return;
-    
+
     const checkExpiredMatches = async () => {
       try {
         // Süresi dolmuş in_progress maçları bul
@@ -198,15 +198,15 @@ const TournamentBracketPage = () => {
           .eq("tournament_id", tournamentId)
           .eq("status", "in_progress")
           .lt("ends_at", new Date().toISOString());
-        
+
         if (!expiredMatches || expiredMatches.length === 0) return;
-        
+
         console.log(`⏰ ${expiredMatches.length} adet süresi dolmuş maç tespit edildi`);
-        
+
         for (const match of expiredMatches) {
           const p1Score = match.player1_score || 0;
           const p2Score = match.player2_score || 0;
-          
+
           // Kazananı belirle (beraberlikte önce player1)
           let winnerId: string;
           if (p1Score >= p2Score) {
@@ -214,9 +214,11 @@ const TournamentBracketPage = () => {
           } else {
             winnerId = match.player2_id;
           }
-          
-          console.log(`⏰ Maç otomatik tamamlanıyor: ${match.id} | P1: ${p1Score} vs P2: ${p2Score} | Kazanan: ${winnerId?.slice(-8)}`);
-          
+
+          console.log(
+            `⏰ Maç otomatik tamamlanıyor: ${match.id} | P1: ${p1Score} vs P2: ${p2Score} | Kazanan: ${winnerId?.slice(-8)}`,
+          );
+
           await supabase
             .from("tournament_matches")
             .update({
@@ -226,7 +228,7 @@ const TournamentBracketPage = () => {
             .eq("id", match.id)
             .eq("status", "in_progress"); // Double-check status
         }
-        
+
         // Maçlar tamamlandıysa round ilerlemeyi kontrol et ve data yenile
         if (expiredMatches.length > 0) {
           toast.info(`${expiredMatches.length} maç süre dolduğu için tamamlandı`);
@@ -237,13 +239,13 @@ const TournamentBracketPage = () => {
         console.error("⏰ Süresi dolan maç kontrolü hatası:", err);
       }
     };
-    
+
     // İlk kontrol
     checkExpiredMatches();
-    
+
     // Her 5 saniyede bir kontrol et
     expiredMatchCheckRef.current = setInterval(checkExpiredMatches, 5000);
-    
+
     return () => {
       if (expiredMatchCheckRef.current) {
         clearInterval(expiredMatchCheckRef.current);
@@ -287,38 +289,41 @@ const TournamentBracketPage = () => {
   // Navigate to game when my match starts - with realtime subscription
   // 🔒 Tamamlanmış maçlara gitmeyi önle ve döngüyü kır
   const completedMatchIdsRef = useRef<Set<string>>(new Set());
-  
+
   useEffect(() => {
     if (!user || !tournamentId) return;
     if (!currentTournament || currentTournament.status !== "in_progress") return;
 
-    // Tamamlanmış maçları cache'le - tekrar navigate edilmesini önle
-    matches.forEach(m => {
-      if (m.status === "completed") {
-        completedMatchIdsRef.current.add(m.id);
-      }
-    });
-
     // Navigasyon fonksiyonu - aynı maça veya tamamlanmış maça gitmeyi önle
     const navigateToMatch = (match: any, source: string) => {
-      // Tamamlanmış maçtan döndüysek, o maça tekrar gitme
-      if (fromCompletedMatchRef.current === match.id) {
-        console.log(`🚫 Match ${match.id} was just completed, blocking re-navigation`);
+      // 1. KORUMA: LocalStorage kontrolü (En önemli kısım burası)
+      // GamePage çıkarken bu kaydı oluşturuyor. Eğer varsa, veritabanı "in_progress" dese bile gitme.
+      const completedKey = `tournament_match_completed_${match.id}`;
+      const isLocallyCompleted = localStorage.getItem(completedKey);
+
+      if (isLocallyCompleted) {
+        console.log(`🚫 Match ${match.id} yerel olarak tamamlanmış (localStorage), navigasyon engellendi.`);
         return false;
       }
-      
-      // Tamamlanmış maça gitme
-      if (match.status === "completed" || completedMatchIdsRef.current.has(match.id)) {
+
+      // 2. KORUMA: Eğer maç zaten completed statüsündeyse gitme
+      if (match.status === "completed") {
         console.log(`🚫 Match ${match.id} is completed, skipping navigation`);
         return false;
       }
-      
-      // Aynı maça zaten gidildiyse tekrar gitme
+
+      // 3. KORUMA: Aynı maça zaten gidildiyse tekrar gitme (Ref kontrolü)
       if (navigatedMatchIdRef.current === match.id) {
         console.log(`🚫 Already navigated to match ${match.id}, skipping`);
         return false;
       }
-      
+
+      // 4. KORUMA: Kazananı belli olan maça gitme (Status in_progress kalsa bile)
+      if (match.winner_id) {
+        console.log(`🚫 Match ${match.id} kazananı belli, navigasyon engellendi.`);
+        return false;
+      }
+
       console.log(`🎮 [${source}] My match started, navigating:`, match.id);
       navigatedMatchIdRef.current = match.id;
       setNavigatedToGame(true);
@@ -326,12 +331,11 @@ const TournamentBracketPage = () => {
       return true;
     };
 
-    // İlk yükleme kontrolü - sadece in_progress ve henüz tamamlanmamış maçlar
+    // İlk yükleme kontrolü
     const checkMyMatch = () => {
       const myMatch = matches.find(
         (m) =>
           m.status === "in_progress" &&
-          !completedMatchIdsRef.current.has(m.id) &&
           (m as any).countdown_started_at &&
           (m.player1_id === user.id || m.player2_id === user.id),
       );
@@ -360,21 +364,14 @@ const TournamentBracketPage = () => {
         },
         (payload) => {
           const newMatch = payload.new as any;
-          
-          // Maç tamamlandıysa cache'e ekle
-          if (newMatch.status === "completed") {
-            completedMatchIdsRef.current.add(newMatch.id);
-            console.log(`✅ Match ${newMatch.id} marked as completed in cache`);
-            return;
-          }
-          
-          // Benim maçım mı ve in_progress mu ve henüz tamamlanmamış mı?
+
+          // Benim maçım mı ve in_progress mu?
           if (
             newMatch.status === "in_progress" &&
-            !completedMatchIdsRef.current.has(newMatch.id) &&
             newMatch.countdown_started_at &&
             (newMatch.player1_id === user.id || newMatch.player2_id === user.id)
           ) {
+            // Navigasyon fonksiyonu gerekli kontrolleri yapıp yönlendirecek
             navigateToMatch(newMatch, "Realtime");
           }
         },
