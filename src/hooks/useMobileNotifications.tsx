@@ -348,35 +348,29 @@ export const useMobileNotifications = () => {
     }
   };
 
-  // Request notification permissions
+  // Request notification permissions (Butona basınca çalışan)
   const requestPermissions = async () => {
     try {
-      console.log("🔔 requestPermissions çağrıldı, isMobile:", isMobile);
-      
+      console.log("🔔 requestPermissions çağrıldı (Manuel)");
+
       if (isMobile) {
-        await initializePushNotifications();
-        await initializeLocalNotifications();
-        
-        // İzin durumunu tekrar kontrol et
         const PushNotifications = await getPushNotifications();
         if (PushNotifications) {
-          const status = await PushNotifications.checkPermissions();
-          console.log("📱 İzin kontrolü sonucu:", status.receive);
-          setIsPermissionGranted(status.receive === "granted");
+          // 1. Önce burada açıkça izin iste (Pencere burada açılacak)
+          const permission = await PushNotifications.requestPermissions();
+
+          if (permission.receive === "granted") {
+            // 2. İzin verildiyse servisleri başlat
+            await initializePushNotifications();
+            await initializeLocalNotifications();
+            setIsPermissionGranted(true);
+          }
         }
       } else {
-        // Web bildirimi izinleri
+        // Web mantığı aynı kalabilir
         if ("Notification" in window) {
           const permission = await Notification.requestPermission();
           setIsPermissionGranted(permission === "granted");
-          console.log("🌐 Web bildirim izni:", permission);
-
-          if (permission === "granted") {
-            toast({
-              title: "Bildirimler Aktif",
-              description: "Oyun bildirimleri artık aktif",
-            });
-          }
         }
       }
     } catch (error) {
@@ -409,7 +403,7 @@ export const useMobileNotifications = () => {
   // Bekleyen token'ı kaydet (user login olduktan sonra)
   const savePendingToken = useCallback(async () => {
     if (!user?.id) return;
-    
+
     try {
       const pendingData = localStorage.getItem("push_token_pending");
       if (pendingData) {
@@ -436,7 +430,14 @@ export const useMobileNotifications = () => {
         initializeLocalNotifications();
       }
     }
-  }, [user?.id, isPermissionGranted, checkPermissionStatus, initializePushNotifications, initializeLocalNotifications, savePendingToken]);
+  }, [
+    user?.id,
+    isPermissionGranted,
+    checkPermissionStatus,
+    initializePushNotifications,
+    initializeLocalNotifications,
+    savePendingToken,
+  ]);
 
   return {
     isPermissionGranted,
