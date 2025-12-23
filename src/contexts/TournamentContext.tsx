@@ -83,12 +83,58 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     }
   };
 
-  // Create tournament
+  // Create tournament - kurucu olarak katılırken 3 kredi düşür
   const createTournament = async (): Promise<string | null> => {
     if (!user) return null;
 
     try {
       setLoading(true);
+
+      // 3 kredi düşür (turnuva boyunca toplam)
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("game_credits, bonus_credits, premium_until, unlimited_lives_until")
+        .eq("id", user.id)
+        .single();
+
+      if (profile) {
+        const now = new Date();
+        const isPremium = 
+          (profile.premium_until && new Date(profile.premium_until) > now) ||
+          (profile.unlimited_lives_until && new Date(profile.unlimited_lives_until) > now);
+
+        if (!isPremium) {
+          let gameCredits = profile.game_credits || 0;
+          let bonusCredits = profile.bonus_credits || 0;
+          let creditsToDeduct = 3;
+
+          // Önce bonus kredilerden düş
+          if (bonusCredits >= creditsToDeduct) {
+            bonusCredits -= creditsToDeduct;
+            creditsToDeduct = 0;
+          } else {
+            creditsToDeduct -= bonusCredits;
+            bonusCredits = 0;
+          }
+
+          // Kalan varsa normal kredilerden düş
+          if (creditsToDeduct > 0) {
+            gameCredits = Math.max(0, gameCredits - creditsToDeduct);
+          }
+
+          // Güncelle
+          await supabase
+            .from("profiles")
+            .update({
+              game_credits: gameCredits,
+              bonus_credits: bonusCredits,
+              last_credit_refresh: gameCredits < 5 ? new Date().toISOString() : null,
+            })
+            .eq("id", user.id);
+
+          console.log("✅ 3 kredi düşürüldü (turnuva oluşturma)");
+        }
+      }
 
       const expiresAt = new Date();
       expiresAt.setSeconds(expiresAt.getSeconds() + 30);
@@ -135,12 +181,71 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     }
   };
 
-  // Join tournament
+  // Join tournament - 3 kredi düşür (turnuva boyunca geçerli)
   const joinTournament = async (tournamentId: string): Promise<boolean> => {
     if (!user) return false;
 
     try {
       setLoading(true);
+
+      // Önce zaten katılmış mı kontrol et
+      const { data: existing } = await supabase
+        .from("tournament_participants")
+        .select("id")
+        .eq("tournament_id", tournamentId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (existing) {
+        console.log("✅ Zaten katılmış");
+        return true;
+      }
+
+      // 3 kredi düşür (turnuva boyunca toplam)
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("game_credits, bonus_credits, premium_until, unlimited_lives_until")
+        .eq("id", user.id)
+        .single();
+
+      if (profile) {
+        const now = new Date();
+        const isPremium = 
+          (profile.premium_until && new Date(profile.premium_until) > now) ||
+          (profile.unlimited_lives_until && new Date(profile.unlimited_lives_until) > now);
+
+        if (!isPremium) {
+          let gameCredits = profile.game_credits || 0;
+          let bonusCredits = profile.bonus_credits || 0;
+          let creditsToDeduct = 3;
+
+          // Önce bonus kredilerden düş
+          if (bonusCredits >= creditsToDeduct) {
+            bonusCredits -= creditsToDeduct;
+            creditsToDeduct = 0;
+          } else {
+            creditsToDeduct -= bonusCredits;
+            bonusCredits = 0;
+          }
+
+          // Kalan varsa normal kredilerden düş
+          if (creditsToDeduct > 0) {
+            gameCredits = Math.max(0, gameCredits - creditsToDeduct);
+          }
+
+          // Güncelle
+          await supabase
+            .from("profiles")
+            .update({
+              game_credits: gameCredits,
+              bonus_credits: bonusCredits,
+              last_credit_refresh: gameCredits < 5 ? new Date().toISOString() : null,
+            })
+            .eq("id", user.id);
+
+          console.log("✅ 3 kredi düşürüldü (turnuva katılımı)");
+        }
+      }
 
       const { error } = await supabase
         .from("tournament_participants")
@@ -149,12 +254,6 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
           user_id: user.id,
           is_bot: false,
         });
-
-      // Duplicate key = already joined
-      if (error && error.code === "23505") {
-        console.log("✅ Zaten katılmış");
-        return true;
-      }
 
       if (error) throw error;
 
