@@ -66,7 +66,7 @@ export const useMobileNotifications = () => {
       console.log("📱 Push bildirimleri başlatılıyor...");
 
       // Request permission to use push notifications
-      const permissionStatus = await PushNotifications.requestPermissions();
+      const permissionStatus = await PushNotifications.checkPermissions();
       console.log("📱 İzin durumu:", permissionStatus.receive);
 
       if (permissionStatus.receive === "granted") {
