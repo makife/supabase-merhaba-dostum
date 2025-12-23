@@ -4539,36 +4539,15 @@ const GamePage = ({
             .single();
 
           if (matchData && matchData.status === "in_progress" && matchData.countdown_started_at) {
-            // ✅ SERVER-SIDE COUNTDOWN ZAMANI KULLAN
-            if (!serverMatchStartRef.current) {
-              // Buffer 5 saniye + Countdown 5 saniye = 10 saniye, oyun başlangıcı = countdown_started_at + 10 saniye
-              const countdownStart = new Date(matchData.countdown_started_at).getTime();
-              serverMatchStartRef.current = countdownStart + 10000; // 5s buffer + 5s countdown = 10 saniye sonra başlar
-              console.log(
-                "📌 Tournament match start time (countdown_started_at + 10s):",
-                new Date(serverMatchStartRef.current).toISOString(),
-              );
-            }
-
-            const matchStartTime = serverMatchStartRef.current!;
-            const currentTime = Date.now() + serverTimeOffset;
-            const elapsedSeconds = Math.floor((currentTime - matchStartTime) / 1000);
-            const remainingTime = Math.max(0, 120 - elapsedSeconds);
-
-            // İlk 3 saniye sadece countdown bittiğinde sync yap (titreme önleme)
-            if (countdownCompletedAtRef.current && Date.now() - countdownCompletedAtRef.current < 3000) {
-              console.log("⏸️ Skipping sync - countdown just completed");
-              return;
-            }
-
-            // 1 saniyeden fazla fark varsa sync et
-            if (Math.abs(timeLeftRef.current - remainingTime) > 1) {
-              timeLeftRef.current = remainingTime;
-              if (isMountedRef.current) {
-                setDisplayTime(remainingTime);
-                console.log("🔄 Timer synced to:", remainingTime, "seconds (server-side)");
-              }
-            }
+            // ... (içerik kodları) ...
+            // BU KISIM TİTREMEYE SEBEP OLUYOR 👇
+            // if (Math.abs(timeLeftRef.current - remainingTime) > 1) {
+            //   timeLeftRef.current = remainingTime;
+            //   if (isMountedRef.current) {
+            //     setDisplayTime(remainingTime);
+            //     console.log("🔄 Timer synced to:", remainingTime, "seconds (server-side)");
+            //   }
+            // }
           }
         } catch (error) {
           console.error("Timer sync error:", error);
@@ -4591,20 +4570,9 @@ const GamePage = ({
             filter: `id=eq.${tournamentMatch.id}`,
           },
           (payload: any) => {
-            // DÜZELTME BURADA:
-            // Sadece countdown_started_at GERÇEKTEN değiştiyse sync yap.
-            // Skor güncellemelerinde de bu veri gelir ama değişmez, bu yüzden gereksiz sync'i engelliyoruz.
-            const newCountdown = payload.new?.countdown_started_at;
-            const oldCountdown = payload.old?.countdown_started_at; // veya mevcut state
-
-            // Eğer yeni bir tarih varsa VE bu tarih eskisinden farklıysa sync yap
-            if (newCountdown && newCountdown !== tournamentMatch.countdown_started_at) {
-              console.log("⏰ Timer RE-SYNC gerekli (zaman değişti):", newCountdown);
-              syncTimer();
-            } else {
-              // Skor güncellemesi gibi zamanı etkilemeyen durumlarda burası çalışır
-              // ve sürenin titremesini/zıplamasını engeller.
-            }
+            // ...
+            // BURASI SKOR GÜNCELLENDİĞİNDE BİLE TETİKLENİP SYNC YAPIYOR
+            syncTimer();
           },
         )
         .subscribe();
