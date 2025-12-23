@@ -4591,10 +4591,19 @@ const GamePage = ({
             filter: `id=eq.${tournamentMatch.id}`,
           },
           (payload: any) => {
-            console.log("⏰ Tournament timer sync event received:", payload);
-            // countdown_started_at değiştiyse timer'ı sync et
-            if (payload.new?.countdown_started_at) {
+            // DÜZELTME BURADA:
+            // Sadece countdown_started_at GERÇEKTEN değiştiyse sync yap.
+            // Skor güncellemelerinde de bu veri gelir ama değişmez, bu yüzden gereksiz sync'i engelliyoruz.
+            const newCountdown = payload.new?.countdown_started_at;
+            const oldCountdown = payload.old?.countdown_started_at; // veya mevcut state
+
+            // Eğer yeni bir tarih varsa VE bu tarih eskisinden farklıysa sync yap
+            if (newCountdown && newCountdown !== tournamentMatch.countdown_started_at) {
+              console.log("⏰ Timer RE-SYNC gerekli (zaman değişti):", newCountdown);
               syncTimer();
+            } else {
+              // Skor güncellemesi gibi zamanı etkilemeyen durumlarda burası çalışır
+              // ve sürenin titremesini/zıplamasını engeller.
             }
           },
         )
