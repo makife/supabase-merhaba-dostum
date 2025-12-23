@@ -3613,15 +3613,14 @@ const GamePage = ({
           // Tournament ID'yi match data'sından al (URL'de yoksa)
           const finalTournamentId = tournamentId || matchData.tournament_id;
 
-          // ⚠️ KRİTİK: TAMAMLANMIŞ MAÇI TEKRAR BAŞLATMA
+          // ⚠️ KRİTİK: TAMAMLANMIŞ MAÇI TEKRAR BAŞLATMA - sessizce bracket'e dön
           if (matchData.status === "completed") {
-            console.log("🚫 Bu maç zaten tamamlanmış, bracket sayfasına yönlendiriliyor:", matchData.id);
-            toast({
-              title: "Maç Tamamlandı",
-              description: "Bu maç zaten oynanmış, turnuva sayfasına yönlendiriliyorsunuz.",
-              variant: "default",
+            console.log("🚫 Bu maç zaten tamamlanmış, bracket sayfasına sessizce yönlendiriliyor:", matchData.id);
+            // Toast gösterme - döngüyü kırmak için sessizce dön
+            navigate(`/tournament-bracket/${finalTournamentId}`, { 
+              replace: true,
+              state: { fromCompletedMatch: matchData.id } 
             });
-            navigate(`/tournament-bracket/${finalTournamentId}`);
             return;
           }
 
