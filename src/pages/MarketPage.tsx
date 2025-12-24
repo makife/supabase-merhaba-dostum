@@ -44,7 +44,7 @@ const MarketPage = () => {
   const { playSound } = useSounds();
   const { isAdLoading, loadRewardedAd, showRewardedAd } = useAdMob();
   const { isLoading: isSubscriptionLoading, purchaseSubscription } = useNativeSubscriptions();
-  const { isLoading: isRestoreLoading, restorePurchases } = useNativePurchases();
+  const { isLoading: isRestoreLoading, restorePurchases, purchasePackage } = useNativePurchases();
 
   const [activeTab, setActiveTab] = useState("ink-store");
   const [purchaseLoading, setPurchaseLoading] = useState(false);
@@ -180,14 +180,32 @@ const MarketPage = () => {
 
   const handleBuyInkPack = async (pack: InkPack) => {
     if (!user) return;
-    setPurchaseLoading(true);
-    playSound("buttonClick");
 
+    // Sadece mobilde çalışır kontrolü (Test ederken web'deysen bunu yorum satırına alabilirsin)
+    if (isNativePlatform) {
+      setPurchaseLoading(true);
+      try {
+        // 1. REVENUECAT İLE SATIN AL
+        // pack.id değerinin ("ink_drop" vb.) RevenueCat'teki paket ID ile AYNI olması şart!
+        const success = await purchasePackage(pack.id);
+
+        if (!success) {
+          setPurchaseLoading(false);
+          return; // Başarısızsa veya iptal edildiyse dur.
+        }
+
+        // 2. ÖDEME BAŞARILIYSA MÜREKKEBİ VER
+        // Buradan aşağısı senin eski kodunla aynı, sadece başarılı olunca çalışıyor.
+      } catch (e) {
+        console.error(e);
+        setPurchaseLoading(false);
+        return;
+      }
+    }
+
+    // --- MÜREKKEP EKLEME KISMI ---
     try {
-      console.log(`${pack.id} için satın alma işlemi başlatıldı...`);
-
       const newBalance = (profile?.ink_count || 0) + pack.amount;
-
       const { error } = await supabase.from("profiles").update({ ink_count: newBalance }).eq("id", user.id);
 
       if (error) throw error;
@@ -195,13 +213,13 @@ const MarketPage = () => {
       await refreshProfile();
       playSound("buttonClick");
       toast({
-        title: "Mürekkep Eklendi! 💧",
-        description: `${pack.amount} damla mürekkep hesabınıza tanımlandı.`,
+        title: "Satın Alma Başarılı! 💧",
+        description: `${pack.amount} damla mürekkep eklendi.`,
         className: "bg-indigo-900 text-white border-indigo-700",
       });
     } catch (error) {
       console.error(error);
-      toast({ title: "Hata", description: "Satın alma işlemi başarısız.", variant: "destructive" });
+      toast({ title: "Hata", description: "Mürekkep eklenirken sorun oluştu.", variant: "destructive" });
     } finally {
       setPurchaseLoading(false);
     }
@@ -255,17 +273,14 @@ const MarketPage = () => {
       } else if (item.type === "heart") {
         const currentCredits = profile.game_credits || 0;
         const newCredits = currentCredits + item.value;
-        
+
         // Eğer yeni krediler >= 5 ise, timer'ı sıfırla (last_credit_refresh = null)
         const updateData: any = { game_credits: newCredits };
         if (newCredits >= 5) {
           updateData.last_credit_refresh = null;
         }
-        
-        await supabase
-          .from("profiles")
-          .update(updateData)
-          .eq("id", user.id);
+
+        await supabase.from("profiles").update(updateData).eq("id", user.id);
       } else if (item.type === "time") {
         const now = new Date();
         const currentExpiryVal = (profile as any).unlimited_lives_until;
