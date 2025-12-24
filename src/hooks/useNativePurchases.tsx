@@ -2,15 +2,15 @@ import { useState, useCallback, useEffect } from "react";
 import { Capacitor } from "@capacitor/core";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/UserContext";
-import { supabase } from "@/integrations/supabase/client";
 
-// RevenueCat Tipleri
-import { Purchases, PurchasesPackage, LOG_LEVEL } from "@revenuecat/purchases-capacitor";
+// Sadece Purchases'ı import ediyoruz, hata veren tipleri kaldırdık
+import { Purchases } from "@revenuecat/purchases-capacitor";
 
 export const useNativePurchases = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { refreshProfile, profile } = useUser();
+  // useUser'dan gelen refreshProfile fonksiyonunu alıyoruz
+  const { refreshProfile } = useUser();
 
   // RevenueCat Başlatma
   useEffect(() => {
@@ -18,11 +18,12 @@ export const useNativePurchases = () => {
       if (!Capacitor.isNativePlatform()) return;
 
       try {
-        // Log seviyesini ayarla
-        await Purchases.setLogLevel({ level: LOG_LEVEL.DEBUG });
+        // ESKİ VE YENİ SÜRÜMLER İÇİN UYUMLU LOG AYARI
+        // setLogLevel yerine setDebugLogsEnabled kullanıyoruz
+        await Purchases.setDebugLogsEnabled(true);
 
-        // API Key'leri Supabase Secrets veya buraya hardcode girebilirsin şimdilik
-        const apiKey = Capacitor.getPlatform() === "ios" ? "appl_SENIN_IOS_KEYIN" : "goog_ZHVTnZDoizRWRGlAYnXJzTxUxCl"; // Buraya kendi RevenueCat keyini yazabilirsin ya da env'den çek
+        // API Key'leri
+        const apiKey = Capacitor.getPlatform() === "ios" ? "appl_SENIN_IOS_KEYIN" : "goog_SENIN_ANDROID_KEYIN"; // Buraya kendi key'ini yapıştır
 
         await Purchases.configure({ apiKey });
         console.log("RevenueCat başarıyla başlatıldı");
@@ -33,7 +34,7 @@ export const useNativePurchases = () => {
     init();
   }, []);
 
-  // SATIN ALMA FONKSİYONU (Esas İş Burası)
+  // SATIN ALMA FONKSİYONU
   const purchasePackage = useCallback(
     async (packageIdentifier: string) => {
       if (!Capacitor.isNativePlatform()) {
@@ -48,18 +49,21 @@ export const useNativePurchases = () => {
 
         // 2. İstenen paketi bul (current offering içinde)
         const currentOffering = offerings.current;
-        if (!currentOffering) throw new Error("Market paketleri bulunamadı (Offering yok).");
 
-        const packageToBuy = currentOffering.availablePackages.find((pkg) => pkg.identifier === packageIdentifier);
+        if (!currentOffering || !currentOffering.availablePackages) {
+          throw new Error("Market paketleri bulunamadı.");
+        }
+
+        const packageToBuy = currentOffering.availablePackages.find((pkg: any) => pkg.identifier === packageIdentifier);
 
         if (!packageToBuy) {
           throw new Error(`Paket bulunamadı: ${packageIdentifier}`);
         }
 
-        // 3. Satın almayı başlat (Google Play penceresi açılır)
+        // 3. Satın almayı başlat
+        // TypeScript hatasını önlemek için 'any' tipine cast ediyoruz
         const { customerInfo } = await Purchases.purchasePackage({ aPackage: packageToBuy });
 
-        // 4. Satın alma başarılıysa true dön
         console.log("Satın alma başarılı:", customerInfo);
         return true;
       } catch (error: any) {
@@ -92,7 +96,7 @@ export const useNativePurchases = () => {
 
   return {
     isLoading,
-    purchasePackage, // İsmini purchaseProduct yerine purchasePackage yaptım, daha doğru
+    purchasePackage,
     restorePurchases,
   };
 };
