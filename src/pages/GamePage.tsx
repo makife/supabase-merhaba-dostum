@@ -5283,7 +5283,7 @@ const GamePage = ({
 
         selectAIWord();
       },
-      3500 + Math.random() * 15000,
+      5500 + Math.random() * 15000,
     );
 
     return () => {
