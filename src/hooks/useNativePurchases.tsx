@@ -21,7 +21,7 @@ export const useNativePurchases = () => {
         // Hata veren Log satırını sildik, şu anlık gerek yok.
 
         // API Key ayarı
-        const apiKey = Capacitor.getPlatform() === "ios" ? "appl_SENIN_IOS_KEYIN" : "goog_SENIN_ANDROID_KEYIN"; // <-- BURAYA KENDİ KEYİNİ YAZ
+        const apiKey = Capacitor.getPlatform() === "ios" ? "appl_SENIN_IOS_KEYIN" : "goog_ZHVTnZDoizRWRGlAYnXJzTxUxCl"; // <-- BURAYA KENDİ KEYİNİ YAZ
 
         // RevenueCat'i yapılandır
         await Purchases.configure({ apiKey });
