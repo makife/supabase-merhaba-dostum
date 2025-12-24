@@ -2,210 +2,97 @@ import { useState, useCallback, useEffect } from "react";
 import { Capacitor } from "@capacitor/core";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/UserContext";
-import { useUserPurchases } from "@/hooks/useUserPurchases";
+import { supabase } from "@/integrations/supabase/client";
 
-// Dinamik import (sadece native platformda)
-const getPurchases = async () => {
-  const module = await import("@revenuecat/purchases-capacitor");
-  return module.Purchases;
-};
+// RevenueCat Tipleri
+import { Purchases, PurchasesPackage, LOG_LEVEL } from "@revenuecat/purchases-capacitor";
 
 export const useNativePurchases = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
   const { toast } = useToast();
-  const { refreshProfile } = useUser();
-  const { processPurchase } = useUserPurchases();
+  const { refreshProfile, profile } = useUser();
 
-  // RevenueCat başlatma
-  const initializePurchases = useCallback(async () => {
-    if (!Capacitor.isNativePlatform() || isInitialized) {
-      return;
-    }
-
-    try {
-      // RevenueCat API keys - gerçek projede secrets'tan alınmalı
-      const REVENUECAT_API_KEY =
-        Capacitor.getPlatform() === "ios" ? "appl_your_ios_api_key_here" : "goog_your_android_api_key_here";
-
-      const Purchases = await getPurchases();
-      await Purchases.configure({
-        apiKey: REVENUECAT_API_KEY,
-      });
-
-      setIsInitialized(true);
-      console.log("RevenueCat initialized for native purchases");
-    } catch (error) {
-      console.error("Failed to initialize RevenueCat:", error);
-    }
-  }, [isInitialized]);
-
-  // Mount'ta başlat
+  // RevenueCat Başlatma
   useEffect(() => {
-    initializePurchases();
-  }, [initializePurchases]);
+    const init = async () => {
+      if (!Capacitor.isNativePlatform()) return;
 
-  // Ürün satın alma
-  const purchaseProduct = useCallback(
-    async (productId: string, item: any) => {
+      try {
+        // Log seviyesini ayarla
+        await Purchases.setLogLevel({ level: LOG_LEVEL.DEBUG });
+
+        // API Key'leri Supabase Secrets veya buraya hardcode girebilirsin şimdilik
+        const apiKey = Capacitor.getPlatform() === "ios" ? "appl_SENIN_IOS_KEYIN" : "goog_ZHVTnZDoizRWRGlAYnXJzTxUxCl"; // Buraya kendi RevenueCat keyini yazabilirsin ya da env'den çek
+
+        await Purchases.configure({ apiKey });
+        console.log("RevenueCat başarıyla başlatıldı");
+      } catch (e) {
+        console.error("RevenueCat başlatma hatası:", e);
+      }
+    };
+    init();
+  }, []);
+
+  // SATIN ALMA FONKSİYONU (Esas İş Burası)
+  const purchasePackage = useCallback(
+    async (packageIdentifier: string) => {
       if (!Capacitor.isNativePlatform()) {
-        toast({
-          title: "Hata",
-          description: "Bu özellik sadece mobil uygulamada çalışır",
-          variant: "destructive",
-        });
+        toast({ title: "Hata", description: "Satın alma sadece mobilde çalışır", variant: "destructive" });
         return false;
       }
 
+      setIsLoading(true);
       try {
-        setIsLoading(true);
+        // 1. Mevcut paketleri (offerings) çek
+        const offerings = await Purchases.getOfferings();
 
-        // Onay dialogu
-        const confirmed = window.confirm(
-          `${item.title} satın almak istediğinizden emin misiniz?\nFiyat: ₺${item.price}`,
-        );
+        // 2. İstenen paketi bul (current offering içinde)
+        const currentOffering = offerings.current;
+        if (!currentOffering) throw new Error("Market paketleri bulunamadı (Offering yok).");
 
-        if (!confirmed) {
-          return false;
+        const packageToBuy = currentOffering.availablePackages.find((pkg) => pkg.identifier === packageIdentifier);
+
+        if (!packageToBuy) {
+          throw new Error(`Paket bulunamadı: ${packageIdentifier}`);
         }
 
-        // Gerçek satın alma işlemi
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+        // 3. Satın almayı başlat (Google Play penceresi açılır)
+        const { customerInfo } = await Purchases.purchasePackage({ aPackage: packageToBuy });
 
-        const success = await processPurchase(item);
-
-        if (success) {
-          toast({
-            title: "Satın Alma Başarılı",
-            description: `${item.title} hesabınıza eklendi`,
-          });
-
-          await refreshProfile();
-          return true;
+        // 4. Satın alma başarılıysa true dön
+        console.log("Satın alma başarılı:", customerInfo);
+        return true;
+      } catch (error: any) {
+        if (error.userCancelled) {
+          console.log("Kullanıcı iptal etti");
         } else {
-          throw new Error("Purchase processing failed");
+          console.error("Satın alma hatası:", error);
+          toast({ title: "Hata", description: error.message || "Satın alma başarısız", variant: "destructive" });
         }
-      } catch (error) {
-        console.error("Purchase failed:", error);
-        toast({
-          title: "Satın Alma Hatası",
-          description: "Satın alma işlemi başarısız oldu",
-          variant: "destructive",
-        });
         return false;
       } finally {
         setIsLoading(false);
       }
     },
-    [processPurchase, refreshProfile, toast],
+    [toast],
   );
 
-  // Satın alımları geri yükle - GERÇEK REVENUECAT ENTEGRASYONU
+  // RESTORE (Geri Yükleme)
   const restorePurchases = useCallback(async () => {
-    if (!Capacitor.isNativePlatform()) {
-      toast({
-        title: "Hata",
-        description: "Bu özellik sadece mobil uygulamada çalışır",
-        variant: "destructive",
-      });
-      return;
-    }
-
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-
-      const Purchases = await getPurchases();
-      const result = await Purchases.restorePurchases();
-
-      console.log("Restored purchases:", result);
-
-      // Geri yüklenen satın alımları işle
-      const activeSubscriptions = result.activeSubscriptions || [];
-      const allPurchases = result.allPurchasedProductIdentifiers || [];
-
-      let restoredCount = 0;
-
-      // Her bir geri yüklenen ürünü veritabanına kaydet
-      for (const productId of allPurchases) {
-        try {
-          const item = {
-            id: productId,
-            title: getProductTitle(productId),
-            type: getItemType(productId),
-            value: getItemValue(productId),
-            price: 0,
-            currency: "restored" as const,
-          };
-
-          await processPurchase(item);
-          restoredCount++;
-        } catch (err) {
-          console.error("Failed to restore product:", productId, err);
-        }
-      }
-
-      if (restoredCount > 0) {
-        toast({
-          title: "Geri Yükleme Başarılı",
-          description: `${restoredCount} satın alım geri yüklendi`,
-        });
-      } else {
-        toast({
-          title: "Bilgi",
-          description: "Geri yüklenecek satın alım bulunamadı",
-        });
-      }
-
-      await refreshProfile();
-    } catch (error) {
-      console.error("Failed to restore purchases:", error);
-      toast({
-        title: "Hata",
-        description: "Satın alımlar geri yüklenemedi. Lütfen tekrar deneyin.",
-        variant: "destructive",
-      });
+      await Purchases.restorePurchases();
+      toast({ title: "Başarılı", description: "Satın alımlar geri yüklendi." });
+    } catch (e) {
+      toast({ title: "Hata", description: "Geri yükleme başarısız.", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
-  }, [processPurchase, refreshProfile, toast]);
+  }, [toast]);
 
   return {
     isLoading,
-    isInitialized,
-    purchaseProduct,
+    purchasePackage, // İsmini purchaseProduct yerine purchasePackage yaptım, daha doğru
     restorePurchases,
   };
-};
-
-// Helper: Ürün başlığı
-const getProductTitle = (productId: string): string => {
-  if (productId.includes("credits_5")) return "5 Oyun Hakkı";
-  if (productId.includes("credits_25")) return "25 Oyun Hakkı";
-  if (productId.includes("credits_50")) return "50 Oyun Hakkı";
-  if (productId.includes("unlimited_1h")) return "1 Saatlik Sınırsız";
-  if (productId.includes("unlimited_24h")) return "24 Saatlik Sınırsız";
-  if (productId.includes("premium")) return "Premium Üyelik";
-  return productId;
-};
-
-// Helper: Ürün tipi
-const getItemType = (productId: string): string => {
-  if (productId.includes("credits")) return "credits";
-  if (productId.includes("unlimited")) return "unlimited_time";
-  if (productId.includes("premium")) return "premium";
-  if (productId.includes("theme")) return "theme";
-  if (productId.includes("avatar")) return "avatar";
-  if (productId.includes("sound")) return "sound";
-  return "credits";
-};
-
-// Helper: Ürün değeri
-const getItemValue = (productId: string): number => {
-  if (productId.includes("5")) return 5;
-  if (productId.includes("25")) return 25;
-  if (productId.includes("50")) return 50;
-  if (productId.includes("1h")) return 1;
-  if (productId.includes("24h")) return 24;
-  if (productId.includes("month")) return 30;
-  return 1;
 };
