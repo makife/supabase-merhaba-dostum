@@ -6,11 +6,8 @@ import { FloatingMenu } from "@/components/FloatingMenu";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import { useSounds } from "@/hooks/useSounds";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import PrivateRoomModal from "@/components/PrivateRoomModal";
+import { PrivateRoomModal } from "@/components/PrivateRoomModal"; // Component path'ini kontrol et
 import { SlotMatchmaking } from "@/components/SlotMatchmaking";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
@@ -18,29 +15,30 @@ import { useJokerInventory } from "@/hooks/useJokerInventory";
 import { useMemoryGame } from "@/hooks/useMemoryGame";
 import { useMatchmaking } from "@/contexts/NewMatchmakingContext";
 import { AvatarViewDialog } from "@/components/AvatarViewDialog";
-import { motion, AnimatePresence } from "framer-motion"; // EĞER YOKSA: npm install framer-motion
+import { motion, AnimatePresence } from "framer-motion";
 
 import {
   Bot,
   Users,
   Trophy,
-  Clock,
   Target,
   User,
   Crown,
   Zap,
-  Gift,
   Brain,
   Grid3X3,
   Infinity,
   Sparkles,
   Gamepad2,
-  ChevronRight
+  ChevronRight,
+  Ghost, // Snake için
+  Radiation, // Reactor için
+  LayoutGrid // Simon için
 } from "lucide-react";
 
-// --- HELPER COMPONENTS FOR UI CONSISTENCY ---
+// --- YARDIMCI BİLEŞENLER ---
 
-// Modern Glass Card Component
+// Glass Card: Tüm kartların temel tasarımı
 const GlassCard = ({ children, className = "", onClick }: any) => (
   <motion.div
     whileHover={{ scale: 1.02 }}
@@ -48,27 +46,16 @@ const GlassCard = ({ children, className = "", onClick }: any) => (
     onClick={onClick}
     className={`
       relative overflow-hidden rounded-2xl
-      bg-black/40 backdrop-blur-xl border border-white/10
-      shadow-[0_8px_32px_0_rgba(0,0,0,0.36)]
+      bg-white/10 backdrop-blur-md border border-white/20
+      shadow-lg
       ${className}
     `}
   >
-    {/* Parlama Efekti */}
-    <div className="absolute -inset-1 bg-gradient-to-tr from-white/5 to-transparent opacity-20 pointer-events-none" />
     {children}
   </motion.div>
 );
 
-// Stat Pill (Badge Replacement)
-const StatPill = ({ icon: Icon, value, label, colorClass }: any) => (
-  <div className="flex flex-col items-center bg-black/30 rounded-xl p-2 border border-white/5 min-w-[70px]">
-    <Icon className={`w-4 h-4 mb-1 ${colorClass}`} />
-    <span className="text-white font-bold text-sm">{value}</span>
-    <span className="text-[10px] text-white/50 uppercase tracking-wider">{label}</span>
-  </div>
-);
-
-// --- MAIN LOGIC & DATA ---
+// --- ANA SAYFA ---
 
 const greetingMessages = [
   "Sahne senin! 🌟", "Rekor kırma zamanı! 🏆", "Zeka küpü iş başında! 🧠", 
@@ -76,14 +63,6 @@ const greetingMessages = [
 ];
 
 const getRandomGreeting = () => greetingMessages[Math.floor(Math.random() * greetingMessages.length)];
-
-const isGiftPremium = (profile: any) => {
-  if (!profile?.premium_until) return false;
-  const premiumUntil = new Date(profile.premium_until);
-  const createdAt = new Date(profile.created_at);
-  const daysDiff = Math.ceil((premiumUntil.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
-  return daysDiff >= 6 && daysDiff <= 8 && premiumUntil > new Date();
-};
 
 const isUnlimitedLivesActive = (profile: any) => {
   if (!profile?.unlimited_lives_until) return false;
@@ -117,7 +96,7 @@ const HomePage = () => {
     return newGreeting;
   });
 
-  // --- CALCULATIONS ---
+  // --- HESAPLAMALAR ---
   const calculateLevel = (totalScore: number) => {
     const baseExp = 1000;
     const expIncreasePerLevel = 100;
@@ -135,9 +114,11 @@ const HomePage = () => {
   const levelInfo = calculateLevel(profile?.total_score || 0);
   const progressPercent = Math.min(100, Math.max(0, (levelInfo.experience / levelInfo.nextLevelExp) * 100));
 
-  // --- EFFECTS (Timers, Music, Reset) ---
-  
-  // Unlimited Time Calculation
+  // Toplam Hak Hesaplama (Satın alınanlar + Bonuslar)
+  const totalCredits = (profile?.game_credits || 0) + (profile?.bonus_credits || 0);
+  const hasExtraCredits = totalCredits > 5;
+
+  // --- TİMER LOGIC (Aynen korundu) ---
   useEffect(() => {
     if (!profile || !isUnlimitedLivesActive(profile)) {
       setUnlimitedTimeLeft("");
@@ -151,15 +132,13 @@ const HomePage = () => {
       const diff = expiry.getTime() - now.getTime();
       const h = Math.floor(diff / (1000 * 60 * 60));
       const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      
       setUnlimitedTimeLeft(h > 0 ? `${h}s ${m}dk` : `${m}dk`);
     };
     updateTime();
-    const interval = setInterval(updateTime, 60000); // Her dakika güncelle yeterli
+    const interval = setInterval(updateTime, 60000);
     return () => clearInterval(interval);
   }, [profile]);
 
-  // Credit Timer
   useEffect(() => {
     if (!isPremium && profile) {
        const updateCreditTimer = async () => {
@@ -168,10 +147,9 @@ const HomePage = () => {
          
          const now = new Date();
          const last = new Date(profile.last_credit_refresh);
-         const next = new Date(last.getTime() + 72 * 60 * 1000); // 72 dk kuralı
+         const next = new Date(last.getTime() + 72 * 60 * 1000);
          
          if (now >= next) {
-             // Refresh logic here or let backend handle
              await refreshProfile();
          } else {
              const diff = next.getTime() - now.getTime();
@@ -187,7 +165,7 @@ const HomePage = () => {
 
   useEffect(() => startBackgroundMusic(), [startBackgroundMusic]);
 
-  // --- CONFIGURATION ---
+  // --- OYUN MODLARI CONFIG ---
   const gameModesConfig = [
     {
       id: "vs-computer",
@@ -195,7 +173,6 @@ const HomePage = () => {
       subtitle: "Bot'a karşı antrenman",
       icon: Bot,
       color: "from-blue-600 to-blue-400",
-      shadow: "shadow-blue-500/20",
       route: "/game/vs-computer",
     },
     {
@@ -204,7 +181,6 @@ const HomePage = () => {
       subtitle: "Arkadaşınla oyna",
       icon: Users,
       color: "from-emerald-600 to-emerald-400",
-      shadow: "shadow-emerald-500/20",
       route: "/game/private-room",
     },
     {
@@ -213,7 +189,6 @@ const HomePage = () => {
       subtitle: "Online PvP mücadele",
       icon: Zap,
       color: "from-violet-600 to-violet-400",
-      shadow: "shadow-violet-500/20",
       route: "/game/random-match",
     },
     {
@@ -222,16 +197,14 @@ const HomePage = () => {
       subtitle: "8 Kişilik Lig",
       icon: Trophy,
       color: "from-amber-500 to-orange-500",
-      shadow: "shadow-amber-500/20",
       route: "/tournament",
     },
   ];
 
-  // --- RENDER HELPERS ---
   const handleModeClick = (mode: any) => {
     playSound("buttonClick");
     // Kredi Kontrolü
-    if (!isPremium && !isUnlimitedLivesActive(profile) && (profile?.game_credits || 0) + (profile?.bonus_credits || 0) <= 0) {
+    if (!isPremium && !isUnlimitedLivesActive(profile) && totalCredits <= 0) {
       toast.error("Yetersiz Hak!", { description: "Oynamak için haklarınızın yenilenmesini bekleyin veya marketi ziyaret edin." });
       return;
     }
@@ -241,12 +214,13 @@ const HomePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a16] text-white font-sans selection:bg-purple-500/30">
+    // ARKA PLAN GÜNCELLENDİ: Çok karanlık yerine modern Gradient
+    <div className="min-h-screen bg-gradient-to-br from-[#1a1c2e] via-[#2d1b4e] to-[#1a1c2e] text-white font-sans overflow-x-hidden">
       
-      {/* BACKGROUND EFFECTS */}
+      {/* BACKGROUND PARTICLES (Süsleme) */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-         <div className="absolute top-[-10%] left-[-20%] w-[500px] h-[500px] bg-purple-900/20 rounded-full blur-[100px]" />
-         <div className="absolute bottom-[-10%] right-[-20%] w-[500px] h-[500px] bg-blue-900/20 rounded-full blur-[100px]" />
+         <div className="absolute top-[-10%] left-[-20%] w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[120px]" />
+         <div className="absolute bottom-[-10%] right-[-20%] w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[120px]" />
       </div>
 
       <div className="relative z-10 flex flex-col h-full max-w-md mx-auto pb-24">
@@ -257,81 +231,100 @@ const HomePage = () => {
                 {/* User Info */}
                 <div className="flex items-center gap-3" onClick={() => setShowAvatarView(true)}>
                     <div className="relative group cursor-pointer">
-                        <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-600 to-purple-600 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-200"></div>
-                        <Avatar className="w-14 h-14 border-2 border-black relative">
+                        <Avatar className="w-16 h-16 border-2 border-white/20 ring-2 ring-purple-500/30 shadow-xl">
                             <AvatarImage src={profile?.avatar_url || user?.user_metadata?.avatar_url} className="object-cover" />
                             <AvatarFallback className="bg-zinc-800"><User/></AvatarFallback>
                         </Avatar>
                         {isPremium && (
-                           <div className="absolute -top-2 -right-1 bg-yellow-500 text-black p-0.5 rounded-full border-2 border-black">
-                               <Crown className="w-3 h-3" />
+                           <div className="absolute -top-1 -right-1 bg-yellow-400 text-black p-0.5 rounded-full border-2 border-white shadow-sm">
+                               <Crown className="w-3.5 h-3.5" />
                            </div>
                         )}
                     </div>
                     <div>
-                        <h2 className="text-lg font-bold leading-none">{profile?.username || "Misafir"}</h2>
-                        <p className="text-xs text-zinc-400 mt-1">{greeting}</p>
+                        <h2 className="text-xl font-bold leading-none drop-shadow-md">{profile?.username || "Misafir"}</h2>
+                        <p className="text-xs text-purple-200 mt-1 font-medium">{greeting}</p>
                     </div>
                 </div>
 
                 {/* Currency / Stats */}
-                <div className="flex flex-col items-end gap-2">
-                    {/* Mürekkep */}
-                    <button onClick={() => navigate("/market")} className="flex items-center gap-2 bg-zinc-900/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-purple-500/30 hover:border-purple-500/60 transition-colors">
-                        <img src="/murekkepikon.png" alt="Ink" className="w-5 h-5 drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
-                        <span className="font-bold text-sm">{profile?.ink_count || 0}</span>
+                <div className="flex flex-col items-end gap-2.5">
+                    {/* Mürekkep - İKON BÜYÜTÜLDÜ */}
+                    <button onClick={() => navigate("/market")} className="flex items-center gap-2 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 hover:border-purple-400 transition-colors shadow-lg group">
+                        <img 
+                          src="/murekkepikon.png" 
+                          alt="Ink" 
+                          className="w-9 h-9 object-contain drop-shadow-[0_0_8px_rgba(168,85,247,0.6)] group-hover:scale-110 transition-transform" 
+                        />
+                        <span className="font-bold text-lg text-white">{profile?.ink_count || 0}</span>
                     </button>
                     
-                    {/* Can / Kredi */}
-                    <div className="flex items-center gap-2 bg-zinc-900/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-zinc-700">
-                        {isUnlimitedLivesActive(profile) ? (
-                            <>
-                                <Infinity className="w-4 h-4 text-green-400 animate-pulse" />
-                                <span className="text-xs font-bold text-green-400">{unlimitedTimeLeft || "∞"}</span>
-                            </>
-                        ) : (
-                            <>
-                                <div className="flex gap-1">
-                                    {[...Array(5)].map((_, i) => (
-                                        <div key={i} className={`w-1.5 h-3 rounded-sm ${i < (profile?.game_credits || 0) ? 'bg-gradient-to-t from-red-600 to-red-400 shadow-[0_0_5px_rgba(248,113,113,0.6)]' : 'bg-zinc-700'}`} />
-                                    ))}
-                                </div>
-                                {(profile?.game_credits || 0) < 5 && timeUntilNextCredit && (
-                                   <span className="text-[10px] text-zinc-500 ml-1 font-mono">{timeUntilNextCredit}</span>
-                                )}
-                            </>
-                        )}
+                    {/* CAN / KREDİ GÖSTERİMİ - DÜZELTİLDİ */}
+                    <div className="flex flex-col items-end">
+                      <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg">
+                          {isUnlimitedLivesActive(profile) ? (
+                              <>
+                                  <Infinity className="w-5 h-5 text-green-400 animate-pulse" />
+                                  <span className="text-xs font-bold text-green-400">{unlimitedTimeLeft || "∞"}</span>
+                              </>
+                          ) : (
+                              <>
+                                  {/* Eğer hak 5'ten fazlaysa Sayı Göster, değilse Bar Göster */}
+                                  {hasExtraCredits ? (
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="w-3 h-3 rounded-full bg-yellow-400 animate-pulse shadow-[0_0_8px_rgba(250,204,21,0.8)]" />
+                                      <span className="text-sm font-bold text-yellow-400">{totalCredits} / 5</span>
+                                    </div>
+                                  ) : (
+                                    <div className="flex gap-1">
+                                        {[...Array(5)].map((_, i) => (
+                                            <div 
+                                              key={i} 
+                                              className={`w-2 h-4 rounded-sm transition-all duration-300 ${
+                                                i < totalCredits 
+                                                ? 'bg-gradient-to-t from-red-500 to-orange-400 shadow-[0_0_6px_rgba(249,115,22,0.6)]' 
+                                                : 'bg-white/10'
+                                              }`} 
+                                            />
+                                        ))}
+                                    </div>
+                                  )}
+                              </>
+                          )}
+                      </div>
+                      {/* Geri Sayım Metni */}
+                      {(!isPremium && !isUnlimitedLivesActive(profile) && totalCredits < 5 && timeUntilNextCredit) && (
+                         <span className="text-[10px] text-orange-300 font-mono mt-0.5 bg-black/30 px-1.5 rounded-md">
+                           +1 Hak: {timeUntilNextCredit}
+                         </span>
+                      )}
                     </div>
                 </div>
             </div>
 
             {/* Level Bar HUD */}
-            <div className="bg-zinc-900/50 rounded-xl p-3 border border-white/5 relative overflow-hidden">
+            <div className="bg-black/30 rounded-xl p-3 border border-white/10 relative overflow-hidden shadow-xl">
                 <div className="flex justify-between items-end mb-2 relative z-10">
                     <div>
-                        <div className="text-[10px] text-zinc-400 uppercase tracking-widest font-bold mb-0.5">Mevcut Seviye</div>
-                        <div className="text-2xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">
+                        <div className="text-[10px] text-white/60 uppercase tracking-widest font-bold mb-0.5">Mevcut Seviye</div>
+                        <div className="text-2xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-orange-500 drop-shadow-sm">
                             LVL {levelInfo.level}
                         </div>
                     </div>
                     <div className="text-right">
-                         <div className="text-sm font-bold text-white">{levelInfo.experience} / <span className="text-zinc-500">{levelInfo.nextLevelExp} XP</span></div>
+                         <div className="text-sm font-bold text-white">{levelInfo.experience} / <span className="text-white/50">{levelInfo.nextLevelExp} XP</span></div>
                     </div>
                 </div>
                 {/* Progress Bar Container */}
-                <div className="h-2 w-full bg-black/40 rounded-full overflow-hidden relative z-10">
+                <div className="h-2.5 w-full bg-black/50 rounded-full overflow-hidden relative z-10 shadow-inner">
                     <motion.div 
                         initial={{ width: 0 }}
                         animate={{ width: `${progressPercent}%` }}
                         transition={{ duration: 1, ease: "easeOut" }}
-                        className="h-full bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 relative"
+                        className="h-full bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 relative shadow-[0_0_10px_rgba(234,88,12,0.5)]"
                     >
-                         <div className="absolute top-0 right-0 bottom-0 w-[2px] bg-white/50 blur-[2px]" />
+                         <div className="absolute top-0 right-0 bottom-0 w-[2px] bg-white/50 blur-[1px]" />
                     </motion.div>
-                </div>
-                {/* Decorative background lines */}
-                <div className="absolute top-0 right-0 opacity-10">
-                    <Trophy className="w-24 h-24 -rotate-12 -translate-y-4 translate-x-4" />
                 </div>
             </div>
         </div>
@@ -339,31 +332,31 @@ const HomePage = () => {
         {/* --- STATS & INVENTORY --- */}
         <div className="px-5 mb-6">
             <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-                <GlassCard className="flex-1 min-w-[100px] p-3 flex flex-col items-center justify-center gap-1">
+                <GlassCard className="flex-1 min-w-[90px] p-2 flex flex-col items-center justify-center gap-1 bg-blue-500/10 border-blue-500/20">
                     <Target className="w-5 h-5 text-blue-400" />
                     <span className="text-lg font-bold">{profile?.daily_games || 0}</span>
-                    <span className="text-[10px] text-zinc-500">GÜNLÜK OYUN</span>
+                    <span className="text-[10px] text-white/60 uppercase">Oyun</span>
                 </GlassCard>
-                <GlassCard className="flex-1 min-w-[100px] p-3 flex flex-col items-center justify-center gap-1">
+                <GlassCard className="flex-1 min-w-[90px] p-2 flex flex-col items-center justify-center gap-1 bg-yellow-500/10 border-yellow-500/20">
                     <Zap className="w-5 h-5 text-yellow-400" />
                     <span className="text-lg font-bold">{profile?.win_streak || 0}</span>
-                    <span className="text-[10px] text-zinc-500">SERİ</span>
+                    <span className="text-[10px] text-white/60 uppercase">Seri</span>
                 </GlassCard>
                 
                 {/* Jokerler Compact */}
-                <GlassCard className="flex-[2] min-w-[180px] p-3 flex items-center justify-between gap-2 bg-gradient-to-br from-purple-900/20 to-zinc-900/40">
-                    <div className="flex flex-col items-center gap-1">
-                         <img src="/degistirIkon.png" className="w-6 h-6 object-contain opacity-90" />
+                <GlassCard className="flex-[2] min-w-[180px] p-2 flex items-center justify-between gap-2 bg-purple-500/10 border-purple-500/20">
+                    <div className="flex flex-col items-center gap-1 flex-1">
+                         <img src="/degistirIkon.png" className="w-7 h-7 object-contain drop-shadow-sm" />
                          <span className="text-xs font-bold text-purple-200">x{jokers.degistir}</span>
                     </div>
                     <div className="w-[1px] h-8 bg-white/10" />
-                    <div className="flex flex-col items-center gap-1">
-                         <img src="/fisildaIkon.png" className="w-6 h-6 object-contain opacity-90" />
+                    <div className="flex flex-col items-center gap-1 flex-1">
+                         <img src="/fisildaIkon.png" className="w-7 h-7 object-contain drop-shadow-sm" />
                          <span className="text-xs font-bold text-blue-200">x{jokers.fisilida}</span>
                     </div>
                     <div className="w-[1px] h-8 bg-white/10" />
-                    <div className="flex flex-col items-center gap-1">
-                         <img src="/senyazIkon.png" className="w-6 h-6 object-contain opacity-90" />
+                    <div className="flex flex-col items-center gap-1 flex-1">
+                         <img src="/senyazIkon.png" className="w-7 h-7 object-contain drop-shadow-sm" />
                          <span className="text-xs font-bold text-pink-200">x{jokers.senYaz}</span>
                     </div>
                 </GlassCard>
@@ -372,7 +365,7 @@ const HomePage = () => {
 
         {/* --- HERO: GAME MODES --- */}
         <div className="px-5 flex-1">
-            <h3 className="text-sm font-bold text-zinc-500 mb-3 flex items-center gap-2">
+            <h3 className="text-sm font-bold text-white/50 mb-3 flex items-center gap-2">
                 <Gamepad2 className="w-4 h-4" />
                 OYUN MODLARI
             </h3>
@@ -382,11 +375,11 @@ const HomePage = () => {
                         key={mode.id}
                         whileTap={{ scale: 0.97 }}
                         onClick={() => handleModeClick(mode)}
-                        className="group relative h-24 rounded-2xl overflow-hidden cursor-pointer"
+                        className="group relative h-24 rounded-2xl overflow-hidden cursor-pointer shadow-lg border border-white/5"
                     >
-                         {/* Background Gradient & Image */}
-                        <div className={`absolute inset-0 bg-gradient-to-r ${mode.color} opacity-90`} />
-                        <div className="absolute inset-0 bg-[url('https://transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 mix-blend-overlay" />
+                         {/* Background Gradient */}
+                        <div className={`absolute inset-0 bg-gradient-to-r ${mode.color} opacity-80 transition-opacity duration-300 group-hover:opacity-100`} />
+                        <div className="absolute inset-0 bg-[url('https://transparenttextures.com/patterns/carbon-fibre.png')] opacity-20 mix-blend-overlay" />
                         
                         {/* Content */}
                         <div className="absolute inset-0 flex items-center justify-between px-6">
@@ -396,7 +389,7 @@ const HomePage = () => {
                                 </div>
                                 <div>
                                     <h3 className="text-xl font-black tracking-wide text-white drop-shadow-md uppercase italic">{mode.title}</h3>
-                                    <p className="text-xs text-white/80 font-medium">{mode.subtitle}</p>
+                                    <p className="text-xs text-white/90 font-medium">{mode.subtitle}</p>
                                 </div>
                             </div>
                             <div className="z-10 bg-white/20 p-2 rounded-full backdrop-blur-sm group-hover:bg-white/30 transition-colors">
@@ -404,7 +397,7 @@ const HomePage = () => {
                             </div>
                         </div>
 
-                        {/* Decorative Asset (Right Side) */}
+                        {/* Decorative Icon */}
                         <div className="absolute -right-6 -bottom-6 opacity-20 transform rotate-12 group-hover:scale-110 transition-transform duration-500">
                              <mode.icon className="w-32 h-32 text-black" />
                         </div>
@@ -413,26 +406,25 @@ const HomePage = () => {
             </div>
         </div>
 
-        {/* --- MINI GAMES (Horizontal Scroll) --- */}
-        <div className="mt-8 px-5">
+        {/* --- MINI GAMES (GERİ EKLENDİ) --- */}
+        <div className="mt-8 px-5 pb-10">
              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-zinc-500 flex items-center gap-2">
+                <h3 className="text-sm font-bold text-white/50 flex items-center gap-2">
                     <Sparkles className="w-4 h-4" />
-                    EKSTRALAR
+                    EKSTRA OYUNLAR
                 </h3>
              </div>
              
              <div className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide snap-x">
-                {/* Günlük Çark */}
+                {/* 1. Günlük Çark */}
                 <GlassCard 
-                    className="min-w-[160px] h-[160px] flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-zinc-800/50 to-zinc-900/50 snap-center"
+                    className="min-w-[160px] h-[160px] flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-orange-500/20 to-red-500/20 snap-center"
                     onClick={() => navigate("/wheel")}
                 >
                     <div className="relative">
-                        <div className="absolute inset-0 bg-yellow-500/30 blur-xl rounded-full animate-pulse" />
-                        {/* Basitleştirilmiş SVG Çark */}
-                        <svg viewBox="0 0 100 100" className="w-16 h-16 animate-[spin_10s_linear_infinite]">
-                             <circle cx="50" cy="50" r="45" fill="none" stroke="url(#grad)" strokeWidth="10" />
+                        <div className="absolute inset-0 bg-orange-500/30 blur-xl rounded-full animate-pulse" />
+                        <svg viewBox="0 0 100 100" className="w-14 h-14 animate-[spin_8s_linear_infinite]">
+                             <circle cx="50" cy="50" r="45" fill="none" stroke="url(#grad)" strokeWidth="10" strokeDasharray="20 10" />
                              <defs>
                                 <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
                                     <stop offset="0%" stopColor="#eab308" />
@@ -448,32 +440,101 @@ const HomePage = () => {
                     </div>
                 </GlassCard>
 
-                {/* Hafıza Oyunu */}
+                {/* 2. Hafıza Oyunu */}
                  <GlassCard 
-                    className={`min-w-[160px] h-[160px] flex flex-col items-center justify-center gap-3 snap-center ${canPlayMemory ? 'border-purple-500/50' : 'opacity-70 grayscale'}`}
+                    className={`min-w-[160px] h-[160px] flex flex-col items-center justify-center gap-3 snap-center bg-gradient-to-b from-purple-500/20 to-pink-500/20 ${canPlayMemory ? 'border-purple-500/50' : 'opacity-70 grayscale'}`}
                     onClick={() => navigate("/memory-game")}
                 >
                     <div className="relative">
-                         <Brain className={`w-14 h-14 ${canPlayMemory ? 'text-purple-400 drop-shadow-[0_0_10px_rgba(192,132,252,0.5)]' : 'text-zinc-600'}`} />
-                         {!canPlayMemory && <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full backdrop-blur-sm text-xs font-bold">{timeUntilNextPlay}</div>}
+                         <Brain className={`w-14 h-14 ${canPlayMemory ? 'text-purple-400 drop-shadow-[0_0_10px_rgba(192,132,252,0.5)]' : 'text-zinc-500'}`} />
+                         {!canPlayMemory && <div className="absolute inset-0 flex items-center justify-center bg-black/80 rounded-full backdrop-blur-sm text-xs font-bold border border-white/20">{timeUntilNextPlay}</div>}
                     </div>
                     <div className="text-center">
                         <div className="font-bold text-white">Hafıza</div>
-                        <div className="text-[10px] text-zinc-400">Kartları Eşleştir</div>
+                        <div className="text-[10px] text-zinc-400">Kart Eşleştirme</div>
                     </div>
                 </GlassCard>
 
-                {/* Puzzle */}
+                {/* 3. Neon Blitz (Refleks) */}
                 <GlassCard 
-                    className="min-w-[160px] h-[160px] flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-zinc-800/50 to-zinc-900/50 snap-center"
-                    onClick={() => navigate("/puzzle-game")}
+                    className="min-w-[160px] h-[160px] flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-cyan-500/20 to-blue-500/20 snap-center"
+                    onClick={() => navigate("/neon-blitz")}
                 >
-                    <Grid3X3 className="w-14 h-14 text-cyan-400 drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]" />
+                    <Zap className="w-14 h-14 text-cyan-400 drop-shadow-[0_0_15px_rgba(34,211,238,0.8)] animate-pulse" />
                     <div className="text-center">
-                        <div className="font-bold text-white">Puzzle</div>
-                        <div className="text-[10px] text-zinc-400">Kelime Yerleştir</div>
+                        <div className="font-bold text-white">Dokunsana</div>
+                        <div className="text-[10px] text-zinc-400">Refleks Oyunu</div>
                     </div>
                 </GlassCard>
+
+                {/* 4. Harf Kulesi (Morles) */}
+                <GlassCard 
+                    className="min-w-[160px] h-[160px] flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-indigo-500/20 to-violet-500/20 snap-center"
+                    onClick={() => navigate("/morles-game")}
+                >
+                    <div className="grid grid-cols-2 gap-1 w-14 h-14 p-2">
+                       <div className="bg-indigo-400 rounded-sm animate-pulse"></div>
+                       <div className="bg-indigo-500 rounded-sm"></div>
+                       <div className="bg-indigo-500 rounded-sm"></div>
+                       <div className="bg-transparent"></div>
+                    </div>
+                    <div className="text-center">
+                        <div className="font-bold text-white">Harf Kulesi</div>
+                        <div className="text-[10px] text-zinc-400">Blokları Yerleştir</div>
+                    </div>
+                </GlassCard>
+
+                {/* 5. Kelime Avcısı (Reactor) */}
+                <GlassCard 
+                    className="min-w-[160px] h-[160px] flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-green-500/20 to-emerald-500/20 snap-center"
+                    onClick={() => navigate("/reactor-runner")}
+                >
+                    <Radiation className="w-14 h-14 text-green-400 drop-shadow-[0_0_10px_rgba(74,222,128,0.6)] animate-spin-slow" style={{ animationDuration: '4s' }} />
+                    <div className="text-center">
+                        <div className="font-bold text-white">Kelime Avcısı</div>
+                        <div className="text-[10px] text-zinc-400">Engellerden Kaç</div>
+                    </div>
+                </GlassCard>
+
+                {/* 6. Yılan (Snake) */}
+                <GlassCard 
+                    className="min-w-[160px] h-[160px] flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-pink-500/20 to-rose-500/20 snap-center"
+                    onClick={() => navigate("/snake-game")}
+                >
+                    <div className="relative">
+                        <Ghost className="w-14 h-14 text-pink-400 drop-shadow-md" />
+                        <div className="absolute -bottom-1 -right-1 text-lg">🍎</div>
+                    </div>
+                    <div className="text-center">
+                        <div className="font-bold text-white">Harf Yeme</div>
+                        <div className="text-[10px] text-zinc-400">Klasik Yılan</div>
+                    </div>
+                </GlassCard>
+
+                {/* 7. Sıkı Takip (Simon Says) */}
+                <GlassCard 
+                    className="min-w-[160px] h-[160px] flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-indigo-500/20 to-blue-500/20 snap-center"
+                    onClick={() => navigate("/grid-simon-says")}
+                >
+                    <LayoutGrid className="w-14 h-14 text-indigo-400 drop-shadow-md animate-pulse" />
+                    <div className="text-center">
+                        <div className="font-bold text-white">Sıkı Takip</div>
+                        <div className="text-[10px] text-zinc-400">Sıralamayı Ezberle</div>
+                    </div>
+                </GlassCard>
+
+                {/* 8. Puzzle */}
+                <GlassCard 
+                    className="min-w-[160px] h-[160px] flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-cyan-500/20 to-teal-500/20 snap-center"
+                    onClick={() => navigate("/puzzle-game")}
+                >
+                    <Grid3X3 className="w-14 h-14 text-teal-400 drop-shadow-md" />
+                    <div className="text-center">
+                        <div className="font-bold text-white">Puzzle</div>
+                        <div className="text-[10px] text-zinc-400">Mantık Kur</div>
+                    </div>
+                </GlassCard>
+
              </div>
         </div>
 
@@ -485,7 +546,6 @@ const HomePage = () => {
           <FloatingMenu />
       </div>
 
-      {/* Logic Components (Hidden or Overlay) */}
       <AnimatePresence>
         {selectedMode && (
           selectedMode === "private-room" ? (
