@@ -44,7 +44,8 @@ const SettingsPage = () => {
   const { soundsEnabled, setSoundsEnabled, playSound } = useSounds();
   const { musicEnabled, setMusicEnabled } = useMusic();
   const { hasPurchased, settings, updateSettings } = useUserPurchases();
-  const { isPermissionGranted, isMobile, requestPermissions, disableNotifications, showLocalNotification } = useMobileNotifications();
+  const { isPermissionGranted, isMobile, requestPermissions, disableNotifications, showLocalNotification } =
+    useMobileNotifications();
 
   // Settings state
   const [notifications, setNotifications] = useState(false);
@@ -149,9 +150,9 @@ const SettingsPage = () => {
       if (checked) {
         // Mobile veya web bildirim izinlerini iste
         console.log("📱 Platform:", isMobile ? "Mobile" : "Web");
-        
+
         await requestPermissions();
-        
+
         // İzin verildi mi kontrol et
         setTimeout(async () => {
           if (isPermissionGranted) {
@@ -159,7 +160,7 @@ const SettingsPage = () => {
               title: "Bildirimler Aktif",
               description: "Oyun bildirimleri başarıyla aktif edildi",
             });
-            
+
             // Test bildirimi göster
             setTimeout(() => {
               showLocalNotification("Bildirimler Aktif", "Kelimeci bildirimleriniz aktif edildi!");
@@ -201,7 +202,7 @@ const SettingsPage = () => {
     const content = `
       <div class="space-y-4">
         <h3 class="font-semibold text-lg">Oyunun Amacı</h3>
-        <p>Ekrandaki harf karelerinden kelimeler oluşturarak puan toplamak ve rakibinizi geçmek.</p>
+        <p>4x4 ızgarada bulunan harf karelerinden kelimeler oluşturarak puan toplamak ve rakibinizi geçmek.</p>
         
         <h3 class="font-semibold text-lg">Nasıl Oynanır</h3>
         <ol class="list-decimal list-inside space-y-2">
@@ -242,7 +243,7 @@ const SettingsPage = () => {
         <div class="space-y-3">
           <div class="p-3 bg-muted rounded-lg">
             <h4 class="font-medium">E-posta Desteği</h4>
-            <p class="text-sm text-muted-foreground">info@erganmuhendislik.com</p>
+            <p class="text-sm text-muted-foreground">info@kelimele.com.tr</p>
             <p class="text-sm">24 saat içinde yanıtlanır</p>
           </div>
           
@@ -288,7 +289,7 @@ const SettingsPage = () => {
           
           <section>
             <h4 class="font-medium">İletişim</h4>
-            <p class="text-sm text-muted-foreground">Gizlilik konularında: privacy@kelimeci.com</p>
+            <p class="text-sm text-muted-foreground">Gizlilik konularında: info@kelimele.com.tr</p>
           </section>
         </div>
       </div>
@@ -302,15 +303,15 @@ const SettingsPage = () => {
         <h3 class="font-semibold text-lg">Kelimeci Hakkında</h3>
         
         <div class="text-center space-y-2">
-          <h4 class="text-2xl font-bold text-primary">KELİMECİ</h4>
+          <h4 class="text-2xl font-bold text-primary">KELİMELE</h4>
           <p class="text-lg font-medium">Versiyon 1.0.0</p>
         </div>
         
         <div class="space-y-3">
           <section>
             <h4 class="font-medium">Geliştirici</h4>
-            <p class="text-sm text-muted-foreground">Ergan Mühendislik tarafından geliştirilmiştir.</p>
-            <p class="text-sm text-muted-foreground">Web: <a href="https://erganmuhendislik.com" class="text-primary underline">erganmuhendislik.com</a></p>
+            <p class="text-sm text-muted-foreground">Kelimele ekibi tarafından geliştirilmiştir.</p>
+            <p class="text-sm text-muted-foreground">Web: <a href="https://kelimele.com.tr" class="text-primary underline">erganmuhendislik.com</a></p>
           </section>
           
           <section>
@@ -329,7 +330,7 @@ const SettingsPage = () => {
           
           <section>
             <h4 class="font-medium">Teşekkürler</h4>
-            <p class="text-sm text-muted-foreground">Kelimeci'yi tercih ettiğiniz için teşekkür ederiz!</p>
+            <p class="text-sm text-muted-foreground">Kelimele'yi tercih ettiğiniz için teşekkür ederiz!</p>
           </section>
         </div>
         
@@ -354,7 +355,7 @@ const SettingsPage = () => {
               <span class="whitespace-nowrap">E-posta</span>
             </h4>
             <div class="space-y-2">
-              <p class="text-sm font-mono break-all">info@erganmuhendislik.com</p>
+              <p class="text-sm font-mono break-all">info@kelimele.com.tr</p>
               <p class="text-xs text-muted-foreground">Genel sorular, destek ve tüm konular</p>
             </div>
           </div>
