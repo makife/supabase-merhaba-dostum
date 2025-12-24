@@ -309,33 +309,32 @@ const MarketPage = () => {
       return;
     }
 
+    // Native platformda değilse uyarı göster
+    if (!isNativePlatform) {
+      toast({
+        title: "Bilgi",
+        description: "Reklamlar sadece mobil uygulamada çalışır.",
+        variant: "default",
+      });
+      return;
+    }
+
     try {
+      // Önce reklamı yükle
       await loadRewardedAd();
+      // Reklam göster - ödül useAdMob hook içindeki listener tarafından verilecek
       await showRewardedAd();
 
-      const { error } = await supabase
-        .from("profiles")
-        .update({ ink_count: (profile?.ink_count || 0) + 5 })
-        .eq("id", user?.id);
-
-      if (!error) {
-        if (storedDate !== today) {
-          localStorage.setItem("lastAdDate", today);
-          localStorage.setItem("adCount", "1");
-        } else {
-          localStorage.setItem("adCount", (storedCount + 1).toString());
-        }
-
-        await refreshProfile();
-        toast({
-          title: "Tebrikler!",
-          description: "+5 Damla Mürekkep kazandın! 💧",
-          className: "bg-indigo-600 text-white",
-        });
+      // Reklam izleme sayısını güncelle (ödül hook içinde veriliyor)
+      if (storedDate !== today) {
+        localStorage.setItem("lastAdDate", today);
+        localStorage.setItem("adCount", "1");
+      } else {
+        localStorage.setItem("adCount", (storedCount + 1).toString());
       }
     } catch (e) {
-      console.error(e);
-      toast({ title: "Reklam Hatası", description: "Reklam yüklenemedi.", variant: "destructive" });
+      console.error("Ad error:", e);
+      toast({ title: "Reklam Hatası", description: "Reklam yüklenemedi veya gösterilemedi.", variant: "destructive" });
     }
   };
 

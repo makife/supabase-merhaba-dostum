@@ -107,39 +107,36 @@ export const useAdMob = () => {
     }
   }, [isAdLoading, toast]);
 
-  // Give reward to user
+  // Give reward to user - 5 mürekkep ver
   const giveReward = useCallback(async () => {
     if (!user) return;
 
     try {
-      // Get current credits first
+      // Get current ink count first
       const { data: profile } = await supabase
         .from('profiles')
-        .select('game_credits')
+        .select('ink_count')
         .eq('id', user.id)
         .single();
 
-      const newCredits = (profile?.game_credits || 0) + 1; // 1 kredi ekle
+      const newInkCount = (profile?.ink_count || 0) + 5; // 5 mürekkep ekle
 
-      // Update user credits in database
+      // Update user ink in database
       const { error } = await supabase
         .from('profiles')
-        .update({ 
-          game_credits: newCredits,
-          last_credit_refresh: new Date().toISOString()
-        })
+        .update({ ink_count: newInkCount })
         .eq('id', user.id);
 
       if (error) {
         throw error;
       }
 
-      console.log('Reward given successfully');
+      console.log('Ink reward given successfully:', newInkCount);
     } catch (error) {
-      console.error('Failed to give reward:', error);
+      console.error('Failed to give ink reward:', error);
       toast({
         title: 'Ödül Hatası',
-        description: 'Ödül verilirken bir hata oluştu.',
+        description: 'Mürekkep ödülü verilirken bir hata oluştu.',
         variant: 'destructive',
       });
     }
@@ -200,7 +197,7 @@ export const useAdMob = () => {
       const adRewardedListener = await AdMob.addListener(RewardAdPluginEvents.Rewarded, async (reward: any) => {
         console.log('User earned reward:', reward);
         await giveReward();
-        toast({ title: 'Ödül Kazandınız! 🎉', description: '+1 kredi hesabınıza eklendi.' });
+        toast({ title: 'Tebrikler! 💧', description: '+5 Damla Mürekkep kazandınız.' });
       });
       await AdMob.showRewardVideoAd();
       setTimeout(() => {
