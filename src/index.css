@@ -2684,10 +2684,7 @@ body.is-capacitor.hide-bars::before {
 }
 
 .game-mode-card:hover {
-  transform: translateY(-4px) scale(1.02);
-  box-shadow: 
-    0 20px 40px hsl(0 0% 0% / 0.3),
-    0 0 60px hsl(var(--primary) / 0.2);
+  transform: translateY(-2px);
 }
 
 .game-mode-card:active {
@@ -2728,8 +2725,7 @@ body.is-capacitor.hide-bars::before {
 }
 
 .game-mini-pill:hover {
-  transform: scale(1.05);
-  box-shadow: 0 10px 30px hsl(0 0% 0% / 0.3);
+  transform: scale(1.02);
 }
 
 .game-mini-pill:active {
@@ -2804,18 +2800,9 @@ body.is-capacitor.hide-bars::before {
   100% { background-position: 0% 50%; }
 }
 
-/* Ink Counter Pulse */
+/* Ink Counter - pulse disabled for performance */
 .game-ink-counter {
-  animation: inkPulse 2s ease-in-out infinite;
-}
-
-@keyframes inkPulse {
-  0%, 100% { 
-    box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4);
-  }
-  50% { 
-    box-shadow: 0 0 0 8px hsl(var(--primary) / 0);
-  }
+  /* animation removed for mobile performance */
 }
 
 /* Joker Card Shimmer */

@@ -376,7 +376,7 @@ const HomePage = () => {
               <div className="relative">
                 <img src="/murekkepikon.png" alt="Mürekkep" className="w-10 h-10 object-contain drop-shadow-lg" />
               </div>
-              <div className="game-ink-counter bg-gradient-to-r from-primary to-accent px-3 py-0.5 rounded-full mt-1 shadow-lg">
+              <div className="game-ink-counter bg-gradient-to-r from-primary to-accent px-3 py-0.5 rounded-full mt-1">
                 <span className="text-sm font-bold text-primary-foreground">{profile?.ink_count || 0}</span>
               </div>
             </motion.div>
