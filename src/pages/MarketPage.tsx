@@ -324,58 +324,26 @@ const MarketPage = () => {
       return;
     }
 
-    // Native platform değilse reklam izlemeden +2 mürekkep ver
-    if (!isNativePlatform) {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ ink_count: (profile?.ink_count || 0) + 2 })
-        .eq("id", user?.id);
+    // +1 mürekkep ver
+    const { error } = await supabase
+      .from("profiles")
+      .update({ ink_count: (profile?.ink_count || 0) + 1 })
+      .eq("id", user?.id);
 
-      if (!error) {
-        if (storedDate !== today) {
-          localStorage.setItem("lastAdDate", today);
-          localStorage.setItem("adCount", "1");
-        } else {
-          localStorage.setItem("adCount", (storedCount + 1).toString());
-        }
-
-        await refreshProfile();
-        toast({
-          title: "Tebrikler!",
-          description: "+2 Damla Mürekkep kazandın! 💧",
-          className: "bg-indigo-600 text-white",
-        });
+    if (!error) {
+      if (storedDate !== today) {
+        localStorage.setItem("lastAdDate", today);
+        localStorage.setItem("adCount", "1");
+      } else {
+        localStorage.setItem("adCount", (storedCount + 1).toString());
       }
-      return;
-    }
 
-    try {
-      await loadRewardedAd();
-      await showRewardedAd();
-
-      const { error } = await supabase
-        .from("profiles")
-        .update({ ink_count: (profile?.ink_count || 0) + 5 })
-        .eq("id", user?.id);
-
-      if (!error) {
-        if (storedDate !== today) {
-          localStorage.setItem("lastAdDate", today);
-          localStorage.setItem("adCount", "1");
-        } else {
-          localStorage.setItem("adCount", (storedCount + 1).toString());
-        }
-
-        await refreshProfile();
-        toast({
-          title: "Tebrikler!",
-          description: "+5 Damla Mürekkep kazandın! 💧",
-          className: "bg-indigo-600 text-white",
-        });
-      }
-    } catch (e) {
-      console.error(e);
-      toast({ title: "Reklam Hatası", description: "Reklam yüklenemedi.", variant: "destructive" });
+      await refreshProfile();
+      toast({
+        title: "Tebrikler!",
+        description: "+1 Damla Mürekkep kazandın! 💧",
+        className: "bg-indigo-600 text-white",
+      });
     }
   };
 
@@ -427,16 +395,13 @@ const MarketPage = () => {
             <button
               onClick={handleWatchAd}
               disabled={isAdLoading}
-              className="relative overflow-hidden rounded-xl shadow-lg hover:scale-105 transition-transform disabled:opacity-50"
+              className="overflow-hidden rounded-xl shadow-lg hover:scale-105 transition-transform disabled:opacity-50"
             >
               <img 
                 src="/reklamGorsel.jpg" 
                 alt="Reklam izle" 
                 className="h-12 w-auto object-cover rounded-xl"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-amber-500/30 to-orange-500/30 flex items-center justify-center">
-                <span className="text-white font-bold text-sm drop-shadow-lg">+2 🎁</span>
-              </div>
             </button>
           </CardContent>
         </Card>
