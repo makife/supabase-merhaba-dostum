@@ -301,6 +301,7 @@ const HomePage = () => {
       route: "/grid-simon-says",
     },
     { id: "puzzle", title: "Puzzle", icon: "🧩", gradient: "from-blue-500 to-indigo-600", route: "/puzzle-game" },
+    { id: "dino", title: "Reaktör Koşusu", icon: "☢️", gradient: "from-red-500 to-orange-600", route: "/dino-runner" },
   ];
 
   const handleGameModeClick = (modeId: string) => {
