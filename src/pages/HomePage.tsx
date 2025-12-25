@@ -505,8 +505,6 @@ const HomePage = () => {
                 {/* DEĞİŞİKLİK 3: text-xs yerine text-sm ve font-bold yapıldı */}
                 <span className="text-sm font-bold text-foreground">×{joker.count}</span>
               </motion.div>
-            ))}
-          </div>
 
       {/* Gift Premium Banner */}
       {isPremium && isGiftPremium(profile) && (
