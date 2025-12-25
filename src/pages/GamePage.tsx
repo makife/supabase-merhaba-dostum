@@ -51,7 +51,6 @@ import { generateBotName, generateBotAvatar } from "@/utils/tournamentHelpers";
 import { matchBanlist } from "@/utils/matchBanlist";
 import robotAvatar from "@/assets/robot-avatar.png";
 import { useQueryClient } from "@tanstack/react-query";
-import { JokerParticleEffects } from "@/components/JokerParticleEffects";
 
 // Safe helpers
 const shortId = (v?: string | null) => (v ? String(v).slice(-8) : "NULL");
@@ -193,9 +192,6 @@ const GamePage = ({
   const [selectedJoker, setSelectedJoker] = useState<string | null>(null);
   const [highlightedLetters, setHighlightedLetters] = useState<{ row: number; col: number }[]>([]);
   const [isJokerActive, setIsJokerActive] = useState(false);
-  const [activeJokerEffect, setActiveJokerEffect] = useState<"degistir" | "fisilida" | "senyaz" | null>(null);
-  const [jokerEffectPositions, setJokerEffectPositions] = useState<{ row: number; col: number }[]>([]);
-  const gridContainerRef = useRef<HTMLDivElement>(null);
 
   // Wordlist for local validation
   const [wordlist, setWordlist] = useState<Set<string>>(new Set());
@@ -2996,10 +2992,6 @@ const GamePage = ({
 
     setHighlightedLetters(positions);
     setGameGrid(newGrid);
-    
-    // Duman efekti başlat
-    setActiveJokerEffect("degistir");
-    setJokerEffectPositions(positions);
 
     // ⚠️ Server'a grid gönderme - sadece lokal değişiklik
     console.log("🎯 Değiştir jokeri - sadece lokal grid değişikliği");
@@ -3009,17 +3001,14 @@ const GamePage = ({
       console.error("❌ Değiştir joker kullanılamadı!");
       setIsJokerActive(false);
       setGridSyncPaused(false);
-      setActiveJokerEffect(null);
       return;
     }
 
     setTimeout(() => {
       setHighlightedLetters([]);
       setIsJokerActive(false);
-      setActiveJokerEffect(null);
-      setJokerEffectPositions([]);
       // Grid sync'i sürekli kapalı tut - değiştir jokeri lokal kalmalı
-    }, 1500);
+    }, 1000);
 
     setSelectedLetters([]);
     // currentWord artık derived value, manuel set'e gerek yok
@@ -3163,10 +3152,6 @@ const GamePage = ({
 
       console.log(`💡 Fısılda: "${selectedWord}" kelimesi (sözlük hali) için ${wordPositions.length} pozisyon bulundu`);
 
-      // Yıldız efekti başlat
-      setActiveJokerEffect("fisilida");
-      setJokerEffectPositions(wordPositions);
-
       // Kelime sırasına göre harfleri sırayla yak
       for (let i = 0; i < wordPositions.length; i++) {
         setTimeout(() => {
@@ -3182,8 +3167,6 @@ const GamePage = ({
       setTimeout(
         () => {
           setIsJokerActive(false);
-          setActiveJokerEffect(null);
-          setJokerEffectPositions([]);
         },
         wordPositions.length * 500 + 800,
       );
@@ -3193,7 +3176,6 @@ const GamePage = ({
       if (!jokerUsed) {
         console.error("❌ Fısılda joker kullanılamadı!");
         setIsJokerActive(false);
-        setActiveJokerEffect(null);
         return;
       }
     } else {
@@ -3371,10 +3353,6 @@ const GamePage = ({
 
     // Her şey tamam, şimdi kelimeyi yaz (currentWord derived value olduğundan sadece selectedLetters set ediyoruz)
     setSelectedLetters(wordPositions);
-    
-    // Sen Yaz efekti başlat
-    setActiveJokerEffect("senyaz");
-    setJokerEffectPositions(wordPositions.map(wp => ({ row: wp.row, col: wp.col })));
 
     setTimeout(async () => {
       let jokerSuccess = false;
@@ -3429,8 +3407,6 @@ const GamePage = ({
       // currentWord artık derived value, manuel set'e gerek yok
       setSelectedLetters([]);
       setIsJokerActive(false);
-      setActiveJokerEffect(null);
-      setJokerEffectPositions([]);
 
       // SADECE GERÇEKTEN BAŞARILI OLDUĞUNDA JOKER SAYISINI AZALT
       if (jokerSuccess) {
@@ -6944,17 +6920,7 @@ const GamePage = ({
                 {/* Game Grid */}
                 <Card className="game-grid border-0 mb-2 flex-1">
                   <CardContent className="p-3 h-full flex items-center justify-center">
-                    <div ref={gridContainerRef} className="grid grid-cols-4 gap-2 w-full max-w-xs relative">
-                      {/* Joker Particle Effects */}
-                      <JokerParticleEffects
-                        type={activeJokerEffect}
-                        positions={jokerEffectPositions}
-                        gridRef={gridContainerRef}
-                        onComplete={() => {
-                          setActiveJokerEffect(null);
-                          setJokerEffectPositions([]);
-                        }}
-                      />
+                    <div className="grid grid-cols-4 gap-2 w-full max-w-xs">
                       {gameGrid.map((row, rowIndex) =>
                         row.map((letter, colIndex) => {
                           const isSelected = selectedLetters.some((s) => s.row === rowIndex && s.col === colIndex);
