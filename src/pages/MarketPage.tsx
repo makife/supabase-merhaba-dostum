@@ -424,16 +424,20 @@ const MarketPage = () => {
               </div>
             </div>
 
-            <Button
-              size="sm"
-              variant="secondary"
+            <button
               onClick={handleWatchAd}
-              className="bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white border-0 shadow-lg text-xs"
               disabled={isAdLoading}
+              className="relative overflow-hidden rounded-xl shadow-lg hover:scale-105 transition-transform disabled:opacity-50"
             >
-              <Video className="w-3 h-3 mr-1" />
-              {isNativePlatform ? "+5 Kazan" : "+2 Kazan"}
-            </Button>
+              <img 
+                src="/reklamGorsel.jpg" 
+                alt="Reklam izle" 
+                className="h-12 w-auto object-cover rounded-xl"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-amber-500/30 to-orange-500/30 flex items-center justify-center">
+                <span className="text-white font-bold text-sm drop-shadow-lg">+2 🎁</span>
+              </div>
+            </button>
           </CardContent>
         </Card>
       </div>
