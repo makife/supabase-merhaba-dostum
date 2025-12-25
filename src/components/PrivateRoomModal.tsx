@@ -271,7 +271,8 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
                 <Button
                   onClick={handleJoinRoom}
                   disabled={loading || joinCode.length < 3}
-                  className="w-full py-7 text-base font-black uppercase tracking-widest bg-zinc-800 hover:bg-zinc-700 rounded-2xl transition-all"
+                  variant="ghost"
+                  className="w-full py-7 text-base font-black uppercase tracking-widest bg-zinc-800 hover:bg-zinc-700 text-white rounded-2xl transition-all border-0 disabled:bg-zinc-800/50 disabled:text-zinc-500"
                 >
                   {loading ? "BAĞLANILIYOR..." : "ODAYA GİRİŞ YAP"}
                 </Button>
