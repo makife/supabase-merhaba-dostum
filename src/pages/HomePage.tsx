@@ -319,394 +319,397 @@ const HomePage = () => {
   return (
     <div className="fixed inset-0 flex flex-col bg-background game-bg-animated game-hex-pattern overflow-hidden">
       {/* Main Content - blur when menu is open */}
-      <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${isMenuOpen ? 'blur-md pointer-events-none' : ''}`}>
-
-      {/* Header Section */}
-      <motion.div
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.5 }}
-        className="flex-shrink-0 p-3 safe-area-top"
+      <div
+        className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${isMenuOpen ? "blur-md pointer-events-none" : ""}`}
       >
-        <div className="game-glass-card rounded-2xl p-4 relative overflow-hidden">
-          {/* User Info Row */}
-          <div className="flex items-center justify-between mb-4">
-            {/* Avatar & Name */}
-            <div className="flex items-center gap-3">
+        {/* Header Section */}
+        <motion.div
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5 }}
+          className="flex-shrink-0 p-3 safe-area-top"
+        >
+          <div className="game-glass-card rounded-2xl p-4 relative overflow-hidden">
+            {/* User Info Row */}
+            <div className="flex items-center justify-between mb-4">
+              {/* Avatar & Name */}
+              <div className="flex items-center gap-3">
+                <motion.div
+                  whileTap={{ scale: 0.95 }}
+                  className="relative cursor-pointer game-avatar-ring"
+                  onClick={() => setShowAvatarView(true)}
+                >
+                  <Avatar className="w-14 h-14 border-2 border-primary/50 shadow-lg">
+                    <AvatarImage
+                      src={profile?.avatar_url || user?.user_metadata?.avatar_url}
+                      alt="Profile"
+                      className="object-cover"
+                    />
+                    <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground font-bold">
+                      <User className="w-6 h-6" />
+                    </AvatarFallback>
+                  </Avatar>
+                  {isPremium && (
+                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-yellow-400 to-amber-600 rounded-full flex items-center justify-center shadow-lg">
+                      <Crown className="w-3 h-3 text-white" />
+                    </div>
+                  )}
+                </motion.div>
+
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-xl font-bold game-gradient-text font-bungee tracking-wide">KELİMELE</h1>
+                  <p className="text-sm font-medium text-foreground truncate">
+                    {profile?.username || user?.email?.split("@")[0]}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{greeting}</p>
+                </div>
+              </div>
+
+              {/* Ink Counter */}
               <motion.div
                 whileTap={{ scale: 0.95 }}
-                className="relative cursor-pointer game-avatar-ring"
-                onClick={() => setShowAvatarView(true)}
+                className="flex flex-col items-center cursor-pointer"
+                onClick={() => {
+                  playSound("buttonClick");
+                  navigate("/market");
+                }}
               >
-                <Avatar className="w-14 h-14 border-2 border-primary/50 shadow-lg">
-                  <AvatarImage
-                    src={profile?.avatar_url || user?.user_metadata?.avatar_url}
-                    alt="Profile"
-                    className="object-cover"
-                  />
-                  <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground font-bold">
-                    <User className="w-6 h-6" />
-                  </AvatarFallback>
-                </Avatar>
-                {isPremium && (
-                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-yellow-400 to-amber-600 rounded-full flex items-center justify-center shadow-lg">
-                    <Crown className="w-3 h-3 text-white" />
-                  </div>
-                )}
+                <div className="relative">
+                  <img src="/murekkepikon.png" alt="Mürekkep" className="w-10 h-10 object-contain drop-shadow-lg" />
+                </div>
+                <div className="game-ink-counter bg-gradient-to-r from-primary to-accent px-3 py-0.5 rounded-full mt-1 shadow-lg">
+                  <span className="text-sm font-bold text-primary-foreground">{profile?.ink_count || 0}</span>
+                </div>
               </motion.div>
-
-              <div className="flex-1 min-w-0">
-                <h1 className="text-xl font-bold game-gradient-text font-bungee tracking-wide">KELİMELE</h1>
-                <p className="text-sm font-medium text-foreground truncate">
-                  {profile?.username || user?.email?.split("@")[0]}
-                </p>
-                <p className="text-xs text-muted-foreground">{greeting}</p>
-              </div>
             </div>
 
-            {/* Ink Counter */}
-            <motion.div
-              whileTap={{ scale: 0.95 }}
-              className="flex flex-col items-center cursor-pointer"
-              onClick={() => {
-                playSound("buttonClick");
-                navigate("/market");
-              }}
-            >
-              <div className="relative">
-                <img src="/murekkepikon.png" alt="Mürekkep" className="w-10 h-10 object-contain drop-shadow-lg" />
-              </div>
-              <div className="game-ink-counter bg-gradient-to-r from-primary to-accent px-3 py-0.5 rounded-full mt-1 shadow-lg">
-                <span className="text-sm font-bold text-primary-foreground">{profile?.ink_count || 0}</span>
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Level Progress */}
-          <div className="bg-background/30 backdrop-blur-sm rounded-xl p-3 border border-border/30">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-amber-400 to-orange-600 rounded-lg flex items-center justify-center shadow-lg">
-                  <Star className="w-4 h-4 text-white fill-white" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-foreground">Seviye {levelData.level}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {levelData.experience} / {levelData.nextLevelExp} XP
-                  </p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-lg font-bold text-primary">{(profile?.total_score || 0).toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground">Toplam Puan</p>
-              </div>
-            </div>
-
-            <div className="relative h-2 bg-background/50 rounded-full overflow-hidden game-progress-bar">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${progressPercent}%` }}
-                transition={{ duration: 1, ease: "easeOut" }}
-                className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 rounded-full"
-              />
-            </div>
-          </div>
-
-          {/* Credits Bar */}
-          {!isPremium && (
-            <div className="mt-3 flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">Kalan Haklar</span>
-              {isUnlimitedLivesActive(profile) ? (
+            {/* Level Progress */}
+            <div className="bg-background/30 backdrop-blur-sm rounded-xl p-3 border border-border/30">
+              <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0">
-                    <Infinity className="w-3 h-3 mr-1" /> Sınırsız
-                  </Badge>
-                  {unlimitedTimeLeft && (
-                    <span className="text-xs text-orange-400 font-medium">{unlimitedTimeLeft}</span>
-                  )}
+                  <div className="w-8 h-8 bg-gradient-to-br from-amber-400 to-orange-600 rounded-lg flex items-center justify-center shadow-lg">
+                    <Star className="w-4 h-4 text-white fill-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-foreground">Seviye {levelData.level}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {levelData.experience} / {levelData.nextLevelExp} XP
+                    </p>
+                  </div>
                 </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  {(() => {
-                    const totalCredits = getTotalCredits();
-                    const displayCredits = getDisplayCredits();
-                    
-                    // If total credits > 5, show as number badge
-                    if (totalCredits > 5) {
-                      return (
-                        <div className="flex items-center gap-2">
-                          <div className="flex gap-1">
-                            {Array.from({ length: 5 }, (_, i) => (
-                              <motion.div
-                                key={i}
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                transition={{ delay: i * 0.1 }}
-                                className="w-5 h-2 rounded-full bg-green-500"
-                              />
-                            ))}
+                <div className="text-right">
+                  <p className="text-lg font-bold text-primary">{(profile?.total_score || 0).toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground">Toplam Puan</p>
+                </div>
+              </div>
+
+              <div className="relative h-2 bg-background/50 rounded-full overflow-hidden game-progress-bar">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progressPercent}%` }}
+                  transition={{ duration: 1, ease: "easeOut" }}
+                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 rounded-full"
+                />
+              </div>
+            </div>
+
+            {/* Credits Bar */}
+            {!isPremium && (
+              <div className="mt-3 flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Kalan Haklar</span>
+                {isUnlimitedLivesActive(profile) ? (
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0">
+                      <Infinity className="w-3 h-3 mr-1" /> Sınırsız
+                    </Badge>
+                    {unlimitedTimeLeft && (
+                      <span className="text-xs text-orange-400 font-medium">{unlimitedTimeLeft}</span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    {(() => {
+                      const totalCredits = getTotalCredits();
+                      const displayCredits = getDisplayCredits();
+
+                      // If total credits > 5, show as number badge
+                      if (totalCredits > 5) {
+                        return (
+                          <div className="flex items-center gap-2">
+                            <div className="flex gap-1">
+                              {Array.from({ length: 5 }, (_, i) => (
+                                <motion.div
+                                  key={i}
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  transition={{ delay: i * 0.1 }}
+                                  className="w-5 h-2 rounded-full bg-green-500"
+                                />
+                              ))}
+                            </div>
+                            <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 text-xs px-2 py-0.5">
+                              +{totalCredits - 5}
+                            </Badge>
                           </div>
-                          <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 text-xs px-2 py-0.5">
-                            +{totalCredits - 5}
-                          </Badge>
+                        );
+                      }
+
+                      // Normal display for 5 or less
+                      return (
+                        <div className="flex gap-1">
+                          {Array.from({ length: 5 }, (_, i) => (
+                            <motion.div
+                              key={i}
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{ delay: i * 0.1 }}
+                              className={`w-5 h-2 rounded-full transition-all ${
+                                i < totalCredits
+                                  ? i < 2
+                                    ? "bg-red-500"
+                                    : i < 4
+                                      ? "bg-amber-500"
+                                      : "bg-green-500"
+                                  : "bg-muted/50"
+                              }`}
+                            />
+                          ))}
                         </div>
                       );
-                    }
-                    
-                    // Normal display for 5 or less
-                    return (
-                      <div className="flex gap-1">
-                        {Array.from({ length: 5 }, (_, i) => (
-                          <motion.div
-                            key={i}
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ delay: i * 0.1 }}
-                            className={`w-5 h-2 rounded-full transition-all ${
-                              i < totalCredits
-                                ? i < 2
-                                  ? "bg-red-500"
-                                  : i < 4
-                                    ? "bg-amber-500"
-                                    : "bg-green-500"
-                                : "bg-muted/50"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                    );
-                  })()}
-                  {timeUntilNextCredit && getTotalCredits() < 5 && (
-                    <span className="text-xs text-orange-400 font-medium">+1 {timeUntilNextCredit}</span>
+                    })()}
+                    {timeUntilNextCredit && getTotalCredits() < 5 && (
+                      <span className="text-xs text-orange-400 font-medium">+1 {timeUntilNextCredit}</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Jokers */}
+            <div className="mt-3 flex gap-2">
+              {[
+                { img: "/degistirIkon.png", name: "Değiştir", count: jokers.degistir },
+                { img: "/fisildaIkon.png", name: "Fısılda", count: jokers.fisilida },
+                { img: "/senyazIkon.png", name: "Sen Yaz", count: jokers.senYaz },
+              ].map((joker, i) => (
+                <motion.div
+                  key={joker.name}
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 + i * 0.1 }}
+                  className="flex-1 game-joker-card bg-background/30 backdrop-blur-sm rounded-lg p-2 flex items-center gap-2 border border-border/30"
+                >
+                  <img src={joker.img} alt={joker.name} className="w-6 h-6 object-contain" />
+                  <span className="text-xs font-medium text-foreground">×{joker.count}</span>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Gift Premium Banner */}
+        {isPremium && isGiftPremium(profile) && (
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="flex-shrink-0 px-3 pb-2"
+          >
+            <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 backdrop-blur-sm rounded-xl p-3 border border-amber-500/30 flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
+                <Gift className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-foreground">🎉 1 Hafta Premium Hediye!</p>
+                <p className="text-xs text-muted-foreground">
+                  Bitiş: {profile?.premium_until ? new Date(profile.premium_until).toLocaleDateString("tr-TR") : ""}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Mini Games Horizontal Scroll */}
+        <motion.div
+          initial={{ x: -20, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="flex-shrink-0 px-3 py-2"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+              <Gamepad2 className="w-4 h-4 text-primary" />
+              Mini Oyunlar
+            </h3>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </div>
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1" style={{ scrollSnapType: "x mandatory" }}>
+            {miniGamesConfig.map((game, index) => (
+              <motion.div
+                key={game.id}
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.3 + index * 0.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  playSound("buttonClick");
+                  navigate(game.route);
+                }}
+                className={`game-mini-pill flex-shrink-0 bg-gradient-to-br ${game.gradient} rounded-xl p-3 min-w-[100px] cursor-pointer relative overflow-hidden`}
+                style={{ scrollSnapAlign: "start" }}
+              >
+                <div className="relative z-10">
+                  <span className="text-2xl block mb-1">{game.icon}</span>
+                  <p className="text-xs font-bold text-white truncate">{game.title}</p>
+                  {game.disabled && game.cooldown && (
+                    <p className="text-[10px] text-white/70 mt-0.5">{game.cooldown}</p>
                   )}
                 </div>
-              )}
-            </div>
-          )}
-
-          {/* Jokers */}
-          <div className="mt-3 flex gap-2">
-            {[
-              { img: "/degistirIkon.png", name: "Değiştir", count: jokers.degistir },
-              { img: "/fisildaIkon.png", name: "Fısılda", count: jokers.fisilida },
-              { img: "/senyazIkon.png", name: "Sen Yaz", count: jokers.senYaz },
-            ].map((joker, i) => (
-              <motion.div
-                key={joker.name}
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.3 + i * 0.1 }}
-                // DEĞİŞİKLİK 1: p-2 yerine p-1, gap-2 yerine gap-1 ve justify-center eklendi
-                className="flex-1 game-joker-card bg-background/30 backdrop-blur-sm rounded-lg p-1 flex items-center justify-center gap-1 border border-border/30"
-              >
-                {/* DEĞİŞİKLİK 2: w-6 h-6 yerine w-8 h-8 (veya w-9 h-9) yapıldı */}
-                <img src={joker.img} alt={joker.name} className="w-8 h-8 object-contain" />
-                
-                {/* DEĞİŞİKLİK 3: text-xs yerine text-sm ve font-bold yapıldı */}
-                <span className="text-sm font-bold text-foreground">×{joker.count}</span>
+                {game.disabled && <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] z-20" />}
               </motion.div>
-
-      {/* Gift Premium Banner */}
-      {isPremium && isGiftPremium(profile) && (
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="flex-shrink-0 px-3 pb-2"
-        >
-          <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 backdrop-blur-sm rounded-xl p-3 border border-amber-500/30 flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
-              <Gift className="w-5 h-5 text-white" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-bold text-foreground">🎉 1 Hafta Premium Hediye!</p>
-              <p className="text-xs text-muted-foreground">
-                Bitiş: {profile?.premium_until ? new Date(profile.premium_until).toLocaleDateString("tr-TR") : ""}
-              </p>
-            </div>
+            ))}
           </div>
         </motion.div>
-      )}
 
-      {/* Mini Games Horizontal Scroll */}
-      <motion.div
-        initial={{ x: -20, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="flex-shrink-0 px-3 py-2"
-      >
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-            <Gamepad2 className="w-4 h-4 text-primary" />
-            Mini Oyunlar
-          </h3>
-          <ChevronRight className="w-4 h-4 text-muted-foreground" />
-        </div>
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1" style={{ scrollSnapType: "x mandatory" }}>
-          {miniGamesConfig.map((game, index) => (
-            <motion.div
-              key={game.id}
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.3 + index * 0.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => {
-                playSound("buttonClick");
-                navigate(game.route);
-              }}
-              className={`game-mini-pill flex-shrink-0 bg-gradient-to-br ${game.gradient} rounded-xl p-3 min-w-[100px] cursor-pointer relative overflow-hidden`}
-              style={{ scrollSnapAlign: "start" }}
-            >
-              <div className="relative z-10">
-                <span className="text-2xl block mb-1">{game.icon}</span>
-                <p className="text-xs font-bold text-white truncate">{game.title}</p>
-                {game.disabled && game.cooldown && <p className="text-[10px] text-white/70 mt-0.5">{game.cooldown}</p>}
-              </div>
-              {game.disabled && <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] z-20" />}
-            </motion.div>
-          ))}
-        </div>
-      </motion.div>
+        {/* Main Game Modes */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-3 pb-24 scrollbar-hide" data-onboarding="game-modes">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+              <Flame className="w-4 h-4 text-orange-500" />
+              Oyun Modları
+            </h3>
+          </div>
 
-      {/* Main Game Modes */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-3 pb-24 scrollbar-hide" data-onboarding="game-modes">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-            <Flame className="w-4 h-4 text-orange-500" />
-            Oyun Modları
-          </h3>
-        </div>
+          <div className="grid grid-cols-2 gap-3">
+            {gameModesConfig.map((mode, index) => (
+              <motion.div
+                key={mode.id}
+                initial={{ y: 30, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.4 + index * 0.1 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => handleGameModeClick(mode.id)}
+                className={`game-mode-card bg-gradient-to-br ${mode.gradient} rounded-2xl overflow-hidden cursor-pointer aspect-[4/3]`}
+              >
+                <div className="relative h-full p-4 flex flex-col justify-between z-10">
+                  {/* Icon */}
+                  <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/30">
+                    <mode.icon className="w-6 h-6 text-white" />
+                  </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          {gameModesConfig.map((mode, index) => (
-            <motion.div
-              key={mode.id}
-              initial={{ y: 30, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.4 + index * 0.1 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => handleGameModeClick(mode.id)}
-              className={`game-mode-card bg-gradient-to-br ${mode.gradient} rounded-2xl overflow-hidden cursor-pointer aspect-[4/3]`}
-            >
-              <div className="relative h-full p-4 flex flex-col justify-between z-10">
-                {/* Icon */}
-                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/30">
-                  <mode.icon className="w-6 h-6 text-white" />
+                  {/* Title & Description */}
+                  <div>
+                    <h4 className="text-base font-bold text-white drop-shadow-lg">{mode.title}</h4>
+                    <p className="text-xs text-white/80 mt-0.5">{mode.description}</p>
+                  </div>
+
+                  {/* Play Button */}
+                  <Button
+                    size="sm"
+                    className="game-btn-premium w-full bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur-sm font-semibold"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleGameModeClick(mode.id);
+                    }}
+                  >
+                    <Play className="w-4 h-4 mr-1 fill-white" />
+                    Oyna
+                  </Button>
                 </div>
+              </motion.div>
+            ))}
+          </div>
 
-                {/* Title & Description */}
-                <div>
-                  <h4 className="text-base font-bold text-white drop-shadow-lg">{mode.title}</h4>
-                  <p className="text-xs text-white/80 mt-0.5">{mode.description}</p>
-                </div>
-
-                {/* Play Button */}
-                <Button
-                  size="sm"
-                  className="game-btn-premium w-full bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur-sm font-semibold"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleGameModeClick(mode.id);
-                  }}
-                >
-                  <Play className="w-4 h-4 mr-1 fill-white" />
-                  Oyna
-                </Button>
-              </div>
-            </motion.div>
-          ))}
+          {/* Stats Section */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.8 }}
+            className="mt-4 flex gap-2"
+          >
+            <div className="game-stat-badge flex-1 rounded-xl p-3 text-center">
+              <Target className="w-4 h-4 text-primary mx-auto mb-1" />
+              <p className="text-lg font-bold text-foreground">{profile?.daily_games || 0}</p>
+              <p className="text-xs text-muted-foreground">Günlük Oyun</p>
+            </div>
+            <div className="game-stat-badge flex-1 rounded-xl p-3 text-center">
+              <Flame className="w-4 h-4 text-orange-500 mx-auto mb-1" />
+              <p className="text-lg font-bold text-foreground">{profile?.win_streak || 0}</p>
+              <p className="text-xs text-muted-foreground">Seri</p>
+            </div>
+            <div className="game-stat-badge flex-1 rounded-xl p-3 text-center">
+              <Trophy className="w-4 h-4 text-amber-500 mx-auto mb-1" />
+              <p className="text-lg font-bold text-foreground">{profile?.wins || 0}</p>
+              <p className="text-xs text-muted-foreground">Zafer</p>
+            </div>
+          </motion.div>
         </div>
 
-        {/* Stats Section */}
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.8 }}
-          className="mt-4 flex gap-2"
-        >
-          <div className="game-stat-badge flex-1 rounded-xl p-3 text-center">
-            <Target className="w-4 h-4 text-primary mx-auto mb-1" />
-            <p className="text-lg font-bold text-foreground">{profile?.daily_games || 0}</p>
-            <p className="text-xs text-muted-foreground">Günlük Oyun</p>
-          </div>
-          <div className="game-stat-badge flex-1 rounded-xl p-3 text-center">
-            <Flame className="w-4 h-4 text-orange-500 mx-auto mb-1" />
-            <p className="text-lg font-bold text-foreground">{profile?.win_streak || 0}</p>
-            <p className="text-xs text-muted-foreground">Seri</p>
-          </div>
-          <div className="game-stat-badge flex-1 rounded-xl p-3 text-center">
-            <Trophy className="w-4 h-4 text-amber-500 mx-auto mb-1" />
-            <p className="text-lg font-bold text-foreground">{profile?.wins || 0}</p>
-            <p className="text-xs text-muted-foreground">Zafer</p>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Game Mode Selector Modals */}
-      {selectedMode && selectedMode === "private-room" ? (
-        <PrivateRoomModal
-          onClose={() => setSelectedMode(null)}
-          onStartGame={(nakamaMatchId, gameType) => {
-            setSelectedMode(null);
-            navigate(`/game/random-match?room=${nakamaMatchId}&type=${gameType}`);
-          }}
-        />
-      ) : selectedMode === "random-match" ? (
-        <GameModeSelector
-          mode={selectedMode}
-          onStart={(gameType) => {
-            setSelectedMode(null);
-            setMatchmakingGameType(gameType);
-            setMatchmakingKey(Date.now());
-            setShowMatchmaking(true);
-            setTimeout(() => startSearch(gameType), 100);
-          }}
-          onClose={() => {
-            playSound("buttonClick");
-            setSelectedMode(null);
-          }}
-        />
-      ) : selectedMode === "tournament" ? (
-        <GameModeSelector
-          mode={selectedMode}
-          onStart={(gameType) => {
-            navigate("/tournament", { state: { gameType } });
-            setSelectedMode(null);
-          }}
-          onClose={() => {
-            playSound("buttonClick");
-            setSelectedMode(null);
-          }}
-        />
-      ) : selectedMode ? (
-        <GameModeSelector
-          mode={selectedMode}
-          onStart={(gameType) => {
-            const mode = gameModesConfig.find((m) => m.id === selectedMode);
-            if (mode) {
-              navigate(`/game/${selectedMode}?type=${gameType}`);
-            }
-            setSelectedMode(null);
-          }}
-          onClose={() => {
-            playSound("buttonClick");
-            setSelectedMode(null);
-          }}
-        />
-      ) : null}
-
-      {/* Slot Matchmaking Modal */}
-      {showMatchmaking && (
-        <div className="fixed inset-0 z-[9999] bg-background">
-          <SlotMatchmaking
-            key={`matchmaking-${matchmakingKey}`}
-            onCancel={() => {
-              cancelSearch();
-              setShowMatchmaking(false);
+        {/* Game Mode Selector Modals */}
+        {selectedMode && selectedMode === "private-room" ? (
+          <PrivateRoomModal
+            onClose={() => setSelectedMode(null)}
+            onStartGame={(nakamaMatchId, gameType) => {
+              setSelectedMode(null);
+              navigate(`/game/random-match?room=${nakamaMatchId}&type=${gameType}`);
             }}
-            searchProgress={searchProgress}
           />
-        </div>
-      )}
+        ) : selectedMode === "random-match" ? (
+          <GameModeSelector
+            mode={selectedMode}
+            onStart={(gameType) => {
+              setSelectedMode(null);
+              setMatchmakingGameType(gameType);
+              setMatchmakingKey(Date.now());
+              setShowMatchmaking(true);
+              setTimeout(() => startSearch(gameType), 100);
+            }}
+            onClose={() => {
+              playSound("buttonClick");
+              setSelectedMode(null);
+            }}
+          />
+        ) : selectedMode === "tournament" ? (
+          <GameModeSelector
+            mode={selectedMode}
+            onStart={(gameType) => {
+              navigate("/tournament", { state: { gameType } });
+              setSelectedMode(null);
+            }}
+            onClose={() => {
+              playSound("buttonClick");
+              setSelectedMode(null);
+            }}
+          />
+        ) : selectedMode ? (
+          <GameModeSelector
+            mode={selectedMode}
+            onStart={(gameType) => {
+              const mode = gameModesConfig.find((m) => m.id === selectedMode);
+              if (mode) {
+                navigate(`/game/${selectedMode}?type=${gameType}`);
+              }
+              setSelectedMode(null);
+            }}
+            onClose={() => {
+              playSound("buttonClick");
+              setSelectedMode(null);
+            }}
+          />
+        ) : null}
+
+        {/* Slot Matchmaking Modal */}
+        {showMatchmaking && (
+          <div className="fixed inset-0 z-[9999] bg-background">
+            <SlotMatchmaking
+              key={`matchmaking-${matchmakingKey}`}
+              onCancel={() => {
+                cancelSearch();
+                setShowMatchmaking(false);
+              }}
+              searchProgress={searchProgress}
+            />
+          </div>
+        )}
       </div>
 
       {/* Floating Menu - outside blur wrapper */}
