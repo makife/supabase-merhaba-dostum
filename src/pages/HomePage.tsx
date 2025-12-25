@@ -93,6 +93,7 @@ const HomePage = () => {
     return newGreeting;
   });
   const [showAvatarView, setShowAvatarView] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Level hesaplama
   const calculateLevel = (totalScore: number) => {
@@ -317,20 +318,8 @@ const HomePage = () => {
 
   return (
     <div className="fixed inset-0 flex flex-col bg-background game-bg-animated game-hex-pattern overflow-hidden">
-      {/* Floating Particles */}
-      <div className="game-particles">
-        {[...Array(6)].map((_, i) => (
-          <div
-            key={i}
-            className="game-particle"
-            style={{
-              left: `${Math.random() * 100}%`,
-              animationDelay: `${i * 1.5}s`,
-              animationDuration: `${8 + Math.random() * 4}s`,
-            }}
-          />
-        ))}
-      </div>
+      {/* Main Content - blur when menu is open */}
+      <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${isMenuOpen ? 'blur-md pointer-events-none' : ''}`}>
 
       {/* Header Section */}
       <motion.div
@@ -688,10 +677,11 @@ const HomePage = () => {
           />
         </div>
       )}
+      </div>
 
-      {/* Floating Menu */}
+      {/* Floating Menu - outside blur wrapper */}
       <div data-onboarding="floating-menu" className="fixed bottom-0 left-0 right-0 z-50 game-floating-menu">
-        <FloatingMenu />
+        <FloatingMenu onOpenChange={setIsMenuOpen} />
       </div>
 
       {/* Avatar View Dialog */}
