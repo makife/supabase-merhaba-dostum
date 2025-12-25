@@ -51,7 +51,7 @@ import { generateBotName, generateBotAvatar } from "@/utils/tournamentHelpers";
 import { matchBanlist } from "@/utils/matchBanlist";
 import robotAvatar from "@/assets/robot-avatar.png";
 import { useQueryClient } from "@tanstack/react-query";
-import JokerParticleEffects from "@/components/JokerParticleEffects";
+import { JokerParticleEffects } from "@/components/JokerParticleEffects";
 
 // Safe helpers
 const shortId = (v?: string | null) => (v ? String(v).slice(-8) : "NULL");
