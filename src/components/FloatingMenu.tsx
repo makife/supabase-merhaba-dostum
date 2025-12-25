@@ -120,7 +120,11 @@ const menuItems = [
   },
 ];
 
-export function FloatingMenu() {
+interface FloatingMenuProps {
+  onOpenChange?: (isOpen: boolean) => void;
+}
+
+export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
@@ -131,7 +135,9 @@ export function FloatingMenu() {
 
   const handleToggle = () => {
     playSound("buttonClick");
-    setIsOpen(!isOpen);
+    const newState = !isOpen;
+    setIsOpen(newState);
+    onOpenChange?.(newState);
   };
 
   const handleMenuClick = (route: string, title: string) => {
@@ -180,7 +186,7 @@ export function FloatingMenu() {
   return (
     <div className="fixed bottom-4 right-4 z-50">
       {/* Backdrop overlay when menu is open */}
-      {isOpen && <div className="fixed inset-0 bg-black/20 backdrop-blur-sm -z-10" onClick={() => setIsOpen(false)} />}
+      {isOpen && <div className="fixed inset-0 bg-black/40 -z-10" onClick={() => { setIsOpen(false); onOpenChange?.(false); }} />}
 
       {/* Menu items - Positioned higher */}
       <div
