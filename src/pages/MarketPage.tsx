@@ -324,6 +324,31 @@ const MarketPage = () => {
       return;
     }
 
+    // Native platform değilse reklam izlemeden +2 mürekkep ver
+    if (!isNativePlatform) {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ ink_count: (profile?.ink_count || 0) + 2 })
+        .eq("id", user?.id);
+
+      if (!error) {
+        if (storedDate !== today) {
+          localStorage.setItem("lastAdDate", today);
+          localStorage.setItem("adCount", "1");
+        } else {
+          localStorage.setItem("adCount", (storedCount + 1).toString());
+        }
+
+        await refreshProfile();
+        toast({
+          title: "Tebrikler!",
+          description: "+2 Damla Mürekkep kazandın! 💧",
+          className: "bg-indigo-600 text-white",
+        });
+      }
+      return;
+    }
+
     try {
       await loadRewardedAd();
       await showRewardedAd();
@@ -407,7 +432,7 @@ const MarketPage = () => {
               disabled={isAdLoading}
             >
               <Video className="w-3 h-3 mr-1" />
-              +5 Kazan
+              {isNativePlatform ? "+5 Kazan" : "+2 Kazan"}
             </Button>
           </CardContent>
         </Card>
