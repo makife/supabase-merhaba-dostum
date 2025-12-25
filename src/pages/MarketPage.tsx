@@ -58,14 +58,14 @@ const MarketPage = () => {
       id: "ink_drop",
       name: "Bir Damla Mürekkep",
       amount: 100,
-      price: 39.99,
+      price: 47.99,
       image: "/damlaMurekkep.png",
     },
     {
       id: "ink_bottle",
       name: "Mürekkep Şişesi",
       amount: 300,
-      price: 99.99,
+      price: 119.99,
       label: "Popüler",
       image: "/murekkepSisesi.png",
     },
@@ -73,14 +73,14 @@ const MarketPage = () => {
       id: "ink_pot",
       name: "Hokka",
       amount: 850,
-      price: 249.99,
+      price: 299.99,
       image: "/murekkepHokka.png",
     },
     {
       id: "ink_barrel",
       name: "Mürekkep Varili",
       amount: 2500,
-      price: 699.99,
+      price: 839.99,
       label: "En İyi Fiyat",
       image: "/murekkepVaril.png",
     },
@@ -324,32 +324,33 @@ const MarketPage = () => {
       return;
     }
 
-    // Native platformda değilse uyarı göster
-    if (!isNativePlatform) {
-      toast({
-        title: "Bilgi",
-        description: "Reklamlar sadece mobil uygulamada çalışır.",
-        variant: "default",
-      });
-      return;
-    }
-
     try {
-      // Önce reklamı yükle
       await loadRewardedAd();
-      // Reklam göster - ödül useAdMob hook içindeki listener tarafından verilecek
       await showRewardedAd();
 
-      // Reklam izleme sayısını güncelle (ödül hook içinde veriliyor)
-      if (storedDate !== today) {
-        localStorage.setItem("lastAdDate", today);
-        localStorage.setItem("adCount", "1");
-      } else {
-        localStorage.setItem("adCount", (storedCount + 1).toString());
+      const { error } = await supabase
+        .from("profiles")
+        .update({ ink_count: (profile?.ink_count || 0) + 5 })
+        .eq("id", user?.id);
+
+      if (!error) {
+        if (storedDate !== today) {
+          localStorage.setItem("lastAdDate", today);
+          localStorage.setItem("adCount", "1");
+        } else {
+          localStorage.setItem("adCount", (storedCount + 1).toString());
+        }
+
+        await refreshProfile();
+        toast({
+          title: "Tebrikler!",
+          description: "+5 Damla Mürekkep kazandın! 💧",
+          className: "bg-indigo-600 text-white",
+        });
       }
     } catch (e) {
-      console.error("Ad error:", e);
-      toast({ title: "Reklam Hatası", description: "Reklam yüklenemedi veya gösterilemedi.", variant: "destructive" });
+      console.error(e);
+      toast({ title: "Reklam Hatası", description: "Reklam yüklenemedi.", variant: "destructive" });
     }
   };
 
