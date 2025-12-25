@@ -72,7 +72,7 @@ const isUnlimitedLivesActive = (profile: any) => {
 
 const HomePage = () => {
   const { user } = useAuth();
-  const { profile, isPremium, refreshProfile } = useUser();
+  const { profile, isPremium, refreshProfile, getTotalCredits, getDisplayCredits } = useUser();
   const navigate = useNavigate();
   const { playSound } = useSounds();
   const { startBackgroundMusic } = useMusic();
@@ -427,26 +427,56 @@ const HomePage = () => {
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <div className="flex gap-1">
-                    {Array.from({ length: 5 }, (_, i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ delay: i * 0.1 }}
-                        className={`w-5 h-2 rounded-full transition-all ${
-                          i < (profile?.game_credits || 0)
-                            ? i < 2
-                              ? "bg-red-500"
-                              : i < 4
-                                ? "bg-amber-500"
-                                : "bg-green-500"
-                            : "bg-muted/50"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  {timeUntilNextCredit && (
+                  {(() => {
+                    const totalCredits = getTotalCredits();
+                    const displayCredits = getDisplayCredits();
+                    
+                    // If total credits > 5, show as number badge
+                    if (totalCredits > 5) {
+                      return (
+                        <div className="flex items-center gap-2">
+                          <div className="flex gap-1">
+                            {Array.from({ length: 5 }, (_, i) => (
+                              <motion.div
+                                key={i}
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ delay: i * 0.1 }}
+                                className="w-5 h-2 rounded-full bg-green-500"
+                              />
+                            ))}
+                          </div>
+                          <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 text-xs px-2 py-0.5">
+                            +{totalCredits - 5}
+                          </Badge>
+                        </div>
+                      );
+                    }
+                    
+                    // Normal display for 5 or less
+                    return (
+                      <div className="flex gap-1">
+                        {Array.from({ length: 5 }, (_, i) => (
+                          <motion.div
+                            key={i}
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ delay: i * 0.1 }}
+                            className={`w-5 h-2 rounded-full transition-all ${
+                              i < totalCredits
+                                ? i < 2
+                                  ? "bg-red-500"
+                                  : i < 4
+                                    ? "bg-amber-500"
+                                    : "bg-green-500"
+                                : "bg-muted/50"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    );
+                  })()}
+                  {timeUntilNextCredit && getTotalCredits() < 5 && (
                     <span className="text-xs text-orange-400 font-medium">+1 {timeUntilNextCredit}</span>
                   )}
                 </div>
