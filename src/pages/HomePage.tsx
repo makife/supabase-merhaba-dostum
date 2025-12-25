@@ -301,7 +301,13 @@ const HomePage = () => {
       route: "/grid-simon-says",
     },
     { id: "puzzle", title: "Puzzle", icon: "🧩", gradient: "from-blue-500 to-indigo-600", route: "/puzzle-game" },
-    { id: "dino", title: "Reaktör Koşusu", icon: "☢️", gradient: "from-red-500 to-orange-600", route: "/reactor-runner" },
+    {
+      id: "dino",
+      title: "Reaktör Koşusu",
+      icon: "☢️",
+      gradient: "from-red-500 to-orange-600",
+      route: "/reactor-runner",
+    },
   ];
 
   const handleGameModeClick = (modeId: string) => {
@@ -417,7 +423,7 @@ const HomePage = () => {
             {/* Credits Bar */}
             {!isPremium && (
               <div className="mt-3 flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Kalan Haklar</span>
+                <span className="text-xs text-muted-foreground">Kalan Sayfalarım</span>
                 {isUnlimitedLivesActive(profile) ? (
                   <div className="flex items-center gap-2">
                     <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0">
