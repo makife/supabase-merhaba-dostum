@@ -248,7 +248,7 @@ const HomePage = () => {
     {
       id: "vs-computer",
       title: "Yapay Zeka",
-      description: "AI rakibine karşı pratik yap",
+      description: "AI ile pratik yap",
       icon: Bot,
       gradient: "from-cyan-500 via-blue-600 to-indigo-700",
       glowColor: "cyan",
@@ -256,7 +256,7 @@ const HomePage = () => {
     {
       id: "private-room",
       title: "Özel Oda",
-      description: "Arkadaşınla özel oda oluştur",
+      description: "Arkadaşınla oyna",
       icon: Users,
       gradient: "from-emerald-500 via-green-600 to-teal-700",
       glowColor: "emerald",
@@ -281,10 +281,24 @@ const HomePage = () => {
 
   const miniGamesConfig = [
     { id: "wheel", title: "Günlük Çark", icon: "🎡", gradient: "from-yellow-500 to-orange-600", route: "/wheel" },
-    { id: "memory", title: "Hafıza", icon: "🧠", gradient: "from-purple-500 to-pink-600", route: "/memory-game", disabled: !canPlayMemory, cooldown: timeUntilNextPlay },
+    {
+      id: "memory",
+      title: "Hafıza",
+      icon: "🧠",
+      gradient: "from-purple-500 to-pink-600",
+      route: "/memory-game",
+      disabled: !canPlayMemory,
+      cooldown: timeUntilNextPlay,
+    },
     { id: "neon", title: "Dokunsana", icon: "⚡", gradient: "from-cyan-500 to-blue-600", route: "/neon-blitz" },
     { id: "morles", title: "Harf Kulesi", icon: "🏗️", gradient: "from-teal-500 to-cyan-600", route: "/morles-game" },
-    { id: "simon", title: "Sıkı Takip", icon: "🎯", gradient: "from-indigo-500 to-purple-600", route: "/grid-simon-says" },
+    {
+      id: "simon",
+      title: "Sıkı Takip",
+      icon: "🎯",
+      gradient: "from-indigo-500 to-purple-600",
+      route: "/grid-simon-says",
+    },
     { id: "puzzle", title: "Puzzle", icon: "🧩", gradient: "from-blue-500 to-indigo-600", route: "/puzzle-game" },
   ];
 
@@ -319,7 +333,7 @@ const HomePage = () => {
       </div>
 
       {/* Header Section */}
-      <motion.div 
+      <motion.div
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5 }}
@@ -330,9 +344,9 @@ const HomePage = () => {
           <div className="flex items-center justify-between mb-4">
             {/* Avatar & Name */}
             <div className="flex items-center gap-3">
-              <motion.div 
+              <motion.div
                 whileTap={{ scale: 0.95 }}
-                className="relative cursor-pointer game-avatar-ring" 
+                className="relative cursor-pointer game-avatar-ring"
                 onClick={() => setShowAvatarView(true)}
               >
                 <Avatar className="w-14 h-14 border-2 border-primary/50 shadow-lg">
@@ -353,9 +367,7 @@ const HomePage = () => {
               </motion.div>
 
               <div className="flex-1 min-w-0">
-                <h1 className="text-xl font-bold game-gradient-text font-bungee tracking-wide">
-                  KELİMELE
-                </h1>
+                <h1 className="text-xl font-bold game-gradient-text font-bungee tracking-wide">KELİMELE</h1>
                 <p className="text-sm font-medium text-foreground truncate">
                   {profile?.username || user?.email?.split("@")[0]}
                 </p>
@@ -364,10 +376,13 @@ const HomePage = () => {
             </div>
 
             {/* Ink Counter */}
-            <motion.div 
+            <motion.div
               whileTap={{ scale: 0.95 }}
               className="flex flex-col items-center cursor-pointer"
-              onClick={() => { playSound("buttonClick"); navigate("/market"); }}
+              onClick={() => {
+                playSound("buttonClick");
+                navigate("/market");
+              }}
             >
               <div className="relative">
                 <img src="/murekkepikon.png" alt="Mürekkep" className="w-10 h-10 object-contain drop-shadow-lg" />
@@ -387,19 +402,19 @@ const HomePage = () => {
                 </div>
                 <div>
                   <p className="text-sm font-bold text-foreground">Seviye {levelData.level}</p>
-                  <p className="text-xs text-muted-foreground">{levelData.experience} / {levelData.nextLevelExp} XP</p>
+                  <p className="text-xs text-muted-foreground">
+                    {levelData.experience} / {levelData.nextLevelExp} XP
+                  </p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-lg font-bold text-primary">
-                  {(profile?.total_score || 0).toLocaleString()}
-                </p>
+                <p className="text-lg font-bold text-primary">{(profile?.total_score || 0).toLocaleString()}</p>
                 <p className="text-xs text-muted-foreground">Toplam Puan</p>
               </div>
             </div>
-            
+
             <div className="relative h-2 bg-background/50 rounded-full overflow-hidden game-progress-bar">
-              <motion.div 
+              <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${progressPercent}%` }}
                 transition={{ duration: 1, ease: "easeOut" }}
@@ -432,7 +447,11 @@ const HomePage = () => {
                         transition={{ delay: i * 0.1 }}
                         className={`w-5 h-2 rounded-full transition-all ${
                           i < (profile?.game_credits || 0)
-                            ? i < 2 ? "bg-red-500" : i < 4 ? "bg-amber-500" : "bg-green-500"
+                            ? i < 2
+                              ? "bg-red-500"
+                              : i < 4
+                                ? "bg-amber-500"
+                                : "bg-green-500"
                             : "bg-muted/50"
                         }`}
                       />
@@ -470,7 +489,7 @@ const HomePage = () => {
 
       {/* Gift Premium Banner */}
       {isPremium && isGiftPremium(profile) && (
-        <motion.div 
+        <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           className="flex-shrink-0 px-3 pb-2"
@@ -490,7 +509,7 @@ const HomePage = () => {
       )}
 
       {/* Mini Games Horizontal Scroll */}
-      <motion.div 
+      <motion.div
         initial={{ x: -20, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ delay: 0.2 }}
@@ -511,20 +530,19 @@ const HomePage = () => {
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.3 + index * 0.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => { playSound("buttonClick"); navigate(game.route); }}
+              onClick={() => {
+                playSound("buttonClick");
+                navigate(game.route);
+              }}
               className={`game-mini-pill flex-shrink-0 bg-gradient-to-br ${game.gradient} rounded-xl p-3 min-w-[100px] cursor-pointer relative overflow-hidden`}
               style={{ scrollSnapAlign: "start" }}
             >
               <div className="relative z-10">
                 <span className="text-2xl block mb-1">{game.icon}</span>
                 <p className="text-xs font-bold text-white truncate">{game.title}</p>
-                {game.disabled && game.cooldown && (
-                  <p className="text-[10px] text-white/70 mt-0.5">{game.cooldown}</p>
-                )}
+                {game.disabled && game.cooldown && <p className="text-[10px] text-white/70 mt-0.5">{game.cooldown}</p>}
               </div>
-              {game.disabled && (
-                <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] z-20" />
-              )}
+              {game.disabled && <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] z-20" />}
             </motion.div>
           ))}
         </div>
@@ -538,7 +556,7 @@ const HomePage = () => {
             Oyun Modları
           </h3>
         </div>
-        
+
         <div className="grid grid-cols-2 gap-3">
           {gameModesConfig.map((mode, index) => (
             <motion.div
@@ -555,7 +573,7 @@ const HomePage = () => {
                 <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/30">
                   <mode.icon className="w-6 h-6 text-white" />
                 </div>
-                
+
                 {/* Title & Description */}
                 <div>
                   <h4 className="text-base font-bold text-white drop-shadow-lg">{mode.title}</h4>
@@ -580,7 +598,7 @@ const HomePage = () => {
         </div>
 
         {/* Stats Section */}
-        <motion.div 
+        <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.8 }}
@@ -623,7 +641,10 @@ const HomePage = () => {
             setShowMatchmaking(true);
             setTimeout(() => startSearch(gameType), 100);
           }}
-          onClose={() => { playSound("buttonClick"); setSelectedMode(null); }}
+          onClose={() => {
+            playSound("buttonClick");
+            setSelectedMode(null);
+          }}
         />
       ) : selectedMode === "tournament" ? (
         <GameModeSelector
@@ -632,7 +653,10 @@ const HomePage = () => {
             navigate("/tournament", { state: { gameType } });
             setSelectedMode(null);
           }}
-          onClose={() => { playSound("buttonClick"); setSelectedMode(null); }}
+          onClose={() => {
+            playSound("buttonClick");
+            setSelectedMode(null);
+          }}
         />
       ) : selectedMode ? (
         <GameModeSelector
@@ -644,7 +668,10 @@ const HomePage = () => {
             }
             setSelectedMode(null);
           }}
-          onClose={() => { playSound("buttonClick"); setSelectedMode(null); }}
+          onClose={() => {
+            playSound("buttonClick");
+            setSelectedMode(null);
+          }}
         />
       ) : null}
 
@@ -653,7 +680,10 @@ const HomePage = () => {
         <div className="fixed inset-0 z-[9999] bg-background">
           <SlotMatchmaking
             key={`matchmaking-${matchmakingKey}`}
-            onCancel={() => { cancelSearch(); setShowMatchmaking(false); }}
+            onCancel={() => {
+              cancelSearch();
+              setShowMatchmaking(false);
+            }}
             searchProgress={searchProgress}
           />
         </div>
