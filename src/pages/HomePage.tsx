@@ -497,10 +497,14 @@ const HomePage = () => {
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.3 + i * 0.1 }}
-                  className="flex-1 game-joker-card bg-background/30 backdrop-blur-sm rounded-lg p-2 flex items-center gap-2 border border-border/30"
+                  // DEĞİŞİKLİK 1: p-2 yerine p-1, gap-2 yerine gap-1 ve justify-center eklendi
+                  className="flex-1 game-joker-card bg-background/30 backdrop-blur-sm rounded-lg p-1 flex items-center justify-center gap-1 border border-border/30"
                 >
-                  <img src={joker.img} alt={joker.name} className="w-6 h-6 object-contain" />
-                  <span className="text-xs font-medium text-foreground">×{joker.count}</span>
+                  {/* DEĞİŞİKLİK 2: w-6 h-6 yerine w-8 h-8 (veya w-9 h-9) yapıldı */}
+                  <img src={joker.img} alt={joker.name} className="w-8 h-8 object-contain" />
+
+                  {/* DEĞİŞİKLİK 3: text-xs yerine text-sm ve font-bold yapıldı */}
+                  <span className="text-sm font-bold text-foreground">×{joker.count}</span>
                 </motion.div>
               ))}
             </div>
