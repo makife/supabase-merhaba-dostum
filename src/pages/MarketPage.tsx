@@ -618,7 +618,7 @@ const MarketPage = () => {
                   <div className="grid grid-cols-2 gap-3 pt-2">
                     <Button
                       className="bg-white text-orange-600 hover:bg-orange-50 font-bold h-auto py-3 flex-col gap-1 shadow-md"
-                      onClick={() => purchaseSubscription("premium_month")}
+                      onClick={() => purchaseSubscription("premium_monthly")}
                       disabled={isSubscriptionLoading}
                     >
                       <span className="text-lg">Aylık</span>
@@ -626,7 +626,7 @@ const MarketPage = () => {
                     </Button>
                     <Button
                       className="bg-indigo-900 text-white hover:bg-indigo-800 font-bold h-auto py-3 flex-col gap-1 border border-white/20 shadow-md relative"
-                      onClick={() => purchaseSubscription("premium_year")}
+                      onClick={() => purchaseSubscription("premium_yearly")}
                       disabled={isSubscriptionLoading}
                     >
                       <span className="absolute -top-2 right-0 bg-red-500 text-[9px] px-2 py-0.5 rounded-full animate-bounce">
