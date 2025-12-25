@@ -144,6 +144,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
     playSound("buttonClick");
     navigate(route);
     setIsOpen(false);
+    onOpenChange?.(false);
   };
 
   const handleChatOpen = async () => {
