@@ -26,16 +26,26 @@ interface FCMMessage {
     }
     data?: Record<string, string>
     android?: {
+      priority: 'high' | 'normal'
       notification: {
         sound: string
         channel_id: string
+        notification_priority: 'PRIORITY_HIGH' | 'PRIORITY_MAX' | 'PRIORITY_DEFAULT' | 'PRIORITY_LOW' | 'PRIORITY_MIN'
+        visibility: 'PUBLIC' | 'PRIVATE' | 'SECRET'
+        default_sound: boolean
+        default_vibrate_timings: boolean
       }
     }
     apns?: {
+      headers?: {
+        'apns-priority': string
+      }
       payload: {
         aps: {
           sound: string
           badge?: number
+          'content-available'?: number
+          'mutable-content'?: number
         }
       }
     }
@@ -237,7 +247,7 @@ serve(async (req) => {
       }
     }
 
-    // Prepare FCM message
+    // Prepare FCM message with HIGH PRIORITY for heads-up display
     const fcmMessage: FCMMessage = {
       message: {
         token: profileData.push_token,
@@ -249,16 +259,26 @@ serve(async (req) => {
           Object.entries(data).map(([key, value]) => [key, String(value)])
         ) : undefined,
         android: {
+          priority: 'high',
           notification: {
             sound: 'default',
-            channel_id: 'kelimeci_notifications'
+            channel_id: 'kelimeci_notifications',
+            notification_priority: 'PRIORITY_HIGH',
+            visibility: 'PUBLIC',
+            default_sound: true,
+            default_vibrate_timings: true
           }
         },
         apns: {
+          headers: {
+            'apns-priority': '10'
+          },
           payload: {
             aps: {
               sound: 'default',
-              badge: 1
+              badge: 1,
+              'content-available': 1,
+              'mutable-content': 1
             }
           }
         }
