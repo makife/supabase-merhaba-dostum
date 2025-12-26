@@ -1,5 +1,5 @@
 // PrivateChat.tsx - Real-time düzeltmeleri
-import { sendMessageNotification, setActivePrivateChat, removeActivePrivateChat } from "@/utils/notifications";
+import { setActivePrivateChat, removeActivePrivateChat } from "@/utils/notifications";
 import { useUser } from "@/contexts/UserContext";
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,6 +16,7 @@ import { ReportMessageDialog } from "@/components/ReportMessageDialog";
 import { toast } from "sonner";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useMobileNotifications } from "@/hooks/useMobileNotifications";
 
 interface PrivateMessage {
   id: string;
@@ -41,6 +42,7 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
   const { user } = useAuth();
   const { profile } = useUser();
   const { playSound } = useSounds();
+  const { sendMessageNotification } = useMobileNotifications();
   const [messages, setMessages] = useState<PrivateMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
