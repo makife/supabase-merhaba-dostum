@@ -311,6 +311,7 @@ const MarketPage = () => {
   };
 
   const handleWatchAd = async () => {
+    // Tarih kontrolü (Simülasyon değil, günlük limit için gerekli)
     const today = new Date().toDateString();
     const storedDate = localStorage.getItem("lastAdDate");
     const storedCount = parseInt(localStorage.getItem("adCount") || "0");
@@ -324,26 +325,25 @@ const MarketPage = () => {
       return;
     }
 
-    // +1 mürekkep ver
-    const { error } = await supabase
-      .from("profiles")
-      .update({ ink_count: (profile?.ink_count || 0) + 1 })
-      .eq("id", user?.id);
-
-    if (!error) {
+    try {
+      // Sadece reklamı yükle ve göster
+      await loadRewardedAd();
+      await showRewardedAd(); 
+      
+      // NOT: Ödül verme işlemi ve "Tebrikler" mesajı artık useAdMob.tsx içinde otomatik yapılıyor.
+      // Burada elle bir şey yapmana gerek yok.
+      
+      // Sadece sayacı arttırıyoruz (Reklam açıldı sayıyoruz)
       if (storedDate !== today) {
         localStorage.setItem("lastAdDate", today);
         localStorage.setItem("adCount", "1");
       } else {
         localStorage.setItem("adCount", (storedCount + 1).toString());
       }
-
-      await refreshProfile();
-      toast({
-        title: "Tebrikler!",
-        description: "+1 Damla Mürekkep kazandın! 💧",
-        className: "bg-indigo-600 text-white",
-      });
+      
+    } catch (e) {
+      console.error(e);
+      toast({ title: "Reklam Hatası", description: "Reklam yüklenemedi.", variant: "destructive" });
     }
   };
 
@@ -392,17 +392,16 @@ const MarketPage = () => {
               </div>
             </div>
 
-            <button
+            <Button
+              size="sm"
+              variant="secondary"
               onClick={handleWatchAd}
+              className="bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white border-0 shadow-lg text-xs"
               disabled={isAdLoading}
-              className="overflow-hidden rounded-xl shadow-lg hover:scale-105 transition-transform disabled:opacity-50"
             >
-              <img 
-                src="/reklamGorsel.jpg" 
-                alt="Reklam izle" 
-                className="h-12 w-auto object-cover rounded-xl"
-              />
-            </button>
+              <Video className="w-3 h-3 mr-1" />
+              +5 Kazan
+            </Button>
           </CardContent>
         </Card>
       </div>
