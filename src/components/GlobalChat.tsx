@@ -14,7 +14,7 @@ import { UserAvatar } from '@/components/UserAvatar';
 import { PrivateChat } from '@/components/PrivateChat';
 import { ReportMessageDialog } from '@/components/ReportMessageDialog';
 import { toast } from 'sonner';
-import { sendMentionNotification } from '@/utils/notifications';
+import { useMobileNotifications } from "@/hooks/useMobileNotifications";
 import { isUserBanned, containsBannedWords, banUser, getBanTimeLeft } from '@/utils/chatBot';
 import { useUserBlocking } from '@/hooks/useUserBlocking';
 import { useNavigate } from 'react-router-dom';
@@ -59,6 +59,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   const { playSound } = useSounds();
   const { isUserBlocked, blockUser, unblockUser, blockedUsers } = useUserBlocking();
   const navigate = useNavigate();
+  const { sendMentionNotification } = useMobileNotifications();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
