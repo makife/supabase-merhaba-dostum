@@ -122,17 +122,27 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
             gameCredits = Math.max(0, gameCredits - creditsToDeduct);
           }
 
-          // Güncelle
-          await supabase
+          // Güncelle - sadece kredi değerlerini güncelle
+          const updateData: { game_credits: number; bonus_credits: number; last_credit_refresh?: string } = {
+            game_credits: gameCredits,
+            bonus_credits: bonusCredits,
+          };
+          
+          // Sadece ilk defa 5'in altına düşerse refresh timer'ı başlat
+          if (gameCredits < 5 && (profile.game_credits || 0) >= 5) {
+            updateData.last_credit_refresh = new Date().toISOString();
+          }
+
+          const { error: updateError } = await supabase
             .from("profiles")
-            .update({
-              game_credits: gameCredits,
-              bonus_credits: bonusCredits,
-              last_credit_refresh: gameCredits < 5 ? new Date().toISOString() : null,
-            })
+            .update(updateData)
             .eq("id", user.id);
 
-          console.log("✅ 3 kredi düşürüldü (turnuva oluşturma)");
+          if (updateError) {
+            console.error("❌ Kredi güncelleme hatası:", updateError);
+          } else {
+            console.log("✅ 3 kredi düşürüldü (turnuva oluşturma)", { gameCredits, bonusCredits });
+          }
         }
       }
 
@@ -233,17 +243,27 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
             gameCredits = Math.max(0, gameCredits - creditsToDeduct);
           }
 
-          // Güncelle
-          await supabase
+          // Güncelle - sadece kredi değerlerini güncelle
+          const updateData: { game_credits: number; bonus_credits: number; last_credit_refresh?: string } = {
+            game_credits: gameCredits,
+            bonus_credits: bonusCredits,
+          };
+          
+          // Sadece ilk defa 5'in altına düşerse refresh timer'ı başlat
+          if (gameCredits < 5 && (profile.game_credits || 0) >= 5) {
+            updateData.last_credit_refresh = new Date().toISOString();
+          }
+
+          const { error: updateError } = await supabase
             .from("profiles")
-            .update({
-              game_credits: gameCredits,
-              bonus_credits: bonusCredits,
-              last_credit_refresh: gameCredits < 5 ? new Date().toISOString() : null,
-            })
+            .update(updateData)
             .eq("id", user.id);
 
-          console.log("✅ 3 kredi düşürüldü (turnuva katılımı)");
+          if (updateError) {
+            console.error("❌ Kredi güncelleme hatası:", updateError);
+          } else {
+            console.log("✅ 3 kredi düşürüldü (turnuva katılımı)", { gameCredits, bonusCredits });
+          }
         }
       }
 
