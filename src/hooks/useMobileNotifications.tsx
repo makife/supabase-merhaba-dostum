@@ -263,13 +263,14 @@ export const useMobileNotifications = () => {
     const title = "Oyun Daveti";
     const body = `${senderUsername} sizi oyuna davet ediyor!`;
 
-    if (isMobile) {
-      await sendPushNotification(receiverId, title, body, {
-        type: "game_invite",
-        roomCode,
-        senderUsername,
-      });
-    }
+    console.log("🎮 GAME INVITE NOTIFICATION - Sending push to:", receiverId);
+    
+    // Her zaman sunucu taraflı bildirim gönder
+    const success = await sendPushNotification(receiverId, title, body, {
+      type: "game_invite",
+      roomCode,
+      senderUsername,
+    });
 
     console.log("🎮 GAME INVITE NOTIFICATION SENT:", {
       to: receiverId,
@@ -277,7 +278,10 @@ export const useMobileNotifications = () => {
       roomCode,
       title,
       body,
+      success,
     });
+    
+    return success;
   };
 
   // Send private message notification
@@ -285,13 +289,14 @@ export const useMobileNotifications = () => {
     const title = "Yeni Mesaj";
     const body = `${senderUsername} size bir mesaj gönderdi`;
 
-    if (isMobile) {
-      await sendPushNotification(receiverId, title, body, {
-        type: "private_message",
-        chatId,
-        senderUsername,
-      });
-    }
+    console.log("💬 MESSAGE NOTIFICATION - Sending push to:", receiverId);
+    
+    // Her zaman sunucu taraflı bildirim gönder (sunucu token kontrolü yapacak)
+    const success = await sendPushNotification(receiverId, title, body, {
+      type: "private_message",
+      chatId,
+      senderUsername,
+    });
 
     console.log("💬 MESSAGE NOTIFICATION SENT:", {
       to: receiverId,
@@ -299,48 +304,59 @@ export const useMobileNotifications = () => {
       chatId,
       title,
       body,
+      success,
     });
+    
+    return success;
   };
 
   // Send tournament notification
   const sendTournamentNotification = async (receiverId: string, message: string, tournamentId?: string) => {
     const title = "Turnuva Bildirimi";
 
-    if (isMobile) {
-      await sendPushNotification(receiverId, title, message, {
-        type: "tournament",
-        tournamentId,
-      });
-    }
+    console.log("🏆 TOURNAMENT NOTIFICATION - Sending push to:", receiverId);
+    
+    // Her zaman sunucu taraflı bildirim gönder
+    const success = await sendPushNotification(receiverId, title, message, {
+      type: "tournament",
+      tournamentId,
+    });
 
     console.log("🏆 TOURNAMENT NOTIFICATION SENT:", {
       to: receiverId,
       message,
       tournamentId,
       title,
+      success,
     });
+    
+    return success;
   };
   
-  // 👇 BU KODU EKLE (Mention Bildirimi İçin)
+  // Mention Bildirimi
   const sendMentionNotification = async (receiverId: string, senderUsername: string, message: string, messageId: string) => {
     const title = "Biri senden bahsetti!";
     // Mesaj çok uzunsa keselim
     const shortMessage = message.length > 50 ? message.substring(0, 47) + "..." : message;
     const body = `${senderUsername}: "${shortMessage}"`;
 
-    if (isMobile) {
-      await sendPushNotification(receiverId, title, body, {
-        type: "mention",
-        messageId,
-        roomId: "global"
-      });
-    }
+    console.log("📢 MENTION NOTIFICATION - Sending push to:", receiverId);
+    
+    // Her zaman sunucu taraflı bildirim gönder (sunucu token kontrolü yapacak)
+    const success = await sendPushNotification(receiverId, title, body, {
+      type: "mention",
+      messageId,
+      roomId: "global"
+    });
 
     console.log("📢 MENTION NOTIFICATION SENT:", {
       to: receiverId,
       from: senderUsername,
-      message,
+      message: shortMessage,
+      success,
     });
+    
+    return success;
   };
 
   // Send push notification via backend
