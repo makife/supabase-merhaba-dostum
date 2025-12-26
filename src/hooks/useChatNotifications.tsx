@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { getIsAppInForeground } from "./useAppForegroundState";
 
 export function useChatNotifications() {
   const { user } = useAuth();
@@ -88,7 +89,36 @@ export function useChatNotifications() {
     setGlobalMentionCount(mentionCount);
   };
 
-  // Real-time bildirim dinleyicisi
+  // Show in-app toast notification (only when app is in foreground)
+  const showInAppNotification = useCallback((
+    title: string,
+    description: string,
+    navigateTo?: string
+  ) => {
+    // Only show toast if app is in foreground
+    if (!getIsAppInForeground()) {
+      console.log("[ChatNotif] App in background, skipping in-app toast");
+      return;
+    }
+
+    toast({
+      title,
+      description,
+      duration: 5000,
+      action: navigateTo ? (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate(navigateTo)}
+        >
+          Görüntüle
+        </Button>
+      ) : undefined,
+    });
+  }, [navigate]);
+
+  // Real-time notification listener
+  // Only shows in-app toasts - push notifications are handled by the server
   useEffect(() => {
     if (!user?.id) return;
 
@@ -108,10 +138,10 @@ export function useChatNotifications() {
           const newMsg: any = payload.new;
           if (!newMsg) return;
 
-          // Sayacı güncelle
+          // Update unread count
           refreshUnreadCounts();
 
-          // Gönderen bilgisini al
+          // Get sender info
           const { data: senderProfile } = await supabase
             .from("profiles")
             .select("username")
@@ -120,21 +150,13 @@ export function useChatNotifications() {
 
           const senderName = senderProfile?.username || "Birisi";
 
-          // Toast bildirimi göster
-          toast({
-            title: "💬 Yeni Özel Mesaj",
-            description: `${senderName} sana mesaj gönderdi`,
-            duration: 5000,
-            action: (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate("/chat")}
-              >
-                Görüntüle
-              </Button>
-            ),
-          });
+          // Show in-app toast (only if app is in foreground)
+          // Push notification is already handled by the message sender
+          showInAppNotification(
+            "💬 Yeni Özel Mesaj",
+            `${senderName} sana mesaj gönderdi`,
+            "/chat"
+          );
         },
       )
       .on(
@@ -149,45 +171,27 @@ export function useChatNotifications() {
           const notif: any = payload.new;
           if (!notif) return;
 
-          // Mention bildirimi
+          // Mention notification
           if (notif.type === "mention") {
             refreshUnreadCounts();
-            toast({
-              title: "📢 Senden Bahsedildi",
-              description: notif.message,
-              duration: 5000,
-              action: (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate("/chat")}
-                >
-                  Görüntüle
-                </Button>
-              ),
-            });
+            showInAppNotification(
+              "📢 Senden Bahsedildi",
+              notif.message,
+              "/chat"
+            );
           }
 
-          // Özel mesaj bildirimi (notifications tablosundan)
+          // Private message notification (from notifications table)
           if (notif.type === "message") {
             refreshUnreadCounts();
-            toast({
-              title: "💬 Yeni Özel Mesaj",
-              description: notif.message,
-              duration: 5000,
-              action: (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate("/chat")}
-                >
-                  Görüntüle
-                </Button>
-              ),
-            });
+            showInAppNotification(
+              "💬 Yeni Özel Mesaj",
+              notif.message,
+              "/chat"
+            );
           }
 
-          // Turnuva rakip ayrıldı bildirimi
+          // Tournament opponent left notification
           if (notif.type === "tournament_opponent_left") {
             toast({
               title: "🏆 Turnuva Zaferi!",
@@ -212,7 +216,7 @@ export function useChatNotifications() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id, profile?.username, navigate]);
+  }, [user?.id, profile?.username, navigate, showInAppNotification]);
 
   const totalNotifications = unreadCount + globalMentionCount;
 

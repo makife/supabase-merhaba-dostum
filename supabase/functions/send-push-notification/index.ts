@@ -12,6 +12,8 @@ interface PushNotificationRequest {
   title: string
   body: string
   data?: Record<string, any>
+  // If true, skip sending push if user was recently active (app likely in foreground)
+  skipIfOnline?: boolean
 }
 
 interface FCMMessage {
@@ -196,12 +198,12 @@ serve(async (req) => {
       )
     }
 
-    const { title, body, data } = requestBody
+    const { title, body, data, skipIfOnline } = requestBody
 
-    // Get receiver's push token from database
+    // Get receiver's push token and last_seen from database
     const { data: profileData, error: profileError } = await supabaseClient
       .from('profiles')
-      .select('push_token')
+      .select('push_token, last_seen')
       .eq('id', receiverId)
       .single()
 
@@ -214,6 +216,25 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       )
+    }
+
+    // If skipIfOnline is true, check if user was active in last 30 seconds
+    // This means their app is likely in foreground and they'll see in-app notifications
+    if (skipIfOnline && profileData.last_seen) {
+      const lastSeen = new Date(profileData.last_seen)
+      const now = new Date()
+      const secondsSinceLastSeen = (now.getTime() - lastSeen.getTime()) / 1000
+      
+      if (secondsSinceLastSeen < 30) {
+        console.log(`User ${receiverId} was active ${secondsSinceLastSeen}s ago - skipping push (will see in-app notification)`)
+        return new Response(
+          JSON.stringify({ success: true, message: 'User is online, skipping push notification', skipped: true }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        )
+      }
     }
 
     // Prepare FCM message

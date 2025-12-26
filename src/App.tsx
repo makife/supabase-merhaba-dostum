@@ -54,6 +54,7 @@ import { supabase } from "@/integrations/supabase/client";
 import RoomAutoNavigator from "@/components/RoomAutoNavigator";
 import { RematchDialog } from "@/components/RematchDialog";
 import { useAppState } from "@/hooks/useAppState";
+import { useAppForegroundState } from "@/hooks/useAppForegroundState";
 import { realtimeManager } from "@/utils/realtimeManager";
 import { OnboardingPermissions } from "@/components/OnboardingPermissions";
 import { WelcomeIntroDialog } from "@/components/WelcomeIntroDialog";
@@ -451,6 +452,9 @@ const GlobalRematchDialog = () => {
 };
 
 const App = () => {
+  // Initialize foreground state tracking globally
+  useAppForegroundState();
+  
   // 1. Hook'u sadece bir referans almak için kullanıyoruz
   const { manualHideBars } = useImmersiveBars();
 
