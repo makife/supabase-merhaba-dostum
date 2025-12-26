@@ -120,7 +120,7 @@ export const useAdMob = () => {
         .single();
 
       // BURAYI DEĞİŞTİRDİK: +1 yerine +5 yaptık
-      const newCredits = (profile?.game_credits || 0) + 5;
+      const newCredits = (profile?.game_credits || 0) + 1;
 
       // Veritabanını güncelle
       const { error } = await supabase
