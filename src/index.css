@@ -2549,23 +2549,15 @@ body.is-capacitor.hide-bars::before {
     0 -2px 6px hsl(var(--background) / 0.5) inset;
 }
 
-/* Animated Gradient Background */
+/* Animated Gradient Background - STATIC for mobile performance */
 .game-bg-animated {
   background: linear-gradient(
-    -45deg,
-    hsl(var(--background)),
-    hsl(var(--muted)),
-    hsl(var(--primary) / 0.1),
-    hsl(var(--accent) / 0.1)
+    135deg,
+    hsl(var(--background)) 0%,
+    hsl(var(--muted)) 50%,
+    hsl(var(--background)) 100%
   );
-  background-size: 400% 400%;
-  animation: gradientFlow 15s ease infinite;
-}
-
-@keyframes gradientFlow {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  /* Animation disabled for mobile performance */
 }
 
 /* Neon Glow Text */
@@ -2691,41 +2683,11 @@ body.is-capacitor.hide-bars::before {
   transform: translateY(-2px) scale(1);
 }
 
-/* Mini Game Pill */
+/* Mini Game Pill - simplified for mobile performance */
 .game-mini-pill {
   position: relative;
   overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.game-mini-pill::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: conic-gradient(
-    from 0deg,
-    transparent,
-    hsl(var(--primary-foreground) / 0.1),
-    transparent 60%
-  );
-  animation: rotateBorder 4s linear infinite;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.game-mini-pill:hover::before {
-  opacity: 1;
-}
-
-@keyframes rotateBorder {
-  to { transform: rotate(360deg); }
-}
-
-.game-mini-pill:hover {
-  transform: scale(1.02);
+  /* Rotating border animation disabled for mobile performance */
 }
 
 .game-mini-pill:active {
@@ -2746,34 +2708,14 @@ body.is-capacitor.hide-bars::before {
   box-shadow: 0 0 20px hsl(var(--primary) / 0.2);
 }
 
-/* Level Progress Bar Animation */
+/* Level Progress Bar - simplified for mobile performance */
 .game-progress-bar {
   position: relative;
   overflow: hidden;
+  /* Shine animation disabled for mobile performance */
 }
 
-.game-progress-bar::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    hsl(var(--primary-foreground) / 0.3),
-    transparent
-  );
-  animation: progressShine 2s ease-in-out infinite;
-}
-
-@keyframes progressShine {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-
-/* Avatar Ring Animation */
+/* Avatar Ring - STATIC for mobile performance */
 .game-avatar-ring {
   position: relative;
 }
@@ -2784,20 +2726,12 @@ body.is-capacitor.hide-bars::before {
   inset: -3px;
   border-radius: 50%;
   background: linear-gradient(
-    45deg,
+    135deg,
     hsl(var(--primary)),
-    hsl(var(--accent)),
-    hsl(var(--primary))
+    hsl(var(--accent))
   );
-  background-size: 200% 200%;
-  animation: avatarRingRotate 3s linear infinite;
   z-index: -1;
-}
-
-@keyframes avatarRingRotate {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  /* Animation disabled for mobile performance */
 }
 
 /* Ink Counter - pulse disabled for performance */
@@ -2805,32 +2739,10 @@ body.is-capacitor.hide-bars::before {
   /* animation removed for mobile performance */
 }
 
-/* Joker Card Shimmer */
+/* Joker Card - simplified for mobile performance */
 .game-joker-card {
   position: relative;
-  overflow: hidden;
-}
-
-.game-joker-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -75%;
-  width: 50%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    hsl(var(--primary-foreground) / 0.15),
-    transparent
-  );
-  transform: skewX(-25deg);
-  animation: jokerShimmer 3s ease-in-out infinite;
-}
-
-@keyframes jokerShimmer {
-  0% { left: -75%; }
-  100% { left: 125%; }
+  /* Shimmer animation disabled for mobile performance */
 }
 
 /* Floating Menu Glass */
@@ -2854,25 +2766,17 @@ body.is-capacitor.hide-bars::before {
   animation: quickPulse 1s ease-in-out infinite;
 }
 
-/* Gradient Text */
+/* Gradient Text - STATIC for mobile performance */
 .game-gradient-text {
   background: linear-gradient(
     135deg,
     hsl(var(--primary)),
-    hsl(var(--accent)),
-    hsl(var(--primary))
+    hsl(var(--accent))
   );
-  background-size: 200% 200%;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: gradientText 3s ease infinite;
-}
-
-@keyframes gradientText {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  /* Animation disabled for mobile performance */
 }
 
 /* Hexagon Pattern Background */
