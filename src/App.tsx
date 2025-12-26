@@ -14,6 +14,7 @@ import { MatchmakingProvider } from "@/contexts/NewMatchmakingContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { TournamentProvider } from "@/contexts/TournamentContext";
 import { RematchProvider, useRematchContext } from "@/contexts/RematchContext";
+import { ConnectionProvider, useConnection } from "@/contexts/ConnectionContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ModeratorRoute from "@/components/ModeratorRoute";
 import LoadingScreen from "@/components/LoadingScreen";
@@ -47,14 +48,13 @@ import NeonBlitzPage from "@/pages/NeonBlitz";
 import SnakeGamePage from "@/pages/SnakeGame";
 import MorlesGamePage from "@/pages/MorlesGame";
 import { Capacitor } from "@capacitor/core";
-import { PushNotifications } from "@capacitor/push-notifications"; // EKLENDI
+import { PushNotifications } from "@capacitor/push-notifications";
 import { useImmersiveBars } from "@/hooks/useImmersiveBars";
 import { supabase } from "@/integrations/supabase/client";
 import RoomAutoNavigator from "@/components/RoomAutoNavigator";
 import { RematchDialog } from "@/components/RematchDialog";
 import { useAppState } from "@/hooks/useAppState";
 import { realtimeManager } from "@/utils/realtimeManager";
-import { useSupabaseConnection } from "@/hooks/useSupabaseConnection";
 import { OnboardingPermissions } from "@/components/OnboardingPermissions";
 import { WelcomeIntroDialog } from "@/components/WelcomeIntroDialog";
 import { StatusBar, Style } from "@capacitor/status-bar";
@@ -453,9 +453,6 @@ const GlobalRematchDialog = () => {
 const App = () => {
   // 1. Hook'u sadece bir referans almak için kullanıyoruz
   const { manualHideBars } = useImmersiveBars();
-  
-  // Supabase bağlantı izleme ve otomatik yeniden bağlanma
-  useSupabaseConnection();
 
   // 2. Arka plan/ön plan yönetimi
   useAppState({
@@ -561,42 +558,44 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter
-          future={{
-            v7_startTransition: true,
-            v7_relativeSplatPath: true,
-          }}
-        >
-          {/* AuthProvider en dışta olmalı çünkü useUser ve diğerleri 
-              Supabase session'ına ihtiyaç duyuyor. 
-          */}
-          <AuthProvider>
-            <UserProvider>
-              <ThemeProvider>
-                <MusicProvider>
-                  <MatchmakingWrapper>
-                    <GameProvider>
-                      <RematchProvider>
-                        <GlobalRematchDialog />
-                        <BackButtonDialog />
-                        <RoomAutoNavigator />
-                        <TournamentProvider>
-                          <NotificationProvider>
-                            <AppRoutes />
-                          </NotificationProvider>
-                        </TournamentProvider>
-                      </RematchProvider>
-                    </GameProvider>
-                  </MatchmakingWrapper>
-                </MusicProvider>
-              </ThemeProvider>
-            </UserProvider>
-          </AuthProvider>
-        </BrowserRouter>
-      </TooltipProvider>
+      <ConnectionProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter
+            future={{
+              v7_startTransition: true,
+              v7_relativeSplatPath: true,
+            }}
+          >
+            {/* AuthProvider en dışta olmalı çünkü useUser ve diğerleri 
+                Supabase session'ına ihtiyaç duyuyor. 
+            */}
+            <AuthProvider>
+              <UserProvider>
+                <ThemeProvider>
+                  <MusicProvider>
+                    <MatchmakingWrapper>
+                      <GameProvider>
+                        <RematchProvider>
+                          <GlobalRematchDialog />
+                          <BackButtonDialog />
+                          <RoomAutoNavigator />
+                          <TournamentProvider>
+                            <NotificationProvider>
+                              <AppRoutes />
+                            </NotificationProvider>
+                          </TournamentProvider>
+                        </RematchProvider>
+                      </GameProvider>
+                    </MatchmakingWrapper>
+                  </MusicProvider>
+                </ThemeProvider>
+              </UserProvider>
+            </AuthProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </ConnectionProvider>
     </QueryClientProvider>
   );
 };

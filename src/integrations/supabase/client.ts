@@ -19,10 +19,11 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     params: {
       eventsPerSecond: 10,
     },
-    heartbeatIntervalMs: 15000, // 15 saniyede bir heartbeat
+    // Production-level settings
+    heartbeatIntervalMs: 10000, // 10 saniyede bir heartbeat (daha aggressive)
     reconnectAfterMs: (tries: number) => {
-      // Exponential backoff: 1s, 2s, 4s, 8s, max 10s
-      return Math.min(1000 * Math.pow(2, tries), 10000);
+      // Exponential backoff: 500ms, 1s, 2s, 4s, max 8s
+      return Math.min(500 * Math.pow(2, tries), 8000);
     },
   },
   global: {
@@ -32,61 +33,12 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   },
 });
 
-// Bağlantı durumunu izle ve otomatik yeniden bağlan
-let isReconnecting = false;
-let reconnectAttempts = 0;
-const MAX_RECONNECT_ATTEMPTS = 10;
-
-export const checkAndReconnect = async (): Promise<boolean> => {
-  if (isReconnecting) return false;
-  
+// Connection health check helper - uses server time RPC for accurate status
+export const checkConnection = async (): Promise<boolean> => {
   try {
-    isReconnecting = true;
-    
-    // Basit bir health check - auth session kontrolü
-    const { data, error } = await supabase.auth.getSession();
-    
-    if (error) {
-      console.log('🔄 Supabase bağlantı hatası, yeniden bağlanılıyor...');
-      reconnectAttempts++;
-      
-      if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-        console.log('❌ Maksimum yeniden bağlanma denemesi aşıldı');
-        reconnectAttempts = 0;
-        return false;
-      }
-      
-      // Tüm realtime kanallarını kapat ve yeniden aç
-      const channels = supabase.getChannels();
-      for (const channel of channels) {
-        await supabase.removeChannel(channel);
-      }
-      
-      return false;
-    }
-    
-    reconnectAttempts = 0;
-    return true;
+    const { error } = await supabase.rpc('get_server_time');
+    return !error;
   } catch (e) {
-    console.log('🔄 Bağlantı kontrolü hatası:', e);
     return false;
-  } finally {
-    isReconnecting = false;
   }
 };
-
-// Network durumu değiştiğinde otomatik kontrol
-if (typeof window !== 'undefined') {
-  window.addEventListener('online', () => {
-    console.log('🌐 İnternet bağlantısı geri geldi');
-    setTimeout(() => checkAndReconnect(), 1000);
-  });
-  
-  // Sayfa görünür olduğunda kontrol et
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      console.log('👁️ Uygulama ön plana geldi');
-      setTimeout(() => checkAndReconnect(), 500);
-    }
-  });
-}
