@@ -311,7 +311,7 @@ const MarketPage = () => {
   };
 
   const handleWatchAd = async () => {
-    // Tarih kontrolü (Simülasyon değil, günlük limit için gerekli)
+    // Tarih kontrolü
     const today = new Date().toDateString();
     const storedDate = localStorage.getItem("lastAdDate");
     const storedCount = parseInt(localStorage.getItem("adCount") || "0");
@@ -331,9 +331,8 @@ const MarketPage = () => {
       await showRewardedAd(); 
       
       // NOT: Ödül verme işlemi ve "Tebrikler" mesajı artık useAdMob.tsx içinde otomatik yapılıyor.
-      // Burada elle bir şey yapmana gerek yok.
       
-      // Sadece sayacı arttırıyoruz (Reklam açıldı sayıyoruz)
+      // Sadece sayacı arttırıyoruz
       if (storedDate !== today) {
         localStorage.setItem("lastAdDate", today);
         localStorage.setItem("adCount", "1");
@@ -392,16 +391,22 @@ const MarketPage = () => {
               </div>
             </div>
 
+            {/* 👇 GÖRSEL BUTON BURAYA EKLENDİ 👇 */}
             <Button
-              size="sm"
-              variant="secondary"
+              variant="ghost" 
+              className="p-0 h-auto bg-transparent hover:bg-transparent shadow-none border-0" 
               onClick={handleWatchAd}
-              className="bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white border-0 shadow-lg text-xs"
               disabled={isAdLoading}
             >
-              <Video className="w-3 h-3 mr-1" />
-              +5 Kazan
+               <img 
+                 src="/reklamGorsel.jpg" 
+                 alt="Reklam İzle" 
+                 className={`h-12 w-auto object-contain rounded-lg shadow-lg hover:scale-105 active:scale-95 transition-all duration-200 ${isAdLoading ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
+               />
+               {/* Yükleniyor durumunda spinner eklenebilir ama görsel soluklaşması yeterli */}
             </Button>
+            {/* 👆 GÖRSEL BUTON BİTİŞ 👆 */}
+
           </CardContent>
         </Card>
       </div>
@@ -572,7 +577,7 @@ const MarketPage = () => {
               </div>
             </TabsContent>
 
-            {/* 3. VIP ABONELİK - Fiyatlar ve Avantajlar Güncellendi */}
+            {/* 3. VIP ABONELİK */}
             <TabsContent value="vip" className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
               <Card className="bg-gradient-to-br from-amber-400 to-orange-500 border-none shadow-xl text-white overflow-hidden">
                 <CardHeader className="text-center pb-2">
