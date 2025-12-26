@@ -320,6 +320,28 @@ export const useMobileNotifications = () => {
       title,
     });
   };
+  
+  // 👇 BU KODU EKLE (Mention Bildirimi İçin)
+  const sendMentionNotification = async (receiverId: string, senderUsername: string, message: string, messageId: string) => {
+    const title = "Biri senden bahsetti!";
+    // Mesaj çok uzunsa keselim
+    const shortMessage = message.length > 50 ? message.substring(0, 47) + "..." : message;
+    const body = `${senderUsername}: "${shortMessage}"`;
+
+    if (isMobile) {
+      await sendPushNotification(receiverId, title, body, {
+        type: "mention",
+        messageId,
+        roomId: "global"
+      });
+    }
+
+    console.log("📢 MENTION NOTIFICATION SENT:", {
+      to: receiverId,
+      from: senderUsername,
+      message,
+    });
+  };
 
   // Send push notification via backend
   const sendPushNotification = async (receiverId: string, title: string, body: string, data?: any) => {
@@ -450,5 +472,6 @@ export const useMobileNotifications = () => {
     sendGameInviteNotification,
     sendMessageNotification,
     sendTournamentNotification,
+	sendMentionNotification,
   };
 };
