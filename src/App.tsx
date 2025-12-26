@@ -103,11 +103,9 @@ const AppRoutes = () => {
         try {
           // 🔊 Native Audio'yu başlat
           if (isNativePlatform()) {
-            initNativeAudio()
-              .then(() => {
-                console.log("✅ App: Native Audio başlatıldı");
-              })
-              .catch(console.warn);
+            initNativeAudio().then(() => {
+              console.log("✅ App: Native Audio başlatıldı");
+            }).catch(console.warn);
           }
 
           // Status Bar Rengi ve Stili
@@ -146,12 +144,15 @@ const AppRoutes = () => {
 
   return (
     <>
-      <OnboardingPermissions
-        open={showOnboarding}
+      <OnboardingPermissions 
+        open={showOnboarding} 
         onComplete={() => setShowOnboarding(false)}
         onShowIntro={() => setShowIntroDialog(true)}
       />
-      <WelcomeIntroDialog open={showIntroDialog} onClose={() => setShowIntroDialog(false)} />
+      <WelcomeIntroDialog 
+        open={showIntroDialog} 
+        onClose={() => setShowIntroDialog(false)} 
+      />
       <Routes>
         <Route path="/auth" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
         <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
@@ -477,65 +478,79 @@ const App = () => {
   // 👇 PUSH NOTIFICATION ENTEGRASYONU BURADA
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
+      
+      // Yardımcı Fonksiyon: Token'ı Veritabanına Yaz
+      const saveTokenToSupabase = async (userId: string, tokenValue: string) => {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ push_token: tokenValue }) 
+          .eq('id', userId);
+
+        if (error) console.error("❌ Token kaydedilemedi:", error);
+        else console.log("✅ Token veritabanına başarıyla kaydedildi!");
+      };
+
       const initPush = async () => {
         try {
-          // İzinleri kontrol et ve iste
           let permStatus = await PushNotifications.checkPermissions();
-          if (permStatus.receive === "prompt") {
+          if (permStatus.receive === 'prompt') {
             permStatus = await PushNotifications.requestPermissions();
           }
-
-          if (permStatus.receive === "granted") {
-            // İzin varsa kayıt ol
+          if (permStatus.receive === 'granted') {
             await PushNotifications.register();
           }
         } catch (e) {
-          console.error("Push başlatma hatası:", e);
+          console.error('Push başlatma hatası:', e);
         }
       };
 
       initPush();
 
-      // Token Geldiğinde ÇALIŞACAK KISIM
-      const registrationListener = PushNotifications.addListener("registration", async (token) => {
-        console.log("🔥🔥🔥 PUSH TOKEN:", token.value);
-
-        // KRİTİK NOKTA: Token'ı veritabanına kaydet!
-        // Şu anki oturum açmış kullanıcıyı al
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-
+      // 1. Token Gelince Çalışan Listener
+      const registrationListener = PushNotifications.addListener('registration', async (token) => {
+        console.log('🔥🔥🔥 PUSH TOKEN GELDİ:', token.value);
+        
+        // Token'ı her ihtimale karşı telefona kaydet (Kullanıcı yoksa bile elimizde olsun)
+        localStorage.setItem('temp_push_token', token.value);
+        
+        // Eğer şu an açık bir oturum varsa hemen kaydet
+        const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { error } = await supabase
-            .from("profiles")
-            .update({ push_token: token.value }) // Veritabanındaki sütun adı 'push_token' olmalı
-            .eq("id", user.id);
-
-          if (error) console.error("Token kaydedilemedi:", error);
-          else console.log("✅ Token veritabanına başarıyla kaydedildi!");
+          await saveTokenToSupabase(user.id, token.value);
+        } else {
+          console.log("⚠️ Kullanıcı henüz giriş yapmamış, token hafızaya alındı.");
         }
       });
 
-      // Diğer listenerlar (Bildirim geldiğinde vs.)
-      const notificationListener = PushNotifications.addListener("pushNotificationReceived", (notification) => {
-        console.log("🔔 Bildirim geldi:", notification);
+      // 2. Kullanıcı Giriş Yapınca Çalışan Dinleyici (YENİ EKLENEN KISIM)
+      const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+          console.log("👤 Kullanıcı giriş yaptı, token kontrol ediliyor...");
+          // Hafızada bekleyen token var mı?
+          const storedToken = localStorage.getItem('temp_push_token');
+          if (storedToken) {
+            console.log("📦 Hafızadaki token bulundu, veritabanına yazılıyor...");
+            await saveTokenToSupabase(session.user.id, storedToken);
+          }
+        }
       });
 
-      const actionListener = PushNotifications.addListener("pushNotificationActionPerformed", (notification) => {
-        // Bildirime tıklanınca yapılacaklar (Örn: Oyuna git)
-        console.log("🔔 Bildirime tıklandı:", notification);
+      const notificationListener = PushNotifications.addListener('pushNotificationReceived', notification => {
+        console.log('🔔 Bildirim geldi:', notification);
+      });
+      
+      const actionListener = PushNotifications.addListener('pushNotificationActionPerformed', notification => {
         const data = notification.notification.data;
         if (data?.roomCode) {
-          window.location.href = `/game?room=${data.roomCode}`;
+           window.location.href = `/game?room=${data.roomCode}`;
         }
       });
 
-      // Temizlik (Cleanup)
       return () => {
-        registrationListener.then((listener) => listener.remove());
-        notificationListener.then((listener) => listener.remove());
-        actionListener.then((listener) => listener.remove());
+        registrationListener.then(listener => listener.remove());
+        notificationListener.then(listener => listener.remove());
+        actionListener.then(listener => listener.remove());
+        authListener.subscription.unsubscribe(); // Auth dinleyicisini de kapat
       };
     }
   }, []);
