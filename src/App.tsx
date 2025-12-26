@@ -47,6 +47,7 @@ import NeonBlitzPage from "@/pages/NeonBlitz";
 import SnakeGamePage from "@/pages/SnakeGame";
 import MorlesGamePage from "@/pages/MorlesGame";
 import { Capacitor } from "@capacitor/core";
+import { PushNotifications } from "@capacitor/push-notifications"; // EKLENDI
 import { useImmersiveBars } from "@/hooks/useImmersiveBars";
 import { supabase } from "@/integrations/supabase/client";
 import RoomAutoNavigator from "@/components/RoomAutoNavigator";
@@ -102,9 +103,11 @@ const AppRoutes = () => {
         try {
           // 🔊 Native Audio'yu başlat
           if (isNativePlatform()) {
-            initNativeAudio().then(() => {
-              console.log("✅ App: Native Audio başlatıldı");
-            }).catch(console.warn);
+            initNativeAudio()
+              .then(() => {
+                console.log("✅ App: Native Audio başlatıldı");
+              })
+              .catch(console.warn);
           }
 
           // Status Bar Rengi ve Stili
@@ -143,15 +146,12 @@ const AppRoutes = () => {
 
   return (
     <>
-      <OnboardingPermissions 
-        open={showOnboarding} 
+      <OnboardingPermissions
+        open={showOnboarding}
         onComplete={() => setShowOnboarding(false)}
         onShowIntro={() => setShowIntroDialog(true)}
       />
-      <WelcomeIntroDialog 
-        open={showIntroDialog} 
-        onClose={() => setShowIntroDialog(false)} 
-      />
+      <WelcomeIntroDialog open={showIntroDialog} onClose={() => setShowIntroDialog(false)} />
       <Routes>
         <Route path="/auth" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
         <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
@@ -473,6 +473,72 @@ const App = () => {
       realtimeManager.forceCleanupAll();
     },
   });
+
+  // 👇 PUSH NOTIFICATION ENTEGRASYONU BURADA
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      const initPush = async () => {
+        try {
+          // İzinleri kontrol et ve iste
+          let permStatus = await PushNotifications.checkPermissions();
+          if (permStatus.receive === "prompt") {
+            permStatus = await PushNotifications.requestPermissions();
+          }
+
+          if (permStatus.receive === "granted") {
+            // İzin varsa kayıt ol
+            await PushNotifications.register();
+          }
+        } catch (e) {
+          console.error("Push başlatma hatası:", e);
+        }
+      };
+
+      initPush();
+
+      // Token Geldiğinde ÇALIŞACAK KISIM
+      const registrationListener = PushNotifications.addListener("registration", async (token) => {
+        console.log("🔥🔥🔥 PUSH TOKEN:", token.value);
+
+        // KRİTİK NOKTA: Token'ı veritabanına kaydet!
+        // Şu anki oturum açmış kullanıcıyı al
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (user) {
+          const { error } = await supabase
+            .from("profiles")
+            .update({ push_token: token.value }) // Veritabanındaki sütun adı 'push_token' olmalı
+            .eq("id", user.id);
+
+          if (error) console.error("Token kaydedilemedi:", error);
+          else console.log("✅ Token veritabanına başarıyla kaydedildi!");
+        }
+      });
+
+      // Diğer listenerlar (Bildirim geldiğinde vs.)
+      const notificationListener = PushNotifications.addListener("pushNotificationReceived", (notification) => {
+        console.log("🔔 Bildirim geldi:", notification);
+      });
+
+      const actionListener = PushNotifications.addListener("pushNotificationActionPerformed", (notification) => {
+        // Bildirime tıklanınca yapılacaklar (Örn: Oyuna git)
+        console.log("🔔 Bildirime tıklandı:", notification);
+        const data = notification.notification.data;
+        if (data?.roomCode) {
+          window.location.href = `/game?room=${data.roomCode}`;
+        }
+      });
+
+      // Temizlik (Cleanup)
+      return () => {
+        registrationListener.then((listener) => listener.remove());
+        notificationListener.then((listener) => listener.remove());
+        actionListener.then((listener) => listener.remove());
+      };
+    }
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
