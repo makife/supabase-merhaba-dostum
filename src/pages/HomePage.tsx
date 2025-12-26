@@ -20,7 +20,7 @@ import { useMemoryGame } from "@/hooks/useMemoryGame";
 import { useMatchmaking } from "@/contexts/NewMatchmakingContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { AvatarViewDialog } from "@/components/AvatarViewDialog";
-import { motion, AnimatePresence } from "framer-motion";
+
 
 import {
   Bot,
@@ -330,10 +330,7 @@ const HomePage = () => {
         className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${isMenuOpen ? "blur-md pointer-events-none" : ""}`}
       >
         {/* Header Section */}
-        <motion.div
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5 }}
+        <div
           className="flex-shrink-0 p-3 safe-area-top"
         >
           <div className="game-glass-card rounded-2xl p-4 relative overflow-hidden">
@@ -341,8 +338,7 @@ const HomePage = () => {
             <div className="flex items-center justify-between mb-4">
               {/* Avatar & Name */}
               <div className="flex items-center gap-3">
-                <motion.div
-                  whileTap={{ scale: 0.95 }}
+                <div
                   className="relative cursor-pointer game-avatar-ring"
                   onClick={() => setShowAvatarView(true)}
                 >
@@ -361,7 +357,7 @@ const HomePage = () => {
                       <Crown className="w-3 h-3 text-white" />
                     </div>
                   )}
-                </motion.div>
+                </div>
 
                 <div className="flex-1 min-w-0">
                   <h1 className="text-xl font-bold game-gradient-text font-bungee tracking-wide">KELİMELE</h1>
@@ -373,8 +369,7 @@ const HomePage = () => {
               </div>
 
               {/* Ink Counter */}
-              <motion.div
-                whileTap={{ scale: 0.95 }}
+              <div
                 className="flex flex-col items-center cursor-pointer"
                 onClick={() => {
                   playSound("buttonClick");
@@ -387,7 +382,7 @@ const HomePage = () => {
                 <div className="game-ink-counter bg-gradient-to-r from-primary to-accent px-3 py-0.5 rounded-full mt-1 shadow-lg">
                   <span className="text-sm font-bold text-primary-foreground">{profile?.ink_count || 0}</span>
                 </div>
-              </motion.div>
+              </div>
             </div>
 
             {/* Level Progress */}
@@ -411,11 +406,9 @@ const HomePage = () => {
               </div>
 
               <div className="relative h-2 bg-background/50 rounded-full overflow-hidden game-progress-bar">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progressPercent}%` }}
-                  transition={{ duration: 1, ease: "easeOut" }}
-                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 rounded-full"
+                <div
+                  style={{ width: `${progressPercent}%` }}
+                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 rounded-full transition-all duration-500"
                 />
               </div>
             </div>
@@ -445,11 +438,8 @@ const HomePage = () => {
                           <div className="flex items-center gap-2">
                             <div className="flex gap-1">
                               {Array.from({ length: 5 }, (_, i) => (
-                                <motion.div
+                                <div
                                   key={i}
-                                  initial={{ scale: 0 }}
-                                  animate={{ scale: 1 }}
-                                  transition={{ delay: i * 0.1 }}
                                   className="w-5 h-2 rounded-full bg-green-500"
                                 />
                               ))}
@@ -465,12 +455,9 @@ const HomePage = () => {
                       return (
                         <div className="flex gap-1">
                           {Array.from({ length: 5 }, (_, i) => (
-                            <motion.div
+                            <div
                               key={i}
-                              initial={{ scale: 0 }}
-                              animate={{ scale: 1 }}
-                              transition={{ delay: i * 0.1 }}
-                              className={`w-5 h-2 rounded-full transition-all ${
+                              className={`w-5 h-2 rounded-full ${
                                 i < totalCredits
                                   ? i < 2
                                     ? "bg-red-500"
@@ -498,31 +485,22 @@ const HomePage = () => {
                 { img: "/degistirIkon.png", name: "Değiştir", count: jokers.degistir },
                 { img: "/fisildaIkon.png", name: "Fısılda", count: jokers.fisilida },
                 { img: "/senyazIkon.png", name: "Sen Yaz", count: jokers.senYaz },
-              ].map((joker, i) => (
-                <motion.div
+              ].map((joker) => (
+                <div
                   key={joker.name}
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.3 + i * 0.1 }}
-                  // DEĞİŞİKLİK 1: p-2 yerine p-1, gap-2 yerine gap-1 ve justify-center eklendi
                   className="flex-1 game-joker-card bg-background/30 backdrop-blur-sm rounded-lg p-1 flex items-center justify-center gap-1 border border-border/30"
                 >
-                  {/* DEĞİŞİKLİK 2: w-6 h-6 yerine w-8 h-8 (veya w-9 h-9) yapıldı */}
                   <img src={joker.img} alt={joker.name} className="w-8 h-8 object-contain" />
-
-                  {/* DEĞİŞİKLİK 3: text-xs yerine text-sm ve font-bold yapıldı */}
                   <span className="text-sm font-bold text-foreground">×{joker.count}</span>
-                </motion.div>
+                </div>
               ))}
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Gift Premium Banner */}
         {isPremium && isGiftPremium(profile) && (
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
+          <div
             className="flex-shrink-0 px-3 pb-2"
           >
             <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 backdrop-blur-sm rounded-xl p-3 border border-amber-500/30 flex items-center gap-3">
@@ -536,14 +514,11 @@ const HomePage = () => {
                 </p>
               </div>
             </div>
-          </motion.div>
+          </div>
         )}
 
         {/* Mini Games Horizontal Scroll */}
-        <motion.div
-          initial={{ x: -20, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ delay: 0.2 }}
+        <div
           className="flex-shrink-0 px-3 py-2"
         >
           <div className="flex items-center justify-between mb-2">
@@ -554,18 +529,14 @@ const HomePage = () => {
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </div>
           <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1" style={{ scrollSnapType: "x mandatory" }}>
-            {miniGamesConfig.map((game, index) => (
-              <motion.div
+            {miniGamesConfig.map((game) => (
+              <div
                 key={game.id}
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.3 + index * 0.05 }}
-                whileTap={{ scale: 0.95 }}
                 onClick={() => {
                   playSound("buttonClick");
                   navigate(game.route);
                 }}
-                className={`game-mini-pill flex-shrink-0 bg-gradient-to-br ${game.gradient} rounded-xl p-3 min-w-[100px] cursor-pointer relative overflow-hidden`}
+                className={`game-mini-pill flex-shrink-0 bg-gradient-to-br ${game.gradient} rounded-xl p-3 min-w-[100px] cursor-pointer relative overflow-hidden active:scale-95`}
                 style={{ scrollSnapAlign: "start" }}
               >
                 <div className="relative z-10">
@@ -576,10 +547,10 @@ const HomePage = () => {
                   )}
                 </div>
                 {game.disabled && <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] z-20" />}
-              </motion.div>
+              </div>
             ))}
           </div>
-        </motion.div>
+        </div>
 
         {/* Main Game Modes */}
         <div className="flex-shrink-0 px-3 pt-2">
@@ -593,15 +564,11 @@ const HomePage = () => {
         <div className="flex-1 min-h-0 overflow-y-auto px-3 pb-24 scrollbar-hide" data-onboarding="game-modes">
 
           <div className="grid grid-cols-2 gap-3">
-            {gameModesConfig.map((mode, index) => (
-              <motion.div
+            {gameModesConfig.map((mode) => (
+              <div
                 key={mode.id}
-                initial={{ y: 30, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.4 + index * 0.1 }}
-                whileTap={{ scale: 0.97 }}
                 onClick={() => handleGameModeClick(mode.id)}
-                className={`game-mode-card bg-gradient-to-br ${mode.gradient} rounded-2xl overflow-hidden cursor-pointer aspect-[4/3]`}
+                className={`game-mode-card bg-gradient-to-br ${mode.gradient} rounded-2xl overflow-hidden cursor-pointer aspect-[4/3] active:scale-[0.98]`}
               >
                 <div className="relative h-full p-4 flex flex-col justify-between z-10">
                   {/* Icon */}
@@ -628,15 +595,12 @@ const HomePage = () => {
                     Oyna
                   </Button>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
 
           {/* Stats Section */}
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.8 }}
+          <div
             className="mt-4 flex gap-2"
           >
             <div className="game-stat-badge flex-1 rounded-xl p-3 text-center">
@@ -654,7 +618,7 @@ const HomePage = () => {
               <p className="text-lg font-bold text-foreground">{profile?.wins || 0}</p>
               <p className="text-xs text-muted-foreground">Zafer</p>
             </div>
-          </motion.div>
+          </div>
         </div>
 
         {/* Game Mode Selector Modals */}
