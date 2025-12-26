@@ -54,6 +54,7 @@ import RoomAutoNavigator from "@/components/RoomAutoNavigator";
 import { RematchDialog } from "@/components/RematchDialog";
 import { useAppState } from "@/hooks/useAppState";
 import { realtimeManager } from "@/utils/realtimeManager";
+import { useSupabaseConnection } from "@/hooks/useSupabaseConnection";
 import { OnboardingPermissions } from "@/components/OnboardingPermissions";
 import { WelcomeIntroDialog } from "@/components/WelcomeIntroDialog";
 import { StatusBar, Style } from "@capacitor/status-bar";
@@ -452,6 +453,9 @@ const GlobalRematchDialog = () => {
 const App = () => {
   // 1. Hook'u sadece bir referans almak için kullanıyoruz
   const { manualHideBars } = useImmersiveBars();
+  
+  // Supabase bağlantı izleme ve otomatik yeniden bağlanma
+  useSupabaseConnection();
 
   // 2. Arka plan/ön plan yönetimi
   useAppState({
