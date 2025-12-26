@@ -582,13 +582,15 @@ const HomePage = () => {
         </motion.div>
 
         {/* Main Game Modes */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-3 pb-24 scrollbar-hide" data-onboarding="game-modes">
+        <div className="flex-shrink-0 px-3 pt-2">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
               <Flame className="w-4 h-4 text-orange-500" />
               Oyun Modları
             </h3>
           </div>
+        </div>
+        <div className="flex-1 min-h-0 overflow-y-auto px-3 pb-24 scrollbar-hide" data-onboarding="game-modes">
 
           <div className="grid grid-cols-2 gap-3">
             {gameModesConfig.map((mode, index) => (
