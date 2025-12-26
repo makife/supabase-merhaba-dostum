@@ -550,30 +550,35 @@ const TournamentBracketPage = () => {
           <div className="w-16 sm:w-24" />
         </div>
 
-        {/* Round Oluşturuluyor Loading - countdown başlayana kadar göster */}
-        {isWaitingForRoundCreation && (
-          <Card className="mb-4 bg-indigo-800 border-indigo-600">
-            <CardContent className="p-4 text-center">
-              <div className="w-8 h-8 border-2 border-yellow-400 border-t-transparent rounded-full mx-auto mb-2 animate-spin" />
-              <p className="text-yellow-200 text-sm font-medium">
-                🔄 {currentRound === 2 ? "Yarı Final" : currentRound === 3 ? "Final" : "Round"} oluşturuluyor, lütfen
-                bekleyin...
-              </p>
-            </CardContent>
-          </Card>
-        )}
+        {/* Sticky Notification Area - sayfayla scroll olmaz */}
+        {(isWaitingForRoundCreation || hasActiveCountdown) && (
+          <div className="sticky top-0 z-50 -mx-3 sm:-mx-4 px-3 sm:px-4 py-2 bg-gradient-to-b from-purple-900 via-purple-900/95 to-transparent">
+            {/* Round Oluşturuluyor Loading - countdown başlayana kadar göster */}
+            {isWaitingForRoundCreation && (
+              <Card className="bg-indigo-800 border-indigo-600 shadow-lg">
+                <CardContent className="p-4 text-center">
+                  <div className="w-8 h-8 border-2 border-yellow-400 border-t-transparent rounded-full mx-auto mb-2 animate-spin" />
+                  <p className="text-yellow-200 text-sm font-medium">
+                    🔄 {currentRound === 2 ? "Yarı Final" : currentRound === 3 ? "Final" : "Round"} oluşturuluyor, lütfen
+                    bekleyin...
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
-        {/* Countdown - maçlar oluştuktan sonra geri sayım */}
-        {hasActiveCountdown && (
-          <Card className="mb-4 bg-indigo-800 border-indigo-600">
-            <CardContent className="p-3 text-center">
-              <Clock className="w-6 h-6 text-yellow-400 mx-auto mb-1" />
-              <p className="text-white font-medium text-sm">
-                {currentRound === 1 ? "Çeyrek Final" : currentRound === 2 ? "Yarı Final" : "Final"} başlıyor...
-              </p>
-              <p className="text-yellow-300 text-xl font-bold">{countdown} saniye</p>
-            </CardContent>
-          </Card>
+            {/* Countdown - maçlar oluştuktan sonra geri sayım */}
+            {hasActiveCountdown && (
+              <Card className="bg-indigo-800 border-indigo-600 shadow-lg">
+                <CardContent className="p-3 text-center">
+                  <Clock className="w-6 h-6 text-yellow-400 mx-auto mb-1" />
+                  <p className="text-white font-medium text-sm">
+                    {currentRound === 1 ? "Çeyrek Final" : currentRound === 2 ? "Yarı Final" : "Final"} başlıyor...
+                  </p>
+                  <p className="text-yellow-300 text-xl font-bold">{countdown} saniye</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         )}
 
         {/* Bracket */}
