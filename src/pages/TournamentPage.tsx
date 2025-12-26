@@ -11,7 +11,7 @@ import { toast } from "sonner";
 
 const TournamentPage = () => {
   const navigate = useNavigate();
-  const { tournaments, loading, createTournament, joinTournament, fetchTournaments } = useTournamentContext();
+  const { tournaments, loading, createTournament, joinTournament, fetchTournaments, hasLeftTournament } = useTournamentContext();
   const { profile, isPremium } = useUser();
 
   useEffect(() => {
@@ -147,6 +147,7 @@ const TournamentPage = () => {
                   tournament={tournament}
                   onJoin={handleJoinTournament}
                   disabled={loading}
+                  hasLeft={hasLeftTournament(tournament.id)}
                 />
               ))}
             </div>

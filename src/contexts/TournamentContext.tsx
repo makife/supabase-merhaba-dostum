@@ -12,6 +12,7 @@ interface TournamentContextType {
   participants: TournamentParticipant[];
   matches: TournamentMatch[];
   loading: boolean;
+  leftTournaments: string[]; // Ayrılan turnuva ID'leri
 
   createTournament: () => Promise<string | null>;
   joinTournament: (tournamentId: string) => Promise<boolean>;
@@ -21,6 +22,7 @@ interface TournamentContextType {
   fetchTournamentDetails: (tournamentId: string) => Promise<void>;
   advanceToNextRound: (tournamentId: string) => Promise<boolean>;
   resetContext: () => void;
+  hasLeftTournament: (tournamentId: string) => boolean;
 }
 
 const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
@@ -41,8 +43,14 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
   const [participants, setParticipants] = useState<TournamentParticipant[]>([]);
   const [matches, setMatches] = useState<TournamentMatch[]>([]);
   const [loading, setLoading] = useState(false);
+  const [leftTournaments, setLeftTournaments] = useState<string[]>([]);
   
   const fetchingRef = useRef(false);
+
+  // Ayrılan turnuva kontrolü
+  const hasLeftTournament = (tournamentId: string): boolean => {
+    return leftTournaments.includes(tournamentId);
+  };
 
   const resetContext = () => {
     setTournaments([]);
@@ -50,6 +58,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     setParticipants([]);
     setMatches([]);
     setLoading(false);
+    // leftTournaments'ı resetleme - oturum boyunca kalmalı
   };
 
   // Fetch active tournaments
@@ -356,6 +365,9 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
       }
 
       toast({ title: "Başarılı", description: "Turnuvadan ayrıldınız" });
+      
+      // Ayrılan turnuvayı kaydet (tekrar katılmasın)
+      setLeftTournaments(prev => [...prev, tournamentId]);
       
       // Context'i temizle
       setCurrentTournament(null);
@@ -678,6 +690,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     participants,
     matches,
     loading,
+    leftTournaments,
     createTournament,
     joinTournament,
     leaveTournament,
@@ -686,6 +699,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     fetchTournamentDetails,
     advanceToNextRound,
     resetContext,
+    hasLeftTournament,
   };
 
   return <TournamentContext.Provider value={value}>{children}</TournamentContext.Provider>;
