@@ -89,7 +89,9 @@ export const useAdMob = () => {
       }
 
       const isIOS = Capacitor.getPlatform() === "ios";
-      const adId = isIOS ? "ca-app-pub-4768026665961339/6383991586" : "ca-app-pub-4768026665961339/4806604463";
+      const adId = isIOS
+        ? "ca-app-pub-4768026665961339/6383991586" // iOS kodun varsa buraya (yoksa kalsın)
+        : "ca-app-pub-4768026665961339/4806604463";
       await admobModule.AdMob.prepareRewardVideoAd({ adId, isTesting: false });
       setIsAdReady(true);
       console.log("Rewarded ad loaded successfully");
@@ -105,29 +107,40 @@ export const useAdMob = () => {
     }
   }, [isAdLoading, toast]);
 
-  // Give reward to user - 5 mürekkep ver
+  // Give reward to user
   const giveReward = useCallback(async () => {
     if (!user) return;
 
     try {
-      // Get current ink count first
-      const { data: profile } = await supabase.from("profiles").select("ink_count").eq("id", user.id).single();
+      // Önce mevcut miktarı çek
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("game_credits") // Sütun adın farklıysa burayı değiştir! (örn: 'ink')
+        .eq("id", user.id)
+        .single();
 
-      const newInkCount = (profile?.ink_count || 0) + 5; // 5 mürekkep ekle
+      // BURAYI DEĞİŞTİRDİK: +1 yerine +5 yaptık
+      const newCredits = (profile?.game_credits || 0) + 5;
 
-      // Update user ink in database
-      const { error } = await supabase.from("profiles").update({ ink_count: newInkCount }).eq("id", user.id);
+      // Veritabanını güncelle
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          game_credits: newCredits, // Sütun adın farklıysa burayı değiştir!
+          last_credit_refresh: new Date().toISOString(),
+        })
+        .eq("id", user.id);
 
       if (error) {
         throw error;
       }
 
-      console.log("Ink reward given successfully:", newInkCount);
+      console.log("Reward given successfully");
     } catch (error) {
-      console.error("Failed to give ink reward:", error);
+      console.error("Failed to give reward:", error);
       toast({
         title: "Ödül Hatası",
-        description: "Mürekkep ödülü verilirken bir hata oluştu.",
+        description: "Mürekkep verilirken bir hata oluştu.",
         variant: "destructive",
       });
     }
@@ -188,7 +201,8 @@ export const useAdMob = () => {
       const adRewardedListener = await AdMob.addListener(RewardAdPluginEvents.Rewarded, async (reward: any) => {
         console.log("User earned reward:", reward);
         await giveReward();
-        toast({ title: "Tebrikler! 💧", description: "+5 Damla Mürekkep kazandınız." });
+        // BURAYI DEĞİŞTİRDİK: Mesaj artık 5 mürekkep diyor
+        toast({ title: "Tebrikler! 🎉", description: "5 Damla Mürekkep kazandınız." });
       });
       await AdMob.showRewardVideoAd();
       setTimeout(() => {
