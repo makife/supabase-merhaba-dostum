@@ -92,14 +92,14 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     }
   };
 
-  // Create tournament - kurucu olarak katılırken 3 kredi düşür
+  // Create tournament - kredi düşümü YOK, sadece maç başladığında düşülür
   const createTournament = async (): Promise<string | null> => {
     if (!user) return null;
 
     try {
       setLoading(true);
 
-      // 3 kredi düşür (turnuva boyunca toplam)
+      // Kredi kontrolü - minimum 3 kredi gerekli ama düşüm yapılmıyor
       const { data: profile } = await supabase
         .from("profiles")
         .select("game_credits, bonus_credits, premium_until, unlimited_lives_until")
@@ -113,44 +113,10 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
           (profile.unlimited_lives_until && new Date(profile.unlimited_lives_until) > now);
 
         if (!isPremium) {
-          let gameCredits = profile.game_credits || 0;
-          let bonusCredits = profile.bonus_credits || 0;
-          let creditsToDeduct = 3;
-
-          // Önce bonus kredilerden düş
-          if (bonusCredits >= creditsToDeduct) {
-            bonusCredits -= creditsToDeduct;
-            creditsToDeduct = 0;
-          } else {
-            creditsToDeduct -= bonusCredits;
-            bonusCredits = 0;
-          }
-
-          // Kalan varsa normal kredilerden düş
-          if (creditsToDeduct > 0) {
-            gameCredits = Math.max(0, gameCredits - creditsToDeduct);
-          }
-
-          // Güncelle - sadece kredi değerlerini güncelle
-          const updateData: { game_credits: number; bonus_credits: number; last_credit_refresh?: string } = {
-            game_credits: gameCredits,
-            bonus_credits: bonusCredits,
-          };
-          
-          // Sadece ilk defa 5'in altına düşerse refresh timer'ı başlat
-          if (gameCredits < 5 && (profile.game_credits || 0) >= 5) {
-            updateData.last_credit_refresh = new Date().toISOString();
-          }
-
-          const { error: updateError } = await supabase
-            .from("profiles")
-            .update(updateData)
-            .eq("id", user.id);
-
-          if (updateError) {
-            console.error("❌ Kredi güncelleme hatası:", updateError);
-          } else {
-            console.log("✅ 3 kredi düşürüldü (turnuva oluşturma)", { gameCredits, bonusCredits });
+          const totalCredits = (profile.game_credits || 0) + (profile.bonus_credits || 0);
+          if (totalCredits < 3) {
+            toast({ title: "Yetersiz Kredi", description: "Turnuvaya katılmak için en az 3 kredi gerekli", variant: "destructive" });
+            return null;
           }
         }
       }
@@ -200,7 +166,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     }
   };
 
-  // Join tournament - 3 kredi düşür (turnuva boyunca geçerli)
+  // Join tournament - kredi düşümü YOK, sadece maç başladığında düşülür
   const joinTournament = async (tournamentId: string): Promise<boolean> => {
     if (!user) return false;
 
@@ -220,7 +186,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
         return true;
       }
 
-      // 3 kredi düşür (turnuva boyunca toplam)
+      // Kredi kontrolü - minimum 3 kredi gerekli ama düşüm yapılmıyor
       const { data: profile } = await supabase
         .from("profiles")
         .select("game_credits, bonus_credits, premium_until, unlimited_lives_until")
@@ -234,44 +200,10 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
           (profile.unlimited_lives_until && new Date(profile.unlimited_lives_until) > now);
 
         if (!isPremium) {
-          let gameCredits = profile.game_credits || 0;
-          let bonusCredits = profile.bonus_credits || 0;
-          let creditsToDeduct = 3;
-
-          // Önce bonus kredilerden düş
-          if (bonusCredits >= creditsToDeduct) {
-            bonusCredits -= creditsToDeduct;
-            creditsToDeduct = 0;
-          } else {
-            creditsToDeduct -= bonusCredits;
-            bonusCredits = 0;
-          }
-
-          // Kalan varsa normal kredilerden düş
-          if (creditsToDeduct > 0) {
-            gameCredits = Math.max(0, gameCredits - creditsToDeduct);
-          }
-
-          // Güncelle - sadece kredi değerlerini güncelle
-          const updateData: { game_credits: number; bonus_credits: number; last_credit_refresh?: string } = {
-            game_credits: gameCredits,
-            bonus_credits: bonusCredits,
-          };
-          
-          // Sadece ilk defa 5'in altına düşerse refresh timer'ı başlat
-          if (gameCredits < 5 && (profile.game_credits || 0) >= 5) {
-            updateData.last_credit_refresh = new Date().toISOString();
-          }
-
-          const { error: updateError } = await supabase
-            .from("profiles")
-            .update(updateData)
-            .eq("id", user.id);
-
-          if (updateError) {
-            console.error("❌ Kredi güncelleme hatası:", updateError);
-          } else {
-            console.log("✅ 3 kredi düşürüldü (turnuva katılımı)", { gameCredits, bonusCredits });
+          const totalCredits = (profile.game_credits || 0) + (profile.bonus_credits || 0);
+          if (totalCredits < 3) {
+            toast({ title: "Yetersiz Kredi", description: "Turnuvaya katılmak için en az 3 kredi gerekli", variant: "destructive" });
+            return false;
           }
         }
       }
@@ -384,7 +316,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     }
   };
 
-  // Start tournament - called when countdown ends
+  // Start tournament - called when countdown ends, deduct credits here
   const startTournament = async (tournamentId: string): Promise<boolean> => {
     try {
       setLoading(true);
@@ -409,6 +341,70 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
       }
 
       console.log(`✅ Turnuva başladı, ${result.bots_added} bot eklendi`);
+
+      // 🎫 Turnuva başladı - tüm gerçek oyuncuların kredisini düş
+      const { data: realParticipants } = await supabase
+        .from("tournament_participants")
+        .select("user_id")
+        .eq("tournament_id", tournamentId)
+        .eq("is_bot", false);
+
+      if (realParticipants && realParticipants.length > 0) {
+        console.log(`💰 ${realParticipants.length} oyuncunun kredisi düşülüyor...`);
+        
+        for (const participant of realParticipants) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("game_credits, bonus_credits, premium_until, unlimited_lives_until")
+            .eq("id", participant.user_id)
+            .single();
+
+          if (profile) {
+            const now = new Date();
+            const isPremium = 
+              (profile.premium_until && new Date(profile.premium_until) > now) ||
+              (profile.unlimited_lives_until && new Date(profile.unlimited_lives_until) > now);
+
+            if (!isPremium) {
+              let gameCredits = profile.game_credits || 0;
+              let bonusCredits = profile.bonus_credits || 0;
+              let creditsToDeduct = 3;
+
+              // Önce bonus kredilerden düş
+              if (bonusCredits >= creditsToDeduct) {
+                bonusCredits -= creditsToDeduct;
+                creditsToDeduct = 0;
+              } else {
+                creditsToDeduct -= bonusCredits;
+                bonusCredits = 0;
+              }
+
+              // Kalan varsa normal kredilerden düş
+              if (creditsToDeduct > 0) {
+                gameCredits = Math.max(0, gameCredits - creditsToDeduct);
+              }
+
+              const updateData: { game_credits: number; bonus_credits: number; last_credit_refresh?: string } = {
+                game_credits: gameCredits,
+                bonus_credits: bonusCredits,
+              };
+              
+              // Sadece ilk defa 5'in altına düşerse refresh timer'ı başlat
+              if (gameCredits < 5 && (profile.game_credits || 0) >= 5) {
+                updateData.last_credit_refresh = new Date().toISOString();
+              }
+
+              await supabase
+                .from("profiles")
+                .update(updateData)
+                .eq("id", participant.user_id);
+
+              console.log(`✅ 3 kredi düşürüldü: ${participant.user_id}`);
+            }
+          }
+        }
+      }
+
       await fetchTournamentDetails(tournamentId);
       return true;
     } catch (error) {
