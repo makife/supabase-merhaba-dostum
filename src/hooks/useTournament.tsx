@@ -16,6 +16,20 @@ export const useTournament = (tournamentId?: string) => {
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const startingRef = useRef(false);
+  const lastCreatorIdRef = useRef<string | null>(null);
+
+  // Reset startingRef when creator changes (e.g., after creator leaves)
+  useEffect(() => {
+    const currentCreatorId = context.currentTournament?.creator_id || null;
+    
+    if (lastCreatorIdRef.current !== null && lastCreatorIdRef.current !== currentCreatorId) {
+      // Creator changed - reset startingRef so new creator can trigger countdown end
+      console.log("🔄 Kurucu değişti, startingRef sıfırlanıyor");
+      startingRef.current = false;
+    }
+    
+    lastCreatorIdRef.current = currentCreatorId;
+  }, [context.currentTournament?.creator_id]);
 
   // Countdown timer
   useEffect(() => {
@@ -29,14 +43,15 @@ export const useTournament = (tournamentId?: string) => {
     }
 
     const expiresAt = new Date(context.currentTournament.expires_at).getTime();
+    const creatorId = context.currentTournament.creator_id;
 
     const tick = () => {
       const now = Date.now();
       const remaining = Math.max(0, Math.floor((expiresAt - now) / 1000));
       setTimeLeft(remaining);
 
-      // Auto-start when countdown ends
-      if (remaining === 0 && !startingRef.current) {
+      // Auto-start when countdown ends - only if current user is creator
+      if (remaining === 0 && !startingRef.current && user?.id === creatorId) {
         startingRef.current = true;
         handleCountdownEnd();
       }
@@ -51,7 +66,7 @@ export const useTournament = (tournamentId?: string) => {
         intervalRef.current = null;
       }
     };
-  }, [context.currentTournament?.expires_at, context.currentTournament?.status]);
+  }, [context.currentTournament?.expires_at, context.currentTournament?.status, context.currentTournament?.creator_id, user?.id]);
 
   // Handle countdown end
   const handleCountdownEnd = useCallback(async () => {
