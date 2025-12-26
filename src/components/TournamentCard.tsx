@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Trophy, Users, Clock, Swords } from 'lucide-react';
+import { Trophy, Users, Clock, Swords, Ban } from 'lucide-react';
 import { Tournament } from '@/types/tournament';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -10,12 +10,14 @@ interface TournamentCardProps {
   tournament: Tournament;
   onJoin: (tournamentId: string) => void;
   disabled?: boolean;
+  hasLeft?: boolean; // Kullanıcı bu turnuvadan ayrılmış mı?
 }
 
 export const TournamentCard: React.FC<TournamentCardProps> = ({
   tournament,
   onJoin,
-  disabled = false
+  disabled = false,
+  hasLeft = false
 }) => {
   const [participantCount, setParticipantCount] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(0);
@@ -59,8 +61,30 @@ export const TournamentCard: React.FC<TournamentCardProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const isDisabled = disabled || participantCount >= 8 || timeRemaining === 0 || hasLeft;
+  
+  const getButtonContent = () => {
+    if (hasLeft) {
+      return (
+        <>
+          <Ban className="w-4 h-4 mr-2" />
+          Ayrıldın
+        </>
+      );
+    }
+    if (participantCount >= 8) {
+      return 'Dolu';
+    }
+    return (
+      <>
+        <Swords className="w-4 h-4 mr-2" />
+        Katıl
+      </>
+    );
+  };
+
   return (
-    <Card className="bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/15 transition-all">
+    <Card className={`bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/15 transition-all ${hasLeft ? 'opacity-60' : ''}`}>
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -87,12 +111,11 @@ export const TournamentCard: React.FC<TournamentCardProps> = ({
           
           <Button 
             onClick={() => onJoin(tournament.id)}
-            disabled={disabled || participantCount >= 8 || timeRemaining === 0}
-            className="bg-green-500 hover:bg-green-600 text-white disabled:opacity-50"
+            disabled={isDisabled}
+            className={`${hasLeft ? 'bg-gray-500' : 'bg-green-500 hover:bg-green-600'} text-white disabled:opacity-50`}
             size="sm"
           >
-            <Swords className="w-4 h-4 mr-2" />
-            {participantCount >= 8 ? 'Dolu' : 'Katıl'}
+            {getButtonContent()}
           </Button>
         </div>
       </CardContent>
