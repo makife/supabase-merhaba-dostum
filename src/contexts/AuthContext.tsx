@@ -15,17 +15,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// LocalStorage Cache İşlemleri
-const getCachedUser = (): User | null => {
-  try {
-    const cached = localStorage.getItem("kelimeci_cached_user");
-    if (cached) return JSON.parse(cached);
-  } catch (e) {
-    console.log("Cache okuma hatası:", e);
-  }
-  return null;
-};
-
+// LocalStorage Yardımcıları
 const getCachedSession = (): Session | null => {
   try {
     const cached = localStorage.getItem("kelimeci_cached_session");
@@ -46,125 +36,128 @@ const setCachedData = (user: User | null, session: Session | null) => {
       localStorage.removeItem("kelimeci_cached_session");
     }
   } catch (e) {
-    console.log("Cache yazma hatası:", e);
+    console.log(e);
   }
 };
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 };
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
-export const AuthProvider = ({ children }: AuthProviderProps) => {
-  // 1. ÖNEMLİ: Başlangıç state'ini direkt Cache'den alıyoruz.
-  // Cache varsa loading FALSE başlar. Kullanıcı anında içeri girer.
-  const cachedUser = getCachedUser();
-  const cachedSession = getCachedSession();
-
-  const [user, setUser] = useState<User | null>(cachedUser);
-  const [session, setSession] = useState<Session | null>(cachedSession);
-
-  // Eğer cache varsa, loading FALSE olsun ki kullanıcı beklemesin
-  const [loading, setLoading] = useState(!cachedUser);
-
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const mounted = useRef(true);
+
+  // Token'ın süresi dolmuş mu kontrol eden fonksiyon
+  const isTokenExpired = (session: Session) => {
+    if (!session?.expires_at) return true;
+    const now = Math.floor(Date.now() / 1000);
+    // Güvenlik payı: Sürenin bitmesine 60 saniye kaldıysa bile "bitmiş" sayalım.
+    return session.expires_at < now + 60;
+  };
 
   useEffect(() => {
     mounted.current = true;
 
-    // Supabase Listener
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-      console.log("🔐 Auth Event:", event);
-
-      // Sadece açıkça çıkış yapılırsa veya token geçersizse sil
-      if (event === "SIGNED_OUT") {
-        setSession(null);
-        setUser(null);
-        setCachedData(null, null);
-        setLoading(false);
-        return;
-      }
-
-      // Token yenilendi veya giriş yapıldıysa güncelle
-      if (newSession) {
-        setSession(newSession);
-        setUser(newSession.user);
-        setCachedData(newSession.user, newSession);
-        setLoading(false);
-      }
-    });
-
-    // Başlangıç Kontrolü (Arka Planda)
     const initAuth = async () => {
+      console.log("🔒 Auth Check Başlıyor...");
+
+      // 1. Önce Cache'e Bak
+      const cachedSession = getCachedSession();
+
+      if (cachedSession) {
+        // 2. KRİTİK NOKTA: Cache var ama süresi dolmuş mu?
+        if (isTokenExpired(cachedSession)) {
+          console.log("⚠️ Cache bulundu ama SÜRESİ DOLMUŞ (Bayat Token). Yenisi isteniyor...");
+          // Session'ı state'e ATMA! Bekle, yenisi gelsin.
+        } else {
+          console.log("✅ Cache geçerli, hemen içeri alınıyor.");
+          // Token taze, kullanıcıyı bekletme, hemen içeri al
+          if (mounted.current) {
+            setSession(cachedSession);
+            setUser(cachedSession.user);
+            setLoading(false); // Kullanıcı uygulamayı kullanmaya başlasın
+          }
+        }
+      }
+
+      // 3. Supabase ile Gerçek Kontrol (Her durumda çalışır)
       try {
-        // Supabase'den güncel durumu iste
         const {
           data: { session: currentSession },
           error,
         } = await supabase.auth.getSession();
 
-        if (error) {
-          console.log("⚠️ Network/Auth hatası (Cache korunuyor):", error.message);
-          // HATA VARSA HİÇBİR ŞEY YAPMA!
-          // Cache'deki kullanıcıyla devam et.
-          if (mounted.current) setLoading(false);
-          return;
-        }
-
-        if (currentSession) {
-          // Her şey yolunda, veriyi güncelle
-          if (mounted.current) {
-            setSession(currentSession);
-            setUser(currentSession.user);
-            setCachedData(currentSession.user, currentSession);
-          }
-        } else {
-          // Session yok. AMA...
-          // Eğer cache'de user varsa hemen silme! Belki token yenileniyordur.
-          // refreshSession deneyelim.
-          console.log("⚠️ Session null geldi, refresh deneniyor...");
-          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-
-          if (refreshData.session) {
-            console.log("✅ Session kurtarıldı!");
-            if (mounted.current) {
-              setSession(refreshData.session);
-              setUser(refreshData.session.user);
-              setCachedData(refreshData.session.user, refreshData.session);
-            }
+        // Eğer getSession bozuk döndüyse veya token yoksa
+        if (!currentSession || error) {
+          // Eğer elimizde taze bir cache vardıysa onu koru, yoksa null
+          if (cachedSession && !isTokenExpired(cachedSession)) {
+            console.log("⚠️ Network hatası ama cache taze, devam ediliyor.");
           } else {
-            // Artık eminiz, gerçekten oturum yok.
-            // Eğer cache boşsa null yap, doluysa (offline olabilir) dokunma.
-            if (!cachedUser) {
-              console.log("❌ Kurtarılamadı, oturum yok.");
+            // Cache de yok veya bayatsa, refreshSession dene
+            console.log("🔄 Oturum kurtarılmaya çalışılıyor (Refresh)...");
+            const { data: refreshData } = await supabase.auth.refreshSession();
+
+            if (refreshData.session) {
+              console.log("✅ Token başarıyla kurtarıldı!");
               if (mounted.current) {
-                setUser(null);
-                setSession(null);
+                setSession(refreshData.session);
+                setUser(refreshData.session.user);
+                setCachedData(refreshData.session.user, refreshData.session);
               }
             } else {
-              console.log("⚠️ Offline olabilir, Cache ile devam ediliyor.");
+              console.log("❌ Kurtarılamadı, giriş sayfasına yönlendirilecek.");
+              if (mounted.current) {
+                setSession(null);
+                setUser(null);
+                setCachedData(null, null);
+              }
+            }
+          }
+        } else {
+          // getSession başarılı döndüyse her şey yolundadır
+          if (mounted.current) {
+            // Eğer cache'den yüklediğimizle aynısı geldiyse gereksiz render yapma
+            if (currentSession.access_token !== session?.access_token) {
+              console.log("✅ Sunucudan güncel oturum alındı.");
+              setSession(currentSession);
+              setUser(currentSession.user);
+              setCachedData(currentSession.user, currentSession);
             }
           }
         }
-      } catch (err) {
-        console.error("Auth Init Crash:", err);
-        // Crash olsa bile cache'i silme
+      } catch (e) {
+        console.error("Auth Init Error:", e);
       } finally {
         if (mounted.current) setLoading(false);
       }
     };
 
     initAuth();
+
+    // Auth State Değişimlerini Dinle
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      if (event === "TOKEN_REFRESHED" || event === "SIGNED_IN") {
+        if (newSession) {
+          console.log(`🔐 Token Yenilendi (${event})`);
+          setSession(newSession);
+          setUser(newSession.user);
+          setCachedData(newSession.user, newSession);
+        }
+      } else if (event === "SIGNED_OUT") {
+        console.log("👋 Çıkış yapıldı");
+        setSession(null);
+        setUser(null);
+        setCachedData(null, null);
+      }
+    });
 
     return () => {
       mounted.current = false;
@@ -174,98 +167,50 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const signIn = async (email: string, password: string) => {
     setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      toast({
-        title: "Giriş Hatası",
-        description: "E-posta veya şifre hatalı.",
-        variant: "destructive",
-      });
+      toast({ title: "Giriş Hatası", description: "Bilgileri kontrol ediniz.", variant: "destructive" });
     } else if (data.session) {
-      // Manuel girişte hemen state'i güncelle
       setSession(data.session);
       setUser(data.session.user);
       setCachedData(data.session.user, data.session);
-      toast({
-        title: "Giriş Başarılı",
-        description: "Hoş geldiniz!",
-      });
     }
     setLoading(false);
     return { error };
   };
 
   const signUp = async (email: string, password: string, username: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: { username: username },
-      },
+      options: { data: { username } },
     });
-
-    if (error) {
-      toast({
-        title: "Kayıt Hatası",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
+    if (error) toast({ title: "Kayıt Hatası", description: error.message, variant: "destructive" });
     return { error };
   };
 
   const signOut = async () => {
-    // Önce UI'ı temizle (Hızlı tepki için)
-    setCachedData(null, null);
-    setUser(null);
-    setSession(null);
-
-    // Sonra arka planı hallet
+    setLoading(true); // Çıkış yaparken loading göster ki UI saçmalamasın
     await supabase.auth.signOut();
-    toast({
-      title: "Çıkış Yapıldı",
-      description: "Güle güle!",
-    });
+    setSession(null);
+    setUser(null);
+    setCachedData(null, null);
+    setLoading(false);
+    toast({ title: "Çıkış Yapıldı" });
   };
 
   const resetPassword = async (email: string) => {
-    const redirectUrl = `https://kelimeci.com.tr/auth/reset-password`;
-
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: redirectUrl,
+      redirectTo: "https://kelimeci.com.tr/auth/reset-password",
     });
-
-    if (error) {
-      toast({
-        title: "Hata",
-        description: "Şifre sıfırlama maili gönderilemedi.",
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Mail Gönderildi",
-        description: "Şifre sıfırlama linki e-posta adresinize gönderildi.",
-      });
-    }
+    if (error) toast({ title: "Hata", variant: "destructive" });
+    else toast({ title: "Mail Gönderildi" });
     return { error };
   };
 
-  const value = {
-    user,
-    session,
-    loading, // Cache varsa burası hep false olur
-    signIn,
-    signUp,
-    signOut,
-    resetPassword,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut, resetPassword }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
