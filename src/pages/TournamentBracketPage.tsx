@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Trophy, Home, Clock, Crown } from "lucide-react";
+import { Trophy, LogOut, Clock, Crown } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTournament } from "@/hooks/useTournament";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,8 +19,56 @@ const TournamentBracketPage = () => {
   const { user } = useAuth();
   const { playSpecialSound } = useSounds();
 
-  const { currentTournament, matches, participants, loading, fetchTournamentDetails, advanceToNextRound } =
+  const { currentTournament, matches, participants, loading, fetchTournamentDetails, advanceToNextRound, leaveTournament } =
     useTournament(tournamentId);
+  
+  const [isLeaving, setIsLeaving] = useState(false);
+  
+  // Bracket'ten ayrılma fonksiyonu - aktif maç varsa rakibi kazanan yap
+  const handleLeaveBracket = async () => {
+    if (!user || !tournamentId) return;
+    
+    setIsLeaving(true);
+    try {
+      const currentRound = currentTournament?.current_round || 1;
+      
+      // Kullanıcının aktif maçını bul
+      const myActiveMatch = matches.find(
+        (m) =>
+          m.round === currentRound &&
+          (m.player1_id === user.id || m.player2_id === user.id) &&
+          (m.status === "pending" || m.status === "in_progress")
+      );
+      
+      if (myActiveMatch) {
+        // Rakibi kazanan yap
+        const winnerId = myActiveMatch.player1_id === user.id 
+          ? myActiveMatch.player2_id 
+          : myActiveMatch.player1_id;
+        
+        console.log(`🚪 Bracket'ten ayrılıyor, maç ${myActiveMatch.id} - Kazanan: ${winnerId}`);
+        
+        await supabase
+          .from("tournament_matches")
+          .update({
+            status: "completed",
+            winner_id: winnerId,
+          })
+          .eq("id", myActiveMatch.id);
+        
+        toast.info("Maçı bıraktınız, rakibiniz kazandı");
+      }
+      
+      // Turnuvadan ayrıl
+      await leaveTournament();
+      navigate("/tournament");
+    } catch (error) {
+      console.error("❌ Bracket ayrılma hatası:", error);
+      toast.error("Ayrılırken bir hata oluştu");
+    } finally {
+      setIsLeaving(false);
+    }
+  };
 
   const [countdown, setCountdown] = useState(10);
   const [showChampion, setShowChampion] = useState(false);
@@ -539,10 +588,38 @@ const TournamentBracketPage = () => {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <Button onClick={() => navigate("/tournament")} size="sm" className="bg-blue-600 hover:bg-blue-700">
-            <Home className="w-4 h-4 mr-1" />
-            <span className="hidden sm:inline">Ana Sayfa</span>
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button 
+                size="sm" 
+                className="bg-red-600 hover:bg-red-700"
+                disabled={isLeaving}
+              >
+                <LogOut className="w-4 h-4 mr-1" />
+                <span className="hidden sm:inline">{isLeaving ? "Ayrılıyor..." : "Ayrıl"}</span>
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="bg-gray-900 border-gray-700">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-white">Turnuvadan Ayrıl</AlertDialogTitle>
+                <AlertDialogDescription className="text-gray-300">
+                  Turnuvadan ayrılırsanız aktif maçınızı kaybetmiş sayılırsınız ve rakibiniz bir sonraki tura geçer. 
+                  Bu işlem geri alınamaz.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="bg-gray-700 hover:bg-gray-600 text-white border-gray-600">
+                  Vazgeç
+                </AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={handleLeaveBracket}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  Ayrıl
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <div className="text-center flex-1 mx-2">
             <h1 className="text-lg sm:text-xl font-bold text-white truncate">{currentTournament.name}</h1>
             <p className="text-gray-300 text-xs sm:text-sm">Turnuva Ağacı</p>
