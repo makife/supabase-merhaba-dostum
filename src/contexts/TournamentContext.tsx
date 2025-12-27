@@ -352,57 +352,87 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
       if (realParticipants && realParticipants.length > 0) {
         console.log(`💰 ${realParticipants.length} oyuncunun kredisi düşülüyor...`);
         
-        for (const participant of realParticipants) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("game_credits, bonus_credits, premium_until, unlimited_lives_until")
-            .eq("id", participant.user_id)
-            .single();
+        // Tüm oyuncuların kredilerini paralel olarak düş
+        const creditPromises = realParticipants.map(async (participant) => {
+          if (!participant.user_id) {
+            console.warn("⚠️ Katılımcının user_id'si yok, atlanıyor");
+            return;
+          }
 
-          if (profile) {
+          try {
+            const { data: profile, error: profileError } = await supabase
+              .from("profiles")
+              .select("game_credits, bonus_credits, premium_until, unlimited_lives_until")
+              .eq("id", participant.user_id)
+              .maybeSingle();
+
+            if (profileError) {
+              console.error(`❌ Profil getirme hatası (${participant.user_id}):`, profileError);
+              return;
+            }
+
+            if (!profile) {
+              console.warn(`⚠️ Profil bulunamadı: ${participant.user_id}`);
+              return;
+            }
+
             const now = new Date();
             const isPremium = 
               (profile.premium_until && new Date(profile.premium_until) > now) ||
               (profile.unlimited_lives_until && new Date(profile.unlimited_lives_until) > now);
 
-            if (!isPremium) {
-              let gameCredits = profile.game_credits || 0;
-              let bonusCredits = profile.bonus_credits || 0;
-              let creditsToDeduct = 3;
-
-              // Önce bonus kredilerden düş
-              if (bonusCredits >= creditsToDeduct) {
-                bonusCredits -= creditsToDeduct;
-                creditsToDeduct = 0;
-              } else {
-                creditsToDeduct -= bonusCredits;
-                bonusCredits = 0;
-              }
-
-              // Kalan varsa normal kredilerden düş
-              if (creditsToDeduct > 0) {
-                gameCredits = Math.max(0, gameCredits - creditsToDeduct);
-              }
-
-              const updateData: { game_credits: number; bonus_credits: number; last_credit_refresh?: string } = {
-                game_credits: gameCredits,
-                bonus_credits: bonusCredits,
-              };
-              
-              // Sadece ilk defa 5'in altına düşerse refresh timer'ı başlat
-              if (gameCredits < 5 && (profile.game_credits || 0) >= 5) {
-                updateData.last_credit_refresh = new Date().toISOString();
-              }
-
-              await supabase
-                .from("profiles")
-                .update(updateData)
-                .eq("id", participant.user_id);
-
-              console.log(`✅ 3 kredi düşürüldü: ${participant.user_id}`);
+            if (isPremium) {
+              console.log(`👑 Premium kullanıcı, kredi düşürülmedi: ${participant.user_id}`);
+              return;
             }
+
+            let gameCredits = profile.game_credits || 0;
+            let bonusCredits = profile.bonus_credits || 0;
+            const originalGameCredits = gameCredits;
+            let creditsToDeduct = 3;
+
+            // Önce bonus kredilerden düş
+            if (bonusCredits >= creditsToDeduct) {
+              bonusCredits -= creditsToDeduct;
+              creditsToDeduct = 0;
+            } else {
+              creditsToDeduct -= bonusCredits;
+              bonusCredits = 0;
+            }
+
+            // Kalan varsa normal kredilerden düş
+            if (creditsToDeduct > 0) {
+              gameCredits = Math.max(0, gameCredits - creditsToDeduct);
+            }
+
+            const updateData: { game_credits: number; bonus_credits: number; last_credit_refresh?: string } = {
+              game_credits: gameCredits,
+              bonus_credits: bonusCredits,
+            };
+            
+            // Sadece ilk defa 5'in altına düşerse refresh timer'ı başlat
+            if (gameCredits < 5 && originalGameCredits >= 5) {
+              updateData.last_credit_refresh = new Date().toISOString();
+            }
+
+            const { error: updateError } = await supabase
+              .from("profiles")
+              .update(updateData)
+              .eq("id", participant.user_id);
+
+            if (updateError) {
+              console.error(`❌ Kredi güncelleme hatası (${participant.user_id}):`, updateError);
+            } else {
+              console.log(`✅ 3 kredi düşürüldü: ${participant.user_id} (${originalGameCredits} -> ${gameCredits})`);
+            }
+          } catch (error) {
+            console.error(`❌ Kredi düşüm hatası (${participant.user_id}):`, error);
           }
-        }
+        });
+
+        // Tüm kredi işlemlerinin tamamlanmasını bekle
+        await Promise.all(creditPromises);
+        console.log(`✅ Tüm oyuncuların kredi işlemleri tamamlandı`);
       }
 
       await fetchTournamentDetails(tournamentId);
