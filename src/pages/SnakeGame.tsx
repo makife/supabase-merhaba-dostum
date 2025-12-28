@@ -2,13 +2,34 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Play, Pause, RotateCcw, Trophy, Target, ArrowLeft } from "lucide-react";
 
 const GRID_SIZE = 20;
-// Yüzdelik hesaplama: 100 / 20 = 5. Her kare %5 genişliğinde olacak.
 const CELL_SIZE_PERCENT = 100 / GRID_SIZE;
 
 const INITIAL_SNAKE = [{ x: 10, y: 10 }];
 const INITIAL_DIRECTION = { x: 0, y: -1 };
-
 const FALLBACK_WORDS = ["REACT", "KODLAMA", "YAZILIM", "FRONTEND", "SNAKE", "TASARIM", "MOBIL", "OYUN"];
+
+// --- ÖZEL HOOK: useInterval ---
+// Bu hook, React state'i değişse bile sayacı sıfırlamaz.
+// Dan Abramov'un meşhur useInterval pattern'i.
+function useInterval(callback, delay) {
+  const savedCallback = useRef();
+
+  // Son callback'i hatırla.
+  useEffect(() => {
+    savedCallback.current = callback;
+  }, [callback]);
+
+  // Interval'ı kur.
+  useEffect(() => {
+    function tick() {
+      savedCallback.current();
+    }
+    if (delay !== null) {
+      const id = setInterval(tick, delay);
+      return () => clearInterval(id);
+    }
+  }, [delay]);
+}
 
 const SnakeGame = () => {
   const navigate = () => {
@@ -24,7 +45,10 @@ const SnakeGame = () => {
   const [targetWord, setTargetWord] = useState("");
   const [targetLetterIdx, setTargetLetterIdx] = useState(0);
   const [food, setFood] = useState({ x: 5, y: 5, letter: "" });
+
+  // Yönü ref ile tutuyoruz, state ile değil. Bu sayede render tetiklemez.
   const directionRef = useRef(INITIAL_DIRECTION);
+
   const [gameRunning, setGameRunning] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [score, setScore] = useState(0);
@@ -33,7 +57,6 @@ const SnakeGame = () => {
   const [highScore, setHighScore] = useState(0);
 
   const gameAreaRef = useRef(null);
-  const gameLoopRef = useRef(null);
   const touchStartRef = useRef({ x: 0, y: 0 });
   const audioContextRef = useRef<AudioContext | null>(null);
 
@@ -49,7 +72,6 @@ const SnakeGame = () => {
           .split("\n")
           .map((w) => w.trim().toUpperCase())
           .filter((w) => w.length > 0);
-
         if (words.length > 0) {
           setWordList(words);
           const randomWord = words[Math.floor(Math.random() * words.length)];
@@ -61,8 +83,7 @@ const SnakeGame = () => {
           setFood((prev) => ({ ...prev, letter: FALLBACK_WORDS[0][0] }));
         }
       })
-      .catch((err) => {
-        console.warn("wordlist.txt yüklenemedi, varsayılan liste kullanılıyor.", err);
+      .catch(() => {
         setWordList(FALLBACK_WORDS);
         const startWord = FALLBACK_WORDS[Math.floor(Math.random() * FALLBACK_WORDS.length)];
         setTargetWord(startWord);
@@ -77,10 +98,7 @@ const SnakeGame = () => {
       audioContextRef.current = new AudioContextClass();
     }
     return () => {
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-        audioContextRef.current = null;
-      }
+      // Cleanup gerekmiyor, audio context kalabilir
     };
   }, []);
 
@@ -92,25 +110,26 @@ const SnakeGame = () => {
   const playSound = useCallback((frequency: number, duration = 100, type: OscillatorType = "sine") => {
     if (!audioContextRef.current) return;
     try {
-      const audioContext = audioContextRef.current;
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      oscillator.frequency.value = frequency;
-      oscillator.type = type;
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + duration / 1000);
-    } catch (error) {
-      console.log("Ses hatası:", error);
+      const ctx = audioContextRef.current;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = frequency;
+      osc.type = type;
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration / 1000);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + duration / 1000);
+    } catch (e) {
+      console.log(e);
     }
   }, []);
 
   const changeDirection = useCallback(
     (newDirection) => {
       const prev = directionRef.current;
+      // Geriye dönüşü engelle (Sağa giderken sola dönemezsin)
       if (prev.x + newDirection.x === 0 && prev.y + newDirection.y === 0) return;
       directionRef.current = newDirection;
       if (!gameRunning && !gameOver) setGameRunning(true);
@@ -130,31 +149,48 @@ const SnakeGame = () => {
     return newFood;
   }, []);
 
-  const gameLoop = useCallback(() => {
-    setSnake((prevSnake) => {
-      if (gameOver || !gameRunning) return prevSnake;
+  // --- OYUN MANTIĞI (Tek Fonksiyon) ---
+  // Bu fonksiyon artık useEffect içinde değil, useInterval içinde çağrılacak.
+  const gameStep = () => {
+    if (gameOver || !gameRunning) return;
 
+    setSnake((prevSnake) => {
       const newSnake = [...prevSnake];
       const head = { ...newSnake[0] };
 
       head.x += directionRef.current.x;
       head.y += directionRef.current.y;
 
-      // Duvarlardan geçiş (Warp)
+      // Duvarlardan geçiş
       if (head.x < 0) head.x = GRID_SIZE - 1;
       if (head.x >= GRID_SIZE) head.x = 0;
       if (head.y < 0) head.y = GRID_SIZE - 1;
       if (head.y >= GRID_SIZE) head.y = 0;
 
-      newSnake.unshift(head);
+      // Kendine çarptı mı? (Hareket etmeden önceki kuyruk hariç kontrol et)
+      // Not: pop() yapılmadan kontrol edersek kuyruğa çarpabiliriz, o yüzden önce yemeği kontrol edelim.
 
+      // Yeme Kontrolü (Henüz kuyruk silinmedi)
       const ateFood = head.x === food.x && head.y === food.y;
 
+      // Yeni kafa kendine çarpıyor mu?
+      // Dikkat: Kuyruk son elemanı hareket edeceği için çarpışma kontrolüne dahil edilmemeli,
+      // ama eğer yemek yendiyse kuyruk uzayacağı için dahil edilmeli.
+      // Basit çözüm: Şimdilik çarpışmayı kontrol et, kuyruğu sonra sil.
+      if (newSnake.some((segment) => segment.x === head.x && segment.y === head.y)) {
+        setGameOver(true);
+        setGameRunning(false);
+        playSound(200, 500, "sawtooth");
+        return prevSnake; // State değişmesin
+      }
+
+      newSnake.unshift(head);
+
       if (ateFood) {
+        // Puan artışı
         const pointGain = 10 * level;
         const newScore = score + pointGain;
         setScore(newScore);
-
         playSound(600 + level * 50, 150, "sine");
 
         if (newScore > highScore) {
@@ -163,57 +199,36 @@ const SnakeGame = () => {
         }
 
         const nextIdx = targetLetterIdx + 1;
-
         if (nextIdx >= targetWord.length) {
+          // Kelime tamamlandı
           playSound(800, 300, "square");
           setLevel((prev) => prev + 1);
-          setSpeed((prev) => Math.max(80, prev - 15));
-
+          setSpeed((prev) => Math.max(80, prev - 10)); // Hızlanma
           const newWord = wordList[Math.floor(Math.random() * wordList.length)];
           setTargetWord(newWord);
           setTargetLetterIdx(0);
           setFood(generateFood(newSnake, newWord[0]));
         } else {
+          // Sonraki harf
           setTargetLetterIdx(nextIdx);
           setFood(generateFood(newSnake, targetWord[nextIdx]));
         }
       } else {
+        // Yemek yenmedi, kuyruğu sil
         newSnake.pop();
-      }
-
-      // Kendine çarpma kontrolü
-      if (newSnake.slice(1).some((segment) => segment.x === head.x && segment.y === head.y)) {
-        setGameOver(true);
-        setGameRunning(false);
-        playSound(200, 500, "sawtooth");
-        return prevSnake;
       }
 
       return newSnake;
     });
-  }, [
-    food,
-    gameOver,
-    gameRunning,
-    score,
-    level,
-    highScore,
-    targetWord,
-    targetLetterIdx,
-    wordList,
-    generateFood,
-    playSound,
-  ]);
+  };
 
-  useEffect(() => {
-    if (gameRunning && !gameOver) {
-      gameLoopRef.current = setInterval(gameLoop, speed);
-    } else {
-      clearInterval(gameLoopRef.current);
-    }
-    return () => clearInterval(gameLoopRef.current);
-  }, [gameLoop, gameRunning, gameOver, speed]);
+  // --- KRİTİK DEĞİŞİKLİK: useInterval Kullanımı ---
+  // setInterval yerine bu hook'u kullanıyoruz.
+  // gameRunning true ise 'speed' kadar sürede çalışır.
+  // gameRunning false ise (null) çalışmaz.
+  useInterval(gameStep, gameRunning && !gameOver ? speed : null);
 
+  // Klavye Kontrolü
   useEffect(() => {
     const handleKeyPress = (e) => {
       if (gameOver) return;
@@ -236,19 +251,18 @@ const SnakeGame = () => {
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, [gameOver, changeDirection]);
 
+  // Touch Kontrolü
   const handleTouchStart = (e) => {
-    // e.preventDefault(); // Sayfa kaydırmayı engellemek için, ama bazen butona basmayı da engeller. Dikkatli kullanılmalı.
     const touch = e.touches[0];
     touchStartRef.current = { x: touch.clientX, y: touch.clientY };
   };
 
   const handleTouchEnd = (e) => {
-    // e.preventDefault();
     if (gameOver) return;
     const touch = e.changedTouches[0];
     const deltaX = touch.clientX - touchStartRef.current.x;
     const deltaY = touch.clientY - touchStartRef.current.y;
-    if (Math.max(Math.abs(deltaX), Math.abs(deltaY)) < 30) return;
+    if (Math.max(Math.abs(deltaX), Math.abs(deltaY)) < 30) return; // Çok kısa kaydırma
 
     if (Math.abs(deltaX) > Math.abs(deltaY)) {
       deltaX > 0 ? changeDirection({ x: 1, y: 0 }) : changeDirection({ x: -1, y: 0 });
@@ -261,11 +275,9 @@ const SnakeGame = () => {
     setGameRunning(true);
     setGameOver(false);
   };
-
   const pauseGame = () => {
     setGameRunning(false);
   };
-
   const resetGame = () => {
     setSnake(INITIAL_SNAKE);
     const randomWord = wordList.length > 0 ? wordList[Math.floor(Math.random() * wordList.length)] : "SNAKE";
@@ -285,15 +297,13 @@ const SnakeGame = () => {
     return colors[(level - 1) % colors.length];
   };
 
-  // --- DİNAMİK HARF BOYUTU HESAPLAMA ---
-  // Ekran genişliği ve kelime uzunluğuna göre kutu boyutunu ayarlar.
+  // Dinamik Harf Boyutu
   const calculateLetterSize = () => {
     const maxLength = targetWord.length;
-    // Baz boyutlar
     if (maxLength <= 5) return { size: "40px", fontSize: "20px" };
     if (maxLength <= 8) return { size: "32px", fontSize: "16px" };
     if (maxLength <= 12) return { size: "24px", fontSize: "12px" };
-    return { size: "18px", fontSize: "10px" }; // Çok uzun kelimeler için
+    return { size: "18px", fontSize: "10px" };
   };
 
   const letterStyle = calculateLetterSize();
@@ -307,13 +317,11 @@ const SnakeGame = () => {
     color: "white",
     fontSize: "20px",
     cursor: !disabled ? "pointer" : "not-allowed",
-    transition: "all 0.3s ease",
-    backdropFilter: "blur(10px)",
     opacity: disabled ? 0.5 : 1,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    touchAction: "manipulation", // Çift tıklama zoom'unu engeller
+    touchAction: "manipulation",
   });
 
   return (
@@ -326,7 +334,7 @@ const SnakeGame = () => {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        overscrollBehavior: "none", // Mobil çekme efektini engeller
+        overscrollBehavior: "none",
       }}
     >
       <div
@@ -356,8 +364,7 @@ const SnakeGame = () => {
               fontSize: "14px",
             }}
           >
-            <ArrowLeft size={20} />
-            Geri Dön
+            <ArrowLeft size={20} /> Geri Dön
           </button>
         </div>
 
@@ -412,7 +419,7 @@ const SnakeGame = () => {
             </div>
           </div>
 
-          {/* Kelime Göstergesi (Responsive) */}
+          {/* Kelime Göstergesi */}
           <div
             style={{
               background: "rgba(0,0,0,0.3)",
@@ -430,10 +437,9 @@ const SnakeGame = () => {
                 display: "flex",
                 justifyContent: "center",
                 gap: "4px",
-                // Flex-wrap: nowrap yaparak tek satıra zorluyoruz. Sığmazsa taşma olmaması için aşağıda boyutları küçültüyoruz.
                 flexWrap: "nowrap",
-                overflowX: "auto", // Çok aşırı uzun olursa kaydırılabilir olsun ama taşmasın
-                paddingBottom: "4px", // Scrollbar için minik pay
+                overflowX: "auto",
+                paddingBottom: "4px",
               }}
             >
               {targetWord.split("").map((letter, index) => (
@@ -443,10 +449,9 @@ const SnakeGame = () => {
                     display: "inline-flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    // Dinamik boyutlar buraya geliyor
                     width: letterStyle.size,
                     height: letterStyle.size,
-                    minWidth: letterStyle.size, // Küçülmeyi engeller
+                    minWidth: letterStyle.size,
                     fontSize: letterStyle.fontSize,
                     borderRadius: "6px",
                     fontWeight: "bold",
@@ -479,13 +484,12 @@ const SnakeGame = () => {
             borderRadius: "12px",
             border: "4px solid rgba(255, 255, 255, 0.2)",
             margin: "0 auto",
-            // Yüzdelik düzen için genişlik %100, kare olması için aspect-ratio
             width: "100%",
-            maxWidth: "400px", // Maksimum genişlik sınırı
-            aspectRatio: "1/1", // Kare olmasını zorla
+            maxWidth: "400px",
+            aspectRatio: "1/1",
             overflow: "hidden",
             touchAction: "none",
-            boxSizing: "border-box", // Border içeriği daraltır, dışarı taşırmaz
+            boxSizing: "border-box",
           }}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
@@ -495,21 +499,19 @@ const SnakeGame = () => {
               key={index}
               style={{
                 position: "absolute",
-                // Piksel yerine yüzde kullanımı:
                 left: `${segment.x * CELL_SIZE_PERCENT}%`,
                 top: `${segment.y * CELL_SIZE_PERCENT}%`,
                 width: `${CELL_SIZE_PERCENT}%`,
                 height: `${CELL_SIZE_PERCENT}%`,
-                // Yılanın tam birleşmesi için scale ile çok az büyütüp aradaki çizgileri yok edebiliriz,
-                // ya da border-radius ile oynayabiliriz.
                 borderRadius: index === 0 ? "50%" : "2px",
                 background: index === 0 ? "white" : getLevelColor(),
                 boxShadow: index === 0 ? "0 0 10px white" : "none",
                 zIndex: 2,
-                transition: "left 0.1s linear, top 0.1s linear", // Akıcı hareket için (isteğe bağlı)
+                // DİKKAT: transition kaldırıldı. Yılan "snap" (anlık) hareket edecek, bu çok daha akıcı hissettirir.
               }}
             />
           ))}
+
           <div
             style={{
               position: "absolute",
@@ -520,7 +522,7 @@ const SnakeGame = () => {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: "12px", // Harf boyutu sabit kalabilir veya responsive yapılabilir
+              fontSize: "12px",
               fontWeight: "bold",
               color: "#fff",
               textShadow: "0 0 5px black",
@@ -530,6 +532,7 @@ const SnakeGame = () => {
           >
             {food.letter}
           </div>
+
           {gameOver && (
             <div
               style={{
@@ -551,9 +554,8 @@ const SnakeGame = () => {
           )}
         </div>
 
-        {/* --- YÖN KONTROL BUTONLARI (MOBİL İÇİN) --- */}
+        {/* Yön Kontrolleri */}
         <div style={{ marginTop: "24px", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
-          {/* Yukarı */}
           <button
             onClick={() => {
               if (directionRef.current.y === 0) changeDirection({ x: 0, y: -1 });
@@ -563,7 +565,6 @@ const SnakeGame = () => {
           >
             ⬆️
           </button>
-          {/* Sol - Aşağı - Sağ */}
           <div style={{ display: "flex", gap: "24px", alignItems: "center" }}>
             <button
               onClick={() => {
@@ -595,7 +596,7 @@ const SnakeGame = () => {
           </div>
         </div>
 
-        {/* Başlat/Durdur/Sıfırla Kontrolleri */}
+        {/* Alt Butonlar */}
         <div style={{ marginTop: "20px", display: "flex", justifyContent: "center", gap: "16px" }}>
           {!gameRunning && !gameOver && (
             <button onClick={startGame} style={btnStyle("#10b981")}>
@@ -612,18 +613,11 @@ const SnakeGame = () => {
           </button>
         </div>
       </div>
-
-      <style>{`
-        @keyframes bounce {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.3); }
-        }
-      `}</style>
+      <style>{`@keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.3); } }`}</style>
     </div>
   );
 };
 
-// Alt butonlar için stil
 const btnStyle = (color) => ({
   display: "flex",
   alignItems: "center",
