@@ -13,6 +13,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSounds } from "@/hooks/useSounds";
 import { Capacitor } from "@capacitor/core";
 import { ArrowLeft, Crown, Zap, Infinity, Droplet, PenTool, Video, RotateCcw } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Veri Tipleri
 interface InkPack {
@@ -48,6 +58,10 @@ const MarketPage = () => {
 
   const [activeTab, setActiveTab] = useState("ink-store");
   const [purchaseLoading, setPurchaseLoading] = useState(false);
+
+  // Onay Penceresi State'leri
+  const [itemToBuy, setItemToBuy] = useState<StationeryItem | null>(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   const isNativePlatform = Capacitor.isNativePlatform();
 
@@ -181,21 +195,14 @@ const MarketPage = () => {
   const handleBuyInkPack = async (pack: InkPack) => {
     if (!user) return;
 
-    // Sadece mobilde çalışır kontrolü (Test ederken web'deysen bunu yorum satırına alabilirsin)
     if (isNativePlatform) {
       setPurchaseLoading(true);
       try {
-        // 1. REVENUECAT İLE SATIN AL
-        // pack.id değerinin ("ink_drop" vb.) RevenueCat'teki paket ID ile AYNI olması şart!
         const success = await purchasePackage(pack.id);
-
         if (!success) {
           setPurchaseLoading(false);
-          return; // Başarısızsa veya iptal edildiyse dur.
+          return;
         }
-
-        // 2. ÖDEME BAŞARILIYSA MÜREKKEBİ VER
-        // Buradan aşağısı senin eski kodunla aynı, sadece başarılı olunca çalışıyor.
       } catch (e) {
         console.error(e);
         setPurchaseLoading(false);
@@ -203,7 +210,6 @@ const MarketPage = () => {
       }
     }
 
-    // --- MÜREKKEP EKLEME KISMI ---
     try {
       const newBalance = (profile?.ink_count || 0) + pack.amount;
       const { error } = await supabase.from("profiles").update({ ink_count: newBalance }).eq("id", user.id);
@@ -225,7 +231,8 @@ const MarketPage = () => {
     }
   };
 
-  const handleSpendInk = async (item: StationeryItem) => {
+  // 1. DÜĞMEYE BASINCA: Kontrol et ve Onay Penceresini Aç
+  const handleSpendInk = (item: StationeryItem) => {
     if (!user || !profile) return;
     playSound("buttonClick");
 
@@ -239,23 +246,36 @@ const MarketPage = () => {
       return;
     }
 
+    // Onay penceresi için veriyi hazırla ve aç
+    setItemToBuy(item);
+    setShowConfirmation(true);
+  };
+
+  // 2. ONAY VERİLİRSE: Asıl satın alma işlemi
+  const confirmPurchase = async () => {
+    if (!itemToBuy || !user || !profile) return;
+
+    setShowConfirmation(false);
     setPurchaseLoading(true);
+
     try {
+      // Önce mürekkebi düş
       const { error: deductError } = await supabase
         .from("profiles")
-        .update({ ink_count: (profile.ink_count || 0) - item.priceInInk })
+        .update({ ink_count: (profile.ink_count || 0) - itemToBuy.priceInInk })
         .eq("id", user.id)
         .select()
         .single();
 
       if (deductError) throw deductError;
 
-      if (item.type === "joker" && item.subtype) {
+      // Sonra ürünü ver
+      if (itemToBuy.type === "joker" && itemToBuy.subtype) {
         const { data: inv } = await supabase
           .from("user_inventory")
           .select("quantity")
           .eq("user_id", user.id)
-          .eq("item_type", item.subtype)
+          .eq("item_type", itemToBuy.subtype)
           .maybeSingle();
 
         const currentQty = inv?.quantity || 0;
@@ -263,30 +283,29 @@ const MarketPage = () => {
         const { error: invError } = await supabase.from("user_inventory").upsert(
           {
             user_id: user.id,
-            item_type: item.subtype,
-            quantity: currentQty + item.value,
+            item_type: itemToBuy.subtype,
+            quantity: currentQty + itemToBuy.value,
           },
           { onConflict: "user_id,item_type" },
         );
 
         if (invError) throw invError;
-      } else if (item.type === "heart") {
+      } else if (itemToBuy.type === "heart") {
         const currentCredits = profile.game_credits || 0;
-        const newCredits = currentCredits + item.value;
+        const newCredits = currentCredits + itemToBuy.value;
 
-        // Eğer yeni krediler >= 5 ise, timer'ı sıfırla (last_credit_refresh = null)
         const updateData: any = { game_credits: newCredits };
         if (newCredits >= 5) {
           updateData.last_credit_refresh = null;
         }
 
         await supabase.from("profiles").update(updateData).eq("id", user.id);
-      } else if (item.type === "time") {
+      } else if (itemToBuy.type === "time") {
         const now = new Date();
         const currentExpiryVal = (profile as any).unlimited_lives_until;
         const currentExpiry = currentExpiryVal ? new Date(currentExpiryVal) : now;
         const baseTime = currentExpiry > now ? currentExpiry : now;
-        const newExpiry = new Date(baseTime.getTime() + item.value * 60 * 60 * 1000);
+        const newExpiry = new Date(baseTime.getTime() + itemToBuy.value * 60 * 60 * 1000);
 
         await supabase
           .from("profiles")
@@ -294,24 +313,28 @@ const MarketPage = () => {
           .eq("id", user.id);
       }
 
-      // CRITICAL: Profile'ı yenile ki UI güncellensin
       await refreshProfile();
 
+      // Başarı sesi çal (Varsa 'success' yoksa 'buttonClick')
+      // Eğer useSounds hook'unda 'success' tanımlı değilse hata verebilir,
+      // o yüzden şimdilik güvenli olan 'buttonClick' bırakıyorum.
       playSound("buttonClick");
+
       toast({
-        title: "İşlem Başarılı! 🖋️",
-        description: `${item.name} envanterinize eklendi.`,
+        title: "Satın Alma Başarılı! 🖋️",
+        description: `${itemToBuy.name} başarıyla alındı.`,
+        className: "bg-green-600 text-white border-green-500",
       });
     } catch (error) {
       console.error(error);
       toast({ title: "Hata", description: "İşlem gerçekleştirilemedi.", variant: "destructive" });
     } finally {
       setPurchaseLoading(false);
+      setItemToBuy(null);
     }
   };
 
   const handleWatchAd = async () => {
-    // Tarih kontrolü
     const today = new Date().toDateString();
     const storedDate = localStorage.getItem("lastAdDate");
     const storedCount = parseInt(localStorage.getItem("adCount") || "0");
@@ -326,20 +349,15 @@ const MarketPage = () => {
     }
 
     try {
-      // Sadece reklamı yükle ve göster
       await loadRewardedAd();
-      await showRewardedAd(); 
-      
-      // NOT: Ödül verme işlemi ve "Tebrikler" mesajı artık useAdMob.tsx içinde otomatik yapılıyor.
-      
-      // Sadece sayacı arttırıyoruz
+      await showRewardedAd();
+
       if (storedDate !== today) {
         localStorage.setItem("lastAdDate", today);
         localStorage.setItem("adCount", "1");
       } else {
         localStorage.setItem("adCount", (storedCount + 1).toString());
       }
-      
     } catch (e) {
       console.error(e);
       toast({ title: "Reklam Hatası", description: "Reklam yüklenemedi.", variant: "destructive" });
@@ -391,22 +409,18 @@ const MarketPage = () => {
               </div>
             </div>
 
-            {/* 👇 GÖRSEL BUTON BURAYA EKLENDİ 👇 */}
             <Button
-              variant="ghost" 
-              className="p-0 h-auto bg-transparent hover:bg-transparent shadow-none border-0" 
+              variant="ghost"
+              className="p-0 h-auto bg-transparent hover:bg-transparent shadow-none border-0"
               onClick={handleWatchAd}
               disabled={isAdLoading}
             >
-               <img 
-                 src="/reklamGorsel.jpg" 
-                 alt="Reklam İzle" 
-                 className={`h-12 w-auto object-contain rounded-lg shadow-lg hover:scale-105 active:scale-95 transition-all duration-200 ${isAdLoading ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
-               />
-               {/* Yükleniyor durumunda spinner eklenebilir ama görsel soluklaşması yeterli */}
+              <img
+                src="/reklamGorsel.jpg"
+                alt="Reklam İzle"
+                className={`h-12 w-auto object-contain rounded-lg shadow-lg hover:scale-105 active:scale-95 transition-all duration-200 ${isAdLoading ? "opacity-50 grayscale cursor-not-allowed" : ""}`}
+              />
             </Button>
-            {/* 👆 GÖRSEL BUTON BİTİŞ 👆 */}
-
           </CardContent>
         </Card>
       </div>
@@ -657,6 +671,39 @@ const MarketPage = () => {
           </div>
         </Tabs>
       </div>
+
+      {/* --- ONAY PENCERESİ (YENİ EKLENEN KISIM) --- */}
+      <AlertDialog open={showConfirmation} onOpenChange={setShowConfirmation}>
+        <AlertDialogContent className="w-[90%] rounded-xl bg-white border-slate-100">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold text-slate-800">
+              Satın Almak İstiyor musunuz?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-600">
+              Bu işlem için mürekkep haznenizden{" "}
+              <span className="font-bold text-indigo-600 text-lg">{itemToBuy?.priceInInk} Damla</span> düşülecektir.
+              Onaylıyor musunuz?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2 justify-end mt-2">
+            <AlertDialogCancel
+              className="flex-1 mt-0 bg-slate-100 text-slate-700 border-0 hover:bg-slate-200"
+              onClick={() => {
+                setItemToBuy(null);
+                setShowConfirmation(false);
+              }}
+            >
+              Vazgeç
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
+              onClick={confirmPurchase}
+            >
+              Satın Al
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
