@@ -2,10 +2,12 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Play, Pause, RotateCcw, Trophy, Target, ArrowLeft } from "lucide-react";
 
 const GRID_SIZE = 20;
+// Yüzdelik hesaplama: 100 / 20 = 5. Her kare %5 genişliğinde olacak.
+const CELL_SIZE_PERCENT = 100 / GRID_SIZE;
+
 const INITIAL_SNAKE = [{ x: 10, y: 10 }];
 const INITIAL_DIRECTION = { x: 0, y: -1 };
 
-// Varsayılan kelime listesi (Dosya yüklenemezse kullanılır)
 const FALLBACK_WORDS = ["REACT", "KODLAMA", "YAZILIM", "FRONTEND", "SNAKE", "TASARIM", "MOBIL", "OYUN"];
 
 const SnakeGame = () => {
@@ -17,15 +19,11 @@ const SnakeGame = () => {
     }
   };
 
-  // --- State Tanımları ---
   const [snake, setSnake] = useState(INITIAL_SNAKE);
   const [wordList, setWordList] = useState<string[]>([]);
   const [targetWord, setTargetWord] = useState("");
   const [targetLetterIdx, setTargetLetterIdx] = useState(0);
-
-  // Food artık emoji değil, hedef harfi taşıyacak
   const [food, setFood] = useState({ x: 5, y: 5, letter: "" });
-
   const directionRef = useRef(INITIAL_DIRECTION);
   const [gameRunning, setGameRunning] = useState(false);
   const [gameOver, setGameOver] = useState(false);
@@ -39,7 +37,7 @@ const SnakeGame = () => {
   const touchStartRef = useRef({ x: 0, y: 0 });
   const audioContextRef = useRef<AudioContext | null>(null);
 
-  // --- Kelime Listesini Çekme ---
+  // --- Kelime Listesi ---
   useEffect(() => {
     fetch("/wordlist.txt")
       .then((res) => {
@@ -72,7 +70,7 @@ const SnakeGame = () => {
       });
   }, []);
 
-  // --- Audio Setup ---
+  // --- Audio ---
   useEffect(() => {
     if (!audioContextRef.current) {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
@@ -132,7 +130,6 @@ const SnakeGame = () => {
     return newFood;
   }, []);
 
-  // --- Oyun Döngüsü ---
   const gameLoop = useCallback(() => {
     setSnake((prevSnake) => {
       if (gameOver || !gameRunning) return prevSnake;
@@ -143,6 +140,7 @@ const SnakeGame = () => {
       head.x += directionRef.current.x;
       head.y += directionRef.current.y;
 
+      // Duvarlardan geçiş (Warp)
       if (head.x < 0) head.x = GRID_SIZE - 1;
       if (head.x >= GRID_SIZE) head.x = 0;
       if (head.y < 0) head.y = GRID_SIZE - 1;
@@ -167,7 +165,6 @@ const SnakeGame = () => {
         const nextIdx = targetLetterIdx + 1;
 
         if (nextIdx >= targetWord.length) {
-          // Kelime bitti
           playSound(800, 300, "square");
           setLevel((prev) => prev + 1);
           setSpeed((prev) => Math.max(80, prev - 15));
@@ -177,7 +174,6 @@ const SnakeGame = () => {
           setTargetLetterIdx(0);
           setFood(generateFood(newSnake, newWord[0]));
         } else {
-          // Sonraki harf
           setTargetLetterIdx(nextIdx);
           setFood(generateFood(newSnake, targetWord[nextIdx]));
         }
@@ -185,6 +181,7 @@ const SnakeGame = () => {
         newSnake.pop();
       }
 
+      // Kendine çarpma kontrolü
       if (newSnake.slice(1).some((segment) => segment.x === head.x && segment.y === head.y)) {
         setGameOver(true);
         setGameRunning(false);
@@ -239,15 +236,14 @@ const SnakeGame = () => {
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, [gameOver, changeDirection]);
 
-  // Touch
   const handleTouchStart = (e) => {
-    e.preventDefault();
+    // e.preventDefault(); // Sayfa kaydırmayı engellemek için, ama bazen butona basmayı da engeller. Dikkatli kullanılmalı.
     const touch = e.touches[0];
     touchStartRef.current = { x: touch.clientX, y: touch.clientY };
   };
 
   const handleTouchEnd = (e) => {
-    e.preventDefault();
+    // e.preventDefault();
     if (gameOver) return;
     const touch = e.changedTouches[0];
     const deltaX = touch.clientX - touchStartRef.current.x;
@@ -289,7 +285,19 @@ const SnakeGame = () => {
     return colors[(level - 1) % colors.length];
   };
 
-  // Buton Stili (Eski stilin aynısı)
+  // --- DİNAMİK HARF BOYUTU HESAPLAMA ---
+  // Ekran genişliği ve kelime uzunluğuna göre kutu boyutunu ayarlar.
+  const calculateLetterSize = () => {
+    const maxLength = targetWord.length;
+    // Baz boyutlar
+    if (maxLength <= 5) return { size: "40px", fontSize: "20px" };
+    if (maxLength <= 8) return { size: "32px", fontSize: "16px" };
+    if (maxLength <= 12) return { size: "24px", fontSize: "12px" };
+    return { size: "18px", fontSize: "10px" }; // Çok uzun kelimeler için
+  };
+
+  const letterStyle = calculateLetterSize();
+
   const directionBtnStyle = (disabled) => ({
     width: "50px",
     height: "50px",
@@ -305,6 +313,7 @@ const SnakeGame = () => {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
+    touchAction: "manipulation", // Çift tıklama zoom'unu engeller
   });
 
   return (
@@ -317,6 +326,7 @@ const SnakeGame = () => {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
+        overscrollBehavior: "none", // Mobil çekme efektini engeller
       }}
     >
       <div
@@ -402,7 +412,7 @@ const SnakeGame = () => {
             </div>
           </div>
 
-          {/* Kelime Göstergesi */}
+          {/* Kelime Göstergesi (Responsive) */}
           <div
             style={{
               background: "rgba(0,0,0,0.3)",
@@ -415,7 +425,17 @@ const SnakeGame = () => {
             <p style={{ color: "#aaa", fontSize: "12px", marginBottom: "6px", textTransform: "uppercase" }}>
               Hedef Kelime
             </p>
-            <div style={{ display: "flex", justifyContent: "center", gap: "4px", flexWrap: "wrap" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                gap: "4px",
+                // Flex-wrap: nowrap yaparak tek satıra zorluyoruz. Sığmazsa taşma olmaması için aşağıda boyutları küçültüyoruz.
+                flexWrap: "nowrap",
+                overflowX: "auto", // Çok aşırı uzun olursa kaydırılabilir olsun ama taşmasın
+                paddingBottom: "4px", // Scrollbar için minik pay
+              }}
+            >
               {targetWord.split("").map((letter, index) => (
                 <span
                   key={index}
@@ -423,11 +443,13 @@ const SnakeGame = () => {
                     display: "inline-flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    width: "28px",
-                    height: "28px",
+                    // Dinamik boyutlar buraya geliyor
+                    width: letterStyle.size,
+                    height: letterStyle.size,
+                    minWidth: letterStyle.size, // Küçülmeyi engeller
+                    fontSize: letterStyle.fontSize,
                     borderRadius: "6px",
                     fontWeight: "bold",
-                    fontSize: "16px",
                     backgroundColor:
                       index < targetLetterIdx
                         ? "#10b981"
@@ -457,10 +479,13 @@ const SnakeGame = () => {
             borderRadius: "12px",
             border: "4px solid rgba(255, 255, 255, 0.2)",
             margin: "0 auto",
-            width: GRID_SIZE * 15,
-            height: GRID_SIZE * 15,
+            // Yüzdelik düzen için genişlik %100, kare olması için aspect-ratio
+            width: "100%",
+            maxWidth: "400px", // Maksimum genişlik sınırı
+            aspectRatio: "1/1", // Kare olmasını zorla
             overflow: "hidden",
             touchAction: "none",
+            boxSizing: "border-box", // Border içeriği daraltır, dışarı taşırmaz
           }}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
@@ -470,28 +495,32 @@ const SnakeGame = () => {
               key={index}
               style={{
                 position: "absolute",
-                left: segment.x * 15,
-                top: segment.y * 15,
-                width: 14,
-                height: 14,
-                borderRadius: index === 0 ? "50%" : "4px",
+                // Piksel yerine yüzde kullanımı:
+                left: `${segment.x * CELL_SIZE_PERCENT}%`,
+                top: `${segment.y * CELL_SIZE_PERCENT}%`,
+                width: `${CELL_SIZE_PERCENT}%`,
+                height: `${CELL_SIZE_PERCENT}%`,
+                // Yılanın tam birleşmesi için scale ile çok az büyütüp aradaki çizgileri yok edebiliriz,
+                // ya da border-radius ile oynayabiliriz.
+                borderRadius: index === 0 ? "50%" : "2px",
                 background: index === 0 ? "white" : getLevelColor(),
                 boxShadow: index === 0 ? "0 0 10px white" : "none",
                 zIndex: 2,
+                transition: "left 0.1s linear, top 0.1s linear", // Akıcı hareket için (isteğe bağlı)
               }}
             />
           ))}
           <div
             style={{
               position: "absolute",
-              left: food.x * 15,
-              top: food.y * 15,
-              width: 15,
-              height: 15,
+              left: `${food.x * CELL_SIZE_PERCENT}%`,
+              top: `${food.y * CELL_SIZE_PERCENT}%`,
+              width: `${CELL_SIZE_PERCENT}%`,
+              height: `${CELL_SIZE_PERCENT}%`,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: "12px",
+              fontSize: "12px", // Harf boyutu sabit kalabilir veya responsive yapılabilir
               fontWeight: "bold",
               color: "#fff",
               textShadow: "0 0 5px black",
