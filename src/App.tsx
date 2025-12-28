@@ -105,9 +105,11 @@ const AppRoutes = () => {
         try {
           // 🔊 Native Audio'yu başlat
           if (isNativePlatform()) {
-            initNativeAudio().then(() => {
-              console.log("✅ App: Native Audio başlatıldı");
-            }).catch(console.warn);
+            initNativeAudio()
+              .then(() => {
+                console.log("✅ App: Native Audio başlatıldı");
+              })
+              .catch(console.warn);
           }
 
           // Status Bar Rengi ve Stili
@@ -140,21 +142,49 @@ const AppRoutes = () => {
     }
   }, [user, loading]);
 
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      const initPush = async () => {
+        try {
+          let permStatus = await PushNotifications.checkPermissions();
+          if (permStatus.receive === "prompt") {
+            permStatus = await PushNotifications.requestPermissions();
+          }
+          if (permStatus.receive === "granted") {
+            // 👇 KRİTİK NOKTA: SESLİ KANAL OLUŞTURMA
+            await PushNotifications.createChannel({
+              id: "kelimeci_alerts_v2",
+              name: "Oyun Bildirimleri",
+              description: "Oyun davetleri ve sıra bildirimleri",
+              importance: 5,
+              visibility: 1,
+              sound: "default",
+              vibration: true,
+              lights: true,
+            });
+            await PushNotifications.register();
+          }
+        } catch (e) {
+          console.error("Push başlatma hatası:", e);
+        }
+      };
+
+      initPush();
+    }
+  }, []);
+
   if (loading || customLoading) {
     return <LoadingScreen onLoadingComplete={() => setCustomLoading(false)} />;
   }
 
   return (
     <>
-      <OnboardingPermissions 
-        open={showOnboarding} 
+      <OnboardingPermissions
+        open={showOnboarding}
         onComplete={() => setShowOnboarding(false)}
         onShowIntro={() => setShowIntroDialog(true)}
       />
-      <WelcomeIntroDialog 
-        open={showIntroDialog} 
-        onClose={() => setShowIntroDialog(false)} 
-      />
+      <WelcomeIntroDialog open={showIntroDialog} onClose={() => setShowIntroDialog(false)} />
       <Routes>
         <Route path="/auth" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
         <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
@@ -454,7 +484,7 @@ const GlobalRematchDialog = () => {
 const App = () => {
   // Initialize foreground state tracking globally
   useAppForegroundState();
-  
+
   // 1. Hook'u sadece bir referans almak için kullanıyoruz
   const { manualHideBars } = useImmersiveBars();
 
@@ -483,13 +513,9 @@ const App = () => {
   // 👇 PUSH NOTIFICATION ENTEGRASYONU BURADA
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
-      
       // Yardımcı Fonksiyon: Token'ı Veritabanına Yaz
       const saveTokenToSupabase = async (userId: string, tokenValue: string) => {
-        const { error } = await supabase
-          .from('profiles')
-          .update({ push_token: tokenValue }) 
-          .eq('id', userId);
+        const { error } = await supabase.from("profiles").update({ push_token: tokenValue }).eq("id", userId);
 
         if (error) console.error("❌ Token kaydedilemedi:", error);
         else console.log("✅ Token veritabanına başarıyla kaydedildi!");
@@ -498,28 +524,30 @@ const App = () => {
       const initPush = async () => {
         try {
           let permStatus = await PushNotifications.checkPermissions();
-          if (permStatus.receive === 'prompt') {
+          if (permStatus.receive === "prompt") {
             permStatus = await PushNotifications.requestPermissions();
           }
-          if (permStatus.receive === 'granted') {
+          if (permStatus.receive === "granted") {
             await PushNotifications.register();
           }
         } catch (e) {
-          console.error('Push başlatma hatası:', e);
+          console.error("Push başlatma hatası:", e);
         }
       };
 
       initPush();
 
       // 1. Token Gelince Çalışan Listener
-      const registrationListener = PushNotifications.addListener('registration', async (token) => {
-        console.log('🔥🔥🔥 PUSH TOKEN GELDİ:', token.value);
-        
+      const registrationListener = PushNotifications.addListener("registration", async (token) => {
+        console.log("🔥🔥🔥 PUSH TOKEN GELDİ:", token.value);
+
         // Token'ı her ihtimale karşı telefona kaydet (Kullanıcı yoksa bile elimizde olsun)
-        localStorage.setItem('temp_push_token', token.value);
-        
+        localStorage.setItem("temp_push_token", token.value);
+
         // Eğer şu an açık bir oturum varsa hemen kaydet
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (user) {
           await saveTokenToSupabase(user.id, token.value);
         } else {
@@ -529,10 +557,10 @@ const App = () => {
 
       // 2. Kullanıcı Giriş Yapınca Çalışan Dinleyici (YENİ EKLENEN KISIM)
       const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
+        if (event === "SIGNED_IN" && session?.user) {
           console.log("👤 Kullanıcı giriş yaptı, token kontrol ediliyor...");
           // Hafızada bekleyen token var mı?
-          const storedToken = localStorage.getItem('temp_push_token');
+          const storedToken = localStorage.getItem("temp_push_token");
           if (storedToken) {
             console.log("📦 Hafızadaki token bulundu, veritabanına yazılıyor...");
             await saveTokenToSupabase(session.user.id, storedToken);
@@ -540,21 +568,21 @@ const App = () => {
         }
       });
 
-      const notificationListener = PushNotifications.addListener('pushNotificationReceived', notification => {
-        console.log('🔔 Bildirim geldi:', notification);
+      const notificationListener = PushNotifications.addListener("pushNotificationReceived", (notification) => {
+        console.log("🔔 Bildirim geldi:", notification);
       });
-      
-      const actionListener = PushNotifications.addListener('pushNotificationActionPerformed', notification => {
+
+      const actionListener = PushNotifications.addListener("pushNotificationActionPerformed", (notification) => {
         const data = notification.notification.data;
         if (data?.roomCode) {
-           window.location.href = `/game?room=${data.roomCode}`;
+          window.location.href = `/game?room=${data.roomCode}`;
         }
       });
 
       return () => {
-        registrationListener.then(listener => listener.remove());
-        notificationListener.then(listener => listener.remove());
-        actionListener.then(listener => listener.remove());
+        registrationListener.then((listener) => listener.remove());
+        notificationListener.then((listener) => listener.remove());
+        actionListener.then((listener) => listener.remove());
         authListener.subscription.unsubscribe(); // Auth dinleyicisini de kapat
       };
     }
@@ -562,21 +590,20 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ConnectionProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter
-            future={{
-              v7_startTransition: true,
-              v7_relativeSplatPath: true,
-            }}
-          >
-            {/* AuthProvider en dışta olmalı çünkü useUser ve diğerleri 
-                Supabase session'ına ihtiyaç duyuyor. 
-            */}
-            <AuthProvider>
-              <UserProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+          }}
+        >
+          {/* ✅ DÜZELTME BURADA: AuthProvider EN DIŞTA OLMAK ZORUNDA */}
+          <AuthProvider>
+            <UserProvider>
+              {/* ✅ ConnectionProvider İÇERİDE (Çünkü useAuth kullanıyor) */}
+              <ConnectionProvider>
                 <ThemeProvider>
                   <MusicProvider>
                     <MatchmakingWrapper>
@@ -595,11 +622,11 @@ const App = () => {
                     </MatchmakingWrapper>
                   </MusicProvider>
                 </ThemeProvider>
-              </UserProvider>
-            </AuthProvider>
-          </BrowserRouter>
-        </TooltipProvider>
-      </ConnectionProvider>
+              </ConnectionProvider>
+            </UserProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
     </QueryClientProvider>
   );
 };
