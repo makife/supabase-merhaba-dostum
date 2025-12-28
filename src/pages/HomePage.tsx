@@ -21,7 +21,6 @@ import { useMatchmaking } from "@/contexts/NewMatchmakingContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { AvatarViewDialog } from "@/components/AvatarViewDialog";
 
-
 import {
   Bot,
   Users,
@@ -71,20 +70,20 @@ const isUnlimitedLivesActive = (profile: any) => {
 };
 
 // VIP türünü belirle: 'yearly' (365+ gün), 'monthly' (30+ gün), 'short' (kısa süreli), null (VIP değil)
-const getVipType = (profile: any): 'yearly' | 'monthly' | 'short' | null => {
+const getVipType = (profile: any): "yearly" | "monthly" | "short" | null => {
   if (!profile?.premium_until) return null;
   const now = new Date();
   const premiumUntil = new Date(profile.premium_until);
   if (premiumUntil <= now) return null;
-  
+
   const daysRemaining = Math.ceil((premiumUntil.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-  
+
   // 300+ gün kaldıysa yıllık VIP
-  if (daysRemaining >= 300) return 'yearly';
+  if (daysRemaining >= 300) return "yearly";
   // 25+ gün kaldıysa aylık VIP
-  if (daysRemaining >= 25) return 'monthly';
+  if (daysRemaining >= 25) return "monthly";
   // Daha kısa süreli (1 saat, 24 saat vb.)
-  return 'short';
+  return "short";
 };
 
 const HomePage = () => {
@@ -112,7 +111,7 @@ const HomePage = () => {
   });
   const [showAvatarView, setShowAvatarView] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  
+
   // VIP türünü hesapla
   const vipType = getVipType(profile);
 
@@ -145,22 +144,39 @@ const HomePage = () => {
       return;
     }
     const now = new Date();
-    const expiry = new Date((profile as any).unlimited_lives_until);
-    if (now >= expiry) {
+    // unlimited_lives_until null kontrolü ile güvenli hale getirelim
+    const expiryDateString = (profile as any).unlimited_lives_until;
+    if (!expiryDateString) {
       setUnlimitedTimeLeft("");
       return;
     }
-    const timeDiff = expiry.getTime() - now.getTime();
-    const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
 
-    let result = "";
-    if (days > 0) result = `${days}g ${hours}s`;
-    else if (hours > 0) result = `${hours}s ${minutes}d`;
-    else result = `${minutes}:${seconds.toString().padStart(2, "0")}`;
-    setUnlimitedTimeLeft(result);
+    const expiry = new Date(expiryDateString);
+    if (now >= expiry) {
+      setUnlimitedTimeLeft("");
+      // Süre bittiyse profili yenile ki arayüz normale dönsün
+      if (unlimitedTimeLeft !== "") refreshProfile();
+      return;
+    }
+
+    const timeDiff = expiry.getTime() - now.getTime();
+
+    const totalSeconds = Math.floor(timeDiff / 1000);
+    const days = Math.floor(totalSeconds / (3600 * 24));
+    const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    // Formatlama: Gün varsa gün göster, yoksa SS:DD:SN
+    if (days > 0) {
+      setUnlimitedTimeLeft(`${days} Gün ${hours} Sa`);
+    } else {
+      // Çift haneli görünüm için padStart kullanıyoruz (09:05:01 gibi)
+      const h = hours.toString().padStart(2, "0");
+      const m = minutes.toString().padStart(2, "0");
+      const s = seconds.toString().padStart(2, "0");
+      setUnlimitedTimeLeft(`${h}:${m}:${s}`);
+    }
   };
 
   // Premium süre hesaplama (1 saat ve 24 saatlik abonelikler için)
@@ -392,43 +408,44 @@ const HomePage = () => {
         className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${isMenuOpen ? "blur-md pointer-events-none" : ""}`}
       >
         {/* Header Section */}
-        <div
-          className="flex-shrink-0 p-3 safe-area-top"
-        >
-          <div className={`rounded-2xl p-4 relative overflow-hidden border transition-all duration-300 ${
-            vipType === 'yearly' 
-              ? 'bg-gradient-to-br from-amber-900/40 via-yellow-800/30 to-orange-900/40 border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.3)]' 
-              : vipType === 'monthly' 
-                ? 'bg-gradient-to-br from-sky-900/40 via-cyan-800/30 to-blue-900/40 border-sky-400/50 shadow-[0_0_20px_rgba(56,189,248,0.3)]' 
-                : 'game-glass-card'
-          }`}>
+        <div className="flex-shrink-0 p-3 safe-area-top">
+          <div
+            className={`rounded-2xl p-4 relative overflow-hidden border transition-all duration-300 ${
+              vipType === "yearly"
+                ? "bg-gradient-to-br from-amber-900/40 via-yellow-800/30 to-orange-900/40 border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.3)]"
+                : vipType === "monthly"
+                  ? "bg-gradient-to-br from-sky-900/40 via-cyan-800/30 to-blue-900/40 border-sky-400/50 shadow-[0_0_20px_rgba(56,189,248,0.3)]"
+                  : "game-glass-card"
+            }`}
+          >
             {/* VIP Badge Overlay */}
-            {(vipType === 'yearly' || vipType === 'monthly') && (
-              <div className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-xs font-bold flex items-center gap-1 ${
-                vipType === 'yearly' 
-                  ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-amber-950' 
-                  : 'bg-gradient-to-r from-sky-400 to-cyan-300 text-sky-950'
-              }`}>
+            {(vipType === "yearly" || vipType === "monthly") && (
+              <div
+                className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-xs font-bold flex items-center gap-1 ${
+                  vipType === "yearly"
+                    ? "bg-gradient-to-r from-amber-500 to-yellow-400 text-amber-950"
+                    : "bg-gradient-to-r from-sky-400 to-cyan-300 text-sky-950"
+                }`}
+              >
                 <Crown className="w-3 h-3" />
-                {vipType === 'yearly' ? 'GOLD VIP' : 'VIP'}
+                {vipType === "yearly" ? "GOLD VIP" : "VIP"}
               </div>
             )}
-            
+
             {/* User Info Row */}
             <div className="flex items-center justify-between mb-4">
               {/* Avatar & Name */}
               <div className="flex items-center gap-3">
-                <div
-                  className="relative cursor-pointer game-avatar-ring"
-                  onClick={() => setShowAvatarView(true)}
-                >
-                  <Avatar className={`w-14 h-14 border-2 shadow-lg ${
-                    vipType === 'yearly' 
-                      ? 'border-amber-400/70' 
-                      : vipType === 'monthly' 
-                        ? 'border-sky-400/70' 
-                        : 'border-primary/50'
-                  }`}>
+                <div className="relative cursor-pointer game-avatar-ring" onClick={() => setShowAvatarView(true)}>
+                  <Avatar
+                    className={`w-14 h-14 border-2 shadow-lg ${
+                      vipType === "yearly"
+                        ? "border-amber-400/70"
+                        : vipType === "monthly"
+                          ? "border-sky-400/70"
+                          : "border-primary/50"
+                    }`}
+                  >
                     <AvatarImage
                       src={profile?.avatar_url || user?.user_metadata?.avatar_url}
                       alt="Profile"
@@ -439,13 +456,15 @@ const HomePage = () => {
                     </AvatarFallback>
                   </Avatar>
                   {isPremium && (
-                    <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center shadow-lg ${
-                      vipType === 'yearly' 
-                        ? 'bg-gradient-to-br from-yellow-400 to-amber-600' 
-                        : vipType === 'monthly' 
-                          ? 'bg-gradient-to-br from-sky-400 to-cyan-500' 
-                          : 'bg-gradient-to-br from-yellow-400 to-amber-600'
-                    }`}>
+                    <div
+                      className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center shadow-lg ${
+                        vipType === "yearly"
+                          ? "bg-gradient-to-br from-yellow-400 to-amber-600"
+                          : vipType === "monthly"
+                            ? "bg-gradient-to-br from-sky-400 to-cyan-500"
+                            : "bg-gradient-to-br from-yellow-400 to-amber-600"
+                      }`}
+                    >
                       <Crown className="w-3 h-3 text-white" />
                     </div>
                   )}
@@ -543,10 +562,7 @@ const HomePage = () => {
                           <div className="flex items-center gap-2">
                             <div className="flex gap-1">
                               {Array.from({ length: 5 }, (_, i) => (
-                                <div
-                                  key={i}
-                                  className="w-5 h-2 rounded-full bg-green-500"
-                                />
+                                <div key={i} className="w-5 h-2 rounded-full bg-green-500" />
                               ))}
                             </div>
                             <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 text-xs px-2 py-0.5">
@@ -605,9 +621,7 @@ const HomePage = () => {
 
         {/* Gift Premium Banner */}
         {isPremium && isGiftPremium(profile) && (
-          <div
-            className="flex-shrink-0 px-3 pb-2"
-          >
+          <div className="flex-shrink-0 px-3 pb-2">
             <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 backdrop-blur-sm rounded-xl p-3 border border-amber-500/30 flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
                 <Gift className="w-5 h-5 text-white" />
@@ -623,9 +637,7 @@ const HomePage = () => {
         )}
 
         {/* Mini Games Horizontal Scroll */}
-        <div
-          className="flex-shrink-0 px-3 py-2"
-        >
+        <div className="flex-shrink-0 px-3 py-2">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
               <Gamepad2 className="w-4 h-4 text-primary" />
@@ -667,7 +679,6 @@ const HomePage = () => {
           </div>
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto px-3 pb-24 scrollbar-hide" data-onboarding="game-modes">
-
           <div className="grid grid-cols-2 gap-3">
             {gameModesConfig.map((mode) => (
               <div
@@ -705,9 +716,7 @@ const HomePage = () => {
           </div>
 
           {/* Stats Section */}
-          <div
-            className="mt-4 flex gap-2"
-          >
+          <div className="mt-4 flex gap-2">
             <div className="game-stat-badge flex-1 rounded-xl p-3 text-center">
               <Target className="w-4 h-4 text-primary mx-auto mb-1" />
               <p className="text-lg font-bold text-foreground">{profile?.daily_games || 0}</p>
