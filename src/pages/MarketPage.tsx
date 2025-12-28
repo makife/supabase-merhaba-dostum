@@ -677,15 +677,33 @@ const MarketPage = () => {
         <AlertDialogContent className="w-[90%] rounded-xl bg-white border-slate-100">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-xl font-bold text-slate-800">
-              Satın Almak İstiyor musunuz?
+              {itemToBuy?.type === "time" && isUnlimitedLivesActive(profile)
+                ? "Sürenizi Uzatmak İster misiniz?"
+                : "Satın Almak İstiyor musunuz?"}
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-slate-600">
-              Bu işlem için mürekkep haznenizden{" "}
-              <span className="font-bold text-indigo-600 text-lg">{itemToBuy?.priceInInk} Damla</span> düşülecektir.
-              Onaylıyor musunuz?
+
+            <AlertDialogDescription className="text-slate-600 text-left pt-2">
+              {/* 1. Eğer SÜRE SATIN ALINIYORSA ve ZATEN SÜRE VARSA Özel Mesaj Göster */}
+              {itemToBuy?.type === "time" && isUnlimitedLivesActive(profile) ? (
+                <div className="bg-orange-50 p-3 rounded-lg border border-orange-100 mb-2">
+                  <p className="text-orange-800 font-medium text-xs mb-1">⚠️ Mevcut Sınırsız Hakkınız Var</p>
+                  <p className="text-slate-700 text-sm">
+                    Şu anda aktif bir sınırsız süreniz bulunmaktadır. Satın alıma devam ederseniz, yeni süre{" "}
+                    <span className="font-bold text-indigo-600">mevcut sürenizin üzerine eklenecektir.</span>
+                  </p>
+                </div>
+              ) : null}
+
+              {/* Standart Bilgilendirme */}
+              <span className="block mt-2">
+                Bu işlem için mürekkep haznenizden{" "}
+                <span className="font-bold text-indigo-600 text-lg">{itemToBuy?.priceInInk} Damla</span> düşülecektir.
+                Onaylıyor musunuz?
+              </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex-row gap-2 justify-end mt-2">
+
+          <AlertDialogFooter className="flex-row gap-2 justify-end mt-4">
             <AlertDialogCancel
               className="flex-1 mt-0 bg-slate-100 text-slate-700 border-0 hover:bg-slate-200"
               onClick={() => {
@@ -699,7 +717,7 @@ const MarketPage = () => {
               className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
               onClick={confirmPurchase}
             >
-              Satın Al
+              {itemToBuy?.type === "time" && isUnlimitedLivesActive(profile) ? "Süreyi Uzat" : "Satın Al"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
