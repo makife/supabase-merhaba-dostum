@@ -537,32 +537,40 @@ const HomePage = () => {
               </div>
             )}
 
-            {/* Credits Bar */}
+            {/* Credits Bar - GÜNCELLENMİŞ VERSİYON */}
             {!isPremium && (
               <div className="mt-3 flex items-center justify-between bg-black/5 p-2 rounded-lg border border-black/5">
-                <span className="text-xs text-muted-foreground font-medium pl-1">Kalan Hak</span>
+                {/* Sol Etiket: Duruma göre değişsin */}
+                <span className="text-xs text-muted-foreground font-medium pl-1">
+                  {isUnlimitedLivesActive(profile) ? "Kalan Süre" : "Kalan Hak"}
+                </span>
 
                 {isUnlimitedLivesActive(profile) ? (
                   <div className="flex items-center gap-2">
-                    {/* Yanıp sönen efektli sayaç */}
-                    {unlimitedTimeLeft && (
-                      <div className="flex items-center gap-1.5 bg-orange-100 border border-orange-200 px-2 py-1 rounded-md">
+                    {/* SAYAÇ KUTUSU */}
+                    {unlimitedTimeLeft ? (
+                      <div className="flex items-center gap-1.5 bg-orange-100 border border-orange-200 px-2 py-1 rounded-md shadow-sm transition-all duration-300">
                         <Clock className="w-3 h-3 text-orange-600 animate-pulse" />
-                        <span className="text-xs font-mono font-bold text-orange-600 tabular-nums">
+                        <span className="text-xs font-mono font-bold text-orange-600 tabular-nums leading-none tracking-wide">
                           {unlimitedTimeLeft}
                         </span>
                       </div>
+                    ) : (
+                      // Hesaplama yapılırken boş görünmesin diye gri kutu
+                      <div className="h-6 w-20 bg-gray-200 rounded animate-pulse" />
                     )}
 
-                    <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 shadow-sm animate-in fade-in zoom-in">
+                    {/* SINIRSIZ ROZETİ */}
+                    <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 shadow-sm animate-in fade-in zoom-in duration-300">
                       <Infinity className="w-3 h-3 mr-1" /> Sınırsız
                     </Badge>
                   </div>
                 ) : (
+                  /* NORMAL HAK GÖRÜNÜMÜ */
                   <div className="flex items-center gap-2">
                     {(() => {
                       const totalCredits = getTotalCredits();
-                      // ... (Kalan kod aynı, sadece üstteki 'isUnlimitedLivesActive' bloğunu değiştirdik)
+
                       if (totalCredits > 5) {
                         return (
                           <div className="flex items-center gap-2">
@@ -583,7 +591,7 @@ const HomePage = () => {
                           {Array.from({ length: 5 }, (_, i) => (
                             <div
                               key={i}
-                              className={`w-5 h-2 rounded-full shadow-sm ${
+                              className={`w-5 h-2 rounded-full shadow-sm transition-colors duration-300 ${
                                 i < totalCredits
                                   ? i < 2
                                     ? "bg-red-500"
@@ -598,10 +606,11 @@ const HomePage = () => {
                       );
                     })()}
 
+                    {/* +1 Hak İçin Geri Sayım */}
                     {timeUntilNextCredit && getTotalCredits() < 5 && (
                       <div className="flex items-center gap-1 bg-white/50 px-1.5 py-0.5 rounded text-[10px] text-orange-500 font-bold border border-orange-100">
                         <Clock className="w-3 h-3" />
-                        <span>{timeUntilNextCredit}</span>
+                        <span className="tabular-nums">{timeUntilNextCredit}</span>
                       </div>
                     )}
                   </div>
