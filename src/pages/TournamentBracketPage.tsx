@@ -3,7 +3,17 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Trophy, LogOut, Clock, Crown } from "lucide-react";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTournament } from "@/hooks/useTournament";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,35 +29,40 @@ const TournamentBracketPage = () => {
   const { user } = useAuth();
   const { playSpecialSound } = useSounds();
 
-  const { currentTournament, matches, participants, loading, fetchTournamentDetails, advanceToNextRound, leaveTournament } =
-    useTournament(tournamentId);
-  
+  const {
+    currentTournament,
+    matches,
+    participants,
+    loading,
+    fetchTournamentDetails,
+    advanceToNextRound,
+    leaveTournament,
+  } = useTournament(tournamentId);
+
   const [isLeaving, setIsLeaving] = useState(false);
-  
+
   // Bracket'ten ayrılma fonksiyonu - aktif maç varsa rakibi kazanan yap
   const handleLeaveBracket = async () => {
     if (!user || !tournamentId) return;
-    
+
     setIsLeaving(true);
     try {
       const currentRound = currentTournament?.current_round || 1;
-      
+
       // Kullanıcının aktif maçını bul
       const myActiveMatch = matches.find(
         (m) =>
           m.round === currentRound &&
           (m.player1_id === user.id || m.player2_id === user.id) &&
-          (m.status === "pending" || m.status === "in_progress")
+          (m.status === "pending" || m.status === "in_progress"),
       );
-      
+
       if (myActiveMatch) {
         // Rakibi kazanan yap
-        const winnerId = myActiveMatch.player1_id === user.id 
-          ? myActiveMatch.player2_id 
-          : myActiveMatch.player1_id;
-        
+        const winnerId = myActiveMatch.player1_id === user.id ? myActiveMatch.player2_id : myActiveMatch.player1_id;
+
         console.log(`🚪 Bracket'ten ayrılıyor, maç ${myActiveMatch.id} - Kazanan: ${winnerId}`);
-        
+
         await supabase
           .from("tournament_matches")
           .update({
@@ -55,10 +70,10 @@ const TournamentBracketPage = () => {
             winner_id: winnerId,
           })
           .eq("id", myActiveMatch.id);
-        
+
         toast.info("Maçı bıraktınız, rakibiniz kazandı");
       }
-      
+
       // Turnuvadan ayrıl
       await leaveTournament();
       navigate("/tournament");
@@ -198,7 +213,7 @@ const TournamentBracketPage = () => {
   }, [tournamentId, user, currentTournament, participants]);
 
   // Check and advance round
-  cconst checkAndAdvance = useCallback(async () => {
+  const checkAndAdvance = useCallback(async () => {
     if (!tournamentId || !user || !currentTournament || advancingRef.current) return;
     if (currentTournament.creator_id !== user.id) return;
 
@@ -221,7 +236,7 @@ const TournamentBracketPage = () => {
       advancingRef.current = false;
     } else if (allCompleted && currentRound === 3) {
       // FİNAL BİTTİ - KAZANANI BUL VE BİLDİRİM GÖNDER
-      
+
       // 1. Turnuvayı tamamlandı olarak işaretle
       await supabase
         .from("tournaments")
@@ -231,19 +246,18 @@ const TournamentBracketPage = () => {
       // 2. Final maçını ve kazananı bul
       const finalMatch = roundMatches[0]; // Final tek maçtır
       if (finalMatch && finalMatch.winner_id) {
-        
         // Kazananın ismini bulmak için profile ihtiyacımız olabilir
         // (State'teki participants array'inden bulabiliriz)
-        const winnerProfile = participants.find(p => p.user_id === finalMatch.winner_id);
+        const winnerProfile = participants.find((p) => p.user_id === finalMatch.winner_id);
         const winnerName = winnerProfile?.profiles?.username || "Bir Oyuncu";
 
         // 3. Bildirim Fonksiyonunu Çağır (RPC)
         await supabase.rpc("notify_tournament_end", {
           p_tournament_id: tournamentId,
           p_winner_id: finalMatch.winner_id,
-          p_winner_name: winnerName
+          p_winner_name: winnerName,
         });
-        
+
         console.log("📢 Turnuva sonuç bildirimi gönderildi");
       }
     }
@@ -612,11 +626,7 @@ const TournamentBracketPage = () => {
         <div className="flex items-center justify-between mb-4">
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button 
-                size="sm" 
-                className="bg-red-600 hover:bg-red-700"
-                disabled={isLeaving}
-              >
+              <Button size="sm" className="bg-red-600 hover:bg-red-700" disabled={isLeaving}>
                 <LogOut className="w-4 h-4 mr-1" />
                 <span className="hidden sm:inline">{isLeaving ? "Ayrılıyor..." : "Ayrıl"}</span>
               </Button>
@@ -625,18 +635,15 @@ const TournamentBracketPage = () => {
               <AlertDialogHeader>
                 <AlertDialogTitle className="text-white">Turnuvadan Ayrıl</AlertDialogTitle>
                 <AlertDialogDescription className="text-gray-300">
-                  Turnuvadan ayrılırsanız aktif maçınızı kaybetmiş sayılırsınız ve rakibiniz bir sonraki tura geçer. 
-                  Bu işlem geri alınamaz.
+                  Turnuvadan ayrılırsanız aktif maçınızı kaybetmiş sayılırsınız ve rakibiniz bir sonraki tura geçer. Bu
+                  işlem geri alınamaz.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel className="bg-gray-700 hover:bg-gray-600 text-white border-gray-600">
                   Vazgeç
                 </AlertDialogCancel>
-                <AlertDialogAction 
-                  onClick={handleLeaveBracket}
-                  className="bg-red-600 hover:bg-red-700"
-                >
+                <AlertDialogAction onClick={handleLeaveBracket} className="bg-red-600 hover:bg-red-700">
                   Ayrıl
                 </AlertDialogAction>
               </AlertDialogFooter>
@@ -658,8 +665,8 @@ const TournamentBracketPage = () => {
                 <CardContent className="p-4 text-center">
                   <div className="w-8 h-8 border-2 border-yellow-400 border-t-transparent rounded-full mx-auto mb-2 animate-spin" />
                   <p className="text-yellow-200 text-sm font-medium">
-                    🔄 {currentRound === 2 ? "Yarı Final" : currentRound === 3 ? "Final" : "Round"} oluşturuluyor, lütfen
-                    bekleyin...
+                    🔄 {currentRound === 2 ? "Yarı Final" : currentRound === 3 ? "Final" : "Round"} oluşturuluyor,
+                    lütfen bekleyin...
                   </p>
                 </CardContent>
               </Card>
