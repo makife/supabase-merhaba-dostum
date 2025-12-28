@@ -588,6 +588,7 @@ const App = () => {
     }
   }, []);
 
+  // App.tsx içindeki return kısmı
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -599,10 +600,12 @@ const App = () => {
             v7_relativeSplatPath: true,
           }}
         >
-          {/* ✅ DÜZELTME BURADA: AuthProvider EN DIŞTA OLMAK ZORUNDA */}
+          {/* 1. KADEME: AuthProvider (En Dışta - Kimlik Yönetimi) */}
           <AuthProvider>
+            {/* 2. KADEME: UserProvider (Profil Verisi) */}
             <UserProvider>
-              {/* ✅ ConnectionProvider İÇERİDE (Çünkü useAuth kullanıyor) */}
+              {/* 3. KADEME: ConnectionProvider (Bağlantı Yönetimi) 
+                  ARTIK BURADA OLMALI çünkü üstteki AuthProvider'a muhtaç! */}
               <ConnectionProvider>
                 <ThemeProvider>
                   <MusicProvider>
