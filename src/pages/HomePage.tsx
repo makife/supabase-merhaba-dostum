@@ -509,7 +509,7 @@ const HomePage = () => {
           {(!isPremium || isUnlimitedLivesActive(profile)) && (
             <div className="flex items-center justify-between bg-white border border-slate-100 rounded-xl p-2 px-3 shadow-sm">
               <span className="text-xs text-slate-500 font-medium">
-                {isUnlimitedLivesActive(profile) ? "Sınırsız Akış" : "Kalan Hak"}
+                {isUnlimitedLivesActive(profile) ? "Sınırsız Akış" : "Kalan Sayfalarım"}
               </span>
 
               {isUnlimitedLivesActive(profile) ? (
@@ -538,7 +538,7 @@ const HomePage = () => {
                         ))}
                       </div>
                       <Badge className="bg-green-500 hover:bg-green-600 text-white border-0 text-xs px-2 py-0.5 shadow-sm">
-                        {totalCredits} Hak
+                        {totalCredits} Sayfa
                       </Badge>
                     </div>
                   ) : (
